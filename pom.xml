@@ -5,7 +5,7 @@
 
   <groupId>org.neo4j</groupId>
   <artifactId>parent</artifactId>
-  <version>3.6.8-SNAPSHOT</version>
+  <version>4.0.0-SNAPSHOT</version>
   <packaging>pom</packaging>
   <name>Neo4j</name>
   <description>Neo4j Graph Database</description>
@@ -62,22 +62,24 @@
 
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-    <maven.compiler.source>1.8</maven.compiler.source>
-    <maven.compiler.target>1.8</maven.compiler.target>
+    <maven.compiler.source>11</maven.compiler.source>
+    <maven.compiler.target>11</maven.compiler.target>
     <licensing.prepend.text>licensing/notice-agpl-prefix.txt</licensing.prepend.text>
-    <lucene.version>5.5.5</lucene.version>
-    <bouncycastle.version>1.60</bouncycastle.version>
+    <lucene.version>8.1.0</lucene.version>
+    <bouncycastle.version>1.61</bouncycastle.version>
     <generate-config-docs-phase>prepare-package</generate-config-docs-phase>
-    <java.exports/>
     <test.runner.jvm/>
     <test.runner.jvm.settings.additional/>
     <test.runner.jvm.settings>-Xmx2G -XX:+UseG1GC -XX:-OmitStackTraceInFastThrow -XX:+HeapDumpOnOutOfMemoryError
-      -XX:HeapDumpPath=target/test-data -Dorg.neo4j.unsafe.impl.internal.dragons.UnsafeUtil.DIRTY_MEMORY=true
-      -Dorg.neo4j.unsafe.impl.internal.dragons.UnsafeUtil.CHECK_NATIVE_ACCESS=true
+      "-XX:HeapDumpPath=target/test data" -Dorg.neo4j.internal.unsafe.UnsafeUtil.DIRTY_MEMORY=true
+      -Dorg.neo4j.internal.unsafe.UnsafeUtil.CHECK_NATIVE_ACCESS=true
       -Dorg.neo4j.io.pagecache.impl.muninn.usePreciseCursorErrorStackTraces=true
       -Dorg.neo4j.kernel.impl.api.KernelStatement.trackStatements=true
-      -Dorg.org.neo4j.kernel.impl.newapi.DefaultCursors.trackCursors=true
-      -XX:+UnlockExperimentalVMOptions -XX:+TrustFinalNonStaticFields ${java.exports} ${test.runner.jvm.settings.additional}
+      -Dorg.neo4j.kernel.impl.newapi.DefaultCursors.trackCursors=true
+      -Dorg.neo4j.codegen.bytecode.ByteCodeExpressionVisitor.checkByteCode=false
+      -Djunit.jupiter.extensions.autodetection.enabled=true
+      -Djunit.jupiter.execution.parallel.enabled=true
+      -XX:+UnlockExperimentalVMOptions -XX:+TrustFinalNonStaticFields ${test.runner.jvm.settings.additional}
     </test.runner.jvm.settings>
     <jetty.version>9.4.17.v20190418</jetty.version>
     <findbugs.version>3.0.1</findbugs.version>
@@ -87,27 +89,24 @@
 
     <license-text.header>headers/AGPL-3-header.txt</license-text.header>
 
-    <scala-maven-plugin.version>3.4.2</scala-maven-plugin.version>
-    <scala.version>2.11.12</scala.version>
-    <scala.binary.version>2.11</scala.binary.version>
-    <asm.version>6.2</asm.version>
+    <scala-maven-plugin.version>4.0.1</scala-maven-plugin.version>
+    <scala.version>2.12.7</scala.version>
+    <scala.binary.version>2.12</scala.binary.version>
+    <asm.version>7.1</asm.version>
     <metrics.version>4.0.2</metrics.version>
     <scala.target.vm>1.8</scala.target.vm>
-    <scala.java.additional.args/>
-    <jersey.version>1.19.3</jersey.version>
-    <junit.version>5.2.0</junit.version>
-    <junit.platform.version>1.2.0</junit.platform.version>
+    <jersey.version>2.28</jersey.version>
+    <junit.version>5.4.2</junit.version>
+    <junit.platform.version>1.4.2</junit.platform.version>
     <currentYear>2019</currentYear>
-    <cypher.compatibility.23>2.3.12</cypher.compatibility.23>
-    <cypher.compatibility.31>3.1.9</cypher.compatibility.31>
-    <cypher.compatibility.34>3.4.14</cypher.compatibility.34>
-    <opencypher.version>1.0.0-M12</opencypher.version>
-    <caffeine.version>2.6.2</caffeine.version>
-    <required.maven.version>3.5.2</required.maven.version>
+    <opencypher.version>1.0.0-M13</opencypher.version>
+    <caffeine.version>2.7.0</caffeine.version>
+    <required.maven.version>3.5.4</required.maven.version>
     <jackson.version>1.9.13</jackson.version>
   </properties>
 
   <modules>
+    <module>annotations</module>
     <module>build-resources</module>
     <module>community</module>
     <module>packaging</module>
@@ -153,6 +152,8 @@
         </includes>
       </testResource>
     </testResources>
+
+    <!-- Plugin definitions -->
     <pluginManagement>
       <plugins>
 
@@ -185,36 +186,23 @@
             <groups>
               <group>
                 <title>Graph database</title>
-                <packages>org.neo4j.graphdb:org.neo4j.graphdb.*
-                </packages>
+                <packages>org.neo4j.graphdb:org.neo4j.dbms.api</packages>
               </group>
               <group>
                 <title>Query language</title>
-                <packages>org.neo4j.cypher.javacompat:org.neo4j.cypher.javacompat.*:org.neo4j.cypher.export</packages>
+                <packages>org.neo4j.cypher.export</packages>
               </group>
               <group>
                 <title>Graph algorithms</title>
                 <packages>org.neo4j.graphalgo:org.neo4j.graphalgo.*</packages>
               </group>
               <group>
-                <title>Management</title>
-                <packages>org.neo4j.jmx:org.neo4j.jmx.*</packages>
-              </group>
-              <group>
-                <title>Management (Enterprise edition)</title>
-                <packages>org.neo4j.management:org.neo4j.management.*</packages>
-              </group>
-              <group>
                 <title>Logging</title>
                 <packages>org.neo4j.logging:org.neo4j.logging.*</packages>
               </group>
               <group>
-                <title>Backup (Enterprise edition)</title>
-                <packages>org.neo4j.backup</packages>
-              </group>
-              <group>
                 <title>Import</title>
-                <packages>org.neo4j.unsafe.batchinsert</packages>
+                <packages>org.neo4j.batchinsert</packages>
               </group>
               <group>
                 <title>Procedures</title>
@@ -225,19 +213,19 @@
                 <packages>org.neo4j.server:org.neo4j.server.*</packages>
               </group>
               <group>
-                <title>Helpers</title>
-                <packages>org.neo4j.helpers:org.neo4j.helpers.*</packages>
-              </group>
-              <group>
-                <title>Explicit Indexes</title>
-                <packages>org.neo4j.index:org.neo4j.index.*</packages>
+                <title>Test Harness</title>
+                <packages>org.neo4j.harness.junit*</packages>
               </group>
             </groups>
 
             <!-- Include the following packages... (yes, has to be one line) -->
-            <subpackages>org.neo4j.backup:org.neo4j.graphalgo:org.neo4j.cypher.export:org.neo4j.cypher.javacompat:org.neo4j.graphdb:org.neo4j.helpers:org.neo4j.helpers.collection:org.neo4j.index:org.neo4j.jmx:org.neo4j.management:org.neo4j.server.helpers:org.neo4j.server.plugins:org.neo4j.server.rest.repr:org.neo4j.server.rest.web:org.neo4j.unsafe.batchinsert:org.neo4j.logging:org.neo4j.procedure</subpackages>
+            <subpackages>
+              org.neo4j.graphalgo:org.neo4j.cypher.export:org.neo4j.graphdb:org.neo4j.dbms.api:org.neo4j.server.helpers:org.neo4j.server.rest.repr:org.neo4j.server.rest.web:org.neo4j.batchinsert:org.neo4j.logging:org.neo4j.procedure:org.neo4j.harness.junit
+            </subpackages>
             <!-- ...unless the package contains -->
-            <excludePackageNames>*.impl.*:*.internal.*:org.neo4j.helpers.progress:org.neo4j.logging.async:org.neo4j.server.rest.repr.formats:org.neo4j.server.rest.repr.util</excludePackageNames>
+            <excludePackageNames>
+              *.impl.*:*.internal.*:org.neo4j.logging.async:org.neo4j.server.rest.repr.formats:org.neo4j.server.rest.repr.util:org.neo4j.graphdb.factory:org.neo4j.graphdb.facade
+            </excludePackageNames>
           </configuration>
         </plugin>
 
@@ -245,8 +233,9 @@
         <plugin>
           <groupId>org.revapi</groupId>
           <artifactId>revapi-maven-plugin</artifactId>
-          <version>0.10.5</version>
+          <version>0.11.0</version>
           <configuration>
+            <skip>true</skip>
             <versionFormat>^\d+\.\d+\.\d+$</versionFormat>
             <analysisConfiguration>
               <revapi.java>
@@ -263,11 +252,6 @@
                     </include>
                     <exclude>
                       <item>org\.neo4j\.graphdb\.Path</item>
-                      <!--TODO remove this again once released-->
-                      <item>org\.neo4j\.server\.rest\.repr\.ListRepresentation</item>
-                      <item>org\.neo4j\.server\.rest\.repr\.RepresentationType</item>
-                      <item>org\.neo4j\.server\.rest\.repr\.ValueRepresentation</item>
-                      <item>org\.neo4j\.server\.helpers\.PropertyTypeDispatcher</item>
                     </exclude>
                   </classes>
                   <packages>
@@ -277,17 +261,15 @@
                       <item>org\.neo4j\.cypher\.export(\..+)?</item>
                       <item>org\.neo4j\.cypher\.javacompat(\..+)?</item>
                       <item>org\.neo4j\.graphdb(\..+)?</item>
-                      <item>org\.neo4j\.helpers(\..+)?</item>
-                      <item>org\.neo4j\.index(\..+)?</item>
-                      <item>org\.neo4j\.jmx(\..+)?</item>
-                      <item>org\.neo4j\.management(\..+)?</item>
                       <item>org\.neo4j\.server\.helpers(\..+)?</item>
                       <item>org\.neo4j\.server\.plugins(\..+)?</item>
                       <item>org\.neo4j\.server\.rest\.repr(\..+)?</item>
                       <item>org\.neo4j\.server\.rest\.web(\..+)?</item>
-                      <item>org\.neo4j\.unsafe\.batchinsert(\..+)?</item>
+                      <item>org\.neo4j\.batchinsert(\..+)?</item>
                       <item>org\.neo4j\.logging(\..+)?</item>
                       <item>org\.neo4j\.procedure(\..+)?</item>
+                      <item>org\.neo4j\.harness\.junit(\..+)?</item>
+                      <item>com\.neo4j\.harness\.junit(\..+)?</item>
                     </include>
                     <exclude>
                       <item>.*\.impl(\..+)?</item>
@@ -314,154 +296,6 @@
                   <!-- Ignore for now since some are already published, should be removed in 4.0 -->
                   <code>java.class.nonPublicPartOfAPI</code>
                 </item>
-                <item>
-                  <code>java.class.noLongerImplementsInterface</code>
-                  <class>org.neo4j.graphalgo.WeightedPath</class>
-                  <justification>Cleanup accidental Path exposure as a Resource.</justification>
-                </item>
-                <item>
-                  <code>java.class.removed</code>
-                  <old>interface org.neo4j.management.Cache</old>
-                  <classSimpleName>Cache</classSimpleName>
-                  <package>org.neo4j.management</package>
-                  <elementKind>interface</elementKind>
-                  <justification>The implemented class was removed in 3.0, but this interface lingered on.</justification>
-                </item>
-                <item>
-                  <code>java.method.removed</code>
-                  <classSimpleName>Neo4jManager</classSimpleName>
-                  <methodName>getCacheBeans</methodName>
-                  <package>org.neo4j.management</package>
-                  <elementKind>method</elementKind>
-                  <justification>The implemented class was removed in 3.0, but this interface lingered on.</justification>
-                </item>
-                <item>
-                  <code>java.class.removed</code>
-                  <class>org.neo4j.helpers.FailableConcurrentTransfer</class>
-                  <justification>Class is never used</justification>
-                </item>
-                <item>
-                  <code>java.field.nowFinal</code>
-                  <old>field org.neo4j.graphdb.InputPosition.empty</old>
-                  <justification>Changes to this field should not be allowed</justification>
-                </item>
-                <item>
-                  <code>java.class.externalClassExposedInAPI</code>
-                  <new>class org.neo4j.helpers.HostnamePort</new>
-                  <package>org.neo4j.helpers</package>
-                  <classQualifiedName>org.neo4j.helpers.HostnamePort</classQualifiedName>
-                  <justification>This is meant to be exposed</justification>
-                </item>
-                <item>
-                  <code>java.class.added</code>
-                  <classQualifiedName>org.neo4j.helpers.collection.MultiSet</classQualifiedName>
-                  <justification>This class was accidentally removed in 3.5.0 and recovered after release.</justification>
-                </item>
-                <item>
-                  <code>java.class.added</code>
-                  <classQualifiedName>org.neo4j.helpers.collection.CachingIterator</classQualifiedName>
-                  <justification>This class was accidentally removed in 3.5.0 and recovered after release.</justification>
-                </item>
-                <item>
-                  <code>java.class.added</code>
-                  <classQualifiedName>org.neo4j.helpers.collection.RangeIterator</classQualifiedName>
-                  <justification>This class was accidentally removed in 3.5.0 and recovered after release.</justification>
-                </item>
-                <item>
-                  <code>java.class.added</code>
-                  <classQualifiedName>org.neo4j.helpers.collection.PagingIterator</classQualifiedName>
-                  <justification>This class was accidentally removed in 3.5.0 and recovered after release.</justification>
-                </item>
-                  <item>
-                      <code>java.method.parameterTypeChanged</code>
-                      <classQualifiedName>org.neo4j.graphdb.factory.GraphDatabaseFactory</classQualifiedName>
-                      <newType>org.neo4j.graphdb.facade.GraphDatabaseFacadeFactory.Dependencies</newType>
-                      <oldType>org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory.Dependencies</oldType>
-                      <justification>This class was moved during edition/platform separation from the kernel</justification>
-                  </item>
-                  <item>
-                      <code>java.method.returnTypeChanged</code>
-                      <classQualifiedName>org.neo4j.graphdb.factory.GraphDatabaseFactoryState</classQualifiedName>
-                      <newType>org.neo4j.graphdb.facade.GraphDatabaseFacadeFactory.Dependencies</newType>
-                      <oldType>org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory.Dependencies</oldType>
-                      <justification>This class was moved during edition/platform separation from the kernel</justification>
-                  </item>
-                  <item>
-                      <code>java.class.added</code>
-                      <classQualifiedName>org.neo4j.graphdb.factory.module.DatabaseInitializer</classQualifiedName>
-                      <justification>Adjusting revapi config to actual code state</justification>
-                  </item>
-                  <item>
-                      <code>java.class.added</code>
-                      <classQualifiedName>org.neo4j.graphdb.factory.module.edition.context.EditionDatabaseContext</classQualifiedName>
-                      <justification>Adjusting revapi config to actual code state</justification>
-                  </item>
-                  <item>
-                      <code>java.class.added</code>
-                      <classQualifiedName>org.neo4j.graphdb.factory.module.edition.context.DefaultEditionDatabaseContext</classQualifiedName>
-                      <justification>Adjusting revapi config to actual code state</justification>
-                  </item>
-                  <item>
-                      <code>java.method.returnTypeChanged</code>
-                      <classQualifiedName>org.neo4j.graphdb.factory.module.edition.AbstractEditionModule</classQualifiedName>
-                      <newType>org.neo4j.graphdb.factory.module.edition.context.EditionDatabaseContext</newType>
-                      <oldType>org.neo4j.graphdb.factory.module.edition.context.DatabaseEditionContext</oldType>
-                      <justification>Adjusting revapi config to actual code state</justification>
-                  </item>
-                  <item>
-                      <code>java.method.returnTypeChanged</code>
-                      <classQualifiedName>org.neo4j.graphdb.factory.module.edition.DefaultEditionModule</classQualifiedName>
-                      <newType>org.neo4j.graphdb.factory.module.edition.context.EditionDatabaseContext</newType>
-                      <oldType>org.neo4j.graphdb.factory.module.edition.context.DatabaseEditionContext</oldType>
-                      <justification>Adjusting revapi config to actual code state</justification>
-                  </item>
-                  <item>
-                    <code>java.method.added</code>
-                    <new>method java.lang.String org.neo4j.graphdb.index.fulltext.AnalyzerProvider::description()</new>
-                    <justification>This is necessary for listAvailableAnalyzers to show a description,
-                      and is extremely unlikely to conflict adversely with any code in the wild.</justification>
-                  </item>
-                  <item>
-                    <code>java.method.added</code>
-                    <new>method boolean org.neo4j.graphdb.config.BaseSetting&lt;T&gt;::secret()</new>
-                    <justification>This is necessary for obsfucate the system password in the debug log. Only additive change.</justification>
-                  </item>
-                  <item>
-                    <code>java.method.added</code>
-                    <new>method void org.neo4j.graphdb.config.BaseSetting&lt;T&gt;::setSecret(boolean)</new>
-                    <justification>This is necessary for obsfucate the system password in the debug log. Only additive change.</justification>
-                  </item>
-                  <item>
-                    <code>java.method.defaultMethodAddedToInterface</code>
-                    <new>method boolean org.neo4j.graphdb.config.SettingGroup&lt;T&gt;::secret()</new>
-                    <justification>This is necessary for obsfucate the system password in the debug log. Only additive change.</justification>
-                  </item>
-                  <item>
-                    <code>java.annotation.attributeValueChanged</code>
-                    <old>field org.neo4j.graphdb.factory.GraphDatabaseSettings.load_csv_file_url_root</old>
-                    <new>field org.neo4j.graphdb.factory.GraphDatabaseSettings.load_csv_file_url_root</new>
-                    <justification>The description annotation contained text that was not strictly correct, and this is therefor an important documentation correction.</justification>
-                  </item>
-                <item>
-                  <code>java.field.addedStaticField</code>
-                  <new>field org.neo4j.graphdb.factory.GraphDatabaseSettings.data_collector_max_query_text_size</new>
-                  <justification>
-                    Adding a static field is generally not permitted because it could clash someone extending
-                    the class and adding a field with the same name. The risk that someone does that for our setting
-                    with the specific setting that we've added is so small the we think violation of the rule is the right
-                    thing to do.
-                  </justification>
-                </item>
-                <item>
-                  <code>java.field.addedStaticField</code>
-                  <new>field org.neo4j.graphdb.factory.GraphDatabaseSettings.data_collector_max_recent_query_count</new>
-                  <justification>
-                    Adding a static field is generally not permitted because it could clash someone extending
-                    the class and adding a field with the same name. The risk that someone does that for our setting
-                    with the specific setting that we've added is so small the we think violation of the rule is the right
-                    thing to do.
-                  </justification>
-                </item>
               </revapi.ignore>
               <revapi.semver.ignore>
                 <enabled>true</enabled>
@@ -481,12 +315,12 @@
             <dependency>
               <groupId>org.revapi</groupId>
               <artifactId>revapi-java</artifactId>
-              <version>0.18.1</version>
+              <version>0.19.0</version>
             </dependency>
             <dependency>
               <groupId>org.revapi</groupId>
               <artifactId>revapi-basic-features</artifactId>
-              <version>0.7.4</version>
+              <version>0.8.0</version>
             </dependency>
           </dependencies>
           <executions>
@@ -502,7 +336,7 @@
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-surefire-plugin</artifactId>
-          <version>2.22.0</version>
+          <version>2.22.2</version>
           <configuration>
             <forkCount>${forkCounts}</forkCount>
             <trimStackTrace>false</trimStackTrace>
@@ -519,11 +353,28 @@
               <exclude>**/*IntegrationTest.class</exclude>
             </excludes>
           </configuration>
+          <dependencies>
+            <dependency>
+              <groupId>org.junit.platform</groupId>
+              <artifactId>junit-platform-launcher</artifactId>
+              <version>${junit.platform.version}</version>
+            </dependency>
+            <dependency>
+              <groupId>org.junit.jupiter</groupId>
+              <artifactId>junit-jupiter-engine</artifactId>
+              <version>${junit.version}</version>
+            </dependency>
+            <dependency>
+              <groupId>org.junit.vintage</groupId>
+              <artifactId>junit-vintage-engine</artifactId>
+              <version>${junit.version}</version>
+            </dependency>
+          </dependencies>
         </plugin>
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-failsafe-plugin</artifactId>
-          <version>2.22.0</version>
+          <version>2.22.2</version>
           <configuration>
             <argLine>${test.runner.jvm.settings}</argLine>
             <forkCount>${forkCounts}</forkCount>
@@ -543,6 +394,23 @@
             </systemPropertyVariables>
             <jvm>${test.runner.jvm}</jvm>
           </configuration>
+          <dependencies>
+            <dependency>
+              <groupId>org.junit.platform</groupId>
+              <artifactId>junit-platform-launcher</artifactId>
+              <version>${junit.platform.version}</version>
+            </dependency>
+            <dependency>
+              <groupId>org.junit.jupiter</groupId>
+              <artifactId>junit-jupiter-engine</artifactId>
+              <version>${junit.version}</version>
+            </dependency>
+            <dependency>
+              <groupId>org.junit.vintage</groupId>
+              <artifactId>junit-vintage-engine</artifactId>
+              <version>${junit.version}</version>
+            </dependency>
+          </dependencies>
           <executions>
             <execution>
               <id>integration-test</id>
@@ -563,7 +431,7 @@
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-jar-plugin</artifactId>
-          <version>3.1.0</version>
+          <version>3.1.1</version>
           <executions>
             <!-- Augment default jar with url -->
             <execution>
@@ -575,6 +443,7 @@
                   </manifest>
                   <manifestEntries>
                     <Url>${project.organization.url}</Url>
+                    <!--suppress UnresolvedMavenProperty -->
                     <Automatic-Module-Name>${moduleName}</Automatic-Module-Name>
                   </manifestEntries>
                 </archive>
@@ -617,14 +486,14 @@
         <plugin>
           <groupId>org.neo4j.build.plugins</groupId>
           <artifactId>licensing-maven-plugin</artifactId>
-          <version>1.7.7</version>
+          <version>1.7.8</version>
           <configuration>
             <failIfDisliked>true</failIfDisliked>
             <failIfMissing>true</failIfMissing>
             <plainTextReport>true</plainTextReport>
             <prependText>${licensing.prepend.text}</prependText>
             <excludedGroups>
-              ^((org.neo4j){1}|(org.neo4j.app){1}|(org.neo4j.server.plugin){1}|(org.neo4j.assembly){1}|(org.neo4j.bolt){1}|(org.neo4j.build){1}|(org.neo4j.test){1})$
+              ^((org.neo4j){1}|(org.neo4j.community){1}|(org.neo4j.app){1}|(org.neo4j.server.plugin){1}|(org.neo4j.assembly){1}|(org.neo4j.bolt){1}|(org.neo4j.build){1}|(org.neo4j.test){1})$
             </excludedGroups>
             <excludedArtifacts>^((neo4j-browser))$</excludedArtifacts>
             <includedScopes>compile</includedScopes>
@@ -718,10 +587,10 @@
               <arg>100</arg>
               <arg>-Xlint</arg>
               <arg>-target:jvm-${scala.target.vm}</arg>
-              <arg>${scala.java.additional.args}</arg>
+              <arg>-nobootcp</arg>
             </args>
             <jvmArgs>
-              <jvmArg>-Xms64m</jvmArg>
+              <jvmArg>-Xms256m</jvmArg>
               <jvmArg>-Xmx1024m</jvmArg>
             </jvmArgs>
           </configuration>
@@ -753,6 +622,7 @@
           <version>3.0.0-M2</version>
           <configuration>
             <rules>
+              <dependencyConvergence/>
               <evaluateBeanshell>
                 <message>Maven module has to be in a "groupId" beginning with "org.neo4j"</message>
                 <condition>{String s = "${project.groupId}"; s.startsWith("org.neo4j");}</condition>
@@ -781,11 +651,10 @@
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-compiler-plugin</artifactId>
-          <version>3.8.0</version>
+          <version>3.8.1</version>
           <configuration>
             <showDeprecation>true</showDeprecation>
             <showWarnings>true</showWarnings>
-            <compilerArgument>${java.exports}</compilerArgument>
           </configuration>
         </plugin>
         <plugin>
@@ -797,6 +666,13 @@
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-dependency-plugin</artifactId>
           <version>3.1.1</version>
+          <dependencies>
+            <dependency>
+              <groupId>org.apache.maven.shared</groupId>
+              <artifactId>maven-dependency-analyzer</artifactId>
+              <version>1.11.1</version>
+            </dependency>
+          </dependencies>
         </plugin>
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
@@ -831,12 +707,12 @@
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-shade-plugin</artifactId>
-          <version>3.1.1</version>
+          <version>3.2.1</version>
         </plugin>
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-assembly-plugin</artifactId>
-          <version>3.1.0</version>
+          <version>3.1.1</version>
           <configuration>
             <tarLongFileMode>gnu</tarLongFileMode>
           </configuration>
@@ -867,29 +743,6 @@
           </executions>
         </plugin>
 
-        <plugin>
-          <groupId>org.scalastyle</groupId>
-          <artifactId>scalastyle-maven-plugin</artifactId>
-          <version>1.0.0</version>
-          <configuration>
-            <verbose>false</verbose>
-            <failOnViolation>true</failOnViolation>
-            <includeTestSourceDirectory>true</includeTestSourceDirectory>
-            <failOnWarning>false</failOnWarning>
-            <inputEncoding>UTF-8</inputEncoding>
-            <sourceDirectory>${basedir}/src/main/scala</sourceDirectory>
-            <testSourceDirectory>${basedir}/src/test/scala</testSourceDirectory>
-            <outputFile>${basedir}/target/scalastyle-output.xml</outputFile>
-            <outputEncoding>UTF-8</outputEncoding>
-          </configuration>
-          <executions>
-            <execution>
-              <goals>
-                <goal>check</goal>
-              </goals>
-            </execution>
-          </executions>
-        </plugin>
       </plugins>
     </pluginManagement>
 
@@ -917,7 +770,7 @@
           <dependency>
             <groupId>com.puppycrawl.tools</groupId>
             <artifactId>checkstyle</artifactId>
-            <version>8.12</version>
+            <version>8.19</version>
           </dependency>
           <dependency>
             <groupId>org.neo4j.build</groupId>
@@ -968,6 +821,37 @@
   </build>
 
   <profiles>
+    <profile>
+      <id>errorprone</id>
+      <activation>
+        <activeByDefault>false</activeByDefault>
+      </activation>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-compiler-plugin</artifactId>
+            <configuration>
+              <compilerArgs>
+                <arg>-XDcompilePolicy=simple</arg>
+                <arg>-Xplugin:ErrorProne
+                  -Xep:ReturnValueIgnored:WARN
+                  -Xep:InvalidZoneId:WARN
+                </arg>
+              </compilerArgs>
+              <annotationProcessorPaths>
+                <path>
+                  <groupId>com.google.errorprone</groupId>
+                  <artifactId>error_prone_core</artifactId>
+                  <version>2.3.3</version>
+                </path>
+              </annotationProcessorPaths>
+            </configuration>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+
     <!-- Only generate NOTICE and LICENSES files for projects with src/ directory -->
     <profile>
       <id>has-sources</id>
@@ -1015,64 +899,64 @@
       <properties>
         <test.runner.jvm.settings.additional>@{argLine}</test.runner.jvm.settings.additional>
       </properties>
-        <build>
-            <plugins>
-                <plugin>
-                    <groupId>org.jacoco</groupId>
-                    <artifactId>jacoco-maven-plugin</artifactId>
-                    <version>0.8.2</version>
-                    <executions>
-                        <execution>
-                            <id>default-prepare-agent</id>
-                            <goals>
-                                <goal>prepare-agent</goal>
-                            </goals>
-                        </execution>
-                        <execution>
-                            <id>default-prepare-agent-integration</id>
-                            <goals>
-                                <goal>prepare-agent-integration</goal>
-                            </goals>
-                        </execution>
-                        <execution>
-                            <id>merge</id>
-                            <phase>verify</phase>
-                            <goals>
-                                <goal>merge</goal>
-                            </goals>
-                            <configuration>
-                                <destFile>${project.build.directory}/jacoco-aggregated.exec</destFile>
-                                <fileSets>
-                                    <fileSet implementation="org.apache.maven.shared.model.fileset.FileSet">
-                                        <directory>${project.build.directory}</directory>
-                                        <includes>
-                                            <include>*.exec</include>
-                                        </includes>
-                                    </fileSet>
-                                </fileSets>
-                            </configuration>
-                        </execution>
-                        <execution>
-                            <id>default-report</id>
-                            <phase>verify</phase>
-                            <goals>
-                                <goal>report</goal>
-                            </goals>
-                          <configuration>
-                            <dataFile>${project.build.directory}/jacoco-aggregated.exec</dataFile>
-                          </configuration>
-                        </execution>
-                        <execution>
-                            <id>report-aggregate</id>
-                            <phase>verify</phase>
-                            <goals>
-                                <goal>report-aggregate</goal>
-                            </goals>
-                        </execution>
-                    </executions>
-                </plugin>
-            </plugins>
-        </build>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>org.jacoco</groupId>
+            <artifactId>jacoco-maven-plugin</artifactId>
+            <version>0.8.3</version>
+            <executions>
+              <execution>
+                <id>default-prepare-agent</id>
+                <goals>
+                  <goal>prepare-agent</goal>
+                </goals>
+              </execution>
+              <execution>
+                <id>default-prepare-agent-integration</id>
+                <goals>
+                  <goal>prepare-agent-integration</goal>
+                </goals>
+              </execution>
+              <execution>
+                <id>merge</id>
+                <phase>verify</phase>
+                <goals>
+                  <goal>merge</goal>
+                </goals>
+                <configuration>
+                  <destFile>${project.build.directory}/jacoco-aggregated.exec</destFile>
+                  <fileSets>
+                    <fileSet implementation="org.apache.maven.shared.model.fileset.FileSet">
+                      <directory>${project.build.directory}</directory>
+                      <includes>
+                        <include>*.exec</include>
+                      </includes>
+                    </fileSet>
+                  </fileSets>
+                </configuration>
+              </execution>
+              <execution>
+                <id>default-report</id>
+                <phase>verify</phase>
+                <goals>
+                  <goal>report</goal>
+                </goals>
+                <configuration>
+                  <dataFile>${project.build.directory}/jacoco-aggregated.exec</dataFile>
+                </configuration>
+              </execution>
+              <execution>
+                <id>report-aggregate</id>
+                <phase>verify</phase>
+                <goals>
+                  <goal>report-aggregate</goal>
+                </goals>
+              </execution>
+            </executions>
+          </plugin>
+        </plugins>
+      </build>
     </profile>
 
     <!--
@@ -1092,18 +976,6 @@
       </activation>
       <properties>
         <git.commit>${env.GIT_COMMIT}</git.commit>
-      </properties>
-    </profile>
-
-    <profile>
-      <id>java9AndLater</id>
-      <activation>
-        <activeByDefault>false</activeByDefault>
-        <jdk>[9, )</jdk>
-      </activation>
-      <properties>
-        <maven.javadoc.skip>true</maven.javadoc.skip>
-        <scala.java.additional.args>-nobootcp</scala.java.additional.args>
       </properties>
     </profile>
 
@@ -1168,6 +1040,16 @@
         <groupId>com.github.ben-manes.caffeine</groupId>
         <artifactId>caffeine</artifactId>
         <version>${caffeine.version}</version>
+        <exclusions>
+          <exclusion>
+            <groupId>org.checkerframework</groupId>
+            <artifactId>checker-qual</artifactId>
+          </exclusion>
+          <exclusion>
+            <groupId>com.google.errorprone</groupId>
+            <artifactId>error_prone_annotations</artifactId>
+          </exclusion>
+        </exclusions>
       </dependency>
       <dependency>
         <groupId>org.slf4j</groupId>
@@ -1179,12 +1061,17 @@
         <artifactId>slf4j-api</artifactId>
         <version>1.7.25</version>
       </dependency>
+      <dependency>
+        <groupId>io.airlift</groupId>
+        <artifactId>airline</artifactId>
+        <version>0.8</version>
+      </dependency>
 
       <!-- testing -->
       <dependency>
         <groupId>org.neo4j.driver</groupId>
         <artifactId>neo4j-java-driver</artifactId>
-        <version>1.7.0</version>
+        <version>2.0.0-alpha02</version>
         <scope>test</scope>
       </dependency>
       <dependency>
@@ -1196,26 +1083,10 @@
       <dependency>
         <groupId>com.google.guava</groupId>
         <artifactId>guava-testlib</artifactId>
-        <version>26.0-jre</version>
+        <version>27.1-jre</version>
         <scope>test</scope>
       </dependency>
 
-      <dependency>
-        <groupId>org.apache.httpcomponents</groupId>
-        <artifactId>httpclient</artifactId>
-        <version>4.5.6</version>
-      </dependency>
-      <dependency>
-        <groupId>org.apache.httpcomponents</groupId>
-        <artifactId>httpclient</artifactId>
-        <version>4.5.6</version>
-        <classifier>tests</classifier>
-      </dependency>
-      <dependency>
-        <groupId>org.apache.httpcomponents</groupId>
-        <artifactId>httpcore</artifactId>
-        <version>4.4.10</version>
-      </dependency>
       <dependency>
         <groupId>org.slf4j</groupId>
         <artifactId>slf4j-log4j12</artifactId>
@@ -1226,13 +1097,7 @@
       <!-- The JUnit-Hamcrest-Mockito combo -->
       <dependency>
         <groupId>org.junit.jupiter</groupId>
-        <artifactId>junit-jupiter-params</artifactId>
-        <version>${junit.version}</version>
-        <scope>test</scope>
-      </dependency>
-      <dependency>
-        <groupId>org.junit.jupiter</groupId>
-        <artifactId>junit-jupiter-migrationsupport</artifactId>
+        <artifactId>junit-jupiter</artifactId>
         <version>${junit.version}</version>
         <scope>test</scope>
       </dependency>
@@ -1243,42 +1108,47 @@
         <scope>test</scope>
       </dependency>
       <dependency>
-        <groupId>org.junit.jupiter</groupId>
-        <artifactId>junit-jupiter-engine</artifactId>
-        <version>${junit.version}</version>
+        <groupId>org.junit.platform</groupId>
+        <artifactId>junit-platform-testkit</artifactId>
+        <version>${junit.platform.version}</version>
         <scope>test</scope>
-      </dependency>
-
-      <dependency>
-          <groupId>org.hamcrest</groupId>
-          <artifactId>hamcrest-core</artifactId>
-          <version>1.3</version>
-          <scope>test</scope>
-      </dependency>
-      <dependency>
-          <groupId>org.hamcrest</groupId>
-          <artifactId>hamcrest-library</artifactId>
-          <version>1.3</version>
-          <scope>test</scope>
+        <exclusions>
+          <exclusion>
+            <groupId>org.junit.platform</groupId>
+            <artifactId>*</artifactId>
+          </exclusion>
+        </exclusions>
       </dependency>
       <dependency>
         <groupId>org.hamcrest</groupId>
-        <artifactId>hamcrest-all</artifactId>
-        <version>1.3</version>
+        <artifactId>hamcrest</artifactId>
+        <version>2.1</version>
         <scope>test</scope>
+      </dependency>
+      <dependency>
+        <groupId>co.unruly</groupId>
+        <artifactId>java-8-matchers</artifactId>
+        <version>1.6</version>
+        <scope>test</scope>
+        <exclusions>
+          <exclusion>
+            <groupId>org.hamcrest</groupId>
+            <artifactId>*</artifactId>
+          </exclusion>
+        </exclusions>
       </dependency>
 
       <dependency>
         <groupId>org.mockito</groupId>
         <artifactId>mockito-core</artifactId>
-        <version>2.21.0</version>
+        <version>2.27.0</version>
         <scope>test</scope>
       </dependency>
 
       <dependency>
         <groupId>commons-codec</groupId>
         <artifactId>commons-codec</artifactId>
-        <version>1.11</version>
+        <version>1.12</version>
         <scope>test</scope>
       </dependency>
 
@@ -1302,8 +1172,8 @@
       <!-- scala test dependencies -->
       <dependency>
         <groupId>org.scalatest</groupId>
-        <artifactId>scalatest_2.11</artifactId>
-        <version>2.2.5</version>
+        <artifactId>scalatest_${scala.binary.version}</artifactId>
+        <version>3.0.5</version>
         <scope>test</scope>
         <exclusions>
           <exclusion>
@@ -1318,7 +1188,7 @@
       </dependency>
       <dependency>
         <groupId>org.scalautils</groupId>
-        <artifactId>scalautils_2.11</artifactId>
+        <artifactId>scalautils_${scala.binary.version}</artifactId>
         <version>2.1.7</version>
         <scope>test</scope>
         <exclusions>
@@ -1334,20 +1204,20 @@
       </dependency>
       <dependency>
         <groupId>org.scalacheck</groupId>
-        <artifactId>scalacheck_2.11</artifactId>
-        <version>1.12.5</version>
+        <artifactId>scalacheck_${scala.binary.version}</artifactId>
+        <version>1.14.0</version>
         <scope>test</scope>
       </dependency>
       <dependency>
         <groupId>org.json4s</groupId>
-        <artifactId>json4s-native_2.11</artifactId>
-        <version>3.6.1</version>
+        <artifactId>json4s-native_2.12</artifactId>
+        <version>3.6.5</version>
         <scope>test</scope>
       </dependency>
       <dependency>
-        <groupId>com.novus</groupId>
-        <artifactId>salat-core_2.11</artifactId>
-        <version>1.9.9</version>
+        <groupId>com.github.salat</groupId>
+        <artifactId>salat-core_${scala.binary.version}</artifactId>
+        <version>1.11.2</version>
         <scope>test</scope>
         <exclusions>
           <exclusion>
@@ -1357,6 +1227,10 @@
           <exclusion>
             <artifactId>scalap</artifactId>
             <groupId>org.scala-lang</groupId>
+          </exclusion>
+          <exclusion>
+            <groupId>org.scala-lang.modules</groupId>
+            <artifactId>scala-xml_${scala.binary.version}</artifactId>
           </exclusion>
         </exclusions>
       </dependency>
@@ -1384,6 +1258,11 @@
         <version>3.6.1</version>
       </dependency>
       <dependency>
+        <groupId>commons-logging</groupId>
+        <artifactId>commons-logging</artifactId>
+        <version>1.2</version>
+      </dependency>
+      <dependency>
         <groupId>commons-configuration</groupId>
         <artifactId>commons-configuration</artifactId>
         <version>1.10</version>
@@ -1391,8 +1270,12 @@
         <scope>compile</scope>
         <exclusions>
           <exclusion>
-            <artifactId>commons-digester</artifactId>
             <groupId>commons-digester</groupId>
+            <artifactId>commons-digester</artifactId>
+          </exclusion>
+          <exclusion>
+            <groupId>commons-logging</groupId>
+            <artifactId>commons-logging</artifactId>
           </exclusion>
         </exclusions>
       </dependency>
@@ -1419,12 +1302,12 @@
       <dependency>
         <groupId>org.apache.commons</groupId>
         <artifactId>commons-lang3</artifactId>
-        <version>3.8</version>
+        <version>3.9</version>
       </dependency>
       <dependency>
         <groupId>org.apache.commons</groupId>
         <artifactId>commons-text</artifactId>
-        <version>1.4</version>
+        <version>1.6</version>
       </dependency>
       <dependency>
         <groupId>org.apache.commons</groupId>
@@ -1434,25 +1317,13 @@
       <dependency>
         <groupId>com.github.luben</groupId>
         <artifactId>zstd-jni</artifactId>
-        <version>1.3.8-6</version>
+        <version>1.4.0-1</version>
       </dependency>
 
-      <!-- Netty is used by three components: Com, Cluster and Bolt Socket Transport.
-           Netty 4 is a significant improvement over Netty 3, in that it introduces
-           buffer pooling (among lots of other improvements), and thus we want to move
-           to Netty 4 to reduce GC overhead. Netty 4 (io.netty:netty-all) can co-exist
-           with Netty 3 (io.netty:netty) because they have different modules and different
-           package structure. As such, the two netty dependencies represents the in-between
-           state while we move all remaining Netty 3 uses over to Netty 4 -->
-      <dependency>
-        <groupId>io.netty</groupId>
-        <artifactId>netty</artifactId>
-        <version>3.9.9.Final</version>
-      </dependency>
       <dependency>
         <groupId>io.netty</groupId>
         <artifactId>netty-all</artifactId>
-        <version>4.1.32.Final</version>
+        <version>4.1.35.Final</version>
       </dependency>
 
       <dependency>
@@ -1461,42 +1332,58 @@
         <version>1.2.17</version>
       </dependency>
       <dependency>
-        <groupId>net.sf.opencsv</groupId>
-        <artifactId>opencsv</artifactId>
-        <version>2.3</version>
-      </dependency>
-      <dependency>
-        <groupId>com.sun.jersey</groupId>
-        <artifactId>jersey-client</artifactId>
-        <version>${jersey.version}</version>
-        <exclusions>
-          <exclusion>
-            <groupId>javax.ws.rs</groupId>
-            <artifactId>jsr311-api</artifactId>
-          </exclusion>
-        </exclusions>
-      </dependency>
-      <dependency>
-        <groupId>com.sun.jersey</groupId>
+        <groupId>org.glassfish.jersey.core</groupId>
         <artifactId>jersey-server</artifactId>
         <version>${jersey.version}</version>
         <exclusions>
           <exclusion>
             <groupId>javax.ws.rs</groupId>
-            <artifactId>jsr311-api</artifactId>
+            <artifactId>javax.ws.rs-api</artifactId>
+          </exclusion>
+          <exclusion>
+            <groupId>org.glassfish.hk2</groupId>
+            <artifactId>osgi-resource-locator</artifactId>
+          </exclusion>
+          <exclusion>
+            <groupId>org.glassfish.hk2.external</groupId>
+            <artifactId>javax.inject</artifactId>
           </exclusion>
         </exclusions>
       </dependency>
       <dependency>
-        <groupId>com.sun.jersey</groupId>
-        <artifactId>jersey-servlet</artifactId>
+        <groupId>org.glassfish.jersey.containers</groupId>
+        <artifactId>jersey-container-servlet</artifactId>
         <version>${jersey.version}</version>
         <exclusions>
           <exclusion>
             <groupId>javax.ws.rs</groupId>
-            <artifactId>jsr311-api</artifactId>
+            <artifactId>javax.ws.rs-api</artifactId>
+          </exclusion>
+          <exclusion>
+            <groupId>org.glassfish.hk2.external</groupId>
+            <artifactId>javax.inject</artifactId>
           </exclusion>
         </exclusions>
+      </dependency>
+      <dependency>
+        <groupId>org.glassfish.jersey.inject</groupId>
+        <artifactId>jersey-hk2</artifactId>
+        <version>${jersey.version}</version>
+        <exclusions>
+          <exclusion>
+            <groupId>org.glassfish.hk2.external</groupId>
+            <artifactId>aopalliance-repackaged</artifactId>
+          </exclusion>
+          <exclusion>
+            <groupId>org.glassfish.hk2.external</groupId>
+            <artifactId>javax.inject</artifactId>
+          </exclusion>
+        </exclusions>
+      </dependency>
+      <dependency>
+        <groupId>javax.ws.rs</groupId>
+        <artifactId>javax.ws.rs-api</artifactId>
+        <version>2.1.1</version>
       </dependency>
       <dependency>
         <groupId>org.codehaus.jackson</groupId>
@@ -1544,11 +1431,6 @@
         <version>${bouncycastle.version}</version>
       </dependency>
       <dependency>
-        <groupId>org.neo4j.3rdparty.javax.ws.rs</groupId>
-        <artifactId>jsr311-api</artifactId>
-        <version>1.1.2.r612</version>
-      </dependency>
-      <dependency>
         <groupId>io.dropwizard.metrics</groupId>
         <artifactId>metrics-core</artifactId>
         <version>${metrics.version}</version>
@@ -1564,15 +1446,15 @@
         <version>${metrics.version}</version>
         <exclusions>
           <exclusion>
-              <groupId>com.rabbitmq</groupId>
-              <artifactId>amqp-client</artifactId>
+            <groupId>com.rabbitmq</groupId>
+            <artifactId>amqp-client</artifactId>
           </exclusion>
         </exclusions>
       </dependency>
       <dependency>
         <groupId>org.jprocesses</groupId>
         <artifactId>jProcesses</artifactId>
-        <version>1.6.4</version>
+        <version>1.6.5</version>
       </dependency>
 
       <dependency>
@@ -1586,12 +1468,75 @@
         <artifactId>junit</artifactId>
         <version>4.12</version>
         <scope>provided</scope>
+        <exclusions>
+          <exclusion>
+            <groupId>org.hamcrest</groupId>
+            <artifactId>*</artifactId>
+          </exclusion>
+        </exclusions>
       </dependency>
       <dependency>
         <groupId>com.google.testing.compile</groupId>
         <artifactId>compile-testing</artifactId>
-        <version>0.15</version>
+        <version>0.16</version>
         <scope>test</scope>
+        <exclusions>
+          <exclusion>
+            <groupId>com.google.truth</groupId>
+            <artifactId>truth</artifactId>
+          </exclusion>
+          <exclusion>
+            <groupId>com.google.guava</groupId>
+            <artifactId>guava</artifactId>
+          </exclusion>
+          <exclusion>
+            <groupId>com.google.truth.extensions</groupId>
+            <artifactId>truth-java8-extension</artifactId>
+          </exclusion>
+          <exclusion>
+            <groupId>com.google.auto</groupId>
+            <artifactId>auto-common</artifactId>
+          </exclusion>
+        </exclusions>
+      </dependency>
+      <dependency>
+        <groupId>com.google.auto.service</groupId>
+        <artifactId>auto-service</artifactId>
+        <version>1.0-rc5</version>
+        <exclusions>
+          <exclusion>
+            <groupId>com.google.auto</groupId>
+            <artifactId>auto-common</artifactId>
+          </exclusion>
+          <exclusion>
+            <groupId>com.google.guava</groupId>
+            <artifactId>guava</artifactId>
+          </exclusion>
+        </exclusions>
+      </dependency>
+      <dependency>
+        <groupId>com.google.auto</groupId>
+        <artifactId>auto-common</artifactId>
+        <version>0.10</version>
+      </dependency>
+      <dependency>
+        <groupId>com.google.truth</groupId>
+        <artifactId>truth</artifactId>
+        <version>0.44</version>
+        <exclusions>
+          <exclusion>
+            <groupId>com.google.guava</groupId>
+            <artifactId>guava</artifactId>
+          </exclusion>
+          <exclusion>
+            <groupId>org.checkerframework</groupId>
+            <artifactId>checker-qual</artifactId>
+          </exclusion>
+          <exclusion>
+            <groupId>com.google.errorprone</groupId>
+            <artifactId>error_prone_annotations</artifactId>
+          </exclusion>
+        </exclusions>
       </dependency>
 
       <dependency>
@@ -1615,6 +1560,13 @@
         <version>1.1.1</version>
       </dependency>
 
+      <dependency>
+        <groupId>org.neo4j</groupId>
+        <artifactId>annotations</artifactId>
+        <version>${project.version}</version>
+        <optional>true</optional>
+        <scope>provided</scope>
+      </dependency>
     </dependencies>
   </dependencyManagement>
 </project>
