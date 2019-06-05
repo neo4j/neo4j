@@ -115,13 +115,13 @@ public class DetectAllRelationshipInconsistenciesIT
             StoreAccess storeAccess = new StoreAccess( neoStores ).initialize();
             DirectStoreAccess directStoreAccess = new DirectStoreAccess( storeAccess,
                     db.getDependencyResolver().resolveDependency( LabelScanStore.class ),
-                    db.getDependencyResolver().resolveDependency( IndexProviderMap.class ), counts,
+                    db.getDependencyResolver().resolveDependency( IndexProviderMap.class ),
                     db.getDependencyResolver().resolveDependency( TokenHolders.class ) );
 
             int threads = random.intBetween( 2, 10 );
-            FullCheck checker = new FullCheck( getTuningConfiguration(), ProgressMonitorFactory.NONE, Statistics.NONE, threads );
+            FullCheck checker = new FullCheck( getTuningConfiguration(), ProgressMonitorFactory.NONE, Statistics.NONE, threads, true );
             AssertableLogProvider logProvider = new AssertableLogProvider( true );
-            ConsistencySummaryStatistics summary = checker.execute( directStoreAccess,
+            ConsistencySummaryStatistics summary = checker.execute( directStoreAccess, counts,
                     logProvider.getLog( FullCheck.class ) );
             int relationshipInconsistencies = summary.getInconsistencyCountForRecordType(
                     RecordType.RELATIONSHIP );

@@ -22,6 +22,7 @@ package org.neo4j.consistency;
 import java.io.File;
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.io.UncheckedIOException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 
@@ -61,6 +62,7 @@ import org.neo4j.kernel.impl.store.StoreFactory;
 import org.neo4j.kernel.impl.store.counts.ReadOnlyCountsTracker;
 import org.neo4j.kernel.impl.transaction.state.DefaultIndexProviderMap;
 import org.neo4j.kernel.lifecycle.LifeSupport;
+import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.logging.DuplicatingLog;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
@@ -192,7 +194,24 @@ public class ConsistencyCheckService
         LifeSupport life = new LifeSupport();
         StoreFactory factory = new StoreFactory( databaseLayout, config, new DefaultIdGeneratorFactory( fileSystem ), pageCache, fileSystem, logProvider );
         ReadOnlyCountsTracker counts = new ReadOnlyCountsTracker( logProvider, fileSystem, pageCache, config, databaseLayout );
-        life.add( counts );
+        try
+        {
+            counts.init();
+        }
+        catch ( IOException e )
+        {
+            throw new UncheckedIOException( e );
+        }
+        // Don't start the counts store here as part of life, instead only shut down. This is because it's better to let FullCheck
+        // start it and add its missing/broken detection where it can report to user.
+        life.add( new LifecycleAdapter()
+        {
+            @Override
+            public void shutdown() throws Exception
+            {
+                counts.shutdown();
+            }
+        } );
 
         ConsistencySummaryStatistics summary;
         final File reportFile = chooseReportPath( reportDir );
@@ -239,10 +258,9 @@ public class ConsistencyCheckService
                 storeAccess = new StoreAccess( neoStores );
             }
             storeAccess.initialize();
-            DirectStoreAccess stores = new DirectStoreAccess( storeAccess, labelScanStore, indexes, counts, tokenHolders );
-            FullCheck check = new FullCheck(
-                    progressFactory, statistics, numberOfThreads, consistencyFlags, config );
-            summary = check.execute( stores, new DuplicatingLog( log, reportLog ) );
+            DirectStoreAccess stores = new DirectStoreAccess( storeAccess, labelScanStore, indexes, tokenHolders );
+            FullCheck check = new FullCheck( progressFactory, statistics, numberOfThreads, consistencyFlags, config, true );
+            summary = check.execute( stores, counts, new DuplicatingLog( log, reportLog ) );
         }
         finally
         {

@@ -28,8 +28,12 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
 
+import java.io.File;
 import java.io.IOException;
+import java.io.RandomAccessFile;
 import java.lang.reflect.Method;
+import java.nio.ByteBuffer;
+import java.nio.channels.FileChannel;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -55,6 +59,7 @@ import org.neo4j.consistency.report.ConsistencyReport;
 import org.neo4j.consistency.report.ConsistencySummaryStatistics;
 import org.neo4j.consistency.store.DirectStoreAccess;
 import org.neo4j.exceptions.KernelException;
+import org.neo4j.function.ThrowingFunction;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
@@ -67,6 +72,7 @@ import org.neo4j.internal.kernel.api.TokenRead;
 import org.neo4j.internal.kernel.api.TokenWrite;
 import org.neo4j.internal.recordstorage.SchemaRuleAccess;
 import org.neo4j.internal.recordstorage.StoreTokens;
+import org.neo4j.internal.schema.IndexProviderDescriptor;
 import org.neo4j.internal.schema.SchemaRule;
 import org.neo4j.internal.schema.constraints.ConstraintDescriptorFactory;
 import org.neo4j.io.pagecache.IOLimiter;
@@ -74,7 +80,6 @@ import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexPopulator;
-import org.neo4j.internal.schema.IndexProviderDescriptor;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.impl.annotations.Documented;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
@@ -90,6 +95,7 @@ import org.neo4j.kernel.impl.store.RecordStore;
 import org.neo4j.kernel.impl.store.SchemaStore;
 import org.neo4j.kernel.impl.store.StoreAccess;
 import org.neo4j.kernel.impl.store.allocator.ReusableRecordsAllocator;
+import org.neo4j.kernel.impl.store.counts.CountsTracker;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.LabelTokenRecord;
@@ -134,8 +140,8 @@ import static org.neo4j.internal.helpers.collection.Iterables.asIterable;
 import static org.neo4j.internal.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.internal.kernel.api.TokenRead.ANY_LABEL;
 import static org.neo4j.internal.kernel.api.TokenRead.ANY_RELATIONSHIP_TYPE;
-import static org.neo4j.internal.schema.SchemaDescriptor.forLabel;
 import static org.neo4j.internal.schema.IndexProviderDescriptor.from;
+import static org.neo4j.internal.schema.SchemaDescriptor.forLabel;
 import static org.neo4j.kernel.impl.index.schema.IndexDescriptorFactory.forSchema;
 import static org.neo4j.kernel.impl.index.schema.IndexDescriptorFactory.uniqueForSchema;
 import static org.neo4j.kernel.impl.store.AbstractDynamicStore.readFullByteArrayFromHeavyRecords;
@@ -459,7 +465,6 @@ public class FullCheckIntegrationTest
                 .getPopulator( rule, samplingConfig );
             populator.markAsFailed( "Oh noes! I was a shiny index and then I was failed" );
             populator.close( false );
-
         }
 
         for ( Long indexedNodeId : indexedNodes )
@@ -2134,6 +2139,52 @@ public class FullCheckIntegrationTest
         } );
     }
 
+    @Test
+    public void shouldReportMissingCountsStore() throws Exception
+    {
+        shouldReportBadCountsStore( this::corruptFileIfExists );
+    }
+
+    @Test
+    public void shouldReportBrokenCountsStore() throws Exception
+    {
+        shouldReportBadCountsStore( File::delete );
+    }
+
+    private void shouldReportBadCountsStore( ThrowingFunction<File,Boolean,IOException> fileAction ) throws Exception
+    {
+        // given
+        boolean aCorrupted = fileAction.apply( fixture.databaseLayout().countStoreA() );
+        boolean bCorrupted = fileAction.apply( fixture.databaseLayout().countStoreB() );
+        assertTrue( aCorrupted || bCorrupted );
+
+        // When
+        ConsistencySummaryStatistics stats = check();
+
+        // Then report will be filed on Node inconsistent with the Property completing the circle
+        on( stats ).verify( RecordType.COUNTS, 1 );
+    }
+
+    private boolean corruptFileIfExists( File file ) throws IOException
+    {
+        if ( file.exists() )
+        {
+            try ( RandomAccessFile accessFile = new RandomAccessFile( file, "rw" ) )
+            {
+                FileChannel channel = accessFile.getChannel();
+                ByteBuffer buffer = ByteBuffer.allocate( 30 );
+                while ( buffer.hasRemaining() )
+                {
+                    buffer.put( (byte) 9 );
+                }
+                buffer.flip();
+                channel.write( buffer );
+            }
+            return true;
+        }
+        return false;
+    }
+
     private void shouldReportCircularPropertyRecordChain( RecordType expectedInconsistentRecordType, EntityCreator entityCreator ) throws Exception
     {
         // Given
@@ -2180,15 +2231,15 @@ public class FullCheckIntegrationTest
 
     private ConsistencySummaryStatistics check() throws ConsistencyCheckIncompleteException
     {
-        return check( fixture.directStoreAccess() );
+        return check( fixture.readOnlyDirectStoreAccess(), fixture.counts() );
     }
 
-    private ConsistencySummaryStatistics check( DirectStoreAccess stores ) throws ConsistencyCheckIncompleteException
+    private ConsistencySummaryStatistics check( DirectStoreAccess stores, CountsTracker counts ) throws ConsistencyCheckIncompleteException
     {
         Config config = config();
         FullCheck checker = new FullCheck( config, ProgressMonitorFactory.NONE, fixture.getAccessStatistics(),
-                defaultConsistencyCheckThreadsNumber() );
-        return checker.execute( stores, FormattedLog.toOutputStream( System.out ),
+                defaultConsistencyCheckThreadsNumber(), true );
+        return checker.execute( stores, counts, FormattedLog.toOutputStream( System.out ),
                 ( report, method, message ) ->
                 {
                     Set<String> types = allReports.get( report );

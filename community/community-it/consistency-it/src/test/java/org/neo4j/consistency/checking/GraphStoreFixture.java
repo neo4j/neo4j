@@ -53,7 +53,6 @@ import org.neo4j.internal.schema.SchemaRule;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier;
 import org.neo4j.kernel.extension.DatabaseExtensions;
 import org.neo4j.kernel.impl.api.TransactionRepresentationCommitProcess;
 import org.neo4j.kernel.impl.api.TransactionToApply;
@@ -68,6 +67,7 @@ import org.neo4j.kernel.impl.store.StoreAccess;
 import org.neo4j.kernel.impl.store.StoreFactory;
 import org.neo4j.kernel.impl.store.TokenStore;
 import org.neo4j.kernel.impl.store.counts.CountsTracker;
+import org.neo4j.kernel.impl.store.counts.ReadOnlyCountsTracker;
 import org.neo4j.kernel.impl.store.record.NeoStoreRecord;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
@@ -107,6 +107,8 @@ import org.neo4j.token.api.TokenHolder;
 
 import static java.lang.System.currentTimeMillis;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
+import static org.neo4j.configuration.Settings.FALSE;
+import static org.neo4j.configuration.Settings.TRUE;
 import static org.neo4j.consistency.ConsistencyCheckService.defaultConsistencyCheckThreadsNumber;
 import static org.neo4j.consistency.internal.SchemaIndexExtensionLoader.instantiateExtensions;
 import static org.neo4j.internal.kernel.api.TokenRead.ANY_LABEL;
@@ -141,6 +143,7 @@ public abstract class GraphStoreFixture extends ConfigurablePageCacheRule implem
      */
     private String formatName;
     private LabelScanStore labelScanStore;
+    private ReadOnlyCountsTracker counts;
 
     private GraphStoreFixture( boolean keepStatistics, String formatName )
     {
@@ -179,12 +182,22 @@ public abstract class GraphStoreFixture extends ConfigurablePageCacheRule implem
 
     public DirectStoreAccess directStoreAccess()
     {
+        return directStoreAccess( false );
+    }
+
+    public DirectStoreAccess readOnlyDirectStoreAccess()
+    {
+        return directStoreAccess( true );
+    }
+
+    private DirectStoreAccess directStoreAccess( boolean readOnly )
+    {
         if ( directStoreAccess == null )
         {
             fileSystem = new DefaultFileSystemAbstraction();
             PageCache pageCache = getPageCache( fileSystem );
             LogProvider logProvider = NullLogProvider.getInstance();
-            Config config = Config.defaults();
+            Config config = Config.defaults( GraphDatabaseSettings.read_only, readOnly ? TRUE : FALSE );
             DefaultIdGeneratorFactory idGeneratorFactory = new DefaultIdGeneratorFactory( fileSystem );
             StoreFactory storeFactory = new StoreFactory(
                     directory.databaseLayout(), config, idGeneratorFactory, pageCache, fileSystem, logProvider );
@@ -206,25 +219,40 @@ public abstract class GraphStoreFixture extends ConfigurablePageCacheRule implem
             fixtureLife.start();
             storeLife.start();
 
-            CountsTracker counts = new CountsTracker( logProvider, fileSystem, pageCache, config, databaseLayout(), EmptyVersionContextSupplier.EMPTY );
-            storeLife.add( counts );
-
             IndexStoreView indexStoreView = new NeoStoreIndexStoreView( LockService.NO_LOCK_SERVICE,
                     () -> new RecordStorageReader( nativeStores.getRawNeoStores() ) );
 
             Monitors monitors = new Monitors();
-            labelScanStore = startLabelScanStore( pageCache, indexStoreView, monitors );
+            labelScanStore = startLabelScanStore( pageCache, indexStoreView, monitors, readOnly );
             IndexProviderMap indexes = createIndexes( pageCache, config, logProvider, monitors);
-            directStoreAccess = new DirectStoreAccess( nativeStores, labelScanStore, indexes, counts, readOnlyTokenHolders( neoStore ) );
+            directStoreAccess = new DirectStoreAccess( nativeStores, labelScanStore, indexes, readOnlyTokenHolders( neoStore ) );
             storeReader = new RecordStorageReader( neoStore );
         }
         return directStoreAccess;
     }
 
-    private LabelScanStore startLabelScanStore( PageCache pageCache, IndexStoreView indexStoreView, Monitors monitors )
+    public CountsTracker counts()
+    {
+        if ( counts == null )
+        {
+            Config config = Config.defaults( GraphDatabaseSettings.read_only, TRUE );
+            counts = new ReadOnlyCountsTracker( NullLogProvider.getInstance(), fileSystem, pageCache, config, databaseLayout() );
+            try
+            {
+                counts.init();
+            }
+            catch ( IOException e )
+            {
+                throw new UncheckedIOException( e );
+            }
+        }
+        return counts;
+    }
+
+    private LabelScanStore startLabelScanStore( PageCache pageCache, IndexStoreView indexStoreView, Monitors monitors, boolean readOnly )
     {
         NativeLabelScanStore labelScanStore =
-                new NativeLabelScanStore( pageCache, databaseLayout(), fileSystem, new FullLabelStream( indexStoreView ), false, monitors,
+                new NativeLabelScanStore( pageCache, databaseLayout(), fileSystem, new FullLabelStream( indexStoreView ), readOnly, monitors,
                         RecoveryCleanupWorkCollector.immediate() );
         try
         {
@@ -607,6 +635,8 @@ public abstract class GraphStoreFixture extends ConfigurablePageCacheRule implem
             neoStore.close();
             labelScanStore.shutdown();
             directStoreAccess = null;
+            counts.shutdown();
+            counts = null;
         }
     }
 
