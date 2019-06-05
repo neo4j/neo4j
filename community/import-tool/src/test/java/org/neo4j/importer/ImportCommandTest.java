@@ -21,7 +21,6 @@ package org.neo4j.importer;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.ArgumentCaptor;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -29,18 +28,15 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.PrintStream;
-import java.nio.file.Path;
+import java.util.Optional;
 
 import org.neo4j.commandline.admin.CommandFailed;
 import org.neo4j.commandline.admin.CommandLocator;
 import org.neo4j.commandline.admin.IncorrectUsage;
-import org.neo4j.commandline.admin.OutsideWorld;
 import org.neo4j.commandline.admin.RealOutsideWorld;
 import org.neo4j.commandline.admin.Usage;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
-import org.neo4j.internal.helpers.Args;
-import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.SuppressOutputExtension;
 import org.neo4j.test.extension.TestDirectoryExtension;
@@ -49,12 +45,7 @@ import org.neo4j.test.rule.TestDirectory;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
-import static org.neo4j.internal.helpers.ArrayUtil.array;
-import static org.neo4j.io.NullOutputStream.NULL_OUTPUT_STREAM;
 
 @ExtendWith( {TestDirectoryExtension.class, SuppressOutputExtension.class} )
 class ImportCommandTest
@@ -63,100 +54,6 @@ class ImportCommandTest
     private TestDirectory testDir;
     @Inject
     private SuppressOutput suppressOutput;
-
-    @Test
-    void defaultsToCsvWhenModeNotSpecified() throws Exception
-    {
-        File homeDir = testDir.directory( "home" );
-        ImporterFactory mockImporterFactory = mock( ImporterFactory.class );
-        Importer importer = mock( Importer.class );
-        when( mockImporterFactory
-                .createImporter( any( Args.class ), any( Config.class ), any( OutsideWorld.class ), any( DatabaseLayout.class ) ) )
-                .thenReturn( importer );
-
-        try ( RealOutsideWorld outsideWorld = new RealOutsideWorld( System.out, System.err, new ByteArrayInputStream( new byte[0] ) ) )
-        {
-            ImportCommand importCommand =
-                    new ImportCommand( homeDir.toPath(), testDir.directory( "conf" ).toPath(), outsideWorld,
-                            mockImporterFactory );
-
-            String[] arguments = {"--database=foo"};
-
-            importCommand.execute( arguments );
-
-            verify( mockImporterFactory ).createImporter( any( Args.class ), any( Config.class ),
-                    any( OutsideWorld.class ), any( DatabaseLayout.class ) );
-        }
-    }
-
-    @Test
-    void acceptsNodeMetadata() throws Exception
-    {
-        File homeDir = testDir.directory( "home" );
-        ImporterFactory mockImporterFactory = mock( ImporterFactory.class );
-        Importer importer = mock( Importer.class );
-        when( mockImporterFactory
-                .createImporter( any( Args.class ), any( Config.class ), any( OutsideWorld.class ), any() ) )
-                .thenReturn( importer );
-
-        ImportCommand importCommand =
-                new ImportCommand( homeDir.toPath(), testDir.directory( "conf" ).toPath(),
-                        new RealOutsideWorld( System.out, System.err, new ByteArrayInputStream( new byte[0] ) ), mockImporterFactory );
-
-        String[] arguments = {"--database=foo", "--nodes:PERSON:FRIEND=mock.csv"};
-
-        importCommand.execute( arguments );
-
-        verify( mockImporterFactory ).createImporter( any( Args.class ), any( Config.class ), any( OutsideWorld.class ),
-                any( DatabaseLayout.class ) );
-    }
-
-    @Test
-    void acceptsRelationshipsMetadata() throws Exception
-    {
-        File homeDir = testDir.directory( "home" );
-        ImporterFactory mockImporterFactory = mock( ImporterFactory.class );
-        Importer importer = mock( Importer.class );
-        when( mockImporterFactory
-                .createImporter( any( Args.class ), any( Config.class ), any( OutsideWorld.class ), any( DatabaseLayout.class ) ) )
-                .thenReturn( importer );
-
-        ImportCommand importCommand =
-                new ImportCommand( homeDir.toPath(), testDir.directory( "conf" ).toPath(),
-                        new RealOutsideWorld( System.out, System.err, new ByteArrayInputStream( new byte[0] ) ), mockImporterFactory );
-
-        String[] arguments = {"--database=foo", "--relationships:LIKES:HATES=mock.csv"};
-
-        importCommand.execute( arguments );
-
-        verify( mockImporterFactory )
-                .createImporter( any( Args.class ), any( Config.class ), any( OutsideWorld.class ), any( DatabaseLayout.class ) );
-    }
-
-    @Test
-    void letImporterDecideAboutDatabaseExistence() throws Exception
-    {
-        File report = testDir.file( "report" );
-        Path homeDir = testDir.directory( "home" ).toPath();
-        PrintStream nullOutput = new PrintStream( NULL_OUTPUT_STREAM );
-        OutsideWorld outsideWorld = new RealOutsideWorld( nullOutput, nullOutput, new ByteArrayInputStream( new byte[0] ) );
-        Path confPath = testDir.directory( "conf" ).toPath();
-        ImportCommand importCommand = new ImportCommand( homeDir, confPath, outsideWorld );
-        File nodesFile = createTextFile( "nodes.csv", ":ID", "1", "2" );
-        String[] arguments = {"--database=existing", "--nodes=" + nodesFile.getAbsolutePath(),
-                "--report-file=" + testDir.file( "report" )};
-
-        // First run an import so that a database gets created
-        importCommand.execute( arguments );
-
-        // When
-        ImporterFactory importerFactory = mock( ImporterFactory.class );
-        Importer importer = mock( Importer.class );
-        when( importerFactory.createImporter( any(), any(), any(), any() ) ).thenReturn( importer );
-        new ImportCommand( homeDir, confPath, outsideWorld, importerFactory ).execute( arguments );
-
-        // Then no exception about database existence should be thrown
-    }
 
     @Test
     void shouldUseArgumentsFoundInside_f_Argument() throws FileNotFoundException, CommandFailed, IncorrectUsage
@@ -177,7 +74,7 @@ class ImportCommandTest
 
         // then
         assertTrue( suppressOutput.getOutputVoice().containsMessage( "IMPORT DONE" ) );
-        assertTrue( suppressOutput.getErrorVoice().containsMessage( nodesFile.getAbsolutePath() ) );
+        assertTrue( suppressOutput.getOutputVoice().containsMessage( nodesFile.getAbsolutePath() ) );
         assertTrue( suppressOutput.getOutputVoice().containsMessage( "2 nodes" ) );
     }
 
@@ -217,7 +114,7 @@ class ImportCommandTest
                             "                          [--skip-duplicate-nodes[=<true|false>]]%n" +
                             "                          [--processors=<max processor count>]%n" +
                             "                          [--trim-strings[=<true|false>]]%n" +
-                            "                          [--normalize-types=<true|false>]%n" +
+                            "                          [--normalize-types[=<true|false>]]%n" +
                             "%n" +
                             "environment variables:%n" +
                             "    NEO4J_CONF    Path to directory which contains neo4j.conf.%n" +
@@ -334,7 +231,7 @@ class ImportCommandTest
                             "      available processors. [default:null]%n" +
                             "  --trim-strings=<true|false>%n" +
                             "      Whether or not strings should be trimmed for whitespaces. [default:true]%n" +
-                            "  --normalize-types=<true/false>%n" +
+                            "  --normalize-types=<true|false>%n" +
                             "      Whether or not to normalize property types to Cypher types, e.g. 'int'%n" +
                             "      becomes 'long' and 'float' becomes 'double' [default:true]%n" ),
                     baos.toString() );
@@ -349,18 +246,12 @@ class ImportCommandTest
         File additionalConfigFile = testDir.createFile( "empty.conf" );
         try ( RealOutsideWorld outsideWorld = new RealOutsideWorld( System.out, System.err, new ByteArrayInputStream( new byte[0] ) ) )
         {
-            ImporterFactory mockImporterFactory = mock( ImporterFactory.class );
-            Importer importer = mock( Importer.class );
-            ArgumentCaptor<Config> configArgumentCaptor = ArgumentCaptor.forClass( Config.class );
-            when( mockImporterFactory.createImporter( any( Args.class ), configArgumentCaptor.capture(), any( OutsideWorld.class ),
-                    any( DatabaseLayout.class ) ) ).thenReturn( importer );
-            ImportCommand command = new ImportCommand( homeDir.toPath(), testDir.directory( "conf" ).toPath(), outsideWorld, mockImporterFactory );
+            ImportCommand command = new ImportCommand( homeDir.toPath(), testDir.directory( "conf" ).toPath(), outsideWorld );
 
             // when
-            command.execute( array( "--additional-config", additionalConfigFile.getAbsolutePath() ) );
+            Config resultingConfig = command.loadNeo4jConfig( Optional.of( additionalConfigFile.toPath() ) );
 
             // then
-            Config resultingConfig = configArgumentCaptor.getValue();
             assertEquals( homeDir, resultingConfig.get( GraphDatabaseSettings.neo4j_home ) );
         }
     }
@@ -372,18 +263,12 @@ class ImportCommandTest
         File homeDir = testDir.directory( "other", "place" );
         try ( RealOutsideWorld outsideWorld = new RealOutsideWorld( System.out, System.err, new ByteArrayInputStream( new byte[0] ) ) )
         {
-            ImporterFactory mockImporterFactory = mock( ImporterFactory.class );
-            Importer importer = mock( Importer.class );
-            ArgumentCaptor<Config> configArgumentCaptor = ArgumentCaptor.forClass( Config.class );
-            when( mockImporterFactory.createImporter( any( Args.class ), configArgumentCaptor.capture(), any( OutsideWorld.class ),
-                    any( DatabaseLayout.class ) ) ).thenReturn( importer );
-            ImportCommand command = new ImportCommand( homeDir.toPath(), testDir.directory( "conf" ).toPath(), outsideWorld, mockImporterFactory );
+            ImportCommand command = new ImportCommand( homeDir.toPath(), testDir.directory( "conf" ).toPath(), outsideWorld );
 
             // when
-            command.execute( array() );
+            Config resultingConfig = command.loadNeo4jConfig( Optional.empty() );
 
             // then
-            Config resultingConfig = configArgumentCaptor.getValue();
             assertEquals( homeDir, resultingConfig.get( GraphDatabaseSettings.neo4j_home ) );
         }
     }

@@ -33,13 +33,14 @@ import java.util.Map;
 import org.neo4j.commandline.admin.RealOutsideWorld;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
-import org.neo4j.internal.helpers.Args;
+import org.neo4j.csv.reader.Configuration;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.SuppressOutputExtension;
 import org.neo4j.test.extension.TestDirectoryExtension;
 import org.neo4j.test.rule.TestDirectory;
 
+import static java.util.Collections.emptySet;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.internal.helpers.collection.MapUtil.stringMap;
 
@@ -66,13 +67,15 @@ class CsvImporterTest
                     .withSettings( additionalConfig() )
                     .withSetting( GraphDatabaseSettings.logs_directory, logDir.getAbsolutePath() ).build();
 
-            CsvImporter csvImporter = new CsvImporter(
-                    ImportCommand.arguments().parse( new String[]{
-                            String.format( "--report-file=%s", reportLocation.getAbsolutePath() ),
-                            String.format( "--nodes=%s", inputFile.getAbsolutePath() ),
-                            "--delimiter=TAB"} ).parsedArgs(),
-                    config,
-                    outsideWorld, databaseLayout );
+            CsvImporter csvImporter = CsvImporter.builder()
+                .withDatabaseLayout( databaseLayout )
+                .withDatabaseConfig( config )
+                .withReportFile( reportLocation.getAbsoluteFile() )
+                .withCsvConfig( Configuration.TABS )
+                .withOutsideWorld( outsideWorld )
+                .addNodeFiles( emptySet(), new File[]{inputFile.getAbsoluteFile()} )
+                .build();
+
             csvImporter.doImport();
         }
 

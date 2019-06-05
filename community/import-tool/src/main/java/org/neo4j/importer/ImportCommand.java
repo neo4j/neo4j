@@ -21,11 +21,16 @@ package org.neo4j.importer;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.PrintStream;
 import java.io.UncheckedIOException;
+import java.nio.charset.Charset;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
+import java.util.function.Function;
 
 import org.neo4j.commandline.admin.AdminCommand;
 import org.neo4j.commandline.admin.CommandFailed;
@@ -35,50 +40,68 @@ import org.neo4j.commandline.arguments.Arguments;
 import org.neo4j.commandline.arguments.OptionalBooleanArg;
 import org.neo4j.commandline.arguments.OptionalNamedArg;
 import org.neo4j.commandline.arguments.OptionalNamedArgWithMetadata;
+import org.neo4j.common.Validator;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.configuration.LayoutConfig;
+import org.neo4j.internal.batchimport.Configuration;
 import org.neo4j.internal.batchimport.input.BadCollector;
+import org.neo4j.internal.batchimport.input.IdType;
+import org.neo4j.internal.helpers.Args;
+import org.neo4j.io.fs.FileUtils;
 import org.neo4j.io.layout.DatabaseLayout;
+import org.neo4j.kernel.impl.util.Converters;
+import org.neo4j.kernel.impl.util.Validators;
+import org.neo4j.util.VisibleForTesting;
 
+import static java.lang.Math.toIntExact;
+import static java.nio.charset.Charset.defaultCharset;
 import static java.util.Arrays.asList;
+import static java.util.Collections.emptySet;
 import static org.neo4j.commandline.arguments.common.Database.ARG_DATABASE;
 import static org.neo4j.configuration.GraphDatabaseSettings.neo4j_home;
+import static org.neo4j.configuration.Settings.parseLongWithUnit;
 import static org.neo4j.csv.reader.Configuration.COMMAS;
+import static org.neo4j.importer.CsvImporter.MULTI_FILE_DELIMITER;
 import static org.neo4j.internal.batchimport.Configuration.DEFAULT;
 import static org.neo4j.internal.batchimport.Configuration.DEFAULT_MAX_MEMORY_PERCENT;
+import static org.neo4j.internal.batchimport.Configuration.calculateMaxMemoryFromPercent;
+import static org.neo4j.internal.batchimport.Configuration.canDetectFreeMemory;
 import static org.neo4j.internal.helpers.TextUtil.tokenizeStringWithQuotes;
+import static org.neo4j.io.ByteUnit.bytesToString;
 import static org.neo4j.io.fs.FileUtils.readTextFile;
+import static org.neo4j.kernel.impl.util.Converters.withDefault;
 
 public class ImportCommand implements AdminCommand
 {
     public static final String DEFAULT_REPORT_FILE_NAME = "import.report";
-    static final String OPT_REPORT_FILE = "report-file";
-    static final String OPT_NODES = "nodes";
-    static final String OPT_RELATIONSHIPS = "relationships";
-    static final String OPT_ID_TYPE = "id-type";
-    static final String OPT_INPUT_ENCODING = "input-encoding";
-    static final String OPT_IGNORE_EXTRA_COLUMNS = "ignore-extra-columns";
-    static final String OPT_HIGH_IO = "high-io";
     static final String OPT_MULTILINE_FIELDS = "multiline-fields";
-    static final String OPT_TRIM_STRINGS = "trim-strings";
-    static final String OPT_PROCESSORS = "processors";
-    static final String OPT_SKIP_DUPLICATE_NODES = "skip-duplicate-nodes";
-    static final String OPT_SKIP_BAD_RELATIONSHIPS = "skip-bad-relationships";
-    static final String OPT_SKIP_BAD_ENTRIES_LOGGING = "skip-bad-entries-logging";
-    static final String OPT_READ_BUFFER_SIZE = "read-buffer-size";
-    static final String OPT_LEGACY_STYLE_QUOTING = "legacy-style-quoting";
-    static final String OPT_IGNORE_EMPTY_STRINGS = "ignore-empty-strings";
-    static final String OPT_DETAILED_PROGRESS = "detailed-progress";
-    static final String OPT_CACHE_ON_HEAP = "cache-on-heap";
-    static final String OPT_BAD_TOLERANCE = "bad-tolerance";
-    static final String OPT_MAX_MEMORY = "max-memory";
-    static final String OPT_QUOTE = "quote";
-    static final String OPT_DELIMITER = "delimiter";
-    static final String OPT_ARRAY_DELIMITER = "array-delimiter";
-    static final String OPT_NORMALIZE_TYPES = "normalize-types";
+    private static final String OPT_REPORT_FILE = "report-file";
+    private static final String OPT_NODES = "nodes";
+    private static final String OPT_RELATIONSHIPS = "relationships";
+    private static final String OPT_ID_TYPE = "id-type";
+    private static final String OPT_INPUT_ENCODING = "input-encoding";
+    private static final String OPT_IGNORE_EXTRA_COLUMNS = "ignore-extra-columns";
+    private static final String OPT_HIGH_IO = "high-io";
+    private static final String OPT_TRIM_STRINGS = "trim-strings";
+    private static final String OPT_PROCESSORS = "processors";
+    private static final String OPT_SKIP_DUPLICATE_NODES = "skip-duplicate-nodes";
+    private static final String OPT_SKIP_BAD_RELATIONSHIPS = "skip-bad-relationships";
+    private static final String OPT_SKIP_BAD_ENTRIES_LOGGING = "skip-bad-entries-logging";
+    private static final String OPT_READ_BUFFER_SIZE = "read-buffer-size";
+    private static final String OPT_LEGACY_STYLE_QUOTING = "legacy-style-quoting";
+    private static final String OPT_IGNORE_EMPTY_STRINGS = "ignore-empty-strings";
+    private static final String OPT_DETAILED_PROGRESS = "detailed-progress";
+    private static final String OPT_CACHE_ON_HEAP = "cache-on-heap";
+    private static final String OPT_BAD_TOLERANCE = "bad-tolerance";
+    private static final String OPT_MAX_MEMORY = "max-memory";
+    private static final String OPT_QUOTE = "quote";
+    private static final String OPT_DELIMITER = "delimiter";
+    private static final String OPT_ARRAY_DELIMITER = "array-delimiter";
+    private static final String OPT_NORMALIZE_TYPES = "normalize-types";
 
     private static final Arguments arguments;
+    private static final Function<String, Character> CHARACTER_CONVERTER = new CharacterConverter();
 
     static
     {
@@ -219,19 +242,12 @@ public class ImportCommand implements AdminCommand
     private final Path homeDir;
     private final Path configDir;
     private final OutsideWorld outsideWorld;
-    private final ImporterFactory importerFactory;
 
     public ImportCommand( Path homeDir, Path configDir, OutsideWorld outsideWorld )
-    {
-        this( homeDir, configDir, outsideWorld, new ImporterFactory() );
-    }
-
-    ImportCommand( Path homeDir, Path configDir, OutsideWorld outsideWorld, ImporterFactory importerFactory )
     {
         this.homeDir = homeDir;
         this.configDir = configDir;
         this.outsideWorld = outsideWorld;
-        this.importerFactory = importerFactory;
     }
 
     @Override
@@ -259,9 +275,65 @@ public class ImportCommand implements AdminCommand
 
         try
         {
-            Config config = loadNeo4jConfig( homeDir, configDir, loadAdditionalConfig( additionalConfigFile ) );
+            Config config = loadNeo4jConfig( additionalConfigFile );
             DatabaseLayout databaseLayout = DatabaseLayout.of( config.get( neo4j_home ), LayoutConfig.of( config ), database );
-            Importer importer = importerFactory.createImporter( arguments.parsedArgs(), config, outsideWorld, databaseLayout );
+
+            final var parsedArgs = arguments.parsedArgs();
+            final var csvConfig = csvConfiguration( parsedArgs, false );
+            final var importConfig = importConfiguration( parsedArgs, databaseLayout );
+            final var nodesFiles = extractInputFiles( parsedArgs, OPT_NODES, outsideWorld.errorStream() );
+            final var relationshipsFiles = extractInputFiles( parsedArgs, OPT_RELATIONSHIPS, outsideWorld.errorStream() );
+            final var reportFile = new File( parsedArgs.get( OPT_REPORT_FILE, ImportCommand.DEFAULT_REPORT_FILE_NAME ) ).getAbsoluteFile();
+            final var ignoreExtraColumns = parsedArgs.getBoolean( OPT_IGNORE_EXTRA_COLUMNS );
+            final var badTolerance = parsedArgs.getNumber( OPT_BAD_TOLERANCE, 1000 ).longValue();
+            final var skipBadRelationships = parsedArgs.getBoolean( OPT_SKIP_BAD_RELATIONSHIPS );
+            final var skipDuplicateNodes = parsedArgs.getBoolean( OPT_SKIP_DUPLICATE_NODES );
+            final var skipBadEntriesLogging = parsedArgs.getBoolean( OPT_SKIP_BAD_ENTRIES_LOGGING );
+            final var detailedProgress = parsedArgs.getBoolean( OPT_DETAILED_PROGRESS );
+            final var idType = parsedArgs.interpretOption( OPT_ID_TYPE, withDefault( IdType.STRING ), from -> IdType.valueOf( from.toUpperCase() ) );
+            final var inputEncoding = Charset.forName( parsedArgs.get( OPT_INPUT_ENCODING, defaultCharset().name() ) );
+            final var normalizeTypes = parsedArgs.getBoolean( OPT_NORMALIZE_TYPES, true );
+
+            try
+            {
+                validateInputFiles( nodesFiles, relationshipsFiles );
+            }
+            catch ( IllegalArgumentException e )
+            {
+                throw new IncorrectUsage( e.getMessage() );
+            }
+
+            final var importerBuilder = CsvImporter.builder()
+                .withDatabaseLayout( databaseLayout )
+                .withDatabaseConfig( config )
+                .withOutsideWorld( outsideWorld )
+                .withCsvConfig( csvConfig )
+                .withImportConfig( importConfig )
+                .withIdType( idType )
+                .withInputEncoding( inputEncoding )
+                .withReportFile( reportFile )
+                .withIgnoreExtraColumns( ignoreExtraColumns )
+                .withBadTolerance( badTolerance )
+                .withSkipBadRelationships( skipBadRelationships )
+                .withSkipDuplicateNodes( skipDuplicateNodes )
+                .withSkipBadEntriesLogging( skipBadEntriesLogging )
+                .withSkipBadRelationships( skipBadRelationships )
+                .withVerbose( detailedProgress )
+                .withNormalizeTypes( normalizeTypes );
+
+            nodesFiles.forEach( opt ->
+            {
+                final var labels = Optional.ofNullable( opt.metadata() ).map( s -> s.split( ":" ) ).map( Set::of ).orElse( emptySet() );
+                importerBuilder.addNodeFiles( labels, opt.value() );
+            } );
+
+            relationshipsFiles.forEach( opt ->
+            {
+                final var defaultType = Optional.ofNullable( opt.metadata() ).orElse( "" );
+                importerBuilder.addRelationshipFiles( defaultType, opt.value() );
+            } );
+
+            final var importer = importerBuilder.build();
             importer.doImport();
         }
         catch ( IllegalArgumentException e )
@@ -290,13 +362,16 @@ public class ImportCommand implements AdminCommand
         return additionalConfigFile.map( path -> Config.fromFile( path ).build() ).orElseGet( Config::defaults );
     }
 
-    private static Config loadNeo4jConfig( Path homeDir, Path configDir, Config additionalConfig )
+    @VisibleForTesting
+     Config loadNeo4jConfig( Optional<Path> additionalConfigFile )
     {
         Config config = Config.fromFile( configDir.resolve( Config.DEFAULT_CONFIG_FILE_NAME ) )
                 .withHome( homeDir )
                 .withConnectorsDisabled()
                 .withNoThrowOnFileLoadFailure()
                 .build();
+
+        final var additionalConfig = loadAdditionalConfig( additionalConfigFile );
 
         // This is a temporary hack. Without this line there the loaded additionalConfig instance will always have the
         // neo4j_home setting set to the value of system property "user.dir", which overrides whatever homeDir that was given to
@@ -312,5 +387,139 @@ public class ImportCommand implements AdminCommand
         List<String> arguments = new ArrayList<>();
         readTextFile( file, line -> arguments.addAll( asList( tokenizeStringWithQuotes( line, true, true, false ) ) ) );
         return arguments.toArray( new String[0] );
+    }
+
+    private static org.neo4j.csv.reader.Configuration csvConfiguration( Args args, final boolean defaultSettingsSuitableForTests )
+    {
+        final var config = COMMAS.toBuilder();
+
+        Optional.ofNullable( args.interpretOption( OPT_DELIMITER, Converters.optional(), CHARACTER_CONVERTER ) )
+            .ifPresent( config::withDelimiter );
+
+        Optional.ofNullable( args.interpretOption( OPT_ARRAY_DELIMITER, Converters.optional(), CHARACTER_CONVERTER ) )
+            .ifPresent( config::withArrayDelimiter );
+
+        Optional.ofNullable( args.interpretOption( OPT_QUOTE, Converters.optional(), CHARACTER_CONVERTER ) )
+            .ifPresent( config::withQuotationCharacter );
+
+        Optional.ofNullable( args.getBoolean( OPT_MULTILINE_FIELDS, null ) )
+            .ifPresent( config::withMultilineFields );
+
+        Optional.ofNullable( args.getBoolean( OPT_IGNORE_EMPTY_STRINGS, null ) )
+            .ifPresent( config::withEmptyQuotedStringsAsNull );
+
+        Optional.ofNullable( args.getBoolean( OPT_TRIM_STRINGS, null ) )
+            .ifPresent( config::withTrimStrings );
+
+        Optional.ofNullable( args.getBoolean( OPT_LEGACY_STYLE_QUOTING, null ) )
+            .ifPresent( config::withLegacyStyleQuoting );
+
+        Optional.ofNullable( args.get( OPT_READ_BUFFER_SIZE, null ) )
+            .map( s -> toIntExact( parseLongWithUnit( s ) ) )
+            .ifPresentOrElse( config::withBufferSize, () ->
+            {
+                if ( defaultSettingsSuitableForTests )
+                {
+                    config.withBufferSize( 10_000 );
+                }
+            } );
+
+        return config.build();
+    }
+
+    private static org.neo4j.internal.batchimport.Configuration importConfiguration( Args args, DatabaseLayout databaseLayout )
+    {
+        final var processors = args.getNumber( OPT_PROCESSORS, Configuration.DEFAULT.maxNumberOfProcessors() );
+        final var maxMemory = parseMaxMemory( args.get( OPT_MAX_MEMORY, Configuration.DEFAULT_MAX_MEMORY_PERCENT + "%", null ) );
+        final var highIO = args.getBoolean( OPT_HIGH_IO, Configuration.DEFAULT.highIO() );
+        final var cacheOnHeap = args.getBoolean( OPT_CACHE_ON_HEAP );
+
+        return new org.neo4j.internal.batchimport.Configuration()
+        {
+            @Override
+            public int maxNumberOfProcessors()
+            {
+                return processors != null ? processors.intValue() : DEFAULT.maxNumberOfProcessors();
+            }
+
+            @Override
+            public long maxMemoryUsage()
+            {
+                return maxMemory != null ? maxMemory : DEFAULT.maxMemoryUsage();
+            }
+
+            @Override
+            public boolean highIO()
+            {
+                return highIO != null ? highIO : FileUtils.highIODevice( databaseLayout.databaseDirectory().toPath(), false );
+            }
+
+            @Override
+            public boolean allowCacheAllocationOnHeap()
+            {
+                return cacheOnHeap;
+            }
+        };
+    }
+
+    private static Long parseMaxMemory( String maxMemoryString )
+    {
+        if ( maxMemoryString != null )
+        {
+            maxMemoryString = maxMemoryString.trim();
+            if ( maxMemoryString.endsWith( "%" ) )
+            {
+                int percent = Integer.parseInt( maxMemoryString.substring( 0, maxMemoryString.length() - 1 ) );
+                long result = calculateMaxMemoryFromPercent( percent );
+                if ( !canDetectFreeMemory() )
+                {
+                    System.err.println( "WARNING: amount of free memory couldn't be detected so defaults to " +
+                        bytesToString( result ) + ". For optimal performance instead explicitly specify amount of " +
+                        "memory that importer is allowed to use using " + OPT_MAX_MEMORY );
+                }
+                return result;
+            }
+            return parseLongWithUnit( maxMemoryString );
+        }
+        return null;
+    }
+
+    private static Collection<Args.Option<File[]>> extractInputFiles( Args args, String key, PrintStream err )
+    {
+        return args
+            .interpretOptionsWithMetadata( key, Converters.optional(),
+                Converters.toFiles( MULTI_FILE_DELIMITER, Converters.regexFiles( true ) ),
+                filesExist( err ),
+                Validators.atLeast( "--" + key, 1 ) );
+    }
+
+    private static Validator<File[]> filesExist( PrintStream err )
+    {
+        return files ->
+        {
+            for ( File file : files )
+            {
+                if ( file.getName().startsWith( ":" ) )
+                {
+                    err.println( "It looks like you're trying to specify default label or relationship type (" +
+                        file.getName() + "). Please put such directly on the key, f.ex. " +
+                        OPT_NODES + ":MyLabel" );
+                }
+                Validators.REGEX_FILE_EXISTS.validate( file );
+            }
+        };
+    }
+
+    private static void validateInputFiles( Collection<Args.Option<File[]>> nodesFiles,
+        Collection<Args.Option<File[]>> relationshipsFiles )
+    {
+        if ( nodesFiles.isEmpty() )
+        {
+            if ( relationshipsFiles.isEmpty() )
+            {
+                throw new IllegalArgumentException( "No input specified, nothing to import" );
+            }
+            throw new IllegalArgumentException( "No node input specified, cannot import relationships without nodes" );
+        }
     }
 }

@@ -22,24 +22,24 @@ package org.neo4j.importer;
 import java.io.BufferedOutputStream;
 import java.io.File;
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.PrintStream;
 import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.time.ZoneId;
-import java.util.Collection;
-import java.util.Optional;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
-import java.util.function.Function;
 import java.util.function.Supplier;
 
 import org.neo4j.batchinsert.internal.TransactionLogsInitializer;
-import org.neo4j.commandline.admin.IncorrectUsage;
 import org.neo4j.commandline.admin.OutsideWorld;
-import org.neo4j.common.Validator;
+import org.neo4j.commandline.admin.RealOutsideWorld;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
-import org.neo4j.configuration.Settings;
 import org.neo4j.csv.reader.IllegalMultilineFieldException;
 import org.neo4j.internal.batchimport.BatchImporter;
 import org.neo4j.internal.batchimport.BatchImporterFactory;
@@ -53,58 +53,25 @@ import org.neo4j.internal.batchimport.input.InputException;
 import org.neo4j.internal.batchimport.input.MissingRelationshipDataException;
 import org.neo4j.internal.batchimport.input.csv.CsvInput;
 import org.neo4j.internal.batchimport.input.csv.DataFactory;
-import org.neo4j.internal.batchimport.input.csv.Decorator;
 import org.neo4j.internal.batchimport.staging.ExecutionMonitor;
 import org.neo4j.internal.batchimport.staging.ExecutionMonitors;
 import org.neo4j.internal.batchimport.staging.SpectrumExecutionMonitor;
-import org.neo4j.internal.helpers.Args;
 import org.neo4j.internal.helpers.Exceptions;
-import org.neo4j.internal.helpers.collection.IterableWrapper;
 import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.io.fs.FileUtils;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.os.OsBeanUtil;
 import org.neo4j.kernel.impl.store.format.RecordFormatSelector;
-import org.neo4j.kernel.impl.util.Converters;
-import org.neo4j.kernel.impl.util.Validators;
 import org.neo4j.kernel.internal.Version;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.logging.internal.LogService;
 import org.neo4j.logging.internal.StoreLogService;
 import org.neo4j.scheduler.JobScheduler;
 
-import static java.lang.Math.toIntExact;
-import static java.nio.charset.Charset.defaultCharset;
+import static java.util.Objects.requireNonNull;
 import static org.neo4j.configuration.GraphDatabaseSettings.store_internal_log_path;
-import static org.neo4j.configuration.Settings.parseLongWithUnit;
-import static org.neo4j.csv.reader.Configuration.COMMAS;
-import static org.neo4j.importer.ImportCommand.OPT_ARRAY_DELIMITER;
-import static org.neo4j.importer.ImportCommand.OPT_BAD_TOLERANCE;
-import static org.neo4j.importer.ImportCommand.OPT_CACHE_ON_HEAP;
-import static org.neo4j.importer.ImportCommand.OPT_DELIMITER;
-import static org.neo4j.importer.ImportCommand.OPT_DETAILED_PROGRESS;
-import static org.neo4j.importer.ImportCommand.OPT_HIGH_IO;
-import static org.neo4j.importer.ImportCommand.OPT_ID_TYPE;
-import static org.neo4j.importer.ImportCommand.OPT_IGNORE_EMPTY_STRINGS;
-import static org.neo4j.importer.ImportCommand.OPT_IGNORE_EXTRA_COLUMNS;
-import static org.neo4j.importer.ImportCommand.OPT_INPUT_ENCODING;
-import static org.neo4j.importer.ImportCommand.OPT_LEGACY_STYLE_QUOTING;
-import static org.neo4j.importer.ImportCommand.OPT_MAX_MEMORY;
+import static org.neo4j.importer.ImportCommand.DEFAULT_REPORT_FILE_NAME;
 import static org.neo4j.importer.ImportCommand.OPT_MULTILINE_FIELDS;
-import static org.neo4j.importer.ImportCommand.OPT_NODES;
-import static org.neo4j.importer.ImportCommand.OPT_NORMALIZE_TYPES;
-import static org.neo4j.importer.ImportCommand.OPT_PROCESSORS;
-import static org.neo4j.importer.ImportCommand.OPT_QUOTE;
-import static org.neo4j.importer.ImportCommand.OPT_READ_BUFFER_SIZE;
-import static org.neo4j.importer.ImportCommand.OPT_RELATIONSHIPS;
-import static org.neo4j.importer.ImportCommand.OPT_REPORT_FILE;
-import static org.neo4j.importer.ImportCommand.OPT_SKIP_BAD_ENTRIES_LOGGING;
-import static org.neo4j.importer.ImportCommand.OPT_SKIP_BAD_RELATIONSHIPS;
-import static org.neo4j.importer.ImportCommand.OPT_SKIP_DUPLICATE_NODES;
-import static org.neo4j.importer.ImportCommand.OPT_TRIM_STRINGS;
 import static org.neo4j.internal.batchimport.AdditionalInitialIds.EMPTY;
-import static org.neo4j.internal.batchimport.Configuration.calculateMaxMemoryFromPercent;
-import static org.neo4j.internal.batchimport.Configuration.canDetectFreeMemory;
 import static org.neo4j.internal.batchimport.input.Collectors.badCollector;
 import static org.neo4j.internal.batchimport.input.Collectors.collect;
 import static org.neo4j.internal.batchimport.input.Collectors.silentBadCollector;
@@ -117,7 +84,6 @@ import static org.neo4j.internal.batchimport.input.csv.DataFactories.defaultForm
 import static org.neo4j.internal.helpers.Exceptions.throwIfUnchecked;
 import static org.neo4j.io.ByteUnit.bytesToString;
 import static org.neo4j.kernel.impl.scheduler.JobSchedulerFactory.createScheduler;
-import static org.neo4j.kernel.impl.util.Converters.withDefault;
 
 class CsvImporter implements Importer
 {
@@ -126,117 +92,93 @@ class CsvImporter implements Importer
      */
     static final String MULTI_FILE_DELIMITER = ",";
 
-    private static final Function<String, Character> CHARACTER_CONVERTER = new CharacterConverter();
-
-    private final Collection<Args.Option<File[]>> nodesFiles;
-    private final Collection<Args.Option<File[]>> relationshipsFiles;
+    private final DatabaseLayout databaseLayout;
+    private final Config databaseConfig;
+    private final org.neo4j.csv.reader.Configuration csvConfig;
+    private final org.neo4j.internal.batchimport.Configuration importConfig;
+    private final File reportFile;
     private final IdType idType;
     private final Charset inputEncoding;
-    private final Config databaseConfig;
-    private final Args args;
     private final OutsideWorld outsideWorld;
-    private final DatabaseLayout databaseLayout;
-    private final String reportFileName;
     private final boolean ignoreExtraColumns;
-    private final boolean highIO;
-    private final Boolean skipBadRelationships;
+    private final boolean skipBadRelationships;
     private final boolean skipDuplicateNodes;
     private final boolean skipBadEntriesLogging;
-    private final boolean detailedProgress;
-    private final boolean cacheOnHeap;
     private final long badTolerance;
-    private final Number maxMemory;
-    private final Number numOfProcessors;
     private final boolean normalizeTypes;
+    private final boolean verbose;
+    private final Map<Set<String>, List<File[]>> nodeFiles;
+    private final Map<String, List<File[]>> relationshipFiles;
 
-    CsvImporter( Args args, Config databaseConfig, OutsideWorld outsideWorld, DatabaseLayout databaseLayout ) throws IncorrectUsage
+    private CsvImporter( Builder b )
     {
-        this.args = args;
-        this.outsideWorld = outsideWorld;
-        this.databaseLayout = databaseLayout;
-        nodesFiles = extractInputFiles( args, OPT_NODES, outsideWorld.errorStream() );
-        relationshipsFiles = extractInputFiles( args, OPT_RELATIONSHIPS, outsideWorld.errorStream() );
-        reportFileName = args.get( OPT_REPORT_FILE, ImportCommand.DEFAULT_REPORT_FILE_NAME );
-        ignoreExtraColumns = args.getBoolean( OPT_IGNORE_EXTRA_COLUMNS );
-        numOfProcessors = args.getNumber( OPT_PROCESSORS, Configuration.DEFAULT.maxNumberOfProcessors() );
-        badTolerance = args.getNumber( OPT_BAD_TOLERANCE, 1000 ).longValue();
-        maxMemory = parseMaxMemory( args.get( OPT_MAX_MEMORY, Configuration.DEFAULT_MAX_MEMORY_PERCENT + "%", null ) );
-        skipBadRelationships = args.getBoolean( OPT_SKIP_BAD_RELATIONSHIPS );
-        skipDuplicateNodes = args.getBoolean( OPT_SKIP_DUPLICATE_NODES );
-        skipBadEntriesLogging = args.getBoolean( OPT_SKIP_BAD_ENTRIES_LOGGING );
-        highIO = args.getBoolean( OPT_HIGH_IO, Configuration.DEFAULT.highIO() );
-        detailedProgress = args.getBoolean( OPT_DETAILED_PROGRESS );
-        cacheOnHeap = args.getBoolean( OPT_CACHE_ON_HEAP );
+        this.databaseLayout = requireNonNull( b.databaseLayout );
+        this.databaseConfig = requireNonNull( b.databaseConfig );
+        this.csvConfig = requireNonNull( b.csvConfig );
+        this.importConfig = requireNonNull( b.importConfig );
+        this.reportFile = requireNonNull( b.reportFile );
+        this.idType = requireNonNull( b.idType );
+        this.inputEncoding = requireNonNull( b.inputEncoding );
+        this.outsideWorld = requireNonNull( b.outsideWorld );
+        this.ignoreExtraColumns = b.ignoreExtraColumns;
+        this.skipBadRelationships = b.skipBadRelationships;
+        this.skipDuplicateNodes = b.skipDuplicateNodes;
+        this.skipBadEntriesLogging = b.skipBadEntriesLogging;
+        this.badTolerance = b.badTolerance;
+        this.normalizeTypes = b.normalizeTypes;
+        this.verbose = b.verbose;
+        this.nodeFiles = requireNonNull( b.nodeFiles );
+        this.relationshipFiles = requireNonNull( b.relationshipFiles );
 
-        try
-        {
-            validateInputFiles( nodesFiles, relationshipsFiles );
-        }
-        catch ( IllegalArgumentException e )
-        {
-            throw new IncorrectUsage( e.getMessage() );
-        }
-
-        idType = args.interpretOption( OPT_ID_TYPE, withDefault( IdType.STRING ),
-                from -> IdType.valueOf( from.toUpperCase() ) );
-        inputEncoding = Charset.forName( args.get( OPT_INPUT_ENCODING, defaultCharset().name() ) );
-        normalizeTypes = args.getBoolean( OPT_NORMALIZE_TYPES, true );
-        this.databaseConfig = databaseConfig;
     }
 
     @Override
     public void doImport() throws IOException
     {
         FileSystemAbstraction fs = outsideWorld.fileSystem();
-        File reportFile = new File( reportFileName );
 
         OutputStream badOutput = new BufferedOutputStream( fs.openAsOutputStream( reportFile, false ) );
         try ( Collector badCollector = getBadCollector( skipBadEntriesLogging, badOutput ) )
         {
-            Configuration configuration = importConfiguration(
-                    numOfProcessors, maxMemory, databaseLayout, cacheOnHeap, highIO );
-
             // Extract the default time zone from the database configuration
             ZoneId dbTimeZone = databaseConfig.get( GraphDatabaseSettings.db_temporal_timezone );
             Supplier<ZoneId> defaultTimeZone = () -> dbTimeZone;
 
-            CsvInput input = new CsvInput( nodeData( inputEncoding, nodesFiles ), defaultFormatNodeFileHeader( defaultTimeZone, normalizeTypes ),
-                    relationshipData( inputEncoding, relationshipsFiles ), defaultFormatRelationshipFileHeader( defaultTimeZone, normalizeTypes ), idType,
-                    csvConfiguration( args, false ),
+            final var nodeData = nodeData();
+            final var relationshipsData = relationshipData();
+
+            CsvInput input = new CsvInput( nodeData, defaultFormatNodeFileHeader( defaultTimeZone, normalizeTypes ),
+                relationshipsData, defaultFormatRelationshipFileHeader( defaultTimeZone, normalizeTypes ), idType,
+                csvConfig,
                     new CsvInput.PrintingMonitor( outsideWorld.outStream() ) );
 
-            doImport( outsideWorld.errorStream(), outsideWorld.errorStream(), outsideWorld.inStream(), databaseLayout, reportFile, fs,
-                    nodesFiles, relationshipsFiles, false, input, this.databaseConfig, badCollector, configuration, detailedProgress );
+            doImport( input, badCollector );
         }
     }
 
-    public static void doImport( PrintStream out, PrintStream err, InputStream in, DatabaseLayout databaseLayout, File badFile,
-            FileSystemAbstraction fs, Collection<Args.Option<File[]>> nodesFiles,
-            Collection<Args.Option<File[]>> relationshipsFiles, boolean enableStacktrace, Input input,
-            Config dbConfig, Collector badCollector,
-            org.neo4j.internal.batchimport.Configuration configuration, boolean detailedProgress ) throws IOException
+    private void doImport( Input input, Collector badCollector ) throws IOException
     {
         boolean success;
         LifeSupport life = new LifeSupport();
 
-        File internalLogFile = dbConfig.get( store_internal_log_path );
-        LogService logService = life.add( StoreLogService.withInternalLog( internalLogFile ).build( fs ) );
+        File internalLogFile = databaseConfig.get( store_internal_log_path );
+        LogService logService = life.add( StoreLogService.withInternalLog( internalLogFile ).build( outsideWorld.fileSystem() ) );
         final JobScheduler jobScheduler = life.add( createScheduler() );
 
         life.start();
-        ExecutionMonitor executionMonitor = detailedProgress
-                                            ? new SpectrumExecutionMonitor( 2, TimeUnit.SECONDS, out, SpectrumExecutionMonitor.DEFAULT_WIDTH )
-                                            : ExecutionMonitors.defaultVisible( in, jobScheduler );
+        ExecutionMonitor executionMonitor = verbose ? new SpectrumExecutionMonitor( 2, TimeUnit.SECONDS, outsideWorld.outStream(),
+            SpectrumExecutionMonitor.DEFAULT_WIDTH ) : ExecutionMonitors.defaultVisible( outsideWorld.inStream(), jobScheduler );
         BatchImporter importer = BatchImporterFactory.withHighestPriority().instantiate( databaseLayout,
-                fs,
-                null, // no external page cache
-                configuration,
-                logService, executionMonitor,
-                EMPTY,
-                dbConfig,
-                RecordFormatSelector.selectForConfig( dbConfig, logService.getInternalLogProvider() ),
-                new PrintingImportLogicMonitor( out, err ), jobScheduler, badCollector, TransactionLogsInitializer.INSTANCE );
-        printOverview( databaseLayout.databaseDirectory(), nodesFiles, relationshipsFiles, configuration, out );
+            outsideWorld.fileSystem(),
+            null, // no external page cache
+            importConfig,
+            logService, executionMonitor,
+            EMPTY,
+            databaseConfig,
+            RecordFormatSelector.selectForConfig( databaseConfig, logService.getInternalLogProvider() ),
+            new PrintingImportLogicMonitor( outsideWorld.outStream(), outsideWorld.errorStream() ),
+            jobScheduler, badCollector, TransactionLogsInitializer.INSTANCE );
+        printOverview( databaseLayout.databaseDirectory(), nodeFiles, relationshipFiles, importConfig, outsideWorld.outStream() );
         success = false;
         try
         {
@@ -245,18 +187,17 @@ class CsvImporter implements Importer
         }
         catch ( Exception e )
         {
-            throw andPrintError( "Import error", e, enableStacktrace, err );
+            throw andPrintError( "Import error", e, verbose, outsideWorld.errorStream() );
         }
         finally
         {
             long numberOfBadEntries = badCollector.badEntries();
 
-            if ( badFile != null )
+            if ( reportFile != null )
             {
                 if ( numberOfBadEntries > 0 )
                 {
-                    System.out.println( "There were bad entries which were skipped and logged into " +
-                            badFile.getAbsolutePath() );
+                    outsideWorld.outStream().println( "There were bad entries which were skipped and logged into " + reportFile.getAbsolutePath() );
                 }
             }
 
@@ -264,7 +205,7 @@ class CsvImporter implements Importer
 
             if ( !success )
             {
-                err.println( "WARNING Import failed. The store files in " + databaseLayout.databaseDirectory().getAbsolutePath() +
+                outsideWorld.errorStream().println( "WARNING Import failed. The store files in " + databaseLayout.databaseDirectory().getAbsolutePath() +
                         " are left as they are, although they are likely in an unusable state. " +
                         "Starting a database on these store files will likely fail or observe inconsistent records so " +
                         "start at your own risk or delete the store manually" );
@@ -276,7 +217,6 @@ class CsvImporter implements Importer
      * Method name looks strange, but look at how it's used and you'll see why it's named like that.
      *
      * @param stackTrace whether or not to also print the stack trace of the error.
-     * @param err
      */
     private static RuntimeException andPrintError( String typeOfError, Exception e, boolean stackTrace,
             PrintStream err )
@@ -333,9 +273,8 @@ class CsvImporter implements Importer
         }
     }
 
-    private static void printOverview( File storeDir, Collection<Args.Option<File[]>> nodesFiles,
-            Collection<Args.Option<File[]>> relationshipsFiles,
-            org.neo4j.internal.batchimport.Configuration configuration, PrintStream out )
+    private static void printOverview( File storeDir, Map<Set<String>, List<File[]>> nodesFiles, Map<String, List<File[]>> relationshipsFiles,
+        Configuration configuration, PrintStream out )
     {
         out.println( "Neo4j version: " + Version.getNeo4jVersion() );
         out.println( "Importing the contents of these files into " + storeDir + ":" );
@@ -352,30 +291,28 @@ class CsvImporter implements Importer
         out.println();
     }
 
-    private static void printInputFiles( String name, Collection<Args.Option<File[]>> files, PrintStream out )
+    private static void printInputFiles( String name, Map<?, List<File[]>> inputFiles, PrintStream out )
     {
-        if ( files.isEmpty() )
+        if ( inputFiles.isEmpty() )
         {
             return;
         }
 
         out.println( name + ":" );
         int i = 0;
-        for ( Args.Option<File[]> group : files )
+
+        inputFiles.forEach( ( k, files ) ->
         {
-            if ( i++ > 0 )
+            printIndented( k + ":", out );
+            for ( File[] arr : files )
             {
-                out.println();
+                for ( final File file : arr )
+                {
+                    printIndented( file, out );
+                }
             }
-            if ( group.metadata() != null )
-            {
-                printIndented( ":" + group.metadata(), out );
-            }
-            for ( File file : group.value() )
-            {
-                printIndented( file, out );
-            }
-        }
+            out.println();
+        } );
     }
 
     private static void printIndented( Object value, PrintStream out )
@@ -383,33 +320,34 @@ class CsvImporter implements Importer
         out.println( "  " + value );
     }
 
-    private static Iterable<DataFactory>
-    relationshipData( final Charset encoding, Collection<Args.Option<File[]>> relationshipsFiles )
+    private Iterable<DataFactory> relationshipData()
     {
-        return new IterableWrapper<>( relationshipsFiles )
+        final var result = new ArrayList<DataFactory>();
+        relationshipFiles.forEach( ( defaultTypeName, fileSets ) ->
         {
-            @Override
-            protected DataFactory underlyingObjectToObject( Args.Option<File[]> group )
+            final var decorator = defaultRelationshipType( defaultTypeName );
+            for ( File[] files : fileSets )
             {
-                return data( defaultRelationshipType( group.metadata() ), encoding, group.value() );
+                final var data = data( decorator, inputEncoding, files );
+                result.add( data );
             }
-        };
+        } );
+        return result;
     }
 
-    private static Iterable<DataFactory> nodeData( final Charset encoding,
-            Collection<Args.Option<File[]>> nodesFiles )
+    private Iterable<DataFactory> nodeData()
     {
-        return new IterableWrapper<>( nodesFiles )
+        final var result = new ArrayList<DataFactory>();
+        nodeFiles.forEach( ( labels, fileSets ) ->
         {
-            @Override
-            protected DataFactory underlyingObjectToObject( Args.Option<File[]> input )
+            final var decorator = labels.isEmpty() ? NO_DECORATOR : additiveLabels( labels.toArray( new String[0] ) );
+            for ( File[] files : fileSets )
             {
-                Decorator decorator = input.metadata() != null
-                                      ? additiveLabels( input.metadata().split( ":" ) )
-                                      : NO_DECORATOR;
-                return data( decorator, encoding, input.value() );
+                final var data = data( decorator, inputEncoding, files );
+                result.add( data );
             }
-        };
+        } );
+        return result;
     }
 
     private Collector getBadCollector( boolean skipBadEntriesLogging, OutputStream badOutput )
@@ -424,134 +362,138 @@ class CsvImporter implements Importer
         return skipBadRelationships || skipDuplicateNodes || ignoreExtraColumns;
     }
 
-    private static org.neo4j.csv.reader.Configuration csvConfiguration( Args args, final boolean defaultSettingsSuitableForTests )
+    static Builder builder()
     {
-        final var config = COMMAS.toBuilder();
-
-        Optional.ofNullable( args.interpretOption( OPT_DELIMITER, Converters.optional(), CHARACTER_CONVERTER ) )
-                .ifPresent( config::withDelimiter );
-
-        Optional.ofNullable( args.interpretOption( OPT_ARRAY_DELIMITER, Converters.optional(), CHARACTER_CONVERTER ) )
-                .ifPresent( config::withArrayDelimiter );
-
-        Optional.ofNullable( args.interpretOption( OPT_QUOTE, Converters.optional(), CHARACTER_CONVERTER ) )
-                .ifPresent( config::withQuotationCharacter );
-
-        Optional.ofNullable( args.getBoolean( OPT_MULTILINE_FIELDS, null ) )
-                .ifPresent( config::withMultilineFields );
-
-        Optional.ofNullable( args.getBoolean( OPT_IGNORE_EMPTY_STRINGS, null ) )
-                .ifPresent( config::withEmptyQuotedStringsAsNull );
-
-        Optional.ofNullable( args.getBoolean( OPT_TRIM_STRINGS, null ) )
-                .ifPresent( config::withTrimStrings );
-
-        Optional.ofNullable( args.getBoolean( OPT_LEGACY_STYLE_QUOTING, null ) )
-                .ifPresent( config::withLegacyStyleQuoting );
-
-        Optional.ofNullable( args.get( OPT_READ_BUFFER_SIZE, null ) )
-                .map( s -> toIntExact( parseLongWithUnit( s ) ) )
-                .ifPresentOrElse( config::withBufferSize, () ->
-                {
-                    if ( defaultSettingsSuitableForTests )
-                    {
-                        config.withBufferSize( 10_000 );
-                    }
-                } );
-
-        return config.build();
+        return new Builder();
     }
 
-    private static org.neo4j.internal.batchimport.Configuration importConfiguration(
-            Number processors, Number maxMemory, DatabaseLayout databaseLayout,
-            boolean allowCacheOnHeap, Boolean defaultHighIO )
+    static class Builder
     {
-        return new org.neo4j.internal.batchimport.Configuration()
+        private DatabaseLayout databaseLayout;
+        private Config databaseConfig;
+        private org.neo4j.csv.reader.Configuration csvConfig = org.neo4j.csv.reader.Configuration.COMMAS;
+        private Configuration importConfig = Configuration.DEFAULT;
+        private File reportFile = new File( DEFAULT_REPORT_FILE_NAME );
+        private IdType idType = IdType.STRING;
+        private Charset inputEncoding = StandardCharsets.UTF_8;
+        private OutsideWorld outsideWorld = new RealOutsideWorld();
+        private boolean ignoreExtraColumns;
+        private boolean skipBadRelationships;
+        private boolean skipDuplicateNodes;
+        private boolean skipBadEntriesLogging;
+        private long badTolerance;
+        private boolean normalizeTypes;
+        private boolean verbose;
+        private Map<Set<String>, List<File[]>> nodeFiles = new HashMap<>();
+        private Map<String, List<File[]>> relationshipFiles = new HashMap<>();
+
+        Builder withDatabaseLayout( DatabaseLayout databaseLayout )
         {
-            @Override
-            public int maxNumberOfProcessors()
-            {
-                return processors != null ? processors.intValue() : DEFAULT.maxNumberOfProcessors();
-            }
-
-            @Override
-            public long maxMemoryUsage()
-            {
-                return maxMemory != null ? maxMemory.longValue() : DEFAULT.maxMemoryUsage();
-            }
-
-            @Override
-            public boolean highIO()
-            {
-                return defaultHighIO != null ? defaultHighIO : FileUtils.highIODevice( databaseLayout.databaseDirectory().toPath(), false );
-            }
-
-            @Override
-            public boolean allowCacheAllocationOnHeap()
-            {
-                return allowCacheOnHeap;
-            }
-        };
-    }
-
-    private static Long parseMaxMemory( String maxMemoryString )
-    {
-        if ( maxMemoryString != null )
-        {
-            maxMemoryString = maxMemoryString.trim();
-            if ( maxMemoryString.endsWith( "%" ) )
-            {
-                int percent = Integer.parseInt( maxMemoryString.substring( 0, maxMemoryString.length() - 1 ) );
-                long result = calculateMaxMemoryFromPercent( percent );
-                if ( !canDetectFreeMemory() )
-                {
-                    System.err.println( "WARNING: amount of free memory couldn't be detected so defaults to " +
-                            bytesToString( result ) + ". For optimal performance instead explicitly specify amount of " +
-                            "memory that importer is allowed to use using " + OPT_MAX_MEMORY );
-                }
-                return result;
-            }
-            return Settings.parseLongWithUnit( maxMemoryString );
+            this.databaseLayout = databaseLayout;
+            return this;
         }
-        return null;
-    }
 
-    private static Collection<Args.Option<File[]>> extractInputFiles( Args args, String key, PrintStream err )
-    {
-        return args
-                .interpretOptionsWithMetadata( key, Converters.optional(),
-                        Converters.toFiles( MULTI_FILE_DELIMITER, Converters.regexFiles( true ) ),
-                        filesExist( err ),
-                        Validators.atLeast( "--" + key, 1 ) );
-    }
-
-    private static Validator<File[]> filesExist( PrintStream err )
-    {
-        return files ->
+        Builder withDatabaseConfig( Config databaseConfig )
         {
-            for ( File file : files )
-            {
-                if ( file.getName().startsWith( ":" ) )
-                {
-                    err.println( "It looks like you're trying to specify default label or relationship type (" +
-                            file.getName() + "). Please put such directly on the key, f.ex. " +
-                            OPT_NODES + ":MyLabel" );
-                }
-                Validators.REGEX_FILE_EXISTS.validate( file );
-            }
-        };
-    }
+            this.databaseConfig = databaseConfig;
+            return this;
+        }
 
-    private static void validateInputFiles( Collection<Args.Option<File[]>> nodesFiles,
-            Collection<Args.Option<File[]>> relationshipsFiles )
-    {
-        if ( nodesFiles.isEmpty() )
+        Builder withCsvConfig( org.neo4j.csv.reader.Configuration csvConfig )
         {
-            if ( relationshipsFiles.isEmpty() )
-            {
-                throw new IllegalArgumentException( "No input specified, nothing to import" );
-            }
-            throw new IllegalArgumentException( "No node input specified, cannot import relationships without nodes" );
+            this.csvConfig = csvConfig;
+            return this;
+        }
+
+        Builder withImportConfig( Configuration importConfig )
+        {
+            this.importConfig = importConfig;
+            return this;
+        }
+
+        Builder withReportFile( File reportFile )
+        {
+            this.reportFile = reportFile;
+            return this;
+        }
+
+        Builder withIdType( IdType idType )
+        {
+            this.idType = idType;
+            return this;
+        }
+
+        Builder withInputEncoding( Charset inputEncoding )
+        {
+            this.inputEncoding = inputEncoding;
+            return this;
+        }
+
+        Builder withOutsideWorld( OutsideWorld outsideWorld )
+        {
+            this.outsideWorld = outsideWorld;
+            return this;
+        }
+
+        Builder withIgnoreExtraColumns( boolean ignoreExtraColumns )
+        {
+            this.ignoreExtraColumns = ignoreExtraColumns;
+            return this;
+        }
+
+        Builder withSkipBadRelationships( boolean skipBadRelationships )
+        {
+            this.skipBadRelationships = skipBadRelationships;
+            return this;
+        }
+
+        Builder withSkipDuplicateNodes( boolean skipDuplicateNodes )
+        {
+            this.skipDuplicateNodes = skipDuplicateNodes;
+            return this;
+        }
+
+        Builder withSkipBadEntriesLogging( boolean skipBadEntriesLogging )
+        {
+            this.skipBadEntriesLogging = skipBadEntriesLogging;
+            return this;
+        }
+
+        Builder withBadTolerance( long badTolerance )
+        {
+            this.badTolerance = badTolerance;
+            return this;
+        }
+
+        Builder withNormalizeTypes( boolean normalizeTypes )
+        {
+            this.normalizeTypes = normalizeTypes;
+            return this;
+        }
+
+        Builder withVerbose( boolean verbose )
+        {
+            this.verbose = verbose;
+            return this;
+        }
+
+        Builder addNodeFiles( Set<String> labels, File[] files )
+        {
+            final var list = nodeFiles.computeIfAbsent( labels, unused -> new ArrayList<>() );
+            list.add( files );
+            return this;
+        }
+
+        Builder addRelationshipFiles( String defaultRelType, File[] files )
+        {
+            final var list = relationshipFiles.computeIfAbsent( defaultRelType, unused -> new ArrayList<>() );
+            list.add( files );
+            return this;
+        }
+
+        CsvImporter build()
+        {
+            return new CsvImporter( this );
         }
     }
 }
