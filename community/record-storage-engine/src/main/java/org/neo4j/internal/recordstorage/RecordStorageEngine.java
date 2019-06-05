@@ -113,9 +113,20 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
     private IndexUpdateListener indexUpdateListener;
     private NodeLabelUpdateListener nodeLabelUpdateListener;
 
-    public RecordStorageEngine( DatabaseLayout databaseLayout, Config config, PageCache pageCache, FileSystemAbstraction fs, LogProvider logProvider,
-            TokenHolders tokenHolders, SchemaState schemaState, ConstraintRuleAccessor constraintSemantics, LockService lockService, Health databaseHealth,
-            IdGeneratorFactory idGeneratorFactory, IdController idController, VersionContextSupplier versionContextSupplier, boolean createStoreIfNotExists )
+    public RecordStorageEngine( DatabaseLayout databaseLayout,
+            Config config,
+            PageCache pageCache,
+            FileSystemAbstraction fs,
+            LogProvider logProvider,
+            TokenHolders tokenHolders,
+            SchemaState schemaState,
+            ConstraintRuleAccessor constraintSemantics,
+            LockService lockService,
+            Health databaseHealth,
+            IdGeneratorFactory idGeneratorFactory,
+            IdController idController,
+            VersionContextSupplier versionContextSupplier,
+            boolean createStoreIfNotExists )
     {
         this.tokenHolders = tokenHolders;
         this.schemaState = schemaState;
