@@ -25,6 +25,8 @@ import org.neo4j.cypher.internal.ir.v3_5.{PatternRelationship, QueryGraph}
 import org.neo4j.cypher.internal.planner.v3_5.spi.PlanningAttributes.Solveds
 import org.neo4j.cypher.internal.v3_5.logical.plans.LogicalPlan
 
+import scala.collection.immutable.BitSet
+
 object joinSolverStep {
   val VERBOSE = false
 }
@@ -37,6 +39,9 @@ case class joinSolverStep(qg: QueryGraph) extends IDPSolverStep[PatternRelations
 
     if (VERBOSE) {
       println(s"\n>>>> start solving ${show(goal, goalSymbols(goal, registry))}")
+      goal.toSeq.map(BitSet(_)).foreach {
+        subgoal => println(s"Solving subgoal $subgoal which covers " + registry.explode(subgoal).flatMap(_.coveredIds))
+      }
     }
 
     /**
@@ -66,7 +71,7 @@ case class joinSolverStep(qg: QueryGraph) extends IDPSolverStep[PatternRelations
         val overlappingNodes = computeOverlappingNodes(lhs, rhs, context.planningAttributes.solveds, argumentsToRemove)
         if (overlappingNodes.nonEmpty) {
           val overlappingSymbols = computeOverlappingSymbols(lhs, rhs, argumentsToRemove)
-          if (overlappingSymbols == overlappingNodes) {
+          if (overlappingNodes.subsetOf(overlappingSymbols)) {
             if (VERBOSE) {
               println(s"${show(leftGoal, nodes(lhs, context.planningAttributes.solveds))} overlap ${show(rightGoal, nodes(rhs, context.planningAttributes.solveds))} on ${showNames(overlappingNodes)}")
             }
