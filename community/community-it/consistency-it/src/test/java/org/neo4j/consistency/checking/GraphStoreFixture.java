@@ -635,8 +635,11 @@ public abstract class GraphStoreFixture extends ConfigurablePageCacheRule implem
             neoStore.close();
             labelScanStore.shutdown();
             directStoreAccess = null;
-            counts.shutdown();
-            counts = null;
+            if ( counts != null )
+            {
+                counts.shutdown();
+                counts = null;
+            }
         }
     }
 
