@@ -25,7 +25,7 @@ public interface OperatorProfileEvent extends AutoCloseable
 
     void row();
 
-    void rows(int n);
+    void rows( int n );
 
     @Override
     void close();

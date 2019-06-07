@@ -29,7 +29,7 @@ public interface QueryProfiler
 
     default OperatorProfileEvent executeOperator( int operatorId, boolean trackTime )
     {
-        return executeOperator( new Id(operatorId), trackTime );
+        return executeOperator( new Id( operatorId ), trackTime );
     }
 
     QueryProfiler NONE = new QueryProfiler()
