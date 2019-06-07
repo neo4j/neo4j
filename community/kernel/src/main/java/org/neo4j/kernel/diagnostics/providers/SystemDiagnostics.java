@@ -43,6 +43,8 @@ import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
+import java.util.Set;
 import java.util.TimeZone;
 
 import org.neo4j.internal.diagnostics.DiagnosticsProvider;
@@ -135,13 +137,11 @@ public enum SystemDiagnostics implements DiagnosticsProvider
             if ( runtime.isBootClassPathSupported() )
             {
                 classpath = buildClassPath( getClass().getClassLoader(),
-                        new String[] { "bootstrap", "classpath" },
-                        runtime.getBootClassPath(), runtime.getClassPath() );
+                        Map.of( "bootstrap", runtime.getBootClassPath(), "classpath", runtime.getClassPath() ) );
             }
             else
             {
-                classpath = buildClassPath( getClass().getClassLoader(),
-                        new String[] { "classpath" }, runtime.getClassPath() );
+                classpath = buildClassPath( getClass().getClassLoader(), Map.of( "classpath", runtime.getClassPath() ) );
             }
             for ( String path : classpath )
             {
@@ -149,17 +149,22 @@ public enum SystemDiagnostics implements DiagnosticsProvider
             }
         }
 
-        private Collection<String> buildClassPath( ClassLoader loader, String[] pathKeys, String... classPaths )
+        private Collection<String> buildClassPath( ClassLoader loader, Map<String, String> classPaths )
         {
             Map<String, String> paths = new HashMap<>();
-            assert pathKeys.length == classPaths.length;
-            for ( int i = 0; i < classPaths.length; i++ )
+
+            Set<Entry<String,String>> entries = classPaths.entrySet();
+            for ( Entry<String,String> classPathEntry : entries )
             {
-                for ( String path : classPaths[i].split( File.pathSeparator ) )
+                String classPathType = classPathEntry.getKey();
+                String[] splittedClassPath = classPathEntry.getValue().split( File.pathSeparator );
+                for ( String entry : splittedClassPath )
                 {
-                    paths.put( canonicalize( path ), pathValue( paths, pathKeys[i], path ) );
+                    String canonicalEntry = canonicalize( entry );
+                    paths.merge( canonicalEntry, classPathType, ( k, v ) -> v + " + " + classPathType );
                 }
             }
+
             for ( int level = 0; loader != null; level++ )
             {
                 if ( loader instanceof URLClassLoader )
@@ -172,7 +177,8 @@ public enum SystemDiagnostics implements DiagnosticsProvider
                         {
                             if ( "file".equalsIgnoreCase( url.getProtocol() ) )
                             {
-                                paths.put( url.toString(), pathValue( paths, "loader." + level, url.getPath() ) );
+                                String type = "loader." + level;
+                                paths.merge( url.toString(), type, ( k, v ) -> k + " + " + type );
                             }
                         }
                     }
@@ -184,25 +190,11 @@ public enum SystemDiagnostics implements DiagnosticsProvider
                 loader = loader.getParent();
             }
             List<String> result = new ArrayList<>( paths.size() );
-            for ( Map.Entry<String, String> path : paths.entrySet() )
+            for ( Entry<String, String> path : paths.entrySet() )
             {
                 result.add( " [" + path.getValue() + "] " + path.getKey() );
             }
             return result;
-        }
-
-        private String pathValue( Map<String, String> paths, String key, String path )
-        {
-            String value;
-            if ( null != ( value = paths.remove( canonicalize( path ) ) ) )
-            {
-                value += " + " + key;
-            }
-            else
-            {
-                value = key;
-            }
-            return value;
         }
     },
     LIBRARY_PATH( "Library path" )
