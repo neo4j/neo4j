@@ -19,11 +19,8 @@
  */
 package org.neo4j.cypher.internal.runtime.spec
 
-import java.util
-
 import org.neo4j.cypher.internal.runtime.{QueryStatistics, ResourceManager}
-import org.neo4j.cypher.result.{QueryProfile, QueryResult, RuntimeResult}
-import org.neo4j.graphdb.ResourceIterator
+import org.neo4j.cypher.result.{QueryProfile, RuntimeResult}
 import org.neo4j.kernel.impl.query.TransactionalContext
 
 /**
@@ -36,21 +33,7 @@ class ClosingRuntimeResult(inner: RuntimeResult,
                            assertAllReleased: () => Unit) extends RuntimeResult{
   override def fieldNames(): Array[String] = inner.fieldNames()
 
-  override def isIterable: Boolean = false
-
-  override def asIterator(): ResourceIterator[util.Map[String, AnyRef]] = ???
-
   override def consumptionState(): RuntimeResult.ConsumptionState = inner.consumptionState()
-
-  override def accept[E <: Exception](visitor: QueryResult.QueryResultVisitor[E]): Unit = {
-    var success = false
-    try {
-      inner.accept(visitor)
-      success = true
-    } finally {
-      closeResources(success)
-    }
-  }
 
   override def queryStatistics(): QueryStatistics = inner.queryStatistics()
 
