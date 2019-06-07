@@ -87,10 +87,8 @@ class JoinSolverStepTest extends CypherFunSuite with LogicalPlanningTestSupport2
     implicit val registry = IdRegistry[PatternRelationship]
     new given().withLogicalPlanningContext { (cfg, ctx) =>
       val plan1 = fakeLogicalPlanFor(ctx.planningAttributes, "a", "r1", "b", "c") // those will become available symbols
-      println(plan1.availableSymbols)
       ctx.planningAttributes.solveds.set(plan1.id, RegularPlannerQuery(QueryGraph.empty.addPatternNodes("b"))) // those will become available nodes
       val plan2 = fakeLogicalPlanFor(ctx.planningAttributes,"b", "c")
-      println(plan2.availableSymbols)
       ctx.planningAttributes.solveds.set(plan2.id, RegularPlannerQuery(QueryGraph.empty.addPatternNodes("b")))
       // overlapping symbols plan1& plan2 => (b,c)
       // overlapping nodes   plan1&plan2  => (b)
