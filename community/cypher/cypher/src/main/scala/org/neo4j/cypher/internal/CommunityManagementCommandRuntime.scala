@@ -54,20 +54,10 @@ case class CommunityManagementCommandRuntime(normalExecutionEngine: ExecutionEng
         VirtualValues.EMPTY_MAP
       )
 
-    // SHOW DATABASES
-    case ShowDatabases() => (_, _, _) =>
-      SystemCommandExecutionPlan("ShowDatabases", normalExecutionEngine,
-        "MATCH (d:Database) RETURN d.name as name, d.status as status, d.default as default", VirtualValues.EMPTY_MAP)
-
     // SHOW DEFAULT DATABASE
     case ShowDefaultDatabase() => (_, _, _) =>
       SystemCommandExecutionPlan("ShowDefaultDatabase", normalExecutionEngine,
         "MATCH (d:Database {default: true}) RETURN d.name as name", VirtualValues.EMPTY_MAP)
-
-    // SHOW DATABASE foo
-    case ShowDatabase(normalizedName) => (_, _, _) =>
-      SystemCommandExecutionPlan("ShowDatabase", normalExecutionEngine,
-        "MATCH (d:Database {name: $name}) RETURN d.name as name, d.status as status, d.default as default", VirtualValues.map(Array("name"), Array(Values.stringValue(normalizedName.name))))
   }
 
   override def isApplicableManagementCommand(logicalPlanState: LogicalPlanState): Boolean = logicalToExecutable.isDefinedAt(logicalPlanState.maybeLogicalPlan.get)

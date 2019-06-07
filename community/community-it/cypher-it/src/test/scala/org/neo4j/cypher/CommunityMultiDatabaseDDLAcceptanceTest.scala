@@ -23,7 +23,6 @@ import java.io.File
 
 import org.neo4j.configuration.Config
 import org.neo4j.configuration.GraphDatabaseSettings.{DEFAULT_DATABASE_NAME, SYSTEM_DATABASE_NAME, default_database}
-import org.neo4j.cypher.internal.DatabaseStatus
 import org.neo4j.cypher.internal.javacompat.GraphDatabaseCypherService
 import org.neo4j.dbms.database.DefaultSystemGraphInitializer
 import org.neo4j.graphdb.config.Setting
@@ -36,110 +35,8 @@ import org.neo4j.server.security.systemgraph.{BasicSystemGraphOperations, Contex
 import scala.collection.Map
 
 class CommunityMultiDatabaseDDLAcceptanceTest extends CommunityDDLAcceptanceTestBase {
-  private val onlineStatus = DatabaseStatus.Online.stringValue()
   private val defaultConfig = Config.defaults()
   private val databaseIdRepository = new TestDatabaseIdRepository()
-
-  test("should show database neo4j") {
-    // GIVEN
-    setup( defaultConfig )
-
-    // WHEN
-    val result = execute("SHOW DATABASE neo4j")
-
-    // THEN
-    result.toList should be(List(Map("name" -> "neo4j", "status" -> onlineStatus, "default" -> true)))
-  }
-
-  test("should show custom default database") {
-    // GIVEN
-    val config = Config.defaults()
-    config.augment(default_database, "foo")
-    setup(config)
-
-    // WHEN
-    val result = execute("SHOW DATABASE foo")
-
-    // THEN
-    result.toList should be(List(Map("name" -> "foo", "status" -> onlineStatus, "default" -> true)))
-
-    // WHEN
-    val result2 = execute("SHOW DATABASE neo4j")
-
-    // THEN
-    result2.toList should be(empty)
-  }
-
-  test("should give nothing when showing a non-existing database") {
-    // GIVEN
-    setup(defaultConfig)
-    selectDatabase(SYSTEM_DATABASE_NAME)
-
-    // WHEN
-    val result = execute("SHOW DATABASE foo")
-
-    // THEN
-    result.toList should be(List.empty)
-
-    // and an invalid (non-existing) one
-    // WHEN
-    val result2 = execute("SHOW DATABASE ``")
-
-    // THEN
-    result2.toList should be(List.empty)
-  }
-
-  test("should fail when showing a database when not on system database") {
-    // GIVEN
-    setup(defaultConfig)
-    selectDatabase(DEFAULT_DATABASE_NAME)
-
-    the [DatabaseManagementException] thrownBy {
-      // WHEN
-      execute("SHOW DATABASE neo4j")
-      // THEN
-    } should have message "Trying to run `CATALOG SHOW DATABASE` against non-system database."
-  }
-
-  test("should show default databases") {
-    // GIVEN
-    setup( defaultConfig )
-
-    // WHEN
-    val result = execute("SHOW DATABASES")
-
-    // THEN
-    result.toSet should be(Set(
-      Map("name" -> "neo4j", "status" -> onlineStatus, "default" -> true),
-      Map("name" -> "system", "status" -> onlineStatus, "default" -> false)))
-  }
-
-  test("should show custom default and system databases") {
-    // GIVEN
-    val config = Config.defaults()
-    config.augment(default_database, "foo")
-    setup(config)
-
-    // WHEN
-    val result = execute("SHOW DATABASES")
-
-    // THEN
-    result.toSet should be(Set(
-      Map("name" -> "foo", "status" -> onlineStatus, "default" -> true),
-      Map("name" -> "system", "status" -> onlineStatus, "default" -> false)))
-     }
-
-  test("should fail when showing databases when not on system database") {
-    // GIVEN
-    setup(defaultConfig)
-    selectDatabase(DEFAULT_DATABASE_NAME)
-
-    the [DatabaseManagementException] thrownBy {
-      // WHEN
-      execute("SHOW DATABASES")
-      // THEN
-    } should have message "Trying to run `CATALOG SHOW DATABASES` against non-system database."
-  }
 
   test("should show default database") {
     // GIVEN
@@ -163,12 +60,6 @@ class CommunityMultiDatabaseDDLAcceptanceTest extends CommunityDDLAcceptanceTest
 
     // THEN
     result.toList should be(List(Map("name" -> "foo")))
-
-    // WHEN
-    val result2 = execute("SHOW DATABASE neo4j")
-
-    // THEN
-    result2.toList should be(empty)
   }
 
   test("should fail when showing default database when not on system database") {
@@ -179,6 +70,21 @@ class CommunityMultiDatabaseDDLAcceptanceTest extends CommunityDDLAcceptanceTest
       execute("SHOW DEFAULT DATABASE")
       // THEN
     } should have message "Trying to run `CATALOG SHOW DEFAULT DATABASE` against non-system database."
+  }
+
+  test("should fail on showing database from community") {
+    setup( defaultConfig )
+    assertFailure("SHOW DATABASE neo4j", "Unsupported management command: SHOW DATABASE neo4j")
+  }
+
+  test("should fail on showing non-existing database with correct error message") {
+    setup( defaultConfig )
+    assertFailure("SHOW DATABASE foo", "Unsupported management command: SHOW DATABASE foo")
+  }
+
+  test("should fail on showing databases from community") {
+    setup( defaultConfig )
+    assertFailure("SHOW DATABASES", "Unsupported management command: SHOW DATABASES")
   }
 
   test("should fail on creating database from community") {

@@ -77,9 +77,9 @@ public class NeoServerIT extends AbstractRestFunctionalTestBase
     }
 
     @Test
-    public void shouldBeAbleToRunQueryAgainstSystemDatabaseViaTransactionalEndpoint() throws Exception
+    public void shouldBeAbleToRunQueryAgainstSystemDatabaseViaTransactionalEndpoint()
     {
-        HTTP.Response response = POST( txCommitUri( "system" ), quotedJson( "{ 'statements': [ { 'statement': 'SHOW DATABASES' } ] }" ) );
+        HTTP.Response response = POST( txCommitUri( "system" ), quotedJson( "{ 'statements': [ { 'statement': 'SHOW DEFAULT DATABASE' } ] }" ) );
 
         MatcherAssert.assertThat( response.status(), is( 200 ) );
         MatcherAssert.assertThat( response, containsNoErrors() );
