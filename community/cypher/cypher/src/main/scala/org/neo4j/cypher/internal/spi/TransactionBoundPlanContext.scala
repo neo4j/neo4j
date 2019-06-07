@@ -19,23 +19,19 @@
  */
 package org.neo4j.cypher.internal.spi
 
-import java.util.Optional
-
 import org.neo4j.cypher.internal.LastCommittedTxIdProvider
 import org.neo4j.cypher.internal.logical.plans._
 import org.neo4j.cypher.internal.planner.spi.IndexDescriptor.{OrderCapability, ValueCapability}
 import org.neo4j.cypher.internal.planner.spi._
 import org.neo4j.cypher.internal.runtime.interpreted._
+import org.neo4j.cypher.internal.spi.procsHelpers._
 import org.neo4j.cypher.internal.v4_0.frontend.phases.InternalNotificationLogger
 import org.neo4j.cypher.internal.v4_0.util.symbols._
-import org.neo4j.cypher.internal.v4_0.util.{CypherExecutionException, LabelId, PropertyKeyId, symbols => types}
+import org.neo4j.cypher.internal.v4_0.util.{LabelId, PropertyKeyId, symbols => types}
 import org.neo4j.exceptions.KernelException
 import org.neo4j.internal.kernel.api
-import org.neo4j.internal.kernel.api.procs.Neo4jTypes.AnyType
-import org.neo4j.internal.kernel.api.procs.{DefaultParameterValue, Neo4jTypes}
 import org.neo4j.internal.kernel.api.{IndexReference, InternalIndexState, procs, _}
 import org.neo4j.internal.schema.{ConstraintDescriptor, IndexKind, SchemaDescriptor}
-import org.neo4j.procedure.Mode
 import org.neo4j.values.storable.ValueCategory
 
 import scala.collection.JavaConverters._
@@ -216,45 +212,6 @@ class TransactionBoundPlanContext(tc: TransactionalContextWrapper, logger: Inter
                                  signature.allowed(), description, isAggregate = aggregation,
                                  id = fcn.id(), threadSafe = fcn.threadSafe()))
     }
-  }
-
-  private def asOption[T](optional: Optional[T]): Option[T] = if (optional.isPresent) Some(optional.get()) else None
-
-  private def asCypherProcMode(mode: Mode, allowed: Array[String]): ProcedureAccessMode = mode match {
-    case Mode.READ => ProcedureReadOnlyAccess(allowed)
-    case Mode.DEFAULT => ProcedureReadOnlyAccess(allowed)
-    case Mode.WRITE => ProcedureReadWriteAccess(allowed)
-    case Mode.SCHEMA => ProcedureSchemaWriteAccess(allowed)
-    case Mode.DBMS => ProcedureDbmsAccess(allowed)
-
-    case _ => throw new CypherExecutionException(
-      "Unable to execute procedure, because it requires an unrecognized execution mode: " + mode.name(), null)
-  }
-
-  private def asCypherValue(neo4jValue: DefaultParameterValue) = CypherValue(neo4jValue.value,
-                                                                  asCypherType(neo4jValue.neo4jType()))
-
-  private def asCypherType(neoType: AnyType): CypherType = neoType match {
-    case Neo4jTypes.NTString => CTString
-    case Neo4jTypes.NTInteger => CTInteger
-    case Neo4jTypes.NTFloat => CTFloat
-    case Neo4jTypes.NTNumber => CTNumber
-    case Neo4jTypes.NTBoolean => CTBoolean
-    case l: Neo4jTypes.ListType => CTList(asCypherType(l.innerType()))
-    case Neo4jTypes.NTByteArray => CTList(CTAny)
-    case Neo4jTypes.NTDateTime => CTDateTime
-    case Neo4jTypes.NTLocalDateTime => CTLocalDateTime
-    case Neo4jTypes.NTDate => CTDate
-    case Neo4jTypes.NTTime => CTTime
-    case Neo4jTypes.NTLocalTime => CTLocalTime
-    case Neo4jTypes.NTDuration => CTDuration
-    case Neo4jTypes.NTPoint => CTPoint
-    case Neo4jTypes.NTNode => CTNode
-    case Neo4jTypes.NTRelationship => CTRelationship
-    case Neo4jTypes.NTPath => CTPath
-    case Neo4jTypes.NTGeometry => CTGeometry
-    case Neo4jTypes.NTMap => CTMap
-    case Neo4jTypes.NTAny => CTAny
   }
 
   override def notificationLogger(): InternalNotificationLogger = logger
