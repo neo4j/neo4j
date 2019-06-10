@@ -175,7 +175,8 @@ class FulltextIndexProvider extends IndexProvider implements FulltextAdapter, Au
         // All of the above has failed, so we need to load the settings in from the storage directory of the index.
         // This situation happens during recovery.
         PartitionedIndexStorage indexStorage = getIndexStorage( descriptor.getId() );
-        fulltextIndexDescriptor = readOrInitialiseDescriptor( descriptor, defaultAnalyzerName, tokenHolders.propertyKeyTokens(), indexStorage, fileSystem );
+        fulltextIndexDescriptor =
+                readOrInitialiseDescriptor( descriptor, defaultAnalyzerName, tokenHolders.propertyKeyTokens(), indexStorage.getIndexFolder(), fileSystem );
         return new FulltextIndexCapability( fulltextIndexDescriptor.isEventuallyConsistent() );
     }
 
@@ -226,7 +227,7 @@ class FulltextIndexProvider extends IndexProvider implements FulltextAdapter, Au
     {
         PartitionedIndexStorage indexStorage = getIndexStorage( descriptor.getId() );
         FulltextIndexDescriptor fulltextIndexDescriptor = readOrInitialiseDescriptor(
-                descriptor, defaultAnalyzerName, tokenHolders.propertyKeyTokens(), indexStorage, fileSystem );
+                descriptor, defaultAnalyzerName, tokenHolders.propertyKeyTokens(), indexStorage.getIndexFolder(), fileSystem );
         DatabaseIndex<FulltextIndexReader> fulltextIndex = FulltextIndexBuilder
                 .create( fulltextIndexDescriptor, config, tokenHolders.propertyKeyTokens() )
                 .withFileSystem( fileSystem )
@@ -240,7 +241,7 @@ class FulltextIndexProvider extends IndexProvider implements FulltextAdapter, Au
         }
         log.debug( "Creating populator for fulltext schema index: %s", descriptor );
         return new FulltextIndexPopulator( fulltextIndexDescriptor, fulltextIndex,
-                () -> FulltextIndexSettings.saveFulltextIndexSettings( fulltextIndexDescriptor, indexStorage, fileSystem ) );
+                () -> FulltextIndexSettings.saveFulltextIndexSettings( fulltextIndexDescriptor, indexStorage.getIndexFolder(), fileSystem ) );
     }
 
     @Override
@@ -249,7 +250,7 @@ class FulltextIndexProvider extends IndexProvider implements FulltextAdapter, Au
         PartitionedIndexStorage indexStorage = getIndexStorage( descriptor.getId() );
 
         FulltextIndexDescriptor fulltextIndexDescriptor = readOrInitialiseDescriptor(
-                descriptor, defaultAnalyzerName, tokenHolders.propertyKeyTokens(), indexStorage, fileSystem );
+                descriptor, defaultAnalyzerName, tokenHolders.propertyKeyTokens(), indexStorage.getIndexFolder(), fileSystem );
         FulltextIndexBuilder fulltextIndexBuilder = FulltextIndexBuilder
                 .create( fulltextIndexDescriptor, config, tokenHolders.propertyKeyTokens() )
                 .withFileSystem( fileSystem )

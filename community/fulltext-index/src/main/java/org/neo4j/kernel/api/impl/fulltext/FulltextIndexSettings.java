@@ -38,20 +38,19 @@ import org.neo4j.graphdb.index.fulltext.AnalyzerProvider;
 import org.neo4j.internal.kernel.api.exceptions.PropertyKeyIdNotFoundKernelException;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
-import org.neo4j.kernel.api.impl.index.storage.PartitionedIndexStorage;
 import org.neo4j.kernel.impl.core.TokenHolder;
 import org.neo4j.kernel.impl.core.TokenNotFoundException;
 import org.neo4j.storageengine.api.schema.StoreIndexDescriptor;
 
-class FulltextIndexSettings
+public class FulltextIndexSettings
 {
+    public static final String INDEX_CONFIG_ANALYZER = "analyzer";
+    public static final String INDEX_CONFIG_EVENTUALLY_CONSISTENT = "eventually_consistent";
     private static final String INDEX_CONFIG_FILE = "fulltext-index.properties";
-    static final String INDEX_CONFIG_ANALYZER = "analyzer";
-    static final String INDEX_CONFIG_EVENTUALLY_CONSISTENT = "eventually_consistent";
     private static final String INDEX_CONFIG_PROPERTY_NAMES = "propertyNames";
 
     static FulltextIndexDescriptor readOrInitialiseDescriptor( StoreIndexDescriptor descriptor, String defaultAnalyzerName,
-            TokenHolder propertyKeyTokenHolder, PartitionedIndexStorage indexStorage, FileSystemAbstraction fileSystem )
+            TokenHolder propertyKeyTokenHolder, File indexFolder, FileSystemAbstraction fileSystem )
     {
         Properties indexConfiguration = new Properties();
         if ( descriptor.schema() instanceof FulltextSchemaDescriptor )
@@ -59,7 +58,7 @@ class FulltextIndexSettings
             FulltextSchemaDescriptor schema = (FulltextSchemaDescriptor) descriptor.schema();
             indexConfiguration.putAll( schema.getIndexConfiguration() );
         }
-        loadPersistedSettings( indexConfiguration, indexStorage, fileSystem );
+        loadPersistedSettings( indexConfiguration, indexFolder, fileSystem );
         boolean eventuallyConsistent = Boolean.parseBoolean( indexConfiguration.getProperty( INDEX_CONFIG_EVENTUALLY_CONSISTENT ) );
         String analyzerName = indexConfiguration.getProperty( INDEX_CONFIG_ANALYZER, defaultAnalyzerName );
         Analyzer analyzer = createAnalyzer( analyzerName );
@@ -80,9 +79,9 @@ class FulltextIndexSettings
         return new FulltextIndexDescriptor( descriptor, propertyNames, analyzer, analyzerName, eventuallyConsistent );
     }
 
-    private static void loadPersistedSettings( Properties settings, PartitionedIndexStorage indexStorage, FileSystemAbstraction fs )
+    private static void loadPersistedSettings( Properties settings, File indexFolder, FileSystemAbstraction fs )
     {
-        File settingsFile = new File( indexStorage.getIndexFolder(), INDEX_CONFIG_FILE );
+        File settingsFile = new File( indexFolder, INDEX_CONFIG_FILE );
         if ( fs.fileExists( settingsFile ) )
         {
             try ( Reader reader = fs.openAsReader( settingsFile, StandardCharsets.UTF_8 ) )
@@ -109,12 +108,12 @@ class FulltextIndexSettings
         }
     }
 
-    static void saveFulltextIndexSettings( FulltextIndexDescriptor descriptor, PartitionedIndexStorage indexStorage, FileSystemAbstraction fs )
+    static void saveFulltextIndexSettings( FulltextIndexDescriptor descriptor, File indexFolder, FileSystemAbstraction fs )
             throws IOException
     {
-        File indexConfigFile = new File( indexStorage.getIndexFolder(), INDEX_CONFIG_FILE );
+        File indexConfigFile = new File( indexFolder, INDEX_CONFIG_FILE );
         Properties settings = new Properties();
-        settings.getProperty( INDEX_CONFIG_EVENTUALLY_CONSISTENT, Boolean.toString( descriptor.isEventuallyConsistent() ) );
+        settings.setProperty( INDEX_CONFIG_EVENTUALLY_CONSISTENT, Boolean.toString( descriptor.isEventuallyConsistent() ) );
         settings.setProperty( INDEX_CONFIG_ANALYZER, descriptor.analyzerName() );
         settings.setProperty( INDEX_CONFIG_PROPERTY_NAMES, descriptor.propertyNames().stream().collect( Collectors.joining( ", ", "[", "]" )) );
         settings.setProperty( "_propertyIds", Arrays.toString( descriptor.properties() ) );
