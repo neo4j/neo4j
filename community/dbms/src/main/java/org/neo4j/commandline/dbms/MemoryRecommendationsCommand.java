@@ -238,11 +238,10 @@ public class MemoryRecommendationsCommand implements AdminCommand
         long luceneSize = luceneSize( layouts );
 
         print( "#" );
-        print( "# The numbers below have been derived based on your current data volume in database and index configuration of databases located at: '" +
-                databasesRoot + "'." );
+        print( "# The numbers below have been derived based on your current databases located at: '" + databasesRoot + "'." );
         print( "# They can be used as an input into more detailed memory analysis." );
-        print( "# Lucene indexes: " + bytesToString( luceneSize ) );
-        print( "# Data volume and native indexes: " + bytesToString( pageCacheSize ) );
+        print( "# Total size of lucene indexes in all databases: " + bytesToString( luceneSize ) );
+        print( "# Total size of data and native indexes in all databases: " + bytesToString( pageCacheSize ) );
     }
 
     private long pageCacheSize( Collection<DatabaseLayout> layouts )
