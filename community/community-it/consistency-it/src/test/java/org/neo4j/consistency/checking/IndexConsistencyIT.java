@@ -19,8 +19,8 @@
  */
 package org.neo4j.consistency.checking;
 
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.io.File;
 import java.io.FileFilter;
@@ -34,6 +34,7 @@ import org.neo4j.configuration.Config;
 import org.neo4j.consistency.ConsistencyCheckService;
 import org.neo4j.consistency.checking.full.ConsistencyCheckIncompleteException;
 import org.neo4j.consistency.checking.full.ConsistencyFlags;
+import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
@@ -44,27 +45,34 @@ import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointer;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.SimpleTriggerInfo;
 import org.neo4j.kernel.impl.transaction.state.DefaultIndexProviderMap;
+import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.logging.AssertableLogProvider;
-import org.neo4j.test.rule.EmbeddedDbmsRule;
+import org.neo4j.test.extension.DbmsExtension;
+import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.RandomExtension;
 import org.neo4j.test.rule.RandomRule;
 
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.internal.helpers.progress.ProgressMonitorFactory.NONE;
 import static org.neo4j.io.fs.FileUtils.copyRecursively;
 import static org.neo4j.test.TestLabels.LABEL_ONE;
 import static org.neo4j.test.TestLabels.LABEL_THREE;
 import static org.neo4j.test.TestLabels.LABEL_TWO;
 
-public class IndexConsistencyIT
+@DbmsExtension
+@ExtendWith( RandomExtension.class )
+class IndexConsistencyIT
 {
-    @Rule
-    public final EmbeddedDbmsRule db = new EmbeddedDbmsRule();
+    @Inject
+    private GraphDatabaseAPI db;
+    @Inject
+    private DatabaseManagementService managementService;
 
-    @Rule
-    public final RandomRule random = new RandomRule();
+    @Inject
+    private RandomRule random;
 
     private final AssertableLogProvider log = new AssertableLogProvider();
     private static final Label[] LABELS = new Label[]{LABEL_ONE, LABEL_TWO, LABEL_THREE};
@@ -75,7 +83,7 @@ public class IndexConsistencyIT
     private final FileFilter SOURCE_COPY_FILE_FILTER = file -> file.isDirectory() || file.getName().startsWith( "index" );
 
     @Test
-    public void reportNotCleanNativeIndex() throws IOException, ConsistencyCheckIncompleteException
+    void reportNotCleanNativeIndex() throws IOException, ConsistencyCheckIncompleteException
     {
         DatabaseLayout databaseLayout = db.databaseLayout();
         someData();
@@ -90,17 +98,17 @@ public class IndexConsistencyIT
             tx.success();
         }
 
-        db.shutdownAndKeepStore();
+        managementService.shutdown();
 
         copyRecursively( indexesCopy, indexSources );
 
         ConsistencyCheckService.Result result = fullConsistencyCheck();
-        assertFalse( "Expected consistency check to fail", result.isSuccessful() );
+        assertFalse( result.isSuccessful(), "Expected consistency check to fail" );
         assertThat( readReport( result ), containsString("WARN : Index was not properly shutdown and rebuild is required.") );
     }
 
     @Test
-    public void reportNotCleanNativeIndexWithCorrectData() throws IOException, ConsistencyCheckIncompleteException
+    void reportNotCleanNativeIndexWithCorrectData() throws IOException, ConsistencyCheckIncompleteException
     {
         DatabaseLayout databaseLayout = db.databaseLayout();
         someData();
@@ -109,18 +117,18 @@ public class IndexConsistencyIT
         File indexSources = resolveComponent( DefaultIndexProviderMap.class ).getDefaultProvider().directoryStructure().rootDirectory();
         copyRecursively( indexSources, indexesCopy, SOURCE_COPY_FILE_FILTER );
 
-        db.shutdownAndKeepStore();
+        managementService.shutdown();
 
         copyRecursively( indexesCopy, indexSources );
 
         ConsistencyCheckService.Result result = fullConsistencyCheck();
-        assertTrue( "Expected consistency check to fail", result.isSuccessful() );
+        assertTrue( result.isSuccessful(), "Expected consistency check to fail" );
         assertThat( readReport( result ), containsString("WARN : Index was not properly shutdown and rebuild is required.") );
     }
 
     private <T> T resolveComponent( Class<T> clazz )
     {
-        return db.resolveDependency( clazz );
+        return db.getDependencyResolver().resolveDependency( clazz );
     }
 
     private String readReport( ConsistencyCheckService.Result result ) throws IOException
@@ -128,12 +136,12 @@ public class IndexConsistencyIT
         return Files.readString( result.reportFile().toPath() );
     }
 
-    List<Pair<Long,Label[]>> someData()
+    void someData()
     {
-        return someData( 50 );
+        someData( 50 );
     }
 
-    List<Pair<Long,Label[]>> someData( int numberOfModifications )
+    void someData( int numberOfModifications )
     {
         List<Pair<Long,Label[]>> existingNodes;
         existingNodes = new ArrayList<>();
@@ -152,10 +160,9 @@ public class IndexConsistencyIT
             db.schema().awaitIndexesOnline( 1, TimeUnit.MINUTES );
             tx.success();
         }
-        return existingNodes;
     }
 
-    private List<Pair<Long,Label[]>> randomModifications( List<Pair<Long,Label[]>> existingNodes,
+    private void randomModifications( List<Pair<Long,Label[]>> existingNodes,
             int numberOfModifications )
     {
         for ( int i = 0; i < numberOfModifications; i++ )
@@ -174,7 +181,6 @@ public class IndexConsistencyIT
                 modifyLabelsOnExistingNode( existingNodes );
             }
         }
-        return existingNodes;
     }
 
     private void createNewNode( List<Pair<Long,Label[]>> existingNodes )

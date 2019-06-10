@@ -19,8 +19,8 @@
  */
 package org.neo4j.consistency;
 
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.util.Arrays;
 import java.util.concurrent.ThreadLocalRandom;
@@ -28,6 +28,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReferenceArray;
 
 import org.neo4j.consistency.checking.full.ConsistencyFlags;
+import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.NotFoundException;
@@ -35,16 +36,18 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.internal.index.label.LabelScanStore;
 import org.neo4j.internal.recordstorage.RecordStorageEngine;
 import org.neo4j.io.layout.DatabaseLayout;
+import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.storageengine.api.CommandsToApply;
 import org.neo4j.storageengine.api.TransactionApplicationMode;
 import org.neo4j.test.Race;
 import org.neo4j.test.TestLabels;
-import org.neo4j.test.rule.EmbeddedDbmsRule;
-import org.neo4j.test.rule.SuppressOutput;
+import org.neo4j.test.extension.DbmsExtension;
+import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.SuppressOutputExtension;
 
 import static java.lang.Integer.max;
 import static java.util.UUID.randomUUID;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.configuration.Config.defaults;
 import static org.neo4j.internal.helpers.progress.ProgressMonitorFactory.NONE;
 import static org.neo4j.logging.FormattedLogProvider.toOutputStream;
@@ -54,7 +57,9 @@ import static org.neo4j.logging.FormattedLogProvider.toOutputStream;
  * where e.g. a transaction A which did CREATE NODE N and transaction B which did DELETE NODE N would have a chance to be applied to the
  * {@link LabelScanStore} in the reverse order, i.e. transaction B before transaction A, resulting in outdated label data remaining in the label index.
  */
-public class LabelScanStoreTxApplyRaceIT
+@DbmsExtension
+@ExtendWith( SuppressOutputExtension.class )
+class LabelScanStoreTxApplyRaceIT
 {
     // === CONTROL PANEL ===
     private static final int NUMBER_OF_DELETORS = 2;
@@ -65,18 +70,17 @@ public class LabelScanStoreTxApplyRaceIT
 
     private static final Label[] LABELS = TestLabels.values();
 
-    @Rule
-    public final EmbeddedDbmsRule db = new EmbeddedDbmsRule();
-
-    @Rule
-    public final SuppressOutput suppressOutput = SuppressOutput.suppressAll();
+    @Inject
+    private GraphDatabaseAPI db;
+    @Inject
+    private DatabaseManagementService managementService;
 
     /**
      * The test case is basically loads of concurrent CREATE/DELETE NODE or sometimes just CREATE, keeping the created node in an array
      * for dedicated deleter threads to pick up and delete as fast as they can see them. This concurrently with large creation transactions.
      */
     @Test
-    public void shouldStressIt() throws Throwable
+    void shouldStressIt() throws Throwable
     {
         // given
         Race race = new Race().withMaxDuration( 5, TimeUnit.SECONDS );
@@ -92,7 +96,8 @@ public class LabelScanStoreTxApplyRaceIT
 
         // then
         DatabaseLayout dbLayout = db.databaseLayout();
-        db.shutdownAndKeepStore();
+        managementService.shutdown();
+
         assertTrue( new ConsistencyCheckService().runFullConsistencyCheck( dbLayout, defaults(), NONE,
                 toOutputStream( System.out ), false, new ConsistencyFlags( true, true, true, false ) ).isSuccessful() );
     }
