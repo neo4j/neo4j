@@ -19,8 +19,8 @@
  */
 package org.neo4j.cypher.internal.compiler.phases
 
-import org.neo4j.cypher.internal.planner.spi.PlanContext
 import org.neo4j.cypher.internal.logical.plans.{ResolvedCall, ResolvedFunctionInvocation}
+import org.neo4j.cypher.internal.planner.spi.PlanContext
 import org.neo4j.cypher.internal.v4_0.ast._
 import org.neo4j.cypher.internal.v4_0.expressions.FunctionInvocation
 import org.neo4j.cypher.internal.v4_0.frontend.phases.CompilationPhaseTracer.CompilationPhase.AST_REWRITE
@@ -38,9 +38,13 @@ case object RewriteProcedureCalls extends Phase[PlannerContext, BaseState, BaseS
   // This rewriter rewrites standalone calls in simplified syntax to calls in standard
   // syntax to prevent them from being rejected during semantic checking.
   private val fakeStandaloneCallDeclarations = Rewriter.lift {
-    case q@Query(None, part@SingleQuery(Seq(resolved@ResolvedCall(_, _, _, _, _)))) if !resolved.fullyDeclared =>
-      val result = q.copy(part = part.copy(clauses = Seq(resolved.withFakedFullDeclarations))(part.position))(q.position)
-      result
+    case q@Query(None, part@SingleQuery(Seq(resolved@ResolvedCall(_, _, _, _, _)))) =>
+      val newResolved = resolved.withFakedFullDeclarations
+      //Add the equivalent of a return for each item yielded by the procedure
+      val aliases = newResolved.callResults.map(item => AliasedReturnItem(item.variable, item.variable)(resolved.position))
+      val projection = Return(distinct = false, ReturnItems(includeExisting = false, aliases)(resolved.position),
+                              None, None, None)(resolved.position)
+      q.copy(part = part.copy(clauses = Seq(newResolved, projection))(part.position))(q.position)
   }
 
   def resolverProcedureCall(context: PlanContext) = bottomUp(Rewriter.lift {

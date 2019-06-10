@@ -22,9 +22,8 @@ package org.neo4j.cypher.internal
 import org.neo4j.cypher.internal.compiler.phases.LogicalPlanState
 import org.neo4j.cypher.internal.compiler.planner.CantCompileQueryException
 import org.neo4j.cypher.internal.logical.plans._
-import org.neo4j.cypher.internal.procs.{ProcedureCallExecutionPlan, SchemaWriteExecutionPlan}
+import org.neo4j.cypher.internal.procs.SchemaWriteExecutionPlan
 import org.neo4j.cypher.internal.runtime._
-import org.neo4j.cypher.internal.runtime.interpreted.commands.convert.{CommunityExpressionConverter, ExpressionConverters}
 import org.neo4j.cypher.internal.v4_0.expressions.{LabelName, PropertyKeyName, RelTypeName}
 import org.neo4j.cypher.internal.v4_0.util.{LabelId, PropertyKeyId}
 
@@ -47,19 +46,10 @@ object ProcedureCallOrSchemaCommandRuntime extends CypherRuntime[RuntimeContext]
 
   def queryType(logicalPlan: LogicalPlan): Option[InternalQueryType] =
     if (logicalToExecutable.isDefinedAt(logicalPlan)) {
-      logicalPlan match {
-        case StandAloneProcedureCall(signature, args, types, indices) =>
-          Some(ProcedureCallMode.fromAccessMode(signature.accessMode).queryType)
-        case _ => Some(SCHEMA_WRITE)
-      }
+      Some(SCHEMA_WRITE)
     } else None
 
   val logicalToExecutable: PartialFunction[LogicalPlan, (RuntimeContext, Map[String,Int]) => ExecutionPlan] = {
-    // Global call: CALL foo.bar.baz("arg1", 2)
-    case plan@StandAloneProcedureCall(signature, args, types, indices) => (runtimeContext, mapping) =>
-      ProcedureCallExecutionPlan(signature, args, types, indices,
-                                 new ExpressionConverters(CommunityExpressionConverter(runtimeContext.tokenContext)), mapping, plan.id)
-
     // CREATE CONSTRAINT ON (node:Label) ASSERT (node.prop1,node.prop2) IS NODE KEY
     case CreateNodeKeyConstraint(_, label, props) => (_, _) =>
       SchemaWriteExecutionPlan("CreateNodeKeyConstraint", ctx => {

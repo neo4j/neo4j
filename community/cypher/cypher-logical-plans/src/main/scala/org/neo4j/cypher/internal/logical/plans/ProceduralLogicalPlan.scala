@@ -19,10 +19,9 @@
  */
 package org.neo4j.cypher.internal.logical.plans
 
-import org.neo4j.cypher.internal.v4_0.util.symbols.CypherType
 import org.neo4j.cypher.internal.ir.{LazyMode, StrictnessMode}
-import org.neo4j.cypher.internal.v4_0.util.attribution.IdGen
 import org.neo4j.cypher.internal.v4_0.expressions._
+import org.neo4j.cypher.internal.v4_0.util.attribution.IdGen
 
 abstract class ProceduralLogicalPlan(idGen: IdGen) extends LogicalPlan(idGen) {
   override def lhs: Option[LogicalPlan] = None
@@ -34,11 +33,6 @@ abstract class ProceduralLogicalPlan(idGen: IdGen) extends LogicalPlan(idGen) {
   override def strictness: StrictnessMode = LazyMode
 
 }
-
-case class StandAloneProcedureCall(signature: ProcedureSignature,
-                                   args: Seq[Expression],
-                                   types: Seq[(String, CypherType)],
-                                   callResultIndices: Seq[(Int, String)])(implicit idGen: IdGen) extends ProceduralLogicalPlan(idGen)
 
 case class CreateNodeKeyConstraint(node: String, label: LabelName, props: Seq[Property])(implicit idGen: IdGen) extends ProceduralLogicalPlan(idGen)
 case class DropNodeKeyConstraint(label: LabelName, props: Seq[Property])(implicit idGen: IdGen) extends ProceduralLogicalPlan(idGen)

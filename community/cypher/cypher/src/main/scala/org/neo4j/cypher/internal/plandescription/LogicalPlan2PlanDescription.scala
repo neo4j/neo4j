@@ -112,10 +112,6 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean, cardinalities: Cardina
         val signature = Signature(call.qualifiedName, call.callArguments, call.callResultTypes)
         PlanDescriptionImpl(id, "ProcedureCall", NoChildren, Seq(signature), variables)
 
-      case StandAloneProcedureCall(signature, _, resultSymbols, _) =>
-        val signatureDesc = Signature(signature.name, Seq.empty, resultSymbols)
-        PlanDescriptionImpl(id, "ProcedureCall", NoChildren, Seq(signatureDesc), resultSymbols.map(_._1).toSet)
-
       case RelationshipCountFromCountStore(ident, startLabel, typeNames, endLabel, _) =>
         val exp = CountRelationshipsExpression(ident, startLabel.map(_.name), typeNames.map(_.name),
                                                endLabel.map(_.name))

@@ -20,11 +20,10 @@
 package org.neo4j.cypher.internal.compiler
 
 import org.neo4j.cypher.internal.compiler.phases.{LogicalPlanState, PlannerContext}
-import org.neo4j.cypher.internal.planner.spi.ProcedurePlannerName
 import org.neo4j.cypher.internal.logical.plans
-import org.neo4j.cypher.internal.logical.plans.{LogicalPlan, ResolvedCall}
+import org.neo4j.cypher.internal.logical.plans.LogicalPlan
+import org.neo4j.cypher.internal.planner.spi.ProcedurePlannerName
 import org.neo4j.cypher.internal.v4_0.ast._
-import org.neo4j.cypher.internal.v4_0.ast.semantics.{SemanticCheckResult, SemanticState}
 import org.neo4j.cypher.internal.v4_0.frontend.phases.CompilationPhaseTracer.CompilationPhase
 import org.neo4j.cypher.internal.v4_0.frontend.phases.CompilationPhaseTracer.CompilationPhase.PIPE_BUILDING
 import org.neo4j.cypher.internal.v4_0.frontend.phases.{BaseState, Condition, Phase}
@@ -44,12 +43,6 @@ case object ProcedureCallOrSchemaCommandPlanBuilder extends Phase[PlannerContext
   override def process(from: BaseState, context: PlannerContext): LogicalPlanState = {
     implicit val idGen = new SequentialIdGen()
     val maybeLogicalPlan: Option[LogicalPlan] = from.statement() match {
-      // Global call: CALL foo.bar.baz("arg1", 2)
-      case Query(None, SingleQuery(Seq(resolved@ResolvedCall(signature, args, _, _, _)))) =>
-        val SemanticCheckResult(_, errors) = resolved.semanticCheck(SemanticState.clean)
-        errors.foreach { error => throw context.exceptionCreator(error.msg, error.position) }
-        Some(plans.StandAloneProcedureCall(signature, args, resolved.callResultTypes, resolved.callResultIndices))
-
       // CREATE CONSTRAINT ON (node:Label) ASSERT (node.prop1,node.prop2) IS NODE KEY
       case CreateNodeKeyConstraint(node, label, props) =>
         Some(plans.CreateNodeKeyConstraint(node.name, label, props))

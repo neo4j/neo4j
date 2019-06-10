@@ -20,11 +20,11 @@
 package org.neo4j.cypher.internal.compiler
 
 import org.neo4j.cypher.internal.compiler.phases.RewriteProcedureCalls
+import org.neo4j.cypher.internal.logical.plans._
 import org.neo4j.cypher.internal.v4_0.ast._
+import org.neo4j.cypher.internal.v4_0.expressions.{Namespace, ProcedureName}
 import org.neo4j.cypher.internal.v4_0.util.symbols._
 import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.v4_0.expressions.{Namespace, ProcedureName}
-import org.neo4j.cypher.internal.logical.plans._
 
 class RewriteProcedureCallsTest extends CypherFunSuite with AstConstructionTestSupport {
 
@@ -45,8 +45,14 @@ class RewriteProcedureCallsTest extends CypherFunSuite with AstConstructionTestS
     val rewritten = rewriteProcedureCalls(procLookup, fcnLookup, original)
 
     rewritten should equal(
-      Query(None, SingleQuery(Seq(ResolvedCall(procLookup)(unresolved).coerceArguments.withFakedFullDeclarations))_)(pos)
-    )
+      Query(None, SingleQuery(
+        Seq(ResolvedCall(procLookup)(unresolved).coerceArguments.withFakedFullDeclarations,
+            Return(distinct = false,
+                   ReturnItems(includeExisting = false,
+                               Seq(
+                                 AliasedReturnItem(varFor("x"), varFor("x"))(pos),
+                                 AliasedReturnItem(varFor("y"), varFor("y"))(pos)))(pos),
+                   None, None, None)(pos)))(pos))(pos))
   }
 
   test("should resolve in-query procedure calls") {

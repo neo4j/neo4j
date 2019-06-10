@@ -173,9 +173,6 @@ case class CypherCurrentCompiler[CONTEXT <: RuntimeContext](planner: CypherPlann
     logicalPlan match {
       case produceResult: ProduceResult => produceResult.columns.toArray
 
-      case procedureCall: StandAloneProcedureCall =>
-        procedureCall.signature.outputSignature.map(_.seq.map(_.name).toArray).getOrElse(Array.empty)
-
       case _ => Array()
     }
 
