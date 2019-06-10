@@ -288,7 +288,7 @@ class InsertCachedPropertiesTest extends CypherFunSuite with PlanMatchHelp with 
           Selection(Seq(equals(cachedNProp1, literalInt(2))),
             Argument(Set("n"))),
           Map("x" -> n)),
-        Map("xProp" -> cachedNProp1.copy(usedVariable = n.copy("x")(n.position))(cachedNProp1.position))
+        Map("xProp" -> cachedNProp1.copy(entityVariable = n.copy("x")(n.position))(cachedNProp1.position))
       )
     )
     val initialType = initialTable.types(nProp1)
@@ -371,7 +371,7 @@ class InsertCachedPropertiesTest extends CypherFunSuite with PlanMatchHelp with 
             Argument(Set("n"))),
           Map("x" -> n),
           Map("count(1)" -> count(literalInt(1)))),
-        Map("xProp" -> cachedNProp1.copy(usedVariable = n.copy("x")(n.position))(cachedNProp1.position))
+        Map("xProp" -> cachedNProp1.copy(entityVariable = n.copy("x")(n.position))(cachedNProp1.position))
       )
     )
     val initialType = initialTable.types(nProp1)

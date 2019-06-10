@@ -244,19 +244,21 @@ class MapExecutionContext(private val m: MutableMap[String, AnyValue], private v
   override def getCachedPropertyAt(offset: Int): Value = fail()
 
   override def invalidateCachedNodeProperties(node: Long): Unit = {
-    if (cachedProperties != null)
-      cachedProperties.keys.filter(cnp => getByName(cnp.variableName) match {
+    if (cachedProperties != null) {
+      cachedProperties.keys.filter(cnp => getByName(cnp.entityName) match {
         case n: VirtualNodeValue => n.id() == node
         case _ => false
       }).foreach(cnp => setCachedProperty(cnp, null))
+    }
   }
 
   override def invalidateCachedRelationshipProperties(rel: Long): Unit = {
-    if (cachedProperties != null)
-      cachedProperties.keys.filter(cnp => getByName(cnp.variableName) match {
+    if (cachedProperties != null) {
+      cachedProperties.keys.filter(cnp => getByName(cnp.entityName) match {
         case r: VirtualRelationshipValue => r.id() == rel
         case _ => false
       }).foreach(cnp => setCachedProperty(cnp, null))
+    }
   }
 
   private def cloneFromMap(newMap: MutableMap[String, AnyValue]): ExecutionContext = {
@@ -265,7 +267,6 @@ class MapExecutionContext(private val m: MutableMap[String, AnyValue], private v
     map.setLinenumber(getLinenumber)
     map
   }
-
 
   def canEqual(other: Any): Boolean = other.isInstanceOf[MapExecutionContext]
 

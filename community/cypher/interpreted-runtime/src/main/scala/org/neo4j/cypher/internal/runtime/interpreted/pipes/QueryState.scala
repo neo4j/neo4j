@@ -97,8 +97,6 @@ object QueryState {
 
 trait ExecutionContextFactory {
 
-  def newExecutionContext(m: mutable.Map[String, AnyValue] = MutableMaps.empty): ExecutionContext
-
   def newExecutionContext(): ExecutionContext
 
   def copyWith(init: ExecutionContext): ExecutionContext
@@ -116,9 +114,6 @@ trait ExecutionContextFactory {
 }
 
 case class CommunityExecutionContextFactory() extends ExecutionContextFactory {
-
-  override def newExecutionContext(m: mutable.Map[String, AnyValue] = MutableMaps.empty): ExecutionContext =
-    ExecutionContext(m)
 
   override def newExecutionContext(): ExecutionContext = ExecutionContext.empty
 

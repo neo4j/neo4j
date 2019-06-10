@@ -96,7 +96,7 @@ abstract class AbstractCachedRelationshipProperty extends AbstractCachedProperty
 case class CachedNodeProperty(nodeName: String, propertyKey: KeyToken, key: ASTCachedProperty)
   extends AbstractCachedNodeProperty
 {
-  override def toString: String = key.cacheKey
+  override def toString: String = key.propertyAccessString
 
   override def getId(ctx: ExecutionContext): Long =
     ctx.getByName(nodeName) match {
@@ -117,7 +117,7 @@ case class CachedNodeProperty(nodeName: String, propertyKey: KeyToken, key: ASTC
 case class CachedRelationshipProperty(nodeName: String, propertyKey: KeyToken, key: ASTCachedProperty)
   extends AbstractCachedRelationshipProperty
 {
-  override def toString: String = key.cacheKey
+  override def toString: String = key.propertyAccessString
 
   override def getId(ctx: ExecutionContext): Long =
     ctx.getByName(nodeName) match {
