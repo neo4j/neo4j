@@ -89,6 +89,14 @@ final case class AlterUser(userName: String,
       SemanticState.recordCurrentScope(this)
 }
 
+final case class SetOwnPassword(initialPassword: String)(val position: InputPosition) extends MultiDatabaseDDL {
+  override def name = "SET OWN PASSWORD"
+
+  override def semanticCheck: SemanticCheck =
+    super.semanticCheck chain
+      SemanticState.recordCurrentScope(this)
+}
+
 final case class ShowRoles(withUsers: Boolean, showAll: Boolean)(val position: InputPosition) extends MultiDatabaseDDL {
 
   override def name: String = if (showAll) "SHOW ALL ROLES" else "SHOW POPULATED ROLES"

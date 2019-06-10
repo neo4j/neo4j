@@ -165,6 +165,9 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean, cardinalities: Cardina
         val userName = User(Prettifier.escapeName(name))
         PlanDescriptionImpl(id, "AlterUser", NoChildren, Seq(userName), variables)
 
+      case SetOwnPassword(_) =>
+        PlanDescriptionImpl(id, "SetOwnPassword", NoChildren, Seq.empty, variables)
+
       case ShowRoles(_,_) =>
         PlanDescriptionImpl(id, "ShowRoles", NoChildren, Seq.empty, variables)
 

@@ -273,4 +273,42 @@ class UserManagementDDLParserTest extends DDLParserTestBase {
   test("CATALOG ALTER USER foo SET PASSWORD 'password' SET STATUS IMAGINARY") {
     failsToParse
   }
+
+  // Changing own password
+
+  test("SET MY PASSWORD TO 'password'") {
+    yields(ast.SetOwnPassword("password"))
+  }
+
+  test("SET MY PASSWORD TO ''") {
+    yields(ast.SetOwnPassword(""))
+  }
+
+  test("SET MY PASSWORD TO 'passWORD123%!'") {
+    yields(ast.SetOwnPassword("passWORD123%!"))
+  }
+
+  test("SET MY PASSWORD TO null") {
+    failsToParse
+  }
+
+  test("SET MY PASSWORD TO 123") {
+    failsToParse
+  }
+
+  test("SET MY PASSWORD TO") {
+    failsToParse
+  }
+
+  test("SET PASSWORD TO 'password'") {
+    failsToParse
+  }
+
+  test("SET MY PASSWORD 'password'") {
+    failsToParse
+  }
+
+  test("SET PASSWORD 'password'") {
+    failsToParse
+  }
 }

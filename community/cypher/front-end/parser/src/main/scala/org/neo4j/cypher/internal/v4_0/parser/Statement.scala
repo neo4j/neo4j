@@ -38,7 +38,7 @@ trait Statement extends Parser
   }
 
   def UserManagementCommand: Rule1[CatalogDDL] = rule("Security user management statement") {
-    optional(keyword("CATALOG")) ~~ (ShowRoles | CreateRole | DropRole | ShowUsers | CreateUser | DropUser | AlterUser)
+    optional(keyword("CATALOG")) ~~ (ShowRoles | CreateRole | DropRole | ShowUsers | CreateUser | DropUser | AlterUser | SetOwnPassword)
   }
 
   def PrivilegeManagementCommand: Rule1[CatalogDDL] = rule("Security privilege management statement") {
@@ -107,6 +107,10 @@ trait Statement extends Parser
     // ALTER USER username setStatus
     group(keyword("ALTER USER") ~~ SymbolicNameString ~~ setStatus) ~~>>
       ((userName, suspended) => ast.AlterUser(userName, None, None, None, Some(suspended)))
+  }
+
+  def SetOwnPassword: Rule1[SetOwnPassword] = rule("CATALOG SET OWN PASSWORD") {
+    group("SET MY PASSWORD TO" ~~ StringLiteral) ~~>> (initialPassword => ast.SetOwnPassword(initialPassword.value))
   }
 
   def optionalRequirePasswordChange: Rule1[Option[Boolean]] = {

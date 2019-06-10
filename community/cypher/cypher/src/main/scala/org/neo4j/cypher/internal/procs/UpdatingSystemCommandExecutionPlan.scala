@@ -60,7 +60,7 @@ case class UpdatingSystemCommandExecutionPlan(name: String,
         sourceResult.foreach(_.consumeAll())
 
         val tc: TransactionalContext = ctx.asInstanceOf[ExceptionTranslatingQueryContext].inner.asInstanceOf[TransactionBoundQueryContext].transactionalContext.tc
-        if (!tc.securityContext().isAdmin) throw new AuthorizationViolationException(PERMISSION_DENIED)
+        if (!name.equals("SetOwnPassword") && !tc.securityContext().isAdmin) throw new AuthorizationViolationException(PERMISSION_DENIED)
         val systemSubscriber = new SystemCommandQuerySubscriber(subscriber, queryHandler)
         val execution = normalExecutionEngine.executeSubQuery(query, systemParams, tc, shouldCloseTransaction = false, doProfile, prePopulateResults, systemSubscriber).asInstanceOf[InternalExecutionResult]
         systemSubscriber.assertNotFailed()
