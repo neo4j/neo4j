@@ -43,6 +43,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.StringJoiner;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -79,6 +80,7 @@ import org.neo4j.util.concurrent.BinaryLatch;
 import org.neo4j.values.storable.RandomValues;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.ValueGroup;
+import org.neo4j.values.storable.Values;
 
 import static java.lang.String.format;
 import static java.util.Arrays.asList;
@@ -109,6 +111,8 @@ public class FulltextProceduresTest
     public static final String AWAIT_REFRESH = "CALL db.index.fulltext.awaitEventuallyConsistentIndexRefresh()";
     public static final String NODE_CREATE = "CALL db.index.fulltext.createNodeIndex(\"%s\", %s, %s )";
     public static final String RELATIONSHIP_CREATE = "CALL db.index.fulltext.createRelationshipIndex(\"%s\", %s, %s)";
+    public static final String NODE_CREATE_WITH_CONFIG = "CALL db.index.fulltext.createNodeIndex(\"%s\", %s, %s, %s)";
+    public static final String RELATIONSHIP_CREATE_WITH_CONFIG = "CALL db.index.fulltext.createRelationshipIndex(\"%s\", %s, %s, %s)";
 
     private static final String SCORE = "score";
     public static final String NODE = "node";
@@ -2534,6 +2538,21 @@ public class FulltextProceduresTest
     public static String array( String... args )
     {
         return Arrays.stream( args ).map( s -> "\"" + s + "\"" ).collect( Collectors.joining( ", ", "[", "]" ) );
+    }
+
+    public static Map<String,Value> asConfigMap( String analyzer, boolean eventuallyConsistent )
+    {
+        Map<String,Value> map = new HashMap<>();
+        map.put( FulltextIndexSettings.INDEX_CONFIG_ANALYZER, Values.stringValue( analyzer ) );
+        map.put( FulltextIndexSettings.INDEX_CONFIG_EVENTUALLY_CONSISTENT, Values.booleanValue( eventuallyConsistent ) );
+        return map;
+    }
+
+    public static String asConfigString( Map<String,Value> configMap )
+    {
+        StringJoiner joiner = new StringJoiner( ", ", "{", "}" );
+        configMap.forEach( ( k, v ) -> joiner.add( k + ": \"" + v.asObject() + "\"" ) );
+        return joiner.toString();
     }
 
     private List<Value> generateRandomNonStringValues()
