@@ -227,8 +227,8 @@ class MemoryRecommendationsCommandTest
         long[] systemSizes = calculatePageCacheFileSize( systemLayout );
         long expectedPageCacheSize = expectedSizes[0] + systemSizes[0];
         long expectedLuceneSize = expectedSizes[1] + systemSizes[1];
-        assertThat( memrecString, containsString( "Lucene indexes: " + bytesToString( expectedLuceneSize ) ) );
-        assertThat( memrecString, containsString( "Data volume and native indexes: " + bytesToString( expectedPageCacheSize ) ) );
+        assertThat( memrecString, containsString( "Total size of lucene indexes in all databases: " + bytesToString( expectedLuceneSize ) ) );
+        assertThat( memrecString, containsString( "Total size of data and native indexes in all databases: " + bytesToString( expectedPageCacheSize ) ) );
     }
 
     @Test
@@ -263,8 +263,8 @@ class MemoryRecommendationsCommandTest
         command.execute( new String[]{"--memory", "8g"} );
 
         String memrecString = outsideWorld.getOutput();
-        assertThat( memrecString, containsString( "Lucene indexes: " + bytesToString( totalLuceneIndexesSize ) ) );
-        assertThat( memrecString, containsString( "Data volume and native indexes: " + bytesToString( totalPageCacheSize ) ) );
+        assertThat( memrecString, containsString( "Total size of lucene indexes in all databases: " + bytesToString( totalLuceneIndexesSize ) ) );
+        assertThat( memrecString, containsString( "Total size of data and native indexes in all databases: " + bytesToString( totalPageCacheSize ) ) );
     }
 
     private static Matcher<Long> between( long lowerBound, long upperBound )
