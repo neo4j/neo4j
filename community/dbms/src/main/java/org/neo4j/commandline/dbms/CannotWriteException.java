@@ -23,7 +23,7 @@ import java.nio.file.Path;
 
 import static java.lang.String.format;
 
-class CannotWriteException extends Exception
+public class CannotWriteException extends Exception
 {
     CannotWriteException( Path file )
     {

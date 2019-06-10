@@ -42,7 +42,7 @@ import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_WRITE_LOCK;
 import static org.neo4j.io.pagecache.impl.muninn.MuninnPagedFile.UNMAPPED_TTE;
 import static org.neo4j.util.FeatureToggles.flag;
 
-abstract class MuninnPageCursor extends PageCursor
+public abstract class MuninnPageCursor extends PageCursor
 {
     private static final boolean usePreciseCursorErrorStackTraces =
             flag( MuninnPageCursor.class, "usePreciseCursorErrorStackTraces", false );
@@ -1077,5 +1077,10 @@ abstract class MuninnPageCursor extends PageCursor
     public boolean isWriteLocked()
     {
         return isFlagRaised( pf_flags, PF_SHARED_WRITE_LOCK );
+    }
+
+    public long lastTxModifierId()
+    {
+        return pagedFile.getLastModifiedTxId( pinnedPageRef );
     }
 }

@@ -126,7 +126,7 @@ public class SslPolicy
         return nettyClientHandler( channel, nettyClientContext() );
     }
 
-    ChannelHandler nettyClientHandler( Channel channel, SslContext sslContext )
+    public ChannelHandler nettyClientHandler( Channel channel, SslContext sslContext )
     {
         return new ClientSideOnConnectSslHandler( channel, sslContext, verifyHostname, tlsVersions );
     }

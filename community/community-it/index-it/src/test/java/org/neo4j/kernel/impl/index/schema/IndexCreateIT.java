@@ -66,7 +66,7 @@ public class IndexCreateIT extends KernelIntegrationTest
         shouldFailWithNonExistentProviderName( UNIQUE_CONSTRAINT_CREATOR );
     }
 
-    void shouldFailWithNonExistentProviderName( IndexCreator creator ) throws KernelException
+    protected void shouldFailWithNonExistentProviderName( IndexCreator creator ) throws KernelException
     {
         // given
         SchemaWrite schemaWrite = schemaWriteInNewTransaction();
@@ -83,7 +83,7 @@ public class IndexCreateIT extends KernelIntegrationTest
         }
     }
 
-    void shouldCreateWithSpecificExistingProviderName( IndexCreator creator ) throws KernelException
+    protected void shouldCreateWithSpecificExistingProviderName( IndexCreator creator ) throws KernelException
     {
         int labelId = 0;
         for ( GraphDatabaseSettings.SchemaIndex indexSetting : GraphDatabaseSettings.SchemaIndex.values() )
@@ -102,7 +102,7 @@ public class IndexCreateIT extends KernelIntegrationTest
         }
     }
 
-    interface IndexCreator
+    protected interface IndexCreator
     {
         void create( SchemaWrite schemaWrite, LabelSchemaDescriptor descriptor, String providerName ) throws SchemaKernelException;
     }

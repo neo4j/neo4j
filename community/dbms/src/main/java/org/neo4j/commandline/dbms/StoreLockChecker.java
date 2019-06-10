@@ -32,7 +32,7 @@ import org.neo4j.kernel.StoreLockException;
 import org.neo4j.kernel.internal.locker.GlobalStoreLocker;
 import org.neo4j.kernel.internal.locker.StoreLocker;
 
-class StoreLockChecker implements Closeable
+public class StoreLockChecker implements Closeable
 {
 
     private final FileSystemAbstraction fileSystem;
@@ -53,7 +53,7 @@ class StoreLockChecker implements Closeable
      * @see StoreLocker
      * @see Files
      */
-    static Closeable check( StoreLayout storeLayout ) throws CannotWriteException
+    public static Closeable check( StoreLayout storeLayout ) throws CannotWriteException
     {
         Path lockFile = storeLayout.storeLockFile().toPath();
         if ( Files.exists( lockFile ) )
