@@ -290,8 +290,8 @@ class ExceptionTranslatingQueryContext(val inner: QueryContext) extends QueryCon
     override def getById(id: Long): T =
       translateException(inner.getById(id))
 
-    override def getProperty(id: Long, propertyKeyId: Int, cursor: CURSOR, propertyCursor: PropertyCursor): Value =
-      translateException(inner.getProperty(id, propertyKeyId, cursor, propertyCursor))
+    override def getProperty(id: Long, propertyKeyId: Int, cursor: CURSOR, propertyCursor: PropertyCursor, throwOnDeleted: Boolean = true): Value =
+      translateException(inner.getProperty(id, propertyKeyId, cursor, propertyCursor, throwOnDeleted))
 
     override def hasProperty(id: Long, propertyKeyId: Int, cursor: CURSOR, propertyCursor: PropertyCursor): Boolean =
       translateException(inner.hasProperty(id, propertyKeyId, cursor, propertyCursor))

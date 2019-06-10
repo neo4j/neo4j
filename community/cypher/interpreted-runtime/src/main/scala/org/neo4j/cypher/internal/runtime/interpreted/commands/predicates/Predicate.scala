@@ -198,7 +198,10 @@ case class CachedNodePropertyExists(cachedNodeProperty: Expression) extends Pred
                  cp.getCachedProperty(m) match {
                    case null =>
                      // the cached node property has been invalidated
-                     Some(state.query.nodeOps.hasProperty(nodeId, propId, state.cursors.nodeCursor, state.cursors.propertyCursor))
+                     val property = state.query.nodeOps.getProperty(nodeId, propId, state.cursors.nodeCursor, state.cursors.propertyCursor, throwOnDeleted = false)
+                     // Re-cache the value
+                     cp.setCachedProperty(m, property)
+                     Some(property != Values.NO_VALUE)
                    case Values.NO_VALUE =>
                      Some(false)
                    case _ =>
@@ -241,7 +244,10 @@ case class CachedRelationshipPropertyExists(cachedRelProperty: Expression) exten
                   cp.getCachedProperty(m) match {
                     case null =>
                       // the cached rel property has been invalidated
-                      Some(state.query.relationshipOps.hasProperty(relId, propId, state.cursors.relationshipScanCursor, state.cursors.propertyCursor))
+                      val property = state.query.relationshipOps.getProperty(relId, propId, state.cursors.relationshipScanCursor, state.cursors.propertyCursor, throwOnDeleted = false)
+                      // Re-cache the value
+                      cp.setCachedProperty(m, property)
+                      Some(property != Values.NO_VALUE)
                     case Values.NO_VALUE =>
                       Some(false)
                     case _ =>

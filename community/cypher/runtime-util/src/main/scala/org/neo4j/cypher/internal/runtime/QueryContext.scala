@@ -203,19 +203,29 @@ trait QueryContext extends TokenContext with DbAccess {
 
   override def relationshipType(name: String): Int = transactionalContext.tokenRead.relationshipType(name)
 
-  override def nodeProperty(node: Long, property: Int, nodeCursor: NodeCursor, propertyCursor: PropertyCursor): Value =
-    nodeOps.getProperty(node, property, nodeCursor, propertyCursor)
+  override def nodeProperty(node: Long,
+                            property: Int,
+                            nodeCursor: NodeCursor,
+                            propertyCursor: PropertyCursor,
+                            throwOnDeleted: Boolean): Value =
+    nodeOps.getProperty(node, property, nodeCursor, propertyCursor, throwOnDeleted)
 
-  override def nodePropertyIds(node: Long, nodeCursor: NodeCursor, propertyCursor: PropertyCursor): Array[Int] =
+  override def nodePropertyIds(node: Long,
+                               nodeCursor: NodeCursor,
+                               propertyCursor: PropertyCursor): Array[Int] =
     nodeOps.propertyKeyIds(node, nodeCursor, propertyCursor)
 
-  override def nodeHasProperty(node: Long, property: Int, nodeCursor: NodeCursor, propertyCursor: PropertyCursor): Boolean =
+  override def nodeHasProperty(node: Long,
+                               property: Int,
+                               nodeCursor: NodeCursor,
+                               propertyCursor: PropertyCursor): Boolean =
     nodeOps.hasProperty(node, property, nodeCursor, propertyCursor)
 
   override def relationshipProperty(relationship: Long,
                                     property: Int,
                                     relationshipScanCursor: RelationshipScanCursor,
-                                    propertyCursor: PropertyCursor): Value =
+                                    propertyCursor: PropertyCursor,
+                                    throwOnDeleted: Boolean): Value =
     relationshipOps.getProperty(relationship, property, relationshipScanCursor, propertyCursor)
 
   override def relationshipPropertyIds(relationship: Long,
@@ -251,7 +261,11 @@ trait Operations[T, CURSOR] {
 
   def removeProperty(obj: Long, propertyKeyId: Int)
 
-  def getProperty(obj: Long, propertyKeyId: Int, cursor: CURSOR, propertyCursor: PropertyCursor): Value
+  /**
+    * @param throwOnDeleted if this is `true` an Exception will be thrown whten the entity with id `obj` has been deleted in this transaction.
+    *                       If this is `false`, it will return `Values.NO_VALUE` in that case.
+    */
+  def getProperty(obj: Long, propertyKeyId: Int, cursor: CURSOR, propertyCursor: PropertyCursor, throwOnDeleted: Boolean = true): Value
 
   def hasProperty(obj: Long, propertyKeyId: Int, cursor: CURSOR, propertyCursor: PropertyCursor): Boolean
 

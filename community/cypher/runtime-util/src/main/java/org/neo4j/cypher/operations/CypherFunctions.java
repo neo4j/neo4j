@@ -503,16 +503,18 @@ public final class CypherFunctions
         if ( container instanceof VirtualNodeValue )
         {
             return dbAccess.nodeProperty( ((VirtualNodeValue) container).id(),
-                                          dbAccess.propertyKey( key ),
-                                          nodeCursor,
-                                          propertyCursor );
+                    dbAccess.propertyKey( key ),
+                    nodeCursor,
+                    propertyCursor,
+                    true );
         }
         else if ( container instanceof VirtualRelationshipValue )
         {
             return dbAccess.relationshipProperty( ((VirtualRelationshipValue) container).id(),
-                                                  dbAccess.propertyKey( key ),
-                                                  relationshipScanCursor,
-                                                  propertyCursor );
+                    dbAccess.propertyKey( key ),
+                    relationshipScanCursor,
+                    propertyCursor,
+                    true);
         }
         else if ( container instanceof MapValue )
         {
@@ -544,26 +546,28 @@ public final class CypherFunctions
     }
 
     public static AnyValue containerIndex( AnyValue container,
-                                           AnyValue index,
-                                           DbAccess dbAccess,
-                                           NodeCursor nodeCursor,
-                                           RelationshipScanCursor relationshipScanCursor,
-                                           PropertyCursor propertyCursor )
+            AnyValue index,
+            DbAccess dbAccess,
+            NodeCursor nodeCursor,
+            RelationshipScanCursor relationshipScanCursor,
+            PropertyCursor propertyCursor )
     {
-        assert container != NO_VALUE && index != NO_VALUE : "NO_VALUE checks need to happen outside this call" ;
+        assert container != NO_VALUE && index != NO_VALUE : "NO_VALUE checks need to happen outside this call";
         if ( container instanceof VirtualNodeValue )
         {
             return dbAccess.nodeProperty( ((VirtualNodeValue) container).id(),
-                                          dbAccess.propertyKey( asString( index ) ),
-                                          nodeCursor,
-                                          propertyCursor );
+                    dbAccess.propertyKey( asString( index ) ),
+                    nodeCursor,
+                    propertyCursor,
+                    true );
         }
         else if ( container instanceof VirtualRelationshipValue )
         {
             return dbAccess.relationshipProperty( ((VirtualRelationshipValue) container).id(),
-                                                  dbAccess.propertyKey( asString( index ) ),
-                                                  relationshipScanCursor,
-                                                  propertyCursor );
+                    dbAccess.propertyKey( asString( index ) ),
+                    relationshipScanCursor,
+                    propertyCursor,
+                    true );
         }
         if ( container instanceof MapValue )
         {
@@ -1259,7 +1263,11 @@ public final class CypherFunctions
         MapValueBuilder builder = new MapValueBuilder();
         for ( String key : POINT_KEYS )
         {
-            Value value = access.nodeProperty( nodeValue.id(), access.propertyKey( key ), nodeCursor, propertyCursor );
+            Value value = access.nodeProperty( nodeValue.id(),
+                    access.propertyKey( key ),
+                    nodeCursor,
+                    propertyCursor,
+                    true );
             if ( value == NO_VALUE )
             {
                 continue;
@@ -1279,9 +1287,10 @@ public final class CypherFunctions
         for ( String key : POINT_KEYS )
         {
             Value value = access.relationshipProperty( relationshipValue.id(),
-                                                       access.propertyKey( key ),
-                                                       relationshipScanCursor,
-                                                       propertyCursor );
+                    access.propertyKey( key ),
+                    relationshipScanCursor,
+                    propertyCursor,
+                    true );
             if ( value == NO_VALUE )
             {
                 continue;

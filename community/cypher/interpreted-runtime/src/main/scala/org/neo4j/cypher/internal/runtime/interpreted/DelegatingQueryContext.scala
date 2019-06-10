@@ -284,7 +284,7 @@ class DelegatingOperations[T, CURSOR](protected val inner: Operations[T, CURSOR]
 
   override def getById(id: Long): T = inner.getById(id)
 
-  override def getProperty(obj: Long, propertyKeyId: Int, cursor: CURSOR, propertyCursor: PropertyCursor): Value =
+  override def getProperty(obj: Long, propertyKeyId: Int, cursor: CURSOR, propertyCursor: PropertyCursor, throwOnDeleted: Boolean = true): Value =
     singleDbHit(inner.getProperty(obj, propertyKeyId, cursor, propertyCursor))
 
   override def getTxStateProperty(obj: Long, propertyKeyId: Int): Value = inner.getTxStateProperty(obj, propertyKeyId)

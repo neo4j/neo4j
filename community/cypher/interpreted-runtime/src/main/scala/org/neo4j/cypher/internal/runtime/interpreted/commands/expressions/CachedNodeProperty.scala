@@ -82,7 +82,7 @@ abstract class AbstractCachedNodeProperty extends AbstractCachedProperty {
 
   override def property(state: QueryState,
                         id: Long,
-                        propId: Int): Value = state.query.nodeProperty(id, propId, state.cursors.nodeCursor, state.cursors.propertyCursor)
+                        propId: Int): Value = state.query.nodeProperty(id, propId, state.cursors.nodeCursor, state.cursors.propertyCursor, throwOnDeleted = true)
 }
 
 abstract class AbstractCachedRelationshipProperty extends AbstractCachedProperty {
@@ -90,7 +90,7 @@ abstract class AbstractCachedRelationshipProperty extends AbstractCachedProperty
 
   override def property(state: QueryState,
                         id: Long,
-                        propId: Int): Value = state.query.relationshipProperty(id, propId, state.cursors.relationshipScanCursor, state.cursors.propertyCursor)
+                        propId: Int): Value = state.query.relationshipProperty(id, propId, state.cursors.relationshipScanCursor, state.cursors.propertyCursor, throwOnDeleted = true)
 }
 
 case class CachedNodeProperty(nodeName: String, propertyKey: KeyToken, key: ASTCachedProperty)

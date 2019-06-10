@@ -448,10 +448,10 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
       }
     }
 
-    override def getProperty(id: Long, propertyKeyId: Int, nodeCursor: NodeCursor, propertyCursor: PropertyCursor): Value = {
+    override def getProperty(id: Long, propertyKeyId: Int, nodeCursor: NodeCursor, propertyCursor: PropertyCursor, throwOnDeleted: Boolean = true): Value = {
       reads().singleNode(id, nodeCursor)
       if (!nodeCursor.next()) {
-        if (isDeletedInThisTx(id)) throw new EntityNotFoundException(
+        if (throwOnDeleted && isDeletedInThisTx(id)) throw new EntityNotFoundException(
           s"Node with id $id has been deleted in this transaction")
         else Values.NO_VALUE
       } else {
@@ -571,10 +571,10 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
       }
     }
 
-    override def getProperty(id: Long, propertyKeyId: Int, relationshipCursor: RelationshipScanCursor, propertyCursor: PropertyCursor): Value = {
+    override def getProperty(id: Long, propertyKeyId: Int, relationshipCursor: RelationshipScanCursor, propertyCursor: PropertyCursor, throwOnDeleted: Boolean = true): Value = {
       reads().singleRelationship(id, relationshipCursor)
       if (!relationshipCursor.next()) {
-        if (isDeletedInThisTx(id)) throw new EntityNotFoundException(
+        if (throwOnDeleted && isDeletedInThisTx(id)) throw new EntityNotFoundException(
           s"Relationship with id $id has been deleted in this transaction")
         else Values.NO_VALUE
       } else {

@@ -34,9 +34,15 @@ import org.neo4j.values.virtual.MapValue;
  */
 public interface DbAccess extends EntityById
 {
-    Value nodeProperty( long node, int property, NodeCursor nodeCursor, PropertyCursor propertyCursor );
+    Value nodeProperty( long node,
+            int property,
+            NodeCursor nodeCursor,
+            PropertyCursor propertyCursor,
+            boolean throwOnDeleted );
 
-    int[] nodePropertyIds( long node, NodeCursor nodeCursor, PropertyCursor propertyCursor );
+    int[] nodePropertyIds( long node,
+            NodeCursor nodeCursor,
+            PropertyCursor propertyCursor );
 
     int propertyKey( String name );
 
@@ -44,21 +50,25 @@ public interface DbAccess extends EntityById
 
     int relationshipType( String name );
 
-    boolean nodeHasProperty( long node, int property, NodeCursor nodeCursor, PropertyCursor propertyCursor );
+    boolean nodeHasProperty( long node,
+            int property,
+            NodeCursor nodeCursor,
+            PropertyCursor propertyCursor );
 
     Value relationshipProperty( long node,
-                                int property,
-                                RelationshipScanCursor relationshipScanCursor,
-                                PropertyCursor propertyCursor );
+            int property,
+            RelationshipScanCursor relationshipScanCursor,
+            PropertyCursor propertyCursor,
+            boolean throwOnDeleted );
 
     int[] relationshipPropertyIds( long node,
-                                   RelationshipScanCursor relationshipScanCursor,
-                                   PropertyCursor propertyCursor );
+            RelationshipScanCursor relationshipScanCursor,
+            PropertyCursor propertyCursor );
 
     boolean relationshipHasProperty( long node,
-                                     int property,
-                                     RelationshipScanCursor relationshipScanCursor,
-                                     PropertyCursor propertyCursor );
+            int property,
+            RelationshipScanCursor relationshipScanCursor,
+            PropertyCursor propertyCursor );
 
     int nodeGetOutgoingDegree( long node, NodeCursor nodeCursor );
 
