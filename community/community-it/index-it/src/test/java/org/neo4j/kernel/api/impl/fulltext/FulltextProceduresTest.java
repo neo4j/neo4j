@@ -756,7 +756,7 @@ public class FulltextProceduresTest
         try ( Transaction tx = db.beginTx() )
         {
             expectedException.expect( Exception.class );
-            db.execute( format( QUERY_NODES, "rels", "bla bla" ) ).close();
+            db.execute( format( QUERY_NODES, "rels", "bla bla" ) ).next();
             tx.success();
         }
     }
@@ -777,7 +777,7 @@ public class FulltextProceduresTest
         try ( Transaction tx = db.beginTx() )
         {
             expectedException.expect( Exception.class );
-            db.execute( format( QUERY_RELS, "nodes", "bla bla" ) ).close();
+            db.execute( format( QUERY_RELS, "nodes", "bla bla" ) ).next();
             tx.success();
         }
     }
@@ -1243,7 +1243,7 @@ public class FulltextProceduresTest
         {
             createSimpleNodesIndex();
             expectedException.expect( QueryExecutionException.class );
-            db.execute( format( QUERY_NODES, "nodes", "value" ) ).close();
+            db.execute( format( QUERY_NODES, "nodes", "value" ) ).next();
         }
     }
 
@@ -1896,7 +1896,7 @@ public class FulltextProceduresTest
         {
             db.execute( format( DROP, "nodes" ) ).close();
             expectedException.expect( QueryExecutionException.class );
-            db.execute( format( QUERY_NODES, "nodes", "blabla" ) );
+            db.execute( format( QUERY_NODES, "nodes", "blabla" ) ).next();
         }
     }
 
@@ -1914,7 +1914,7 @@ public class FulltextProceduresTest
         {
             db.execute( format( DROP, "rels" ) ).close();
             expectedException.expect( QueryExecutionException.class );
-            db.execute( format( QUERY_RELS, "rels", "blabla" ) );
+            db.execute( format( QUERY_RELS, "rels", "blabla" ) ).next();
         }
     }
 

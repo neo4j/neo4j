@@ -136,14 +136,18 @@ case class ResolvedCall(signature: ProcedureSignature,
   private def resultCheck: SemanticCheck =
     // CALL of VOID procedure => No need to name arguments, even in query
     // CALL of empty procedure => No need to name arguments, even in query
-    if (signature.outputFields.isEmpty)
+    if (signature.outputFields.isEmpty && callResults.nonEmpty) {
+      error(_: SemanticState, SemanticError("Cannot yield value from void procedure.", position))
+    }
+    else if (signature.outputFields.isEmpty) {
       success
-    // CALL ... YIELD ... => Check named outputs
-    else if (declaredResults)
+    } // CALL ... YIELD ... => Check named outputs
+    else if (declaredResults) {
       callResults.foldSemanticCheck(_.semanticCheck(callOutputTypes))
-    // CALL wo YIELD of non-VOID or non-empty procedure in query => Error
-    else
+    } // CALL wo YIELD of non-VOID or non-empty procedure in query => Error
+    else {
       error(_: SemanticState, SemanticError(s"Procedure call inside a query does not support naming results implicitly (name explicitly using `YIELD` instead)", position))
+    }
 
   private val callOutputTypes: Map[String, CypherType] =
     signature.outputSignature.map { _.map { field => field.name -> field.typ }.toMap }.getOrElse(Map.empty)
