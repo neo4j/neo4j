@@ -298,7 +298,12 @@ public class ResultSubscriber extends PrefetchingResourceIterator<Map<String,Obj
         }
         if ( materializedIterator.hasNext() )
         {
-            return materializedIterator.next();
+            Map<String,Object> next = materializedIterator.next();
+            if ( !materializedIterator.hasNext() )
+            {
+                close();
+            }
+            return next;
         }
         else
         {
