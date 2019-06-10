@@ -50,7 +50,7 @@ case class CommunityManagementCommandRuntime(normalExecutionEngine: ExecutionEng
     case ShowUsers() => (_, _, _) =>
       SystemCommandExecutionPlan("ShowUsers", normalExecutionEngine,
         """MATCH (u:User)
-          |RETURN u.name as user""".stripMargin,
+          |RETURN u.name as user, u.passwordChangeRequired AS passwordChangeRequired""".stripMargin,
         VirtualValues.EMPTY_MAP
       )
 

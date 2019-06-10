@@ -34,7 +34,7 @@ class CommunityUserManagementDDLAcceptanceTest extends CommunityDDLAcceptanceTes
     val result = execute("SHOW USERS")
 
     // THEN
-    result.toList should be(List(Map("user" -> "neo4j")))
+    result.toList should be(List(user("neo4j")))
   }
 
   test("should fail when showing users when not on system database") {
@@ -93,4 +93,9 @@ class CommunityUserManagementDDLAcceptanceTest extends CommunityDDLAcceptanceTes
     assertFailure("ALTER USER foo SET PASSWORD 'xxx'", "Unsupported management command: ALTER USER foo SET PASSWORD 'xxx'")
   }
 
+  // helper methods
+
+  private def user(username: String, passwordChangeRequired: Boolean = true): Map[String, Any] = {
+    Map("user" -> username, "passwordChangeRequired" -> passwordChangeRequired)
+  }
 }
