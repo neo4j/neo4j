@@ -21,6 +21,8 @@ package org.neo4j.cypher
 
 import org.neo4j.configuration.GraphDatabaseSettings
 import org.neo4j.configuration.GraphDatabaseSettings.SYSTEM_DATABASE_NAME
+import org.neo4j.graphdb.Result
+import org.neo4j.internal.kernel.api.Transaction
 import org.neo4j.internal.kernel.api.security.AuthenticationResult
 import org.neo4j.kernel.api.exceptions.InvalidArgumentsException
 import org.neo4j.server.security.auth.SecurityTestUtils
@@ -270,21 +272,84 @@ class CommunityUserManagementDDLAcceptanceTest extends CommunityDDLAcceptanceTes
     } should have message "Trying to run `CREATE USER` against non-system database."
   }
 
-  test("should fail on dropping user from community") {
+  // Tests for dropping users
+
+  test("should drop user") {
     // GIVEN
-    selectDatabase(SYSTEM_DATABASE_NAME)
+    selectDatabase(GraphDatabaseSettings.SYSTEM_DATABASE_NAME)
+    prepareUser("foo", "bar")
+
+    // WHEN
+    execute("DROP USER foo")
 
     // THEN
-    assertFailure("DROP USER neo4j", "Unsupported management command: DROP USER neo4j")
+    execute("SHOW USERS").toSet should be(Set(user("neo4j")))
   }
 
-  test("should fail on dropping non-existing user with correct error message") {
+  test("should re-create dropped user") {
     // GIVEN
-    selectDatabase(SYSTEM_DATABASE_NAME)
+    selectDatabase(GraphDatabaseSettings.SYSTEM_DATABASE_NAME)
+    prepareUser("foo", "bar")
+    execute("DROP USER foo")
+    execute("SHOW USERS").toSet should be(Set(user("neo4j")))
+
+    // WHEN
+    execute("CREATE USER foo SET PASSWORD 'bar'")
 
     // THEN
-    assertFailure("DROP USER foo", "Unsupported management command: DROP USER foo")
+    execute("SHOW USERS").toSet should be(Set(user("neo4j"), user("foo")))
   }
+
+  test("should fail when dropping current user") {
+    // GIVEN
+    selectDatabase(GraphDatabaseSettings.SYSTEM_DATABASE_NAME)
+    execute("CREATE USER foo SET PASSWORD 'bar' CHANGE NOT REQUIRED")
+    execute("SHOW USERS").toSet shouldBe Set(user("neo4j"), user("foo", passwordChangeRequired = false))
+
+    the[InvalidArgumentsException] thrownBy {
+      // WHEN
+      executeOnSystem("foo", "bar", "DROP USER foo")
+      // THEN
+    } should have message "Deleting yourself (user 'foo') is not allowed."
+
+    // THEN
+    execute("SHOW USERS").toSet shouldBe Set(user("neo4j"), user("foo", passwordChangeRequired = false))
+  }
+
+  test("should fail when dropping non-existing user") {
+    // GIVEN
+    selectDatabase(GraphDatabaseSettings.SYSTEM_DATABASE_NAME)
+    execute("SHOW USERS").toSet should be(Set(user("neo4j")))
+
+    the[InvalidArgumentsException] thrownBy {
+      // WHEN
+      execute("DROP USER foo")
+      // THEN
+    } should have message "User 'foo' does not exist."
+
+    // THEN
+    execute("SHOW USERS").toSet should be(Set(user("neo4j")))
+
+    // and an invalid (non-existing) one
+    the[InvalidArgumentsException] thrownBy {
+      // WHEN
+      execute("DROP USER `:foo`")
+      // THEN
+    } should have message "User ':foo' does not exist."
+
+    // THEN
+    execute("SHOW USERS").toSet should be(Set(user("neo4j")))
+  }
+
+  test("should fail when dropping user when not on system database") {
+    the[DatabaseManagementException] thrownBy {
+      // WHEN
+      execute("DROP USER foo")
+      // THEN
+    } should have message "Trying to run `DROP USER` against non-system database."
+  }
+
+  // Tests for altering users (not supported in community)
 
   test("should fail on altering user from community") {
     // GIVEN
@@ -313,4 +378,31 @@ class CommunityUserManagementDDLAcceptanceTest extends CommunityDDLAcceptanceTes
     val result = login.subject().getAuthenticationResult
     result should be(expected)
   }
+
+  private def prepareUser(username: String, password: String): Unit = {
+    execute(s"CREATE USER $username SET PASSWORD '$password'")
+    execute("SHOW USERS").toSet shouldBe Set(user("neo4j"), user(username))
+    testUserLogin(username, "wrong", AuthenticationResult.FAILURE)
+    testUserLogin(username, password, AuthenticationResult.PASSWORD_CHANGE_REQUIRED)
+  }
+
+  private def executeOnSystem(username: String, password: String, query: String, resultHandler: (Result.ResultRow, Int) => Unit = (_, _) => {}): Int = {
+    selectDatabase(GraphDatabaseSettings.SYSTEM_DATABASE_NAME)
+    val login = authManager.login(SecurityTestUtils.authToken(username, password))
+    val tx = graph.beginTransaction(Transaction.Type.explicit, login)
+    try {
+      var count = 0
+      val result: Result = new RichGraphDatabaseQueryService(graph).execute(query)
+      result.accept(row => {
+        resultHandler(row, count)
+        count = count + 1
+        true
+      })
+      tx.success()
+      count
+    } finally {
+      tx.close()
+    }
+  }
+
 }

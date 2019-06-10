@@ -101,6 +101,18 @@ case class CommunityManagementCommandRuntime(normalExecutionEngine: ExecutionEng
     case CreateUser(_, _, _, _, _) =>
       throw new IllegalStateException("Password not correctly supplied.")
 
+    // DROP USER foo
+    case DropUser(userName) => (_, _, currentUser) =>
+      if (userName.equals(currentUser)) throw new InvalidArgumentsException(s"Deleting yourself (user '$userName') is not allowed.")
+      UpdatingSystemCommandExecutionPlan("DropUser", normalExecutionEngine,
+        """MATCH (user:User {name: $name}) DETACH DELETE user
+          |RETURN user""".stripMargin,
+        VirtualValues.map(Array("name"), Array(Values.stringValue(userName))),
+        QueryHandler
+          .handleNoResult(() => Some(new InvalidArgumentsException(s"User '$userName' does not exist.")))
+          .handleError(e => new InvalidArgumentsException(s"Failed to delete the specified user '$userName'.", e))
+      )
+
     // SHOW DEFAULT DATABASE
     case ShowDefaultDatabase() => (_, _, _) =>
       SystemCommandExecutionPlan("ShowDefaultDatabase", normalExecutionEngine,
