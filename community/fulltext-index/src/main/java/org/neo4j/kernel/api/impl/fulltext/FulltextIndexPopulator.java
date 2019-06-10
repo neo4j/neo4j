@@ -24,6 +24,8 @@ import org.apache.lucene.document.Document;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.util.Collection;
+import java.util.HashMap;
+import java.util.Map;
 
 import org.neo4j.function.ThrowingAction;
 import org.neo4j.kernel.api.impl.index.DatabaseIndex;
@@ -32,6 +34,8 @@ import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.storageengine.api.NodePropertyAccessor;
 import org.neo4j.storageengine.api.schema.IndexSample;
+import org.neo4j.values.storable.Value;
+import org.neo4j.values.storable.Values;
 
 public class FulltextIndexPopulator extends LuceneIndexPopulator<DatabaseIndex<FulltextIndexReader>>
 {
@@ -98,6 +102,15 @@ public class FulltextIndexPopulator extends LuceneIndexPopulator<DatabaseIndex<F
     public IndexSample sampleResult()
     {
         return new IndexSample();
+    }
+
+    @Override
+    public Map<String,Value> indexConfig()
+    {
+        Map<String,Value> map = new HashMap<>();
+        map.put( FulltextIndexSettings.INDEX_CONFIG_ANALYZER, Values.stringValue( descriptor.analyzerName() ) );
+        map.put( FulltextIndexSettings.INDEX_CONFIG_EVENTUALLY_CONSISTENT, Values.booleanValue( descriptor.isEventuallyConsistent() ) );
+        return map;
     }
 
     private Document updateAsDocument( IndexEntryUpdate<?> update )
