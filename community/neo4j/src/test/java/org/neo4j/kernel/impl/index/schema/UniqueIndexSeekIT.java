@@ -46,7 +46,6 @@ import static org.hamcrest.Matchers.both;
 import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.Matchers.lessThanOrEqualTo;
-import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThat;
 import static org.neo4j.graphdb.Label.label;
@@ -91,7 +90,7 @@ public class UniqueIndexSeekIT
 
     private static CombinableMatcher<Long> closeTo( long from, long delta )
     {
-        return both( greaterThanOrEqualTo( from ) ).and( lessThanOrEqualTo( from + delta ) );
+        return both( greaterThanOrEqualTo( from - delta ) ).and( lessThanOrEqualTo( from + delta ) );
     }
 
     private GraphDatabaseAPI createDatabase( TrackingIndexExtensionFactory indexExtensionFactory )
