@@ -63,6 +63,8 @@ public interface LoginContext
 
         int getOrCreateLabelId( String name ) throws KernelException;
 
+        int getOrCreateRelTypeId( String name ) throws KernelException;
+
         IdLookup EMPTY = new IdLookup()
         {
             @Override
@@ -73,6 +75,12 @@ public interface LoginContext
 
             @Override
             public int getOrCreateLabelId( String name )
+            {
+                return -1;
+            }
+
+            @Override
+            public int getOrCreateRelTypeId( String name ) throws KernelException
             {
                 return -1;
             }

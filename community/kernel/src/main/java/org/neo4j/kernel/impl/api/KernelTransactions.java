@@ -202,6 +202,12 @@ public class KernelTransactions extends LifecycleAdapter implements Supplier<IdC
                 {
                     return tokenHolders.labelTokens().getOrCreateId( name );
                 }
+
+                @Override
+                public int getOrCreateRelTypeId( String name ) throws KernelException
+                {
+                    return tokenHolders.relationshipTypeTokens().getOrCreateId( name );
+                }
             }, databaseId.name() );
         }
         catch ( KernelException ke )
