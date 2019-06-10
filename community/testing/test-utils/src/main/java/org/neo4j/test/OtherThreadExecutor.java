@@ -36,9 +36,11 @@ import java.util.function.Predicate;
 
 import static java.lang.String.format;
 import static java.lang.System.currentTimeMillis;
+import static java.lang.System.nanoTime;
 import static java.util.Arrays.asList;
 import static java.util.concurrent.Executors.newSingleThreadExecutor;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static java.util.concurrent.TimeUnit.NANOSECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
 /**
@@ -56,7 +58,7 @@ public class OtherThreadExecutor<T> implements ThreadFactory, Closeable
     private volatile Thread thread;
     private volatile ExecutionState executionState;
     private final String name;
-    private final long timeout;
+    private final long timeoutNanos;
 
     private static final class AnyThreadState implements Predicate<Thread>
     {
@@ -83,29 +85,6 @@ public class OtherThreadExecutor<T> implements ThreadFactory, Closeable
         }
     }
 
-    public static Predicate<Thread> anyThreadState( State... possibleStates )
-    {
-        return new AnyThreadState( possibleStates );
-    }
-
-    public Predicate<Thread> orExecutionCompleted( final Predicate<Thread> actual )
-    {
-        return new Predicate<Thread>()
-        {
-            @Override
-            public boolean test( Thread thread )
-            {
-                return actual.test( thread ) || executionState == ExecutionState.EXECUTED;
-            }
-
-            @Override
-            public String toString()
-            {
-                return "(" + actual.toString() + ") or execution completed.";
-            }
-        };
-    }
-
     private enum ExecutionState
     {
         REQUESTED_EXECUTION,
@@ -122,7 +101,7 @@ public class OtherThreadExecutor<T> implements ThreadFactory, Closeable
     {
         this.name = name;
         this.state = initialState;
-        this.timeout = MILLISECONDS.convert( timeout, unit );
+        this.timeoutNanos = NANOSECONDS.convert( timeout, unit );
     }
 
     public <R> Future<R> executeDontWait( final WorkerCommand<T, R> cmd )
@@ -177,7 +156,7 @@ public class OtherThreadExecutor<T> implements ThreadFactory, Closeable
 
     public <R> R awaitFuture( Future<R> future ) throws InterruptedException, ExecutionException, TimeoutException
     {
-        return future.get( timeout, MILLISECONDS );
+        return future.get( timeoutNanos, MILLISECONDS );
     }
 
     public interface WorkerCommand<T, R>
@@ -263,15 +242,15 @@ public class OtherThreadExecutor<T> implements ThreadFactory, Closeable
     public WaitDetails waitUntilThreadState( Predicate<WaitDetails> correctWait,
             final Thread.State... possibleStates ) throws TimeoutException
     {
-        long end = currentTimeMillis() + timeout;
+        long endTimeNanos = nanoTime() + timeoutNanos;
         WaitDetails details;
         while ( !correctWait.test( details = waitUntil( new AnyThreadState( possibleStates )) ) )
         {
             LockSupport.parkNanos( MILLISECONDS.toNanos( 20 ) );
-            if ( currentTimeMillis() > end )
+            if ( nanoTime() > endTimeNanos )
             {
                 throw new TimeoutException( "Wanted to wait for any of " + Arrays.toString( possibleStates ) +
-                        " over at " + correctWait + ", but didn't managed to get there in " + timeout + "ms. " +
+                        " over at " + correctWait + ", but didn't managed to get there in " + timeoutNanos + "ms. " +
                         "instead ended up waiting in " + details );
             }
         }
@@ -280,7 +259,7 @@ public class OtherThreadExecutor<T> implements ThreadFactory, Closeable
 
     public WaitDetails waitUntil( Predicate<Thread> condition ) throws TimeoutException
     {
-        long end = System.currentTimeMillis() + timeout;
+        long end = currentTimeMillis() + timeoutNanos;
         Thread thread = getThread();
         while ( !condition.test( thread ) || executionState == ExecutionState.REQUESTED_EXECUTION )
         {
@@ -293,10 +272,10 @@ public class OtherThreadExecutor<T> implements ThreadFactory, Closeable
                 // whatever
             }
 
-            if ( System.currentTimeMillis() > end )
+            if ( currentTimeMillis() > end )
             {
                 throw new TimeoutException( "The executor didn't meet condition '" + condition +
-                        "' inside an executing command for " + timeout + " ms" );
+                        "' inside an executing command for " + timeoutNanos + " ms" );
             }
         }
 
@@ -334,18 +313,6 @@ public class OtherThreadExecutor<T> implements ThreadFactory, Closeable
             for ( StackTraceElement element : stackTrace )
             {
                 if ( element.getClassName().equals( clz.getName() ) && element.getMethodName().equals( method ) )
-                {
-                    return true;
-                }
-            }
-            return false;
-        }
-
-        public boolean isAt( String classNameContains, String method )
-        {
-            for ( StackTraceElement element : stackTrace )
-            {
-                if ( element.getClassName().contains( classNameContains ) && element.getMethodName().equals( method ) )
                 {
                     return true;
                 }

@@ -28,8 +28,9 @@ import java.util.concurrent.TimeoutException;
 import java.util.concurrent.locks.LockSupport;
 import java.util.function.BooleanSupplier;
 
-import static java.lang.System.currentTimeMillis;
+import static java.lang.System.nanoTime;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static java.util.concurrent.TimeUnit.NANOSECONDS;
 
 /**
  * Simple race scenario, a utility for executing multiple threads coordinated to start at the same time.
@@ -87,8 +88,8 @@ public class Race
      */
     public Race withMaxDuration( long time, TimeUnit unit )
     {
-        long endTime = currentTimeMillis() + unit.toMillis( time );
-        this.endCondition = mergeEndCondition( () -> currentTimeMillis() >= endTime );
+        long endTimeNano = nanoTime() + unit.toNanos( time );
+        this.endCondition = mergeEndCondition( () -> nanoTime() >= endTimeNano );
         return this;
     }
 
@@ -203,9 +204,9 @@ public class Race
             }
             else
             {
-                long time = currentTimeMillis();
+                long timeNanoStart = nanoTime();
                 contestant.join( maxWaitTimeMillis - waitedSoFar );
-                waitedSoFar += currentTimeMillis() - time;
+                waitedSoFar += NANOSECONDS.toMillis( nanoTime() - timeNanoStart );
                 if ( waitedSoFar >= maxWaitTimeMillis )
                 {
                     throw new TimeoutException( "Didn't complete after " + maxWaitTime + " " + unit );

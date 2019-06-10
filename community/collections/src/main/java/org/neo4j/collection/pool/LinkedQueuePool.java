@@ -19,12 +19,15 @@
  */
 package org.neo4j.collection.pool;
 
+import java.time.Duration;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.LongSupplier;
 
 import org.neo4j.function.Factory;
+
+import static java.time.Duration.ofMinutes;
 
 public class LinkedQueuePool<R> implements Pool<R>
 {
@@ -75,37 +78,35 @@ public class LinkedQueuePool<R> implements Pool<R>
 
         class TimeoutCheckStrategy implements CheckStrategy
         {
-            private final long interval;
-            private long lastCheckTime;
+            private final long intervalNanos;
+            private long lastCheckTimeNanos;
             private final LongSupplier clock;
 
-            TimeoutCheckStrategy( long interval )
+            TimeoutCheckStrategy( Duration duration )
             {
-                this( interval, System::currentTimeMillis );
+                this( duration, System::nanoTime );
             }
 
-            TimeoutCheckStrategy( long interval, LongSupplier clock )
+            TimeoutCheckStrategy( Duration duration, LongSupplier nanoClock )
             {
-                this.interval = interval;
-                this.lastCheckTime = clock.getAsLong();
-                this.clock = clock;
+                this.intervalNanos = duration.toNanos();
+                this.lastCheckTimeNanos = nanoClock.getAsLong();
+                this.clock = nanoClock;
             }
 
             @Override
             public boolean shouldCheck()
             {
-                long currentTime = clock.getAsLong();
-                if ( currentTime > lastCheckTime + interval )
+                long currentTimeNanos = clock.getAsLong();
+                if ( currentTimeNanos > lastCheckTimeNanos + intervalNanos )
                 {
-                    lastCheckTime = currentTime;
+                    lastCheckTimeNanos = currentTimeNanos;
                     return true;
                 }
                 return false;
             }
         }
     }
-
-    private static final int DEFAULT_CHECK_INTERVAL = 60 * 1000;
 
     private final Queue<R> unused = new ConcurrentLinkedQueue<>();
     private final Monitor<R> monitor;
@@ -120,8 +121,7 @@ public class LinkedQueuePool<R> implements Pool<R>
 
     public LinkedQueuePool( int minSize, Factory<R> factory )
     {
-        this( minSize, factory, new CheckStrategy.TimeoutCheckStrategy( DEFAULT_CHECK_INTERVAL ),
-                new Monitor.Adapter<>() );
+        this( minSize, factory, new CheckStrategy.TimeoutCheckStrategy( ofMinutes( 1 ) ), new Monitor.Adapter<>() );
     }
 
     public LinkedQueuePool( int minSize, Factory<R> factory, CheckStrategy strategy, Monitor<R> monitor )

@@ -23,7 +23,7 @@ import java.util.concurrent.TimeUnit;
 
 import org.neo4j.io.pagecache.monitoring.PageCacheCounters;
 
-import static java.lang.System.currentTimeMillis;
+import static java.lang.System.nanoTime;
 
 public class Conditions
 {
@@ -39,8 +39,8 @@ public class Conditions
 
     public static Condition timePeriod( final int duration, final TimeUnit timeUnit )
     {
-        final long endTimeInMilliseconds = currentTimeMillis() + timeUnit.toMillis( duration );
+        final long endTimeInNanos = nanoTime() + timeUnit.toNanos( duration );
 
-        return () -> currentTimeMillis() > endTimeInMilliseconds;
+        return () -> nanoTime() > endTimeInNanos;
     }
 }
