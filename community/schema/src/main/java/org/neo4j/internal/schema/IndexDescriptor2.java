@@ -24,7 +24,7 @@ import java.util.OptionalLong;
 
 import org.neo4j.common.TokenNameLookup;
 
-public class IndexDescriptor2 implements SchemaDescriptorSupplier
+public class IndexDescriptor2 implements IndexRef<IndexDescriptor2>
 {
     private final long id;
     private final String name;
@@ -69,9 +69,7 @@ public class IndexDescriptor2 implements SchemaDescriptorSupplier
         return schema;
     }
 
-    /**
-     * Returns true if this index is only meant to allow one value per key.
-     */
+    @Override
     public boolean isUnique()
     {
         return isUnique;
@@ -93,28 +91,19 @@ public class IndexDescriptor2 implements SchemaDescriptorSupplier
         return owningConstraintId == null ? OptionalLong.empty() : OptionalLong.of( owningConstraintId );
     }
 
-    /**
-     * Returns a user friendly description of this index descriptor.
-     *
-     * @param tokenNameLookup used for looking up names for token ids.
-     * @return a user friendly description of what this index indexes.
-     */
+    @Override
     public String userDescription( TokenNameLookup tokenNameLookup )
     {
         return "Index( " + id + ", '" + name + "', " + (isUnique ? "UNIQUE" : "GENERAL") + ", " + schema().userDescription( tokenNameLookup ) + " )";
     }
 
-    /**
-     * Returns the {@link IndexType} of this index descriptor.
-     */
+    @Override
     public IndexType getIndexType()
     {
         return schema().getIndexType();
     }
 
-    /**
-     * Returns the {@link IndexProviderDescriptor} of the index provider for this index.
-     */
+    @Override
     public IndexProviderDescriptor getIndexProvider()
     {
         return indexProvider;
@@ -128,23 +117,13 @@ public class IndexDescriptor2 implements SchemaDescriptorSupplier
         return capability;
     }
 
-    /**
-     * Produce a new index descriptor that is the same as this index descriptor in every way, except it has the given index provider descriptor.
-     *
-     * @param indexProvider The index provider descriptor used in the new index descriptor.
-     * @return A new index descriptor with the given index provider.
-     */
+    @Override
     public IndexDescriptor2 withIndexProvider( IndexProviderDescriptor indexProvider )
     {
         return new IndexDescriptor2( id, name, schema, isUnique, indexProvider, owningConstraintId, capability );
     }
 
-    /**
-     * Produce a new index descriptor that is the same as this index descriptor in every way, except it has the given schema descriptor.
-     *
-     * @param schema The schema descriptor used in the new index descriptor.
-     * @return A new index descriptor with the given schema descriptor.
-     */
+    @Override
     public IndexDescriptor2 withSchemaDescriptor( SchemaDescriptor schema )
     {
         return new IndexDescriptor2( id, name, schema, isUnique, indexProvider, owningConstraintId, capability );

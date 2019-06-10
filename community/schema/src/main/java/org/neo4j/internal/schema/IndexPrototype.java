@@ -29,7 +29,7 @@ import static java.lang.String.format;
 /**
  * The prototype of an index that may or may not exist.
  */
-public class IndexPrototype implements SchemaDescriptorSupplier
+public class IndexPrototype implements IndexRef<IndexPrototype>
 {
     private final SchemaDescriptor schema;
     private final boolean isUnique;
@@ -74,9 +74,7 @@ public class IndexPrototype implements SchemaDescriptorSupplier
         return schema;
     }
 
-    /**
-     * Returns true if this index is only meant to allow one value per key.
-     */
+    @Override
     public boolean isUnique()
     {
         return isUnique;
@@ -91,47 +89,31 @@ public class IndexPrototype implements SchemaDescriptorSupplier
         return Optional.ofNullable( name );
     }
 
-    /**
-     * Returns a user friendly description of this index prototype.
-     *
-     * @param tokenNameLookup used for looking up names for token ids.
-     * @return a user friendly description of what this index indexes.
-     */
+    @Override
     public String userDescription( TokenNameLookup tokenNameLookup )
     {
         return format( "Index( %s, %s )", isUnique ? "UNIQUE" : "GENERAL", schema().userDescription( tokenNameLookup ) );
     }
 
-    /**
-     * Returns the {@link IndexType} of this index prototype.
-     */
+    @Override
     public IndexType getIndexType()
     {
         return schema().getIndexType();
     }
 
+    @Override
     public IndexProviderDescriptor getIndexProvider()
     {
         return indexProvider;
     }
 
-    /**
-     * Produce a new index prototype that is the same as this index prototype in every way, except it has the given index provider descriptor.
-     *
-     * @param indexProvider The index provider descriptor used in the new index prototype.
-     * @return A new index prototype with the given index provider.
-     */
+    @Override
     public IndexPrototype withIndexProvider( IndexProviderDescriptor indexProvider )
     {
         return new IndexPrototype( schema, isUnique, indexProvider, name );
     }
 
-    /**
-     * Produce a new index prototype that is the same as this index prototype in every way, except it has the given schema descriptor.
-     *
-     * @param schema The schema descriptor used in the new index prototype.
-     * @return A new index prototype with the given schema descriptor.
-     */
+    @Override
     public IndexPrototype withSchemaDescriptor( SchemaDescriptor schema )
     {
         return new IndexPrototype( schema, isUnique, indexProvider, name );
