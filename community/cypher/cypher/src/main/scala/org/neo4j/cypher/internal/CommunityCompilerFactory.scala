@@ -68,7 +68,7 @@ class CommunityCompilerFactory(graph: GraphDatabaseQueryService,
     }
 
     val runtime = if (plannerConfig.planSystemCommands)
-      CommunityManagementCommandRuntime(executionEngineProvider())
+      CommunityManagementCommandRuntime(executionEngineProvider(), graph.getDependencyResolver)
     else
       CommunityRuntimeFactory.getRuntime(cypherRuntime, plannerConfig.useErrorsOverWarnings)
 

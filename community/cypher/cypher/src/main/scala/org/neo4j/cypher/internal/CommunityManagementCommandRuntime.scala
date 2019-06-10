@@ -19,18 +19,24 @@
  */
 package org.neo4j.cypher.internal
 
+import java.util
+
+import org.neo4j.common.DependencyResolver
 import org.neo4j.cypher.internal.compiler.phases.LogicalPlanState
 import org.neo4j.cypher.internal.compiler.planner.CantCompileQueryException
 import org.neo4j.cypher.internal.logical.plans._
-import org.neo4j.cypher.internal.procs.SystemCommandExecutionPlan
+import org.neo4j.cypher.internal.procs.{QueryHandler, SystemCommandExecutionPlan, UpdatingSystemCommandExecutionPlan}
 import org.neo4j.cypher.internal.runtime._
+import org.neo4j.kernel.api.exceptions.InvalidArgumentsException
+import org.neo4j.kernel.api.security.AuthManager
+import org.neo4j.string.UTF8
 import org.neo4j.values.storable.{TextValue, Values}
 import org.neo4j.values.virtual.VirtualValues
 
 /**
   * This runtime takes on queries that require no planning, such as multidatabase management commands
   */
-case class CommunityManagementCommandRuntime(normalExecutionEngine: ExecutionEngine) extends ManagementCommandRuntime {
+case class CommunityManagementCommandRuntime(normalExecutionEngine: ExecutionEngine, resolver: DependencyResolver) extends ManagementCommandRuntime {
   override def name: String = "community management-commands"
 
   override def compileToExecutable(state: LogicalQuery, context: RuntimeContext, username: String): ExecutionPlan = {
@@ -45,6 +51,10 @@ case class CommunityManagementCommandRuntime(normalExecutionEngine: ExecutionEng
     logicalToExecutable.applyOrElse(withSlottedParameters, throwCantCompile).apply(context, parameterMapping, username)
   }
 
+  private lazy val authManager = {
+    resolver.resolveDependency(classOf[AuthManager])
+  }
+
   val logicalToExecutable: PartialFunction[LogicalPlan, (RuntimeContext, Map[String, Int], String) => ExecutionPlan] = {
     // SHOW USERS
     case ShowUsers() => (_, _, _) =>
@@ -53,6 +63,43 @@ case class CommunityManagementCommandRuntime(normalExecutionEngine: ExecutionEng
           |RETURN u.name as user, u.passwordChangeRequired AS passwordChangeRequired""".stripMargin,
         VirtualValues.EMPTY_MAP
       )
+
+    // CREATE USER foo WITH PASSWORD password
+    case CreateUser(userName, Some(initialStringPassword), None, requirePasswordChange, suspendedOptional) => (_, _, _) =>
+      if(suspendedOptional.isDefined)  // Users are always active in community
+        throw new CantCompileQueryException("'SET STATUS' is not available in community edition.")
+
+      // TODO: Move the conversion to byte[] earlier in the stack (during or after parsing)
+      val initialPassword = UTF8.encode(initialStringPassword)
+      try {
+        validatePassword(initialPassword)
+
+        // NOTE: If username already exists we will violate a constraint
+        UpdatingSystemCommandExecutionPlan("CreateUser", normalExecutionEngine,
+          """CREATE (u:User {name: $name, credentials: $credentials, passwordChangeRequired: $passwordChangeRequired, suspended: false})
+            |RETURN u.name""".stripMargin,
+          VirtualValues.map(
+            Array("name", "credentials", "passwordChangeRequired"),
+            Array(
+              Values.stringValue(userName),
+              Values.stringValue(authManager.createCredentialForPassword(initialPassword).serialize()),
+              Values.booleanValue(requirePasswordChange))),
+          QueryHandler
+            .handleNoResult(() => Some(new InvalidArgumentsException(s"Failed to create user '$userName'.")))
+            .handleError(e => new InvalidArgumentsException(s"The specified user '$userName' already exists.", e))
+        )
+      } finally {
+        // Clear password
+        if (initialPassword != null) util.Arrays.fill(initialPassword, 0.toByte)
+      }
+
+    // CREATE USER foo WITH PASSWORD $password
+    case CreateUser(_, _, Some(_), _, _) =>
+      throw new IllegalStateException("Did not resolve parameters correctly.")
+
+    // CREATE USER foo WITH PASSWORD
+    case CreateUser(_, _, _, _, _) =>
+      throw new IllegalStateException("Password not correctly supplied.")
 
     // SHOW DEFAULT DATABASE
     case ShowDefaultDatabase() => (_, _, _) =>

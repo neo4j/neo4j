@@ -407,6 +407,18 @@ public class BasicSystemGraphRealm extends AuthorizingRealm implements AuthManag
         }
     }
 
+    @Override
+    public Credential createCredentialForPassword( byte[] password )
+    {
+        return SystemGraphCredential.createCredentialForPassword( password, secureHasher );
+    }
+
+    @Override
+    public Credential deserialize( String part ) throws Throwable
+    {
+        return SystemGraphCredential.deserialize( part, secureHasher );
+    }
+
     private void assertValidScheme( Map<String,Object> token ) throws InvalidAuthTokenException
     {
         String scheme = AuthToken.safeCast( AuthToken.SCHEME_KEY, token );
