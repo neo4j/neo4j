@@ -65,7 +65,7 @@ case class CreateUser(userName: String, initialStringPassword: Option[String], i
 case class DropUser(userName: String)(implicit idGen: IdGen) extends SecurityManagementLogicalPlan
 case class AlterUser(userName: String, initialStringPassword: Option[String], initialParameterPassword: Option[Parameter],
                      requirePasswordChange: Option[Boolean], suspended: Option[Boolean])(implicit idGen: IdGen) extends SecurityManagementLogicalPlan
-case class SetOwnPassword(initialPassword: String)(implicit idGen: IdGen) extends SecurityManagementLogicalPlan
+case class SetOwnPassword(initialStringPassword: Option[String], initialParameterPassword: Option[Parameter])(implicit idGen: IdGen) extends SecurityManagementLogicalPlan
 case class ShowRoles(withUsers: Boolean, showAll: Boolean)(implicit idGen: IdGen) extends SecurityManagementLogicalPlan
 case class CreateRole(source: Option[SecurityManagementLogicalPlan], roleName: String)(implicit idGen: IdGen) extends SecurityManagementLogicalPlan(source)
 case class DropRole(roleName: String)(implicit idGen: IdGen) extends SecurityManagementLogicalPlan

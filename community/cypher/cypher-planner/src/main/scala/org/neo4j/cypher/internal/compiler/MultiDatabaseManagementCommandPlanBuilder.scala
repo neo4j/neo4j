@@ -72,8 +72,8 @@ case object MultiDatabaseManagementCommandPlanBuilder extends Phase[PlannerConte
           plans.AlterUser(userName, initialStringPassword, initialParameterPassword, requirePasswordChange, suspended),
           prettifier.asString(c)))
 
-      case SetOwnPassword(initialPassword) =>
-        Some(plans.SetOwnPassword(initialPassword))
+      case SetOwnPassword(initialStringPassword, initialParameterPassword) =>
+        Some(plans.SetOwnPassword(initialStringPassword, initialParameterPassword))
 
       // SHOW [ ALL | POPULATED ] ROLES [ WITH USERS ]
       case ShowRoles(withUsers, showAll) =>

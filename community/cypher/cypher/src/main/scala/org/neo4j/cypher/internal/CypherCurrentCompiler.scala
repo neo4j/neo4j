@@ -32,6 +32,7 @@ import org.neo4j.cypher.internal.result.{ClosingExecutionResult, ExplainExecutio
 import org.neo4j.cypher.internal.runtime.interpreted.TransactionBoundQueryContext.IndexSearchMonitor
 import org.neo4j.cypher.internal.runtime.interpreted.{TransactionBoundQueryContext, TransactionalContextWrapper}
 import org.neo4j.cypher.internal.runtime.{ExecutableQuery => _, _}
+import org.neo4j.cypher.internal.v4_0.expressions.Parameter
 import org.neo4j.cypher.internal.v4_0.frontend.PlannerName
 import org.neo4j.cypher.internal.v4_0.frontend.phases.CompilationPhaseTracer
 import org.neo4j.cypher.internal.v4_0.util.attribution.SequentialIdGen
@@ -79,23 +80,23 @@ case class CypherCurrentCompiler[CONTEXT <: RuntimeContext](planner: CypherPlann
                       ): ExecutableQuery = {
 
     def resolveParameterForManagementCommands(logicalPlan: LogicalPlan): LogicalPlan = {
+      def getParamValue(paramPassword: Parameter) = {
+        params.get(paramPassword.name) match {
+          case param: TextValue => param.stringValue()
+          case IsNoValue() => throw new ParameterNotFoundException("Expected parameter(s): " + paramPassword.name)
+          case param => throw new ParameterWrongTypeException("Only string values are accepted as password, got: " + param.getTypeName)
+        }
+      }
+
       logicalPlan match {
         case l@LogSystemCommand(source, _) =>
           LogSystemCommand(resolveParameterForManagementCommands(source), l.command)(new SequentialIdGen(l.id.x + 1))
         case c@CreateUser(_, _, Some(paramPassword), _, _) =>
-          val paramString = params.get(paramPassword.name) match {
-            case param: TextValue => param.stringValue()
-            case IsNoValue() => throw new ParameterNotFoundException("Expected parameter(s): " + paramPassword.name)
-            case param => throw new ParameterWrongTypeException("Only string values are accepted as password, got: " + param.getTypeName)
-          }
-          CreateUser(c.userName, Some(paramString), None, c.requirePasswordChange, c.suspended)(new SequentialIdGen(c.id.x + 1))
+          CreateUser(c.userName, Some(getParamValue(paramPassword)), None, c.requirePasswordChange, c.suspended)(new SequentialIdGen(c.id.x + 1))
         case a@AlterUser(_, _, Some(paramPassword), _, _) =>
-          val paramString = params.get(paramPassword.name) match {
-            case param: TextValue => param.stringValue()
-            case IsNoValue() => throw new ParameterNotFoundException("Expected parameter(s): " + paramPassword.name)
-            case param => throw new ParameterWrongTypeException("Only string values are accepted as password, got: " + param.getTypeName)
-          }
-          AlterUser(a.userName, Some(paramString), None, a.requirePasswordChange, a.suspended)(new SequentialIdGen(a.id.x + 1))
+          AlterUser(a.userName, Some(getParamValue(paramPassword)), None, a.requirePasswordChange, a.suspended)(new SequentialIdGen(a.id.x + 1))
+        case p@SetOwnPassword(_, Some(paramPassword)) =>
+          SetOwnPassword(Some(getParamValue(paramPassword)), None)(new SequentialIdGen(p.id.x + 1))
         case _ => // Not a management command that needs resolving, do nothing
           logicalPlan
       }

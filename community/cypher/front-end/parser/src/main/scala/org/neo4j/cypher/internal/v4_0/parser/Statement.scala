@@ -110,7 +110,8 @@ trait Statement extends Parser
   }
 
   def SetOwnPassword: Rule1[SetOwnPassword] = rule("CATALOG SET OWN PASSWORD") {
-    group("SET MY PASSWORD TO" ~~ StringLiteral) ~~>> (initialPassword => ast.SetOwnPassword(initialPassword.value))
+    group(keyword("SET MY PASSWORD TO") ~~ StringLiteral) ~~>> (initialPassword => ast.SetOwnPassword(Some(initialPassword.value), None)) |
+    group(keyword("SET MY PASSWORD TO") ~~ Parameter) ~~>> (initialPassword => ast.SetOwnPassword(None, Some(initialPassword)))
   }
 
   def optionalRequirePasswordChange: Rule1[Option[Boolean]] = {

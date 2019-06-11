@@ -277,15 +277,19 @@ class UserManagementDDLParserTest extends DDLParserTestBase {
   // Changing own password
 
   test("SET MY PASSWORD TO 'password'") {
-    yields(ast.SetOwnPassword("password"))
+    yields(ast.SetOwnPassword(Some("password"), None))
   }
 
-  test("SET MY PASSWORD TO ''") {
-    yields(ast.SetOwnPassword(""))
+  test("set my password to ''") {
+    yields(ast.SetOwnPassword(Some(""), None))
   }
 
   test("SET MY PASSWORD TO 'passWORD123%!'") {
-    yields(ast.SetOwnPassword("passWORD123%!"))
+    yields(ast.SetOwnPassword(Some("passWORD123%!"), None))
+  }
+
+  test("SET MY PASSWORD TO $password") {
+    yields(ast.SetOwnPassword(None, Some(Param("password", CTAny)(_))))
   }
 
   test("SET MY PASSWORD TO null") {
