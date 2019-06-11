@@ -16,6 +16,9 @@
  */
 package org.neo4j.cypher.internal.v4_0.expressions.functions
 
+import org.neo4j.cypher.internal.v4_0.expressions.{Expression, FunctionInvocation}
+import org.neo4j.cypher.internal.v4_0.util.InputPosition
+
 case object Exists extends Function with FunctionWithInfo {
   def name = "exists"
 
@@ -23,4 +26,15 @@ case object Exists extends Function with FunctionWithInfo {
 
   override def getDescription: String =
     "Returns true if a match for the pattern exists in the graph, or if the specified property exists in the node, relationship or map."
+
+  private val functionName = asFunctionName(InputPosition.NONE)
+
+  def unapply(arg: Expression): Option[Expression] =
+    arg match {
+      case FunctionInvocation(_, `functionName`, _, args) => Some(args.head)
+      case _ => None
+    }
+
+  def apply(arg: Expression): FunctionInvocation =
+    FunctionInvocation(arg, functionName)
 }

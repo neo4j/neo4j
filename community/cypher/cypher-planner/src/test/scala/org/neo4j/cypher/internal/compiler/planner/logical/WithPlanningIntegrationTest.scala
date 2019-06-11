@@ -268,9 +268,9 @@ class WithPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
 
     result should beLike {
       case
-        Selection(_,
-        RollUpApply(_,_,_,_,_)
-        ) => ()
+        Selection(ands,
+        Limit(_,_,_)
+        ) if hasPathExpression(ands) => ()
     }
   }
 
@@ -282,9 +282,9 @@ class WithPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
 
     result should beLike {
       case
-        Selection(_,
-        RollUpApply(_,_,_,_,_)
-        ) => ()
+        Selection(ands,
+        Limit(_,_,_)
+        ) if hasPathExpression(ands)=> ()
     }
   }
 
@@ -296,10 +296,21 @@ class WithPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
 
     result should beLike {
       case
-        Selection(_,
-        RollUpApply(_,_,_,_,_)
-        ) => ()
+        Selection(ands,
+        Limit(_,_,_)
+        ) if hasGetDegree(ands) => ()
     }
   }
 
+  private def hasPathExpression(ands: Ands): Boolean = {
+    ands.treeExists {
+      case _: PathExpression => true
+    }
+  }
+
+  private def hasGetDegree(ands: Ands): Boolean = {
+    ands.treeExists {
+      case _: GetDegree => true
+    }
+  }
 }

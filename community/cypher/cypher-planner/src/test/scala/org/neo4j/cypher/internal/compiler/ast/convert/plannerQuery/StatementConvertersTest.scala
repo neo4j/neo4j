@@ -772,7 +772,8 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
       horizon = AggregatingQueryProjection(
         groupingExpressions = Map("owner" -> varFor("owner")),
         aggregationExpressions = Map("collected" -> CountStar()(pos)),
-        selections = Selections(Set(Predicate(Set("owner", "  REL62", "  NODE64"), patternExpression)))),
+        selections = Selections(Set(Predicate(Set("owner", "  REL62", "  NODE64"),
+                                              exists(patternExpression))))),
       tail = Some(RegularPlannerQuery(
         queryGraph = QueryGraph(argumentIds = Set("collected", "owner")),
         horizon = RegularQueryProjection(projections = Map("owner" -> varFor("owner")))
@@ -794,7 +795,7 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
     val result = query.toString
 
     val expectation =
-      """RegularPlannerQuery(QueryGraph {Nodes: ['  candidate@60', '  origin@7', 'c'], Rels: ['(  origin@7)--[r1:KNOWS:WORKS_AT]--(c)', '(c)--[r2:KNOWS:WORKS_AT]--(  candidate@60)'], Predicates: ['not r1 = r2', 'not (`  origin@7`)-[`  REL143`:KNOWS]-(`  candidate@60`)', 'type(r1) = type(r2)', '`  origin@7`.name IN ["Clark Kent"]']},InterestingOrder(RequiredOrderCandidate(List(Desc(Variable(boost),Map()))),List()),AggregatingQueryProjection(Map(origin -> Property(Variable(  origin@7),PropertyKeyName(name)), candidate -> Property(Variable(  candidate@60),PropertyKeyName(name))),Map(boost -> FunctionInvocation(Namespace(List()),FunctionName(SUM),false,Vector(FunctionInvocation(Namespace(List()),FunctionName(ROUND),false,Vector(Add(Property(Variable(r2),PropertyKeyName(weight)),Multiply(FunctionInvocation(Namespace(List()),FunctionName(COALESCE),false,Vector(Property(Variable(r2),PropertyKeyName(activity)), SignedDecimalIntegerLiteral(0))),SignedDecimalIntegerLiteral(2)))))))),QueryPagination(None,Some(SignedDecimalIntegerLiteral(10))),Selections(Set())),None)"""
+      """RegularPlannerQuery(QueryGraph {Nodes: ['  candidate@60', '  origin@7', 'c'], Rels: ['(  origin@7)--[r1:KNOWS:WORKS_AT]--(c)', '(c)--[r2:KNOWS:WORKS_AT]--(  candidate@60)'], Predicates: ['not r1 = r2', 'not exists((`  origin@7`)-[`  REL143`:KNOWS]-(`  candidate@60`))', 'type(r1) = type(r2)', '`  origin@7`.name IN ["Clark Kent"]']},InterestingOrder(RequiredOrderCandidate(List(Desc(Variable(boost),Map()))),List()),AggregatingQueryProjection(Map(origin -> Property(Variable(  origin@7),PropertyKeyName(name)), candidate -> Property(Variable(  candidate@60),PropertyKeyName(name))),Map(boost -> FunctionInvocation(Namespace(List()),FunctionName(SUM),false,Vector(FunctionInvocation(Namespace(List()),FunctionName(ROUND),false,Vector(Add(Property(Variable(r2),PropertyKeyName(weight)),Multiply(FunctionInvocation(Namespace(List()),FunctionName(COALESCE),false,Vector(Property(Variable(r2),PropertyKeyName(activity)), SignedDecimalIntegerLiteral(0))),SignedDecimalIntegerLiteral(2)))))))),QueryPagination(None,Some(SignedDecimalIntegerLiteral(10))),Selections(Set())),None)"""
 
     result should equal(expectation)
   }
@@ -810,7 +811,7 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
     val result = query.toString
 
     val expectation =
-      """RegularPlannerQuery(QueryGraph {Nodes: ['owner']},InterestingOrder(RequiredOrderCandidate(List()),List()),AggregatingQueryProjection(Map(owner -> Variable(owner)),Map(xyz -> CountStar()),QueryPagination(None,None),Selections(Set())),Some(RegularPlannerQuery(QueryGraph {Arguments: ['owner', 'xyz']},InterestingOrder(RequiredOrderCandidate(List()),List()),RegularQueryProjection(Map(owner -> Variable(owner), collection -> GreaterThan(Variable(xyz),SignedDecimalIntegerLiteral(0))),QueryPagination(None,None),Selections(Set(Predicate(Set(owner,   REL90,   NODE92),PatternExpression(RelationshipsPattern(RelationshipChain(NodePattern(Some(Variable(owner)),List(),None,None),RelationshipPattern(Some(Variable(  REL90)),List(),None,None,BOTH,false,None),NodePattern(Some(Variable(  NODE92)),List(),None,None)))))))),Some(RegularPlannerQuery(QueryGraph {Arguments: ['collection', 'owner']},InterestingOrder(RequiredOrderCandidate(List()),List()),RegularQueryProjection(Map(owner -> Variable(owner)),QueryPagination(None,None),Selections(Set())),None)))))"""
+      """RegularPlannerQuery(QueryGraph {Nodes: ['owner']},InterestingOrder(RequiredOrderCandidate(List()),List()),AggregatingQueryProjection(Map(owner -> Variable(owner)),Map(xyz -> CountStar()),QueryPagination(None,None),Selections(Set())),Some(RegularPlannerQuery(QueryGraph {Arguments: ['owner', 'xyz']},InterestingOrder(RequiredOrderCandidate(List()),List()),RegularQueryProjection(Map(owner -> Variable(owner), collection -> GreaterThan(Variable(xyz),SignedDecimalIntegerLiteral(0))),QueryPagination(None,None),Selections(Set(Predicate(Set(owner,   REL90,   NODE92),FunctionInvocation(Namespace(List()),FunctionName(exists),false,Vector(PatternExpression(RelationshipsPattern(RelationshipChain(NodePattern(Some(Variable(owner)),List(),None,None),RelationshipPattern(Some(Variable(  REL90)),List(),None,None,BOTH,false,None),NodePattern(Some(Variable(  NODE92)),List(),None,None)))))))))),Some(RegularPlannerQuery(QueryGraph {Arguments: ['collection', 'owner']},InterestingOrder(RequiredOrderCandidate(List()),List()),RegularQueryProjection(Map(owner -> Variable(owner)),QueryPagination(None,None),Selections(Set())),None)))))"""
     result should equal(expectation)
   }
 

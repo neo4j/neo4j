@@ -25,6 +25,7 @@ import org.neo4j.cypher.internal.logical.plans.{Expand, ExpandAll, LogicalPlan, 
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.Solveds
 import org.neo4j.cypher.internal.v4_0.expressions._
 import org.neo4j.cypher.internal.v4_0.util.attribution.SameId
+import org.neo4j.cypher.internal.v4_0.expressions.functions.Exists
 
 object triadicSelectionFinder extends CandidateGenerator[LogicalPlan] {
 
@@ -34,6 +35,7 @@ object triadicSelectionFinder extends CandidateGenerator[LogicalPlan] {
       case predicate@Not(patternExpr: PatternExpression) => findMatchingRelationshipPattern(positivePredicate = false, predicate, patternExpr, in, qg, interestingOrder, context)
       // WHERE (a)-[:X]->(c)
       case patternExpr: PatternExpression => findMatchingRelationshipPattern(positivePredicate = true, patternExpr, patternExpr, in, qg, interestingOrder, context)
+      case predicate@Exists(patternExpr: PatternExpression) => findMatchingRelationshipPattern(positivePredicate = true, predicate, patternExpr, in, qg, interestingOrder, context)
     }.flatten
 
   def unsolvedPredicates(in: LogicalPlan, qg: QueryGraph, solveds: Solveds) = {
