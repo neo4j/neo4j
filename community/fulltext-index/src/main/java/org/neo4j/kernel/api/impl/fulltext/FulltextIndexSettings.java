@@ -35,22 +35,21 @@ import org.neo4j.internal.schema.IndexConfig;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.kernel.api.impl.index.storage.PartitionedIndexStorage;
 import org.neo4j.service.Services;
 import org.neo4j.values.storable.BooleanValue;
 import org.neo4j.values.storable.TextValue;
 import org.neo4j.values.storable.Values;
 
-class FulltextIndexSettings
+public class FulltextIndexSettings
 {
+    public static final String INDEX_CONFIG_ANALYZER = "analyzer";
+    public static final String INDEX_CONFIG_EVENTUALLY_CONSISTENT = "eventually_consistent";
     private static final String INDEX_CONFIG_FILE = "fulltext-index.properties";
-    static final String INDEX_CONFIG_ANALYZER = "analyzer";
-    static final String INDEX_CONFIG_EVENTUALLY_CONSISTENT = "eventually_consistent";
 
     // kept around for the time being, for index configuration migration purpose...
-    private static void loadPersistedSettings( Properties settings, PartitionedIndexStorage indexStorage, FileSystemAbstraction fs )
+    private static void loadPersistedSettings( Properties settings, File indexFolder, FileSystemAbstraction fs )
     {
-        File settingsFile = new File( indexStorage.getIndexFolder(), INDEX_CONFIG_FILE );
+        File settingsFile = new File( indexFolder, INDEX_CONFIG_FILE );
         if ( fs.fileExists( settingsFile ) )
         {
             try ( Reader reader = fs.openAsReader( settingsFile, StandardCharsets.UTF_8 ) )
