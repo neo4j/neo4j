@@ -42,6 +42,7 @@ import org.neo4j.io.IOUtils;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.impl.scheduler.BufferingExecutor;
+import org.neo4j.kernel.internal.Version;
 import org.neo4j.logging.FormattedLogProvider;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
@@ -52,7 +53,6 @@ import org.neo4j.server.logging.JULBridge;
 import org.neo4j.server.logging.JettyLogBridge;
 
 import static java.lang.String.format;
-import static org.neo4j.commandline.Util.neo4jVersion;
 import static org.neo4j.io.fs.FileSystemUtils.createOrOpenAsOutputStream;
 
 public abstract class ServerBootstrapper implements Bootstrapper
@@ -77,7 +77,7 @@ public abstract class ServerBootstrapper implements Bootstrapper
 
         if ( args.version() )
         {
-            System.out.println( "neo4j " + neo4jVersion() );
+            System.out.println( "neo4j " + Version.getNeo4jVersion() );
             return 0;
         }
 
