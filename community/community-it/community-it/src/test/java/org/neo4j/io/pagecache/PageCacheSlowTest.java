@@ -120,7 +120,7 @@ public abstract class PageCacheSlowTest<T extends PageCache> extends PageCacheTe
     @RepeatedTest( 50 )
     void mustNotLoseUpdates()
     {
-        assertTimeoutPreemptively( ofMillis( SEMI_LONG_TIMEOUT_MILLIS ), () ->
+        assertTimeoutPreemptively( ofMillis( 10 * LONG_TIMEOUT_MILLIS ), () ->
         {
             // Another test that tries to squeeze out data race bugs. The idea is
             // the following:
