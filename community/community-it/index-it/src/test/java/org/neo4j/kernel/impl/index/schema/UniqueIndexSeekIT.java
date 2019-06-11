@@ -94,7 +94,7 @@ public class UniqueIndexSeekIT
 
     private static CombinableMatcher<Long> closeTo( long from, long delta )
     {
-        return both( greaterThanOrEqualTo( from ) ).and( lessThanOrEqualTo( from + delta ) );
+        return both( greaterThanOrEqualTo( from - delta ) ).and( lessThanOrEqualTo( from + delta ) );
     }
 
     private GraphDatabaseAPI createDatabase( TrackingIndexExtensionFactory indexExtensionFactory )
