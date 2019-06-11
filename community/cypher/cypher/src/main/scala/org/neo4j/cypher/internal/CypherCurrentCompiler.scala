@@ -41,6 +41,7 @@ import org.neo4j.graphdb.Notification
 import org.neo4j.kernel.api.query.{CompilerInfo, SchemaIndexUsage}
 import org.neo4j.kernel.impl.query.{QueryExecution, QueryExecutionMonitor, QuerySubscriber, TransactionalContext}
 import org.neo4j.monitoring.Monitors
+import org.neo4j.string.UTF8
 import org.neo4j.values.storable.TextValue
 import org.neo4j.values.virtual.MapValue
 
@@ -82,7 +83,7 @@ case class CypherCurrentCompiler[CONTEXT <: RuntimeContext](planner: CypherPlann
     def resolveParameterForManagementCommands(logicalPlan: LogicalPlan): LogicalPlan = {
       def getParamValue(paramPassword: Parameter) = {
         params.get(paramPassword.name) match {
-          case param: TextValue => param.stringValue()
+          case param: TextValue => UTF8.encode(param.stringValue())
           case IsNoValue() => throw new ParameterNotFoundException("Expected parameter(s): " + paramPassword.name)
           case param => throw new ParameterWrongTypeException("Only string values are accepted as password, got: " + param.getTypeName)
         }

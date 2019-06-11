@@ -30,7 +30,6 @@ import org.neo4j.cypher.internal.runtime._
 import org.neo4j.internal.kernel.api.security.SecurityContext
 import org.neo4j.kernel.api.exceptions.InvalidArgumentsException
 import org.neo4j.kernel.api.security.AuthManager
-import org.neo4j.string.UTF8
 import org.neo4j.values.storable.{TextValue, Values}
 import org.neo4j.values.virtual.VirtualValues
 
@@ -68,12 +67,10 @@ case class CommunityManagementCommandRuntime(normalExecutionEngine: ExecutionEng
       )
 
     // CREATE USER foo WITH PASSWORD password
-    case CreateUser(userName, Some(initialStringPassword), None, requirePasswordChange, suspendedOptional) => (_, _, _) =>
+    case CreateUser(userName, Some(initialPassword), None, requirePasswordChange, suspendedOptional) => (_, _, _) =>
       if(suspendedOptional.isDefined)  // Users are always active in community
         throw new CantCompileQueryException("'SET STATUS' is not available in community edition.")
 
-      // TODO: Move the conversion to byte[] earlier in the stack (during or after parsing)
-      val initialPassword = UTF8.encode(initialStringPassword)
       try {
         validatePassword(initialPassword)
 

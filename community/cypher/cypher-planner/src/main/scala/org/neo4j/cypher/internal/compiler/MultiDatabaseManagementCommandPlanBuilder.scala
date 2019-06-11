@@ -32,6 +32,7 @@ import org.neo4j.cypher.internal.v4_0.frontend.phases.CompilationPhaseTracer.Com
 import org.neo4j.cypher.internal.v4_0.frontend.phases._
 import org.neo4j.cypher.internal.v4_0.util.InputPosition
 import org.neo4j.cypher.internal.v4_0.util.attribution.SequentialIdGen
+import org.neo4j.string.UTF8
 
 /**
   * This planner takes on queries that run at the DBMS level for multi-database management
@@ -54,10 +55,17 @@ case object MultiDatabaseManagementCommandPlanBuilder extends Phase[PlannerConte
         Some(plans.ShowUsers())
 
       // CREATE USER foo
-      case c@CreateUser(userName, initialStringPassword, initialParameterPassword, requirePasswordChange, suspended) =>
+      case c@CreateUser(userName, Some(initialStringPassword), initialParameterPassword, requirePasswordChange, suspended) =>
         NameValidator.assertValidUsername(userName)
         Some(plans.LogSystemCommand(
-          plans.CreateUser(userName, initialStringPassword, initialParameterPassword, requirePasswordChange, suspended),
+          plans.CreateUser(userName, Some(UTF8.encode(initialStringPassword)), initialParameterPassword, requirePasswordChange, suspended),
+          prettifier.asString(c)))
+
+      // CREATE USER foo
+      case c@CreateUser(userName, None, initialParameterPassword, requirePasswordChange, suspended) =>
+        NameValidator.assertValidUsername(userName)
+        Some(plans.LogSystemCommand(
+          plans.CreateUser(userName, None, initialParameterPassword, requirePasswordChange, suspended),
           prettifier.asString(c)))
 
       // DROP USER foo
@@ -67,13 +75,24 @@ case object MultiDatabaseManagementCommandPlanBuilder extends Phase[PlannerConte
           prettifier.asString(c)))
 
       // ALTER USER foo
-      case c@AlterUser(userName, initialStringPassword, initialParameterPassword, requirePasswordChange, suspended) =>
+      case c@AlterUser(userName, Some(initialStringPassword), initialParameterPassword, requirePasswordChange, suspended) =>
         Some(plans.LogSystemCommand(
-          plans.AlterUser(userName, initialStringPassword, initialParameterPassword, requirePasswordChange, suspended),
+          plans.AlterUser(userName, Some(UTF8.encode(initialStringPassword)), initialParameterPassword, requirePasswordChange, suspended),
           prettifier.asString(c)))
 
-      case SetOwnPassword(initialStringPassword, initialParameterPassword) =>
-        Some(plans.SetOwnPassword(initialStringPassword, initialParameterPassword))
+      // ALTER USER foo
+      case c@AlterUser(userName, None, initialParameterPassword, requirePasswordChange, suspended) =>
+        Some(plans.LogSystemCommand(
+          plans.AlterUser(userName, None, initialParameterPassword, requirePasswordChange, suspended),
+          prettifier.asString(c)))
+
+      // SET MY PASSWORD TO password
+      case SetOwnPassword(Some(initialStringPassword), initialParameterPassword) =>
+        Some(plans.SetOwnPassword(Some(UTF8.encode(initialStringPassword)), initialParameterPassword))
+
+      // SET MY PASSWORD TO password
+      case SetOwnPassword(None, initialParameterPassword) =>
+        Some(plans.SetOwnPassword(None, initialParameterPassword))
 
       // SHOW [ ALL | POPULATED ] ROLES [ WITH USERS ]
       case ShowRoles(withUsers, showAll) =>
