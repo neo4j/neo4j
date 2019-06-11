@@ -19,7 +19,6 @@
  */
 package org.neo4j.kernel.api.security;
 
-import java.io.IOException;
 import java.util.Arrays;
 import java.util.Set;
 
@@ -34,10 +33,9 @@ public interface UserManager
     /**
      * NOTE: The initialPassword byte array will be cleared (overwritten with zeroes)
      */
-    User newUser( String username, byte[] initialPassword, boolean requirePasswordChange )
-            throws IOException, InvalidArgumentsException;
+    User newUser( String username, byte[] initialPassword, boolean requirePasswordChange ) throws InvalidArgumentsException;
 
-    boolean deleteUser( String username ) throws IOException, InvalidArgumentsException;
+    boolean deleteUser( String username ) throws InvalidArgumentsException;
 
     User getUser( String username ) throws InvalidArgumentsException;
 
@@ -46,12 +44,11 @@ public interface UserManager
     /**
      * NOTE: The password byte array will be cleared (overwritten with zeroes)
      */
-    void setUserPassword( String username, byte[] password, boolean requirePasswordChange )
-            throws IOException, InvalidArgumentsException;
+    void setUserPassword( String username, byte[] password, boolean requirePasswordChange ) throws InvalidArgumentsException;
 
-    void setUserRequirePasswordChange( String username, boolean requirePasswordChange ) throws InvalidArgumentsException, IOException;
+    void setUserRequirePasswordChange( String username, boolean requirePasswordChange ) throws InvalidArgumentsException;
 
-    void setUserStatus( String username, boolean isSuspended ) throws InvalidArgumentsException, IOException;
+    void setUserStatus( String username, boolean isSuspended ) throws InvalidArgumentsException;
 
     Set<String> getAllUsernames();
 
@@ -95,12 +92,12 @@ public interface UserManager
         }
 
         @Override
-        public void setUserRequirePasswordChange( String username, boolean requirePasswordChange ) throws InvalidArgumentsException
+        public void setUserRequirePasswordChange( String username, boolean requirePasswordChange )
         {
         }
 
         @Override
-        public void setUserStatus( String username, boolean isSuspended ) throws InvalidArgumentsException
+        public void setUserStatus( String username, boolean isSuspended )
         {
         }
 
