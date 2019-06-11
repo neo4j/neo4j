@@ -306,6 +306,22 @@ abstract class ExpandAllTestBase[CONTEXT <: RuntimeContext](
       )
     execute(executablePlan) should beColumns("x", "y").withRows(RowCount(3))
   }
+
+  test("should handle big expand") {
+    val SIZE = 30
+    val (ns, ms) = bipartiteGraph(30, "N", "M", "R")
+
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("m2")
+      .expandAll("(n2)--(m2)")
+      .expandAll("(m1)--(n2)")
+      .expandAll("(n1)--(m1)")
+      .nodeByLabelScan("n1", "N")
+      .build()
+
+    val result = execute(logicalQuery, runtime)
+    result should beColumns("m2").withRows(rowCount(SIZE*SIZE*SIZE*SIZE))
+  }
 }
 
 // Supported by interpreted, slotted
