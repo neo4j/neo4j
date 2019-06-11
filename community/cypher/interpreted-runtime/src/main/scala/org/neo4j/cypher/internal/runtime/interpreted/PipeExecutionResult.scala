@@ -36,6 +36,7 @@ class PipeExecutionResult(inner: Iterator[_],
   private var demand = 0L
   private var cancelled = false
   private val numberOfFields = fieldNames.length
+  private var error: Throwable = _
 
   override def queryStatistics(): QueryStatistics = state.getStatistics
 
@@ -51,10 +52,7 @@ class PipeExecutionResult(inner: Iterator[_],
   subscriber.onResult(numberOfFields)
 
   override def request(numberOfRecords: Long): Unit = {
-    if (!resultRequested) {
-      resultRequested = true
-      subscriber.onResult(numberOfFields)
-    }
+    resultRequested = true
     demand = checkForOverflow(demand + numberOfRecords)
     serveResults()
   }
@@ -64,12 +62,22 @@ class PipeExecutionResult(inner: Iterator[_],
   }
 
   override def await(): Boolean = {
+    if (error != null) {
+      throw error
+    }
     inner.hasNext && !cancelled
   }
 
   private def serveResults(): Unit = {
     while (inner.hasNext && demand > 0 && !cancelled) {
-      inner.next()
+      try {
+        inner.next()
+      } catch {
+        case e: Throwable =>
+          error = e
+          subscriber.onError(e)
+          cancel()
+      }
       demand -= 1L
     }
 

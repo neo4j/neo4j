@@ -19,13 +19,16 @@
  */
 package org.neo4j.cypher.internal.runtime.spec.tests
 
-import org.mockito.Mockito.{times, verify}
+import java.io.IOException
+
+import org.mockito.ArgumentMatchers._
+import org.mockito.Mockito.{never, times, verify, when}
 import org.neo4j.cypher.internal.runtime.spec.{Edition, LogicalQueryBuilder, RuntimeTestSuite}
 import org.neo4j.cypher.internal.{CypherRuntime, RuntimeContext}
 import org.neo4j.cypher.result.RuntimeResult
 import org.neo4j.kernel.impl.query.QuerySubscriber
 import org.neo4j.values.AnyValue
-import org.neo4j.values.storable.Values.{longValue, stringValue}
+import org.neo4j.values.storable.Values.{intValue, longValue, stringValue}
 
 abstract class ReactiveResultTestBase[CONTEXT <: RuntimeContext](edition: Edition[CONTEXT],
                                                                  runtime: CypherRuntime[CONTEXT])
@@ -225,7 +228,26 @@ abstract class ReactiveResultTestBase[CONTEXT <: RuntimeContext](edition: Editio
       List(
         List(longValue(1)),
         List(longValue(2))
-      ))
+        ))
+  }
+
+  test("should handle throwing subscriber") {
+    val subscriber = mock[QuerySubscriber]
+    val exception = new IOException("two is the loneliest number since the number one")
+    when(subscriber.onField(0, intValue(2))).thenThrow(exception)
+
+    val result = runtimeResult(subscriber,
+                               Array(1),
+                               Array(2),
+                               Array(3))
+
+    result.request(1)
+    result.await() shouldBe true
+    verify(subscriber, never).onError(any[Throwable])
+
+    result.request(1)
+    an[IOException] shouldBe thrownBy(result.await())
+    verify(subscriber).onError(exception)
   }
 
   private def runtimeResult(subscriber: QuerySubscriber, data: Array[Any]*): RuntimeResult = {
