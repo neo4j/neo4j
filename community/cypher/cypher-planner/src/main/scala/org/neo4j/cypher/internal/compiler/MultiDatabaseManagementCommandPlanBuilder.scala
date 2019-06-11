@@ -86,13 +86,21 @@ case object MultiDatabaseManagementCommandPlanBuilder extends Phase[PlannerConte
           plans.AlterUser(userName, None, initialParameterPassword, requirePasswordChange, suspended),
           prettifier.asString(c)))
 
-      // SET MY PASSWORD TO password
-      case SetOwnPassword(Some(initialStringPassword), initialParameterPassword) =>
-        Some(plans.SetOwnPassword(Some(UTF8.encode(initialStringPassword)), initialParameterPassword))
+      // SET MY PASSWORD FROM currentPassword TO newPassword
+      case SetOwnPassword(Some(newStringPassword), newParameterPassword, Some(currentStringPassword), currentParameterPassword) =>
+        Some(plans.SetOwnPassword(Some(UTF8.encode(newStringPassword)), newParameterPassword, Some(UTF8.encode(currentStringPassword)), currentParameterPassword))
 
-      // SET MY PASSWORD TO password
-      case SetOwnPassword(None, initialParameterPassword) =>
-        Some(plans.SetOwnPassword(None, initialParameterPassword))
+      // SET MY PASSWORD FROM currentPassword TO newPassword
+      case SetOwnPassword(None, newParameterPassword, Some(currentStringPassword), currentParameterPassword) =>
+        Some(plans.SetOwnPassword(None, newParameterPassword, Some(UTF8.encode(currentStringPassword)), currentParameterPassword))
+
+      // SET MY PASSWORD FROM currentPassword TO newPassword
+      case SetOwnPassword(Some(newStringPassword), newParameterPassword, None, currentParameterPassword) =>
+        Some(plans.SetOwnPassword(Some(UTF8.encode(newStringPassword)), newParameterPassword, None, currentParameterPassword))
+
+      // SET MY PASSWORD FROM currentPassword TO newPassword
+      case SetOwnPassword(None, newParameterPassword, None, currentParameterPassword) =>
+        Some(plans.SetOwnPassword(None, newParameterPassword, None, currentParameterPassword))
 
       // SHOW [ ALL | POPULATED ] ROLES [ WITH USERS ]
       case ShowRoles(withUsers, showAll) =>

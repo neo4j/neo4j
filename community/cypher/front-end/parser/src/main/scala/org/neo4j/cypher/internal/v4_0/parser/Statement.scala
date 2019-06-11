@@ -110,8 +110,18 @@ trait Statement extends Parser
   }
 
   def SetOwnPassword: Rule1[SetOwnPassword] = rule("CATALOG SET OWN PASSWORD") {
-    group(keyword("SET MY PASSWORD TO") ~~ StringLiteral) ~~>> (initialPassword => ast.SetOwnPassword(Some(initialPassword.value), None)) |
-    group(keyword("SET MY PASSWORD TO") ~~ Parameter) ~~>> (initialPassword => ast.SetOwnPassword(None, Some(initialPassword)))
+    // SET MY PASSWORD FROM stringLiteralPassword TO stringLiteralPassword
+    group(keyword("SET MY PASSWORD FROM") ~~ StringLiteral ~~ keyword("TO") ~~ StringLiteral) ~~>>
+      ((currentPassword, newPassword) => ast.SetOwnPassword(Some(newPassword.value), None, Some(currentPassword.value), None)) |
+    // SET MY PASSWORD FROM stringLiteralPassword TO parameterPassword
+    group(keyword("SET MY PASSWORD FROM") ~~ StringLiteral ~~ keyword("TO") ~~ Parameter) ~~>>
+      ((currentPassword, newPassword) => ast.SetOwnPassword(None, Some(newPassword), Some(currentPassword.value), None)) |
+    // SET MY PASSWORD FROM parameterPassword TO stringLiteralPassword
+    group(keyword("SET MY PASSWORD FROM") ~~ Parameter ~~ keyword("TO") ~~ StringLiteral) ~~>>
+      ((currentPassword, newPassword) => ast.SetOwnPassword(Some(newPassword.value), None, None, Some(currentPassword))) |
+    // SET MY PASSWORD FROM parameterPassword TO parameterPassword
+    group(keyword("SET MY PASSWORD FROM") ~~ Parameter ~~ keyword("TO") ~~ Parameter) ~~>>
+      ((currentPassword, newPassword) => ast.SetOwnPassword(None, Some(newPassword), None, Some(currentPassword)))
   }
 
   def optionalRequirePasswordChange: Rule1[Option[Boolean]] = {

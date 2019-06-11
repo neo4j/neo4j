@@ -93,11 +93,14 @@ case class Prettifier(expr: ExpressionStringifier) {
       val statusString = if (suspended.isDefined) s" SET STATUS ${if (suspended.get) "SUSPENDED" else "ACTIVE"}" else ""
       s"${x.name} $userNameString$passwordPrefix$passwordString$passwordModeString$statusString"
 
-    case x @ SetOwnPassword(_, initialParameterPassword) =>
-      val password = if (initialParameterPassword.isDefined)
-        s"$$${initialParameterPassword.get.name}"
+    case x @ SetOwnPassword(_, newParameterPassword, _, currentParameterPassword) =>
+      val newPassword = if (newParameterPassword.isDefined)
+        s"$$${newParameterPassword.get.name}"
       else "'******'"
-      s"${x.name} TO $password"
+      val currentPassword = if (currentParameterPassword.isDefined)
+        s"$$${currentParameterPassword.get.name}"
+      else "'******'"
+      s"${x.name} FROM $currentPassword TO $newPassword"
 
     case x @ ShowRoles(withUsers, _) =>
       s"${x.name}${if (withUsers) " WITH USERS" else ""}"

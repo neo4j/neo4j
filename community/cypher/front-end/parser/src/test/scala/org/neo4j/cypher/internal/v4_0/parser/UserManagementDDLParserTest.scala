@@ -276,43 +276,63 @@ class UserManagementDDLParserTest extends DDLParserTestBase {
 
   // Changing own password
 
-  test("SET MY PASSWORD TO 'password'") {
-    yields(ast.SetOwnPassword(Some("password"), None))
+  test("SET MY PASSWORD FROM 'current' TO 'new'") {
+    yields(ast.SetOwnPassword(Some("new"), None, Some("current"), None))
   }
 
-  test("set my password to ''") {
-    yields(ast.SetOwnPassword(Some(""), None))
+  test("set my password from 'current' to ''") {
+    yields(ast.SetOwnPassword(Some(""), None, Some("current"), None))
   }
 
-  test("SET MY PASSWORD TO 'passWORD123%!'") {
-    yields(ast.SetOwnPassword(Some("passWORD123%!"), None))
+  test("set my password from '' to 'new'") {
+    yields(ast.SetOwnPassword(Some("new"), None, Some(""), None))
   }
 
-  test("SET MY PASSWORD TO $password") {
-    yields(ast.SetOwnPassword(None, Some(Param("password", CTAny)(_))))
+  test("SET MY PASSWORD FROM 'current' TO 'passWORD123%!'") {
+    yields(ast.SetOwnPassword(Some("passWORD123%!"), None, Some("current"), None))
   }
 
-  test("SET MY PASSWORD TO null") {
+  test("SET MY PASSWORD FROM 'current' TO $newPassword") {
+    yields(ast.SetOwnPassword(None, Some(Param("newPassword", CTAny)(_)), Some("current"), None))
+  }
+
+  test("SET MY PASSWORD FROM $currentPassword TO 'new'") {
+    yields(ast.SetOwnPassword(Some("new"), None, None, Some(Param("currentPassword", CTAny)(_))))
+  }
+
+  test("set my password from $currentPassword to ''") {
+    yields(ast.SetOwnPassword(Some(""), None, None, Some(Param("currentPassword", CTAny)(_))))
+  }
+
+  test("SET MY PASSWORD FROM $currentPassword TO 'passWORD123%!'") {
+    yields(ast.SetOwnPassword(Some("passWORD123%!"), None, None, Some(Param("currentPassword", CTAny)(_))))
+  }
+
+  test("SET MY PASSWORD FROM $currentPassword TO $newPassword") {
+    yields(ast.SetOwnPassword(None, Some(Param("newPassword", CTAny)(_)), None, Some(Param("currentPassword", CTAny)(_))))
+  }
+
+  test("SET MY PASSWORD FROM 'current' TO null") {
     failsToParse
   }
 
-  test("SET MY PASSWORD TO 123") {
+  test("SET MY PASSWORD FROM $current TO 123") {
     failsToParse
   }
 
-  test("SET MY PASSWORD TO") {
+  test("SET PASSWORD FROM 'current' TO 'new'") {
     failsToParse
   }
 
-  test("SET PASSWORD TO 'password'") {
+  test("SET MY PASSWORD FROM 'current' TO") {
     failsToParse
   }
 
-  test("SET MY PASSWORD 'password'") {
+  test("SET MY PASSWORD FROM TO 'new'") {
     failsToParse
   }
 
-  test("SET PASSWORD 'password'") {
+  test("SET MY PASSWORD TO 'new'") {
     failsToParse
   }
 }

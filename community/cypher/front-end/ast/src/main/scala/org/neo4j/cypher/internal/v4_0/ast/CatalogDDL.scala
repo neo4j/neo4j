@@ -89,10 +89,14 @@ final case class AlterUser(userName: String,
       SemanticState.recordCurrentScope(this)
 }
 
-final case class SetOwnPassword(initialStringPassword: Option[String],
-                                initialParameterPassword: Option[Parameter])(val position: InputPosition) extends MultiDatabaseDDL {
-  assert(initialStringPassword.isDefined || initialParameterPassword.isDefined)
-  assert(!(initialStringPassword.isDefined && initialParameterPassword.isDefined))
+final case class SetOwnPassword(newStringPassword: Option[String],
+                                newParameterPassword: Option[Parameter],
+                                currentStringPassword: Option[String],
+                                currentParameterPassword: Option[Parameter])(val position: InputPosition) extends MultiDatabaseDDL {
+  assert(newStringPassword.isDefined || newParameterPassword.isDefined)
+  assert(!(newStringPassword.isDefined && newParameterPassword.isDefined))
+  assert(currentStringPassword.isDefined || currentParameterPassword.isDefined)
+  assert(!(currentStringPassword.isDefined && currentParameterPassword.isDefined))
 
   override def name = "SET OWN PASSWORD"
 

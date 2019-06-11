@@ -96,8 +96,12 @@ case class CypherCurrentCompiler[CONTEXT <: RuntimeContext](planner: CypherPlann
           CreateUser(c.userName, Some(getParamValue(paramPassword)), None, c.requirePasswordChange, c.suspended)(new SequentialIdGen(c.id.x + 1))
         case a@AlterUser(_, _, Some(paramPassword), _, _) =>
           AlterUser(a.userName, Some(getParamValue(paramPassword)), None, a.requirePasswordChange, a.suspended)(new SequentialIdGen(a.id.x + 1))
-        case p@SetOwnPassword(_, Some(paramPassword)) =>
-          SetOwnPassword(Some(getParamValue(paramPassword)), None)(new SequentialIdGen(p.id.x + 1))
+        case p@SetOwnPassword(_, Some(newParamPassword), _, None) =>
+          SetOwnPassword(Some(getParamValue(newParamPassword)), None, p.currentStringPassword, None)(new SequentialIdGen(p.id.x + 1))
+        case p@SetOwnPassword(_, None, _, Some(currentParamPassword)) =>
+          SetOwnPassword(p.newStringPassword, None, Some(getParamValue(currentParamPassword)), None)(new SequentialIdGen(p.id.x + 1))
+        case p@SetOwnPassword(_, Some(newParamPassword), _, Some(currentParamPassword)) =>
+          SetOwnPassword(Some(getParamValue(newParamPassword)), None, Some(getParamValue(currentParamPassword)), None)(new SequentialIdGen(p.id.x + 1))
         case _ => // Not a management command that needs resolving, do nothing
           logicalPlan
       }
