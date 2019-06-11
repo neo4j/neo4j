@@ -21,14 +21,14 @@ package org.neo4j.cypher.internal.compiler
 
 import org.neo4j.cypher.internal.compiler.phases.{LogicalPlanState, PlannerContext}
 import org.neo4j.cypher.internal.logical.plans
-import org.neo4j.cypher.internal.logical.plans.{LogicalPlan, NameValidator, NormalizedDatabaseName}
+import org.neo4j.cypher.internal.logical.plans.{LogicalPlan, NameValidator}
 import org.neo4j.cypher.internal.planner.spi.ProcedurePlannerName
 import org.neo4j.cypher.internal.v4_0.ast._
 import org.neo4j.cypher.internal.v4_0.frontend.phases.CompilationPhaseTracer.CompilationPhase
 import org.neo4j.cypher.internal.v4_0.frontend.phases.CompilationPhaseTracer.CompilationPhase.PIPE_BUILDING
 import org.neo4j.cypher.internal.v4_0.frontend.phases._
 import org.neo4j.cypher.internal.v4_0.util.attribution.SequentialIdGen
-import org.neo4j.kernel.database.DatabaseId
+import org.neo4j.kernel.database.NormalizedDatabaseName
 
 /**
   * This planner takes on queries that run at the DBMS level for multi-database management
@@ -156,28 +156,28 @@ case object MultiDatabaseManagementCommandPlanBuilder extends Phase[PlannerConte
 
       // SHOW DATABASE foo
       case ShowDatabase(dbName) =>
-        Some(plans.ShowDatabase(NormalizedDatabaseName(dbName)))
+        Some(plans.ShowDatabase(new NormalizedDatabaseName(dbName)))
 
       // CREATE DATABASE foo
       case CreateDatabase(dbName) =>
-        val normalizedName = NormalizedDatabaseName(dbName)
+        val normalizedName = new NormalizedDatabaseName(dbName)
         NameValidator.assertValidDatabaseName(normalizedName)
         Some(plans.CreateDatabase(normalizedName))
 
       // DROP DATABASE foo
       case DropDatabase(dbName) =>
-        val normalizedName = NormalizedDatabaseName(dbName)
+        val normalizedName = new NormalizedDatabaseName(dbName)
         Some(plans.DropDatabase(
           Some(plans.EnsureValidNonDefaultDatabase(normalizedName, "drop")),
           normalizedName))
 
       // START DATABASE foo
       case StartDatabase(dbName) =>
-        Some(plans.StartDatabase(NormalizedDatabaseName(dbName)))
+        Some(plans.StartDatabase(new NormalizedDatabaseName(dbName)))
 
       // STOP DATABASE foo
       case StopDatabase(dbName) =>
-        val normalizedName = NormalizedDatabaseName(dbName)
+        val normalizedName = new NormalizedDatabaseName(dbName)
         Some(plans.StopDatabase(
           Some(plans.EnsureValidNonDefaultDatabase(normalizedName, "stop")),
           normalizedName))

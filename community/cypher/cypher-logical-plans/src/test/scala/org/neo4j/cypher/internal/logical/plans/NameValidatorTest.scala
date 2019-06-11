@@ -20,10 +20,11 @@
 package org.neo4j.cypher.internal.logical.plans
 
 import org.neo4j.cypher.internal.v4_0.util.InvalidArgumentException
+import org.neo4j.kernel.database.NormalizedDatabaseName
 import org.scalatest.{FunSuite, Matchers}
 
 class NameValidatorTest extends FunSuite with Matchers {
-  implicit private def stringToNormalizedName(name: String): NormalizedDatabaseName = NormalizedDatabaseName(name)
+  implicit private def stringToNormalizedName(name: String): NormalizedDatabaseName = new NormalizedDatabaseName(name)
 
   // username tests
 
