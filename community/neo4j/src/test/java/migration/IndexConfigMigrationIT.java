@@ -25,10 +25,13 @@ import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
+import java.util.StringJoiner;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
@@ -40,6 +43,8 @@ import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.helpers.collection.Iterables;
+import org.neo4j.internal.kernel.api.IndexReference;
+import org.neo4j.internal.kernel.api.SchemaRead;
 import org.neo4j.internal.kernel.api.TokenRead;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
 import org.neo4j.io.compress.ZipUtils;
@@ -59,6 +64,7 @@ import org.neo4j.values.storable.PointValue;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 
+import static java.lang.String.format;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -66,6 +72,8 @@ import static org.neo4j.graphdb.factory.GraphDatabaseSettings.SchemaIndex.LUCENE
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.SchemaIndex.NATIVE10;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.SchemaIndex.NATIVE20;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.SchemaIndex.NATIVE_BTREE10;
+import static org.neo4j.kernel.api.impl.fulltext.FulltextIndexSettings.INDEX_CONFIG_ANALYZER;
+import static org.neo4j.kernel.api.impl.fulltext.FulltextIndexSettings.INDEX_CONFIG_EVENTUALLY_CONSISTENT;
 import static org.neo4j.kernel.impl.index.schema.config.SpatialIndexSettings.makeCRSRangeSetting;
 import static org.neo4j.kernel.impl.index.schema.config.SpatialIndexSettings.space_filling_curve_max_bits;
 import static org.neo4j.test.Unzip.unzip;
@@ -151,12 +159,34 @@ class IndexConfigMigrationIT
 
     private static final String ZIP_FILE_3_5 = "IndexConfigMigrationIT-3_5-db.zip";
 
+    // Schema index
     private static final String propKey = "key";
     private static final Label label1 = Label.label( "label1" );
     private static final Label label2 = Label.label( "label2" );
     private static final Label label3 = Label.label( "label3" );
     private static final Label label4 = Label.label( "label4" );
     private static final Label[] labels = {label1, label2, label3, label4};
+
+    // Fulltext index
+    private enum FulltextIndexDescription
+    {
+        BOTH( "fulltextBoth", true, "fulltextToken1", asConfigMap( "simple", true ) ),
+        ANALYZER_ONLY( "fulltextAnalyzer", false, "fulltextToken2", asConfigMap( "russian" ) ),
+        EVENTUALLY_CONSISTENY_ONLY( "fulltextEC", true, "fulltextToken3", asConfigMap( true ) );
+
+        private final String indexName;
+        private final String indexProcedure;
+        private final String tokenName;
+        private final Map<String,Value> configMap;
+
+        FulltextIndexDescription( String indexName, boolean nodeIndex, String tokenName, Map<String,Value> configMap )
+        {
+            this.indexName = indexName;
+            this.tokenName = tokenName;
+            this.configMap = configMap;
+            this.indexProcedure = nodeIndex ? "createNodeIndex" : "createRelationshipIndex";
+        }
+    }
 
     @Inject
     private TestDirectory directory;
@@ -183,6 +213,10 @@ class IndexConfigMigrationIT
         createIndex( db, NATIVE10.providerName(), label3 );
         createIndex( db, LUCENE10.providerName(), label4 );
         createSpatialData( db, label1, label2, label3, label4 );
+        for ( FulltextIndexDescription fulltextIndex : FulltextIndexDescription.values() )
+        {
+            createFulltextIndex( db, fulltextIndex.indexProcedure, fulltextIndex.indexName, fulltextIndex.tokenName, propKey, fulltextIndex.configMap );
+        }
         db.shutdown();
 
         File zipFile = new File( storeDir.getParentFile(), storeDir.getName() + ".zip" );
@@ -203,7 +237,7 @@ class IndexConfigMigrationIT
         try ( Transaction tx = db.beginTx() )
         {
             Set<CoordinateReferenceSystem> allCRS = Iterables.asSet( all() );
-            hasIndexCount( db, 4 );
+            hasIndexCount( db, 7 );
             for ( Node node : db.getAllNodes() )
             {
                 hasLabels( node, label1, label2, label3, label4 );
@@ -215,6 +249,7 @@ class IndexConfigMigrationIT
             }
             assertTrue( allCRS.isEmpty(), "Expected all CRS to be represented in store, but missing " + allCRS );
             assertIndexConfiguration( db );
+            assertFulltextIndexConfiguration( db );
             tx.success();
         }
         finally
@@ -236,11 +271,34 @@ class IndexConfigMigrationIT
                 Value expectedValue = expectedIndexConfig.remove( actualKey );
                 assertNotNull( expectedValue, "Actual index config had map entry that was not among expected " + entry );
                 assertEquals( 0, COMPARATOR.compare( expectedValue, actualValue ),
-                        String.format( "Expected and actual index config value differed for %s, expected %s but was %s.", actualKey, expectedValue,
+                        format( "Expected and actual index config value differed for %s, expected %s but was %s.", actualKey, expectedValue,
                                 actualValue ) );
             }
             assertTrue( expectedIndexConfig.isEmpty(), "Actual index config was missing some values: " + expectedIndexConfig );
         }
+    }
+
+    private static void assertFulltextIndexConfiguration( GraphDatabaseAPI db ) throws IndexNotFoundKernelException
+    {
+        for ( FulltextIndexDescription fulltextIndex : FulltextIndexDescription.values() )
+        {
+            Map<String,Value> actualIndexConfig = getFulltextIndexConfig( db, fulltextIndex.indexName );
+            for ( Map.Entry<String,Value> expectedEntry : fulltextIndex.configMap.entrySet() )
+            {
+                Value actualValue = actualIndexConfig.get( expectedEntry.getKey() );
+                assertEquals( expectedEntry.getValue(), actualValue,
+                        format( "Index did not have expected config, %s.%nExpected: %s%nActual: %s ",
+                                fulltextIndex.indexName, fulltextIndex.configMap, actualIndexConfig ) );
+            }
+        }
+    }
+
+    private static Map<String,Value> getFulltextIndexConfig( GraphDatabaseAPI db, String indexName ) throws IndexNotFoundKernelException
+    {
+        IndexingService indexingService = getIndexingService( db );
+        IndexReference indexReference = schemaRead( db ).indexGetForName( indexName );
+        IndexProxy indexProxy = indexingService.getIndexProxy( indexReference.schema() );
+        return indexProxy.indexConfig();
     }
 
     @SuppressWarnings( "SameParameterValue" )
@@ -290,9 +348,9 @@ class IndexConfigMigrationIT
     {
         try ( Transaction tx = db.beginTx() )
         {
-            String indexPattern = String.format( "\":%s(%s)\"", label.name(), propKey );
+            String indexPattern = format( "\":%s(%s)\"", label.name(), propKey );
             String indexProvider = "\"" + providerName + "\"";
-            db.execute( String.format( "CALL db.createIndex( %s, %s )", indexPattern, indexProvider ) ).close();
+            db.execute( format( "CALL db.createIndex( %s, %s )", indexPattern, indexProvider ) ).close();
             tx.success();
         }
         try ( Transaction tx = db.beginTx() )
@@ -300,6 +358,55 @@ class IndexConfigMigrationIT
             db.schema().awaitIndexesOnline( 1, TimeUnit.MINUTES );
             tx.success();
         }
+    }
+
+    private static void createFulltextIndex( GraphDatabaseService db, String indexProcedure, String fulltextName, String token, String propKey,
+            Map<String,Value> configMap )
+    {
+        try ( Transaction tx = db.beginTx() )
+        {
+            String labelArray = array( token );
+            String propArray = array( propKey );
+            String configString = asConfigString( configMap );
+            System.out.println( fulltextName + " created with config: " + configString );
+            String query = format( "CALL db.index.fulltext." + indexProcedure + "(\"%s\", %s, %s, %s )", fulltextName, labelArray, propArray, configString );
+            db.execute( query ).close();
+            tx.success();
+        }
+    }
+
+    private static Map<String,Value> asConfigMap( String analyzer, boolean eventuallyConsistent )
+    {
+        Map<String,Value> map = new HashMap<>();
+        map.put( INDEX_CONFIG_ANALYZER, Values.stringValue( analyzer ) );
+        map.put( INDEX_CONFIG_EVENTUALLY_CONSISTENT, Values.booleanValue( eventuallyConsistent ) );
+        return map;
+    }
+
+    private static Map<String,Value> asConfigMap( String analyzer )
+    {
+        Map<String,Value> map = new HashMap<>();
+        map.put( INDEX_CONFIG_ANALYZER, Values.stringValue( analyzer ) );
+        return map;
+    }
+
+    private static Map<String,Value> asConfigMap( boolean eventuallyConsistent )
+    {
+        Map<String,Value> map = new HashMap<>();
+        map.put( INDEX_CONFIG_EVENTUALLY_CONSISTENT, Values.booleanValue( eventuallyConsistent ) );
+        return map;
+    }
+
+    private static String asConfigString( Map<String,Value> configMap )
+    {
+        StringJoiner joiner = new StringJoiner( ", ", "{", "}" );
+        configMap.forEach( ( k, v ) -> joiner.add( k + ": \"" + v.asObject() + "\"" ) );
+        return joiner.toString();
+    }
+
+    private static String array( String... args )
+    {
+        return Arrays.stream( args ).collect( Collectors.joining( "\", \"", "[\"", "\"]" ) );
     }
 
     private static void setSpatialConfig( GraphDatabaseBuilder builder )
@@ -319,5 +426,10 @@ class IndexConfigMigrationIT
     private static TokenRead tokenRead( GraphDatabaseAPI db )
     {
         return db.getDependencyResolver().resolveDependency( ThreadToStatementContextBridge.class ).getKernelTransactionBoundToThisThread( false ).tokenRead();
+    }
+
+    private static SchemaRead schemaRead( GraphDatabaseAPI db )
+    {
+        return db.getDependencyResolver().resolveDependency( ThreadToStatementContextBridge.class ).getKernelTransactionBoundToThisThread( false ).schemaRead();
     }
 }

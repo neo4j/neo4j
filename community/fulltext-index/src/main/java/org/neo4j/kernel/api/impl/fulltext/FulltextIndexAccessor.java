@@ -23,13 +23,16 @@ import org.apache.lucene.document.Document;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.util.HashMap;
+import java.util.Map;
 
 import org.neo4j.helpers.collection.BoundedIterable;
 import org.neo4j.kernel.api.impl.index.AbstractLuceneIndexAccessor;
 import org.neo4j.kernel.api.index.IndexUpdater;
-import org.neo4j.storageengine.api.NodePropertyAccessor;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
+import org.neo4j.storageengine.api.NodePropertyAccessor;
 import org.neo4j.values.storable.Value;
+import org.neo4j.values.storable.Values;
 
 import static org.neo4j.kernel.api.impl.fulltext.LuceneFulltextDocumentStructure.documentRepresentingProperties;
 import static org.neo4j.kernel.api.impl.fulltext.LuceneFulltextDocumentStructure.newTermForChangeOrRemove;
@@ -92,6 +95,15 @@ public class FulltextIndexAccessor extends AbstractLuceneIndexAccessor<FulltextI
     public void verifyDeferredConstraints( NodePropertyAccessor propertyAccessor )
     {
         //The fulltext index does not care about constraints.
+    }
+
+    @Override
+    public Map<String,Value> indexConfig()
+    {
+        Map<String,Value> map = new HashMap<>();
+        map.put( FulltextIndexSettings.INDEX_CONFIG_ANALYZER, Values.stringValue( descriptor.analyzerName() ) );
+        map.put( FulltextIndexSettings.INDEX_CONFIG_EVENTUALLY_CONSISTENT, Values.booleanValue( descriptor.isEventuallyConsistent() ) );
+        return map;
     }
 
     public TransactionStateLuceneIndexWriter getTransactionStateIndexWriter()
