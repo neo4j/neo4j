@@ -285,8 +285,10 @@ class IndexConfigMigrationIT
             Map<String,Value> actualIndexConfig = getFulltextIndexConfig( db, fulltextIndex.indexName );
             for ( Map.Entry<String,Value> expectedEntry : fulltextIndex.configMap.entrySet() )
             {
-                Value actualValue = actualIndexConfig.remove( expectedEntry.getKey() );
-                assertEquals( expectedEntry.getValue(), actualValue, "Index did not have expected config, " + fulltextIndex.indexName );
+                Value actualValue = actualIndexConfig.get( expectedEntry.getKey() );
+                assertEquals( expectedEntry.getValue(), actualValue,
+                        format( "Index did not have expected config, %s.%nExpected: %s%nActual: %s ",
+                                fulltextIndex.indexName, fulltextIndex.configMap, actualIndexConfig ) );
             }
         }
     }
@@ -404,7 +406,7 @@ class IndexConfigMigrationIT
 
     private static String array( String... args )
     {
-        return Arrays.stream( args ).map( s -> "\"" + s + "\"" ).collect( Collectors.joining( ", ", "[", "]" ) );
+        return Arrays.stream( args ).collect( Collectors.joining( "\", \"", "[\"", "\"]" ) );
     }
 
     private static void setSpatialConfig( GraphDatabaseBuilder builder )
