@@ -50,8 +50,13 @@ case class joinSolverStep(qg: QueryGraph) extends IDPSolverStep[PatternRelations
       *  (= not registered), because then it will not be possible to find an expand solution anymore.
       */
     def registered: Int => Boolean = nbr => registry.lookup(nbr).isDefined
-    val removeArguments = goal.exists(registered) || table.plans.exists(p => p._1.exists(registered))
-    val argumentsToRemove  = if (removeArguments) qg.argumentIds else Set.empty[String]
+    val expandStillPossible = goal.exists(registered) || table.plans.exists(p => p._1.exists(registered))
+
+    val argumentsToRemove =
+      if (expandStillPossible)
+        qg.argumentIds
+      else
+        Set.empty[String]
 
     val goalSize = goal.size
     val planProducer = context.logicalPlanProducer
@@ -71,7 +76,11 @@ case class joinSolverStep(qg: QueryGraph) extends IDPSolverStep[PatternRelations
         val overlappingNodes = computeOverlappingNodes(lhs, rhs, context.planningAttributes.solveds, argumentsToRemove)
         if (overlappingNodes.nonEmpty) {
           val overlappingSymbols = computeOverlappingSymbols(lhs, rhs, argumentsToRemove)
-          if (overlappingNodes.subsetOf(overlappingSymbols)) {
+          // If the overlapping symbols contain more than the overlapping nodes, that means
+          // We have solved the same relationship on both LHS and RHS. Joining this is plan
+          // would not be optimal, but we have to consider it, if expanding is not longer possible due to compaction
+          if (expandStillPossible && overlappingNodes == overlappingSymbols ||
+            !expandStillPossible && overlappingNodes.subsetOf(overlappingSymbols)) {
             if (VERBOSE) {
               println(s"${show(leftGoal, nodes(lhs, context.planningAttributes.solveds))} overlap ${show(rightGoal, nodes(rhs, context.planningAttributes.solveds))} on ${showNames(overlappingNodes)}")
             }
