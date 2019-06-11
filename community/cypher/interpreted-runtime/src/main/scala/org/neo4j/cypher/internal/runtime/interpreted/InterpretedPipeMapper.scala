@@ -325,7 +325,7 @@ case class InterpretedPipeMapper(readOnly: Boolean,
         LoadCSVPipe(source, format, buildExpression(url), variableName, fieldTerminator, legacyCsvQuoteEscaping, bufferSize)(id = id)
 
       case ProduceResult(_, columns) =>
-        ProduceResultsPipe(source, columns)(id = id)
+        ProduceResultsPipe(source, columns.toArray)(id = id)
 
       case Create(_, nodes, relationships) =>
         CreatePipe(

@@ -22,9 +22,9 @@ package org.neo4j.cypher.internal.runtime.interpreted.pipes
 import org.mockito.Mockito._
 import org.neo4j.cypher.internal.runtime.ExecutionContext
 import org.neo4j.cypher.internal.runtime.ImplicitValueConversion._
+import org.neo4j.cypher.internal.runtime.interpreted.ValueComparisonHelper.beEquivalentTo
 import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
 import org.neo4j.values.storable.Values.{FALSE, TRUE, intValue, stringValue}
-import org.neo4j.cypher.internal.runtime.interpreted.ValueComparisonHelper.beEquivalentTo
 
 class ProduceResultsPipeTest extends CypherFunSuite {
 
@@ -39,7 +39,7 @@ class ProduceResultsPipeTest extends CypherFunSuite {
         ExecutionContext.from("a" -> "bar", "b" -> 20, "c" -> false, "d" -> "d")
       ))
 
-    val pipe = ProduceResultsPipe(sourcePipe, Seq("a", "b", "c"))()
+    val pipe = ProduceResultsPipe(sourcePipe, Array("a", "b", "c"))()
 
     val result = pipe.createResults(queryState).toList
 
@@ -57,7 +57,7 @@ class ProduceResultsPipeTest extends CypherFunSuite {
     when(queryState.decorator).thenReturn(NullPipeDecorator)
     when(sourcePipe.createResults(queryState)).thenReturn(Iterator.empty)
 
-    val pipe = ProduceResultsPipe(sourcePipe, Seq("a", "b", "c"))()
+    val pipe = ProduceResultsPipe(sourcePipe, Array("a", "b", "c"))()
 
     val result = pipe.createResults(queryState).toList
 

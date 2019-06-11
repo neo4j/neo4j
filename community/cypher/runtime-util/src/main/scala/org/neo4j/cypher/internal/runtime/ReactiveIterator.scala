@@ -53,13 +53,20 @@ class ReactiveIterator(inner: Iterator[Array[AnyValue]], result: RuntimeResult, 
   private def serveResults(): Unit = {
     while (inner.hasNext && served < demand && !cancelled) {
       val values = next()
-      subscriber.onRecord()
-      var i = 0
-      while (i < numberOfFields) {
-        subscriber.onField(i, values(mapIndex(i)))
-        i += 1
+      try {
+        subscriber.onRecord()
+        var i = 0
+        while (i < numberOfFields) {
+          subscriber.onField(i, values(mapIndex(i)))
+          i += 1
+        }
+        subscriber.onRecordCompleted()
       }
-      subscriber.onRecordCompleted()
+      catch {
+        case e: Exception =>
+          subscriber.onError(e)
+          cancel()
+      }
     }
 
     if (!inner.hasNext) {

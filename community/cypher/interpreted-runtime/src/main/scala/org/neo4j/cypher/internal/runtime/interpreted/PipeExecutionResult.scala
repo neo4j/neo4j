@@ -21,22 +21,21 @@ package org.neo4j.cypher.internal.runtime.interpreted
 
 import org.neo4j.cypher.internal.runtime._
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
-import org.neo4j.cypher.internal.v4_0.util.InternalException
 import org.neo4j.cypher.result.RuntimeResult.ConsumptionState
 import org.neo4j.cypher.result.{QueryProfile, RuntimeResult}
 import org.neo4j.kernel.impl.query.QuerySubscriber
 
-class PipeExecutionResult(val result: IteratorBasedResult,
+class PipeExecutionResult(inner: Iterator[_],
                           val fieldNames: Array[String],
                           val state: QueryState,
                           override val queryProfile: QueryProfile,
                           subscriber: QuerySubscriber)
   extends RuntimeResult {
 
-  self =>
-
   private var resultRequested = false
-  private var reactiveIterator: ReactiveIterator = _
+  private var demand = 0L
+  private var cancelled = false
+  private val numberOfFields = fieldNames.length
 
   override def queryStatistics(): QueryStatistics = state.getStatistics
 
@@ -46,30 +45,39 @@ class PipeExecutionResult(val result: IteratorBasedResult,
 
   override def consumptionState: RuntimeResult.ConsumptionState =
     if (!resultRequested) ConsumptionState.NOT_STARTED
-    else if (result.mapIterator.hasNext) ConsumptionState.HAS_MORE
+    else if (inner.hasNext) ConsumptionState.HAS_MORE
     else ConsumptionState.EXHAUSTED
 
+  subscriber.onResult(numberOfFields)
+
   override def request(numberOfRecords: Long): Unit = {
-    resultRequested = true
-    if (reactiveIterator == null) {
-      val iterator =
-        if (result.recordIterator.isDefined) result.recordIterator.get.map(_.fields())
-        else result.mapIterator.map(r => fieldNames.map(r.getByName))
-      reactiveIterator = new ReactiveIterator(iterator, this, subscriber)
+    if (!resultRequested) {
+      resultRequested = true
+      subscriber.onResult(numberOfFields)
     }
-    reactiveIterator.request(numberOfRecords)
+    demand = checkForOverflow(demand + numberOfRecords)
+    serveResults()
   }
 
   override def cancel(): Unit = {
-    if (reactiveIterator != null) {
-      reactiveIterator.cancel()
-    }
+    cancelled = true
   }
 
   override def await(): Boolean = {
-    if (reactiveIterator == null) {
-      throw new InternalException("Call to await before calling request")
-    }
-    reactiveIterator.await()
+    inner.hasNext && !cancelled
   }
+
+  private def serveResults(): Unit = {
+    while (inner.hasNext && demand > 0 && !cancelled) {
+      inner.next()
+      demand -= 1L
+    }
+
+    if (!inner.hasNext) {
+      subscriber.onResultCompleted(state.getStatistics)
+    }
+  }
+
+  private def checkForOverflow(value: Long): Long =
+    if (value < 0) Long.MaxValue else value
 }

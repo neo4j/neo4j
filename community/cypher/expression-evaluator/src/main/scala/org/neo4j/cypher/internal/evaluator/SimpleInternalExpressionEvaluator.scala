@@ -28,6 +28,7 @@ import org.neo4j.cypher.internal.v4_0.expressions.Expression
 import org.neo4j.cypher.internal.v4_0.parser.Expressions
 import org.neo4j.cypher.internal.v4_0.util.attribution.Id
 import org.neo4j.internal.kernel.api.IndexReadSession
+import org.neo4j.kernel.impl.query.QuerySubscriber
 import org.neo4j.values.AnyValue
 import org.parboiled.scala.{EOI, ReportingParseRunner, Rule1}
 
@@ -51,11 +52,12 @@ class SimpleInternalExpressionEvaluator extends InternalExpressionEvaluator {
     val commandExpr = CONVERTERS.toCommandExpression(Id.INVALID_ID, rewritten)
 
     val emptyQueryState = new QueryState(null,
-      null,
-      Array.empty,
-      null,
-      Array.empty[IndexReadSession],
-      new Array(nExpressionSlots))
+                                         null,
+                                         Array.empty,
+                                         null,
+                                         Array.empty[IndexReadSession],
+                                         new Array(nExpressionSlots),
+                                         QuerySubscriber.DO_NOTHING_SUBSCRIBER)
 
     commandExpr(ExecutionContext.empty, emptyQueryState)
   }

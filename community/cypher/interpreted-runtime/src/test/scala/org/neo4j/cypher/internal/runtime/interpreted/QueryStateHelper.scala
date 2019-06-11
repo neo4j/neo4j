@@ -30,7 +30,7 @@ import org.neo4j.graphdb.{Node, Relationship}
 import org.neo4j.internal.kernel.api.{CursorFactory, IndexReadSession}
 import org.neo4j.kernel.GraphDatabaseQueryService
 import org.neo4j.kernel.impl.coreapi.InternalTransaction
-import org.neo4j.kernel.impl.query.Neo4jTransactionalContextFactory
+import org.neo4j.kernel.impl.query.{Neo4jTransactionalContextFactory, QuerySubscriber}
 import org.neo4j.kernel.impl.util.BaseToObjectValueWriter
 import org.neo4j.monitoring.Monitors
 import org.neo4j.values.AnyValue
@@ -48,10 +48,12 @@ object QueryStateHelper extends MockitoSugar {
                 expressionCursors: ExpressionCursors = new ExpressionCursors(mock[CursorFactory]),
                 queryIndexes: Array[IndexReadSession] = Array(mock[IndexReadSession]),
                 expressionVariables: Array[AnyValue] = Array.empty,
+                subscriber: QuerySubscriber = QuerySubscriber.DO_NOTHING_SUBSCRIBER,
                 decorator: PipeDecorator = NullPipeDecorator,
                 initialContext: Option[ExecutionContext] = None
                ):QueryState =
-    new QueryState(query, resources, params, expressionCursors, queryIndexes, expressionVariables, decorator, initialContext = initialContext)
+    new QueryState(query, resources, params, expressionCursors, queryIndexes, expressionVariables, subscriber,
+                   decorator, initialContext = initialContext)
 
   def queryStateFrom(db: GraphDatabaseQueryService,
                      tx: InternalTransaction,

@@ -31,7 +31,7 @@ public interface QuerySubscription
      * Request a number of records.
      * @param numberOfRecords The number of records demanded.
      */
-    void request( long numberOfRecords )throws Exception;
+    void request( long numberOfRecords ) throws Exception;
 
     /**
      * Request the query to not send any more data.

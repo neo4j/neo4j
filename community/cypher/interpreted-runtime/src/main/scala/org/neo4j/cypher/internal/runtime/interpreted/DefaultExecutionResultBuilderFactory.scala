@@ -38,7 +38,10 @@ abstract class BaseExecutionResultBuilderFactory(pipe: Pipe,
     protected var externalResource: ExternalCSVResource = new CSVResources(queryContext.resources)
     protected var pipeDecorator: PipeDecorator = if (hasLoadCSV) new LinenumberPipeDecorator() else NullPipeDecorator
 
-    protected def createQueryState(params: MapValue, prePopulateResults: Boolean, input: InputDataStream): QueryState
+    protected def createQueryState(params: MapValue,
+                                   prePopulateResults: Boolean,
+                                   input: InputDataStream,
+                                   subscriber: QuerySubscriber): QueryState
 
     def queryContext: QueryContext
 
@@ -57,7 +60,7 @@ abstract class BaseExecutionResultBuilderFactory(pipe: Pipe,
                        prePopulateResults: Boolean,
                        input: InputDataStream,
                        subscriber: QuerySubscriber): RuntimeResult = {
-      val state = createQueryState(params, prePopulateResults, input)
+      val state = createQueryState(params, prePopulateResults, input, subscriber)
       //pipe.createResults, may fail early and if so we must make sure to close the state
       val results = try {
         pipe.createResults(state)
@@ -66,8 +69,7 @@ abstract class BaseExecutionResultBuilderFactory(pipe: Pipe,
           state.close()
           throw e
       }
-      val resultIterator = buildResultIterator(results, readOnly)
-      new PipeExecutionResult(resultIterator, columns.toArray, state, queryProfile, subscriber)
+      new PipeExecutionResult(results, columns.toArray, state, queryProfile, subscriber)
     }
 
     protected def buildResultIterator(results: Iterator[ExecutionContext], readOnly: Boolean): IteratorBasedResult
@@ -89,7 +91,7 @@ case class InterpretedExecutionResultBuilderFactory(pipe: Pipe,
   override def create(queryContext: QueryContext): ExecutionResultBuilder = InterpretedExecutionResultBuilder(queryContext: QueryContext)
 
   case class InterpretedExecutionResultBuilder(queryContext: QueryContext) extends BaseExecutionResultBuilder {
-    override def createQueryState(params: MapValue, prePopulateResults: Boolean, input: InputDataStream): QueryState = {
+    override def createQueryState(params: MapValue, prePopulateResults: Boolean, input: InputDataStream, subscriber: QuerySubscriber): QueryState = {
       val cursors = new ExpressionCursors(queryContext.transactionalContext.cursors)
       queryContext.resources.trace(cursors)
       new QueryState(queryContext,
@@ -98,6 +100,7 @@ case class InterpretedExecutionResultBuilderFactory(pipe: Pipe,
                      cursors,
                      queryIndexes.indexes.map(index => queryContext.transactionalContext.dataRead.indexReadSession(index)),
                      new Array[AnyValue](nExpressionSlots),
+                     subscriber,
                      pipeDecorator,
                      lenientCreateRelationship = lenientCreateRelationship,
                      prePopulateResults = prePopulateResults,

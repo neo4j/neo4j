@@ -19,45 +19,49 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
-import org.neo4j.cypher.internal.runtime.{ExecutionContext, MapExecutionContext, MutableMaps, ValuePopulation}
+import org.neo4j.cypher.internal.runtime.{ExecutionContext, ValuePopulation}
 import org.neo4j.cypher.internal.v4_0.util.attribution.Id
-import org.neo4j.values.AnyValue
+import org.neo4j.kernel.impl.query.QuerySubscriber
 
-case class ProduceResultsPipe(source: Pipe, columns: Seq[String])
+case class ProduceResultsPipe(source: Pipe, columns: Array[String])
                              (val id: Id = Id.INVALID_ID) extends PipeWithSource(source) {
-  protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState): Iterator[MapExecutionContext] = {
+  protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext] = {
     // do not register this pipe as parent as it does not do anything except filtering of already fetched
     // key-value pairs and thus should not have any stats
-
+    val subscriber = state.subscriber
     if (state.prePopulateResults)
       input.map {
         original =>
-          produceAndPopulate(original)
+          produceAndPopulate(original, subscriber)
+          original
       }
     else
       input.map {
         original =>
-          produce(original)
+          produce(original, subscriber)
+          original
       }
   }
 
-  private def produceAndPopulate(original: ExecutionContext) = {
-    val m = MutableMaps.create[String, AnyValue](columns.size)
-    columns.foreach(
-      name => {
-        val value = original.getByName(name)
-        ValuePopulation.populate(value)
-        m.put(name, value)
-      }
-    )
-    ExecutionContext(m)
+  private def produceAndPopulate(original: ExecutionContext, subscriber: QuerySubscriber): Unit = {
+    var i = 0
+    subscriber.onRecord()
+    while (i < columns.length) {
+      val value = original.getByName(columns(i))
+      ValuePopulation.populate(value)
+      subscriber.onField(i, value)
+      i += 1
+    }
+    subscriber.onRecordCompleted()
   }
 
-  private def produce(original: ExecutionContext) = {
-    val m = MutableMaps.create[String, AnyValue](columns.size)
-    columns.foreach(
-      name => m.put(name, original.getByName(name))
-    )
-    ExecutionContext(m)
+  private def produce(original: ExecutionContext, subscriber: QuerySubscriber): Unit = {
+    var i = 0
+    subscriber.onRecord()
+    while (i < columns.length) {
+      subscriber.onField(i, original.getByName(columns(i)))
+      i += 1
+    }
+    subscriber.onRecordCompleted()
   }
 }
