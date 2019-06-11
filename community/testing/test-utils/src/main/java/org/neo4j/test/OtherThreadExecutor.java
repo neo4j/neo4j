@@ -35,7 +35,6 @@ import java.util.concurrent.locks.LockSupport;
 import java.util.function.Predicate;
 
 import static java.lang.String.format;
-import static java.lang.System.currentTimeMillis;
 import static java.lang.System.nanoTime;
 import static java.util.Arrays.asList;
 import static java.util.concurrent.Executors.newSingleThreadExecutor;
@@ -156,7 +155,7 @@ public class OtherThreadExecutor<T> implements ThreadFactory, Closeable
 
     public <R> R awaitFuture( Future<R> future ) throws InterruptedException, ExecutionException, TimeoutException
     {
-        return future.get( timeoutNanos, MILLISECONDS );
+        return future.get( timeoutNanos, NANOSECONDS );
     }
 
     public interface WorkerCommand<T, R>
@@ -250,7 +249,7 @@ public class OtherThreadExecutor<T> implements ThreadFactory, Closeable
             if ( nanoTime() > endTimeNanos )
             {
                 throw new TimeoutException( "Wanted to wait for any of " + Arrays.toString( possibleStates ) +
-                        " over at " + correctWait + ", but didn't managed to get there in " + timeoutNanos + "ms. " +
+                        " over at " + correctWait + ", but didn't managed to get there in " + timeoutNanos + "ns. " +
                         "instead ended up waiting in " + details );
             }
         }
@@ -259,23 +258,23 @@ public class OtherThreadExecutor<T> implements ThreadFactory, Closeable
 
     public WaitDetails waitUntil( Predicate<Thread> condition ) throws TimeoutException
     {
-        long end = currentTimeMillis() + timeoutNanos;
+        long end = nanoTime() + timeoutNanos;
         Thread thread = getThread();
         while ( !condition.test( thread ) || executionState == ExecutionState.REQUESTED_EXECUTION )
         {
             try
             {
-                Thread.sleep( 1 );
+                Thread.sleep( 10 );
             }
             catch ( InterruptedException e )
             {
                 // whatever
             }
 
-            if ( currentTimeMillis() > end )
+            if ( nanoTime() > end )
             {
                 throw new TimeoutException( "The executor didn't meet condition '" + condition +
-                        "' inside an executing command for " + timeoutNanos + " ms" );
+                        "' inside an executing command for " + timeoutNanos + " ns" );
             }
         }
 
