@@ -91,9 +91,6 @@ public class TestBasicSystemGraphRealm
             QueryExecutor executor,
             Config config ) throws Throwable
     {
-        GraphDatabaseCypherService graph =
-                new GraphDatabaseCypherService( manager.getManagementService().database( config.get( GraphDatabaseSettings.default_database ) ) );
-        Collection<TransactionEventListener<?>> systemListeners = unregisterListeners( graph );
 
         BasicSystemGraphOperations systemGraphOperations = new BasicSystemGraphOperations( executor, secureHasher );
         UserSecurityGraphInitializer securityGraphInitializer =
@@ -117,33 +114,7 @@ public class TestBasicSystemGraphRealm
         );
         realm.start();
 
-        registerListeners( graph, systemListeners );
-
         return realm;
-    }
-
-    protected static Collection<TransactionEventListener<?>> unregisterListeners( GraphDatabaseCypherService graph )
-    {
-        GlobalTransactionEventListeners transactionEventListeners = graph.getDependencyResolver().resolveDependency( GlobalTransactionEventListeners.class );
-        Collection<TransactionEventListener<?>> systemListeners =
-                transactionEventListeners.getDatabaseTransactionEventListeners( GraphDatabaseSettings.SYSTEM_DATABASE_NAME );
-
-        for ( TransactionEventListener<?> listener : systemListeners )
-        {
-            transactionEventListeners.unregisterTransactionEventListener( GraphDatabaseSettings.SYSTEM_DATABASE_NAME, listener );
-        }
-
-        return systemListeners;
-    }
-
-    protected static void registerListeners( GraphDatabaseCypherService graph, Collection<TransactionEventListener<?>> systemListeners )
-    {
-        GlobalTransactionEventListeners transactionEventListeners = graph.getDependencyResolver().resolveDependency( GlobalTransactionEventListeners.class );
-
-        for ( TransactionEventListener<?> listener : systemListeners )
-        {
-            transactionEventListeners.registerTransactionEventListener( GraphDatabaseSettings.SYSTEM_DATABASE_NAME, listener );
-        }
     }
 
     protected static AuthenticationStrategy newRateLimitedAuthStrategy()
