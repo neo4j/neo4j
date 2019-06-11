@@ -40,6 +40,10 @@ case object CompiledRuntimeName extends RuntimeName {
   override val name = "COMPILED"
 }
 
+case object ParallelRuntimeName extends RuntimeName {
+  override val name = "PARALLEL"
+}
+
 case object ProcedureRuntimeName extends RuntimeName {
   override val name = "PROCEDURE"
 }
@@ -55,6 +59,7 @@ object RuntimeName {
     case SlottedRuntimeName.name => SlottedRuntimeName
     case MorselRuntimeName.name => MorselRuntimeName
     case CompiledRuntimeName.name => CompiledRuntimeName
+    case ParallelRuntimeName.name => ParallelRuntimeName
     case ProcedureRuntimeName.name => ProcedureRuntimeName
     case SystemCommandRuntimeName.name => SystemCommandRuntimeName
 

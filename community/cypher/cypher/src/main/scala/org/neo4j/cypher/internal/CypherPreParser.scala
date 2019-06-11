@@ -56,6 +56,7 @@ case object CypherPreParser extends org.parboiled.scala.Parser with Base {
       | option("runtime", "compiled") ~ push(CompiledRuntimeOption)
       | option("runtime", "slotted") ~ push(SlottedRuntimeOption)
       | option("runtime", "morsel") ~ push(MorselRuntimeOption)
+      | option("runtime", "parallel") ~ push(ParallelRuntimeOption)
   )
 
   def StrategyOption: Rule1[UpdateStrategyOption] = rule("strategy option")(

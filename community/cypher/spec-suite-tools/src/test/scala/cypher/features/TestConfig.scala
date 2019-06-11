@@ -30,9 +30,9 @@ case object CostSlottedTestConfig extends TestConfig(Some("cost-slotted.txt"),"C
 
 case object CostSlottedWithCompiledExpressionsTestConfig extends TestConfig(Some("cost-slotted.txt"),"CYPHER planner=cost runtime=slotted expressionEngine=COMPILED")
 
-case object CostMorselSingleThreadedTestConfig extends TestConfig(Some("cost-morsel-single-threaded.txt"),"CYPHER planner=cost runtime=morsel debug=singlethreaded")
+case object CostMorselSingleThreadedTestConfig extends TestConfig(Some("cost-morsel-single-threaded.txt"), "CYPHER planner=cost runtime=morsel")
 
-case object CostMorselTestConfig extends TestConfig(Some("cost-morsel.txt"),"CYPHER planner=cost runtime=morsel")
+case object CostParallelTestConfig extends TestConfig(Some("cost-parallel.txt"), "CYPHER planner=cost runtime=parallel")
 
 case object CostCompiledTestConfig extends TestConfig(Some("cost-compiled.txt"),
   "CYPHER planner=cost runtime=compiled debug=generate_java_source")
