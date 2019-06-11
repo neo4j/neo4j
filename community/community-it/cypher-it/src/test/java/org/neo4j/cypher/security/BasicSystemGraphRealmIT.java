@@ -280,6 +280,17 @@ public class BasicSystemGraphRealmIT
     }
 
     @Test
+    void shouldHandleCustomDefaultDatabase() throws Throwable
+    {
+        defaultConfig.augment( default_database, "foo" );
+
+        BasicImportOptionsBuilder importOptions = new BasicImportOptionsBuilder().migrateUsers( "alice" );
+        BasicSystemGraphRealm realm = TestBasicSystemGraphRealm.testRealm( importOptions, dbManager, defaultConfig );
+
+        assertAuthenticationSucceeds( realm, "alice" );
+    }
+
+    @Test
     void shouldHandleSwitchOfDefaultDatabase() throws Throwable
     {
         BasicImportOptionsBuilder importOptions = new BasicImportOptionsBuilder().migrateUsers( "alice" );

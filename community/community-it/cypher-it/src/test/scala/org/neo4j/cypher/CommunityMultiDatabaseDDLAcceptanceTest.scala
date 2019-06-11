@@ -62,6 +62,28 @@ class CommunityMultiDatabaseDDLAcceptanceTest extends CommunityDDLAcceptanceTest
     result.toList should be(List(Map("name" -> "foo")))
   }
 
+  test("should show correct default database for switch of default database") {
+    // GIVEN
+    val config = Config.defaults()
+    setup(config)
+
+    // WHEN
+    val result = execute("SHOW DEFAULT DATABASE")
+
+    // THEN
+    result.toSet should be(Set(Map("name" -> "neo4j")))
+
+    // GIVEN
+    config.augment(default_database, "foo")
+    initSystemGraph(config)
+
+    // WHEN
+    val result2 = execute("SHOW DEFAULT DATABASE")
+
+    // THEN
+    result2.toSet should be(Set(Map("name" -> "foo")))
+  }
+
   test("should fail when showing default database when not on system database") {
     setup(defaultConfig)
     selectDatabase(DEFAULT_DATABASE_NAME)
@@ -130,11 +152,15 @@ class CommunityMultiDatabaseDDLAcceptanceTest extends CommunityDDLAcceptanceTest
   // Disable normal database creation because we need different settings on each test
   override protected def initTest() {}
 
-  protected def setup(config: Config) {
+  private def setup(config: Config): Unit = {
     managementService = graphDatabaseFactory(new File("test")).impermanent().setConfigRaw(config.getRaw).setInternalLogProvider(logProvider).build()
     graphOps = managementService.database(SYSTEM_DATABASE_NAME)
     graph = new GraphDatabaseCypherService(graphOps)
 
+    initSystemGraph(config)
+  }
+
+  private def initSystemGraph(config: Config): Unit = {
     val queryExecutor: ContextSwitchingSystemGraphQueryExecutor = new ContextSwitchingSystemGraphQueryExecutor(databaseManager, threadToStatementContextBridge(), databaseIdRepository)
     val secureHasher: SecureHasher = new SecureHasher
     val systemGraphOperations: BasicSystemGraphOperations = new BasicSystemGraphOperations(queryExecutor, secureHasher)
