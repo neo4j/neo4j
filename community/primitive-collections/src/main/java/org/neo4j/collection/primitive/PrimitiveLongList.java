@@ -103,7 +103,8 @@ public class PrimitiveLongList implements PrimitiveLongCollection
 
     private void ensureCapacity()
     {
-        int newCapacity = elements.length << 1;
+        int currentCapacity = elements.length;
+        int newCapacity = currentCapacity == 0 ? DEFAULT_SIZE : currentCapacity << 1;
         if ( newCapacity < 0 )
         {
             throw new IllegalStateException( "Fail to increase list capacity." );

@@ -28,6 +28,13 @@ import org.neo4j.cypher.{CypherExecutionException, ExecutionEngineFunSuite, Quer
 class SpatialUniqueConstraintValidationAcceptanceTest
   extends ExecutionEngineFunSuite with QueryStatisticsTestSupport with ListSupport {
 
+  test("should be able to create uniqueness constraint after nodes") {
+    execute("CREATE ( :Label { location: point({x:1, y:2}) } )")
+    execute("CREATE ( :Label { location: point({x:1, y:3}) } )")
+
+    execute("CREATE CONSTRAINT ON (node:Label) ASSERT node.location IS UNIQUE")
+  }
+
   test("should enforce uniqueness constraint on create node with label and property") {
     // GIVEN
     execute("CREATE CONSTRAINT ON (node:Label1) ASSERT node.key1 IS UNIQUE")

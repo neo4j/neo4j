@@ -120,6 +120,17 @@ public class PrimitiveLongListTest
     }
 
     @Test
+    public void addAfterClear()
+    {
+        PrimitiveLongList longList = new PrimitiveLongList();
+        longList.clear();
+
+        longList.add( 1 );
+        assertEquals( 1, longList.get( 0 ) );
+        assertEquals( 1, longList.size() );
+    }
+
+    @Test
     public void transformListToArray()
     {
         PrimitiveLongList longList = new PrimitiveLongList();
