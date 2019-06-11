@@ -19,12 +19,9 @@
  */
 package org.neo4j.tooling;
 
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
-import org.junit.runners.Parameterized.Parameter;
-import org.junit.runners.Parameterized.Parameters;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import java.io.File;
 import java.io.PrintStream;
@@ -33,24 +30,25 @@ import java.util.Arrays;
 import java.util.List;
 
 import org.neo4j.internal.batchimport.input.InputException;
-import org.neo4j.test.rule.EmbeddedDbmsRule;
-import org.neo4j.test.rule.SuppressOutput;
+import org.neo4j.io.layout.DatabaseLayout;
+import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.SuppressOutputExtension;
+import org.neo4j.test.extension.TestDirectoryExtension;
+import org.neo4j.test.rule.TestDirectory;
 
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.neo4j.tooling.ImportToolTest.assertExceptionContains;
 import static org.neo4j.tooling.ImportToolTest.importTool;
 
-/**
- * Tests that we fail correctly when given strings which can't be interpreted as numbers when configured to interpret
- * them as such.
- */
-@RunWith( Parameterized.class )
-public class ImportToolNumericalFailureTest
+@ExtendWith( {TestDirectoryExtension.class, SuppressOutputExtension.class} )
+class ImportToolNumericalFailureTest
 {
-    @Parameters( name = "{index}: {0}, \"{1}\", \"{2}\"" )
-    public static List<Object[]> types()
+    @Inject
+    private TestDirectory testDirectory;
+
+    static List<String[]> parameters()
     {
-        ArrayList<Object[]> params = new ArrayList<>();
+        ArrayList<String[]> params = new ArrayList<>();
 
         for ( String type : Arrays.asList( "int", "long", "short", "byte", "float", "double" ) )
         {
@@ -81,57 +79,33 @@ public class ImportToolNumericalFailureTest
                 params.add( args );
             }
         }
-
         return params;
     }
 
-    @Parameter
-    public String type;
-
-    @Parameter( value = 1 )
-    public String val;
-
-    @Parameter( value = 2 )
-    public String expectedError;
-
-    @Rule
-    public final EmbeddedDbmsRule dbRule = new EmbeddedDbmsRule().startLazily();
-    @Rule
-    public final SuppressOutput suppressOutput = SuppressOutput.suppress( SuppressOutput.System.values() );
-
-    private int dataIndex;
-
-    @Test
-    public void test() throws Exception
+    @ParameterizedTest
+    @MethodSource( value = "parameters" )
+    void failImportOnInvalidData( String type, String val, String expectedError ) throws Exception
     {
-        // GIVEN
-        File data = file( fileName( "whitespace.csv" ) );
+        DatabaseLayout databaseLayout = testDirectory.databaseLayout();
+        File data = file( databaseLayout, fileName( "whitespace.csv" ) );
         try ( PrintStream writer = new PrintStream( data ) )
         {
             writer.println( ":LABEL,adult:" + type );
             writer.println( "PERSON," + val );
         }
 
-        try
-        {
-            // WHEN
-            importTool( "--into", dbRule.getDatabaseDirAbsolutePath(), "--quote", "'", "--nodes", data.getAbsolutePath() );
-            // THEN
-            fail( "Expected import to fail" );
-        }
-        catch ( Exception e )
-        {
-            assertExceptionContains( e, expectedError, InputException.class );
-        }
+        Exception exception = assertThrows( Exception.class,
+                () -> importTool( "--into", databaseLayout.databaseDirectory().getAbsolutePath(), "--quote", "'", "--nodes", data.getAbsolutePath() ) );
+        assertExceptionContains( exception, expectedError, InputException.class );
     }
 
     private String fileName( String name )
     {
-        return dataIndex++ + "-" + name;
+        return name;
     }
 
-    private File file( String localname )
+    private File file( DatabaseLayout databaseLayout, String localname )
     {
-        return dbRule.databaseLayout().file( localname );
+        return databaseLayout.file( localname );
     }
 }
