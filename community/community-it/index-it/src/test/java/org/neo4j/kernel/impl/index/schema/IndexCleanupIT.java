@@ -42,6 +42,7 @@ import org.neo4j.internal.schema.IndexProviderDescriptor;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.kernel.impl.api.index.IndexingService;
+import org.neo4j.monitoring.Monitors;
 import org.neo4j.test.Barrier;
 import org.neo4j.test.rule.DbmsRule;
 import org.neo4j.test.rule.EmbeddedDbmsRule;
@@ -138,7 +139,8 @@ public class IndexCleanupIT
             }
         };
         configureDb( schemaIndex );
-        db.getMonitors().addMonitorListener( trappingMonitor );
+        Monitors monitors = db.getGraphDatabaseAPI().getDependencyResolver().resolveDependency( Monitors.class );
+        monitors.addMonitorListener( trappingMonitor );
         createIndex( db, false );
 
         midPopulation.await();
