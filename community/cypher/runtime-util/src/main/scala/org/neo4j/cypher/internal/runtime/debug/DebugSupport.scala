@@ -26,6 +26,7 @@ object DebugSupport {
   final val DEBUG_LOCKS = false
   final val DEBUG_ERROR_HANDLING = false
   final val DEBUG_CURSORS = false
+  final val DEBUG_PIPELINES = false
 
   def logWorker(str: => String): Unit = {
     if (DEBUG_WORKERS) {
@@ -54,6 +55,14 @@ object DebugSupport {
   def logCursors(str: => String): Unit = {
     if (DEBUG_CURSORS) {
       println(s"        $str")
+    }
+  }
+
+  def logPipelines(rows: => Seq[String]): Unit = {
+    if (DEBUG_PIPELINES) {
+      for (row <- rows) {
+        println(s"       || $row")
+      }
     }
   }
 }

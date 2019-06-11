@@ -28,5 +28,7 @@ class DebugSupportTest extends CypherFunSuite {
     DebugSupport.DEBUG_TRACKER shouldBe false
     DebugSupport.DEBUG_LOCKS shouldBe false
     DebugSupport.DEBUG_ERROR_HANDLING shouldBe false
+    DebugSupport.DEBUG_CURSORS shouldBe false
+    DebugSupport.DEBUG_PIPELINES shouldBe false
   }
 }

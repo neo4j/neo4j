@@ -49,6 +49,8 @@ trait WorkIdentity {
     * Two tasks may return the same value <code>workDescription</code> but different values for <code>workId</code>.
     */
   def workDescription: String
+
+  override def toString: String = s"$workDescription-$workId"
 }
 
 case class WorkIdentityImpl(workId: Id, workDescription: String) extends WorkIdentity with HasWorkIdentity {
