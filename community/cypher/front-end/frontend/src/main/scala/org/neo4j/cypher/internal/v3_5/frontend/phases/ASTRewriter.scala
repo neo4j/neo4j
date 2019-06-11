@@ -24,7 +24,7 @@ import org.neo4j.cypher.internal.v3_5.rewriting.conditions._
 import org.neo4j.cypher.internal.v3_5.rewriting.rewriters.{replaceLiteralDynamicPropertyLookups, _}
 import org.neo4j.cypher.internal.v3_5.rewriting.{RewriterCondition, RewriterStepSequencer}
 
-class ASTRewriter(rewriterSequencer: (String) => RewriterStepSequencer,
+class ASTRewriter(rewriterSequencer: String => RewriterStepSequencer,
                   literalExtraction: LiteralExtraction,
                   getDegreeRewriting: Boolean) {
 
@@ -53,7 +53,8 @@ class ASTRewriter(rewriterSequencer: (String) => RewriterStepSequencer,
       replaceLiteralDynamicPropertyLookups,
       namePatternComprehensionPatternElements,
       enableCondition(noUnnamedPatternElementsInPatternComprehension),
-      inlineNamedPathsInPatternComprehensions
+      inlineNamedPathsInPatternComprehensions,
+      addImplicitExistToPatternExpressions(semanticState)
     )
 
     val rewrittenStatement = statement.endoRewrite(contract.rewriter)

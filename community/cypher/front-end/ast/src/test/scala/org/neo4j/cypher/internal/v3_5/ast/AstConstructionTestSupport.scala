@@ -17,6 +17,7 @@
 package org.neo4j.cypher.internal.v3_5.ast
 
 import org.neo4j.cypher.internal.v3_5.expressions._
+import org.neo4j.cypher.internal.v3_5.expressions.functions.Exists
 import org.neo4j.cypher.internal.v3_5.util.test_helpers.CypherTestSupport
 import org.neo4j.cypher.internal.v3_5.util.{DummyPosition, InputPosition}
 
@@ -33,6 +34,9 @@ trait AstConstructionTestSupport extends CypherTestSupport {
 
   def hasLabels(v: String, label: String): HasLabels =
     HasLabels(varFor(v), Seq(lblName(label)))(pos)
+
+  def exists(e: Expression): FunctionInvocation =
+    FunctionInvocation(FunctionName(Exists.name)(e.position), e)(e.position)
 
   def prop(variable: String, propKey: String): Property = Property(varFor(variable), PropertyKeyName(propKey)(pos))(pos)
 

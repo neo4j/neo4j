@@ -26,6 +26,7 @@ import org.neo4j.cypher.internal.compiler.v3_5.planner.logical.Metrics.{Cardinal
 import org.neo4j.cypher.internal.ir.v3_5._
 import org.neo4j.cypher.internal.v3_5.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.v3_5.expressions._
+import org.neo4j.cypher.internal.v3_5.expressions.functions.Exists
 import org.neo4j.cypher.internal.v3_5.logical.plans._
 import org.neo4j.cypher.internal.v3_5.util.Cardinality
 import org.neo4j.cypher.internal.v3_5.util.test_helpers.CypherFunSuite
@@ -40,11 +41,11 @@ class SelectPatternPredicatesTest extends CypherFunSuite with LogicalPlanningTes
   val patternRel = PatternRelationship(relName, ("a", nodeName), dir, types, SimplePatternLength)
 
   // MATCH (a) WHERE (a)-->()
-  val patternExp = PatternExpression(RelationshipsPattern(RelationshipChain(
+  val patternExp = Exists(PatternExpression(RelationshipsPattern(RelationshipChain(
     NodePattern(Some(varFor("a")), Seq(), None)_,
     RelationshipPattern(Some(varFor(relName)), types, None, None, sdir) _,
     NodePattern(Some(varFor(nodeName)), Seq(), None)_
-  )_)_)
+  )_)_))
 
   val factory = newMockedMetricsFactory
   doReturn(new CardinalityModel {
@@ -203,11 +204,11 @@ class SelectPatternPredicatesTest extends CypherFunSuite with LogicalPlanningTes
 
   test("should introduce let semi apply and select or semi apply for multiple pattern predicates in or") {
     // Given
-    val patternExp2 = PatternExpression(RelationshipsPattern(RelationshipChain(
+    val patternExp2 = Exists(PatternExpression(RelationshipsPattern(RelationshipChain(
       NodePattern(Some(varFor("a")), Seq(), None)_,
       RelationshipPattern(Some(varFor("  UNNAMED3")), types, None, None, sdir) _,
       NodePattern(Some(varFor("  UNNAMED4")), Seq(), None)_
-    )_)_)
+    )_)_))
 
     val patternRel2 = PatternRelationship("  UNNAMED3", ("a", "  UNNAMED4"), dir, types, SimplePatternLength)
 
@@ -246,11 +247,11 @@ class SelectPatternPredicatesTest extends CypherFunSuite with LogicalPlanningTes
 
   test("should introduce let semi apply and select or anti semi apply for multiple pattern predicates in or") {
     // Given
-    val patternExp2: PatternExpression = PatternExpression(RelationshipsPattern(RelationshipChain(
+    val patternExp2 = Exists(PatternExpression(RelationshipsPattern(RelationshipChain(
       NodePattern(Some(varFor("a")), Seq(), None)_,
       RelationshipPattern(Some(varFor("  UNNAMED3")), types, None, None, sdir) _,
       NodePattern(Some(varFor("  UNNAMED4")), Seq(), None)_
-    )_)_)
+    )_)_))
     val patternRel2 = PatternRelationship("  UNNAMED3", ("a", "  UNNAMED4"), dir, types, SimplePatternLength)
 
     val orsExp = Ors(Set(patternExp, Not(patternExp2)_))_
@@ -288,11 +289,11 @@ class SelectPatternPredicatesTest extends CypherFunSuite with LogicalPlanningTes
 
   test("should introduce let anti semi apply and select or semi apply for multiple pattern predicates in or") {
     // Given
-    val patternExp2: PatternExpression = PatternExpression(RelationshipsPattern(RelationshipChain(
+    val patternExp2 = Exists(PatternExpression(RelationshipsPattern(RelationshipChain(
       NodePattern(Some(varFor("a")), Seq(), None)_,
       RelationshipPattern(Some(varFor("  UNNAMED3")), types, None, None, sdir) _,
       NodePattern(Some(varFor("  UNNAMED4")), Seq(), None)_
-    )_)_)
+    )_)_))
     val patternRel2 = PatternRelationship("  UNNAMED3", ("a", "  UNNAMED4"), dir, types, SimplePatternLength)
 
     val orsExp = Ors(Set(Not(patternExp)_, patternExp2))_
@@ -335,11 +336,11 @@ class SelectPatternPredicatesTest extends CypherFunSuite with LogicalPlanningTes
       StringLiteral("42")_
     )_
 
-    val patternExp2: PatternExpression = PatternExpression(RelationshipsPattern(RelationshipChain(
+    val patternExp2 = Exists(PatternExpression(RelationshipsPattern(RelationshipChain(
       NodePattern(Some(varFor("a")), Seq(), None)_,
       RelationshipPattern(Some(varFor("  UNNAMED3")), types, None, None, sdir) _,
       NodePattern(Some(varFor("  UNNAMED4")), Seq(), None)_
-    )_)_)
+    )_)_))
     val patternRel2 = PatternRelationship("  UNNAMED3", ("a", "  UNNAMED4"), dir, types, SimplePatternLength)
 
     val orsExp = Ors(Set(equals, patternExp, Not(patternExp2)_))_
@@ -382,11 +383,11 @@ class SelectPatternPredicatesTest extends CypherFunSuite with LogicalPlanningTes
       StringLiteral("42")_
     )_
 
-    val patternExp2: PatternExpression = PatternExpression(RelationshipsPattern(RelationshipChain(
+    val patternExp2 = Exists(PatternExpression(RelationshipsPattern(RelationshipChain(
       NodePattern(Some(varFor("a")), Seq(), None)_,
       RelationshipPattern(Some(varFor("  UNNAMED3")), types, None, None, sdir) _,
       NodePattern(Some(varFor("  UNNAMED4")), Seq(), None)_
-    )_)_)
+    )_)_))
     val patternRel2 = PatternRelationship("  UNNAMED3", ("a", "  UNNAMED4"), dir, types, SimplePatternLength)
 
     val orsExp = Ors(Set(equals, Not(patternExp)_, patternExp2))_

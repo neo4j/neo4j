@@ -16,6 +16,21 @@
  */
 package org.neo4j.cypher.internal.v3_5.expressions.functions
 
+import org.neo4j.cypher.internal.v3_5.expressions.{Expression, FunctionInvocation}
+import org.neo4j.cypher.internal.v3_5.util.InputPosition
+
 case object Exists extends Function {
+
+  private val functionName = asFunctionName(InputPosition.NONE)
+
   def name = "EXISTS"
+
+  def unapply(arg: Expression): Option[Expression] =
+    arg match {
+      case FunctionInvocation(_, functionName, _, args) => Some(args.head)
+      case _ => None
+    }
+
+  def apply(arg: Expression): FunctionInvocation =
+    FunctionInvocation(arg, functionName)
 }
