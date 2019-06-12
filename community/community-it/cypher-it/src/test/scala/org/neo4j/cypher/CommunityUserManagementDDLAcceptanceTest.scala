@@ -408,6 +408,23 @@ class CommunityUserManagementDDLAcceptanceTest extends CommunityDDLAcceptanceTes
     testUserLogin("foo", "bar", AuthenticationResult.FAILURE)
   }
 
+  test("should change own password when password change is required") {
+    // GIVEN
+    selectDatabase(SYSTEM_DATABASE_NAME)
+    execute("CREATE USER foo SET PASSWORD 'bar' CHANGE REQUIRED")
+    execute("SHOW USERS").toSet shouldBe Set(user("neo4j"),
+      user("foo", passwordChangeRequired = true))
+
+    // WHEN
+    executeOnSystem("foo", "bar", "ALTER CURRENT USER SET PASSWORD FROM 'bar' TO 'baz'")
+
+    // THEN
+    execute("SHOW USERS").toSet shouldBe Set(user("neo4j"),
+      user("foo", passwordChangeRequired = false))
+    testUserLogin("foo", "baz", AuthenticationResult.SUCCESS)
+    testUserLogin("foo", "bar", AuthenticationResult.FAILURE)
+  }
+
   test("should fail on changing own password from wrong password") {
     // GIVEN
     selectDatabase(SYSTEM_DATABASE_NAME)

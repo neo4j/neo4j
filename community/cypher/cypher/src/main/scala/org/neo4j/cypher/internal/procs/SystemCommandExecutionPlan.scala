@@ -31,6 +31,8 @@ import org.neo4j.cypher.result.RuntimeResult
 import org.neo4j.graphdb.QueryStatistics
 import org.neo4j.graphdb.security.AuthorizationViolationException
 import org.neo4j.graphdb.security.AuthorizationViolationException.PERMISSION_DENIED
+import org.neo4j.internal.kernel.api.security.AccessMode
+import org.neo4j.kernel.api.KernelTransaction
 import org.neo4j.kernel.impl.query.{QueryExecution, QuerySubscriber}
 import org.neo4j.values.AnyValue
 import org.neo4j.values.virtual.MapValue
@@ -52,11 +54,20 @@ case class SystemCommandExecutionPlan(name: String, normalExecutionEngine: Execu
 
     val tc = ctx.asInstanceOf[ExceptionTranslatingQueryContext].inner.asInstanceOf[TransactionBoundQueryContext].transactionalContext.tc
     if (!name.equals("ShowDefaultDatabase") && !name.startsWith("ShowDatabase") && !tc.securityContext().isAdmin) throw new AuthorizationViolationException(PERMISSION_DENIED)
-    val systemSubscriber = new SystemCommandQuerySubscriber(subscriber, QueryHandler.handleError(onError))
-    val execution = normalExecutionEngine.executeSubQuery(query, systemParams, tc, shouldCloseTransaction = false, doProfile, prePopulateResults, systemSubscriber)
-    systemSubscriber.assertNotFailed()
 
-    SystemCommandRuntimeResult(ctx, resultMapper(ctx, execution), systemSubscriber)
+    var revert: KernelTransaction.Revertable = null
+    try {
+      val fullReadAccess = tc.securityContext().withMode(AccessMode.Static.READ)
+      revert = tc.kernelTransaction().overrideWith(fullReadAccess)
+
+      val systemSubscriber = new SystemCommandQuerySubscriber(subscriber, QueryHandler.handleError(onError))
+      val execution = normalExecutionEngine.executeSubQuery(query, systemParams, tc, shouldCloseTransaction = false, doProfile, prePopulateResults, systemSubscriber)
+      systemSubscriber.assertNotFailed()
+
+      SystemCommandRuntimeResult(ctx, resultMapper(ctx, execution), systemSubscriber, fullReadAccess, tc.kernelTransaction())
+    } finally {
+      if (revert != null) revert
+    }
   }
 
   override def runtimeName: RuntimeName = SystemCommandRuntimeName

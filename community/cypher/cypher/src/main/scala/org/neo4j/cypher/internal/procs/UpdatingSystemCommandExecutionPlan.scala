@@ -29,6 +29,8 @@ import org.neo4j.cypher.internal.{ExecutionEngine, ExecutionPlan, RuntimeName, S
 import org.neo4j.cypher.result.RuntimeResult
 import org.neo4j.graphdb.security.AuthorizationViolationException
 import org.neo4j.graphdb.security.AuthorizationViolationException.PERMISSION_DENIED
+import org.neo4j.internal.kernel.api.security.AccessMode
+import org.neo4j.kernel.api.KernelTransaction
 import org.neo4j.kernel.impl.query.{QuerySubscriber, TransactionalContext}
 import org.neo4j.values.AnyValue
 import org.neo4j.values.virtual.MapValue
@@ -61,11 +63,20 @@ case class UpdatingSystemCommandExecutionPlan(name: String,
 
         val tc: TransactionalContext = ctx.asInstanceOf[ExceptionTranslatingQueryContext].inner.asInstanceOf[TransactionBoundQueryContext].transactionalContext.tc
         if (!name.equals("AlterCurrentUserSetPassword") && !tc.securityContext().isAdmin) throw new AuthorizationViolationException(PERMISSION_DENIED)
-        val systemSubscriber = new SystemCommandQuerySubscriber(subscriber, queryHandler)
-        val execution = normalExecutionEngine.executeSubQuery(query, systemParams, tc, shouldCloseTransaction = false, doProfile, prePopulateResults, systemSubscriber).asInstanceOf[InternalExecutionResult]
-        systemSubscriber.assertNotFailed()
 
-        SystemCommandRuntimeResult(ctx, new UpdatingSystemCommandExecutionResult(execution), systemSubscriber)
+        var revert: KernelTransaction.Revertable = null
+        try {
+          val fullAccess = tc.securityContext().withMode(AccessMode.Static.FULL)
+          revert = tc.kernelTransaction().overrideWith(fullAccess)
+
+          val systemSubscriber = new SystemCommandQuerySubscriber(subscriber, queryHandler)
+          val execution = normalExecutionEngine.executeSubQuery(query, systemParams, tc, shouldCloseTransaction = false, doProfile, prePopulateResults, systemSubscriber).asInstanceOf[InternalExecutionResult]
+          systemSubscriber.assertNotFailed()
+
+          SystemCommandRuntimeResult(ctx, new UpdatingSystemCommandExecutionResult(execution), systemSubscriber, fullAccess, tc.kernelTransaction())
+        } finally {
+          if(revert != null ) revert
+        }
     }
   }
 

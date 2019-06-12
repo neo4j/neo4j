@@ -25,13 +25,17 @@ import org.neo4j.cypher.internal.result.{Error, InternalExecutionResult}
 import org.neo4j.cypher.internal.runtime.{QueryContext, QueryStatistics}
 import org.neo4j.cypher.result.RuntimeResult.ConsumptionState
 import org.neo4j.cypher.result.{OperatorProfile, QueryProfile, RuntimeResult}
+import org.neo4j.internal.kernel.api.security.SecurityContext
+import org.neo4j.kernel.api.KernelTransaction
 
 /**
   * Results, as produced by a system command.
   */
 case class SystemCommandRuntimeResult(ctx: QueryContext,
                                       execution: SystemCommandExecutionResult,
-                                      subscriber: SystemCommandQuerySubscriber) extends RuntimeResult {
+                                      subscriber: SystemCommandQuerySubscriber,
+                                      securityContext: SecurityContext,
+                                      kernelTransaction: KernelTransaction) extends RuntimeResult {
 
   override val fieldNames: Array[String] = execution.fieldNames()
   private var state = ConsumptionState.NOT_STARTED
@@ -45,10 +49,17 @@ case class SystemCommandRuntimeResult(ctx: QueryContext,
   override def queryProfile(): QueryProfile = SystemCommandProfile(0)
 
   override def request(numberOfRecords: Long): Unit = {
-    state = ConsumptionState.HAS_MORE
-    execution.inner.request(numberOfRecords)
-    // The lower level (execution) is capturing exceptions using the subscriber, but this level is expecting to do the same higher up, so re-throw to trigger that code path
-    subscriber.assertNotFailed(e => execution.inner.close(Error(e)))
+    var revert: KernelTransaction.Revertable = null
+    try {
+      revert = kernelTransaction.overrideWith(securityContext)
+
+      state = ConsumptionState.HAS_MORE
+      execution.inner.request(numberOfRecords)
+      // The lower level (execution) is capturing exceptions using the subscriber, but this level is expecting to do the same higher up, so re-throw to trigger that code path
+      subscriber.assertNotFailed(e => execution.inner.close(Error(e)))
+    } finally {
+      if (revert != null) revert
+    }
   }
 
   override def cancel(): Unit = execution.inner.cancel()
