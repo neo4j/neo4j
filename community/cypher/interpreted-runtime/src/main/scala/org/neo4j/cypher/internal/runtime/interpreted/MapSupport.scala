@@ -59,7 +59,7 @@ class LazyMap[T, CURSOR](ctx: QueryContext, ops: Operations[T, CURSOR], cursor: 
 
   private lazy val allProps: util.Map[String, AnyValue] = ops.propertyKeyIds(id, cursor, propertyCursor)
     .map(propertyId => {
-      val value: AnyValue = ops.getProperty(id, propertyId, cursor, propertyCursor)
+      val value: AnyValue = ops.getProperty(id, propertyId, cursor, propertyCursor, throwOnDeleted = true)
       ctx.getPropertyKeyName(propertyId) -> value
     }
     ).toMap.asJava
@@ -80,7 +80,7 @@ class LazyMap[T, CURSOR](ctx: QueryContext, ops: Operations[T, CURSOR], cursor: 
   override def get(key: String): AnyValue =
       ctx.getOptPropertyKeyId(key) match {
         case Some(keyId) =>
-          ops.getProperty(id, keyId, cursor, propertyCursor)
+          ops.getProperty(id, keyId, cursor, propertyCursor, throwOnDeleted = true)
         case None =>
           Values.NO_VALUE
       }

@@ -226,7 +226,7 @@ trait QueryContext extends TokenContext with DbAccess {
                                     relationshipScanCursor: RelationshipScanCursor,
                                     propertyCursor: PropertyCursor,
                                     throwOnDeleted: Boolean): Value =
-    relationshipOps.getProperty(relationship, property, relationshipScanCursor, propertyCursor)
+    relationshipOps.getProperty(relationship, property, relationshipScanCursor, propertyCursor, throwOnDeleted)
 
   override def relationshipPropertyIds(relationship: Long,
                                        relationshipScanCursor: RelationshipScanCursor,
@@ -265,7 +265,7 @@ trait Operations[T, CURSOR] {
     * @param throwOnDeleted if this is `true` an Exception will be thrown whten the entity with id `obj` has been deleted in this transaction.
     *                       If this is `false`, it will return `Values.NO_VALUE` in that case.
     */
-  def getProperty(obj: Long, propertyKeyId: Int, cursor: CURSOR, propertyCursor: PropertyCursor, throwOnDeleted: Boolean = true): Value
+  def getProperty(obj: Long, propertyKeyId: Int, cursor: CURSOR, propertyCursor: PropertyCursor, throwOnDeleted: Boolean): Value
 
   def hasProperty(obj: Long, propertyKeyId: Int, cursor: CURSOR, propertyCursor: PropertyCursor): Boolean
 
