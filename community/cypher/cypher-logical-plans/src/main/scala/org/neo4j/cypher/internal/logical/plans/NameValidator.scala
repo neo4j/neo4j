@@ -22,7 +22,6 @@ package org.neo4j.cypher.internal.logical.plans
 import java.util.regex.Pattern
 
 import org.neo4j.cypher.internal.v4_0.util.InvalidArgumentException
-import org.neo4j.kernel.database.NormalizedDatabaseName
 
 object NameValidator {
   // Allow all ascii from '!' to '~', apart from ',' and ':' which are used as separators in flat file
@@ -30,14 +29,6 @@ object NameValidator {
 
   // Allow only letters, numbers and underscore
   private val roleNamePattern = Pattern.compile("^[a-zA-Z0-9_]+$")
-
-  private def isLowerCaseLetter(asciiCode: Int) = {
-    asciiCode >= 97 && asciiCode <= 122
-  }
-
-  private def isDigitDotOrDash(asciiCode: Int) = {
-    (asciiCode >= 48 && asciiCode <= 57) || asciiCode == 46 || asciiCode == 45
-  }
 
   def assertValidUsername(name: String): Unit = {
     if (name == null || name.isEmpty)
@@ -55,23 +46,5 @@ object NameValidator {
       throw new InvalidArgumentException(
         s"""Role name '$name' contains illegal characters.
            |Use simple ascii characters, numbers and underscores.""".stripMargin)
-  }
-
-  def assertValidDatabaseName(normalizedName: NormalizedDatabaseName): Unit = {
-    if (normalizedName == null) throw new InvalidArgumentException("The provided database name is empty.")
-
-    val name = normalizedName.name
-    if (name.isEmpty)
-      throw new InvalidArgumentException("The provided database name is empty.")
-    if (name.length < 3 || name.length > 63)
-      throw new InvalidArgumentException("The provided database name must have a length between 3 and 63 characters.")
-    if (!isLowerCaseLetter(name(0).toInt))
-      throw new InvalidArgumentException(s"Database name '$name' is not starting with an ASCII alphabetic character.")
-    name.foreach(c => if (!(isLowerCaseLetter(c.toInt) || isDigitDotOrDash(c.toInt)))
-      throw new InvalidArgumentException(
-        s"""Database name '$name' contains illegal characters.
-           |Use simple ascii characters, numbers, dots and dashes.""".stripMargin))
-    if (name.startsWith("system"))
-      throw new InvalidArgumentException(s"Database name '$name' is invalid, due to the prefix 'system'.")
   }
 }

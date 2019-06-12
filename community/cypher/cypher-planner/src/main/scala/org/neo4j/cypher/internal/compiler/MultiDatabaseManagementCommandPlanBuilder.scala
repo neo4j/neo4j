@@ -28,7 +28,7 @@ import org.neo4j.cypher.internal.v4_0.frontend.phases.CompilationPhaseTracer.Com
 import org.neo4j.cypher.internal.v4_0.frontend.phases.CompilationPhaseTracer.CompilationPhase.PIPE_BUILDING
 import org.neo4j.cypher.internal.v4_0.frontend.phases._
 import org.neo4j.cypher.internal.v4_0.util.attribution.SequentialIdGen
-import org.neo4j.kernel.database.NormalizedDatabaseName
+import org.neo4j.kernel.database.{DatabaseNameValidator, NormalizedDatabaseName}
 
 /**
   * This planner takes on queries that run at the DBMS level for multi-database management
@@ -161,7 +161,7 @@ case object MultiDatabaseManagementCommandPlanBuilder extends Phase[PlannerConte
       // CREATE DATABASE foo
       case CreateDatabase(dbName) =>
         val normalizedName = new NormalizedDatabaseName(dbName)
-        NameValidator.assertValidDatabaseName(normalizedName)
+        DatabaseNameValidator.assertValidDatabaseName(normalizedName)
         Some(plans.CreateDatabase(normalizedName))
 
       // DROP DATABASE foo

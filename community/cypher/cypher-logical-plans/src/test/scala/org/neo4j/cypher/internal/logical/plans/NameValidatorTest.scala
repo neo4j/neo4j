@@ -20,11 +20,9 @@
 package org.neo4j.cypher.internal.logical.plans
 
 import org.neo4j.cypher.internal.v4_0.util.InvalidArgumentException
-import org.neo4j.kernel.database.NormalizedDatabaseName
 import org.scalatest.{FunSuite, Matchers}
 
 class NameValidatorTest extends FunSuite with Matchers {
-  implicit private def stringToNormalizedName(name: String): NormalizedDatabaseName = new NormalizedDatabaseName(name)
 
   // username tests
 
@@ -97,108 +95,6 @@ class NameValidatorTest extends FunSuite with Matchers {
         e.getMessage should be(
           """Role name 'role%' contains illegal characters.
             |Use simple ascii characters, numbers and underscores.""".stripMargin)
-    }
-  }
-
-  // database name tests
-
-  test("Should not get an error for a valid database name") {
-    NameValidator.assertValidDatabaseName("my.Vaild-Db")
-  }
-
-  test("Should get an error for an empty database name") {
-    try {
-      NameValidator.assertValidDatabaseName("")
-
-      fail("Expected exception \"The provided database name is empty.\" but succeeded.")
-    } catch {
-      case e: InvalidArgumentException => e.getMessage should be("The provided database name is empty.")
-    }
-
-    try {
-      NameValidator.assertValidDatabaseName(null)
-
-      fail("Expected exception \"The provided database name is empty.\" but succeeded.")
-    } catch {
-      case e: InvalidArgumentException => e.getMessage should be("The provided database name is empty.")
-    }
-  }
-
-  test("Should get an error for a database name with invalid characters") {
-    try {
-      NameValidator.assertValidDatabaseName("database%")
-
-      fail("Expected exception \"Database name 'database%' contains illegal characters.\" but succeeded.")
-    } catch {
-      case e: InvalidArgumentException =>
-        e.getMessage should be(
-          """Database name 'database%' contains illegal characters.
-            |Use simple ascii characters, numbers, dots and dashes.""".stripMargin)
-    }
-
-    try {
-      NameValidator.assertValidDatabaseName("data_base")
-
-      fail("Expected exception \"Database name 'data_base' contains illegal characters.\" but succeeded.")
-    } catch {
-      case e: InvalidArgumentException =>
-        e.getMessage should be(
-          """Database name 'data_base' contains illegal characters.
-            |Use simple ascii characters, numbers, dots and dashes.""".stripMargin)
-    }
-  }
-
-  test("Should get an error for a database name with 'system' prefix") {
-    try {
-      NameValidator.assertValidDatabaseName("systemdatabase")
-
-      fail("Expected exception \"Database name 'systemdatabase' is invalid, due to the prefix 'system'.\" but succeeded.")
-    } catch {
-      case e: InvalidArgumentException =>
-        e.getMessage should be("Database name 'systemdatabase' is invalid, due to the prefix 'system'.")
-    }
-  }
-
-  test("Should get an error for a database name with invalid first character") {
-    try {
-      NameValidator.assertValidDatabaseName("3database")
-
-      fail("Expected exception \"Database name '3database' is not starting with an ASCII alphabetic character.\" but succeeded.")
-    } catch {
-      case e: InvalidArgumentException =>
-        e.getMessage should be("Database name '3database' is not starting with an ASCII alphabetic character.")
-    }
-
-    try {
-      NameValidator.assertValidDatabaseName("_database")
-
-      fail("Expected exception \"Database name '_database' is not starting with an ASCII alphabetic character.\" but succeeded.")
-    } catch {
-      case e: InvalidArgumentException =>
-        e.getMessage should be("Database name '_database' is not starting with an ASCII alphabetic character.")
-    }
-  }
-
-  test("Should get an error for a database name with invalid length") {
-    try {
-      // Too short
-      NameValidator.assertValidDatabaseName("me")
-
-      fail("Expected exception \"The provided database name must have a length between 3 and 63 characters.\" but succeeded.")
-    } catch {
-      case e: InvalidArgumentException =>
-        e.getMessage should be("The provided database name must have a length between 3 and 63 characters.")
-    }
-
-    try {
-      // Too long
-      NameValidator.assertValidDatabaseName(
-        "ihaveallooootoflettersclearlymorethenishould-ihaveallooootoflettersclearlymorethenishould-ihaveallooootoflettersclearlymorethenishould")
-
-      fail("Expected exception \"The provided database name must have a length between 3 and 63 characters.\" but succeeded.")
-    } catch {
-      case e: InvalidArgumentException =>
-        e.getMessage should be("The provided database name must have a length between 3 and 63 characters.")
     }
   }
 }
