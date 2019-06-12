@@ -64,7 +64,6 @@ import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
 import static org.neo4j.bolt.testing.BoltMatchers.canReset;
 import static org.neo4j.bolt.testing.BoltMatchers.failedWithStatus;
 import static org.neo4j.bolt.testing.BoltMatchers.hasNoTransaction;
@@ -335,9 +334,8 @@ public class BoltStateMachineV1Test
 
         // And given that transaction will fail to roll back
         TransactionStateMachine txMachine = txStateMachine( machine );
-        when( txMachine.ctx.currentTransaction.isOpen() ).thenReturn( true );
         doThrow( new TransactionFailureException( "No Mr. Bond, I expect you to die." ) ).
-                when( txMachine.ctx.currentTransaction ).close();
+                when( txMachine.ctx.currentTransaction ).rollback();
 
         // When
         machine.process( new RunMessage( "ROLLBACK", EMPTY_PARAMS ), nullResponseHandler() );
@@ -432,7 +430,7 @@ public class BoltStateMachineV1Test
     {
         // Given
         TransactionStateMachineSPI transactionSPI = mock( TransactionStateMachineSPI.class );
-        doThrow( new AuthorizationExpiredException( "Auth expired!" ) ).when( transactionSPI ).beginTransaction( any(), any(), any() );
+        doThrow( new AuthorizationExpiredException( "Auth expired!" ) ).when( transactionSPI ).beginTransaction( any(), any(), any(), any() );
 
         BoltStateMachine machine = newMachineWithTransactionSPI( transactionSPI );
 

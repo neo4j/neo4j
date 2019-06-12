@@ -23,63 +23,43 @@ import java.io.IOException;
 import java.time.Clock;
 import java.time.Duration;
 import java.util.Map;
-import java.util.concurrent.TimeUnit;
-import java.util.function.Supplier;
 
 import org.neo4j.bolt.BoltChannel;
+import org.neo4j.bolt.dbapi.BoltGraphDatabaseServiceSPI;
+import org.neo4j.bolt.dbapi.BoltQueryExecution;
+import org.neo4j.bolt.dbapi.BoltQueryExecutor;
+import org.neo4j.bolt.dbapi.BoltTransaction;
+import org.neo4j.bolt.runtime.AccessMode;
 import org.neo4j.bolt.runtime.BoltResult;
 import org.neo4j.bolt.runtime.BoltResultHandle;
 import org.neo4j.bolt.runtime.TransactionStateMachineSPI;
 import org.neo4j.cypher.CypherExecutionException;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.graphdb.QueryStatistics;
-import org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo;
 import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.internal.kernel.api.security.LoginContext;
-import org.neo4j.kernel.GraphDatabaseQueryService;
-import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.exceptions.Status;
-import org.neo4j.kernel.api.txtracking.TransactionIdTracker;
-import org.neo4j.kernel.availability.AvailabilityGuard;
-import org.neo4j.kernel.availability.DatabaseAvailabilityGuard;
-import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
-import org.neo4j.kernel.impl.coreapi.InternalTransaction;
-import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
-import org.neo4j.kernel.impl.query.Neo4jTransactionalContextFactory;
 import org.neo4j.kernel.impl.query.QueryExecution;
-import org.neo4j.kernel.impl.query.QueryExecutionEngine;
 import org.neo4j.kernel.impl.query.QueryExecutionKernelException;
 import org.neo4j.kernel.impl.query.QuerySubscriber;
-import org.neo4j.kernel.impl.query.TransactionalContext;
-import org.neo4j.kernel.impl.query.TransactionalContextFactory;
-import org.neo4j.storageengine.api.TransactionIdStore;
 import org.neo4j.time.SystemNanoClock;
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.virtual.MapValue;
 
 import static org.neo4j.internal.kernel.api.Transaction.Type.explicit;
-import static org.neo4j.internal.kernel.api.Transaction.Type.implicit;
 
 public class TransactionStateMachineV1SPI implements TransactionStateMachineSPI
 {
-    private final ThreadToStatementContextBridge txBridge;
-    private final QueryExecutionEngine queryExecutionEngine;
-    private final TransactionIdTracker transactionIdTracker;
-    private final TransactionalContextFactory contextFactory;
+    private final BoltGraphDatabaseServiceSPI boltGraphDatabaseServiceSPI;
     private final Duration txAwaitDuration;
     private final Clock clock;
-    private final GraphDatabaseFacade databaseFacade;
     private final BoltChannel boltChannel;
     private final StatementProcessorReleaseManager resourceReleaseManager;
 
-    public TransactionStateMachineV1SPI( GraphDatabaseFacade facade, BoltChannel boltChannel, Duration txAwaitDuration, SystemNanoClock clock,
-            StatementProcessorReleaseManager resourceReleaseManger )
+    public TransactionStateMachineV1SPI( BoltGraphDatabaseServiceSPI boltGraphDatabaseServiceSPI, BoltChannel boltChannel, Duration txAwaitDuration,
+            SystemNanoClock clock, StatementProcessorReleaseManager resourceReleaseManger )
     {
-        this.databaseFacade = facade;
-        this.txBridge = resolveDependency( facade, ThreadToStatementContextBridge.class );
-        this.queryExecutionEngine = resolveDependency( facade, QueryExecutionEngine.class );
-        this.transactionIdTracker = newTransactionIdTracker( facade, clock );
-        this.contextFactory = newTransactionalContextFactory( facade );
+        this.boltGraphDatabaseServiceSPI = boltGraphDatabaseServiceSPI;
         this.boltChannel = boltChannel;
         this.txAwaitDuration = txAwaitDuration;
         this.clock = clock;
@@ -89,47 +69,53 @@ public class TransactionStateMachineV1SPI implements TransactionStateMachineSPI
     @Override
     public void awaitUpToDate( long oldestAcceptableTxId ) throws TransactionFailureException
     {
-        transactionIdTracker.awaitUpToDate( oldestAcceptableTxId, txAwaitDuration );
+        boltGraphDatabaseServiceSPI.awaitUpToDate( oldestAcceptableTxId, txAwaitDuration );
     }
 
     @Override
     public long newestEncounteredTxId()
     {
-        return transactionIdTracker.newestEncounteredTxId();
+        return boltGraphDatabaseServiceSPI.newestEncounteredTxId();
     }
 
     @Override
-    public KernelTransaction beginTransaction( LoginContext loginContext, Duration txTimeout, Map<String,Object> txMetadata )
+    public BoltTransaction beginTransaction( LoginContext loginContext, Duration txTimeout, AccessMode accessMode, Map<String,Object> txMetadata )
     {
-        beginTransaction( explicit, loginContext, boltChannel.info(), txTimeout, txMetadata );
-        return txBridge.getKernelTransactionBoundToThisThread( false );
+        return boltGraphDatabaseServiceSPI.beginTransaction( explicit, loginContext, boltChannel.info(), txTimeout, accessMode, txMetadata  );
     }
 
     @Override
-    public void bindTransactionToCurrentThread( KernelTransaction tx )
+    public BoltQueryExecutor getPeriodicCommitExecutor( LoginContext loginContext, Duration txTimeout, AccessMode accessMode, Map<String,Object> txMetaData )
     {
-        txBridge.bindTransactionToCurrentThread( tx );
+        return boltGraphDatabaseServiceSPI.getPeriodicCommitExecutor( loginContext, boltChannel.info(), txTimeout, accessMode, txMetaData );
     }
 
     @Override
-    public void unbindTransactionFromCurrentThread()
+    public void bindTransactionToCurrentThread( BoltTransaction tx )
     {
-        txBridge.unbindTransactionFromCurrentThread();
+        tx.bindToCurrentThread();
+    }
+
+    @Override
+    public void unbindTransactionFromCurrentThread( BoltTransaction tx )
+    {
+
+        if ( tx != null )
+        {
+            tx.unbindFromCurrentThread();
+        }
     }
 
     @Override
     public boolean isPeriodicCommit( String query )
     {
-        return queryExecutionEngine.isPeriodicCommit( query );
+        return boltGraphDatabaseServiceSPI.isPeriodicCommit( query );
     }
 
     @Override
-    public BoltResultHandle executeQuery( LoginContext loginContext, String statement, MapValue params, Duration txTimeout,
-            Map<String,Object> txMetadata )
+    public BoltResultHandle executeQuery( BoltQueryExecutor boltQueryExecutor, String statement, MapValue params )
     {
-        InternalTransaction internalTransaction = beginTransaction( implicit, loginContext, boltChannel.info(), txTimeout, txMetadata );
-        TransactionalContext transactionalContext = contextFactory.newContext( internalTransaction, statement, params );
-        return newBoltResultHandle( statement, params, transactionalContext );
+        return newBoltResultHandle( statement, params, boltQueryExecutor );
     }
 
     @Override
@@ -144,60 +130,23 @@ public class TransactionStateMachineV1SPI implements TransactionStateMachineSPI
         resourceReleaseManager.releaseStatementProcessor();
     }
 
-    protected BoltResultHandle newBoltResultHandle( String statement, MapValue params, TransactionalContext transactionalContext )
+    protected BoltResultHandle newBoltResultHandle( String statement, MapValue params, BoltQueryExecutor boltQueryExecutor )
     {
-        return new BoltResultHandleV1( statement, params, transactionalContext );
-    }
-
-    private InternalTransaction beginTransaction( KernelTransaction.Type type, LoginContext loginContext, ClientConnectionInfo clientInfo, Duration txTimeout,
-            Map<String,Object> txMetadata )
-    {
-        InternalTransaction tx;
-        if ( txTimeout == null )
-        {
-            tx = databaseFacade.beginTransaction( type, loginContext, clientInfo );
-        }
-        else
-        {
-            tx = databaseFacade.beginTransaction( type, loginContext, clientInfo, txTimeout.toMillis(), TimeUnit.MILLISECONDS );
-        }
-
-        if ( txMetadata != null )
-        {
-            tx.setMetaData( txMetadata );
-        }
-        return tx;
-    }
-
-    private static TransactionIdTracker newTransactionIdTracker( GraphDatabaseFacade databaseContext, SystemNanoClock clock )
-    {
-        Supplier<TransactionIdStore> transactionIdStoreSupplier = databaseContext.getDependencyResolver().provideDependency( TransactionIdStore.class );
-        AvailabilityGuard guard = resolveDependency( databaseContext, DatabaseAvailabilityGuard.class );
-        return new TransactionIdTracker( transactionIdStoreSupplier, guard, clock );
-    }
-
-    private static TransactionalContextFactory newTransactionalContextFactory( GraphDatabaseFacade databaseContext )
-    {
-        GraphDatabaseQueryService queryService = resolveDependency( databaseContext, GraphDatabaseQueryService.class );
-        return Neo4jTransactionalContextFactory.create( queryService );
-    }
-
-    private static <T> T resolveDependency( GraphDatabaseFacade databaseContext, Class<T> clazz )
-    {
-        return databaseContext.getDependencyResolver().resolveDependency( clazz );
+        return new BoltResultHandleV1( statement, params, boltQueryExecutor );
     }
 
     public class BoltResultHandleV1 implements BoltResultHandle
     {
         private final String statement;
         private final MapValue params;
-        private final TransactionalContext transactionalContext;
+        private final BoltQueryExecutor boltQueryExecutor;
+        private BoltQueryExecution boltQueryExecution;
 
-        public BoltResultHandleV1( String statement, MapValue params, TransactionalContext transactionalContext )
+        public BoltResultHandleV1( String statement, MapValue params, BoltQueryExecutor boltQueryExecutor )
         {
             this.statement = statement;
             this.params = params;
-            this.transactionalContext = transactionalContext;
+            this.boltQueryExecutor = boltQueryExecutor;
         }
 
         @Override
@@ -206,7 +155,8 @@ public class TransactionStateMachineV1SPI implements TransactionStateMachineSPI
             try
             {
                 BoltAdapterSubscriber subscriber = new BoltAdapterSubscriber();
-                QueryExecution result = queryExecutionEngine.executeQuery( statement, params, transactionalContext, true, subscriber );
+                boltQueryExecution = boltQueryExecutor.executeQuery( statement, params, true, subscriber );
+                QueryExecution result = boltQueryExecution.getQueryExecution();
                 subscriber.assertSucceeded();
                 return newBoltResult( result, subscriber, clock );
             }
@@ -231,13 +181,19 @@ public class TransactionStateMachineV1SPI implements TransactionStateMachineSPI
         @Override
         public void close( boolean success )
         {
-            transactionalContext.close( success );
+            if ( boltQueryExecution != null )
+            {
+                boltQueryExecution.close( success );
+            }
         }
 
         @Override
         public void terminate()
         {
-            transactionalContext.terminate();
+            if ( boltQueryExecution != null )
+            {
+                boltQueryExecution.terminate();
+            }
         }
     }
 

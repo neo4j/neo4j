@@ -25,6 +25,9 @@ import org.mockito.InOrder;
 
 import java.util.Optional;
 
+import org.neo4j.bolt.dbapi.BoltQueryExecutor;
+import org.neo4j.bolt.dbapi.BoltTransaction;
+import org.neo4j.bolt.runtime.AccessMode;
 import org.neo4j.bolt.runtime.BoltResult;
 import org.neo4j.bolt.runtime.BoltResultHandle;
 import org.neo4j.bolt.runtime.StatementMetadata;
@@ -35,7 +38,6 @@ import org.neo4j.bolt.v4.messaging.ResultConsumer;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.internal.helpers.collection.MapUtil;
 import org.neo4j.internal.kernel.api.security.LoginContext;
-import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.impl.query.QueryExecutionKernelException;
 import org.neo4j.kernel.impl.util.ValueUtils;
@@ -99,7 +101,7 @@ class TransactionStateMachineTest
     void shouldTransitionToExplicitTransactionOnBegin() throws Exception
     {
         assertEquals( TransactionStateMachine.State.EXPLICIT_TRANSACTION,
-                TransactionStateMachine.State.AUTO_COMMIT.beginTransaction( mutableState, stateMachineSPI, null, null, null ) );
+                TransactionStateMachine.State.AUTO_COMMIT.beginTransaction( mutableState, stateMachineSPI, null, null, AccessMode.WRITE, null ) );
     }
 
     @Test
@@ -120,7 +122,7 @@ class TransactionStateMachineTest
     void shouldThrowOnBeginInExplicitTransaction() throws Exception
     {
         QueryExecutionKernelException e = assertThrows( QueryExecutionKernelException.class, () ->
-                TransactionStateMachine.State.EXPLICIT_TRANSACTION.beginTransaction( mutableState, stateMachineSPI, null, null, null ) );
+                TransactionStateMachine.State.EXPLICIT_TRANSACTION.beginTransaction( mutableState, stateMachineSPI, null, null, AccessMode.WRITE, null ) );
 
         assertEquals( "Nested transactions are not supported.", e.getMessage() );
     }
@@ -191,7 +193,7 @@ class TransactionStateMachineTest
     @Test
     void shouldDoNothingInAutoCommitTransactionUponInitialisationWhenValidated() throws Exception
     {
-        KernelTransaction transaction = newTimedOutTransaction();
+        BoltTransaction transaction = newTimedOutTransaction();
         TransactionStateMachineV1SPI stateMachineSPI = newTransactionStateMachineSPI( transaction );
         TransactionStateMachine stateMachine = newTransactionStateMachine( stateMachineSPI );
 
@@ -206,21 +208,20 @@ class TransactionStateMachineTest
         assertNull( stateMachine.ctx.currentTransaction );
 
         verify( transaction, never() ).getReasonIfTerminated();
-        verify( transaction, never() ).failure();
-        verify( transaction, never() ).close();
+        verify( transaction, never() ).rollback();
     }
 
     @Test
     void shouldTryToTerminateAllActiveStatements() throws Exception
     {
-        KernelTransaction transaction = newTimedOutTransaction();
+        BoltTransaction transaction = newTimedOutTransaction();
 
         BoltResultHandle resultHandle = newResultHandle();
         doThrow( new RuntimeException( "You shall not pass" ) ).doThrow( new RuntimeException( "Not pass twice" ) ).when( resultHandle ).terminate();
         TransactionStateMachineV1SPI stateMachineSPI = mock( TransactionStateMachineV1SPI.class );
 
-        when( stateMachineSPI.beginTransaction( any(), any(), any() ) ).thenReturn( transaction );
-        when( stateMachineSPI.executeQuery( any(), anyString(), any(), any(), any() ) ).thenReturn( resultHandle );
+        when( stateMachineSPI.beginTransaction( any(), any(), any(), any() ) ).thenReturn( transaction );
+        when( stateMachineSPI.executeQuery( any() , anyString(), any() ) ).thenReturn( resultHandle );
         when( stateMachineSPI.supportsNestedStatementsInTransaction() ).thenReturn( true ); // V4
 
         TransactionStateMachine stateMachine = newTransactionStateMachine( stateMachineSPI );
@@ -249,7 +250,7 @@ class TransactionStateMachineTest
     @Test
     void shouldResetInAutoCommitTransactionWhileStatementIsRunningWhenValidated() throws Exception
     {
-        KernelTransaction transaction = newTimedOutTransaction();
+        BoltTransaction transaction = newTimedOutTransaction();
         TransactionStateMachineV1SPI stateMachineSPI = newTransactionStateMachineSPI( transaction );
         TransactionStateMachine stateMachine = newTransactionStateMachine( stateMachineSPI );
 
@@ -271,14 +272,13 @@ class TransactionStateMachineTest
         assertThat( stateMachine.ctx.statementOutcomes.entrySet(), hasSize( 0 ) );
 
         verify( transaction ).getReasonIfTerminated();
-        verify( transaction ).failure();
-        verify( transaction ).close();
+        verify( transaction ).rollback();
     }
 
     @Test
     void shouldResetInExplicitTransactionUponTxBeginWhenValidated() throws Exception
     {
-        KernelTransaction transaction = newTimedOutTransaction();
+        BoltTransaction transaction = newTimedOutTransaction();
         TransactionStateMachineV1SPI stateMachineSPI = newTransactionStateMachineSPI( transaction );
         TransactionStateMachine stateMachine = newTransactionStateMachine( stateMachineSPI );
 
@@ -295,14 +295,13 @@ class TransactionStateMachineTest
         assertThat( stateMachine.ctx.statementOutcomes.entrySet(), hasSize( 0 ) );
 
         verify( transaction ).getReasonIfTerminated();
-        verify( transaction ).failure();
-        verify( transaction ).close();
+        verify( transaction ).rollback();
     }
 
     @Test
     void shouldResetInExplicitTransactionWhileStatementIsRunningWhenValidated() throws Exception
     {
-        KernelTransaction transaction = newTimedOutTransaction();
+        BoltTransaction transaction = newTimedOutTransaction();
         TransactionStateMachineV1SPI stateMachineSPI = newTransactionStateMachineSPI( transaction );
         TransactionStateMachine stateMachine = newTransactionStateMachine( stateMachineSPI );
 
@@ -321,39 +320,38 @@ class TransactionStateMachineTest
         assertThat( stateMachine.ctx.statementOutcomes.entrySet(), hasSize( 0 ) );
 
         verify( transaction ).getReasonIfTerminated();
-        verify( transaction ).failure();
-        verify( transaction ).close();
+        verify( transaction ).rollback();
     }
 
     @Test
     void shouldUnbindTxAfterRun() throws Exception
     {
-        KernelTransaction transaction = newTimedOutTransaction();
+        BoltTransaction transaction = newTimedOutTransaction();
         TransactionStateMachineV1SPI stateMachineSPI = newTransactionStateMachineSPI( transaction );
         TransactionStateMachine stateMachine = newTransactionStateMachine( stateMachineSPI );
 
         stateMachine.run( "SOME STATEMENT", null );
 
-        verify( stateMachineSPI ).unbindTransactionFromCurrentThread();
+        verify( stateMachineSPI ).unbindTransactionFromCurrentThread( any() );
     }
 
     @Test
     void shouldUnbindTxAfterStreamResult() throws Throwable
     {
-        KernelTransaction transaction = newTimedOutTransaction();
+        BoltTransaction transaction = newTimedOutTransaction();
         TransactionStateMachineV1SPI stateMachineSPI = newTransactionStateMachineSPI( transaction );
         TransactionStateMachine stateMachine = newTransactionStateMachine( stateMachineSPI );
 
         stateMachine.run( "SOME STATEMENT", null );
         stateMachine.streamResult( StatementMetadata.ABSENT_QUERY_ID, EMPTY );
 
-        verify( stateMachineSPI, times( 2 ) ).unbindTransactionFromCurrentThread();
+        verify( stateMachineSPI, times( 2 ) ).unbindTransactionFromCurrentThread(any());
     }
 
     @Test
     void shouldCloseResultAndTransactionHandlesWhenExecutionFails() throws Exception
     {
-        KernelTransaction transaction = newTransaction();
+        BoltTransaction transaction = newTransaction();
         BoltResultHandle resultHandle = newResultHandle( new RuntimeException( "some error" ) );
         TransactionStateMachineV1SPI stateMachineSPI = newTransactionStateMachineSPI( transaction, resultHandle );
         TransactionStateMachine stateMachine = newTransactionStateMachine( stateMachineSPI );
@@ -368,7 +366,7 @@ class TransactionStateMachineTest
     @Test
     void shouldCloseResultAndTransactionHandlesWhenConsumeFails() throws Exception
     {
-        KernelTransaction transaction = newTransaction();
+        BoltTransaction transaction = newTransaction();
         TransactionStateMachineV1SPI stateMachineSPI = newTransactionStateMachineSPI( transaction );
         TransactionStateMachine stateMachine = newTransactionStateMachine( stateMachineSPI );
 
@@ -392,7 +390,7 @@ class TransactionStateMachineTest
     @Test
     void shouldCloseResultHandlesWhenExecutionFailsInExplicitTransaction() throws Exception
     {
-        KernelTransaction transaction = newTransaction();
+        BoltTransaction transaction = newTransaction();
         BoltResultHandle resultHandle = newResultHandle( new RuntimeException( "some error" ) );
         TransactionStateMachineV1SPI stateMachineSPI = newTransactionStateMachineSPI( transaction, resultHandle );
         TransactionStateMachine stateMachine = newTransactionStateMachine( stateMachineSPI );
@@ -411,7 +409,7 @@ class TransactionStateMachineTest
     @Test
     void shouldCloseResultHandlesWhenConsumeFailsInExplicitTransaction() throws Throwable
     {
-        KernelTransaction transaction = newTransaction();
+        BoltTransaction transaction = newTransaction();
         TransactionStateMachineV1SPI stateMachineSPI = newTransactionStateMachineSPI( transaction );
         TransactionStateMachine stateMachine = newTransactionStateMachine( stateMachineSPI );
 
@@ -436,9 +434,10 @@ class TransactionStateMachineTest
     @Test
     void shouldNotOpenExplicitTransactionForPeriodicCommitQuery() throws Exception
     {
-        KernelTransaction transaction = newTransaction();
+        BoltTransaction transaction = newTransaction();
         TransactionStateMachineV1SPI stateMachineSPI = newTransactionStateMachineSPI( transaction );
         when( stateMachineSPI.isPeriodicCommit( PERIODIC_COMMIT_QUERY ) ).thenReturn( true );
+        when( stateMachineSPI.getPeriodicCommitExecutor( any(), any(), any(), any() )).thenReturn( mock(BoltQueryExecutor.class) );
 
         TransactionStateMachine stateMachine = newTransactionStateMachine( stateMachineSPI );
 
@@ -450,15 +449,15 @@ class TransactionStateMachineTest
         InOrder inOrder = inOrder( stateMachineSPI );
         inOrder.verify( stateMachineSPI ).isPeriodicCommit( PERIODIC_COMMIT_QUERY );
         // periodic commit query was executed without starting an explicit transaction
-        inOrder.verify( stateMachineSPI ).executeQuery( any( LoginContext.class ), eq( PERIODIC_COMMIT_QUERY ), eq( EMPTY_MAP ), any(), any() );
+        inOrder.verify( stateMachineSPI ).executeQuery( any( BoltQueryExecutor.class ), eq( PERIODIC_COMMIT_QUERY ), eq( EMPTY_MAP ) );
         // explicit transaction was started only after query execution to stream the result
-        inOrder.verify( stateMachineSPI ).beginTransaction( any( LoginContext.class ), any(), any() );
+        inOrder.verify( stateMachineSPI ).beginTransaction( any( LoginContext.class ), any(), any(), any() );
     }
 
     @Test
     void shouldNotMarkForTerminationWhenNoTransaction() throws Exception
     {
-        KernelTransaction transaction = newTransaction();
+        BoltTransaction transaction = newTransaction();
         TransactionStateMachineV1SPI stateMachineSPI = newTransactionStateMachineSPI( transaction );
 
         TransactionStateMachine stateMachine = newTransactionStateMachine( stateMachineSPI );
@@ -467,18 +466,14 @@ class TransactionStateMachineTest
         verify( transaction, never() ).markForTermination( any() );
     }
 
-    private static KernelTransaction newTransaction()
+    private static BoltTransaction newTransaction()
     {
-        KernelTransaction transaction = mock( KernelTransaction.class );
-
-        when( transaction.isOpen() ).thenReturn( true );
-
-        return transaction;
+        return mock( BoltTransaction.class );
     }
 
-    private static KernelTransaction newTimedOutTransaction()
+    private static BoltTransaction newTimedOutTransaction()
     {
-        KernelTransaction transaction = newTransaction();
+        BoltTransaction transaction = newTransaction();
 
         when( transaction.getReasonIfTerminated() ).thenReturn( Optional.of( Status.Transaction.TransactionTimedOut ) );
 
@@ -495,24 +490,24 @@ class TransactionStateMachineTest
         return ValueUtils.asMapValue( MapUtil.map( keyValues ) );
     }
 
-    private static TransactionStateMachineV1SPI newTransactionStateMachineSPI( KernelTransaction transaction ) throws KernelException
+    private static TransactionStateMachineV1SPI newTransactionStateMachineSPI( BoltTransaction transaction ) throws KernelException
     {
         BoltResultHandle resultHandle = newResultHandle();
         TransactionStateMachineV1SPI stateMachineSPI = mock( TransactionStateMachineV1SPI.class );
 
-        when( stateMachineSPI.beginTransaction( any(), any(), any() ) ).thenReturn( transaction );
-        when( stateMachineSPI.executeQuery( any(), anyString(), any(), any(), any() ) ).thenReturn( resultHandle );
+        when( stateMachineSPI.beginTransaction( any(), any(), any(), any() ) ).thenReturn( transaction );
+        when( stateMachineSPI.executeQuery( any(), anyString(), any() ) ).thenReturn( resultHandle );
 
         return stateMachineSPI;
     }
 
-    private static TransactionStateMachineV1SPI newTransactionStateMachineSPI( KernelTransaction transaction,
+    private static TransactionStateMachineV1SPI newTransactionStateMachineSPI( BoltTransaction transaction,
             BoltResultHandle resultHandle ) throws KernelException
     {
         TransactionStateMachineV1SPI stateMachineSPI = mock( TransactionStateMachineV1SPI.class );
 
-        when( stateMachineSPI.beginTransaction( any(), any(), any() ) ).thenReturn( transaction );
-        when( stateMachineSPI.executeQuery( any(), anyString(), any(), any(), any() ) ).thenReturn( resultHandle );
+        when( stateMachineSPI.beginTransaction( any(), any(), any(), any() ) ).thenReturn( transaction );
+        when( stateMachineSPI.executeQuery( any(), anyString(), any() ) ).thenReturn( resultHandle );
 
         return stateMachineSPI;
     }

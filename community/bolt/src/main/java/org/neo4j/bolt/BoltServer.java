@@ -25,6 +25,7 @@ import io.netty.util.internal.logging.InternalLoggerFactory;
 import java.time.Clock;
 import java.util.Map;
 
+import org.neo4j.bolt.dbapi.BoltGraphDatabaseManagementServiceSPI;
 import org.neo4j.bolt.runtime.BoltConnectionFactory;
 import org.neo4j.bolt.runtime.BoltSchedulerProvider;
 import org.neo4j.bolt.runtime.BoltStateMachineFactory;
@@ -47,7 +48,6 @@ import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.configuration.connectors.BoltConnector;
 import org.neo4j.configuration.connectors.ConnectorPortRegister;
-import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.internal.helpers.ListenSocketAddress;
 import org.neo4j.kernel.api.net.NetworkConnectionTracker;
 import org.neo4j.kernel.api.security.AuthManager;
@@ -68,7 +68,7 @@ import static java.util.stream.Collectors.toMap;
 public class BoltServer extends LifecycleAdapter
 {
     // platform dependencies
-    private final DatabaseManagementService managementService;
+    private final BoltGraphDatabaseManagementServiceSPI boltGraphDatabaseManagementServiceSPI;
     private final JobScheduler jobScheduler;
     private final ConnectorPortRegister connectorPortRegister;
     private final NetworkConnectionTracker connectionTracker;
@@ -82,11 +82,11 @@ public class BoltServer extends LifecycleAdapter
 
     private final LifeSupport life = new LifeSupport();
 
-    public BoltServer( DatabaseManagementService managementService, JobScheduler jobScheduler,
+    public BoltServer( BoltGraphDatabaseManagementServiceSPI boltGraphDatabaseManagementServiceSPI, JobScheduler jobScheduler,
             ConnectorPortRegister connectorPortRegister, NetworkConnectionTracker connectionTracker, Config config, SystemNanoClock clock,
             Monitors monitors, LogService logService, DependencyResolver dependencyResolver )
     {
-        this.managementService = managementService;
+        this.boltGraphDatabaseManagementServiceSPI = boltGraphDatabaseManagementServiceSPI;
         this.jobScheduler = jobScheduler;
         this.connectorPortRegister = connectorPortRegister;
         this.connectionTracker = connectionTracker;
@@ -222,6 +222,6 @@ public class BoltServer extends LifecycleAdapter
 
     private BoltStateMachineFactory createBoltFactory( Authentication authentication, SystemNanoClock clock )
     {
-        return new BoltStateMachineFactoryImpl( managementService, authentication, clock, config, logService );
+        return new BoltStateMachineFactoryImpl( boltGraphDatabaseManagementServiceSPI, authentication, clock, config, logService );
     }
 }

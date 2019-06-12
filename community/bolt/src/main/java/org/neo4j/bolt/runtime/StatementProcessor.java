@@ -33,11 +33,12 @@ public interface StatementProcessor
 {
     void beginTransaction( Bookmark bookmark ) throws KernelException;
 
-    void beginTransaction( Bookmark bookmark, Duration txTimeout, Map<String,Object> txMetadata ) throws KernelException;
+    void beginTransaction( Bookmark bookmark, Duration txTimeout, AccessMode accessMode, Map<String,Object> txMetadata ) throws KernelException;
 
     StatementMetadata run( String statement, MapValue params ) throws KernelException;
 
-    StatementMetadata run( String statement, MapValue params, Bookmark bookmark, Duration txTimeout, Map<String,Object> txMetaData ) throws KernelException;
+    StatementMetadata run( String statement, MapValue params, Bookmark bookmark, Duration txTimeout, AccessMode accessMode, Map<String,Object> txMetaData )
+            throws KernelException;
 
     Bookmark streamResult( int statementId, ResultConsumer resultConsumer ) throws Throwable;
 
@@ -66,7 +67,7 @@ public interface StatementProcessor
         }
 
         @Override
-        public void beginTransaction( Bookmark bookmark, Duration txTimeout, Map<String,Object> txMetadata ) throws KernelException
+        public void beginTransaction( Bookmark bookmark, Duration txTimeout, AccessMode accessMode, Map<String,Object> txMetadata ) throws KernelException
         {
             throw new UnsupportedOperationException( "Unable to begin a transaction" );
         }
@@ -78,8 +79,8 @@ public interface StatementProcessor
         }
 
         @Override
-        public StatementMetadata run( String statement, MapValue params, Bookmark bookmark, Duration txTimeout, Map<String,Object> txMetaData )
-                throws KernelException
+        public StatementMetadata run( String statement, MapValue params, Bookmark bookmark, Duration txTimeout, AccessMode accessMode,
+                Map<String,Object> txMetaData ) throws KernelException
         {
             throw new UnsupportedOperationException( "Unable to run statements" );
         }

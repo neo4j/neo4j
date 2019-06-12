@@ -24,6 +24,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
 import org.neo4j.bolt.BoltChannel;
+import org.neo4j.bolt.dbapi.impl.BoltKernelDatabaseManagementServiceProvider;
 import org.neo4j.bolt.security.auth.Authentication;
 import org.neo4j.bolt.testing.BoltTestUtil;
 import org.neo4j.bolt.v1.BoltProtocolV1;
@@ -95,7 +96,9 @@ class BoltStateMachineFactoryImplTest
     private static BoltStateMachineFactoryImpl newBoltFactory( DatabaseManagementService managementService )
     {
         Config config = Config.defaults( GraphDatabaseSettings.default_database, CUSTOM_DB_NAME );
-        return new BoltStateMachineFactoryImpl( managementService, mock( Authentication.class ), CLOCK, config, NullLogService.getInstance() );
+
+        BoltKernelDatabaseManagementServiceProvider dbProvider = new BoltKernelDatabaseManagementServiceProvider( managementService, CLOCK );
+        return new BoltStateMachineFactoryImpl( dbProvider, mock( Authentication.class ), CLOCK, config, NullLogService.getInstance() );
     }
 
     private static DatabaseManagementService newDbMock()

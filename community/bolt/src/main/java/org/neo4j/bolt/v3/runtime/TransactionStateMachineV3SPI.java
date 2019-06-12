@@ -23,35 +23,35 @@ import java.time.Clock;
 import java.time.Duration;
 
 import org.neo4j.bolt.BoltChannel;
+import org.neo4j.bolt.dbapi.BoltGraphDatabaseServiceSPI;
+import org.neo4j.bolt.dbapi.BoltQueryExecutor;
 import org.neo4j.bolt.runtime.BoltResult;
 import org.neo4j.bolt.runtime.BoltResultHandle;
 import org.neo4j.bolt.v1.runtime.StatementProcessorReleaseManager;
 import org.neo4j.bolt.v1.runtime.TransactionStateMachineV1SPI;
-import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.kernel.impl.query.QueryExecution;
-import org.neo4j.kernel.impl.query.TransactionalContext;
 import org.neo4j.time.SystemNanoClock;
 import org.neo4j.values.virtual.MapValue;
 
 public class TransactionStateMachineV3SPI extends TransactionStateMachineV1SPI
 {
-    public TransactionStateMachineV3SPI( GraphDatabaseFacade databaseFacade, BoltChannel boltChannel, Duration txAwaitDuration, SystemNanoClock clock,
-            StatementProcessorReleaseManager resourceReleaseManger )
+    public TransactionStateMachineV3SPI( BoltGraphDatabaseServiceSPI boltGraphDatabaseServiceSPI, BoltChannel boltChannel, Duration txAwaitDuration,
+            SystemNanoClock clock, StatementProcessorReleaseManager resourceReleaseManger )
     {
-        super( databaseFacade, boltChannel, txAwaitDuration, clock, resourceReleaseManger );
+        super( boltGraphDatabaseServiceSPI, boltChannel, txAwaitDuration, clock, resourceReleaseManger );
     }
 
     @Override
-    protected BoltResultHandle newBoltResultHandle( String statement, MapValue params, TransactionalContext transactionalContext )
+    protected BoltResultHandle newBoltResultHandle( String statement, MapValue params, BoltQueryExecutor boltQueryExecutor )
     {
-        return new BoltResultHandleV3( statement, params, transactionalContext );
+        return new BoltResultHandleV3( statement, params, boltQueryExecutor );
     }
 
     private class BoltResultHandleV3 extends BoltResultHandleV1
     {
-        BoltResultHandleV3( String statement, MapValue params, TransactionalContext transactionalContext )
+        BoltResultHandleV3( String statement, MapValue params, BoltQueryExecutor boltQueryExecutor )
         {
-            super( statement, params, transactionalContext );
+            super( statement, params, boltQueryExecutor );
         }
 
         @Override

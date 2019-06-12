@@ -24,6 +24,7 @@ import org.junit.jupiter.api.Test;
 import java.time.Duration;
 
 import org.neo4j.bolt.BoltChannel;
+import org.neo4j.bolt.dbapi.impl.BoltKernelDatabaseManagementServiceProvider;
 import org.neo4j.bolt.messaging.BoltIOException;
 import org.neo4j.bolt.v1.runtime.StatementProcessorReleaseManager;
 import org.neo4j.bolt.v4.runtime.TransactionStateMachineV4SPI;
@@ -101,7 +102,8 @@ class TransactionStateMachineSPIProviderV4Test
 
     private TransactionStateMachineSPIProvider newSpiProvider( DatabaseManagementService managementService )
     {
-        return new TransactionStateMachineSPIProviderV4( managementService, "neo4j",
-                mock( BoltChannel.class ), Duration.ZERO, mock( SystemNanoClock.class ) );
+        SystemNanoClock clock = mock( SystemNanoClock.class );
+        BoltKernelDatabaseManagementServiceProvider dbProvider = new BoltKernelDatabaseManagementServiceProvider( managementService, clock );
+        return new TransactionStateMachineSPIProviderV4( dbProvider, "neo4j", mock( BoltChannel.class ), Duration.ZERO, clock );
     }
 }

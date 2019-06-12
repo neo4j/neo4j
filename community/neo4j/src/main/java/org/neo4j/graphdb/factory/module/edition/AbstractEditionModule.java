@@ -22,8 +22,11 @@ package org.neo4j.graphdb.factory.module.edition;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
+import org.neo4j.bolt.dbapi.BoltGraphDatabaseManagementServiceSPI;
+import org.neo4j.bolt.dbapi.impl.BoltKernelDatabaseManagementServiceProvider;
 import org.neo4j.configuration.Config;
 import org.neo4j.dbms.api.DatabaseExistsException;
+import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.dbms.database.DatabaseManager;
 import org.neo4j.dbms.database.SystemGraphInitializer;
 import org.neo4j.exceptions.KernelException;
@@ -58,6 +61,7 @@ import org.neo4j.procedure.builtin.TokenProcedures;
 import org.neo4j.procedure.builtin.routing.BaseRoutingProcedureInstaller;
 import org.neo4j.procedure.impl.ProcedureConfig;
 import org.neo4j.service.Services;
+import org.neo4j.time.SystemNanoClock;
 
 import static org.neo4j.procedure.impl.temporal.TemporalFunction.registerTemporalFunctions;
 
@@ -211,6 +215,12 @@ public abstract class AbstractEditionModule
     public void setSecurityProvider( SecurityProvider securityProvider )
     {
         this.securityProvider = securityProvider;
+    }
+
+    public BoltGraphDatabaseManagementServiceSPI createBoltDatabaseManagementServiceProvider( DatabaseManagementService managementService,
+            SystemNanoClock clock )
+    {
+        return new BoltKernelDatabaseManagementServiceProvider( managementService, clock );
     }
 
     public abstract DatabaseIdRepository databaseIdRepository();

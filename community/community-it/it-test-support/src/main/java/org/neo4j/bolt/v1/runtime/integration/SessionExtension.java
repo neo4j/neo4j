@@ -29,6 +29,8 @@ import java.util.List;
 import java.util.Map;
 
 import org.neo4j.bolt.BoltChannel;
+import org.neo4j.bolt.dbapi.BoltGraphDatabaseManagementServiceSPI;
+import org.neo4j.bolt.dbapi.impl.BoltKernelDatabaseManagementServiceProvider;
 import org.neo4j.bolt.runtime.BoltStateMachine;
 import org.neo4j.bolt.runtime.BoltStateMachineFactoryImpl;
 import org.neo4j.bolt.security.auth.Authentication;
@@ -46,6 +48,7 @@ import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.logging.internal.NullLogService;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.time.Clocks;
+import org.neo4j.time.SystemNanoClock;
 
 public class SessionExtension implements BeforeEachCallback, AfterEachCallback
 {
@@ -100,10 +103,12 @@ public class SessionExtension implements BeforeEachCallback, AfterEachCallback
         Authentication authentication = authentication( resolver.resolveDependency( AuthManager.class ),
                 resolver.resolveDependency( UserManagerSupplier.class ) );
         Config config = resolver.resolveDependency( Config.class );
+        SystemNanoClock clock = Clocks.nanoClock();
+        BoltGraphDatabaseManagementServiceSPI databaseManagementService = new BoltKernelDatabaseManagementServiceProvider( managementService, clock );
         boltFactory = new BoltStateMachineFactoryImpl(
-                managementService,
+                databaseManagementService,
                 authentication,
-                Clocks.nanoClock(),
+                clock,
                 config,
                 NullLogService.getInstance()
         );

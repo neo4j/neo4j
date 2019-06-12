@@ -22,6 +22,7 @@ package org.neo4j.bolt.runtime;
 import java.time.Duration;
 
 import org.neo4j.bolt.BoltChannel;
+import org.neo4j.bolt.dbapi.BoltGraphDatabaseManagementServiceSPI;
 import org.neo4j.bolt.security.auth.Authentication;
 import org.neo4j.bolt.v1.BoltProtocolV1;
 import org.neo4j.bolt.v1.runtime.BoltStateMachineV1;
@@ -33,23 +34,22 @@ import org.neo4j.bolt.v4.BoltProtocolV4;
 import org.neo4j.bolt.v4.BoltStateMachineV4;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
-import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.logging.internal.LogService;
 import org.neo4j.time.SystemNanoClock;
 
 public class BoltStateMachineFactoryImpl implements BoltStateMachineFactory
 {
-    private final DatabaseManagementService managementService;
+    private final BoltGraphDatabaseManagementServiceSPI boltGraphDatabaseManagementServiceSPI;
     private final LogService logging;
     private final Authentication authentication;
     private final Config config;
     private final SystemNanoClock clock;
     private final String defaultDatabaseName;
 
-    public BoltStateMachineFactoryImpl( DatabaseManagementService managementService, Authentication authentication,
+    public BoltStateMachineFactoryImpl( BoltGraphDatabaseManagementServiceSPI boltGraphDatabaseManagementServiceSPI, Authentication authentication,
             SystemNanoClock clock, Config config, LogService logging )
     {
-        this.managementService = managementService;
+        this.boltGraphDatabaseManagementServiceSPI = boltGraphDatabaseManagementServiceSPI;
         this.logging = logging;
         this.authentication = authentication;
         this.config = config;
@@ -81,7 +81,7 @@ public class BoltStateMachineFactoryImpl implements BoltStateMachineFactory
     private BoltStateMachine newStateMachineV1( BoltChannel boltChannel )
     {
         TransactionStateMachineSPIProvider transactionSpiProvider =
-                new TransactionStateMachineSPIProviderV1( managementService, defaultDatabaseName, boltChannel, getAwaitDuration(), clock );
+                new TransactionStateMachineSPIProviderV1( boltGraphDatabaseManagementServiceSPI, defaultDatabaseName, boltChannel, getAwaitDuration(), clock );
         BoltStateMachineSPI boltSPI = new BoltStateMachineV1SPI( logging, authentication, transactionSpiProvider );
         return new BoltStateMachineV1( boltSPI, boltChannel, clock );
     }
@@ -89,7 +89,7 @@ public class BoltStateMachineFactoryImpl implements BoltStateMachineFactory
     private BoltStateMachine newStateMachineV3( BoltChannel boltChannel )
     {
         TransactionStateMachineSPIProvider transactionSpiProvider =
-                new TransactionStateMachineSPIProviderV3( managementService, defaultDatabaseName, boltChannel, getAwaitDuration(), clock );
+                new TransactionStateMachineSPIProviderV3( boltGraphDatabaseManagementServiceSPI, defaultDatabaseName, boltChannel, getAwaitDuration(), clock );
         BoltStateMachineSPI boltSPI = new BoltStateMachineV1SPI( logging, authentication, transactionSpiProvider );
         return new BoltStateMachineV3( boltSPI, boltChannel, clock );
     }
@@ -97,7 +97,7 @@ public class BoltStateMachineFactoryImpl implements BoltStateMachineFactory
     private BoltStateMachine newStateMachineV4( BoltChannel boltChannel )
     {
         TransactionStateMachineSPIProvider transactionSpiProvider =
-                new TransactionStateMachineSPIProviderV4( managementService, defaultDatabaseName, boltChannel, getAwaitDuration(), clock );
+                new TransactionStateMachineSPIProviderV4( boltGraphDatabaseManagementServiceSPI, defaultDatabaseName, boltChannel, getAwaitDuration(), clock );
         BoltStateMachineSPI boltSPI = new BoltStateMachineV1SPI( logging, authentication, transactionSpiProvider );
         return new BoltStateMachineV4( boltSPI, boltChannel, clock );
     }

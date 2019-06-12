@@ -23,12 +23,13 @@ import java.time.Duration;
 import java.util.Objects;
 
 import org.neo4j.bolt.BoltChannel;
+import org.neo4j.bolt.dbapi.BoltGraphDatabaseServiceSPI;
+import org.neo4j.bolt.dbapi.BoltGraphDatabaseManagementServiceSPI;
 import org.neo4j.bolt.messaging.BoltIOException;
 import org.neo4j.bolt.v1.runtime.StatementProcessorReleaseManager;
-import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.dbms.api.DatabaseNotFoundException;
 import org.neo4j.kernel.api.exceptions.Status;
-import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
+import org.neo4j.kernel.availability.UnavailableException;
 import org.neo4j.time.SystemNanoClock;
 
 import static java.lang.String.format;
@@ -40,19 +41,20 @@ public abstract class AbstractTransactionStatementSPIProvider implements Transac
     final SystemNanoClock clock;
     final BoltChannel boltChannel;
     final String defaultDatabaseName;
-    private final DatabaseManagementService managementService;
+    private final BoltGraphDatabaseManagementServiceSPI boltGraphDatabaseManagementServiceSPI;
 
-    AbstractTransactionStatementSPIProvider( DatabaseManagementService managementService, String defaultDatabaseName, BoltChannel boltChannel,
+    AbstractTransactionStatementSPIProvider( BoltGraphDatabaseManagementServiceSPI boltGraphDatabaseManagementServiceSPI, String defaultDatabaseName,
+            BoltChannel boltChannel,
             Duration awaitDuration, SystemNanoClock clock )
     {
-        this.managementService = managementService;
+        this.boltGraphDatabaseManagementServiceSPI = boltGraphDatabaseManagementServiceSPI;
         this.defaultDatabaseName = defaultDatabaseName;
         this.txAwaitDuration = awaitDuration;
         this.clock = clock;
         this.boltChannel = boltChannel;
     }
 
-    protected abstract TransactionStateMachineSPI newTransactionStateMachineSPI( GraphDatabaseFacade activeDatabase,
+    protected abstract TransactionStateMachineSPI newTransactionStateMachineSPI( BoltGraphDatabaseServiceSPI activeBoltGraphDatabaseServiceSPI,
             StatementProcessorReleaseManager resourceReleaseManger ) throws BoltIOException;
 
     @Override
@@ -60,16 +62,19 @@ public abstract class AbstractTransactionStatementSPIProvider implements Transac
             throws BoltProtocolBreachFatality, BoltIOException
     {
         String selectedDatabaseName = selectDatabaseName( databaseName );
+
         try
         {
-            GraphDatabaseFacade databaseFacade = (GraphDatabaseFacade) managementService.database( selectedDatabaseName );
-            ensureAvailable( databaseFacade );
-            return newTransactionStateMachineSPI( databaseFacade, resourceReleaseManger );
+            var boltGraphDatabaseServiceSPI = boltGraphDatabaseManagementServiceSPI.database( selectedDatabaseName );
+            return newTransactionStateMachineSPI( boltGraphDatabaseServiceSPI, resourceReleaseManger );
         }
         catch ( DatabaseNotFoundException e )
         {
-            throw new BoltIOException( Status.Database.DatabaseNotFound,
-                    format( "Database does not exists. Database name: '%s'.", selectedDatabaseName ) );
+            throw new BoltIOException( Status.Database.DatabaseNotFound, format( "Database does not exists. Database name: '%s'.", selectedDatabaseName ) );
+        }
+        catch ( UnavailableException e )
+        {
+            throw new BoltIOException( Status.General.DatabaseUnavailable, format( "Database `%s` is unavailable.", databaseName ) );
         }
     }
 
@@ -83,13 +88,5 @@ public abstract class AbstractTransactionStatementSPIProvider implements Transac
                     "Please contact your Bolt client author to report this bug in the client code. Requested database name: '%s'.", databaseName ) );
         }
         return defaultDatabaseName;
-    }
-
-    private void ensureAvailable( GraphDatabaseFacade database ) throws BoltIOException
-    {
-        if ( !database.isAvailable( 0 ) )
-        {
-            throw new BoltIOException( Status.General.DatabaseUnavailable, format( "Database `%s` is unavailable.", database.databaseName() ) );
-        }
     }
 }

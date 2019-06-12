@@ -24,8 +24,12 @@ import org.junit.jupiter.api.Test;
 import java.time.Duration;
 
 import org.neo4j.bolt.BoltChannel;
+import org.neo4j.bolt.dbapi.BoltGraphDatabaseServiceSPI;
+import org.neo4j.bolt.dbapi.impl.BoltKernelDatabaseManagementServiceProvider;
 import org.neo4j.bolt.v1.runtime.StatementProcessorReleaseManager;
+import org.neo4j.common.DependencyResolver;
 import org.neo4j.dbms.api.DatabaseManagementService;
+import org.neo4j.kernel.GraphDatabaseQueryService;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.time.SystemNanoClock;
 
@@ -67,16 +71,23 @@ class DefaultDatabaseTransactionStateMachineSPIProviderTest
         GraphDatabaseFacade databaseFacade = mock( GraphDatabaseFacade.class );
         when( databaseFacade.isAvailable( anyLong() ) ).thenReturn( true );
         when( managementService.database( databaseName ) ).thenReturn( databaseFacade );
+        DependencyResolver dependencyResolver = mock( DependencyResolver.class );
+        when( databaseFacade.getDependencyResolver() ).thenReturn( dependencyResolver );
+        GraphDatabaseQueryService queryService = mock( GraphDatabaseQueryService.class );
+        when( dependencyResolver.resolveDependency( GraphDatabaseQueryService.class ) ).thenReturn( queryService );
+        when( queryService.getDependencyResolver() ).thenReturn( dependencyResolver );
+
         return managementService;
     }
 
     private TransactionStateMachineSPIProvider newSpiProvider( DatabaseManagementService managementService )
     {
-        return new AbstractTransactionStatementSPIProvider( managementService, "neo4j", mock( BoltChannel.class ),
-                Duration.ZERO, mock( SystemNanoClock.class ) )
+        SystemNanoClock clock = mock( SystemNanoClock.class );
+        var dbProvider = new BoltKernelDatabaseManagementServiceProvider( managementService, mock( SystemNanoClock.class ) );
+        return new AbstractTransactionStatementSPIProvider( dbProvider, "neo4j", mock( BoltChannel.class ), Duration.ZERO, clock )
         {
             @Override
-            protected TransactionStateMachineSPI newTransactionStateMachineSPI( GraphDatabaseFacade activeDatabase,
+            protected TransactionStateMachineSPI newTransactionStateMachineSPI( BoltGraphDatabaseServiceSPI activeBoltGraphDatabaseServiceSPI,
                     StatementProcessorReleaseManager resourceReleaseManger )
             {
                 return mock( TransactionStateMachineSPI.class );

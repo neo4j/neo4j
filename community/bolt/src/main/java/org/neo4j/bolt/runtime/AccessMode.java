@@ -17,22 +17,10 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.bolt.v3.messaging.request;
+package org.neo4j.bolt.runtime;
 
-import org.neo4j.bolt.messaging.BoltIOException;
-import org.neo4j.values.virtual.MapValue;
-
-class BeginMessageTest extends AbstractTransactionInitiatingMessage
+public enum AccessMode
 {
-    @Override
-    protected TransactionInitiatingMessage createMessage() throws BoltIOException
-    {
-        return new BeginMessage();
-    }
-
-    @Override
-    protected TransactionInitiatingMessage createMessage( MapValue meta ) throws BoltIOException
-    {
-        return new BeginMessage( meta ) ;
-    }
+    WRITE,
+    READ
 }

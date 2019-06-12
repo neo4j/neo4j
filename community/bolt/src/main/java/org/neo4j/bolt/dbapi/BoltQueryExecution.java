@@ -17,22 +17,25 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.bolt.v3.messaging.request;
+package org.neo4j.bolt.dbapi;
 
-import org.neo4j.bolt.messaging.BoltIOException;
-import org.neo4j.values.virtual.MapValue;
+import org.neo4j.kernel.impl.query.QueryExecution;
 
-class BeginMessageTest extends AbstractTransactionInitiatingMessage
+/**
+ * A representation of a query execution result.
+ */
+public interface BoltQueryExecution
 {
-    @Override
-    protected TransactionInitiatingMessage createMessage() throws BoltIOException
-    {
-        return new BeginMessage();
-    }
+    QueryExecution getQueryExecution();
 
-    @Override
-    protected TransactionInitiatingMessage createMessage( MapValue meta ) throws BoltIOException
-    {
-        return new BeginMessage( meta ) ;
-    }
+    /**
+     * This should be called once the query is finished, either successfully or not.
+     * Should be called from the same thread the query was executing in.
+     */
+    void close( boolean success );
+
+    /**
+     * This is used to terminate a currently running query. Can be called from any thread.
+     */
+    void terminate();
 }

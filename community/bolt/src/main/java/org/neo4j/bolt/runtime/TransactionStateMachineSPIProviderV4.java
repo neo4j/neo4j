@@ -23,20 +23,23 @@ import java.time.Duration;
 import java.util.Objects;
 
 import org.neo4j.bolt.BoltChannel;
+import org.neo4j.bolt.dbapi.BoltGraphDatabaseServiceSPI;
+import org.neo4j.bolt.dbapi.BoltGraphDatabaseManagementServiceSPI;
 import org.neo4j.bolt.v1.runtime.StatementProcessorReleaseManager;
 import org.neo4j.bolt.v4.runtime.TransactionStateMachineV4SPI;
-import org.neo4j.dbms.api.DatabaseManagementService;
-import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.time.SystemNanoClock;
 
 import static org.neo4j.bolt.v4.messaging.MessageMetadataParser.ABSENT_DB_NAME;
 
 public class TransactionStateMachineSPIProviderV4 extends AbstractTransactionStatementSPIProvider
 {
-    public TransactionStateMachineSPIProviderV4( DatabaseManagementService managementService, String defaultDatabaseName, BoltChannel boltChannel,
-            Duration txAwaitDuration, SystemNanoClock clock )
+    TransactionStateMachineSPIProviderV4( BoltGraphDatabaseManagementServiceSPI boltGraphDatabaseManagementServiceSPI,
+            String defaultDatabaseName,
+            BoltChannel boltChannel,
+            Duration awaitDuration,
+            SystemNanoClock clock )
     {
-        super( managementService, defaultDatabaseName, boltChannel, txAwaitDuration, clock );
+        super( boltGraphDatabaseManagementServiceSPI, defaultDatabaseName, boltChannel, awaitDuration, clock );
     }
 
     @Override
@@ -46,9 +49,9 @@ public class TransactionStateMachineSPIProviderV4 extends AbstractTransactionSta
     }
 
     @Override
-    protected TransactionStateMachineSPI newTransactionStateMachineSPI( GraphDatabaseFacade facade,
+    protected TransactionStateMachineSPI newTransactionStateMachineSPI( BoltGraphDatabaseServiceSPI activeBoltGraphDatabaseServiceSPI,
             StatementProcessorReleaseManager resourceReleaseManger )
     {
-        return new TransactionStateMachineV4SPI( facade, boltChannel, txAwaitDuration, clock, resourceReleaseManger );
+        return new TransactionStateMachineV4SPI( activeBoltGraphDatabaseServiceSPI, boltChannel, txAwaitDuration, clock, resourceReleaseManger );
     }
 }

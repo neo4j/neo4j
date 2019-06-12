@@ -25,11 +25,13 @@ import java.util.Objects;
 
 import org.neo4j.bolt.messaging.BoltIOException;
 import org.neo4j.bolt.messaging.RequestMessage;
+import org.neo4j.bolt.runtime.AccessMode;
 import org.neo4j.bolt.v1.runtime.bookmarking.Bookmark;
 import org.neo4j.values.virtual.MapValue;
 import org.neo4j.values.virtual.VirtualValues;
 
 import static java.util.Objects.requireNonNull;
+import static org.neo4j.bolt.v3.messaging.request.MessageMetadataParser.parseAccessMode;
 import static org.neo4j.bolt.v3.messaging.request.MessageMetadataParser.parseTransactionMetadata;
 import static org.neo4j.bolt.v3.messaging.request.MessageMetadataParser.parseTransactionTimeout;
 
@@ -38,6 +40,7 @@ public abstract class TransactionInitiatingMessage implements RequestMessage
     private final MapValue meta;
     private final Bookmark bookmark;
     private final Duration txTimeout;
+    private final AccessMode accessMode;
     private final Map<String,Object> txMetadata;
 
     public TransactionInitiatingMessage() throws BoltIOException
@@ -50,6 +53,7 @@ public abstract class TransactionInitiatingMessage implements RequestMessage
         this.meta = requireNonNull( meta );
         this.bookmark = Bookmark.fromParamsOrNull( meta );
         this.txTimeout = parseTransactionTimeout( meta );
+        this.accessMode = parseAccessMode( meta );
         this.txMetadata = parseTransactionMetadata( meta );
     }
 
@@ -61,6 +65,11 @@ public abstract class TransactionInitiatingMessage implements RequestMessage
     public Duration transactionTimeout()
     {
         return this.txTimeout;
+    }
+
+    public AccessMode getAccessMode()
+    {
+        return accessMode;
     }
 
     public Map<String,Object> transactionMetadata()

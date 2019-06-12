@@ -19,83 +19,22 @@
  */
 package org.neo4j.bolt.v3.messaging.request;
 
-import org.junit.jupiter.api.Test;
-
-import java.time.Duration;
-import java.util.Map;
-
 import org.neo4j.bolt.messaging.BoltIOException;
-import org.neo4j.kernel.impl.util.ValueUtils;
 import org.neo4j.values.virtual.MapValue;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.equalTo;
-import static org.hamcrest.Matchers.startsWith;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.neo4j.internal.helpers.collection.MapUtil.map;
 import static org.neo4j.values.virtual.VirtualValues.EMPTY_MAP;
 
-class RunMessageTest
+class RunMessageTest extends AbstractTransactionInitiatingMessage
 {
-    @Test
-    void shouldParseEmptyTransactionMetadataCorrectly() throws Throwable
+    @Override
+    protected TransactionInitiatingMessage createMessage() throws BoltIOException
     {
-        // When
-        RunMessage message = new RunMessage( "RETURN 1" );
-
-        // Then
-        assertNull( message.transactionMetadata() );
+        return new RunMessage( "RETURN 1" );
     }
 
-    @Test
-    void shouldThrowExceptionIfFailedToParseTransactionMetadataCorrectly() throws Throwable
+    @Override
+    protected TransactionInitiatingMessage createMessage( MapValue meta ) throws BoltIOException
     {
-        // Given
-        Map<String,Object> msgMetadata = map( "tx_metadata", "invalid value type" );
-        MapValue meta = ValueUtils.asMapValue( msgMetadata );
-        // When & Then
-        BoltIOException exception = assertThrows( BoltIOException.class, () -> new RunMessage( "RETURN 1", EMPTY_MAP, meta ) );
-        assertThat( exception.getMessage(), startsWith( "Expecting transaction metadata value to be a Map value" ) );
-    }
-
-    @Test
-    void shouldParseTransactionMetadataCorrectly() throws Throwable
-    {
-        // Given
-        Map<String,Object> txMetadata = map( "creation-time", Duration.ofMillis( 4321L ) );
-        Map<String,Object> msgMetadata = map( "tx_metadata", txMetadata );
-        MapValue meta = ValueUtils.asMapValue( msgMetadata );
-
-        // When
-        RunMessage runMessage = new RunMessage( "RETURN 1", EMPTY_MAP, meta );
-
-        // Then
-        assertThat( runMessage.transactionMetadata().toString(), equalTo( txMetadata.toString() ) );
-    }
-
-    @Test
-    void shouldThrowExceptionIfFailedToParseTransactionTimeoutCorrectly() throws Throwable
-    {
-        // Given
-        Map<String,Object> msgMetadata = map( "tx_timeout", "invalid value type" );
-        MapValue meta = ValueUtils.asMapValue( msgMetadata );
-        // When & Then
-        BoltIOException exception = assertThrows( BoltIOException.class, () -> new RunMessage( "RETURN 1", EMPTY_MAP, meta ) );
-        assertThat( exception.getMessage(), startsWith( "Expecting transaction timeout value to be a Long value" ) );
-    }
-
-    @Test
-    void shouldParseTransactionTimeoutCorrectly() throws Throwable
-    {
-        // Given
-        Map<String,Object> msgMetadata = map( "tx_timeout", 123456L );
-        MapValue meta = ValueUtils.asMapValue( msgMetadata );
-
-        // When
-        RunMessage runMessage = new RunMessage( "RETURN 1", EMPTY_MAP, meta );
-
-        // Then
-        assertThat( runMessage.transactionTimeout().toMillis(), equalTo( 123456L ) );
+        return new RunMessage( "RETURN 1", EMPTY_MAP, meta );
     }
 }

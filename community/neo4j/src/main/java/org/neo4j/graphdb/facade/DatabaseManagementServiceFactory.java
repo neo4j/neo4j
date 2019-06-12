@@ -25,6 +25,7 @@ import java.util.Optional;
 import java.util.function.Function;
 
 import org.neo4j.bolt.BoltServer;
+import org.neo4j.bolt.dbapi.BoltGraphDatabaseManagementServiceSPI;
 import org.neo4j.collection.Dependencies;
 import org.neo4j.common.DependencyResolver;
 import org.neo4j.common.Edition;
@@ -148,7 +149,9 @@ public class DatabaseManagementServiceFactory
         globalDependencies.satisfyDependencies( securityProvider.userManagerSupplier() );
 
         globalLife.add( globalModule.getGlobalExtensions() );
-        globalLife.add( createBoltServer( globalModule, edition, managementService ) );
+        BoltGraphDatabaseManagementServiceSPI boltGraphDatabaseManagementServiceSPI = edition.createBoltDatabaseManagementServiceProvider( managementService,
+                globalModule.getGlobalClock() );
+        globalLife.add( createBoltServer( globalModule, edition, boltGraphDatabaseManagementServiceSPI ) );
         globalDependencies.satisfyDependency( edition.globalTransactionCounter() );
         globalLife.add( new PublishPageCacheTracerMetricsAfterStart( globalModule.getTracers().getPageCursorTracerSupplier() ) );
 
@@ -287,10 +290,10 @@ public class DatabaseManagementServiceFactory
     }
 
     private static BoltServer createBoltServer( GlobalModule platform, AbstractEditionModule edition,
-            DatabaseManagementService managementService )
+            BoltGraphDatabaseManagementServiceSPI boltGraphDatabaseManagementServiceSPI )
     {
-        return new BoltServer( managementService, platform.getJobScheduler(), platform.getConnectorPortRegister(), edition.getConnectionTracker(),
-                platform.getGlobalConfig(), platform.getGlobalClock(), platform.getGlobalMonitors(), platform.getLogService(),
+        return new BoltServer( boltGraphDatabaseManagementServiceSPI, platform.getJobScheduler(), platform.getConnectorPortRegister(),
+                edition.getConnectionTracker(), platform.getGlobalConfig(), platform.getGlobalClock(), platform.getGlobalMonitors(), platform.getLogService(),
                 platform.getGlobalDependencies() );
     }
 

@@ -22,9 +22,10 @@ package org.neo4j.bolt.runtime;
 import java.time.Duration;
 import java.util.Map;
 
+import org.neo4j.bolt.dbapi.BoltQueryExecutor;
+import org.neo4j.bolt.dbapi.BoltTransaction;
 import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.internal.kernel.api.security.LoginContext;
-import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.values.virtual.MapValue;
 
 public interface TransactionStateMachineSPI
@@ -33,16 +34,17 @@ public interface TransactionStateMachineSPI
 
     long newestEncounteredTxId();
 
-    KernelTransaction beginTransaction( LoginContext loginContext, Duration txTimeout, Map<String,Object> txMetaData );
+    BoltTransaction beginTransaction( LoginContext loginContext, Duration txTimeout, AccessMode accessMode, Map<String,Object> txMetaData );
 
-    void bindTransactionToCurrentThread( KernelTransaction tx );
+    BoltQueryExecutor getPeriodicCommitExecutor( LoginContext loginContext, Duration txTimeout, AccessMode accessMode, Map<String,Object> txMetaData );
 
-    void unbindTransactionFromCurrentThread();
+    void bindTransactionToCurrentThread( BoltTransaction tx );
+
+    void unbindTransactionFromCurrentThread( BoltTransaction tx );
 
     boolean isPeriodicCommit( String query );
 
-    BoltResultHandle executeQuery( LoginContext loginContext, String statement, MapValue params, Duration txTimeout,
-            Map<String,Object> txMetaData );
+    BoltResultHandle executeQuery( BoltQueryExecutor boltQueryExecutor, String statement, MapValue params );
 
     boolean supportsNestedStatementsInTransaction();
 

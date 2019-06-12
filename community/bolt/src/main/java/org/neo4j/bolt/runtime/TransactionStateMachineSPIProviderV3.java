@@ -22,25 +22,26 @@ package org.neo4j.bolt.runtime;
 import java.time.Duration;
 
 import org.neo4j.bolt.BoltChannel;
-import org.neo4j.bolt.messaging.BoltIOException;
+import org.neo4j.bolt.dbapi.BoltGraphDatabaseServiceSPI;
+import org.neo4j.bolt.dbapi.BoltGraphDatabaseManagementServiceSPI;
 import org.neo4j.bolt.v1.runtime.StatementProcessorReleaseManager;
 import org.neo4j.bolt.v3.runtime.TransactionStateMachineV3SPI;
-import org.neo4j.dbms.api.DatabaseManagementService;
-import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.time.SystemNanoClock;
 
 public class TransactionStateMachineSPIProviderV3 extends AbstractTransactionStatementSPIProvider
 {
-    TransactionStateMachineSPIProviderV3( DatabaseManagementService managementService, String defaultDatabaseName, BoltChannel boltChannel,
-            Duration awaitDuration, SystemNanoClock clock )
+    TransactionStateMachineSPIProviderV3( BoltGraphDatabaseManagementServiceSPI boltGraphDatabaseManagementServiceSPI,
+            String defaultDatabaseName, BoltChannel boltChannel,
+            Duration awaitDuration,
+            SystemNanoClock clock )
     {
-        super( managementService, defaultDatabaseName, boltChannel, awaitDuration, clock );
+        super( boltGraphDatabaseManagementServiceSPI, defaultDatabaseName, boltChannel, awaitDuration, clock );
     }
 
     @Override
-    protected TransactionStateMachineSPI newTransactionStateMachineSPI( GraphDatabaseFacade databaseFacade,
-            StatementProcessorReleaseManager resourceReleaseManger ) throws BoltIOException
+    protected TransactionStateMachineSPI newTransactionStateMachineSPI( BoltGraphDatabaseServiceSPI activeBoltGraphDatabaseServiceSPI,
+            StatementProcessorReleaseManager resourceReleaseManger )
     {
-        return new TransactionStateMachineV3SPI( databaseFacade, boltChannel, txAwaitDuration, clock, resourceReleaseManger );
+        return new TransactionStateMachineV3SPI( activeBoltGraphDatabaseServiceSPI, boltChannel, txAwaitDuration, clock, resourceReleaseManger );
     }
 }

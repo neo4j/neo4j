@@ -17,22 +17,13 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.bolt.v3.messaging.request;
+package org.neo4j.bolt.dbapi;
 
-import org.neo4j.bolt.messaging.BoltIOException;
+import org.neo4j.kernel.impl.query.QueryExecutionKernelException;
+import org.neo4j.kernel.impl.query.QuerySubscriber;
 import org.neo4j.values.virtual.MapValue;
 
-class BeginMessageTest extends AbstractTransactionInitiatingMessage
+public interface BoltQueryExecutor
 {
-    @Override
-    protected TransactionInitiatingMessage createMessage() throws BoltIOException
-    {
-        return new BeginMessage();
-    }
-
-    @Override
-    protected TransactionInitiatingMessage createMessage( MapValue meta ) throws BoltIOException
-    {
-        return new BeginMessage( meta ) ;
-    }
+    BoltQueryExecution executeQuery( String query, MapValue parameters, boolean prePopulate, QuerySubscriber subscriber ) throws QueryExecutionKernelException;
 }

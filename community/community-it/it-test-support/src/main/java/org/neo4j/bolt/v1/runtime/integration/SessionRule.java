@@ -32,6 +32,7 @@ import java.util.LinkedList;
 import java.util.Map;
 
 import org.neo4j.bolt.BoltChannel;
+import org.neo4j.bolt.dbapi.impl.BoltKernelDatabaseManagementServiceProvider;
 import org.neo4j.bolt.runtime.BoltStateMachine;
 import org.neo4j.bolt.runtime.BoltStateMachineFactoryImpl;
 import org.neo4j.bolt.security.auth.Authentication;
@@ -49,6 +50,7 @@ import org.neo4j.logging.internal.NullLogService;
 import org.neo4j.storageengine.api.TransactionIdStore;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.time.Clocks;
+import org.neo4j.time.SystemNanoClock;
 
 public class SessionRule implements TestRule
 {
@@ -76,10 +78,11 @@ public class SessionRule implements TestRule
                 Config config = gdb.getDependencyResolver().resolveDependency( Config.class );
                 Authentication authentication = authentication( resolver.resolveDependency( AuthManager.class ),
                         resolver.resolveDependency( UserManagerSupplier.class ) );
-                boltFactory = new BoltStateMachineFactoryImpl(
-                                        managementService,
+                SystemNanoClock clock = Clocks.nanoClock();
+                var boltGraphDatabaseManagementService = new BoltKernelDatabaseManagementServiceProvider( managementService, clock );
+                boltFactory = new BoltStateMachineFactoryImpl( boltGraphDatabaseManagementService,
                                         authentication,
-                                        Clocks.nanoClock(),
+                                        clock,
                                         config,
                                         NullLogService.getInstance()
                                     );

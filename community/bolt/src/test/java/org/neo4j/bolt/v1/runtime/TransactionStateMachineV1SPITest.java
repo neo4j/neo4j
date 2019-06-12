@@ -29,6 +29,7 @@ import java.util.concurrent.Future;
 import java.util.function.Supplier;
 
 import org.neo4j.bolt.BoltChannel;
+import org.neo4j.bolt.dbapi.impl.BoltKernelGraphDatabaseServiceProvider;
 import org.neo4j.collection.Dependencies;
 import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.GraphDatabaseQueryService;
@@ -50,6 +51,7 @@ import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThat;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.when;
@@ -61,7 +63,7 @@ public class TransactionStateMachineV1SPITest
     private static final DatabaseId DATABASE_ID = new TestDatabaseIdRepository().defaultDatabase();
 
     @Test
-    public void throwsWhenTxAwaitDurationExpires()
+    public void throwsWhenTxAwaitDurationExpires() throws Exception
     {
         long lastClosedTransactionId = 100;
         Supplier<TransactionIdStore> txIdStore = () -> fixedTxIdStore( lastClosedTransactionId );
@@ -138,7 +140,7 @@ public class TransactionStateMachineV1SPITest
     }
 
     private static TransactionStateMachineV1SPI createTxSpi( Supplier<TransactionIdStore> txIdStore, Duration txAwaitDuration,
-            DatabaseAvailabilityGuard availabilityGuard, SystemNanoClock clock )
+            DatabaseAvailabilityGuard availabilityGuard, SystemNanoClock clock ) throws Exception
     {
         QueryExecutionEngine queryExecutionEngine = mock( QueryExecutionEngine.class );
 
@@ -151,6 +153,7 @@ public class TransactionStateMachineV1SPITest
 
         GraphDatabaseFacade facade = mock( GraphDatabaseFacade.class );
         when( facade.getDependencyResolver() ).thenReturn( dependencyResolver );
+        when( facade.isAvailable( anyLong() ) ).thenReturn( true );
 
         GraphDatabaseQueryService queryService = mock( GraphDatabaseQueryService.class );
         when( queryService.getDependencyResolver() ).thenReturn( dependencyResolver );
@@ -158,6 +161,7 @@ public class TransactionStateMachineV1SPITest
 
         BoltChannel boltChannel = new BoltChannel( "bolt-42", "bolt", new EmbeddedChannel() );
 
-        return new TransactionStateMachineV1SPI( facade, boltChannel, txAwaitDuration, clock, mock( StatementProcessorReleaseManager.class ) );
+        BoltKernelGraphDatabaseServiceProvider databaseServiceProvider = new BoltKernelGraphDatabaseServiceProvider( facade, clock, "" );
+        return new TransactionStateMachineV1SPI( databaseServiceProvider, boltChannel, txAwaitDuration, clock, mock( StatementProcessorReleaseManager.class ) );
     }
 }
