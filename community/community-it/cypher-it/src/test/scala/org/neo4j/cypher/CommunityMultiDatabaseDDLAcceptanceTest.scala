@@ -38,6 +38,66 @@ class CommunityMultiDatabaseDDLAcceptanceTest extends CommunityDDLAcceptanceTest
   private val defaultConfig = Config.defaults()
   private val databaseIdRepository = new TestDatabaseIdRepository()
 
+  test("should fail at startup when config setting for default database name is invalid") {
+    // GIVEN
+    val config = Config.defaults()
+    val startOfError = "Invalid value for configuration setting dbms.default_database: "
+
+    // Empty name
+    config.augment(default_database, "")
+
+    the[IllegalArgumentException] thrownBy {
+      // WHEN
+      setup(config)
+      // THEN
+    } should have message (startOfError + "The provided database name is empty.")
+
+    // Starting on invalid character
+    config.augment(default_database, "_default")
+
+    the[IllegalArgumentException] thrownBy {
+      // WHEN
+      setup(config)
+      // THEN
+    } should have message (startOfError + "Database name '_default' is not starting with an ASCII alphabetic character.")
+
+    // Has prefix 'system'
+    config.augment(default_database, "system-mine")
+    the[IllegalArgumentException] thrownBy {
+      // WHEN
+      setup(config)
+      // THEN
+    } should have message (startOfError + "Database name 'system-mine' is invalid, due to the prefix 'system'.")
+
+    // Contains invalid characters
+    config.augment(default_database, "mydbwith_and%")
+    the[IllegalArgumentException] thrownBy {
+      // WHEN
+      setup(config)
+      // THEN
+    } should have message (startOfError +
+      "Database name 'mydbwith_and%' contains illegal characters. Use simple ascii characters, numbers, dots and dashes.")
+
+    // Too short name
+    config.augment(default_database, "me")
+    the[IllegalArgumentException] thrownBy {
+      // WHEN
+      setup(config)
+      // THEN
+    } should have message (startOfError + "The provided database name must have a length between 3 and 63 characters.")
+
+    // Too long name
+    val name = "ihaveallooootoflettersclearlymorethenishould-ihaveallooootoflettersclearlymorethenishould"
+    config.augment(default_database, name)
+    the[IllegalArgumentException] thrownBy {
+      // WHEN
+      setup(config)
+      // THEN
+    } should have message (startOfError + "The provided database name must have a length between 3 and 63 characters.")
+  }
+
+  // SHOW DEFAULT DATABASE tests
+
   test("should show default database") {
     // GIVEN
     setup( defaultConfig )
@@ -93,6 +153,8 @@ class CommunityMultiDatabaseDDLAcceptanceTest extends CommunityDDLAcceptanceTest
       // THEN
     } should have message "Trying to run `CATALOG SHOW DEFAULT DATABASE` against non-system database."
   }
+
+  // Test for non-valid community commands
 
   test("should fail on showing database from community") {
     setup( defaultConfig )

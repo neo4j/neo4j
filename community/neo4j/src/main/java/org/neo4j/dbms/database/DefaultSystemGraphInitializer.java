@@ -112,7 +112,6 @@ public class DefaultSystemGraphInitializer extends SystemGraphInitializer
 
     private void updateDefaultDatabase( GraphDatabaseService system, boolean stopOld ) throws InvalidArgumentsException
     {
-        assertValidDbName( defaultDbName );
         boolean defaultFound;
 
         try ( Transaction tx = system.beginTx() )
@@ -169,7 +168,6 @@ public class DefaultSystemGraphInitializer extends SystemGraphInitializer
 
     private void newDb( GraphDatabaseService system, String dbName, boolean defaultDb ) throws InvalidArgumentsException
     {
-        assertValidDbName( dbName );
         try ( Transaction tx = system.beginTx() )
         {
             Node node = system.createNode( databaseLabel );
@@ -181,14 +179,6 @@ public class DefaultSystemGraphInitializer extends SystemGraphInitializer
         catch ( ConstraintViolationException e )
         {
             throw new InvalidArgumentsException( "The specified database '" + dbName + "' already exists." );
-        }
-    }
-
-    static void assertValidDbName( String name ) throws InvalidArgumentsException
-    {
-        if ( name == null || name.isEmpty() )
-        {
-            throw new InvalidArgumentsException( "The provided database name is empty." );
         }
     }
 }
