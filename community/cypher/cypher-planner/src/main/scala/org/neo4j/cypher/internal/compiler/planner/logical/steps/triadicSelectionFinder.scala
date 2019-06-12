@@ -32,9 +32,8 @@ object triadicSelectionFinder extends CandidateGenerator[LogicalPlan] {
   override def apply(in: LogicalPlan, qg: QueryGraph, interestingOrder: InterestingOrder, context: LogicalPlanningContext): Seq[LogicalPlan] =
     unsolvedPredicates(in, qg, context.planningAttributes.solveds).collect {
       // WHERE NOT (a)-[:X]->(c)
-      case predicate@Not(patternExpr: PatternExpression) => findMatchingRelationshipPattern(positivePredicate = false, predicate, patternExpr, in, qg, interestingOrder, context)
+      case predicate@Not(Exists(patternExpr: PatternExpression)) => findMatchingRelationshipPattern(positivePredicate = false, predicate, patternExpr, in, qg, interestingOrder, context)
       // WHERE (a)-[:X]->(c)
-      case patternExpr: PatternExpression => findMatchingRelationshipPattern(positivePredicate = true, patternExpr, patternExpr, in, qg, interestingOrder, context)
       case predicate@Exists(patternExpr: PatternExpression) => findMatchingRelationshipPattern(positivePredicate = true, predicate, patternExpr, in, qg, interestingOrder, context)
     }.flatten
 
