@@ -98,7 +98,7 @@ class JoinSolverStepTest extends CypherFunSuite with LogicalPlanningTestSupport2
       table.put(register(pattern1), plan1)
       table.put(register(pattern2), plan2)
 
-      joinSolverStep(qg)(registry, register(pattern1, pattern2), table, ctx).toSet should equal(Set(
+      joinSolverStep(qg, TESTING = true)(registry, register(pattern1, pattern2), table, ctx).toSet should equal(Set(
         NodeHashJoin(Set("b"), plan1, plan2),
         NodeHashJoin(Set("b"), plan2, plan1)
       ))
