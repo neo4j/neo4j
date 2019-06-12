@@ -19,9 +19,11 @@
  */
 package org.neo4j.cypher
 
-import org.neo4j.configuration.GraphDatabaseSettings
-import org.neo4j.configuration.GraphDatabaseSettings.SYSTEM_DATABASE_NAME
-import org.neo4j.graphdb.Result
+import java.util
+import java.util.Collections
+
+import org.neo4j.configuration.GraphDatabaseSettings.{DEFAULT_DATABASE_NAME, SYSTEM_DATABASE_NAME}
+import org.neo4j.graphdb.{QueryExecutionException, Result}
 import org.neo4j.internal.kernel.api.Transaction
 import org.neo4j.internal.kernel.api.security.AuthenticationResult
 import org.neo4j.kernel.api.exceptions.InvalidArgumentsException
@@ -51,7 +53,7 @@ class CommunityUserManagementDDLAcceptanceTest extends CommunityDDLAcceptanceTes
     // Bar   :
     // Baz   :
     // Zet   :
-    selectDatabase(GraphDatabaseSettings.SYSTEM_DATABASE_NAME)
+    selectDatabase(SYSTEM_DATABASE_NAME)
     execute("CREATE USER Bar SET PASSWORD 'neo'")
     execute("CREATE USER Baz SET PASSWORD 'NEO'")
     execute("CREATE USER Zet SET PASSWORD 'NeX'")
@@ -76,7 +78,7 @@ class CommunityUserManagementDDLAcceptanceTest extends CommunityDDLAcceptanceTes
 
   test("should create user with password as string") {
     // GIVEN
-    selectDatabase(GraphDatabaseSettings.SYSTEM_DATABASE_NAME)
+    selectDatabase(SYSTEM_DATABASE_NAME)
     execute("SHOW USERS").toSet should be(Set(user("neo4j")))
 
     // WHEN
@@ -90,7 +92,7 @@ class CommunityUserManagementDDLAcceptanceTest extends CommunityDDLAcceptanceTes
 
   test("should create user with mixed password") {
     // GIVEN
-    selectDatabase(GraphDatabaseSettings.SYSTEM_DATABASE_NAME)
+    selectDatabase(SYSTEM_DATABASE_NAME)
     execute("SHOW USERS").toSet should be(Set(user("neo4j")))
 
     // WHEN
@@ -105,7 +107,7 @@ class CommunityUserManagementDDLAcceptanceTest extends CommunityDDLAcceptanceTes
 
   test("should fail when creating user with empty password") {
     // GIVEN
-    selectDatabase(GraphDatabaseSettings.SYSTEM_DATABASE_NAME)
+    selectDatabase(SYSTEM_DATABASE_NAME)
     execute("SHOW USERS").toSet shouldBe Set(user("neo4j"))
 
     the[InvalidArgumentsException] thrownBy {
@@ -119,7 +121,7 @@ class CommunityUserManagementDDLAcceptanceTest extends CommunityDDLAcceptanceTes
 
   test("should create user with password as parameter") {
     // GIVEN
-    selectDatabase(GraphDatabaseSettings.SYSTEM_DATABASE_NAME)
+    selectDatabase(SYSTEM_DATABASE_NAME)
     execute("SHOW USERS").toSet shouldBe Set(user("neo4j"))
 
     // WHEN
@@ -133,7 +135,7 @@ class CommunityUserManagementDDLAcceptanceTest extends CommunityDDLAcceptanceTes
 
   test("should fail when creating user with numeric password as parameter") {
     // GIVEN
-    selectDatabase(GraphDatabaseSettings.SYSTEM_DATABASE_NAME)
+    selectDatabase(SYSTEM_DATABASE_NAME)
     execute("SHOW USERS").toSet shouldBe Set(user("neo4j"))
 
     the[ParameterWrongTypeException] thrownBy {
@@ -147,7 +149,7 @@ class CommunityUserManagementDDLAcceptanceTest extends CommunityDDLAcceptanceTes
 
   test("should fail when creating user with password as missing parameter") {
     // GIVEN
-    selectDatabase(GraphDatabaseSettings.SYSTEM_DATABASE_NAME)
+    selectDatabase(SYSTEM_DATABASE_NAME)
     execute("SHOW USERS").toSet shouldBe Set(user("neo4j"))
 
     the[ParameterNotFoundException] thrownBy {
@@ -161,7 +163,7 @@ class CommunityUserManagementDDLAcceptanceTest extends CommunityDDLAcceptanceTes
 
   test("should fail when creating user with password as null parameter") {
     // GIVEN
-    selectDatabase(GraphDatabaseSettings.SYSTEM_DATABASE_NAME)
+    selectDatabase(SYSTEM_DATABASE_NAME)
     execute("SHOW USERS").toSet shouldBe Set(user("neo4j"))
 
     the[ParameterNotFoundException] thrownBy {
@@ -175,7 +177,7 @@ class CommunityUserManagementDDLAcceptanceTest extends CommunityDDLAcceptanceTes
 
   test("should create user with password change not required") {
     // GIVEN
-    selectDatabase(GraphDatabaseSettings.SYSTEM_DATABASE_NAME)
+    selectDatabase(SYSTEM_DATABASE_NAME)
     execute("SHOW USERS").toSet shouldBe Set(user("neo4j"))
 
     // WHEN
@@ -189,7 +191,7 @@ class CommunityUserManagementDDLAcceptanceTest extends CommunityDDLAcceptanceTes
 
   test("should not be able to create user with explicit status active in community") {
     // GIVEN
-    selectDatabase(GraphDatabaseSettings.SYSTEM_DATABASE_NAME)
+    selectDatabase(SYSTEM_DATABASE_NAME)
     execute("SHOW USERS").toSet shouldBe Set(user("neo4j"))
 
     // WHEN
@@ -202,7 +204,7 @@ class CommunityUserManagementDDLAcceptanceTest extends CommunityDDLAcceptanceTes
 
   test("should not be able to create user with status suspended in community") {
     // GIVEN
-    selectDatabase(GraphDatabaseSettings.SYSTEM_DATABASE_NAME)
+    selectDatabase(SYSTEM_DATABASE_NAME)
     execute("SHOW USERS").toSet shouldBe Set(user("neo4j"))
 
     // WHEN
@@ -215,7 +217,7 @@ class CommunityUserManagementDDLAcceptanceTest extends CommunityDDLAcceptanceTes
 
   test("should fail when creating already existing user") {
     // GIVEN
-    selectDatabase(GraphDatabaseSettings.SYSTEM_DATABASE_NAME)
+    selectDatabase(SYSTEM_DATABASE_NAME)
     execute("SHOW USERS").toSet shouldBe Set(user("neo4j"))
 
     the[InvalidArgumentsException] thrownBy {
@@ -230,7 +232,7 @@ class CommunityUserManagementDDLAcceptanceTest extends CommunityDDLAcceptanceTes
 
   test("should fail when creating user with illegal username") {
     // GIVEN
-    selectDatabase(GraphDatabaseSettings.SYSTEM_DATABASE_NAME)
+    selectDatabase(SYSTEM_DATABASE_NAME)
     execute("SHOW USERS").toSet shouldBe Set(user("neo4j"))
 
     the[InvalidArgumentException] thrownBy {
@@ -277,7 +279,7 @@ class CommunityUserManagementDDLAcceptanceTest extends CommunityDDLAcceptanceTes
 
   test("should drop user") {
     // GIVEN
-    selectDatabase(GraphDatabaseSettings.SYSTEM_DATABASE_NAME)
+    selectDatabase(SYSTEM_DATABASE_NAME)
     prepareUser("foo", "bar")
 
     // WHEN
@@ -289,7 +291,7 @@ class CommunityUserManagementDDLAcceptanceTest extends CommunityDDLAcceptanceTes
 
   test("should re-create dropped user") {
     // GIVEN
-    selectDatabase(GraphDatabaseSettings.SYSTEM_DATABASE_NAME)
+    selectDatabase(SYSTEM_DATABASE_NAME)
     prepareUser("foo", "bar")
     execute("DROP USER foo")
     execute("SHOW USERS").toSet should be(Set(user("neo4j")))
@@ -303,7 +305,7 @@ class CommunityUserManagementDDLAcceptanceTest extends CommunityDDLAcceptanceTes
 
   test("should be able to drop the user that created you") {
     // GIVEN
-    selectDatabase(GraphDatabaseSettings.SYSTEM_DATABASE_NAME)
+    selectDatabase(SYSTEM_DATABASE_NAME)
     execute("CREATE USER alice SET PASSWORD 'abc' CHANGE NOT REQUIRED")
 
     // WHEN
@@ -325,7 +327,7 @@ class CommunityUserManagementDDLAcceptanceTest extends CommunityDDLAcceptanceTes
 
   test("should fail when dropping current user") {
     // GIVEN
-    selectDatabase(GraphDatabaseSettings.SYSTEM_DATABASE_NAME)
+    selectDatabase(SYSTEM_DATABASE_NAME)
     execute("CREATE USER foo SET PASSWORD 'bar' CHANGE NOT REQUIRED")
     execute("SHOW USERS").toSet shouldBe Set(user("neo4j"), user("foo", passwordChangeRequired = false))
 
@@ -341,7 +343,7 @@ class CommunityUserManagementDDLAcceptanceTest extends CommunityDDLAcceptanceTes
 
   test("should fail when dropping non-existing user") {
     // GIVEN
-    selectDatabase(GraphDatabaseSettings.SYSTEM_DATABASE_NAME)
+    selectDatabase(SYSTEM_DATABASE_NAME)
     execute("SHOW USERS").toSet should be(Set(user("neo4j")))
 
     the[InvalidArgumentsException] thrownBy {
@@ -390,6 +392,225 @@ class CommunityUserManagementDDLAcceptanceTest extends CommunityDDLAcceptanceTes
     assertFailure("ALTER USER foo SET PASSWORD 'xxx'", "Unsupported management command: ALTER USER foo SET PASSWORD 'xxx'")
   }
 
+  // Tests for changing own password
+
+  test("should change own password") {
+    // GIVEN
+    selectDatabase(SYSTEM_DATABASE_NAME)
+    execute("CREATE USER foo SET PASSWORD 'bar' CHANGE NOT REQUIRED")
+    execute("SHOW USERS").toSet shouldBe Set(user("neo4j"), user("foo", passwordChangeRequired = false))
+
+    // WHEN
+    executeOnSystem("foo", "bar", "SET MY PASSWORD FROM 'bar' TO 'baz'")
+
+    // THEN
+    testUserLogin("foo", "baz", AuthenticationResult.SUCCESS)
+    testUserLogin("foo", "bar", AuthenticationResult.FAILURE)
+  }
+
+  test("should fail on changing own password from wrong password") {
+    // GIVEN
+    selectDatabase(SYSTEM_DATABASE_NAME)
+    execute("CREATE USER foo SET PASSWORD 'bar' CHANGE NOT REQUIRED")
+    execute("SHOW USERS").toSet shouldBe Set(user("neo4j"), user("foo", passwordChangeRequired = false))
+
+    // THEN
+    // WHEN
+    the[QueryExecutionException] thrownBy { // the InvalidArgumentsException exception gets wrapped in this code path
+      // WHEN
+      executeOnSystem("foo", "bar", "SET MY PASSWORD FROM 'wrongPassword' TO 'baz'")
+      // THEN
+    } should have message "Invalid principal or credentials."
+
+    // THEN
+    testUserLogin("foo", "bar", AuthenticationResult.SUCCESS)
+    testUserLogin("foo", "baz", AuthenticationResult.FAILURE)
+  }
+
+  test("should fail when changing own password to invalid password") {
+    // GIVEN
+    selectDatabase(SYSTEM_DATABASE_NAME)
+    execute("CREATE USER foo SET PASSWORD 'bar' CHANGE NOT REQUIRED")
+    execute("SHOW USERS").toSet shouldBe Set(user("neo4j"), user("foo", passwordChangeRequired = false))
+
+    the[InvalidArgumentsException] thrownBy {
+      // WHEN
+      executeOnSystem("foo", "bar", "SET MY PASSWORD FROM 'bar' TO ''")
+      // THEN
+    } should have message "A password cannot be empty."
+
+    // THEN
+    testUserLogin("foo", "bar", AuthenticationResult.SUCCESS)
+
+    val parameter = new util.HashMap[String, Object]()
+    parameter.put("password", "bar")
+
+    the[QueryExecutionException] thrownBy { // the InvalidArgumentsException exception gets wrapped in this code path
+      // WHEN
+      executeOnSystem("foo", "bar", "SET MY PASSWORD FROM 'bar' TO $password", params = parameter)
+      // THEN
+    } should have message "Old password and new password cannot be the same."
+
+    // THEN
+    testUserLogin("foo", "bar", AuthenticationResult.SUCCESS)
+  }
+
+  test("should change own password to parameter") {
+    // GIVEN
+    selectDatabase(SYSTEM_DATABASE_NAME)
+    execute("CREATE USER foo SET PASSWORD 'bar' CHANGE NOT REQUIRED")
+    execute("SHOW USERS").toSet shouldBe Set(user("neo4j"), user("foo", passwordChangeRequired = false))
+
+    val parameter = new util.HashMap[String, Object]()
+    parameter.put("password", "baz")
+
+    // WHEN
+    executeOnSystem("foo", "bar", "SET MY PASSWORD FROM 'bar' TO $password", params = parameter)
+
+    // THEN
+    testUserLogin("foo", "baz", AuthenticationResult.SUCCESS)
+    testUserLogin("foo", "bar", AuthenticationResult.FAILURE)
+  }
+
+  test("should fail when changing own password to missing parameter") {
+    // GIVEN
+    selectDatabase(SYSTEM_DATABASE_NAME)
+    execute("CREATE USER foo SET PASSWORD 'bar' CHANGE NOT REQUIRED")
+    execute("SHOW USERS").toSet shouldBe Set(user("neo4j"), user("foo", passwordChangeRequired = false))
+
+    the[QueryExecutionException] thrownBy { // the ParameterNotFoundException exception gets wrapped in this code path
+      // WHEN
+      executeOnSystem("foo", "bar", "SET MY PASSWORD FROM 'bar' TO $password")
+      // THEN
+    } should have message "Expected parameter(s): password"
+
+    // THEN
+    testUserLogin("foo", "bar", AuthenticationResult.SUCCESS)
+  }
+
+  test("should change own password from parameter") {
+    // GIVEN
+    selectDatabase(SYSTEM_DATABASE_NAME)
+    execute("CREATE USER foo SET PASSWORD 'bar' CHANGE NOT REQUIRED")
+    execute("SHOW USERS").toSet shouldBe Set(user("neo4j"), user("foo", passwordChangeRequired = false))
+
+    val parameter = new util.HashMap[String, Object]()
+    parameter.put("password", "bar")
+
+    // WHEN
+    executeOnSystem("foo", "bar", "SET MY PASSWORD FROM $password TO 'baz'", params = parameter)
+
+    // THEN
+    testUserLogin("foo", "baz", AuthenticationResult.SUCCESS)
+    testUserLogin("foo", "bar", AuthenticationResult.FAILURE)
+  }
+
+  test("should fail when changing own password from integer parameter") {
+    // GIVEN
+    selectDatabase(SYSTEM_DATABASE_NAME)
+    execute("CREATE USER foo SET PASSWORD '123' CHANGE NOT REQUIRED")
+    execute("SHOW USERS").toSet shouldBe Set(user("neo4j"), user("foo", passwordChangeRequired = false))
+
+    val parameter = new util.HashMap[String, Object]()
+    parameter.put("password", Integer.valueOf(123))
+
+    the[QueryExecutionException] thrownBy { // the ParameterWrongTypeException exception gets wrapped in this code path
+      // WHEN
+      executeOnSystem("foo", "bar", "SET MY PASSWORD FROM $password TO 'bar'", params = parameter)
+      // THEN
+    } should have message "Only string values are accepted as password, got: Integer"
+
+    // THEN
+    testUserLogin("foo", "123", AuthenticationResult.SUCCESS)
+  }
+
+  test("should change own password from parameter to parameter") {
+    // GIVEN
+    selectDatabase(SYSTEM_DATABASE_NAME)
+    execute("CREATE USER foo SET PASSWORD 'bar' CHANGE NOT REQUIRED")
+    execute("SHOW USERS").toSet shouldBe Set(user("neo4j"), user("foo", passwordChangeRequired = false))
+
+    val parameter = new util.HashMap[String, Object]()
+    parameter.put("currentPassword", "bar")
+    parameter.put("newPassword", "baz")
+
+    // WHEN
+    executeOnSystem("foo", "bar", "SET MY PASSWORD FROM $currentPassword TO $newPassword", params = parameter)
+
+    // THEN
+    testUserLogin("foo", "baz", AuthenticationResult.SUCCESS)
+    testUserLogin("foo", "bar", AuthenticationResult.FAILURE)
+  }
+
+  test("should fail when changing own password from existing parameter to missing parameter") {
+    // GIVEN
+    selectDatabase(SYSTEM_DATABASE_NAME)
+    execute("CREATE USER foo SET PASSWORD 'bar' CHANGE NOT REQUIRED")
+    execute("SHOW USERS").toSet shouldBe Set(user("neo4j"), user("foo", passwordChangeRequired = false))
+
+    val parameter = new util.HashMap[String, Object]()
+    parameter.put("currentPassword", "bar")
+
+    the[QueryExecutionException] thrownBy { // the ParameterNotFoundException exception gets wrapped in this code path
+      // WHEN
+      executeOnSystem("foo", "bar", "SET MY PASSWORD FROM $currentPassword TO $newPassword", params = parameter)
+      // THEN
+    } should have message "Expected parameter(s): newPassword"
+
+    // THEN
+    testUserLogin("foo", "bar", AuthenticationResult.SUCCESS)
+  }
+
+  test("should fail when changing own password from missing parameter to existing parameter") {
+    // GIVEN
+    selectDatabase(SYSTEM_DATABASE_NAME)
+    execute("CREATE USER foo SET PASSWORD 'bar' CHANGE NOT REQUIRED")
+    execute("SHOW USERS").toSet shouldBe Set(user("neo4j"), user("foo", passwordChangeRequired = false))
+
+    val parameter = new util.HashMap[String, Object]()
+    parameter.put("newPassword", "baz")
+
+    the[QueryExecutionException] thrownBy { // the ParameterNotFoundException exception gets wrapped in this code path
+      // WHEN
+      executeOnSystem("foo", "bar", "SET MY PASSWORD FROM $currentPassword TO $newPassword", params = parameter)
+      // THEN
+    } should have message "Expected parameter(s): currentPassword"
+
+    // THEN
+    testUserLogin("foo", "bar", AuthenticationResult.SUCCESS)
+  }
+
+  test("should fail when changing own password from parameter to parameter when both are missing") {
+    // GIVEN
+    selectDatabase(SYSTEM_DATABASE_NAME)
+    execute("CREATE USER foo SET PASSWORD 'bar' CHANGE NOT REQUIRED")
+    execute("SHOW USERS").toSet shouldBe Set(user("neo4j"), user("foo", passwordChangeRequired = false))
+
+    val e = the[QueryExecutionException] thrownBy { // the ParameterNotFoundException exception gets wrapped in this code path
+      // WHEN
+      executeOnSystem("foo", "bar", "SET MY PASSWORD FROM $currentPassword TO $newPassword")
+    }
+    // THEN
+    e.getMessage should (be("Expected parameter(s): newPassword") or be("Expected parameter(s): currentPassword"))
+
+    // THEN
+    testUserLogin("foo", "bar", AuthenticationResult.SUCCESS)
+  }
+
+  test("should fail when changing own password when not on system database") {
+    // GIVEN
+    selectDatabase(SYSTEM_DATABASE_NAME)
+    execute("CREATE USER foo SET PASSWORD 'bar' CHANGE NOT REQUIRED")
+    execute("SHOW USERS").toSet shouldBe Set(user("neo4j"), user("foo", passwordChangeRequired = false))
+    selectDatabase(DEFAULT_DATABASE_NAME)
+
+    the[QueryExecutionException] thrownBy { // the DatabaseManagementException gets wrapped twice in this code path
+      // WHEN
+      executeOnDefault("foo", "bar", "SET MY PASSWORD FROM 'bar' TO 'baz'")
+      // THEN
+    } should have message "This is a DDL command and it should be executed against the system database: SET OWN PASSWORD"
+  }
+
   // helper methods
 
   private def user(username: String, passwordChangeRequired: Boolean = true): Map[String, Any] = {
@@ -409,13 +630,24 @@ class CommunityUserManagementDDLAcceptanceTest extends CommunityDDLAcceptanceTes
     testUserLogin(username, password, AuthenticationResult.PASSWORD_CHANGE_REQUIRED)
   }
 
-  private def executeOnSystem(username: String, password: String, query: String, resultHandler: (Result.ResultRow, Int) => Unit = (_, _) => {}): Int = {
-    selectDatabase(GraphDatabaseSettings.SYSTEM_DATABASE_NAME)
+  private def executeOnDefault(username: String, password: String, query: String,
+                       resultHandler: (Result.ResultRow, Int) => Unit = (_, _) => {}, params: util.Map[String, Object] = Collections.emptyMap()): Int = {
+    executeOn(DEFAULT_DATABASE_NAME, username, password, query, resultHandler, params)
+  }
+
+  private def executeOnSystem(username: String, password: String, query: String,
+                      resultHandler: (Result.ResultRow, Int) => Unit = (_, _) => {}, params: util.Map[String, Object] = Collections.emptyMap()): Int = {
+    executeOn(SYSTEM_DATABASE_NAME, username, password, query, resultHandler, params)
+  }
+
+  private def executeOn(database: String, username: String, password: String, query: String,
+                        resultHandler: (Result.ResultRow, Int) => Unit, params: util.Map[String, Object]): Int = {
+    selectDatabase(database)
     val login = authManager.login(SecurityTestUtils.authToken(username, password))
     val tx = graph.beginTransaction(Transaction.Type.explicit, login)
     try {
       var count = 0
-      val result: Result = new RichGraphDatabaseQueryService(graph).execute(query)
+      val result: Result = new RichGraphDatabaseQueryService(graph).execute(query, params)
       result.accept(row => {
         resultHandler(row, count)
         count = count + 1

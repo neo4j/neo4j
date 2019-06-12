@@ -113,6 +113,47 @@ case class CommunityManagementCommandRuntime(normalExecutionEngine: ExecutionEng
           .handleError(e => new InvalidArgumentsException(s"Failed to delete the specified user '$userName'.", e))
       )
 
+    // SET MY PASSWORD FROM 'currentPassword' TO 'newPassword'
+    case SetOwnPassword(Some(newPassword), None, Some(currentPassword), None) => (_, _, securityContext) =>
+      val query =
+        """MATCH (user:User {name: $name})
+          |WITH user, user.credentials AS oldCredentials
+          |SET user.credentials = $credentials
+          |SET user.passwordChangeRequired = false
+          |RETURN oldCredentials""".stripMargin
+      val currentUser = securityContext.subject().username()
+
+      UpdatingSystemCommandExecutionPlan("SetOwnPassword", normalExecutionEngine,
+        query,
+        VirtualValues.map(Array("name", "credentials"),
+          Array(Values.stringValue(currentUser),
+            Values.stringValue(authManager.createCredentialForPassword(validatePassword(newPassword)).serialize()))),
+        QueryHandler
+          .handleNoResult(() => Some(new InvalidArgumentsException(s"User '$currentUser' does not exist."))) // TODO should be current user so can this even happen?
+          .handleError(e => new InvalidArgumentsException(s"User '$currentUser' failed to change its own password.", e))
+          .handleResult((_, value) => {
+            val oldCredentials = authManager.deserialize(value.asInstanceOf[TextValue].stringValue())
+            if (!oldCredentials.matchesPassword(currentPassword))
+              Some(new InvalidArgumentsException("Invalid principal or credentials."))
+            else if (oldCredentials.matchesPassword(newPassword))
+              Some(new InvalidArgumentsException("Old password and new password cannot be the same."))
+            else
+              None
+          })
+      )
+
+    // SET MY PASSWORD FROM currentPassword TO $newPassword
+    case SetOwnPassword(_, Some(_), _, _) =>
+      throw new IllegalStateException("Did not resolve parameters correctly.")
+
+    // SET MY PASSWORD FROM $currentPassword TO newPassword
+    case SetOwnPassword(_, _, _, Some(_)) =>
+      throw new IllegalStateException("Did not resolve parameters correctly.")
+
+    // SET MY PASSWORD FROM currentPassword TO newPassword
+    case SetOwnPassword(_, _, _, _) =>
+      throw new IllegalStateException("Password not correctly supplied.")
+
     // SHOW DEFAULT DATABASE
     case ShowDefaultDatabase() => (_, _, _) =>
       SystemCommandExecutionPlan("ShowDefaultDatabase", normalExecutionEngine,
