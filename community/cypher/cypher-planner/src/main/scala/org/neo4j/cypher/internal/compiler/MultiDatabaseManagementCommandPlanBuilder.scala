@@ -22,9 +22,10 @@ package org.neo4j.cypher.internal.compiler
 import org.neo4j.configuration.{DatabaseNameValidator, NormalizedDatabaseName}
 import org.neo4j.cypher.internal.compiler.phases.{LogicalPlanState, PlannerContext}
 import org.neo4j.cypher.internal.logical.plans
-import org.neo4j.cypher.internal.logical.plans.{LogicalPlan, NameValidator}
+import org.neo4j.cypher.internal.logical.plans.{LogicalPlan, NameValidator, ResolvedCall}
 import org.neo4j.cypher.internal.planner.spi.ProcedurePlannerName
 import org.neo4j.cypher.internal.v4_0.ast._
+import org.neo4j.cypher.internal.v4_0.ast.semantics.{SemanticCheckResult, SemanticState}
 import org.neo4j.cypher.internal.v4_0.frontend.phases.CompilationPhaseTracer.CompilationPhase
 import org.neo4j.cypher.internal.v4_0.frontend.phases.CompilationPhaseTracer.CompilationPhase.PIPE_BUILDING
 import org.neo4j.cypher.internal.v4_0.frontend.phases._
@@ -181,6 +182,12 @@ case object MultiDatabaseManagementCommandPlanBuilder extends Phase[PlannerConte
         Some(plans.StopDatabase(
           Some(plans.EnsureValidNonDefaultDatabase(normalizedName, "stop")),
           normalizedName))
+
+      // Global call: CALL foo.bar.baz("arg1", 2)
+      case Query(None, SingleQuery(Seq(resolved@ResolvedCall(signature, args, _, _, _)))) if signature.systemProcedure =>
+        val SemanticCheckResult(_, errors) = resolved.semanticCheck(SemanticState.clean)
+        errors.foreach { error => throw context.exceptionCreator(error.msg, error.position) }
+        Some(plans.StandAloneProcedureCall(signature, args, resolved.callResultTypes, resolved.callResultIndices))
 
       case _ => None
     }

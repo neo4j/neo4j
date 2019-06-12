@@ -42,6 +42,7 @@ import org.neo4j.kernel.api.procedure.CallableUserFunction;
 import org.neo4j.kernel.api.procedure.FailedLoadAggregatedFunction;
 import org.neo4j.kernel.api.procedure.FailedLoadFunction;
 import org.neo4j.kernel.api.procedure.FailedLoadProcedure;
+import org.neo4j.kernel.api.procedure.SystemProcedure;
 import org.neo4j.logging.Log;
 import org.neo4j.procedure.Admin;
 import org.neo4j.procedure.Description;
@@ -254,6 +255,7 @@ class ProcedureCompiler
         Procedure procedure = method.getAnnotation( Procedure.class );
         Mode mode = procedure.mode();
         boolean admin = method.isAnnotationPresent( Admin.class );
+        boolean systemProcedure = method.isAnnotationPresent( SystemProcedure.class );
         String deprecated = deprecated( method, procedure::deprecatedBy,
                 "Use of @Procedure(deprecatedBy) without @Deprecated in " + procName );
 
@@ -269,14 +271,14 @@ class ProcedureCompiler
                 description = describeAndLogLoadFailure( procName );
                 ProcedureSignature signature =
                         new ProcedureSignature( procName, inputSignature, outputSignature, Mode.DEFAULT,
-                                admin, null, new String[0], description, warning, procedure.eager(), false );
+                                admin, null, new String[0], description, warning, procedure.eager(), false, systemProcedure );
                 return new FailedLoadProcedure( signature );
             }
         }
 
         ProcedureSignature signature =
                 new ProcedureSignature( procName, inputSignature, outputSignature, mode, admin, deprecated,
-                        config.rolesFor( procName.toString() ), description, warning, procedure.eager(), false );
+                        config.rolesFor( procName.toString() ), description, warning, procedure.eager(), false, systemProcedure );
 
         return ProcedureCompilation.compileProcedure( signature, setters, method );
     }

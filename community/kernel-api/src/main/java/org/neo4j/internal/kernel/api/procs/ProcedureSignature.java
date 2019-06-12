@@ -48,6 +48,7 @@ public class ProcedureSignature
     private final String warning;
     private final boolean eager;
     private final boolean caseInsensitive;
+    private final boolean systemProcedure;
 
     public ProcedureSignature(
             QualifiedName name,
@@ -60,7 +61,8 @@ public class ProcedureSignature
             String description,
             String warning,
             boolean eager,
-            boolean caseInsensitive )
+            boolean caseInsensitive,
+            boolean systemProcedure )
     {
         this.name = name;
         this.inputSignature = unmodifiableList( inputSignature );
@@ -73,6 +75,7 @@ public class ProcedureSignature
         this.warning = warning;
         this.eager = eager;
         this.caseInsensitive = caseInsensitive;
+        this.systemProcedure = systemProcedure;
     }
 
     public QualifiedName name()
@@ -135,6 +138,11 @@ public class ProcedureSignature
         return eager;
     }
 
+    public boolean systemProcedure()
+    {
+        return systemProcedure;
+    }
+
     @Override
     public boolean equals( Object o )
     {
@@ -185,6 +193,7 @@ public class ProcedureSignature
         private String warning;
         private boolean eager;
         private boolean admin;
+        private boolean systemProcedure;
 
         public Builder( String[] namespace, String name )
         {
@@ -259,10 +268,16 @@ public class ProcedureSignature
             return this;
         }
 
+        public Builder systemProcedure()
+        {
+            this.systemProcedure = true;
+            return this;
+        }
+
         public ProcedureSignature build()
         {
             return new ProcedureSignature( name, inputSignature, outputSignature, mode, admin, deprecated, allowed,
-                    description, warning, eager, false );
+                    description, warning, eager, false, systemProcedure );
         }
     }
 
