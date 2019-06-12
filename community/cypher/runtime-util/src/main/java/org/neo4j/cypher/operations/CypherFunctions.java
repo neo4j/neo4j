@@ -393,12 +393,12 @@ public final class CypherFunctions
         }
         else
         {
-            throw new CypherTypeException( format( "Expected %s to be a RelationshipValue", anyValue), null );
+            throw new CypherTypeException( format( "Expected %s to be a RelationshipValue", anyValue ), null );
         }
     }
 
     public static NodeValue startNode( VirtualRelationshipValue relationship, DbAccess access,
-            RelationshipScanCursor cursor )
+                                       RelationshipScanCursor cursor )
     {
 
         access.singleRelationship( relationship.id(), cursor );
@@ -416,12 +416,12 @@ public final class CypherFunctions
         }
         else
         {
-            throw new CypherTypeException( format( "Expected %s to be a RelationshipValue", anyValue), null );
+            throw new CypherTypeException( format( "Expected %s to be a RelationshipValue", anyValue ), null );
         }
     }
 
     public static NodeValue endNode( VirtualRelationshipValue relationship, DbAccess access,
-            RelationshipScanCursor cursor )
+                                     RelationshipScanCursor cursor )
     {
         access.singleRelationship( relationship.id(), cursor );
         //at this point we don't care if it is there or not just load what we got
@@ -443,7 +443,7 @@ public final class CypherFunctions
     }
 
     public static NodeValue otherNode( VirtualRelationshipValue relationship, DbAccess access, VirtualNodeValue node,
-            RelationshipScanCursor cursor )
+                                       RelationshipScanCursor cursor )
     {
 
         access.singleRelationship( relationship.id(), cursor );
@@ -488,7 +488,7 @@ public final class CypherFunctions
         }
         else
         {
-            throw new CypherTypeException( format( "Expected %s to be a property container", container), null );
+            throw new CypherTypeException( format( "Expected %s to be a property container", container ), null );
         }
     }
 
@@ -503,24 +503,24 @@ public final class CypherFunctions
         if ( container instanceof VirtualNodeValue )
         {
             return dbAccess.nodeProperty( ((VirtualNodeValue) container).id(),
-                    dbAccess.propertyKey( key ),
-                    nodeCursor,
-                    propertyCursor,
-                    true );
+                                          dbAccess.propertyKey( key ),
+                                          nodeCursor,
+                                          propertyCursor,
+                                          true );
         }
         else if ( container instanceof VirtualRelationshipValue )
         {
             return dbAccess.relationshipProperty( ((VirtualRelationshipValue) container).id(),
-                    dbAccess.propertyKey( key ),
-                    relationshipScanCursor,
-                    propertyCursor,
-                    true);
+                                                  dbAccess.propertyKey( key ),
+                                                  relationshipScanCursor,
+                                                  propertyCursor,
+                                                  true );
         }
         else if ( container instanceof MapValue )
         {
             return ((MapValue) container).get( key );
         }
-        else if ( container instanceof TemporalValue<?,?> )
+        else if ( container instanceof TemporalValue<?, ?> )
         {
             return ((TemporalValue) container).get( key );
         }
@@ -546,28 +546,28 @@ public final class CypherFunctions
     }
 
     public static AnyValue containerIndex( AnyValue container,
-            AnyValue index,
-            DbAccess dbAccess,
-            NodeCursor nodeCursor,
-            RelationshipScanCursor relationshipScanCursor,
-            PropertyCursor propertyCursor )
+                                           AnyValue index,
+                                           DbAccess dbAccess,
+                                           NodeCursor nodeCursor,
+                                           RelationshipScanCursor relationshipScanCursor,
+                                           PropertyCursor propertyCursor )
     {
         assert container != NO_VALUE && index != NO_VALUE : "NO_VALUE checks need to happen outside this call";
         if ( container instanceof VirtualNodeValue )
         {
             return dbAccess.nodeProperty( ((VirtualNodeValue) container).id(),
-                    dbAccess.propertyKey( asString( index ) ),
-                    nodeCursor,
-                    propertyCursor,
-                    true );
+                                          dbAccess.propertyKey( asString( index ) ),
+                                          nodeCursor,
+                                          propertyCursor,
+                                          true );
         }
         else if ( container instanceof VirtualRelationshipValue )
         {
             return dbAccess.relationshipProperty( ((VirtualRelationshipValue) container).id(),
-                    dbAccess.propertyKey( asString( index ) ),
-                    relationshipScanCursor,
-                    propertyCursor,
-                    true );
+                                                  dbAccess.propertyKey( asString( index ) ),
+                                                  relationshipScanCursor,
+                                                  propertyCursor,
+                                                  true );
         }
         if ( container instanceof MapValue )
         {
@@ -581,7 +581,7 @@ public final class CypherFunctions
         {
             throw new CypherTypeException( format(
                     "`%s` is not a collection or a map. Element access is only possible by performing a collection " +
-                    "lookup using an integer index, or by performing a map lookup using a string key (found: %s[%s])",
+                            "lookup using an integer index, or by performing a map lookup using a string key (found: %s[%s])",
                     container, container, index ), null );
         }
     }
@@ -609,17 +609,17 @@ public final class CypherFunctions
     {
         assert container != NO_VALUE : "NO_VALUE checks need to happen outside this call";
         if ( container instanceof ListValue )
-       {
-           return ((ListValue) container).tail();
-       }
-       else if ( container instanceof ArrayValue )
-       {
-           return VirtualValues.fromArray( (ArrayValue) container ).tail();
-       }
-       else
-       {
-           return EMPTY_LIST;
-       }
+        {
+            return ((ListValue) container).tail();
+        }
+        else if ( container instanceof ArrayValue )
+        {
+            return VirtualValues.fromArray( (ArrayValue) container ).tail();
+        }
+        else
+        {
+            return EMPTY_LIST;
+        }
     }
 
     public static AnyValue last( AnyValue container )
@@ -697,7 +697,7 @@ public final class CypherFunctions
 
     public static TextValue replace( AnyValue original, AnyValue search, AnyValue replaceWith )
     {
-        assert original != NO_VALUE && search != NO_VALUE && replaceWith != NO_VALUE : "NO_VALUE checks need to happen outside this call" ;
+        assert original != NO_VALUE && search != NO_VALUE && replaceWith != NO_VALUE : "NO_VALUE checks need to happen outside this call";
 
         if ( original instanceof TextValue )
         {
@@ -750,7 +750,7 @@ public final class CypherFunctions
 
     public static ListValue split( AnyValue original, AnyValue separator )
     {
-        assert original != NO_VALUE && separator != NO_VALUE : "NO_VALUE checks need to happen outside this call" ;
+        assert original != NO_VALUE && separator != NO_VALUE : "NO_VALUE checks need to happen outside this call";
 
         if ( original instanceof TextValue )
         {
@@ -774,7 +774,7 @@ public final class CypherFunctions
         {
             TextValue asText = (TextValue) original;
 
-            return asText.substring( asInt( start ));
+            return asText.substring( asInt( start ) );
         }
         else
         {
@@ -789,7 +789,7 @@ public final class CypherFunctions
         {
             TextValue asText = (TextValue) original;
 
-            return asText.substring( asInt( start ), asInt( length ));
+            return asText.substring( asInt( start ), asInt( length ) );
         }
         else
         {
@@ -837,8 +837,7 @@ public final class CypherFunctions
         else
         {
             throw new CypherTypeException( format( "Expected %s to be a node or relationship, but it was `%s`",
-                    item, item.getClass().getSimpleName() ), null );
-
+                                                   item, item.getClass().getSimpleName() ), null );
         }
     }
 
@@ -973,7 +972,7 @@ public final class CypherFunctions
         }
         else if ( in instanceof VirtualRelationshipValue )
         {
-           return access.relationshipAsMap( ((VirtualRelationshipValue) in).id(), relationshipCursor, propertyCursor );
+            return access.relationshipAsMap( ((VirtualRelationshipValue) in).id(), relationshipCursor, propertyCursor );
         }
         else if ( in instanceof MapValue )
         {
@@ -1133,15 +1132,15 @@ public final class CypherFunctions
         assert collection != NO_VALUE && fromValue != NO_VALUE : "NO_VALUE checks need to happen outside this call";
 
         int from = asInt( fromValue );
-       ListValue list = asList( collection );
-       if ( from >= 0 )
-       {
-           return list.drop( from );
-       }
-       else
-       {
-           return list.drop( list.size() + from );
-       }
+        ListValue list = asList( collection );
+        if ( from >= 0 )
+        {
+            return list.drop( from );
+        }
+        else
+        {
+            return list.drop( list.size() + from );
+        }
     }
 
     public static ListValue toSlice( AnyValue collection, AnyValue toValue )
@@ -1195,7 +1194,7 @@ public final class CypherFunctions
         }
         else if ( collection instanceof ListValue )
         {
-            return  (ListValue) collection;
+            return (ListValue) collection;
         }
         else if ( collection instanceof ArrayValue )
         {
@@ -1212,7 +1211,7 @@ public final class CypherFunctions
         if ( !(value instanceof TextValue) )
         {
             throw new CypherTypeException( format( "Expected %s to be a %s, but it was a %s", value,
-                    TextValue.class.getName(), value.getClass().getName() ), null );
+                                                   TextValue.class.getName(), value.getClass().getName() ), null );
         }
         return (TextValue) value;
     }
@@ -1264,10 +1263,10 @@ public final class CypherFunctions
         for ( String key : POINT_KEYS )
         {
             Value value = access.nodeProperty( nodeValue.id(),
-                    access.propertyKey( key ),
-                    nodeCursor,
-                    propertyCursor,
-                    true );
+                                               access.propertyKey( key ),
+                                               nodeCursor,
+                                               propertyCursor,
+                                               true );
             if ( value == NO_VALUE )
             {
                 continue;
@@ -1287,10 +1286,10 @@ public final class CypherFunctions
         for ( String key : POINT_KEYS )
         {
             Value value = access.relationshipProperty( relationshipValue.id(),
-                    access.propertyKey( key ),
-                    relationshipScanCursor,
-                    propertyCursor,
-                    true );
+                                                       access.propertyKey( key ),
+                                                       relationshipScanCursor,
+                                                       propertyCursor,
+                                                       true );
             if ( value == NO_VALUE )
             {
                 continue;
@@ -1304,12 +1303,13 @@ public final class CypherFunctions
     private static boolean containsNull( MapValue map )
     {
         boolean[] hasNull = {false};
-        map.foreach( ( s, value ) -> {
-            if ( value == NO_VALUE )
-            {
-                hasNull[0] = true;
-            }
-        } );
+        map.foreach( ( s, value ) ->
+                     {
+                         if ( value == NO_VALUE )
+                         {
+                             hasNull[0] = true;
+                         }
+                     } );
         return hasNull[0];
     }
 
@@ -1319,7 +1319,7 @@ public final class CypherFunctions
         if ( !(number instanceof IntegralValue) )
         {
             throw new CypherTypeException( format( "Cannot index a list using an non-integer number, got %s", number ),
-                    null );
+                                           null );
         }
         long idx = number.longValue();
         if ( idx > Integer.MAX_VALUE || idx < Integer.MIN_VALUE )
@@ -1348,7 +1348,7 @@ public final class CypherFunctions
 
     static String asString( AnyValue value )
     {
-       return asTextValue( value ).stringValue();
+        return asTextValue( value ).stringValue();
     }
 
     private static NumberValue asNumberValue( AnyValue value )
@@ -1356,7 +1356,7 @@ public final class CypherFunctions
         if ( !(value instanceof NumberValue) )
         {
             throw new CypherTypeException( format( "Expected %s to be a %s, but it was a %s", value,
-                    NumberValue.class.getName(), value.getClass().getName() ), null );
+                                                   NumberValue.class.getName(), value.getClass().getName() ), null );
         }
         return (NumberValue) value;
     }
@@ -1400,7 +1400,7 @@ public final class CypherFunctions
         assert in != NO_VALUE : "NO_VALUE checks need to happen outside this call";
         return new CypherTypeException(
                 format( "Expected a string value for `%s`, but got: %s; consider converting it to a string with " +
-                        "toString().",
+                                "toString().",
                         method, in ), null );
     }
 }

@@ -32,12 +32,12 @@ case object RELATIONSHIP_TYPE extends EntityType
   */
 trait ASTCachedProperty extends LogicalProperty {
   /**
-    * @return the type of the entity of which a property is cached.
+    * @return the type of the entity for which a property is cached.
     */
   def entityType: EntityType
 
   /**
-    * @return the name of the entity of which a property is cached.
+    * @return the name of the entity for which a property is cached.
     */
   def entityName: String
 
