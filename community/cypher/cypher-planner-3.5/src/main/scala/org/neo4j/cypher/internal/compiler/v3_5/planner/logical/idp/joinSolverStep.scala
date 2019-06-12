@@ -31,8 +31,8 @@ object joinSolverStep {
   val VERBOSE = false
 }
 
-case class joinSolverStep(qg: QueryGraph, TESTING: Boolean = false) extends IDPSolverStep[PatternRelationship, LogicalPlan, LogicalPlanningContext] {
-  // TESTING can be used to force expandStillPossible to be false if needed
+case class joinSolverStep(qg: QueryGraph, IGNORE_EXPAND_SOLUTIONS_FOR_TEST: Boolean = false) extends IDPSolverStep[PatternRelationship, LogicalPlan, LogicalPlanningContext] {
+  // IGNORE_EXPAND_SOLUTIONS_FOR_TEST can be used to force expandStillPossible to be false if needed
 
   import LogicalPlanningSupport._
 
@@ -51,7 +51,7 @@ case class joinSolverStep(qg: QueryGraph, TESTING: Boolean = false) extends IDPS
       *  (= not registered), because then it will not be possible to find an expand solution anymore.
       */
     def registered: Int => Boolean = nbr => registry.lookup(nbr).isDefined
-    val expandStillPossible = (goal.exists(registered) || table.plans.exists(p => p._1.exists(registered))) && !TESTING
+    val expandStillPossible = (goal.exists(registered) || table.plans.exists(p => p._1.exists(registered))) && !IGNORE_EXPAND_SOLUTIONS_FOR_TEST
 
     val argumentsToRemove =
       if (expandStillPossible)
