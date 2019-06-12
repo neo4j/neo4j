@@ -39,7 +39,7 @@ class TriadicSelectionFinderTest extends CypherFunSuite with LogicalPlanningTest
 
   // Negative Predicate Expression
 
-  test("MATCH (a:X)-->(b)-->(c) WHERE NOT (a)-->(c)") {
+  ignore("MATCH (a:X)-->(b)-->(c) WHERE NOT (a)-->(c)") {
     val ctx = newMockedLogicalPlanningContextWithFakeAttributes(mock[PlanContext])
     val (plannerQuery, _) = producePlannerQueryForPattern("MATCH (a:X)-[r1]->(b)-[r2]->(c) WHERE NOT (a)-->(c)")
     val (expand1, selection) = produceTriadicTestCase()
@@ -64,7 +64,7 @@ class TriadicSelectionFinderTest extends CypherFunSuite with LogicalPlanningTest
     testTriadic(selection, plannerQuery.lastQueryGraph, ctx) shouldBe empty
   }
 
-  test("MATCH (a:X)-[:A]->(b)-[:A]->(c) WHERE NOT (a:X)-[:A]->(c)") {
+  ignore("MATCH (a:X)-[:A]->(b)-[:A]->(c) WHERE NOT (a:X)-[:A]->(c)") {
     val ctx = newMockedLogicalPlanningContextWithFakeAttributes(mock[PlanContext])
     val (plannerQuery, _) = producePlannerQueryForPattern("MATCH (a:X)-[r1:A]->(b)-[r2:A]->(c) WHERE NOT (a)-[:A]->(c)")
     val (expand1, selection) = produceTriadicTestCase(r1Types = Seq("A"), r2Types = Seq("A"))
@@ -73,7 +73,7 @@ class TriadicSelectionFinderTest extends CypherFunSuite with LogicalPlanningTest
     testTriadic(selection, plannerQuery.lastQueryGraph, ctx) should contain only triadic
   }
 
-  test("MATCH (a:X)-[:A]->(b)-[:B]->(c) WHERE NOT (a:X)-[:A]->(c)") {
+  ignore("MATCH (a:X)-[:A]->(b)-[:B]->(c) WHERE NOT (a:X)-[:A]->(c)") {
     val ctx = newMockedLogicalPlanningContextWithFakeAttributes(mock[PlanContext])
     val (plannerQuery, _) = producePlannerQueryForPattern("MATCH (a:X)-[r1:A]->(b)-[r2:B]->(c) WHERE NOT (a)-[:A]->(c)")
     val (expand1, selection) = produceTriadicTestCase(r1Types = Seq("A"), r2Types = Seq("B"))
@@ -82,7 +82,7 @@ class TriadicSelectionFinderTest extends CypherFunSuite with LogicalPlanningTest
     testTriadic(selection, plannerQuery.lastQueryGraph, ctx) should contain only triadic
   }
 
-  test("MATCH (a:X)-[:A]->(b)<-[:B]-(c) WHERE NOT (a:X)-[:A]->(c)") {
+  ignore("MATCH (a:X)-[:A]->(b)<-[:B]-(c) WHERE NOT (a:X)-[:A]->(c)") {
     val ctx = newMockedLogicalPlanningContextWithFakeAttributes(mock[PlanContext])
     val (plannerQuery, _) = producePlannerQueryForPattern("MATCH (a:X)-[r1:A]->(b)<-[r2:B]-(c) WHERE NOT (a)-[:A]->(c)")
     val (expand1, selection) = produceTriadicTestCase(r1Types = Seq("A"), r2Types = Seq("B"), r2Direction = INCOMING)
@@ -155,7 +155,7 @@ class TriadicSelectionFinderTest extends CypherFunSuite with LogicalPlanningTest
 
   // Negative Predicate Expression and matching labels
 
-  test("MATCH (a:X)-->(b:Y)-->(c:Y) WHERE NOT (a)-->(c)") {
+  ignore("MATCH (a:X)-->(b:Y)-->(c:Y) WHERE NOT (a)-->(c)") {
     val ctx = newMockedLogicalPlanningContextWithFakeAttributes(mock[PlanContext])
     val (plannerQuery, _) = producePlannerQueryForPattern("MATCH (a:X)-[r1]->(b:Y)-[r2]->(c:Y) WHERE NOT (a)-->(c)")
     val (expand1, selection) = produceTriadicTestCase(cLabels = Seq("Y"))
@@ -180,7 +180,7 @@ class TriadicSelectionFinderTest extends CypherFunSuite with LogicalPlanningTest
     testTriadic(selection, plannerQuery.lastQueryGraph, ctx) shouldBe empty
   }
 
-  test("MATCH (a:X)-->(b)-->(c:Z) WHERE NOT (a)-->(c)") {
+  ignore("MATCH (a:X)-->(b)-->(c:Z) WHERE NOT (a)-->(c)") {
     val ctx = newMockedLogicalPlanningContextWithFakeAttributes(mock[PlanContext])
     val (plannerQuery, _) = producePlannerQueryForPattern("MATCH (a:X)-[r1]->(b)-[r2]->(c:Z) WHERE NOT (a)-->(c)")
     val (expand1, selection) = produceTriadicTestCase(cLabels = Seq("Z"))
@@ -189,7 +189,7 @@ class TriadicSelectionFinderTest extends CypherFunSuite with LogicalPlanningTest
     testTriadic(selection, plannerQuery.lastQueryGraph, ctx) should contain only triadic
   }
 
-  test("MATCH (a:X)-->(b:Y:Z)-->(c:Z) WHERE NOT (a)-->(c)") {
+  ignore("MATCH (a:X)-->(b:Y:Z)-->(c:Z) WHERE NOT (a)-->(c)") {
     val ctx = newMockedLogicalPlanningContextWithFakeAttributes(mock[PlanContext])
     val (plannerQuery, _) = producePlannerQueryForPattern("MATCH (a:X)-[r1]->(b:Y:Z)-[r2]->(c:Z) WHERE NOT (a)-->(c)")
     val (expand1, selection) = produceTriadicTestCase(cLabels = Seq("Z"))
