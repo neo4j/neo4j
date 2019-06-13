@@ -36,12 +36,7 @@ public class Configuration
             .withArrayDelimiter( ',' )
             .build();
 
-    /**
-     * TODO: Our intention is to flip this to false (which means to comply with RFC4180) at some point
-     * because of how it better complies with common expectancy of behavior. It may be least disruptive
-     * to do this when changing major version of the product.
-     */
-    public static final boolean DEFAULT_LEGACY_STYLE_QUOTING = true;
+    public static final boolean DEFAULT_LEGACY_STYLE_QUOTING = false;
 
     private final char quotationCharacter;
     private final char delimiter;
