@@ -63,6 +63,6 @@ public class NormalizedDatabaseName
     @Override
     public String toString()
     {
-        return "NormalizedDatabaseName{" + "name='" + name + '\'' + '}';
+        return "NormalizedDatabaseName{ name='" + name + "'}";
     }
 }
