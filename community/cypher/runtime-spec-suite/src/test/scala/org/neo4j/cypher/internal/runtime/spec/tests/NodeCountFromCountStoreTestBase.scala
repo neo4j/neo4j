@@ -123,4 +123,25 @@ abstract class NodeCountFromCountStoreTestBase[CONTEXT <: RuntimeContext](
     // then
     runtimeResult should beColumns("x").withRows(singleColumn(Seq(aNodes.size * bNodes.size)))
   }
+
+  test("should work on rhs of apply") {
+    // given
+    val (aNodes, bNodes) = bipartiteGraph(sizeHint, "LabelA", "LabelB", "RelType")
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x")
+      .filter("x > 0")
+      .apply()
+      .|.nodeCountFromCountStore("x", List(Some("LabelA"), Some("LabelB")))
+      .nodeByLabelScan("n", "LabelA")
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    val expectedCount: Long = aNodes.size * bNodes.size
+    val expectedRows = aNodes.map(_ => expectedCount)
+    runtimeResult should beColumns("x").withRows(singleColumn(expectedRows))
+  }
 }
