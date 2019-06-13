@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler
 
+import org.neo4j.configuration.{DatabaseNameValidator, NormalizedDatabaseName}
 import org.neo4j.cypher.internal.compiler.phases.{LogicalPlanState, PlannerContext}
 import org.neo4j.cypher.internal.logical.plans
 import org.neo4j.cypher.internal.logical.plans.{LogicalPlan, NameValidator}
@@ -28,7 +29,6 @@ import org.neo4j.cypher.internal.v4_0.frontend.phases.CompilationPhaseTracer.Com
 import org.neo4j.cypher.internal.v4_0.frontend.phases.CompilationPhaseTracer.CompilationPhase.PIPE_BUILDING
 import org.neo4j.cypher.internal.v4_0.frontend.phases._
 import org.neo4j.cypher.internal.v4_0.util.attribution.SequentialIdGen
-import org.neo4j.kernel.database.{DatabaseNameValidator, NormalizedDatabaseName}
 
 /**
   * This planner takes on queries that run at the DBMS level for multi-database management

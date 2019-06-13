@@ -52,8 +52,6 @@ import org.neo4j.kernel.api.procedure.Context;
 import org.neo4j.kernel.api.procedure.GlobalProcedures;
 import org.neo4j.kernel.api.security.provider.SecurityProvider;
 import org.neo4j.kernel.database.DatabaseIdRepository;
-import org.neo4j.kernel.database.DatabaseNameValidator;
-import org.neo4j.kernel.database.NormalizedDatabaseName;
 import org.neo4j.kernel.impl.api.dbms.NonTransactionalDbmsOperations;
 import org.neo4j.kernel.impl.factory.DatabaseInfo;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
@@ -162,16 +160,6 @@ public class DatabaseManagementServiceFactory
     private static void startDatabaseServer( Config config, GlobalModule globalModule, AbstractEditionModule edition, LifeSupport globalLife, Log internalLog,
             DatabaseManager<?> databaseManager, DatabaseManagementService managementService )
     {
-        try
-        {
-            NormalizedDatabaseName normalizedName = new NormalizedDatabaseName( config.get( GraphDatabaseSettings.default_database ) );
-            DatabaseNameValidator.assertValidDatabaseName( normalizedName );
-        }
-        catch ( IllegalArgumentException e )
-        {
-            throw new IllegalArgumentException(
-                    "Invalid value for configuration setting " + GraphDatabaseSettings.default_database.name() + ": " + e.getMessage() );
-        }
 
         RuntimeException startupException = null;
         try

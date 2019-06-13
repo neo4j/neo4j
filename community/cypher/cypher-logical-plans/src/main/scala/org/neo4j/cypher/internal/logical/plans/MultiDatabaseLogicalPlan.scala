@@ -19,13 +19,13 @@
  */
 package org.neo4j.cypher.internal.logical.plans
 
+import org.neo4j.configuration.NormalizedDatabaseName
 import org.neo4j.cypher.internal.ir.{LazyMode, StrictnessMode}
 import org.neo4j.cypher.internal.v4_0.ast.{ActionResource, GraphScope, PrivilegeQualifier, ShowPrivilegeScope}
 import org.neo4j.cypher.internal.v4_0.expressions.Parameter
 import org.neo4j.cypher.internal.v4_0.util.CypherException
 import org.neo4j.cypher.internal.v4_0.util.attribution.IdGen
 import org.neo4j.cypher.internal.v4_0.util.spi.MapToPublicExceptions
-import org.neo4j.kernel.database.NormalizedDatabaseName
 
 class DatabaseManagementException(message: String) extends CypherException {
   override def mapToPublic[T <: Throwable](mapper: MapToPublicExceptions[T]): T =
