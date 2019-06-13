@@ -33,6 +33,9 @@ import org.neo4j.values.AnyValue
 case object slottedParameters {
 
   def apply(input: LogicalPlan): (LogicalPlan,  Map[String, (Option[AnyValue], Int)]) = {
+    //This may look like it is dangerous, what if we both have a normal parameter and an implicit
+    //procedure argument by the same name? This will not happen since implicit parameters is only supported
+    //for stand-alone procedures, e.g `CALL my.proc` with `{input1: 'foo', input2: 1337}`
     val mapping: Map[String, (Option[AnyValue], Int)] = input.treeFold(Map.empty[String, Option[AnyValue]]) {
       case Parameter(name, _) => acc => (acc.updated(name, None), Some(identity))
       case ImplicitProcedureArgument(name, _, defaultValue) => acc => (acc.updated(name, Some(ValueUtils.of(defaultValue))), Some(identity))
