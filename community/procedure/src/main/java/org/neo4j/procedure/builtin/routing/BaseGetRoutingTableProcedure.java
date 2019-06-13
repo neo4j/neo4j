@@ -23,6 +23,7 @@ import java.util.List;
 
 import org.neo4j.collection.RawIterator;
 import org.neo4j.configuration.Config;
+import org.neo4j.dbms.database.DatabaseManager;
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
 import org.neo4j.internal.kernel.api.procs.Neo4jTypes;
 import org.neo4j.internal.kernel.api.procs.ProcedureSignature;
@@ -38,7 +39,6 @@ import org.neo4j.values.storable.TextValue;
 import org.neo4j.values.storable.Values;
 import org.neo4j.values.virtual.MapValue;
 
-import static org.neo4j.configuration.GraphDatabaseSettings.default_database;
 import static org.neo4j.internal.kernel.api.procs.DefaultParameterValue.nullValue;
 import static org.neo4j.internal.kernel.api.procs.ProcedureSignature.procedureSignature;
 import static org.neo4j.kernel.api.exceptions.Status.Database.DatabaseNotFound;
@@ -53,13 +53,16 @@ public abstract class BaseGetRoutingTableProcedure implements CallableProcedure
 
     private final ProcedureSignature signature;
     private final DatabaseIdRepository databaseIdRepository;
+    private final DatabaseManager<?> databaseManager;
 
     protected final Config config;
 
-    protected BaseGetRoutingTableProcedure( List<String> namespace, DatabaseIdRepository databaseIdRepository, Config config )
+    protected BaseGetRoutingTableProcedure( List<String> namespace, DatabaseIdRepository databaseIdRepository,
+            DatabaseManager<?> databaseManager, Config config )
     {
         this.signature = buildSignature( namespace );
         this.databaseIdRepository = databaseIdRepository;
+        this.databaseManager = databaseManager;
         this.config = config;
     }
 
@@ -73,8 +76,13 @@ public abstract class BaseGetRoutingTableProcedure implements CallableProcedure
     public final RawIterator<AnyValue[],ProcedureException> apply( Context ctx, AnyValue[] input, ResourceTracker resourceTracker ) throws ProcedureException
     {
         var databaseId = extractDatabaseId( input );
+        assertDatabaseExists( databaseId );
+
         var routingContext = extractRoutingContext( input );
+
         var result = invoke( databaseId, routingContext );
+        assertRoutingResultNotEmpty( result, databaseId );
+
         return RawIterator.<AnyValue[],ProcedureException>of( RoutingResultFormat.build( result ) );
     }
 
@@ -82,18 +90,12 @@ public abstract class BaseGetRoutingTableProcedure implements CallableProcedure
 
     protected abstract RoutingResult invoke( DatabaseId databaseId, MapValue routingContext ) throws ProcedureException;
 
-    protected static ProcedureException databaseNotFoundException( DatabaseId databaseId )
-    {
-        return new ProcedureException( DatabaseNotFound,
-                "Unable to get a routing table for database '" + databaseId.name() + "' because this database does not exist" );
-    }
-
     private DatabaseId extractDatabaseId( AnyValue[] input )
     {
         var arg = input[1];
         if ( arg == Values.NO_VALUE )
         {
-            return databaseIdRepository.get( config.get( default_database ) );
+            return databaseIdRepository.defaultDatabase();
         }
         else if ( arg instanceof TextValue )
         {
@@ -102,6 +104,26 @@ public abstract class BaseGetRoutingTableProcedure implements CallableProcedure
         else
         {
             throw new IllegalArgumentException( "Illegal database name argument " + arg );
+        }
+    }
+
+    private void assertDatabaseExists( DatabaseId databaseId ) throws ProcedureException
+    {
+        var databaseExists = databaseManager.getDatabaseContext( databaseId )
+                .map( ctx -> ctx.database().isStarted() )
+                .orElse( false );
+
+        if ( !databaseExists )
+        {
+            throw databaseNotFoundException( databaseId );
+        }
+    }
+
+    private static void assertRoutingResultNotEmpty( RoutingResult result, DatabaseId databaseId ) throws ProcedureException
+    {
+        if ( result.containsNoEndpoints() )
+        {
+            throw databaseNotFoundException( databaseId );
         }
     }
 
@@ -132,5 +154,11 @@ public abstract class BaseGetRoutingTableProcedure implements CallableProcedure
                 .mode( Mode.DBMS )
                 .description( description() )
                 .build();
+    }
+
+    private static ProcedureException databaseNotFoundException( DatabaseId databaseId )
+    {
+        return new ProcedureException( DatabaseNotFound,
+                "Unable to get a routing table for database '" + databaseId.name() + "' because this database does not exist" );
     }
 }

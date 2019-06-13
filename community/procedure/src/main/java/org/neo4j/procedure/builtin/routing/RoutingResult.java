@@ -64,6 +64,11 @@ public class RoutingResult
         return readEndpoints;
     }
 
+    boolean containsNoEndpoints()
+    {
+        return routeEndpoints.isEmpty() && writeEndpoints.isEmpty() && readEndpoints.isEmpty();
+    }
+
     @Override
     public boolean equals( Object o )
     {
@@ -75,7 +80,7 @@ public class RoutingResult
         {
             return false;
         }
-        RoutingResult that = (RoutingResult) o;
+        var that = (RoutingResult) o;
         return timeToLiveMillis == that.timeToLiveMillis &&
                Objects.equals( routeEndpoints, that.routeEndpoints ) &&
                Objects.equals( writeEndpoints, that.writeEndpoints ) &&

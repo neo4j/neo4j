@@ -33,20 +33,17 @@ import org.neo4j.dbms.database.DatabaseContext;
 import org.neo4j.dbms.database.DatabaseManager;
 import org.neo4j.internal.helpers.AdvertisedSocketAddress;
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
-import org.neo4j.internal.kernel.api.procs.ProcedureSignature;
 import org.neo4j.internal.kernel.api.procs.QualifiedName;
-import org.neo4j.kernel.api.procedure.CallableProcedure;
+import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.database.Database;
 import org.neo4j.kernel.database.DatabaseId;
 import org.neo4j.kernel.database.DatabaseIdRepository;
 import org.neo4j.kernel.database.PlaceholderDatabaseIdRepository;
+import org.neo4j.values.AnyValue;
 import org.neo4j.values.virtual.MapValue;
 
 import static java.util.Collections.emptyList;
 import static java.util.Collections.singletonList;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.both;
-import static org.hamcrest.Matchers.containsString;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.mock;
@@ -61,6 +58,7 @@ import static org.neo4j.internal.kernel.api.procs.Neo4jTypes.NTList;
 import static org.neo4j.internal.kernel.api.procs.Neo4jTypes.NTMap;
 import static org.neo4j.internal.kernel.api.procs.Neo4jTypes.NTString;
 import static org.neo4j.procedure.builtin.routing.BaseRoutingProcedureInstaller.DEFAULT_NAMESPACE;
+import static org.neo4j.values.storable.Values.stringValue;
 
 public class SingleInstanceGetRoutingTableProcedureTest
 {
@@ -71,11 +69,11 @@ public class SingleInstanceGetRoutingTableProcedureTest
     @Test
     void shouldHaveCorrectSignature()
     {
-        ConnectorPortRegister portRegister = mock( ConnectorPortRegister.class );
-        Config config = Config.defaults();
-        CallableProcedure proc = newProcedure( portRegister, config );
+        var portRegister = mock( ConnectorPortRegister.class );
+        var config = Config.defaults();
+        var proc = newProcedure( portRegister, config );
 
-        ProcedureSignature signature = proc.signature();
+        var signature = proc.signature();
 
         assertEquals( List.of( inputField( "context", NTMap ), inputField( "database", NTString, nullValue( NTString ) ) ), signature.inputSignature() );
 
@@ -85,12 +83,12 @@ public class SingleInstanceGetRoutingTableProcedureTest
     @Test
     void shouldHaveCorrectNamespace()
     {
-        ConnectorPortRegister portRegister = mock( ConnectorPortRegister.class );
-        Config config = Config.defaults();
+        var portRegister = mock( ConnectorPortRegister.class );
+        var config = Config.defaults();
 
-        CallableProcedure proc = newProcedure( portRegister, config );
+        var proc = newProcedure( portRegister, config );
 
-        QualifiedName name = proc.signature().name();
+        var name = proc.signature().name();
 
         assertEquals( new QualifiedName( new String[]{"dbms", "routing"}, "getRoutingTable" ), name );
     }
@@ -98,12 +96,12 @@ public class SingleInstanceGetRoutingTableProcedureTest
     @Test
     void shouldReturnEmptyRoutingTableWhenNoBoltConnectors() throws Exception
     {
-        ConnectorPortRegister portRegister = mock( ConnectorPortRegister.class );
-        Config config = newConfig( "123s", null );
+        var portRegister = mock( ConnectorPortRegister.class );
+        var config = newConfig( "123s", null );
 
-        BaseGetRoutingTableProcedure proc = newProcedure( portRegister, config );
+        var proc = newProcedure( portRegister, config );
 
-        RoutingResult result = proc.invoke( ID, MapValue.EMPTY );
+        var result = proc.invoke( ID, MapValue.EMPTY );
 
         assertEquals( Duration.ofSeconds( 123 ).toMillis(), result.ttlMillis() );
         assertEquals( emptyList(), result.readEndpoints() );
@@ -114,16 +112,16 @@ public class SingleInstanceGetRoutingTableProcedureTest
     @Test
     void shouldReturnRoutingTable() throws Exception
     {
-        ConnectorPortRegister portRegister = mock( ConnectorPortRegister.class );
-        Config config = newConfig( "42m", "neo4j.com:7687" );
+        var portRegister = mock( ConnectorPortRegister.class );
+        var config = newConfig( "42m", "neo4j.com:7687" );
 
-        BaseGetRoutingTableProcedure proc = newProcedure( portRegister, config );
+        var proc = newProcedure( portRegister, config );
 
-        RoutingResult result = proc.invoke( ID, MapValue.EMPTY );
+        var result = proc.invoke( ID, MapValue.EMPTY );
 
         assertEquals( Duration.ofMinutes( 42 ).toMillis(), result.ttlMillis() );
 
-        AdvertisedSocketAddress address = new AdvertisedSocketAddress( "neo4j.com", 7687 );
+        var address = new AdvertisedSocketAddress( "neo4j.com", 7687 );
         assertEquals( singletonList( address ), result.readEndpoints() );
         assertEquals( expectedWriters( address ), result.writeEndpoints() );
         assertEquals( singletonList( address ), result.routeEndpoints() );
@@ -132,13 +130,28 @@ public class SingleInstanceGetRoutingTableProcedureTest
     @Test
     void shouldThrowWhenDatabaseDoesNotExist()
     {
-        ConnectorPortRegister portRegister = mock( ConnectorPortRegister.class );
-        Config config = Config.defaults();
-        BaseGetRoutingTableProcedure procedure = newProcedure( portRegister, config );
+        var portRegister = mock( ConnectorPortRegister.class );
+        var config = Config.defaults();
+        var procedure = newProcedure( portRegister, config );
 
-        ProcedureException error = assertThrows( ProcedureException.class, () -> procedure.invoke( UNKNOWN_ID, MapValue.EMPTY ) );
+        var input = new AnyValue[]{MapValue.EMPTY, stringValue( UNKNOWN_ID.name() )};
 
-        assertThat( error.getMessage(), both( containsString( UNKNOWN_ID.name() ) ).and( containsString( "does not exist" ) ) );
+        var error = assertThrows( ProcedureException.class, () -> procedure.apply( null, input, null ) );
+        assertEquals( Status.Database.DatabaseNotFound, error.status() );
+    }
+
+    @Test
+    void shouldThrowWhenDatabaseIsStopped()
+    {
+        var portRegister = mock( ConnectorPortRegister.class );
+        var config = Config.defaults();
+        var databaseManager = databaseManagerMock( config, false );
+        var procedure = newProcedure( databaseManager, portRegister, config );
+
+        var input = new AnyValue[]{MapValue.EMPTY, stringValue( ID.name() )};
+
+        var error = assertThrows( ProcedureException.class, () -> procedure.apply( null, input, null ) );
+        assertEquals( Status.Database.DatabaseNotFound, error.status() );
     }
 
     protected BaseGetRoutingTableProcedure newProcedure( DatabaseManager<?> databaseManager, ConnectorPortRegister portRegister, Config config )
@@ -151,33 +164,40 @@ public class SingleInstanceGetRoutingTableProcedureTest
         return singletonList( selfAddress );
     }
 
-    @SuppressWarnings( "unchecked" )
     private BaseGetRoutingTableProcedure newProcedure( ConnectorPortRegister portRegister, Config config )
     {
-        DatabaseManager<DatabaseContext> databaseManager = mock( DatabaseManager.class );
-        DatabaseContext databaseContext = mock( DatabaseContext.class );
-        Database database = mock( Database.class );
-        when( databaseContext.database() ).thenReturn( database );
-        when( database.getConfig() ).thenReturn( config );
-        when( databaseManager.getDatabaseContext( ID ) ).thenReturn( Optional.of( databaseContext ) );
+        var databaseManager = databaseManagerMock( config, true );
         return newProcedure( databaseManager, portRegister, config );
     }
 
     private static Config newConfig( String routingTtl, String boltAddress )
     {
-        Config.Builder builder = Config.builder();
+        var builder = Config.builder();
         if ( routingTtl != null )
         {
             builder.withSetting( GraphDatabaseSettings.routing_ttl, routingTtl );
         }
         if ( boltAddress != null )
         {
-            BoltConnector connector = new BoltConnector( "my_bolt" );
+            var connector = new BoltConnector( "my_bolt" );
             builder.withSetting( connector.enabled, TRUE );
             builder.withSetting( connector.type, BOLT.toString() );
             builder.withSetting( connector.listen_address, boltAddress );
             builder.withSetting( connector.advertised_address, boltAddress );
         }
         return builder.build();
+    }
+
+    @SuppressWarnings( "unchecked" )
+    private static DatabaseManager<DatabaseContext> databaseManagerMock( Config config, boolean databaseStarted )
+    {
+        var databaseManager = mock( DatabaseManager.class );
+        var databaseContext = mock( DatabaseContext.class );
+        var database = mock( Database.class );
+        when( databaseContext.database() ).thenReturn( database );
+        when( database.getConfig() ).thenReturn( config );
+        when( database.isStarted() ).thenReturn( databaseStarted );
+        when( databaseManager.getDatabaseContext( ID ) ).thenReturn( Optional.of( databaseContext ) );
+        return databaseManager;
     }
 }

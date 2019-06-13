@@ -28,7 +28,6 @@ import org.neo4j.configuration.connectors.BoltConnector;
 import org.neo4j.configuration.connectors.ConnectorPortRegister;
 import org.neo4j.dbms.database.DatabaseManager;
 import org.neo4j.internal.helpers.AdvertisedSocketAddress;
-import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
 import org.neo4j.kernel.database.DatabaseId;
 import org.neo4j.kernel.database.DatabaseIdRepository;
 import org.neo4j.values.virtual.MapValue;
@@ -39,14 +38,12 @@ public class SingleInstanceGetRoutingTableProcedure extends BaseGetRoutingTableP
 {
     private static final String DESCRIPTION = "Returns endpoints of this instance.";
 
-    private final DatabaseManager<?> databaseManager;
     private final ConnectorPortRegister portRegister;
 
     public SingleInstanceGetRoutingTableProcedure( List<String> namespace, DatabaseManager<?> databaseManager, ConnectorPortRegister portRegister,
             DatabaseIdRepository databaseIdRepository, Config config )
     {
-        super( namespace, databaseIdRepository, config );
-        this.databaseManager = databaseManager;
+        super( namespace, databaseIdRepository, databaseManager, config );
         this.portRegister = portRegister;
     }
 
@@ -57,13 +54,8 @@ public class SingleInstanceGetRoutingTableProcedure extends BaseGetRoutingTableP
     }
 
     @Override
-    protected RoutingResult invoke( DatabaseId databaseId, MapValue routingContext ) throws ProcedureException
+    protected RoutingResult invoke( DatabaseId databaseId, MapValue routingContext )
     {
-        if ( !databaseExists( databaseId ) )
-        {
-            throw databaseNotFoundException( databaseId );
-        }
-
         return config.enabledBoltConnectors()
                 .stream()
                 .findFirst()
@@ -109,10 +101,5 @@ public class SingleInstanceGetRoutingTableProcedure extends BaseGetRoutingTableP
             }
         }
         return advertisedAddress;
-    }
-
-    private boolean databaseExists( DatabaseId databaseId )
-    {
-        return databaseManager.getDatabaseContext( databaseId ).isPresent();
     }
 }
