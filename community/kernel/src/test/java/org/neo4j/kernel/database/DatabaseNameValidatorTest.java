@@ -29,7 +29,7 @@ class DatabaseNameValidatorTest
     @Test
     void shouldNotGetAnErrorForAValidDatabaseName()
     {
-        assertValid( "my.Vaild-Db" );
+        assertValid( "my.Vaild-Db123" );
     }
 
     @Test
@@ -50,7 +50,7 @@ class DatabaseNameValidatorTest
             DatabaseNameValidator.assertValidDatabaseName( null );
             fail( "Expected exception \"The provided database name is empty.\" but succeeded." );
         }
-        catch ( IllegalArgumentException e )
+        catch ( NullPointerException e )
         {
             assertEquals( "The provided database name is empty.", e.getMessage() );
         }
@@ -79,6 +79,17 @@ class DatabaseNameValidatorTest
         catch ( IllegalArgumentException e )
         {
             assertEquals( "Database name 'data_base' contains illegal characters. Use simple ascii characters, numbers, dots and dashes.", e.getMessage() );
+        }
+
+        try
+        {
+            assertValid( "dataåäö" );
+
+            fail( "Expected exception \"Database name 'dataåäö' contains illegal characters.\" but succeeded." );
+        }
+        catch ( IllegalArgumentException e )
+        {
+            assertEquals( "Database name 'dataåäö' contains illegal characters. Use simple ascii characters, numbers, dots and dashes.", e.getMessage() );
         }
     }
 

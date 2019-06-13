@@ -19,52 +19,44 @@
  */
 package org.neo4j.kernel.database;
 
+import java.util.Objects;
+import java.util.regex.Pattern;
+
 public class DatabaseNameValidator
 {
+    private static Pattern databaseNamePattern = Pattern.compile( "^[a-z0-9-.]+$" );
+    private static Pattern startsWithLowerCaseLetterPattern = Pattern.compile( "^[a-z].*" );
+
     public static void assertValidDatabaseName( NormalizedDatabaseName normalizedName )
     {
-        if ( normalizedName == null )
-        {
-            throw new IllegalArgumentException( "The provided database name is empty." );
-        }
+        Objects.requireNonNull( normalizedName, "The provided database name is empty." );
 
         String name = normalizedName.name();
 
-        if ( name.length() == 0 )
+        if ( name.isEmpty() )
         {
             throw new IllegalArgumentException( "The provided database name is empty." );
         }
+
         if ( name.length() < 3 || name.length() > 63 )
         {
             throw new IllegalArgumentException( "The provided database name must have a length between 3 and 63 characters." );
         }
-        if ( !isLowerCaseLetter( (int) name.charAt( 0 ) ) )
+
+        if ( !startsWithLowerCaseLetterPattern.matcher(  name ).matches() )
         {
             throw new IllegalArgumentException( "Database name '" + name + "' is not starting with an ASCII alphabetic character." );
         }
 
-        for ( char c : name.toCharArray() )
+        if ( !databaseNamePattern.matcher( name ).matches() )
         {
-            if ( !(isLowerCaseLetter( (int) c ) || isDigitDotOrDash( (int) c )) )
-            {
-                throw new IllegalArgumentException(
-                        "Database name '" + name + "' contains illegal characters. Use simple ascii characters, numbers, dots and dashes." );
-            }
+            throw new IllegalArgumentException(
+                    "Database name '" + name + "' contains illegal characters. Use simple ascii characters, numbers, dots and dashes." );
         }
 
         if ( name.startsWith( "system" ) )
         {
             throw new IllegalArgumentException( "Database name '" + name + "' is invalid, due to the prefix 'system'." );
         }
-    }
-
-    private static boolean isLowerCaseLetter( int asciiCode )
-    {
-        return asciiCode >= 97 && asciiCode <= 122;
-    }
-
-    private static boolean isDigitDotOrDash( int asciiCode )
-    {
-        return (asciiCode >= 48 && asciiCode <= 57) || asciiCode == 46 || asciiCode == 45;
     }
 }
