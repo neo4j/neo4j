@@ -27,7 +27,7 @@ import org.neo4j.cypher.internal.compiler.planner.logical._
 import org.neo4j.cypher.internal.compiler.planner.logical.cardinality.QueryGraphCardinalityModel
 import org.neo4j.cypher.internal.compiler.planner.logical.idp._
 import org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter.unnestApply
-import org.neo4j.cypher.internal.compiler.planner.logical.steps.{LogicalPlanProducer, devNullListener, insertCachedProperties}
+import org.neo4j.cypher.internal.compiler.planner.logical.steps.{LogicalPlanProducer, devNullListener}
 import org.neo4j.cypher.internal.compiler.test_helpers.ContextHelper
 import org.neo4j.cypher.internal.compiler.{CypherPlannerConfiguration, NotImplementedPlanContext, StatsDivergenceCalculator, SyntaxExceptionCreator}
 import org.neo4j.cypher.internal.ir.{PeriodicCommit, PlannerQuery, ProvidedOrder, QueryGraph}
@@ -36,13 +36,13 @@ import org.neo4j.cypher.internal.planner.spi.IndexDescriptor.{OrderCapability, V
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.{Cardinalities, ProvidedOrders, Solveds}
 import org.neo4j.cypher.internal.planner.spi._
 import org.neo4j.cypher.internal.v4_0.ast._
-import org.neo4j.cypher.internal.v4_0.ast.semantics.{SemanticFeature, SemanticTable}
+import org.neo4j.cypher.internal.v4_0.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.v4_0.expressions.PatternExpression
 import org.neo4j.cypher.internal.v4_0.frontend.phases._
 import org.neo4j.cypher.internal.v4_0.parser.CypherParser
 import org.neo4j.cypher.internal.v4_0.rewriting.RewriterStepSequencer.newPlain
 import org.neo4j.cypher.internal.v4_0.rewriting.rewriters._
-import org.neo4j.cypher.internal.v4_0.rewriting.{Deprecations, RewriterStepSequencer, ValidatingRewriterStepSequencer}
+import org.neo4j.cypher.internal.v4_0.rewriting.{RewriterStepSequencer, ValidatingRewriterStepSequencer}
 import org.neo4j.cypher.internal.v4_0.util.attribution.{Attribute, Attributes}
 import org.neo4j.cypher.internal.v4_0.util.helpers.fixedPoint
 import org.neo4j.cypher.internal.v4_0.util.test_helpers.{CypherFunSuite, CypherTestSupport}
@@ -62,7 +62,7 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
   val innerVariableNamer = new GeneratingNamer
   var astRewriter = new ASTRewriter(rewriterSequencer, literalExtraction = Never, getDegreeRewriting = true, innerVariableNamer = innerVariableNamer)
   final var planner = QueryPlanner()
-  var queryGraphSolver: QueryGraphSolver = new IDPQueryGraphSolver(SingleComponentPlanner(mock[IDPQueryGraphSolverMonitor]), cartesianProductsOrValueJoins, mock[IDPQueryGraphSolverMonitor])
+  var queryGraphSolver: QueryGraphSolver = createQueryGraphSolver()
   val cypherCompilerConfig = CypherPlannerConfiguration(
     queryCacheSize = 100,
     statsDivergenceCalculator = StatsDivergenceCalculator.divergenceNoDecayCalculator(0.5, 1000),
@@ -77,6 +77,10 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
     planSystemCommands = false
   )
   val realConfig = RealLogicalPlanningConfiguration(cypherCompilerConfig)
+
+  def createQueryGraphSolver(solverConfig: IDPSolverConfig = DefaultIDPSolverConfig): QueryGraphSolver = {
+    new IDPQueryGraphSolver(SingleComponentPlanner(mock[IDPQueryGraphSolverMonitor], solverConfig), cartesianProductsOrValueJoins, mock[IDPQueryGraphSolverMonitor])
+  }
 
   implicit class LogicalPlanningEnvironment[C <: LogicalPlanningConfiguration](config: C) {
     lazy val semanticTable: SemanticTable = config.updateSemanticTableWithTokens(SemanticTable())
@@ -170,14 +174,14 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
       input.copy(maybeLogicalPlan = Some(newPlan))
     }
 
-    def getLogicalPlanFor(queryString: String): (Option[PeriodicCommit], LogicalPlan, SemanticTable, Solveds, Cardinalities) = {
+    def getLogicalPlanFor(queryString: String, config:CypherPlannerConfiguration = cypherCompilerConfig, queryGraphSolver: QueryGraphSolver = queryGraphSolver): (Option[PeriodicCommit], LogicalPlan, SemanticTable, Solveds, Cardinalities) = {
       val mkException = new SyntaxExceptionCreator(queryString, Some(pos))
-      val metrics = metricsFactory.newMetrics(planContext.statistics, mock[ExpressionEvaluator], cypherCompilerConfig)
+      val metrics = metricsFactory.newMetrics(planContext.statistics, mock[ExpressionEvaluator], config)
       def context = ContextHelper.create(planContext = planContext,
         exceptionCreator = mkException,
         queryGraphSolver = queryGraphSolver,
         metrics = metrics,
-        config = cypherCompilerConfig,
+        config = config,
         logicalPlanIdGen = idGen
       )
 
@@ -261,8 +265,8 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
     res
   }
 
-  def planFor(queryString: String): (Option[PeriodicCommit], LogicalPlan, SemanticTable, Solveds, Cardinalities) =
-    new given().getLogicalPlanFor(queryString)
+  def planFor(queryString: String, config:CypherPlannerConfiguration = cypherCompilerConfig, queryGraphSolver: QueryGraphSolver = queryGraphSolver): (Option[PeriodicCommit], LogicalPlan, SemanticTable, Solveds, Cardinalities) =
+    new given().getLogicalPlanFor(queryString, config, queryGraphSolver)
 
   class given extends StubbedLogicalPlanningConfiguration(realConfig)
 
