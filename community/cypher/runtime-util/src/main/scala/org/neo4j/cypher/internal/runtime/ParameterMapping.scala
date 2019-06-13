@@ -19,25 +19,23 @@
  */
 package org.neo4j.cypher.internal.runtime
 
-import org.neo4j.cypher.internal.v4_0.util.ParameterNotFoundException
 import org.neo4j.values.AnyValue
-import org.neo4j.values.storable.Values.NO_VALUE
-import org.neo4j.values.virtual.MapValue
 
-object createParameterArray {
+case class ParameterMapping(private val mapping: Map[String, OffsetAndDefault] = Map.empty) {
+  def size: Int = mapping.size
+  def foreach[U](f: (String, OffsetAndDefault) => U): Unit = mapping.foreach(m => f(m._1, m._2))
+  def offsetFor(key: String): Int = mapping(key).offset
+  def defaultValueFor(key: String): Option[AnyValue] = mapping(key).default
 
-  def apply(params: MapValue,
-                     parameterMapping: ParameterMapping): Array[AnyValue] = {
-    val parameterArray = new Array[AnyValue](parameterMapping.size)
-    parameterMapping.foreach {
-      case (key, OffsetAndDefault(offset, default)) =>
-        val value = params.get(key)
-        if ((value eq NO_VALUE) && !params.containsKey(key)) {
-          parameterArray(offset) = default.getOrElse(throw new ParameterNotFoundException("Expected a parameter named " + key))
-        } else {
-          parameterArray(offset) = value
-        }
-    }
-    parameterArray
-  }
+  def updated(key: String): ParameterMapping =
+    copy(mapping = mapping.updated(key, mapping.getOrElse(key, OffsetAndDefault(mapping.size, None))))
+
+  def updated(key: String, default: AnyValue): ParameterMapping =
+    copy(mapping = mapping.updated(key, mapping.getOrElse(key, OffsetAndDefault(mapping.size, Some(default)))))
 }
+
+object ParameterMapping {
+  val empty: ParameterMapping = ParameterMapping()
+}
+
+case class OffsetAndDefault(offset: Int, default: Option[AnyValue])

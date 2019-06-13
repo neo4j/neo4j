@@ -24,7 +24,6 @@ import org.neo4j.cypher.internal.runtime.ast.ParameterFromSlot
 import org.neo4j.cypher.internal.v4_0.expressions.{ImplicitProcedureArgument, Parameter}
 import org.neo4j.cypher.internal.v4_0.util.{Rewriter, bottomUp}
 import org.neo4j.kernel.impl.util.ValueUtils
-import org.neo4j.values.AnyValue
 
 /**
   * Rewrites a logical plan so that parameter access is done by offset into an array instead of accessing
@@ -32,20 +31,18 @@ import org.neo4j.values.AnyValue
   */
 case object slottedParameters {
 
-  def apply(input: LogicalPlan): (LogicalPlan,  Map[String, (Option[AnyValue], Int)]) = {
+  def apply(input: LogicalPlan): (LogicalPlan, ParameterMapping) = {
     //This may look like it is dangerous, what if we both have a normal parameter and an implicit
     //procedure argument by the same name? This will not happen since implicit parameters is only supported
     //for stand-alone procedures, e.g `CALL my.proc` with `{input1: 'foo', input2: 1337}`
-    val mapping: Map[String, (Option[AnyValue], Int)] = input.treeFold(Map.empty[String, Option[AnyValue]]) {
-      case Parameter(name, _) => acc => (acc.updated(name, None), Some(identity))
-      case ImplicitProcedureArgument(name, _, defaultValue) => acc => (acc.updated(name, Some(ValueUtils.of(defaultValue))), Some(identity))
-    }.toArray.sortBy(_._1).zipWithIndex.map {
-      case ((key, default), offset) => key -> (default, offset)
-    }.toMap
+    val mapping: ParameterMapping = input.treeFold(ParameterMapping.empty) {
+      case Parameter(name, _) => acc => (acc.updated(name), Some(identity))
+      case ImplicitProcedureArgument(name, _, defaultValue) => acc => (acc.updated(name, ValueUtils.of(defaultValue)), Some(identity))
+    }
 
     val rewriter = bottomUp(Rewriter.lift {
-      case Parameter(name, typ) => ParameterFromSlot(mapping(name)._2, name, typ)
-      case ImplicitProcedureArgument(name, typ, _) => ParameterFromSlot(mapping(name)._2, name, typ)
+      case Parameter(name, typ) => ParameterFromSlot(mapping.offsetFor(name), name, typ)
+      case ImplicitProcedureArgument(name, typ, _) => ParameterFromSlot(mapping.offsetFor(name), name, typ)
     })
 
     (input.endoRewrite(rewriter), mapping)

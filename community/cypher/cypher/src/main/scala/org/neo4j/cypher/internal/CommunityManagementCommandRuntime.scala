@@ -30,7 +30,6 @@ import org.neo4j.cypher.internal.runtime._
 import org.neo4j.kernel.api.exceptions.InvalidArgumentsException
 import org.neo4j.kernel.api.security.AuthManager
 import org.neo4j.string.UTF8
-import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.{TextValue, Values}
 import org.neo4j.values.virtual.VirtualValues
 
@@ -56,7 +55,8 @@ case class CommunityManagementCommandRuntime(normalExecutionEngine: ExecutionEng
     resolver.resolveDependency(classOf[AuthManager])
   }
 
-  val logicalToExecutable: PartialFunction[LogicalPlan, (RuntimeContext, Map[String, (Option[AnyValue],Int)], String) => ExecutionPlan] = {
+  val logicalToExecutable: PartialFunction[LogicalPlan, (RuntimeContext, ParameterMapping, String) => ExecutionPlan] = {
+
     // SHOW USERS
     case ShowUsers() => (_, _, _) =>
       SystemCommandExecutionPlan("ShowUsers", normalExecutionEngine,
