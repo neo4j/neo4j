@@ -40,7 +40,8 @@ object CreatePlannerQuery extends Phase[BaseContext, BaseState, LogicalPlanState
       val unionQuery: UnionQuery = toUnionQuery(query, from.semanticTable())
       LogicalPlanState(from).copy(maybeUnionQuery = Some(unionQuery))
 
-    case ddl: MultiDatabaseDDL => throw new DatabaseManagementException(s"Trying to run `${ddl.name}` against non-system database.")
+    case ddl: MultiDatabaseDDL => throw new DatabaseManagementException(
+      s"This is a DDL command and it should be executed against the system database: ${ddl.name}")
 
     case x => throw new InternalException(s"Expected a Query and not `$x`")
   }

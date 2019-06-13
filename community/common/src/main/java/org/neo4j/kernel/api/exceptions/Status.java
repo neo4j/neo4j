@@ -235,7 +235,7 @@ public interface Status
         RuntimeUnsupportedError( ClientError,
                 "This query is not supported by the chosen runtime." ),
         NotSystemDatabaseError( ClientError,
-                "Tried to run management command against non-system database." ),
+                "This is a DDL command and it should be executed against the system database." ),
 
         // database errors
         ExecutionFailed( DatabaseError,

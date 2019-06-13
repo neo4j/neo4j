@@ -68,7 +68,8 @@ class CommunityUserManagementDDLAcceptanceTest extends CommunityDDLAcceptanceTes
       // WHEN
       execute("SHOW USERS")
       // THEN
-    } should have message "Trying to run `SHOW USERS` against non-system database."
+    } should have message
+      "This is a DDL command and it should be executed against the system database: SHOW USERS"
   }
 
   // Tests for creating users
@@ -269,7 +270,7 @@ class CommunityUserManagementDDLAcceptanceTest extends CommunityDDLAcceptanceTes
       // WHEN
       execute("CREATE USER foo SET PASSWORD 'bar'")
       // THEN
-    } should have message "Trying to run `CREATE USER` against non-system database."
+    } should have message "This is a DDL command and it should be executed against the system database: CREATE USER"
   }
 
   // Tests for dropping users
@@ -368,7 +369,7 @@ class CommunityUserManagementDDLAcceptanceTest extends CommunityDDLAcceptanceTes
       // WHEN
       execute("DROP USER foo")
       // THEN
-    } should have message "Trying to run `DROP USER` against non-system database."
+    } should have message "This is a DDL command and it should be executed against the system database: DROP USER"
   }
 
   // Tests for altering users (not supported in community)
