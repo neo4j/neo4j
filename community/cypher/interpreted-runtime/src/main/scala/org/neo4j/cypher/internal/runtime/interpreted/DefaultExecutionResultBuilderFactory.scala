@@ -20,9 +20,9 @@
 package org.neo4j.cypher.internal.runtime.interpreted
 
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
+import org.neo4j.cypher.internal.runtime._
 import org.neo4j.cypher.internal.runtime.interpreted.load_csv.LoadCsvPeriodicCommitObserver
 import org.neo4j.cypher.internal.runtime.interpreted.pipes._
-import org.neo4j.cypher.internal.runtime.{ExecutionContext, _}
 import org.neo4j.cypher.result.{QueryProfile, RuntimeResult}
 import org.neo4j.kernel.impl.query.QuerySubscriber
 import org.neo4j.values.AnyValue
@@ -71,8 +71,6 @@ abstract class BaseExecutionResultBuilderFactory(pipe: Pipe,
       }
       new PipeExecutionResult(results, columns.toArray, state, queryProfile, subscriber)
     }
-
-    protected def buildResultIterator(results: Iterator[ExecutionContext], readOnly: Boolean): IteratorBasedResult
   }
 
 }
@@ -105,10 +103,6 @@ case class InterpretedExecutionResultBuilderFactory(pipe: Pipe,
                      lenientCreateRelationship = lenientCreateRelationship,
                      prePopulateResults = prePopulateResults,
                      input = input)
-    }
-
-    override def buildResultIterator(results: Iterator[ExecutionContext], readOnly: Boolean): IteratorBasedResult = {
-      IteratorBasedResult(results)
     }
   }
 
