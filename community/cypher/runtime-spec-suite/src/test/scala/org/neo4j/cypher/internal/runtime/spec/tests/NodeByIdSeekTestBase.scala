@@ -102,5 +102,23 @@ abstract class NodeByIdSeekTestBase[CONTEXT <: RuntimeContext](
     runtimeResult should beColumns("x").withRows(singleColumn(toFind))
   }
 
+  test("should handle nodeById + filter") {
+    // given
+    val nodes = nodeGraph(sizeHint)
+    val toSeekFor = (1 to 5).map(_ => nodes(random.nextInt(nodes.length)))
+    val toFind = toSeekFor(random.nextInt(toSeekFor.length))
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x")
+      .filter(s"id(x) = ${toFind.getId}")
+      .nodeByIdSeek("x", toSeekFor.map(_.getId):_*)
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    runtimeResult should beColumns("x").withRows(singleColumn(Seq(toFind)))
+  }
+
 
 }
