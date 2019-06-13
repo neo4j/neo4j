@@ -25,11 +25,14 @@ import org.neo4j.cypher.internal.ir.v3_5.{PatternRelationship, QueryGraph}
 import org.neo4j.cypher.internal.planner.v3_5.spi.PlanningAttributes.Solveds
 import org.neo4j.cypher.internal.v3_5.logical.plans.LogicalPlan
 
+import scala.collection.immutable.BitSet
+
 object joinSolverStep {
   val VERBOSE = false
 }
 
-case class joinSolverStep(qg: QueryGraph) extends IDPSolverStep[PatternRelationship, LogicalPlan, LogicalPlanningContext] {
+case class joinSolverStep(qg: QueryGraph, IGNORE_EXPAND_SOLUTIONS_FOR_TEST: Boolean = false) extends IDPSolverStep[PatternRelationship, LogicalPlan, LogicalPlanningContext] {
+  // IGNORE_EXPAND_SOLUTIONS_FOR_TEST can be used to force expandStillPossible to be false if needed
 
   import LogicalPlanningSupport._
 
@@ -37,6 +40,9 @@ case class joinSolverStep(qg: QueryGraph) extends IDPSolverStep[PatternRelations
 
     if (VERBOSE) {
       println(s"\n>>>> start solving ${show(goal, goalSymbols(goal, registry))}")
+      goal.toSeq.map(BitSet(_)).foreach {
+        subgoal => println(s"Solving subgoal $subgoal which covers " + registry.explode(subgoal).flatMap(_.coveredIds))
+      }
     }
 
     /**
@@ -45,8 +51,13 @@ case class joinSolverStep(qg: QueryGraph) extends IDPSolverStep[PatternRelations
       *  (= not registered), because then it will not be possible to find an expand solution anymore.
       */
     def registered: Int => Boolean = nbr => registry.lookup(nbr).isDefined
-    val removeArguments = goal.exists(registered) || table.plans.exists(p => p._1.exists(registered))
-    val argumentsToRemove  = if (removeArguments) qg.argumentIds else Set.empty[String]
+    val expandStillPossible = (goal.exists(registered) || table.plans.exists(p => p._1.exists(registered))) && !IGNORE_EXPAND_SOLUTIONS_FOR_TEST
+
+    val argumentsToRemove =
+      if (expandStillPossible)
+        qg.argumentIds
+      else
+        Set.empty[String]
 
     val goalSize = goal.size
     val planProducer = context.logicalPlanProducer
@@ -66,7 +77,11 @@ case class joinSolverStep(qg: QueryGraph) extends IDPSolverStep[PatternRelations
         val overlappingNodes = computeOverlappingNodes(lhs, rhs, context.planningAttributes.solveds, argumentsToRemove)
         if (overlappingNodes.nonEmpty) {
           val overlappingSymbols = computeOverlappingSymbols(lhs, rhs, argumentsToRemove)
-          if (overlappingSymbols == overlappingNodes) {
+          // If the overlapping symbols contain more than the overlapping nodes, that means
+          // We have solved the same relationship on both LHS and RHS. Joining this is plan
+          // would not be optimal, but we have to consider it, if expanding is not longer possible due to compaction
+          if (expandStillPossible && overlappingNodes == overlappingSymbols ||
+            !expandStillPossible && overlappingNodes.subsetOf(overlappingSymbols)) {
             if (VERBOSE) {
               println(s"${show(leftGoal, nodes(lhs, context.planningAttributes.solveds))} overlap ${show(rightGoal, nodes(rhs, context.planningAttributes.solveds))} on ${showNames(overlappingNodes)}")
             }

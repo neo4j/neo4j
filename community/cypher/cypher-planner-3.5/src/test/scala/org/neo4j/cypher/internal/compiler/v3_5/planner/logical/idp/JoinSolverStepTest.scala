@@ -21,8 +21,8 @@ package org.neo4j.cypher.internal.compiler.v3_5.planner.logical.idp
 
 import org.neo4j.cypher.internal.compiler.v3_5.planner._
 import org.neo4j.cypher.internal.ir.v3_5._
-import org.neo4j.cypher.internal.v3_5.logical.plans.{LogicalPlan, NodeHashJoin}
 import org.neo4j.cypher.internal.v3_5.expressions.SemanticDirection
+import org.neo4j.cypher.internal.v3_5.logical.plans.{LogicalPlan, NodeHashJoin}
 import org.neo4j.cypher.internal.v3_5.util.test_helpers.CypherFunSuite
 
 class JoinSolverStepTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
@@ -77,6 +77,28 @@ class JoinSolverStepTest extends CypherFunSuite with LogicalPlanningTestSupport2
       table.put(register(pattern2), plan2)
 
       joinSolverStep(qg)(registry, register(pattern1, pattern2), table, ctx).toSet should equal(Set(
+        NodeHashJoin(Set("b"), plan1, plan2),
+        NodeHashJoin(Set("b"), plan2, plan1)
+      ))
+    }
+  }
+
+  test("does join plans where available nodes are subset of available symbols") {
+    implicit val registry = IdRegistry[PatternRelationship]
+    new given().withLogicalPlanningContext { (cfg, ctx) =>
+      val plan1 = fakeLogicalPlanFor(ctx.planningAttributes, "a", "r1", "b", "c") // those will become available symbols
+      ctx.planningAttributes.solveds.set(plan1.id, RegularPlannerQuery(QueryGraph.empty.addPatternNodes("b"))) // those will become available nodes
+      val plan2 = fakeLogicalPlanFor(ctx.planningAttributes,"b", "c")
+      ctx.planningAttributes.solveds.set(plan2.id, RegularPlannerQuery(QueryGraph.empty.addPatternNodes("b")))
+      // overlapping symbols plan1& plan2 => (b,c)
+      // overlapping nodes   plan1&plan2  => (b)
+
+      val qg = QueryGraph.empty.addPatternNodes("a", "b", "c")
+
+      table.put(register(pattern1), plan1)
+      table.put(register(pattern2), plan2)
+
+      joinSolverStep(qg, IGNORE_EXPAND_SOLUTIONS_FOR_TEST = true)(registry, register(pattern1, pattern2), table, ctx).toSet should equal(Set(
         NodeHashJoin(Set("b"), plan1, plan2),
         NodeHashJoin(Set("b"), plan2, plan1)
       ))
