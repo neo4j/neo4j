@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.logical.builder
 import org.neo4j.cypher.internal.ir.SimplePatternLength
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.pos
 import org.neo4j.cypher.internal.logical.plans._
-import org.neo4j.cypher.internal.v4_0.expressions.{Expression, LabelName, SignedDecimalIntegerLiteral, Variable}
+import org.neo4j.cypher.internal.v4_0.expressions._
 import org.neo4j.cypher.internal.v4_0.util.InputPosition
 import org.neo4j.cypher.internal.v4_0.util.attribution.{Id, IdGen, SameId, SequentialIdGen}
 
@@ -247,6 +247,19 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
   def nodeByLabelScan(node: String, label: String, args: String*): IMPL = {
     newNode(varFor(node))
     appendAtCurrentIndent(LeafOperator(NodeByLabelScan(node, labelName(label), args.toSet)(_)))
+  }
+
+  def nodeByIdSeek(node: String, ids: Long*): IMPL = {
+    newNode(varFor(node))
+      val idExpressions = ids.map(l => UnsignedDecimalIntegerLiteral(l.toString)(pos))
+    val input =
+      if (idExpressions.length == 1) {
+        SingleSeekableArg(idExpressions.head)
+      } else {
+        ManySeekableArgs(ListLiteral(idExpressions)(pos))
+      }
+
+    appendAtCurrentIndent(LeafOperator(NodeByIdSeek(node, input , Set.empty)(_)))
   }
 
   def nodeIndexOperator(indexSeekString: String,
