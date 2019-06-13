@@ -37,6 +37,7 @@ abstract class ProvidedOrderTestBase[CONTEXT <: RuntimeContext](
       ProvidedOrderTest("descending", IndexOrderDescending, _.reverse)
     )
   ) {
+
     test(s"expand keeps index provided $orderString order") {
       // given
       val n = sizeHint
@@ -70,8 +71,30 @@ abstract class ProvidedOrderTestBase[CONTEXT <: RuntimeContext](
       val runtimeResult = execute(logicalQuery, runtime)
 
       // then
-      val expected = expectedMutation(nodes.zipWithIndex.filter{ case (_, i) => i % 10 == 0 && i > sizeHint / 2}.flatMap(n => Seq.fill(36)(n)).map(_._2))
+      val expected = expectedMutation(nodes.zipWithIndex.filter{ case (_, i) => i % 10 == 0 && i > n / 2}.flatMap(n => Seq.fill(36)(n)).map(_._2))
       runtimeResult should beColumns("prop").withRows(singleColumnInOrder(expected))
+    }
+
+    test(s"aggregation keeps index provided $orderString order") {
+      // given
+      val n = sizeHint
+      val nodes = nodePropertyGraph(n, {
+        case i => Map("prop" -> i % 100)
+      },"Honey")
+      index("Honey", "prop")
+
+      // when
+      val logicalQuery = new LogicalQueryBuilder(this)
+        .produceResults("prop", "c")
+        .aggregation(groupingExpressions = Seq("x.prop AS prop"), aggregationExpression = Seq("count(*) AS c"))
+        .nodeIndexOperator("x:Honey(prop >= 0)", indexOrder = indexOrder, getValue = DoNotGetValue)
+        .build()
+
+      val runtimeResult = execute(logicalQuery, runtime)
+
+      // then
+      val expected = expectedMutation(0 until 100).map(prop => Array(prop, n / 100))
+      runtimeResult should beColumns("prop", "c").withRows(inOrder(expected))
     }
   }
 }
