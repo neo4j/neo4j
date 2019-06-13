@@ -32,6 +32,7 @@ class InterpretedAggregationTest extends AggregationTestBase(COMMUNITY.EDITION, 
 class InterpretedOrderedAggregationTest extends OrderedAggregationTestBase(COMMUNITY.EDITION, InterpretedRuntime, SIZE_HINT)
 class InterpretedAllNodeScanTest extends AllNodeScanTestBase(COMMUNITY.EDITION, InterpretedRuntime, SIZE_HINT)
 class InterpretedNodeByIdSeekTest extends NodeByIdSeekTestBase(COMMUNITY.EDITION, InterpretedRuntime, SIZE_HINT)
+class InterpretedNodeCountFromCountStoreTest extends NodeCountFromCountStoreTestBase(COMMUNITY.EDITION, InterpretedRuntime, SIZE_HINT)
 class InterpretedExpandAllTest extends ExpandAllTestBase(COMMUNITY.EDITION, InterpretedRuntime, SIZE_HINT)
                                with ExpandAllWithOptionalTestBase[CommunityRuntimeContext]
 class InterpretedLabelScanTest extends LabelScanTestBase(COMMUNITY.EDITION, InterpretedRuntime, SIZE_HINT)

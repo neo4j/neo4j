@@ -262,6 +262,11 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
     appendAtCurrentIndent(LeafOperator(NodeByIdSeek(node, input, Set.empty)(_)))
   }
 
+  def nodeCountFromCountStore(node: String, labels: List[Option[String]]): IMPL = {
+    val labelNames = labels.map(maybeLabel => maybeLabel.map(labelName))
+    appendAtCurrentIndent(LeafOperator(NodeCountFromCountStore(node, labelNames, Set.empty)(_)))
+  }
+
   def nodeIndexOperator(indexSeekString: String,
                         getValue: GetValueFromIndexBehavior = DoNotGetValue,
                         indexOrder: IndexOrder = IndexOrderNone,
