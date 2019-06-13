@@ -29,12 +29,17 @@ abstract class ProvidedOrderTestBase[CONTEXT <: RuntimeContext](
                                                                  val sizeHint: Int
                                                                ) extends RuntimeTestSuite[CONTEXT](edition, runtime) {
 
-  case class ProvidedOrderTest(orderString: String, indexOrder: IndexOrder, expectedMutation: Seq[Int] => Seq[Int])
+  trait SeqMutator { def apply[X](in: Seq[X]): Seq[X]}
+  case class ProvidedOrderTest(orderString: String, indexOrder: IndexOrder, expectedMutation: SeqMutator)
 
   for(
     ProvidedOrderTest(orderString, indexOrder, expectedMutation) <- Seq(
-      ProvidedOrderTest("ascending", IndexOrderAscending, identity),
-      ProvidedOrderTest("descending", IndexOrderDescending, _.reverse)
+      ProvidedOrderTest("ascending", IndexOrderAscending, new SeqMutator {
+        override def apply[X](in: Seq[X]): Seq[X] = in
+      }),
+      ProvidedOrderTest("descending", IndexOrderDescending, new SeqMutator {
+        override def apply[X](in: Seq[X]): Seq[X] = in.reverse
+      })
     )
   ) {
 
@@ -78,7 +83,7 @@ abstract class ProvidedOrderTestBase[CONTEXT <: RuntimeContext](
     test(s"aggregation keeps index provided $orderString order") {
       // given
       val n = sizeHint
-      val nodes = nodePropertyGraph(n, {
+      nodePropertyGraph(n, {
         case i => Map("prop" -> i % 100)
       },"Honey")
       index("Honey", "prop")
@@ -95,6 +100,55 @@ abstract class ProvidedOrderTestBase[CONTEXT <: RuntimeContext](
       // then
       val expected = expectedMutation(0 until 100).map(prop => Array(prop, n / 100))
       runtimeResult should beColumns("prop", "c").withRows(inOrder(expected))
+    }
+
+    test(s"node hash join keeps RHS index provided $orderString order") {
+      // given
+      val n = sizeHint / 2 // Expected to be a multiple of modulo
+      val fillFactor = 3
+      val modulo = 100
+      val zGTFilter = 10
+
+      val nodes = nodePropertyGraph(n, {
+        case i => Map("prop" -> i % modulo)
+      },"Honey")
+      index("Honey", "prop")
+
+      val relTuples = (for(i <- 0 until n) yield {
+        Seq.fill(fillFactor)((i, i, "SELF"))
+      }).reduce(_ ++ _)
+
+      connect(nodes, relTuples)
+
+      // when
+      val logicalQuery = new LogicalQueryBuilder(this)
+        .produceResults("prop")
+        .projection("y.prop AS prop")
+        .nodeHashJoin("y")
+        .|.expand("(z)-->(y)")
+        .|.nodeIndexOperator(s"z:Honey(prop >= $zGTFilter)", indexOrder = indexOrder, getValue = DoNotGetValue)
+        .expand("(x)-->(y)")
+        .filter("x.prop % 2 = 0")
+        .nodeByLabelScan("x", "Honey")
+        .build()
+
+      val runtimeResult = execute(logicalQuery, runtime)
+
+      // then
+      val lhs = for {
+        x <- (0 until n).map(_ % modulo).sorted if x % 2 == 0
+        y <- Seq.fill(fillFactor)(x)
+      } yield y
+      val rhs = for {
+        z <- expectedMutation((0 until n).map(_ % modulo).filter(_ >= zGTFilter).sorted)
+        y <- Seq.fill(fillFactor)(z)
+      } yield y
+      val expected = for {
+        rhs_y <- rhs.zipWithIndex.filter(_._2 % (n / modulo) == 0).map(_._1) // Only every (n / modulo)th node (even though they have the same property) matches
+        lhs_y <- lhs if lhs_y == rhs_y
+      } yield lhs_y
+
+      runtimeResult should beColumns("prop").withRows(singleColumnInOrder(expected))
     }
   }
 }
