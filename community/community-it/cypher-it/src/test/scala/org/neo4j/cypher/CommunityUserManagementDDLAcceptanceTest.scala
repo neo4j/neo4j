@@ -300,6 +300,28 @@ class CommunityUserManagementDDLAcceptanceTest extends CommunityDDLAcceptanceTes
     execute("SHOW USERS").toSet should be(Set(user("neo4j"), user("foo")))
   }
 
+  test("should be able to drop the user that created you") {
+    // GIVEN
+    selectDatabase(GraphDatabaseSettings.SYSTEM_DATABASE_NAME)
+    execute("CREATE USER alice SET PASSWORD 'abc' CHANGE NOT REQUIRED")
+
+    // WHEN
+    executeOnSystem("alice", "abc", "CREATE USER bob SET PASSWORD 'bar' CHANGE NOT REQUIRED")
+
+    // THEN
+    execute("SHOW USERS").toSet should be(Set(
+      user("neo4j"),
+      user("alice", passwordChangeRequired = false),
+      user("bob", passwordChangeRequired = false)
+    ))
+
+    // WHEN
+    executeOnSystem("bob", "bar",  "DROP USER alice")
+
+    // THEN
+    execute("SHOW USERS").toSet should be(Set(user("neo4j"), user("bob", passwordChangeRequired = false)))
+  }
+
   test("should fail when dropping current user") {
     // GIVEN
     selectDatabase(GraphDatabaseSettings.SYSTEM_DATABASE_NAME)
