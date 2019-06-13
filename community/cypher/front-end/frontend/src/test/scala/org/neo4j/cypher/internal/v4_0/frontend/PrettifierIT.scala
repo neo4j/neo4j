@@ -432,37 +432,37 @@ class PrettifierIT extends CypherFunSuite {
         "REVOKE READ (foo, bar) ON GRAPH foo NODES A, B, C (*) FROM x, y, z",
 
       "catalog show databases" ->
-        "CATALOG SHOW DATABASES",
+        "SHOW DATABASES",
 
       "catalog show default database" ->
-        "CATALOG SHOW DEFAULT DATABASE",
+        "SHOW DEFAULT DATABASE",
 
       "catalog show database foO_Bar_42" ->
-        "CATALOG SHOW DATABASE foO_Bar_42",
+        "SHOW DATABASE foO_Bar_42",
 
       "catalog create database foO_Bar_42" ->
-        "CATALOG CREATE DATABASE foO_Bar_42",
+        "CREATE DATABASE foO_Bar_42",
 
       "catalog create database `foO_Bar_42`" ->
-        "CATALOG CREATE DATABASE foO_Bar_42",
+        "CREATE DATABASE foO_Bar_42",
 
       "catalog create database `graph.db`" ->
-        "CATALOG CREATE DATABASE `graph.db`",
+        "CREATE DATABASE `graph.db`",
 
       "catalog DROP database foO_Bar_42" ->
-        "CATALOG DROP DATABASE foO_Bar_42",
+        "DROP DATABASE foO_Bar_42",
 
       "catalog start database foO_Bar_42" ->
-        "CATALOG START DATABASE foO_Bar_42",
+        "START DATABASE foO_Bar_42",
 
       "start database foO_Bar_42" ->
-        "CATALOG START DATABASE foO_Bar_42",
+        "START DATABASE foO_Bar_42",
 
       "catalog stop database foO_Bar_42" ->
-        "CATALOG STOP DATABASE foO_Bar_42",
+        "STOP DATABASE foO_Bar_42",
 
       "stop database foO_Bar_42" ->
-        "CATALOG STOP DATABASE foO_Bar_42",
+        "STOP DATABASE foO_Bar_42",
 
       "catalog create graph com.neo4j.Users { MATCH (n) RETURN n }" ->
         """CATALOG CREATE GRAPH com.neo4j.Users {

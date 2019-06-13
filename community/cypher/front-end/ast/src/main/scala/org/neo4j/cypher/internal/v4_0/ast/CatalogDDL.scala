@@ -231,7 +231,7 @@ final case class ShowPrivileges(scope: ShowPrivilegeScope)(val position: InputPo
 
 final case class ShowDatabases()(val position: InputPosition) extends MultiDatabaseDDL {
 
-  override def name = "CATALOG SHOW DATABASES"
+  override def name = "SHOW DATABASES"
 
   override def semanticCheck: SemanticCheck =
     super.semanticCheck chain
@@ -240,7 +240,7 @@ final case class ShowDatabases()(val position: InputPosition) extends MultiDatab
 
 final case class ShowDefaultDatabase()(val position: InputPosition) extends MultiDatabaseDDL {
 
-  override def name = "CATALOG SHOW DEFAULT DATABASE"
+  override def name = "SHOW DEFAULT DATABASE"
 
   override def semanticCheck: SemanticCheck =
     super.semanticCheck chain
@@ -249,7 +249,7 @@ final case class ShowDefaultDatabase()(val position: InputPosition) extends Mult
 
 final case class ShowDatabase(dbName: String)(val position: InputPosition) extends MultiDatabaseDDL {
 
-  override def name = "CATALOG SHOW DATABASE"
+  override def name = "SHOW DATABASE"
 
   override def semanticCheck: SemanticCheck =
     super.semanticCheck chain
@@ -258,7 +258,7 @@ final case class ShowDatabase(dbName: String)(val position: InputPosition) exten
 
 final case class CreateDatabase(dbName: String)(val position: InputPosition) extends MultiDatabaseDDL {
 
-  override def name = "CATALOG CREATE DATABASE"
+  override def name = "CREATE DATABASE"
 
   override def semanticCheck: SemanticCheck =
     super.semanticCheck chain
@@ -267,7 +267,7 @@ final case class CreateDatabase(dbName: String)(val position: InputPosition) ext
 
 final case class DropDatabase(dbName: String)(val position: InputPosition) extends MultiDatabaseDDL {
 
-  override def name = "CATALOG DROP DATABASE"
+  override def name = "DROP DATABASE"
 
   override def semanticCheck: SemanticCheck =
     super.semanticCheck chain
@@ -276,7 +276,7 @@ final case class DropDatabase(dbName: String)(val position: InputPosition) exten
 
 final case class StartDatabase(dbName: String)(val position: InputPosition) extends MultiDatabaseDDL {
 
-  override def name = "CATALOG START DATABASE"
+  override def name = "START DATABASE"
 
   override def semanticCheck: SemanticCheck =
     super.semanticCheck chain
@@ -285,7 +285,7 @@ final case class StartDatabase(dbName: String)(val position: InputPosition) exte
 
 final case class StopDatabase(dbName: String)(val position: InputPosition) extends MultiDatabaseDDL {
 
-  override def name = "CATALOG STOP DATABASE"
+  override def name = "STOP DATABASE"
 
   override def semanticCheck: SemanticCheck =
     super.semanticCheck chain
