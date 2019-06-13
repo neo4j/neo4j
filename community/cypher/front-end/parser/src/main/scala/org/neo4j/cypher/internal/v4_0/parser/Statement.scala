@@ -157,38 +157,38 @@ trait Statement extends Parser
   }
 
   //`GRANT TRAVERSE ON GRAPH foo NODES A (*) TO role`
-  def GrantTraverse: Rule1[GrantPrivilege] = rule("CATALOG GRANT TRAVERSE") {
-    group(keyword("GRANT TRAVERSE") ~~ keyword("ON GRAPH") ~~ GraphName ~~ ScopeQualifier ~~ keyword("TO") ~~ SymbolicNamesList) ~~>>
+  def GrantTraverse: Rule1[GrantPrivilege] = rule("GRANT TRAVERSE") {
+    group(keyword("GRANT TRAVERSE") ~~ Graph ~~ ScopeQualifier ~~ keyword("TO") ~~ SymbolicNamesList) ~~>>
       ((scope, qualifier, grantees) => ast.GrantPrivilege.traverse(scope, qualifier, grantees))
   }
 
   //`REVOKE TRAVERSE ON GRAPH foo NODES A (*) FROM role`
-  def RevokeTraverse: Rule1[RevokePrivilege] = rule("CATALOG REVOKE TRAVERSE") {
-    group(keyword("REVOKE TRAVERSE") ~~ keyword("ON GRAPH") ~~ GraphName ~~ ScopeQualifier ~~ keyword("FROM") ~~ SymbolicNamesList) ~~>>
+  def RevokeTraverse: Rule1[RevokePrivilege] = rule("REVOKE TRAVERSE") {
+    group(keyword("REVOKE TRAVERSE") ~~ Graph ~~ ScopeQualifier ~~ keyword("FROM") ~~ SymbolicNamesList) ~~>>
       ((scope, qualifier, grantees) => ast.RevokePrivilege.traverse(scope, qualifier, grantees))
   }
 
   //`GRANT READ (a) ON GRAPH foo NODES A (*) TO role`
   def GrantRead: Rule1[GrantPrivilege] = rule("GRANT READ") {
-    group(keyword("GRANT READ") ~~ PrivilegeProperty ~~ keyword("ON GRAPH") ~~ GraphName ~~ ScopeQualifier ~~ keyword("TO") ~~ SymbolicNamesList) ~~>>
+    group(keyword("GRANT READ") ~~ PrivilegeProperty ~~ Graph ~~ ScopeQualifier ~~ keyword("TO") ~~ SymbolicNamesList) ~~>>
       ((prop, scope, qualifier, grantees) => ast.GrantPrivilege.read(prop, scope, qualifier, grantees))
   }
 
   //`REVOKE READ (a) ON GRAPH foo NODES A (*) FROM role`
   def RevokeRead: Rule1[RevokePrivilege] = rule("REVOKE READ") {
-    group(keyword("REVOKE READ") ~~ PrivilegeProperty ~~ keyword("ON GRAPH") ~~ GraphName ~~ ScopeQualifier ~~ keyword("FROM") ~~ SymbolicNamesList) ~~>>
+    group(keyword("REVOKE READ") ~~ PrivilegeProperty ~~ Graph ~~ ScopeQualifier ~~ keyword("FROM") ~~ SymbolicNamesList) ~~>>
       ((prop, scope, qualifier, grantees) => ast.RevokePrivilege.read(prop, scope, qualifier, grantees))
   }
 
   //`GRANT MATCH (a) ON GRAPH foo NODES A (*) TO role`
-  def GrantMatch: Rule1[GrantPrivilege] = rule("GRANT READ") {
-    group(keyword("GRANT MATCH") ~~ PrivilegeProperty ~~ keyword("ON GRAPH") ~~ GraphName ~~ ScopeQualifier ~~ keyword("TO") ~~ SymbolicNamesList) ~~>>
+  def GrantMatch: Rule1[GrantPrivilege] = rule("GRANT MATCH") {
+    group(keyword("GRANT MATCH") ~~ PrivilegeProperty ~~ Graph ~~ ScopeQualifier ~~ keyword("TO") ~~ SymbolicNamesList) ~~>>
       ((prop, scope, qualifier, grantees) => ast.GrantPrivilege.asMatch(prop, scope, qualifier, grantees))
   }
 
   //`REVOKE MATCH (a) ON GRAPH foo NODES A (*) FROM role`
-  def RevokeMatch: Rule1[RevokePrivilege] = rule("REVOKE READ") {
-    group(keyword("REVOKE MATCH") ~~ PrivilegeProperty ~~ keyword("ON GRAPH") ~~ GraphName ~~ ScopeQualifier ~~ keyword("FROM") ~~ SymbolicNamesList) ~~>>
+  def RevokeMatch: Rule1[RevokePrivilege] = rule("REVOKE MATCH") {
+    group(keyword("REVOKE MATCH") ~~ PrivilegeProperty ~~ Graph ~~ ScopeQualifier ~~ keyword("FROM") ~~ SymbolicNamesList) ~~>>
       ((prop, scope, qualifier, grantees) => ast.RevokePrivilege.asMatch(prop, scope, qualifier, grantees))
   }
 
@@ -202,19 +202,22 @@ trait Statement extends Parser
   )
 
   private def ScopeQualifier: Rule1[PrivilegeQualifier] = rule("which element type and associated labels (props) qualifier combination")(
-    group(keyword("NODES") ~~ SymbolicNamesList ~~ optional("(" ~~ "*" ~~ ")")) ~~>> {ast.LabelsQualifier(_)} |
-      optional(keyword("NODES") ~~ "*" ~~ optional("(" ~~ "*" ~~ ")")) ~~~> {ast.AllQualifier()}
+    group(NodeKeyword ~~ SymbolicNamesList ~~ optional("(" ~~ "*" ~~ ")")) ~~>> {ast.LabelsQualifier(_)} |
+      optional(NodeKeyword ~~ "*" ~~ optional("(" ~~ "*" ~~ ")")) ~~~> {ast.AllQualifier()}
   )
 
-  private def GraphName: Rule1[GraphScope] = rule("a database/graph")(
-    group(SymbolicNameString) ~~>> (ast.NamedGraphScope(_)) |
-      keyword("*") ~~~> (ast.AllGraphsScope())
+  private def NodeKeyword: Rule0 = keyword("NODE") | keyword("NODES")
+
+  private def Graph: Rule1[GraphScope] = rule("on a database/graph")(
+    group(keyword("ON") ~~ (keyword("GRAPH") | keyword("GRAPHS"))) ~~
+      (group(SymbolicNameString) ~~>> (ast.NamedGraphScope(_)) |
+        keyword("*") ~~~> ast.AllGraphsScope())
   )
 
   private def ScopeForShowPrivileges: Rule1[ShowPrivilegeScope] = rule("a database/graph")(
     group(keyword("ROLE") ~~ SymbolicNameString) ~~>> (ast.ShowRolePrivileges(_)) |
       group(keyword("USER") ~~ SymbolicNameString) ~~>> (ast.ShowUserPrivileges(_)) |
-      optional(keyword("ALL")) ~~~> (ast.ShowAllPrivileges())
+      optional(keyword("ALL")) ~~~> ast.ShowAllPrivileges()
   )
 
   def ShowDatabase: Rule1[ShowDatabase] = rule("CATALOG SHOW DATABASE") {
