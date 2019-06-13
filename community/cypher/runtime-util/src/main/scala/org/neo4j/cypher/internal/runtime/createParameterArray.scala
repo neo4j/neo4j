@@ -27,13 +27,16 @@ import org.neo4j.values.virtual.MapValue
 object createParameterArray {
 
   def apply(params: MapValue,
-                     parameterMapping: Map[String, Int]): Array[AnyValue] = {
+                     parameterMapping: Map[String, (Option[AnyValue], Int)]): Array[AnyValue] = {
     val parameterArray = new Array[AnyValue](parameterMapping.size)
     parameterMapping.foreach {
-      case (key, slot) =>
+      case (key, (default, slot)) =>
         val value = params.get(key)
-        if ((value eq NO_VALUE) && !params.containsKey(key)) throw new ParameterNotFoundException("Expected a parameter named " + key)
-        parameterArray(slot) = value
+        if ((value eq NO_VALUE) && !params.containsKey(key)) {
+          parameterArray(slot) = default.getOrElse(throw new ParameterNotFoundException("Expected a parameter named " + key))
+        } else {
+          parameterArray(slot) = value
+        }
     }
     parameterArray
   }

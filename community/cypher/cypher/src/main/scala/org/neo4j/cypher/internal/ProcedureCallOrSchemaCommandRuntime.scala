@@ -26,6 +26,7 @@ import org.neo4j.cypher.internal.procs.SchemaWriteExecutionPlan
 import org.neo4j.cypher.internal.runtime._
 import org.neo4j.cypher.internal.v4_0.expressions.{LabelName, PropertyKeyName, RelTypeName}
 import org.neo4j.cypher.internal.v4_0.util.{LabelId, PropertyKeyId}
+import org.neo4j.values.AnyValue
 
 /**
   * This runtime takes on queries that require no planning, such as procedures and schema commands
@@ -49,7 +50,7 @@ object ProcedureCallOrSchemaCommandRuntime extends CypherRuntime[RuntimeContext]
       Some(SCHEMA_WRITE)
     } else None
 
-  val logicalToExecutable: PartialFunction[LogicalPlan, (RuntimeContext, Map[String,Int]) => ExecutionPlan] = {
+  val logicalToExecutable: PartialFunction[LogicalPlan, (RuntimeContext, Map[String,(Option[AnyValue], Int)]) => ExecutionPlan] = {
     // CREATE CONSTRAINT ON (node:Label) ASSERT (node.prop1,node.prop2) IS NODE KEY
     case CreateNodeKeyConstraint(_, label, props) => (_, _) =>
       SchemaWriteExecutionPlan("CreateNodeKeyConstraint", ctx => {

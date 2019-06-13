@@ -221,6 +221,9 @@ object SemanticExpressionCheck extends SemanticAnalysisTooling {
       case x:Parameter =>
         specifyType(x.parameterType.covariant, x)
 
+      case x:ImplicitProcedureArgument =>
+        specifyType(x.parameterType.covariant, x)
+
       case x:HasLabels =>
         check(ctx, x.expression) chain
           expectType(CTNode.covariant, x.expression) chain

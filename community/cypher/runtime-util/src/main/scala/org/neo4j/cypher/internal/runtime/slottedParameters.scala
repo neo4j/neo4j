@@ -21,8 +21,10 @@ package org.neo4j.cypher.internal.runtime
 
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.runtime.ast.ParameterFromSlot
-import org.neo4j.cypher.internal.v4_0.expressions.Parameter
+import org.neo4j.cypher.internal.v4_0.expressions.{ImplicitProcedureArgument, Parameter}
 import org.neo4j.cypher.internal.v4_0.util.{Rewriter, bottomUp}
+import org.neo4j.kernel.impl.util.ValueUtils
+import org.neo4j.values.AnyValue
 
 /**
   * Rewrites a logical plan so that parameter access is done by offset into an array instead of accessing
@@ -30,13 +32,17 @@ import org.neo4j.cypher.internal.v4_0.util.{Rewriter, bottomUp}
   */
 case object slottedParameters {
 
-  def apply(input: LogicalPlan): (LogicalPlan, Map[String, Int]) = {
-    val mapping: Map[String, Int] = input.treeFold(Set.empty[String]) {
-      case Parameter(name, _) => acc => (acc + name, Some(identity))
-    }.toArray.sorted.zipWithIndex.toMap
+  def apply(input: LogicalPlan): (LogicalPlan,  Map[String, (Option[AnyValue], Int)]) = {
+    val mapping: Map[String, (Option[AnyValue], Int)] = input.treeFold(Map.empty[String, Option[AnyValue]]) {
+      case Parameter(name, _) => acc => (acc.updated(name, None), Some(identity))
+      case ImplicitProcedureArgument(name, _, defaultValue) => acc => (acc.updated(name, Some(ValueUtils.of(defaultValue))), Some(identity))
+    }.toArray.sortBy(_._1).zipWithIndex.map {
+      case ((key, default), offset) => key -> (default, offset)
+    }.toMap
 
     val rewriter = bottomUp(Rewriter.lift {
-      case Parameter(name, typ) => ParameterFromSlot(mapping(name), name, typ)
+      case Parameter(name, typ) => ParameterFromSlot(mapping(name)._2, name, typ)
+      case ImplicitProcedureArgument(name, typ, _) => ParameterFromSlot(mapping(name)._2, name, typ)
     })
 
     (input.endoRewrite(rewriter), mapping)

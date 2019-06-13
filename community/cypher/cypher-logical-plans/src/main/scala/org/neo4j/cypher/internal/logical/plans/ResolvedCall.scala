@@ -24,7 +24,7 @@ import org.neo4j.cypher.internal.v4_0.ast.semantics.SemanticCheckResult._
 import org.neo4j.cypher.internal.v4_0.ast.semantics.{SemanticCheck, SemanticError, SemanticExpressionCheck, SemanticState}
 import org.neo4j.cypher.internal.v4_0.expressions.Expression.SemanticContext
 import org.neo4j.cypher.internal.v4_0.expressions._
-import org.neo4j.cypher.internal.v4_0.util.symbols.{CypherType, _}
+import org.neo4j.cypher.internal.v4_0.util.symbols.CypherType
 import org.neo4j.cypher.internal.v4_0.util.{InputPosition, SyntaxException}
 
 object ResolvedCall {
@@ -32,8 +32,8 @@ object ResolvedCall {
     val UnresolvedCall(_, _, declaredArguments, declaredResult) = unresolved
     val position = unresolved.position
     val signature = signatureLookup(QualifiedName(unresolved))
-    val nonDefaults = signature.inputSignature.flatMap(s => if (s.default.isDefined) None else Some(Parameter(s.name, CTAny)(position)))
-    val callArguments = declaredArguments.getOrElse(nonDefaults)
+    val implicitArguments = signature.inputSignature.map(s => s.default.map(d => ImplicitProcedureArgument(s.name, s.typ, d.value)).getOrElse(Parameter(s.name, s.typ)(position)))
+    val callArguments = declaredArguments.getOrElse(implicitArguments)
     val callResults = declaredResult.map(_.items).getOrElse(signatureResults(signature, position))
     val callFilter = declaredResult.flatMap(_.where)
     if (callFilter.nonEmpty)
