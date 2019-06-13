@@ -431,6 +431,12 @@ class PrettifierIT extends CypherFunSuite {
       "revoke read (foo,bar) on graph foo nodes A,B,C (*) from x,y,z" ->
         "REVOKE READ (foo, bar) ON GRAPH foo NODES A, B, C (*) FROM x, y, z",
 
+      "catalog show databases" ->
+        "CATALOG SHOW DATABASES",
+
+      "catalog show default database" ->
+        "CATALOG SHOW DEFAULT DATABASE",
+
       "catalog show database foO_Bar_42" ->
         "CATALOG SHOW DATABASE foO_Bar_42",
 
