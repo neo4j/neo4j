@@ -150,5 +150,45 @@ abstract class ProvidedOrderTestBase[CONTEXT <: RuntimeContext](
 
       runtimeResult should beColumns("prop").withRows(singleColumnInOrder(expected))
     }
+
+    test(s"apply keeps LHS index provided $orderString order") {
+      // given
+      val n = sizeHint
+      val fillFactor = 10
+      val modulo = 100
+      val zGTFilter = 10
+
+      val nodes = nodePropertyGraph(n, {
+        case i => Map("prop" -> i % modulo)
+      },"Honey")
+      index("Honey", "prop")
+
+      val relTuples = (for(i <- 0 until n) yield {
+        Seq.fill(fillFactor)((i, i, "SELF"))
+      }).reduce(_ ++ _)
+
+      connect(nodes, relTuples)
+
+      // when
+      val logicalQuery = new LogicalQueryBuilder(this)
+        .produceResults("prop")
+        .projection("y.prop AS prop")
+        .apply()
+        .|.filter("y.prop % 2 = 0")
+        .|.argument("y")
+        .expand("(z)-->(y)")
+        .nodeIndexOperator(s"z:Honey(prop >= $zGTFilter)", indexOrder = indexOrder, getValue = DoNotGetValue)
+        .build()
+
+      val runtimeResult = execute(logicalQuery, runtime)
+
+      // then
+      val expected = for {
+        z <- expectedMutation((0 until n).map(_ % modulo).filter(_ >= zGTFilter).sorted)
+        y <- Seq.fill(fillFactor)(z) if y % 2 == 0
+      } yield y
+
+      runtimeResult should beColumns("prop").withRows(singleColumnInOrder(expected))
+    }
   }
 }
