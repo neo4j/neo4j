@@ -207,5 +207,5 @@ case object UnsupportedSystemCommand extends Phase[PlannerContext, BaseState, Lo
 
   override def postConditions: Set[Condition] = Set.empty
 
-  override def process(from: BaseState, context: PlannerContext): LogicalPlanState = throw new RuntimeException(s"Not a recognised system command: ${from.queryText}")
+  override def process(from: BaseState, context: PlannerContext): LogicalPlanState = throw new RuntimeException(s"Not a recognised system command or procedure: ${from.queryText}")
 }

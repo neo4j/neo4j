@@ -46,12 +46,14 @@ case class CommunityManagementCommandRuntime(normalExecutionEngine: ExecutionEng
         s"Plan is not a recognized database administration command in community edition: ${unknownPlan.getClass.getSimpleName}")
     }
 
-    val (withSlottedParameters, parameterMapping) = slottedParameters(state.logicalPlan)
+    val (planWithSlottedParameters, parameterMapping) = slottedParameters(state.logicalPlan)
 
-    if (logicalToExecutable.isDefinedAt(withSlottedParameters)) {
-      logicalToExecutable.applyOrElse(withSlottedParameters, throwCantCompile).apply(context, parameterMapping, username)
+    // Either the logical plan is a command that the partial function logicalToExecutable provides/understands OR it could be a system procedure
+    // If neither we throw an error
+    if (logicalToExecutable.isDefinedAt(planWithSlottedParameters)) {
+      logicalToExecutable.applyOrElse(planWithSlottedParameters, throwCantCompile).apply(context, parameterMapping, username)
     } else {
-      ProcedureCallOrSchemaCommandRuntime.logicalToExecutable.applyOrElse(withSlottedParameters, throwCantCompile).apply(context, parameterMapping)
+      ProcedureCallOrSchemaCommandRuntime.logicalToExecutable.applyOrElse(planWithSlottedParameters, throwCantCompile).apply(context, parameterMapping)
     }
   }
 
