@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted
 
+import org.neo4j.cypher.exceptionHandler.runSafely
 import org.neo4j.cypher.internal.runtime._
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
 import org.neo4j.cypher.result.RuntimeResult.ConsumptionState
@@ -70,18 +71,14 @@ class PipeExecutionResult(inner: Iterator[_],
 
   private def serveResults(): Unit = {
     while (inner.hasNext && demand > 0 && !cancelled) {
-      try {
-        inner.next()
-      } catch {
-        case e: Throwable =>
-          error = e
-          subscriber.onError(e)
-          cancel()
-      }
+      runSafely[Unit](inner.next())(t => {
+        error = t
+        subscriber.onError(t)
+        cancel()
+      })
       demand -= 1L
     }
-
-    if (!inner.hasNext) {
+    if (!inner.hasNext && error == null) {
       subscriber.onResultCompleted(state.getStatistics)
     }
   }
