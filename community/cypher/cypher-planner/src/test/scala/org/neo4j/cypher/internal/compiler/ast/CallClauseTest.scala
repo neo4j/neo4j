@@ -19,12 +19,12 @@
  */
 package org.neo4j.cypher.internal.compiler.ast
 
+import org.neo4j.cypher.internal.logical.plans._
 import org.neo4j.cypher.internal.v4_0.ast._
 import org.neo4j.cypher.internal.v4_0.ast.semantics.{SemanticCheckResult, SemanticState}
+import org.neo4j.cypher.internal.v4_0.expressions.{Namespace, ProcedureName, ProcedureOutput}
 import org.neo4j.cypher.internal.v4_0.util.symbols._
 import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.v4_0.expressions.{Namespace, ProcedureName, ProcedureOutput}
-import org.neo4j.cypher.internal.logical.plans._
 
 class CallClauseTest extends CypherFunSuite with AstConstructionTestSupport {
 
@@ -39,7 +39,7 @@ class CallClauseTest extends CypherFunSuite with AstConstructionTestSupport {
     val signatureOutputs = Some(IndexedSeq(FieldSignature("x", CTInteger), FieldSignature("y", CTList(CTNode))))
     val signature = ProcedureSignature(qualifiedName, signatureInputs, signatureOutputs, None,
                                        ProcedureReadOnlyAccess(Array.empty), id = ID)
-    val callArguments = IndexedSeq(parameter("a", CTAny))
+    val callArguments = IndexedSeq(parameter("a", CTInteger))
     val callResults = IndexedSeq(ProcedureResultItem(varFor("x"))(pos), ProcedureResultItem(varFor("y"))(pos))
 
     val resolved = ResolvedCall(_ => signature)(unresolved)
@@ -65,7 +65,7 @@ class CallClauseTest extends CypherFunSuite with AstConstructionTestSupport {
     val signatureOutputs = None
     val signature = ProcedureSignature(qualifiedName, signatureInputs, signatureOutputs, None,
                                        ProcedureReadOnlyAccess(Array.empty), id = ID)
-    val callArguments = Seq(parameter("a", CTAny))
+    val callArguments = Seq(parameter("a", CTInteger))
     val callResults = IndexedSeq.empty
 
     val resolved = ResolvedCall(_ => signature)(unresolved)
@@ -90,7 +90,7 @@ class CallClauseTest extends CypherFunSuite with AstConstructionTestSupport {
     val signatureOutputs = Some(IndexedSeq(FieldSignature("x", CTInteger), FieldSignature("y", CTList(CTNode))))
     val signature = ProcedureSignature(qualifiedName, signatureInputs, signatureOutputs, None,
                                        ProcedureReadOnlyAccess(Array.empty), id = ID)
-    val callArguments = Seq(parameter("a", CTAny))
+    val callArguments = Seq(parameter("a", CTInteger))
     val callResults = IndexedSeq(ProcedureResultItem(varFor("x"))(pos), ProcedureResultItem(varFor("y"))(pos))
     val unresolved = UnresolvedCall(ns, name, None, Some(ProcedureResult(callResults)(pos)))(pos)
 

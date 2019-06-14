@@ -41,7 +41,7 @@ class SlottedParametersTest extends CypherFunSuite with AstConstructionTestSuppo
 
     //then
     val newPredicate = greaterThan(add(ParameterFromSlot(0, "a", symbols.CTAny), ParameterFromSlot( 1, "b", symbols.CTAny)), literalInt(42))
-    mapping should equal(Map("a" -> 0, "b" -> 1))
+    mapping should equal(ParameterMapping.empty.updated("a").updated("b"))
     newPlan should equal(ProduceResult(Selection(Seq(newPredicate), allNodes), Seq("x")))
   }
 
@@ -57,7 +57,7 @@ class SlottedParametersTest extends CypherFunSuite with AstConstructionTestSuppo
 
     //then
     val newPredicate = greaterThan(add(ParameterFromSlot(0, "a", symbols.CTAny), ParameterFromSlot( 0, "a", symbols.CTAny)), literalInt(42))
-    mapping should equal(Map("a" -> 0))
+    mapping should equal(ParameterMapping.empty.updated("a"))
     newPlan should equal(ProduceResult(Selection(Seq(newPredicate), allNodes), Seq("x")))
   }
 
