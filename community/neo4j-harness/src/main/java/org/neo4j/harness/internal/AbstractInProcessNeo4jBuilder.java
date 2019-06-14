@@ -114,21 +114,12 @@ public abstract class AbstractInProcessNeo4jBuilder implements Neo4jBuilder
     @Override
     public InProcessNeo4j build()
     {
-        try ( FileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction() )
+        File userLogFile = new File( serverFolder, "neo4j.log" );
+        File internalLogFile = new File( serverFolder, "debug.log" );
+
+        try ( FileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction();
+              OutputStream userLogOutputStream = openStream( fileSystem, userLogFile ) )
         {
-            File userLogFile = new File( serverFolder, "neo4j.log" );
-            File internalLogFile = new File( serverFolder, "debug.log" );
-
-            final OutputStream logOutputStream;
-            try
-            {
-                logOutputStream = createOrOpenAsOutputStream( fileSystem, userLogFile, true );
-            }
-            catch ( IOException e )
-            {
-                throw new RuntimeException( "Unable to create log file", e );
-            }
-
             config.put( ServerSettings.third_party_packages.name(), toStringForThirdPartyPackageProperty( unmanagedExtentions.toList() ) );
             config.put( GraphDatabaseSettings.store_internal_log_path.name(), internalLogFile.getAbsolutePath() );
 
@@ -138,7 +129,7 @@ public abstract class AbstractInProcessNeo4jBuilder implements Neo4jBuilder
                 config.put( "dbms.connector.https.enabled", Settings.FALSE );
             }
 
-            LogProvider userLogProvider = FormattedLogProvider.withZoneId( logZoneIdFrom( config ) ).toOutputStream( logOutputStream );
+            LogProvider userLogProvider = FormattedLogProvider.withZoneId( logZoneIdFrom( config ) ).toOutputStream( userLogOutputStream );
             GraphDatabaseDependencies dependencies = GraphDatabaseDependencies.newDependencies().userLogProvider( userLogProvider );
             dependencies = dependencies.extensions( buildExtensionList( dependencies ) );
 
@@ -148,7 +139,7 @@ public abstract class AbstractInProcessNeo4jBuilder implements Neo4jBuilder
 
             NeoServer server = startNeo4jServer( dependencies, dbConfig, graphFactory, httpAndHttpsDisabled );
 
-            InProcessNeo4j controls = new InProcessNeo4j( serverFolder, userLogFile, internalLogFile, server, logOutputStream );
+            InProcessNeo4j controls = new InProcessNeo4j( serverFolder, userLogFile, internalLogFile, server, userLogOutputStream );
             controls.start();
 
             try
@@ -330,6 +321,18 @@ public abstract class AbstractInProcessNeo4jBuilder implements Neo4jBuilder
     {
         String dbTimeZone = config.getOrDefault( db_timezone.name(), db_timezone.getDefaultValue() );
         return LogTimeZone.valueOf( dbTimeZone ).getZoneId();
+    }
+
+    private static OutputStream openStream( FileSystemAbstraction fs, File file )
+    {
+        try
+        {
+            return createOrOpenAsOutputStream( fs, file, true );
+        }
+        catch ( IOException e )
+        {
+            throw new RuntimeException( "Unable to create log file", e );
+        }
     }
 
     /**
