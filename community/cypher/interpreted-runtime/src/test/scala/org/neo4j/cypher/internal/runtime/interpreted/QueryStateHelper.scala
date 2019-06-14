@@ -57,7 +57,8 @@ object QueryStateHelper extends MockitoSugar {
 
   def queryStateFrom(db: GraphDatabaseQueryService,
                      tx: InternalTransaction,
-                     params: Array[AnyValue] = Array.empty
+                     params: Array[AnyValue] = Array.empty,
+                     subscriber: QuerySubscriber = QuerySubscriber.DO_NOTHING_SUBSCRIBER
                     ): QueryState = {
     val searchMonitor = new Monitors().newMonitor(classOf[IndexSearchMonitor])
     val contextFactory = Neo4jTransactionalContextFactory.create(db)
@@ -66,12 +67,13 @@ object QueryStateHelper extends MockitoSugar {
     emptyWith(db = db,
               query = queryContext,
               params = params,
-              expressionCursors = new ExpressionCursors(transactionalContext.cursors))
+              expressionCursors = new ExpressionCursors(transactionalContext.cursors),
+              subscriber = subscriber)
   }
 
   def withQueryState[T](db: GraphDatabaseQueryService, tx: InternalTransaction, params: Array[AnyValue] = Array.empty,
-                        f: QueryState => T): T = {
-    val queryState = queryStateFrom(db, tx, params)
+                        f: QueryState => T, subscriber: QuerySubscriber = QuerySubscriber.DO_NOTHING_SUBSCRIBER): T = {
+    val queryState = queryStateFrom(db, tx, params, subscriber)
     try {
       f(queryState)
     } finally {

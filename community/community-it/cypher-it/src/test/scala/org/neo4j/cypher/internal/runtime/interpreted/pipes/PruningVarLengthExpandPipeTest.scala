@@ -20,7 +20,6 @@
 package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
 import org.neo4j.cypher.GraphDatabaseFunSuite
-import org.neo4j.cypher.internal.runtime.ExecutionContext
 import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContextHelper._
 import org.neo4j.cypher.internal.runtime.interpreted.QueryStateHelper.withQueryState
 import org.neo4j.cypher.internal.runtime.interpreted.ValueComparisonHelper.beEquivalentTo
@@ -28,13 +27,18 @@ import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.{Liter
 import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates.{Equals, Predicate, True}
 import org.neo4j.cypher.internal.runtime.interpreted.commands.values.UnresolvedProperty
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.VarLengthExpandPipeTest.createVarLengthPredicate
+import org.neo4j.cypher.internal.runtime.{ExecutionContext, MapExecutionContext}
 import org.neo4j.cypher.internal.v4_0.expressions.SemanticDirection
 import org.neo4j.graphdb.Node
 import org.neo4j.internal.kernel.api.Transaction.Type
 import org.neo4j.internal.kernel.api.security.LoginContext
+import org.neo4j.kernel.impl.query.{QuerySubscriber, QuerySubscriberAdapter}
 import org.neo4j.kernel.impl.util.ValueUtils._
+import org.neo4j.values.AnyValue
 
 import scala.collection.immutable.IndexedSeq
+import scala.collection.mutable
+import scala.collection.mutable.ArrayBuffer
 import scala.util.Random
 
 class PruningVarLengthExpandPipeTest extends GraphDatabaseFunSuite {
@@ -367,7 +371,8 @@ class PruningVarLengthExpandPipeTest extends GraphDatabaseFunSuite {
     val sourcePipe2 = new FakePipe(Iterator(Map("from" -> startNode)))
     val pipeUnderTest = createPipe(sourcePipe, min, max, SemanticDirection.BOTH)
     val pipe = VarLengthExpandPipe(sourcePipe2, "from", "r", "to", SemanticDirection.BOTH, SemanticDirection.BOTH, types, min, Some(max), nodeInScope = false)()
-    val comparison = ProduceResultsPipe(DistinctPipe(pipe, Array(DistinctPipe.GroupingCol("from", Variable("from")), DistinctPipe.GroupingCol("to", Variable("to"))))(), Array("from", "to"))()
+    val columns = Array("from", "to")
+    val comparison = ProduceResultsPipe(DistinctPipe(pipe, Array(DistinctPipe.GroupingCol("from", Variable("from")), DistinctPipe.GroupingCol("to", Variable("to"))))(), columns)()
 
     val distinctExpand = graph.withTx { tx =>
       withQueryState(graph, tx, Array.empty, { queryState =>
@@ -375,13 +380,24 @@ class PruningVarLengthExpandPipeTest extends GraphDatabaseFunSuite {
       })
     }
 
-    val distinctAfterVarLengthExpand = graph.withTx { tx =>
+    val records = ArrayBuffer.empty[ExecutionContext]
+    val subscriber: QuerySubscriber = new QuerySubscriberAdapter {
+      private var record: mutable.Map[String, AnyValue] = mutable.Map.empty
+      override def onField(offset: Int, value: AnyValue): Unit = {
+        record.put(columns(offset), value)
+      }
+      override def onRecordCompleted(): Unit = {
+        records.append(new MapExecutionContext(record))
+        record =  mutable.Map.empty
+      }
+    }
+    graph.withTx { tx =>
       withQueryState(graph, tx, Array.empty, { queryState =>
         comparison.createResults(queryState).toList
-      })
+      }, subscriber)
     }
 
-    val oldThing = distinctAfterVarLengthExpand.toSet
+    val oldThing = records.toSet
     val newThing = distinctExpand.toSet
     if (oldThing != newThing) {
       val missingFromNew = oldThing -- newThing
