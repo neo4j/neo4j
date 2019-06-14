@@ -29,7 +29,7 @@ abstract class NodeCountFromCountStoreTestBase[CONTEXT <: RuntimeContext](
                                                                          ) extends RuntimeTestSuite[CONTEXT](edition, runtime) {
   test("should get count for single label node") {
     // given
-    val (aNodes, _) = bipartiteGraph(sizeHint, "LabelA", "LabelB", "RelType")
+    val nodes = nodeGraph(sizeHint, "LabelA")
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -40,12 +40,12 @@ abstract class NodeCountFromCountStoreTestBase[CONTEXT <: RuntimeContext](
     val runtimeResult = execute(logicalQuery, runtime)
 
     // then
-    runtimeResult should beColumns("x").withRows(singleColumn(Seq(aNodes.size)))
+    runtimeResult should beColumns("x").withRows(singleColumn(Seq(nodes.size)))
   }
 
   test("should get count for label wildcard") {
     // given
-    val (aNodes, bNodes) = bipartiteGraph(sizeHint, "LabelA", "LabelB", "RelType")
+    val nodes = nodeGraph(sizeHint, "LabelA")
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -56,12 +56,12 @@ abstract class NodeCountFromCountStoreTestBase[CONTEXT <: RuntimeContext](
     val runtimeResult = execute(logicalQuery, runtime)
 
     // then
-    runtimeResult should beColumns("x").withRows(singleColumn(Seq(aNodes.size + bNodes.size)))
+    runtimeResult should beColumns("x").withRows(singleColumn(Seq(nodes.size)))
   }
 
-  test("should get count for non-existent label") {
+  test("should return zero for count when non-existent label") {
     // given
-    val (_, _) = bipartiteGraph(sizeHint, "LabelA", "LabelB", "RelType")
+    nodeGraph(sizeHint, "LabelA")
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -75,9 +75,9 @@ abstract class NodeCountFromCountStoreTestBase[CONTEXT <: RuntimeContext](
     runtimeResult should beColumns("x").withRows(singleColumn(Seq(0)))
   }
 
-  test("should get count when one label is non-existent") {
+  test("should return zero for count when one label is non-existent") {
     // given
-    val (_, _) = bipartiteGraph(sizeHint, "LabelA", "LabelB", "RelType")
+    nodeGraph(sizeHint, "LabelA")
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -93,7 +93,7 @@ abstract class NodeCountFromCountStoreTestBase[CONTEXT <: RuntimeContext](
 
   test("should get count for cartesian product of labels") {
     // given
-    val (aNodes, bNodes) = bipartiteGraph(sizeHint, "LabelA", "LabelB", "RelType")
+    val nodes = nodeGraph(sizeHint, "LabelA", "LabelB")
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -104,12 +104,12 @@ abstract class NodeCountFromCountStoreTestBase[CONTEXT <: RuntimeContext](
     val runtimeResult = execute(logicalQuery, runtime)
 
     // then
-    runtimeResult should beColumns("x").withRows(singleColumn(Seq(aNodes.size * bNodes.size)))
+    runtimeResult should beColumns("x").withRows(singleColumn(Seq(nodes.size * nodes.size)))
   }
 
   test("should work when followed by other operators") {
     // given
-    val (aNodes, bNodes) = bipartiteGraph(sizeHint, "LabelA", "LabelB", "RelType")
+    val nodes = nodeGraph(sizeHint, "LabelA", "LabelB")
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -121,12 +121,12 @@ abstract class NodeCountFromCountStoreTestBase[CONTEXT <: RuntimeContext](
     val runtimeResult = execute(logicalQuery, runtime)
 
     // then
-    runtimeResult should beColumns("x").withRows(singleColumn(Seq(aNodes.size * bNodes.size)))
+    runtimeResult should beColumns("x").withRows(singleColumn(Seq(nodes.size * nodes.size)))
   }
 
   test("should work on rhs of apply") {
     // given
-    val (aNodes, bNodes) = bipartiteGraph(sizeHint, "LabelA", "LabelB", "RelType")
+    val nodes = nodeGraph(sizeHint, "LabelA", "LabelB")
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -140,8 +140,8 @@ abstract class NodeCountFromCountStoreTestBase[CONTEXT <: RuntimeContext](
     val runtimeResult = execute(logicalQuery, runtime)
 
     // then
-    val expectedCount: Long = aNodes.size * bNodes.size
-    val expectedRows = aNodes.map(_ => expectedCount)
+    val expectedCount: Long = nodes.size * nodes.size
+    val expectedRows = nodes.map(_ => expectedCount)
     runtimeResult should beColumns("x").withRows(singleColumn(expectedRows))
   }
 }
