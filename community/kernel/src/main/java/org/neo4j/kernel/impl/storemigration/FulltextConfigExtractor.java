@@ -66,11 +66,11 @@ class FulltextConfigExtractor
         BooleanValue eventuallyConsistent = extractBooleanSetting( settings, indexConfig, INDEX_CONFIG_EVENTUALLY_CONSISTENT );
         if ( analyser != null )
         {
-            indexConfig.put( FulltextConfigKey.ANALYSER.key(), analyser );
+            indexConfig.put( FulltextConfigKey.ANALYZER, analyser );
         }
         if ( eventuallyConsistent != null )
         {
-            indexConfig.put( FulltextConfigKey.EVENTUALLY_CONSISTENT.key(), eventuallyConsistent );
+            indexConfig.put( FulltextConfigKey.EVENTUALLY_CONSISTENT, eventuallyConsistent );
         }
         return IndexConfig.with( indexConfig );
     }

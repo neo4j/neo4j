@@ -68,6 +68,7 @@ import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.Result;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.kernel.impl.index.schema.FulltextConfigKey;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.scheduler.Group;
 import org.neo4j.scheduler.JobScheduler;
@@ -99,6 +100,7 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.internal.helpers.collection.Iterables.single;
+import static org.neo4j.kernel.impl.index.schema.FulltextConfigKey.ANALYZER;
 
 public class FulltextProceduresTest
 {
@@ -2543,8 +2545,8 @@ public class FulltextProceduresTest
     public static Map<String,Value> asConfigMap( String analyzer, boolean eventuallyConsistent )
     {
         Map<String,Value> map = new HashMap<>();
-        map.put( FulltextIndexSettings.INDEX_CONFIG_ANALYZER, Values.stringValue( analyzer ) );
-        map.put( FulltextIndexSettings.INDEX_CONFIG_EVENTUALLY_CONSISTENT, Values.booleanValue( eventuallyConsistent ) );
+        map.put( ANALYZER, Values.stringValue( analyzer ) );
+        map.put( FulltextConfigKey.EVENTUALLY_CONSISTENT, Values.booleanValue( eventuallyConsistent ) );
         return map;
     }
 

@@ -19,21 +19,20 @@
  */
 package org.neo4j.kernel.impl.index.schema;
 
-public enum FulltextConfigKey
+/**
+ * Responsible for naming of
+ */
+public final class FulltextConfigKey
 {
-    ANALYSER( "analyser" ),
-    EVENTUALLY_CONSISTENT( "eventually_consistent" );
+    // Config keys used by index config. Belonging to 'fulltext' namespace to differentiate from other index config.
+    private static final String FULLTEXT_CONFIG_PREFIX = "fulltext.";
+    public static final String ANALYZER = FULLTEXT_CONFIG_PREFIX + "analyzer";
+    public static final String EVENTUALLY_CONSISTENT = FULLTEXT_CONFIG_PREFIX + "eventually_consistent";
 
-    private static final String FULLTEXT_CONFIG_PREFIX = "fulltext";
-    private final String keyName;
+    // Config keys used as arguments by user in procedure call. No name space needed because implicit from procedure.
+    public static final String PROCEDURE_ANALYZER = "analyzer";
+    public static final String PROCEDURE_EVENTUALLY_CONSISTENT = "eventually_consistent";
 
-    FulltextConfigKey( String keyName )
-    {
-        this.keyName = keyName;
-    }
-
-    public String key()
-    {
-        return FULLTEXT_CONFIG_PREFIX + "." + keyName;
-    }
+    private FulltextConfigKey()
+    {}
 }

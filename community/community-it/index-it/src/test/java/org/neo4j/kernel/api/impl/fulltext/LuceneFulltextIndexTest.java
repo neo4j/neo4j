@@ -38,8 +38,8 @@ import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
 import static org.neo4j.common.EntityType.NODE;
 import static org.neo4j.common.EntityType.RELATIONSHIP;
-import static org.neo4j.kernel.api.impl.fulltext.FulltextIndexSettings.INDEX_CONFIG_ANALYZER;
-import static org.neo4j.kernel.api.impl.fulltext.FulltextIndexSettings.INDEX_CONFIG_EVENTUALLY_CONSISTENT;
+import static org.neo4j.kernel.impl.index.schema.FulltextConfigKey.ANALYZER;
+import static org.neo4j.kernel.impl.index.schema.FulltextConfigKey.EVENTUALLY_CONSISTENT;
 
 public class LuceneFulltextIndexTest extends LuceneFulltextTestSupport
 {
@@ -576,7 +576,7 @@ public class LuceneFulltextIndexTest extends LuceneFulltextTestSupport
 
         IndexDescriptor descriptor = provider.bless( new IndexDescriptor( schema, false, Optional.empty(), provider.getProviderDescriptor() ) );
 
-        assertThat( descriptor.schema().getIndexConfig().get( INDEX_CONFIG_ANALYZER ), is( Values.stringValue( "standard" ) ) );
-        assertThat( descriptor.schema().getIndexConfig().get( INDEX_CONFIG_EVENTUALLY_CONSISTENT ), is( Values.booleanValue( false ) ) );
+        assertThat( descriptor.schema().getIndexConfig().get( ANALYZER ), is( Values.stringValue( "standard" ) ) );
+        assertThat( descriptor.schema().getIndexConfig().get( EVENTUALLY_CONSISTENT ), is( Values.booleanValue( false ) ) );
     }
 }

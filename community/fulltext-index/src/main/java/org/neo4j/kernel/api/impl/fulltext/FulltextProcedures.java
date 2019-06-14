@@ -64,8 +64,8 @@ import org.neo4j.procedure.builtin.IndexProcedures;
 import org.neo4j.util.FeatureToggles;
 
 import static org.neo4j.kernel.api.impl.fulltext.FulltextIndexProviderFactory.DESCRIPTOR;
-import static org.neo4j.kernel.api.impl.fulltext.FulltextIndexSettings.INDEX_CONFIG_ANALYZER;
-import static org.neo4j.kernel.api.impl.fulltext.FulltextIndexSettings.INDEX_CONFIG_EVENTUALLY_CONSISTENT;
+import static org.neo4j.kernel.impl.index.schema.FulltextConfigKey.PROCEDURE_ANALYZER;
+import static org.neo4j.kernel.impl.index.schema.FulltextConfigKey.PROCEDURE_EVENTUALLY_CONSISTENT;
 import static org.neo4j.procedure.Mode.READ;
 import static org.neo4j.procedure.Mode.SCHEMA;
 
@@ -124,9 +124,9 @@ public class FulltextProcedures
     @Description( "Create a node fulltext index for the given labels and properties. " +
                   "The optional 'config' map parameter can be used to supply settings to the index. " +
                   "Note: index specific settings are currently experimental, and might not replicated correctly in a cluster, or during backup. " +
-                  "Supported settings are '" + INDEX_CONFIG_ANALYZER + "', for specifying what analyzer to use " +
+                  "Supported settings are '" + PROCEDURE_ANALYZER + "', for specifying what analyzer to use " +
                   "when indexing and querying. Use the `db.index.fulltext.listAvailableAnalyzers` procedure to see what options are available. " +
-                  "And '" + INDEX_CONFIG_EVENTUALLY_CONSISTENT + "' which can be set to 'true' to make this index eventually consistent, " +
+                  "And '" + PROCEDURE_EVENTUALLY_CONSISTENT + "' which can be set to 'true' to make this index eventually consistent, " +
                   "such that updates from committing transactions are applied in a background thread." )
     @Procedure( name = "db.index.fulltext.createNodeIndex", mode = SCHEMA )
     public void createNodeFulltextIndex(
@@ -149,9 +149,9 @@ public class FulltextProcedures
     @Description( "Create a relationship fulltext index for the given relationship types and properties. " +
                   "The optional 'config' map parameter can be used to supply settings to the index. " +
                   "Note: index specific settings are currently experimental, and might not replicated correctly in a cluster, or during backup. " +
-                  "Supported settings are '" + INDEX_CONFIG_ANALYZER + "', for specifying what analyzer to use " +
+                  "Supported settings are '" + PROCEDURE_ANALYZER + "', for specifying what analyzer to use " +
                   "when indexing and querying. Use the `db.index.fulltext.listAvailableAnalyzers` procedure to see what options are available. " +
-                  "And '" + INDEX_CONFIG_EVENTUALLY_CONSISTENT + "' which can be set to 'true' to make this index eventually consistent, " +
+                  "And '" + PROCEDURE_EVENTUALLY_CONSISTENT + "' which can be set to 'true' to make this index eventually consistent, " +
                   "such that updates from committing transactions are applied in a background thread." )
     @Procedure( name = "db.index.fulltext.createRelationshipIndex", mode = SCHEMA )
     public void createRelationshipFulltextIndex(
@@ -168,7 +168,7 @@ public class FulltextProcedures
 
     private IndexConfig createIndexConfig( @Name( value = "config", defaultValue = "{}" ) Map<String,String> config )
     {
-        return FulltextIndexSettings.toIndexConfig( config );
+        return FulltextIndexSettings.procedureConfigToIndexConfig( config );
     }
 
     @Description( "Drop the specified index." )

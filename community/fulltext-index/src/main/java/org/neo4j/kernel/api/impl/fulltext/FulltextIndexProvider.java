@@ -53,6 +53,7 @@ import org.neo4j.kernel.impl.api.NonTransactionalTokenNameLookup;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.kernel.impl.factory.OperationalMode;
 import org.neo4j.kernel.impl.index.schema.ByteBufferFactory;
+import org.neo4j.kernel.impl.index.schema.FulltextConfigKey;
 import org.neo4j.kernel.impl.storemigration.SchemaIndexMigrator;
 import org.neo4j.logging.Log;
 import org.neo4j.scheduler.JobScheduler;
@@ -64,8 +65,6 @@ import org.neo4j.token.TokenHolders;
 import org.neo4j.values.storable.Values;
 
 import static org.neo4j.kernel.api.exceptions.Status.General.InvalidArguments;
-import static org.neo4j.kernel.api.impl.fulltext.FulltextIndexSettings.INDEX_CONFIG_ANALYZER;
-import static org.neo4j.kernel.api.impl.fulltext.FulltextIndexSettings.INDEX_CONFIG_EVENTUALLY_CONSISTENT;
 import static org.neo4j.kernel.api.impl.fulltext.FulltextIndexSettings.createAnalyzer;
 import static org.neo4j.kernel.api.impl.fulltext.FulltextIndexSettings.createPropertyNames;
 import static org.neo4j.kernel.api.impl.fulltext.FulltextIndexSettings.isEventuallyConsistent;
@@ -297,8 +296,8 @@ class FulltextIndexProvider extends IndexProvider implements FulltextAdapter
 
     private IndexConfig addMissingDefaultIndexConfig( IndexConfig indexConfig )
     {
-        indexConfig = indexConfig.withIfAbsent( INDEX_CONFIG_ANALYZER, Values.stringValue( defaultAnalyzerName ) );
-        indexConfig = indexConfig.withIfAbsent( INDEX_CONFIG_EVENTUALLY_CONSISTENT, Values.booleanValue( defaultEventuallyConsistentSetting ) );
+        indexConfig = indexConfig.withIfAbsent( FulltextConfigKey.ANALYZER, Values.stringValue( defaultAnalyzerName ) );
+        indexConfig = indexConfig.withIfAbsent( FulltextConfigKey.EVENTUALLY_CONSISTENT, Values.booleanValue( defaultEventuallyConsistentSetting ) );
         return indexConfig;
     }
 

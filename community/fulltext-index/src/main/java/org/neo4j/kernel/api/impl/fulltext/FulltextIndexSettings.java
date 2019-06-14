@@ -21,48 +21,25 @@ package org.neo4j.kernel.api.impl.fulltext;
 
 import org.apache.lucene.analysis.Analyzer;
 
-import java.io.File;
-import java.io.IOException;
-import java.io.Reader;
-import java.io.UncheckedIOException;
-import java.nio.charset.StandardCharsets;
 import java.util.Map;
-import java.util.Properties;
 
 import org.neo4j.common.TokenNameLookup;
 import org.neo4j.graphdb.schema.AnalyzerProvider;
 import org.neo4j.internal.schema.IndexConfig;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptor;
-import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.service.Services;
 import org.neo4j.values.storable.BooleanValue;
 import org.neo4j.values.storable.TextValue;
 import org.neo4j.values.storable.Values;
 
+import static org.neo4j.kernel.impl.index.schema.FulltextConfigKey.ANALYZER;
+import static org.neo4j.kernel.impl.index.schema.FulltextConfigKey.EVENTUALLY_CONSISTENT;
+import static org.neo4j.kernel.impl.index.schema.FulltextConfigKey.PROCEDURE_ANALYZER;
+import static org.neo4j.kernel.impl.index.schema.FulltextConfigKey.PROCEDURE_EVENTUALLY_CONSISTENT;
+
 public class FulltextIndexSettings
 {
-    public static final String INDEX_CONFIG_ANALYZER = "analyzer";
-    public static final String INDEX_CONFIG_EVENTUALLY_CONSISTENT = "eventually_consistent";
-    private static final String INDEX_CONFIG_FILE = "fulltext-index.properties";
-
-    // kept around for the time being, for index configuration migration purpose...
-    private static void loadPersistedSettings( Properties settings, File indexFolder, FileSystemAbstraction fs )
-    {
-        File settingsFile = new File( indexFolder, INDEX_CONFIG_FILE );
-        if ( fs.fileExists( settingsFile ) )
-        {
-            try ( Reader reader = fs.openAsReader( settingsFile, StandardCharsets.UTF_8 ) )
-            {
-                settings.load( reader );
-            }
-            catch ( IOException e )
-            {
-                throw new UncheckedIOException( "Failed to read persisted fulltext index properties: " + settingsFile, e );
-            }
-        }
-    }
-
     static Analyzer createAnalyzer( String analyzerName )
     {
         try
@@ -77,7 +54,7 @@ public class FulltextIndexSettings
 
     static Analyzer createAnalyzer( IndexDescriptor descriptor, TokenNameLookup tokenNameLookup )
     {
-        TextValue analyzerName = descriptor.schema().getIndexConfig().get( INDEX_CONFIG_ANALYZER );
+        TextValue analyzerName = descriptor.schema().getIndexConfig().get( ANALYZER );
         if ( analyzerName == null )
         {
             throw new RuntimeException( "Index has no analyzer configured: " + descriptor.userDescription( tokenNameLookup ) );
@@ -103,20 +80,20 @@ public class FulltextIndexSettings
         return propertyNames;
     }
 
-    static IndexConfig toIndexConfig( Map<String,String> map )
+    static IndexConfig procedureConfigToIndexConfig( Map<String,String> map )
     {
         IndexConfig config = IndexConfig.empty();
 
-        String analyzer = map.remove( INDEX_CONFIG_ANALYZER );
+        String analyzer = map.remove( PROCEDURE_ANALYZER );
         if ( analyzer != null )
         {
-            config = config.with( INDEX_CONFIG_ANALYZER, Values.stringValue( analyzer ) );
+            config = config.with( ANALYZER, Values.stringValue( analyzer ) );
         }
 
-        String eventuallyConsistent = map.remove( INDEX_CONFIG_EVENTUALLY_CONSISTENT );
+        String eventuallyConsistent = map.remove( PROCEDURE_EVENTUALLY_CONSISTENT );
         if ( eventuallyConsistent != null )
         {
-            config = config.with( INDEX_CONFIG_EVENTUALLY_CONSISTENT, Values.booleanValue( Boolean.parseBoolean( eventuallyConsistent ) ) );
+            config = config.with( EVENTUALLY_CONSISTENT, Values.booleanValue( Boolean.parseBoolean( eventuallyConsistent ) ) );
         }
 
         // Ignore any other entries that the map might contain.
@@ -126,7 +103,7 @@ public class FulltextIndexSettings
 
     static boolean isEventuallyConsistent( SchemaDescriptor schema )
     {
-        BooleanValue eventuallyConsistent = schema.getIndexConfig().getOrDefault( INDEX_CONFIG_EVENTUALLY_CONSISTENT, BooleanValue.FALSE );
+        BooleanValue eventuallyConsistent = schema.getIndexConfig().getOrDefault( EVENTUALLY_CONSISTENT, BooleanValue.FALSE );
         return eventuallyConsistent.booleanValue();
     }
 }

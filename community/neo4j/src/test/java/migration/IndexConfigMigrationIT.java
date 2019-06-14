@@ -72,8 +72,8 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.configuration.GraphDatabaseSettings.SchemaIndex.NATIVE_BTREE10;
-import static org.neo4j.kernel.api.impl.fulltext.FulltextIndexSettings.INDEX_CONFIG_ANALYZER;
-import static org.neo4j.kernel.api.impl.fulltext.FulltextIndexSettings.INDEX_CONFIG_EVENTUALLY_CONSISTENT;
+import static org.neo4j.kernel.impl.index.schema.FulltextConfigKey.ANALYZER;
+import static org.neo4j.kernel.impl.index.schema.FulltextConfigKey.EVENTUALLY_CONSISTENT;
 import static org.neo4j.kernel.impl.index.schema.config.SpatialIndexSettings.makeCRSRangeSetting;
 import static org.neo4j.kernel.impl.index.schema.config.SpatialIndexSettings.space_filling_curve_max_bits;
 import static org.neo4j.test.Unzip.unzip;
@@ -397,22 +397,22 @@ class IndexConfigMigrationIT
     private static Map<String,Value> asConfigMap( String analyzer, boolean eventuallyConsistent )
     {
         Map<String,Value> map = new HashMap<>();
-        map.put( INDEX_CONFIG_ANALYZER, Values.stringValue( analyzer ) );
-        map.put( INDEX_CONFIG_EVENTUALLY_CONSISTENT, Values.booleanValue( eventuallyConsistent ) );
+        map.put( ANALYZER, Values.stringValue( analyzer ) );
+        map.put( EVENTUALLY_CONSISTENT, Values.booleanValue( eventuallyConsistent ) );
         return map;
     }
 
     private static Map<String,Value> asConfigMap( String analyzer )
     {
         Map<String,Value> map = new HashMap<>();
-        map.put( INDEX_CONFIG_ANALYZER, Values.stringValue( analyzer ) );
+        map.put( ANALYZER, Values.stringValue( analyzer ) );
         return map;
     }
 
     private static Map<String,Value> asConfigMap( boolean eventuallyConsistent )
     {
         Map<String,Value> map = new HashMap<>();
-        map.put( INDEX_CONFIG_EVENTUALLY_CONSISTENT, Values.booleanValue( eventuallyConsistent ) );
+        map.put( EVENTUALLY_CONSISTENT, Values.booleanValue( eventuallyConsistent ) );
         return map;
     }
 
