@@ -267,6 +267,13 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
     appendAtCurrentIndent(LeafOperator(NodeCountFromCountStore(node, labelNames, Set.empty)(_)))
   }
 
+  def relationshipCountFromCountStore(name: String, maybeStartLabel: Option[String], relTypes: List[String], maybeEndLabel: Option[String]): IMPL = {
+    val startLabel = maybeStartLabel.map(labelName)
+    val relTypeNames = relTypes.map(relTypeName)
+    val endLabel = maybeEndLabel.map(labelName)
+    appendAtCurrentIndent(LeafOperator(RelationshipCountFromCountStore(name, startLabel, relTypeNames, endLabel, Set.empty)(_)))
+  }
+
   def nodeIndexOperator(indexSeekString: String,
                         getValue: GetValueFromIndexBehavior = DoNotGetValue,
                         indexOrder: IndexOrder = IndexOrderNone,
@@ -388,6 +395,7 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
   // AST construction
   private def varFor(name: String): Variable = Variable(name)(pos)
   private def labelName(s: String): LabelName = LabelName(s)(pos)
+  private def relTypeName(s: String): RelTypeName = RelTypeName(s)(pos)
   private def literalInt(value: Long): SignedDecimalIntegerLiteral =
     SignedDecimalIntegerLiteral(value.toString)(pos)
 
