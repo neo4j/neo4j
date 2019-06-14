@@ -23,11 +23,9 @@ import org.apache.lucene.document.Document;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
-import java.util.HashMap;
 import java.util.Map;
 
 import org.neo4j.internal.helpers.collection.BoundedIterable;
-import org.neo4j.internal.schema.IndexConfig;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.kernel.api.impl.index.AbstractLuceneIndexAccessor;
 import org.neo4j.kernel.api.impl.index.DatabaseIndex;
@@ -91,11 +89,7 @@ public class FulltextIndexAccessor extends AbstractLuceneIndexAccessor<FulltextI
     @Override
     public Map<String,Value> indexConfig()
     {
-        Map<String,Value> map = new HashMap<>();
-        IndexConfig indexConfig = descriptor.schema().getIndexConfig();
-        map.put( FulltextIndexSettings.INDEX_CONFIG_ANALYZER, indexConfig.get( FulltextIndexSettings.INDEX_CONFIG_ANALYZER ) );
-        map.put( FulltextIndexSettings.INDEX_CONFIG_EVENTUALLY_CONSISTENT, indexConfig.get( FulltextIndexSettings.INDEX_CONFIG_EVENTUALLY_CONSISTENT ) );
-        return map;
+        return descriptor.schema().getIndexConfig().asMap();
     }
 
     public class FulltextIndexUpdater extends AbstractLuceneIndexUpdater

@@ -111,6 +111,11 @@ public final class IndexConfig
         return map.keyValuesView();
     }
 
+    public Map<String,Value> asMap()
+    {
+        return map.toMap();
+    }
+
     @Override
     public boolean equals( Object o )
     {

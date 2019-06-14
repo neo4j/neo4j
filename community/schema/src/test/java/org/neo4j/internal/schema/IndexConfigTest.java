@@ -21,7 +21,10 @@ package org.neo4j.internal.schema;
 
 import org.junit.jupiter.api.Test;
 
+import java.util.Map;
+
 import org.neo4j.values.storable.BooleanValue;
+import org.neo4j.values.storable.Value;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -41,5 +44,25 @@ class IndexConfigTest
 
         assertNull( config.get( "b" ) );
         assertFalse( config.getOrDefault( "b", BooleanValue.FALSE ).booleanValue() );
+    }
+
+    @Test
+    void shouldNotBePossibleToMutateIndexConfigFromAsMap()
+    {
+        IndexConfig config = IndexConfig.empty();
+        config = config.with( "a", BooleanValue.TRUE );
+        config = config.with( "b", BooleanValue.TRUE );
+
+        Map<String,Value> map = config.asMap();
+        map.remove( "a" );
+        map.put( "b", BooleanValue.FALSE );
+        map.put( "c", BooleanValue.TRUE );
+        assertNull( map.get( "a" ) );
+        assertFalse( ((BooleanValue) map.get( "b" )).booleanValue() );
+        assertTrue( ((BooleanValue) map.get( "c" )).booleanValue() );
+
+        assertTrue( config.<BooleanValue>get( "a" ).booleanValue() );
+        assertTrue( config.<BooleanValue>get( "b" ).booleanValue() );
+        assertNull( config.get( "c" ) );
     }
 }
