@@ -161,7 +161,7 @@ public class GraphDatabaseSettings implements LoadableConfig
     @Description( "Set this to specify the default planner for the default language version." )
     public static final Setting<String> cypher_planner = setting(
             "cypher.planner",
-            optionsObeyCase( "COST", "RULE", DEFAULT ), DEFAULT );
+            optionsObeyCase( "COST", DEFAULT ), DEFAULT );
 
     @Description( "Set this to specify the behavior when Cypher planner or runtime hints cannot be fulfilled. "
             + "If true, then non-conformance will result in an error, otherwise only a warning is generated." )
