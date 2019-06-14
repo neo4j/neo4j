@@ -38,8 +38,8 @@ import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
 import static org.neo4j.common.EntityType.NODE;
 import static org.neo4j.common.EntityType.RELATIONSHIP;
-import static org.neo4j.kernel.impl.index.schema.FulltextConfigKey.ANALYZER;
-import static org.neo4j.kernel.impl.index.schema.FulltextConfigKey.EVENTUALLY_CONSISTENT;
+import static org.neo4j.kernel.impl.index.schema.FulltextIndexSettingsKeys.ANALYZER;
+import static org.neo4j.kernel.impl.index.schema.FulltextIndexSettingsKeys.EVENTUALLY_CONSISTENT;
 
 public class LuceneFulltextIndexTest extends LuceneFulltextTestSupport
 {

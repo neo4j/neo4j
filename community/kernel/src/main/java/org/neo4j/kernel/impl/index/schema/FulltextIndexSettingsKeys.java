@@ -22,7 +22,7 @@ package org.neo4j.kernel.impl.index.schema;
 /**
  * Responsible for naming of
  */
-public final class FulltextConfigKey
+public final class FulltextIndexSettingsKeys
 {
     // Config keys used by index config. Belonging to 'fulltext' namespace to differentiate from other index config.
     private static final String FULLTEXT_CONFIG_PREFIX = "fulltext.";
@@ -33,6 +33,6 @@ public final class FulltextConfigKey
     public static final String PROCEDURE_ANALYZER = "analyzer";
     public static final String PROCEDURE_EVENTUALLY_CONSISTENT = "eventually_consistent";
 
-    private FulltextConfigKey()
+    private FulltextIndexSettingsKeys()
     {}
 }

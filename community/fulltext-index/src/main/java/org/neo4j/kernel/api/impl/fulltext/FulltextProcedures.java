@@ -64,8 +64,8 @@ import org.neo4j.procedure.builtin.IndexProcedures;
 import org.neo4j.util.FeatureToggles;
 
 import static org.neo4j.kernel.api.impl.fulltext.FulltextIndexProviderFactory.DESCRIPTOR;
-import static org.neo4j.kernel.impl.index.schema.FulltextConfigKey.PROCEDURE_ANALYZER;
-import static org.neo4j.kernel.impl.index.schema.FulltextConfigKey.PROCEDURE_EVENTUALLY_CONSISTENT;
+import static org.neo4j.kernel.impl.index.schema.FulltextIndexSettingsKeys.PROCEDURE_ANALYZER;
+import static org.neo4j.kernel.impl.index.schema.FulltextIndexSettingsKeys.PROCEDURE_EVENTUALLY_CONSISTENT;
 import static org.neo4j.procedure.Mode.READ;
 import static org.neo4j.procedure.Mode.SCHEMA;
 

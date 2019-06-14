@@ -33,13 +33,16 @@ import org.neo4j.values.storable.BooleanValue;
 import org.neo4j.values.storable.TextValue;
 import org.neo4j.values.storable.Values;
 
-import static org.neo4j.kernel.impl.index.schema.FulltextConfigKey.ANALYZER;
-import static org.neo4j.kernel.impl.index.schema.FulltextConfigKey.EVENTUALLY_CONSISTENT;
-import static org.neo4j.kernel.impl.index.schema.FulltextConfigKey.PROCEDURE_ANALYZER;
-import static org.neo4j.kernel.impl.index.schema.FulltextConfigKey.PROCEDURE_EVENTUALLY_CONSISTENT;
+import static org.neo4j.kernel.impl.index.schema.FulltextIndexSettingsKeys.ANALYZER;
+import static org.neo4j.kernel.impl.index.schema.FulltextIndexSettingsKeys.EVENTUALLY_CONSISTENT;
+import static org.neo4j.kernel.impl.index.schema.FulltextIndexSettingsKeys.PROCEDURE_ANALYZER;
+import static org.neo4j.kernel.impl.index.schema.FulltextIndexSettingsKeys.PROCEDURE_EVENTUALLY_CONSISTENT;
 
-public class FulltextIndexSettings
+final class FulltextIndexSettings
 {
+    private FulltextIndexSettings()
+    {}
+
     static Analyzer createAnalyzer( String analyzerName )
     {
         try

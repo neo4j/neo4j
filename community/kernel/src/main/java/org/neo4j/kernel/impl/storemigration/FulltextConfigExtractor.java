@@ -29,7 +29,7 @@ import java.util.Properties;
 
 import org.neo4j.internal.schema.IndexConfig;
 import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.kernel.impl.index.schema.FulltextConfigKey;
+import org.neo4j.kernel.impl.index.schema.FulltextIndexSettingsKeys;
 import org.neo4j.values.storable.BooleanValue;
 import org.neo4j.values.storable.TextValue;
 import org.neo4j.values.storable.Value;
@@ -66,11 +66,11 @@ class FulltextConfigExtractor
         BooleanValue eventuallyConsistent = extractBooleanSetting( settings, indexConfig, INDEX_CONFIG_EVENTUALLY_CONSISTENT );
         if ( analyser != null )
         {
-            indexConfig.put( FulltextConfigKey.ANALYZER, analyser );
+            indexConfig.put( FulltextIndexSettingsKeys.ANALYZER, analyser );
         }
         if ( eventuallyConsistent != null )
         {
-            indexConfig.put( FulltextConfigKey.EVENTUALLY_CONSISTENT, eventuallyConsistent );
+            indexConfig.put( FulltextIndexSettingsKeys.EVENTUALLY_CONSISTENT, eventuallyConsistent );
         }
         return IndexConfig.with( indexConfig );
     }

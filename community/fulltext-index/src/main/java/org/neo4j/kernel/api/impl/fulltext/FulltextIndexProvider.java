@@ -53,7 +53,7 @@ import org.neo4j.kernel.impl.api.NonTransactionalTokenNameLookup;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.kernel.impl.factory.OperationalMode;
 import org.neo4j.kernel.impl.index.schema.ByteBufferFactory;
-import org.neo4j.kernel.impl.index.schema.FulltextConfigKey;
+import org.neo4j.kernel.impl.index.schema.FulltextIndexSettingsKeys;
 import org.neo4j.kernel.impl.storemigration.SchemaIndexMigrator;
 import org.neo4j.logging.Log;
 import org.neo4j.scheduler.JobScheduler;
@@ -296,8 +296,8 @@ class FulltextIndexProvider extends IndexProvider implements FulltextAdapter
 
     private IndexConfig addMissingDefaultIndexConfig( IndexConfig indexConfig )
     {
-        indexConfig = indexConfig.withIfAbsent( FulltextConfigKey.ANALYZER, Values.stringValue( defaultAnalyzerName ) );
-        indexConfig = indexConfig.withIfAbsent( FulltextConfigKey.EVENTUALLY_CONSISTENT, Values.booleanValue( defaultEventuallyConsistentSetting ) );
+        indexConfig = indexConfig.withIfAbsent( FulltextIndexSettingsKeys.ANALYZER, Values.stringValue( defaultAnalyzerName ) );
+        indexConfig = indexConfig.withIfAbsent( FulltextIndexSettingsKeys.EVENTUALLY_CONSISTENT, Values.booleanValue( defaultEventuallyConsistentSetting ) );
         return indexConfig;
     }
 
