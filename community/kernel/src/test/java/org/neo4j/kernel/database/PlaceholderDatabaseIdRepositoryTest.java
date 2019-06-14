@@ -30,7 +30,7 @@ import static org.neo4j.configuration.GraphDatabaseSettings.SYSTEM_DATABASE_NAME
 
 class PlaceholderDatabaseIdRepositoryTest
 {
-    private String defaultDBName = "default database name";
+    private String defaultDBName = "default-database-name";
     private DatabaseIdRepository databaseIdRepository =
             new PlaceholderDatabaseIdRepository( Config.defaults( GraphDatabaseSettings.default_database, defaultDBName ) );
 

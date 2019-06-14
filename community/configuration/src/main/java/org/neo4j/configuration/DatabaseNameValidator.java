@@ -22,10 +22,12 @@ package org.neo4j.configuration;
 import java.util.Objects;
 import java.util.regex.Pattern;
 
+import static org.apache.commons.lang3.CharUtils.isAsciiAlphaLower;
+import static org.apache.commons.lang3.CharUtils.isAsciiPrintable;
+
 public class DatabaseNameValidator
 {
     private static Pattern databaseNamePattern = Pattern.compile( "^[a-z0-9-.]+$" );
-    private static Pattern startsWithLowerCaseLetterPattern = Pattern.compile( "^[a-z].*" );
 
     public static void assertValidDatabaseName( NormalizedDatabaseName normalizedName )
     {
@@ -43,7 +45,7 @@ public class DatabaseNameValidator
             throw new IllegalArgumentException( "The provided database name must have a length between 3 and 63 characters." );
         }
 
-        if ( !startsWithLowerCaseLetterPattern.matcher(  name ).matches() )
+        if ( !isAsciiAlphaLower( name.charAt( 0 ) ) )
         {
             throw new IllegalArgumentException( "Database name '" + name + "' is not starting with an ASCII alphabetic character." );
         }
