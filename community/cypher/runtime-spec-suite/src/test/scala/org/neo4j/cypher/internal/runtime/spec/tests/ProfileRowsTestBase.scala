@@ -190,4 +190,24 @@ abstract class ProfileRowsTestBase[CONTEXT <: RuntimeContext](edition: Edition[C
     queryProfile.operatorProfile(4).rows() shouldBe size * size // all node scan
     queryProfile.operatorProfile(5).rows() shouldBe size // all node scan
   }
+
+  test("should profile rows of labelscan + produce results") {
+    // given
+    nodeGraph(sizeHint, "L1")
+    nodeGraph(sizeHint, "L2")
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x")
+      .nodeByLabelScan("x", "L1")
+      .build()
+
+    val runtimeResult = profile(logicalQuery, runtime)
+    consume(runtimeResult)
+
+    // then
+    val queryProfile = runtimeResult.runtimeResult.queryProfile()
+    queryProfile.operatorProfile(0).rows() shouldBe sizeHint // produce results
+    queryProfile.operatorProfile(1).rows() shouldBe sizeHint // label scan
+  }
 }
