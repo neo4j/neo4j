@@ -17,30 +17,25 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.database;
+package org.neo4j.dbms.database;
 
-import java.util.UUID;
-
-import org.neo4j.configuration.GraphDatabaseSettings;
-import org.neo4j.configuration.helpers.NormalizedDatabaseName;
+import org.neo4j.kernel.lifecycle.SafeLifecycle;
 
 /**
- * Encapsulates the retrieval of a persistent {@link DatabaseId} for a database of a given name.
+ * Run after {@link SystemGraphInitializer} but before registering extensions
  */
-public interface DatabaseIdRepository
+public class DefaultDatabaseInitializer extends SafeLifecycle
 {
-    DatabaseId SYSTEM_DATABASE_ID = new DatabaseId( GraphDatabaseSettings.SYSTEM_DATABASE_NAME, new UUID( 0L, 1L ) );
+    private final DatabaseManager<?> databaseManager;
 
-    DatabaseId get( NormalizedDatabaseName databaseName );
-
-    default DatabaseId get( String databaseName )
+    public DefaultDatabaseInitializer( DatabaseManager<?> databaseManager )
     {
-        return get( new NormalizedDatabaseName( databaseName ) );
+        this.databaseManager = databaseManager;
     }
 
-    interface Caching extends DatabaseIdRepository
+    @Override
+    public void start0() throws Exception
     {
-        // TODO call this
-        void invalidate( DatabaseId databaseId );
+        databaseManager.initialiseDefaultDatabase();
     }
 }

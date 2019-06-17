@@ -204,7 +204,6 @@ public class Database extends LifecycleAdapter
     private final CollectionsFactorySupplier collectionsFactorySupplier;
     private final Locks locks;
     private final DatabaseEventListeners eventListeners;
-    private final DatabaseIdRepository databaseIdRepository;
     private final DatabaseTracer databaseTracer;
     private final PageCursorTracerSupplier pageCursorTracerSupplier;
     private final LockTracer lockTracer;
@@ -265,7 +264,6 @@ public class Database extends LifecycleAdapter
         this.ioLimiter = context.getIoLimiter();
         this.clock = context.getClock();
         this.eventListeners = context.getDatabaseEventListeners();
-        this.databaseIdRepository = context.getDatabaseIdRepository();
 
         this.readOnly = databaseConfig.get( read_only );
         this.idController = context.getIdController();
@@ -489,7 +487,7 @@ public class Database extends LifecycleAdapter
 
     private void upgradeStore( DatabaseConfig databaseConfig, DatabasePageCache databasePageCache ) throws IOException
     {
-        new DatabaseMigratorFactory( fs, databaseConfig, databaseLogService, databasePageCache, scheduler, databaseIdRepository )
+        new DatabaseMigratorFactory( fs, databaseConfig, databaseLogService, databasePageCache, scheduler, databaseId )
                 .createDatabaseMigrator( databaseLayout, storageEngineFactory, databaseDependencies ).migrate();
     }
 

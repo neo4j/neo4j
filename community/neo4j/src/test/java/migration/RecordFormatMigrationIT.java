@@ -33,8 +33,6 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.internal.recordstorage.RecordStorageEngine;
-import org.neo4j.kernel.database.DatabaseId;
-import org.neo4j.kernel.database.TestDatabaseIdRepository;
 import org.neo4j.kernel.impl.store.format.standard.Standard;
 import org.neo4j.kernel.impl.store.format.standard.StandardV3_4;
 import org.neo4j.kernel.impl.store.format.standard.StandardV4_0;
@@ -196,8 +194,7 @@ class RecordFormatMigrationIT
     {
         assertThrows( Throwable.class, databaseService::beginTx );
         DatabaseManager<?> databaseManager = getDatabaseManager( (GraphDatabaseAPI) databaseService );
-        DatabaseId databaseId = new TestDatabaseIdRepository().get( testDirectory.databaseLayout().getDatabaseName() );
-        DatabaseContext databaseContext = databaseManager.getDatabaseContext( databaseId ).get();
+        DatabaseContext databaseContext = databaseManager.getDatabaseContext( testDirectory.databaseLayout().getDatabaseName() ).get();
         assertTrue( databaseContext.isFailed() );
         return databaseContext;
     }

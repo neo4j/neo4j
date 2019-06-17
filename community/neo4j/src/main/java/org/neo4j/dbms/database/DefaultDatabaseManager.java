@@ -27,19 +27,16 @@ import org.neo4j.graphdb.factory.module.GlobalModule;
 import org.neo4j.graphdb.factory.module.edition.AbstractEditionModule;
 import org.neo4j.kernel.database.Database;
 import org.neo4j.kernel.database.DatabaseId;
-import org.neo4j.kernel.database.DatabaseIdRepository;
-import org.neo4j.logging.Log;
 
 import static java.util.Objects.requireNonNull;
+import static org.neo4j.configuration.GraphDatabaseSettings.default_database;
+import static org.neo4j.kernel.database.DatabaseIdRepository.SYSTEM_DATABASE_ID;
 
 public final class DefaultDatabaseManager extends AbstractDatabaseManager<StandaloneDatabaseContext>
 {
-    private final DatabaseIdRepository databaseIdRepository;
-
     public DefaultDatabaseManager( GlobalModule globalModule, AbstractEditionModule edition )
     {
         super( globalModule, edition, true );
-        databaseIdRepository = globalModule.getDatabaseIdRepository();
     }
 
     @Override
@@ -49,9 +46,28 @@ public final class DefaultDatabaseManager extends AbstractDatabaseManager<Standa
     }
 
     @Override
-    public void initialiseDefaultDatabases()
+    public void initialiseSystemDatabase()
     {
-        defaultDatabaseNames().stream().map( databaseIdRepository::get ).forEach( this::createDatabase );
+        createDatabase( SYSTEM_DATABASE_ID );
+    }
+
+    @Override
+    public void initialiseDefaultDatabase()
+    {
+        DatabaseId databaseId = databaseIdRepository().get( config.get( default_database ) );
+        StandaloneDatabaseContext context = createDatabase( databaseId );
+        if ( manageDatabasesOnStartAndStop )
+        {
+            try
+            {
+                context.database().start();
+            }
+            catch ( Throwable t )
+            {
+                log.error( "Failed to start default database: " + databaseId.name(), t );
+                context.fail( t );
+            }
+        }
     }
 
     /**

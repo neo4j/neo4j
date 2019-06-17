@@ -20,6 +20,9 @@
 package org.neo4j.kernel.database;
 
 import java.util.Objects;
+import java.util.UUID;
+
+import org.neo4j.configuration.helpers.NormalizedDatabaseName;
 
 import static java.util.Objects.requireNonNull;
 import static org.neo4j.configuration.GraphDatabaseSettings.SYSTEM_DATABASE_NAME;
@@ -29,21 +32,31 @@ import static org.neo4j.configuration.GraphDatabaseSettings.SYSTEM_DATABASE_NAME
  *
  * Cannot be used to represent a database that has not been created yet or has not been resolved from persistent storage yet.
  *
- * TODO: a persistent and immutable component. For further details see https://trello.com/c/3ajorJyU
+ * Create using a {@link DatabaseIdRepository}, or if reading from persistence or network use a {@link DatabaseIdFactory}
+ *
+ * Equality and hashcode are based only on UUID.
  */
 public class DatabaseId implements Comparable<DatabaseId>
 {
     private final String name;
+    private final UUID uuid;
 
-    public DatabaseId( String name )
+    DatabaseId( String name, UUID uuid )
     {
         requireNonNull( name, "Database name should be not null." );
-        this.name = name.toLowerCase();
+        requireNonNull( uuid, "Database UUID should be not null." );
+        this.uuid = uuid;
+        this.name = new NormalizedDatabaseName( name ).name();
     }
 
     public String name()
     {
         return name;
+    }
+
+    public UUID uuid()
+    {
+        return uuid;
     }
 
     @Override
@@ -58,19 +71,19 @@ public class DatabaseId implements Comparable<DatabaseId>
             return false;
         }
         DatabaseId that = (DatabaseId) o;
-        return Objects.equals( name, that.name );
+        return uuid.equals( that.uuid );
     }
 
     @Override
     public int hashCode()
     {
-        return Objects.hash( name );
+        return Objects.hash( uuid );
     }
 
     @Override
     public String toString()
     {
-        return "DatabaseId{" + "name='" + name + '\'' + '}';
+        return "DatabaseId{" + "name='" + name + '\'' + ", uuid=" + uuid + '}';
     }
 
     @Override

@@ -36,6 +36,8 @@ import org.neo4j.dbms.database.StandaloneDatabaseContext;
 import org.neo4j.kernel.api.security.AuthToken;
 import org.neo4j.kernel.database.Database;
 import org.neo4j.kernel.database.DatabaseId;
+import org.neo4j.kernel.database.DatabaseIdRepository;
+import org.neo4j.kernel.database.TestDatabaseIdRepository;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.server.security.auth.ShiroAuthToken;
@@ -55,6 +57,7 @@ public class BasicSystemGraphRealmTestHelper
     {
         GraphDatabaseFacade testSystemDb;
         private final DatabaseManagementService managementService;
+        private final DatabaseIdRepository.Caching databaseIdRepository = new TestDatabaseIdRepository();
 
         TestDatabaseManager( TestDirectory testDir )
         {
@@ -81,11 +84,6 @@ public class BasicSystemGraphRealmTestHelper
         }
 
         @Override
-        public void initialiseDefaultDatabases()
-        {
-        }
-
-        @Override
         public StandaloneDatabaseContext createDatabase( DatabaseId databaseId )
         {
             throw new UnsupportedOperationException( "Call to createDatabase not expected" );
@@ -104,6 +102,12 @@ public class BasicSystemGraphRealmTestHelper
         @Override
         public void startDatabase( DatabaseId databaseId )
         {
+        }
+
+        @Override
+        public DatabaseIdRepository.Caching databaseIdRepository()
+        {
+            return databaseIdRepository;
         }
 
         @Override

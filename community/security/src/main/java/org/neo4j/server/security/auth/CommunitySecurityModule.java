@@ -71,7 +71,7 @@ public class CommunitySecurityModule extends SecurityModule
         LogProvider logProvider = dependencies.logService().getUserLogProvider();
         FileSystemAbstraction fileSystem = dependencies.fileSystem();
 
-        authManager = createBasicSystemGraphRealm( config, logProvider, fileSystem, dependencies.databaseIdRepository() );
+        authManager = createBasicSystemGraphRealm( config, logProvider, fileSystem, databaseManager.databaseIdRepository() );
 
         life.add( dependencies.dependencySatisfier().satisfyDependency( authManager ) );
 
@@ -136,7 +136,7 @@ public class CommunitySecurityModule extends SecurityModule
             DatabaseIdRepository databaseIdRepository )
     {
         ContextSwitchingSystemGraphQueryExecutor queryExecutor =
-                new ContextSwitchingSystemGraphQueryExecutor( databaseManager, threadToStatementContextBridge, databaseIdRepository );
+                new ContextSwitchingSystemGraphQueryExecutor( databaseManager, threadToStatementContextBridge );
 
         SecureHasher secureHasher = new SecureHasher();
         BasicSystemGraphOperations systemGraphOperations = new BasicSystemGraphOperations( queryExecutor, secureHasher );

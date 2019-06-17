@@ -48,8 +48,7 @@ import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FlushableChannel;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.io.fs.StoreFileChannel;
-import org.neo4j.kernel.database.DatabaseId;
-import org.neo4j.kernel.database.TestDatabaseIdRepository;
+import org.neo4j.kernel.database.DatabaseIdRepository;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.kernel.impl.transaction.SimpleLogVersionRepository;
@@ -117,7 +116,6 @@ class RecoveryCorruptedTransactionLogIT
     private static final byte CHECKPOINT_COMMAND_SIZE = 2 /*header*/ + 2 * Long.BYTES /*command content*/;
     private final AssertableLogProvider logProvider = new AssertableLogProvider( true );
     private final RecoveryMonitor recoveryMonitor = new RecoveryMonitor();
-    private final DatabaseId defaultDatabaseId = new TestDatabaseIdRepository().defaultDatabase();
     private File databaseDirectory;
     private final Monitors monitors = new Monitors();
     private LogFiles logFiles;
@@ -176,7 +174,8 @@ class RecoveryCorruptedTransactionLogIT
         try
         {
             DatabaseManager<?> databaseManager = db.getDependencyResolver().resolveDependency( DatabaseManager.class );
-            DatabaseContext databaseContext = databaseManager.getDatabaseContext( defaultDatabaseId ).get();
+            DatabaseIdRepository databaseIdRepository = databaseManager.databaseIdRepository();
+            DatabaseContext databaseContext = databaseManager.getDatabaseContext( databaseIdRepository.get( DEFAULT_DATABASE_NAME ) ).get();
             assertTrue( databaseContext.isFailed() );
             assertThat( databaseContext.failureCause(), new RootCauseMatcher<>( UnsupportedLogVersionException.class ) );
         }
@@ -408,7 +407,8 @@ class RecoveryCorruptedTransactionLogIT
         try
         {
             DatabaseManager<?> databaseManager = db.getDependencyResolver().resolveDependency( DatabaseManager.class );
-            DatabaseContext databaseContext = databaseManager.getDatabaseContext( defaultDatabaseId ).get();
+            DatabaseIdRepository databaseIdRepository = databaseManager.databaseIdRepository();
+            DatabaseContext databaseContext = databaseManager.getDatabaseContext( databaseIdRepository.get( DEFAULT_DATABASE_NAME ) ).get();
             assertTrue( databaseContext.isFailed() );
             assertThat( databaseContext.failureCause(), new RootCauseMatcher<>( NegativeArraySizeException.class ) );
         }

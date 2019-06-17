@@ -19,28 +19,88 @@
  */
 package org.neo4j.kernel.database;
 
+import java.util.UUID;
+
+import org.neo4j.collection.Dependencies;
+import org.neo4j.common.DependencyResolver;
+import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
+import org.neo4j.configuration.helpers.NormalizedDatabaseName;
+import org.neo4j.dbms.database.SystemGraphInitializer;
 
-public class TestDatabaseIdRepository implements DatabaseIdRepository
+import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
+
+public class TestDatabaseIdRepository extends MapCachingDatabaseIdRepository
 {
-    public static DatabaseId DEFAULT_DATABASE_ID = new DatabaseId( GraphDatabaseSettings.DEFAULT_DATABASE_NAME );
-    public static DatabaseId SYSTEM_DATABASE_ID = new DatabaseId( GraphDatabaseSettings.SYSTEM_DATABASE_NAME );
+    private final String defaultDatabaseName;
 
-    @Override
-    public DatabaseId get( String databaseName )
+    public TestDatabaseIdRepository()
     {
-        return new DatabaseId( databaseName );
+        this( DEFAULT_DATABASE_NAME );
     }
 
-    @Override
+    public TestDatabaseIdRepository( Config config )
+    {
+        this( config.get( GraphDatabaseSettings.default_database ) );
+    }
+
+    public TestDatabaseIdRepository( String defaultDbName )
+    {
+        super( new RandomDatabaseIdRepository() );
+        this.defaultDatabaseName = defaultDbName;
+    }
+
     public DatabaseId defaultDatabase()
     {
-        return DEFAULT_DATABASE_ID;
+        return get( defaultDatabaseName );
     }
 
-    @Override
-    public DatabaseId systemDatabase()
+    private static class RandomDatabaseIdRepository implements DatabaseIdRepository
     {
-        return SYSTEM_DATABASE_ID;
+        @Override
+        public DatabaseId get( NormalizedDatabaseName databaseName )
+        {
+            return new DatabaseId( databaseName.name(), UUID.randomUUID() );
+        }
+    }
+
+    /**
+     * Disable SystemGraphInitializer to avoid interfering with tests or changing backups. Injects {@link TestDatabaseIdRepository} as it will no longer
+     * be possible to read {@link DatabaseId} from system database.
+     * Assumes default database name is {@link GraphDatabaseSettings#DEFAULT_DATABASE_NAME}
+     * @return Dependencies that can set as external dependencies in DatabaseManagementServiceBuilder
+     */
+    public static Dependencies noOpSystemGraphInitializer()
+    {
+        return noOpSystemGraphInitializer( Config.defaults() );
+    }
+
+    /**
+     * Disable SystemGraphInitializer to avoid interfering with tests or changing backups. Injects {@link TestDatabaseIdRepository} as it will no longer
+     * be possible to read {@link DatabaseId} from system database.
+     * @param config Used for default database name
+     * @return Dependencies that can set as external dependencies in DatabaseManagementServiceBuilder
+     */
+    public static Dependencies noOpSystemGraphInitializer( Config config )
+    {
+        return noOpSystemGraphInitializer( new Dependencies(), config );
+    }
+
+    /**
+     * Disable SystemGraphInitializer to avoid interfering with tests or changing backups. Injects {@link TestDatabaseIdRepository} as it will no longer
+     * be possible to read {@link DatabaseId} from system database.
+     * @param dependencies to include in returned {@link DependencyResolver}
+     * @param config Used for default database name
+     * @return Dependencies that can set as external dependencies in DatabaseManagementServiceBuilder
+     */
+    public static Dependencies noOpSystemGraphInitializer( DependencyResolver dependencies, Config config )
+    {
+        return noOpSystemGraphInitializer( new Dependencies( dependencies ), config );
+    }
+
+    private static Dependencies noOpSystemGraphInitializer( Dependencies dependencies, Config config )
+    {
+        dependencies.satisfyDependencies( SystemGraphInitializer.NO_OP, new TestDatabaseIdRepository( config ) );
+        return dependencies;
     }
 }

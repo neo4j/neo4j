@@ -42,7 +42,6 @@ import org.neo4j.kernel.api.procedure.GlobalProcedures;
 import org.neo4j.kernel.availability.DatabaseAvailabilityGuard;
 import org.neo4j.kernel.database.DatabaseCreationContext;
 import org.neo4j.kernel.database.DatabaseId;
-import org.neo4j.kernel.database.DatabaseIdRepository;
 import org.neo4j.kernel.database.DatabaseNameLogContext;
 import org.neo4j.kernel.extension.ExtensionFactory;
 import org.neo4j.kernel.impl.api.CommitProcessFactory;
@@ -76,7 +75,6 @@ public class ModularDatabaseCreationContext implements DatabaseCreationContext
     private final DatabaseId databaseId;
     private final Config globalConfig;
     private final DatabaseConfig databaseConfig;
-    private final DatabaseIdRepository databaseIdRepository;
     private final IdGeneratorFactory idGeneratorFactory;
     private final DatabaseLogService databaseLogService;
     private final JobScheduler scheduler;
@@ -121,7 +119,6 @@ public class ModularDatabaseCreationContext implements DatabaseCreationContext
         this.globalConfig = globalModule.getGlobalConfig();
         this.databaseConfig = databaseConfig;
         this.versionContextSupplier = versionContextSupplier;
-        this.databaseIdRepository = globalModule.getDatabaseIdRepository();
         DatabaseIdContext idContext = editionComponents.getIdContext();
         this.idGeneratorFactory = idContext.getIdGeneratorFactory();
         this.idController = idContext.getIdController();
@@ -387,12 +384,6 @@ public class ModularDatabaseCreationContext implements DatabaseCreationContext
     public FileLockerService getFileLockerService()
     {
         return fileLockerService;
-    }
-
-    @Override
-    public DatabaseIdRepository getDatabaseIdRepository()
-    {
-        return databaseIdRepository;
     }
 
     private DatabaseAvailabilityGuard databaseAvailabilityGuardFactory( DatabaseId databaseId, GlobalModule globalModule, long databaseTimeoutMillis  )

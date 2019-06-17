@@ -24,10 +24,8 @@ import org.junit.jupiter.api.Test;
 import java.io.File;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import org.neo4j.collection.Dependencies;
 import org.neo4j.collection.RawIterator;
 import org.neo4j.configuration.GraphDatabaseSettings;
-import org.neo4j.dbms.database.SystemGraphInitializer;
 import org.neo4j.internal.helpers.collection.MapUtil;
 import org.neo4j.internal.kernel.api.Transaction;
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
@@ -111,11 +109,9 @@ class DbIndexesFailureMessageIT extends KernelIntegrationTest
     @Override
     protected TestDatabaseManagementServiceBuilder createGraphDatabaseFactory( File databaseRootDir )
     {
-        Dependencies dependencies = new Dependencies();
-        dependencies.satisfyDependencies( SystemGraphInitializer.NO_OP );   // disable system graph construction because it will interfere with some tests
         return super.createGraphDatabaseFactory( databaseRootDir )
                 .removeExtensions( INDEX_PROVIDERS_FILTER )
-                .setExternalDependencies( dependencies )
+                .noOpSystemGraphInitializer()
                 .addExtension( new FailingGenericNativeIndexProviderFactory( POPULATION ) );
     }
 }

@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.dmbs.database;
+package org.neo4j.dbms.database;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -26,15 +26,8 @@ import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.io.IOException;
 
-import org.neo4j.collection.Dependencies;
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.dbms.api.DatabaseManagementServiceBuilder;
-import org.neo4j.dbms.database.DatabaseManager;
-import org.neo4j.dbms.database.SystemGraphInitializer;
-import org.neo4j.dbms.database.UnableToStartDatabaseException;
-import org.neo4j.kernel.database.DatabaseId;
-import org.neo4j.kernel.database.DatabaseIdRepository;
-import org.neo4j.kernel.database.TestDatabaseIdRepository;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.TestDirectoryExtension;
@@ -48,13 +41,12 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.configuration.GraphDatabaseSettings.SYSTEM_DATABASE_NAME;
+import static org.neo4j.kernel.database.DatabaseIdRepository.SYSTEM_DATABASE_ID;
+import static org.neo4j.kernel.database.TestDatabaseIdRepository.noOpSystemGraphInitializer;
 
 @ExtendWith( TestDirectoryExtension.class )
 class DatabaseFailureIT
 {
-    private static final DatabaseIdRepository DATABASE_ID_REPOSITORY = new TestDatabaseIdRepository();
-    private static final DatabaseId DEFAULT_DATABASE_ID = DATABASE_ID_REPOSITORY.defaultDatabase();
-    private static final DatabaseId SYSTEM_DATABASE_ID = DATABASE_ID_REPOSITORY.systemDatabase();
     @Inject
     private TestDirectory testDirectory;
     private GraphDatabaseAPI database;
@@ -79,8 +71,8 @@ class DatabaseFailureIT
         deleteDirectory( testDirectory.databaseLayout().getTransactionLogsDirectory() );
 
         database = startDatabase();
-        var databaseManager = getDatabaseManager();
-        assertTrue( databaseManager.getDatabaseContext( DEFAULT_DATABASE_ID ).get().isFailed() );
+        DatabaseManager<?> databaseManager = database.getDependencyResolver().resolveDependency( DatabaseManager.class );
+        assertTrue( databaseManager.getDatabaseContext( databaseManager.databaseIdRepository().get( DEFAULT_DATABASE_NAME ) ).get().isFailed() );
         assertFalse( databaseManager.getDatabaseContext( SYSTEM_DATABASE_ID ).get().isFailed() );
     }
 
@@ -94,11 +86,6 @@ class DatabaseFailureIT
         assertThat( startException, new NestedThrowableMatcher( UnableToStartDatabaseException.class ) );
     }
 
-    private DatabaseManager<?> getDatabaseManager()
-    {
-        return database.getDependencyResolver().resolveDependency( DatabaseManager.class );
-    }
-
     private GraphDatabaseAPI startDatabase()
     {
         startDatabaseServer();
@@ -107,8 +94,8 @@ class DatabaseFailureIT
 
     private void startDatabaseServer()
     {
-        Dependencies dependencies = new Dependencies();
-        dependencies.satisfyDependencies( SystemGraphInitializer.NO_OP );   // disable system graph construction because it will interfere with some tests
-        managementService = new DatabaseManagementServiceBuilder( testDirectory.storeDir() ).setExternalDependencies( dependencies ).build();
+        managementService = new DatabaseManagementServiceBuilder( testDirectory.storeDir() )
+                .setExternalDependencies( noOpSystemGraphInitializer() )
+                .build();
     }
 }

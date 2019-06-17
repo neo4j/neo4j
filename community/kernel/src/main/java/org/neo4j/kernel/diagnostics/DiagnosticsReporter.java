@@ -37,7 +37,6 @@ import java.util.zip.ZipOutputStream;
 
 import org.neo4j.configuration.Config;
 import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.kernel.database.DatabaseIdRepository;
 import org.neo4j.service.Services;
 
 import static java.lang.String.format;
@@ -148,11 +147,11 @@ public class DiagnosticsReporter
         return availableClassifiers;
     }
 
-    public void registerAllOfflineProviders( Config config, File storeDirectory, FileSystemAbstraction fs, DatabaseIdRepository databaseIdRepository )
+    public void registerAllOfflineProviders( Config config, File storeDirectory, FileSystemAbstraction fs, String defaultDatabaseName )
     {
         for ( DiagnosticsOfflineReportProvider provider : Services.loadAll( DiagnosticsOfflineReportProvider.class ) )
         {
-            provider.init( fs, databaseIdRepository, config, storeDirectory );
+            provider.init( fs, defaultDatabaseName, config, storeDirectory );
             registerOfflineProvider( provider );
         }
     }

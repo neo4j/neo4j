@@ -42,7 +42,6 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.kernel.database.TestDatabaseIdRepository;
 import org.neo4j.kernel.impl.store.format.standard.StandardV3_4;
 import org.neo4j.kernel.impl.storemigration.RecordStoreVersionCheck;
 import org.neo4j.kernel.impl.storemigration.StoreUpgrader;
@@ -120,11 +119,11 @@ public class StoreUpgradeOnStartupTest
         // given
         removeCheckPointFromTxLog( fileSystem, workingDatabaseLayout.databaseDirectory() );
         GraphDatabaseService database = createGraphDatabaseService();
-        var databaseIdRepository = new TestDatabaseIdRepository();
         try
         {
             DatabaseManager<?> databaseManager = ((GraphDatabaseAPI) database).getDependencyResolver().resolveDependency( DatabaseManager.class );
-            DatabaseContext databaseContext = databaseManager.getDatabaseContext( databaseIdRepository.defaultDatabase() ).get();
+            var databaseIdRepository = databaseManager.databaseIdRepository();
+            DatabaseContext databaseContext = databaseManager.getDatabaseContext( databaseIdRepository.get( DEFAULT_DATABASE_NAME ) ).get();
             assertTrue( databaseContext.isFailed() );
             assertThat( rootCause( databaseContext.failureCause() ),
                     Matchers.instanceOf( StoreUpgrader.UnableToUpgradeException.class ) );

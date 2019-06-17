@@ -21,6 +21,7 @@ package org.neo4j.server.http.cypher;
 
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.database.DatabaseId;
+import org.neo4j.kernel.database.TestDatabaseIdRepository;
 import org.neo4j.kernel.impl.api.KernelStatement;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
@@ -38,7 +39,7 @@ public class TxStateCheckerTestSupport
         when( CONTAINER.getBridge() ).thenReturn( fakeBridge );
         GraphDatabaseFacade facade = mock( GraphDatabaseFacade.class );
         when( CONTAINER.getDb() ).thenReturn( facade );
-        when( facade.databaseId() ).thenReturn( new DatabaseId( "test" ) );
+        when( facade.databaseId() ).thenReturn( new TestDatabaseIdRepository().get( "test" ) );
     }
 
     public static class FakeBridge extends ThreadToStatementContextBridge

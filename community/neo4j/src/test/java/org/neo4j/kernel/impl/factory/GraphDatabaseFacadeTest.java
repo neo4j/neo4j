@@ -36,6 +36,7 @@ import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.availability.DatabaseAvailabilityGuard;
 import org.neo4j.kernel.database.Database;
 import org.neo4j.kernel.database.DatabaseId;
+import org.neo4j.kernel.database.TestDatabaseIdRepository;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.impl.coreapi.TopLevelTransaction;
@@ -78,7 +79,7 @@ class GraphDatabaseFacadeTest
         when( resolver.resolveDependency( Config.class ) ).thenReturn( config );
 
         kernelTransaction = mock( KernelTransaction.class );
-        when( kernelTransaction.getDatabaseId() ).thenReturn( new DatabaseId( "any" ) );
+        when( kernelTransaction.getDatabaseId() ).thenReturn( new TestDatabaseIdRepository().get( "any ") );
         statement = mock( Statement.class, RETURNS_DEEP_STUBS );
         when( kernelTransaction.acquireStatement() ).thenReturn( statement );
         when( contextBridge.getKernelTransactionBoundToThisThread( eq( true ), any( DatabaseId.class ) ) ).thenReturn( kernelTransaction );

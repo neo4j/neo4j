@@ -24,22 +24,20 @@ import java.util.Optional
 
 import org.neo4j.configuration.GraphDatabaseSettings
 import org.neo4j.cypher.internal.javacompat.GraphDatabaseCypherService
-import org.neo4j.dbms.database.{DatabaseContext, DatabaseManager}
+import org.neo4j.dbms.database.DatabaseContext
 import org.neo4j.graphdb.config.Setting
 import org.neo4j.kernel.api.security.AuthManager
-import org.neo4j.kernel.database.TestDatabaseIdRepository
 
 import scala.collection.Map
 
 abstract class CommunityDDLAcceptanceTestBase extends ExecutionEngineFunSuite with GraphDatabaseTestSupport {
 
   def authManager: AuthManager = graph.getDependencyResolver.resolveDependency(classOf[AuthManager])
-  def databaseManager: DatabaseManager[DatabaseContext] = graph.getDependencyResolver.resolveDependency(classOf[DatabaseManager[DatabaseContext]])
 
   override def databaseConfig(): Map[Setting[_], Object] = Map(GraphDatabaseSettings.auth_enabled -> TRUE)
 
   def selectDatabase(name: String): Unit = {
-    val maybeCtx: Optional[DatabaseContext] = databaseManager.getDatabaseContext(new TestDatabaseIdRepository().get(name))
+    val maybeCtx: Optional[DatabaseContext] = databaseManager.getDatabaseContext(name)
     val dbCtx: DatabaseContext = maybeCtx.orElseGet(() => throw new RuntimeException(s"No such database: $name"))
     graphOps = dbCtx.databaseFacade()
     graph = new GraphDatabaseCypherService(graphOps)

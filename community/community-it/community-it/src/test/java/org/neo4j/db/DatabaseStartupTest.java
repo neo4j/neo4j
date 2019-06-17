@@ -43,8 +43,6 @@ import org.neo4j.io.fs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.kernel.database.DatabaseIdRepository;
-import org.neo4j.kernel.database.TestDatabaseIdRepository;
 import org.neo4j.kernel.impl.factory.DatabaseInfo;
 import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.storemigration.StoreUpgrader;
@@ -71,8 +69,6 @@ class DatabaseStartupTest
     FileSystemAbstraction fs;
     @Inject
     private TestDirectory testDirectory;
-
-    private DatabaseIdRepository databaseIdRepository = new TestDatabaseIdRepository();
 
     @Test
     void startTheDatabaseWithWrongVersionShouldFailWithUpgradeNotAllowed() throws Throwable
@@ -105,7 +101,7 @@ class DatabaseStartupTest
         {
             assertThrows( DatabaseShutdownException.class, databaseService::beginTx );
             DatabaseManager<?> databaseManager = getDatabaseManager( (GraphDatabaseAPI) databaseService );
-            DatabaseContext databaseContext = databaseManager.getDatabaseContext( databaseIdRepository.get( databaseLayout.getDatabaseName() ) ).get();
+            DatabaseContext databaseContext = databaseManager.getDatabaseContext( databaseLayout.getDatabaseName() ).get();
             assertTrue( databaseContext.isFailed() );
             Throwable throwable = findCauseOrSuppressed( databaseContext.failureCause(), e -> e instanceof IllegalArgumentException ).get();
             assertEquals( "Unknown store version 'bad'", throwable.getMessage() );
@@ -150,7 +146,7 @@ class DatabaseStartupTest
         {
             assertThrows( DatabaseShutdownException.class, databaseService::beginTx );
             DatabaseManager<?> databaseManager = getDatabaseManager( (GraphDatabaseAPI) databaseService );
-            DatabaseContext databaseContext = databaseManager.getDatabaseContext( databaseIdRepository.get( databaseLayout.getDatabaseName() ) ).get();
+            DatabaseContext databaseContext = databaseManager.getDatabaseContext( databaseLayout.getDatabaseName() ).get();
             assertTrue( databaseContext.isFailed() );
             Optional<Throwable> upgradeException =
                     findCauseOrSuppressed( databaseContext.failureCause(), e -> e instanceof StoreUpgrader.UnexpectedUpgradingStoreVersionException );

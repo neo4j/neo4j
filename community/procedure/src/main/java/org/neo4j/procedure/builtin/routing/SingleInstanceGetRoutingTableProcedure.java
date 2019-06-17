@@ -29,7 +29,6 @@ import org.neo4j.configuration.connectors.ConnectorPortRegister;
 import org.neo4j.configuration.helpers.SocketAddress;
 import org.neo4j.dbms.database.DatabaseManager;
 import org.neo4j.kernel.database.DatabaseId;
-import org.neo4j.kernel.database.DatabaseIdRepository;
 import org.neo4j.values.virtual.MapValue;
 
 import static java.util.Collections.emptyList;
@@ -41,9 +40,9 @@ public class SingleInstanceGetRoutingTableProcedure extends BaseGetRoutingTableP
     private final ConnectorPortRegister portRegister;
 
     public SingleInstanceGetRoutingTableProcedure( List<String> namespace, DatabaseManager<?> databaseManager, ConnectorPortRegister portRegister,
-            DatabaseIdRepository databaseIdRepository, Config config )
+            Config config )
     {
-        super( namespace, databaseIdRepository, databaseManager, config );
+        super( namespace, databaseManager, config );
         this.portRegister = portRegister;
     }
 

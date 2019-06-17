@@ -35,7 +35,6 @@ import java.util.stream.Stream;
 import org.neo4j.collection.Dependencies;
 import org.neo4j.common.DependencyResolver;
 import org.neo4j.dbms.api.DatabaseManagementService;
-import org.neo4j.dbms.database.SystemGraphInitializer;
 import org.neo4j.graphdb.factory.module.id.IdContextFactory;
 import org.neo4j.graphdb.factory.module.id.IdContextFactoryBuilder;
 import org.neo4j.internal.helpers.collection.Iterables;
@@ -229,10 +228,13 @@ class LabelsAcceptanceTest
             // Given
             Dependencies dependencies = new Dependencies();
             dependencies.satisfyDependencies( createIdContextFactoryWithMaxedOutLabelTokenIds( fileSystem, scheduler ) );
-            dependencies.satisfyDependencies( SystemGraphInitializer.NO_OP );   // disable system graph construction because it will create labels
 
-            DatabaseManagementService managementService =
-                    new TestDatabaseManagementServiceBuilder().setFileSystem( fileSystem ).setExternalDependencies( dependencies ).impermanent().build();
+            DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder()
+                    .setFileSystem( fileSystem )
+                    .noOpSystemGraphInitializer()
+                    .setExternalDependencies( dependencies )
+                    .impermanent()
+                    .build();
 
             GraphDatabaseService graphDatabase = managementService.database( DEFAULT_DATABASE_NAME );
 

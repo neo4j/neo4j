@@ -19,48 +19,45 @@
  */
 package org.neo4j.dbms.database;
 
+import java.util.UUID;
 import java.util.function.Function;
 
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
+import org.neo4j.configuration.helpers.NormalizedDatabaseName;
 import org.neo4j.graphdb.ConstraintViolationException;
 import org.neo4j.graphdb.GraphDatabaseService;
-import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.api.exceptions.InvalidArgumentsException;
-import org.neo4j.kernel.database.DatabaseIdRepository;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 
 import static org.neo4j.configuration.GraphDatabaseSettings.SYSTEM_DATABASE_NAME;
+import static org.neo4j.kernel.database.DatabaseIdRepository.SYSTEM_DATABASE_ID;
 
 public class DefaultSystemGraphInitializer extends SystemGraphInitializer
 {
     private final DatabaseManager<?> databaseManager;
     private final boolean isCommunity;
-    private final DatabaseIdRepository databaseIdRepository;
-    private final String defaultDbName;
-    private final Label databaseLabel = Label.label( "Database" );
-    private final Label deletedLabel = Label.label( "DeletedDatabase" );
+    private final NormalizedDatabaseName defaultDbName;
 
-    public DefaultSystemGraphInitializer( DatabaseManager<?> databaseManager, DatabaseIdRepository databaseIdRepository, Config config )
+    public DefaultSystemGraphInitializer( DatabaseManager<?> databaseManager, Config config )
     {
-        this( databaseManager, databaseIdRepository, config, true );
+        this( databaseManager, config, true );
     }
 
-    protected DefaultSystemGraphInitializer( DatabaseManager<?> databaseManager, DatabaseIdRepository databaseIdRepository, Config config, boolean isCommunity )
+    protected DefaultSystemGraphInitializer( DatabaseManager<?> databaseManager, Config config, boolean isCommunity )
     {
         this.databaseManager = databaseManager;
-        this.defaultDbName = config.get( GraphDatabaseSettings.default_database );
+        this.defaultDbName = new NormalizedDatabaseName( config.get( GraphDatabaseSettings.default_database ) );
         this.isCommunity = isCommunity;
-        this.databaseIdRepository = databaseIdRepository;
     }
 
     public void initializeSystemGraph() throws Exception
     {
         // First get a recent handle on the database representing the system graph
-        GraphDatabaseFacade system = databaseManager.getDatabaseContext( databaseIdRepository.systemDatabase() ).orElseThrow(
+        GraphDatabaseFacade system = databaseManager.getDatabaseContext( SYSTEM_DATABASE_ID ).orElseThrow(
                 () -> new IllegalStateException( "No database called `" + SYSTEM_DATABASE_NAME + "` was found." ) ).databaseFacade();
         initializeSystemGraph( system );
     }
@@ -87,7 +84,7 @@ public class DefaultSystemGraphInitializer extends SystemGraphInitializer
         boolean hasDatabaseNodes = false;
         try ( Transaction tx = system.beginTx() )
         {
-            ResourceIterator<Node> nodes = system.findNodes( databaseLabel, "name", SYSTEM_DATABASE_NAME );
+            ResourceIterator<Node> nodes = system.findNodes( DATABASE_LABEL, DATABASE_NAME_PROPERTY, SYSTEM_DATABASE_NAME );
             if ( nodes.hasNext() )
             {
                 hasDatabaseNodes = true;
@@ -102,12 +99,12 @@ public class DefaultSystemGraphInitializer extends SystemGraphInitializer
     {
         try ( Transaction tx = system.beginTx() )
         {
-            system.schema().constraintFor( databaseLabel ).assertPropertyIsUnique( "name" ).create();
+            system.schema().constraintFor( DATABASE_LABEL ).assertPropertyIsUnique( DATABASE_NAME_PROPERTY ).create();
             tx.success();
         }
 
-        newDb( system, defaultDbName, true );
-        newDb( system, SYSTEM_DATABASE_NAME, false );
+        newDb( system, defaultDbName, true, UUID.randomUUID() );
+        newDb( system, new NormalizedDatabaseName( SYSTEM_DATABASE_NAME ), false, SYSTEM_DATABASE_ID.uuid() );
     }
 
     private void updateDefaultDatabase( GraphDatabaseService system, boolean stopOld ) throws InvalidArgumentsException
@@ -123,16 +120,16 @@ public class DefaultSystemGraphInitializer extends SystemGraphInitializer
                 while ( nodes.hasNext() )
                 {
                     Node oldDb = nodes.next();
-                    if ( oldDb.getProperty( "name" ).equals( defaultDbName ) )
+                    if ( oldDb.getProperty( DATABASE_NAME_PROPERTY ).equals( defaultDbName.name() ) )
                     {
                         correctDefaultFound = true;
                     }
                     else
                     {
-                        oldDb.setProperty( "default", false );
+                        oldDb.setProperty( DATABASE_DEFAULT_PROPERTY, false );
                         if ( stopOld )
                         {
-                            oldDb.setProperty( "status", "offline" );
+                            oldDb.setProperty( DATABASE_STATUS_PROPERTY, "offline" );
                         }
                     }
                 }
@@ -140,19 +137,19 @@ public class DefaultSystemGraphInitializer extends SystemGraphInitializer
                 return correctDefaultFound;
             };
             // First find current default, and if it does not have the name defined as default, unset it
-            defaultFound = unsetOldNode.apply( system.findNodes( databaseLabel, "default", true ) );
+            defaultFound = unsetOldNode.apply( system.findNodes( DATABASE_LABEL, DATABASE_DEFAULT_PROPERTY, true ) );
 
             // If the current default is deleted, unset it, but do not record that we found a valid default
-            unsetOldNode.apply( system.findNodes( deletedLabel, "default", true ) );
+            unsetOldNode.apply( system.findNodes( DELETED_DATABASE_LABEL, DATABASE_DEFAULT_PROPERTY, true ) );
 
             // If the old default was not the correct one, find the correct one and set the default flag
             if ( !defaultFound )
             {
-                Node defaultDb = system.findNode( databaseLabel, "name", defaultDbName );
+                Node defaultDb = system.findNode( DATABASE_LABEL, DATABASE_NAME_PROPERTY, defaultDbName.name() );
                 if ( defaultDb != null )
                 {
-                    defaultDb.setProperty( "default", true );
-                    defaultDb.setProperty( "status", "online" );
+                    defaultDb.setProperty( DATABASE_DEFAULT_PROPERTY, true );
+                    defaultDb.setProperty( DATABASE_STATUS_PROPERTY, "online" );
                     defaultFound = true;
                 }
             }
@@ -162,23 +159,24 @@ public class DefaultSystemGraphInitializer extends SystemGraphInitializer
         // If no database exists with the default name, create it
         if ( !defaultFound )
         {
-            newDb( system, defaultDbName, true );
+            newDb( system, defaultDbName, true, UUID.randomUUID() );
         }
     }
 
-    private void newDb( GraphDatabaseService system, String dbName, boolean defaultDb ) throws InvalidArgumentsException
+    private void newDb( GraphDatabaseService system, NormalizedDatabaseName databaseName, boolean defaultDb, UUID uuid ) throws InvalidArgumentsException
     {
         try ( Transaction tx = system.beginTx() )
         {
-            Node node = system.createNode( databaseLabel );
-            node.setProperty( "name", dbName );
-            node.setProperty( "status", "online" );
-            node.setProperty( "default", defaultDb );
+            Node node = system.createNode( DATABASE_LABEL );
+            node.setProperty( DATABASE_NAME_PROPERTY, databaseName.name() );
+            node.setProperty( DATABASE_UUID_PROPERTY, uuid.toString() );
+            node.setProperty( DATABASE_STATUS_PROPERTY, "online" );
+            node.setProperty( DATABASE_DEFAULT_PROPERTY, defaultDb );
             tx.success();
         }
         catch ( ConstraintViolationException e )
         {
-            throw new InvalidArgumentsException( "The specified database '" + dbName + "' already exists." );
+            throw new InvalidArgumentsException( "The specified database '" + databaseName + "' already exists." );
         }
     }
 }

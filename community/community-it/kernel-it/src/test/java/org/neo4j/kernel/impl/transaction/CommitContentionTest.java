@@ -27,11 +27,9 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.atomic.AtomicReference;
 
-import org.neo4j.collection.Dependencies;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.dbms.api.DatabaseManagementService;
-import org.neo4j.dbms.database.SystemGraphInitializer;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.facade.DatabaseManagementServiceFactory;
@@ -45,6 +43,7 @@ import org.neo4j.test.rule.TestDirectory;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.neo4j.configuration.GraphDatabaseSettings.neo4j_home;
+import static org.neo4j.kernel.database.TestDatabaseIdRepository.noOpSystemGraphInitializer;
 
 @ExtendWith( TestDirectoryExtension.class )
 class CommitContentionTest
@@ -125,8 +124,6 @@ class CommitContentionTest
 
     private GraphDatabaseService createDb()
     {
-        Dependencies dependencies = new Dependencies();
-        dependencies.satisfyDependencies( SystemGraphInitializer.NO_OP );   // disable system graph construction because it will interfere with some tests
         Config cfg = Config.defaults( neo4j_home, testDirectory.absolutePath().toPath() );
         managementService = new DatabaseManagementServiceFactory( DatabaseInfo.COMMUNITY, globalModule -> new CommunityEditionModule( globalModule )
         {
@@ -135,7 +132,7 @@ class CommitContentionTest
             {
                 return new SkipTransactionDatabaseStats();
             }
-        } ).build( testDirectory.storeDir(), cfg, GraphDatabaseDependencies.newDependencies().dependencies( dependencies ) );
+        } ).build( testDirectory.storeDir(), cfg, GraphDatabaseDependencies.newDependencies().dependencies( noOpSystemGraphInitializer( cfg ) ) );
         return managementService
                 .database( Config.defaults().get( GraphDatabaseSettings.default_database ));
     }

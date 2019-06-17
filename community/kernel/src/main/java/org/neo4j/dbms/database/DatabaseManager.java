@@ -26,24 +26,49 @@ import org.neo4j.configuration.Config;
 import org.neo4j.dbms.api.DatabaseExistsException;
 import org.neo4j.dbms.api.DatabaseNotFoundException;
 import org.neo4j.kernel.database.DatabaseId;
+import org.neo4j.kernel.database.DatabaseIdRepository;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 
 public interface DatabaseManager<DB extends DatabaseContext> extends Lifecycle
 {
     /**
+     * Creates the system database. This must be created and started before
+     * any other databases can be created. If the system database is already
+     * initialised, nothing happens
+     */
+    default void initialiseSystemDatabase()
+    {
+        // no-op
+    }
+
+    /**
      * Creates those databases which are required by default in a Neo4j install
      * as per the system {@link Config}. If default databases are already
      * initialised, nothing happens
      */
-    void initialiseDefaultDatabases();
+    default void initialiseDefaultDatabase()
+    {
+        // no-op
+    }
+
+    /**
+     * Returns a given {@link DatabaseContext} object by identifier, or `Optional.empty()` if the database does not exist
+     *
+     * @param databaseId the ID of the database to be returned
+     * @return optionally, the database context instance with ID databaseId
+     */
+    Optional<DB> getDatabaseContext( DatabaseId databaseId );
 
     /**
      * Returns a given {@link DatabaseContext} object by name, or `Optional.empty()` if the database does not exist
      *
-     * @param databaseId the ID of the database to be returned
+     * @param databaseName the name of the database to be returned
      * @return optionally, the database context instance with name databaseName
      */
-    Optional<DB> getDatabaseContext( DatabaseId databaseId );
+    default Optional<DB> getDatabaseContext( String databaseName )
+    {
+        return getDatabaseContext( databaseIdRepository().get( databaseName ) );
+    }
 
     /**
      * Create database with specified name.
@@ -85,4 +110,12 @@ public interface DatabaseManager<DB extends DatabaseContext> extends Lifecycle
      * @return a Map from database names to database objects.
      */
     SortedMap<DatabaseId,DB> registeredDatabases();
+
+    /**
+     * Return the {@link DatabaseIdRepository.Caching} constructed with this database manager. Use this to retrieve a
+     * {@link DatabaseId} for a given database name.
+     *
+     * @return database ID repository for use with this database manager
+     */
+    DatabaseIdRepository.Caching databaseIdRepository();
 }

@@ -25,27 +25,23 @@ import org.neo4j.configuration.Config;
 import org.neo4j.configuration.connectors.ConnectorPortRegister;
 import org.neo4j.dbms.database.DatabaseManager;
 import org.neo4j.kernel.api.procedure.CallableProcedure;
-import org.neo4j.kernel.database.DatabaseIdRepository;
 
 public class SingleInstanceRoutingProcedureInstaller extends BaseRoutingProcedureInstaller
 {
     protected final DatabaseManager<?> databaseManager;
     protected final ConnectorPortRegister portRegister;
     protected final Config config;
-    protected final DatabaseIdRepository databaseIdRepository;
 
-    public SingleInstanceRoutingProcedureInstaller( DatabaseManager<?> databaseManager, ConnectorPortRegister portRegister,
-            DatabaseIdRepository databaseIdRepository, Config config )
+    public SingleInstanceRoutingProcedureInstaller( DatabaseManager<?> databaseManager, ConnectorPortRegister portRegister, Config config )
     {
         this.databaseManager = databaseManager;
         this.portRegister = portRegister;
-        this.databaseIdRepository = databaseIdRepository;
         this.config = config;
     }
 
     @Override
     protected CallableProcedure createProcedure( List<String> namespace )
     {
-        return new SingleInstanceGetRoutingTableProcedure( namespace, databaseManager, portRegister, databaseIdRepository, config );
+        return new SingleInstanceGetRoutingTableProcedure( namespace, databaseManager, portRegister, config );
     }
 }

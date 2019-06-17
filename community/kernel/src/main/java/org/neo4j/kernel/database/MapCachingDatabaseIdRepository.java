@@ -17,44 +17,37 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.bolt.runtime;
+package org.neo4j.kernel.database;
 
-import org.neo4j.kernel.database.DatabaseId;
-import org.neo4j.kernel.database.DatabaseIdRepository;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
-import static org.neo4j.bolt.v4.messaging.MessageMetadataParser.ABSENT_DB_NAME;
+import org.neo4j.configuration.helpers.NormalizedDatabaseName;
 
-public class BoltDatabaseIdRepository implements DatabaseIdRepository
+public class MapCachingDatabaseIdRepository implements DatabaseIdRepository.Caching
 {
     private final DatabaseIdRepository delegate;
+    private final Map<String,DatabaseId> databaseIds;
 
-    public BoltDatabaseIdRepository( DatabaseIdRepository delegate )
+    public MapCachingDatabaseIdRepository( DatabaseIdRepository delegate )
     {
         this.delegate = delegate;
+        this.databaseIds = new ConcurrentHashMap<>();
     }
 
     @Override
-    public DatabaseId get( String databaseName )
+    public DatabaseId get( NormalizedDatabaseName databaseName )
     {
-        if ( ABSENT_DB_NAME.equals( databaseName ) )
+        if ( SYSTEM_DATABASE_ID.name().equals( databaseName.name() ) )
         {
-            return defaultDatabase();
+            return SYSTEM_DATABASE_ID;
         }
-        else
-        {
-            return delegate.get( databaseName );
-        }
+        return databaseIds.computeIfAbsent( databaseName.name(), delegate::get );
     }
 
     @Override
-    public DatabaseId defaultDatabase()
+    public void invalidate( DatabaseId databaseId )
     {
-        return delegate.defaultDatabase();
-    }
-
-    @Override
-    public DatabaseId systemDatabase()
-    {
-        return delegate.systemDatabase();
+        databaseIds.remove( databaseId.name() );
     }
 }

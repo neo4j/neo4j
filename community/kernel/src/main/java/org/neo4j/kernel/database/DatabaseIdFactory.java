@@ -21,26 +21,13 @@ package org.neo4j.kernel.database;
 
 import java.util.UUID;
 
-import org.neo4j.configuration.GraphDatabaseSettings;
-import org.neo4j.configuration.helpers.NormalizedDatabaseName;
-
-/**
- * Encapsulates the retrieval of a persistent {@link DatabaseId} for a database of a given name.
- */
-public interface DatabaseIdRepository
+public class DatabaseIdFactory
 {
-    DatabaseId SYSTEM_DATABASE_ID = new DatabaseId( GraphDatabaseSettings.SYSTEM_DATABASE_NAME, new UUID( 0L, 1L ) );
-
-    DatabaseId get( NormalizedDatabaseName databaseName );
-
-    default DatabaseId get( String databaseName )
+    /**
+     * To create a {@link DatabaseId} from known name and UUID. Only intended for use where UUID is definitively known.
+     */
+    public static DatabaseId from( String name, UUID uuid )
     {
-        return get( new NormalizedDatabaseName( databaseName ) );
-    }
-
-    interface Caching extends DatabaseIdRepository
-    {
-        // TODO call this
-        void invalidate( DatabaseId databaseId );
+        return new DatabaseId( name, uuid );
     }
 }

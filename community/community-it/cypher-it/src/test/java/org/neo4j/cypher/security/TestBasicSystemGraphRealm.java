@@ -60,7 +60,7 @@ public class TestBasicSystemGraphRealm
 
     static BasicSystemGraphRealm testRealm( BasicImportOptionsBuilder importOptions, TestDatabaseManager dbManager, Config config ) throws Throwable
     {
-        var executor = new ContextSwitchingSystemGraphQueryExecutor( dbManager, threadToStatementContextBridge, databaseIdRepository );
+        var executor = new ContextSwitchingSystemGraphQueryExecutor( dbManager, threadToStatementContextBridge );
         return testRealm( importOptions.migrationSupplier(), importOptions.initialUserSupplier(), newRateLimitedAuthStrategy(),
                 dbManager, executor, config );
     }
@@ -77,7 +77,7 @@ public class TestBasicSystemGraphRealm
         Supplier<UserRepository> migrationUserRepositorySupplier = () -> CommunitySecurityModule.getUserRepository( config, logProvider, fileSystem );
         Supplier<UserRepository> initialUserRepositorySupplier = () -> CommunitySecurityModule.getInitialUserRepository( config, logProvider, fileSystem );
 
-        var executor = new ContextSwitchingSystemGraphQueryExecutor( dbManager, threadToStatementContextBridge, databaseIdRepository );
+        var executor = new ContextSwitchingSystemGraphQueryExecutor( dbManager, threadToStatementContextBridge );
         return testRealm( migrationUserRepositorySupplier, initialUserRepositorySupplier, newRateLimitedAuthStrategy(), dbManager,
                 executor, config );
     }
@@ -94,7 +94,7 @@ public class TestBasicSystemGraphRealm
         BasicSystemGraphOperations systemGraphOperations = new BasicSystemGraphOperations( executor, secureHasher );
         UserSecurityGraphInitializer securityGraphInitializer =
                 new UserSecurityGraphInitializer(
-                        new DefaultSystemGraphInitializer( manager, databaseIdRepository, config ),
+                        new DefaultSystemGraphInitializer( manager, config ),
                         executor,
                         Mockito.mock(Log.class),
                         systemGraphOperations,

@@ -19,8 +19,6 @@
  */
 package org.neo4j.dbms.database;
 
-import java.util.Arrays;
-import java.util.List;
 import java.util.NavigableMap;
 import java.util.SortedMap;
 import java.util.TreeMap;
@@ -34,12 +32,16 @@ import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.graphdb.factory.module.GlobalModule;
 import org.neo4j.graphdb.factory.module.ModularDatabaseCreationContext;
 import org.neo4j.graphdb.factory.module.edition.AbstractEditionModule;
+import org.neo4j.graphdb.factory.module.edition.CommunityEditionModule;
 import org.neo4j.graphdb.factory.module.edition.context.EditionDatabaseComponents;
 import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier;
 import org.neo4j.io.pagecache.tracing.cursor.context.VersionContextSupplier;
 import org.neo4j.kernel.api.procedure.GlobalProcedures;
 import org.neo4j.kernel.database.Database;
 import org.neo4j.kernel.database.DatabaseId;
+import org.neo4j.kernel.database.DatabaseIdRepository;
+import org.neo4j.kernel.database.MapCachingDatabaseIdRepository;
+import org.neo4j.kernel.database.SystemDbDatabaseIdRepository;
 import org.neo4j.kernel.impl.context.TransactionVersionContextSupplier;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.logging.Log;
@@ -54,9 +56,10 @@ public abstract class AbstractDatabaseManager<DB extends DatabaseContext> extend
     protected final GlobalModule globalModule;
     protected final AbstractEditionModule edition;
     protected final Log log;
-    private final boolean manageDatabasesOnStartAndStop;
+    protected final boolean manageDatabasesOnStartAndStop;
     protected final Config config;
     protected final LogProvider logProvider;
+    private final DatabaseIdRepository.Caching databaseIdRepository;
 
     protected AbstractDatabaseManager( GlobalModule globalModule, AbstractEditionModule edition, boolean manageDatabasesOnStartAndStop )
     {
@@ -67,11 +70,22 @@ public abstract class AbstractDatabaseManager<DB extends DatabaseContext> extend
         this.edition = edition;
         this.manageDatabasesOnStartAndStop = manageDatabasesOnStartAndStop;
         this.databaseMap = new ConcurrentHashMap<>();
+        this.databaseIdRepository = createDatabaseIdRepository( globalModule );
     }
 
-    List<String> defaultDatabaseNames()
+    private DatabaseIdRepository.Caching createDatabaseIdRepository( GlobalModule globalModule )
     {
-        return Arrays.asList( GraphDatabaseSettings.SYSTEM_DATABASE_NAME, config.get( GraphDatabaseSettings.default_database ) );
+        return CommunityEditionModule.tryResolveOrCreate(
+                DatabaseIdRepository.Caching.class,
+                globalModule.getExternalDependencyResolver(),
+                () -> new MapCachingDatabaseIdRepository(
+                        new SystemDbDatabaseIdRepository( this, globalModule.getJobScheduler() ) ) );
+    }
+
+    @Override
+    public DatabaseIdRepository.Caching databaseIdRepository()
+    {
+        return databaseIdRepository;
     }
 
     @Override
@@ -144,7 +158,7 @@ public abstract class AbstractDatabaseManager<DB extends DatabaseContext> extend
             catch ( Throwable t )
             {
                 context.fail( t );
-                log.error( "Failed to perform operation with database " + databaseId, t );
+                log.error( "Failed to perform operation with database " + databaseId.name(), t );
             }
         }
     }

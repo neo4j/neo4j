@@ -28,12 +28,12 @@ import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.security.AuthProviderFailedException;
 import org.neo4j.kernel.api.KernelTransaction;
-import org.neo4j.kernel.database.DatabaseIdRepository;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.query.QueryExecution;
 import org.neo4j.kernel.impl.query.QuerySubscriber;
 
 import static org.neo4j.configuration.GraphDatabaseSettings.SYSTEM_DATABASE_NAME;
+import static org.neo4j.kernel.database.DatabaseIdRepository.SYSTEM_DATABASE_ID;
 
 /**
  * Switches the transactional context of the thread while operating on the system graph.
@@ -42,14 +42,11 @@ public class ContextSwitchingSystemGraphQueryExecutor implements QueryExecutor
 {
     private final DatabaseManager<?> databaseManager;
     private final ThreadToStatementContextBridge txBridge;
-    private final DatabaseIdRepository databaseIdRepository;
 
-    public ContextSwitchingSystemGraphQueryExecutor( DatabaseManager<?> databaseManager, ThreadToStatementContextBridge txBridge,
-            DatabaseIdRepository databaseIdRepository )
+    public ContextSwitchingSystemGraphQueryExecutor( DatabaseManager<?> databaseManager, ThreadToStatementContextBridge txBridge )
     {
         this.databaseManager = databaseManager;
         this.txBridge = txBridge;
-        this.databaseIdRepository = databaseIdRepository;
     }
 
     @Override
@@ -177,7 +174,7 @@ public class ContextSwitchingSystemGraphQueryExecutor implements QueryExecutor
 
     private SystemDatabaseInnerAccessor getSystemDb()
     {
-        return databaseManager.getDatabaseContext( databaseIdRepository.systemDatabase() ).orElseThrow(
+        return databaseManager.getDatabaseContext( SYSTEM_DATABASE_ID ).orElseThrow(
                 () -> new AuthProviderFailedException( "No database called `" + SYSTEM_DATABASE_NAME + "` was found." ) )
                 .dependencies().resolveDependency( SystemDatabaseInnerAccessor.class );
     }

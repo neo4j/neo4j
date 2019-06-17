@@ -34,6 +34,7 @@ import org.neo4j.values.virtual.MapValue;
 
 import static org.neo4j.bolt.v4.runtime.bookmarking.BookmarkParsingException.newInvalidBookmarkError;
 import static org.neo4j.bolt.v4.runtime.bookmarking.BookmarkParsingException.newInvalidBookmarkMixtureError;
+import static org.neo4j.kernel.database.DatabaseIdRepository.SYSTEM_DATABASE_ID;
 
 public final class BookmarksParserV4 implements BookmarksParser
 {
@@ -68,7 +69,6 @@ public final class BookmarksParserV4 implements BookmarksParser
 
     private List<Bookmark> parseBookmarks( ListValue bookmarks ) throws BookmarkParsingException
     {
-        var systemDbId = databaseIdRepository.systemDatabase();
         var maxSystemDbTxId = ABSENT_BOOKMARK_ID;
 
         DatabaseId userDbId = null;
@@ -80,7 +80,7 @@ public final class BookmarksParserV4 implements BookmarksParser
             {
                 var parsedBookmark = parse( bookmark );
 
-                if ( systemDbId.equals( parsedBookmark.databaseId ) )
+                if ( SYSTEM_DATABASE_ID.equals( parsedBookmark.databaseId ) )
                 {
                     maxSystemDbTxId = Math.max( maxSystemDbTxId, parsedBookmark.txId );
                 }
@@ -99,7 +99,7 @@ public final class BookmarksParserV4 implements BookmarksParser
             }
         }
 
-        return buildBookmarks( systemDbId, maxSystemDbTxId, userDbId, maxUserDbTxId );
+        return buildBookmarks( SYSTEM_DATABASE_ID, maxSystemDbTxId, userDbId, maxUserDbTxId );
     }
 
     private ParsedBookmark parse( AnyValue bookmark ) throws BookmarkParsingException

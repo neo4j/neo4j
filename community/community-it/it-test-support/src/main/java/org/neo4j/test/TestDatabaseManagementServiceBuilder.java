@@ -37,6 +37,7 @@ import org.neo4j.graphdb.security.URLAccessRule;
 import org.neo4j.io.ByteUnit;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.UncloseableDelegatingFileSystemAbstraction;
+import org.neo4j.kernel.database.TestDatabaseIdRepository;
 import org.neo4j.kernel.extension.ExtensionFactory;
 import org.neo4j.kernel.impl.index.schema.AbstractIndexProviderFactory;
 import org.neo4j.logging.LogProvider;
@@ -60,6 +61,7 @@ public class TestDatabaseManagementServiceBuilder extends DatabaseManagementServ
     protected SystemNanoClock clock;
     protected boolean impermanent;
     private Config fromConfig;
+    private boolean noOpSystemGraphInitializer;
 
     public TestDatabaseManagementServiceBuilder()
     {
@@ -79,6 +81,12 @@ public class TestDatabaseManagementServiceBuilder extends DatabaseManagementServ
         Config cfg = config.set( GraphDatabaseSettings.neo4j_home, homeDirectory.toPath().toAbsolutePath() )
                 .fromConfig( fromConfig )
                 .build();
+
+        if ( noOpSystemGraphInitializer )
+        {
+            dependencies = TestDatabaseIdRepository.noOpSystemGraphInitializer( dependencies, cfg );
+        }
+
         return newDatabaseManagementService( homeDirectory, cfg, databaseDependencies() );
     }
 
@@ -180,6 +188,12 @@ public class TestDatabaseManagementServiceBuilder extends DatabaseManagementServ
     public DatabaseManagementServiceBuilder setConfigRaw( Map<String, String> raw )
     {
         config.setRaw( raw );
+        return this;
+    }
+
+    public TestDatabaseManagementServiceBuilder noOpSystemGraphInitializer()
+    {
+        this.noOpSystemGraphInitializer = true;
         return this;
     }
 

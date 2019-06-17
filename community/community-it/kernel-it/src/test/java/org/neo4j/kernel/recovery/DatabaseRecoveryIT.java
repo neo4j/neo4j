@@ -42,7 +42,6 @@ import org.neo4j.adversaries.CountingAdversary;
 import org.neo4j.collection.Dependencies;
 import org.neo4j.common.DependencyResolver;
 import org.neo4j.dbms.api.DatabaseManagementService;
-import org.neo4j.dbms.database.SystemGraphInitializer;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
@@ -809,11 +808,13 @@ class DatabaseRecoveryIT
         {
             managementService.shutdown();
         }
-        Dependencies dependencies = new Dependencies();
-        dependencies.satisfyDependencies( SystemGraphInitializer.NO_OP );   // disable system graph construction because it will interfere with some tests
-        managementService = new TestDatabaseManagementServiceBuilder( storeDir ).setFileSystem( fs ).setExtensions(
-                singletonList( new IndexExtensionFactory( indexProvider ) ) ).impermanent().setExternalDependencies( dependencies )
-                .setConfig( default_schema_provider, indexProvider.getProviderDescriptor().name() ).build();
+        managementService = new TestDatabaseManagementServiceBuilder( storeDir )
+                .setFileSystem( fs )
+                .setExtensions( singletonList( new IndexExtensionFactory( indexProvider ) ) )
+                .impermanent()
+                .noOpSystemGraphInitializer()
+                .setConfig( default_schema_provider, indexProvider.getProviderDescriptor().name() )
+                .build();
 
         return (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );
     }

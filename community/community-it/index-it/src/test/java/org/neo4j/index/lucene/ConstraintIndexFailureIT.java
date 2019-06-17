@@ -24,9 +24,7 @@ import org.junit.Test;
 
 import java.io.File;
 
-import org.neo4j.collection.Dependencies;
 import org.neo4j.dbms.api.DatabaseManagementService;
-import org.neo4j.dbms.database.SystemGraphInitializer;
 import org.neo4j.graphdb.ConstraintViolationException;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
@@ -76,10 +74,11 @@ public class ConstraintIndexFailureIT
 
         // Remove the indexes offline and start up with an index provider which reports FAILED as initial state. An ordeal, I know right...
         FileUtils.deleteRecursively( IndexDirectoryStructure.baseSchemaIndexFolder( dir ) );
-        Dependencies dependencies = new Dependencies();
-        dependencies.satisfyDependencies( SystemGraphInitializer.NO_OP );   // disable system graph construction because it will interfere with some tests
-        managementService = new TestDatabaseManagementServiceBuilder( dir ).removeExtensions( INDEX_PROVIDERS_FILTER ).addExtension(
-                new FailingGenericNativeIndexProviderFactory( INITIAL_STATE ) ).setExternalDependencies( dependencies ).build();
+        managementService = new TestDatabaseManagementServiceBuilder( dir )
+                .removeExtensions( INDEX_PROVIDERS_FILTER )
+                .addExtension( new FailingGenericNativeIndexProviderFactory( INITIAL_STATE ) )
+                .noOpSystemGraphInitializer()
+                .build();
         db = managementService.database( DEFAULT_DATABASE_NAME );
         // when
         try ( Transaction tx = db.beginTx() )

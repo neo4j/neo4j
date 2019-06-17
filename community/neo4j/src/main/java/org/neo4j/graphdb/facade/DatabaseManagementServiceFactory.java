@@ -35,6 +35,7 @@ import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.dbms.database.DatabaseContext;
 import org.neo4j.dbms.database.DatabaseManagementServiceImpl;
 import org.neo4j.dbms.database.DatabaseManager;
+import org.neo4j.dbms.database.DefaultDatabaseInitializer;
 import org.neo4j.dbms.database.UnableToStartDatabaseException;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -82,6 +83,7 @@ import static org.neo4j.internal.kernel.api.procs.Neo4jTypes.NTNode;
 import static org.neo4j.internal.kernel.api.procs.Neo4jTypes.NTPath;
 import static org.neo4j.internal.kernel.api.procs.Neo4jTypes.NTPoint;
 import static org.neo4j.internal.kernel.api.procs.Neo4jTypes.NTRelationship;
+import static org.neo4j.kernel.database.DatabaseIdRepository.SYSTEM_DATABASE_ID;
 
 /**
  * This is the main factory for creating database instances. It delegates creation to two different modules
@@ -137,8 +139,7 @@ public class DatabaseManagementServiceFactory
         Log internalLog = logService.getInternalLog( getClass() );
         DatabaseManager<?> databaseManager = edition.createDatabaseManager( globalModule );
         DatabaseManagementService managementService = new DatabaseManagementServiceImpl( databaseManager, globalModule.getGlobalAvailabilityGuard(),
-                globalLife, globalModule.getDatabaseEventListeners(), globalModule.getTransactionEventListeners(), edition.databaseIdRepository(),
-                internalLog );
+                globalLife, globalModule.getDatabaseEventListeners(), globalModule.getTransactionEventListeners(), internalLog );
         globalDependencies.satisfyDependencies( managementService );
 
         GlobalProcedures globalProcedures = setupProcedures( globalModule, edition, databaseManager );
@@ -150,29 +151,31 @@ public class DatabaseManagementServiceFactory
         globalDependencies.satisfyDependencies( securityProvider.authManager() );
         globalDependencies.satisfyDependencies( securityProvider.userManagerSupplier() );
 
+        globalLife.add( new DefaultDatabaseInitializer( databaseManager ) );
+
         globalLife.add( globalModule.getGlobalExtensions() );
         BoltGraphDatabaseManagementServiceSPI boltGraphDatabaseManagementServiceSPI = edition.createBoltDatabaseManagementServiceProvider( managementService,
                 globalModule.getGlobalMonitors(), globalModule.getGlobalClock(), logService );
-        globalLife.add( createBoltServer( globalModule, edition, boltGraphDatabaseManagementServiceSPI ) );
+        globalLife.add( createBoltServer( globalModule, edition, boltGraphDatabaseManagementServiceSPI, databaseManager.databaseIdRepository() ) );
         globalDependencies.satisfyDependency( edition.globalTransactionCounter() );
         globalLife.add( new PublishPageCacheTracerMetricsAfterStart( globalModule.getTracers().getPageCursorTracerSupplier() ) );
 
-        startDatabaseServer( globalModule, globalLife, internalLog, databaseManager, managementService, edition );
+        startDatabaseServer( globalModule, globalLife, internalLog, databaseManager, managementService );
 
         return managementService;
     }
 
     private static void startDatabaseServer( GlobalModule globalModule, LifeSupport globalLife, Log internalLog, DatabaseManager<?> databaseManager,
-            DatabaseManagementService managementService, AbstractEditionModule edition )
+            DatabaseManagementService managementService )
     {
 
         RuntimeException startupException = null;
         try
         {
-            databaseManager.initialiseDefaultDatabases();
+            databaseManager.initialiseSystemDatabase();
             globalLife.start();
 
-            verifySystemDatabaseStart( databaseManager, edition.databaseIdRepository() );
+            verifySystemDatabaseStart( databaseManager );
         }
         catch ( Throwable throwable )
         {
@@ -202,9 +205,9 @@ public class DatabaseManagementServiceFactory
         }
     }
 
-    private static void verifySystemDatabaseStart( DatabaseManager<?> databaseManager, DatabaseIdRepository databaseIdRepository )
+    private static void verifySystemDatabaseStart( DatabaseManager<?> databaseManager )
     {
-        Optional<? extends DatabaseContext> databaseContext = databaseManager.getDatabaseContext( databaseIdRepository.systemDatabase() );
+        Optional<? extends DatabaseContext> databaseContext = databaseManager.getDatabaseContext( SYSTEM_DATABASE_ID );
         if ( databaseContext.isEmpty() )
         {
             throw new UnableToStartDatabaseException( SYSTEM_DATABASE_NAME + " not found." );
@@ -231,8 +234,7 @@ public class DatabaseManagementServiceFactory
      * order to enforce that the databaseManager must be constructed first.
      */
     @SuppressWarnings( "unused" )
-    private static GlobalProcedures setupProcedures( GlobalModule globalModule, AbstractEditionModule editionModule,
-            DatabaseManager<?> databaseManager )
+    private static GlobalProcedures setupProcedures( GlobalModule globalModule, AbstractEditionModule editionModule, DatabaseManager<?> databaseManager )
     {
         Config globalConfig = globalModule.getGlobalConfig();
         File proceduresDirectory = globalConfig.get( GraphDatabaseSettings.plugin_dir ).toFile();
@@ -294,10 +296,10 @@ public class DatabaseManagementServiceFactory
     }
 
     private static BoltServer createBoltServer( GlobalModule platform, AbstractEditionModule edition,
-            BoltGraphDatabaseManagementServiceSPI boltGraphDatabaseManagementServiceSPI )
+            BoltGraphDatabaseManagementServiceSPI boltGraphDatabaseManagementServiceSPI, DatabaseIdRepository databaseIdRepository )
     {
         return new BoltServer( boltGraphDatabaseManagementServiceSPI, platform.getJobScheduler(), platform.getConnectorPortRegister(),
-                edition.getConnectionTracker(), platform.getDatabaseIdRepository(), platform.getGlobalConfig(), platform.getGlobalClock(),
+                edition.getConnectionTracker(), databaseIdRepository, platform.getGlobalConfig(), platform.getGlobalClock(),
                 platform.getGlobalMonitors(), platform.getLogService(), platform.getGlobalDependencies() );
     }
 }

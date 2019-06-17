@@ -23,6 +23,7 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 
 import org.neo4j.bolt.dbapi.BoltGraphDatabaseManagementServiceSPI;
+import org.neo4j.configuration.helpers.NormalizedDatabaseName;
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.dbms.database.DatabaseManager;
 import org.neo4j.dbms.database.SystemGraphInitializer;
@@ -83,7 +84,7 @@ public abstract class AbstractEditionModule
             Predicate<String> fileNameFilter )
     {
         DefaultFileDeletionListenerFactory listenerFactory =
-                new DefaultFileDeletionListenerFactory( databaseIdRepository().get( databaseLayout.getDatabaseName() ), logging, fileNameFilter );
+                new DefaultFileDeletionListenerFactory( new NormalizedDatabaseName( databaseLayout.getDatabaseName() ), logging, fileNameFilter );
         return new DatabaseLayoutWatcher( watcher, databaseLayout, listenerFactory );
     }
 
@@ -98,7 +99,7 @@ public abstract class AbstractEditionModule
         globalProcedures.registerBuiltInFunctions( BuiltInFunctions.class );
         registerTemporalFunctions( globalProcedures, procedureConfig );
 
-        registerEditionSpecificProcedures( globalProcedures );
+        registerEditionSpecificProcedures( globalProcedures, databaseManager.databaseIdRepository() );
         BaseRoutingProcedureInstaller routingProcedureInstaller = createRoutingProcedureInstaller( globalModule, databaseManager );
         routingProcedureInstaller.install( globalProcedures );
         this.globalProcedures = globalProcedures;
@@ -109,7 +110,8 @@ public abstract class AbstractEditionModule
         return globalProcedures;
     }
 
-    protected abstract void registerEditionSpecificProcedures( GlobalProcedures globalProcedures ) throws KernelException;
+    protected abstract void registerEditionSpecificProcedures( GlobalProcedures globalProcedures, DatabaseIdRepository databaseIdRepository )
+            throws KernelException;
 
     protected abstract BaseRoutingProcedureInstaller createRoutingProcedureInstaller( GlobalModule globalModule, DatabaseManager<?> databaseManager );
 
@@ -200,8 +202,6 @@ public abstract class AbstractEditionModule
     {
         this.securityProvider = securityProvider;
     }
-
-    public abstract DatabaseIdRepository databaseIdRepository();
 
     public abstract BoltGraphDatabaseManagementServiceSPI createBoltDatabaseManagementServiceProvider( DatabaseManagementService managementService,
             Monitors monitors, SystemNanoClock clock, LogService logService );

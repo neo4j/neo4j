@@ -138,6 +138,4 @@ public interface DatabaseCreationContext
     ThreadToStatementContextBridge getContextBridge();
 
     FileLockerService getFileLockerService();
-
-    DatabaseIdRepository getDatabaseIdRepository();
 }

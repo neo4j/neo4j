@@ -31,8 +31,6 @@ import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.dbms.api.DatabaseManagementServiceBuilder;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.kernel.database.DatabaseId;
-import org.neo4j.kernel.database.DatabaseIdRepository;
-import org.neo4j.kernel.database.TestDatabaseIdRepository;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.TestDirectoryExtension;
@@ -43,23 +41,26 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
+import static org.neo4j.kernel.database.DatabaseIdRepository.SYSTEM_DATABASE_ID;
 
 @ExtendWith( TestDirectoryExtension.class )
 class DefaultDatabaseManagerIT
 {
-    private static final DatabaseIdRepository DATABASE_ID_REPOSITORY = new TestDatabaseIdRepository();
-    private static final DatabaseId DEFAULT_DATABASE_ID = DATABASE_ID_REPOSITORY.defaultDatabase();
-    private static final DatabaseId SYSTEM_DATABASE_ID = DATABASE_ID_REPOSITORY.systemDatabase();
+    private DatabaseId defaultDatabaseId;
+
     @Inject
     private TestDirectory testDirectory;
     private GraphDatabaseService database;
     private DatabaseManagementService managementService;
+    private DatabaseManager<?> databaseManager;
 
     @BeforeEach
     void setUp()
     {
         managementService = new DatabaseManagementServiceBuilder( testDirectory.storeDir() ).build();
         database = managementService.database( DEFAULT_DATABASE_NAME );
+        databaseManager = ((GraphDatabaseAPI)database).getDependencyResolver().resolveDependency( DatabaseManager.class );
+        defaultDatabaseId = databaseManager.databaseIdRepository().get( DEFAULT_DATABASE_NAME );
     }
 
     @AfterEach
@@ -71,15 +72,13 @@ class DefaultDatabaseManagerIT
     @Test
     void createDatabase()
     {
-        DatabaseManager<?> databaseManager = getDatabaseManager();
-        assertThrows( DatabaseManagementException.class, () -> databaseManager.createDatabase( DEFAULT_DATABASE_ID ) );
+        assertThrows( DatabaseManagementException.class, () -> databaseManager.createDatabase( defaultDatabaseId ) );
     }
 
     @Test
     void lookupExistingDatabase()
     {
-        DatabaseManager<?> databaseManager = getDatabaseManager();
-        var defaultDatabaseContext = databaseManager.getDatabaseContext( DEFAULT_DATABASE_ID );
+        var defaultDatabaseContext = databaseManager.getDatabaseContext( defaultDatabaseId );
         var systemDatabaseContext = databaseManager.getDatabaseContext( SYSTEM_DATABASE_ID );
 
         assertTrue( defaultDatabaseContext.isPresent() );
@@ -89,25 +88,17 @@ class DefaultDatabaseManagerIT
     @Test
     void listDatabases()
     {
-        DatabaseManager<?> databaseManager = getDatabaseManager();
         var databases = databaseManager.registeredDatabases();
         assertEquals( 2, databases.size()  );
         ArrayList<DatabaseId> databaseNames = new ArrayList<>( databases.keySet() );
         assertEquals( SYSTEM_DATABASE_ID, databaseNames.get( 0 ) );
-        assertEquals( DEFAULT_DATABASE_ID, databaseNames.get( 1 ) );
+        assertEquals( defaultDatabaseId, databaseNames.get( 1 ) );
     }
 
     @Test
     void shutdownDatabaseOnStop() throws Throwable
     {
-        DatabaseManager<?> databaseManager = getDatabaseManager();
         databaseManager.stop();
         assertFalse( database.isAvailable( 0 ) );
     }
-
-    private DatabaseManager<?> getDatabaseManager()
-    {
-        return ((GraphDatabaseAPI)database).getDependencyResolver().resolveDependency( DatabaseManager.class );
-    }
-
 }

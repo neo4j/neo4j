@@ -26,6 +26,7 @@ import org.neo4j.logging.Log;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.mock;
+import static org.neo4j.graphdb.factory.module.edition.AbstractEditionModule.setupSecurityModule;
 
 class EditionModuleTest
 {
@@ -33,7 +34,7 @@ class EditionModuleTest
     void shouldFailWhenAuthEnabledAndNoSecurityModuleFound()
     {
         IllegalArgumentException argumentException = assertThrows( IllegalArgumentException.class,
-                () -> AbstractEditionModule.setupSecurityModule( null, mock( Log.class ), null, "non-existent-security-module" ) );
+                () -> setupSecurityModule( null, mock( Log.class ), null, "non-existent-security-module" ) );
         assertEquals( "Failed to load security module with key 'non-existent-security-module'.", argumentException.getMessage() );
     }
 }

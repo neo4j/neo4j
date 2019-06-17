@@ -26,6 +26,7 @@ import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.availability.AvailabilityGuard;
 import org.neo4j.kernel.database.DatabaseId;
+import org.neo4j.kernel.database.TestDatabaseIdRepository;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
@@ -40,7 +41,8 @@ import static org.mockito.Mockito.when;
 class ThreadToStatementContextBridgeTest
 {
     private final KernelTransaction kernelTransaction = mock( KernelTransaction.class );
-    private final DatabaseId testDb = new DatabaseId( "testdb" );
+    private final TestDatabaseIdRepository databaseIdRepository = new TestDatabaseIdRepository();
+    private final DatabaseId testDb = databaseIdRepository.get( "testDb" );
     private ThreadToStatementContextBridge bridge;
 
     @BeforeEach
@@ -73,7 +75,7 @@ class ThreadToStatementContextBridgeTest
 
         TransactionFailureException exception =
                 assertThrows( TransactionFailureException.class,
-                        () -> bridge.getKernelTransactionBoundToThisThread( false, new DatabaseId( "something" ) ) );
+                        () -> bridge.getKernelTransactionBoundToThisThread( false, databaseIdRepository.get( "something" ) ) );
         assertThat( exception.getMessage(),
                 equalTo( "Fail to get transaction for database 'something', since 'testdb' database transaction already bound to this thread." ) );
     }

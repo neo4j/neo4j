@@ -26,6 +26,7 @@ import org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME
 import org.neo4j.cypher.internal.javacompat.GraphDatabaseCypherService
 import org.neo4j.cypher.internal.v4_0.util.test_helpers.{CypherFunSuite, CypherTestSupport}
 import org.neo4j.dbms.api.DatabaseManagementService
+import org.neo4j.dbms.database.{DatabaseContext, DatabaseManager}
 import org.neo4j.graphdb._
 import org.neo4j.graphdb.config.Setting
 import org.neo4j.internal.kernel.api.helpers.Indexes
@@ -50,6 +51,7 @@ trait GraphDatabaseTestSupport extends CypherTestSupport with GraphIcing {
   var graphOps: GraphDatabaseService = _
   var graph: GraphDatabaseCypherService = _
   var managementService: DatabaseManagementService = _
+  var databaseManager: DatabaseManager[DatabaseContext] = _
   var nodes: List[Node] = _
 
   def databaseConfig(): Map[Setting[_],Object] = Map()
@@ -65,6 +67,7 @@ trait GraphDatabaseTestSupport extends CypherTestSupport with GraphIcing {
     managementService = graphDatabaseFactory(Files.createTempDirectory("test").getParent.toFile).impermanent().setConfig(config.asJava).setInternalLogProvider(logProvider).build()
     graphOps = managementService.database(DEFAULT_DATABASE_NAME)
     graph = new GraphDatabaseCypherService(graphOps)
+    databaseManager = graph.getDependencyResolver.resolveDependency(classOf[DatabaseManager[DatabaseContext]])
     onNewGraphDatabase()
   }
 

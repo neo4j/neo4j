@@ -56,6 +56,8 @@ public enum Group
     METRICS_EVENT( "MetricsEvent" ),
     /** Threads that perform database manager operations necessary to bring databases to their desired states. */
     DATABASE_RECONCILER( "DatabaseReconciler" ),
+    /** Ensures DatabaseId lookup is not run from an outer transaction that will be tied to a database */
+    DATABASE_ID_REPOSITORY( "DatabaseIdRepository" ),
 
     // CYPHER.
     /** Thread pool for parallel Cypher query execution. */

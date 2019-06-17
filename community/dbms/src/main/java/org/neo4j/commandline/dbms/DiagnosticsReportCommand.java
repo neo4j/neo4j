@@ -44,8 +44,6 @@ import org.neo4j.configuration.ConfigUtils;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.dbms.diagnostics.jmx.JMXDumper;
 import org.neo4j.dbms.diagnostics.jmx.JmxDump;
-import org.neo4j.kernel.database.DatabaseIdRepository;
-import org.neo4j.kernel.database.PlaceholderDatabaseIdRepository;
 import org.neo4j.kernel.diagnostics.DiagnosticsReportSource;
 import org.neo4j.kernel.diagnostics.DiagnosticsReportSources;
 import org.neo4j.kernel.diagnostics.DiagnosticsReporter;
@@ -191,9 +189,8 @@ public class DiagnosticsReportCommand extends AbstractCommand
         Config config = getConfig( configFile );
 
         File storeDirectory = config.get( databases_root_path ).toFile();
-        DatabaseIdRepository databaseIdRepository = new PlaceholderDatabaseIdRepository( config );
 
-        reporter.registerAllOfflineProviders( config, storeDirectory, ctx.fs(), databaseIdRepository );
+        reporter.registerAllOfflineProviders( config, storeDirectory, ctx.fs(), config.get( GraphDatabaseSettings.default_database ) );
 
         // Register sources provided by this tool
         reporter.registerSource( "config",

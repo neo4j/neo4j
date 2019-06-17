@@ -88,7 +88,6 @@ public class CommunityEditionModule extends StandaloneEditionModule
     public static final String COMMUNITY_SECURITY_MODULE_ID = "community-security-module";
 
     protected final SslPolicyLoader sslPolicyLoader;
-    private final DatabaseIdRepository databaseIdRepository;
 
     public CommunityEditionModule( GlobalModule globalModule )
     {
@@ -121,8 +120,6 @@ public class CommunityEditionModule extends StandaloneEditionModule
         ioLimiter = IOLimiter.UNLIMITED;
 
         connectionTracker = globalDependencies.satisfyDependency( createConnectionTracker() );
-
-        databaseIdRepository = globalModule.getDatabaseIdRepository();
     }
 
     protected Function<DatabaseId,TokenHolders> createTokenHolderProvider( GlobalModule platform )
@@ -185,7 +182,7 @@ public class CommunityEditionModule extends StandaloneEditionModule
     }
 
     @Override
-    public void registerEditionSpecificProcedures( GlobalProcedures globalProcedures ) throws KernelException
+    public void registerEditionSpecificProcedures( GlobalProcedures globalProcedures, DatabaseIdRepository databaseIdRepository ) throws KernelException
     {
         // no additional procedures in community edition
     }
@@ -195,14 +192,14 @@ public class CommunityEditionModule extends StandaloneEditionModule
     {
         ConnectorPortRegister portRegister = globalModule.getConnectorPortRegister();
         Config config = globalModule.getGlobalConfig();
-        return new SingleInstanceRoutingProcedureInstaller( databaseManager, portRegister, databaseIdRepository(), config );
+        return new SingleInstanceRoutingProcedureInstaller( databaseManager, portRegister, config );
     }
 
     @Override
     public SystemGraphInitializer createSystemGraphInitializer( GlobalModule globalModule, DatabaseManager<?> databaseManager )
     {
         SystemGraphInitializer initializer = tryResolveOrCreate( SystemGraphInitializer.class, globalModule.getExternalDependencyResolver(),
-                () -> new DefaultSystemGraphInitializer( databaseManager, globalModule.getDatabaseIdRepository(), globalModule.getGlobalConfig() ) );
+                () -> new DefaultSystemGraphInitializer( databaseManager, globalModule.getGlobalConfig() ) );
         return globalModule.getGlobalDependencies().satisfyDependency( globalModule.getGlobalLife().add( initializer ) );
     }
 
@@ -223,12 +220,6 @@ public class CommunityEditionModule extends StandaloneEditionModule
             globalLife.add( noAuthSecurityProvider );
             this.securityProvider = noAuthSecurityProvider;
         }
-    }
-
-    @Override
-    public DatabaseIdRepository databaseIdRepository()
-    {
-        return databaseIdRepository;
     }
 
     public static <T> T tryResolveOrCreate( Class<T> clazz, DependencyResolver dependencies, Supplier<T> newInstanceMethod )

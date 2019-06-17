@@ -45,7 +45,6 @@ import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.io.pagecache.tracing.cursor.context.VersionContextSupplier;
-import org.neo4j.kernel.database.TestDatabaseIdRepository;
 import org.neo4j.kernel.impl.factory.DatabaseInfo;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.kernel.lifecycle.LifeSupport;
@@ -80,8 +79,7 @@ class DatabaseShutdownTest
         DatabaseManagementService managementService = factory.build();
         GraphDatabaseService databaseService = managementService.database( DEFAULT_DATABASE_NAME );
         DatabaseManager<?> databaseManager = ((GraphDatabaseAPI) databaseService).getDependencyResolver().resolveDependency( DatabaseManager.class );
-        var databaseIdRepository = new TestDatabaseIdRepository();
-        var databaseContext = databaseManager.getDatabaseContext( databaseIdRepository.get( databaseLayout.getDatabaseName() ) );
+        var databaseContext = databaseManager.getDatabaseContext( databaseLayout.getDatabaseName() );
         factory.setFailFlush( true );
         managementService.shutdown();
         DatabaseContext context = databaseContext.get();

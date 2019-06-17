@@ -51,13 +51,10 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.graphdb.RelationshipType.withName;
-import static org.neo4j.kernel.database.TestDatabaseIdRepository.DEFAULT_DATABASE_ID;
 
 @ExtendWith( {DefaultFileSystemExtension.class, TestDirectoryExtension.class} )
 class MissingStoreFilesRecoveryIT
 {
-    private static final DatabaseId databaseId = DEFAULT_DATABASE_ID;
-
     @Inject
     private TestDirectory testDirectory;
     @Inject
@@ -65,6 +62,7 @@ class MissingStoreFilesRecoveryIT
     private DatabaseManagementService managementService;
     private DatabaseLayout databaseLayout;
     private DatabaseManagementServiceBuilder serviceBuilder;
+    private DatabaseId defaultDatabaseId;
     private static final Label testNodes = Label.label( "testNodes" );
 
     @BeforeEach
@@ -75,6 +73,9 @@ class MissingStoreFilesRecoveryIT
         var databaseApi = defaultDatabase( managementService );
         createSomeData( databaseApi );
         databaseLayout = databaseApi.databaseLayout();
+
+        defaultDatabaseId = getDatabaseManager().databaseIdRepository().get( DEFAULT_DATABASE_NAME );
+
         managementService.shutdown();
     }
 
@@ -95,7 +96,7 @@ class MissingStoreFilesRecoveryIT
 
         managementService = serviceBuilder.build();
         DatabaseManager<?> databaseManager = getDatabaseManager();
-        var databaseContext = databaseManager.getDatabaseContext( databaseId ).get();
+        var databaseContext = databaseManager.getDatabaseContext( defaultDatabaseId ).get();
         assertTrue( databaseContext.isFailed() );
     }
 
@@ -108,7 +109,7 @@ class MissingStoreFilesRecoveryIT
         fileSystem.deleteFile( databaseLayout.nodeStore() );
 
         DatabaseManager<?> databaseManager = getDatabaseManager();
-        var databaseContext = databaseManager.getDatabaseContext( databaseId ).get();
+        var databaseContext = databaseManager.getDatabaseContext( defaultDatabaseId ).get();
         assertFalse( databaseContext.isFailed() );
         assertFalse( fileSystem.fileExists( databaseLayout.nodeStore() ) );
     }

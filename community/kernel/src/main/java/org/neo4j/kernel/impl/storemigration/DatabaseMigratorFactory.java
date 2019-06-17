@@ -30,7 +30,6 @@ import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.layout.StoreLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.database.DatabaseId;
-import org.neo4j.kernel.database.DatabaseIdRepository;
 import org.neo4j.kernel.impl.api.index.IndexProviderMap;
 import org.neo4j.kernel.impl.transaction.log.LogVersionUpgradeChecker;
 import org.neo4j.kernel.impl.transaction.log.ReadableClosablePositionAwareChannel;
@@ -53,23 +52,22 @@ public class DatabaseMigratorFactory
     private final LogService logService;
     private final PageCache pageCache;
     private final JobScheduler jobScheduler;
-    private final DatabaseIdRepository databaseIdRepository;
+    private final DatabaseId databaseId;
 
     public DatabaseMigratorFactory( FileSystemAbstraction fs, Config config, LogService logService, PageCache pageCache, JobScheduler jobScheduler,
-            DatabaseIdRepository databaseIdRepository )
+            DatabaseId databaseId )
     {
         this.fs = fs;
         this.config = config;
         this.logService = logService;
         this.pageCache = pageCache;
         this.jobScheduler = jobScheduler;
-        this.databaseIdRepository = databaseIdRepository;
+        this.databaseId = databaseId;
     }
 
     public DatabaseMigrator createDatabaseMigrator( DatabaseLayout databaseLayout, StorageEngineFactory storageEngineFactory,
             DependencyResolver dependencyResolver )
     {
-        final DatabaseId databaseId = databaseIdRepository.get( databaseLayout.getDatabaseName() );
         final DatabaseConfig dbConfig = new DatabaseConfig( config, databaseId );
         final IndexProviderMap indexProviderMap = dependencyResolver.resolveDependency( IndexProviderMap.class );
         final Monitors monitors = dependencyResolver.resolveDependency( Monitors.class );

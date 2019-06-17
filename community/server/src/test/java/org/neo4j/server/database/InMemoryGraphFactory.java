@@ -21,13 +21,11 @@ package org.neo4j.server.database;
 
 import java.io.File;
 
-import org.neo4j.collection.Dependencies;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.configuration.connectors.BoltConnector;
 import org.neo4j.configuration.helpers.SocketAddress;
 import org.neo4j.dbms.api.DatabaseManagementService;
-import org.neo4j.dbms.database.SystemGraphInitializer;
 import org.neo4j.graphdb.facade.ExternalDependencies;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 
@@ -38,13 +36,11 @@ public class InMemoryGraphFactory implements GraphFactory
     @Override
     public DatabaseManagementService newDatabaseManagementService( Config config, ExternalDependencies dependencies )
     {
-        Dependencies deps = new Dependencies();
-        deps.satisfyDependencies( SystemGraphInitializer.NO_OP );   // disable system graph construction because it will interfere with some tests
         File storeDir = new File( config.get( GraphDatabaseSettings.databases_root_path ).toFile(), DEFAULT_DATABASE_NAME );
         return new TestDatabaseManagementServiceBuilder( storeDir )
                 .setExtensions( dependencies.extensions() )
                 .setMonitors( dependencies.monitors() )
-                .setExternalDependencies( deps )
+                .noOpSystemGraphInitializer()
                 .impermanent()
                 .setConfig( BoltConnector.listen_address, new SocketAddress( "localhost", 0 ) )
                 .setConfig( BoltConnector.enabled, true )

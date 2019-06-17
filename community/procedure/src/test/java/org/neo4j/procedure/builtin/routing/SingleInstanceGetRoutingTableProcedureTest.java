@@ -37,8 +37,7 @@ import org.neo4j.internal.kernel.api.procs.QualifiedName;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.database.Database;
 import org.neo4j.kernel.database.DatabaseId;
-import org.neo4j.kernel.database.DatabaseIdRepository;
-import org.neo4j.kernel.database.PlaceholderDatabaseIdRepository;
+import org.neo4j.kernel.database.TestDatabaseIdRepository;
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.virtual.MapValue;
 
@@ -61,7 +60,7 @@ import static org.neo4j.values.storable.Values.stringValue;
 
 public class SingleInstanceGetRoutingTableProcedureTest
 {
-    private static final DatabaseIdRepository databaseIdRepository = new PlaceholderDatabaseIdRepository( Config.defaults() );
+    private static final TestDatabaseIdRepository databaseIdRepository = new TestDatabaseIdRepository();
     private static final DatabaseId ID = databaseIdRepository.defaultDatabase();
     private static final DatabaseId UNKNOWN_ID = databaseIdRepository.get( "unknown_database_name" );
 
@@ -155,7 +154,7 @@ public class SingleInstanceGetRoutingTableProcedureTest
 
     protected BaseGetRoutingTableProcedure newProcedure( DatabaseManager<?> databaseManager, ConnectorPortRegister portRegister, Config config )
     {
-        return new SingleInstanceGetRoutingTableProcedure( DEFAULT_NAMESPACE, databaseManager, portRegister, databaseIdRepository, config );
+        return new SingleInstanceGetRoutingTableProcedure( DEFAULT_NAMESPACE, databaseManager, portRegister, config );
     }
 
     protected List<SocketAddress> expectedWriters( SocketAddress selfAddress )
@@ -195,6 +194,7 @@ public class SingleInstanceGetRoutingTableProcedureTest
         when( database.getConfig() ).thenReturn( config );
         when( database.isStarted() ).thenReturn( databaseStarted );
         when( databaseManager.getDatabaseContext( ID ) ).thenReturn( Optional.of( databaseContext ) );
+        when( databaseManager.databaseIdRepository() ).thenReturn( databaseIdRepository );
         return databaseManager;
     }
 }

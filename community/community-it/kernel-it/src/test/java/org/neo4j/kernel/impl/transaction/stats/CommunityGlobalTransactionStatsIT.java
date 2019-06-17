@@ -32,7 +32,6 @@ import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.dbms.database.DatabaseManager;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.kernel.database.TestDatabaseIdRepository;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
@@ -43,6 +42,7 @@ import org.neo4j.test.rule.TestDirectory;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
+import static org.neo4j.kernel.database.DatabaseIdRepository.SYSTEM_DATABASE_ID;
 
 @ExtendWith( TestDirectoryExtension.class )
 class CommunityGlobalTransactionStatsIT
@@ -74,9 +74,9 @@ class CommunityGlobalTransactionStatsIT
     {
         ExecutorService transactionExecutor = Executors.newSingleThreadExecutor();
         DatabaseManager<?> databaseManager = getDatabaseManager();
-        var databaseIdRepository = new TestDatabaseIdRepository();
-        var defaultDatabase = databaseManager.getDatabaseContext( databaseIdRepository.defaultDatabase() );
-        var systemDatabase = databaseManager.getDatabaseContext( databaseIdRepository.systemDatabase() );
+        var databaseIdRepository = databaseManager.databaseIdRepository();
+        var defaultDatabase = databaseManager.getDatabaseContext( databaseIdRepository.get( DEFAULT_DATABASE_NAME ) );
+        var systemDatabase = databaseManager.getDatabaseContext( SYSTEM_DATABASE_ID );
 
         assertTrue( defaultDatabase.isPresent() );
         assertTrue( systemDatabase.isPresent() );

@@ -49,7 +49,7 @@ import org.neo4j.kernel.database.DatabaseCreationContext;
 import org.neo4j.kernel.database.DatabaseId;
 import org.neo4j.kernel.database.DatabaseIdRepository;
 import org.neo4j.kernel.database.DatabaseNameLogContext;
-import org.neo4j.kernel.database.PlaceholderDatabaseIdRepository;
+import org.neo4j.kernel.database.TestDatabaseIdRepository;
 import org.neo4j.kernel.diagnostics.providers.DbmsDiagnosticsManager;
 import org.neo4j.kernel.extension.ExtensionFactory;
 import org.neo4j.kernel.extension.ExtensionType;
@@ -103,6 +103,7 @@ import static org.neo4j.kernel.impl.util.collection.CollectionsFactorySupplier.O
 public class DatabaseRule extends ExternalResource
 {
     private Database database;
+    private DatabaseIdRepository databaseIdRepository = new TestDatabaseIdRepository();
 
     public Database getDatabase( DatabaseLayout databaseLayout, FileSystemAbstraction fs, PageCache pageCache )
     {
@@ -153,7 +154,7 @@ public class DatabaseRule extends ExternalResource
         dependency( mutableDependencies, DbmsDiagnosticsManager.class, deps -> mock( DbmsDiagnosticsManager.class ) );
         StorageEngineFactory storageEngineFactory = dependency( mutableDependencies, StorageEngineFactory.class,
                 deps -> StorageEngineFactory.selectStorageEngine() );
-        DatabaseId databaseId = new PlaceholderDatabaseIdRepository( config ).get( databaseName );
+        DatabaseId databaseId = databaseIdRepository.get( databaseName );
 
         database = new Database( new TestDatabaseCreationContext( databaseId, databaseLayout, config, idGeneratorFactory, logService,
                 mock( JobScheduler.class, RETURNS_MOCKS ), mock( TokenNameLookup.class ), mutableDependencies, mockedTokenHolders(), locksFactory,
@@ -234,7 +235,6 @@ public class DatabaseRule extends ExternalResource
         private final StorageEngineFactory storageEngineFactory;
         private final ThreadToStatementContextBridge contextBridge;
         private final FileLockerService fileLockerService;
-        private final DatabaseIdRepository databaseIdRepository;
 
         TestDatabaseCreationContext( DatabaseId databaseId, DatabaseLayout databaseLayout, Config config, IdGeneratorFactory idGeneratorFactory,
                 LogService logService, JobScheduler scheduler, TokenNameLookup tokenNameLookup, DependencyResolver dependencyResolver,
@@ -284,7 +284,6 @@ public class DatabaseRule extends ExternalResource
             this.eventListeners = mock( DatabaseEventListeners.class );
             this.storageEngineFactory = storageEngineFactory;
             this.contextBridge = contextBridge;
-            this.databaseIdRepository = new PlaceholderDatabaseIdRepository( config );
             this.fileLockerService = fileLockerService;
         }
 
@@ -518,12 +517,6 @@ public class DatabaseRule extends ExternalResource
         public ThreadToStatementContextBridge getContextBridge()
         {
             return contextBridge;
-        }
-
-        @Override
-        public DatabaseIdRepository getDatabaseIdRepository()
-        {
-            return databaseIdRepository;
         }
 
         @Override

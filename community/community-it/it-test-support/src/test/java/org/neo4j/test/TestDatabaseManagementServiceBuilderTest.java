@@ -23,11 +23,9 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 import org.neo4j.common.DependencyResolver;
-import org.neo4j.configuration.Config;
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.dbms.database.DatabaseManager;
 import org.neo4j.kernel.database.DatabaseIdRepository;
-import org.neo4j.kernel.database.PlaceholderDatabaseIdRepository;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.TestDirectoryExtension;
@@ -35,6 +33,7 @@ import org.neo4j.test.rule.TestDirectory;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
+import static org.neo4j.kernel.database.DatabaseIdRepository.SYSTEM_DATABASE_ID;
 
 @ExtendWith( TestDirectoryExtension.class )
 class TestDatabaseManagementServiceBuilderTest
@@ -77,10 +76,9 @@ class TestDatabaseManagementServiceBuilderTest
     {
         DependencyResolver resolver = database.getDependencyResolver();
         DatabaseManager<?> databaseManager = resolver.resolveDependency( DatabaseManager.class );
-        Config config = resolver.resolveDependency( Config.class );
-        DatabaseIdRepository databaseIdRepository = new PlaceholderDatabaseIdRepository( config );
+        DatabaseIdRepository databaseIdRepository = databaseManager.databaseIdRepository();
 
-        assertTrue( databaseManager.getDatabaseContext( databaseIdRepository.systemDatabase() ).isPresent() );
-        assertTrue( databaseManager.getDatabaseContext( databaseIdRepository.defaultDatabase() ).isPresent() );
+        assertTrue( databaseManager.getDatabaseContext( SYSTEM_DATABASE_ID ).isPresent() );
+        assertTrue( databaseManager.getDatabaseContext( databaseIdRepository.get( DEFAULT_DATABASE_NAME ) ).isPresent() );
     }
 }
