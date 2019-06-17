@@ -19,21 +19,45 @@
  */
 package org.neo4j.counts;
 
+import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 
+/**
+ * Store and accessor of entity counts. Counts changes revolves around one or a combination of multiple tokens and are applied as deltas.
+ * This makes it necessary to tie all changes to transaction ids so that this store can tell whether or not to re-apply any given
+ * set of changes during recovery. Changes are applied by making calls to {@link CountsAccessor.Updater} from {@link #apply(long)}.
+ */
 public interface CountsStore extends CountsAccessor, AutoCloseable
 {
+    /**
+     * @param txId id of the transaction that produces the changes that are being applied.
+     * @return an updater where count deltas are being applied onto.
+     */
     CountsAccessor.Updater apply( long txId );
 
+    /**
+     * Closes this counts store so that no more changes can be made and no more counts can be read.
+     */
     @Override
     void close();
 
+    /**
+     * Puts the counts store in started state, i.e. after potentially recovery has been made. Any changes {@link #apply(long) applied}
+     * before this call is made are considered recovery repairs from a previous non-clean shutdown.
+     * @throws Exception any type of error happening when transitioning to started state.
+     */
     void start() throws Exception;
 
-    // Not liking this method, let's get rid of it
-    long txId();
-
+    /**
+     * Makes a counts store play nice with {@link LifeSupport}. Calls:
+     * <ul>
+     *     <li>{@link #start()} in {@link Lifecycle#start()}</li>
+     *     <li>{@link #close()} in {@link Lifecycle#shutdown()}</li>
+     * </ul>
+     * @param countsStore {@link CountsStore} to wrap in a {@link Lifecycle}.
+     * @return Lifecycle with the wrapped {@link CountsStore} inside of it.
+     */
     static Lifecycle wrapInLifecycle( CountsStore countsStore )
     {
         return new LifecycleAdapter()

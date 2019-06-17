@@ -46,7 +46,6 @@ import org.neo4j.index.internal.gbptree.Seeker;
 import org.neo4j.index.internal.gbptree.Writer;
 import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.register.Register;
 import org.neo4j.storageengine.api.TransactionIdStore;
 import org.neo4j.util.Preconditions;
 import org.neo4j.util.concurrent.ArrayQueueOutOfOrderSequence;
@@ -252,15 +251,15 @@ public class GBPTreeCountsStore implements CountsStore
     // === Reads ===
 
     @Override
-    public Register.DoubleLongRegister nodeCount( int labelId, Register.DoubleLongRegister target )
+    public long nodeCount( int labelId )
     {
-        return read( new CountsKey().initializeNode( labelId ), target );
+        return read( new CountsKey().initializeNode( labelId ) );
     }
 
     @Override
-    public Register.DoubleLongRegister relationshipCount( int startLabelId, int typeId, int endLabelId, Register.DoubleLongRegister target )
+    public long relationshipCount( int startLabelId, int typeId, int endLabelId )
     {
-        return read( new CountsKey().initializeRelationship( startLabelId, typeId, endLabelId ), target );
+        return read( new CountsKey().initializeRelationship( startLabelId, typeId, endLabelId ) );
     }
 
     @Override
@@ -294,19 +293,15 @@ public class GBPTreeCountsStore implements CountsStore
         }
     }
 
-    @Override
     public long txId()
     {
         return idSequence.getHighestGapFreeNumber();
     }
 
-    private Register.DoubleLongRegister read( CountsKey key, Register.DoubleLongRegister target )
+    private long read( CountsKey key )
     {
         AtomicLong changedCount = changes.get( key );
-        long count = changedCount != null ? changedCount.get() : readCountFromTree( key );
-        // Apparently the caller expects the count to be written in the second long
-        target.write( 0, count );
-        return target;
+        return changedCount != null ? changedCount.get() : readCountFromTree( key );
     }
 
     /**

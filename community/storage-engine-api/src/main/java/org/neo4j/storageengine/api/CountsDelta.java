@@ -19,6 +19,8 @@
  */
 package org.neo4j.storageengine.api;
 
+import org.apache.commons.lang3.mutable.MutableLong;
+
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -27,8 +29,6 @@ import java.util.Map;
 
 import org.neo4j.counts.CountsAccessor;
 import org.neo4j.counts.CountsVisitor;
-import org.neo4j.register.Register.DoubleLongRegister;
-import org.neo4j.register.Registers;
 import org.neo4j.util.VisibleForTesting;
 
 import static java.lang.Math.toIntExact;
@@ -36,31 +36,30 @@ import static java.util.Objects.requireNonNull;
 import static org.neo4j.token.api.TokenConstants.ANY_LABEL;
 import static org.neo4j.token.api.TokenConstants.ANY_RELATIONSHIP_TYPE;
 
+/**
+ * An in-memory single-threaded counts holder useful for modifying and reading counts transaction state.
+ */
 public class CountsDelta implements CountsAccessor, CountsAccessor.Updater
 {
-    private static final long DEFAULT_FIRST_VALUE = 0;
-    private static final long DEFAULT_SECOND_VALUE = 0;
-    private final Map<Key, DoubleLongRegister> counts = new HashMap<>();
+    private static final long DEFAULT_COUNT = 0;
+    private final Map<Key,MutableLong> counts = new HashMap<>();
 
     @Override
-    public DoubleLongRegister nodeCount( int labelId, DoubleLongRegister target )
+    public long nodeCount( int labelId )
     {
-        counts( nodeKey( labelId ) ).copyTo( target );
-        return target;
+        return counts( nodeKey( labelId ) ).longValue();
     }
 
     @Override
     public void incrementNodeCount( long labelId, long delta )
     {
-        counts( nodeKey( labelId ) ).increment( 0L, delta );
+        counts( nodeKey( labelId ) ).add( delta );
     }
 
     @Override
-    public DoubleLongRegister relationshipCount( int startLabelId, int typeId, int endLabelId,
-                                                 DoubleLongRegister target )
+    public long relationshipCount( int startLabelId, int typeId, int endLabelId )
     {
-        counts( relationshipKey( startLabelId, typeId, endLabelId ) ).copyTo( target );
-        return target;
+        return counts( relationshipKey( startLabelId, typeId, endLabelId ) ).longValue();
     }
 
     @Override
@@ -68,7 +67,7 @@ public class CountsDelta implements CountsAccessor, CountsAccessor.Updater
     {
         if ( delta != 0 )
         {
-            counts( relationshipKey( startLabelId, typeId, endLabelId ) ).increment( 0L, delta );
+            counts( relationshipKey( startLabelId, typeId, endLabelId ) ).add( delta );
         }
     }
 
@@ -81,10 +80,10 @@ public class CountsDelta implements CountsAccessor, CountsAccessor.Updater
     @Override
     public void accept( CountsVisitor visitor )
     {
-        for ( Map.Entry<Key, DoubleLongRegister> entry : counts.entrySet() )
+        for ( Map.Entry<Key, MutableLong> entry : counts.entrySet() )
         {
-            DoubleLongRegister register = entry.getValue();
-            entry.getKey().accept( visitor, register.readSecond() );
+            MutableLong register = entry.getValue();
+            entry.getKey().accept( visitor, register.longValue() );
         }
     }
 
@@ -103,25 +102,20 @@ public class CountsDelta implements CountsAccessor, CountsAccessor.Updater
     public static final class Difference
     {
         private final Key key;
-        private final long expectedFirst;
-        private final long expectedSecond;
-        private final long actualFirst;
-        private final long actualSecond;
+        private final long expectedCount;
+        private final long actualCount;
 
-        public Difference( Key key, long expectedFirst, long expectedSecond, long actualFirst, long actualSecond )
+        public Difference( Key key, long expectedCount, long actualCount )
         {
-            this.expectedFirst = expectedFirst;
-            this.expectedSecond = expectedSecond;
-            this.actualFirst = actualFirst;
-            this.actualSecond = actualSecond;
+            this.expectedCount = expectedCount;
+            this.actualCount = actualCount;
             this.key = requireNonNull( key, "key" );
         }
 
         @Override
         public String toString()
         {
-            return String.format( "%s[%s expected=%d:%d, actual=%d:%d]", getClass().getSimpleName(), key, expectedFirst,
-                    expectedSecond, actualFirst, actualSecond );
+            return String.format( "%s[%s expected=%d, actual=%d]", getClass().getSimpleName(), key, expectedCount, actualCount );
         }
 
         public Key key()
@@ -139,9 +133,7 @@ public class CountsDelta implements CountsAccessor, CountsAccessor.Updater
             if ( obj instanceof Difference )
             {
                 Difference that = (Difference) obj;
-                return actualFirst == that.actualFirst && expectedFirst == that.expectedFirst
-                       && actualSecond == that.actualSecond && expectedSecond == that.expectedSecond
-                       && key.equals( that.key );
+                return actualCount == that.actualCount && expectedCount == that.expectedCount && key.equals( that.key );
             }
             return false;
         }
@@ -150,10 +142,8 @@ public class CountsDelta implements CountsAccessor, CountsAccessor.Updater
         public int hashCode()
         {
             int result = key.hashCode();
-            result = 31 * result + (int) (expectedFirst ^ (expectedFirst >>> 32));
-            result = 31 * result + (int) (expectedSecond ^ (expectedSecond >>> 32));
-            result = 31 * result + (int) (actualFirst ^ (actualFirst >>> 32));
-            result = 31 * result + (int) (actualSecond ^ (actualSecond >>> 32));
+            result = 31 * result + (int) (expectedCount ^ (expectedCount >>> 32));
+            result = 31 * result + (int) (actualCount ^ (actualCount >>> 32));
             return result;
         }
     }
@@ -183,17 +173,17 @@ public class CountsDelta implements CountsAccessor, CountsAccessor.Updater
         }
     }
 
-    private DoubleLongRegister counts( Key key )
+    private MutableLong counts( Key key )
     {
-        return counts.computeIfAbsent( key, k -> Registers.newDoubleLongRegister( DEFAULT_FIRST_VALUE, DEFAULT_SECOND_VALUE ) );
+        return counts.computeIfAbsent( key, k -> new MutableLong( DEFAULT_COUNT ) );
     }
 
     private static class Verifier implements CountsVisitor
     {
-        private final Map<Key, DoubleLongRegister> counts;
+        private final Map<Key, MutableLong> counts;
         private final List<Difference> differences = new ArrayList<>();
 
-        Verifier( Map<Key, DoubleLongRegister> counts )
+        Verifier( Map<Key, MutableLong> counts )
         {
             this.counts = new HashMap<>( counts );
         }
@@ -201,42 +191,41 @@ public class CountsDelta implements CountsAccessor, CountsAccessor.Updater
         @Override
         public void visitNodeCount( int labelId, long count )
         {
-            verify( nodeKey( labelId ), 0, count );
+            verify( nodeKey( labelId ), count );
         }
 
         @Override
         public void visitRelationshipCount( int startLabelId, int typeId, int endLabelId, long count )
         {
-            verify( relationshipKey( startLabelId, typeId, endLabelId ), 0, count );
+            verify( relationshipKey( startLabelId, typeId, endLabelId ), count );
         }
 
-        private void verify( Key key, long actualFirst, long actualSecond )
+        private void verify( Key key, long actualCount )
         {
-            DoubleLongRegister expected = counts.remove( key );
+            MutableLong expected = counts.remove( key );
             if ( expected == null )
             {
-                if ( actualFirst != 0 || actualSecond != 0 )
+                if ( actualCount != 0 )
                 {
-                    differences.add( new Difference( key, 0, 0, actualFirst, actualSecond ) );
+                    differences.add( new Difference( key, 0, actualCount ) );
                 }
             }
             else
             {
-                long expectedFirst = expected.readFirst();
-                long expectedSecond = expected.readSecond();
-                if ( expectedFirst != actualFirst || expectedSecond != actualSecond )
+                long expectedCount = expected.longValue();
+                if ( expectedCount != actualCount )
                 {
-                    differences.add( new Difference( key, expectedFirst, expectedSecond, actualFirst, actualSecond ) );
+                    differences.add( new Difference( key, expectedCount, actualCount ) );
                 }
             }
         }
 
         public List<Difference> differences()
         {
-            for ( Map.Entry<Key, DoubleLongRegister> entry : counts.entrySet() )
+            for ( Map.Entry<Key, MutableLong> entry : counts.entrySet() )
             {
-                DoubleLongRegister value = entry.getValue();
-                differences.add( new Difference( entry.getKey(), value.readFirst(), value.readSecond(), 0, 0 ) );
+                MutableLong value = entry.getValue();
+                differences.add( new Difference( entry.getKey(), value.longValue(), 0 ) );
             }
             counts.clear();
             return differences;

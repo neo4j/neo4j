@@ -47,7 +47,6 @@ import org.neo4j.storageengine.api.StorageSchemaReader;
 import org.neo4j.token.TokenHolders;
 
 import static org.neo4j.collection.PrimitiveLongCollections.EMPTY_LONG_ARRAY;
-import static org.neo4j.register.Registers.newDoubleLongRegister;
 import static org.neo4j.token.api.TokenConstants.ANY_LABEL;
 
 /**
@@ -218,7 +217,7 @@ public class RecordStorageReader implements StorageReader
     @Override
     public long countsForNode( int labelId )
     {
-        return counts.nodeCount( labelId, newDoubleLongRegister() ).readSecond();
+        return counts.nodeCount( labelId );
     }
 
     @Override
@@ -228,7 +227,7 @@ public class RecordStorageReader implements StorageReader
         {
             throw new UnsupportedOperationException( "not implemented" );
         }
-        return counts.relationshipCount( startLabelId, typeId, endLabelId, newDoubleLongRegister() ).readSecond();
+        return counts.relationshipCount( startLabelId, typeId, endLabelId );
     }
 
     @Override
@@ -238,7 +237,7 @@ public class RecordStorageReader implements StorageReader
         {
             try
             {
-                return counts.nodeCount( ANY_LABEL, newDoubleLongRegister() ).readSecond();
+                return counts.nodeCount( ANY_LABEL );
             }
             catch ( IllegalStateException e )
             {

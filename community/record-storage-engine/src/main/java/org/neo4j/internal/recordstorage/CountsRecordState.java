@@ -25,6 +25,9 @@ import org.neo4j.counts.CountsVisitor;
 import org.neo4j.storageengine.api.CountsDelta;
 import org.neo4j.storageengine.api.StorageCommand;
 
+/**
+ * A {@link CountsDelta} with an additional capability of turning counts into {@link StorageCommand commands} for storage.
+ */
 public class CountsRecordState extends CountsDelta implements RecordState
 {
     @Override

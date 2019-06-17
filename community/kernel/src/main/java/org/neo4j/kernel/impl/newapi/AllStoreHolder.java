@@ -81,7 +81,6 @@ import static org.neo4j.common.TokenNameLookup.idTokenNameLookup;
 import static org.neo4j.internal.helpers.collection.Iterators.filter;
 import static org.neo4j.internal.helpers.collection.Iterators.singleOrNull;
 import static org.neo4j.kernel.api.procedure.BasicContext.buildContext;
-import static org.neo4j.register.Registers.newDoubleLongRegister;
 import static org.neo4j.storageengine.api.txstate.TxStateVisitor.EMPTY;
 
 public class AllStoreHolder extends Read
@@ -247,7 +246,7 @@ public class AllStoreHolder extends Read
                 txState.accept( new TransactionCountingStateVisitor( EMPTY, storageReader, txState, counts ) );
                 if ( counts.hasChanges() )
                 {
-                    count += counts.nodeCount( labelId, newDoubleLongRegister() ).readSecond();
+                    count += counts.nodeCount( labelId );
                 }
             }
             catch ( KernelException e )
@@ -278,7 +277,7 @@ public class AllStoreHolder extends Read
                 txState.accept( new TransactionCountingStateVisitor( EMPTY, storageReader, txState, counts ) );
                 if ( counts.hasChanges() )
                 {
-                    count += counts.relationshipCount( startLabelId, typeId, endLabelId, newDoubleLongRegister() ).readSecond();
+                    count += counts.relationshipCount( startLabelId, typeId, endLabelId );
                 }
             }
             catch ( KernelException e )

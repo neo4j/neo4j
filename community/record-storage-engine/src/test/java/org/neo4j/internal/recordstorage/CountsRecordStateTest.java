@@ -53,8 +53,8 @@ class CountsRecordStateTest
 
         // then
         assertEquals( differences, asSet(
-                new CountsRecordState.Difference( CountsDelta.nodeKey( 17 ), 0, 5, 0, 3 ),
-                new CountsRecordState.Difference( CountsDelta.relationshipKey( 1, 2, 3 ), 0, 19, 0, 22 )
+                new CountsRecordState.Difference( CountsDelta.nodeKey( 17 ), 5, 3 ),
+                new CountsRecordState.Difference( CountsDelta.relationshipKey( 1, 2, 3 ), 19, 22 )
         ) );
     }
 

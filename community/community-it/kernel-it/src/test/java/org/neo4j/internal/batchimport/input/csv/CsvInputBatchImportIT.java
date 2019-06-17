@@ -111,7 +111,6 @@ import static org.neo4j.internal.kernel.api.TokenRead.ANY_RELATIONSHIP_TYPE;
 import static org.neo4j.kernel.impl.store.format.RecordFormatSelector.defaultFormat;
 import static org.neo4j.kernel.impl.util.AutoCreatingHashMap.nested;
 import static org.neo4j.kernel.impl.util.AutoCreatingHashMap.values;
-import static org.neo4j.register.Registers.newDoubleLongRegister;
 
 @TestDirectoryExtension
 @ExtendWith( RandomExtension.class )
@@ -366,8 +365,7 @@ class CsvInputBatchImportIT
                     translationTable( neoStores.getLabelTokenStore(), ANY_LABEL );
             for ( Pair<Integer,Long> count : allNodeCounts( labelTranslationTable, expectedNodeCounts ) )
             {
-                assertEquals( count.other().longValue(),
-                        counts.nodeCount( count.first(), newDoubleLongRegister() ).readSecond(), "Label count mismatch for label " + count.first() );
+                assertEquals( count.other().longValue(), counts.nodeCount( count.first() ), "Label count mismatch for label " + count.first() );
             }
 
             Function<String, Integer> relationshipTypeTranslationTable =
@@ -376,8 +374,7 @@ class CsvInputBatchImportIT
                     relationshipTypeTranslationTable, expectedRelationshipCounts ) )
             {
                 RelationshipCountKey key = count.first();
-                assertEquals( count.other().longValue(),
-                        counts.relationshipCount( key.startLabel, key.type, key.endLabel, newDoubleLongRegister() ).readSecond(),
+                assertEquals( count.other().longValue(), counts.relationshipCount( key.startLabel, key.type, key.endLabel ),
                         "Label count mismatch for label " + key );
             }
 

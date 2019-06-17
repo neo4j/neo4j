@@ -39,8 +39,6 @@ import org.neo4j.counts.CountsAccessor;
 import org.neo4j.counts.CountsStore;
 import org.neo4j.counts.CountsVisitor;
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.register.Register.DoubleLongRegister;
-import org.neo4j.register.Registers;
 import org.neo4j.test.OtherThreadExecutor;
 import org.neo4j.test.Race;
 import org.neo4j.test.extension.Inject;
@@ -57,7 +55,6 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.greaterThan;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
@@ -106,14 +103,14 @@ class GBPTreeCountsStoreTest
     void shouldUpdateAndReadSomeCounts() throws IOException
     {
         // given
-        try ( CountsAccessor.Updater updater = countsStore.apply( BASE_TX_ID + 1 ) )
+        long txId = BASE_TX_ID;
+        try ( CountsAccessor.Updater updater = countsStore.apply( ++txId ) )
         {
             updater.incrementNodeCount( LABEL_ID_1, 10 );
-
             updater.incrementRelationshipCount( LABEL_ID_1, RELATIONSHIP_TYPE_ID_1, LABEL_ID_2, 3 );
             updater.incrementRelationshipCount( LABEL_ID_1, RELATIONSHIP_TYPE_ID_2, LABEL_ID_2, 7 );
         }
-        try ( CountsAccessor.Updater updater = countsStore.apply( BASE_TX_ID + 2 ) )
+        try ( CountsAccessor.Updater updater = countsStore.apply( ++txId ) )
         {
             updater.incrementNodeCount( LABEL_ID_1, 5 ); // now at 15
             updater.incrementRelationshipCount( LABEL_ID_1, RELATIONSHIP_TYPE_ID_1, LABEL_ID_2, 2 ); // now at 5
@@ -122,16 +119,22 @@ class GBPTreeCountsStoreTest
         countsStore.checkpoint( UNLIMITED );
 
         // when/then
-        DoubleLongRegister register = Registers.newDoubleLongRegister();
+        assertEquals( 15, countsStore.nodeCount( LABEL_ID_1 ) );
+        assertEquals( 5, countsStore.relationshipCount( LABEL_ID_1, RELATIONSHIP_TYPE_ID_1, LABEL_ID_2 ) );
+        assertEquals( 7, countsStore.relationshipCount( LABEL_ID_1, RELATIONSHIP_TYPE_ID_2, LABEL_ID_2 ) );
 
-        countsStore.nodeCount( LABEL_ID_1, register );
-        assertEquals( 15, register.readSecond() );
+        // and when
+        try ( CountsAccessor.Updater updater = countsStore.apply( ++txId ) )
+        {
+            updater.incrementNodeCount( LABEL_ID_1, -7 );
+            updater.incrementRelationshipCount( LABEL_ID_1, RELATIONSHIP_TYPE_ID_1, LABEL_ID_2, -5 );
+            updater.incrementRelationshipCount( LABEL_ID_1, RELATIONSHIP_TYPE_ID_2, LABEL_ID_2, -2 );
+        }
 
-        countsStore.relationshipCount( LABEL_ID_1, RELATIONSHIP_TYPE_ID_1, LABEL_ID_2, register );
-        assertEquals( 5, register.readSecond() );
-
-        countsStore.relationshipCount( LABEL_ID_1, RELATIONSHIP_TYPE_ID_2, LABEL_ID_2, register );
-        assertEquals( 7, register.readSecond() );
+        // then
+        assertEquals( 8, countsStore.nodeCount( LABEL_ID_1 ) );
+        assertEquals( 0, countsStore.relationshipCount( LABEL_ID_1, RELATIONSHIP_TYPE_ID_1, LABEL_ID_2 ) );
+        assertEquals( 5, countsStore.relationshipCount( LABEL_ID_1, RELATIONSHIP_TYPE_ID_2, LABEL_ID_2 ) );
     }
 
     @Test
@@ -147,6 +150,23 @@ class GBPTreeCountsStoreTest
         OutOfOrderSequence lastClosedTxId = new ArrayQueueOutOfOrderSequence( BASE_TX_ID, 200, EMPTY_LONG_ARRAY );
         long lastRoundClosedAt = BASE_TX_ID;
 
+        // Start at some number > 0 so that we can do negative deltas now and then
+        long baseCount = 10_000;
+        try ( CountsAccessor.Updater initialApplier = countsStore.apply( nextTxId.incrementAndGet() ) )
+        {
+            for ( int s = -1; s < HIGH_TOKEN_ID; s++ )
+            {
+                initialApplier.incrementNodeCount( s, baseCount );
+                for ( int t = -1; t < HIGH_TOKEN_ID; t++ )
+                {
+                    for ( int e = -1; e < HIGH_TOKEN_ID; e++ )
+                    {
+                        initialApplier.incrementRelationshipCount( s, t, e, baseCount );
+                    }
+                }
+            }
+        }
+
         // when
         for ( int r = 0; r < numberOfRounds; r++ )
         {
@@ -156,7 +176,7 @@ class GBPTreeCountsStoreTest
             {
                 Thread.sleep( ThreadLocalRandom.current().nextInt( 30 ) );
                 long txId = nextTxId.incrementAndGet();
-                applyTransaction( expected, txId );
+                generateAndApplyTransaction( expected, txId );
                 lastClosedTxId.offer( txId, EMPTY_LONG_ARRAY );
             } ) );
             race.addContestant( throwing( () ->
@@ -176,7 +196,7 @@ class GBPTreeCountsStoreTest
             lastRoundClosedAt = nextTxId.get();
 
             // then
-            assertCountsMatchesExpected( expected );
+            assertCountsMatchesExpected( expected, baseCount );
         }
     }
 
@@ -192,7 +212,7 @@ class GBPTreeCountsStoreTest
             incrementNodeCount( txId, labelId, delta );
             expectedCount += delta;
         }
-        assertEquals( expectedCount, countsStore.nodeCount( labelId, Registers.newDoubleLongRegister() ).readSecond() );
+        assertEquals( expectedCount, countsStore.nodeCount( labelId ) );
 
         // when reapplying after a restart
         checkpointAndRestartCountsStore();
@@ -202,7 +222,7 @@ class GBPTreeCountsStoreTest
             incrementNodeCount( txId, labelId, delta );
         }
         // then it should not change the delta
-        assertEquals( expectedCount, countsStore.nodeCount( labelId, Registers.newDoubleLongRegister() ).readSecond() );
+        assertEquals( expectedCount, countsStore.nodeCount( labelId ) );
     }
 
     @Test
@@ -217,11 +237,11 @@ class GBPTreeCountsStoreTest
         // when
         checkpointAndRestartCountsStore();
         incrementNodeCount( BASE_TX_ID + 3, labelId, 7 );
-        assertEquals( 5 + 7, countsStore.nodeCount( labelId, Registers.newDoubleLongRegister() ).readSecond() );
+        assertEquals( 5 + 7, countsStore.nodeCount( labelId ) );
         incrementNodeCount( BASE_TX_ID + 2, labelId, 3 );
 
         // then
-        assertEquals( 5 + 7 + 3, countsStore.nodeCount( labelId, Registers.newDoubleLongRegister() ).readSecond() );
+        assertEquals( 5 + 7 + 3, countsStore.nodeCount( labelId ) );
     }
 
     @Test
@@ -249,21 +269,21 @@ class GBPTreeCountsStoreTest
         openCountsStore( builder );
         assertTrue( builder.lastCommittedTxIdCalled );
         assertTrue( builder.initializeCalled );
-        assertEquals( 10, countsStore.nodeCount( labelId, Registers.newDoubleLongRegister() ).readSecond() );
-        assertEquals( 0, countsStore.nodeCount( labelId2, Registers.newDoubleLongRegister() ).readSecond() );
-        assertEquals( 14, countsStore.relationshipCount( labelId, relationshipTypeId, labelId2, Registers.newDoubleLongRegister() ).readSecond() );
+        assertEquals( 10, countsStore.nodeCount( labelId ) );
+        assertEquals( 0, countsStore.nodeCount( labelId2 ) );
+        assertEquals( 14, countsStore.relationshipCount( labelId, relationshipTypeId, labelId2 ) );
 
         // and when
         checkpointAndRestartCountsStore();
         // Re-applying a txId below or equal to the "rebuild transaction id" should not apply it
         incrementNodeCount( rebuiltAtTransactionId - 1, labelId, 100 );
-        assertEquals( 10, countsStore.nodeCount( labelId, Registers.newDoubleLongRegister() ).readSecond() );
+        assertEquals( 10, countsStore.nodeCount( labelId ) );
         incrementNodeCount( rebuiltAtTransactionId, labelId, 100 );
-        assertEquals( 10, countsStore.nodeCount( labelId, Registers.newDoubleLongRegister() ).readSecond() );
+        assertEquals( 10, countsStore.nodeCount( labelId ) );
 
         // then
         incrementNodeCount( rebuiltAtTransactionId + 1, labelId, 100 );
-        assertEquals( 110, countsStore.nodeCount( labelId, Registers.newDoubleLongRegister() ).readSecond() );
+        assertEquals( 110, countsStore.nodeCount( labelId ) );
     }
 
     @Test
@@ -300,7 +320,7 @@ class GBPTreeCountsStoreTest
         countsStore.start();
 
         // then
-        assertEquals( 2, countsStore.nodeCount( labelId, Registers.newDoubleLongRegister() ).readSecond() );
+        assertEquals( 2, countsStore.nodeCount( labelId ) );
     }
 
     @Test
@@ -396,7 +416,7 @@ class GBPTreeCountsStoreTest
         }
     }
 
-    private void assertCountsMatchesExpected( ConcurrentMap<CountsKey,AtomicLong> source )
+    private void assertCountsMatchesExpected( ConcurrentMap<CountsKey,AtomicLong> source, long baseCount )
     {
         ConcurrentMap<CountsKey,AtomicLong> expected = new ConcurrentHashMap<>();
         source.entrySet().stream()
@@ -419,8 +439,14 @@ class GBPTreeCountsStoreTest
             private void visitCount( CountsKey key, long count )
             {
                 AtomicLong expectedCount = expected.remove( key );
-                assertNotNull( expectedCount, () -> format( "Counts store has unexpected count key %s count:%d", key, count ) );
-                assertEquals( expectedCount.get(), count, () -> format( "Counts store has wrong count for %s", key ) );
+                if ( expectedCount == null )
+                {
+                    assertEquals( baseCount, count );
+                }
+                else
+                {
+                    assertEquals( baseCount + expectedCount.get(), count, () -> format( "Counts store has wrong count for %s", key ) );
+                }
             }
         } );
         assertTrue( expected.isEmpty(), expected::toString );
@@ -431,11 +457,18 @@ class GBPTreeCountsStoreTest
         ConcurrentMap<CountsKey,AtomicLong> throwAwayMap = new ConcurrentHashMap<>();
         for ( long txId = lastCheckPointedTxId + 1; txId <= lastCommittedTxId; txId++ )
         {
-            applyTransaction( throwAwayMap, txId );
+            generateAndApplyTransaction( throwAwayMap, txId );
         }
     }
 
-    private void applyTransaction( ConcurrentMap<CountsKey,AtomicLong> expected, long txId )
+    /**
+     * Generates a transaction, i.e. a counts change set. The data is random, but uses a seed which is the seed of the {@link RandomRule} in this test
+     * as well as the the supplied txId. Calling this method in any given test multiple times with any specific txId will generate the same data.
+     *
+     * @param expected map of counts to update with the generated changes.
+     * @param txId transaction id to generate transaction data for and ultimately apply to the counts store (and the expected map).
+     */
+    private void generateAndApplyTransaction( ConcurrentMap<CountsKey,AtomicLong> expected, long txId )
     {
         Random rng = new Random( random.seed() + txId );
         try ( CountsAccessor.Updater updater = countsStore.apply( txId ) )
@@ -443,25 +476,31 @@ class GBPTreeCountsStoreTest
             int numberOfKeys = rng.nextInt( 10 );
             for ( int j = 0; j < numberOfKeys; j++ )
             {
-                long delta = rng.nextInt( 10 );
+                long delta = rng.nextInt( 11 ) - 1; // chance to get -1
                 CountsKey expectedKey;
                 if ( rng.nextBoolean() )
                 {   // Node
-                    int labelId = rng.nextInt( HIGH_TOKEN_ID );
+                    int labelId = randomTokenId( rng );
                     updater.incrementNodeCount( labelId, delta );
                     expectedKey = new CountsKey().initializeNode( labelId );
                 }
                 else
                 {   // Relationship
-                    int startLabelId = rng.nextInt( HIGH_TOKEN_ID );
-                    int type = rng.nextInt( HIGH_TOKEN_ID );
-                    int endLabelId = rng.nextInt( HIGH_TOKEN_ID );
+                    int startLabelId = randomTokenId( rng );
+                    int type = randomTokenId( rng );
+                    int endLabelId = randomTokenId( rng );
                     updater.incrementRelationshipCount( startLabelId, type, endLabelId, delta );
                     expectedKey = new CountsKey().initializeRelationship( startLabelId, type, endLabelId );
                 }
                 expected.computeIfAbsent( expectedKey, k -> new AtomicLong() ).addAndGet( delta );
             }
         }
+    }
+
+    private int randomTokenId( Random rng )
+    {
+        // i.e. also include chance for -1 which is the "any" token
+        return rng.nextInt( HIGH_TOKEN_ID + 1 ) - 1;
     }
 
     private void checkpointAndRestartCountsStore() throws Exception
