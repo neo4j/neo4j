@@ -25,10 +25,11 @@ import java.util.UUID
 import org.apache.commons.io.filefilter.TrueFileFilter
 import org.apache.commons.io.{FileUtils, IOUtils}
 import org.neo4j.blob._
-import org.neo4j.blob.utils.Logging
 import org.neo4j.blob.utils.StreamUtils._
+import org.neo4j.blob.utils.{GlobalContext, Logging}
 import org.neo4j.kernel.impl.ConfigUtils._
 import org.neo4j.kernel.impl.Configuration
+
 import scala.collection.JavaConversions._
 
 trait BlobStorage extends BatchBlobValueStorage {
@@ -182,5 +183,10 @@ object BlobStorage extends Logging {
     }
   }
 
-  def createDefault(): BatchBlobValueStorage = new DefaultLocalFileSystemBlobValueStorage();
+  def createDefault(): BatchBlobValueStorage = {
+    //will read "default-blob-value-storage-class" entry first
+    GlobalContext.getOption("default-blob-value-storage-class")
+      .map(Class.forName(_).newInstance().asInstanceOf[BatchBlobValueStorage])
+      .getOrElse(new DefaultLocalFileSystemBlobValueStorage())
+  }
 }
