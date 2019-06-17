@@ -526,4 +526,127 @@ class PrivilegeManagementDDLParserTest extends DDLParserTestBase {
           }
       }
   }
+
+  // Granting writes to role
+
+  Seq(
+    ("GRANT", "TO", grant: grantOrRevokeFunc)
+    // TODO add revoke this loop as well
+  ).foreach {
+    case (command: String, preposition: String, func: grantOrRevokeFunc) =>
+
+      Seq("GRAPH", "GRAPHS").foreach {
+        graphKeyword =>
+
+          Seq("WRITE", "WRITES").foreach {
+            writeKeyword =>
+
+              Seq("NODE", "NODES").foreach {
+                nodeKeyword =>
+
+                  Seq(
+                    ("*", ast.AllGraphsScope()(pos)),
+                    ("foo", ast.NamedGraphScope("foo")(pos)),
+                  ).foreach {
+                    case (dbName: String, graphScope: GraphScope) =>
+
+                      test(s"$command $writeKeyword (*) ON $graphKeyword $dbName $nodeKeyword * $preposition role") {
+                        yields(func(WritePrivilege()(pos), ast.AllResource()(pos), graphScope, ast.AllQualifier() _, Seq("role")))
+                      }
+
+                      test(s"$command $writeKeyword (*) ON $graphKeyword $dbName $nodeKeyword * (*) $preposition role") {
+                        yields(func(WritePrivilege()(pos), ast.AllResource()(pos), graphScope, ast.AllQualifier() _, Seq("role")))
+                      }
+
+                      test(s"$command $writeKeyword (*) ON $graphKeyword $dbName $nodeKeyword * $preposition `r:ole`") {
+                        yields(func(WritePrivilege()(pos), ast.AllResource()(pos), graphScope, ast.AllQualifier() _, Seq("r:ole")))
+                      }
+
+                      // Missing `ON`
+
+                      test(s"$command $writeKeyword (*) $graphKeyword $dbName $nodeKeyword * (*) $preposition role") {
+                        failsToParse
+                      }
+
+                      // Missing role
+
+                      test(s"$command $writeKeyword (*) ON $graphKeyword $dbName $nodeKeyword * (*)") {
+                        failsToParse
+                      }
+
+                      // Missing property definition
+
+                      test(s"$command $writeKeyword ON $graphKeyword $dbName $nodeKeyword * $preposition role") {
+                        failsToParse
+                      }
+
+                      test(s"$command $writeKeyword ON $graphKeyword $dbName $nodeKeyword * (*) $preposition role") {
+                        failsToParse
+                      }
+
+                      // Invalid role name
+
+                      test(s"$command $writeKeyword (*) ON $graphKeyword $dbName $nodeKeyword * $preposition r:ole") {
+                        failsToParse
+                      }
+
+
+                      // Does not support write on specific label/property yet
+
+                      test(s"$command $writeKeyword (*) ON $graphKeyword $dbName $nodeKeyword A $preposition role") {
+                        failsToParse
+                      }
+
+                      test(s"$command $writeKeyword (*) ON $graphKeyword $dbName $nodeKeyword A (*) $preposition role") {
+                        failsToParse
+                      }
+
+                      test(s"$command $writeKeyword (*) ON $graphKeyword $dbName $nodeKeyword * (foo) $preposition role") {
+                        failsToParse
+                      }
+
+                      test(s"$command $writeKeyword (*) ON $graphKeyword $dbName $nodeKeyword A (foo) $preposition role") {
+                        failsToParse
+                      }
+
+                      test(s"$command $writeKeyword (prop) ON $graphKeyword $dbName $nodeKeyword * $preposition role") {
+                        failsToParse
+                      }
+                  }
+
+                  test(s"$command $writeKeyword (*) ON $graphKeyword `f:oo` $nodeKeyword * $preposition role") {
+                    yields(func(WritePrivilege()(pos), ast.AllResource() _, ast.NamedGraphScope("f:oo") _, ast.AllQualifier() _, Seq("role")))
+                  }
+
+                  // Invalid graph name
+
+                  test(s"$command $writeKeyword (*) ON $graphKeyword f:oo $nodeKeyword * $preposition role") {
+                    failsToParse
+                  }
+
+                  // Multiple graphs not allowed
+
+                  test(s"$command $writeKeyword (*) ON $graphKeyword foo, baz $nodeKeyword A (*) $preposition role") {
+                    failsToParse
+                  }
+
+                  test(s"$command $writeKeyword (*) ON $graphKeyword $nodeKeyword * (*) $preposition role") {
+                    failsToParse
+                  }
+              }
+
+              // Needs to be separate loop to avoid duplicate tests since the test does not have any $nodeKeyword
+              Seq(
+                ("*", ast.AllGraphsScope()(pos)),
+                ("foo", ast.NamedGraphScope("foo")(pos))
+              ).foreach {
+                case (dbName: String, graphScope: GraphScope) =>
+
+                  test(s"$command $writeKeyword (*) ON $graphKeyword $dbName $preposition role") {
+                    yields(func(WritePrivilege()(pos), ast.AllResource()(pos), graphScope, ast.AllQualifier() _, Seq("role")))
+                  }
+              }
+          }
+      }
+  }
 }

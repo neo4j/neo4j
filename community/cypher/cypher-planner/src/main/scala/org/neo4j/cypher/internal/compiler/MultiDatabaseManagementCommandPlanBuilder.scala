@@ -29,6 +29,7 @@ import org.neo4j.cypher.internal.v4_0.ast.semantics.{SemanticCheckResult, Semant
 import org.neo4j.cypher.internal.v4_0.frontend.phases.CompilationPhaseTracer.CompilationPhase
 import org.neo4j.cypher.internal.v4_0.frontend.phases.CompilationPhaseTracer.CompilationPhase.PIPE_BUILDING
 import org.neo4j.cypher.internal.v4_0.frontend.phases._
+import org.neo4j.cypher.internal.v4_0.util.InputPosition
 import org.neo4j.cypher.internal.v4_0.util.attribution.SequentialIdGen
 
 /**
@@ -116,6 +117,12 @@ case object MultiDatabaseManagementCommandPlanBuilder extends Phase[PlannerConte
           roleName -> label
         }).foldLeft(Option.empty[plans.RevokeTraverse]) {
           case (source, (roleName, label)) => Some(plans.RevokeTraverse(source, database, label, roleName))
+        }
+
+      // GRANT WRITES (*) ON GRAPH foo * (*) TO role
+      case GrantPrivilege(WritePrivilege(), _, database, _, roleNames) =>
+        roleNames.foldLeft(Option.empty[plans.GrantWrite]) {
+          case (source, roleName) => Some(plans.GrantWrite(source, AllResource()(InputPosition.NONE), database, AllQualifier()(InputPosition.NONE), roleName))
         }
 
       // GRANT READ (prop) ON GRAPH foo NODES A (*) TO role

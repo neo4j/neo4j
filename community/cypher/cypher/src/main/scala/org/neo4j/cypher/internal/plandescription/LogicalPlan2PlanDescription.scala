@@ -201,12 +201,16 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean, cardinalities: Cardina
         PlanDescriptionImpl(id, "RevokeTraverse", NoChildren, Seq(Database(dbName), Qualifier(qualifierText), Role(roleName)), variables)
 
       case GrantRead(_, resource, database, qualifier, roleName) =>
-        val (resourceText, dbName, qualifierText) = Prettifier.extractScope(resource, database, qualifier)
+        val (_, dbName, qualifierText) = Prettifier.extractScope(resource, database, qualifier)
         PlanDescriptionImpl(id, "GrantRead", NoChildren, Seq(Database(dbName), Qualifier(qualifierText), Role(roleName)), variables)
 
       case RevokeRead(_, resource, database, qualifier, roleName) =>
-        val (resourceText, dbName, qualifierText) = Prettifier.extractScope(resource, database, qualifier)
+        val (_, dbName, qualifierText) = Prettifier.extractScope(resource, database, qualifier)
         PlanDescriptionImpl(id, "RevokeRead", NoChildren, Seq(Database(dbName), Qualifier(qualifierText), Role(roleName)), variables)
+
+      case GrantWrite(_, resource, database, qualifier, roleName) =>
+        val (_, dbName, qualifierText) = Prettifier.extractScope(resource, database, qualifier)
+        PlanDescriptionImpl(id, "GrantWrite", NoChildren, Seq(Database(dbName), Qualifier(qualifierText), Role(roleName)), variables)
 
       case ShowPrivileges(scope) =>
         PlanDescriptionImpl(id, "ShowPrivileges", NoChildren, Seq(Scope(Prettifier.extractScope(scope))), variables)

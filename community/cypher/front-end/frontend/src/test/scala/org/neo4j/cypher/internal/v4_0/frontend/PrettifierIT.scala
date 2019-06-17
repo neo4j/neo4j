@@ -386,6 +386,21 @@ class PrettifierIT extends CypherFunSuite {
       "grant read (foo,bar) on graph foo nodes A,B,C (*) to x,y,z" ->
         "GRANT READ (foo, bar) ON GRAPH foo NODES A, B, C (*) TO x, y, z",
 
+      "grant writes (*) on graph * to role" ->
+        "GRANT WRITE (*) ON GRAPH * NODES * (*) TO role",
+
+      "grant writes (*) on graph * nodes * to role" ->
+        "GRANT WRITE (*) ON GRAPH * NODES * (*) TO role",
+
+      "grant writes (*) on graph * nodes * (*) to role" ->
+        "GRANT WRITE (*) ON GRAPH * NODES * (*) TO role",
+
+      "grant writes (*) on graph foo nodes * (*) to role" ->
+        "GRANT WRITE (*) ON GRAPH foo NODES * (*) TO role",
+
+      "grant write (*) on graphs foo node * (*) to role" ->
+        "GRANT WRITE (*) ON GRAPH foo NODES * (*) TO role",
+
       "revoke traverse on graph * from role" ->
         "REVOKE TRAVERSE ON GRAPH * NODES * (*) FROM role",
 

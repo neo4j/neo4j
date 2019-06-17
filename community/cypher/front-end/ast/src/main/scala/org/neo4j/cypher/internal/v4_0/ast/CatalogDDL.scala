@@ -142,6 +142,8 @@ final case class ReadPrivilege()(val position: InputPosition) extends PrivilegeT
 
 final case class MatchPrivilege()(val position: InputPosition) extends PrivilegeType("MATCH")
 
+final case class WritePrivilege()(val position: InputPosition) extends PrivilegeType("WRITE")
+
 sealed trait ActionResource {
   def simplify: Seq[ActionResource] = Seq(this)
 }
@@ -189,6 +191,8 @@ object GrantPrivilege {
     GrantPrivilege(ReadPrivilege()(InputPosition.NONE), resource, scope, qualifier, roleNames)
   def asMatch(resource: ActionResource, scope: GraphScope, qualifier: PrivilegeQualifier, roleNames: Seq[String]): InputPosition => GrantPrivilege =
     GrantPrivilege(MatchPrivilege()(InputPosition.NONE), resource, scope, qualifier, roleNames)
+  def write(resource: ActionResource, scope: GraphScope, qualifier: PrivilegeQualifier, roleNames: Seq[String]): InputPosition => GrantPrivilege =
+    GrantPrivilege(WritePrivilege()(InputPosition.NONE), resource, scope, qualifier, roleNames)
 }
 
 object RevokePrivilege {

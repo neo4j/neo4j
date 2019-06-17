@@ -43,7 +43,7 @@ trait Statement extends Parser
 
   def PrivilegeManagementCommand: Rule1[CatalogDDL] = rule("Security privilege management statement") {
     optional(keyword("CATALOG")) ~~
-      (ShowPrivileges | GrantRole | RevokeRole | GrantTraverse | RevokeTraverse | GrantRead | RevokeRead | GrantMatch | RevokeMatch)
+      (ShowPrivileges | GrantRole | RevokeRole | GrantTraverse | RevokeTraverse | GrantRead | RevokeRead | GrantMatch | RevokeMatch | GrantWrite)
   }
 
   def ShowUsers: Rule1[ShowUsers] = rule("CATALOG SHOW USERS") {
@@ -192,6 +192,12 @@ trait Statement extends Parser
       ((prop, scope, qualifier, grantees) => ast.RevokePrivilege.asMatch(prop, scope, qualifier, grantees))
   }
 
+  //`GRANT WRITES (*) ON GRAPH foo * (*) TO role`
+  def GrantWrite: Rule1[GrantPrivilege] = rule("CATALOG GRANT WRITE") {
+    group(keyword("GRANT") ~~ WriteKeyword ~~ AllPrivilegeProperty ~~ Graph ~~ AllScopeQualifier ~~ keyword("TO") ~~ SymbolicNamesList) ~~>>
+      ((prop, scope, qualifier, grantees) => ast.GrantPrivilege.write(prop, scope, qualifier, grantees))
+  }
+
   def ShowPrivileges: Rule1[ShowPrivileges] = rule("CATALOG SHOW PRIVILEGES") {
     group(keyword("SHOW") ~~ ScopeForShowPrivileges ~~ keyword("PRIVILEGES")) ~~>> (ast.ShowPrivileges(_))
   }
@@ -201,12 +207,24 @@ trait Statement extends Parser
       group("(" ~~ "*" ~~ ")") ~~~> {ast.AllResource()}
   )
 
+  // TODO can be removed once we have more fine-grained writes
+  private def AllPrivilegeProperty: Rule1[ActionResource] = rule("all properties")(
+      group("(" ~~ "*" ~~ ")") ~~~> {ast.AllResource()}
+  )
+
   private def ScopeQualifier: Rule1[PrivilegeQualifier] = rule("which element type and associated labels (props) qualifier combination")(
     group(NodeKeyword ~~ SymbolicNamesList ~~ optional("(" ~~ "*" ~~ ")")) ~~>> {ast.LabelsQualifier(_)} |
       optional(NodeKeyword ~~ "*" ~~ optional("(" ~~ "*" ~~ ")")) ~~~> {ast.AllQualifier()}
   )
 
+  // TODO can be removed once we have more fine-grained writes
+  private def AllScopeQualifier: Rule1[PrivilegeQualifier] = rule("all element types and associated labels (props) qualifier combinations")(
+    optional(NodeKeyword ~~ "*" ~~ optional("(" ~~ "*" ~~ ")")) ~~~> {ast.AllQualifier()}
+  )
+
   private def NodeKeyword: Rule0 = keyword("NODE") | keyword("NODES")
+
+  private def WriteKeyword: Rule0 = keyword("WRITE") | keyword("WRITES")
 
   private def Graph: Rule1[GraphScope] = rule("on a database/graph")(
     group(keyword("ON") ~~ (keyword("GRAPH") | keyword("GRAPHS"))) ~~
