@@ -22,6 +22,7 @@ package org.neo4j.internal.kernel.api.helpers;
 import java.util.Collections;
 import java.util.List;
 
+import org.neo4j.internal.kernel.api.KernelReadTracer;
 import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.PropertyCursor;
 import org.neo4j.internal.kernel.api.RelationshipTraversalCursor;
@@ -154,5 +155,11 @@ public class StubRelationshipCursor implements RelationshipTraversalCursor
     public boolean isClosed()
     {
         return isClosed;
+    }
+
+    @Override
+    public void setTracer( KernelReadTracer tracer )
+    {
+        throw new UnsupportedOperationException( "not implemented" );
     }
 }

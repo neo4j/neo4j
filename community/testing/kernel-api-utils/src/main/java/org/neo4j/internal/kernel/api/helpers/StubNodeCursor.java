@@ -24,6 +24,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
+import org.neo4j.internal.kernel.api.KernelReadTracer;
 import org.neo4j.internal.kernel.api.LabelSet;
 import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.PropertyCursor;
@@ -148,6 +149,12 @@ public class StubNodeCursor implements NodeCursor
     public boolean isDense()
     {
         return dense;
+    }
+
+    @Override
+    public void setTracer( KernelReadTracer tracer )
+    {
+        throw new UnsupportedOperationException( "not implemented" );
     }
 
     @Override

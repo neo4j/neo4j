@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.newapi;
 
 import org.neo4j.internal.kernel.api.IndexOrder;
 import org.neo4j.internal.kernel.api.IndexQuery;
+import org.neo4j.internal.kernel.api.KernelReadTracer;
 import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.NodeValueIndexCursor;
 import org.neo4j.internal.schema.IndexDescriptor;
@@ -110,5 +111,11 @@ public class ExtendedNodeValueIndexCursorAdapter implements NodeValueIndexCursor
     public boolean needsValues()
     {
         return false;
+    }
+
+    @Override
+    public void setTracer( KernelReadTracer tracer )
+    {
+        throw new UnsupportedOperationException( "not implemented" );
     }
 }

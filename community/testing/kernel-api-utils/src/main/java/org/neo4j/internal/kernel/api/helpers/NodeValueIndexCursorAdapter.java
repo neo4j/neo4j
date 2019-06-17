@@ -19,6 +19,7 @@
  */
 package org.neo4j.internal.kernel.api.helpers;
 
+import org.neo4j.internal.kernel.api.KernelReadTracer;
 import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.NodeValueIndexCursor;
 import org.neo4j.values.storable.Value;
@@ -81,5 +82,11 @@ public class NodeValueIndexCursorAdapter implements NodeValueIndexCursor
     public boolean isClosed()
     {
         return false;
+    }
+
+    @Override
+    public void setTracer( KernelReadTracer tracer )
+    {
+        throw new UnsupportedOperationException( "not implemented" );
     }
 }

@@ -21,6 +21,7 @@ package org.neo4j.internal.kernel.api.helpers;
 
 import java.util.Map;
 
+import org.neo4j.internal.kernel.api.KernelReadTracer;
 import org.neo4j.internal.kernel.api.LabelSet;
 import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.NodeLabelIndexCursor;
@@ -89,5 +90,10 @@ public class StubNodeLabelIndexCursor implements NodeLabelIndexCursor
     public boolean isClosed()
     {
         return false;
+    }
+
+    @Override
+    public void setTracer( KernelReadTracer tracer )
+    {
     }
 }

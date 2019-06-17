@@ -17,15 +17,13 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.internal.kernel.api;
+package org.neo4j.kernel.impl.newapi;
 
-/**
- * This interface should not be used generically in hot paths, but instead these use cases should use the explicit cursor
- * types.
- */
-public interface Cursor extends AutoCloseablePlus
+public class KernelReadTracerTest extends KernelReadTracerTestBase<ReadTestSupport>
 {
-    boolean next();
-
-    void setTracer( KernelReadTracer tracer );
+    @Override
+    public ReadTestSupport newTestSupport()
+    {
+        return new ReadTestSupport();
+    }
 }

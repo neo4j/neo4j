@@ -129,6 +129,11 @@ public interface NodeValueIndexCursor extends NodeIndexCursor
         {
             return NO_VALUE;
         }
+
+        @Override
+        public void setTracer( KernelReadTracer tracer )
+        {
+        }
     }
 
     NodeValueIndexCursor EMPTY = new Empty();

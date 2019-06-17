@@ -19,6 +19,7 @@
  */
 package org.neo4j.internal.kernel.api.helpers;
 
+import org.neo4j.internal.kernel.api.KernelReadTracer;
 import org.neo4j.internal.kernel.api.RelationshipGroupCursor;
 import org.neo4j.internal.kernel.api.RelationshipTraversalCursor;
 
@@ -130,6 +131,12 @@ public class StubGroupCursor implements RelationshipGroupCursor
     public long loopsReference()
     {
         return groups[offset].loop;
+    }
+
+    @Override
+    public void setTracer( KernelReadTracer tracer )
+    {
+        throw new UnsupportedOperationException( "not implemented" );
     }
 
     public static class GroupData

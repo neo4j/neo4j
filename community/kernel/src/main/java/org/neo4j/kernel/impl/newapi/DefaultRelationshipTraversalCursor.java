@@ -24,6 +24,7 @@ import org.eclipse.collections.impl.iterator.ImmutableEmptyLongIterator;
 
 import java.util.Arrays;
 
+import org.neo4j.internal.kernel.api.KernelReadTracer;
 import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.RelationshipTraversalCursor;
 import org.neo4j.internal.kernel.api.security.AccessMode;
@@ -101,6 +102,12 @@ class DefaultRelationshipTraversalCursor extends DefaultRelationshipCursor<Stora
 
     @Override
     public void resume( Position position )
+    {
+        throw new UnsupportedOperationException( "not implemented" );
+    }
+
+    @Override
+    public void setTracer( KernelReadTracer tracer )
     {
         throw new UnsupportedOperationException( "not implemented" );
     }

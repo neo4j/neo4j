@@ -21,6 +21,7 @@ package org.neo4j.internal.kernel.api.helpers;
 
 import java.util.Map;
 
+import org.neo4j.internal.kernel.api.KernelReadTracer;
 import org.neo4j.internal.kernel.api.PropertyCursor;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.ValueGroup;
@@ -72,5 +73,11 @@ public class StubPropertyCursor implements PropertyCursor
     public Value propertyValue()
     {
         return values[offset];
+    }
+
+    @Override
+    public void setTracer( KernelReadTracer tracer )
+    {
+        throw new UnsupportedOperationException( "not implemented" );
     }
 }
