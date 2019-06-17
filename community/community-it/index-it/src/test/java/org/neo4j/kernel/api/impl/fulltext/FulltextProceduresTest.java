@@ -101,6 +101,8 @@ import static org.junit.Assert.fail;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.internal.helpers.collection.Iterables.single;
 import static org.neo4j.kernel.impl.index.schema.FulltextIndexSettingsKeys.ANALYZER;
+import static org.neo4j.kernel.impl.index.schema.FulltextIndexSettingsKeys.PROCEDURE_ANALYZER;
+import static org.neo4j.kernel.impl.index.schema.FulltextIndexSettingsKeys.PROCEDURE_EVENTUALLY_CONSISTENT;
 
 public class FulltextProceduresTest
 {
@@ -2540,6 +2542,14 @@ public class FulltextProceduresTest
     public static String array( String... args )
     {
         return Arrays.stream( args ).map( s -> "\"" + s + "\"" ).collect( Collectors.joining( ", ", "[", "]" ) );
+    }
+
+    public static Map<String,Value> asProcedureConfigMap( String analyzer, boolean eventuallyConsistent )
+    {
+        Map<String,Value> map = new HashMap<>();
+        map.put( PROCEDURE_ANALYZER, Values.stringValue( analyzer ) );
+        map.put( PROCEDURE_EVENTUALLY_CONSISTENT, Values.booleanValue( eventuallyConsistent ) );
+        return map;
     }
 
     public static Map<String,Value> asConfigMap( String analyzer, boolean eventuallyConsistent )
