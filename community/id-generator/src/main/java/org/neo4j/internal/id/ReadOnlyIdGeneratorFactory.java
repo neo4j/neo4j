@@ -186,7 +186,7 @@ public class ReadOnlyIdGeneratorFactory implements IdGeneratorFactory
         }
 
         @Override
-        public void start()
+        public void start( FreeIds freeIdsForRebuild )
         {
             // Don't
         }

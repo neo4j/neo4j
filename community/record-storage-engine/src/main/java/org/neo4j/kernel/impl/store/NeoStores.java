@@ -23,12 +23,12 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.OpenOption;
-import java.util.function.Consumer;
 import java.util.function.Predicate;
 
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.exceptions.UnderlyingStorageException;
+import org.neo4j.function.ThrowingConsumer;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.internal.helpers.Exceptions;
 import org.neo4j.internal.id.IdGeneratorFactory;
@@ -381,7 +381,7 @@ public class NeoStores implements AutoCloseable
         return (SchemaStore) getStore( StoreType.SCHEMA );
     }
 
-    public void makeStoreOk()
+    public void makeStoreOk() throws IOException
     {
         visitStores( CommonAbstractStore::start );
     }
@@ -410,7 +410,7 @@ public class NeoStores implements AutoCloseable
      * methods like:
      * {@link #close()} (where that method could be deleted all together, note a specific behaviour of Counts'Store'})
      */
-    private void visitStores( Consumer<CommonAbstractStore> visitor )
+    private <E extends Exception> void visitStores( ThrowingConsumer<CommonAbstractStore,E> visitor ) throws E
     {
         for ( CommonAbstractStore store : stores )
         {

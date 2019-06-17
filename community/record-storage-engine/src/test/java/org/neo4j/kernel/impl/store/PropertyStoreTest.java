@@ -25,6 +25,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import java.io.File;
+import java.io.IOException;
 
 import org.neo4j.configuration.Config;
 import org.neo4j.internal.id.DefaultIdGeneratorFactory;
@@ -73,7 +74,7 @@ class PropertyStoreTest
     }
 
     @Test
-    void shouldWriteOutTheDynamicChainBeforeUpdatingThePropertyRecord()
+    void shouldWriteOutTheDynamicChainBeforeUpdatingThePropertyRecord() throws IOException
     {
         // given
         PageCache pageCache = pageCacheExtension.getPageCache( fs );

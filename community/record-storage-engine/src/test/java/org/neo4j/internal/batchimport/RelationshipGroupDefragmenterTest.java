@@ -25,6 +25,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
+import java.io.IOException;
 import java.util.BitSet;
 import java.util.stream.Stream;
 
@@ -82,7 +83,7 @@ class RelationshipGroupDefragmenterTest
     private JobScheduler jobScheduler;
     private int units;
 
-    private void init( RecordFormats format, int units )
+    private void init( RecordFormats format, int units ) throws IOException
     {
         this.units = units;
         jobScheduler = new ThreadPoolJobScheduler();
@@ -101,7 +102,7 @@ class RelationshipGroupDefragmenterTest
 
     @ParameterizedTest
     @MethodSource( "parameters" )
-    void shouldDefragmentRelationshipGroupsWhenAllDense( RecordFormats format, int units )
+    void shouldDefragmentRelationshipGroupsWhenAllDense( RecordFormats format, int units ) throws IOException
     {
         init( format, units );
         // GIVEN some nodes which has their groups scattered
@@ -142,7 +143,7 @@ class RelationshipGroupDefragmenterTest
 
     @ParameterizedTest
     @MethodSource( "parameters" )
-    void shouldDefragmentRelationshipGroupsWhenSomeDense( RecordFormats format, int units )
+    void shouldDefragmentRelationshipGroupsWhenSomeDense( RecordFormats format, int units ) throws IOException
     {
         init( format, units );
         // GIVEN some nodes which has their groups scattered

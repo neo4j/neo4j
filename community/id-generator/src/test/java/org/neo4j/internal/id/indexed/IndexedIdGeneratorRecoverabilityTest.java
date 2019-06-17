@@ -25,6 +25,8 @@ import org.eclipse.collections.api.set.primitive.MutableLongSet;
 import org.eclipse.collections.impl.factory.primitive.LongSets;
 import org.junit.jupiter.api.Test;
 
+import java.io.IOException;
+
 import org.neo4j.internal.id.IdGenerator;
 import org.neo4j.internal.id.IdGenerator.CommitMarker;
 import org.neo4j.internal.id.IdGenerator.ReuseMarker;
@@ -40,6 +42,7 @@ import org.neo4j.test.rule.TestDirectory;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
+import static org.neo4j.internal.id.FreeIds.NO_FREE_IDS;
 import static org.neo4j.io.pagecache.IOLimiter.UNLIMITED;
 import static org.neo4j.test.rule.PageCacheConfig.config;
 
@@ -113,7 +116,7 @@ class IndexedIdGeneratorRecoverabilityTest
             markDeleted( freelist, id1, id2 );
 
             // Recovery is completed ^^^
-            freelist.start();
+            freelist.start( NO_FREE_IDS );
             markFree( freelist, id1, id2 );
 
             final ImmutableLongSet reused = LongSets.immutable.of( freelist.nextId(), freelist.nextId() );
@@ -126,7 +129,7 @@ class IndexedIdGeneratorRecoverabilityTest
     }
 
     @Test
-    void resetUsabilityOnRestart()
+    void resetUsabilityOnRestart() throws IOException
     {
         final long id1;
         final long id2;
@@ -141,14 +144,14 @@ class IndexedIdGeneratorRecoverabilityTest
 
         try ( IdGenerator freelist = instantiateFreelist() )
         {
-            freelist.start();
+            freelist.start( NO_FREE_IDS );
             final ImmutableLongSet reused = LongSets.immutable.of( freelist.nextId(), freelist.nextId() );
             assertEquals( LongSets.immutable.of( id1, id2 ), reused, "IDs are not reused" );
         }
     }
 
     @Test
-    void resetUsabilityOnRestartWithSomeWrites()
+    void resetUsabilityOnRestartWithSomeWrites() throws IOException
     {
         final long id1;
         final long id2;
@@ -166,7 +169,7 @@ class IndexedIdGeneratorRecoverabilityTest
 
         try ( IdGenerator freelist = instantiateFreelist() )
         {
-            freelist.start();
+            freelist.start( NO_FREE_IDS );
 
             // Here we expected that id1 and id2 will be reusable, even if they weren't marked as such in the previous session
             // Making changes to the tree entry where they live will update the generation and all of a sudden the reusable bits
@@ -180,13 +183,13 @@ class IndexedIdGeneratorRecoverabilityTest
     }
 
     @Test
-    void avoidNormalizationDuringRecovery()
+    void avoidNormalizationDuringRecovery() throws IOException
     {
         long id;
         long neighbourId;
         try ( IdGenerator freelist = instantiateFreelist() )
         {
-            freelist.start();
+            freelist.start( NO_FREE_IDS );
             id = freelist.nextId();
             neighbourId = freelist.nextId();
             markUsed( freelist, id, neighbourId );
@@ -204,7 +207,7 @@ class IndexedIdGeneratorRecoverabilityTest
             freelist.checkpoint( UNLIMITED ); // mostly to get the generation persisted
 
             // Normal operations
-            freelist.start();
+            freelist.start( NO_FREE_IDS );
             markFree( freelist, id );
             long idAfterRecovery = freelist.nextId();
             assertEquals( id, idAfterRecovery );
@@ -219,7 +222,7 @@ class IndexedIdGeneratorRecoverabilityTest
             markUsed( freelist, id );
 
             // Normal operations
-            freelist.start();
+            freelist.start( NO_FREE_IDS );
             markDeleted( freelist, id ); // <-- this must be OK
 
             // And as an extra measure of verification

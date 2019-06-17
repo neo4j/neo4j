@@ -25,13 +25,16 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
+import java.io.IOException;
 import java.util.Iterator;
 import java.util.Random;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.LongConsumer;
 
+import org.neo4j.internal.id.FreeIds;
 import org.neo4j.internal.id.IdCapacityExceededException;
 import org.neo4j.internal.id.IdGenerator;
 import org.neo4j.internal.id.IdGenerator.CommitMarker;
@@ -53,6 +56,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.fail;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
+import static org.neo4j.internal.id.FreeIds.NO_FREE_IDS;
 import static org.neo4j.internal.id.indexed.IndexedIdGenerator.IDS_PER_ENTRY;
 
 @PageCacheExtension
@@ -73,7 +77,7 @@ class IndexedIdGeneratorTest
     private IdGenerator freelist;
 
     @BeforeEach
-    void start()
+    void open()
     {
         freelist = new IndexedIdGenerator( pageCache, directory.file( "file" ), immediate(), IdType.LABEL_TOKEN, 0, MAX_ID );
     }
@@ -85,9 +89,10 @@ class IndexedIdGeneratorTest
     }
 
     @Test
-    void shouldAllocateFreedSingleIdSlot()
+    void shouldAllocateFreedSingleIdSlot() throws IOException
     {
         // given
+        freelist.start( NO_FREE_IDS );
         long id = freelist.nextId();
         markUnused( id );
         markReusable( id );
@@ -101,9 +106,10 @@ class IndexedIdGeneratorTest
     }
 
     @Test
-    void shouldNotAllocateFreedIdUntilReused()
+    void shouldNotAllocateFreedIdUntilReused() throws IOException
     {
         // given
+        freelist.start( NO_FREE_IDS );
         long id = freelist.nextId();
         markUnused( id );
         long otherId = freelist.nextId();
@@ -121,6 +127,7 @@ class IndexedIdGeneratorTest
     void shouldStayConsistentAndNotLoseIdsInConcurrentRealWorldSimulation() throws Throwable
     {
         // given
+        freelist.start( NO_FREE_IDS );
         int runTimeSeconds = 1;
         int maxAllocationsAhead = 500;
 
@@ -155,9 +162,10 @@ class IndexedIdGeneratorTest
     }
 
     @Test
-    void shouldNotAllocateReservedMaxIntId()
+    void shouldNotAllocateReservedMaxIntId() throws IOException
     {
         // given
+        freelist.start( NO_FREE_IDS );
         freelist.setHighId( IdValidator.INTEGER_MINUS_ONE );
 
         // when
@@ -169,9 +177,10 @@ class IndexedIdGeneratorTest
     }
 
     @Test
-    void shouldNotGoBeyondMaxId()
+    void shouldNotGoBeyondMaxId() throws IOException
     {
         // given
+        freelist.start( NO_FREE_IDS );
         freelist.setHighId( MAX_ID - 1 );
 
         // when
@@ -190,6 +199,83 @@ class IndexedIdGeneratorTest
         {
             // good
         }
+    }
+
+    @Test
+    void shouldRebuildFromFreeIdsIfWasCreated() throws IOException
+    {
+        // given that it was created in this test right now, we know that
+
+        // when
+        freelist.start( freeIds( 10, 20, 30 ) );
+
+        // then
+        assertEquals( 10L, freelist.nextId() );
+        assertEquals( 20L, freelist.nextId() );
+        assertEquals( 30L, freelist.nextId() );
+    }
+
+    @Test
+    void shouldRebuildFromFreeIdsIfExistedButAtStartingGeneration() throws IOException
+    {
+        // given that it was created in this test right now, we know that
+        freelist.close();
+        open();
+
+        // when
+        freelist.start( freeIds( 10, 20, 30 ) );
+
+        // then
+        assertEquals( 10L, freelist.nextId() );
+        assertEquals( 20L, freelist.nextId() );
+        assertEquals( 30L, freelist.nextId() );
+    }
+
+    @Test
+    void shouldCheckpointAfterRebuild() throws IOException
+    {
+        // given that it was created in this test right now, we know that
+
+        // when
+        freelist.start( freeIds( 10, 20, 30 ) );
+        freelist.close();
+        open();
+
+        // then
+        assertEquals( 10L, freelist.nextId() );
+        assertEquals( 20L, freelist.nextId() );
+        assertEquals( 30L, freelist.nextId() );
+    }
+
+    @Test
+    void shouldNotRebuildInConsecutiveSessions() throws IOException
+    {
+        // given that it was created in this test right now, we know that
+        freelist.start( NO_FREE_IDS );
+        freelist.close();
+        open();
+
+        // when
+        freelist.start( (FreeIds) visitor ->
+        {
+            throw new RuntimeException( "Failing because it should not be called" );
+        } );
+
+        // then
+        assertEquals( 0L, freelist.nextId() );
+        assertEquals( 1L, freelist.nextId() );
+    }
+
+    private static FreeIds freeIds( long... freeIds )
+    {
+        return visitor ->
+        {
+            for ( long freeId : freeIds )
+            {
+                visitor.accept( freeId );
+            }
+            return freeIds[freeIds.length - 1];
+        };
     }
 
     private Runnable freer( ConcurrentLinkedQueue<Allocation> allocations, ConcurrentSparseLongBitSet expectedInUse, AtomicLong freesMade )

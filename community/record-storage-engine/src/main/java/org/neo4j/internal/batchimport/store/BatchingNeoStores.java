@@ -172,7 +172,7 @@ public class BatchingNeoStores implements AutoCloseable, MemoryStatsVisitor.Visi
      *
      * @throws IllegalStateException if {@code storeDir} already contains a database.
      */
-    public void createNew()
+    public void createNew() throws IOException
     {
         assertDatabaseIsEmptyOrNonExistent();
 
@@ -203,7 +203,7 @@ public class BatchingNeoStores implements AutoCloseable, MemoryStatsVisitor.Visi
      * @param mainStoresToKeep {@link Predicate} controlling which files to keep, i.e. {@code true} means keep, {@code false} means delete.
      * @param tempStoresToKeep {@link Predicate} controlling which files to keep, i.e. {@code true} means keep, {@code false} means delete.
      */
-    public void pruneAndOpenExistingStore( Predicate<StoreType> mainStoresToKeep, Predicate<StoreType> tempStoresToKeep )
+    public void pruneAndOpenExistingStore( Predicate<StoreType> mainStoresToKeep, Predicate<StoreType> tempStoresToKeep ) throws IOException
     {
         deleteStoreFiles( temporaryDatabaseLayout, tempStoresToKeep );
         deleteStoreFiles( databaseLayout, mainStoresToKeep );
@@ -231,7 +231,7 @@ public class BatchingNeoStores implements AutoCloseable, MemoryStatsVisitor.Visi
         life.add( labelScanStore );
     }
 
-    private void instantiateStores()
+    private void instantiateStores() throws IOException
     {
         neoStores = newStoreFactory( databaseLayout, idGeneratorFactory ).openAllNeoStores( true );
         countsStore = new CountsTracker( logProvider, fileSystem, pageCache, neo4jConfig, databaseLayout, EmptyVersionContextSupplier.EMPTY );

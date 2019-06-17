@@ -20,11 +20,16 @@
 package org.neo4j.internal.id;
 
 import java.io.Closeable;
+import java.io.IOException;
+import java.util.function.Supplier;
 
+import org.neo4j.collection.PrimitiveLongResourceCollections;
+import org.neo4j.collection.PrimitiveLongResourceIterator;
 import org.neo4j.io.pagecache.IOLimiter;
 
 public interface IdGenerator extends IdSequence, Closeable
 {
+
     /**
      * @param id the highest in use + 1
      */
@@ -55,8 +60,9 @@ public interface IdGenerator extends IdSequence, Closeable
      * Starts the id generator, signaling that the database has entered normal operations mode.
      * Updates to this id generator may have come in before this call and those operations must be treated
      * as recovery operations.
+     * @param freeIdsForRebuild access to stream of ids from the store to use if this id generator needs to be rebuilt when started
      */
-    void start();
+    void start( FreeIds freeIdsForRebuild ) throws IOException;
 
     interface CommitMarker extends AutoCloseable
     {
@@ -174,9 +180,9 @@ public interface IdGenerator extends IdSequence, Closeable
         }
 
         @Override
-        public void start()
+        public void start( FreeIds freeIdsForRebuild ) throws IOException
         {
-            delegate.start();
+            delegate.start( freeIdsForRebuild );
         }
     }
 }

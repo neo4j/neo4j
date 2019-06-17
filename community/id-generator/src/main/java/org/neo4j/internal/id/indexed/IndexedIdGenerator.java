@@ -36,6 +36,7 @@ import java.util.concurrent.locks.ReentrantLock;
 import org.neo4j.index.internal.gbptree.GBPTree;
 import org.neo4j.index.internal.gbptree.GBPTreeVisitor;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
+import org.neo4j.internal.id.FreeIds;
 import org.neo4j.internal.id.IdGenerator;
 import org.neo4j.internal.id.IdType;
 import org.neo4j.internal.id.IdValidator;
@@ -119,10 +120,11 @@ public class IndexedIdGenerator implements IdGenerator
     private final long maxId;
     private final AtomicBoolean atLeastOneIdOnFreelist = new AtomicBoolean();
     private final long generation;
+    private final boolean needsRebuild;
 
     /**
-     * {@code false} after construction and before a call to {@link #start()}, where false means that operations made this freelist
-     * is to be treated as recovery operations. After a call to {@link #start()} the operations are to be treated as normal operations.
+     * {@code false} after construction and before a call to {@link IdGenerator#start(FreeIds)}, where false means that operations made this freelist
+     * is to be treated as recovery operations. After a call to {@link IdGenerator#start(FreeIds)} the operations are to be treated as normal operations.
      */
     private volatile boolean started;
 
@@ -145,7 +147,12 @@ public class IndexedIdGenerator implements IdGenerator
         this.maxId = maxId;
 
         Optional<HeaderReader> header = readHeader( pageCache, file );
-        if ( header.isPresent() )
+        // We check generation here too since we could get into this scenario:
+        // 1. start on existing store, but with missing .id file so that it gets created
+        // 2. rebuild will happen in start(), but perhaps the db was shut down or killed before or during start()
+        // 3. next startup would have said that it wouldn't need rebuild
+        this.needsRebuild = header.isEmpty() || header.get().generation == STARTING_GENERATION;
+        if ( !needsRebuild )
         {
             // This id generator exists, use the values from its header
             this.highId.set( header.get().highId );
@@ -156,8 +163,9 @@ public class IndexedIdGenerator implements IdGenerator
         }
         else
         {
-            // We'll create this index when constructing the GBPTree below
-            this.generation = STARTING_GENERATION;
+            // We'll create this index when constructing the GBPTree below. The generation on its creation will be STARTING_GENERATION,
+            // as written by the HeaderWriter, but the active generation has to be +1 that
+            this.generation = STARTING_GENERATION + 1;
             this.idsPerEntry = idsPerEntryOnCreate;
         }
 
@@ -261,21 +269,16 @@ public class IndexedIdGenerator implements IdGenerator
     @Override
     public CommitMarker commitMarker()
     {
-        commitAndReuseLock.lock();
-        try
-        {
-            return new IdRangeMarker( idsPerEntry, layout, tree.writer(), commitAndReuseLock, started ? IdRangeMerger.DEFAULT : IdRangeMerger.RECOVERY,
-                    atLeastOneIdOnFreelist, generation );
-        }
-        catch ( Exception e )
-        {
-            commitAndReuseLock.unlock();
-            throw new RuntimeException( e );
-        }
+        return lockAndInstantiateMarker();
     }
 
     @Override
     public ReuseMarker reuseMarker()
+    {
+        return lockAndInstantiateMarker();
+    }
+
+    private IdRangeMarker lockAndInstantiateMarker()
     {
         commitAndReuseLock.lock();
         try
@@ -317,8 +320,22 @@ public class IndexedIdGenerator implements IdGenerator
     }
 
     @Override
-    public void start()
+    public void start( FreeIds freeIdsForRebuild ) throws IOException
     {
+        if ( needsRebuild )
+        {
+            // This id generator was created right now, it needs to be populated with all free ids from its owning store so that it's in sync
+            try ( ReuseMarker marker = reuseMarker() )
+            {
+                // We can mark the ids as free right away since this is before started which means we get the very liberal merger
+                long highestFreeId = freeIdsForRebuild.accept( marker::markFree );
+                highId.set( highestFreeId + 1 );
+            }
+            // We can checkpoint here since the free ids we read are committed
+            checkpoint( IOLimiter.UNLIMITED );
+            atLeastOneIdOnFreelist.set( true );
+        }
+
         started = true;
 
         // After potentially recovery has been run and everything is prepared to get going let's call maintenance,

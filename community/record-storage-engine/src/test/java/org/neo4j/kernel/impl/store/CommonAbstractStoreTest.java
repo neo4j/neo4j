@@ -174,7 +174,7 @@ class CommonAbstractStoreTest
     }
 
     @Test
-    void shouldDeleteOnCloseIfOpenOptionsSaysSo()
+    void shouldDeleteOnCloseIfOpenOptionsSaysSo() throws IOException
     {
         // GIVEN
         DatabaseLayout databaseLayout = dir.databaseLayout();

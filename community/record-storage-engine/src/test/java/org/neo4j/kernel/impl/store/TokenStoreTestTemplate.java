@@ -74,7 +74,7 @@ abstract class TokenStoreTestTemplate<R extends TokenRecord>
     private DynamicStringStore nameStore;
 
     @BeforeEach
-    private void setUp()
+    private void setUp() throws IOException
     {
         File file = dir.file( "label-tokens.db" );
         File idFile = dir.file( "label-tokens.db.id" );

@@ -113,7 +113,7 @@ class ReadOnlyHighIdGenerator implements IdGenerator
     }
 
     @Override
-    public void start()
+    public void start( FreeIds freeIdsForRebuild )
     {
         // no-op
     }
