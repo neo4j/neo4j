@@ -202,6 +202,32 @@ abstract class ReactiveResultTestBase[CONTEXT <: RuntimeContext](edition: Editio
     verify(subscriber, times(1)).onResult(1)
   }
 
+  test("should not drop row because of limit") {
+    // given
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x")
+      .limit(2)
+      .input(variables = Seq("x"))
+      .build()
+
+    val input = inputValues(Array(1), Array(2)).stream()
+    val subscriber = new TestSubscriber
+    val result = execute(logicalQuery, runtime, input, subscriber)
+
+    // when
+    result.request(1)
+    result.await()
+    result.request(1)
+    result.await()
+
+    // then
+    subscriber.allSeen should equal(
+      List(
+        List(longValue(1)),
+        List(longValue(2))
+      ))
+  }
+
   private def runtimeResult(subscriber: QuerySubscriber, data: Array[Any]*): RuntimeResult = {
     val variables = (1 to data.head.length).map(i => s"v$i")
     val logicalQuery = new LogicalQueryBuilder(this)
