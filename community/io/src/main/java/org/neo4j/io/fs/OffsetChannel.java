@@ -21,6 +21,7 @@ package org.neo4j.io.fs;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.nio.channels.FileChannel;
 import java.nio.channels.FileLock;
 
 /**
@@ -118,6 +119,12 @@ public class OffsetChannel implements StoreChannel
     public StoreChannel truncate( long size ) throws IOException
     {
         return delegate.truncate( offset( size ) );
+    }
+
+    @Override
+    public FileChannel fileChannel()
+    {
+        return delegate.fileChannel();
     }
 
     @Override

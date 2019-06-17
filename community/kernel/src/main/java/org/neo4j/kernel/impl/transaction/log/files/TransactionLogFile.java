@@ -25,6 +25,7 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.concurrent.atomic.AtomicLong;
 
+import org.neo4j.internal.nativeimpl.NativeAccess;
 import org.neo4j.internal.unsafe.UnsafeUtil;
 import org.neo4j.io.ByteUnit;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -38,6 +39,7 @@ import org.neo4j.kernel.impl.transaction.log.ReadAheadLogChannel;
 import org.neo4j.kernel.impl.transaction.log.ReadableLogChannel;
 import org.neo4j.kernel.impl.transaction.log.ReaderLogVersionBridge;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
+import org.neo4j.logging.Log;
 import org.neo4j.storageengine.api.LogVersionRepository;
 
 import static java.lang.Math.min;
@@ -52,6 +54,9 @@ class TransactionLogFile extends LifecycleAdapter implements LogFile
     private final TransactionLogFiles logFiles;
     private final TransactionLogFilesContext context;
     private final LogVersionBridge readerLogVersionBridge;
+    private final FileSystemAbstraction fileSystem;
+    private final Log log;
+    private final NativeAccess nativeAccess;
     private PositionAwarePhysicalFlushableChannel writer;
     private LogVersionRepository logVersionRepository;
 
@@ -61,8 +66,11 @@ class TransactionLogFile extends LifecycleAdapter implements LogFile
     TransactionLogFile( TransactionLogFiles logFiles, TransactionLogFilesContext context )
     {
         this.rotateAtSize = context.getRotationThreshold();
+        this.fileSystem = context.getFileSystem();
         this.context = context;
         this.logFiles = logFiles;
+        this.log = context.getLogProvider().getLog( TransactionLogFile.class );
+        this.nativeAccess = context.getNativeAccess();
         this.readerLogVersionBridge = new ReaderLogVersionBridge( logFiles );
     }
 
@@ -185,8 +193,19 @@ class TransactionLogFile extends LifecycleAdapter implements LogFile
          * into transaction log that was just rotated.
          */
         PhysicalLogVersionedStoreChannel newLog = logFiles.createLogChannelForVersion( newLogVersion, context::committingTransactionId );
+        trySkipSystemCache( currentLog );
         currentLog.close();
         return newLog;
+    }
+
+    private void trySkipSystemCache( LogVersionedStoreChannel currentLog )
+    {
+        int fileDescriptor = fileSystem.getFileDescriptor( currentLog );
+        int result = nativeAccess.trySkipCache( fileDescriptor );
+        if ( result < 0 )
+        {
+            log.warn( "Unable to skip cache for transaction log version: " + currentLog.getVersion() + ". Error code: " + result );
+        }
     }
 
     @Override

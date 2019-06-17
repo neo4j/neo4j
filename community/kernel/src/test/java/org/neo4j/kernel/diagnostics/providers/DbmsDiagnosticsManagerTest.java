@@ -21,6 +21,9 @@ package org.neo4j.kernel.diagnostics.providers;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.DisabledOnOs;
+import org.junit.jupiter.api.condition.EnabledOnOs;
+import org.junit.jupiter.api.condition.OS;
 
 import java.io.IOException;
 import java.util.Collections;
@@ -136,7 +139,22 @@ class DbmsDiagnosticsManagerTest
         {
             logProvider.formattedMessageMatcher().assertContains( "Database: " + i );
         }
+    }
 
+    @Test
+    @EnabledOnOs( OS.LINUX )
+    void dumpNativeAccessProviderOnLinux()
+    {
+        diagnosticsManager.dumpAll();
+        logProvider.rawMessageMatcher().assertContains( "Linux native access is available." );
+    }
+
+    @Test
+    @DisabledOnOs( OS.LINUX )
+    void dumpNativeAccessProviderOnNonLinux()
+    {
+        diagnosticsManager.dumpAll();
+        logProvider.rawMessageMatcher().assertContains( "Native access is not available for current platform." );
     }
 
     @Test

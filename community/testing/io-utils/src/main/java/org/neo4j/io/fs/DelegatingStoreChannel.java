@@ -21,6 +21,7 @@ package org.neo4j.io.fs;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.nio.channels.FileChannel;
 import java.nio.channels.FileLock;
 
 public class DelegatingStoreChannel implements StoreChannel
@@ -61,6 +62,12 @@ public class DelegatingStoreChannel implements StoreChannel
     {
         delegate.truncate( size );
         return this;
+    }
+
+    @Override
+    public FileChannel fileChannel()
+    {
+        return delegate.fileChannel();
     }
 
     @Override

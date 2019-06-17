@@ -22,6 +22,7 @@ package org.neo4j.io.fs;
 import java.io.Flushable;
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.nio.channels.FileChannel;
 import java.nio.channels.FileLock;
 import java.nio.channels.GatheringByteChannel;
 import java.nio.channels.InterruptibleChannel;
@@ -75,4 +76,10 @@ public interface StoreChannel
 
     @Override
     StoreChannel truncate( long size ) throws IOException;
+
+    /**
+     * Provide underlying file channel
+     * @return underlying file channel
+     */
+    FileChannel fileChannel();
 }

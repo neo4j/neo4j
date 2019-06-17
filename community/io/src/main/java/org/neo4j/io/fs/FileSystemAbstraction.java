@@ -40,6 +40,7 @@ import org.neo4j.io.fs.watcher.FileWatcher;
 
 public interface FileSystemAbstraction extends Closeable
 {
+    int INVALID_FILE_DESCRIPTOR = -1;
     CopyOption[] EMPTY_COPY_OPTIONS = new CopyOption[0];
 
     /**
@@ -154,4 +155,11 @@ public interface FileSystemAbstraction extends Closeable
      * @throws IOException If an I/O error occurs, possibly with the canonicalisation of the paths.
      */
     Stream<FileHandle> streamFilesRecursive( File directory ) throws IOException;
+
+    /**
+     * Get underlying store channel file descriptor.
+     * @param channel channel to get descriptor from
+     * @return {@link #INVALID_FILE_DESCRIPTOR} when can't get descriptor from provided channel or underlying channel id otherwise.
+     */
+    int getFileDescriptor( StoreChannel channel );
 }

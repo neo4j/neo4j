@@ -218,6 +218,12 @@ public class SelectiveFileSystemAbstraction implements FileSystemAbstraction
 
     }
 
+    @Override
+    public int getFileDescriptor( StoreChannel channel )
+    {
+        return defaultFileSystem.getFileDescriptor( channel );
+    }
+
     private FileSystemAbstraction chooseFileSystem( File file )
     {
         return file.equals( specialFile ) ? specialFileSystem : defaultFileSystem;

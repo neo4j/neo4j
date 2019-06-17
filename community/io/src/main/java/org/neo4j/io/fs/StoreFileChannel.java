@@ -87,6 +87,12 @@ public class StoreFileChannel implements StoreChannel
     }
 
     @Override
+    public FileChannel fileChannel()
+    {
+        return channel;
+    }
+
+    @Override
     public StoreFileChannel position( long newPosition ) throws IOException
     {
         channel.position( newPosition );

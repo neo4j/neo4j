@@ -21,6 +21,7 @@ package org.neo4j.test.limited;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.nio.channels.FileChannel;
 import java.nio.channels.FileLock;
 
 import org.neo4j.io.fs.StoreChannel;
@@ -96,6 +97,12 @@ public class LimitedFileChannel implements StoreChannel
     public LimitedFileChannel truncate( long l ) throws IOException
     {
         return new LimitedFileChannel( inner.truncate( l ), fs );
+    }
+
+    @Override
+    public FileChannel fileChannel()
+    {
+        return inner.fileChannel();
     }
 
     @Override

@@ -80,10 +80,14 @@
     </build>
 
     <dependencies>
-        <!-- main dependencies, internal -->
         <dependency>
             <groupId>org.neo4j</groupId>
             <artifactId>annotations</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.neo4j</groupId>
+            <artifactId>neo4j-native</artifactId>
+            <version>${project.version}</version>
         </dependency>
         <dependency>
             <groupId>org.neo4j</groupId>

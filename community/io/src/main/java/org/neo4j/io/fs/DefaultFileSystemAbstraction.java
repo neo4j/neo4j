@@ -47,6 +47,7 @@ import static java.lang.String.format;
 import static java.nio.file.StandardOpenOption.CREATE;
 import static java.nio.file.StandardOpenOption.READ;
 import static java.nio.file.StandardOpenOption.WRITE;
+import static java.util.Objects.requireNonNull;
 
 /**
  * Default file system abstraction that creates files using the underlying file system.
@@ -231,6 +232,13 @@ public class DefaultFileSystemAbstraction implements FileSystemAbstraction
     public Stream<FileHandle> streamFilesRecursive( File directory ) throws IOException
     {
         return StreamFilesRecursive.streamFilesRecursive( directory, this );
+    }
+
+    @Override
+    public int getFileDescriptor( StoreChannel channel )
+    {
+        requireNonNull( channel );
+        return FileUtils.getFileDescriptor( channel.fileChannel() );
     }
 
     protected StoreFileChannel getStoreFileChannel( FileChannel channel )

@@ -240,6 +240,12 @@ public abstract class FileSystemRule<FS extends FileSystemAbstraction> extends E
     }
 
     @Override
+    public int getFileDescriptor( StoreChannel channel )
+    {
+        return fs.getFileDescriptor( channel );
+    }
+
+    @Override
     public int hashCode()
     {
         return fs.hashCode();

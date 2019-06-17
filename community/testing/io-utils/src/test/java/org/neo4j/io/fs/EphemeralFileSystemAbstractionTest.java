@@ -19,11 +19,32 @@
  */
 package org.neo4j.io.fs;
 
+import org.junit.jupiter.api.Test;
+
+import java.io.File;
+import java.io.IOException;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.neo4j.io.fs.FileSystemAbstraction.INVALID_FILE_DESCRIPTOR;
+
 public class EphemeralFileSystemAbstractionTest extends FileSystemAbstractionTest
 {
     @Override
     protected FileSystemAbstraction buildFileSystemAbstraction()
     {
         return new EphemeralFileSystemAbstraction();
+    }
+
+    @Test
+    void ephemeralFileSystemFileDescriptors() throws IOException
+    {
+        fsa.mkdirs( path );
+        assertTrue( fsa.fileExists( path ) );
+        path = new File( path, "some_file" );
+        try ( StoreChannel channel = fsa.write( path ) )
+        {
+            assertEquals( INVALID_FILE_DESCRIPTOR, fsa.getFileDescriptor( channel ) );
+        }
     }
 }

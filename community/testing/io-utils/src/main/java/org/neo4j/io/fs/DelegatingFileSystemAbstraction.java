@@ -110,6 +110,12 @@ public class DelegatingFileSystemAbstraction implements FileSystemAbstraction
     }
 
     @Override
+    public int getFileDescriptor( StoreChannel channel )
+    {
+        return delegate.getFileDescriptor( channel );
+    }
+
+    @Override
     public void renameFile( File from, File to, CopyOption... copyOptions ) throws IOException
     {
         delegate.renameFile( from, to, copyOptions );

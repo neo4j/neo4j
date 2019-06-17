@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.transaction.log;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.nio.channels.FileChannel;
 import java.nio.channels.FileLock;
 
 import org.neo4j.io.fs.StoreChannel;
@@ -89,6 +90,12 @@ public class PhysicalLogVersionedStoreChannel implements LogVersionedStoreChanne
     public StoreChannel truncate( long size ) throws IOException
     {
         return delegateChannel.truncate( size );
+    }
+
+    @Override
+    public FileChannel fileChannel()
+    {
+        return delegateChannel.fileChannel();
     }
 
     @Override

@@ -23,8 +23,11 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.LongSupplier;
 import java.util.function.Supplier;
 
+import org.neo4j.internal.nativeimpl.NativeAccess;
+import org.neo4j.internal.nativeimpl.NativeAccessProvider;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReader;
+import org.neo4j.logging.LogProvider;
 import org.neo4j.storageengine.api.LogVersionRepository;
 
 class TransactionLogFilesContext
@@ -36,11 +39,12 @@ class TransactionLogFilesContext
     private final Supplier<LogVersionRepository> logVersionRepositorySupplier;
     private final LogFileCreationMonitor logFileCreationMonitor;
     private final FileSystemAbstraction fileSystem;
+    private final LogProvider logProvider;
 
     TransactionLogFilesContext( AtomicLong rotationThreshold, LogEntryReader logEntryReader,
             LongSupplier lastCommittedTransactionIdSupplier, LongSupplier committingTransactionIdSupplier,
             LogFileCreationMonitor logFileCreationMonitor, Supplier<LogVersionRepository> logVersionRepositorySupplier,
-            FileSystemAbstraction fileSystem )
+            FileSystemAbstraction fileSystem, LogProvider logProvider )
     {
         this.rotationThreshold = rotationThreshold;
         this.logEntryReader = logEntryReader;
@@ -49,6 +53,7 @@ class TransactionLogFilesContext
         this.logVersionRepositorySupplier = logVersionRepositorySupplier;
         this.logFileCreationMonitor = logFileCreationMonitor;
         this.fileSystem = fileSystem;
+        this.logProvider = logProvider;
     }
 
     AtomicLong getRotationThreshold()
@@ -84,5 +89,15 @@ class TransactionLogFilesContext
     FileSystemAbstraction getFileSystem()
     {
         return fileSystem;
+    }
+
+    public LogProvider getLogProvider()
+    {
+        return logProvider;
+    }
+
+    public NativeAccess getNativeAccess()
+    {
+        return NativeAccessProvider.getNativeAccess();
     }
 }

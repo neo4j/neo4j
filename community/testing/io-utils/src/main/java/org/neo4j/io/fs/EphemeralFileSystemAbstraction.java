@@ -694,6 +694,12 @@ public class EphemeralFileSystemAbstraction implements FileSystemAbstraction
         return StreamFilesRecursive.streamFilesRecursive( directory, this );
     }
 
+    @Override
+    public int getFileDescriptor( StoreChannel channel )
+    {
+        return INVALID_FILE_DESCRIPTOR;
+    }
+
     @SuppressWarnings( "serial" )
     private static class FileStillOpenException extends Exception
     {

@@ -254,6 +254,12 @@ public class AdversarialFileSystemAbstraction implements FileSystemAbstraction
     }
 
     @Override
+    public int getFileDescriptor( StoreChannel channel )
+    {
+        return delegate.getFileDescriptor( channel );
+    }
+
+    @Override
     public void close() throws IOException
     {
         adversary.injectFailure( IOException.class, SecurityException.class );

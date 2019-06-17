@@ -32,6 +32,8 @@ import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReader;
 import org.neo4j.kernel.impl.transaction.log.entry.VersionAwareLogEntryReader;
+import org.neo4j.logging.LogProvider;
+import org.neo4j.logging.NullLogProvider;
 import org.neo4j.storageengine.api.LogVersionRepository;
 import org.neo4j.storageengine.api.StorageEngineFactory;
 import org.neo4j.storageengine.api.TransactionIdStore;
@@ -60,6 +62,7 @@ public class LogFilesBuilder
     private Config config;
     private Long rotationThreshold;
     private LogEntryReader logEntryReader;
+    private LogProvider logProvider = NullLogProvider.getInstance();
     private LogFileCreationMonitor logFileCreationMonitor;
     private DependencyResolver dependencies;
     private FileSystemAbstraction fileSystem;
@@ -134,6 +137,12 @@ public class LogFilesBuilder
     public LogFilesBuilder withTransactionIdStore( TransactionIdStore transactionIdStore )
     {
         this.transactionIdStore = transactionIdStore;
+        return this;
+    }
+
+    public LogFilesBuilder withLogProvider( LogProvider logProvider )
+    {
+        this.logProvider = logProvider;
         return this;
     }
 
@@ -213,7 +222,7 @@ public class LogFilesBuilder
         AtomicLong rotationThreshold = getRotationThresholdAndRegisterForUpdates();
 
         return new TransactionLogFilesContext( rotationThreshold, logEntryReader,
-                lastCommittedIdSupplier, committingTransactionIdSupplier, logFileCreationMonitor, logVersionRepositorySupplier, fileSystem );
+                lastCommittedIdSupplier, committingTransactionIdSupplier, logFileCreationMonitor, logVersionRepositorySupplier, fileSystem, logProvider );
     }
 
     private AtomicLong getRotationThresholdAndRegisterForUpdates()

@@ -47,6 +47,9 @@ Eclipse Public License - v 1.0
 Eclipse Public License v2.0
   javax.ws.rs-api
 
+GNU Lesser General Public License, Version 2.1
+  Java Native Access
+
 Dependencies with multiple licenses
 -----------------------------------
 

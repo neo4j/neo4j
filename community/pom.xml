@@ -44,6 +44,7 @@
     <module>procedure</module>
     <module>unsafe</module>
     <module>io</module>
+    <module>native</module>
     <module>diagnostics</module>
     <module>storage-engine-api</module>
     <module>kernel-api</module>

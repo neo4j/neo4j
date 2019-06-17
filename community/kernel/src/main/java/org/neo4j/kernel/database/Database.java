@@ -348,8 +348,8 @@ public class Database extends LifecycleAdapter
             final LogEntryReader<ReadableClosablePositionAwareChannel> logEntryReader = new VersionAwareLogEntryReader<>();
 
             LogFiles logFiles =
-                    LogFilesBuilder.builder( databaseLayout, fs ).withLogEntryReader( logEntryReader ).withLogFileMonitor( physicalLogMonitor ).withConfig(
-                            databaseConfig ).withDependencies( databaseDependencies ).build();
+                    LogFilesBuilder.builder( databaseLayout, fs ).withLogEntryReader( logEntryReader ).withLogFileMonitor( physicalLogMonitor )
+                            .withConfig( databaseConfig ).withDependencies( databaseDependencies ).withLogProvider( internalLogProvider ).build();
 
             databaseMonitors.addMonitorListener( new LoggingLogFileMonitor( msgLog ) );
             databaseMonitors.addMonitorListener( new LoggingLogTailScannerMonitor( internalLogProvider.getLog( LogTailScanner.class ) ) );

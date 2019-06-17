@@ -190,6 +190,9 @@ GNU General Public License, version 2 with the Classpath Exception
   Extended StAX API
   Java Servlet API
 
+GNU Lesser General Public License, Version 2.1
+  Java Native Access
+
 ISC
   abbrev
   aproba

@@ -48,6 +48,8 @@ import java.util.Set;
 import java.util.TimeZone;
 
 import org.neo4j.internal.diagnostics.DiagnosticsProvider;
+import org.neo4j.internal.nativeimpl.NativeAccess;
+import org.neo4j.internal.nativeimpl.NativeAccessProvider;
 import org.neo4j.io.fs.FileUtils;
 import org.neo4j.io.os.OsBeanUtil;
 import org.neo4j.logging.Logger;
@@ -277,6 +279,15 @@ public enum SystemDiagnostics implements DiagnosticsProvider
             {
                 logger.log( "ERROR: failed to inspect network interfaces and addresses: " + e.getMessage() );
             }
+        }
+    },
+    NATIVE_ACCESSOR( "Native access information" )
+    {
+        @Override
+        public void dump( Logger logger )
+        {
+            NativeAccess nativeAccess = NativeAccessProvider.getNativeAccess();
+            logger.log( "Native access details: " + nativeAccess.describe() );
         }
     };
 

@@ -23,6 +23,7 @@ import org.apache.commons.lang3.SystemUtils;
 
 import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileDescriptor;
 import java.io.FileFilter;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
@@ -37,6 +38,7 @@ import java.io.PrintWriter;
 import java.io.RandomAccessFile;
 import java.io.UncheckedIOException;
 import java.io.Writer;
+import java.lang.reflect.Field;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.channels.SeekableByteChannel;
@@ -56,7 +58,6 @@ import java.nio.file.SimpleFileVisitor;
 import java.nio.file.StandardCopyOption;
 import java.nio.file.StandardOpenOption;
 import java.nio.file.attribute.BasicFileAttributes;
-import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -65,6 +66,10 @@ import static java.nio.file.StandardOpenOption.APPEND;
 import static java.nio.file.StandardOpenOption.CREATE;
 import static java.nio.file.StandardOpenOption.READ;
 import static java.nio.file.StandardOpenOption.WRITE;
+import static java.util.Objects.requireNonNull;
+import static org.apache.commons.lang3.reflect.FieldUtils.getDeclaredField;
+import static org.neo4j.io.fs.FileSystemAbstraction.INVALID_FILE_DESCRIPTOR;
+import static org.neo4j.util.FeatureToggles.flag;
 
 /**
  * Set of utility methods to work with {@link File} and {@link Path} using the {@link DefaultFileSystemAbstraction default file system}.
@@ -75,11 +80,47 @@ import static java.nio.file.StandardOpenOption.WRITE;
  */
 public class FileUtils
 {
+    private static final boolean PRINT_REFLECTION_EXCEPTIONS = flag( FileUtils.class, "printReflectionExceptions", false );
     private static final int NUMBER_OF_RETRIES = 5;
+
+    private static Field CHANNEL_FILE_DESCRIPTOR;
+    private static Field FILE_DESCRIPTOR_FIELD;
+
+    static
+    {
+        try
+        {
+            Class<?> fileChannelClass = Class.forName( "sun.nio.ch.FileChannelImpl" );
+            CHANNEL_FILE_DESCRIPTOR = requireNonNull( getDeclaredField( fileChannelClass, "fd", true ) );
+            FILE_DESCRIPTOR_FIELD = getDeclaredField( FileDescriptor.class, "fd", true );
+        }
+        catch ( Exception e )
+        {
+            throw new RuntimeException( "Unable to get channel file descriptor field.", e );
+        }
+    }
 
     private FileUtils()
     {
         throw new AssertionError();
+    }
+
+    static int getFileDescriptor( FileChannel fileChannel )
+    {
+        requireNonNull( fileChannel );
+        try
+        {
+            FileDescriptor fileDescriptor = (FileDescriptor) CHANNEL_FILE_DESCRIPTOR.get( fileChannel );
+            return FILE_DESCRIPTOR_FIELD.getInt( fileDescriptor );
+        }
+        catch ( IllegalAccessException | IllegalArgumentException e )
+        {
+            if ( PRINT_REFLECTION_EXCEPTIONS )
+            {
+                e.printStackTrace();
+            }
+            return INVALID_FILE_DESCRIPTOR;
+        }
     }
 
     public static void deleteRecursively( File directory ) throws IOException
@@ -550,7 +591,7 @@ public class FileUtils
                 waitAndThenTriggerGC();
             }
         }
-        throw Objects.requireNonNull( storedIoe );
+        throw requireNonNull( storedIoe );
     }
 
     public interface LineListener

@@ -27,10 +27,13 @@ import java.util.UUID;
 
 import static java.lang.String.format;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.core.Is.is;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.neo4j.io.fs.DefaultFileSystemAbstraction.UNABLE_TO_CREATE_DIRECTORY_FORMAT;
+import static org.neo4j.io.fs.FileSystemAbstraction.INVALID_FILE_DESCRIPTOR;
 
 public class DefaultFileSystemAbstractionTest extends FileSystemAbstractionTest
 {
@@ -38,6 +41,30 @@ public class DefaultFileSystemAbstractionTest extends FileSystemAbstractionTest
     protected FileSystemAbstraction buildFileSystemAbstraction()
     {
         return new DefaultFileSystemAbstraction();
+    }
+
+    @Test
+    void retrieveFileDescriptor() throws IOException
+    {
+        File testFile = testDirectory.file( "testFile" );
+        try ( StoreChannel storeChannel = fsa.write( testFile ) )
+        {
+            int fileDescriptor = fsa.getFileDescriptor( storeChannel );
+            assertThat( fileDescriptor, greaterThan( 0 ) );
+        }
+    }
+
+    @Test
+    void retrieveFileDescriptorOnClosedChannel() throws IOException
+    {
+        File testFile = testDirectory.file( "testFile" );
+        StoreChannel escapedChannel = null;
+        try ( StoreChannel storeChannel = fsa.write( testFile ) )
+        {
+            escapedChannel = storeChannel;
+        }
+        int fileDescriptor = fsa.getFileDescriptor( escapedChannel );
+        assertThat( fileDescriptor, equalTo( INVALID_FILE_DESCRIPTOR ) );
     }
 
     @Test
