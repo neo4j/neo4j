@@ -19,6 +19,7 @@
  */
 package org.neo4j.server.modules;
 
+import java.util.List;
 import java.util.function.Supplier;
 import java.util.regex.Pattern;
 import javax.servlet.Filter;
@@ -37,10 +38,10 @@ public class AuthorizationModule implements ServerModule
     private final Config config;
     private final Supplier<AuthManager> authManagerSupplier;
     private final LogProvider logProvider;
-    private final Pattern[] uriWhitelist;
+    private final List<Pattern> uriWhitelist;
 
     public AuthorizationModule( WebServer webServer, Supplier<AuthManager> authManager, LogProvider logProvider,
-            Config config, Pattern[] uriWhitelist )
+            Config config, List<Pattern> uriWhitelist )
     {
         this.webServer = webServer;
         this.config = config;

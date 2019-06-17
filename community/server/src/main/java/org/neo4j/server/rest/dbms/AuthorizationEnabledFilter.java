@@ -21,6 +21,7 @@ package org.neo4j.server.rest.dbms;
 
 import java.io.IOException;
 import java.net.URI;
+import java.util.List;
 import java.util.Map;
 import java.util.function.Supplier;
 import java.util.regex.Pattern;
@@ -61,9 +62,9 @@ public class AuthorizationEnabledFilter extends AuthorizationFilter
 
     private final Supplier<AuthManager> authManagerSupplier;
     private final Log log;
-    private final Pattern[] uriWhitelist;
+    private final List<Pattern> uriWhitelist;
 
-    public AuthorizationEnabledFilter( Supplier<AuthManager> authManager, LogProvider logProvider, Pattern... uriWhitelist )
+    public AuthorizationEnabledFilter( Supplier<AuthManager> authManager, LogProvider logProvider, List<Pattern> uriWhitelist )
     {
         this.authManagerSupplier = authManager;
         this.log = logProvider.getLog( getClass() );

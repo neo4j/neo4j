@@ -68,6 +68,7 @@ import org.neo4j.ssl.SslPolicy;
 import org.neo4j.ssl.config.SslPolicyLoader;
 import org.neo4j.time.Clocks;
 
+import static java.util.stream.Collectors.toUnmodifiableList;
 import static org.neo4j.configuration.GraphDatabaseSettings.db_timezone;
 import static org.neo4j.server.configuration.ServerSettings.http_log_path;
 import static org.neo4j.server.configuration.ServerSettings.http_logging_enabled;
@@ -85,14 +86,14 @@ public abstract class AbstractNeoServer implements NeoServer
      */
     private static final long ROUNDING_SECOND = 1000L;
 
-    private final Pattern[] authWhitelist;
-    public static final String NEO4J_IS_STARTING_MESSAGE = "======== Neo4j " + Version.getNeo4jVersion() + " ========";
+    static final String NEO4J_IS_STARTING_MESSAGE = "======== Neo4j " + Version.getNeo4jVersion() + " ========";
 
     protected final LogProvider userLogProvider;
     private final Log log;
 
     private final List<ServerModule> serverModules = new ArrayList<>();
     private final SimpleUriBuilder uriBuilder = new SimpleUriBuilder();
+    private final List<Pattern> authWhitelist;
     private final Config config;
     private final LifeSupport life = new LifeSupport();
     private final boolean httpEnabled;
@@ -318,7 +319,7 @@ public abstract class AbstractNeoServer implements NeoServer
         return databaseService.getSystemDatabase().getDependencyResolver();
     }
 
-    protected Pattern[] getUriWhitelist()
+    protected List<Pattern> getUriWhitelist()
     {
         return authWhitelist;
     }
@@ -404,15 +405,12 @@ public abstract class AbstractNeoServer implements NeoServer
         }
     }
 
-    private static Pattern[] parseAuthWhitelist( Config config )
+    private static List<Pattern> parseAuthWhitelist( Config config )
     {
-        var whitelist = config.get( ServerSettings.http_auth_whitelist );
-        var patterns = new Pattern[whitelist.size()];
-        for ( int i = 0; i < whitelist.size(); i++ )
-        {
-            patterns[i] = Pattern.compile( whitelist.get( i ) );
-        }
-        return patterns;
+        return config.get( ServerSettings.http_auth_whitelist )
+                .stream()
+                .map( Pattern::compile )
+                .collect( toUnmodifiableList() );
     }
 
     private class ServerDependenciesLifeCycleAdapter extends LifecycleAdapter
