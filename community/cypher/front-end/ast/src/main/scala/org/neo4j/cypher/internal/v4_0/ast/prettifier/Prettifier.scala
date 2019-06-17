@@ -115,20 +115,20 @@ case class Prettifier(expr: ExpressionStringifier) {
       s"${x.name} ${roleNames.map(Prettifier.escapeName).mkString(", " )} FROM ${userNames.map(Prettifier.escapeName).mkString(", ")}"
 
     case x @ GrantPrivilege(TraversePrivilege(), _, dbScope, qualifier, roleNames) =>
-      val (dbName, label) = Prettifier.extractScope(dbScope, qualifier)
-      s"${x.name} ON GRAPH $dbName NODES $label (*) TO ${Prettifier.escapeNames(roleNames)}"
+      val (dbName, segment) = Prettifier.extractScope(dbScope, qualifier)
+      s"${x.name} ON GRAPH $dbName $segment (*) TO ${Prettifier.escapeNames(roleNames)}"
 
     case x @ RevokePrivilege(TraversePrivilege(), _, dbScope, qualifier, roleNames) =>
-      val (dbName, label) = Prettifier.extractScope(dbScope, qualifier)
-      s"${x.name} ON GRAPH $dbName NODES $label (*) FROM ${Prettifier.escapeNames(roleNames)}"
+      val (dbName, segment) = Prettifier.extractScope(dbScope, qualifier)
+      s"${x.name} ON GRAPH $dbName $segment (*) FROM ${Prettifier.escapeNames(roleNames)}"
 
     case x @ GrantPrivilege(_, resource, dbScope, qualifier, roleNames) =>
-      val (resourceName, dbName, label) = Prettifier.extractScope(resource, dbScope, qualifier)
-      s"${x.name} ($resourceName) ON GRAPH $dbName NODES $label (*) TO ${Prettifier.escapeNames(roleNames)}"
+      val (resourceName, dbName, segment) = Prettifier.extractScope(resource, dbScope, qualifier)
+      s"${x.name} ($resourceName) ON GRAPH $dbName $segment (*) TO ${Prettifier.escapeNames(roleNames)}"
 
     case x @ RevokePrivilege(_, resource, dbScope, qualifier, roleNames) =>
-      val (resourceName, dbName, label) = Prettifier.extractScope(resource, dbScope, qualifier)
-      s"${x.name} ($resourceName) ON GRAPH $dbName NODES $label (*) FROM ${Prettifier.escapeNames(roleNames)}"
+      val (resourceName, dbName, segment) = Prettifier.extractScope(resource, dbScope, qualifier)
+      s"${x.name} ($resourceName) ON GRAPH $dbName $segment (*) FROM ${Prettifier.escapeNames(roleNames)}"
 
     case x @ ShowPrivileges(scope) =>
       s"SHOW ${Prettifier.extractScope(scope)} PRIVILEGES"
@@ -384,13 +384,17 @@ object Prettifier {
       case AllGraphsScope() => "*"
       case _ => "<unknown>"
     }
-    val label = qualifier match {
-      case LabelQualifier(name) => escapeName(name)
-      case LabelsQualifier(names) => names.map(escapeName).mkString(", ")
-      case AllQualifier() => "*"
+    val segment = qualifier match {
+      case LabelQualifier(name) => "NODES " + escapeName(name)
+      case LabelsQualifier(names) => "NODES " + names.map(escapeName).mkString(", ")
+      case LabelAllQualifier() => "NODES *"
+      case RelationshipQualifier(name) => "RELATIONSHIPS " + escapeName(name)
+      case RelationshipsQualifier(names) => "RELATIONSHIPS " + names.map(escapeName).mkString(", ")
+      case RelationshipAllQualifier() => "RELATIONSHIPS *"
+      case AllQualifier() => "ELEMENTS *"
       case _ => "<unknown>"
     }
-    (resourceName, dbName, label)
+    (resourceName, dbName, segment)
   }
 
   /*

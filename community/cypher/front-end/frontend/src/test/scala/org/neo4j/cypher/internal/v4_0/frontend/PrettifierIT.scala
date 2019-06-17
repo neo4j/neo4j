@@ -342,7 +342,7 @@ class PrettifierIT extends CypherFunSuite {
         "SHOW ROLE `$role` PRIVILEGES",
 
       "grant traverse on graph * to role" ->
-        "GRANT TRAVERSE ON GRAPH * NODES * (*) TO role",
+        "GRANT TRAVERSE ON GRAPH * ELEMENTS * (*) TO role",
 
       "grant traverse on graph * nodes * to role" ->
         "GRANT TRAVERSE ON GRAPH * NODES * (*) TO role",
@@ -363,7 +363,7 @@ class PrettifierIT extends CypherFunSuite {
         "GRANT TRAVERSE ON GRAPH foo NODES A, B, C (*) TO x, y, z",
 
       "grant read (*) on graph * to role" ->
-        "GRANT READ (*) ON GRAPH * NODES * (*) TO role",
+        "GRANT READ (*) ON GRAPH * ELEMENTS * (*) TO role",
 
       "grant read (*) on graph * nodes * to role" ->
         "GRANT READ (*) ON GRAPH * NODES * (*) TO role",
@@ -405,7 +405,7 @@ class PrettifierIT extends CypherFunSuite {
         "GRANT WRITE (*) ON GRAPH foo NODES * (*) TO role",
 
       "revoke traverse on graph * from role" ->
-        "REVOKE TRAVERSE ON GRAPH * NODES * (*) FROM role",
+        "REVOKE TRAVERSE ON GRAPH * ELEMENTS * (*) FROM role",
 
       "revoke traverse on graph * nodes * from role" ->
         "REVOKE TRAVERSE ON GRAPH * NODES * (*) FROM role",
@@ -426,7 +426,7 @@ class PrettifierIT extends CypherFunSuite {
         "REVOKE TRAVERSE ON GRAPH foo NODES A, B, C (*) FROM x, y, z",
 
       "revoke read (*) on graph * from role" ->
-        "REVOKE READ (*) ON GRAPH * NODES * (*) FROM role",
+        "REVOKE READ (*) ON GRAPH * ELEMENTS * (*) FROM role",
 
       "revoke read (*) on graph * nodes * from role" ->
         "REVOKE READ (*) ON GRAPH * NODES * (*) FROM role",

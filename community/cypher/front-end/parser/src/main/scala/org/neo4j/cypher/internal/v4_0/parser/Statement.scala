@@ -227,13 +227,20 @@ trait Statement extends Parser
 
   private def ScopeQualifier: Rule1[PrivilegeQualifier] = rule("which element type and associated labels (props) qualifier combination")(
     group(NodeKeyword ~~ SymbolicNamesList ~~ optional("(" ~~ "*" ~~ ")")) ~~>> {ast.LabelsQualifier(_)} |
-      optional(NodeKeyword ~~ "*" ~~ optional("(" ~~ "*" ~~ ")")) ~~~> {ast.AllQualifier()}
+    group(NodeKeyword ~~ "*" ~~ optional("(" ~~ "*" ~~ ")")) ~~~> {ast.LabelAllQualifier()} |
+    group(RelationshipKeyword ~~ SymbolicNamesList ~~ optional("(" ~~ "*" ~~ ")")) ~~>> {ast.RelationshipsQualifier(_)} |
+    group(RelationshipKeyword ~~ "*" ~~ optional("(" ~~ "*" ~~ ")")) ~~~> {ast.RelationshipAllQualifier()} |
+    optional(ElementKeyword ~~ "*" ~~ optional("(" ~~ "*" ~~ ")")) ~~~> {ast.AllQualifier()}
   )
 
   // TODO can be removed once we have more fine-grained writes
   private def AllScopeQualifier: Rule1[PrivilegeQualifier] = rule("all element types and associated labels (props) qualifier combinations")(
     optional(NodeKeyword ~~ "*" ~~ optional("(" ~~ "*" ~~ ")")) ~~~> {ast.AllQualifier()}
   )
+
+  private def ElementKeyword: Rule0 = keyword("ELEMENTS") | keyword("ELEMENT")
+
+  private def RelationshipKeyword: Rule0 = keyword("RELATIONSHIPS") | keyword("RELATIONSHIP")
 
   private def NodeKeyword: Rule0 = keyword("NODE") | keyword("NODES")
 

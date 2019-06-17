@@ -168,7 +168,19 @@ final case class LabelsQualifier(labels: Seq[String])(val position: InputPositio
   override def simplify: Seq[PrivilegeQualifier] = labels.map(LabelQualifier(_)(position))
 }
 
-final case class AllQualifier()(val position: InputPosition) extends PrivilegeQualifier
+final case class RelationshipQualifier(reltype: String)(val position: InputPosition) extends PrivilegeQualifier
+
+final case class RelationshipsQualifier(reltypes: Seq[String])(val position: InputPosition) extends PrivilegeQualifier {
+  override def simplify: Seq[PrivilegeQualifier] = reltypes.map(RelationshipQualifier(_)(position))
+}
+
+final case class AllQualifier()(val position: InputPosition) extends PrivilegeQualifier {
+  override def simplify: Seq[PrivilegeQualifier] = Seq(LabelAllQualifier()(position), RelationshipAllQualifier()(position))
+}
+
+final case class LabelAllQualifier()(val position: InputPosition) extends PrivilegeQualifier
+
+final case class RelationshipAllQualifier()(val position: InputPosition) extends PrivilegeQualifier
 
 sealed trait GraphScope
 
