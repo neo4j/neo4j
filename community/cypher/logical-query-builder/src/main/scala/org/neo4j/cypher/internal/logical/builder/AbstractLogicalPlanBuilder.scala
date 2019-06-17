@@ -251,7 +251,7 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
 
   def nodeByIdSeek(node: String, ids: Long*): IMPL = {
     newNode(varFor(node))
-      val idExpressions = ids.map(l => UnsignedDecimalIntegerLiteral(l.toString)(pos))
+    val idExpressions = ids.map(l => UnsignedDecimalIntegerLiteral(l.toString)(pos))
     val input =
       if (idExpressions.length == 1) {
         SingleSeekableArg(idExpressions.head)
@@ -259,7 +259,7 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
         ManySeekableArgs(ListLiteral(idExpressions)(pos))
       }
 
-    appendAtCurrentIndent(LeafOperator(NodeByIdSeek(node, input , Set.empty)(_)))
+    appendAtCurrentIndent(LeafOperator(NodeByIdSeek(node, input, Set.empty)(_)))
   }
 
   def nodeIndexOperator(indexSeekString: String,

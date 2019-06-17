@@ -34,7 +34,7 @@ abstract class NodeByIdSeekTestBase[CONTEXT <: RuntimeContext](
 
   test("should find single node") {
     // given
-    val nodes = nodeGraph(sizeHint)
+    val nodes = nodeGraph(17)
     val toFind = nodes(random.nextInt(nodes.length))
 
     // when
@@ -122,13 +122,13 @@ abstract class NodeByIdSeekTestBase[CONTEXT <: RuntimeContext](
 
   test("should work on rhs of apply") {
     // given
-    val nodes = nodeGraph(sizeHint)
+    val nodes = nodeGraph(10)
     val toSeekFor = (1 to 5).map(_ => nodes(random.nextInt(nodes.length)))
     val toFind = toSeekFor(random.nextInt(toSeekFor.length))
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
-      .produceResults("x")
+      .produceResults("n", "x")
       .apply()
       .|.filter(s"id(x) = ${toFind.getId}")
       .|.nodeByIdSeek("x", toSeekFor.map(_.getId):_*)
@@ -138,7 +138,7 @@ abstract class NodeByIdSeekTestBase[CONTEXT <: RuntimeContext](
     val runtimeResult = execute(logicalQuery, runtime)
 
     // then
-    val expectedRows = nodes.map(_ => toFind)
-    runtimeResult should beColumns("x").withRows(singleColumn(expectedRows))
+    val expectedRows = nodes.map(n => Array(n, toFind))
+    runtimeResult should beColumns("n", "x").withRows(expectedRows)
   }
 }
