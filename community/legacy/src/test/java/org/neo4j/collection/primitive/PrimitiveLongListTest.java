@@ -121,6 +121,17 @@ class PrimitiveLongListTest
     }
 
     @Test
+    void addAfterClear()
+    {
+        PrimitiveLongList longList = new PrimitiveLongList();
+        longList.clear();
+
+        longList.add( 1 );
+        assertEquals( 1, longList.get( 0 ) );
+        assertEquals( 1, longList.size() );
+    }
+
+    @Test
     void transformListToArray()
     {
         PrimitiveLongList longList = new PrimitiveLongList();
