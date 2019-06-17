@@ -70,6 +70,7 @@ class StandardInternalExecutionResult(context: QueryContext,
   override def isClosed: Boolean = taskCloser.isClosed
 
   override def close(reason: CloseReason): Unit = {
+    runtimeResult.cancel()
     taskCloser.close(reason == Success)
   }
 

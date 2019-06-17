@@ -97,24 +97,23 @@ object exceptionHandler extends MapToPublicExceptions[CypherException] {
         body
       }
       catch {
-        case e: InternalCypherException =>
-          onError(e.mapToPublic(exceptionHandler))
-
-        case e: ValuesException =>
-          onError(mapToCypher(e))
-
-        // ValueMath do not wrap java.lang.ArithmeticExceptions, so we map it to public here
-        // (This will also catch if we happened to produce arithmetic exceptions internally (as a runtime bug and not as the result of the query),
-        //  which is not optimal but hopefully rare)
-        case e: java.lang.ArithmeticException =>
-          onError(exceptionHandler.arithmeticException(e.getMessage, e))
-        case e: Throwable => onError(e)
+        case e: Throwable => onError(mapToCypher(e))
       }
     }
   }
 
   trait RunSafely {
     def apply[T](body: => T)(implicit onError: Throwable => T = (e :Throwable) => throw e): T
+  }
+
+  def mapToCypher(exception: Throwable): Throwable = exception match {
+    case e: InternalCypherException => e.mapToPublic(exceptionHandler)
+    case e: ValuesException => mapToCypher(e)
+    // ValueMath do not wrap java.lang.ArithmeticExceptions, so we map it to public here
+    // (This will also catch if we happened to produce arithmetic exceptions internally (as a runtime bug and not as the result of the query),
+    //  which is not optimal but hopefully rare)
+    case e: java.lang.ArithmeticException => exceptionHandler.arithmeticException(e.getMessage, e)
+    case throwable  => throwable
   }
 
   def mapToCypher(exception: ValuesException): CypherException = {

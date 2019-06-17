@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.procs
 
+import org.neo4j.cypher.exceptionHandler
 import org.neo4j.cypher.internal.compatibility.v4_0.ExceptionTranslatingQueryContext
 import org.neo4j.cypher.internal.plandescription.Argument
 import org.neo4j.cypher.internal.result.InternalExecutionResult
@@ -91,14 +92,14 @@ class SystemCommandQuerySubscriber(inner: QuerySubscriber, queryHandler: QueryHa
 
   override def onField(offset: Int, value: AnyValue): Unit = {
     queryHandler.onResult(offset, value).foreach(error => {
-      inner.onError(error)
+      inner.onError(exceptionHandler.mapToCypher(error))
       failed = true
     })
     inner.onField(offset, value)
   }
 
   override def onError(throwable: Throwable): Unit = {
-    inner.onError(queryHandler.onError(throwable))
+    inner.onError(exceptionHandler.mapToCypher(queryHandler.onError(throwable)))
     failed = true
   }
 

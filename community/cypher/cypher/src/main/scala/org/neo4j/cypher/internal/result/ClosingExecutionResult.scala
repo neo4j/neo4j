@@ -49,6 +49,7 @@ class ClosingExecutionResult private(val query: ExecutingQuery,
                                      subscriber: QuerySubscriber) extends InternalExecutionResult {
 
   self =>
+  private var error: Throwable = _
 
   private val monitor = OnlyOnceQueryExecutionMonitor(innerMonitor)
 
@@ -101,6 +102,7 @@ class ClosingExecutionResult private(val query: ExecutingQuery,
     try {
       subscriber.onError(t)
       close(Error(t))
+      this.error = t
     } catch {
       case _: Throwable =>
       // ignore
@@ -134,6 +136,9 @@ class ClosingExecutionResult private(val query: ExecutingQuery,
   }(closeAndCallOnError)
 
   override def await(): Boolean = {
+    if (error != null) {
+      throw error
+    }
     val hasMore = runSafely(inner.await())(e => {
       closeAndCallOnError(e)
       false

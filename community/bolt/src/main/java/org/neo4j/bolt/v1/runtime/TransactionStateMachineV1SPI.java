@@ -231,7 +231,10 @@ public class TransactionStateMachineV1SPI implements TransactionStateMachineSPI
         @Override
         public void onError( Throwable throwable )
         {
-            this.error = throwable;
+            if ( this.error == null )
+            {
+                this.error = throwable;
+            }
         }
 
         @Override

@@ -19,9 +19,10 @@
  */
 package org.neo4j.cypher.internal.runtime.spec
 
+import org.neo4j.cypher.exceptionHandler.runSafely
 import org.neo4j.cypher.internal.runtime.{QueryStatistics, ResourceManager}
 import org.neo4j.cypher.result.{QueryProfile, RuntimeResult}
-import org.neo4j.kernel.impl.query.TransactionalContext
+import org.neo4j.kernel.impl.query.{QuerySubscriber, TransactionalContext}
 
 /**
   * This is needed for tests, because closing is usually handled in org.neo4j.cypher.internal.result.ClosingExecutionResult,
@@ -30,7 +31,11 @@ import org.neo4j.kernel.impl.query.TransactionalContext
 class ClosingRuntimeResult(inner: RuntimeResult,
                            txContext: TransactionalContext,
                            resourceManager: ResourceManager,
+                           subscriber: QuerySubscriber,
                            assertAllReleased: () => Unit) extends RuntimeResult{
+
+  private var error: Throwable = _
+
   override def fieldNames(): Array[String] = inner.fieldNames()
 
   override def consumptionState(): RuntimeResult.ConsumptionState = inner.consumptionState()
@@ -44,11 +49,20 @@ class ClosingRuntimeResult(inner: RuntimeResult,
     closeResources(true)
   }
 
-  override def request(numberOfRecords: Long): Unit = inner.request(numberOfRecords)
+  override def request(numberOfRecords: Long): Unit =
+    runSafely[Unit](inner.request(numberOfRecords))(t => {
+      this.error = t
+      subscriber.onError(t)
+      close()
+  })
 
   override def cancel(): Unit = inner.cancel()
 
   override def await(): Boolean = {
+    if (this.error != null) {
+      throw error
+    }
+
     try {
       val moreData = inner.await()
       if (!moreData) {
