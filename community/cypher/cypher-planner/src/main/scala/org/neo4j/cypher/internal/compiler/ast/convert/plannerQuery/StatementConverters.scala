@@ -24,13 +24,8 @@ import org.neo4j.cypher.internal.ir.{PeriodicCommit, UnionQuery}
 import org.neo4j.cypher.internal.v4_0.ast
 import org.neo4j.cypher.internal.v4_0.ast._
 import org.neo4j.cypher.internal.v4_0.ast.semantics.SemanticTable
-import org.neo4j.cypher.internal.v4_0.expressions.And
-import org.neo4j.cypher.internal.v4_0.expressions.Or
-import org.neo4j.cypher.internal.v4_0.expressions.Pattern
-import org.neo4j.cypher.internal.v4_0.expressions.PatternPart
-import org.neo4j.cypher.internal.v4_0.util.ASTNode
-import org.neo4j.cypher.internal.v4_0.util.InputPosition
-import org.neo4j.cypher.internal.v4_0.util.InternalException
+import org.neo4j.cypher.internal.v4_0.expressions.{And, Or, Pattern, PatternPart}
+import org.neo4j.cypher.internal.v4_0.util.{ASTNode, InputPosition, InternalException}
 
 import scala.collection.mutable.ArrayBuffer
 
@@ -76,8 +71,7 @@ object StatementConverters {
         val plannedQueries: Seq[PlannerQueryBuilder] = queries.reverseMap(x => toPlannerQueryBuilder(x, semanticTable))
         //UNION requires all queries to return the same variables
         assert(plannedQueries.nonEmpty)
-        val returns = plannedQueries.head.returns
-
+        val returns = plannedQueries.last.returns
         UnionQuery(plannedQueries.map(_.build()), distinct, returns, PeriodicCommit(periodicCommitHint))
 
       case _ =>
