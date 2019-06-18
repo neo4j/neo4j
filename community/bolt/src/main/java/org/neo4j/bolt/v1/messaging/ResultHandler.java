@@ -72,6 +72,12 @@ public class ResultHandler extends MessageProcessingHandler
         {
             messageWriter.endRecord();
         }
+
+        @Override
+        public void onError() throws IOException
+        {
+            messageWriter.onError();
+        }
     }
 
     private class RecordDiscardingBoltResultRecordConsumer extends BoltResult.DiscardingRecordConsumer

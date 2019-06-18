@@ -146,10 +146,8 @@ public class BoltResponseMessageWriterV1 implements BoltResponseMessageWriter
         }
         catch ( Throwable error )
         {
-            // packing failed, there might be some half-written data in the output buffer right now
-            // notify output about the failure so that it cleans up the buffer
-            output.messageFailed();
             log.error( "Failed to write value %s because: %s", value, error.getMessage() );
+            onError();
             throw error;
         }
     }
@@ -158,5 +156,13 @@ public class BoltResponseMessageWriterV1 implements BoltResponseMessageWriter
     public void endRecord() throws IOException
     {
         output.messageSucceeded();
+    }
+
+    @Override
+    public void onError() throws IOException
+    {
+        // packing failed, there might be some half-written data in the output buffer right now
+        // notify output about the failure so that it cleans up the buffer
+        output.messageFailed();
     }
 }

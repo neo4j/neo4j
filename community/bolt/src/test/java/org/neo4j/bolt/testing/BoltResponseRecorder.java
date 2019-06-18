@@ -152,5 +152,11 @@ public class BoltResponseRecorder implements BoltResponseHandler
         {
             currentResponse.addFields( anyValues );
         }
+
+        @Override
+        public void onError()
+        {
+            //IGNORE
+        }
     }
 }

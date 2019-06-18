@@ -54,4 +54,9 @@ public interface BoltRecordConsumer
      * Called once at the end of each received record.
      */
     void endRecord() throws IOException;
+
+    /**
+     * Called when an error is received.
+     */
+    void onError() throws IOException;
 }

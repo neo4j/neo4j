@@ -66,6 +66,12 @@ public interface BoltResult extends AutoCloseable
         {
             //discard
         }
+
+        @Override
+        public void onError()
+        {
+            //discard
+        }
     }
 
     BoltResult EMPTY = new BoltResult()

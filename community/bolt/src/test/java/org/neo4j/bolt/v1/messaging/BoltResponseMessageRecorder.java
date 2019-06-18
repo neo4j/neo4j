@@ -60,4 +60,10 @@ public class BoltResponseMessageRecorder implements BoltResponseMessageWriter
     {
         messages.add( new RecordMessage( fields ) );
     }
+
+    @Override
+    public void onError()
+    {
+        //IGNORE
+    }
 }
