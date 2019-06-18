@@ -82,7 +82,8 @@ public class NestedTransactionLocksIT
         // given
         Node resource = createNode();
 
-        try ( Transaction outerTx = db.beginTx(); Transaction nestedTx = db.beginTx() )
+        try ( Transaction outerTx = db.beginTx();
+              Transaction nestedTx = db.beginTx() )
         {
             assertNotSame( outerTx, nestedTx );
 

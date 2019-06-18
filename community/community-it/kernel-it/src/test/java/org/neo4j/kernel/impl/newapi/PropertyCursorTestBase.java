@@ -178,7 +178,8 @@ public abstract class PropertyCursorTestBase<G extends KernelAPIReadTestSupport>
     void shouldNotAccessNonExistentProperties()
     {
         // given
-        try ( NodeCursor node = cursors.allocateNodeCursor(); PropertyCursor props = cursors.allocatePropertyCursor() )
+        try ( NodeCursor node = cursors.allocateNodeCursor();
+              PropertyCursor props = cursors.allocatePropertyCursor() )
         {
             // when
             read.singleNode( bare, node );
@@ -228,7 +229,8 @@ public abstract class PropertyCursorTestBase<G extends KernelAPIReadTestSupport>
     void shouldAccessAllNodeProperties()
     {
         // given
-        try ( NodeCursor node = cursors.allocateNodeCursor(); PropertyCursor props = cursors.allocatePropertyCursor() )
+        try ( NodeCursor node = cursors.allocateNodeCursor();
+              PropertyCursor props = cursors.allocatePropertyCursor() )
         {
             // when
             read.singleNode( allProps, node );
@@ -271,7 +273,8 @@ public abstract class PropertyCursorTestBase<G extends KernelAPIReadTestSupport>
     private void assertAccessSingleProperty( long nodeId, Object expectedValue, ValueGroup expectedValueType )
     {
         // given
-        try ( NodeCursor node = cursors.allocateNodeCursor(); PropertyCursor props = cursors.allocatePropertyCursor() )
+        try ( NodeCursor node = cursors.allocateNodeCursor();
+              PropertyCursor props = cursors.allocatePropertyCursor() )
         {
             // when
             read.singleNode( nodeId, node );
