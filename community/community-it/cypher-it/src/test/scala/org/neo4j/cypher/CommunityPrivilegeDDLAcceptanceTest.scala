@@ -109,6 +109,14 @@ class CommunityPrivilegeDDLAcceptanceTest extends CommunityDDLAcceptanceTestBase
     assertFailure("REVOKE MATCH (*) ON GRAPH * NODES * (*) FROM custom", "Unsupported management command: REVOKE MATCH (*) ON GRAPH * NODES * (*) FROM custom")
   }
 
+  test("should fail on revoking write privileges from community") {
+    // GIVEN
+    selectDatabase(SYSTEM_DATABASE_NAME)
+
+    // THEN
+    assertFailure("REVOKE WRITES (*) ON GRAPH * NODES * (*) FROM custom", "Unsupported management command: REVOKE WRITES (*) ON GRAPH * NODES * (*) FROM custom")
+  }
+
   // Tests for granting and revoking roles to users
 
   test("should fail on granting role to user from community") {
