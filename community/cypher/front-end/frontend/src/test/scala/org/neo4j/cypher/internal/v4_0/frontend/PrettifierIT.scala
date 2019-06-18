@@ -446,6 +446,21 @@ class PrettifierIT extends CypherFunSuite {
       "revoke read (foo,bar) on graph foo nodes A,B,C (*) from x,y,z" ->
         "REVOKE READ (foo, bar) ON GRAPH foo NODES A, B, C (*) FROM x, y, z",
 
+      "revoke writes (*) on graph * from role" ->
+        "REVOKE WRITE (*) ON GRAPH * NODES * (*) FROM role",
+
+      "revoke writes (*) on graph * nodes * from role" ->
+        "REVOKE WRITE (*) ON GRAPH * NODES * (*) FROM role",
+
+      "revoke writes (*) on graph * nodes * (*) from role" ->
+        "REVOKE WRITE (*) ON GRAPH * NODES * (*) FROM role",
+
+      "revoke writes (*) on graph foo nodes * (*) from role" ->
+        "REVOKE WRITE (*) ON GRAPH foo NODES * (*) FROM role",
+
+      "revoke write (*) on graphs foo node * (*) from role" ->
+        "REVOKE WRITE (*) ON GRAPH foo NODES * (*) FROM role",
+
       "catalog show databases" ->
         "SHOW DATABASES",
 

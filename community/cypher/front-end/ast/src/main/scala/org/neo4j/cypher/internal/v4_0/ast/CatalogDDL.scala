@@ -202,6 +202,8 @@ object RevokePrivilege {
     RevokePrivilege(ReadPrivilege()(InputPosition.NONE), resource, scope, qualifier, roleNames)
   def asMatch(resource: ActionResource, scope: GraphScope, qualifier: PrivilegeQualifier, roleNames: Seq[String]): InputPosition => RevokePrivilege =
     RevokePrivilege(MatchPrivilege()(InputPosition.NONE), resource, scope, qualifier, roleNames)
+  def write(resource: ActionResource, scope: GraphScope, qualifier: PrivilegeQualifier, roleNames: Seq[String]): InputPosition => RevokePrivilege =
+    RevokePrivilege(WritePrivilege()(InputPosition.NONE), resource, scope, qualifier, roleNames)
 }
 
 final case class GrantPrivilege(privilege: PrivilegeType, resource: ActionResource, scope: GraphScope, qualifier: PrivilegeQualifier, roleNames: Seq[String])

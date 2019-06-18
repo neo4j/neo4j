@@ -530,8 +530,8 @@ class PrivilegeManagementDDLParserTest extends DDLParserTestBase {
   // Granting writes to role
 
   Seq(
-    ("GRANT", "TO", grant: grantOrRevokeFunc)
-    // TODO add revoke this loop as well
+    ("GRANT", "TO", grant: grantOrRevokeFunc),
+    ("REVOKE", "FROM", revoke: grantOrRevokeFunc)
   ).foreach {
     case (command: String, preposition: String, func: grantOrRevokeFunc) =>
 

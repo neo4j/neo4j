@@ -43,7 +43,7 @@ trait Statement extends Parser
 
   def PrivilegeManagementCommand: Rule1[CatalogDDL] = rule("Security privilege management statement") {
     optional(keyword("CATALOG")) ~~
-      (ShowPrivileges | GrantRole | RevokeRole | GrantTraverse | RevokeTraverse | GrantRead | RevokeRead | GrantMatch | RevokeMatch | GrantWrite)
+      (ShowPrivileges | GrantRole | RevokeRole | GrantTraverse | RevokeTraverse | GrantRead | RevokeRead | GrantMatch | RevokeMatch | GrantWrite | RevokeWrite)
   }
 
   def ShowUsers: Rule1[ShowUsers] = rule("CATALOG SHOW USERS") {
@@ -192,11 +192,18 @@ trait Statement extends Parser
       ((prop, scope, qualifier, grantees) => ast.RevokePrivilege.asMatch(prop, scope, qualifier, grantees))
   }
 
-  //`GRANT WRITES (*) ON GRAPH foo * (*) TO role`
+  //`GRANT WRITE[S] (*) ON GRAPH foo * (*) TO role`
   def GrantWrite: Rule1[GrantPrivilege] = rule("CATALOG GRANT WRITE") {
     group(keyword("GRANT") ~~ WriteKeyword ~~ AllPrivilegeProperty ~~ Graph ~~ AllScopeQualifier ~~ keyword("TO") ~~ SymbolicNamesList) ~~>>
       ((prop, scope, qualifier, grantees) => ast.GrantPrivilege.write(prop, scope, qualifier, grantees))
   }
+
+  //`REVOKE WRITE[S] (*) ON GRAPH foo * (*) FROM role`
+  def RevokeWrite: Rule1[RevokePrivilege] = rule("CATALOG REVOKE WRITE") {
+    group(keyword("REVOKE") ~~ WriteKeyword ~~ AllPrivilegeProperty ~~ Graph ~~ AllScopeQualifier ~~ keyword("FROM") ~~ SymbolicNamesList) ~~>>
+      ((prop, scope, qualifier, grantees) => ast.RevokePrivilege.write(prop, scope, qualifier, grantees))
+  }
+
 
   def ShowPrivileges: Rule1[ShowPrivileges] = rule("CATALOG SHOW PRIVILEGES") {
     group(keyword("SHOW") ~~ ScopeForShowPrivileges ~~ keyword("PRIVILEGES")) ~~>> (ast.ShowPrivileges(_))

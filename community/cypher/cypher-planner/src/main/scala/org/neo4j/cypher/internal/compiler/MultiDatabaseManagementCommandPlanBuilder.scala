@@ -125,6 +125,12 @@ case object MultiDatabaseManagementCommandPlanBuilder extends Phase[PlannerConte
           case (source, roleName) => Some(plans.GrantWrite(source, AllResource()(InputPosition.NONE), database, AllQualifier()(InputPosition.NONE), roleName))
         }
 
+      // REVOKE WRITES (*) ON GRAPH foo * (*) FROM role
+      case RevokePrivilege(WritePrivilege(), _, database, _, roleNames) =>
+        roleNames.foldLeft(Option.empty[plans.RevokeWrite]) {
+          case (source, roleName) => Some(plans.RevokeWrite(source, AllResource()(InputPosition.NONE), database, AllQualifier()(InputPosition.NONE), roleName))
+        }
+
       // GRANT READ (prop) ON GRAPH foo NODES A (*) TO role
       // GRANT MATCH (prop) ON GRAPH foo NODES A (*) TO role
       case GrantPrivilege(privilege, resources, database, labels, roleNames) =>
