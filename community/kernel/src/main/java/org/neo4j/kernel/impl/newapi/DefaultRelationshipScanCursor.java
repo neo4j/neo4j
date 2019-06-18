@@ -98,7 +98,8 @@ class DefaultRelationshipScanCursor extends DefaultRelationshipCursor<StorageRel
         while ( storeCursor.next() )
         {
             boolean skip = hasChanges && read.txState().relationshipIsDeletedInThisTx( storeCursor.entityReference() );
-            if ( !skip && allowedToSeeEndNode() )
+            AccessMode mode = read.ktx.securityContext().mode();
+            if ( !skip && mode.allowsTraverseRelType( storeCursor.type() ) && allowedToSeeEndNode( mode ) )
             {
                 getTracer().onRelationship( relationshipReference() );
                 return true;
@@ -107,24 +108,18 @@ class DefaultRelationshipScanCursor extends DefaultRelationshipCursor<StorageRel
         return false;
     }
 
-    private boolean allowedToSeeEndNode()
+    private boolean allowedToSeeEndNode( AccessMode mode )
     {
-        AccessMode mode = read.ktx.securityContext().mode();
         if ( mode.allowsTraverseAllLabels() )
         {
             return true;
         }
-        try ( NodeCursor nodeCursor = read.cursors().allocateFullAccessNodeCursor() )
+        try ( NodeCursor sourceNode = read.cursors().allocateNodeCursor();
+              NodeCursor targetNode = read.cursors().allocateNodeCursor() )
         {
-            read.singleNode( storeCursor.sourceNodeReference(), nodeCursor );
-            boolean allowed = nodeCursor.next() && mode.allowsTraverseLabels( nodeCursor.labels().all() );
-
-            if ( allowed )
-            {
-                read.singleNode( storeCursor.targetNodeReference(), nodeCursor );
-                allowed = nodeCursor.next() && mode.allowsTraverseLabels( nodeCursor.labels().all() );
-            }
-            return allowed;
+            read.singleNode( storeCursor.sourceNodeReference(), sourceNode );
+            read.singleNode( storeCursor.targetNodeReference(), targetNode );
+            return sourceNode.next() && targetNode.next();
         }
     }
 

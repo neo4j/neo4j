@@ -253,7 +253,34 @@ public class AllStoreHolder extends Read
     @Override
     public long countsForRelationshipWithoutTxState( int startLabelId, int typeId, int endLabelId )
     {
-        return storageReader.countsForRelationship( startLabelId, typeId, endLabelId );
+        AccessMode mode = ktx.securityContext().mode();
+        if ( (typeId == TokenRead.ANY_RELATIONSHIP_TYPE && mode.allowsTraverseAllRelTypes() || mode.allowsTraverseRelType( typeId )) &&
+                (startLabelId == TokenRead.ANY_LABEL && mode.allowsTraverseAllLabels() || mode.allowsTraverseLabels( startLabelId )) &&
+                (endLabelId == TokenRead.ANY_LABEL && mode.allowsTraverseAllLabels() || mode.allowsTraverseLabels( endLabelId )) )
+        {
+            return storageReader.countsForRelationship( startLabelId, typeId, endLabelId );
+        }
+        else
+        {
+            long count = 0;
+            try ( DefaultRelationshipScanCursor rels = cursors.allocateRelationshipScanCursor();
+                    DefaultNodeCursor sourceNode = cursors.allocateNodeCursor();
+                    DefaultNodeCursor targetNode = cursors.allocateNodeCursor() )
+            {
+                this.relationshipTypeScan( typeId, rels );
+                while ( rels.next() )
+                {
+                    rels.source( sourceNode );
+                    rels.target( targetNode );
+                    if ( sourceNode.next() && (startLabelId == TokenRead.ANY_LABEL || sourceNode.labels().contains( startLabelId )) &&
+                           targetNode.next() && (endLabelId == TokenRead.ANY_LABEL || targetNode.labels().contains( endLabelId )) )
+                    {
+                        count++;
+                    }
+                }
+            }
+            return count;
+        }
     }
 
     @Override

@@ -122,6 +122,18 @@ public interface AccessMode
         }
 
         @Override
+        public boolean allowsTraverseAllRelTypes()
+        {
+            return read;
+        }
+
+        @Override
+        public boolean allowsTraverseRelType( int relType )
+        {
+            return read;
+        }
+
+        @Override
         public boolean allowsReadPropertyAllLabels( int propertyKey )
         {
             return read;
@@ -160,6 +172,9 @@ public interface AccessMode
 
     boolean allowsTraverseAllLabels();
     boolean allowsTraverseLabels( long... labels );
+
+    boolean allowsTraverseAllRelTypes();
+    boolean allowsTraverseRelType( int relType );
 
     boolean allowsReadPropertyAllLabels( int propertyKey );
     boolean allowsReadProperty( Supplier<LabelSet> labels, int propertyKey );

@@ -78,6 +78,18 @@ public class RestrictedAccessMode extends WrappedAccessMode
     }
 
     @Override
+    public boolean allowsTraverseAllRelTypes()
+    {
+        return original.allowsTraverseAllRelTypes() && wrapping.allowsTraverseAllRelTypes();
+    }
+
+    @Override
+    public boolean allowsTraverseRelType( int relType )
+    {
+        return original.allowsTraverseRelType( relType ) && wrapping.allowsTraverseRelType( relType );
+    }
+
+    @Override
     public boolean allowsReadPropertyAllLabels( int propertyKey )
     {
         return original.allowsReadPropertyAllLabels( propertyKey ) && wrapping.allowsReadPropertyAllLabels( propertyKey );

@@ -182,7 +182,8 @@ class DefaultRelationshipTraversalCursor extends DefaultRelationshipCursor<Stora
         while ( storeCursor.next() )
         {
             boolean skip = hasChanges && read.txState().relationshipIsDeletedInThisTx( storeCursor.entityReference() );
-            if ( !skip && allowedToSeeEndNode() )
+            AccessMode mode = read.ktx.securityContext().mode();
+            if ( !skip && mode.allowsTraverseRelType( storeCursor.type() ) && allowedToSeeEndNode( mode ) )
             {
                 getTracer().onRelationship( relationshipReference() );
                 return true;
@@ -191,19 +192,16 @@ class DefaultRelationshipTraversalCursor extends DefaultRelationshipCursor<Stora
         return false;
     }
 
-    private boolean allowedToSeeEndNode()
+    private boolean allowedToSeeEndNode( AccessMode mode )
     {
-        AccessMode mode = read.ktx.securityContext().mode();
         if ( mode.allowsTraverseAllLabels() )
         {
             return true;
         }
-        try ( NodeCursor nodeCursor = read.cursors().allocateFullAccessNodeCursor() )
+        try ( NodeCursor nodeCursor = read.cursors().allocateNodeCursor() )
         {
             read.singleNode( storeCursor.neighbourNodeReference(), nodeCursor );
-            boolean allowed = nodeCursor.next() && mode.allowsTraverseLabels( nodeCursor.labels().all() );
-            nodeCursor.close();
-            return allowed;
+            return nodeCursor.next();
         }
     }
 

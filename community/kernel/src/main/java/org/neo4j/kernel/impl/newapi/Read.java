@@ -179,6 +179,17 @@ abstract class Read implements TxStateHolder,
                         ktx.securityContext().mode() );
             }
         }
+
+        if ( schema.entityType().equals( EntityType.RELATIONSHIP ) )
+        {
+            int[] tokenIds = schema.getEntityTokenIds();
+            assert tokenIds.length == 1;
+            if ( !accessMode.allowsTraverseRelType( tokenIds[0] ) )
+            {
+                // This will accept no relationships
+                return new RelationshipSecurityFilter();
+            }
+        }
         // everything in this index is whitelisted
         return cursor;
     }
