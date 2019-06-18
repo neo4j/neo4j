@@ -164,7 +164,7 @@ class FallbackRuntime[CONTEXT <: RuntimeContext](runtimes: Seq[CypherRuntime[CON
       } catch {
         case e: CantCompileQueryException =>
           lastException = e
-          if (runtime != ProcedureCallOrSchemaCommandRuntime && requestedRuntime != CypherRuntimeOption.default) {
+          if (runtime != SchemaCommandRuntime && requestedRuntime != CypherRuntimeOption.default) {
             logger.log(RuntimeUnsupportedNotification)
           }
         case e: Exception =>

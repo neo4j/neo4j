@@ -26,7 +26,7 @@ import org.neo4j.cypher._
 import org.neo4j.cypher.exceptionHandler.runSafely
 import org.neo4j.cypher.internal.compatibility.{CypherPlanner, _}
 import org.neo4j.cypher.internal.compiler._
-import org.neo4j.cypher.internal.compiler.phases.{LogicalPlanState, PlannerContext}
+import org.neo4j.cypher.internal.compiler.phases.PlannerContext
 import org.neo4j.cypher.internal.compiler.planner.logical.{CachedMetricsFactory, SimpleMetricsFactory, simpleExpressionEvaluator}
 import org.neo4j.cypher.internal.logical.plans.{DatabaseManagementException => _, _}
 import org.neo4j.cypher.internal.planner.spi.PlanContext
@@ -77,7 +77,7 @@ case class Cypher4_0Planner(config: CypherPlannerConfiguration,
       val innerVariableNamer = new GeneratingNamer
 
       val syntacticQuery =
-        getOrParse(preParsedQuery, new Parser4_0(planner, notificationLogger, preParsedQuery.offset, tracer, innerVariableNamer))
+        getOrParse(preParsedQuery, params, new Parser4_0(planner, notificationLogger, preParsedQuery.offset, tracer, innerVariableNamer))
 
       val transactionalContextWrapper = TransactionalContextWrapper(transactionalContext)
       // Context used for db communication during planning
@@ -103,7 +103,8 @@ case class Cypher4_0Planner(config: CypherPlannerConfiguration,
                                           clock,
                                           logicalPlanIdGen,
                                           simpleExpressionEvaluator,
-                                          innerVariableNamer)
+                                          innerVariableNamer,
+                                          params)
 
       // Prepare query for caching
       val preparedQuery = planner.normalizeQuery(syntacticQuery, context)
@@ -129,12 +130,12 @@ case class Cypher4_0Planner(config: CypherPlannerConfiguration,
             if (m.isApplicableManagementCommand(logicalPlanState))
               FineToReuse
             else logicalPlanState.maybeLogicalPlan match {
-              case Some(StandAloneProcedureCall(signature,_,_,_)) if signature.systemProcedure => FineToReuse
-              case Some(_: StandAloneProcedureCall) => throw new DatabaseManagementException("Attempting invalid procedure call in management runtime")
+              case Some(ProcedureCall(_,ResolvedCall(signature,_,_,_,_))) if signature.systemProcedure => FineToReuse
+              case Some(_: ProcedureCall) => throw new DatabaseManagementException("Attempting invalid procedure call in management runtime")
               case Some(plan: MultiDatabaseLogicalPlan) => throw plan.invalid("Unsupported management command: " + logicalPlanState.queryText)
               case _ => throw new DatabaseManagementException("Attempting invalid management command in management runtime")
             }
-          case _ if ProcedureCallOrSchemaCommandRuntime.isApplicable(logicalPlanState) => FineToReuse
+          case _ if SchemaCommandRuntime.isApplicable(logicalPlanState) => FineToReuse
           case _ =>
             val fingerprint = PlanFingerprint.take(clock, planContext.txIdProvider, planContext.statistics)
             val fingerprintReference = new PlanFingerprintReference(fingerprint)
@@ -187,7 +188,7 @@ private[v4_0] class Parser4_0(planner: compiler.CypherPlanner[PlannerContext],
                               innerVariableNamer: InnerVariableNamer
                              ) extends Parser[BaseState] {
 
-  override def parse(preParsedQuery: PreParsedQuery): BaseState = {
+  override def parse(preParsedQuery: PreParsedQuery, params: MapValue): BaseState = {
     planner.parseQuery(preParsedQuery.statement,
                        preParsedQuery.rawStatement,
                        notificationLogger,
@@ -195,6 +196,7 @@ private[v4_0] class Parser4_0(planner: compiler.CypherPlanner[PlannerContext],
                        preParsedQuery.debugOptions,
                        Some(offset),
                        tracer,
-                       innerVariableNamer)
+                       innerVariableNamer,
+                       params)
   }
 }

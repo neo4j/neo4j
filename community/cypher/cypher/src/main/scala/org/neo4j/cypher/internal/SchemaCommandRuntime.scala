@@ -28,16 +28,16 @@ import org.neo4j.cypher.internal.v4_0.expressions.{LabelName, PropertyKeyName, R
 import org.neo4j.cypher.internal.v4_0.util.{LabelId, PropertyKeyId}
 
 /**
-  * This runtime takes on queries that require no planning, such as procedures and schema commands
+  * This runtime takes on queries that require no planning such as schema commands
   */
-object ProcedureCallOrSchemaCommandRuntime extends CypherRuntime[RuntimeContext] {
-  override def name: String = "procedure"
+object SchemaCommandRuntime extends CypherRuntime[RuntimeContext] {
+  override def name: String = "schema"
 
   override def compileToExecutable(state: LogicalQuery, context: RuntimeContext, username: String): ExecutionPlan = {
 
     def throwCantCompile(unknownPlan: LogicalPlan): Nothing = {
       throw new CantCompileQueryException(
-        s"Plan is not a procedure call or schema command: ${unknownPlan.getClass.getSimpleName}")
+        s"Plan is not a schema command: ${unknownPlan.getClass.getSimpleName}")
     }
     val (withSlottedParameters, parameterMapping) = slottedParameters(state.logicalPlan)
 

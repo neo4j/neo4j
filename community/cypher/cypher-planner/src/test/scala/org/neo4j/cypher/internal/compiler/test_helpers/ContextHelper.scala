@@ -21,16 +21,16 @@ package org.neo4j.cypher.internal.compiler.test_helpers
 
 import java.time.Clock
 
-import org.neo4j.cypher.internal.compiler.{CypherPlannerConfiguration, NotImplementedPlanContext, UpdateStrategy}
 import org.neo4j.cypher.internal.compiler.phases.PlannerContext
 import org.neo4j.cypher.internal.compiler.planner.logical.{Metrics, QueryGraphSolver}
+import org.neo4j.cypher.internal.compiler.{CypherPlannerConfiguration, NotImplementedPlanContext, UpdateStrategy}
 import org.neo4j.cypher.internal.planner.spi.PlanContext
-import org.neo4j.cypher.internal.v4_0.frontend.phases.CompilationPhaseTracer
 import org.neo4j.cypher.internal.v4_0.frontend.phases.CompilationPhaseTracer.NO_TRACING
-import org.neo4j.cypher.internal.v4_0.frontend.phases.{InternalNotificationLogger, Monitors, devNullLogger}
+import org.neo4j.cypher.internal.v4_0.frontend.phases.{CompilationPhaseTracer, InternalNotificationLogger, Monitors, devNullLogger}
 import org.neo4j.cypher.internal.v4_0.rewriting.rewriters.GeneratingNamer
 import org.neo4j.cypher.internal.v4_0.util.attribution.{IdGen, SequentialIdGen}
 import org.neo4j.cypher.internal.v4_0.util.{CypherException, InputPosition, InternalException}
+import org.neo4j.values.virtual.MapValue
 import org.scalatest.mock.MockitoSugar
 
 object ContextHelper extends MockitoSugar {
@@ -45,8 +45,9 @@ object ContextHelper extends MockitoSugar {
              updateStrategy: UpdateStrategy = mock[UpdateStrategy],
              debugOptions: Set[String] = Set.empty,
              clock: Clock = Clock.systemUTC(),
-             logicalPlanIdGen: IdGen = new SequentialIdGen()): PlannerContext = {
+             logicalPlanIdGen: IdGen = new SequentialIdGen(),
+             params: MapValue = MapValue.EMPTY): PlannerContext = {
     new PlannerContext(exceptionCreator, tracer, notificationLogger, planContext,
-      monitors, metrics, config, queryGraphSolver, updateStrategy, debugOptions, clock, logicalPlanIdGen, new GeneratingNamer)
+      monitors, metrics, config, queryGraphSolver, updateStrategy, debugOptions, clock, logicalPlanIdGen, new GeneratingNamer, params)
   }
 }

@@ -26,10 +26,11 @@ import org.neo4j.cypher.internal.compiler.phases._
 import org.neo4j.cypher.internal.compiler.planner.logical._
 import org.neo4j.cypher.internal.compiler.planner.logical.debug.DebugPrinter
 import org.neo4j.cypher.internal.planner.spi.{IDPPlannerName, PlannerNameFor}
-import org.neo4j.cypher.internal.v4_0.frontend.phases.{BaseState, CompilationPhaseTracer, InitialState, InternalNotificationLogger, Monitors}
+import org.neo4j.cypher.internal.v4_0.frontend.phases.{CompilationPhases => _, _}
 import org.neo4j.cypher.internal.v4_0.rewriting.RewriterStepSequencer
 import org.neo4j.cypher.internal.v4_0.rewriting.rewriters.InnerVariableNamer
 import org.neo4j.cypher.internal.v4_0.util.InputPosition
+import org.neo4j.values.virtual.MapValue
 
 case class CypherPlanner[Context <: PlannerContext](monitors: Monitors,
                                                     sequencer: String => RewriterStepSequencer,
@@ -59,7 +60,9 @@ case class CypherPlanner[Context <: PlannerContext](monitors: Monitors,
                  debugOptions: Set[String],
                  offset: Option[InputPosition],
                  tracer: CompilationPhaseTracer,
-                 innerVariableNamer: InnerVariableNamer): BaseState = {
+                 innerVariableNamer: InnerVariableNamer,
+                 params: MapValue): BaseState = {
+
     val plannerName = PlannerNameFor(plannerNameText)
     val startState = InitialState(queryText, offset, plannerName)
     //TODO: these nulls are a short cut
@@ -77,7 +80,8 @@ case class CypherPlanner[Context <: PlannerContext](monitors: Monitors,
                                          clock,
                                          logicalPlanIdGen = null,
                                          evaluator = null,
-                                         innerVariableNamer = innerVariableNamer)
+                                         innerVariableNamer = innerVariableNamer,
+                                         params )
     CompilationPhases.parsing(sequencer, context.innerVariableNamer).transform(startState, context)
   }
 

@@ -183,11 +183,11 @@ case object MultiDatabaseManagementCommandPlanBuilder extends Phase[PlannerConte
           Some(plans.EnsureValidNonDefaultDatabase(normalizedName, "stop")),
           normalizedName))
 
-      // Global call: CALL foo.bar.baz("arg1", 2)
-      case Query(None, SingleQuery(Seq(resolved@ResolvedCall(signature, args, _, _, _)))) if signature.systemProcedure =>
+      // Global call: CALL foo.bar.baz("arg1", 2) // only if system procedure is allowed!
+      case Query(None, SingleQuery(Seq(resolved@ResolvedCall(signature, args, _, _, _),Return(_,_,_,_,_,_)))) if signature.systemProcedure =>
         val SemanticCheckResult(_, errors) = resolved.semanticCheck(SemanticState.clean)
         errors.foreach { error => throw context.exceptionCreator(error.msg, error.position) }
-        Some(plans.StandAloneProcedureCall(signature, args, resolved.callResultTypes, resolved.callResultIndices))
+        Some(plans.SystemProcedureCall(from.queryText, context.params))
 
       case _ => None
     }

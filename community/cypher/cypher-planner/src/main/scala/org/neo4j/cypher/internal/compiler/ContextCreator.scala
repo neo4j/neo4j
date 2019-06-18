@@ -21,13 +21,13 @@ package org.neo4j.cypher.internal.compiler
 
 import java.time.Clock
 
-import org.neo4j.cypher.internal.v4_0.util.InputPosition
 import org.neo4j.cypher.internal.compiler.planner.logical.{ExpressionEvaluator, MetricsFactory, QueryGraphSolver}
-import org.neo4j.cypher.internal.v4_0.frontend.phases.{BaseContext, InternalNotificationLogger, Monitors}
 import org.neo4j.cypher.internal.planner.spi.PlanContext
-import org.neo4j.cypher.internal.v4_0.frontend.phases.CompilationPhaseTracer
+import org.neo4j.cypher.internal.v4_0.frontend.phases.{BaseContext, CompilationPhaseTracer, InternalNotificationLogger, Monitors}
 import org.neo4j.cypher.internal.v4_0.rewriting.rewriters.InnerVariableNamer
+import org.neo4j.cypher.internal.v4_0.util.InputPosition
 import org.neo4j.cypher.internal.v4_0.util.attribution.IdGen
+import org.neo4j.values.virtual.MapValue
 
 trait ContextCreator[Context <: BaseContext] {
   def create(tracer: CompilationPhaseTracer,
@@ -44,5 +44,6 @@ trait ContextCreator[Context <: BaseContext] {
              clock: Clock,
              logicalPlanIdGen: IdGen,
              evaluator: ExpressionEvaluator,
-             innerVariableNamer: InnerVariableNamer): Context
+             innerVariableNamer: InnerVariableNamer,
+             params: MapValue ): Context
 }

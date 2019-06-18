@@ -157,7 +157,7 @@ case class CypherCurrentCompiler[CONTEXT <: RuntimeContext](planner: CypherPlann
       case m:ManagementCommandRuntime if m.isApplicableManagementCommand(planState) =>
           DBMS
       case _ =>
-        val procedureOrSchema = ProcedureCallOrSchemaCommandRuntime.queryType(planState.logicalPlan)
+        val procedureOrSchema = SchemaCommandRuntime.queryType(planState.logicalPlan)
         if (procedureOrSchema.isDefined)
           procedureOrSchema.get
         else if (planState.planningAttributes.solveds(planState.logicalPlan.id).readOnly)

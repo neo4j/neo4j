@@ -72,7 +72,7 @@ case class Cypher3_5Planner(config: CypherPlannerConfiguration,
       val innerVariableNamer = new GeneratingNamer
 
       val syntacticQuery =
-        getOrParse(preParsedQuery, new Parser3_5(planner, notificationLogger, preParsedQuery.offset, tracer, innerVariableNamer))
+        getOrParse(preParsedQuery, params, new Parser3_5(planner, notificationLogger, preParsedQuery.offset, tracer, innerVariableNamer))
 
       val transactionalContextWrapper = TransactionalContextWrapper(transactionalContext)
       // Context used for db communication during planning
@@ -95,7 +95,8 @@ case class Cypher3_5Planner(config: CypherPlannerConfiguration,
         clock,
         logicalPlanIdGen,
         simpleExpressionEvaluator,
-        innerVariableNamer)
+        innerVariableNamer,
+        params)
 
       // Prepare query for caching
       val preparedQuery = planner.normalizeQuery(syntacticQuery, context)
@@ -116,7 +117,7 @@ case class Cypher3_5Planner(config: CypherPlannerConfiguration,
           notificationLogger.log(MissingParametersNotification(missingParameterNames))
         }
 
-        val reusabilityState = if (ProcedureCallOrSchemaCommandRuntime.isApplicable(logicalPlanState))
+        val reusabilityState = if (SchemaCommandRuntime.isApplicable(logicalPlanState))
           FineToReuse
         else {
           val fingerprint = PlanFingerprint.take(clock, planContext.txIdProvider, planContext.statistics)
@@ -170,7 +171,7 @@ private[v3_5] class Parser3_5(planner: compiler.CypherPlanner[PlannerContext],
                               innerVariableNamer: InnerVariableNamer
                              ) extends Parser[BaseState] {
   // TODO use 3.5 specific things?
-  override def parse(preParsedQuery: PreParsedQuery): BaseState = {
+  override def parse(preParsedQuery: PreParsedQuery, params: MapValue): BaseState = {
     planner.parseQuery(preParsedQuery.statement,
       preParsedQuery.rawStatement,
       notificationLogger,
@@ -178,6 +179,7 @@ private[v3_5] class Parser3_5(planner: compiler.CypherPlanner[PlannerContext],
       preParsedQuery.debugOptions,
       Some(offset),
       tracer,
-      innerVariableNamer)
+      innerVariableNamer,
+      params)
   }
 }

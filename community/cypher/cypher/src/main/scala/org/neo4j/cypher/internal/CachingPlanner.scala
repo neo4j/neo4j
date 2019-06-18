@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal
 
 import org.neo4j.cypher.SyntaxException
 import org.neo4j.cypher.internal.cache.LFUCache
+import org.neo4j.values.virtual.MapValue
 
 /**
   * Cypher planner which has the ability to cache parsing and planning results.
@@ -41,10 +42,11 @@ trait CachingPlanner[PARSED_QUERY <: AnyRef] {
     */
   @throws(classOf[SyntaxException])
   protected def getOrParse(preParsedQuery: PreParsedQuery,
+                           params: MapValue,
                            parser: => Parser[PARSED_QUERY]
                      ): PARSED_QUERY = {
     parsedQueries.get(preParsedQuery.statementWithVersionAndPlanner).getOrElse {
-      val parsedQuery = parser.parse(preParsedQuery)
+      val parsedQuery = parser.parse(preParsedQuery, params)
       parsedQueries.put(preParsedQuery.statementWithVersionAndPlanner, parsedQuery)
       parsedQuery
     }
@@ -61,5 +63,5 @@ trait CachingPlanner[PARSED_QUERY <: AnyRef] {
 }
 
 trait Parser[PARSED_QUERY] {
-  def parse(preParsedQuery: PreParsedQuery): PARSED_QUERY
+  def parse(preParsedQuery: PreParsedQuery, params: MapValue): PARSED_QUERY
 }

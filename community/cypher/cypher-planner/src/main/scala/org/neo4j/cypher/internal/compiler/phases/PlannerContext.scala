@@ -21,15 +21,15 @@ package org.neo4j.cypher.internal.compiler.phases
 
 import java.time.Clock
 
-import org.neo4j.cypher.internal.v4_0.util.{CypherException, InputPosition}
-import org.neo4j.cypher.internal.compiler.{CypherPlannerConfiguration, ContextCreator, SyntaxExceptionCreator, UpdateStrategy}
 import org.neo4j.cypher.internal.compiler.planner.logical.{ExpressionEvaluator, Metrics, MetricsFactory, QueryGraphSolver}
-import org.neo4j.cypher.internal.v4_0.frontend.phases.{BaseContext, InternalNotificationLogger, Monitors}
-import org.neo4j.cypher.internal.v4_0.ast.semantics.SemanticErrorDef
+import org.neo4j.cypher.internal.compiler.{ContextCreator, CypherPlannerConfiguration, SyntaxExceptionCreator, UpdateStrategy}
 import org.neo4j.cypher.internal.planner.spi.PlanContext
-import org.neo4j.cypher.internal.v4_0.frontend.phases.CompilationPhaseTracer
+import org.neo4j.cypher.internal.v4_0.ast.semantics.SemanticErrorDef
+import org.neo4j.cypher.internal.v4_0.frontend.phases.{BaseContext, CompilationPhaseTracer, InternalNotificationLogger, Monitors}
 import org.neo4j.cypher.internal.v4_0.rewriting.rewriters.InnerVariableNamer
 import org.neo4j.cypher.internal.v4_0.util.attribution.IdGen
+import org.neo4j.cypher.internal.v4_0.util.{CypherException, InputPosition}
+import org.neo4j.values.virtual.MapValue
 
 class PlannerContext(val exceptionCreator: (String, InputPosition) => CypherException,
                      val tracer: CompilationPhaseTracer,
@@ -43,7 +43,8 @@ class PlannerContext(val exceptionCreator: (String, InputPosition) => CypherExce
                      val debugOptions: Set[String],
                      val clock: Clock,
                      val logicalPlanIdGen: IdGen,
-                     val innerVariableNamer: InnerVariableNamer) extends BaseContext {
+                     val innerVariableNamer: InnerVariableNamer,
+                     val params: MapValue) extends BaseContext {
 
   override def errorHandler =
     (errors: Seq[SemanticErrorDef]) => errors.foreach(e => throw exceptionCreator(e.msg, e.position))
@@ -65,7 +66,8 @@ object PlannerContextCreator extends ContextCreator[PlannerContext] {
                       clock: Clock,
                       logicalPlanIdGen: IdGen,
                       evaluator: ExpressionEvaluator,
-                      innerVariableNamer: InnerVariableNamer
+                      innerVariableNamer: InnerVariableNamer,
+                      params: MapValue
                      ): PlannerContext = {
     val exceptionCreator = new SyntaxExceptionCreator(queryText, offset)
 
@@ -75,6 +77,6 @@ object PlannerContextCreator extends ContextCreator[PlannerContext] {
       metricsFactory.newMetrics(planContext.statistics, evaluator, config)
 
     new PlannerContext(exceptionCreator, tracer, notificationLogger, planContext,
-      monitors, metrics, config, queryGraphSolver, updateStrategy, debugOptions, clock, logicalPlanIdGen, innerVariableNamer)
+      monitors, metrics, config, queryGraphSolver, updateStrategy, debugOptions, clock, logicalPlanIdGen, innerVariableNamer, params)
   }
 }

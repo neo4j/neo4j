@@ -48,13 +48,8 @@ case class CommunityManagementCommandRuntime(normalExecutionEngine: ExecutionEng
 
     val (planWithSlottedParameters, parameterMapping) = slottedParameters(state.logicalPlan)
 
-    // Either the logical plan is a command that the partial function logicalToExecutable provides/understands OR it could be a system procedure
-    // If neither we throw an error
-    if (logicalToExecutable.isDefinedAt(planWithSlottedParameters)) {
-      logicalToExecutable.applyOrElse(planWithSlottedParameters, throwCantCompile).apply(context, parameterMapping, username)
-    } else {
-      ProcedureCallOrSchemaCommandRuntime.logicalToExecutable.applyOrElse(planWithSlottedParameters, throwCantCompile).apply(context, parameterMapping)
-    }
+    // Either the logical plan is a command that the partial function logicalToExecutable provides/understands OR we throw an error
+    logicalToExecutable.applyOrElse(planWithSlottedParameters, throwCantCompile).apply(context, parameterMapping, username)
   }
 
   private lazy val authManager = {
@@ -124,6 +119,10 @@ case class CommunityManagementCommandRuntime(normalExecutionEngine: ExecutionEng
     case ShowDefaultDatabase() => (_, _, _) =>
       SystemCommandExecutionPlan("ShowDefaultDatabase", normalExecutionEngine,
         "MATCH (d:Database {default: true}) RETURN d.name as name", VirtualValues.EMPTY_MAP)
+
+    // SUPPORT PROCEDURES (need to be cleared before here)
+    case SystemProcedureCall(queryString, params) => (_, _, _) =>
+      SystemCommandExecutionPlan("SystemProcedure", normalExecutionEngine, queryString, params)
   }
 
   override def isApplicableManagementCommand(logicalPlanState: LogicalPlanState): Boolean = logicalToExecutable.isDefinedAt(logicalPlanState.maybeLogicalPlan.get)

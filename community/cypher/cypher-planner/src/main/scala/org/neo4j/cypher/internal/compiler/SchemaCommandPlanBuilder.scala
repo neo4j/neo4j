@@ -30,13 +30,13 @@ import org.neo4j.cypher.internal.v4_0.frontend.phases.{BaseState, Condition, Pha
 import org.neo4j.cypher.internal.v4_0.util.attribution.SequentialIdGen
 
 /**
-  * This planner takes on queries that requires no planning such as procedures and schema commands
+  * This planner takes on queries that requires no planning such as schema commands
   */
-case object ProcedureCallOrSchemaCommandPlanBuilder extends Phase[PlannerContext, BaseState, LogicalPlanState] {
+case object SchemaCommandPlanBuilder extends Phase[PlannerContext, BaseState, LogicalPlanState] {
 
   override def phase: CompilationPhase = PIPE_BUILDING
 
-  override def description = "take on queries that require no planning such as procedures and schema commands"
+  override def description = "take on queries that require no planning such as schema commands"
 
   override def postConditions: Set[Condition] = Set.empty
 
