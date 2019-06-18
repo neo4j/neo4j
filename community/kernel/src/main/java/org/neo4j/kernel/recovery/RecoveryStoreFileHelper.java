@@ -42,8 +42,9 @@ class RecoveryStoreFileHelper
         // count store files will be checked separately since presence of both files is not required
         storeFiles.remove( databaseLayout.countStoreA() );
         storeFiles.remove( databaseLayout.countStoreB() );
-        // index statistics is not mandatory store to have
+        // index statistics and label scan store are not mandatory stores to have
         storeFiles.remove( databaseLayout.indexStatisticsStore() );
+        storeFiles.remove( databaseLayout.labelScanStore() );
         return storeFiles.stream().allMatch( fileSystem::fileExists ) && oneOfCountStoreFilesExist( databaseLayout, fileSystem );
     }
 
