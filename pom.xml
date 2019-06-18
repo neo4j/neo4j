@@ -103,6 +103,8 @@
     <caffeine.version>2.7.0</caffeine.version>
     <required.maven.version>3.5.4</required.maven.version>
     <jackson.version>1.9.13</jackson.version>
+	  <amazon-sdk.version>1.11.524</amazon-sdk.version>
+	  <guava.version>27.1-jre</guava.version>
   </properties>
 
   <modules>
@@ -1091,10 +1093,14 @@
       <dependency>
         <groupId>com.google.guava</groupId>
         <artifactId>guava-testlib</artifactId>
-        <version>27.1-jre</version>
+        <version>${guava.version}</version>
         <scope>test</scope>
       </dependency>
-
+	  <dependency>
+        <groupId>com.google.guava</groupId>
+        <artifactId>guava</artifactId>
+        <version>${guava.version}</version>
+      </dependency>
       <dependency>
         <groupId>org.slf4j</groupId>
         <artifactId>slf4j-log4j12</artifactId>
@@ -1552,7 +1558,6 @@
           </exclusion>
         </exclusions>
       </dependency>
-
       <dependency>
         <groupId>org.glassfish.jaxb</groupId>
         <artifactId>jaxb-runtime</artifactId>
@@ -1573,13 +1578,23 @@
         <artifactId>activation</artifactId>
         <version>1.1.1</version>
       </dependency>
-
       <dependency>
         <groupId>org.neo4j</groupId>
         <artifactId>annotations</artifactId>
         <version>${project.version}</version>
         <optional>true</optional>
         <scope>provided</scope>
+      </dependency>
+      <!-- used by benchmark-infra module -->
+      <dependency>
+      	<groupId>com.amazonaws</groupId>
+      	<artifactId>aws-java-sdk-batch</artifactId>
+      	<version>${amazon-sdk.version}</version>
+      </dependency>
+      <dependency>
+      	<groupId>com.amazonaws</groupId>
+      	<artifactId>aws-java-sdk-s3</artifactId>
+      	<version>${amazon-sdk.version}</version>
       </dependency>
     </dependencies>
   </dependencyManagement>
