@@ -100,13 +100,24 @@ public class DbRepresentation
 
     public static DbRepresentation of( File databaseDirectory, Config config )
     {
+        return of( databaseDirectory.getParentFile(), config.get( default_database ), config );
+    }
+
+    public static DbRepresentation of( File storeDirectory, String databaseName )
+    {
+        Config config = Config.defaults( transaction_logs_root_path, storeDirectory.getAbsolutePath() );
+        return of( storeDirectory, databaseName, config );
+    }
+
+    public static DbRepresentation of( File storeDirectory, String databaseName, Config config )
+    {
         Dependencies dependencies = new Dependencies();
         dependencies.satisfyDependencies( SystemGraphInitializer.NO_OP );   // disable system graph construction because it will change the backup
-        DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder( databaseDirectory.getParentFile() )
+        DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder( storeDirectory )
                 .setConfigRaw( config.getRaw() )
                 .setExternalDependencies( dependencies )
                 .build();
-        GraphDatabaseService db = managementService.database( config.get( default_database ) );
+        GraphDatabaseService db = managementService.database( databaseName );
         try
         {
             return of( db );
