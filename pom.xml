@@ -100,8 +100,7 @@
     <cypher.compatibility.31>3.1.9</cypher.compatibility.31>
     <cypher.compatibility.33>3.3.9</cypher.compatibility.33>
     <caffeine.version>2.6.2</caffeine.version>
-	<amazon-sdk.version>1.11.524</amazon-sdk.version>
-	<guava.version>24.1-jre</guava.version>
+	  <amazon-sdk.version>1.11.524</amazon-sdk.version>
   </properties>
 
   <modules>
@@ -1002,13 +1001,8 @@
       <dependency>
         <groupId>com.google.guava</groupId>
         <artifactId>guava-testlib</artifactId>
-        <version>${guava.version}</version>
+        <version>24.1-jre</version>
         <scope>test</scope>
-      </dependency>
-	  <dependency>
-        <groupId>com.google.guava</groupId>
-        <artifactId>guava</artifactId>
-        <version>${guava.version}</version>
       </dependency>
       <dependency>
         <groupId>org.apache.httpcomponents</groupId>
@@ -1357,7 +1351,7 @@
         <version>0.15</version>
         <scope>test</scope>
       </dependency>
-      
+
       <!-- used by benchmark-infra module -->
       <dependency>
       	<groupId>com.amazonaws</groupId>
