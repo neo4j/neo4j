@@ -24,6 +24,7 @@ import org.junit.jupiter.api.Test;
 import java.util.TreeSet;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.neo4j.internal.counts.CountsKey.relationshipKey;
 
 class CountsLayoutTest
 {
@@ -42,7 +43,7 @@ class CountsLayoutTest
                 for ( int e = -1; e < 10; e++ )
                 {
                     // then
-                    CountsKey key = new CountsKey().initializeRelationship( s, t, e );
+                    CountsKey key = relationshipKey( s, t, e );
                     assertTrue( keys.add( key ) );
                 }
             }

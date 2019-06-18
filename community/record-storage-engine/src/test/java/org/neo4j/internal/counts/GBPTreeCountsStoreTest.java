@@ -60,6 +60,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
+import static org.neo4j.internal.counts.CountsKey.nodeKey;
+import static org.neo4j.internal.counts.CountsKey.relationshipKey;
 import static org.neo4j.internal.counts.GBPTreeCountsStore.NO_MONITOR;
 import static org.neo4j.io.pagecache.IOLimiter.UNLIMITED;
 import static org.neo4j.storageengine.api.TransactionIdStore.BASE_TX_ID;
@@ -427,13 +429,13 @@ class GBPTreeCountsStoreTest
             @Override
             public void visitNodeCount( int labelId, long count )
             {
-                visitCount( new CountsKey().initializeNode( labelId ), count );
+                visitCount( nodeKey( labelId ), count );
             }
 
             @Override
             public void visitRelationshipCount( int startLabelId, int typeId, int endLabelId, long count )
             {
-                visitCount( new CountsKey().initializeRelationship( startLabelId, typeId, endLabelId ), count );
+                visitCount( relationshipKey( startLabelId, typeId, endLabelId ), count );
             }
 
             private void visitCount( CountsKey key, long count )
@@ -482,7 +484,7 @@ class GBPTreeCountsStoreTest
                 {   // Node
                     int labelId = randomTokenId( rng );
                     updater.incrementNodeCount( labelId, delta );
-                    expectedKey = new CountsKey().initializeNode( labelId );
+                    expectedKey = nodeKey( labelId );
                 }
                 else
                 {   // Relationship
@@ -490,7 +492,7 @@ class GBPTreeCountsStoreTest
                     int type = randomTokenId( rng );
                     int endLabelId = randomTokenId( rng );
                     updater.incrementRelationshipCount( startLabelId, type, endLabelId, delta );
-                    expectedKey = new CountsKey().initializeRelationship( startLabelId, type, endLabelId );
+                    expectedKey = relationshipKey( startLabelId, type, endLabelId );
                 }
                 expected.computeIfAbsent( expectedKey, k -> new AtomicLong() ).addAndGet( delta );
             }

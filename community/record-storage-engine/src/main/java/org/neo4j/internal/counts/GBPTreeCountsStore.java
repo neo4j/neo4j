@@ -54,6 +54,8 @@ import org.neo4j.util.concurrent.OutOfOrderSequence;
 import static org.neo4j.collection.PrimitiveLongCollections.EMPTY_LONG_ARRAY;
 import static org.neo4j.internal.counts.CountsKey.MAX_STRAY_TX_ID;
 import static org.neo4j.internal.counts.CountsKey.MIN_STRAY_TX_ID;
+import static org.neo4j.internal.counts.CountsKey.nodeKey;
+import static org.neo4j.internal.counts.CountsKey.relationshipKey;
 import static org.neo4j.internal.counts.TreeWriter.merge;
 import static org.neo4j.io.IOUtils.closeAllUnchecked;
 
@@ -253,13 +255,13 @@ public class GBPTreeCountsStore implements CountsStore
     @Override
     public long nodeCount( int labelId )
     {
-        return read( new CountsKey().initializeNode( labelId ) );
+        return read( nodeKey( labelId ) );
     }
 
     @Override
     public long relationshipCount( int startLabelId, int typeId, int endLabelId )
     {
-        return read( new CountsKey().initializeRelationship( startLabelId, typeId, endLabelId ) );
+        return read( relationshipKey( startLabelId, typeId, endLabelId ) );
     }
 
     @Override

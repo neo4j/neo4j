@@ -93,12 +93,12 @@ public class CountsKey
         return this;
     }
 
-    CountsKey initializeNode( long labelId )
+    private CountsKey initializeNode( long labelId )
     {
         return initialize( TYPE_NODE, labelId, 0 );
     }
 
-    CountsKey initializeRelationship( long startLabelId, long typeId, long endLabelId )
+    private CountsKey initializeRelationship( long startLabelId, long typeId, long endLabelId )
     {
         return initialize( TYPE_RELATIONSHIP, (startLabelId << Integer.SIZE) | (typeId & 0xFFFFFFFFL), (int) endLabelId );
     }
@@ -113,7 +113,7 @@ public class CountsKey
      * @param labelId id of the label.
      * @return a {@link CountsKey for the node label id. The returned key can be put into {@link Map maps} and similar.
      */
-    public static CountsKey nodeKey( int labelId )
+    public static CountsKey nodeKey( long labelId )
     {
         return new CountsKey().initializeNode( labelId );
     }
@@ -125,7 +125,7 @@ public class CountsKey
      * @param endLabelId id of the label of end node.
      * @return a {@link CountsKey for the node start/end label and relationship type id. The returned key can be put into {@link Map maps} and similar.
      */
-    public static CountsKey relationshipKey( int startLabelId, int typeId, int endLabelId )
+    public static CountsKey relationshipKey( long startLabelId, long typeId, long endLabelId )
     {
         return new CountsKey().initializeRelationship( startLabelId, typeId, endLabelId );
     }
