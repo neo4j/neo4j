@@ -23,8 +23,8 @@ import org.neo4j.configuration.GraphDatabaseSettings;
 
 public class TestDatabaseIdRepository implements DatabaseIdRepository
 {
-    private static DatabaseId DEFAULT_DATABASE_ID = new DatabaseId( GraphDatabaseSettings.DEFAULT_DATABASE_NAME );
-    private static DatabaseId SYSTEM_DATABASE_ID = new DatabaseId( GraphDatabaseSettings.SYSTEM_DATABASE_NAME );
+    public static DatabaseId DEFAULT_DATABASE_ID = new DatabaseId( GraphDatabaseSettings.DEFAULT_DATABASE_NAME );
+    public static DatabaseId SYSTEM_DATABASE_ID = new DatabaseId( GraphDatabaseSettings.SYSTEM_DATABASE_NAME );
 
     @Override
     public DatabaseId get( String databaseName )

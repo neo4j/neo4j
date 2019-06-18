@@ -60,11 +60,12 @@ import static org.neo4j.configuration.GraphDatabaseSettings.fail_on_missing_file
 import static org.neo4j.configuration.Settings.FALSE;
 import static org.neo4j.graphdb.RelationshipType.withName;
 import static org.neo4j.internal.helpers.collection.Iterables.count;
+import static org.neo4j.kernel.database.TestDatabaseIdRepository.DEFAULT_DATABASE_ID;
 
 @ExtendWith( {DefaultFileSystemExtension.class, TestDirectoryExtension.class} )
 class MissingStoreFilesRecoveryIT
 {
-    private static final DatabaseId databaseId = new DatabaseId( DEFAULT_DATABASE_NAME );
+    private static final DatabaseId databaseId = DEFAULT_DATABASE_ID;
     private static final long EXPECTED_NUMBER_OF_NODES = 400;
 
     @Inject
