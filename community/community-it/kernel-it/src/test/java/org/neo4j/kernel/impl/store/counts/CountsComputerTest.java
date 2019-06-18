@@ -165,7 +165,7 @@ class CountsComputerTest
 
         try ( GBPTreeCountsStore store = createCountsStore() )
         {
-            assertEquals( BASE_TX_ID + 1 + 1 + 1 + 1, store.txId() );
+            assertEquals( lastCommittedTransactionId, store.txId() );
             assertEquals( 3, store.nodeCount( -1 ) );
             assertEquals( 1, store.nodeCount( 0 ) );
             assertEquals( 1, store.nodeCount( 1 ) );
@@ -195,7 +195,7 @@ class CountsComputerTest
 
         try ( GBPTreeCountsStore store = createCountsStore() )
         {
-            assertEquals( BASE_TX_ID + 1 + 1 + 1 + 1 + 1, store.txId() );
+            assertEquals( lastCommittedTransactionId, store.txId() );
             assertEquals( 2, store.nodeCount( -1 ) );
             assertEquals( 1, store.nodeCount( 0 ) );
             assertEquals( 1, store.nodeCount( 1 ) );
@@ -228,7 +228,7 @@ class CountsComputerTest
 
         try ( GBPTreeCountsStore store = createCountsStore() )
         {
-            assertEquals( BASE_TX_ID + 1 + 1 + 1 + 1 + 1 + 1, store.txId() );
+            assertEquals( lastCommittedTransactionId, store.txId() );
             assertEquals( 4, store.nodeCount( -1 ) );
             assertEquals( 1, store.nodeCount( 0 ) );
             assertEquals( 1, store.nodeCount( 1 ) );
@@ -267,7 +267,7 @@ class CountsComputerTest
 
         try ( GBPTreeCountsStore store = createCountsStore() )
         {
-            assertEquals( BASE_TX_ID + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1, store.txId() );
+            assertEquals( lastCommittedTransactionId, store.txId() );
             assertEquals( 3, store.nodeCount( -1 ) );
             assertEquals( 1, store.nodeCount( 0 ) );
             assertEquals( 1, store.nodeCount( 1 ) );
