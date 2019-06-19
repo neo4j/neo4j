@@ -23,7 +23,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
-import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -31,11 +30,11 @@ import java.util.stream.Stream;
 import org.neo4j.common.DependencyResolver;
 import org.neo4j.common.EntityType;
 import org.neo4j.common.TokenNameLookup;
+import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
-import org.neo4j.internal.helpers.collection.MapUtil;
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.kernel.api.PopulationProgress;
 import org.neo4j.internal.kernel.api.SchemaReadCore;
@@ -44,7 +43,6 @@ import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
 import org.neo4j.internal.kernel.api.procs.ProcedureCallContext;
 import org.neo4j.internal.schema.IndexDescriptor;
-import org.neo4j.internal.schema.IndexProviderDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.SilentTokenNameLookup;
@@ -130,36 +128,34 @@ public class BuiltInProcedures
         try ( Statement ignore = tx.acquireStatement() )
         {
             TokenRead tokenRead = tx.tokenRead();
-            TokenNameLookup tokens = new SilentTokenNameLookup( tokenRead );
+            TokenNameLookup tokenLookup = new SilentTokenNameLookup( tokenRead );
             IndexingService indexingService = resolver.resolveDependency( IndexingService.class );
 
             SchemaReadCore schemaRead = tx.schemaRead().snapshot();
             List<IndexDescriptor> indexes = asList( schemaRead.indexesGetAll() );
-            indexes.sort( Comparator.comparing( a -> a.schema().userDescription( tokens ) ) );
+            indexes.sort( Comparator.comparing( a -> a.schema().userDescription( tokenLookup ) ) );
 
             ArrayList<IndexResult> result = new ArrayList<>();
             for ( IndexDescriptor index : indexes )
             {
-                IndexType type = IndexType.getIndexTypeOf( index );
-
                 SchemaDescriptor schema = index.schema();
-                long indexId = getIndexId( indexingService, schema );
-                List<String> tokenNames = Arrays.asList( tokens.entityTokensGetNames( schema.entityType(), schema.getEntityTokenIds() ) );
-                List<String> propertyNames = propertyNames( tokens, index );
-                String description = "INDEX ON " + schema.userDescription( tokens );
+                long id = getIndexId( indexingService, schema );
+                String name = index.getName();
                 IndexStatus status = getIndexStatus( schemaRead, index );
-                Map<String,String> providerDescriptorMap = indexProviderDescriptorMap( schemaRead.index( schema ) );
-                result.add( new IndexResult( indexId,
-                        description,
-                        index.getName(),
-                        tokenNames,
-                        propertyNames,
-                        status.state,
-                        type.typeName(),
-                        status.populationProgress,
-                        providerDescriptorMap,
-                        status.failureMessage ) );
+                String uniqueness = IndexUniqueness.getUniquenessOf( index );
+                String type = IndexType.getIndexTypeOf( index );
+                String entityType = IndexEntityType.entityTypeOf( index );
+                List<String> labelsOrTypes = Arrays.asList( tokenLookup.entityTokensGetNames( schema.entityType(), schema.getEntityTokenIds() ) );
+                List<String> properties = propertyNames( tokenLookup, index );
+                String provider = index.getIndexProvider().name();
+
+                // todo Move to indexDetails procedure
+                // String description = "INDEX ON " + schema.userDescription( tokens );
+                // String failureMessage = internalIndexState == InternalIndexState.FAILED ? schemaRead.indexGetFailure( index ) : "";
+                result.add( new IndexResult( id, name, status.state, status.populationProgress, uniqueness, type, entityType, labelsOrTypes, properties,
+                        provider ) );
             }
+            result.sort( Comparator.comparing( r -> r.name ) );
             return result.stream();
         }
     }
@@ -329,12 +325,6 @@ public class BuiltInProcedures
         }
     }
 
-    private static Map<String,String> indexProviderDescriptorMap( IndexDescriptor index )
-    {
-        IndexProviderDescriptor provider = index.getIndexProvider();
-        return MapUtil.stringMap( "key", provider.getKey(), "version", provider.getVersion() );
-    }
-
     private static List<String> propertyNames( TokenNameLookup tokens, IndexDescriptor index )
     {
         int[] propertyIds = index.schema().getPropertyIds();
@@ -397,38 +387,30 @@ public class BuiltInProcedures
 
     public static class IndexResult
     {
-        public final String description;
-        public final String indexName;
-        public final List<String> tokenNames;
-        public final List<String> properties;
-        public final String state;
-        public final String type;
-        public final Double progress;
-        public final Map<String,String> provider;
-        public final long id;
-        public final String failureMessage;
+        public final long id;                    //1
+        public final String name;                //"myIndex"
+        public final String state;               //"ONLINE", "FAILED", "POPULATING"
+        public final float populationPercent;    // 0.0, 100.0, 75.1
+        public final String uniqueness;          //"UNIQUE", "NONUNIQUE"
+        public final String type;                //"FULLTEXT", "FUSION", "BTREE"
+        public final String entityType;          //"NODE", "RELATIONSHIP"
+        public final List<String> labelsOrTypes; //["Label1", "Label2"], ["RelType1", "RelType2"]
+        public final List<String> properties;    //["propKey", "propKey2"]
+        public final String provider;            //"native-btree-1.0", "lucene+native-3.0"
 
-        private IndexResult( long id,
-                             String description,
-                             String indexName,
-                             List<String> tokenNames,
-                             List<String> properties,
-                             String state,
-                             String type,
-                             Float progress,
-                             Map<String,String> provider,
-                             String failureMessage )
+        private IndexResult( long id, String name, String state, float populationPercent, String uniqueness, String type, String entityType,
+                List<String> labelsOrTypes, List<String> properties, String provider )
         {
             this.id = id;
-            this.description = description;
-            this.indexName = indexName;
-            this.tokenNames = tokenNames;
-            this.properties = properties;
+            this.name = name;
             this.state = state;
+            this.populationPercent = populationPercent;
+            this.uniqueness = uniqueness;
             this.type = type;
-            this.progress = progress.doubleValue();
+            this.entityType = entityType;
+            this.labelsOrTypes = labelsOrTypes;
+            this.properties = properties;
             this.provider = provider;
-            this.failureMessage = failureMessage;
         }
     }
 
@@ -504,55 +486,54 @@ public class BuiltInProcedures
     //this should probably be moved to some more central place
     private enum IndexType
     {
-        NODE_LABEL_PROPERTY( "node_label_property" ),
-        NODE_UNIQUE_PROPERTY( "node_unique_property" ),
-        REL_TYPE_PROPERTY( "relationship_type_property" ),
-        NODE_FULLTEXT( "node_fulltext" ),
-        RELATIONSHIP_FULLTEXT( "relationship_fulltext" );
+        FULLTEXT,
+        BTREE,
+        FUSION;
 
-        private final String typeName;
-
-        IndexType( String typeName )
-        {
-            this.typeName = typeName;
-        }
-
-        private static IndexType getIndexTypeOf( IndexDescriptor index )
+        private static String getIndexTypeOf( IndexDescriptor index )
         {
             if ( index.getIndexType() == org.neo4j.internal.schema.IndexType.FULLTEXT )
             {
-                if ( index.schema().entityType() == EntityType.NODE )
-                {
-                    return IndexType.NODE_FULLTEXT;
-                }
-                else
-                {
-                    return IndexType.RELATIONSHIP_FULLTEXT;
-                }
+                return FULLTEXT.name();
+            }
+            else if ( index.getIndexProvider().getKey().equals( GraphDatabaseSettings.SchemaIndex.NATIVE30.providerKey() ) )
+            {
+                return FUSION.name();
             }
             else
             {
-                if ( index.isUnique() )
-                {
-                    return IndexType.NODE_UNIQUE_PROPERTY;
-                }
-                else
-                {
-                    if ( index.schema().entityType() == EntityType.NODE )
-                    {
-                        return IndexType.NODE_LABEL_PROPERTY;
-                    }
-                    else
-                    {
-                        return IndexType.REL_TYPE_PROPERTY;
-                    }
-                }
+                return BTREE.name();
             }
         }
+    }
 
-        public String typeName()
+    private enum IndexUniqueness
+    {
+        UNIQUE,
+        NONUNIQUE;
+
+        private static String getUniquenessOf( IndexDescriptor index )
         {
-            return typeName;
+            return index.isUnique() ? UNIQUE.name() : NONUNIQUE.name();
+
+        }
+    }
+
+    private enum IndexEntityType
+    {
+        NODE,
+        RELATIONSHIP;
+
+        private static String entityTypeOf( IndexDescriptor index )
+        {
+            if ( index.schema().entityType() == EntityType.NODE )
+            {
+                return NODE.name();
+            }
+            else
+            {
+                return RELATIONSHIP.name();
+            }
         }
     }
 }
