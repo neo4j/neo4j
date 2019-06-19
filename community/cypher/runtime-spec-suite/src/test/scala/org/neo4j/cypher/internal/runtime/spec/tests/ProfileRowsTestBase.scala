@@ -210,4 +210,27 @@ abstract class ProfileRowsTestBase[CONTEXT <: RuntimeContext](edition: Edition[C
     queryProfile.operatorProfile(0).rows() shouldBe sizeHint // produce results
     queryProfile.operatorProfile(1).rows() shouldBe sizeHint // label scan
   }
+
+  test("should profile rows of nodeIndexSeek + produce results") {
+    // given
+    nodePropertyGraph(sizeHint, {
+      case i if i % 10 == 0 => Map("prop" -> i)
+    },"L1")
+    nodeGraph(sizeHint, "L2")
+    index("L1", "prop")
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x")
+      .nodeIndexOperator("x:L1(prop = 20)")
+      .build()
+
+    val runtimeResult = profile(logicalQuery, runtime)
+    consume(runtimeResult)
+
+    // then
+    val queryProfile = runtimeResult.runtimeResult.queryProfile()
+    queryProfile.operatorProfile(0).rows() shouldBe 1 // produce results
+    queryProfile.operatorProfile(1).rows() shouldBe 1 // node index seek
+  }
 }
