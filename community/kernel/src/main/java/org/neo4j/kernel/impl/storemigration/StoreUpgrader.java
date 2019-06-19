@@ -194,11 +194,9 @@ public class StoreUpgrader
 
         if ( MigrationStatus.moving.isNeededFor( migrationStatus ) )
         {
-            versionToMigrateFrom =
-                    MigrationStatus.moving.maybeReadInfo( fileSystem, migrationStateFile, versionToMigrateFrom );
+            versionToMigrateFrom = MigrationStatus.moving.maybeReadInfo( fileSystem, migrationStateFile, versionToMigrateFrom );
             String versionToMigrateTo = storeVersionCheck.configuredVersion();
-            moveMigratedFilesToStoreDirectory( participants, migrationLayout, dbDirectoryLayout,
-                    versionToMigrateFrom, versionToMigrateTo );
+            moveMigratedFilesToStoreDirectory( participants, migrationLayout, dbDirectoryLayout, versionToMigrateFrom, versionToMigrateTo );
         }
 
         progressMonitor.startTransactionLogsMigration();
