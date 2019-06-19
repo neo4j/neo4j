@@ -28,6 +28,7 @@ import org.neo4j.values.storable.Value;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class IndexConfigTest
@@ -46,6 +47,7 @@ class IndexConfigTest
         assertFalse( config.getOrDefault( "b", BooleanValue.FALSE ).booleanValue() );
     }
 
+    @SuppressWarnings( "ConstantConditions" )
     @Test
     void shouldNotBePossibleToMutateIndexConfigFromAsMap()
     {
@@ -54,12 +56,9 @@ class IndexConfigTest
         config = config.with( "b", BooleanValue.TRUE );
 
         Map<String,Value> map = config.asMap();
-        map.remove( "a" );
-        map.put( "b", BooleanValue.FALSE );
-        map.put( "c", BooleanValue.TRUE );
-        assertNull( map.get( "a" ) );
-        assertFalse( ((BooleanValue) map.get( "b" )).booleanValue() );
-        assertTrue( ((BooleanValue) map.get( "c" )).booleanValue() );
+        assertThrows( UnsupportedOperationException.class, () -> map.remove( "a" ) );
+        assertThrows( UnsupportedOperationException.class, () -> map.put( "b", BooleanValue.FALSE ) );
+        assertThrows( UnsupportedOperationException.class, () -> map.put( "c", BooleanValue.TRUE ) );
 
         assertTrue( config.<BooleanValue>get( "a" ).booleanValue() );
         assertTrue( config.<BooleanValue>get( "b" ).booleanValue() );

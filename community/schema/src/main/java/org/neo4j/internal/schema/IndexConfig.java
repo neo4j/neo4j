@@ -30,6 +30,8 @@ import java.util.Objects;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.ValueCategory;
 
+import static java.util.Collections.unmodifiableMap;
+
 /**
  * The index configuration is an immutable map from Strings to Values.
  * <p>
@@ -113,7 +115,7 @@ public final class IndexConfig
 
     public Map<String,Value> asMap()
     {
-        return map.toMap();
+        return unmodifiableMap( map.toMap() );
     }
 
     @Override
