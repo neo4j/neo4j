@@ -27,7 +27,7 @@ import static org.apache.commons.lang3.exception.ExceptionUtils.getStackTrace;
 public class LinuxNativeAccess implements NativeAccess
 {
     /**
-     * Constant defined in fadvise.h and means that suggest that the specified data will not be accessed in the near future.
+     * Constant defined in fadvise.h and suggest that the specified data will not be accessed in the near future.
      * For more info check man page for posix_fadvise.
      */
     private static final int POSIX_FADV_DONTNEED = 4;
