@@ -24,6 +24,7 @@ import org.eclipse.collections.impl.set.mutable.primitive.LongHashSet;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.PrintStream;
 import java.io.UncheckedIOException;
 import java.util.ArrayList;
 import java.util.List;
@@ -41,6 +42,7 @@ import org.neo4j.counts.CountsStore;
 import org.neo4j.counts.CountsVisitor;
 import org.neo4j.exceptions.UnderlyingStorageException;
 import org.neo4j.index.internal.gbptree.GBPTree;
+import org.neo4j.index.internal.gbptree.GBPTreeVisitor;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.index.internal.gbptree.Seeker;
 import org.neo4j.index.internal.gbptree.Writer;
@@ -352,5 +354,43 @@ public class GBPTreeCountsStore implements CountsStore
     public interface Monitor
     {
         void ignoredTransaction( long txId );
+    }
+
+    /**
+     * Dumps the contents of a counts store.
+     *
+     * @param pageCache {@link PageCache} to use to map the counts store file into.
+     * @param file {@link File} pointing out the counts store.
+     * @param out to print to.
+     * @throws IOException on missing file or I/O error.
+     */
+    public static void dump( PageCache pageCache, File file, PrintStream out ) throws IOException
+    {
+        // First check if it even exists as we don't really want to create it as part of dumping it. readHeader will throw if not found
+        CountsHeader header = new CountsHeader( TransactionIdStore.BASE_TX_ID );
+        GBPTree.readHeader( pageCache, file, header );
+
+        // Now open it and dump its contents
+        try ( GBPTree<CountsKey,CountsValue> tree = new GBPTree<>( pageCache, file, new CountsLayout(), 0, GBPTree.NO_MONITOR, header, GBPTree.NO_HEADER_WRITER,
+                RecoveryCleanupWorkCollector.immediate() ) )
+        {
+            out.printf( "Highest gap-free txId: %d%n", header.highestGapFreeTxId() );
+            tree.visit( new GBPTreeVisitor.Adaptor<>()
+            {
+                private CountsKey key;
+
+                @Override
+                public void key( CountsKey key, boolean isLeaf )
+                {
+                    this.key = key;
+                }
+
+                @Override
+                public void value( CountsValue value )
+                {
+                    out.printf( "%s = %d%n", key, value.count );
+                }
+            } );
+        }
     }
 }

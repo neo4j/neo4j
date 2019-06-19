@@ -24,8 +24,11 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
+import java.io.PrintStream;
+import java.nio.file.NoSuchFileException;
 import java.util.Random;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -38,6 +41,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.neo4j.counts.CountsAccessor;
 import org.neo4j.counts.CountsStore;
 import org.neo4j.counts.CountsVisitor;
+import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.test.OtherThreadExecutor;
 import org.neo4j.test.Race;
@@ -52,6 +56,7 @@ import org.neo4j.util.concurrent.OutOfOrderSequence;
 import static java.lang.String.format;
 import static org.apache.commons.lang3.ArrayUtils.EMPTY_LONG_ARRAY;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.greaterThan;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -83,6 +88,9 @@ class GBPTreeCountsStoreTest
 
     @Inject
     private PageCache pageCache;
+
+    @Inject
+    private FileSystemAbstraction fs;
 
     @Inject
     private RandomRule random;
@@ -408,6 +416,45 @@ class GBPTreeCountsStoreTest
 
         // then it's fine to call checkpoint, because no changes can actually be made on a read-only counts store anyway
         countsStore.checkpoint( UNLIMITED );
+    }
+
+    @Test
+    void shouldDumpCountsStore() throws IOException
+    {
+        // given
+        long txId = BASE_TX_ID + 1;
+        try ( CountsAccessor.Updater updater = countsStore.apply( txId ) )
+        {
+            updater.incrementNodeCount( LABEL_ID_1, 10 );
+            updater.incrementRelationshipCount( LABEL_ID_1, RELATIONSHIP_TYPE_ID_1, LABEL_ID_2, 3 );
+            updater.incrementRelationshipCount( LABEL_ID_1, RELATIONSHIP_TYPE_ID_2, LABEL_ID_2, 7 );
+        }
+        countsStore.checkpoint( UNLIMITED );
+        closeCountsStore();
+
+        // when
+        ByteArrayOutputStream out = new ByteArrayOutputStream( 1024 );
+        GBPTreeCountsStore.dump( pageCache, countsStoreFile(), new PrintStream( out ) );
+
+        // then
+        String dump = out.toString();
+        assertThat( dump, containsString( nodeKey( LABEL_ID_1 ) + " = 10" ) );
+        assertThat( dump, containsString( relationshipKey( LABEL_ID_1, RELATIONSHIP_TYPE_ID_1, LABEL_ID_2 ) + " = 3" ) );
+        assertThat( dump, containsString( relationshipKey( LABEL_ID_1, RELATIONSHIP_TYPE_ID_2, LABEL_ID_2 ) + " = 7" ) );
+        assertThat( dump, containsString( "Highest gap-free txId: " + txId ) );
+    }
+
+    @Test
+    void shouldNotCreateFileOnDumpingNonExistentCountsStore()
+    {
+        // given
+        File file = directory.file( "abcd" );
+
+        // when
+        assertThrows( NoSuchFileException.class, () -> GBPTreeCountsStore.dump( pageCache, file, System.out ) );
+
+        // then
+        assertFalse( fs.fileExists( file ) );
     }
 
     private void incrementNodeCount( long txId, int labelId, int delta )
