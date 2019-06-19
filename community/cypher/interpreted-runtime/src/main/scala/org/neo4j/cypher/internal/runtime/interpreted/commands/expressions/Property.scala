@@ -34,7 +34,7 @@ case class Property(mapExpr: Expression, propertyKey: KeyToken)
   extends Expression with Product with Serializable
 {
   def apply(ctx: ExecutionContext, state: QueryState): AnyValue = mapExpr(ctx, state) match {
-    case Values.NO_VALUE => Values.NO_VALUE
+    case x if x eq Values.NO_VALUE => Values.NO_VALUE
     case n: VirtualNodeValue =>
       propertyKey.getOptId(state.query) match {
         case None => Values.NO_VALUE

@@ -229,7 +229,7 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
 
     val impossiblePredicate =
       predicates.exists {
-        case p: IndexQuery.ExactPredicate => p.value() == Values.NO_VALUE
+        case p: IndexQuery.ExactPredicate => p.value() eq Values.NO_VALUE
         case _: IndexQuery.ExistsPredicate if predicates.length > 1 => false
         case p: IndexQuery =>
           !RANGE_SEEKABLE_VALUE_GROUPS.contains(p.valueGroup())
@@ -290,7 +290,7 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
     val cursor = transactionalContext.cursors.allocateNodeValueIndexCursor()
     try {
       indexSearchMonitor.lockingUniqueIndexSeek(indexReference, queries)
-      if (queries.exists(q => q.value() == Values.NO_VALUE))
+      if (queries.exists(q => q.value() eq Values.NO_VALUE))
         NodeValueHit.EMPTY
       else {
         val index = transactionalContext.kernelTransaction.schemaRead().indexReferenceUnchecked(indexReference.schema())
@@ -486,7 +486,7 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
         val nodePropertyInTx = reads().nodePropertyChangeInTransactionOrNull(nodeId, propertyKeyId)
         nodePropertyInTx match {
           case null => None // no changes in TxState.
-          case Values.NO_VALUE => Some(false) // property removed in TxState
+          case x if x eq Values.NO_VALUE => Some(false) // property removed in TxState
           case _ => Some(true) // property changed in TxState
         }
       }
@@ -687,7 +687,7 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
         val relPropertyInTx = reads().relationshipPropertyChangeInTransactionOrNull(relId, propertyKeyId)
         relPropertyInTx match {
           case null => None // no changes in TxState.
-          case Values.NO_VALUE => Some(false) // property removed in TxState
+          case x if x eq Values.NO_VALUE => Some(false) // property removed in TxState
           case _ => Some(true) // property changed in TxState
         }
       }

@@ -220,7 +220,7 @@ class MapExecutionContext(private val m: MutableMap[String, AnyValue], private v
 
   override def isNull(key: String): Boolean =
     m.get(key) match {
-      case Some(Values.NO_VALUE) => true
+      case Some(v) if v eq Values.NO_VALUE => true
       case _ => false
     }
 

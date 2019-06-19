@@ -100,7 +100,7 @@ case class CachedNodeProperty(nodeName: String, propertyKey: KeyToken, key: ASTC
 
   override def getId(ctx: ExecutionContext): Long =
     ctx.getByName(nodeName) match {
-      case Values.NO_VALUE => StatementConstants.NO_SUCH_NODE
+      case x if x eq Values.NO_VALUE => StatementConstants.NO_SUCH_NODE
       case n: VirtualNodeValue => n.id()
       case other => throw new CypherTypeException(s"Type mismatch: expected a node but was $other")
     }
@@ -121,7 +121,7 @@ case class CachedRelationshipProperty(nodeName: String, propertyKey: KeyToken, k
 
   override def getId(ctx: ExecutionContext): Long =
     ctx.getByName(nodeName) match {
-      case Values.NO_VALUE => StatementConstants.NO_SUCH_RELATIONSHIP
+      case x if x eq Values.NO_VALUE => StatementConstants.NO_SUCH_RELATIONSHIP
       case r: VirtualRelationshipValue => r.id()
       case other => throw new CypherTypeException(s"Type mismatch: expected a relationship but was $other")
     }

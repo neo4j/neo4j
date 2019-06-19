@@ -40,7 +40,7 @@ case class DeletePipe(src: Pipe, expression: Expression, forced: Boolean)
                                                state: QueryState): Iterator[ExecutionContext] = {
     input.map { row =>
       expression(row, state) match {
-        case Values.NO_VALUE => // do nothing
+        case x if x eq Values.NO_VALUE => // do nothing
         case r: RelationshipValue =>
           deleteRelationship(r, state)
         case n: NodeValue =>

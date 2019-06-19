@@ -64,7 +64,7 @@ public abstract class IntegralValue extends NumberValue
     }
 
     @Override
-    public boolean eq( Object other )
+    public boolean equalTo( Object other )
     {
         return other instanceof Value && equals( (Value) other );
     }

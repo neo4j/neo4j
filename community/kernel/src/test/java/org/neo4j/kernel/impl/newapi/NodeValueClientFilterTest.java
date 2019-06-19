@@ -210,7 +210,7 @@ public class NodeValueClientFilterTest implements IndexProgressor, EntityValueCl
         {
             candidate = random.nextValue();
         }
-        while ( candidate.eq( valueToNotReturn ) );
+        while ( candidate.equalTo( valueToNotReturn ) );
         return candidate;
     }
 

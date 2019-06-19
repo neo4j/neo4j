@@ -40,7 +40,7 @@ case class ConstantCachedIn(value: Expression, list: Expression) extends Predica
   override def isMatch(ctx: ExecutionContext, state: QueryState): Option[Boolean] = {
     val inChecker = state.cachedIn.getOrElseUpdate(list, {
       val listValue = list(ctx, state)
-      val checker = if (listValue == Values.NO_VALUE)
+      val checker = if (listValue eq Values.NO_VALUE)
         NullListChecker
       else {
         val input = makeTraversable(listValue)
@@ -72,7 +72,7 @@ case class DynamicCachedIn(value: Expression, list: Expression) extends Predicat
   override def isMatch(ctx: ExecutionContext, state: QueryState): Option[Boolean] = {
     val listValue: AnyValue = list(ctx, state)
 
-    if(listValue == Values.NO_VALUE)
+    if(listValue eq Values.NO_VALUE)
       return None
 
     val traversable = makeTraversable(listValue)

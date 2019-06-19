@@ -131,7 +131,7 @@ case class Xor(a: Predicate, b: Predicate) extends Predicate {
 
 case class IsNull(expression: Expression) extends Predicate {
   override def isMatch(m: ExecutionContext, state: QueryState): Option[Boolean] = expression(m, state) match {
-    case Values.NO_VALUE => Some(true)
+    case x if x eq Values.NO_VALUE => Some(true)
     case _ => Some(false)
   }
 
@@ -166,7 +166,7 @@ case class PropertyExists(variable: Expression, propertyKey: KeyToken) extends P
     case IsMap(map) =>
       Some(map(state).get(propertyKey.name) != Values.NO_VALUE)
 
-    case Values.NO_VALUE => None
+    case x if x eq Values.NO_VALUE => None
     case _ => throw new CypherTypeException("Expected " + variable + " to be a property container.")
   }
 
@@ -201,8 +201,8 @@ case class CachedNodePropertyExists(cachedNodeProperty: Expression) extends Pred
                      val property = state.query.nodeOps.getProperty(nodeId, propId, state.cursors.nodeCursor, state.cursors.propertyCursor, throwOnDeleted = false)
                      // Re-cache the value
                      cp.setCachedProperty(m, property)
-                     Some(property != Values.NO_VALUE)
-                   case Values.NO_VALUE =>
+                     Some(!(property eq Values.NO_VALUE))
+                   case x if x eq Values.NO_VALUE =>
                      Some(false)
                    case _ =>
                      Some(true)
@@ -247,8 +247,8 @@ case class CachedRelationshipPropertyExists(cachedRelProperty: Expression) exten
                       val property = state.query.relationshipOps.getProperty(relId, propId, state.cursors.relationshipScanCursor, state.cursors.propertyCursor, throwOnDeleted = false)
                       // Re-cache the value
                       cp.setCachedProperty(m, property)
-                      Some(property != Values.NO_VALUE)
-                    case Values.NO_VALUE =>
+                      Some(!(property eq Values.NO_VALUE))
+                    case x if x eq Values.NO_VALUE =>
                       Some(false)
                     case _ =>
                       Some(true)
@@ -340,7 +340,7 @@ case class RegularExpression(lhsExpr: Expression, regexExpr: Expression)
     val lValue = lhsExpr(m, state)
     val rValue = regexExpr(m, state)
     (lValue, rValue) match {
-      case (lhs: TextValue, rhs) if rhs != Values.NO_VALUE =>
+      case (lhs: TextValue, rhs) if !(rhs eq Values.NO_VALUE) =>
         val rhsAsRegexString = converter(CastSupport.castOrFail[TextValue](rhs))
         Some(CypherBoolean.regex(lhs, rhsAsRegexString).booleanValue())
       case _ => None
@@ -365,7 +365,7 @@ case class NonEmpty(collection: Expression) extends Predicate {
   override def isMatch(m: ExecutionContext, state: QueryState): Option[Boolean] = {
     collection(m, state) match {
       case IsList(x) => Some(x.nonEmpty)
-      case x if x == Values.NO_VALUE => None
+      case x if x eq Values.NO_VALUE => None
       case x => throw new CypherTypeException(s"Expected a collection, got `$x`")
     }
   }
@@ -385,7 +385,7 @@ case class HasLabel(entity: Expression, label: KeyToken) extends Predicate {
 
   override def isMatch(m: ExecutionContext, state: QueryState): Option[Boolean] = entity(m, state) match {
 
-    case Values.NO_VALUE =>
+    case x if x eq Values.NO_VALUE =>
       None
 
     case value =>
@@ -419,7 +419,7 @@ case class CoercedPredicate(inner: Expression) extends Predicate {
 
   override def isMatch(m: ExecutionContext, state: QueryState): Option[Boolean] = inner(m, state) match {
     case x: BooleanValue => Some(x.booleanValue())
-    case Values.NO_VALUE => None
+    case x if x eq Values.NO_VALUE => None
     case IsList(coll) => Some(coll.nonEmpty)
     case x => throw new CypherTypeException(s"Don't know how to treat that as a predicate: $x")
   }

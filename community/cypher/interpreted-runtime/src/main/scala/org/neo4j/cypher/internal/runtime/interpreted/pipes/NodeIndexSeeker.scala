@@ -109,7 +109,7 @@ trait NodeIndexSeeker {
         expr(row, state) match {
           case text: TextValue =>
             Array(IndexQuery.stringPrefix(propertyId, text))
-          case Values.NO_VALUE =>
+          case x if x eq Values.NO_VALUE =>
             Nil
           case other =>
             throw new CypherTypeException("Expected TextValue, got " + other)
@@ -228,7 +228,7 @@ trait NodeIndexSeeker {
                 ))
             ).toSeq
 
-          case v if v == Values.NO_VALUE => Array[Seq[IndexQuery.ExactPredicate]]()
+          case v if v eq Values.NO_VALUE => Array[Seq[IndexQuery.ExactPredicate]]()
           case other => throw new CypherTypeException(s"Expected list, got $other")
         }
 

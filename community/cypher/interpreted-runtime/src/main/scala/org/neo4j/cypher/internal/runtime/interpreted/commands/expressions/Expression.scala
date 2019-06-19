@@ -92,7 +92,7 @@ abstract class Arithmetics(left: Expression, right: Expression) extends Expressi
 
   protected def applyWithValues(aVal: AnyValue, bVal: AnyValue): AnyValue = {
     (aVal, bVal) match {
-      case (x, y) if x == Values.NO_VALUE || y == Values.NO_VALUE => Values.NO_VALUE
+      case (x, y) if (x eq Values.NO_VALUE) || (y eq Values.NO_VALUE) => Values.NO_VALUE
       case (x, y) => calc(x, y)
     }
   }

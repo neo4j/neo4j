@@ -33,7 +33,7 @@ class CollectFunction(value:Expression) extends AggregationFunction {
 
   override def apply(data: ExecutionContext, state:QueryState) {
     value(data, state) match {
-      case Values.NO_VALUE =>
+      case x if x eq Values.NO_VALUE =>
       case v    => collection += v
     }
   }

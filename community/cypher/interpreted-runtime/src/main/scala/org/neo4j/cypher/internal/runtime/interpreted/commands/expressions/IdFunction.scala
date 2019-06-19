@@ -30,7 +30,7 @@ case class IdFunction(inner: Expression) extends Expression {
 
   override def apply(ctx: ExecutionContext,
                      state: QueryState): AnyValue = inner(ctx, state) match {
-    case Values.NO_VALUE => Values.NO_VALUE
+    case x if x eq Values.NO_VALUE => Values.NO_VALUE
     case value => CypherFunctions.id(value)
   }
 

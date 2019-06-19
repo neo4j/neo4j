@@ -108,7 +108,7 @@ case class VarLengthExpandPipe(source: Pipe,
             val node = state.query.nodeOps.getById(nodeRef.id)
             expand(row, node)
 
-          case Values.NO_VALUE =>
+          case x if x eq Values.NO_VALUE =>
             if (nodeInScope)
               row.set(relName, Values.NO_VALUE)
             else

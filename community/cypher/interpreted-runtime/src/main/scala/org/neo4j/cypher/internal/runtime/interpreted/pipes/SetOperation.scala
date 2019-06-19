@@ -61,7 +61,7 @@ object SetOperation {
 
     map.foreach(new ThrowingBiConsumer[String, AnyValue, RuntimeException] {
       override def accept(k: String, v: AnyValue): Unit = {
-        if (v == Values.NO_VALUE) {
+        if (v eq Values.NO_VALUE) {
           val optPropertyKeyId = qtx.getOptPropertyKeyId(k)
           if (optPropertyKeyId.isDefined) {
             builder += optPropertyKeyId.get -> v
@@ -102,7 +102,7 @@ abstract class AbstractSetPropertyOperation extends SetOperation {
 
     val value = makeValueNeoSafe(expression(context, state))
 
-    if (value == Values.NO_VALUE) {
+    if (value eq Values.NO_VALUE) {
       if (ops.hasProperty(itemId, propertyId, cursor, state.cursors.propertyCursor))
         ops.removeProperty(itemId, propertyId)
     }
@@ -117,7 +117,7 @@ abstract class SetEntityPropertyOperation[T, CURSOR](itemName: String,
 
   override def set(executionContext: ExecutionContext, state: QueryState): Unit = {
     val item = executionContext.getByName(itemName)
-    if (item != Values.NO_VALUE) {
+    if (!(item eq Values.NO_VALUE)) {
       val itemId = id(item)
       val ops = operations(state.query)
       val cursor = entityCursor(state.cursors)
@@ -185,7 +185,7 @@ case class SetPropertyOperation(entityExpr: Expression, propertyKey: LazyPropert
 
   override def set(executionContext: ExecutionContext, state: QueryState) = {
     val resolvedEntity = entityExpr(executionContext, state)
-    if (resolvedEntity != Values.NO_VALUE) {
+    if (!(resolvedEntity eq Values.NO_VALUE)) {
       def setIt[T, CURSOR](entityId: Long, ops: Operations[T, CURSOR], cursor: CURSOR): Unit = {
         // better safe than sorry let's lock the entity
         ops.acquireExclusiveLock(entityId)
@@ -218,7 +218,7 @@ abstract class SetPropertyFromMapOperation[T, CURSOR](itemName: String,
 
   override def set(executionContext: ExecutionContext, state: QueryState): Unit = {
     val item = executionContext.getByName(itemName)
-    if (item != Values.NO_VALUE) {
+    if (!(item eq Values.NO_VALUE)) {
       val ops = operations(state.query)
       val itemId = id(item)
       if (needsExclusiveLock) ops.acquireExclusiveLock(itemId)
@@ -245,7 +245,7 @@ abstract class SetPropertyFromMapOperation[T, CURSOR](itemName: String,
 
     /*Set all map values on the property container*/
     for ((k, v) <- map) {
-      if (v == Values.NO_VALUE)
+      if (v eq Values.NO_VALUE)
         ops.removeProperty(itemId, k)
       else
         ops.setProperty(itemId, k, runtime.makeValueNeoSafe(v))
@@ -298,7 +298,7 @@ case class SetLabelsOperation(nodeName: String, labels: Seq[LazyLabel]) extends 
 
   override def set(executionContext: ExecutionContext, state: QueryState) = {
     val value: AnyValue = executionContext.getByName(nodeName)
-    if (value != Values.NO_VALUE) {
+    if (!(value eq Values.NO_VALUE)) {
       val nodeId = CastSupport.castOrFail[VirtualNodeValue](value).id()
       val labelIds = labels.map(_.getOrCreateId(state.query))
       state.query.setLabelsOnNode(nodeId, labelIds.iterator)

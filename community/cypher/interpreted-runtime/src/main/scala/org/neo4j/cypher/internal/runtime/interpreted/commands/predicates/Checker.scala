@@ -40,7 +40,7 @@ class BuildUp(list: ListValue) extends Checker {
   assert(iterator.hasNext)
   private val cachedSet: mutable.Set[AnyValue] = new mutable.HashSet[AnyValue]
   override def contains(value: AnyValue): (Option[Boolean], Checker) = {
-    if (value == Values.NO_VALUE) (None, this)
+    if (value eq Values.NO_VALUE) (None, this)
     else {
       if (cachedSet.contains(value))
         (Some(true), this)
@@ -89,7 +89,7 @@ class SetChecker(cachedSet: mutable.Set[AnyValue], falseResult: Option[Boolean])
   assert(cachedSet.nonEmpty)
 
   override def contains(value: AnyValue): (Option[Boolean], Checker) = {
-    if (value == Values.NO_VALUE)
+    if (value eq Values.NO_VALUE)
       (None, this)
     else {
       val exists = cachedSet.contains(value)

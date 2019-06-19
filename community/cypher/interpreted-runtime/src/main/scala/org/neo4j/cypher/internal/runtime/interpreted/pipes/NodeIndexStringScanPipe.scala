@@ -47,7 +47,7 @@ abstract class AbstractNodeIndexStringScanPipe(ident: String,
     val resultNodes = value match {
       case value: TextValue =>
         new IndexIterator(state.query, baseContext, queryContextCall(state, state.queryIndexes(queryIndexId), value ))
-      case Values.NO_VALUE =>
+      case x if x eq Values.NO_VALUE =>
         Iterator.empty
       case x => throw new CypherTypeException(s"Expected a string value, but got $x")
     }

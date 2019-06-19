@@ -126,7 +126,7 @@ trait CachingExpandInto {
   protected def getRowNode(row: ExecutionContext, col: String): AnyValue = {
     row.getByName(col) match {
       case n: NodeValue => n
-      case NO_VALUE    => NO_VALUE
+      case x if x eq NO_VALUE    => NO_VALUE
       case value   => throw new InternalException(s"Expected to find a node at '$col' but found $value instead")
     }
   }

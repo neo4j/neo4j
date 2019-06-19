@@ -47,7 +47,7 @@ abstract class InList(collection: Expression,
   def isMatch(row: ExecutionContext, state: QueryState): Option[Boolean] = {
     val list = collection(row, state)
 
-    if (list == Values.NO_VALUE) None
+    if (list eq Values.NO_VALUE) None
     else {
       val seq = makeTraversable(list)
       seqMethod(seq) { item =>

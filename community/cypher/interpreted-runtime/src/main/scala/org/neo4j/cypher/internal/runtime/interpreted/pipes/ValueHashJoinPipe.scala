@@ -50,7 +50,7 @@ case class ValueHashJoinPipe(lhsExpression: Expression, rhsExpression: Expressio
       return Iterator.empty
 
     val result = for {rhsRow <- rhsIterator
-                      joinKey = rhsExpression(rhsRow, state) if joinKey != Values.NO_VALUE}
+                      joinKey = rhsExpression(rhsRow, state) if !(joinKey eq Values.NO_VALUE) }
       yield {
         val lhsRows = table.getOrElse(joinKey, mutable.MutableList.empty)
         lhsRows.map { lhsRow =>

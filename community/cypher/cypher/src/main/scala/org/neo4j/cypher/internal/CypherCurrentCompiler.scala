@@ -40,7 +40,7 @@ import org.neo4j.graphdb.Notification
 import org.neo4j.kernel.api.query.{CompilerInfo, SchemaIndexUsage}
 import org.neo4j.kernel.impl.query.{QueryExecution, QueryExecutionMonitor, QuerySubscriber, TransactionalContext}
 import org.neo4j.monitoring.Monitors
-import org.neo4j.values.storable.{NoValue, TextValue}
+import org.neo4j.values.storable.{TextValue, Values}
 import org.neo4j.values.virtual.MapValue
 
 import scala.collection.JavaConverters._
@@ -83,14 +83,14 @@ case class CypherCurrentCompiler[CONTEXT <: RuntimeContext](planner: CypherPlann
         case c@CreateUser(_, _, Some(paramPassword), _, _) =>
           val paramString = params.get(paramPassword.name) match {
             case param: TextValue => param.stringValue()
-            case NoValue.NO_VALUE => throw new ParameterNotFoundException("Expected parameter(s): " + paramPassword.name)
+            case x if x eq Values.NO_VALUE => throw new ParameterNotFoundException("Expected parameter(s): " + paramPassword.name)
             case param => throw new ParameterWrongTypeException("Only string values are accepted as password, got: " + param.getTypeName)
           }
           CreateUser(c.userName, Some(paramString), None, c.requirePasswordChange, c.suspended)(new SequentialIdGen(c.id.x + 1))
         case a@AlterUser(_, _, Some(paramPassword), _, _) =>
           val paramString = params.get(paramPassword.name) match {
             case param: TextValue => param.stringValue()
-            case NoValue.NO_VALUE => throw new ParameterNotFoundException("Expected parameter(s): " + paramPassword.name)
+            case x if x eq Values.NO_VALUE => throw new ParameterNotFoundException("Expected parameter(s): " + paramPassword.name)
             case param => throw new ParameterWrongTypeException("Only string values are accepted as password, got: " + param.getTypeName)
           }
           AlterUser(a.userName, Some(paramString), None, a.requirePasswordChange, a.suspended)(new SequentialIdGen(a.id.x + 1))

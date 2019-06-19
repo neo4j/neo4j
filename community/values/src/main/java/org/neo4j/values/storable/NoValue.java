@@ -32,14 +32,14 @@ import org.neo4j.values.ValueMapper;
  */
 public final class NoValue extends Value
 {
-    public static final NoValue NO_VALUE = new NoValue();
+    static final NoValue NO_VALUE = new NoValue();
 
     private NoValue()
     {
     }
 
     @Override
-    public boolean eq( Object other )
+    public boolean equalTo( Object other )
     {
         return this == other;
     }

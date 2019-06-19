@@ -49,7 +49,7 @@ public abstract class Value extends AnyValue
     static final Pattern QUOTES_PATTERN = Pattern.compile( "^[\"']|[\"']$" );
 
     @Override
-    public boolean eq( Object other )
+    public boolean equalTo( Object other )
     {
         return other instanceof Value && equals( (Value) other );
     }

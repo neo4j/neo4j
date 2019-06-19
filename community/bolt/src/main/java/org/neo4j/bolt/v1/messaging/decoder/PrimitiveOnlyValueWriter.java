@@ -37,7 +37,7 @@ import org.neo4j.values.storable.CoordinateReferenceSystem;
 import org.neo4j.values.storable.StringValue;
 import org.neo4j.values.storable.UTF8StringValue;
 
-import static org.neo4j.values.storable.NoValue.NO_VALUE;
+import static org.neo4j.values.storable.Values.NO_VALUE;
 
 /**
  * {@link AnyValueWriter Writer} that allows to convert {@link AnyValue} to any primitive Java type. It explicitly

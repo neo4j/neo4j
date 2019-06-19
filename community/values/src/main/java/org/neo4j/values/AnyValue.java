@@ -28,7 +28,7 @@ public abstract class AnyValue
     @Override
     public boolean equals( Object other )
     {
-        return this == other || other != null && eq( other );
+        return this == other || other != null && equalTo( other );
     }
 
     @Override
@@ -44,7 +44,7 @@ public abstract class AnyValue
         return hash;
     }
 
-    protected abstract boolean eq( Object other );
+    protected abstract boolean equalTo( Object other );
 
     protected abstract int computeHash();
 

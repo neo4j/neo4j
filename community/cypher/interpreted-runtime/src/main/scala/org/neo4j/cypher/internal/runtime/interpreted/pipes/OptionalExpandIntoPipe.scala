@@ -48,7 +48,7 @@ case class OptionalExpandIntoPipe(source: Pipe, fromName: String, relName: Strin
             val toNode = getRowNode(row, toName)
 
             toNode match {
-              case Values.NO_VALUE =>
+              case x if x eq Values.NO_VALUE =>
                 row.set(relName, Values.NO_VALUE)
                 Iterator.single(row)
               case n: NodeValue =>
@@ -71,7 +71,7 @@ case class OptionalExpandIntoPipe(source: Pipe, fromName: String, relName: Strin
                 else filteredRows
             }
 
-          case Values.NO_VALUE =>
+          case x if x eq Values.NO_VALUE =>
             row.set(relName, Values.NO_VALUE)
             Iterator(row)
         }

@@ -45,7 +45,7 @@ case class ShortestPathPipe(source: Pipe,
     input.flatMap(ctx => {
       val result = shortestPathExpression(ctx, state) match {
         case in: ListValue => in
-        case v if v == Values.NO_VALUE => VirtualValues.EMPTY_LIST
+        case v if v eq Values.NO_VALUE => VirtualValues.EMPTY_LIST
         case path: PathValue    => VirtualValues.list(path)
       }
 

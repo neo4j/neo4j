@@ -33,7 +33,7 @@ case class LockNodesPipe(src: Pipe, variablesToLock: Set[String])(val id: Id = I
       val nodesToLock: Set[Long] = variablesToLock.flatMap { varName =>
         ctx.getByName(varName) match {
           case n: VirtualNodeValue => Some(n.id())
-          case x if x == Values.NO_VALUE => None
+          case x if x eq Values.NO_VALUE => None
           case x: AnyValue => throw CastSupport.typeError[VirtualNodeValue](x)
         }
       }

@@ -36,13 +36,13 @@ trait MinMax extends AggregationFunction {
 
   override def apply(data: ExecutionContext, state: QueryState) {
     value(data, state) match {
-      case Values.NO_VALUE =>
+      case x if x eq Values.NO_VALUE =>
       case x: AnyValue => checkIfLargest(x)
     }
   }
 
   private def checkIfLargest(value: AnyValue) {
-    if (biggestSeen == Values.NO_VALUE) {
+    if (biggestSeen eq Values.NO_VALUE) {
       biggestSeen = value
     } else if (keep(AnyValues.COMPARATOR.compare(biggestSeen, value))) {
       biggestSeen = value

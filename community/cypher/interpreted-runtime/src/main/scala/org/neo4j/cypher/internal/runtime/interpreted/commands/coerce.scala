@@ -33,7 +33,7 @@ import scala.collection.JavaConverters._
 object coerce {
 
   def apply(value: AnyValue, state: QueryState, typ: CypherType): AnyValue = {
-    val result = if (value == Values.NO_VALUE) Values.NO_VALUE else try {
+    val result = if (value eq Values.NO_VALUE) Values.NO_VALUE else try {
       typ match {
         case CTAny => value
         case CTString => value.asInstanceOf[TextValue]

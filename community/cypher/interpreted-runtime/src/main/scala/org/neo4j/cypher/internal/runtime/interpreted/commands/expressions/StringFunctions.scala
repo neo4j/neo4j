@@ -46,7 +46,7 @@ object StringFunction {
 case object asString extends (AnyValue => String) {
 
   override def apply(a: AnyValue): String = a match {
-    case NO_VALUE => null
+    case x if x eq NO_VALUE => null
     case x: TextValue => x.stringValue()
     case _ => StringFunction.notAString(a)
   }
@@ -133,7 +133,7 @@ case class ReplaceFunction(orig: Expression, search: Expression, replaceWith: Ex
   override def compute(value: AnyValue, m: ExecutionContext, state: QueryState): AnyValue = {
       val searchVal = search(m, state)
       val replaceWithVal = replaceWith(m, state)
-      if (searchVal == NO_VALUE || replaceWithVal == NO_VALUE) NO_VALUE
+      if ((searchVal eq NO_VALUE) || (replaceWithVal eq NO_VALUE)) NO_VALUE
       else CypherFunctions.replace(value, searchVal, replaceWithVal)
   }
 
@@ -151,7 +151,7 @@ case class SplitFunction(orig: Expression, separator: Expression)
 
   override def compute(value: AnyValue, m: ExecutionContext, state: QueryState): AnyValue = {
     val sep = separator(m, state)
-    if (sep == NO_VALUE) NO_VALUE else CypherFunctions.split(value, sep)
+    if (sep eq NO_VALUE) NO_VALUE else CypherFunctions.split(value, sep)
   }
 
   override def arguments: Seq[Expression] = Seq(orig, separator)

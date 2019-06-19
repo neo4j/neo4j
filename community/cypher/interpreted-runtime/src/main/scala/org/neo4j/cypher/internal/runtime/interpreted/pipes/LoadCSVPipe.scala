@@ -71,7 +71,7 @@ case class LoadCSVPipe(source: Pipe,
 
   //Uses an ArrayBackedMap to store header-to-values mapping
   private class IteratorWithHeaders(headers: Seq[Value], context: ExecutionContext, filename: String, inner: LoadCsvIterator) extends Iterator[ExecutionContext] {
-    private val internalMap = new ArrayBackedMap[String, AnyValue](headers.map(a => if (a == Values.NO_VALUE) null else a.asInstanceOf[TextValue].stringValue()).zipWithIndex.toMap)
+    private val internalMap = new ArrayBackedMap[String, AnyValue](headers.map(a => if (a eq Values.NO_VALUE) null else a.asInstanceOf[TextValue].stringValue()).zipWithIndex.toMap)
     private var nextContext: ExecutionContext = _
     private var needsUpdate = true
 

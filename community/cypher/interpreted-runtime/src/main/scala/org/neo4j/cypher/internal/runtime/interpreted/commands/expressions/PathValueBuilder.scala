@@ -125,8 +125,8 @@ final class PathValueBuilder {
     this
   }
 
-  private def nullCheck[A](value: A)(f: => PathValueBuilder):PathValueBuilder = value match {
-    case null | Values.NO_VALUE =>
+  private def nullCheck[A <: AnyRef](value: A)(f: => PathValueBuilder):PathValueBuilder = value match {
+    case x if (x == null) || (Values.NO_VALUE eq x) =>
       nulled = true
       this
 

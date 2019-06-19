@@ -33,7 +33,7 @@ case class RemoveLabelsPipe(src: Pipe, variable: String, labels: Seq[LazyLabel])
                                                state: QueryState): Iterator[ExecutionContext] = {
     input.map { row =>
       val item = row.getByName(variable)
-      if (item != Values.NO_VALUE) removeLabels(row, state, CastSupport.castOrFail[VirtualNodeValue](item).id)
+      if (!(item eq Values.NO_VALUE)) removeLabels(row, state, CastSupport.castOrFail[VirtualNodeValue](item).id)
       row
     }
   }

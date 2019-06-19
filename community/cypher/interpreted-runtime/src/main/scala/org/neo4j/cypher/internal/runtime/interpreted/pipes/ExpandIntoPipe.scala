@@ -57,7 +57,7 @@ case class ExpandIntoPipe(source: Pipe,
           case fromNode: NodeValue =>
             val toNode = getRowNode(row, toName)
             toNode match {
-              case Values.NO_VALUE => Iterator.empty
+              case x if x eq Values.NO_VALUE => Iterator.empty
               case n: NodeValue =>
 
                 val relationships = relCache.get(fromNode, n, dir)
@@ -68,7 +68,7 @@ case class ExpandIntoPipe(source: Pipe,
               case _ => throw new InternalException(s"$toNode must be node or null")
             }
 
-          case Values.NO_VALUE => Iterator.empty
+          case x if x eq Values.NO_VALUE => Iterator.empty
         }
     }
   }

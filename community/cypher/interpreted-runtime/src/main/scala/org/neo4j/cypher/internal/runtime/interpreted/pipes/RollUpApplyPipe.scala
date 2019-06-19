@@ -31,7 +31,7 @@ case class RollUpApplyPipe(lhs: Pipe, rhs: Pipe, collectionName: String, identif
   override protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext] = {
     input.map {
       ctx =>
-        if (nullableIdentifiers.map(ctx.getByName).contains(NO_VALUE)) {
+        if (nullableIdentifiers.map(ctx.getByName).exists(_ eq NO_VALUE)) {
           ctx.set(collectionName, NO_VALUE)
           ctx
         } else {

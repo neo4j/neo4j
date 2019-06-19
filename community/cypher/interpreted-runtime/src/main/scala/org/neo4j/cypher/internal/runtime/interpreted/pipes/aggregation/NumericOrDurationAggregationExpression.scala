@@ -39,7 +39,7 @@ trait NumericOrDurationAggregationExpression {
 
   protected def actOnNumberOrDuration(vl: AnyValue, aggNumber: NumberValue => Unit, aggDuration: DurationValue => Unit) = {
     vl match {
-      case Values.NO_VALUE =>
+      case x if x eq Values.NO_VALUE =>
       case number: NumberValue =>
         aggregatingType match {
           case None =>

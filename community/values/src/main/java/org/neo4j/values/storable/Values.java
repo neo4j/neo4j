@@ -62,7 +62,7 @@ import static org.neo4j.values.storable.TimeValue.time;
 public final class Values
 {
     public static final Value MIN_GLOBAL = DateTimeValue.MIN_VALUE;
-    public static final Value MAX_GLOBAL = NoValue.NO_VALUE;
+    public static final Value MAX_GLOBAL = Values.NO_VALUE;
     public static final Value MIN_NUMBER = Values.doubleValue( Double.NEGATIVE_INFINITY );
     public static final Value MAX_NUMBER = Values.doubleValue( Double.NaN );
     public static final Value ZERO_FLOAT = Values.doubleValue( 0.0 );
@@ -592,7 +592,7 @@ public final class Values
         {
             if ( allowNull )
             {
-                return NoValue.NO_VALUE;
+                return NO_VALUE;
             }
             throw new IllegalArgumentException( "[null] is not a supported property value" );
         }

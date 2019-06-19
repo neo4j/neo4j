@@ -412,6 +412,6 @@ class ExpectedTransactionData
 
     private static boolean isDifferent( Object value, Object valueBeforeTx )
     {
-        return !of( value ).eq( of( valueBeforeTx ) );
+        return !of( value ).equalTo( of( valueBeforeTx ) );
     }
 }

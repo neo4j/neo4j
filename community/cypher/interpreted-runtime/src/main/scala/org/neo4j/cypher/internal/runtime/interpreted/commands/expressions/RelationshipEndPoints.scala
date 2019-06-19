@@ -28,7 +28,7 @@ import org.neo4j.values.storable.Values.NO_VALUE
 
 case class RelationshipEndPoints(relExpression: Expression, start: Boolean) extends Expression {
   override def apply(ctx: ExecutionContext, state: QueryState): AnyValue = relExpression(ctx, state) match {
-    case NO_VALUE => NO_VALUE
+    case x if x eq NO_VALUE => NO_VALUE
     case value => if (start) CypherFunctions.startNode(value, state.query, state.cursors.relationshipScanCursor) else CypherFunctions.endNode(value, state.query, state.cursors.relationshipScanCursor)
   }
 

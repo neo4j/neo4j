@@ -99,7 +99,7 @@ object CastSupport {
       case (_:LocalTimeValue, _:LocalTimeValue) => a
       case (_:DurationValue, _:DurationValue) => a
 
-      case (a, b) if a == Values.NO_VALUE || b == Values.NO_VALUE => throw new CypherTypeException(
+      case (a, b) if (a eq Values.NO_VALUE) || (b eq Values.NO_VALUE) => throw new CypherTypeException(
         "Collections containing null values can not be stored in properties.")
 
       case (a, b) if a.isInstanceOf[ListValue] || b.isInstanceOf[ListValue] => throw new CypherTypeException(

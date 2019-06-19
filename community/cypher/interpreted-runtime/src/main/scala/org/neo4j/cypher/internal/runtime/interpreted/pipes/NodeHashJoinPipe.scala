@@ -80,7 +80,7 @@ case class NodeHashJoinPipe(nodeVariables: Set[String], left: Pipe, right: Pipe)
     for (idx <- cachedVariables.indices) {
       key(idx) = context.getByName(cachedVariables(idx)) match {
         case n: VirtualNodeValue => n.id()
-        case Values.NO_VALUE => return None
+        case x if x eq Values.NO_VALUE => return None
         case _ => throw new CypherTypeException("Created a plan that uses non-nodes when expecting a node")
       }
     }

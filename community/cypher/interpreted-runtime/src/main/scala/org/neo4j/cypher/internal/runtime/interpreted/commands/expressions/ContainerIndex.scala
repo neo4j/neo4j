@@ -33,7 +33,7 @@ case class ContainerIndex(expression: Expression, index: Expression) extends Exp
 
   override def apply(ctx: ExecutionContext,
                      state: QueryState): AnyValue = expression(ctx, state) match {
-    case NO_VALUE => NO_VALUE
+    case x if x eq NO_VALUE => NO_VALUE
     case value =>
       val idx = index(ctx, state)
       if (idx eq NO_VALUE) NO_VALUE

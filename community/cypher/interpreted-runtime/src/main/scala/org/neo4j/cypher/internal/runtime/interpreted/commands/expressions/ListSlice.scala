@@ -43,25 +43,25 @@ case class ListSlice(collection: Expression, from: Option[Expression], to: Optio
   private def fullSlice(from: Expression, to: Expression)(collectionValue: AnyValue, ctx: ExecutionContext, state: QueryState) = {
     val fromValue = from(ctx, state)
     val toValue = to(ctx, state)
-    if ( fromValue == Values.NO_VALUE || toValue == Values.NO_VALUE ) Values.NO_VALUE
+    if ((fromValue eq Values.NO_VALUE) || (toValue eq Values.NO_VALUE)) Values.NO_VALUE
     else CypherFunctions.fullSlice(collectionValue, fromValue, toValue)
   }
 
   private def fromSlice(from: Expression)(collectionValue: AnyValue, ctx: ExecutionContext, state: QueryState) = {
     val fromValue = from(ctx, state)
-    if ( fromValue == Values.NO_VALUE ) Values.NO_VALUE
+    if (fromValue eq Values.NO_VALUE) Values.NO_VALUE
     else CypherFunctions.fromSlice(collectionValue, fromValue)
   }
 
   private def toSlice(from: Expression)(collectionValue: AnyValue, ctx: ExecutionContext, state: QueryState) = {
     val toValue = from(ctx, state)
-    if ( toValue == Values.NO_VALUE ) Values.NO_VALUE
+    if (toValue eq Values.NO_VALUE) Values.NO_VALUE
     else CypherFunctions.toSlice(collectionValue, toValue)
   }
 
   def asInt(e: Expression, ctx: ExecutionContext, state: QueryState): Option[Int] = {
     val index = e(ctx, state)
-    if (index == Values.NO_VALUE) None
+    if (index eq Values.NO_VALUE) None
     else Some(CastSupport.castOrFail[NumberValue](index).longValue().toInt)
   }
 

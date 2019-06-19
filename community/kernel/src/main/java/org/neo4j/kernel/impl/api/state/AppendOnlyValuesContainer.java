@@ -78,6 +78,7 @@ import org.neo4j.values.storable.TimeValue;
 import org.neo4j.values.storable.TimeZones;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.ValueWriter;
+import org.neo4j.values.storable.Values;
 import org.neo4j.values.utils.TemporalUtil;
 
 import static java.lang.Math.max;
@@ -580,7 +581,7 @@ public class AppendOnlyValuesContainer implements ValuesContainer
 
     private enum ValueType
     {
-        NO_VALUE( NoValue.class, ( unused, unused2 ) -> NoValue.NO_VALUE ),
+        NO_VALUE( NoValue.class, ( unused, unused2 ) -> Values.NO_VALUE ),
         BOOLEAN( BooleanValue.class, AppendOnlyValuesContainer::readBoolean ),
         BOOLEAN_ARRAY( BooleanArray.class, AppendOnlyValuesContainer::readBooleanArray ),
         BYTE( ByteValue.class, AppendOnlyValuesContainer::readByte ),

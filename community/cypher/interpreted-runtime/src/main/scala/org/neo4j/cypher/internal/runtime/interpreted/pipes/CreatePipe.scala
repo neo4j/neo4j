@@ -62,7 +62,7 @@ abstract class BaseCreatePipe(src: Pipe) extends PipeWithSource(src) {
                             qtx: QueryContext,
                             ops: Operations[_, _]): Unit = {
     //do not set properties for null values
-    if (value == Values.NO_VALUE) {
+    if (value eq Values.NO_VALUE) {
       handleNoValue(key)
     } else {
       val propertyKeyId = qtx.getOrCreatePropertyKeyId(key)
@@ -119,7 +119,7 @@ abstract class EntityCreatePipe(src: Pipe) extends BaseCreatePipe(src) {
   private def getNode(row: ExecutionContext, relName: String, name: String, lenient: Boolean): NodeValue =
     row.getByName(name) match {
       case n: NodeValue => n
-      case Values.NO_VALUE =>
+      case x if x eq Values.NO_VALUE =>
         if (lenient) null
         else throw new InternalException(LenientCreateRelationship.errorMsg(relName, name))
       case x => throw new InternalException(s"Expected to find a node at '$name' but found instead: $x")

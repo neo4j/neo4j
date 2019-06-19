@@ -45,7 +45,7 @@ object valueHelper {
     case p: PathWrappingPathValue => p.path()
     case a: ArrayValue => a.asObjectCopy()
     case a: ListValue => Vector(a.asArray().map(fromValue): _*)
-    case Values.NO_VALUE => null
+    case x if x eq Values.NO_VALUE => null
   }
 
 }

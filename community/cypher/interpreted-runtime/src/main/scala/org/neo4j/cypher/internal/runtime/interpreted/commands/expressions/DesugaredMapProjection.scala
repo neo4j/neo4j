@@ -36,7 +36,7 @@ case class DesugaredMapProjection(variable: VariableCommand, includeAllProps: Bo
     val variableValue = variable(ctx, state)
 
     val mapOfProperties = variableValue match {
-      case v if v == Values.NO_VALUE => return Values.NO_VALUE
+      case v if v eq Values.NO_VALUE => return Values.NO_VALUE
       case IsMap(m) => if (includeAllProps) m(state) else VirtualValues.EMPTY_MAP
     }
     val builder = new MapValueBuilder(literalExpressions.size)

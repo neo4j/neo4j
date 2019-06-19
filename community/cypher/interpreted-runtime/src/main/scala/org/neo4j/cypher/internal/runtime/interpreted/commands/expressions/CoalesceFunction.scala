@@ -31,7 +31,7 @@ case class CoalesceFunction(override val arguments: Expression*) extends Express
     arguments.
       view.
       map(expression => expression(ctx, state)).
-      find(value => value != Values.NO_VALUE) match {
+      find(value => !(value eq Values.NO_VALUE)) match {
         case None    => Values.NO_VALUE
         case Some(x) => x
       }

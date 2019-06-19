@@ -52,7 +52,7 @@ abstract class OptionalExpandAllPipe(source: Pipe,
               matchIterator
             }
 
-          case value if value == Values.NO_VALUE =>
+          case value if value eq Values.NO_VALUE =>
             Iterator(withNulls(row))
 
           case value =>

@@ -109,7 +109,7 @@ class AppendOnlyValuesContainerTest
     Stream<DynamicTest> addGet()
     {
         final List<Pair<String, Value[]>> inputs = asList(
-                testInput( "NoValue", Function.identity(), NoValue.NO_VALUE ),
+                testInput( "NoValue", Function.identity(), Values.NO_VALUE ),
 
                 testInput( "Boolean", Values::booleanValue, true, false, true, false ),
                 testInput( "BooleanArray", Values::booleanArray, new boolean[] {false, true, false}, EMPTY_BOOLEAN_ARRAY ),

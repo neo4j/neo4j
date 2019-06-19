@@ -49,7 +49,7 @@ trait ListSupport {
   def makeTraversable(z: AnyValue): ListValue = if (isList(z)) {
     castToList(z)
   } else {
-    if (z == Values.NO_VALUE) VirtualValues.EMPTY_LIST else VirtualValues.list(z)
+    if (z eq Values.NO_VALUE) VirtualValues.EMPTY_LIST else VirtualValues.list(z)
   }
 
   protected def castToList: PartialFunction[AnyValue, ListValue] = {

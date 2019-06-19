@@ -65,7 +65,7 @@ public abstract class ArrayValue extends Value implements SequenceValue
     }
 
     @Override
-    public final boolean eq( Object other )
+    public final boolean equalTo( Object other )
     {
         if ( other == null )
         {

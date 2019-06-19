@@ -104,8 +104,8 @@ case class ShortestPathExpression(shortestPathPattern: ShortestPath,
   }
 
   private def anyStartpointsContainNull(m: ExecutionContext): Boolean =
-    m.getByName(shortestPathPattern.left.name) == Values.NO_VALUE ||
-    m.getByName(shortestPathPattern.right.name) == Values.NO_VALUE
+    (m.getByName(shortestPathPattern.left.name) eq Values.NO_VALUE) ||
+      (m.getByName(shortestPathPattern.right.name) eq Values.NO_VALUE)
 
   override def children: Seq[AstNode[_]] = Seq(shortestPathPattern) ++ perStepPredicates ++ fullPathPredicates
 

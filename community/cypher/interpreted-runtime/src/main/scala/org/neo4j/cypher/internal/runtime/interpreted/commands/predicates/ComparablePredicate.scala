@@ -37,7 +37,7 @@ abstract sealed class ComparablePredicate(val left: Expression, val right: Expre
     comparator(l, r) match {
       case Values.TRUE => Some(true)
       case Values.FALSE => Some(false)
-      case Values.NO_VALUE => None
+      case x if x eq Values.NO_VALUE => None
     }
   }
 

@@ -276,7 +276,7 @@ case class PruningVarLengthExpandPipe(source: Pipe,
                 prevLocalRelIndex = -1,
                 prevNodeState = NodeState.NOOP )
 
-            case x: Value if x == Values.NO_VALUE =>
+            case x: Value if x eq Values.NO_VALUE =>
               null
 
             case _ =>

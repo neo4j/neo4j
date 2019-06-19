@@ -32,7 +32,7 @@ import static org.neo4j.values.storable.Values.NO_VALUE;
 public abstract class VirtualValue extends AnyValue
 {
     @Override
-    public final boolean eq( Object other )
+    public final boolean equalTo( Object other )
     {
         if ( other == null )
         {

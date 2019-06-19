@@ -42,7 +42,7 @@ extends PipeWithSource(left) {
 
       override def getValue(row: ExecutionContext): Option[Long] = row.getByName(seen) match {
         case n: VirtualNodeValue => Some(n.id())
-        case Values.NO_VALUE => None
+        case x if x eq Values.NO_VALUE => None
         case x => throw new CypherTypeException(s"Expected a node at `$seen` but got $x")
       }
 
