@@ -48,6 +48,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.neo4j.kernel.api.impl.schema.LuceneIndexProvider.defaultDirectoryStructure;
 import static org.neo4j.kernel.api.schema.SchemaDescriptorFactory.forLabel;
 import static org.neo4j.kernel.impl.api.index.TestIndexProviderDescriptor.PROVIDER_DESCRIPTOR;
+import static org.neo4j.kernel.impl.index.schema.ByteBufferFactory.heapBufferFactory;
 import static org.neo4j.storageengine.api.schema.IndexDescriptorFactory.forSchema;
 
 @ExtendWith( {DefaultFileSystemExtension.class, TestDirectoryExtension.class} )
@@ -73,7 +74,8 @@ class LuceneIndexProviderTest
         Config readOnlyConfig = Config.defaults( GraphDatabaseSettings.read_only, Settings.TRUE );
         LuceneIndexProvider readOnlyIndexProvider =
                 getLuceneIndexProvider( readOnlyConfig, new DirectoryFactory.InMemoryDirectoryFactory(), fileSystem, graphDbDir );
-        assertThrows( UnsupportedOperationException.class, () -> readOnlyIndexProvider.getPopulator( descriptor, new IndexSamplingConfig( readOnlyConfig ) ) );
+        assertThrows( UnsupportedOperationException.class,
+                () -> readOnlyIndexProvider.getPopulator( descriptor, new IndexSamplingConfig( readOnlyConfig ), heapBufferFactory( 1024 ) ) );
     }
 
     @Test

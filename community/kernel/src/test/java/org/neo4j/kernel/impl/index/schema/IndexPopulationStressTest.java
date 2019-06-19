@@ -80,6 +80,7 @@ import static org.neo4j.kernel.api.index.IndexEntryUpdate.remove;
 import static org.neo4j.kernel.api.index.IndexProvider.Monitor.EMPTY;
 import static org.neo4j.kernel.api.schema.SchemaDescriptorFactory.forLabel;
 import static org.neo4j.kernel.configuration.Config.defaults;
+import static org.neo4j.kernel.impl.index.schema.ByteBufferFactory.heapBufferFactory;
 import static org.neo4j.storageengine.api.schema.IndexDescriptorFactory.forSchema;
 import static org.neo4j.test.Race.throwing;
 
@@ -152,7 +153,7 @@ public class IndexPopulationStressTest
     {
         indexProvider = providerCreator.apply( this );
         rules.fileSystem().mkdirs( indexProvider.directoryStructure().rootDirectory() );
-        populator = indexProvider.getPopulator( descriptor, samplingConfig );
+        populator = indexProvider.getPopulator( descriptor, samplingConfig, heapBufferFactory( 1024 ) );
         when( nodePropertyAccessor.getNodePropertyValue( anyLong(), anyInt() ) ).thenThrow( UnsupportedOperationException.class );
         prevAccessCheck = UnsafeUtil.exchangeNativeAccessCheckEnabled( false );
     }
@@ -305,7 +306,7 @@ public class IndexPopulationStressTest
     private void buildReferencePopulatorSingleThreaded( Generator[] generators, Collection<IndexEntryUpdate<?>> updates )
             throws IndexEntryConflictException
     {
-        IndexPopulator referencePopulator = indexProvider.getPopulator( descriptor2, samplingConfig );
+        IndexPopulator referencePopulator = indexProvider.getPopulator( descriptor2, samplingConfig, heapBufferFactory( 1024 ) );
         referencePopulator.create();
         boolean referenceSuccess = false;
         try

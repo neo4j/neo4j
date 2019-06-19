@@ -67,7 +67,7 @@ public class NumberIndexProvider extends NativeIndexProvider<NumberIndexKey,Nati
     }
 
     @Override
-    protected IndexPopulator newIndexPopulator( File storeFile, NumberLayout layout, StoreIndexDescriptor descriptor )
+    protected IndexPopulator newIndexPopulator( File storeFile, NumberLayout layout, StoreIndexDescriptor descriptor, ByteBufferFactory bufferFactory )
     {
         return new WorkSyncedNativeIndexPopulator<>( new NumberIndexPopulator( pageCache, fs, storeFile, layout, monitor, descriptor ) );
     }

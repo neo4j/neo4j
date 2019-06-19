@@ -50,6 +50,7 @@ import org.neo4j.values.storable.Values;
 
 import static org.hamcrest.Matchers.lessThanOrEqualTo;
 import static org.junit.Assert.assertThat;
+import static org.neo4j.kernel.impl.index.schema.ByteBufferFactory.heapBufferFactory;
 
 public abstract class IndexAccessorCompatibility extends IndexProviderCompatibilityTestSuite.Compatibility
 {
@@ -66,7 +67,7 @@ public abstract class IndexAccessorCompatibility extends IndexProviderCompatibil
     public void before() throws Exception
     {
         IndexSamplingConfig indexSamplingConfig = new IndexSamplingConfig( Config.defaults() );
-        IndexPopulator populator = indexProvider.getPopulator( descriptor, indexSamplingConfig );
+        IndexPopulator populator = indexProvider.getPopulator( descriptor, indexSamplingConfig, heapBufferFactory( 1024 ) );
         populator.create();
         populator.close( true );
         accessor = indexProvider.getOnlineAccessor( descriptor, indexSamplingConfig );

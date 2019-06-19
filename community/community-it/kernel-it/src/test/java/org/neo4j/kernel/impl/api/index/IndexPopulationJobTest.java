@@ -104,6 +104,7 @@ import static org.neo4j.internal.kernel.api.security.LoginContext.AUTH_DISABLED;
 import static org.neo4j.kernel.api.index.IndexEntryUpdate.add;
 import static org.neo4j.kernel.impl.api.index.IndexingService.NO_MONITOR;
 import static org.neo4j.kernel.impl.api.index.TestIndexProviderDescriptor.PROVIDER_DESCRIPTOR;
+import static org.neo4j.kernel.impl.index.schema.ByteBufferFactory.heapBufferFactory;
 import static org.neo4j.logging.AssertableLogProvider.inLog;
 
 public class IndexPopulationJobTest
@@ -750,7 +751,7 @@ public class IndexPopulationJobTest
     {
         IndexSamplingConfig samplingConfig = new IndexSamplingConfig( Config.defaults() );
         IndexProvider indexProvider = db.getDependencyResolver().resolveDependency( DefaultIndexProviderMap.class ).getDefaultProvider();
-        return indexProvider.getPopulator( descriptor.withId( 21 ), samplingConfig );
+        return indexProvider.getPopulator( descriptor.withId( 21 ), samplingConfig, heapBufferFactory( 1024 ) );
     }
 
     private IndexPopulationJob newIndexPopulationJob( IndexPopulator populator, FlippableIndexProxy flipper, EntityType type, IndexDescriptor descriptor )

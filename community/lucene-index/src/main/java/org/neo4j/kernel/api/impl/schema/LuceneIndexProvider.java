@@ -39,6 +39,7 @@ import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.kernel.impl.factory.OperationalMode;
+import org.neo4j.kernel.impl.index.schema.ByteBufferFactory;
 import org.neo4j.kernel.impl.storemigration.StoreMigrationParticipant;
 import org.neo4j.kernel.impl.storemigration.participant.SchemaIndexMigrator;
 import org.neo4j.storageengine.api.schema.IndexDescriptor;
@@ -80,7 +81,7 @@ public class LuceneIndexProvider extends IndexProvider
     }
 
     @Override
-    public IndexPopulator getPopulator( StoreIndexDescriptor descriptor, IndexSamplingConfig samplingConfig )
+    public IndexPopulator getPopulator( StoreIndexDescriptor descriptor, IndexSamplingConfig samplingConfig, ByteBufferFactory bufferFactory )
     {
         SchemaIndex luceneIndex = LuceneSchemaIndexBuilder.create( descriptor, config )
                                         .withFileSystem( fileSystem )

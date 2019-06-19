@@ -38,6 +38,8 @@ import org.neo4j.values.storable.RandomValues;
 import org.neo4j.values.storable.ValueGroup;
 import org.neo4j.values.storable.ValueType;
 
+import static org.neo4j.kernel.impl.index.schema.ByteBufferFactory.heapBufferFactory;
+
 class NativeIndexPopulatorTestCases
 {
     static class TestCase<KEY extends NativeIndexKey<KEY>, VALUE extends NativeIndexValue>
@@ -149,7 +151,7 @@ class NativeIndexPopulatorTestCases
             IndexDirectoryStructure directoryStructure = SimpleIndexDirectoryStructures.onIndexFile( storeFile );
             IndexDropAction dropAction = new FileSystemIndexDropAction( fs, directoryStructure );
             return new GenericBlockBasedIndexPopulator( pageCache, fs, storeFile, layout, monitor, descriptor, spaceFillingCurveSettings,
-                    directoryStructure, configuration, dropAction, false );
+                    directoryStructure, configuration, dropAction, false, heapBufferFactory( 10 * 1024 ) );
         };
     }
 

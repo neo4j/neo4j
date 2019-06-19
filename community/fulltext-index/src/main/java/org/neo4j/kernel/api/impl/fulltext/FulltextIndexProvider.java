@@ -59,6 +59,7 @@ import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.kernel.impl.core.TokenHolders;
 import org.neo4j.kernel.impl.factory.OperationalMode;
+import org.neo4j.kernel.impl.index.schema.ByteBufferFactory;
 import org.neo4j.kernel.impl.newapi.AllStoreHolder;
 import org.neo4j.kernel.impl.storemigration.StoreMigrationParticipant;
 import org.neo4j.kernel.impl.storemigration.participant.SchemaIndexMigrator;
@@ -223,7 +224,7 @@ class FulltextIndexProvider extends IndexProvider implements FulltextAdapter, Au
     }
 
     @Override
-    public IndexPopulator getPopulator( StoreIndexDescriptor descriptor, IndexSamplingConfig samplingConfig )
+    public IndexPopulator getPopulator( StoreIndexDescriptor descriptor, IndexSamplingConfig samplingConfig, ByteBufferFactory bufferFactory )
     {
         PartitionedIndexStorage indexStorage = getIndexStorage( descriptor.getId() );
         FulltextIndexDescriptor fulltextIndexDescriptor = readOrInitialiseDescriptor(

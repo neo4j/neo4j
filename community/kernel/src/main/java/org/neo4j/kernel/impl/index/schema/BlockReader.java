@@ -22,6 +22,7 @@ package org.neo4j.kernel.impl.index.schema;
 import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
+import java.nio.ByteBuffer;
 
 import org.neo4j.index.internal.gbptree.Layout;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -41,20 +42,16 @@ public class BlockReader<KEY,VALUE> implements Closeable
     private final FileSystemAbstraction fs;
     private final File file;
     private final Layout<KEY,VALUE> layout;
-    private final ByteBufferFactory byteBufferFactory;
-    private final int blockSize;
 
-    BlockReader( FileSystemAbstraction fs, File file, Layout<KEY,VALUE> layout, ByteBufferFactory byteBufferFactory, int blockSize ) throws IOException
+    BlockReader( FileSystemAbstraction fs, File file, Layout<KEY,VALUE> layout ) throws IOException
     {
         this.fs = fs;
         this.file = file;
         this.layout = layout;
-        this.byteBufferFactory = byteBufferFactory;
-        this.blockSize = blockSize;
         this.channel = fs.open( file, OpenMode.READ );
     }
 
-    BlockEntryReader<KEY,VALUE> nextBlock() throws IOException
+    BlockEntryReader<KEY,VALUE> nextBlock( ByteBuffer blockBuffer ) throws IOException
     {
         long position = channel.position();
         if ( position >= channel.size() )
@@ -63,7 +60,7 @@ public class BlockReader<KEY,VALUE> implements Closeable
         }
         StoreChannel blockChannel = fs.open( file, OpenMode.READ );
         blockChannel.position( position );
-        PageCursor pageCursor = new ReadableChannelPageCursor( new ReadAheadChannel<>( blockChannel, byteBufferFactory.newBuffer( blockSize ) ) );
+        PageCursor pageCursor = new ReadableChannelPageCursor( new ReadAheadChannel<>( blockChannel, blockBuffer ) );
         BlockEntryReader<KEY,VALUE> blockEntryReader = new BlockEntryReader<>( pageCursor, layout );
         long blockSize = blockEntryReader.blockSize();
         channel.position( position + blockSize );

@@ -46,15 +46,16 @@ import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.index.IndexUpdater;
-import org.neo4j.storageengine.api.NodePropertyAccessor;
 import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.kernel.extension.ExtensionType;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
+import org.neo4j.kernel.impl.index.schema.ByteBufferFactory;
 import org.neo4j.kernel.impl.spi.KernelContext;
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.id.IdController;
 import org.neo4j.kernel.impl.storemigration.StoreMigrationParticipant;
 import org.neo4j.kernel.lifecycle.Lifecycle;
+import org.neo4j.storageengine.api.NodePropertyAccessor;
 import org.neo4j.storageengine.api.schema.IndexSample;
 import org.neo4j.storageengine.api.schema.LabelScanReader;
 import org.neo4j.storageengine.api.schema.StoreIndexDescriptor;
@@ -217,7 +218,7 @@ public class IndexPopulationMissConcurrentUpdateIT
             return new IndexProvider( INDEX_PROVIDER, directoriesByProvider( new File( "not-even-persistent" ) ) )
             {
                 @Override
-                public IndexPopulator getPopulator( StoreIndexDescriptor descriptor, IndexSamplingConfig samplingConfig )
+                public IndexPopulator getPopulator( StoreIndexDescriptor descriptor, IndexSamplingConfig samplingConfig, ByteBufferFactory bufferFactory )
                 {
                     return new IndexPopulator()
                     {

@@ -30,6 +30,7 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
+import org.neo4j.kernel.impl.index.schema.ByteBufferFactory;
 import org.neo4j.kernel.impl.storemigration.StoreMigrationParticipant;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.storageengine.api.schema.IndexDescriptor;
@@ -45,7 +46,7 @@ import org.neo4j.storageengine.api.schema.StoreIndexDescriptor;
  *
  * When an index rule is added, the {@link IndexingService} is notified. It will, in turn, ask
  * your {@link IndexProvider} for a
- * {@link #getPopulator(StoreIndexDescriptor, IndexSamplingConfig) batch index writer}.
+ * {@link #getPopulator(StoreIndexDescriptor, IndexSamplingConfig, ByteBufferFactory) batch index writer}.
  *
  * A background index job is triggered, and all existing data that applies to the new rule, as well as new data
  * from the "outside", will be inserted using the writer. You are guaranteed that usage of this writer,
@@ -160,7 +161,7 @@ public abstract class IndexProvider extends LifecycleAdapter
                 }
 
                 @Override
-                public IndexPopulator getPopulator( StoreIndexDescriptor descriptor, IndexSamplingConfig samplingConfig )
+                public IndexPopulator getPopulator( StoreIndexDescriptor descriptor, IndexSamplingConfig samplingConfig, ByteBufferFactory bufferFactory )
                 {
                     return singlePopulator;
                 }
@@ -227,7 +228,7 @@ public abstract class IndexProvider extends LifecycleAdapter
     /**
      * Used for initially populating a created index, using batch insertion.
      */
-    public abstract IndexPopulator getPopulator( StoreIndexDescriptor descriptor, IndexSamplingConfig samplingConfig );
+    public abstract IndexPopulator getPopulator( StoreIndexDescriptor descriptor, IndexSamplingConfig samplingConfig, ByteBufferFactory bufferFactory );
 
     /**
      * Used for updating an index once initial population has completed.
@@ -309,7 +310,7 @@ public abstract class IndexProvider extends LifecycleAdapter
         }
 
         @Override
-        public IndexPopulator getPopulator( StoreIndexDescriptor descriptor, IndexSamplingConfig samplingConfig )
+        public IndexPopulator getPopulator( StoreIndexDescriptor descriptor, IndexSamplingConfig samplingConfig, ByteBufferFactory bufferFactory )
         {
             return null;
         }

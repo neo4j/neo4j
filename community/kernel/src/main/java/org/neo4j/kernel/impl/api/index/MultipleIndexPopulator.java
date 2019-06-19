@@ -87,7 +87,7 @@ import static org.neo4j.kernel.impl.api.index.IndexPopulationFailure.failure;
 public class MultipleIndexPopulator implements IndexPopulator
 {
     public static final String QUEUE_THRESHOLD_NAME = "queue_threshold";
-    static final String BATCH_SIZE_NAME = "batch_size";
+    public static final String BATCH_SIZE_NAME = "batch_size";
 
     final int QUEUE_THRESHOLD = FeatureToggles.getInteger( getClass(), QUEUE_THRESHOLD_NAME, 20_000 );
     final int BATCH_SIZE = FeatureToggles.getInteger( BatchingMultipleIndexPopulator.class, BATCH_SIZE_NAME, 10_000 );

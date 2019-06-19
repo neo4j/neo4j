@@ -37,7 +37,7 @@ import org.neo4j.values.storable.Value;
 
 import static org.neo4j.kernel.impl.index.schema.NativeIndexes.deleteIndex;
 
-class GenericNativeIndexPopulator extends NativeIndexPopulator<GenericKey,NativeIndexValue>
+public class GenericNativeIndexPopulator extends NativeIndexPopulator<GenericKey,NativeIndexValue>
 {
     private final IndexSpecificSpaceFillingCurveSettingsCache spatialSettings;
     private final IndexDirectoryStructure directoryStructure;

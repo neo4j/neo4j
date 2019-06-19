@@ -59,6 +59,7 @@ import static org.junit.rules.RuleChain.outerRule;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
 import static org.neo4j.kernel.api.index.IndexDirectoryStructure.directoriesByProvider;
 import static org.neo4j.kernel.impl.api.index.IndexUpdateMode.ONLINE;
+import static org.neo4j.kernel.impl.index.schema.ByteBufferFactory.heapBufferFactory;
 import static org.neo4j.test.rule.PageCacheRule.config;
 
 public class SpatialIndexSettingsTest
@@ -226,7 +227,7 @@ public class SpatialIndexSettingsTest
 
     private void createEmptyIndex( StoreIndexDescriptor schemaIndexDescriptor, SpatialIndexProvider provider ) throws IOException
     {
-        IndexPopulator populator = provider.getPopulator( schemaIndexDescriptor, samplingConfig() );
+        IndexPopulator populator = provider.getPopulator( schemaIndexDescriptor, samplingConfig(), heapBufferFactory( 1024 ) );
         populator.create();
         populator.close( true );
     }

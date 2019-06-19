@@ -44,7 +44,7 @@ import org.neo4j.values.storable.Value;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.neo4j.kernel.impl.index.schema.ByteBufferFactory.HEAP_BUFFER_FACTORY;
+import static org.neo4j.kernel.impl.index.schema.ByteBufferFactory.HEAP_ALLOCATOR;
 import static org.neo4j.kernel.impl.index.schema.NativeIndexKey.Inclusion.NEUTRAL;
 
 @ExtendWith( {TestDirectoryExtension.class, RandomExtension.class} )
@@ -177,7 +177,7 @@ class IndexKeyStorageTest
         FileSystemAbstraction fs = directory.getFileSystem();
         LocalMemoryTracker allocationTracker = new LocalMemoryTracker();
         File file = directory.file( "file" );
-        try ( UnsafeDirectByteBufferFactory bufferFactory = new UnsafeDirectByteBufferFactory( allocationTracker );
+        try ( UnsafeDirectByteBufferAllocator bufferFactory = new UnsafeDirectByteBufferAllocator( allocationTracker );
               IndexKeyStorage<GenericKey> keyStorage = keyStorage( file, bufferFactory ) )
         {
             assertEquals( 0, allocationTracker.usedDirectMemory(), "Expected to not have any buffers allocated yet" );
@@ -223,10 +223,10 @@ class IndexKeyStorageTest
 
     private IndexKeyStorage<GenericKey> keyStorage( File file ) throws IOException
     {
-        return keyStorage( file, HEAP_BUFFER_FACTORY );
+        return keyStorage( file, HEAP_ALLOCATOR );
     }
 
-    private IndexKeyStorage<GenericKey> keyStorage( File file, ByteBufferFactory bufferFactory ) throws IOException
+    private IndexKeyStorage<GenericKey> keyStorage( File file, ByteBufferFactory.Allocator bufferFactory ) throws IOException
     {
         return new IndexKeyStorage<>( directory.getFileSystem(), file, bufferFactory, BLOCK_SIZE, layout );
     }

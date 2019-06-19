@@ -64,7 +64,6 @@ import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.IndexProvider;
-import org.neo4j.storageengine.api.NodePropertyAccessor;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.api.schema.index.TestIndexDescriptorFactory;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
@@ -86,6 +85,7 @@ import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.RecordLoad;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.kernel.monitoring.Monitors;
+import org.neo4j.storageengine.api.NodePropertyAccessor;
 import org.neo4j.storageengine.api.schema.IndexDescriptor;
 import org.neo4j.storageengine.api.schema.IndexSample;
 import org.neo4j.storageengine.api.schema.LabelScanReader;
@@ -881,7 +881,7 @@ public class BatchInsertTest
         IndexAccessor accessor = mock( IndexAccessor.class );
 
         when( provider.getProviderDescriptor() ).thenReturn( DESCRIPTOR );
-        when( provider.getPopulator( any( StoreIndexDescriptor.class ), any( IndexSamplingConfig.class ) ) ).thenReturn( populator );
+        when( provider.getPopulator( any( StoreIndexDescriptor.class ), any( IndexSamplingConfig.class ), any() ) ).thenReturn( populator );
         when( populator.sampleResult() ).thenReturn( new IndexSample() );
         when( provider.getOnlineAccessor( any( StoreIndexDescriptor.class ), any( IndexSamplingConfig.class ) ) ).thenReturn( accessor );
         when( provider.bless( any( IndexDescriptor.class ) ) ).thenCallRealMethod();
@@ -899,7 +899,7 @@ public class BatchInsertTest
         // THEN
         verify( provider ).init();
         verify( provider ).start();
-        verify( provider ).getPopulator( any( StoreIndexDescriptor.class ), any( IndexSamplingConfig.class ) );
+        verify( provider ).getPopulator( any( StoreIndexDescriptor.class ), any( IndexSamplingConfig.class ), any() );
         verify( populator ).create();
         verify( populator ).add( argThat( matchesCollection( add( nodeId, internalIndex.schema(), Values.of( "Jakewins" ) ) ) ) );
         verify( populator ).verifyDeferredConstraints( any( NodePropertyAccessor.class ) );
@@ -917,7 +917,7 @@ public class BatchInsertTest
         IndexAccessor accessor = mock( IndexAccessor.class );
 
         when( provider.getProviderDescriptor() ).thenReturn( DESCRIPTOR );
-        when( provider.getPopulator( any( StoreIndexDescriptor.class ), any( IndexSamplingConfig.class ) ) ).thenReturn( populator );
+        when( provider.getPopulator( any( StoreIndexDescriptor.class ), any( IndexSamplingConfig.class ), any() ) ).thenReturn( populator );
         when( populator.sampleResult() ).thenReturn( new IndexSample() );
         when( provider.getOnlineAccessor( any( StoreIndexDescriptor.class ), any( IndexSamplingConfig.class ) ) ).thenReturn( accessor );
         when( provider.bless( any( IndexDescriptor.class ) ) ).thenCallRealMethod();
@@ -935,7 +935,7 @@ public class BatchInsertTest
         // THEN
         verify( provider ).init();
         verify( provider ).start();
-        verify( provider ).getPopulator( any( StoreIndexDescriptor.class ), any( IndexSamplingConfig.class ) );
+        verify( provider ).getPopulator( any( StoreIndexDescriptor.class ), any( IndexSamplingConfig.class ), any() );
         verify( populator ).create();
         verify( populator ).add( argThat( matchesCollection( add( nodeId, internalUniqueIndex.schema(), Values.of( "Jakewins" ) ) ) ) );
         verify( populator ).verifyDeferredConstraints( any( NodePropertyAccessor.class ) );
@@ -955,7 +955,7 @@ public class BatchInsertTest
         IndexAccessor accessor = mock( IndexAccessor.class );
 
         when( provider.getProviderDescriptor() ).thenReturn( DESCRIPTOR );
-        when( provider.getPopulator( any( StoreIndexDescriptor.class ), any( IndexSamplingConfig.class ) ) ).thenReturn( populator );
+        when( provider.getPopulator( any( StoreIndexDescriptor.class ), any( IndexSamplingConfig.class ), any() ) ).thenReturn( populator );
         when( populator.sampleResult() ).thenReturn( new IndexSample() );
         when( provider.getOnlineAccessor( any( StoreIndexDescriptor.class ), any( IndexSamplingConfig.class ) ) ).thenReturn( accessor );
 
@@ -970,7 +970,7 @@ public class BatchInsertTest
         // THEN
         verify( provider ).init();
         verify( provider ).start();
-        verify( provider ).getPopulator( any( StoreIndexDescriptor.class ), any( IndexSamplingConfig.class ) );
+        verify( provider ).getPopulator( any( StoreIndexDescriptor.class ), any( IndexSamplingConfig.class ), any() );
         verify( populator ).create();
         verify( populator ).add( argThat( matchesCollection(
                 add( jakewins, internalIndex.schema(), Values.of( "Jakewins" ) ),
@@ -1465,7 +1465,7 @@ public class BatchInsertTest
         IndexProvider provider = mock( IndexProvider.class );
 
         when( provider.getProviderDescriptor() ).thenReturn( DESCRIPTOR );
-        when( provider.getPopulator( any( StoreIndexDescriptor.class ), any( IndexSamplingConfig.class ) ) )
+        when( provider.getPopulator( any( StoreIndexDescriptor.class ), any( IndexSamplingConfig.class ), any() ) )
                 .thenReturn( populator );
         when( provider.bless( any( IndexDescriptor.class ) ) ).thenCallRealMethod();
 

@@ -34,13 +34,13 @@ import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.index.IndexUpdater;
-import org.neo4j.storageengine.api.NodePropertyAccessor;
 import org.neo4j.kernel.extension.ExtensionType;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.kernel.impl.spi.KernelContext;
 import org.neo4j.kernel.impl.storemigration.StoreMigrationParticipant;
 import org.neo4j.kernel.lifecycle.Lifecycle;
+import org.neo4j.storageengine.api.NodePropertyAccessor;
 import org.neo4j.storageengine.api.schema.IndexSample;
 import org.neo4j.storageengine.api.schema.StoreIndexDescriptor;
 
@@ -97,9 +97,9 @@ public class FailingGenericNativeIndexProviderFactory extends KernelExtensionFac
         return new IndexProvider( actualProvider.getProviderDescriptor(), IndexDirectoryStructure.given( actualProvider.directoryStructure() ) )
         {
             @Override
-            public IndexPopulator getPopulator( StoreIndexDescriptor descriptor, IndexSamplingConfig samplingConfig )
+            public IndexPopulator getPopulator( StoreIndexDescriptor descriptor, IndexSamplingConfig samplingConfig, ByteBufferFactory bufferFactory )
             {
-                IndexPopulator actualPopulator = actualProvider.getPopulator( descriptor, samplingConfig );
+                IndexPopulator actualPopulator = actualProvider.getPopulator( descriptor, samplingConfig, bufferFactory );
                 if ( failureTypes.contains( FailureType.POPULATION ) )
                 {
                     return new IndexPopulator()

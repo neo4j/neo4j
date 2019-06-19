@@ -76,6 +76,7 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
+import org.neo4j.kernel.impl.index.schema.ByteBufferFactory;
 import org.neo4j.kernel.impl.pagecache.ConfiguringPageCacheFactory;
 import org.neo4j.kernel.impl.spi.KernelContext;
 import org.neo4j.kernel.impl.store.NeoStores;
@@ -852,9 +853,9 @@ public class RecoveryIT
         }
 
         @Override
-        public IndexPopulator getPopulator( StoreIndexDescriptor descriptor, IndexSamplingConfig samplingConfig )
+        public IndexPopulator getPopulator( StoreIndexDescriptor descriptor, IndexSamplingConfig samplingConfig, ByteBufferFactory bufferFactory )
         {
-            return actual.getPopulator( descriptor, samplingConfig );
+            return actual.getPopulator( descriptor, samplingConfig, bufferFactory );
         }
 
         @Override
