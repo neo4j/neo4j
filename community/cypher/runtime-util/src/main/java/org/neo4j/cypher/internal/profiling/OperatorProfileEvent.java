@@ -19,18 +19,66 @@
  */
 package org.neo4j.cypher.internal.profiling;
 
-public interface OperatorProfileEvent extends AutoCloseable
+import org.neo4j.internal.kernel.api.KernelReadTracer;
+
+public abstract class OperatorProfileEvent implements AutoCloseable, KernelReadTracer
 {
-    void dbHit();
+    public abstract void dbHit();
 
-    void row();
+    public abstract void row();
 
-    void rows( int n );
+    public abstract void rows( int n );
+
+    // AutoCloseable
 
     @Override
-    void close();
+    public abstract void close();
 
-    OperatorProfileEvent NONE = new OperatorProfileEvent()
+    // KernelReadTracer
+
+    @Override
+    public void onNode( long nodeReference )
+    {
+        dbHit();
+    }
+
+    @Override
+    public void onAllNodesScan()
+    {
+        dbHit();
+    }
+
+    @Override
+    public void onLabelScan( int label )
+    {
+        dbHit();
+    }
+
+    @Override
+    public void onRelationship( long relationshipReference )
+    {
+        dbHit();
+    }
+
+    @Override
+    public void onRelationshipGroup( int type )
+    {
+        dbHit();
+    }
+
+    @Override
+    public void onProperty( int propertyKey )
+    {
+        dbHit();
+    }
+
+    @Override
+    public void onIndexSeek()
+    {
+        dbHit();
+    }
+
+    public static OperatorProfileEvent NONE = new OperatorProfileEvent()
     {
         @Override
         public void dbHit()

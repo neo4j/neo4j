@@ -98,7 +98,7 @@ public class ProfilingTracer implements QueryProfiler, QueryProfile
         }
     }
 
-    private static class ExecutionEvent implements OperatorProfileEvent
+    private static class ExecutionEvent extends OperatorProfileEvent
     {
         final ProfilingTracerData data;
         final KernelStatisticProvider statisticProvider;

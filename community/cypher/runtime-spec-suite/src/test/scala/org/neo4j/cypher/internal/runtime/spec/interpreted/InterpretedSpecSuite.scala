@@ -60,3 +60,8 @@ class InterpretedReactiveResultsTest extends ReactiveResultTestBase(COMMUNITY.ED
 class InterpretedMiscTest extends MiscTestBase(COMMUNITY.EDITION, InterpretedRuntime)
 class InterpretedProvidedOrderTest extends ProvidedOrderTestBase(COMMUNITY.EDITION, InterpretedRuntime, SIZE_HINT)
 
+class InterpretedProfileDbHitsTest extends ProfileDbHitsTestBase(COMMUNITY.EDITION,
+                                                                 InterpretedRuntime,
+                                                                 SIZE_HINT,
+                                                                 costOfLabelScan = 2,
+                                                                 costOfProperty = 1)
