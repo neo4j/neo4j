@@ -39,6 +39,7 @@ import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.configuration.Settings;
 import org.neo4j.graphdb.config.Setting;
+import org.neo4j.graphdb.event.DatabaseEventListener;
 import org.neo4j.graphdb.facade.DatabaseManagementServiceFactory;
 import org.neo4j.graphdb.facade.ExternalDependencies;
 import org.neo4j.graphdb.factory.module.GlobalModule;
@@ -61,6 +62,7 @@ import static org.neo4j.internal.helpers.collection.MapUtil.stringMap;
 public class DatabaseManagementServiceBuilder
 {
     protected final List<ExtensionFactory<?>> extensions = new ArrayList<>();
+    protected final List<DatabaseEventListener> databaseEventListeners = new ArrayList<>();
     protected Monitors monitors;
     protected LogProvider userLogProvider;
     protected DependencyResolver dependencies = new Dependencies();
@@ -106,6 +108,12 @@ public class DatabaseManagementServiceBuilder
         return config;
     }
 
+    public DatabaseManagementServiceBuilder addDatabaseListener( DatabaseEventListener databaseEventListener )
+    {
+        databaseEventListeners.add( databaseEventListener );
+        return this;
+    }
+
     public DatabaseManagementServiceBuilder addURLAccessRule( String protocol, URLAccessRule rule )
     {
         urlAccessRules.put( protocol, rule );
@@ -137,12 +145,13 @@ public class DatabaseManagementServiceBuilder
 
     private ExternalDependencies databaseDependencies()
     {
-        return newDependencies().
-                monitors( monitors ).
-                userLogProvider( userLogProvider ).
-                dependencies( dependencies ).
-                urlAccessRules( urlAccessRules ).
-                extensions( extensions );
+        return newDependencies()
+                .monitors( monitors )
+                .userLogProvider( userLogProvider )
+                .dependencies( dependencies )
+                .urlAccessRules( urlAccessRules )
+                .extensions( extensions )
+                .databaseEventListeners( databaseEventListeners );
     }
 
     public DatabaseManagementServiceBuilder setConfig( Setting<?> setting, String value )

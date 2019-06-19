@@ -22,6 +22,7 @@ package org.neo4j.graphdb.facade;
 import java.util.Map;
 
 import org.neo4j.common.DependencyResolver;
+import org.neo4j.graphdb.event.DatabaseEventListener;
 import org.neo4j.graphdb.security.URLAccessRule;
 import org.neo4j.internal.helpers.collection.Pair;
 import org.neo4j.kernel.extension.ExtensionFactory;
@@ -53,4 +54,10 @@ public interface ExternalDependencies
      * Collection of command executors to start running once the db is started
      */
     Iterable<Pair<DeferredExecutor,Group>> deferredExecutors();
+
+    /**
+     * Configured default database event listeners
+     * @return configured default listeners or empty iterable.
+     */
+    Iterable<DatabaseEventListener> databaseEventListeners();
 }

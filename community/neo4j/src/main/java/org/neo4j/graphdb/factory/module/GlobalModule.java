@@ -31,6 +31,7 @@ import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.configuration.connectors.ConnectorPortRegister;
 import org.neo4j.exceptions.UnsatisfiedDependencyException;
+import org.neo4j.graphdb.event.DatabaseEventListener;
 import org.neo4j.graphdb.facade.DatabaseManagementServiceFactory;
 import org.neo4j.graphdb.facade.ExternalDependencies;
 import org.neo4j.internal.diagnostics.DiagnosticsManager;
@@ -215,6 +216,11 @@ public class GlobalModule
         globalDependencies.satisfyDependency( URLAccessRules.combined( externalDependencies.urlAccessRules() ) );
 
         databaseEventListeners = new DatabaseEventListeners( logService.getInternalLog( DatabaseEventListeners.class ) );
+        Iterable<? extends DatabaseEventListener> externalListeners = externalDependencies.databaseEventListeners();
+        for ( DatabaseEventListener databaseListener : externalListeners )
+        {
+            databaseEventListeners.registerDatabaseEventListener( databaseListener );
+        }
         transactionEventListeners = new GlobalTransactionEventListeners();
         globalDependencies.satisfyDependency( transactionEventListeners );
 

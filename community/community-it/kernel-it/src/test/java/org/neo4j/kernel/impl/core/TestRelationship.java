@@ -44,6 +44,7 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.neo4j.graphdb.RelationshipType.withName;
+import static org.neo4j.internal.helpers.collection.Iterables.addAll;
 import static org.neo4j.kernel.impl.MyRelTypes.TEST;
 import static org.neo4j.kernel.impl.MyRelTypes.TEST2;
 import static org.neo4j.kernel.impl.MyRelTypes.TEST_TRAVERSAL;
@@ -857,8 +858,7 @@ public class TestRelationship extends AbstractNeo4jTestCase
     @Test
     public void getAllRelationships()
     {
-        Set<Relationship> existingRelationships =
-                Iterables.addToCollection( getGraphDb().getAllRelationships(), new HashSet<>() );
+        Set<Relationship> existingRelationships = addAll( new HashSet<>(), getGraphDb().getAllRelationships() );
 
         Set<Relationship> createdRelationships = new HashSet<>();
         Node node = getGraphDb().createNode();

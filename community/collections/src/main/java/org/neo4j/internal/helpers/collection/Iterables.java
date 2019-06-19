@@ -19,11 +19,6 @@
  */
 package org.neo4j.internal.helpers.collection;
 
-import org.eclipse.collections.api.list.ImmutableList;
-import org.eclipse.collections.api.map.ImmutableMap;
-import org.eclipse.collections.impl.list.immutable.ImmutableListFactoryImpl;
-import org.eclipse.collections.impl.map.immutable.ImmutableMapFactoryImpl;
-
 import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -540,21 +535,6 @@ public final class Iterables
     }
 
     /**
-     * Adds all the items in {@code iterator} to {@code collection}.
-     * @param <C> the type of {@link Collection} to add to items to.
-     * @param <T> the type of items in the collection and iterator.
-     * @param iterable the {@link Iterator} to grab the items from.
-     * @param collection the {@link Collection} to add the items to.
-     * @return the {@code collection} which was passed in, now filled
-     * with the items from {@code iterator}.
-     */
-    public static <C extends Collection<T>,T> C addToCollection( Iterable<T> iterable,
-            C collection )
-    {
-        return Iterators.addToCollection( iterable.iterator(), collection );
-    }
-
-    /**
      * Counts the number of items in the {@code iterator} by looping
      * through it.
      * @param <T> the type of items in the iterator.
@@ -599,22 +579,12 @@ public final class Iterables
      */
     public static <T> Collection<T> asCollection( Iterable<T> iterable )
     {
-        return addToCollection( iterable, new ArrayList<>() );
+        return addAll( new ArrayList<>(), iterable );
     }
 
     public static <T> List<T> asList( Iterable<T> iterator )
     {
-        return addToCollection( iterator, new ArrayList<>() );
-    }
-
-    public static <T> ImmutableList<T> asImmutableList( Iterable<? extends T> iterator )
-    {
-        return ImmutableListFactoryImpl.INSTANCE.ofAll(iterator);
-    }
-
-    public static <T> ImmutableList<T> asImmutableList( Iterator<T> iterator )
-    {
-        return asImmutableList(() -> iterator);
+        return addAll( new ArrayList<>(), iterator );
     }
 
     public static <T, U> Map<T, U> asMap( Iterable<Pair<T, U>> pairs )
@@ -627,16 +597,6 @@ public final class Iterables
         return map;
     }
 
-    public static <T, U> ImmutableMap<T, U> asImmutableMap( Map<T, U> map )
-    {
-        return ImmutableMapFactoryImpl.INSTANCE.ofAll( map );
-    }
-
-    public static <T, U> ImmutableMap<T, U> asImmutableMap( Iterable<Pair<T, U>> pairs )
-    {
-        return asImmutableMap( asMap( pairs ) );
-    }
-
     /**
      * Creates a {@link Set} from an {@link Iterable}.
      *
@@ -646,7 +606,7 @@ public final class Iterables
      */
     public static <T> Set<T> asSet( Iterable<T> iterable )
     {
-        return addToCollection( iterable, new HashSet<>() );
+        return addAll( new HashSet<>(), iterable );
     }
 
     /**

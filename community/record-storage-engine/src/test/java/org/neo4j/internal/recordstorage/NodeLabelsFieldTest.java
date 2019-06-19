@@ -55,11 +55,13 @@ import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 import org.neo4j.util.Bits;
 
+import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.neo4j.internal.helpers.Numbers.safeCastLongToInt;
+import static org.neo4j.internal.helpers.collection.Iterables.addAll;
 import static org.neo4j.util.Bits.bits;
 
 public class NodeLabelsFieldTest
@@ -210,8 +212,8 @@ public class NodeLabelsFieldTest
         // THEN
         assertEquals( 1, Iterables.count( changedDynamicRecords ) );
         assertEquals( dynamicLabelsLongRepresentation( changedDynamicRecords ), node.getLabelField() );
-        assertTrue( Arrays.equals( new long[] {labelId1, labelId2, labelId3},
-                DynamicNodeLabels.getDynamicLabelsArray( changedDynamicRecords, nodeStore.getDynamicLabelStore() ) ) );
+        assertArrayEquals( new long[]{labelId1, labelId2, labelId3},
+                DynamicNodeLabels.getDynamicLabelsArray( changedDynamicRecords, nodeStore.getDynamicLabelStore() ) );
     }
 
     @Test
@@ -258,9 +260,9 @@ public class NodeLabelsFieldTest
         NodeLabels nodeLabels = NodeLabelsField.parseLabelsField( node );
 
         // WHEN
-        List<DynamicRecord> changedDynamicRecords = Iterables.addToCollection(
-                nodeLabels.remove( 255 /*Initial labels go from 255 and down to 255-58*/, nodeStore ),
-                new ArrayList<>() );
+        List<DynamicRecord> changedDynamicRecords = addAll(
+                new ArrayList<>(),
+                nodeLabels.remove( 255 /*Initial labels go from 255 and down to 255-58*/, nodeStore ) );
 
         // THEN
         assertEquals( initialRecords, changedDynamicRecords );
@@ -277,9 +279,8 @@ public class NodeLabelsFieldTest
         NodeRecord node = nodeRecordWithDynamicLabels( nodeId, nodeStore, oneByteLongs( 57 ) );
         NodeLabels nodeLabels = NodeLabelsField.parseLabelsField( node );
 
-        List<DynamicRecord> changedDynamicRecords = Iterables.addToCollection(
-                nodeLabels.remove( 255 /*Initial labels go from 255 and down to 255-58*/, nodeStore ),
-                new ArrayList<>() );
+        List<DynamicRecord> changedDynamicRecords = addAll( new ArrayList<>(),
+                nodeLabels.remove( 255 /*Initial labels go from 255 and down to 255-58*/, nodeStore ) );
 
         // WHEN
         Pair<Long,long[]> changedPair = DynamicNodeLabels.getDynamicLabelsArrayAndOwner( changedDynamicRecords,
