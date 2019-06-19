@@ -28,7 +28,7 @@ public class AbsentNativeAccess implements NativeAccess
     }
 
     @Override
-    public int trySkipCache( int fd )
+    public int tryEvictFromCache( int fd )
     {
         return SUCCESS;
     }

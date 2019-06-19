@@ -61,8 +61,8 @@ class LinuxNativeAccessTest
     @EnabledOnOs( OS.LINUX )
     void failToSkipCacheOnLinuxForIncorrectDescriptor()
     {
-        assertEquals( ERROR, nativeAccess.trySkipCache( 0 ) );
-        assertEquals( ERROR, nativeAccess.trySkipCache( -1 ) );
+        assertEquals( ERROR, nativeAccess.tryEvictFromCache( 0 ) );
+        assertEquals( ERROR, nativeAccess.tryEvictFromCache( -1 ) );
     }
 
     @Test
@@ -74,7 +74,7 @@ class LinuxNativeAccessTest
         {
             FileDescriptor fd = randomFile.getFD();
             int descriptor = FieldUtils.getDeclaredField( FileDescriptor.class, "fd", true ).getInt( fd );
-            assertEquals( 0, nativeAccess.trySkipCache( descriptor ) );
+            assertEquals( 0, nativeAccess.tryEvictFromCache( descriptor ) );
         }
     }
 }

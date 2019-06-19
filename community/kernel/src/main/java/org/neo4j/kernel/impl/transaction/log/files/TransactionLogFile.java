@@ -193,18 +193,18 @@ class TransactionLogFile extends LifecycleAdapter implements LogFile
          * into transaction log that was just rotated.
          */
         PhysicalLogVersionedStoreChannel newLog = logFiles.createLogChannelForVersion( newLogVersion, context::committingTransactionId );
-        trySkipSystemCache( currentLog );
+        tryEvictFromSystemCache( currentLog );
         currentLog.close();
         return newLog;
     }
 
-    private void trySkipSystemCache( LogVersionedStoreChannel currentLog )
+    private void tryEvictFromSystemCache( LogVersionedStoreChannel currentLog )
     {
         int fileDescriptor = fileSystem.getFileDescriptor( currentLog );
-        int result = nativeAccess.trySkipCache( fileDescriptor );
+        int result = nativeAccess.tryEvictFromCache( fileDescriptor );
         if ( result < 0 )
         {
-            log.warn( "Unable to skip cache for transaction log version: " + currentLog.getVersion() + ". Error code: " + result );
+            log.warn( "Unable to evict from cache transaction log version: " + currentLog.getVersion() + ". Error code: " + result );
         }
     }
 

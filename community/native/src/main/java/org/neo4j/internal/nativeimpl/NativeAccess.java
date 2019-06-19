@@ -38,12 +38,12 @@ public interface NativeAccess
     boolean isAvailable();
 
     /**
-     * Try to skip file caching of file referenced by provided file descriptor.
+     * Try to evict cached pages of file referenced by provided file descriptor.
      * Useful for files that we do not need to access ever again. For example: log files, WAL files, etc.
      * @param fd file descriptor
      * @return result code
      */
-    int trySkipCache( int fd );
+    int tryEvictFromCache( int fd );
 
     /**
      * Details about native access provider

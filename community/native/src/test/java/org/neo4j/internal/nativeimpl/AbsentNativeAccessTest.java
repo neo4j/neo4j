@@ -37,8 +37,8 @@ class AbsentNativeAccessTest
     @Test
     void absentNativeAccessSkipCacheAlwaysFinishSuccessfully()
     {
-        assertEquals( 0, absentNativeAccess.trySkipCache( 1 ) );
-        assertEquals( 0, absentNativeAccess.trySkipCache( 2 ) );
-        assertEquals( 0, absentNativeAccess.trySkipCache( -1 ) );
+        assertEquals( 0, absentNativeAccess.tryEvictFromCache( 1 ) );
+        assertEquals( 0, absentNativeAccess.tryEvictFromCache( 2 ) );
+        assertEquals( 0, absentNativeAccess.tryEvictFromCache( -1 ) );
     }
 }

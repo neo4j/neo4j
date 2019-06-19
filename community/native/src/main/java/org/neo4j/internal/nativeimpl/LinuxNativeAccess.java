@@ -76,7 +76,7 @@ public class LinuxNativeAccess implements NativeAccess
     }
 
     @Override
-    public int trySkipCache( int fd )
+    public int tryEvictFromCache( int fd )
     {
         if ( fd <= 0 )
         {
