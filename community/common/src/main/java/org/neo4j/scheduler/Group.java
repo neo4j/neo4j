@@ -54,6 +54,8 @@ public enum Group
     FILE_IO_HELPER( "FileIOHelper" ),
     NATIVE_SECURITY( "NativeSecurity" ),
     METRICS_EVENT( "MetricsEvent" ),
+    /** Threads that perform database manager operations necessary to bring databases to their desired states. */
+    DATABASE_RECONCILER( "DatabaseReconciler" ),
 
     // CYPHER.
     /** Thread pool for parallel Cypher query execution. */

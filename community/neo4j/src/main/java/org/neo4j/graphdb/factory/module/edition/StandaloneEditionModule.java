@@ -77,6 +77,11 @@ public abstract class StandaloneEditionModule extends AbstractEditionModule
     @Override
     public DatabaseManager<?> createDatabaseManager( GlobalModule globalModule, Log msgLog )
     {
-        return new DefaultDatabaseManager( globalModule, this, msgLog );
+        DefaultDatabaseManager databaseManager = new DefaultDatabaseManager( globalModule, this, msgLog );
+
+        globalModule.getGlobalLife().add( databaseManager );
+        globalModule.getGlobalDependencies().satisfyDependency( databaseManager );
+
+        return databaseManager;
     }
 }

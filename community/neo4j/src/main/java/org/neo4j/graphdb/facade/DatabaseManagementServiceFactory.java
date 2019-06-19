@@ -133,7 +133,7 @@ public class DatabaseManagementServiceFactory
 
         LogService logService = globalModule.getLogService();
         Log internalLog = logService.getInternalLog( getClass() );
-        DatabaseManager<?> databaseManager = createAndInitializeDatabaseManager( globalModule, edition, internalLog );
+        DatabaseManager<?> databaseManager = edition.createDatabaseManager( globalModule, internalLog );
         DatabaseManagementService managementService = new DatabaseManagementServiceImpl( databaseManager, globalModule.getGlobalAvailabilityGuard(),
                 globalLife, globalModule.getDatabaseEventListeners(), globalModule.getTransactionEventListeners(), edition.databaseIdRepository(),
                 internalLog );
@@ -155,20 +155,21 @@ public class DatabaseManagementServiceFactory
         globalDependencies.satisfyDependency( edition.globalTransactionCounter() );
         globalLife.add( new PublishPageCacheTracerMetricsAfterStart( globalModule.getTracers().getPageCursorTracerSupplier() ) );
 
-        startDatabaseServer( config, globalModule, edition, globalLife, internalLog, databaseManager, managementService );
+        startDatabaseServer( globalModule, globalLife, internalLog, databaseManager, managementService, edition );
 
         return managementService;
     }
 
-    private static void startDatabaseServer( Config config, GlobalModule globalModule, AbstractEditionModule edition, LifeSupport globalLife, Log internalLog,
-            DatabaseManager<?> databaseManager, DatabaseManagementService managementService )
+    private static void startDatabaseServer( GlobalModule globalModule, LifeSupport globalLife, Log internalLog, DatabaseManager<?> databaseManager,
+            DatabaseManagementService managementService, AbstractEditionModule edition )
     {
 
         RuntimeException startupException = null;
         try
         {
-            edition.createDatabases( databaseManager, config );
+            databaseManager.initialiseDefaultDatabases();
             globalLife.start();
+
             verifySystemDatabaseStart( databaseManager, edition.databaseIdRepository() );
         }
         catch ( Throwable throwable )
@@ -295,14 +296,5 @@ public class DatabaseManagementServiceFactory
         return new BoltServer( boltGraphDatabaseManagementServiceSPI, platform.getJobScheduler(), platform.getConnectorPortRegister(),
                 edition.getConnectionTracker(), platform.getGlobalConfig(), platform.getGlobalClock(), platform.getGlobalMonitors(), platform.getLogService(),
                 platform.getGlobalDependencies() );
-    }
-
-    private static DatabaseManager<?> createAndInitializeDatabaseManager( GlobalModule platform,
-            AbstractEditionModule edition, Log log )
-    {
-        DatabaseManager<?> databaseManager = edition.createDatabaseManager( platform, log );
-        platform.getGlobalLife().add( databaseManager );
-        platform.getGlobalDependencies().satisfyDependency( databaseManager );
-        return databaseManager;
     }
 }

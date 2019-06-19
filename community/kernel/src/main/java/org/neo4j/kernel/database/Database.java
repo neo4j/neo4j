@@ -707,6 +707,11 @@ public class Database extends LifecycleAdapter
         started = false;
     }
 
+    public void prepareToDrop()
+    {
+        prepareStop( alwaysTrue() );
+    }
+
     public synchronized void drop()
     {
         if ( started )

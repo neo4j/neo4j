@@ -1014,6 +1014,19 @@ public class GraphDatabaseSettings implements LoadableConfig
             .constraint( min( 16 ) )
             .build();
 
+    @Description( "Defines whether the dbms may retry reconciling a database to its desired state." )
+    public static final Setting<Boolean> reconciler_may_retry = setting(
+            "dbms.reconciler.may_retry", BOOLEAN, FALSE );
+
+    @Description( "Defines the maximum amount of time to wait before retrying after the dbms fails to reconcile a database to its desired state." )
+    public static final Setting<Duration> reconciler_maximum_backoff = buildSetting(
+            "dbms.reconciler.max_backoff", DURATION, "1h" ).constraint( min( Duration.ofMinutes( 1 ) ) ).build();
+
+    @Description( "Defines the minimum amount of time to wait before retrying after the dbms fails to reconcile a database to its desired state." )
+    @Internal
+    public static final Setting<Duration> reconciler_minimum_backoff = buildSetting(
+            "dbms.reconciler.min_backoff", DURATION, "2s" ).constraint( min( Duration.ofSeconds( 1 ) ) ).build();
+
     // Needed to validate config, accessed via reflection
     @SuppressWarnings( "unused" )
     public static final HttpConnectorValidator httpValidator = new HttpConnectorValidator();

@@ -27,11 +27,9 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
-import org.neo4j.collection.Dependencies;
 import org.neo4j.common.DependencyResolver;
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.dbms.api.DatabaseManagementServiceBuilder;
-import org.neo4j.dbms.database.SystemGraphInitializer;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
@@ -69,7 +67,6 @@ public abstract class DbmsRule extends ExternalResource implements GraphDatabase
     private DatabaseLayout databaseLayout;
     private Supplier<Statement> statementSupplier;
     private boolean startEagerly = true;
-    private boolean initializeSystemGraph = true;
     private final Map<Setting<?>, String> globalConfig = new HashMap<>();
     private final Monitors monitors = new Monitors();
     private DatabaseManagementService managementService;
@@ -81,15 +78,6 @@ public abstract class DbmsRule extends ExternalResource implements GraphDatabase
     public DbmsRule startLazily()
     {
         startEagerly = false;
-        return this;
-    }
-
-    /**
-     * Means the database will be started without initializing the system graph (ie. without :Database nodes and :Database(name) constraint)
-     */
-    public DbmsRule withoutSystemGraph()
-    {
-        initializeSystemGraph = false;
         return this;
     }
 
@@ -256,13 +244,6 @@ public abstract class DbmsRule extends ExternalResource implements GraphDatabase
         try
         {
             databaseBuilder = newFactory();
-            if ( !initializeSystemGraph )
-            {
-                Dependencies dependencies = new Dependencies();
-                dependencies.satisfyDependencies(
-                        SystemGraphInitializer.NO_OP );   // disable system graph construction because it will interfere with some tests
-                databaseBuilder.setExternalDependencies( dependencies );
-            }
             databaseBuilder.setMonitors( monitors );
             configure( databaseBuilder );
             globalConfig.forEach( databaseBuilder::setConfig );

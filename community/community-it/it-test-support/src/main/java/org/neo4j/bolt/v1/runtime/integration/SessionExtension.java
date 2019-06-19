@@ -77,11 +77,10 @@ public class SessionExtension implements BeforeEachCallback, AfterEachCallback
         return machine;
     }
 
-    public DatabaseManager<?> databaseManager()
+    public DatabaseManagementService managementService()
     {
         assertTestStarted();
-        DependencyResolver resolver = gdb.getDependencyResolver();
-        return resolver.resolveDependency( DatabaseManager.class );
+        return managementService;
     }
 
     public String defaultDatabaseName()

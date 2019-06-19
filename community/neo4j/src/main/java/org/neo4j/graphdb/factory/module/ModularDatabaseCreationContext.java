@@ -26,7 +26,6 @@ import org.neo4j.collection.Dependencies;
 import org.neo4j.common.DependencyResolver;
 import org.neo4j.common.TokenNameLookup;
 import org.neo4j.configuration.Config;
-import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.dbms.database.DatabaseConfig;
 import org.neo4j.function.Factory;
 import org.neo4j.graphdb.factory.module.edition.context.EditionDatabaseComponents;
@@ -38,7 +37,6 @@ import org.neo4j.io.fs.watcher.DatabaseLayoutWatcher;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier;
 import org.neo4j.io.pagecache.tracing.cursor.context.VersionContextSupplier;
 import org.neo4j.kernel.api.procedure.GlobalProcedures;
 import org.neo4j.kernel.availability.DatabaseAvailabilityGuard;
@@ -50,7 +48,6 @@ import org.neo4j.kernel.extension.ExtensionFactory;
 import org.neo4j.kernel.impl.api.CommitProcessFactory;
 import org.neo4j.kernel.impl.api.NonTransactionalTokenNameLookup;
 import org.neo4j.kernel.impl.constraints.ConstraintSemantics;
-import org.neo4j.kernel.impl.context.TransactionVersionContextSupplier;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.factory.AccessCapability;
 import org.neo4j.kernel.impl.factory.DatabaseInfo;
@@ -117,11 +114,13 @@ public class ModularDatabaseCreationContext implements DatabaseCreationContext
     private final ThreadToStatementContextBridge contextBridge;
 
     public ModularDatabaseCreationContext( DatabaseId databaseId, GlobalModule globalModule, Dependencies globalDependencies,
-            Monitors parentMonitors, EditionDatabaseComponents perEditionComponents, GlobalProcedures globalProcedures )
+            Monitors parentMonitors, EditionDatabaseComponents perEditionComponents, GlobalProcedures globalProcedures,
+            VersionContextSupplier versionContextSupplier, DatabaseConfig databaseConfig )
     {
         this.databaseId = databaseId;
         this.globalConfig = globalModule.getGlobalConfig();
-        this.databaseConfig = DatabaseConfig.from( globalConfig, databaseId );
+        this.databaseConfig = databaseConfig;
+        this.versionContextSupplier = versionContextSupplier;
         this.databaseIdRepository = globalModule.getDatabaseIdRepository();
         DatabaseIdContext idContext = perEditionComponents.getIdContext();
         this.idGeneratorFactory = idContext.getIdGeneratorFactory();
@@ -153,7 +152,6 @@ public class ModularDatabaseCreationContext implements DatabaseCreationContext
         this.accessCapability = perEditionComponents.getAccessCapability();
         this.storeCopyCheckPointMutex = new StoreCopyCheckPointMutex();
         this.databaseInfo = globalModule.getDatabaseInfo();
-        this.versionContextSupplier = createVersionContestSupplier( globalModule, databaseConfig );
         this.collectionsFactorySupplier = globalModule.getCollectionsFactorySupplier();
         this.extensionFactories = globalModule.getExtensionFactories();
         this.watcherServiceFactory = perEditionComponents.getWatcherServiceFactory();
@@ -401,19 +399,5 @@ public class ModularDatabaseCreationContext implements DatabaseCreationContext
     {
         Log guardLog = databaseLogService.getInternalLog( DatabaseAvailabilityGuard.class );
         return new DatabaseAvailabilityGuard( databaseId, clock, guardLog, databaseTimeoutMillis, globalModule.getGlobalAvailabilityGuard() );
-    }
-
-    private static VersionContextSupplier createVersionContestSupplier( GlobalModule globalModule, DatabaseConfig databaseConfig )
-    {
-        DependencyResolver externalDependencyResolver = globalModule.getExternalDependencyResolver();
-        Class<VersionContextSupplier> klass = VersionContextSupplier.class;
-        if ( externalDependencyResolver.resolveTypeDependencies( klass ).iterator().hasNext() )
-        {
-            return externalDependencyResolver.resolveDependency( klass );
-        }
-        else
-        {
-            return databaseConfig.get( GraphDatabaseSettings.snapshot_query ) ? new TransactionVersionContextSupplier() : EmptyVersionContextSupplier.EMPTY;
-        }
     }
 }

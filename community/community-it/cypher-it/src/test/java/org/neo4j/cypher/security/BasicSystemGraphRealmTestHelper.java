@@ -81,6 +81,11 @@ public class BasicSystemGraphRealmTestHelper
         }
 
         @Override
+        public void initialiseDefaultDatabases()
+        {
+        }
+
+        @Override
         public StandaloneDatabaseContext createDatabase( DatabaseId databaseId )
         {
             throw new UnsupportedOperationException( "Call to createDatabase not expected" );

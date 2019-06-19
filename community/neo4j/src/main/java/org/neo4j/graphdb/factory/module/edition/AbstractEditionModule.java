@@ -24,8 +24,6 @@ import java.util.function.Predicate;
 
 import org.neo4j.bolt.dbapi.BoltGraphDatabaseManagementServiceSPI;
 import org.neo4j.bolt.dbapi.impl.BoltKernelDatabaseManagementServiceProvider;
-import org.neo4j.configuration.Config;
-import org.neo4j.dbms.api.DatabaseExistsException;
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.dbms.database.DatabaseManager;
 import org.neo4j.dbms.database.SystemGraphInitializer;
@@ -169,12 +167,6 @@ public abstract class AbstractEditionModule
     public TransactionCounters globalTransactionCounter()
     {
         return transactionStatistic;
-    }
-
-    public void createDatabases( DatabaseManager<?> databaseManager, Config config ) throws DatabaseExistsException
-    {
-        databaseManager.createDatabase( databaseIdRepository().systemDatabase() );
-        databaseManager.createDatabase( databaseIdRepository().defaultDatabase() );
     }
 
     public TransactionHeaderInformationFactory getHeaderInformationFactory()

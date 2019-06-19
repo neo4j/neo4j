@@ -21,26 +21,25 @@ package org.neo4j.dbms.database;
 
 import java.util.Optional;
 
-import org.neo4j.collection.Dependencies;
+import org.neo4j.dbms.api.DatabaseExistsException;
 import org.neo4j.dbms.api.DatabaseManagementException;
 import org.neo4j.graphdb.factory.module.GlobalModule;
-import org.neo4j.graphdb.factory.module.ModularDatabaseCreationContext;
 import org.neo4j.graphdb.factory.module.edition.AbstractEditionModule;
-import org.neo4j.graphdb.factory.module.edition.context.EditionDatabaseComponents;
-import org.neo4j.kernel.api.procedure.GlobalProcedures;
 import org.neo4j.kernel.database.Database;
-import org.neo4j.kernel.database.DatabaseCreationContext;
 import org.neo4j.kernel.database.DatabaseId;
+import org.neo4j.kernel.database.DatabaseIdRepository;
 import org.neo4j.logging.Log;
-import org.neo4j.monitoring.Monitors;
 
 import static java.util.Objects.requireNonNull;
 
 public final class DefaultDatabaseManager extends AbstractDatabaseManager<StandaloneDatabaseContext>
 {
+    private final DatabaseIdRepository databaseIdRepository;
+
     public DefaultDatabaseManager( GlobalModule globalModule, AbstractEditionModule edition, Log log )
     {
-        super( globalModule, edition, log );
+        super( globalModule, edition, log, true );
+        databaseIdRepository = globalModule.getDatabaseIdRepository();
     }
 
     @Override
@@ -49,6 +48,20 @@ public final class DefaultDatabaseManager extends AbstractDatabaseManager<Standa
         return Optional.ofNullable( databaseMap.get( databaseId ) );
     }
 
+    @Override
+    public void initialiseDefaultDatabases()
+    {
+        defaultDatabaseNames().stream().map( databaseIdRepository::get ).forEach( this::createDatabase );
+    }
+
+    /**
+     * Create database with specified name.
+     * Database name should be unique.
+     * By default a database is in a started state when it is initially created.
+     * @param databaseId ID of database to create
+     * @throws DatabaseExistsException In case if database with specified name already exists
+     * @return database context for newly created database
+     */
     @Override
     public synchronized StandaloneDatabaseContext createDatabase( DatabaseId databaseId )
     {
@@ -63,17 +76,9 @@ public final class DefaultDatabaseManager extends AbstractDatabaseManager<Standa
     @Override
     protected StandaloneDatabaseContext createDatabaseContext( DatabaseId databaseId )
     {
-        DatabaseCreationContext databaseCreationContext = newDatabaseCreationContext( databaseId, globalModule.getGlobalDependencies(),
-                globalModule.getGlobalMonitors() );
-        Database kernelDatabase = new Database( databaseCreationContext );
+        var databaseCreationContext = newDatabaseCreationContext( databaseId, globalModule.getGlobalDependencies(), globalModule.getGlobalMonitors() );
+        var kernelDatabase = new Database( databaseCreationContext );
         return new StandaloneDatabaseContext( kernelDatabase );
-    }
-
-    private DatabaseCreationContext newDatabaseCreationContext( DatabaseId databaseId, Dependencies globalDependencies, Monitors parentMonitors )
-    {
-        EditionDatabaseComponents editionDatabaseComponents = edition.createDatabaseComponents( databaseId );
-        GlobalProcedures globalProcedures = edition.getGlobalProcedures();
-        return new ModularDatabaseCreationContext( databaseId, globalModule, globalDependencies, parentMonitors, editionDatabaseComponents, globalProcedures );
     }
 
     @Override

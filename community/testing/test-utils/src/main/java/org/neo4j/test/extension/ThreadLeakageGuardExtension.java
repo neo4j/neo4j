@@ -40,7 +40,7 @@ import static java.util.Arrays.stream;
 
 public class ThreadLeakageGuardExtension implements AfterAllCallback, BeforeAllCallback
 {
-    private static final long MAXIMUM_WAIT_TIME_MILLIS = 30_000;
+    private static final long MAXIMUM_WAIT_TIME_MILLIS = 90_000;
     private static final String KEY = "ThreadLeakageExtension";
     private static final ExtensionContext.Namespace NAMESPACE = ExtensionContext.Namespace.create( KEY );
     private final StacktraceHolderException stacktraceHolderException = new StacktraceHolderException();
@@ -59,7 +59,8 @@ public class ThreadLeakageGuardExtension implements AfterAllCallback, BeforeAllC
             "neo4j.StorageMaintenance",         //Sometimes erroneously leaked on database shutdown, possible race-condition, to be fixed!
             "neo4j.TransactionTimeoutMonitor",  //Sometimes erroneously leaked on database shutdown, possible race-condition, to be fixed!
             "neo4j.CheckPoint",                 //Sometimes erroneously leaked on database shutdown, possible race-condition, to be fixed!
-            "neo4j.IndexSampling"               //Sometimes erroneously leaked on database shutdown, possible race-condition, to be fixed!
+            "neo4j.IndexSampling",              //Sometimes erroneously leaked on database shutdown, possible race-condition, to be fixed!
+            "neo4j.ThroughputMonitor"           //Issue with thread leak guard and scheduling of recurring jobs as above?
     );
 
     @Override

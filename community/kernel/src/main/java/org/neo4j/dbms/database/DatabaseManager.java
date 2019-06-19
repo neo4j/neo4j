@@ -22,6 +22,7 @@ package org.neo4j.dbms.database;
 import java.util.Optional;
 import java.util.SortedMap;
 
+import org.neo4j.configuration.Config;
 import org.neo4j.dbms.api.DatabaseExistsException;
 import org.neo4j.dbms.api.DatabaseNotFoundException;
 import org.neo4j.kernel.database.DatabaseId;
@@ -29,6 +30,13 @@ import org.neo4j.kernel.lifecycle.Lifecycle;
 
 public interface DatabaseManager<DB extends DatabaseContext> extends Lifecycle
 {
+    /**
+     * Creates those databases which are required by default in a Neo4j install
+     * as per the system {@link Config}. If default databases are already
+     * initialised, nothing happens
+     */
+    void initialiseDefaultDatabases();
+
     /**
      * Returns a given {@link DatabaseContext} object by name, or `Optional.empty()` if the database does not exist
      *
@@ -40,6 +48,7 @@ public interface DatabaseManager<DB extends DatabaseContext> extends Lifecycle
     /**
      * Create database with specified name.
      * Database name should be unique.
+     * By default a database is in a started state when it is initially created.
      * @param databaseId ID of database to create
      * @throws DatabaseExistsException In case if database with specified name already exists
      * @return database context for newly created database
