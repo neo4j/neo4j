@@ -72,7 +72,7 @@ class NodeLabelSecurityFilter implements IndexProgressor.EntityValueClient, Inde
         read.singleNode( reference, node );
         if ( !node.next() )
         {
-            // This node doesn't exist, therefore it cannot be accepted
+            // This node is not visible to this security context
             return false;
         }
 
@@ -80,8 +80,7 @@ class NodeLabelSecurityFilter implements IndexProgressor.EntityValueClient, Inde
         long[] labels = node.labels().all();
         for ( int prop : properties )
         {
-            allowed &= accessMode.allowsTraverseLabels( labels ) &&
-                    accessMode.allowsReadProperty( () -> Labels.from( labels ), prop );
+            allowed &= accessMode.allowsReadProperty( () -> Labels.from( labels ), prop );
         }
 
         return allowed && target.acceptEntity( reference, score, values );

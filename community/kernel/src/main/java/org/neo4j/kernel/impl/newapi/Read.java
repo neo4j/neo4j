@@ -146,7 +146,7 @@ abstract class Read implements TxStateHolder,
         {
             if ( !accessMode.allowsPropertyReads( prop ) )
             {
-                return new NodeLabelSecurityFilter( reference.properties(), cursor, cursors.allocateFullAccessNodeCursor(), this, AccessMode.Static.NONE );
+                return new NodeLabelSecurityFilter( reference.properties(), cursor, cursors.allocateNodeCursor(), this, AccessMode.Static.NONE );
             }
         }
 
@@ -160,36 +160,29 @@ abstract class Read implements TxStateHolder,
 
         if ( schema.entityType().equals( EntityType.NODE ) && !allowsForAllLabels )
         {
-            boolean allowsAll = true;
             for ( int prop : reference.properties() )
             {
-                boolean allowForAllLabels = true;
                 for ( int label : schema.getEntityTokenIds() )
                 {
-                    boolean allowForLabel = accessMode.allowsTraverseLabels( label ) && accessMode.allowsReadProperty( () -> Labels.from( label ), prop );
-                    allowForAllLabels &= allowForLabel;
+                    if ( !accessMode.allowsTraverseLabels( label ) || !accessMode.allowsReadProperty( () -> Labels.from( label ), prop ) )
+                    {
+                        return new NodeLabelSecurityFilter( reference.properties(), cursor, cursors.allocateNodeCursor(), this, ktx.securityContext().mode() );
+                    }
                 }
-                allowsAll &= allowForAllLabels;
-            }
-
-            if ( !allowsAll )
-            {
-                // only some matching whitelist
-                return new NodeLabelSecurityFilter( reference.properties(), cursor, cursors.allocateFullAccessNodeCursor(), this,
-                        ktx.securityContext().mode() );
             }
         }
 
         if ( schema.entityType().equals( EntityType.RELATIONSHIP ) )
         {
-            int[] tokenIds = schema.getEntityTokenIds();
-            assert tokenIds.length == 1;
-            if ( !accessMode.allowsTraverseRelType( tokenIds[0] ) )
+            for ( int relType : schema.getEntityTokenIds() )
             {
-                // This will accept no relationships
-                return new RelationshipSecurityFilter();
+                if ( !accessMode.allowsTraverseRelType( relType ) || !accessMode.allowsTraverseAllLabels() )
+                {
+                    return new RelationshipSecurityFilter( cursor, cursors.allocateRelationshipScanCursor(), this );
+                }
             }
         }
+
         // everything in this index is whitelisted
         return cursor;
     }

@@ -21,25 +21,36 @@ package org.neo4j.kernel.impl.newapi;
 
 import org.neo4j.internal.kernel.api.IndexOrder;
 import org.neo4j.internal.kernel.api.IndexQuery;
+import org.neo4j.internal.kernel.api.RelationshipScanCursor;
 import org.neo4j.internal.schema.IndexDescriptor;
+import org.neo4j.io.IOUtils;
 import org.neo4j.kernel.api.index.IndexProgressor;
 import org.neo4j.values.storable.Value;
 
 class RelationshipSecurityFilter implements IndexProgressor.EntityValueClient, IndexProgressor
 {
+    private final EntityValueClient target;
+    private final Read read;
+    private final RelationshipScanCursor relCursor;
     private IndexProgressor progressor;
+
+    RelationshipSecurityFilter( EntityValueClient target, RelationshipScanCursor relCursor, Read read )
+    {
+        this.target = target;
+        this.read = read;
+        this.relCursor = relCursor;
+    }
 
     @Override
     public boolean next()
     {
-        return false;
+        return progressor.next();
     }
 
     @Override
     public void close()
-
     {
-        progressor.close();
+        IOUtils.close( RuntimeException::new, relCursor, progressor );
     }
 
     @Override
@@ -47,17 +58,19 @@ class RelationshipSecurityFilter implements IndexProgressor.EntityValueClient, I
             boolean indexIncludesTransactionState )
     {
         this.progressor = progressor;
+        target.initialize( descriptor, this, query, indexOrder, needsValues, indexIncludesTransactionState );
     }
 
     @Override
     public boolean acceptEntity( long reference, float score, Value... values )
     {
-        return false;
+        read.singleRelationship( reference, relCursor );
+        return relCursor.next() && target.acceptEntity( reference, score, values );
     }
 
     @Override
     public boolean needsValues()
     {
-        return false;
+        return target.needsValues();
     }
 }
