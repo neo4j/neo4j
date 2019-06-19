@@ -58,6 +58,7 @@ import static org.neo4j.internal.schema.SchemaDescriptor.forLabel;
 import static org.neo4j.kernel.api.index.IndexDirectoryStructure.directoriesByProvider;
 import static org.neo4j.kernel.api.index.IndexProvider.Monitor.EMPTY;
 import static org.neo4j.kernel.impl.api.index.PhaseTracker.nullInstance;
+import static org.neo4j.kernel.impl.index.schema.ByteBufferFactory.heapBufferFactory;
 import static org.neo4j.kernel.impl.index.schema.IndexDescriptorFactory.forSchema;
 import static org.neo4j.kernel.impl.index.schema.IndexDescriptorFactory.uniqueForSchema;
 import static org.neo4j.storageengine.api.IndexEntryUpdate.add;
@@ -346,7 +347,8 @@ public class GenericBlockBasedIndexPopulatorTest
         SpaceFillingCurveConfiguration configuration = SpaceFillingCurveSettingsFactory.getConfiguredSpaceFillingCurveConfiguration( config );
         PageCache pc = storage.pageCache();
         GenericBlockBasedIndexPopulator populator =
-                new GenericBlockBasedIndexPopulator( pc, fs, indexFiles, layout, EMPTY, indexDescriptor, spatialSettings, configuration, false );
+                new GenericBlockBasedIndexPopulator( pc, fs, indexFiles, layout, EMPTY, indexDescriptor, spatialSettings, configuration, false,
+                        heapBufferFactory( 1024 ) );
         populator.create();
         return populator;
     }

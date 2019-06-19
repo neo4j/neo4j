@@ -77,7 +77,7 @@ abstract class NativeIndexProvider<KEY extends NativeIndexKey<KEY>,VALUE extends
     abstract LAYOUT layout( StorageIndexReference descriptor, File storeFile );
 
     @Override
-    public IndexPopulator getPopulator( StorageIndexReference descriptor, IndexSamplingConfig samplingConfig )
+    public IndexPopulator getPopulator( StorageIndexReference descriptor, IndexSamplingConfig samplingConfig, ByteBufferFactory bufferFactory )
     {
         if ( readOnly )
         {
@@ -85,10 +85,12 @@ abstract class NativeIndexProvider<KEY extends NativeIndexKey<KEY>,VALUE extends
         }
 
         IndexFiles indexFiles = new IndexFiles.Directory( fs, directoryStructure(), descriptor.indexReference() );
-        return newIndexPopulator( indexFiles, layout( descriptor, null /*meaning don't read from this file since we're recreating it anyway*/ ), descriptor );
+        return newIndexPopulator( indexFiles, layout( descriptor, null /*meaning don't read from this file since we're recreating it anyway*/ ), descriptor,
+                bufferFactory );
     }
 
-    protected abstract IndexPopulator newIndexPopulator( IndexFiles indexFiles, LAYOUT layout, StorageIndexReference descriptor );
+    protected abstract IndexPopulator newIndexPopulator( IndexFiles indexFiles, LAYOUT layout, StorageIndexReference descriptor,
+            ByteBufferFactory bufferFactory );
 
     @Override
     public IndexAccessor getOnlineAccessor( StorageIndexReference descriptor, IndexSamplingConfig samplingConfig ) throws IOException

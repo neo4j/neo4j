@@ -92,6 +92,7 @@ import static org.neo4j.collection.PrimitiveLongCollections.toSet;
 import static org.neo4j.internal.helpers.collection.Iterators.asSet;
 import static org.neo4j.internal.kernel.api.IndexQuery.exact;
 import static org.neo4j.internal.kernel.api.QueryContext.NULL_CONTEXT;
+import static org.neo4j.kernel.impl.index.schema.ByteBufferFactory.heapBufferFactory;
 import static org.neo4j.test.rule.concurrent.ThreadingRule.waitingWhileIn;
 
 @RunWith( Parameterized.class )
@@ -159,7 +160,7 @@ public class DatabaseCompositeIndexAccessorTest
     {
         IOFunction function = dirFactory1 ->
         {
-            IndexPopulator populator = provider.getPopulator( descriptor, SAMPLING_CONFIG );
+            IndexPopulator populator = provider.getPopulator( descriptor, SAMPLING_CONFIG, heapBufferFactory( 1024 ) );
             populator.create();
             populator.close( true );
 

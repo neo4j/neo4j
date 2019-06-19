@@ -32,19 +32,19 @@ import org.neo4j.util.Preconditions;
  * Allocates {@link ByteBuffer} instances using {@link UnsafeUtil#newDirectByteBuffer(long, int)}/{@link UnsafeUtil#initDirectByteBuffer(Object, long, int)}
  * and frees all allocated memory in {@link #close()}.
  */
-public class UnsafeDirectByteBufferFactory implements ByteBufferFactory
+public class UnsafeDirectByteBufferAllocator implements ByteBufferFactory.Allocator
 {
     private final MemoryAllocationTracker memoryAllocationTracker;
     private final List<Allocation> allocations = new ArrayList<>();
     private boolean closed;
 
-    UnsafeDirectByteBufferFactory( MemoryAllocationTracker memoryAllocationTracker )
+    public UnsafeDirectByteBufferAllocator( MemoryAllocationTracker memoryAllocationTracker )
     {
         this.memoryAllocationTracker = memoryAllocationTracker;
     }
 
     @Override
-    public synchronized ByteBuffer newBuffer( int bufferSize )
+    public synchronized ByteBuffer allocate( int bufferSize )
     {
         assertOpen();
         try

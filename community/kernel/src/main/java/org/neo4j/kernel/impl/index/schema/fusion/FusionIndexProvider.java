@@ -35,6 +35,7 @@ import org.neo4j.kernel.api.index.IndexDirectoryStructure;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
+import org.neo4j.kernel.impl.index.schema.ByteBufferFactory;
 import org.neo4j.kernel.impl.storemigration.SchemaIndexMigrator;
 import org.neo4j.storageengine.api.StorageEngineFactory;
 import org.neo4j.storageengine.api.StorageIndexReference;
@@ -93,9 +94,9 @@ public class FusionIndexProvider extends IndexProvider
     }
 
     @Override
-    public IndexPopulator getPopulator( StorageIndexReference descriptor, IndexSamplingConfig samplingConfig )
+    public IndexPopulator getPopulator( StorageIndexReference descriptor, IndexSamplingConfig samplingConfig, ByteBufferFactory bufferFactory )
     {
-        EnumMap<IndexSlot,IndexPopulator> populators = providers.map( provider -> provider.getPopulator( descriptor, samplingConfig ) );
+        EnumMap<IndexSlot,IndexPopulator> populators = providers.map( provider -> provider.getPopulator( descriptor, samplingConfig, bufferFactory ) );
         return new FusionIndexPopulator( slotSelector, new InstanceSelector<>( populators ), descriptor.indexReference(), fs, directoryStructure(),
                 archiveFailedIndex );
     }

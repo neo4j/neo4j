@@ -23,14 +23,15 @@ import java.io.IOException;
 
 import org.neo4j.internal.kernel.api.IndexCapability;
 import org.neo4j.internal.kernel.api.InternalIndexState;
+import org.neo4j.internal.schema.IndexProviderDescriptor;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexDirectoryStructure;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.IndexProvider;
-import org.neo4j.internal.schema.IndexProviderDescriptor;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
+import org.neo4j.kernel.impl.index.schema.ByteBufferFactory;
 import org.neo4j.storageengine.api.StorageEngineFactory;
 import org.neo4j.storageengine.api.StorageIndexReference;
 import org.neo4j.storageengine.migration.StoreMigrationParticipant;
@@ -46,9 +47,9 @@ public class TrackingReadersIndexProvider extends IndexProvider
     }
 
     @Override
-    public IndexPopulator getPopulator( StorageIndexReference descriptor, IndexSamplingConfig samplingConfig )
+    public IndexPopulator getPopulator( StorageIndexReference descriptor, IndexSamplingConfig samplingConfig, ByteBufferFactory bufferFactory )
     {
-        return indexProvider.getPopulator( descriptor, samplingConfig );
+        return indexProvider.getPopulator( descriptor, samplingConfig, bufferFactory );
     }
 
     @Override

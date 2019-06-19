@@ -32,7 +32,7 @@ import org.neo4j.values.storable.Value;
 
 import static org.neo4j.index.internal.gbptree.GBPTree.NO_HEADER_WRITER;
 
-class GenericNativeIndexPopulator extends NativeIndexPopulator<GenericKey,NativeIndexValue>
+public class GenericNativeIndexPopulator extends NativeIndexPopulator<GenericKey,NativeIndexValue>
 {
     private final IndexSpecificSpaceFillingCurveSettings spatialSettings;
     private final SpaceFillingCurveConfiguration configuration;

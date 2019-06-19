@@ -105,9 +105,9 @@ public class FailingGenericNativeIndexProviderFactory extends ExtensionFactory<A
         return new IndexProvider( actualProvider.getProviderDescriptor(), IndexDirectoryStructure.given( actualProvider.directoryStructure() ) )
         {
             @Override
-            public IndexPopulator getPopulator( StorageIndexReference descriptor, IndexSamplingConfig samplingConfig )
+            public IndexPopulator getPopulator( StorageIndexReference descriptor, IndexSamplingConfig samplingConfig, ByteBufferFactory bufferFactory )
             {
-                IndexPopulator actualPopulator = actualProvider.getPopulator( descriptor, samplingConfig );
+                IndexPopulator actualPopulator = actualProvider.getPopulator( descriptor, samplingConfig, bufferFactory );
                 if ( failureTypes.contains( FailureType.POPULATION ) )
                 {
                     return new IndexPopulator()

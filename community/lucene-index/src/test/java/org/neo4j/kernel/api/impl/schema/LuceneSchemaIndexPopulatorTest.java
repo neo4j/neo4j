@@ -67,6 +67,7 @@ import static org.mockito.Mockito.mock;
 import static org.neo4j.internal.helpers.collection.Iterators.asSet;
 import static org.neo4j.internal.schema.SchemaDescriptor.forLabel;
 import static org.neo4j.kernel.api.index.IndexDirectoryStructure.directoriesByProvider;
+import static org.neo4j.kernel.impl.index.schema.ByteBufferFactory.heapBufferFactory;
 
 @ExtendWith( {DefaultFileSystemExtension.class, TestDirectoryExtension.class} )
 class LuceneSchemaIndexPopulatorTest
@@ -98,7 +99,7 @@ class LuceneSchemaIndexPopulatorTest
         propertyAccessor = mock( NodePropertyAccessor.class );
         IndexSamplingConfig samplingConfig = new IndexSamplingConfig( Config.defaults() );
         index = IndexDescriptorFactory.forSchema( forLabel( 42, propertyKeyId ), provider.getProviderDescriptor() ).withId( 0 );
-        indexPopulator = provider.getPopulator( index, samplingConfig );
+        indexPopulator = provider.getPopulator( index, samplingConfig, heapBufferFactory( 1024 ) );
         indexPopulator.create();
     }
 

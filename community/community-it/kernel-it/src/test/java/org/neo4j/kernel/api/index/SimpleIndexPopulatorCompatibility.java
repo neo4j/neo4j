@@ -55,6 +55,7 @@ import static org.junit.Assert.fail;
 import static org.neo4j.internal.helpers.collection.Iterators.asSet;
 import static org.neo4j.internal.kernel.api.InternalIndexState.FAILED;
 import static org.neo4j.internal.kernel.api.QueryContext.NULL_CONTEXT;
+import static org.neo4j.kernel.impl.index.schema.ByteBufferFactory.heapBufferFactory;
 import static org.neo4j.storageengine.api.IndexEntryUpdate.add;
 
 @Ignore( "Not a test. This is a compatibility suite that provides test cases for verifying" +
@@ -78,7 +79,7 @@ public class SimpleIndexPopulatorCompatibility extends IndexProviderCompatibilit
         String failure = "The contrived failure";
         IndexSamplingConfig indexSamplingConfig = new IndexSamplingConfig( Config.defaults() );
         // WHEN (this will attempt to call close)
-        withPopulator( indexProvider.getPopulator( descriptor, indexSamplingConfig ), p -> p.markAsFailed( failure ), false );
+        withPopulator( indexProvider.getPopulator( descriptor, indexSamplingConfig, heapBufferFactory( 1024 ) ), p -> p.markAsFailed( failure ), false );
         // THEN
         assertThat( indexProvider.getPopulationFailure( descriptor ), containsString( failure ) );
     }
@@ -88,7 +89,7 @@ public class SimpleIndexPopulatorCompatibility extends IndexProviderCompatibilit
     {
         // GIVEN
         IndexSamplingConfig indexSamplingConfig = new IndexSamplingConfig( Config.defaults() );
-        withPopulator( indexProvider.getPopulator( descriptor, indexSamplingConfig ), p ->
+        withPopulator( indexProvider.getPopulator( descriptor, indexSamplingConfig, heapBufferFactory( 1024 ) ), p ->
         {
             String failure = "The contrived failure";
 
@@ -106,7 +107,7 @@ public class SimpleIndexPopulatorCompatibility extends IndexProviderCompatibilit
     {
         // GIVEN
         IndexSamplingConfig indexSamplingConfig = new IndexSamplingConfig( Config.defaults() );
-        final IndexPopulator p = indexProvider.getPopulator( descriptor, indexSamplingConfig );
+        final IndexPopulator p = indexProvider.getPopulator( descriptor, indexSamplingConfig, heapBufferFactory( 1024 ) );
         p.close( false );
 
         // WHEN
@@ -121,7 +122,7 @@ public class SimpleIndexPopulatorCompatibility extends IndexProviderCompatibilit
         // GIVEN
         IndexSamplingConfig indexSamplingConfig = new IndexSamplingConfig( Config.defaults() );
         final Value propertyValue = Values.of( "value1" );
-        withPopulator( indexProvider.getPopulator( descriptor, indexSamplingConfig ), p ->
+        withPopulator( indexProvider.getPopulator( descriptor, indexSamplingConfig, heapBufferFactory( 1024 ) ), p ->
         {
             long nodeId = 1;
 
@@ -152,7 +153,7 @@ public class SimpleIndexPopulatorCompatibility extends IndexProviderCompatibilit
     public void shouldPopulateWithAllValues() throws Exception
     {
         // GIVEN
-        withPopulator( indexProvider.getPopulator( descriptor, indexSamplingConfig ), p -> p.add( updates( valueSet1 ) ) );
+        withPopulator( indexProvider.getPopulator( descriptor, indexSamplingConfig, heapBufferFactory( 1024 ) ), p -> p.add( updates( valueSet1 ) ) );
 
         // THEN
         assertHasAllValues( valueSet1 );
@@ -162,7 +163,7 @@ public class SimpleIndexPopulatorCompatibility extends IndexProviderCompatibilit
     public void shouldUpdateWithAllValuesDuringPopulation() throws Exception
     {
         // GIVEN
-        withPopulator( indexProvider.getPopulator( descriptor, indexSamplingConfig ), p ->
+        withPopulator( indexProvider.getPopulator( descriptor, indexSamplingConfig, heapBufferFactory( 1024 ) ), p ->
         {
             try ( IndexUpdater updater = p.newPopulatingUpdater( this::valueSet1Lookup ) )
             {
@@ -181,7 +182,7 @@ public class SimpleIndexPopulatorCompatibility extends IndexProviderCompatibilit
     public void shouldPopulateAndUpdate() throws Exception
     {
         // GIVEN
-        withPopulator( indexProvider.getPopulator( descriptor, indexSamplingConfig ), p -> p.add( updates( valueSet1 ) ) );
+        withPopulator( indexProvider.getPopulator( descriptor, indexSamplingConfig, heapBufferFactory( 1024 ) ), p -> p.add( updates( valueSet1 ) ) );
 
         try ( IndexAccessor accessor = indexProvider.getOnlineAccessor( descriptor, indexSamplingConfig ) )
         {
@@ -257,7 +258,7 @@ public class SimpleIndexPopulatorCompatibility extends IndexProviderCompatibilit
         {
             // when
             long offset = valueSet1.size();
-            withPopulator( indexProvider.getPopulator( descriptor, indexSamplingConfig ), p ->
+            withPopulator( indexProvider.getPopulator( descriptor, indexSamplingConfig, heapBufferFactory( 1024 ) ), p ->
             {
                 p.add( updates( valueSet1, 0 ) );
                 p.add( updates( valueSet1, offset ) );
@@ -301,7 +302,7 @@ public class SimpleIndexPopulatorCompatibility extends IndexProviderCompatibilit
             int nodeId1 = 1;
             int nodeId2 = 2;
 
-            withPopulator( indexProvider.getPopulator( descriptor, indexSamplingConfig ), p ->
+            withPopulator( indexProvider.getPopulator( descriptor, indexSamplingConfig, heapBufferFactory( 1024 ) ), p ->
             {
                 try
                 {

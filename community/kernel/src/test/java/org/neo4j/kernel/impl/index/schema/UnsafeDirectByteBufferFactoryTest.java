@@ -33,11 +33,11 @@ class UnsafeDirectByteBufferFactoryTest
     {
         // given
         MemoryAllocationTracker tracker = new LocalMemoryTracker();
-        try ( UnsafeDirectByteBufferFactory factory = new UnsafeDirectByteBufferFactory( tracker ) )
+        try ( UnsafeDirectByteBufferAllocator factory = new UnsafeDirectByteBufferAllocator( tracker ) )
         {
             // when
             int bufferSize = 128;
-            factory.newBuffer( bufferSize );
+            factory.allocate( bufferSize );
 
             // then
             assertEquals( bufferSize, tracker.usedDirectMemory() );
@@ -49,10 +49,10 @@ class UnsafeDirectByteBufferFactoryTest
     {
         // given
         MemoryAllocationTracker tracker = new LocalMemoryTracker();
-        try ( UnsafeDirectByteBufferFactory factory = new UnsafeDirectByteBufferFactory( tracker ) )
+        try ( UnsafeDirectByteBufferAllocator factory = new UnsafeDirectByteBufferAllocator( tracker ) )
         {
             // when
-            factory.newBuffer( 256 );
+            factory.allocate( 256 );
         }
 
         // then
@@ -64,10 +64,10 @@ class UnsafeDirectByteBufferFactoryTest
     {
         // given
         MemoryAllocationTracker tracker = new LocalMemoryTracker();
-        UnsafeDirectByteBufferFactory factory = new UnsafeDirectByteBufferFactory( tracker );
+        UnsafeDirectByteBufferAllocator factory = new UnsafeDirectByteBufferAllocator( tracker );
 
         // when
-        factory.newBuffer( 256 );
+        factory.allocate( 256 );
         factory.close();
 
         // then
@@ -80,13 +80,13 @@ class UnsafeDirectByteBufferFactoryTest
     void shouldNotAllocateAfterClosed()
     {
         // given
-        UnsafeDirectByteBufferFactory factory = new UnsafeDirectByteBufferFactory( new LocalMemoryTracker() );
+        UnsafeDirectByteBufferAllocator factory = new UnsafeDirectByteBufferAllocator( new LocalMemoryTracker() );
         factory.close();
 
         // when
         try
         {
-            factory.newBuffer( 8 );
+            factory.allocate( 8 );
         }
         catch ( IllegalStateException e )
         {

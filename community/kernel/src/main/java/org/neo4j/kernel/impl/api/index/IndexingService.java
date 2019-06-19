@@ -149,6 +149,8 @@ public class IndexingService extends LifecycleAdapter implements IndexUpdateList
         void indexSamplingTriggered( IndexSamplingMode mode );
 
         void populationCancelled();
+
+        void populationJobCompleted( long peakDirectMemoryUsage );
     }
 
     public static class MonitorAdapter implements Monitor
@@ -184,6 +186,10 @@ public class IndexingService extends LifecycleAdapter implements IndexUpdateList
         }
 
         public void populationCancelled()
+        {   // Do nothing
+        }
+
+        public void populationJobCompleted( long peakDirectMemoryUsage )
         {   // Do nothing
         }
     }

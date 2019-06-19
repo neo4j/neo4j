@@ -144,7 +144,7 @@ class IndexRecoveryIT
             startDb();
 
             Semaphore populationSemaphore = new Semaphore( 0 );
-            when( mockedIndexProvider.getPopulator( any( StoreIndexDescriptor.class ), any( IndexSamplingConfig.class ) ) ).thenReturn(
+            when( mockedIndexProvider.getPopulator( any( StoreIndexDescriptor.class ), any( IndexSamplingConfig.class ), any() ) ).thenReturn(
                     indexPopulatorWithControlledCompletionTiming( populationSemaphore ) );
             createIndex( myLabel );
 
@@ -158,7 +158,7 @@ class IndexRecoveryIT
             Semaphore recoverySemaphore = new Semaphore( 0 );
             try
             {
-                when( mockedIndexProvider.getPopulator( any( StoreIndexDescriptor.class ), any( IndexSamplingConfig.class ) ) ).thenReturn(
+                when( mockedIndexProvider.getPopulator( any( StoreIndexDescriptor.class ), any( IndexSamplingConfig.class ), any() ) ).thenReturn(
                         indexPopulatorWithControlledCompletionTiming( recoverySemaphore ) );
                 monitors.addMonitorListener( new MyRecoveryMonitor( recoverySemaphore ) );
                 boolean recoveryRequired = Recovery.isRecoveryRequired( fs, testDirectory.databaseLayout(), defaults() );
@@ -170,7 +170,7 @@ class IndexRecoveryIT
                 // in case if kill was not that fast and killed db after flush there will be no need to do recovery and
                 // we will not gonna need to get index populators during recovery index service start
                 verify( mockedIndexProvider, times( recoveryRequired ? 3 : 2 ) ).getPopulator( any( StoreIndexDescriptor.class ),
-                        any( IndexSamplingConfig.class ) );
+                        any( IndexSamplingConfig.class ), any() );
                 verify( mockedIndexProvider, never() ).getOnlineAccessor( any( StoreIndexDescriptor.class ), any( IndexSamplingConfig.class ) );
             }
             finally
@@ -191,7 +191,7 @@ class IndexRecoveryIT
             {
                 startDb();
 
-                when( mockedIndexProvider.getPopulator( any( StoreIndexDescriptor.class ), any( IndexSamplingConfig.class ) ) ).thenReturn(
+                when( mockedIndexProvider.getPopulator( any( StoreIndexDescriptor.class ), any( IndexSamplingConfig.class ), any() ) ).thenReturn(
                         indexPopulatorWithControlledCompletionTiming( populationSemaphore ) );
                 createIndex( myLabel );
 
@@ -210,13 +210,13 @@ class IndexRecoveryIT
             populationSemaphore = new Semaphore( 1 );
             try
             {
-                when( mockedIndexProvider.getPopulator( any( StoreIndexDescriptor.class ), any( IndexSamplingConfig.class ) ) ).thenReturn(
+                when( mockedIndexProvider.getPopulator( any( StoreIndexDescriptor.class ), any( IndexSamplingConfig.class ), any() ) ).thenReturn(
                         indexPopulatorWithControlledCompletionTiming( populationSemaphore ) );
                 startDb();
 
                 assertThat( getIndexes( db, myLabel ), inTx( db, hasSize( 1 ) ) );
                 assertThat( getIndexes( db, myLabel ), inTx( db, haveState( db, Schema.IndexState.POPULATING ) ) );
-                verify( mockedIndexProvider, times( 3 ) ).getPopulator( any( StoreIndexDescriptor.class ), any( IndexSamplingConfig.class ) );
+                verify( mockedIndexProvider, times( 3 ) ).getPopulator( any( StoreIndexDescriptor.class ), any( IndexSamplingConfig.class ), any() );
                 verify( mockedIndexProvider, never() ).getOnlineAccessor( any( StoreIndexDescriptor.class ), any( IndexSamplingConfig.class ) );
             }
             finally
@@ -234,7 +234,7 @@ class IndexRecoveryIT
 
         IndexPopulator populator = mock( IndexPopulator.class );
         when( mockedIndexProvider
-                .getPopulator( any( StoreIndexDescriptor.class ), any( IndexSamplingConfig.class ) ) )
+                .getPopulator( any( StoreIndexDescriptor.class ), any( IndexSamplingConfig.class ), any() ) )
                 .thenReturn( populator );
         when( populator.sampleResult() ).thenReturn( new IndexSample() );
         IndexAccessor mockedAccessor = mock( IndexAccessor.class );
@@ -260,7 +260,7 @@ class IndexRecoveryIT
         assertThat( getIndexes( db, myLabel ), inTx( db, hasSize( 1 ) ) );
         assertThat( getIndexes( db, myLabel ), inTx( db, haveState( db, Schema.IndexState.ONLINE ) ) );
         verify( mockedIndexProvider )
-                .getPopulator( any( StoreIndexDescriptor.class ), any( IndexSamplingConfig.class ) );
+                .getPopulator( any( StoreIndexDescriptor.class ), any( IndexSamplingConfig.class ), any() );
         int onlineAccessorInvocationCount = 3; // once when we create the index, and once when we restart the db
         verify( mockedIndexProvider, times( onlineAccessorInvocationCount ) )
                 .getOnlineAccessor( any( StoreIndexDescriptor.class ), any( IndexSamplingConfig.class ) );
@@ -272,7 +272,7 @@ class IndexRecoveryIT
     {
         // Given
         IndexPopulator indexPopulator = mock( IndexPopulator.class );
-        when( mockedIndexProvider.getPopulator( any( StoreIndexDescriptor.class ), any( IndexSamplingConfig.class ) ) )
+        when( mockedIndexProvider.getPopulator( any( StoreIndexDescriptor.class ), any( IndexSamplingConfig.class ), any() ) )
                 .thenReturn( indexPopulator );
         IndexAccessor indexAccessor = mock( IndexAccessor.class );
         when( mockedIndexProvider.getOnlineAccessor( any( StoreIndexDescriptor.class ), any( IndexSamplingConfig.class ) ) )
@@ -291,7 +291,7 @@ class IndexRecoveryIT
         // Then
         assertThat( getIndexes( db, myLabel ), inTx( db, hasSize( 1 ) ) );
         assertThat( getIndexes( db, myLabel ), inTx( db, haveState( db, Schema.IndexState.FAILED ) ) );
-        verify( mockedIndexProvider, times( 2 ) ).getPopulator( any( StoreIndexDescriptor.class ), any( IndexSamplingConfig.class ) );
+        verify( mockedIndexProvider, times( 2 ) ).getPopulator( any( StoreIndexDescriptor.class ), any( IndexSamplingConfig.class ), any() );
     }
 
     private void startDb()

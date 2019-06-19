@@ -33,7 +33,8 @@ class IndexKeyStorage<KEY extends NativeIndexKey<KEY>> extends SimpleEntryStorag
     private static final byte KEY_TYPE = 1;
     private final Layout<KEY,?> layout;
 
-    IndexKeyStorage( FileSystemAbstraction fs, File file, ByteBufferFactory byteBufferFactory, int blockSize, Layout<KEY,?> layout ) throws IOException
+    IndexKeyStorage( FileSystemAbstraction fs, File file, ByteBufferFactory.Allocator byteBufferFactory, int blockSize, Layout<KEY,?> layout )
+            throws IOException
     {
         super( fs, file, byteBufferFactory, blockSize );
         this.layout = layout;

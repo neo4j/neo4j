@@ -31,6 +31,8 @@ import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.impl.index.schema.config.IndexSpecificSpaceFillingCurveSettings;
 import org.neo4j.values.storable.ValueType;
 
+import static org.neo4j.kernel.impl.index.schema.ByteBufferFactory.heapBufferFactory;
+
 class NativeIndexPopulatorTestCases
 {
     static class TestCase<KEY extends NativeIndexKey<KEY>, VALUE extends NativeIndexValue>
@@ -83,7 +85,8 @@ class NativeIndexPopulatorTestCases
     private static PopulatorFactory<GenericKey,NativeIndexValue> genericBlockBasedPopulatorFactory()
     {
         return ( pageCache, fs, storeFile, layout, monitor, descriptor ) ->
-                new GenericBlockBasedIndexPopulator( pageCache, fs, storeFile, layout, monitor, descriptor, spaceFillingCurveSettings, configuration, false );
+                new GenericBlockBasedIndexPopulator( pageCache, fs, storeFile, layout, monitor, descriptor, spaceFillingCurveSettings, configuration, false,
+                        heapBufferFactory( 10 * 1024 ) );
     }
 
     @FunctionalInterface
