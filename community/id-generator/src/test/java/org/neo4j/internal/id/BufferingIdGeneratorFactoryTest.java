@@ -31,6 +31,7 @@ import org.neo4j.internal.id.IdController.ConditionSnapshot;
 import org.neo4j.internal.id.IdGenerator.CommitMarker;
 import org.neo4j.internal.id.IdGenerator.ReuseMarker;
 import org.neo4j.io.fs.EphemeralFileSystemAbstraction;
+import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.test.extension.EphemeralFileSystemExtension;
 import org.neo4j.test.extension.Inject;
 
@@ -52,9 +53,10 @@ class BufferingIdGeneratorFactoryTest
         // GIVEN
         MockedIdGeneratorFactory actual = new MockedIdGeneratorFactory();
         ControllableSnapshotSupplier boundaries = new ControllableSnapshotSupplier();
+        PageCache pageCache = mock( PageCache.class );
         BufferingIdGeneratorFactory bufferingIdGeneratorFactory = new BufferingIdGeneratorFactory( actual );
         bufferingIdGeneratorFactory.initialize( boundaries );
-        IdGenerator idGenerator = bufferingIdGeneratorFactory.open( new File( "doesnt-matter" ), IdType.STRING_BLOCK, () -> 0L, Integer.MAX_VALUE );
+        IdGenerator idGenerator = bufferingIdGeneratorFactory.open( pageCache, new File( "doesnt-matter" ), IdType.STRING_BLOCK, () -> 0L, Integer.MAX_VALUE );
 
         // WHEN
         try ( CommitMarker marker = idGenerator.commitMarker() )
@@ -99,7 +101,7 @@ class BufferingIdGeneratorFactoryTest
         private final ReuseMarker[] reuseMarkers = new ReuseMarker[IdType.values().length];
 
         @Override
-        public IdGenerator open( File filename, IdType idType, LongSupplier highIdScanner, long maxId, OpenOption... openOptions )
+        public IdGenerator open( PageCache pageCache, File filename, IdType idType, LongSupplier highIdScanner, long maxId, OpenOption... openOptions )
         {
             IdGenerator idGenerator = mock( IdGenerator.class );
             CommitMarker commitMarker = mock( CommitMarker.class );
@@ -114,9 +116,10 @@ class BufferingIdGeneratorFactoryTest
         }
 
         @Override
-        public IdGenerator create( File filename, IdType idType, long highId, boolean throwIfFileExists, long maxId, OpenOption... openOptions )
+        public IdGenerator create( PageCache pageCache, File filename, IdType idType, long highId, boolean throwIfFileExists, long maxId,
+                OpenOption... openOptions )
         {
-            return open( filename, idType, () -> highId, maxId, openOptions );
+            return open( pageCache, filename, idType, () -> highId, maxId, openOptions );
         }
 
         @Override

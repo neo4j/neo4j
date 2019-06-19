@@ -64,7 +64,7 @@ class StoreFactoryTest
     @BeforeEach
     void setUp()
     {
-        idGeneratorFactory = new DefaultIdGeneratorFactory( fileSystem, pageCache, immediate() );
+        idGeneratorFactory = new DefaultIdGeneratorFactory( fileSystem, immediate() );
     }
 
     private StoreFactory storeFactory( Config config, OpenOption... openOptions )

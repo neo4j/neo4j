@@ -71,7 +71,7 @@ class PropertyCreatorTest
     @BeforeEach
     void startStore()
     {
-        neoStores = new StoreFactory( testDirectory.databaseLayout(), Config.defaults(), new DefaultIdGeneratorFactory( fileSystem, pageCache, immediate() ),
+        neoStores = new StoreFactory( testDirectory.databaseLayout(), Config.defaults(), new DefaultIdGeneratorFactory( fileSystem, immediate() ),
                 pageCache, fileSystem, NullLogProvider.getInstance() ).openNeoStores( true,
                 StoreType.PROPERTY, StoreType.PROPERTY_STRING, StoreType.PROPERTY_ARRAY );
         propertyStore = neoStores.getPropertyStore();

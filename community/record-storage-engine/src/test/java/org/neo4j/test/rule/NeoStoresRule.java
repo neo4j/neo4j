@@ -78,7 +78,7 @@ public class NeoStoresRule extends ExternalResource
         TestDirectory testDirectory = TestDirectory.testDirectory( fs );
         testDirectory.prepareDirectory( testClass, null );
         Config configuration = configOf( config );
-        idGeneratorFactory = new DefaultIdGeneratorFactory( fs, pageCache, immediate() );
+        idGeneratorFactory = new DefaultIdGeneratorFactory( fs, immediate() );
         StoreFactory storeFactory = new StoreFactory( testDirectory.databaseLayout(), configuration, idGeneratorFactory,
                 pageCache, fs, format, NullLogProvider.getInstance() );
         return neoStores = stores.length == 0

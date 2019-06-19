@@ -24,9 +24,11 @@ import java.nio.file.OpenOption;
 import java.util.EnumMap;
 import java.util.function.LongSupplier;
 
+import org.neo4j.io.pagecache.PageCache;
+
 /**
  * {@link IdGeneratorFactory} that ignores the underlying id file and only uses the provided highIdScanner in
- * {@link #open(File, IdType, LongSupplier, long, OpenOption...)}, instantiating {@link IdGenerator} that will return that highId
+ * {@link IdGeneratorFactory#open(PageCache, File, IdType, LongSupplier, long, OpenOption...)}, instantiating {@link IdGenerator} that will return that highId
  * and do nothing else. This is of great convenience when migrating between id file formats.
  */
 public class ScanOnOpenReadOnlyIdGeneratorFactory implements IdGeneratorFactory
@@ -34,7 +36,7 @@ public class ScanOnOpenReadOnlyIdGeneratorFactory implements IdGeneratorFactory
     private final EnumMap<IdType,ReadOnlyHighIdGenerator> idGenerators = new EnumMap<>( IdType.class );
 
     @Override
-    public IdGenerator open( File filename, IdType idType, LongSupplier highIdScanner, long maxId, OpenOption... openOptions )
+    public IdGenerator open( PageCache pageCache, File filename, IdType idType, LongSupplier highIdScanner, long maxId, OpenOption... openOptions )
     {
         long highId = highIdScanner.getAsLong();
         ReadOnlyHighIdGenerator idGenerator = new ReadOnlyHighIdGenerator( highId );
@@ -43,9 +45,10 @@ public class ScanOnOpenReadOnlyIdGeneratorFactory implements IdGeneratorFactory
     }
 
     @Override
-    public IdGenerator create( File filename, IdType idType, long highId, boolean throwIfFileExists, long maxId, OpenOption... openOptions )
+    public IdGenerator create( PageCache pageCache, File filename, IdType idType, long highId, boolean throwIfFileExists, long maxId,
+            OpenOption... openOptions )
     {
-        return open( filename, idType, () -> highId, maxId );
+        return open( pageCache, filename, idType, () -> highId, maxId );
     }
 
     @Override

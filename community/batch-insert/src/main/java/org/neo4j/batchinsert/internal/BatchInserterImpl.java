@@ -276,7 +276,7 @@ public class BatchInserterImpl implements BatchInserter
             msgLog = logService.getInternalLog( getClass() );
 
             boolean dump = config.get( GraphDatabaseSettings.dump_configuration );
-            this.idGeneratorFactory = new DefaultIdGeneratorFactory( fileSystem, pageCache, immediate() );
+            this.idGeneratorFactory = new DefaultIdGeneratorFactory( fileSystem, immediate() );
 
             LogProvider internalLogProvider = logService.getInternalLogProvider();
             RecordFormats recordFormats = RecordFormatSelector.selectForStoreOrConfig( config, this.databaseLayout, fileSystem,

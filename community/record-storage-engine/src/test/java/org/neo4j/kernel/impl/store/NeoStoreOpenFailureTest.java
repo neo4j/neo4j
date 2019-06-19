@@ -58,7 +58,7 @@ class NeoStoreOpenFailureTest
     {
         DatabaseLayout databaseLayout = testDirectory.databaseLayout();
         Config config = Config.defaults();
-        IdGeneratorFactory idGenFactory = new DefaultIdGeneratorFactory( fileSystem, pageCache, immediate() );
+        IdGeneratorFactory idGenFactory = new DefaultIdGeneratorFactory( fileSystem, immediate() );
         LogProvider logProvider = NullLogProvider.getInstance();
         RecordFormats formats = Standard.LATEST_RECORD_FORMATS;
         RecordFormatPropertyConfigurator.configureRecordFormat( formats, config );

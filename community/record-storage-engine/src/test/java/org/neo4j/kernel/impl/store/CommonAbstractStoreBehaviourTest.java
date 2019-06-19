@@ -368,7 +368,7 @@ class CommonAbstractStoreBehaviourTest
         MyStore( Config config, PageCache pageCache, MyFormat format )
         {
             super( new File( "store" ), new File( "idFile" ), config, IdType.NODE,
-                    new DefaultIdGeneratorFactory( fs, pageCache, immediate() ), pageCache,
+                    new DefaultIdGeneratorFactory( fs, immediate() ), pageCache,
                     NullLogProvider.getInstance(), "T", format, format, "XYZ" );
         }
 

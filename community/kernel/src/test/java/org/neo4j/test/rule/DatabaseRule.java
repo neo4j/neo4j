@@ -144,7 +144,7 @@ public class DatabaseRule extends ExternalResource
         LogService logService = dependency( mutableDependencies, LogService.class,
                 deps -> new SimpleLogService( NullLogProvider.getInstance() ) );
         IdGeneratorFactory idGeneratorFactory = dependency( mutableDependencies, IdGeneratorFactory.class,
-                deps -> new DefaultIdGeneratorFactory( fs, pageCache, immediate() ) );
+                deps -> new DefaultIdGeneratorFactory( fs, immediate() ) );
         DatabaseHealth databaseHealth = dependency( mutableDependencies, DatabaseHealth.class,
                 deps -> new DatabaseHealth( mock( DatabasePanicEventGenerator.class ), NullLog.getInstance() ) );
         SystemNanoClock clock = dependency( mutableDependencies, SystemNanoClock.class, deps -> Clocks.nanoClock() );

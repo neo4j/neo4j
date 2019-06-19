@@ -72,7 +72,7 @@ public class StoreAccess
 
     public StoreAccess( FileSystemAbstraction fileSystem, PageCache pageCache, DatabaseLayout directoryStructure, Config config )
     {
-        this( new StoreFactory( directoryStructure, config, new DefaultIdGeneratorFactory( fileSystem, pageCache, immediate() ), pageCache,
+        this( new StoreFactory( directoryStructure, config, new DefaultIdGeneratorFactory( fileSystem, immediate() ), pageCache,
                 fileSystem, NullLogProvider.getInstance() ).openAllNeoStores() );
         this.closeable = true;
     }

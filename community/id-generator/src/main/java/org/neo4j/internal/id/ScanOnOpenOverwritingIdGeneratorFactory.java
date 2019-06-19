@@ -40,14 +40,14 @@ public class ScanOnOpenOverwritingIdGeneratorFactory extends DefaultIdGeneratorF
 {
     public ScanOnOpenOverwritingIdGeneratorFactory( FileSystemAbstraction fs, PageCache pageCache )
     {
-        super( fs, pageCache, immediate() );
+        super( fs, immediate() );
     }
 
     @Override
-    public IdGenerator open( File filename, IdType idType, LongSupplier highIdScanner, long maxId, OpenOption... openOptions )
+    public IdGenerator open( PageCache pageCache, File filename, IdType idType, LongSupplier highIdScanner, long maxId, OpenOption... openOptions )
     {
         long highId = highIdScanner.getAsLong();
         fs.deleteFile( filename );
-        return create( filename, idType, highId, true, maxId, openOptions );
+        return create( pageCache, filename, idType, highId, true, maxId, openOptions );
     }
 }

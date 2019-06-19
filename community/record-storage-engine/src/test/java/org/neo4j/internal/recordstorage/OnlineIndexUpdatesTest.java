@@ -106,7 +106,7 @@ class OnlineIndexUpdatesTest
         Config config = Config.defaults();
         NullLogProvider nullLogProvider = NullLogProvider.getInstance();
         StoreFactory storeFactory =
-                new StoreFactory( databaseLayout, config, new DefaultIdGeneratorFactory( fileSystem, pageCache, immediate() ), pageCache, fileSystem,
+                new StoreFactory( databaseLayout, config, new DefaultIdGeneratorFactory( fileSystem, immediate() ), pageCache, fileSystem,
                         nullLogProvider );
 
         neoStores = storeFactory.openAllNeoStores( true );

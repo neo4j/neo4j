@@ -590,7 +590,7 @@ public class NeoStoresTest
         // given
         Config config = Config.defaults();
         PageCache pageCache = pageCacheRule.getPageCache( fs.get() );
-        StoreFactory sf = new StoreFactory( dir.databaseLayout(), config, new DefaultIdGeneratorFactory( fs.get(), pageCache, immediate() ),
+        StoreFactory sf = new StoreFactory( dir.databaseLayout(), config, new DefaultIdGeneratorFactory( fs.get(), immediate() ),
                 pageCache, fs.get(), LOG_PROVIDER );
 
         // when
@@ -785,7 +785,7 @@ public class NeoStoresTest
         // given
         FileSystemAbstraction fileSystem = fs.get();
         fileSystem.deleteRecursively( databaseLayout.databaseDirectory() );
-        DefaultIdGeneratorFactory idFactory = new DefaultIdGeneratorFactory( fileSystem, pageCache, immediate() );
+        DefaultIdGeneratorFactory idFactory = new DefaultIdGeneratorFactory( fileSystem, immediate() );
         StoreFactory factory = new StoreFactory( databaseLayout, Config.defaults(), idFactory, pageCache, fileSystem,
                 LOG_PROVIDER );
 
@@ -803,7 +803,7 @@ public class NeoStoresTest
         // given
         FileSystemAbstraction fileSystem = fs.get();
         fileSystem.deleteRecursively( databaseLayout.databaseDirectory() );
-        DefaultIdGeneratorFactory idFactory = new DefaultIdGeneratorFactory( fileSystem, pageCache, immediate() );
+        DefaultIdGeneratorFactory idFactory = new DefaultIdGeneratorFactory( fileSystem, immediate() );
         StoreFactory factory = new StoreFactory( databaseLayout, Config.defaults(), idFactory, pageCache, fileSystem,
                 LOG_PROVIDER );
         StoreType[] allStoreTypes = StoreType.values();
@@ -826,7 +826,7 @@ public class NeoStoresTest
     {
         RecordFormats recordFormats = RecordFormatSelector.defaultFormat();
         Config config = Config.defaults();
-        IdGeneratorFactory idGeneratorFactory = new DefaultIdGeneratorFactory( fs, pageCache, immediate() );
+        IdGeneratorFactory idGeneratorFactory = new DefaultIdGeneratorFactory( fs, immediate() );
         return new StoreFactory( databaseLayout, config, idGeneratorFactory, pageCache, fs, recordFormats, LOG_PROVIDER );
     }
 
@@ -1460,7 +1460,7 @@ public class NeoStoresTest
     private StoreFactory getStoreFactory( Config config, DatabaseLayout databaseLayout, FileSystemAbstraction fs,
             NullLogProvider logProvider )
     {
-        return new StoreFactory( databaseLayout, config, new DefaultIdGeneratorFactory( fs, pageCache, immediate() ), pageCache, fs, logProvider );
+        return new StoreFactory( databaseLayout, config, new DefaultIdGeneratorFactory( fs, immediate() ), pageCache, fs, logProvider );
     }
 
     private class CloseFailingDefaultIdGeneratorFactory extends DefaultIdGeneratorFactory
@@ -1469,7 +1469,7 @@ public class NeoStoresTest
 
         CloseFailingDefaultIdGeneratorFactory( FileSystemAbstraction fs, PageCache pageCache, String errorMessage )
         {
-            super( fs, pageCache, immediate() );
+            super( fs, immediate() );
             this.errorMessage = errorMessage;
         }
 

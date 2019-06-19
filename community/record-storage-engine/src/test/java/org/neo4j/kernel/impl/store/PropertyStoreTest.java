@@ -82,7 +82,7 @@ class PropertyStoreTest
         DynamicStringStore stringPropertyStore = mock( DynamicStringStore.class );
 
         final PropertyStore store =
-                new PropertyStore( storeFile, idFile, config, new DefaultIdGeneratorFactory( fs, pageCache, immediate() ), pageCache,
+                new PropertyStore( storeFile, idFile, config, new DefaultIdGeneratorFactory( fs, immediate() ), pageCache,
                         NullLogProvider.getInstance(), stringPropertyStore, mock( PropertyKeyTokenStore.class ), mock( DynamicArrayStore.class ),
                         RecordFormatSelector.defaultFormat() );
         store.initialise( true );

@@ -19,11 +19,11 @@
  */
 package org.neo4j.graphdb.factory.module.id;
 
+import org.junit.jupiter.api.Test;
+
 import java.io.File;
 import java.util.function.Function;
 import java.util.function.LongSupplier;
-
-import org.junit.jupiter.api.Test;
 
 import org.neo4j.configuration.Config;
 import org.neo4j.internal.id.BufferedIdController;
@@ -86,9 +86,9 @@ class IdContextFactoryBuilderTest
         LongSupplier highIdSupplier = () -> 0;
         int maxId = 100;
 
-        idGeneratorFactory.open( file, idType, highIdSupplier, maxId );
+        idGeneratorFactory.open( pageCache, file, idType, highIdSupplier, maxId );
 
-        verify( idGeneratorFactory ).open( file, idType, highIdSupplier, maxId );
+        verify( idGeneratorFactory ).open( pageCache, file, idType, highIdSupplier, maxId );
     }
 
     @Test

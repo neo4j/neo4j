@@ -81,7 +81,7 @@ abstract class TokenStoreTestTemplate<R extends TokenRecord>
         File namesFile = dir.file( "label-tokens.db.names" );
         File namesIdFile = dir.file( "label-tokens.db.names.id" );
 
-        IdGeneratorFactory generatorFactory = new DefaultIdGeneratorFactory( fs, pageCache, immediate() );
+        IdGeneratorFactory generatorFactory = new DefaultIdGeneratorFactory( fs, immediate() );
         LogProvider logProvider = NullLogProvider.getInstance();
 
         RecordFormats formats = RecordFormatSelector.defaultFormat();

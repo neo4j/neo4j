@@ -25,6 +25,8 @@ import java.util.function.LongSupplier;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 
+import org.neo4j.io.pagecache.PageCache;
+
 /**
  * Wraps {@link IdGenerator} so that ids can be {@link IdGenerator#freeId(long) freed} at safe points in time, after all transactions
  * which were active at the time of freeing, have been closed.
@@ -49,18 +51,19 @@ public class BufferingIdGeneratorFactory implements IdGeneratorFactory
     }
 
     @Override
-    public IdGenerator open( File filename, IdType idType, LongSupplier highIdScanner, long maxId, OpenOption... openOptions )
+    public IdGenerator open( PageCache pageCache, File filename, IdType idType, LongSupplier highIdScanner, long maxId, OpenOption... openOptions )
     {
         assert boundaries != null : "Factory needs to be initialized before usage";
 
-        IdGenerator generator = delegate.open( filename, idType, highIdScanner, maxId );
+        IdGenerator generator = delegate.open( pageCache, filename, idType, highIdScanner, maxId );
         return wrapAndKeep( idType, generator );
     }
 
     @Override
-    public IdGenerator create( File filename, IdType idType, long highId, boolean throwIfFileExists, long maxId, OpenOption... openOptions )
+    public IdGenerator create( PageCache pageCache, File filename, IdType idType, long highId, boolean throwIfFileExists, long maxId,
+            OpenOption... openOptions )
     {
-        IdGenerator idGenerator = delegate.create( filename, idType, highId, throwIfFileExists, maxId, openOptions );
+        IdGenerator idGenerator = delegate.create( pageCache, filename, idType, highId, throwIfFileExists, maxId, openOptions );
         return wrapAndKeep( idType, idGenerator );
     }
 

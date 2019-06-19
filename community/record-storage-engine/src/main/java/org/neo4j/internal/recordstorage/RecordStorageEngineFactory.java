@@ -152,7 +152,7 @@ public class RecordStorageEngineFactory implements StorageEngineFactory
     public TransactionMetaDataStore transactionMetaDataStore( FileSystemAbstraction fs, DatabaseLayout databaseLayout, Config config, PageCache pageCache )
     {
         RecordFormats recordFormats = selectForStoreOrConfig( Config.defaults(), databaseLayout, fs, pageCache, NullLogProvider.getInstance() );
-        return new StoreFactory( databaseLayout, config, new DefaultIdGeneratorFactory( fs, pageCache, immediate() ), pageCache, fs, recordFormats,
+        return new StoreFactory( databaseLayout, config, new DefaultIdGeneratorFactory( fs, immediate() ), pageCache, fs, recordFormats,
                 NullLogProvider.getInstance() )
                 .openNeoStores( META_DATA ).getMetaDataStore();
     }
@@ -169,7 +169,7 @@ public class RecordStorageEngineFactory implements StorageEngineFactory
             LogService logService, String recordFormats )
     {
         RecordFormats formats = selectForVersion( recordFormats );
-        StoreFactory factory = new StoreFactory( databaseLayout, config, new DefaultIdGeneratorFactory( fs, pageCache, immediate() ), pageCache, fs, formats,
+        StoreFactory factory = new StoreFactory( databaseLayout, config, new DefaultIdGeneratorFactory( fs, immediate() ), pageCache, fs, formats,
                 logService.getInternalLogProvider() );
         NeoStores stores = factory.openNeoStores( true, StoreType.SCHEMA, StoreType.PROPERTY_KEY_TOKEN, StoreType.PROPERTY );
         return createMigrationTargetSchemaRuleAccess( stores );

@@ -27,6 +27,7 @@ import java.util.function.LongSupplier;
 import org.neo4j.internal.id.IdGenerator.CommitMarker;
 import org.neo4j.internal.id.IdGenerator.ReuseMarker;
 import org.neo4j.io.pagecache.IOLimiter;
+import org.neo4j.io.pagecache.PageCache;
 
 /**
  * {@link IdGeneratorFactory} managing read-only {@link IdGenerator} instances which basically only can access
@@ -43,16 +44,17 @@ public class ReadOnlyIdGeneratorFactory implements IdGeneratorFactory
     }
 
     @Override
-    public IdGenerator open( File filename, IdType idType, LongSupplier highIdScanner, long maxId, OpenOption... openOptions )
+    public IdGenerator open( PageCache pageCache, File filename, IdType idType, LongSupplier highIdScanner, long maxId, OpenOption... openOptions )
     {
-        IdGenerator actualGenerator = actual.open( filename, idType, highIdScanner, maxId );
+        IdGenerator actualGenerator = actual.open( pageCache, filename, idType, highIdScanner, maxId );
         ReadOnlyIdGenerator readOnlyIdGenerator = new ReadOnlyIdGenerator( actualGenerator );
         idGenerators.put( idType, readOnlyIdGenerator );
         return readOnlyIdGenerator;
     }
 
     @Override
-    public IdGenerator create( File filename, IdType idType, long highId, boolean throwIfFileExists, long maxId, OpenOption... openOptions )
+    public IdGenerator create( PageCache pageCache, File filename, IdType idType, long highId, boolean throwIfFileExists, long maxId,
+            OpenOption... openOptions )
     {
         throw new UnsupportedOperationException( "Not supported on read-only id generator factory" );
     }

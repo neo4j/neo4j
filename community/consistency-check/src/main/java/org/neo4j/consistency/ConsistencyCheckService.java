@@ -194,7 +194,7 @@ public class ConsistencyCheckService
         config.augment( GraphDatabaseSettings.pagecache_warmup_enabled, FALSE );
 
         LifeSupport life = new LifeSupport();
-        StoreFactory factory = new StoreFactory( databaseLayout, config, new DefaultIdGeneratorFactory( fileSystem, pageCache, immediate() ),
+        StoreFactory factory = new StoreFactory( databaseLayout, config, new DefaultIdGeneratorFactory( fileSystem, immediate() ),
                 pageCache, fileSystem, logProvider );
         ReadOnlyCountsTracker counts = new ReadOnlyCountsTracker( logProvider, fileSystem, pageCache, config, databaseLayout );
         try

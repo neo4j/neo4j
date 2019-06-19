@@ -129,7 +129,7 @@ class ManyPropertyKeysIT
     {
 
         StoreFactory storeFactory = new StoreFactory( testDirectory.databaseLayout(), Config.defaults(),
-                new DefaultIdGeneratorFactory( fileSystem, pageCache, immediate() ), pageCache, fileSystem, NullLogProvider.getInstance() );
+                new DefaultIdGeneratorFactory( fileSystem, immediate() ), pageCache, fileSystem, NullLogProvider.getInstance() );
         NeoStores neoStores = storeFactory.openAllNeoStores( true );
         PropertyKeyTokenStore store = neoStores.getPropertyKeyTokenStore();
         for ( int i = 0; i < propertyKeyCount; i++ )

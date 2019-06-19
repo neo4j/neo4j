@@ -143,8 +143,8 @@ public class BatchingNeoStores implements AutoCloseable, MemoryStatsVisitor.Visi
         this.pageCache = pageCache;
         this.ioTracer = ioTracer;
         this.externalPageCache = externalPageCache;
-        this.idGeneratorFactory = new DefaultIdGeneratorFactory( fileSystem, pageCache, immediate() );
-        this.tempIdGeneratorFactory = new DefaultIdGeneratorFactory( fileSystem, pageCache, immediate() );
+        this.idGeneratorFactory = new DefaultIdGeneratorFactory( fileSystem, immediate() );
+        this.tempIdGeneratorFactory = new DefaultIdGeneratorFactory( fileSystem, immediate() );
     }
 
     private boolean databaseExistsAndContainsData()

@@ -228,7 +228,7 @@ class LabelsAcceptanceTest
         {
             // Given
             Dependencies dependencies = new Dependencies();
-            dependencies.satisfyDependencies( createIdContextFactoryWithMaxedOutLabelTokenIds( fileSystem, pageCache, scheduler ) );
+            dependencies.satisfyDependencies( createIdContextFactoryWithMaxedOutLabelTokenIds( fileSystem, scheduler ) );
             dependencies.satisfyDependencies( SystemGraphInitializer.NO_OP );   // disable system graph construction because it will create labels
 
             DatabaseManagementService managementService =
@@ -796,21 +796,22 @@ class LabelsAcceptanceTest
         }
     }
 
-    private IdContextFactory createIdContextFactoryWithMaxedOutLabelTokenIds( FileSystemAbstraction fileSystem, PageCache pageCache, JobScheduler jobScheduler )
+    private IdContextFactory createIdContextFactoryWithMaxedOutLabelTokenIds( FileSystemAbstraction fileSystem, JobScheduler jobScheduler )
     {
         return IdContextFactoryBuilder.of( jobScheduler ).withIdGenerationFactoryProvider(
-                any -> new DefaultIdGeneratorFactory( fileSystem, pageCache, immediate() )
+                any -> new DefaultIdGeneratorFactory( fileSystem, immediate() )
                 {
                     @Override
-                    public IdGenerator open( File fileName, IdType idType, LongSupplier highId, long maxId, OpenOption... openOptions )
+                    public IdGenerator open( PageCache pageCache, File fileName, IdType idType, LongSupplier highId, long maxId, OpenOption... openOptions )
                     {
-                        return super.open( fileName, idType, highId, maxId( idType, maxId, highId ), openOptions );
+                        return super.open( pageCache, fileName, idType, highId, maxId( idType, maxId, highId ), openOptions );
                     }
 
                     @Override
-                    public IdGenerator create( File fileName, IdType idType, long highId, boolean throwIfFileExists, long maxId, OpenOption... openOptions )
+                    public IdGenerator create( PageCache pageCache, File fileName, IdType idType, long highId, boolean throwIfFileExists, long maxId,
+                            OpenOption... openOptions )
                     {
-                        return super.create( fileName, idType, highId, throwIfFileExists, maxId( idType, maxId, () -> highId ), openOptions );
+                        return super.create( pageCache, fileName, idType, highId, throwIfFileExists, maxId( idType, maxId, () -> highId ), openOptions );
                     }
 
                     private long maxId( IdType idType, long maxId, LongSupplier highId )

@@ -387,7 +387,7 @@ class NodeStoreTest
 
     private NodeStore newNodeStore( FileSystemAbstraction fs, PageCache pageCache )
     {
-        IdGeneratorFactory idGeneratorFactory = spy( new DefaultIdGeneratorFactory( fs, pageCache, immediate() )
+        IdGeneratorFactory idGeneratorFactory = spy( new DefaultIdGeneratorFactory( fs, immediate() )
         {
             @Override
             protected IdGenerator instantiate( FileSystemAbstraction fs, PageCache pageCache, RecoveryCleanupWorkCollector recoveryCleanupWorkCollector,

@@ -48,7 +48,7 @@ class BufferedIdControllerTest
 
     private BufferedIdController newController()
     {
-        BufferingIdGeneratorFactory idGeneratorFactory = new BufferingIdGeneratorFactory( new DefaultIdGeneratorFactory( fs, pageCache, immediate() ) );
+        BufferingIdGeneratorFactory idGeneratorFactory = new BufferingIdGeneratorFactory( new DefaultIdGeneratorFactory( fs, immediate() ) );
         return new BufferedIdController( idGeneratorFactory, new OnDemandJobScheduler() );
     }
 }

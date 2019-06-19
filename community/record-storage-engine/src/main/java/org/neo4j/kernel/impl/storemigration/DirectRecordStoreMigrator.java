@@ -70,7 +70,7 @@ class DirectRecordStoreMigrator
                     pageCache, fs, fromFormat, NullLogProvider.getInstance() )
                         .openNeoStores( true, storesToOpen );
                 NeoStores toStores = new StoreFactory( toDirectoryStructure, withPersistedStoreHeadersAsConfigFrom( fromStores, storesToOpen ),
-                    new DefaultIdGeneratorFactory( fs, pageCache, immediate() ), pageCache, fs, toFormat, NullLogProvider.getInstance() )
+                    new DefaultIdGeneratorFactory( fs, immediate() ), pageCache, fs, toFormat, NullLogProvider.getInstance() )
                         .openNeoStores( true, storesToOpen ) )
         {
             for ( StoreType type : types )

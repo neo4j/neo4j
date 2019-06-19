@@ -99,7 +99,7 @@ class CommonAbstractStoreTest
     @BeforeEach
     void setUpMocks() throws IOException
     {
-        when( idGeneratorFactory.open( any( File.class ), eq( idType ), any( LongSupplier.class ), anyLong() ) ).thenReturn( idGenerator );
+        when( idGeneratorFactory.open( any(), any( File.class ), eq( idType ), any( LongSupplier.class ), anyLong() ) ).thenReturn( idGenerator );
         when( pageFile.pageSize() ).thenReturn( PAGE_SIZE );
         when( pageFile.io( anyLong(), anyInt() ) ).thenReturn( pageCursor );
         when( mockedPageCache.map( eq( storeFile ), anyInt() ) ).thenReturn( pageFile );
@@ -180,7 +180,7 @@ class CommonAbstractStoreTest
         DatabaseLayout databaseLayout = dir.databaseLayout();
         File nodeStore = databaseLayout.nodeStore();
         File idFile = databaseLayout.idFile( DatabaseFile.NODE_STORE ).orElseThrow( () -> new IllegalStateException( "Node store id file not found." ) );
-        TheStore store = new TheStore( nodeStore, databaseLayout.idNodeStore(), config, idType, new DefaultIdGeneratorFactory( fs, pageCache, immediate() ),
+        TheStore store = new TheStore( nodeStore, databaseLayout.idNodeStore(), config, idType, new DefaultIdGeneratorFactory( fs, immediate() ),
                 pageCache, NullLogProvider.getInstance(), recordFormat, DELETE_ON_CLOSE );
         store.initialise( true );
         store.start();

@@ -35,22 +35,16 @@ public class DefaultIdGeneratorFactory implements IdGeneratorFactory
 {
     private final EnumMap<IdType, IdGenerator> generators = new EnumMap<>( IdType.class );
     protected final FileSystemAbstraction fs;
-    private final PageCache pageCache;
     private final RecoveryCleanupWorkCollector recoveryCleanupWorkCollector;
 
-    public DefaultIdGeneratorFactory( FileSystemAbstraction fs, PageCache pageCache, RecoveryCleanupWorkCollector recoveryCleanupWorkCollector )
+    public DefaultIdGeneratorFactory( FileSystemAbstraction fs, RecoveryCleanupWorkCollector recoveryCleanupWorkCollector )
     {
-        if ( pageCache == null )
-        {
-            new Exception().printStackTrace();
-        }
         this.fs = fs;
-        this.pageCache = pageCache;
         this.recoveryCleanupWorkCollector = recoveryCleanupWorkCollector;
     }
 
     @Override
-    public IdGenerator open( File filename, IdType idType, LongSupplier highIdScanner, long maxId, OpenOption... openOptions )
+    public IdGenerator open( PageCache pageCache, File filename, IdType idType, LongSupplier highIdScanner, long maxId, OpenOption... openOptions )
     {
         IdGenerator generator = instantiate( fs, pageCache, recoveryCleanupWorkCollector, filename, maxId, idType, openOptions );
         generators.put( idType, generator );
@@ -70,7 +64,8 @@ public class DefaultIdGeneratorFactory implements IdGeneratorFactory
     }
 
     @Override
-    public IdGenerator create( File fileName, IdType idType, long highId, boolean throwIfFileExists, long maxId, OpenOption... openOptions )
+    public IdGenerator create( PageCache pageCache, File fileName, IdType idType, long highId, boolean throwIfFileExists, long maxId,
+            OpenOption... openOptions )
     {
         IndexedIdGenerator generator = new IndexedIdGenerator( pageCache, fileName, recoveryCleanupWorkCollector, idType, highId, maxId, openOptions );
         generator.checkpoint( UNLIMITED );

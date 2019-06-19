@@ -68,7 +68,7 @@ class RecordPropertyCursorTest
     void setup()
     {
         neoStores = new StoreFactory( testDirectory.databaseLayout(), Config.defaults(),
-                new DefaultIdGeneratorFactory( testDirectory.getFileSystem(), pageCache, immediate() ),
+                new DefaultIdGeneratorFactory( testDirectory.getFileSystem(), immediate() ),
                 pageCache, testDirectory.getFileSystem(), NullLogProvider.getInstance() ).openAllNeoStores( true );
         creator = new PropertyCreator( neoStores.getPropertyStore(), new PropertyTraverser() );
         owner = neoStores.getNodeStore().newRecord();

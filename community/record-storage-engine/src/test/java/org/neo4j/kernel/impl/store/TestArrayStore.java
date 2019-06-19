@@ -66,7 +66,7 @@ class TestArrayStore
     @BeforeEach
     void before()
     {
-        DefaultIdGeneratorFactory idGeneratorFactory = new DefaultIdGeneratorFactory( fileSystem, pageCache, immediate() );
+        DefaultIdGeneratorFactory idGeneratorFactory = new DefaultIdGeneratorFactory( fileSystem, immediate() );
         StoreFactory factory = new StoreFactory( testDirectory.databaseLayout(), Config.defaults(), idGeneratorFactory, pageCache, fileSystem,
                 NullLogProvider.getInstance() );
         neoStores = factory.openAllNeoStores( true );

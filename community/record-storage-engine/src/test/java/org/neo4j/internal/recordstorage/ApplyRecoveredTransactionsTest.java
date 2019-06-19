@@ -71,8 +71,9 @@ class ApplyRecoveredTransactionsTest
     @BeforeEach
     void before()
     {
-        StoreFactory storeFactory = new StoreFactory( testDirectory.databaseLayout(), Config.defaults(),
-                new DefaultIdGeneratorFactory( fs, pageCache, immediate() ), pageCache, fs, NullLogProvider.getInstance() );
+        idGeneratorFactory = new DefaultIdGeneratorFactory( fs, immediate() );
+        StoreFactory storeFactory =
+                new StoreFactory( testDirectory.databaseLayout(), Config.defaults(), idGeneratorFactory, pageCache, fs, NullLogProvider.getInstance() );
         neoStores = storeFactory.openAllNeoStores( true );
     }
 

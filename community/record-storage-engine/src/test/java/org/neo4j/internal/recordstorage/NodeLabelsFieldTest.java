@@ -89,7 +89,7 @@ class NodeLabelsFieldTest
     {
         Config config = Config.defaults( GraphDatabaseSettings.label_block_size, "60" );
         StoreFactory storeFactory = new StoreFactory( testDirectory.databaseLayout(), config,
-                new DefaultIdGeneratorFactory( testDirectory.getFileSystem(), pageCache, immediate() ),
+                new DefaultIdGeneratorFactory( testDirectory.getFileSystem(), immediate() ),
                 pageCache, testDirectory.getFileSystem(), NullLogProvider.getInstance() );
         neoStores = storeFactory.openAllNeoStores( true );
         nodeStore = neoStores.getNodeStore();

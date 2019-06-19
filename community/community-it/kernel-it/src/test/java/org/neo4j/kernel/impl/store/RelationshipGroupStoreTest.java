@@ -173,7 +173,7 @@ class RelationshipGroupStoreTest
         {
             customConfig.put( dense_node_threshold.name(), "" + customThreshold );
         }
-        return new StoreFactory( testDirectory.databaseLayout(), Config.defaults( customConfig ), new DefaultIdGeneratorFactory( fs, pageCache, immediate() ),
+        return new StoreFactory( testDirectory.databaseLayout(), Config.defaults( customConfig ), new DefaultIdGeneratorFactory( fs, immediate() ),
                 pageCache, fs, NullLogProvider.getInstance() );
     }
 

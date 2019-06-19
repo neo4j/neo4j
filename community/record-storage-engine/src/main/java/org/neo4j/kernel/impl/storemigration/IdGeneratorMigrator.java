@@ -105,7 +105,7 @@ public class IdGeneratorMigrator extends AbstractStoreMigrationParticipant
         }
 
         // The built id files will end up in this rebuiltIdGenerators
-        IdGeneratorFactory rebuiltIdGenerators = new DefaultIdGeneratorFactory( fileSystem, pageCache, immediate() );
+        IdGeneratorFactory rebuiltIdGenerators = new DefaultIdGeneratorFactory( fileSystem, immediate() );
         List<Pair<File,File>> renameList = new ArrayList<>();
 
         // Build the ones from the legacy (the current, really) directory that haven't been migrated
@@ -166,7 +166,7 @@ public class IdGeneratorMigrator extends AbstractStoreMigrationParticipant
             renameMap.add( Pair.of( idFile, actualIdFile ) );
             try ( PageCursor cursor = store.openPageCursorForReading( store.getNumberOfReservedLowIds() );
                     // about maxId: let's not concern ourselves with maxId here; if it's in the store it can be in the id generator
-                    IdGenerator idGenerator = rebuiltIdGenerators.create( idFile, storeType.getIdType(), highId, true, Long.MAX_VALUE );
+                    IdGenerator idGenerator = rebuiltIdGenerators.create( pageCache, idFile, storeType.getIdType(), highId, true, Long.MAX_VALUE );
                     IdGenerator.CommitMarker marker = idGenerator.commitMarker() )
             {
                 AbstractBaseRecord record = store.newRecord();

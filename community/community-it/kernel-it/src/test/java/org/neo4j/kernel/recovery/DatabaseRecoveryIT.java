@@ -482,9 +482,9 @@ class DatabaseRecoveryIT
                 PageCache pageCache2 = new ConfiguringPageCacheFactory( fs2, defaults(), PageCacheTracer.NULL,
                         PageCursorTracerSupplier.NULL, NullLog.getInstance(), contextSupplier, jobScheduler )
                         .getOrCreatePageCache();
-                NeoStores store1 = new StoreFactory( databaseLayout, defaults(), new DefaultIdGeneratorFactory( fs1, pageCache1, immediate() ),
+                NeoStores store1 = new StoreFactory( databaseLayout, defaults(), new DefaultIdGeneratorFactory( fs1, immediate() ),
                         pageCache1, fs1, logProvider ).openAllNeoStores();
-                NeoStores store2 = new StoreFactory( databaseLayout, defaults(), new DefaultIdGeneratorFactory( fs2, pageCache2, immediate() ),
+                NeoStores store2 = new StoreFactory( databaseLayout, defaults(), new DefaultIdGeneratorFactory( fs2, immediate() ),
                         pageCache2, fs2, logProvider ).openAllNeoStores()
                 )
         {

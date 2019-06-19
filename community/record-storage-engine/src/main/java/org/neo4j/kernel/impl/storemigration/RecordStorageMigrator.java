@@ -490,7 +490,7 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant
 
     private void createStore( DatabaseLayout migrationDirectoryStructure, RecordFormats newFormat )
     {
-        IdGeneratorFactory idGeneratorFactory = new DefaultIdGeneratorFactory( fileSystem, pageCache, immediate() );
+        IdGeneratorFactory idGeneratorFactory = new DefaultIdGeneratorFactory( fileSystem, immediate() );
         createStoreFactory( migrationDirectoryStructure, newFormat, idGeneratorFactory ).openAllNeoStores( true ).close();
     }
 

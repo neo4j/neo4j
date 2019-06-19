@@ -116,7 +116,7 @@ class BatchingTokenRepositoryTest
         // given
 
         try ( NeoStores stores = new StoreFactory( testDirectory.databaseLayout(), Config.defaults(),
-                new DefaultIdGeneratorFactory( fileSystem, pageCache, immediate() ), pageCache, fileSystem, NullLogProvider.getInstance() ).openNeoStores( true,
+                new DefaultIdGeneratorFactory( fileSystem, immediate() ), pageCache, fileSystem, NullLogProvider.getInstance() ).openNeoStores( true,
                 StoreType.PROPERTY_KEY_TOKEN, StoreType.PROPERTY_KEY_TOKEN_NAME ) )
         {
             TokenStore<PropertyKeyTokenRecord> tokenStore = stores.getPropertyKeyTokenStore();

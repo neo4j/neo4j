@@ -92,7 +92,7 @@ public class IdContextFactoryBuilder
             // expecting any cleanup to be performed on main startup (this is after recovery).
             idGeneratorFactoryProvider = databaseId -> config.get( GraphDatabaseSettings.rebuild_id_files_on_startup )
                                                        ? new ScanOnOpenOverwritingIdGeneratorFactory( fileSystemAbstraction, pageCache )
-                                                       : new DefaultIdGeneratorFactory( fileSystemAbstraction, pageCache, immediate() );
+                                                       : new DefaultIdGeneratorFactory( fileSystemAbstraction, immediate() );
         }
         if ( factoryWrapper == null )
         {

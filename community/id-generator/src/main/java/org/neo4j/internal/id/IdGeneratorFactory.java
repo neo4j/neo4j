@@ -23,11 +23,13 @@ import java.io.File;
 import java.nio.file.OpenOption;
 import java.util.function.LongSupplier;
 
+import org.neo4j.io.pagecache.PageCache;
+
 public interface IdGeneratorFactory
 {
-    IdGenerator open( File filename, IdType idType, LongSupplier highIdScanner, long maxId, OpenOption... openOptions );
+    IdGenerator open( PageCache pageCache, File filename, IdType idType, LongSupplier highIdScanner, long maxId, OpenOption... openOptions );
 
-    IdGenerator create( File filename, IdType idType, long highId, boolean throwIfFileExists, long maxId, OpenOption... openOptions );
+    IdGenerator create( PageCache pageCache, File filename, IdType idType, long highId, boolean throwIfFileExists, long maxId, OpenOption... openOptions );
 
     IdGenerator get( IdType idType );
 }

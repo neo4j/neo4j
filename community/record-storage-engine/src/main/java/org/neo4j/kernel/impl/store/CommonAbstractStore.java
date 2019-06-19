@@ -228,7 +228,8 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord,HEAD
                     determineRecordSize( storeHeaderFormat.generateHeader() );
 
                     // Create the id generator, and also open it because some stores may need the id generator when initializing their store
-                    idGenerator = idGeneratorFactory.create( idFile, idType, getNumberOfReservedLowIds(), false, recordFormat.getMaxId(), openOptions );
+                    idGenerator = idGeneratorFactory.create( pageCache, idFile, idType, getNumberOfReservedLowIds(), false, recordFormat.getMaxId(),
+                            openOptions );
 
                     // Map the file (w/ the CREATE flag) and initialize the header
                     pagedFile = pageCache.map( storageFile, filePageSize, concat( StandardOpenOption.CREATE, openOptions ) );
@@ -542,7 +543,7 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord,HEAD
      */
     private void openIdGenerator()
     {
-        idGenerator = idGeneratorFactory.open( idFile, getIdType(), this::scanForHighId, recordFormat.getMaxId(), openOptions );
+        idGenerator = idGeneratorFactory.open( pageCache, idFile, getIdType(), this::scanForHighId, recordFormat.getMaxId(), openOptions );
     }
 
     /**

@@ -344,7 +344,7 @@ class CountsComputerTest
     {
         cleanupCountsForRebuilding();
 
-        IdGeneratorFactory idGenFactory = new DefaultIdGeneratorFactory( fileSystem, pageCache, immediate() );
+        IdGeneratorFactory idGenFactory = new DefaultIdGeneratorFactory( fileSystem, immediate() );
         StoreFactory storeFactory = new StoreFactory( testDirectory.databaseLayout(), CONFIG, idGenFactory, pageCache, fileSystem, LOG_PROVIDER );
         try ( Lifespan life = new Lifespan();
               NeoStores neoStores = storeFactory.openAllNeoStores() )

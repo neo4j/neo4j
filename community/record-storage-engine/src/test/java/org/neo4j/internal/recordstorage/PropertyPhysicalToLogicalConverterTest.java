@@ -69,7 +69,7 @@ class PropertyPhysicalToLogicalConverterTest
     void before()
     {
         StoreFactory storeFactory =
-                new StoreFactory( testDirectory.databaseLayout(), Config.defaults(), new DefaultIdGeneratorFactory( fs, pageCache, immediate() ), pageCache, fs,
+                new StoreFactory( testDirectory.databaseLayout(), Config.defaults(), new DefaultIdGeneratorFactory( fs, immediate() ), pageCache, fs,
                         NullLogProvider.getInstance() );
         neoStores = storeFactory.openAllNeoStores( true );
         store = neoStores.getPropertyStore();
