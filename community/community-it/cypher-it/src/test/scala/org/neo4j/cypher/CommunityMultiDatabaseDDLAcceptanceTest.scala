@@ -99,7 +99,7 @@ class CommunityMultiDatabaseDDLAcceptanceTest extends CommunityDDLAcceptanceTest
     val result = execute("SHOW DEFAULT DATABASE")
 
     // THEN
-    result.toList should be(List(Map("name" -> "neo4j")))
+    result.toList should be(List(Map("name" -> DEFAULT_DATABASE_NAME)))
   }
 
   test("should show custom default database using show default database command") {
@@ -124,7 +124,7 @@ class CommunityMultiDatabaseDDLAcceptanceTest extends CommunityDDLAcceptanceTest
     val result = execute("SHOW DEFAULT DATABASE")
 
     // THEN
-    result.toSet should be(Set(Map("name" -> "neo4j")))
+    result.toSet should be(Set(Map("name" -> DEFAULT_DATABASE_NAME)))
 
     // GIVEN
     config.augment(default_database, "foo")
@@ -152,7 +152,8 @@ class CommunityMultiDatabaseDDLAcceptanceTest extends CommunityDDLAcceptanceTest
 
   test("should fail on showing database from community") {
     setup( defaultConfig )
-    assertFailure("SHOW DATABASE neo4j", "Unsupported management command: SHOW DATABASE neo4j")
+    assertFailure(s"SHOW DATABASE $DEFAULT_DATABASE_NAME",
+      s"Unsupported management command: SHOW DATABASE $DEFAULT_DATABASE_NAME")
   }
 
   test("should fail on showing non-existing database with correct error message") {
@@ -172,12 +173,14 @@ class CommunityMultiDatabaseDDLAcceptanceTest extends CommunityDDLAcceptanceTest
 
   test("should fail on creating already existing database with correct error message") {
     setup( defaultConfig )
-    assertFailure("CREATE DATABASE neo4j", "Unsupported management command: CREATE DATABASE neo4j")
+    assertFailure(s"CREATE DATABASE $DEFAULT_DATABASE_NAME",
+      s"Unsupported management command: CREATE DATABASE $DEFAULT_DATABASE_NAME")
   }
 
   test("should fail on dropping database from community") {
     setup( defaultConfig )
-    assertFailure("DROP DATABASE neo4j", "Unsupported management command: DROP DATABASE neo4j")
+    assertFailure(s"DROP DATABASE $DEFAULT_DATABASE_NAME",
+      s"Unsupported management command: DROP DATABASE $DEFAULT_DATABASE_NAME")
   }
 
   test("should fail on dropping non-existing database with correct error message") {
@@ -187,7 +190,8 @@ class CommunityMultiDatabaseDDLAcceptanceTest extends CommunityDDLAcceptanceTest
 
   test("should fail on starting database from community") {
     setup( defaultConfig )
-    assertFailure("START DATABASE neo4j", "Unsupported management command: START DATABASE neo4j")
+    assertFailure(s"START DATABASE $DEFAULT_DATABASE_NAME",
+      s"Unsupported management command: START DATABASE $DEFAULT_DATABASE_NAME")
   }
 
   test("should fail on starting non-existing database with correct error message") {
@@ -197,7 +201,8 @@ class CommunityMultiDatabaseDDLAcceptanceTest extends CommunityDDLAcceptanceTest
 
   test("should fail on stopping database from community") {
     setup( defaultConfig )
-    assertFailure("STOP DATABASE neo4j", "Unsupported management command: STOP DATABASE neo4j")
+    assertFailure(s"STOP DATABASE $DEFAULT_DATABASE_NAME",
+      s"Unsupported management command: STOP DATABASE $DEFAULT_DATABASE_NAME")
   }
 
   test("should fail on stopping non-existing database with correct error message") {
