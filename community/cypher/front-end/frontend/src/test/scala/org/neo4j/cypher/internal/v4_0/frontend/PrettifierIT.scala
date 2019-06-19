@@ -341,132 +341,6 @@ class PrettifierIT extends CypherFunSuite {
       "show role `$role` privileges" ->
         "SHOW ROLE `$role` PRIVILEGES",
 
-      "grant traverse on graph * to role" ->
-        "GRANT TRAVERSE ON GRAPH * ELEMENTS * (*) TO role",
-
-      "grant traverse on graph * nodes * to role" ->
-        "GRANT TRAVERSE ON GRAPH * NODES * (*) TO role",
-
-      "grant traverse on graph * nodes * (*) to role" ->
-        "GRANT TRAVERSE ON GRAPH * NODES * (*) TO role",
-
-      "grant traverse on graph foo nodes * (*) to role" ->
-        "GRANT TRAVERSE ON GRAPH foo NODES * (*) TO role",
-
-      "grant traverse on graph foo nodes A (*) to role" ->
-        "GRANT TRAVERSE ON GRAPH foo NODES A (*) TO role",
-
-      "grant traverse on graph `#%¤` nodes `()/&` (*) to role" ->
-        "GRANT TRAVERSE ON GRAPH `#%¤` NODES `()/&` (*) TO role",
-
-      "grant traverse on graph foo nodes A,B,C (*) to x,y,z" ->
-        "GRANT TRAVERSE ON GRAPH foo NODES A, B, C (*) TO x, y, z",
-
-      "grant read (*) on graph * to role" ->
-        "GRANT READ (*) ON GRAPH * ELEMENTS * (*) TO role",
-
-      "grant read (*) on graph * nodes * to role" ->
-        "GRANT READ (*) ON GRAPH * NODES * (*) TO role",
-
-      "grant read (*) on graph * nodes * (*) to role" ->
-        "GRANT READ (*) ON GRAPH * NODES * (*) TO role",
-
-      "grant read (*) on graph foo nodes * (*) to role" ->
-        "GRANT READ (*) ON GRAPH foo NODES * (*) TO role",
-
-      "grant read (*) on graph foo nodes A (*) to role" ->
-        "GRANT READ (*) ON GRAPH foo NODES A (*) TO role",
-
-      "grant read (bar) on graph foo nodes A (*) to role" ->
-        "GRANT READ (bar) ON GRAPH foo NODES A (*) TO role",
-
-      "grant read ( `&bar` ) on graph `#%¤` nodes `()/&` (*) to role" ->
-        "GRANT READ (`&bar`) ON GRAPH `#%¤` NODES `()/&` (*) TO role",
-
-      "grant read (foo,bar) on graph foo nodes A,B,C (*) to x,y,z" ->
-        "GRANT READ (foo, bar) ON GRAPH foo NODES A, B, C (*) TO x, y, z",
-
-      "grant write (*) on graph * to role" ->
-        "GRANT WRITE (*) ON GRAPH * NODES * (*) TO role",
-
-      "grant write (*) on graph * nodes * to role" ->
-        "GRANT WRITE (*) ON GRAPH * NODES * (*) TO role",
-
-      "grant write (*) on graph * nodes * (*) to role" ->
-        "GRANT WRITE (*) ON GRAPH * NODES * (*) TO role",
-
-      "grant write (*) on graph foo to role" ->
-        "GRANT WRITE (*) ON GRAPH foo NODES * (*) TO role",
-
-      "grant write (*) on graph foo nodes * (*) to role" ->
-        "GRANT WRITE (*) ON GRAPH foo NODES * (*) TO role",
-
-      "grant write (*) on graphs foo node * (*) to role" ->
-        "GRANT WRITE (*) ON GRAPH foo NODES * (*) TO role",
-
-      "revoke traverse on graph * from role" ->
-        "REVOKE TRAVERSE ON GRAPH * ELEMENTS * (*) FROM role",
-
-      "revoke traverse on graph * nodes * from role" ->
-        "REVOKE TRAVERSE ON GRAPH * NODES * (*) FROM role",
-
-      "revoke traverse on graph * nodes * (*) from role" ->
-        "REVOKE TRAVERSE ON GRAPH * NODES * (*) FROM role",
-
-      "revoke traverse on graph foo nodes * (*) from role" ->
-        "REVOKE TRAVERSE ON GRAPH foo NODES * (*) FROM role",
-
-      "revoke traverse on graph foo nodes A (*) from role" ->
-        "REVOKE TRAVERSE ON GRAPH foo NODES A (*) FROM role",
-
-      "revoke traverse on graph `#%¤` nodes `()/&` (*) from role" ->
-        "REVOKE TRAVERSE ON GRAPH `#%¤` NODES `()/&` (*) FROM role",
-
-      "revoke traverse on graph foo nodes A,B,C (*) from x,y,z" ->
-        "REVOKE TRAVERSE ON GRAPH foo NODES A, B, C (*) FROM x, y, z",
-
-      "revoke read (*) on graph * from role" ->
-        "REVOKE READ (*) ON GRAPH * ELEMENTS * (*) FROM role",
-
-      "revoke read (*) on graph * nodes * from role" ->
-        "REVOKE READ (*) ON GRAPH * NODES * (*) FROM role",
-
-      "revoke read (*) on graph * nodes * (*) from role" ->
-        "REVOKE READ (*) ON GRAPH * NODES * (*) FROM role",
-
-      "revoke read (*) on graph foo nodes * (*) from role" ->
-        "REVOKE READ (*) ON GRAPH foo NODES * (*) FROM role",
-
-      "revoke read (*) on graph foo nodes A (*) from role" ->
-        "REVOKE READ (*) ON GRAPH foo NODES A (*) FROM role",
-
-      "revoke read (bar) on graph foo nodes A (*) from role" ->
-        "REVOKE READ (bar) ON GRAPH foo NODES A (*) FROM role",
-
-      "revoke read ( `&bar` ) on graph `#%¤` nodes `()/&` (*) from role" ->
-        "REVOKE READ (`&bar`) ON GRAPH `#%¤` NODES `()/&` (*) FROM role",
-
-      "revoke read (foo,bar) on graph foo nodes A,B,C (*) from x,y,z" ->
-        "REVOKE READ (foo, bar) ON GRAPH foo NODES A, B, C (*) FROM x, y, z",
-
-      "revoke write (*) on graph * from role" ->
-        "REVOKE WRITE (*) ON GRAPH * NODES * (*) FROM role",
-
-      "revoke write (*) on graph * nodes * from role" ->
-        "REVOKE WRITE (*) ON GRAPH * NODES * (*) FROM role",
-
-      "revoke write (*) on graph * nodes * (*) from role" ->
-        "REVOKE WRITE (*) ON GRAPH * NODES * (*) FROM role",
-
-      "revoke write (*) on graph foo from role" ->
-        "REVOKE WRITE (*) ON GRAPH foo NODES * (*) FROM role",
-
-      "revoke write (*) on graph foo nodes * (*) from role" ->
-        "REVOKE WRITE (*) ON GRAPH foo NODES * (*) FROM role",
-
-      "revoke write (*) on graphs foo node * (*) from role" ->
-        "REVOKE WRITE (*) ON GRAPH foo NODES * (*) FROM role",
-
       "catalog show databases" ->
         "SHOW DATABASES",
 
@@ -546,7 +420,95 @@ class PrettifierIT extends CypherFunSuite {
       "create unique (a)--(b) RETURN a" ->
         """CREATE UNIQUE (a)--(b)
           |RETURN a""".stripMargin
-    ) ++ startTests("node") ++ startTests("relationship")
+    ) ++ startTests("node") ++ startTests("relationship") ++ privilegeTests()
+
+  def privilegeTests(): Seq[(String, String)] = {
+    Seq(("GRANT", "TO"), ("REVOKE", "FROM")) flatMap {
+      case (action, preposition) =>
+        Seq(
+          s"$action traverse on graph * $preposition role" ->
+            s"$action TRAVERSE ON GRAPH * ELEMENTS * (*) $preposition role",
+
+          s"$action traverse on graph * nodes * $preposition role" ->
+            s"$action TRAVERSE ON GRAPH * NODES * (*) $preposition role",
+
+          s"$action traverse on graph * nodes * (*) $preposition role" ->
+            s"$action TRAVERSE ON GRAPH * NODES * (*) $preposition role",
+
+          s"$action traverse on graph foo nodes * (*) $preposition role" ->
+            s"$action TRAVERSE ON GRAPH foo NODES * (*) $preposition role",
+
+          s"$action traverse on graph foo nodes A (*) $preposition role" ->
+            s"$action TRAVERSE ON GRAPH foo NODES A (*) $preposition role",
+
+          s"$action traverse on graph `#%¤` nodes `()/&` (*) $preposition role" ->
+            s"$action TRAVERSE ON GRAPH `#%¤` NODES `()/&` (*) $preposition role",
+
+          s"$action traverse on graph foo nodes A,B,C (*) $preposition x,y,z" ->
+            s"$action TRAVERSE ON GRAPH foo NODES A, B, C (*) $preposition x, y, z",
+
+          s"$action traverse on graph * relationships * $preposition role" ->
+            s"$action TRAVERSE ON GRAPH * RELATIONSHIPS * (*) $preposition role",
+
+          s"$action traverse on graph * relationships * (*) $preposition role" ->
+            s"$action TRAVERSE ON GRAPH * RELATIONSHIPS * (*) $preposition role",
+
+          s"$action traverse on graph foo relationships * (*) $preposition role" ->
+            s"$action TRAVERSE ON GRAPH foo RELATIONSHIPS * (*) $preposition role",
+
+          s"$action traverse on graph foo relationships A (*) $preposition role" ->
+            s"$action TRAVERSE ON GRAPH foo RELATIONSHIPS A (*) $preposition role",
+
+          s"$action traverse on graph `#%¤` relationships `()/&` (*) $preposition role" ->
+            s"$action TRAVERSE ON GRAPH `#%¤` RELATIONSHIPS `()/&` (*) $preposition role",
+
+          s"$action traverse on graph foo relationships A,B,C (*) $preposition x,y,z" ->
+            s"$action TRAVERSE ON GRAPH foo RELATIONSHIPS A, B, C (*) $preposition x, y, z",
+
+          s"$action read (*) on graph * $preposition role" ->
+            s"$action READ (*) ON GRAPH * ELEMENTS * (*) $preposition role",
+
+          s"$action read (*) on graph * nodes * $preposition role" ->
+            s"$action READ (*) ON GRAPH * NODES * (*) $preposition role",
+
+          s"$action read (*) on graph * nodes * (*) $preposition role" ->
+            s"$action READ (*) ON GRAPH * NODES * (*) $preposition role",
+
+          s"$action read (*) on graph foo nodes * (*) $preposition role" ->
+            s"$action READ (*) ON GRAPH foo NODES * (*) $preposition role",
+
+          s"$action read (*) on graph foo nodes A (*) $preposition role" ->
+            s"$action READ (*) ON GRAPH foo NODES A (*) $preposition role",
+
+          s"$action read (bar) on graph foo nodes A (*) $preposition role" ->
+            s"$action READ (bar) ON GRAPH foo NODES A (*) $preposition role",
+
+          s"$action read ( `&bar` ) on graph `#%¤` nodes `()/&` (*) $preposition role" ->
+            s"$action READ (`&bar`) ON GRAPH `#%¤` NODES `()/&` (*) $preposition role",
+
+          s"$action read (foo,bar) on graph foo nodes A,B,C (*) $preposition x,y,z" ->
+            s"$action READ (foo, bar) ON GRAPH foo NODES A, B, C (*) $preposition x, y, z",
+
+          s"$action write (*) on graph * $preposition role" ->
+            s"$action WRITE (*) ON GRAPH * NODES * (*) $preposition role",
+
+          s"$action write (*) on graph * nodes * $preposition role" ->
+            s"$action WRITE (*) ON GRAPH * NODES * (*) $preposition role",
+
+          s"$action write (*) on graph * nodes * (*) $preposition role" ->
+            s"$action WRITE (*) ON GRAPH * NODES * (*) $preposition role",
+
+          s"$action write (*) on graph foo $preposition role" ->
+            s"$action WRITE (*) ON GRAPH foo NODES * (*) $preposition role",
+
+          s"$action write (*) on graph foo nodes * (*) $preposition role" ->
+            s"$action WRITE (*) ON GRAPH foo NODES * (*) $preposition role",
+
+          s"$action write (*) on graphs foo node * (*) $preposition role" ->
+            s"$action WRITE (*) ON GRAPH foo NODES * (*) $preposition role"
+        )
+    }
+  }
 
   def startTests(entityType: String): Seq[(String, String)] = {
     val ENTITYTYPE = entityType.toUpperCase

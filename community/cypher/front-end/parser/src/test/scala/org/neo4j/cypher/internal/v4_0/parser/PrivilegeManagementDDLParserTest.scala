@@ -316,6 +316,114 @@ class PrivilegeManagementDDLParserTest extends DDLParserTestBase {
                 failsToParse
               }
           }
+
+          Seq("RELATIONSHIP", "RELATIONSHIPS").foreach {
+            relTypeKeyword =>
+
+              test(s"$command TRAVERSE ON $graphKeyword * $relTypeKeyword * $preposition role") {
+                yields(func(TraversePrivilege()(pos), AllResource()(pos), ast.AllGraphsScope() _, ast.RelationshipAllQualifier() _, Seq("role")))
+              }
+
+              test(s"$command TRAVERSE ON $graphKeyword * $relTypeKeyword * (*) $preposition role") {
+                yields(func(TraversePrivilege()(pos), AllResource()(pos), ast.AllGraphsScope() _, ast.RelationshipAllQualifier() _, Seq("role")))
+              }
+
+              test(s"$command TRAVERSE ON $graphKeyword * $relTypeKeyword A $preposition role") {
+                yields(func(TraversePrivilege()(pos), AllResource()(pos), ast.AllGraphsScope() _, ast.RelationshipsQualifier(Seq("A")) _, Seq("role")))
+              }
+
+              test(s"$command TRAVERSE ON $graphKeyword * $relTypeKeyword A (*) $preposition role") {
+                yields(func(TraversePrivilege()(pos), AllResource()(pos), ast.AllGraphsScope() _, ast.RelationshipsQualifier(Seq("A")) _, Seq("role")))
+              }
+
+              test(s"$command TRAVERSE ON $graphKeyword `*` $relTypeKeyword A $preposition role") {
+                yields(func(TraversePrivilege()(pos), AllResource()(pos), ast.NamedGraphScope("*") _, ast.RelationshipsQualifier(Seq("A")) _, Seq("role")))
+              }
+
+              test(s"$command TRAVERSE ON $graphKeyword foo $relTypeKeyword * $preposition role") {
+                yields(func(TraversePrivilege()(pos), AllResource()(pos), ast.NamedGraphScope("foo") _, ast.RelationshipAllQualifier() _, Seq("role")))
+              }
+
+              test(s"$command TRAVERSE ON $graphKeyword foo $relTypeKeyword * (*) $preposition role") {
+                yields(func(TraversePrivilege()(pos), AllResource()(pos), ast.NamedGraphScope("foo") _, ast.RelationshipAllQualifier() _, Seq("role")))
+              }
+
+              test(s"$command TRAVERSE ON $graphKeyword foo $relTypeKeyword A $preposition role") {
+                yields(func(TraversePrivilege()(pos), AllResource()(pos), ast.NamedGraphScope("foo") _, ast.RelationshipsQualifier(Seq("A")) _, Seq("role")))
+              }
+
+              test(s"$command TRAVERSE ON $graphKeyword foo $relTypeKeyword A (*) $preposition role") {
+                yields(func(TraversePrivilege()(pos), AllResource()(pos), ast.NamedGraphScope("foo") _, ast.RelationshipsQualifier(Seq("A")) _, Seq("role")))
+              }
+
+              test(s"$command TRAVERSE ON $graphKeyword foo $relTypeKeyword A (*) $preposition role1, role2") {
+                yields(func(TraversePrivilege()(pos), AllResource()(pos), ast.NamedGraphScope("foo") _, ast.RelationshipsQualifier(Seq("A")) _, Seq("role1", "role2")))
+              }
+
+              test(s"$command TRAVERSE ON $graphKeyword `2foo` $relTypeKeyword A (*) $preposition role") {
+                yields(func(TraversePrivilege()(pos), AllResource()(pos), ast.NamedGraphScope("2foo") _, ast.RelationshipsQualifier(Seq("A")) _, Seq("role")))
+              }
+
+              test(s"$command TRAVERSE ON $graphKeyword foo $relTypeKeyword A (*) $preposition `r:ole`") {
+                yields(func(TraversePrivilege()(pos), AllResource()(pos), ast.NamedGraphScope("foo") _, ast.RelationshipsQualifier(Seq("A")) _, Seq("r:ole")))
+              }
+
+              test(s"$command TRAVERSE ON $graphKeyword foo $relTypeKeyword `A B` (*) $preposition role") {
+                yields(func(TraversePrivilege()(pos), AllResource()(pos), ast.NamedGraphScope("foo") _, ast.RelationshipsQualifier(Seq("A B")) _, Seq("role")))
+              }
+
+              test(s"$command TRAVERSE ON $graphKeyword foo $relTypeKeyword A, B (*) $preposition role") {
+                yields(func(TraversePrivilege()(pos), AllResource()(pos), ast.NamedGraphScope("foo") _, ast.RelationshipsQualifier(Seq("A", "B")) _, Seq("role")))
+              }
+
+              test(s"$command TRAVERSE ON $graphKeyword foo $relTypeKeyword A, B (*) $preposition role1, role2") {
+                yields(func(TraversePrivilege()(pos), AllResource()(pos), ast.NamedGraphScope("foo") _, ast.RelationshipsQualifier(Seq("A", "B")) _, Seq("role1", "role2")))
+              }
+
+              test(s"$command TRAVERSE $graphKeyword * $relTypeKeyword * (*) $preposition role") {
+                failsToParse
+              }
+
+              test(s"$command TRAVERSE ON $graphKeyword foo $relTypeKeyword A B (*) $preposition role") {
+                failsToParse
+              }
+
+              test(s"$command TRAVERSE ON $graphKeyword foo $relTypeKeyword A (foo) $preposition role") {
+                failsToParse
+              }
+
+              test(s"$command TRAVERSE ON $graphKeyword $relTypeKeyword * $preposition role") {
+                failsToParse
+              }
+
+              test(s"$command TRAVERSE ON $graphKeyword $relTypeKeyword A $preposition role") {
+                failsToParse
+              }
+
+              test(s"$command TRAVERSE ON $graphKeyword $relTypeKeyword * (*) $preposition role") {
+                failsToParse
+              }
+
+              test(s"$command TRAVERSE ON $graphKeyword $relTypeKeyword A (*) $preposition role") {
+                failsToParse
+              }
+
+              test(s"$command TRAVERSE ON $graphKeyword foo $relTypeKeyword A (*) $preposition r:ole") {
+                failsToParse
+              }
+
+              test(s"$command TRAVERSE ON $graphKeyword 2foo $relTypeKeyword A (*) $preposition role") {
+                failsToParse
+              }
+
+              test(s"$command TRAVERSE ON $graphKeyword foo, baz $relTypeKeyword A (*) $preposition role") {
+                failsToParse
+              }
+
+              test(s"$command TRAVERSE ON $graphKeyword * $relTypeKeyword * (*)") {
+                failsToParse
+              }
+          }
       }
   }
 
