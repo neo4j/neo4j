@@ -55,6 +55,7 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.neo4j.internal.kernel.api.QueryContext.NULL_CONTEXT;
 import static org.neo4j.internal.schema.SchemaDescriptor.forLabel;
+import static org.neo4j.io.ByteUnit.kibiBytes;
 import static org.neo4j.kernel.api.index.IndexDirectoryStructure.directoriesByProvider;
 import static org.neo4j.kernel.api.index.IndexProvider.Monitor.EMPTY;
 import static org.neo4j.kernel.impl.api.index.PhaseTracker.nullInstance;
@@ -348,7 +349,7 @@ public class GenericBlockBasedIndexPopulatorTest
         PageCache pc = storage.pageCache();
         GenericBlockBasedIndexPopulator populator =
                 new GenericBlockBasedIndexPopulator( pc, fs, indexFiles, layout, EMPTY, indexDescriptor, spatialSettings, configuration, false,
-                        heapBufferFactory( 1024 ) );
+                        heapBufferFactory( (int) kibiBytes( 40 ) ) );
         populator.create();
         return populator;
     }
