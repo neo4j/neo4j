@@ -19,10 +19,9 @@
  */
 package org.neo4j.cypher.internal.runtime
 
-import org.neo4j.cypher.internal.v4_0.expressions.LabelToken
 import org.neo4j.cypher.internal.logical.plans.IndexedProperty
-import org.neo4j.internal.kernel.api.IndexReference
-import org.neo4j.internal.kernel.api.SchemaRead
+import org.neo4j.cypher.internal.v4_0.expressions.LabelToken
+import org.neo4j.internal.kernel.api.{IndexReference, SchemaRead}
 
 import scala.collection.mutable.ArrayBuffer
 
@@ -33,7 +32,7 @@ import scala.collection.mutable.ArrayBuffer
   */
 class QueryIndexes(schemaRead: SchemaRead) {
 
-  private val buffer = new ArrayBuffer[IndexReference]
+  private val buffer = new ArrayBuffer[InternalIndexReference]
   private var labelScan: Boolean = false
 
   def registerLabelScan(): Unit = labelScan = true
@@ -42,12 +41,19 @@ class QueryIndexes(schemaRead: SchemaRead) {
 
   def registerQueryIndex(label: LabelToken,
                          properties: Seq[IndexedProperty]): Int = {
-    val queryIndexId = buffer.size
-    buffer += schemaRead.indexReferenceUnchecked(label.nameId.id, properties.map(_.propertyKeyToken.nameId.id):_*)
-    queryIndexId
+    val reference = InternalIndexReference(label.nameId.id, properties.map(_.propertyKeyToken.nameId.id))
+    val index = buffer.indexOf(reference)
+    if ( index > 0 ) index
+    else {
+      val queryIndexId = buffer.size
+      buffer += reference
+      queryIndexId
+    }
   }
 
-  def indexes: Array[IndexReference] = buffer.toArray
+  def indexes: Array[IndexReference] = buffer.map(index => schemaRead.indexReferenceUnchecked(index.label, index.properties:_*)).toArray
 
   def hasLabelScan: Boolean = labelScan
+
+  private case class InternalIndexReference(label: Int, properties: Seq[Int])
 }
