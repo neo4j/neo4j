@@ -19,11 +19,10 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
-import org.neo4j.cypher.internal.runtime.ExecutionContext
-import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.{Expression, InequalitySeekRangeExpression, PointDistanceSeekRangeExpression, PrefixSeekRangeExpression}
-import org.neo4j.cypher.internal.runtime.interpreted.{IsList, makeValueNeoSafe}
-import org.neo4j.cypher.internal.v4_0.frontend.helpers.SeqCombiner.combine
 import org.neo4j.cypher.internal.logical.plans._
+import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.{Expression, InequalitySeekRangeExpression, PointDistanceSeekRangeExpression, PrefixSeekRangeExpression}
+import org.neo4j.cypher.internal.runtime.{ExecutionContext, IsList, makeValueNeoSafe}
+import org.neo4j.cypher.internal.v4_0.frontend.helpers.SeqCombiner.combine
 import org.neo4j.cypher.internal.v4_0.util.{CypherTypeException, InternalException}
 import org.neo4j.internal.kernel.api.{IndexQuery, IndexReadSession, NodeValueIndexCursor}
 import org.neo4j.values.AnyValue
@@ -134,7 +133,7 @@ trait NodeIndexSeeker {
                       case (false, false) => // < false, always false
                         return Nil
                       case _ => // true only for false
-                        IndexQuery.exact(propertyId, makeValueNeoSafe(BooleanValue.FALSE))
+                        IndexQuery.exact(propertyId, BooleanValue.FALSE)
                     }
                   case _ =>
                     IndexQuery.range(propertyId, null, false, limit.endPoint, limit.isInclusive)
@@ -151,7 +150,7 @@ trait NodeIndexSeeker {
                       case (false, true) => // >= false, always true
                         IndexQuery.exists(propertyId)
                       case _ => // true only for true
-                        IndexQuery.exact(propertyId, makeValueNeoSafe(BooleanValue.TRUE))
+                        IndexQuery.exact(propertyId, BooleanValue.TRUE)
                     }
                   case _ =>
                     IndexQuery.range(propertyId, limit.endPoint, limit.isInclusive, null, false)
@@ -170,9 +169,9 @@ trait NodeIndexSeeker {
                       case (true, true) => // false <= x <= true, always true
                         List(IndexQuery.exists(propertyId))
                       case (true, _) => // false <= x < true, true only for false
-                        List(IndexQuery.exact(propertyId, makeValueNeoSafe(BooleanValue.FALSE)))
+                        List(IndexQuery.exact(propertyId, BooleanValue.FALSE))
                       case (_, true) => // false < x <= true, true only for true
-                        List(IndexQuery.exact(propertyId, makeValueNeoSafe(BooleanValue.TRUE)))
+                        List(IndexQuery.exact(propertyId, BooleanValue.TRUE))
                       case _ => // false < x < true, always false
                         Nil
                     }

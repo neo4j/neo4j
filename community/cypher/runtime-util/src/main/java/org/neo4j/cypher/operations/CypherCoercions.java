@@ -19,13 +19,13 @@
  */
 package org.neo4j.cypher.operations;
 
-import org.neo4j.cypher.internal.v4_0.util.CypherTypeException;
-
 import java.util.HashMap;
 import java.util.Map;
 
 import org.neo4j.cypher.internal.runtime.DbAccess;
 import org.neo4j.cypher.internal.runtime.ExpressionCursors;
+import org.neo4j.cypher.internal.runtime.makeValueNeoSafe;
+import org.neo4j.cypher.internal.v4_0.util.CypherTypeException;
 import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.PropertyCursor;
 import org.neo4j.internal.kernel.api.RelationshipScanCursor;
@@ -46,6 +46,7 @@ import org.neo4j.values.storable.NumberValue;
 import org.neo4j.values.storable.PointValue;
 import org.neo4j.values.storable.TextValue;
 import org.neo4j.values.storable.TimeValue;
+import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 import org.neo4j.values.virtual.ListValue;
 import org.neo4j.values.virtual.MapValue;
@@ -84,6 +85,17 @@ public final class CypherCoercions
     private CypherCoercions()
     {
         throw new UnsupportedOperationException( "do not instantiate" );
+    }
+
+    /**
+     * This indirection is here because it is really inconvenient to generate code for calling object methods in scala
+     * from scala because it hides the generated classes.
+     *
+     * TODO: makeValueNeoSafe is not fast, rewrite it here and use this method instead.
+     */
+    public static Value asStorableValue( AnyValue value )
+    {
+        return makeValueNeoSafe.apply( value );
     }
 
     public static TextValue asTextValue( AnyValue value )

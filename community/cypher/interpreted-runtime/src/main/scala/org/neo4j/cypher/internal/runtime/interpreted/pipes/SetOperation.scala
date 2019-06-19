@@ -19,9 +19,10 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
+import org.neo4j.cypher.internal.runtime
+import org.neo4j.cypher.internal.runtime._
 import org.neo4j.cypher.internal.runtime.interpreted._
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expression
-import org.neo4j.cypher.internal.runtime.{ExecutionContext, ExpressionCursors, Operations, QueryContext}
 import org.neo4j.cypher.internal.v4_0.util.{CypherTypeException, InvalidArgumentException}
 import org.neo4j.function.ThrowingBiConsumer
 import org.neo4j.internal.kernel.api.{NodeCursor, RelationshipScanCursor}
@@ -247,7 +248,7 @@ abstract class SetPropertyFromMapOperation[T, CURSOR](itemName: String,
       if (v == Values.NO_VALUE)
         ops.removeProperty(itemId, k)
       else
-        ops.setProperty(itemId, k, makeValueNeoSafe(v))
+        ops.setProperty(itemId, k, runtime.makeValueNeoSafe(v))
     }
 
     val properties = ops.propertyKeyIds(itemId, entityCursor(cursors), cursors.propertyCursor).filterNot(map.contains).toSet

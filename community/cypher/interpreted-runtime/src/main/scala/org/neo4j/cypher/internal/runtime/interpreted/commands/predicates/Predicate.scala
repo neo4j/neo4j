@@ -21,12 +21,12 @@ package org.neo4j.cypher.internal.runtime.interpreted.commands.predicates
 
 import java.util.regex.Pattern
 
-import org.neo4j.cypher.internal.runtime.ExecutionContext
+import org.neo4j.cypher.internal.runtime.interpreted.IsMap
 import org.neo4j.cypher.internal.runtime.interpreted.commands.AstNode
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.{AbstractCachedNodeProperty, AbstractCachedRelationshipProperty, Expression, Literal}
 import org.neo4j.cypher.internal.runtime.interpreted.commands.values.KeyToken
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
-import org.neo4j.cypher.internal.runtime.interpreted.{CastSupport, IsList, IsMap}
+import org.neo4j.cypher.internal.runtime.{CastSupport, ExecutionContext, IsList}
 import org.neo4j.cypher.internal.v4_0.util.{CypherTypeException, NonEmptyList}
 import org.neo4j.cypher.operations.CypherBoolean
 import org.neo4j.kernel.api.StatementConstants

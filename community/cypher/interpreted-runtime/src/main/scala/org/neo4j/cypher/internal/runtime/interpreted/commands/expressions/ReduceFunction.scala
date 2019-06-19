@@ -19,9 +19,8 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.commands.expressions
 
-import org.neo4j.cypher.internal.runtime.ExecutionContext
-import org.neo4j.cypher.internal.runtime.interpreted.ListSupport
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
+import org.neo4j.cypher.internal.runtime.{ExecutionContext, ListSupport}
 import org.neo4j.values.AnyValue
 
 case class ReduceFunction(collection: Expression,

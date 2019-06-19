@@ -19,8 +19,8 @@
  */
 package org.neo4j.cypher.internal.runtime.spec.tests
 
-import org.neo4j.cypher.internal.runtime.spec._
 import org.neo4j.cypher.internal.logical.plans.{GetValue, IndexOrderAscending, IndexOrderDescending, ManyQueryExpression}
+import org.neo4j.cypher.internal.runtime.spec._
 import org.neo4j.cypher.internal.{CypherRuntime, RuntimeContext}
 
 // Supported by all runtimes
@@ -42,6 +42,48 @@ abstract class NodeIndexSeekTestBase[CONTEXT <: RuntimeContext](
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
       .nodeIndexOperator("x:Honey(prop = 20)")
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    val expected = nodes(20)
+    runtimeResult should beColumns("x").withSingleRow(expected)
+  }
+
+  test("should exact (single) seek nodes of an index with a property with multiple matches") {
+    // given
+    nodeGraph(5, "Milk")
+    val numMatches = sizeHint / 5
+    val nodes = nodePropertyGraph(sizeHint, {
+      case i if i < numMatches => Map("prop" -> "foo")
+    },"Honey")
+    index("Honey", "prop")
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x")
+      .nodeIndexOperator("x:Honey(prop = 'foo')")
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    runtimeResult should beColumns("x").withRows(RowCount(numMatches))
+  }
+
+  test("should exact (single) seek nodes of an index with an array property") {
+    // given
+    nodeGraph(5, "Milk")
+    val nodes = nodePropertyGraph(sizeHint, {
+      case i if i % 10 == 0 => Map("prop" -> Array[Int](i))
+    },"Honey")
+    index("Honey", "prop")
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x")
+      .nodeIndexOperator("x:Honey(prop = ???)", paramExpr = Some(listOf(literalInt(20))))
       .build()
 
     val runtimeResult = execute(logicalQuery, runtime)

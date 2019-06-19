@@ -19,11 +19,10 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.commands
 
-import org.neo4j.cypher.internal.runtime.ExecutionContext
-import org.neo4j.cypher.internal.runtime.interpreted.ListSupport
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.{Closure, Expression}
 import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates.Predicate
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
+import org.neo4j.cypher.internal.runtime.{ExecutionContext, ListSupport}
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.Values
 import org.neo4j.values.virtual.ListValue

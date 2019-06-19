@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted
 
+import org.neo4j.cypher.internal.runtime.makeValueNeoSafe
 import org.neo4j.cypher.internal.v4_0.util.CypherTypeException
 import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
 import org.neo4j.values.storable.Values._

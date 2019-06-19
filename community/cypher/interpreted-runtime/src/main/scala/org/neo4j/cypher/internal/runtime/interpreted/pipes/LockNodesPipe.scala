@@ -19,8 +19,7 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
-import org.neo4j.cypher.internal.runtime.ExecutionContext
-import org.neo4j.cypher.internal.runtime.interpreted.CastSupport
+import org.neo4j.cypher.internal.runtime.{CastSupport, ExecutionContext}
 import org.neo4j.cypher.internal.v4_0.util.attribution.Id
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.Values

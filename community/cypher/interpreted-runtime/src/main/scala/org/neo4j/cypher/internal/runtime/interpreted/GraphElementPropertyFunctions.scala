@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted
 
+import org.neo4j.cypher.internal.runtime.ListSupport
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expression
 
 import scala.collection.Map

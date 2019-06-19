@@ -19,8 +19,6 @@
  */
 package org.neo4j.cypher.internal.codegen;
 
-import org.neo4j.cypher.internal.v4_0.util.CypherTypeException;
-
 import java.lang.reflect.Array;
 import java.util.Arrays;
 import java.util.Collection;
@@ -37,6 +35,7 @@ import java.util.stream.IntStream;
 import java.util.stream.LongStream;
 import java.util.stream.Stream;
 
+import org.neo4j.cypher.internal.v4_0.util.CypherTypeException;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
@@ -616,7 +615,7 @@ public abstract class CompiledConversionUtils
     public static Object makeValueNeoSafe( Object object )
     {
         AnyValue value = object instanceof AnyValue ? ((AnyValue) object) : ValueUtils.of( object );
-        return org.neo4j.cypher.internal.runtime.interpreted.makeValueNeoSafe.apply( value );
+        return org.neo4j.cypher.internal.runtime.makeValueNeoSafe.apply( value );
     }
 
     @SuppressWarnings( "unchecked" )
