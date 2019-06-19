@@ -23,17 +23,12 @@ import org.eclipse.collections.api.iterator.LongIterator;
 import org.eclipse.collections.api.set.primitive.LongSet;
 import org.eclipse.collections.impl.iterator.ImmutableEmptyLongIterator;
 
-import java.util.Arrays;
-
-import org.neo4j.internal.kernel.api.KernelReadTracer;
 import org.neo4j.internal.kernel.api.LabelSet;
 import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.NodeLabelIndexCursor;
-import org.neo4j.internal.kernel.api.security.AccessMode;
 import org.neo4j.kernel.api.index.IndexProgressor;
 import org.neo4j.kernel.api.index.IndexProgressor.NodeLabelClient;
 import org.neo4j.storageengine.api.txstate.LongDiffSets;
-import org.neo4j.util.Preconditions;
 
 import static org.neo4j.collection.PrimitiveLongCollections.mergeToSet;
 import static org.neo4j.kernel.impl.newapi.Read.NO_ID;
@@ -47,15 +42,12 @@ class DefaultNodeLabelIndexCursor extends IndexCursor<IndexProgressor>
     private LongIterator added;
     private LongSet removed;
 
-    private KernelReadTracer tracer;
-
     private final CursorPool<DefaultNodeLabelIndexCursor> pool;
 
     DefaultNodeLabelIndexCursor( CursorPool<DefaultNodeLabelIndexCursor> pool )
     {
         this.pool = pool;
         this.node = NO_ID;
-        this.tracer = KernelReadTracer.NONE;
     }
 
     public void scan( IndexProgressor progressor, int label )
@@ -67,7 +59,7 @@ class DefaultNodeLabelIndexCursor extends IndexCursor<IndexProgressor>
             added = changes.augment( ImmutableEmptyLongIterator.INSTANCE );
             removed = mergeToSet( read.txState().addedAndRemovedNodes().getRemoved(), changes.getRemoved() );
         }
-        tracer.onLabelScan( label );
+        getTracer().onLabelScan( label );
     }
 
     public void scan( IndexProgressor progressor, LongIterator added, LongSet removed )
@@ -75,13 +67,6 @@ class DefaultNodeLabelIndexCursor extends IndexCursor<IndexProgressor>
         super.initialize( progressor );
         this.added = added;
         this.removed = removed;
-    }
-
-    @Override
-    public void setTracer( KernelReadTracer tracer )
-    {
-        KernelReadTracer.assertNonNull( tracer );
-        this.tracer = tracer;
     }
 
     @Override
@@ -106,7 +91,7 @@ class DefaultNodeLabelIndexCursor extends IndexCursor<IndexProgressor>
         if ( added != null && added.hasNext() )
         {
             this.node = added.next();
-            tracer.onNode( this.node );
+            getTracer().onNode( this.node );
             return true;
         }
         else
@@ -114,7 +99,7 @@ class DefaultNodeLabelIndexCursor extends IndexCursor<IndexProgressor>
             boolean hasNext = innerNext();
             if ( hasNext )
             {
-                tracer.onNode( this.node );
+                getTracer().onNode( this.node );
             }
             return hasNext;
         }
@@ -154,7 +139,7 @@ class DefaultNodeLabelIndexCursor extends IndexCursor<IndexProgressor>
     {
         if ( !isClosed() )
         {
-            super.close();
+            closeProgressor();
             node = NO_ID;
             labels = null;
             read = null;
@@ -167,7 +152,7 @@ class DefaultNodeLabelIndexCursor extends IndexCursor<IndexProgressor>
     @Override
     public boolean isClosed()
     {
-        return super.isClosed();
+        return isProgressorClosed();
     }
 
     @Override

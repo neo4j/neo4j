@@ -19,37 +19,27 @@
  */
 package org.neo4j.kernel.impl.newapi;
 
-import org.neo4j.kernel.api.index.IndexProgressor;
+import org.neo4j.internal.kernel.api.Cursor;
+import org.neo4j.internal.kernel.api.KernelReadTracer;
 
-abstract class IndexCursor<T extends IndexProgressor> extends TraceableCursor
+abstract class TraceableCursor implements Cursor
 {
-    private T progressor;
+    private KernelReadTracer tracer;
 
-    final void initialize( T progressor )
+    TraceableCursor()
     {
-        if ( this.progressor != null )
-        {
-            this.progressor.close();
-        }
-        this.progressor = progressor;
+        this.tracer = KernelReadTracer.NONE;
     }
 
-    final boolean innerNext()
+    @Override
+    public final void setTracer( KernelReadTracer tracer )
     {
-        return progressor != null && progressor.next();
+        KernelReadTracer.assertNonNull( tracer );
+        this.tracer = tracer;
     }
 
-    void closeProgressor()
+    public KernelReadTracer getTracer()
     {
-        if ( progressor != null )
-        {
-            progressor.close();
-        }
-        progressor = null;
-    }
-
-    boolean isProgressorClosed()
-    {
-        return progressor == null;
+        return tracer;
     }
 }

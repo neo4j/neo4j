@@ -48,6 +48,22 @@ public class IndexCursorTest
 
     private static class StubIndexCursor extends IndexCursor<StubProgressor>
     {
+        @Override
+        public boolean next()
+        {
+            return false;
+        }
+
+        @Override
+        public void close()
+        {
+        }
+
+        @Override
+        public boolean isClosed()
+        {
+            return false;
+        }
     }
 
     private static class StubProgressor implements IndexProgressor

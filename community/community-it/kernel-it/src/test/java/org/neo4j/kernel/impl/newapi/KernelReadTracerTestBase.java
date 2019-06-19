@@ -27,7 +27,6 @@ import java.util.concurrent.TimeUnit;
 
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.graphdb.GraphDatabaseService;
-import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
@@ -42,8 +41,10 @@ import org.neo4j.internal.kernel.api.NodeValueIndexCursor;
 import org.neo4j.internal.kernel.api.PropertyCursor;
 import org.neo4j.internal.kernel.api.RelationshipGroupCursor;
 import org.neo4j.internal.kernel.api.RelationshipScanCursor;
+import org.neo4j.internal.kernel.api.RelationshipTraversalCursor;
 import org.neo4j.kernel.impl.newapi.TestKernelReadTracer.TraceEvent;
 
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.kernel.impl.newapi.TestKernelReadTracer.OnAllNodesScan;
@@ -150,15 +151,15 @@ public abstract class KernelReadTracerTestBase<G extends KernelAPIReadTestSuppor
             // when
             cursor.setTracer( tracer );
             read.singleNode( foo, cursor );
-            cursor.next();
-            tracer.assertEvents( OnNode( foo ) ).clear();
+            assertTrue( cursor.next() );
+            tracer.assertEvents( OnNode( foo ) );
 
             read.singleNode( bar, cursor );
-            cursor.next();
-            tracer.assertEvents( OnNode( bar ) ).clear();
+            assertTrue( cursor.next() );
+            tracer.assertEvents( OnNode( bar ) );
 
             read.singleNode( bare, cursor );
-            cursor.next();
+            assertTrue( cursor.next() );
             tracer.assertEvents( OnNode( bare ) );
         }
     }
@@ -174,12 +175,12 @@ public abstract class KernelReadTracerTestBase<G extends KernelAPIReadTestSuppor
             // when
             cursor.setTracer( tracer );
             read.singleNode( foo, cursor );
-            cursor.next();
-            tracer.assertEvents( OnNode( foo ) ).clear();
+            assertTrue( cursor.next() );
+            tracer.assertEvents( OnNode( foo ) );
 
             cursor.setTracer( KernelReadTracer.NONE );
             read.singleNode( bar, cursor );
-            cursor.next();
+            assertTrue( cursor.next() );
             tracer.assertEvents();
 
             cursor.setTracer( tracer );
@@ -222,18 +223,32 @@ public abstract class KernelReadTracerTestBase<G extends KernelAPIReadTestSuppor
 
         try ( NodeValueIndexCursor cursor = cursors.allocateNodeValueIndexCursor() )
         {
-            // when
-            cursor.setTracer( tracer );
             int p1 = token.propertyKey( "p1" );
             IndexReference index = tx.schemaRead().index( token.nodeLabel( "Foo" ), p1 );
             IndexReadSession session = read.indexReadSession( index );
-            read.nodeIndexSeek( session, cursor, IndexOrder.NONE, false, IndexQuery.exists( p1 ) );
 
-            tracer.assertEvents( OnIndexSeek() ).clear();
-
-            cursor.next();
-            tracer.assertEvents( OnNode( cursor.nodeReference() ) );
+            assertIndexSeekTracing( tracer, cursor, session, IndexOrder.NONE, p1 );
+            assertIndexSeekTracing( tracer, cursor, session, IndexOrder.ASCENDING, p1 );
         }
+    }
+
+    private void assertIndexSeekTracing( TestKernelReadTracer tracer,
+                                         NodeValueIndexCursor cursor,
+                                         IndexReadSession session,
+                                         IndexOrder order,
+                                         int prop ) throws KernelException
+    {
+        // when
+        cursor.setTracer( tracer );
+        read.nodeIndexSeek( session, cursor, order, false, IndexQuery.range( prop, 0, false, 10, false ) );
+
+        tracer.assertEvents( OnIndexSeek() );
+
+        assertTrue( cursor.next() );
+        tracer.assertEvents( OnNode( cursor.nodeReference() ) );
+
+        assertFalse( cursor.next() );
+        tracer.assertEvents();
     }
 
     @Test
@@ -247,19 +262,21 @@ public abstract class KernelReadTracerTestBase<G extends KernelAPIReadTestSuppor
             // when
             cursor.setTracer( tracer );
             read.singleRelationship( has, cursor );
-            cursor.next();
-            tracer.assertEvents( OnRelationship( has ) ).clear();
+            assertTrue( cursor.next() );
+            tracer.assertEvents( OnRelationship( has ) );
 
             cursor.setTracer( KernelReadTracer.NONE );
             read.singleRelationship( is, cursor );
-            cursor.next();
+            assertTrue( cursor.next() );
             tracer.assertEvents();
 
             cursor.setTracer( tracer );
             read.singleRelationship( is, cursor );
-            cursor.next();
-            tracer.assertEvents( OnRelationship( is ) ).clear();
+            assertTrue( cursor.next() );
+            tracer.assertEvents( OnRelationship( is ) );
 
+            assertFalse( cursor.next() );
+            tracer.assertEvents();
         }
     }
 
@@ -269,24 +286,77 @@ public abstract class KernelReadTracerTestBase<G extends KernelAPIReadTestSuppor
         // given
         TestKernelReadTracer tracer = new TestKernelReadTracer();
 
-        try ( RelationshipScanCursor cursor = cursors.allocateRelationshipScanCursor() )
+        try ( NodeCursor nodeCursor = cursors.allocateNodeCursor();
+              RelationshipTraversalCursor cursor = cursors.allocateRelationshipTraversalCursor() )
         {
             // when
             cursor.setTracer( tracer );
-            read.singleRelationship( has, cursor );
-            cursor.next();
-            tracer.assertEvents( OnRelationship( has ) ).clear();
+
+            read.singleNode( foo, nodeCursor );
+            assertTrue( nodeCursor.next() );
+            nodeCursor.allRelationships( cursor );
+
+            assertTrue( cursor.next() );
+            tracer.assertEvents( OnRelationship( cursor.relationshipReference() ) );
 
             cursor.setTracer( KernelReadTracer.NONE );
-            read.singleRelationship( is, cursor );
-            cursor.next();
+            assertTrue( cursor.next() );
             tracer.assertEvents();
 
             cursor.setTracer( tracer );
-            read.singleRelationship( is, cursor );
-            cursor.next();
-            tracer.assertEvents( OnRelationship( is ) ).clear();
+            assertTrue( cursor.next() );
+            tracer.assertEvents( OnRelationship( cursor.relationshipReference() ) );
 
+            cursor.next(); // skip last two
+            cursor.next();
+            tracer.clear();
+
+            assertFalse( cursor.next() );
+            tracer.assertEvents();
+        }
+    }
+
+    @Test
+    void shouldTraceLazySelectionRelationshipTraversal()
+    {
+        // given
+        TestKernelReadTracer tracer = new TestKernelReadTracer();
+
+        try ( NodeCursor nodeCursor = cursors.allocateNodeCursor();
+              RelationshipGroupCursor groupCursor = cursors.allocateRelationshipGroupCursor();
+              RelationshipTraversalCursor cursor = cursors.allocateRelationshipTraversalCursor() )
+        {
+            // when
+            cursor.setTracer( tracer );
+
+            read.singleNode( foo, nodeCursor );
+            assertTrue( nodeCursor.next() );
+            nodeCursor.relationships( groupCursor );
+
+            assertTrue( groupCursor.next() );
+            if ( groupCursor.type() != token.relationshipType( "HAS" ) )
+            {
+                assertTrue( groupCursor.next() );
+            }
+
+            tx.dataRead().relationships( foo, groupCursor.outgoingReference(), cursor );
+
+            assertTrue( cursor.next() );
+            tracer.assertEvents( OnRelationship( cursor.relationshipReference() ) );
+
+            cursor.setTracer( KernelReadTracer.NONE );
+            assertTrue( cursor.next() );
+            tracer.assertEvents();
+
+            cursor.setTracer( tracer );
+            assertTrue( cursor.next() );
+            tracer.assertEvents( OnRelationship( cursor.relationshipReference() ) );
+
+            assertTrue( cursor.next() ); // skip last one
+            tracer.clear();
+
+            assertFalse( cursor.next() );
+            tracer.assertEvents();
         }
     }
 
@@ -303,15 +373,19 @@ public abstract class KernelReadTracerTestBase<G extends KernelAPIReadTestSuppor
             groupCursor.setTracer( tracer );
 
             read.singleNode( foo, nodeCursor );
-            nodeCursor.next();
+            assertTrue( nodeCursor.next() );
             nodeCursor.relationships( groupCursor );
 
-            groupCursor.next();
+            assertTrue( groupCursor.next() );
             int expectedType = groupCursor.type();
-            tracer.assertEvents( OnRelationshipGroup( expectedType ) ).clear();
+            tracer.assertEvents( OnRelationshipGroup( expectedType ) );
 
             groupCursor.setTracer( KernelReadTracer.NONE );
-            groupCursor.next();
+            assertTrue( groupCursor.next() );
+            tracer.assertEvents();
+
+            groupCursor.setTracer( tracer );
+            assertFalse( groupCursor.next() );
             tracer.assertEvents();
         }
     }
@@ -329,22 +403,25 @@ public abstract class KernelReadTracerTestBase<G extends KernelAPIReadTestSuppor
             propertyCursor.setTracer( tracer );
 
             read.singleNode( foo, nodeCursor );
-            nodeCursor.next();
+            assertTrue( nodeCursor.next() );
             nodeCursor.properties( propertyCursor );
 
-            propertyCursor.next();
-            tracer.assertEvents( OnProperty( propertyCursor.propertyKey() ) ).clear();
+            assertTrue( propertyCursor.next() );
+            tracer.assertEvents( OnProperty( propertyCursor.propertyKey() ) );
 
-            propertyCursor.next();
-            tracer.assertEvents( OnProperty( propertyCursor.propertyKey() ) ).clear();
+            assertTrue( propertyCursor.next() );
+            tracer.assertEvents( OnProperty( propertyCursor.propertyKey() ) );
 
             propertyCursor.setTracer( KernelReadTracer.NONE );
-            propertyCursor.next();
+            assertTrue( propertyCursor.next() );
             tracer.assertEvents();
 
             propertyCursor.setTracer( tracer );
-            propertyCursor.next();
-            tracer.assertEvents( OnProperty( propertyCursor.propertyKey() ) ).clear();
+            assertTrue( propertyCursor.next() );
+            tracer.assertEvents( OnProperty( propertyCursor.propertyKey() ) );
+
+            assertFalse( propertyCursor.next() );
+            tracer.assertEvents();
         }
     }
 }

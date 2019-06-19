@@ -21,7 +21,6 @@ package org.neo4j.kernel.impl.newapi;
 
 import org.neo4j.internal.kernel.api.IndexOrder;
 import org.neo4j.internal.kernel.api.IndexQuery;
-import org.neo4j.internal.kernel.api.KernelReadTracer;
 import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.RelationshipIndexCursor;
 import org.neo4j.internal.kernel.api.RelationshipScanCursor;
@@ -79,12 +78,6 @@ final class DefaultRelationshipIndexCursor extends IndexCursor<IndexProgressor> 
                     "state into account. This means that the relationship index cursor has to account for the transaction state, but this has not been " +
                     "implemented." );
         }
-    }
-
-    @Override
-    public void setTracer( KernelReadTracer tracer )
-    {
-        throw new UnsupportedOperationException( "not implemented" );
     }
 
     @Override
@@ -146,7 +139,12 @@ final class DefaultRelationshipIndexCursor extends IndexCursor<IndexProgressor> 
     @Override
     public boolean next()
     {
-        return super.innerNext();
+        boolean next = super.innerNext();
+        if ( next )
+        {
+            getTracer().onRelationship( relationshipReference() );
+        }
+        return next;
     }
 
     @Override
@@ -160,7 +158,7 @@ final class DefaultRelationshipIndexCursor extends IndexCursor<IndexProgressor> 
     {
         if ( !isClosed() )
         {
-            super.close();
+            closeProgressor();
             this.relationship = NO_ID;
             this.score = Float.NaN;
             pool.accept( this );
@@ -170,7 +168,7 @@ final class DefaultRelationshipIndexCursor extends IndexCursor<IndexProgressor> 
     @Override
     public boolean isClosed()
     {
-        return super.isClosed();
+        return isProgressorClosed();
     }
 
     public void release()

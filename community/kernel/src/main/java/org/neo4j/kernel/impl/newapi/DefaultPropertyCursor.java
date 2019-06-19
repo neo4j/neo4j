@@ -22,7 +22,6 @@ package org.neo4j.kernel.impl.newapi;
 import java.util.Iterator;
 import java.util.function.Supplier;
 
-import org.neo4j.internal.kernel.api.KernelReadTracer;
 import org.neo4j.internal.kernel.api.LabelSet;
 import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.PropertyCursor;
@@ -36,7 +35,7 @@ import org.neo4j.values.storable.ValueGroup;
 
 import static org.neo4j.kernel.impl.newapi.Read.NO_ID;
 
-public class DefaultPropertyCursor implements PropertyCursor, Supplier<LabelSet>
+public class DefaultPropertyCursor extends TraceableCursor implements PropertyCursor, Supplier<LabelSet>
 {
     private static final long NO_NODE = -1L;
 
@@ -50,13 +49,11 @@ public class DefaultPropertyCursor implements PropertyCursor, Supplier<LabelSet>
     private AccessMode accessMode;
     private long nodeReference = NO_NODE;
     private LabelSet labels;
-    private KernelReadTracer tracer;
 
     DefaultPropertyCursor( CursorPool<DefaultPropertyCursor> pool, StoragePropertyCursor storeCursor )
     {
         this.pool = pool;
         this.storeCursor = storeCursor;
-        this.tracer = KernelReadTracer.NONE;
     }
 
     void initNode( long nodeReference, long reference, Read read, AssertOpen assertOpen )
@@ -137,13 +134,6 @@ public class DefaultPropertyCursor implements PropertyCursor, Supplier<LabelSet>
         this.labels = null;
     }
 
-    @Override
-    public void setTracer( KernelReadTracer tracer )
-    {
-        KernelReadTracer.assertNonNull( tracer );
-        this.tracer = tracer;
-    }
-
     boolean allowed()
     {
         int propertyKey = propertyKey();
@@ -166,7 +156,7 @@ public class DefaultPropertyCursor implements PropertyCursor, Supplier<LabelSet>
             if ( txStateChangedProperties.hasNext() )
             {
                 txStateValue = txStateChangedProperties.next();
-                tracer.onProperty( propertyKey() );
+                getTracer().onProperty( propertyKey() );
                 return true;
             }
             else
@@ -181,7 +171,7 @@ public class DefaultPropertyCursor implements PropertyCursor, Supplier<LabelSet>
             boolean skip = propertiesState != null && propertiesState.isPropertyChangedOrRemoved( storeCursor.propertyKey() );
             if ( !skip && allowed( ) )
             {
-                tracer.onProperty( propertyKey() );
+                getTracer().onProperty( propertyKey() );
                 return true;
             }
         }

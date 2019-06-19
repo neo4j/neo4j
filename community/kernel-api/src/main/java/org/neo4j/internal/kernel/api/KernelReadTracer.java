@@ -24,6 +24,12 @@ import org.neo4j.util.Preconditions;
 /**
  * Tracer of kernel API reads. The Kernel will callback the tracer methods on various key events
  * of kernel reads, allowing a tracer to analyze the read patterns.
+ *
+ * Note: In the initial version of this tracer we only added the callbacks that were
+ *       necessary to support cypher PROFILE dbHits, and some extra which makes testing
+ *       easier. If we adopt this mechanism for other uses, it might be a good idea to
+ *       add additional callback, extend some callbacks with more details, or
+ *       differentiate callbacks (e.g. onNode) depending on the underlying read.
  */
 public interface KernelReadTracer
 {

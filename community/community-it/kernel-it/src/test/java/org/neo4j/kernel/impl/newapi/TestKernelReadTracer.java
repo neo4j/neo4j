@@ -80,15 +80,15 @@ public class TestKernelReadTracer implements KernelReadTracer
         traceEvents.add( OnProperty( propertyKey ) );
     }
 
-    TestKernelReadTracer assertEvents( TraceEvent... expected )
+    void assertEvents( TraceEvent... expected )
     {
-        return assertEvents( Arrays.asList( expected ) );
+        assertEvents( Arrays.asList( expected ) );
     }
 
-    TestKernelReadTracer assertEvents( List<TraceEvent> expected )
+    void assertEvents( List<TraceEvent> expected )
     {
         assertThat( traceEvents, equalTo( expected ) );
-        return this;
+        clear();
     }
 
     void clear()

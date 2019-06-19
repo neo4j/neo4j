@@ -23,9 +23,6 @@ import org.eclipse.collections.api.iterator.LongIterator;
 import org.eclipse.collections.impl.iterator.ImmutableEmptyLongIterator;
 import org.eclipse.collections.impl.set.mutable.primitive.LongHashSet;
 
-import java.util.Arrays;
-
-import org.neo4j.internal.kernel.api.KernelReadTracer;
 import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.RelationshipScanCursor;
 import org.neo4j.internal.kernel.api.security.AccessMode;
@@ -41,13 +38,10 @@ class DefaultRelationshipScanCursor extends DefaultRelationshipCursor<StorageRel
     private LongIterator addedRelationships;
     private CursorPool<DefaultRelationshipScanCursor> pool;
 
-    private KernelReadTracer tracer;
-
     DefaultRelationshipScanCursor( CursorPool<DefaultRelationshipScanCursor> pool, StorageRelationshipScanCursor storeCursor )
     {
         super( storeCursor );
         this.pool = pool;
-        this.tracer = KernelReadTracer.NONE;
     }
 
     void scan( int type, Read read )
@@ -82,13 +76,6 @@ class DefaultRelationshipScanCursor extends DefaultRelationshipCursor<StorageRel
     }
 
     @Override
-    public void setTracer( KernelReadTracer tracer )
-    {
-        KernelReadTracer.assertNonNull( tracer );
-        this.tracer = tracer;
-    }
-
-    @Override
     public boolean next()
     {
         // Check tx state
@@ -99,7 +86,7 @@ class DefaultRelationshipScanCursor extends DefaultRelationshipCursor<StorageRel
             if ( addedRelationships.hasNext() )
             {
                 read.txState().relationshipVisit( addedRelationships.next(), relationshipTxStateDataVisitor );
-                tracer.onRelationship( relationshipReference() );
+                getTracer().onRelationship( relationshipReference() );
                 return true;
             }
             else
@@ -113,7 +100,7 @@ class DefaultRelationshipScanCursor extends DefaultRelationshipCursor<StorageRel
             boolean skip = hasChanges && read.txState().relationshipIsDeletedInThisTx( storeCursor.entityReference() );
             if ( !skip && allowedToSeeEndNode() )
             {
-                tracer.onRelationship( relationshipReference() );
+                getTracer().onRelationship( relationshipReference() );
                 return true;
             }
         }

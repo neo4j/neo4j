@@ -31,7 +31,6 @@ import java.util.Iterator;
 
 import org.neo4j.internal.kernel.api.IndexOrder;
 import org.neo4j.internal.kernel.api.IndexQuery;
-import org.neo4j.internal.kernel.api.KernelReadTracer;
 import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.NodeValueIndexCursor;
 import org.neo4j.internal.schema.IndexDescriptor;
@@ -70,7 +69,6 @@ final class DefaultNodeValueIndexCursor extends IndexCursor<IndexProgressor>
     private IndexOrder indexOrder;
     private final CursorPool<DefaultNodeValueIndexCursor> pool;
     private SortedMergeJoin sortedMergeJoin = new SortedMergeJoin();
-    private KernelReadTracer tracer;
 
     DefaultNodeValueIndexCursor( CursorPool<DefaultNodeValueIndexCursor> pool )
     {
@@ -78,7 +76,6 @@ final class DefaultNodeValueIndexCursor extends IndexCursor<IndexProgressor>
         node = NO_ID;
         score = Float.NaN;
         indexOrder = IndexOrder.NONE;
-        tracer = KernelReadTracer.NONE;
     }
 
     @Override
@@ -97,7 +94,7 @@ final class DefaultNodeValueIndexCursor extends IndexCursor<IndexProgressor>
         this.needsValues = needsValues;
         this.query = query;
 
-        tracer.onIndexSeek();
+        getTracer().onIndexSeek();
 
         if ( !indexIncludesTransactionState && read.hasTxStateWithChanges() && query.length > 0 )
         {
@@ -186,13 +183,6 @@ final class DefaultNodeValueIndexCursor extends IndexCursor<IndexProgressor>
     }
 
     @Override
-    public void setTracer( KernelReadTracer tracer )
-    {
-        KernelReadTracer.assertNonNull( tracer );
-        this.tracer = tracer;
-    }
-
-    @Override
     public boolean acceptEntity( long reference, float score, Value[] values )
     {
         if ( isRemoved( reference ) )
@@ -233,7 +223,7 @@ final class DefaultNodeValueIndexCursor extends IndexCursor<IndexProgressor>
         {
             this.node = added.next();
             this.values = null;
-            tracer.onNode( nodeReference() );
+            getTracer().onNode( nodeReference() );
             return true;
         }
         else if ( needsValues && addedWithValues.hasNext() )
@@ -241,7 +231,7 @@ final class DefaultNodeValueIndexCursor extends IndexCursor<IndexProgressor>
             NodeWithPropertyValues nodeWithPropertyValues = addedWithValues.next();
             this.node = nodeWithPropertyValues.getNodeId();
             this.values = nodeWithPropertyValues.getValues();
-            tracer.onNode( nodeReference() );
+            getTracer().onNode( nodeReference() );
             return true;
         }
         else if ( added.hasNext() || addedWithValues.hasNext() )
@@ -253,7 +243,7 @@ final class DefaultNodeValueIndexCursor extends IndexCursor<IndexProgressor>
             boolean next = innerNext();
             if ( next )
             {
-                tracer.onNode( nodeReference() );
+                getTracer().onNode( nodeReference() );
             }
             return next;
         }
@@ -276,7 +266,7 @@ final class DefaultNodeValueIndexCursor extends IndexCursor<IndexProgressor>
         boolean next = node != -1;
         if ( next )
         {
-            tracer.onNode( nodeReference() );
+            getTracer().onNode( nodeReference() );
         }
         return next;
     }
@@ -341,7 +331,7 @@ final class DefaultNodeValueIndexCursor extends IndexCursor<IndexProgressor>
     {
         if ( !isClosed() )
         {
-            super.close();
+            closeProgressor();
             this.node = NO_ID;
             this.score = Float.NaN;
             this.query = null;
@@ -358,7 +348,7 @@ final class DefaultNodeValueIndexCursor extends IndexCursor<IndexProgressor>
     @Override
     public boolean isClosed()
     {
-        return super.isClosed();
+        return isProgressorClosed();
     }
 
     @Override

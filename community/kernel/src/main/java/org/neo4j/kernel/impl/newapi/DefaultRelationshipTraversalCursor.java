@@ -107,12 +107,6 @@ class DefaultRelationshipTraversalCursor extends DefaultRelationshipCursor<Stora
     }
 
     @Override
-    public void setTracer( KernelReadTracer tracer )
-    {
-        throw new UnsupportedOperationException( "not implemented" );
-    }
-
-    @Override
     public void neighbour( NodeCursor cursor )
     {
         read.singleNode( neighbourNodeReference(), cursor );
@@ -161,6 +155,7 @@ class DefaultRelationshipTraversalCursor extends DefaultRelationshipCursor<Stora
             setupFilterStateIfNeeded();
             if ( filterInitialized && !(hasChanges && read.txState().relationshipIsDeletedInThisTx( relationshipReference() )) )
             {
+                getTracer().onRelationship( relationshipReference() );
                 return true;
             }
         }
@@ -175,6 +170,7 @@ class DefaultRelationshipTraversalCursor extends DefaultRelationshipCursor<Stora
             if ( addedRelationships.hasNext() )
             {
                 read.txState().relationshipVisit( addedRelationships.next(), relationshipTxStateDataVisitor );
+                getTracer().onRelationship( relationshipReference() );
                 return true;
             }
             else
@@ -188,6 +184,7 @@ class DefaultRelationshipTraversalCursor extends DefaultRelationshipCursor<Stora
             boolean skip = hasChanges && read.txState().relationshipIsDeletedInThisTx( storeCursor.entityReference() );
             if ( !skip && allowedToSeeEndNode() )
             {
+                getTracer().onRelationship( relationshipReference() );
                 return true;
             }
         }

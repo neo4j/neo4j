@@ -24,7 +24,6 @@ import org.eclipse.collections.api.iterator.LongIterator;
 import org.eclipse.collections.api.set.primitive.MutableIntSet;
 import org.eclipse.collections.impl.set.mutable.primitive.IntHashSet;
 
-import org.neo4j.internal.kernel.api.KernelReadTracer;
 import org.neo4j.internal.kernel.api.RelationshipGroupCursor;
 import org.neo4j.internal.kernel.api.RelationshipTraversalCursor;
 import org.neo4j.storageengine.api.RelationshipDirection;
@@ -40,11 +39,10 @@ import static org.neo4j.kernel.impl.newapi.RelationshipReferenceEncoding.encodeN
 import static org.neo4j.kernel.impl.newapi.RelationshipReferenceEncoding.encodeNoOutgoing;
 import static org.neo4j.kernel.impl.newapi.RelationshipReferenceEncoding.encodeSelection;
 
-class DefaultRelationshipGroupCursor implements RelationshipGroupCursor
+class DefaultRelationshipGroupCursor extends TraceableCursor implements RelationshipGroupCursor
 {
     private Read read;
     private final CursorPool<DefaultRelationshipGroupCursor> pool;
-    private KernelReadTracer tracer;
 
     private StorageRelationshipGroupCursor storeCursor;
     private boolean hasCheckedTxState;
@@ -57,7 +55,6 @@ class DefaultRelationshipGroupCursor implements RelationshipGroupCursor
     {
         this.pool = pool;
         this.storeCursor = storeCursor;
-        this.tracer = KernelReadTracer.NONE;
     }
 
     void init( long nodeReference, long reference, boolean nodeIsDense, Read read )
@@ -84,13 +81,6 @@ class DefaultRelationshipGroupCursor implements RelationshipGroupCursor
     }
 
     @Override
-    public void setTracer( KernelReadTracer tracer )
-    {
-        KernelReadTracer.assertNonNull( tracer );
-        this.tracer = tracer;
-    }
-
-    @Override
     public boolean next()
     {
         //We need to check tx state if there are new types added
@@ -108,13 +98,13 @@ class DefaultRelationshipGroupCursor implements RelationshipGroupCursor
             boolean next = nextFromTxState();
             if ( next )
             {
-                tracer.onRelationshipGroup( type() );
+                getTracer().onRelationshipGroup( type() );
             }
             return next;
         }
 
         markTypeAsSeen( type() );
-        tracer.onRelationshipGroup( type() );
+        getTracer().onRelationshipGroup( type() );
         return true;
     }
 

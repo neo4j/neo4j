@@ -19,37 +19,11 @@
  */
 package org.neo4j.kernel.impl.newapi;
 
-import org.neo4j.kernel.api.index.IndexProgressor;
-
-abstract class IndexCursor<T extends IndexProgressor> extends TraceableCursor
+public class KernelReadTracerTxStateTest extends KernelReadTracerTxStateTestBase<WriteTestSupport>
 {
-    private T progressor;
-
-    final void initialize( T progressor )
+    @Override
+    public WriteTestSupport newTestSupport()
     {
-        if ( this.progressor != null )
-        {
-            this.progressor.close();
-        }
-        this.progressor = progressor;
-    }
-
-    final boolean innerNext()
-    {
-        return progressor != null && progressor.next();
-    }
-
-    void closeProgressor()
-    {
-        if ( progressor != null )
-        {
-            progressor.close();
-        }
-        progressor = null;
-    }
-
-    boolean isProgressorClosed()
-    {
-        return progressor == null;
+        return new WriteTestSupport();
     }
 }

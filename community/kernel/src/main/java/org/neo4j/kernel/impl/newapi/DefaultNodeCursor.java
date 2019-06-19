@@ -25,7 +25,6 @@ import org.eclipse.collections.impl.factory.primitive.LongSets;
 import org.eclipse.collections.impl.iterator.ImmutableEmptyLongIterator;
 import org.eclipse.collections.impl.set.mutable.primitive.LongHashSet;
 
-import org.neo4j.internal.kernel.api.KernelReadTracer;
 import org.neo4j.internal.kernel.api.LabelSet;
 import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.PropertyCursor;
@@ -36,12 +35,11 @@ import org.neo4j.kernel.api.txstate.TransactionState;
 import org.neo4j.storageengine.api.AllNodeScan;
 import org.neo4j.storageengine.api.StorageNodeCursor;
 import org.neo4j.storageengine.api.txstate.LongDiffSets;
-import org.neo4j.util.Preconditions;
 
 import static org.neo4j.kernel.impl.newapi.Read.NO_ID;
 import static org.neo4j.kernel.impl.newapi.RelationshipReferenceEncoding.encodeDense;
 
-class DefaultNodeCursor implements NodeCursor
+class DefaultNodeCursor extends TraceableCursor implements NodeCursor
 {
     Read read;
     HasChanges hasChanges = HasChanges.MAYBE;
@@ -50,7 +48,6 @@ class DefaultNodeCursor implements NodeCursor
     private long currentAddedInTx;
     private long single;
     private AccessMode accessMode;
-    private KernelReadTracer tracer;
 
     private final CursorPool<DefaultNodeCursor> pool;
 
@@ -58,7 +55,6 @@ class DefaultNodeCursor implements NodeCursor
     {
         this.pool = pool;
         this.storeCursor = storeCursor;
-        this.tracer = KernelReadTracer.NONE;
     }
 
     void scan( Read read )
@@ -70,7 +66,7 @@ class DefaultNodeCursor implements NodeCursor
         this.hasChanges = HasChanges.MAYBE;
         this.addedNodes = ImmutableEmptyLongIterator.INSTANCE;
         this.accessMode = read.ktx.securityContext().mode();
-        tracer.onAllNodesScan();
+        getTracer().onAllNodesScan();
     }
 
     boolean scanBatch( Read read, AllNodeScan scan, int sizeHint, LongIterator addedNodes, boolean hasChanges )
@@ -94,13 +90,6 @@ class DefaultNodeCursor implements NodeCursor
         this.hasChanges = HasChanges.MAYBE;
         this.addedNodes = ImmutableEmptyLongIterator.INSTANCE;
         this.accessMode = read.ktx.securityContext().mode();
-    }
-
-    @Override
-    public void setTracer( KernelReadTracer tracer )
-    {
-        KernelReadTracer.assertNonNull( tracer );
-        this.tracer = tracer;
     }
 
     @Override
@@ -233,7 +222,7 @@ class DefaultNodeCursor implements NodeCursor
             if ( addedNodes.hasNext() )
             {
                 currentAddedInTx = addedNodes.next();
-                tracer.onNode( nodeReference() );
+                getTracer().onNode( nodeReference() );
                 return true;
             }
             else
@@ -247,7 +236,7 @@ class DefaultNodeCursor implements NodeCursor
             boolean skip = hasChanges && read.txState().nodeIsDeletedInThisTx( storeCursor.entityReference() );
             if ( !skip && allowsTraverse() )
             {
-                tracer.onNode( nodeReference() );
+                getTracer().onNode( nodeReference() );
                 return true;
             }
         }
