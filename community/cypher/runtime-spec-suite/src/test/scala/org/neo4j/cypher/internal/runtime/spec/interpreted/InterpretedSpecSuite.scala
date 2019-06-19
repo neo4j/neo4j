@@ -64,4 +64,5 @@ class InterpretedProfileDbHitsTest extends ProfileDbHitsTestBase(COMMUNITY.EDITI
                                                                  InterpretedRuntime,
                                                                  SIZE_HINT,
                                                                  costOfLabelScan = 2,
-                                                                 costOfProperty = 1)
+                                                                 costOfProperty = 1,
+                                                                 costOfExpand = 1)

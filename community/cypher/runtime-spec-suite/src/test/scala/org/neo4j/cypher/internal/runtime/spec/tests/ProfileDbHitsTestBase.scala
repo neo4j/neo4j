@@ -27,7 +27,8 @@ abstract class ProfileDbHitsTestBase[CONTEXT <: RuntimeContext](edition: Edition
                                                                 runtime: CypherRuntime[CONTEXT],
                                                                 sizeHint: Int,
                                                                 costOfProperty: Int,
-                                                                costOfLabelScan: Int
+                                                                costOfLabelScan: Int,
+                                                                costOfExpand: Int
                                                          ) extends RuntimeTestSuite[CONTEXT](edition, runtime) {
 
   test("should profile dbHits of all nodes scan") {
@@ -146,7 +147,7 @@ abstract class ProfileDbHitsTestBase[CONTEXT <: RuntimeContext](edition: Edition
 
     // then
     val queryProfile = runtimeResult.runtimeResult.queryProfile()
-    queryProfile.operatorProfile(1).dbHits() shouldBe (sizeHint * 2L + 1) // expand
+    queryProfile.operatorProfile(1).dbHits() shouldBe (sizeHint * 2L + costOfExpand) // expand
     queryProfile.operatorProfile(2).dbHits() shouldBe 0 // limit
     queryProfile.operatorProfile(3).dbHits() should be >= (sizeHint * 2L) // all node scan
   }
