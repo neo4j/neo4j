@@ -19,7 +19,6 @@
  */
 package org.neo4j.cypher.internal.runtime.spec
 
-import org.neo4j.cypher.exceptionHandler.runSafely
 import org.neo4j.cypher.internal.runtime.{QueryStatistics, ResourceManager}
 import org.neo4j.cypher.result.{QueryProfile, RuntimeResult}
 import org.neo4j.kernel.impl.query.{QuerySubscriber, TransactionalContext}
@@ -49,12 +48,16 @@ class ClosingRuntimeResult(inner: RuntimeResult,
     closeResources(true)
   }
 
-  override def request(numberOfRecords: Long): Unit =
-    runSafely[Unit](inner.request(numberOfRecords))(t => {
-      this.error = t
-      subscriber.onError(t)
-      close()
-  })
+  override def request(numberOfRecords: Long): Unit = {
+    try {
+      inner.request(numberOfRecords)
+    } catch {
+      case t: Throwable =>
+        this.error = t
+        subscriber.onError(t)
+        close()
+    }
+  }
 
   override def cancel(): Unit = inner.cancel()
 
