@@ -34,7 +34,7 @@ import org.neo4j.codegen.source.SourceCode.{PRINT_SOURCE, SOURCECODE}
   */
 object CodeGeneration {
 
-  private val DEBUG = false
+  private val DEBUG = true
 
   def compileClass[T](c: ClassDeclaration[T]): Class[T] = {
     val handle = compileClassDeclaration(c)
