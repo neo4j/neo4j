@@ -28,8 +28,9 @@ abstract class ProfileDbHitsTestBase[CONTEXT <: RuntimeContext](edition: Edition
                                                                 runtime: CypherRuntime[CONTEXT],
                                                                 sizeHint: Int,
                                                                 costOfProperty: Int,
-                                                                costOfLabelScan: Int,
-                                                                costOfExpand: Int
+                                                                costOfLabelLookup: Int,
+                                                                costOfExpand: Int,
+                                                                costOfRelationshipTypeLookup: Int
                                                          ) extends RuntimeTestSuite[CONTEXT](edition, runtime) {
 
   test("should profile dbHits of all nodes scan") {
@@ -67,7 +68,7 @@ abstract class ProfileDbHitsTestBase[CONTEXT <: RuntimeContext](edition: Edition
 
     // then
     val queryProfile = runtimeResult.runtimeResult.queryProfile()
-    queryProfile.operatorProfile(1).dbHits() should be (sizeHint + costOfLabelScan) // label scan
+    queryProfile.operatorProfile(1).dbHits() should be (sizeHint + 1 + costOfLabelLookup) // label scan
   }
 
   test("should profile dbHits of node index seek + scan") {
@@ -131,6 +132,40 @@ abstract class ProfileDbHitsTestBase[CONTEXT <: RuntimeContext](edition: Edition
 
     // then
     result.runtimeResult.queryProfile().operatorProfile(1).dbHits() shouldBe 3 // node by id
+  }
+
+  test("should profile dbHits of NodeCountFromCountStore") {
+    // given
+    nodeGraph(10, "LabelA")
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x")
+      .nodeCountFromCountStore("x", List(None))
+      .build()
+
+    val result = profile(logicalQuery, runtime)
+    consume(result)
+
+    // then
+    result.runtimeResult.queryProfile().operatorProfile(1).dbHits() shouldBe 1 // node count from count store
+  }
+
+  test("should profile dbHits of RelationshipFromCountStore") {
+    // given
+    bipartiteGraph(10, "LabelA", "LabelB", "RelType")
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x")
+      .relationshipCountFromCountStore("x", None, List("RelType"), Some("LabelB"))
+      .build()
+
+    val result = profile(logicalQuery, runtime)
+    consume(result)
+
+    // then
+    result.runtimeResult.queryProfile().operatorProfile(1).dbHits() shouldBe 1 + costOfRelationshipTypeLookup // relationship count from count store
   }
 
   test("should profile dbHits of input + produce results") {

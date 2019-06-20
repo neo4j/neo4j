@@ -59,10 +59,4 @@ class InterpretedNodeHashJoinTest extends NodeHashJoinTestBase(COMMUNITY.EDITION
 class InterpretedReactiveResultsTest extends ReactiveResultTestBase(COMMUNITY.EDITION, InterpretedRuntime)
 class InterpretedMiscTest extends MiscTestBase(COMMUNITY.EDITION, InterpretedRuntime)
 class InterpretedProvidedOrderTest extends ProvidedOrderTestBase(COMMUNITY.EDITION, InterpretedRuntime, SIZE_HINT)
-
-class InterpretedProfileDbHitsTest extends ProfileDbHitsTestBase(COMMUNITY.EDITION,
-                                                                 InterpretedRuntime,
-                                                                 SIZE_HINT,
-                                                                 costOfLabelScan = 2,
-                                                                 costOfProperty = 1,
-                                                                 costOfExpand = 1)
+class InterpretedProfileDbHitsTest extends LegacyDbHitsTestBase(COMMUNITY.EDITION, InterpretedRuntime, SIZE_HINT)
