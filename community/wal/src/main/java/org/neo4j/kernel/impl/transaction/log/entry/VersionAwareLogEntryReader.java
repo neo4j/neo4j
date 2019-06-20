@@ -118,10 +118,7 @@ public class VersionAwareLogEntryReader<SOURCE extends ReadableClosablePositionA
                     throw new IOException( e );
                 }
 
-                if ( !entryReader.skip() )
-                {
-                    return entry;
-                }
+                return entry;
             }
         }
         catch ( ReadPastEndException e )

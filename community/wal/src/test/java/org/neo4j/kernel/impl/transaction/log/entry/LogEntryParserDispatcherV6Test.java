@@ -31,7 +31,6 @@ import org.neo4j.kernel.impl.transaction.log.LogPositionMarker;
 import org.neo4j.storageengine.api.CommandReaderFactory;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 class LogEntryParserDispatcherV6Test
@@ -63,7 +62,6 @@ class LogEntryParserDispatcherV6Test
 
         // then
         assertEquals( start, logEntry );
-        assertFalse( parser.skip() );
     }
 
     @Test
@@ -84,7 +82,6 @@ class LogEntryParserDispatcherV6Test
 
         // then
         assertEquals( commit, logEntry );
-        assertFalse( parser.skip() );
     }
 
     @Test
@@ -104,7 +101,6 @@ class LogEntryParserDispatcherV6Test
 
         // then
         assertEquals( command, logEntry );
-        assertFalse( parser.skip() );
     }
 
     @Test
@@ -125,7 +121,6 @@ class LogEntryParserDispatcherV6Test
 
         // then
         assertEquals( checkPoint, logEntry );
-        assertFalse( parser.skip() );
     }
 
     @Test

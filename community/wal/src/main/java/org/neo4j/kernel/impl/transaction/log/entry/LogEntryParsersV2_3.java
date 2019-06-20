@@ -53,12 +53,6 @@ public enum LogEntryParsersV2_3 implements LogEntryParser<LogEntry>
                 {
                     return LogEntryByteCodes.TX_START;
                 }
-
-                @Override
-                public boolean skip()
-                {
-                    return false;
-                }
             },
 
     COMMAND
@@ -75,12 +69,6 @@ public enum LogEntryParsersV2_3 implements LogEntryParser<LogEntry>
                 public byte byteCode()
                 {
                     return LogEntryByteCodes.COMMAND;
-                }
-
-                @Override
-                public boolean skip()
-                {
-                    return false;
                 }
             },
 
@@ -100,12 +88,6 @@ public enum LogEntryParsersV2_3 implements LogEntryParser<LogEntry>
                 {
                     return LogEntryByteCodes.TX_COMMIT;
                 }
-
-                @Override
-                public boolean skip()
-                {
-                    return false;
-                }
             },
 
     CHECK_POINT
@@ -123,12 +105,6 @@ public enum LogEntryParsersV2_3 implements LogEntryParser<LogEntry>
                 public byte byteCode()
                 {
                     return LogEntryByteCodes.CHECK_POINT;
-                }
-
-                @Override
-                public boolean skip()
-                {
-                    return false;
                 }
             }
 }

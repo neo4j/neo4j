@@ -53,9 +53,4 @@ public interface LogEntryParser<T extends LogEntry>
      * @return code representing the type of log entry.
      */
     byte byteCode();
-
-    /**
-     * @return whether or not entries parsed by this parser should be skipped, like an empty entry.
-     */
-    boolean skip();
 }
