@@ -21,7 +21,12 @@ package org.neo4j.kernel.impl.newapi;
 
 import org.junit.jupiter.api.Test;
 
+import java.util.Optional;
+import java.util.concurrent.TimeoutException;
+
+import org.neo4j.common.EntityType;
 import org.neo4j.exceptions.KernelException;
+import org.neo4j.function.Predicates;
 import org.neo4j.graphdb.Label;
 import org.neo4j.internal.kernel.api.IndexOrder;
 import org.neo4j.internal.kernel.api.IndexQuery;
@@ -32,13 +37,19 @@ import org.neo4j.internal.kernel.api.NodeLabelIndexCursor;
 import org.neo4j.internal.kernel.api.NodeValueIndexCursor;
 import org.neo4j.internal.kernel.api.PropertyCursor;
 import org.neo4j.internal.kernel.api.RelationshipGroupCursor;
+import org.neo4j.internal.kernel.api.RelationshipIndexCursor;
 import org.neo4j.internal.kernel.api.RelationshipScanCursor;
 import org.neo4j.internal.kernel.api.RelationshipTraversalCursor;
 import org.neo4j.internal.kernel.api.Transaction;
+import org.neo4j.internal.schema.IndexConfig;
+import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.values.storable.Values;
 
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.neo4j.internal.kernel.api.InternalIndexState.ONLINE;
+import static org.neo4j.kernel.api.impl.fulltext.FulltextIndexProviderFactory.DESCRIPTOR;
 import static org.neo4j.kernel.impl.newapi.TestKernelReadTracer.OnAllNodesScan;
 import static org.neo4j.kernel.impl.newapi.TestKernelReadTracer.OnIndexSeek;
 import static org.neo4j.kernel.impl.newapi.TestKernelReadTracer.OnLabelScan;
@@ -264,6 +275,64 @@ abstract class KernelReadTracerTxStateTestBase<G extends KernelAPIWriteTestSuppo
             assertFalse( propertyCursor.next() );
             tracer.assertEvents();
         }
+    }
+
+    @Test
+    void shouldTraceRelationshipIndexCursor() throws KernelException, TimeoutException
+    {
+        // given
+        int connection;
+        int name;
+        String indexName = "myIndex";
+        IndexReference index;
+
+        try ( Transaction tx = beginTransaction() )
+        {
+            connection = tx.tokenWrite().relationshipTypeGetOrCreateForName( "Connection" );
+            name = tx.tokenWrite().propertyKeyGetOrCreateForName( "name" );
+            tx.success();
+        }
+
+        try ( Transaction tx = beginTransaction() )
+        {
+            SchemaDescriptor schema = SchemaDescriptor.fulltext( EntityType.RELATIONSHIP,
+                                                                 IndexConfig.empty(),
+                                                                 array( connection ),
+                                                                 array( name ) );
+            index = tx.schemaWrite().indexCreate( schema, DESCRIPTOR.name(), Optional.of( indexName ) );
+            tx.success();
+        }
+
+        try ( Transaction tx = beginTransaction() )
+        {
+            Predicates.awaitEx( () -> tx.schemaRead().indexGetState( index ) == ONLINE, 1, MINUTES );
+            long n1 = tx.dataWrite().nodeCreate();
+            long n2 = tx.dataWrite().nodeCreate();
+            long r = tx.dataWrite().relationshipCreate( n1, connection, n2 );
+            tx.dataWrite().relationshipSetProperty( r, name, Values.stringValue( "transformational" ) );
+            tx.success();
+        }
+
+        // when
+        TestKernelReadTracer tracer = new TestKernelReadTracer();
+
+        try ( Transaction tx = beginTransaction();
+              RelationshipIndexCursor cursor = tx.cursors().allocateRelationshipIndexCursor() )
+        {
+            cursor.setTracer( tracer );
+            tx.dataRead().relationshipIndexSeek( index, cursor, IndexQuery.fulltextSearch( "transformational" ) );
+
+            assertTrue( cursor.next() );
+            tracer.assertEvents( OnRelationship( cursor.relationshipReference() ) );
+
+            assertFalse( cursor.next() );
+            tracer.assertEvents();
+        }
+    }
+
+    private int[] array( int... elements )
+    {
+        return elements;
     }
 
     @SuppressWarnings( "SameParameterValue" )
