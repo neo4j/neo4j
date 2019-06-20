@@ -892,10 +892,11 @@ public abstract class ListValue extends VirtualValue implements SequenceValue, I
     public ListValue distinct()
     {
         HashSet<AnyValue> seen = new HashSet<>();
-        ArrayList<AnyValue> kept = new ArrayList<>(  );
-        for ( AnyValue value: this )
+        ArrayList<AnyValue> kept = new ArrayList<>();
+        for ( AnyValue value : this )
         {
-            if ( seen.add( value ) ) {
+            if ( seen.add( value ) )
+            {
                 kept.add( value );
             }
         }
