@@ -22,6 +22,7 @@ package org.neo4j.values.virtual;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.NoSuchElementException;
@@ -237,7 +238,7 @@ public abstract class ListValue extends VirtualValue implements SequenceValue, I
             case RANDOM_ACCESS:
                 return super.iterator();
             case ITERATION:
-                return new PrefetchingIterator<AnyValue>()
+                return new PrefetchingIterator<>()
                 {
                     private int count;
                     private Iterator<AnyValue> innerIterator = inner.iterator();
@@ -725,7 +726,7 @@ public abstract class ListValue extends VirtualValue implements SequenceValue, I
     @Override
     public Iterator<AnyValue> iterator()
     {
-        return new Iterator<AnyValue>()
+        return new Iterator<>()
         {
             private int count;
 
@@ -886,6 +887,19 @@ public abstract class ListValue extends VirtualValue implements SequenceValue, I
             }
         }
         return false;
+    }
+
+    public ListValue distinct()
+    {
+        HashSet<AnyValue> seen = new HashSet<>();
+        ArrayList<AnyValue> kept = new ArrayList<>(  );
+        for ( AnyValue value: this )
+        {
+            if ( seen.add( value ) ) {
+                kept.add( value );
+            }
+        }
+        return new JavaListListValue( kept );
     }
 
     private AnyValue[] iterationAsArray()
