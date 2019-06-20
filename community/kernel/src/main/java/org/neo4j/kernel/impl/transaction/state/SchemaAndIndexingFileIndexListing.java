@@ -23,23 +23,18 @@ import org.eclipse.collections.api.set.primitive.LongSet;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.function.Function;
 
 import org.neo4j.graphdb.Resource;
 import org.neo4j.graphdb.ResourceIterator;
-import org.neo4j.internal.helpers.collection.Iterators;
 import org.neo4j.internal.index.label.LabelScanStore;
-import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.storageengine.api.StoreFileMetadata;
 
-import static org.neo4j.internal.helpers.collection.Iterators.resourceIterator;
-
 public class SchemaAndIndexingFileIndexListing
 {
-    private static final Function<File,StoreFileMetadata> toStoreFileMetatadata = file -> new StoreFileMetadata( file, 1 );
+    private static final Function<File,StoreFileMetadata> toStoreFileMetadata = file -> new StoreFileMetadata( file, 1 );
 
     private final LabelScanStore labelScanStore;
     private final IndexingService indexingService;
@@ -75,22 +70,6 @@ public class SchemaAndIndexingFileIndexListing
 
     private void getSnapshotFilesMetadata( ResourceIterator<File> snapshot, Collection<StoreFileMetadata> targetFiles )
     {
-        snapshot.stream().map( toStoreFileMetatadata ).forEach( targetFiles::add );
-    }
-
-    public ResourceIterator<StoreFileMetadata> getSnapshot( long indexId ) throws IOException
-    {
-        try
-        {
-            ResourceIterator<File> snapshot = indexingService.getIndexProxy( indexId ).snapshotFiles();
-            ArrayList<StoreFileMetadata> files = new ArrayList<>();
-            getSnapshotFilesMetadata( snapshot, files );
-            return resourceIterator( files.iterator(), snapshot );
-        }
-        catch ( IndexNotFoundKernelException e )
-        {
-            // Perhaps it got dropped after getIndexIds() was called.
-            return Iterators.emptyResourceIterator();
-        }
+        snapshot.stream().map( toStoreFileMetadata ).forEach( targetFiles::add );
     }
 }
