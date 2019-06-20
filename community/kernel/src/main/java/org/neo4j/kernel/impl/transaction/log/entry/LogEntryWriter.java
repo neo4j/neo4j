@@ -32,7 +32,7 @@ import org.neo4j.storageengine.api.StorageCommand;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryByteCodes.CHECK_POINT;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryByteCodes.TX_COMMIT;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryByteCodes.TX_START;
-import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryVersion.CURRENT;
+import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryVersion.LATEST_VERSION;
 
 public class LogEntryWriter
 {
@@ -40,7 +40,7 @@ public class LogEntryWriter
     private final Visitor<StorageCommand,IOException> serializer;
 
     /**
-     * Create a writer that uses {@link LogEntryVersion#CURRENT} for versioning.
+     * Create a writer that uses {@link LogEntryVersion#LATEST_VERSION} for versioning.
      * @param channel underlying channel
      */
     public LogEntryWriter( WritableChannel channel )
@@ -51,7 +51,7 @@ public class LogEntryWriter
 
     protected static void writeLogEntryHeader( byte type, WritableChannel channel ) throws IOException
     {
-        channel.put( CURRENT.byteCode() ).put( type );
+        channel.put( LATEST_VERSION.version() ).put( type );
     }
 
     public void writeStartEntry( LogEntryStart entry ) throws IOException

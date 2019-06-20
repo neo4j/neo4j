@@ -39,7 +39,7 @@ class LogVersionUpgradeCheckerTest
     @Test
     void noThrowWhenLatestVersionAndUpgradeIsNotAllowed()
     {
-        when( tailScanner.getTailInformation() ).thenReturn( new OnlyVersionTailInformation( LogEntryVersion.CURRENT ) );
+        when( tailScanner.getTailInformation() ).thenReturn( new OnlyVersionTailInformation( LogEntryVersion.LATEST_VERSION ) );
 
         check( tailScanner, Config.defaults( GraphDatabaseSettings.allow_upgrade, "false") );
     }
@@ -55,7 +55,7 @@ class LogVersionUpgradeCheckerTest
     @Test
     void stillAcceptLatestVersionWhenUpgradeIsAllowed()
     {
-        when( tailScanner.getTailInformation() ).thenReturn( new OnlyVersionTailInformation( LogEntryVersion.CURRENT ) );
+        when( tailScanner.getTailInformation() ).thenReturn( new OnlyVersionTailInformation( LogEntryVersion.LATEST_VERSION ) );
 
         check( tailScanner, Config.defaults( GraphDatabaseSettings.allow_upgrade, "true") );
     }

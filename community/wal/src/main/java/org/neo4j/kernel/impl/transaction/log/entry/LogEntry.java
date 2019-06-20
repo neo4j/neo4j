@@ -30,6 +30,4 @@ public interface LogEntry
     String toString( TimeZone timeZone );
 
     String timestamp( long timeWritten, TimeZone timeZone );
-
-    <T extends LogEntry> T as();
 }

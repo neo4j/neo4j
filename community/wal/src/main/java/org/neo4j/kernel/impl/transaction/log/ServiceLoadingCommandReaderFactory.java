@@ -59,7 +59,7 @@ public class ServiceLoadingCommandReaderFactory implements CommandReaderFactory
         LogEntryVersion[] versions = LogEntryVersion.values();
         for ( LogEntryVersion version : versions )
         {
-            if ( readersByFormatId.get( version.byteCode() ) == null )
+            if ( readersByFormatId.get( version.version() ) == null )
             {
                 throw new AssertionError( "Version " + version + " not handled" );
             }

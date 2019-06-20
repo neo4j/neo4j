@@ -66,7 +66,7 @@ class IndexDefineCommandTest
 
         // THEN
         CommandReader commandReader = new ServiceLoadingCommandReaderFactory().get(
-                LogEntryVersion.CURRENT.byteCode() );
+                LogEntryVersion.LATEST_VERSION.version() );
         assertThrows( IOException.class, () -> commandReader.read( channel ) );
     }
 

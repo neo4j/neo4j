@@ -44,11 +44,11 @@ class VersionAwareLogEntryReaderTest
     void shouldReadAStartLogEntry() throws IOException
     {
         // given
-        LogEntryVersion version = LogEntryVersion.CURRENT;
+        LogEntryVersion version = LogEntryVersion.LATEST_VERSION;
         final LogEntryStart start = new LogEntryStart( version, 1, 2, 3, 4, new byte[]{5}, new LogPosition( 0, 31 ) );
         final InMemoryClosableChannel channel = new InMemoryClosableChannel();
 
-        channel.put( version.byteCode() ); // version
+        channel.put( version.version() ); // version
         channel.put( LogEntryByteCodes.TX_START ); // type
         channel.putInt( start.getMasterId() );
         channel.putInt( start.getLocalId() );
@@ -68,11 +68,11 @@ class VersionAwareLogEntryReaderTest
     void shouldReadACommitLogEntry() throws IOException
     {
         // given
-        LogEntryVersion version = LogEntryVersion.CURRENT;
+        LogEntryVersion version = LogEntryVersion.LATEST_VERSION;
         final LogEntryCommit commit = new LogEntryCommit( version, 42, 21 );
         final InMemoryClosableChannel channel = new InMemoryClosableChannel();
 
-        channel.put( version.byteCode() );
+        channel.put( version.version() );
         channel.put( LogEntryByteCodes.TX_COMMIT );
         channel.putLong( commit.getTxId() );
         channel.putLong( commit.getTimeWritten() );
@@ -88,12 +88,12 @@ class VersionAwareLogEntryReaderTest
     void shouldReadACommandLogEntry() throws IOException
     {
         // given
-        LogEntryVersion version = LogEntryVersion.CURRENT;
+        LogEntryVersion version = LogEntryVersion.LATEST_VERSION;
         TestCommand testCommand = new TestCommand( new byte[] {100, 101, 102} );
         final LogEntryCommand command = new LogEntryCommand( version, testCommand );
         final InMemoryClosableChannel channel = new InMemoryClosableChannel();
 
-        channel.put( version.byteCode() );
+        channel.put( version.version() );
         channel.put( LogEntryByteCodes.COMMAND );
         testCommand.serialize( channel );
 
@@ -108,12 +108,12 @@ class VersionAwareLogEntryReaderTest
     void shouldReadACheckPointLogEntry() throws IOException
     {
         // given
-        LogEntryVersion version = LogEntryVersion.CURRENT;
+        LogEntryVersion version = LogEntryVersion.LATEST_VERSION;
         final LogPosition logPosition = new LogPosition( 42, 43 );
         final CheckPoint checkPoint = new CheckPoint( version, logPosition );
         final InMemoryClosableChannel channel = new InMemoryClosableChannel();
 
-        channel.put( version.byteCode() );
+        channel.put( version.version() );
         channel.put( LogEntryByteCodes.CHECK_POINT );
         channel.putLong( logPosition.getLogVersion() );
         channel.putLong( logPosition.getByteOffset() );
@@ -129,10 +129,10 @@ class VersionAwareLogEntryReaderTest
     void shouldReturnNullWhenThereIsNoCommand() throws IOException
     {
         // given
-        LogEntryVersion version = LogEntryVersion.CURRENT;
+        LogEntryVersion version = LogEntryVersion.LATEST_VERSION;
         final InMemoryClosableChannel channel = new InMemoryClosableChannel();
 
-        channel.put( version.byteCode() );
+        channel.put( version.version() );
         channel.put( LogEntryByteCodes.COMMAND );
         channel.put( CommandReader.NONE );
 
@@ -176,9 +176,9 @@ class VersionAwareLogEntryReaderTest
         writer.writeStartEntry( 1, 2, secondStartTime, 4, new byte[0] );
 
         // WHEN
-        LogEntryStart readStartEntry = reader.readLogEntry( channel.reader() ).as();
-        LogEntryCommit readCommitEntry = reader.readLogEntry( channel.reader() ).as();
-        LogEntryStart readSecondStartEntry = reader.readLogEntry( channel.reader() ).as();
+        LogEntryStart readStartEntry = (LogEntryStart) reader.readLogEntry( channel.reader() );
+        LogEntryCommit readCommitEntry = (LogEntryCommit) reader.readLogEntry( channel.reader() );
+        LogEntryStart readSecondStartEntry = (LogEntryStart) reader.readLogEntry( channel.reader() );
 
         // THEN
         assertEquals( 1, readStartEntry.getMasterId() );
@@ -225,9 +225,9 @@ class VersionAwareLogEntryReaderTest
         writer.writeStartEntry( 1, 2, secondStartTime, 4, new byte[0] );
 
         // WHEN
-        LogEntryStart readStartEntry = reader.readLogEntry( channel.reader() ).as();
-        LogEntryCommit readCommitEntry = reader.readLogEntry( channel.reader() ).as();
-        LogEntryStart readSecondStartEntry = reader.readLogEntry( channel.reader() ).as();
+        LogEntryStart readStartEntry = (LogEntryStart) reader.readLogEntry( channel.reader() );
+        LogEntryCommit readCommitEntry = (LogEntryCommit) reader.readLogEntry( channel.reader() );
+        LogEntryStart readSecondStartEntry = (LogEntryStart) reader.readLogEntry( channel.reader() );
 
         // THEN
         assertEquals( 1, readStartEntry.getMasterId() );

@@ -102,7 +102,7 @@ public class LogTailScanner
                     // Collect data about latest checkpoint
                     if ( entry instanceof CheckPoint )
                     {
-                        latestCheckPoint = entry.as();
+                        latestCheckPoint = (CheckPoint) entry;
                     }
                     else if ( entry instanceof LogEntryCommit )
                     {
@@ -113,7 +113,7 @@ public class LogTailScanner
                     }
                     else if ( entry instanceof LogEntryStart )
                     {
-                        LogEntryStart startEntry = entry.as();
+                        LogEntryStart startEntry = (LogEntryStart) entry;
                         if ( version == versionToSearchForCommits )
                         {
                             latestStartEntry = startEntry;

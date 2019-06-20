@@ -78,7 +78,7 @@ public class PhysicalTransactionCursor<T extends ReadableClosablePositionAwareCh
             }
 
             assert entry instanceof LogEntryStart : "Expected Start entry, read " + entry + " instead";
-            LogEntryStart startEntry = entry.as();
+            LogEntryStart startEntry = (LogEntryStart) entry;
             LogEntryCommit commitEntry;
 
             List<StorageCommand> entries = new ArrayList<>();
@@ -92,11 +92,11 @@ public class PhysicalTransactionCursor<T extends ReadableClosablePositionAwareCh
                 entry = logEntryCursor.get();
                 if ( entry instanceof LogEntryCommit )
                 {
-                    commitEntry = entry.as();
+                    commitEntry = (LogEntryCommit) entry;
                     break;
                 }
 
-                LogEntryCommand command = entry.as();
+                LogEntryCommand command = (LogEntryCommand) entry;
                 entries.add( command.getCommand() );
             }
 

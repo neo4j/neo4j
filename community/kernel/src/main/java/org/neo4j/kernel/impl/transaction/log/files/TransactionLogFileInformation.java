@@ -114,7 +114,7 @@ public class TransactionLogFileInformation implements LogFileInformation
                 {
                     if ( entry instanceof LogEntryStart )
                     {
-                        return entry.<LogEntryStart>as().getTimeWritten();
+                        return ((LogEntryStart) entry).getTimeWritten();
                     }
                 }
             }

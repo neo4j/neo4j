@@ -52,7 +52,7 @@ class RecoveryStartInformationProviderTest
     {
         // given
         when( tailScanner.getTailInformation() ).thenReturn( new LogTailScanner.LogTailInformation( false,
-                NO_TRANSACTION_ID, logVersion, currentLogVersion, LogEntryVersion.CURRENT ) );
+                NO_TRANSACTION_ID, logVersion, currentLogVersion, LogEntryVersion.LATEST_VERSION ) );
 
         // when
         RecoveryStartInformation recoveryStartInformation = new RecoveryStartInformationProvider( tailScanner, monitor ).get();
@@ -71,7 +71,7 @@ class RecoveryStartInformationProviderTest
         LogPosition checkPointLogPosition = new LogPosition( 1L, 4242 );
         when( tailScanner.getTailInformation() )
                 .thenReturn( new LogTailInformation( new CheckPoint( checkPointLogPosition ), true, 10L, logVersion,
-                        currentLogVersion, LogEntryVersion.CURRENT ) );
+                        currentLogVersion, LogEntryVersion.LATEST_VERSION ) );
 
         // when
         RecoveryStartInformation recoveryStartInformation = new RecoveryStartInformationProvider( tailScanner, monitor ).get();
@@ -88,7 +88,7 @@ class RecoveryStartInformationProviderTest
     {
         // given
         when( tailScanner.getTailInformation() ).thenReturn( new LogTailInformation( true, 10L, INITIAL_LOG_VERSION,
-                currentLogVersion, LogEntryVersion.CURRENT ) );
+                currentLogVersion, LogEntryVersion.LATEST_VERSION ) );
 
         // when
         RecoveryStartInformation recoveryStartInformation = new RecoveryStartInformationProvider( tailScanner, monitor ).get();
@@ -104,7 +104,7 @@ class RecoveryStartInformationProviderTest
     void  detectMissingTransactionLogsInformation()
     {
         when( tailScanner.getTailInformation() ).thenReturn( new LogTailInformation( false, -1, -1,
-                -1, LogEntryVersion.CURRENT ) );
+                -1, LogEntryVersion.LATEST_VERSION ) );
 
         RecoveryStartInformation recoveryStartInformation = new RecoveryStartInformationProvider( tailScanner, monitor ).get();
 
@@ -117,7 +117,7 @@ class RecoveryStartInformationProviderTest
         // given
         long oldestLogVersionFound = 1L;
         when( tailScanner.getTailInformation() ).thenReturn(
-                new LogTailScanner.LogTailInformation( true, 10L, oldestLogVersionFound, currentLogVersion, LogEntryVersion.CURRENT ) );
+                new LogTailScanner.LogTailInformation( true, 10L, oldestLogVersionFound, currentLogVersion, LogEntryVersion.LATEST_VERSION ) );
 
         // when
         UnderlyingStorageException storageException =

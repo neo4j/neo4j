@@ -74,7 +74,7 @@ public class PhysicalLogCommandReaderV3_0_10 extends BaseCommandReader
     @Override
     public int getFormatId()
     {
-        return LogEntryVersion.V3_0_10.byteCode();
+        return LogEntryVersion.V3_0_10.version();
     }
 
     @Override

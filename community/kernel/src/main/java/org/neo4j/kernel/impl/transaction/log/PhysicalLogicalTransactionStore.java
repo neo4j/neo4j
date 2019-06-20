@@ -182,10 +182,10 @@ public class PhysicalLogicalTransactionStore implements LogicalTransactionStore
                 switch ( logEntry.getType() )
                 {
                 case TX_START:
-                    startEntry = logEntry.as();
+                    startEntry = (LogEntryStart) logEntry;
                     break;
                 case TX_COMMIT:
-                    LogEntryCommit commit = logEntry.as();
+                    LogEntryCommit commit = (LogEntryCommit) logEntry;
                     if ( commit.getTxId() == startTransactionId )
                     {
                         startEntryForFoundTransaction = startEntry;

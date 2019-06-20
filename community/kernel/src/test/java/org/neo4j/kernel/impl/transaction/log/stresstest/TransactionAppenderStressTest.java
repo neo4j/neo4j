@@ -35,7 +35,6 @@ import org.neo4j.kernel.impl.transaction.log.ReadAheadLogChannel;
 import org.neo4j.kernel.impl.transaction.log.ReadableLogChannel;
 import org.neo4j.kernel.impl.transaction.log.ReaderLogVersionBridge;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntry;
-import org.neo4j.kernel.impl.transaction.log.entry.LogEntryByteCodes;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryCommit;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReader;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
@@ -127,9 +126,9 @@ public class TransactionAppenderStressTest
                 LogEntry logEntry = reader.readLogEntry( channel );
                 for ( ; logEntry != null; logEntry = reader.readLogEntry( channel ) )
                 {
-                    if ( logEntry.getType() == LogEntryByteCodes.TX_COMMIT )
+                    if ( logEntry instanceof LogEntryCommit )
                     {
-                        txId = logEntry.<LogEntryCommit>as().getTxId();
+                        txId = ((LogEntryCommit) logEntry).getTxId();
                     }
                 }
             }

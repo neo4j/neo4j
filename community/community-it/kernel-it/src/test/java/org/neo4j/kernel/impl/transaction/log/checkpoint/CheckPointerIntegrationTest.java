@@ -272,7 +272,7 @@ class CheckPointerIntegrationTest
                         LogEntry entry = cursor.get();
                         if ( entry instanceof CheckPoint )
                         {
-                            checkPoints.add( entry.as() );
+                            checkPoints.add( (CheckPoint) entry );
                         }
                     }
                 }

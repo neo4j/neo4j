@@ -26,7 +26,7 @@ import org.neo4j.internal.helpers.Format;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 
 import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryByteCodes.TX_START;
-import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryVersion.CURRENT;
+import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryVersion.LATEST_VERSION;
 
 public class LogEntryStart extends AbstractLogEntry
 {
@@ -41,7 +41,7 @@ public class LogEntryStart extends AbstractLogEntry
                           long lastCommittedTxWhenTransactionStarted, byte[] additionalHeader,
                           LogPosition startPosition )
     {
-        this( CURRENT, masterId, authorId, timeWritten,
+        this( LATEST_VERSION, masterId, authorId, timeWritten,
                 lastCommittedTxWhenTransactionStarted, additionalHeader, startPosition );
     }
 
@@ -127,13 +127,6 @@ public class LogEntryStart extends AbstractLogEntry
                 "position=" + startPosition + "," +
                 "checksum=" + checksum( this ) +
                 "]";
-    }
-
-    @Override
-    @SuppressWarnings( "unchecked" )
-    public <T extends LogEntry> T as()
-    {
-        return (T) this;
     }
 
     @Override

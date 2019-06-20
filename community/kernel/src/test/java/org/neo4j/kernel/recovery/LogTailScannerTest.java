@@ -59,9 +59,9 @@ import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 
 import static org.junit.Assert.assertEquals;
-import static org.neo4j.kernel.impl.transaction.log.TestLogEntryReader.logEntryReader;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
+import static org.neo4j.kernel.impl.transaction.log.TestLogEntryReader.logEntryReader;
 import static org.neo4j.kernel.recovery.LogTailScanner.NO_TRANSACTION_ID;
 
 @RunWith( Parameterized.class )
@@ -82,7 +82,7 @@ public class LogTailScannerTest
     private LogFiles logFiles;
     private final int startLogVersion;
     private final int endLogVersion;
-    private final LogEntryVersion latestLogEntryVersion = LogEntryVersion.CURRENT;
+    private final LogEntryVersion latestLogEntryVersion = LogEntryVersion.LATEST_VERSION;
     private LogVersionRepository logVersionRepository;
     private TransactionIdStore transactionIdStore;
 

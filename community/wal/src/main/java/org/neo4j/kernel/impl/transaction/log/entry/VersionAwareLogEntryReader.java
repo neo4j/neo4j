@@ -64,6 +64,7 @@ public class VersionAwareLogEntryReader<SOURCE extends ReadableClosablePositionA
         try
         {
             LogPositionMarker positionMarker = new LogPositionMarker();
+            LogEntryVersion version = LogEntryVersion.LATEST_VERSION;
             long skipped = 0;
             while ( true )
             {
@@ -72,12 +73,14 @@ public class VersionAwareLogEntryReader<SOURCE extends ReadableClosablePositionA
                 byte versionCode = channel.get();
                 byte typeCode = channel.get();
 
-                LogEntryVersion version = null;
                 LogEntryParser<LogEntry> entryReader;
                 LogEntry entry;
                 try
                 {
-                    version = byVersion( versionCode );
+                    if ( version.version() != versionCode )
+                    {
+                        version = byVersion( versionCode );
+                    }
                     entryReader = version.entryParser( typeCode );
                     entry = entryReader.parse( version, channel, positionMarker, commandReaderFactory );
                     if ( entry != null && skipped > 0 )

@@ -24,7 +24,7 @@ import java.util.TimeZone;
 import org.neo4j.internal.helpers.Format;
 
 import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryByteCodes.TX_COMMIT;
-import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryVersion.CURRENT;
+import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryVersion.LATEST_VERSION;
 
 public class LogEntryCommit extends AbstractLogEntry
 {
@@ -34,7 +34,7 @@ public class LogEntryCommit extends AbstractLogEntry
 
     public LogEntryCommit( long txId, long timeWritten )
     {
-        this( CURRENT, txId, timeWritten );
+        this( LATEST_VERSION, txId, timeWritten );
     }
 
     public LogEntryCommit( LogEntryVersion version, long txId, long timeWritten )
@@ -65,13 +65,6 @@ public class LogEntryCommit extends AbstractLogEntry
     public String toString( TimeZone timeZone )
     {
         return name + "[txId=" + getTxId() + ", " + timestamp( getTimeWritten(), timeZone ) + "]";
-    }
-
-    @Override
-    @SuppressWarnings( "unchecked" )
-    public <T extends LogEntry> T as()
-    {
-        return (T) this;
     }
 
     @Override

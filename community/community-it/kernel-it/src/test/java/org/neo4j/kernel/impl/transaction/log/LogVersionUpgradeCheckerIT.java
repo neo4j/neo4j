@@ -160,7 +160,7 @@ class LogVersionUpgradeCheckerIT
             LogPosition logPosition = tailInformation.lastCheckPoint.getLogPosition();
 
             // Fake record
-            channel.put( logVersion.byteCode() )
+            channel.put( logVersion.version() )
                     .put( CHECK_POINT )
                     .putLong( logPosition.getLogVersion() )
                     .putLong( logPosition.getByteOffset() );

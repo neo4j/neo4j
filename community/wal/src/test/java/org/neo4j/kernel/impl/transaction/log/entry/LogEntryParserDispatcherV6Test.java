@@ -36,7 +36,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 
 class LogEntryParserDispatcherV6Test
 {
-    private final LogEntryVersion version = LogEntryVersion.CURRENT;
+    private final LogEntryVersion version = LogEntryVersion.LATEST_VERSION;
     private final CommandReaderFactory commandReader = new TestCommandReaderFactory();
     private final LogPositionMarker marker = new LogPositionMarker();
     private final LogPosition position = new LogPosition( 0, 29 );

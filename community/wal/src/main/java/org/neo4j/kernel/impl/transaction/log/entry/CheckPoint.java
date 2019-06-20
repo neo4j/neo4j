@@ -27,19 +27,13 @@ public class CheckPoint extends AbstractLogEntry
 
     public CheckPoint( LogPosition logPosition )
     {
-        this( LogEntryVersion.CURRENT, logPosition );
+        this( LogEntryVersion.LATEST_VERSION, logPosition );
     }
 
     public CheckPoint( LogEntryVersion version, LogPosition logPosition )
     {
         super( version, LogEntryByteCodes.CHECK_POINT );
         this.logPosition = logPosition;
-    }
-
-    @Override
-    public <T extends LogEntry> T as()
-    {
-        return (T) this;
     }
 
     public LogPosition getLogPosition()

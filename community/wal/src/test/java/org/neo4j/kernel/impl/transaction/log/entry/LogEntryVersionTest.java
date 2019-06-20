@@ -34,7 +34,7 @@ class LogEntryVersionTest
         for ( LogEntryVersion version : LogEntryVersion.values() )
         {
             // GIVEN
-            byte code = version.byteCode();
+            byte code = version.version();
 
             // WHEN
             LogEntryVersion selectedVersion = LogEntryVersion.byVersion( code );
