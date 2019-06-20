@@ -37,6 +37,7 @@ import org.neo4j.logging.NullLogProvider;
 import org.neo4j.storageengine.api.LogVersionRepository;
 import org.neo4j.storageengine.api.StorageEngineFactory;
 import org.neo4j.storageengine.api.TransactionIdStore;
+import org.neo4j.util.FeatureToggles;
 
 import static java.util.Objects.requireNonNull;
 import static org.neo4j.configuration.GraphDatabaseSettings.logical_log_rotation_threshold;
@@ -55,6 +56,8 @@ import static org.neo4j.configuration.GraphDatabaseSettings.logical_log_rotation
  */
 public class LogFilesBuilder
 {
+    private static final boolean EXPERIMENTAL_LOGS = FeatureToggles.flag( LogFilesBuilder.class, "experimental", false );
+
     private boolean readOnly;
     private PageCache pageCache;
     private DatabaseLayout databaseLayout;
@@ -187,6 +190,10 @@ public class LogFilesBuilder
         TransactionLogFilesContext filesContext = buildContext();
         File logsDirectory = getLogsDirectory();
         filesContext.getFileSystem().mkdirs( logsDirectory );
+        if ( EXPERIMENTAL_LOGS )
+        {
+            return new ExperimentalTransactionLogFiles( logsDirectory, logFileName, filesContext );
+        }
         return new TransactionLogFiles( logsDirectory, logFileName, filesContext );
     }
 

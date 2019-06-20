@@ -44,7 +44,7 @@ import static org.neo4j.kernel.impl.transaction.log.entry.LogVersions.CURRENT_LO
  * Used to figure out what logical log file to open when the database
  * starts up.
  */
-public class TransactionLogFiles extends LifecycleAdapter implements LogFiles
+public class ExperimentalTransactionLogFiles extends LifecycleAdapter implements LogFiles
 {
     public static final String DEFAULT_NAME = "neostore.transaction.db";
     public static final FilenameFilter DEFAULT_FILENAME_FILTER = TransactionLogFilesHelper.DEFAULT_FILENAME_FILTER;
@@ -59,7 +59,7 @@ public class TransactionLogFiles extends LifecycleAdapter implements LogFiles
     private final TransactionLogFile logFile;
     private final File logsDirectory;
 
-    TransactionLogFiles( File logsDirectory, String name, TransactionLogFilesContext context )
+    ExperimentalTransactionLogFiles( File logsDirectory, String name, TransactionLogFilesContext context )
     {
         this.logFilesContext = context;
         this.logsDirectory = logsDirectory;
@@ -226,7 +226,6 @@ public class TransactionLogFiles extends LifecycleAdapter implements LogFiles
      * @return {@link PhysicalLogVersionedStoreChannel} for newly created/opened log file.
      * @throws IOException if there's any I/O related error.
      */
-    @Override
     public PhysicalLogVersionedStoreChannel createLogChannelForVersion( long forVersion, LongSupplier lastTransactionIdSupplier ) throws IOException
     {
         File toOpen = getLogFileForVersion( forVersion );

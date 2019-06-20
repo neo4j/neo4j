@@ -51,7 +51,7 @@ import static java.lang.Runtime.getRuntime;
 class TransactionLogFile extends LifecycleAdapter implements LogFile
 {
     private final AtomicLong rotateAtSize;
-    private final TransactionLogFiles logFiles;
+    private final LogFiles logFiles;
     private final TransactionLogFilesContext context;
     private final LogVersionBridge readerLogVersionBridge;
     private final FileSystemAbstraction fileSystem;
@@ -63,7 +63,7 @@ class TransactionLogFile extends LifecycleAdapter implements LogFile
     private volatile PhysicalLogVersionedStoreChannel channel;
     private CloseableByteBuffer closeableByteBuffer;
 
-    TransactionLogFile( TransactionLogFiles logFiles, TransactionLogFilesContext context )
+    TransactionLogFile( LogFiles logFiles, TransactionLogFilesContext context )
     {
         this.rotateAtSize = context.getRotationThreshold();
         this.fileSystem = context.getFileSystem();
