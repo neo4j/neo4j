@@ -330,8 +330,9 @@ abstract class RuntimeTestSuite[CONTEXT <: RuntimeContext](edition: Edition[CONT
     val tx = graphDb.beginTx()
     try {
       tx.success()
+      val labelArray = labels.map(Label.label)
       for (i <- 0 until nNodes) yield {
-        val node = graphDb.createNode(labels.map(Label.label): _*)
+        val node = graphDb.createNode(labelArray: _*)
         properties.runWith(_.foreach(kv => node.setProperty(kv._1, kv._2)))(i)
         node
       }

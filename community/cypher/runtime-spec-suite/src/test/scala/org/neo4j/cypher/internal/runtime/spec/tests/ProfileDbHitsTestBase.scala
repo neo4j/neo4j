@@ -22,6 +22,7 @@ package org.neo4j.cypher.internal.runtime.spec.tests
 import org.neo4j.cypher.internal.logical.plans.Ascending
 import org.neo4j.cypher.internal.runtime.spec._
 import org.neo4j.cypher.internal.{CypherRuntime, RuntimeContext}
+import org.neo4j.cypher.result.QueryProfile
 
 abstract class ProfileDbHitsTestBase[CONTEXT <: RuntimeContext](edition: Edition[CONTEXT],
                                                                 runtime: CypherRuntime[CONTEXT],
@@ -67,6 +68,69 @@ abstract class ProfileDbHitsTestBase[CONTEXT <: RuntimeContext](edition: Edition
     // then
     val queryProfile = runtimeResult.runtimeResult.queryProfile()
     queryProfile.operatorProfile(1).dbHits() should be (sizeHint + costOfLabelScan) // label scan
+  }
+
+  test("should profile dbHits of node index seek + scan") {
+    // given
+    nodePropertyGraph(sizeHint, {
+      case i if i % 10 == 0 => Map("difficulty" -> i)
+    },"Language")
+
+    index("Language", "difficulty")
+
+    // when
+    val seekProfile = profileIndexSeek(s"x:Language(difficulty >= ${sizeHint / 2})")
+    // then
+    seekProfile.operatorProfile(1).dbHits() should be (sizeHint / 10 / 2 + 1) // node index seek
+
+    // when
+    val scanProfile = profileIndexSeek("x:Language(difficulty)")
+    // then
+    scanProfile.operatorProfile(1).dbHits() should be (sizeHint / 10 + 1) // node index scan
+  }
+
+  test("should profile dbHits of node index contains") {
+    // given
+    nodePropertyGraph(sizeHint, {
+      case i => Map("difficulty" -> s"x${i%2}")
+    },"Language")
+
+    index("Language", "difficulty")
+
+    // when
+    val seekProfile = profileIndexSeek(s"x:Language(difficulty CONTAINS '1')")
+    // then
+    seekProfile.operatorProfile(1).dbHits() should be (sizeHint / 2 + 1) // node index contains
+  }
+
+  private def profileIndexSeek(indexSeekString: String): QueryProfile = {
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x")
+      .nodeIndexOperator(indexSeekString)
+      .build()
+
+    val result = profile(logicalQuery, runtime)
+    consume(result)
+
+    result.runtimeResult.queryProfile()
+  }
+
+  test("should profile dbHits of node by id") {
+    // given
+    val nodes = nodeGraph(17)
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x")
+      .nodeByIdSeek("x", nodes(7).getId, nodes(11).getId, nodes(13).getId)
+      .build()
+
+    val result = profile(logicalQuery, runtime)
+    consume(result)
+
+    // then
+    result.runtimeResult.queryProfile().operatorProfile(1).dbHits() shouldBe 3 // node by id
   }
 
   test("should profile dbHits of input + produce results") {
