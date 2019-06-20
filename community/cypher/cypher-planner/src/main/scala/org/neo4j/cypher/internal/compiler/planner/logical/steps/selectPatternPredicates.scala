@@ -24,9 +24,9 @@ import org.neo4j.cypher.internal.ir.{InterestingOrder, QueryGraph}
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.Solveds
 import org.neo4j.cypher.internal.v4_0.expressions._
+import org.neo4j.cypher.internal.v4_0.expressions.functions.Exists
 import org.neo4j.cypher.internal.v4_0.rewriting.rewriters.PatternExpressionPatternElementNamer
 import org.neo4j.cypher.internal.v4_0.util.{FreshIdNameGenerator, UnNamedNameGenerator}
-import org.neo4j.cypher.internal.v4_0.expressions.functions.Exists
 
 case object selectPatternPredicates extends CandidateGenerator[LogicalPlan] {
 
@@ -61,23 +61,27 @@ case object selectPatternPredicates extends CandidateGenerator[LogicalPlan] {
   }
 
   private def planInnerOfSubquery(lhs: LogicalPlan, context: LogicalPlanningContext, interestingOrder: InterestingOrder, e: ExistsSubClause): LogicalPlan = {
-
-    val (namedMap, qg) = e.patternElement match {
+    // Creating a query graph by combining all extracted query graphs created by each entry of the patternElements
+    val emptyTuple = (Map.empty[PatternElement, Variable], QueryGraph.empty)
+    val(namedMap, qg) = e.patternElements.foldLeft(emptyTuple) { (acc, patternElement) =>
+      patternElement match {
       case elem: RelationshipChain =>
         val patternExpr = PatternExpression(RelationshipsPattern(elem)(elem.position))
-        val (namedExpr, namedMap) = PatternExpressionPatternElementNamer.apply(patternExpr)
+        val (namedExpr, namedMap: Map[PatternElement, Variable]) = PatternExpressionPatternElementNamer.apply(patternExpr)
         val qg = extractQG(lhs, namedExpr, context)
 
-        (namedMap, qg)
+        (acc._1 ++ namedMap, acc._2 ++ qg)
 
       case elem: NodePattern =>
         val patternExpr = NodePatternExpression(List(elem))(elem.position)
         val (namedExpr, namedMap) = PatternExpressionPatternElementNamer.apply(patternExpr)
         val qg = extractQG(lhs, namedExpr, context)
 
-        (namedMap, qg)
+        (acc._1 ++ namedMap, acc._2 ++ qg)
+      }
     }
 
+    // Adding the predicates to new query graph
     val new_qg = e.optionalWhereExpression.foldLeft(qg) {
       case (acc, p) => acc.addPredicates(e.outerScope.map(id => id.name), p)
     }

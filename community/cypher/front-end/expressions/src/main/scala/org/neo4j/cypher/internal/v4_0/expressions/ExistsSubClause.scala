@@ -23,12 +23,11 @@ case class ExistsSubClause(pattern: Pattern, optionalWhereExpression: Option[Exp
 
   self =>
 
-  // TODO: Implement support for multiple patterns
-  val patternElement: PatternElement = pattern.patternParts.head.element
+  val patternElements: Seq[PatternElement] = pattern.patternParts.map(_.element)
 
   def withOuterScope(outerScope: Set[LogicalVariable]): ExistsSubClause = copy()(position, outerScope)
 
-  override val introducedVariables: Set[LogicalVariable] = patternElement.allVariables -- outerScope
+  override val introducedVariables: Set[LogicalVariable] = patternElements.collect { case e => e.allVariables }.flatten.toSet -- outerScope
 
   override def dup(children: Seq[AnyRef]): this.type = {
     ExistsSubClause(
