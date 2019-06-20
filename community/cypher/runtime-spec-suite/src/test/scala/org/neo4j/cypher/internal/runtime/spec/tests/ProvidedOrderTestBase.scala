@@ -68,15 +68,15 @@ abstract class ProvidedOrderTestBase[CONTEXT <: RuntimeContext](
       val logicalQuery = new LogicalQueryBuilder(this)
         .produceResults("prop")
         .projection("x.prop AS prop")
-        .expand("(y)-->(z)")
-        .expand("(x)-->(y)")
+        .expand("(y)-->(z)") // 6x more rows
+        .expand("(x)-->(y)") // 6x more rows
         .nodeIndexOperator(s"x:Honey(prop > ${sizeHint / 2})", indexOrder = indexOrder, getValue = DoNotGetValue)
         .build()
 
       val runtimeResult = execute(logicalQuery, runtime)
 
       // then
-      val expected = expectedMutation(nodes.zipWithIndex.filter{ case (_, i) => i % 10 == 0 && i > n / 2}.flatMap(n => Seq.fill(36)(n)).map(_._2))
+      val expected = expectedMutation(nodes.zipWithIndex.filter{ case (_, i) => i % 10 == 0 && i > n / 2}.flatMap(n => Seq.fill(6 * 6)(n)).map(_._2))
       runtimeResult should beColumns("prop").withRows(singleColumnInOrder(expected))
     }
 
@@ -107,7 +107,7 @@ abstract class ProvidedOrderTestBase[CONTEXT <: RuntimeContext](
       val n = sizeHint / 2 // Expected to be a multiple of modulo
       val fillFactor = 3
       val modulo = 100
-      val zGTFilter = 10
+      val zGreaterThanFilter = 10
 
       val nodes = nodePropertyGraph(n, {
         case i => Map("prop" -> i % modulo)
@@ -126,7 +126,7 @@ abstract class ProvidedOrderTestBase[CONTEXT <: RuntimeContext](
         .projection("y.prop AS prop")
         .nodeHashJoin("y")
         .|.expand("(z)-->(y)")
-        .|.nodeIndexOperator(s"z:Honey(prop >= $zGTFilter)", indexOrder = indexOrder, getValue = DoNotGetValue)
+        .|.nodeIndexOperator(s"z:Honey(prop >= $zGreaterThanFilter)", indexOrder = indexOrder, getValue = DoNotGetValue)
         .expand("(x)-->(y)")
         .filter("x.prop % 2 = 0")
         .nodeByLabelScan("x", "Honey")
@@ -140,7 +140,7 @@ abstract class ProvidedOrderTestBase[CONTEXT <: RuntimeContext](
         y <- Seq.fill(fillFactor)(x)
       } yield y
       val rhs = for {
-        z <- expectedMutation((0 until n).map(_ % modulo).filter(_ >= zGTFilter).sorted)
+        z <- expectedMutation((0 until n).map(_ % modulo).filter(_ >= zGreaterThanFilter).sorted)
         y <- Seq.fill(fillFactor)(z)
       } yield y
       val expected = for {
@@ -156,7 +156,7 @@ abstract class ProvidedOrderTestBase[CONTEXT <: RuntimeContext](
       val n = sizeHint
       val fillFactor = 10
       val modulo = 100
-      val zGTFilter = 10
+      val zGreaterThanFilter = 10
 
       val nodes = nodePropertyGraph(n, {
         case i => Map("prop" -> i % modulo)
@@ -177,14 +177,14 @@ abstract class ProvidedOrderTestBase[CONTEXT <: RuntimeContext](
         .|.filter("y.prop % 2 = 0")
         .|.argument("y")
         .expand("(z)-->(y)")
-        .nodeIndexOperator(s"z:Honey(prop >= $zGTFilter)", indexOrder = indexOrder, getValue = DoNotGetValue)
+        .nodeIndexOperator(s"z:Honey(prop >= $zGreaterThanFilter)", indexOrder = indexOrder, getValue = DoNotGetValue)
         .build()
 
       val runtimeResult = execute(logicalQuery, runtime)
 
       // then
       val expected = for {
-        z <- expectedMutation((0 until n).map(_ % modulo).filter(_ >= zGTFilter).sorted)
+        z <- expectedMutation((0 until n).map(_ % modulo).filter(_ >= zGreaterThanFilter).sorted)
         y <- Seq.fill(fillFactor)(z) if y % 2 == 0
       } yield y
 
