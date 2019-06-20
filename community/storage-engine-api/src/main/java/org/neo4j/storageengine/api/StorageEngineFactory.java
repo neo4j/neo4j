@@ -110,13 +110,6 @@ public interface StorageEngineFactory
     LogVersionRepository readOnlyLogVersionRepository( DatabaseLayout databaseLayout, PageCache pageCache ) throws IOException;
 
     /**
-     * Instantiates a {@link ReadableStorageEngine} over a storage location without instantiating the full {@link StorageEngine}, just the readable parts.
-     * @return StorageReader for reading the storage at this location. Must be closed after usage.
-     */
-    ReadableStorageEngine instantiateReadable( FileSystemAbstraction fs, DatabaseLayout databaseLayout, Config config,
-            PageCache pageCache, LogProvider logProvider );
-
-    /**
      * Instantiates a fully functional {@link TransactionMetaDataStore}, which is a union of {@link TransactionIdStore}
      * and {@link LogVersionRepository}.
      * @return a fully functional {@link TransactionMetaDataStore}.

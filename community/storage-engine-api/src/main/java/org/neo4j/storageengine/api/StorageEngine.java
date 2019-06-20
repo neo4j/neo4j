@@ -35,7 +35,7 @@ import org.neo4j.storageengine.api.txstate.TxStateVisitor;
 /**
  * A StorageEngine provides the functionality to durably store data, and read it back.
  */
-public interface StorageEngine extends ReadableStorageEngine
+public interface StorageEngine extends Lifecycle
 {
     /**
      * @return a new {@link CommandCreationContext} meant to be kept for multiple calls to
@@ -152,4 +152,13 @@ public interface StorageEngine extends ReadableStorageEngine
     TransactionIdStore transactionIdStore();
 
     LogVersionRepository logVersionRepository();
+
+    /**
+     * Creates a new {@link StorageReader} for reading committed data from the underlying storage.
+     * The returned instance is intended to be used by one transaction at a time, although can and should be reused
+     * for multiple transactions.
+     *
+     * @return an interface for accessing data in the storage.
+     */
+    StorageReader newReader();
 }

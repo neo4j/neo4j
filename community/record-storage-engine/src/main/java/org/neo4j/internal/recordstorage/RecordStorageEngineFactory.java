@@ -62,7 +62,6 @@ import org.neo4j.monitoring.DatabaseHealth;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.storageengine.api.ConstraintRuleAccessor;
 import org.neo4j.storageengine.api.LogVersionRepository;
-import org.neo4j.storageengine.api.ReadableStorageEngine;
 import org.neo4j.storageengine.api.StorageEngine;
 import org.neo4j.storageengine.api.StorageEngineFactory;
 import org.neo4j.storageengine.api.StoreId;
@@ -114,13 +113,6 @@ public class RecordStorageEngineFactory implements StorageEngineFactory
     {
         return new RecordStorageEngine( databaseLayout, config, pageCache, fs, logProvider, tokenHolders, schemaState, constraintSemantics, lockService,
                 databaseHealth, idGeneratorFactory, idController, versionContextSupplier, createStoreIfNotExists );
-    }
-
-    @Override
-    public ReadableStorageEngine instantiateReadable( FileSystemAbstraction fs, DatabaseLayout databaseLayout, Config config, PageCache pageCache,
-            LogProvider logProvider )
-    {
-        return new ReadableRecordStorageEngine( databaseLayout, config, pageCache, fs, logProvider );
     }
 
     @Override
