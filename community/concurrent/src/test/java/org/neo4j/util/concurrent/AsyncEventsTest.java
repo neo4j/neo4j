@@ -198,6 +198,7 @@ class AsyncEventsTest
             finally
             {
                 asyncEvents.shutdown();
+                threadPool.shutdown();
             }
         } );
     }
