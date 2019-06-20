@@ -61,6 +61,9 @@ import static org.neo4j.values.storable.TimeValue.time;
 @SuppressWarnings( "WeakerAccess" )
 public final class Values
 {
+
+    public static final Value NO_VALUE = NoValue.NO_VALUE;
+
     public static final Value MIN_GLOBAL = DateTimeValue.MIN_VALUE;
     public static final Value MAX_GLOBAL = Values.NO_VALUE;
     public static final Value MIN_NUMBER = Values.doubleValue( Double.NEGATIVE_INFINITY );
@@ -151,8 +154,6 @@ public final class Values
     }
 
     // DIRECT FACTORY METHODS
-
-    public static final Value NO_VALUE = NoValue.NO_VALUE;
 
     public static TextValue utf8Value( byte[] bytes )
     {
