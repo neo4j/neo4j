@@ -304,7 +304,6 @@ public class DatabaseTest
         database.stop();
 
         verify( pageCache, never() ).flushAndForce( IOLimiter.UNLIMITED );
-        assertFalse( files.isEmpty() );
         for ( PagedFile file : files )
         {
             verify( file ).flushAndForce( IOLimiter.UNLIMITED );
@@ -336,7 +335,6 @@ public class DatabaseTest
         database.stop();
 
         verify( pageCache, never() ).flushAndForce( IOLimiter.UNLIMITED );
-        assertFalse( files.isEmpty() );
         for ( PagedFile file : files )
         {
             verify( file ).flushAndForce( IOLimiter.UNLIMITED );
