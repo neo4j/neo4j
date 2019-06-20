@@ -21,10 +21,7 @@ package org.neo4j.internal.id;
 
 import java.io.Closeable;
 import java.io.IOException;
-import java.util.function.Supplier;
 
-import org.neo4j.collection.PrimitiveLongResourceCollections;
-import org.neo4j.collection.PrimitiveLongResourceIterator;
 import org.neo4j.io.pagecache.IOLimiter;
 
 public interface IdGenerator extends IdSequence, Closeable
