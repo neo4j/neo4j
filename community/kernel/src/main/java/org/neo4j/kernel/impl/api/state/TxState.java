@@ -544,6 +544,12 @@ public class TxState implements TransactionState, RelationshipVisitor.Home
     }
 
     @Override
+    public DiffSets<IndexDescriptor> indexDiffSetsByRelationshipType( int relationshipType )
+    {
+        return indexChangesDiffSets().filterAdded( SchemaDescriptorPredicates.hasRelType( relationshipType ) );
+    }
+
+    @Override
     public DiffSets<IndexDescriptor> indexDiffSetsBySchema( SchemaDescriptor schema )
     {
         return indexChangesDiffSets().filterAdded( indexDescriptor -> indexDescriptor.schema().equals( schema ) );

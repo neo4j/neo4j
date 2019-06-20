@@ -60,6 +60,7 @@ import org.neo4j.test.TestGraphDatabaseFactoryState;
 import org.neo4j.test.impl.EphemeralIdGenerator;
 import org.neo4j.test.rule.ImpermanentDatabaseRule;
 import org.neo4j.test.rule.TestDirectory;
+import org.neo4j.util.concurrent.BinaryLatch;
 
 import static java.util.stream.Collectors.toSet;
 import static org.hamcrest.Matchers.hasItems;
@@ -431,9 +432,9 @@ public class LabelsAcceptanceTest
             node.delete();
             tx.success();
         }
-        List<Label> labels;
 
         // When
+        List<Label> labels;
         try ( Transaction ignored = db.beginTx() )
         {
             labels = asList( db.getAllLabelsInUse() );
@@ -442,6 +443,90 @@ public class LabelsAcceptanceTest
         // Then
         assertEquals( 1, labels.size() );
         assertThat( map( Label::name, labels ), hasItems( Labels.MY_LABEL.name() ) );
+    }
+
+    @Test( timeout = 30_000 )
+    public void shouldListAllLabelsInUseEvenWhenExclusiveLabelLocksAreTaken() throws Exception
+    {
+        // Given
+        GraphDatabaseService db = dbRule.getGraphDatabaseAPI();
+        createNode( db, Labels.MY_LABEL );
+        Node node = createNode( db, Labels.MY_OTHER_LABEL );
+        try ( Transaction tx = db.beginTx() )
+        {
+            node.delete();
+            tx.success();
+        }
+
+        BinaryLatch indexCreateStarted = new BinaryLatch();
+        BinaryLatch indexCreateAllowToFinish = new BinaryLatch();
+        Thread indexCreator = new Thread( () ->
+        {
+            try ( Transaction tx = db.beginTx() )
+            {
+                db.schema().indexFor( Labels.MY_LABEL ).on( "prop" ).create();
+                indexCreateStarted.release();
+                indexCreateAllowToFinish.await();
+                tx.success();
+            }
+        } );
+        indexCreator.start();
+
+        // When
+        indexCreateStarted.await();
+        List<Label> labels;
+        try ( Transaction ignored = db.beginTx() )
+        {
+            labels = asList( db.getAllLabelsInUse() );
+        }
+        indexCreateAllowToFinish.release();
+        indexCreator.join();
+
+        // Then
+        assertEquals( 1, labels.size() );
+        assertThat( map( Label::name, labels ), hasItems( Labels.MY_LABEL.name() ) );
+    }
+
+    @Test( timeout = 30_000 )
+    public void shouldListAllRelationshipTypesInUseEvenWhenExclusiveRelationshipTypeLocksAreTaken() throws Exception
+    {
+        // Given
+        GraphDatabaseService db = dbRule.getGraphDatabaseAPI();
+        RelationshipType relType = RelationshipType.withName( "REL" );
+        Node node = createNode( db, Labels.MY_LABEL );
+        try ( Transaction tx = db.beginTx() )
+        {
+            node.createRelationshipTo( node, relType ).setProperty( "prop", "val" );
+            tx.success();
+        }
+
+        BinaryLatch indexCreateStarted = new BinaryLatch();
+        BinaryLatch indexCreateAllowToFinish = new BinaryLatch();
+        Thread indexCreator = new Thread( () ->
+        {
+            try ( Transaction tx = db.beginTx() )
+            {
+                db.execute( "CALL db.index.fulltext.createRelationshipIndex('myIndex', ['REL'], ['prop'] )" ).close();
+                indexCreateStarted.release();
+                indexCreateAllowToFinish.await();
+                tx.success();
+            }
+        } );
+        indexCreator.start();
+
+        // When
+        indexCreateStarted.await();
+        List<RelationshipType> relTypes;
+        try ( Transaction ignored = db.beginTx() )
+        {
+            relTypes = asList( db.getAllRelationshipTypesInUse() );
+        }
+        indexCreateAllowToFinish.release();
+        indexCreator.join();
+
+        // Then
+        assertEquals( 1, relTypes.size() );
+        assertThat( map( RelationshipType::name, relTypes ), hasItems( relType.name() ) );
     }
 
     @Test

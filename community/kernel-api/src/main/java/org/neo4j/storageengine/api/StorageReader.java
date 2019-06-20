@@ -24,7 +24,6 @@ import java.util.function.Function;
 
 import org.neo4j.collection.PrimitiveLongResourceIterator;
 import org.neo4j.internal.kernel.api.IndexReference;
-import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
 import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
@@ -34,7 +33,6 @@ import org.neo4j.storageengine.api.schema.CapableIndexDescriptor;
 import org.neo4j.storageengine.api.schema.IndexDescriptor;
 import org.neo4j.storageengine.api.schema.IndexReader;
 import org.neo4j.storageengine.api.schema.LabelScanReader;
-import org.neo4j.storageengine.api.schema.PopulationProgress;
 
 /**
  * Abstraction for accessing data from a {@link StorageEngine}.
@@ -45,7 +43,7 @@ import org.neo4j.storageengine.api.schema.PopulationProgress;
  * during a longer period of time, with the assumption that it's still one thread at a time using each.
  * <p>
  */
-public interface StorageReader extends AutoCloseable
+public interface StorageReader extends AutoCloseable, StorageSchemaReader
 {
     /**
      * Acquires this statement so that it can be used, should later be {@link #release() released}.
@@ -119,21 +117,10 @@ public interface StorageReader extends AutoCloseable
     long getGraphPropertyReference();
 
     /**
-     * @param labelId label to list indexes for.
-     * @return {@link IndexDescriptor} associated with the given {@code labelId}.
-     */
-    Iterator<CapableIndexDescriptor> indexesGetForLabel( int labelId );
-
-    /**
      * @param name name of index to find
      * @return {@link IndexDescriptor} associated with the given {@code name}.
      */
     CapableIndexDescriptor indexGetForName( String name );
-
-    /**
-     * @return all {@link CapableIndexDescriptor} in storage.
-     */
-    Iterator<CapableIndexDescriptor> indexesGetAll();
 
     /**
      * Returns all indexes (including unique) related to a property.
@@ -156,45 +143,11 @@ public interface StorageReader extends AutoCloseable
     boolean constraintExists( ConstraintDescriptor descriptor );
 
     /**
-     * @param labelId label token id.
-     * @return node property constraints associated with the label token id.
-     */
-    Iterator<ConstraintDescriptor> constraintsGetForLabel( int labelId );
-
-    /**
-     * @param typeId relationship type token id .
-     * @return relationship property constraints associated with the relationship type token id.
-     */
-    Iterator<ConstraintDescriptor> constraintsGetForRelationshipType( int typeId );
-
-    /**
-     * @return all stored property constraints.
-     */
-    Iterator<ConstraintDescriptor> constraintsGetAll();
-
-    /**
      *
      * @param labelId The label id of interest.
      * @return {@link PrimitiveLongResourceIterator} over node ids associated with given label id.
      */
     PrimitiveLongResourceIterator nodesGetForLabel( int labelId );
-
-    /**
-     * Looks for a stored index by given {@code descriptor}
-     *
-     * @param descriptor a description of the index.
-     * @return {@link CapableIndexDescriptor} for matching index, or {@code null} if not found.
-     */
-    CapableIndexDescriptor indexGetForSchema( SchemaDescriptor descriptor );
-
-    /**
-     * Returns state of a stored index.
-     *
-     * @param descriptor {@link IndexDescriptor} to get state for.
-     * @return {@link InternalIndexState} for index.
-     * @throws IndexNotFoundKernelException if index not found.
-     */
-    InternalIndexState indexGetState( IndexDescriptor descriptor ) throws IndexNotFoundKernelException;
 
     /**
      * Return index reference of a stored index.
@@ -204,23 +157,6 @@ public interface StorageReader extends AutoCloseable
      * @throws IndexNotFoundKernelException if index not found.
      */
     IndexReference indexReference( IndexDescriptor descriptor ) throws IndexNotFoundKernelException;
-
-    /**
-     * @param descriptor {@link SchemaDescriptor} to get population progress for.
-     * @return progress of index population, which is the initial state of an index when it's created.
-     * @throws IndexNotFoundKernelException if index not found.
-     */
-    PopulationProgress indexGetPopulationProgress( SchemaDescriptor descriptor ) throws IndexNotFoundKernelException;
-
-    /**
-     * Returns any failure that happened during population or operation of an index. Such failures
-     * are persisted and can be accessed even after restart.
-     *
-     * @param descriptor {@link SchemaDescriptor} to get failure for.
-     * @return failure of an index, or {@code null} if index is working as it should.
-     * @throws IndexNotFoundKernelException if index not found.
-     */
-    String indexGetFailure( SchemaDescriptor descriptor ) throws IndexNotFoundKernelException;
 
     /**
      * Visits data about a relationship. The given {@code relationshipVisitor} will be notified.
@@ -339,4 +275,15 @@ public interface StorageReader extends AutoCloseable
      * @return a new {@link StorageRelationshipScanCursor} capable of reading relationship data from the underlying storage.
      */
     StorageRelationshipScanCursor allocateRelationshipScanCursor();
+
+    /**
+     * Get a lock-free snapshot of the current schema, for inspecting the current schema when no mutations are intended.
+     * <p>
+     * The index states, such as failure messages and population progress, are not captured in the snapshot, but are instead queried "live".
+     * This means that if an index in the snapshot is then later deleted, then querying for the state of the index via the snapshot will throw an
+     * {@link IndexNotFoundKernelException}.
+     *
+     * @return a snapshot of the current schema.
+     */
+    StorageSchemaReader schemaSnapshot();
 }

@@ -32,6 +32,7 @@ import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
 import org.neo4j.internal.kernel.api.schema.constraints.ConstraintDescriptor;
 import org.neo4j.kernel.api.StatementConstants;
 import org.neo4j.kernel.impl.api.IndexReaderFactory;
+import org.neo4j.kernel.impl.api.index.IndexMap;
 import org.neo4j.kernel.impl.api.index.IndexProxy;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.store.SchemaCache;
@@ -53,6 +54,7 @@ import org.neo4j.storageengine.api.StoragePropertyCursor;
 import org.neo4j.storageengine.api.StorageReader;
 import org.neo4j.storageengine.api.StorageRelationshipGroupCursor;
 import org.neo4j.storageengine.api.StorageRelationshipTraversalCursor;
+import org.neo4j.storageengine.api.StorageSchemaReader;
 import org.neo4j.storageengine.api.schema.CapableIndexDescriptor;
 import org.neo4j.storageengine.api.schema.IndexDescriptor;
 import org.neo4j.storageengine.api.schema.IndexReader;
@@ -138,6 +140,12 @@ public class RecordStorageReader implements StorageReader
     public Iterator<CapableIndexDescriptor> indexesGetForLabel( int labelId )
     {
         return schemaCache.indexDescriptorsForLabel( labelId );
+    }
+
+    @Override
+    public Iterator<CapableIndexDescriptor> indexesGetForRelationshipType( int relationshipType )
+    {
+        return schemaCache.indexDescriptorsForRelationshipType( relationshipType );
     }
 
     @Override
@@ -492,6 +500,74 @@ public class RecordStorageReader implements StorageReader
     public RecordRelationshipScanCursor allocateRelationshipScanCursor()
     {
         return new RecordRelationshipScanCursor( relationshipStore );
+    }
+
+    @Override
+    public StorageSchemaReader schemaSnapshot()
+    {
+        SchemaCache schemaCacheSnapshot = schemaCache.snapshot();
+        return new StorageSchemaReader()
+        {
+            @Override
+            public CapableIndexDescriptor indexGetForSchema( SchemaDescriptor descriptor )
+            {
+                return schemaCacheSnapshot.indexDescriptor( descriptor );
+            }
+
+            @Override
+            public Iterator<CapableIndexDescriptor> indexesGetForLabel( int labelId )
+            {
+                return schemaCacheSnapshot.indexDescriptorsForLabel( labelId );
+            }
+
+            @Override
+            public Iterator<CapableIndexDescriptor> indexesGetForRelationshipType( int relationshipType )
+            {
+                return schemaCacheSnapshot.indexDescriptorsForRelationshipType( relationshipType );
+            }
+
+            @Override
+            public Iterator<CapableIndexDescriptor> indexesGetAll()
+            {
+                return schemaCacheSnapshot.indexDescriptors().iterator();
+            }
+
+            @Override
+            public InternalIndexState indexGetState( IndexDescriptor descriptor ) throws IndexNotFoundKernelException
+            {
+                return RecordStorageReader.this.indexGetState( descriptor );
+            }
+
+            @Override
+            public PopulationProgress indexGetPopulationProgress( SchemaDescriptor descriptor ) throws IndexNotFoundKernelException
+            {
+                return RecordStorageReader.this.indexGetPopulationProgress( descriptor );
+            }
+
+            @Override
+            public String indexGetFailure( SchemaDescriptor descriptor ) throws IndexNotFoundKernelException
+            {
+                return RecordStorageReader.this.indexGetFailure( descriptor );
+            }
+
+            @Override
+            public Iterator<ConstraintDescriptor> constraintsGetForLabel( int labelId )
+            {
+                return schemaCacheSnapshot.constraintsForLabel( labelId );
+            }
+
+            @Override
+            public Iterator<ConstraintDescriptor> constraintsGetForRelationshipType( int typeId )
+            {
+                return schemaCacheSnapshot.constraintsForRelationshipType( typeId );
+            }
+
+            @Override
+            public Iterator<ConstraintDescriptor> constraintsGetAll()
+            {
+                return schemaCacheSnapshot.constraints();
+            }
+        };
     }
 
     @Override

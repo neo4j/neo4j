@@ -29,6 +29,7 @@ import java.util.Iterator;
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.graphdb.Resource;
 import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.internal.kernel.api.Kernel;
 import org.neo4j.internal.kernel.api.NodeCursor;
@@ -69,7 +70,6 @@ public abstract class KernelIntegrationTest
 
     @Rule
     public RuleChain ruleChain = RuleChain.outerRule( testDir ).around( fileSystemRule );
-    @SuppressWarnings( "deprecation" )
     protected GraphDatabaseAPI db;
     ThreadToStatementContextBridge statementContextSupplier;
     protected Kernel kernel;
@@ -119,6 +119,19 @@ public abstract class KernelIntegrationTest
     {
         transaction = kernel.beginTransaction( implicit, loginContext );
         return transaction;
+    }
+
+    /**
+     * Create a temporary section wherein other transactions can be started an committed, and after which the <em>current</em> transaction will be restored as
+     * current.
+     */
+    protected Resource captureTransaction()
+    {
+        Transaction tx = transaction;
+        return () ->
+        {
+            transaction = tx;
+        };
     }
 
     protected DbmsOperations dbmsOperations()

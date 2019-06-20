@@ -187,6 +187,12 @@ public class StubStorageCursors implements StorageReader
     }
 
     @Override
+    public Iterator<CapableIndexDescriptor> indexesGetForRelationshipType( int relationshipType )
+    {
+        throw new UnsupportedOperationException( "Not implemented yet" );
+    }
+
+    @Override
     public CapableIndexDescriptor indexGetForName( String name )
     {
         throw new UnsupportedOperationException( "Not implemented yet" );
@@ -412,6 +418,12 @@ public class StubStorageCursors implements StorageReader
     public StorageRelationshipScanCursor allocateRelationshipScanCursor()
     {
         return new StubStorageRelationshipScanCursor();
+    }
+
+    @Override
+    public StorageSchemaReader schemaSnapshot()
+    {
+        throw new UnsupportedOperationException( "Not implemented yet" );
     }
 
     private static class NodeData

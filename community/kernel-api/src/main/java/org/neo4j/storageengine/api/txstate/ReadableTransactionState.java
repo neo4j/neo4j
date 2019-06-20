@@ -92,6 +92,8 @@ public interface ReadableTransactionState
 
     DiffSets<IndexDescriptor> indexDiffSetsByLabel( int labelId );
 
+    DiffSets<IndexDescriptor> indexDiffSetsByRelationshipType( int relationshipType );
+
     DiffSets<IndexDescriptor> indexDiffSetsBySchema( SchemaDescriptor schema );
 
     DiffSets<IndexDescriptor> indexChanges();
