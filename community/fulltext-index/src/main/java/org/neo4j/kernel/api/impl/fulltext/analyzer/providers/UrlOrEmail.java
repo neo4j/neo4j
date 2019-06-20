@@ -62,9 +62,9 @@ public class UrlOrEmail extends AnalyzerProvider
     }
 
     @ServiceProvider
-    public static class EmalAnalyzer extends UrlOrEmail
+    public static class EmailAnalyzer extends UrlOrEmail
     {
-        public EmalAnalyzer()
+        public EmailAnalyzer()
         {
             super( "email" );
         }
