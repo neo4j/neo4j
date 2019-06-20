@@ -269,7 +269,7 @@ class CypherAdapterStreamTest
 
         when( result.getNotifications() ).thenReturn( Arrays.asList(
                 NotificationCode.INDEX_HINT_UNFULFILLABLE.notification( InputPosition.empty ),
-                NotificationCode.PLANNER_UNSUPPORTED.notification( new InputPosition( 4, 5, 6 ) )
+                NotificationCode.RUNTIME_UNSUPPORTED.notification( new InputPosition( 4, 5, 6 ) )
         ) );
         CypherAdapterStream stream = new CypherAdapterStream( result, subscriber, Clock.systemUTC() );
 
@@ -286,10 +286,10 @@ class CypherAdapterStreamTest
         );
         MapValue msg2 = mapValues(
                 "severity", stringValue( "WARNING" ),
-                "code", stringValue( "Neo.ClientNotification.Statement.PlannerUnsupportedWarning" ),
-                "title", stringValue( "This query is not supported by the COST planner." ),
+                "code", stringValue( "Neo.ClientNotification.Statement.RuntimeUnsupportedWarning" ),
+                "title", stringValue( "This query is not supported by the chosen runtime." ),
                 "description",
-                stringValue( "Using COST planner is unsupported for this query, please use RULE planner instead" ),
+                stringValue( "Selected runtime is unsupported for this query, please use a different runtime instead or fallback to default." ),
                 "position", mapValues( "offset", intValue( 4 ), "column", intValue( 6 ), "line", intValue( 5 ) )
         );
 

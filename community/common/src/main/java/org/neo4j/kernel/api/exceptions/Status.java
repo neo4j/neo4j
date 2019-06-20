@@ -267,19 +267,12 @@ public interface Status
                 "might be used in order to find the requested shortest path." ),
 
         // client notifications (not supported/deprecated)
-        PlannerUnavailableWarning( ClientNotification,
-                "The RULE planner is not available in the current CYPHER version, the query has been run by an older " +
-                        "CYPHER version." ),
-        PlannerUnsupportedWarning( ClientNotification,
-                "This query is not supported by the COST planner." ),
         RuntimeUnsupportedWarning( ClientNotification,
                 "This query is not supported by the chosen runtime." ),
         FeatureDeprecationWarning( ClientNotification,
                 "This feature is deprecated and will be removed in future versions." ),
         ExperimentalFeature( ClientNotification,
                 "This feature is experimental and should not be used in production systems." ),
-        JoinHintUnsupportedWarning( ClientNotification,
-                "Queries with join hints are not supported by the RULE planner." ),
 
         // client notifications (unknown tokens)
         UnknownLabelWarning( ClientNotification,

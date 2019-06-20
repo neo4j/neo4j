@@ -44,30 +44,12 @@ public enum NotificationCode
     LEGACY_PLANNER(
         SeverityLevel.WARNING,
         Status.Statement.FeatureDeprecationWarning,
-        "Using PLANNER for switching between planners has been deprecated, please use CYPHER planner=[rule,cost] instead"
-    ),
-    DEPRECATED_RULE_PLANNER(
-        SeverityLevel.WARNING,
-        Status.Statement.FeatureDeprecationWarning,
-        "The rule planner, which was used to plan this query, is deprecated and will be discontinued soon. " +
-                "If you did not explicitly choose the rule planner, you should try to change your query so that the " +
-                "rule planner is not used"
+        "Using PLANNER for switching between planners has been deprecated, please use CYPHER planner=cost instead"
     ),
     DEPRECATED_COMPILED_RUNTIME(
             SeverityLevel.WARNING,
             Status.Statement.FeatureDeprecationWarning,
             "The compiled runtime, which was requested to execute this query, is deprecated and will be removed in a future release."
-    ),
-    PLANNER_UNSUPPORTED(
-        SeverityLevel.WARNING,
-        Status.Statement.PlannerUnsupportedWarning,
-        "Using COST planner is unsupported for this query, please use RULE planner instead"
-    ),
-    RULE_PLANNER_UNAVAILABLE_FALLBACK(
-        SeverityLevel.WARNING,
-        Status.Statement.PlannerUnavailableWarning,
-        "Using RULE planner is unsupported for current CYPHER version, the query has been executed by an older CYPHER " +
-        "version"
     ),
     RUNTIME_UNSUPPORTED(
         SeverityLevel.WARNING,
@@ -84,11 +66,6 @@ public enum NotificationCode
         Status.Statement.JoinHintUnfulfillableWarning,
         "The hinted join was not planned. This could happen because no generated plan contained the join key, " +
                 "please try using a different join key or restructure your query."
-    ),
-    JOIN_HINT_UNSUPPORTED(
-        SeverityLevel.WARNING,
-        Status.Statement.JoinHintUnsupportedWarning,
-        "Using RULE planner is unsupported for queries with join hints, please use COST planner instead"
     ),
     LENGTH_ON_NON_PATH(
         SeverityLevel.WARNING,
@@ -181,25 +158,6 @@ public enum NotificationCode
             "graph algorithms might not work for this use case. It is recommended to introduce a WITH to separate the " +
             "MATCH containing the shortest path from the existential predicates on that path."
     ),
-    CREATE_UNIQUE_UNAVAILABLE_FALLBACK(
-            SeverityLevel.WARNING,
-            Status.Statement.PlannerUnavailableWarning,
-        "CREATE UNIQUE is unsupported for current CYPHER version, the query has been executed by an older CYPHER version"
-    ),
-    CREATE_UNIQUE_DEPRECATED(
-            SeverityLevel.WARNING,
-            Status.Statement.FeatureDeprecationWarning,
-            "CREATE UNIQUE is deprecated and will be removed in a future version."
-    ),
-    START_UNAVAILABLE_FALLBACK(
-            SeverityLevel.WARNING,
-            Status.Statement.PlannerUnavailableWarning,
-            "START is not supported for current CYPHER version, the query has been executed by an older CYPHER version"
-    ),
-    START_DEPRECATED(
-            SeverityLevel.WARNING,
-            Status.Statement.FeatureDeprecationWarning,
-            "START has been deprecated and will be removed in a future version." ),
     EXPERIMENTAL_FEATURE(
             SeverityLevel.WARNING,
             Status.Statement.ExperimentalFeature,
