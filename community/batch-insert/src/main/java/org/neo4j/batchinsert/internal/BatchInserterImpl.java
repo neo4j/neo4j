@@ -573,7 +573,7 @@ public class BatchInserterImpl implements BatchInserter
         }
     }
 
-    private void rebuildCounts()
+    private void rebuildCounts() throws IOException
     {
         new GBPTreeCountsStore( pageCache, databaseLayout.countStore(), RecoveryCleanupWorkCollector.immediate(),
                 new CountsComputer( neoStores, pageCache, databaseLayout ), false, GBPTreeCountsStore.NO_MONITOR ).close();
@@ -1048,9 +1048,9 @@ public class BatchInserterImpl implements BatchInserter
 
         flushStrategy.forceFlush();
 
-        rebuildCounts();
         try
         {
+            rebuildCounts();
             NativeLabelScanStore labelIndex = buildLabelIndex();
             repopulateAllIndexes( labelIndex );
             idGeneratorFactory.visit( IdGenerator::markHighestWrittenAtHighId );

@@ -57,6 +57,7 @@ import org.neo4j.consistency.store.DirectStoreAccess;
 import org.neo4j.counts.CountsStore;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.function.ThrowingFunction;
+import org.neo4j.function.ThrowingSupplier;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
@@ -2044,13 +2045,13 @@ public class FullCheckIntegrationTest
     @Test
     void shouldReportMissingCountsStore() throws Exception
     {
-        shouldReportBadCountsStore( this::corruptFileIfExists );
+        shouldReportBadCountsStore( File::delete );
     }
 
     @Test
     void shouldReportBrokenCountsStore() throws Exception
     {
-        shouldReportBadCountsStore( File::delete );
+        shouldReportBadCountsStore( this::corruptFileIfExists );
     }
 
     private void shouldReportBadCountsStore( ThrowingFunction<File,Boolean,IOException> fileAction ) throws Exception
@@ -2220,12 +2221,13 @@ public class FullCheckIntegrationTest
         return check( fixture.readOnlyDirectStoreAccess(), fixture.counts() );
     }
 
-    private ConsistencySummaryStatistics check( DirectStoreAccess stores, CountsStore counts ) throws ConsistencyCheckIncompleteException
+    private ConsistencySummaryStatistics check( DirectStoreAccess stores, ThrowingSupplier<CountsStore,IOException> counts )
+            throws ConsistencyCheckIncompleteException
     {
         Config config = config();
         final var consistencyFlags = new ConsistencyFlags( true, true, true, true );
         FullCheck checker = new FullCheck( ProgressMonitorFactory.NONE, fixture.getAccessStatistics(), defaultConsistencyCheckThreadsNumber(),
-                consistencyFlags, config, true );
+                consistencyFlags, config );
         return checker.execute( stores, counts, FormattedLog.toOutputStream( System.out ) );
     }
 

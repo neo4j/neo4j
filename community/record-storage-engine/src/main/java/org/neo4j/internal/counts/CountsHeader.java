@@ -41,14 +41,10 @@ class CountsHeader implements Header.Reader, Consumer<PageCursor>
     @Override
     public void read( ByteBuffer headerBytes )
     {
-        highestGapFreeTxId = headerBytes.getLong();
         wasRead = true;
+        highestGapFreeTxId = headerBytes.getLong();
     }
 
-    /**
-     * @return whether or not the {@link #read(ByteBuffer)} method has been called. Used to determine whether or not a counts store
-     * was opened or was created as part of creating the {@link GBPTreeCountsStore} instance.
-     */
     boolean wasRead()
     {
         return wasRead;

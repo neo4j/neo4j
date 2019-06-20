@@ -19,6 +19,7 @@
  */
 package org.neo4j.consistency.checking.full;
 
+import java.io.IOException;
 import java.lang.reflect.Array;
 import java.util.List;
 
@@ -40,6 +41,7 @@ import org.neo4j.consistency.store.DirectRecordAccess;
 import org.neo4j.consistency.store.DirectStoreAccess;
 import org.neo4j.consistency.store.RecordAccess;
 import org.neo4j.counts.CountsStore;
+import org.neo4j.function.ThrowingSupplier;
 import org.neo4j.internal.helpers.progress.ProgressMonitorFactory;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.kernel.impl.store.RecordStore;
@@ -64,16 +66,15 @@ public class FullCheck
     private final boolean checkGraph;
     private final int threads;
     private final Statistics statistics;
-    private final boolean startCountsStore;
 
     public FullCheck( ConsistencyFlags consistencyFlags, Config config, ProgressMonitorFactory progressFactory,
-            Statistics statistics, int threads, boolean startCountsStore )
+            Statistics statistics, int threads )
     {
-        this( progressFactory, statistics, threads, consistencyFlags, config, startCountsStore );
+        this( progressFactory, statistics, threads, consistencyFlags, config );
     }
 
     public FullCheck( ProgressMonitorFactory progressFactory, Statistics statistics, int threads,
-                      ConsistencyFlags consistencyFlags, Config config, boolean startCountsStore )
+                      ConsistencyFlags consistencyFlags, Config config )
     {
         this.statistics = statistics;
         this.threads = threads;
@@ -83,16 +84,15 @@ public class FullCheck
         this.checkIndexes = consistencyFlags.isCheckIndexes();
         this.checkLabelScanStore = consistencyFlags.isCheckLabelScanStore();
         this.checkPropertyOwners = consistencyFlags.isCheckPropertyOwners();
-        this.startCountsStore = startCountsStore;
     }
 
-    public ConsistencySummaryStatistics execute( DirectStoreAccess stores, CountsStore counts, Log log )
+    public ConsistencySummaryStatistics execute( DirectStoreAccess stores, ThrowingSupplier<CountsStore,IOException> countsSupplier, Log log )
             throws ConsistencyCheckIncompleteException
     {
-        return execute( stores, counts, log, NO_MONITOR );
+        return execute( stores, countsSupplier, log, NO_MONITOR );
     }
 
-    ConsistencySummaryStatistics execute( DirectStoreAccess stores, CountsStore counts, Log log, Monitor reportMonitor )
+    ConsistencySummaryStatistics execute( DirectStoreAccess stores, ThrowingSupplier<CountsStore,IOException> countsSupplier, Log log, Monitor reportMonitor )
             throws ConsistencyCheckIncompleteException
     {
         ConsistencySummaryStatistics summary = new ConsistencySummaryStatistics();
@@ -109,28 +109,20 @@ public class FullCheck
         execute( stores, decorator, records, report, cacheAccess, reportMonitor );
         ownerCheck.scanForOrphanChains( progressFactory );
 
+        CountsStore counts;
         if ( checkGraph )
         {
-            boolean checkCounts = true;
-            if ( startCountsStore )
+            // Perhaps other read-only use cases thinks it's fine to just rebuild an in-memory counts store,
+            // but the consistency checker should instead prevent rebuild and report that the counts store is broken or missing
+            try
             {
-                // Perhaps other read-only use cases thinks it's fine to just rebuild an in-memory counts store,
-                // but the consistency checker should instead prevent rebuild and report that the counts store is broken or missing
-                try
-                {
-                    counts.start();
-                }
-                catch ( Exception e )
-                {
-                    log.error( "Counts store is missing, broken or of an older format and will not be consistency checked", e );
-                    summary.update( RecordType.COUNTS, 1, 0 );
-                    checkCounts = false;
-                }
-            }
-
-            if ( checkCounts )
-            {
+                counts = countsSupplier.get();
                 countsBuilder.checkCounts( counts, new ConsistencyReporter( records, report ), progressFactory );
+            }
+            catch ( Exception e )
+            {
+                log.error( "Counts store is missing, broken or of an older format and will not be consistency checked", e );
+                summary.update( RecordType.COUNTS, 1, 0 );
             }
         }
 

@@ -23,6 +23,7 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import java.io.IOException;
 import java.util.Iterator;
 
 import org.neo4j.configuration.Config;
@@ -99,7 +100,7 @@ class OnlineIndexUpdatesTest
     private DirectRecordAccess<PropertyRecord,PrimitiveRecord> recordAccess;
 
     @BeforeEach
-    void setUp()
+    void setUp() throws IOException
     {
         life = new LifeSupport();
         DatabaseLayout databaseLayout = testDirectory.databaseLayout();

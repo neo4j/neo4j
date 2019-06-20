@@ -297,7 +297,7 @@ class GBPTreeCountsStoreTest
     }
 
     @Test
-    void shouldNotApplyTransactionOnCreatedCountsStoreDuringRecovery() throws Exception
+    void shouldNotApplyTransactionOnCreatedCountsStoreDuringRecovery() throws IOException
     {
         // given
         int labelId = 123;
@@ -395,7 +395,7 @@ class GBPTreeCountsStoreTest
     }
 
     @Test
-    void shouldFailApplyInReadOnlyMode() throws Exception
+    void shouldFailApplyInReadOnlyMode() throws IOException
     {
         // given
         closeCountsStore();
@@ -407,7 +407,7 @@ class GBPTreeCountsStoreTest
     }
 
     @Test
-    void shouldNotCheckpointInReadOnlyMode() throws Exception
+    void shouldNotCheckpointInReadOnlyMode() throws IOException
     {
         // given
         closeCountsStore();
@@ -575,13 +575,13 @@ class GBPTreeCountsStoreTest
         return directory.file( "counts.db" );
     }
 
-    private void openCountsStore( CountsBuilder builder ) throws Exception
+    private void openCountsStore( CountsBuilder builder ) throws IOException
     {
         instantiateCountsStore( builder, false, NO_MONITOR );
         countsStore.start();
     }
 
-    private void instantiateCountsStore( CountsBuilder builder, boolean readOnly, GBPTreeCountsStore.Monitor monitor )
+    private void instantiateCountsStore( CountsBuilder builder, boolean readOnly, GBPTreeCountsStore.Monitor monitor ) throws IOException
     {
         countsStore = new GBPTreeCountsStore( pageCache, countsStoreFile(), immediate(), builder, readOnly, monitor );
     }

@@ -19,6 +19,8 @@
  */
 package org.neo4j.counts;
 
+import java.io.IOException;
+
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
@@ -45,9 +47,9 @@ public interface CountsStore extends CountsAccessor, AutoCloseable
     /**
      * Puts the counts store in started state, i.e. after potentially recovery has been made. Any changes {@link #apply(long) applied}
      * before this call is made are considered recovery repairs from a previous non-clean shutdown.
-     * @throws Exception any type of error happening when transitioning to started state.
+     * @throws IOException any type of error happening when transitioning to started state.
      */
-    void start() throws Exception;
+    void start() throws IOException;
 
     /**
      * Makes a counts store play nice with {@link LifeSupport}. Calls:
@@ -63,7 +65,7 @@ public interface CountsStore extends CountsAccessor, AutoCloseable
         return new LifecycleAdapter()
         {
             @Override
-            public void start() throws Exception
+            public void start() throws IOException
             {
                 countsStore.start();
             }

@@ -42,7 +42,6 @@ import org.neo4j.common.EntityType;
 import org.neo4j.common.ProgressReporter;
 import org.neo4j.configuration.Config;
 import org.neo4j.exceptions.KernelException;
-import org.neo4j.exceptions.UnspecifiedKernelException;
 import org.neo4j.internal.batchimport.AdditionalInitialIds;
 import org.neo4j.internal.batchimport.BatchImporter;
 import org.neo4j.internal.batchimport.BatchImporterFactory;
@@ -86,7 +85,6 @@ import org.neo4j.io.layout.DatabaseFile;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.impl.store.CommonAbstractStore;
 import org.neo4j.kernel.impl.store.CountsComputer;
 import org.neo4j.kernel.impl.store.MetaDataStore;
@@ -246,7 +244,7 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant
      * code lingering in the code base a rebuild is cleaner, but will require a longer migration time. Worth it?
      */
     private void migrateCountsStore( DatabaseLayout directoryLayout, DatabaseLayout migrationLayout, RecordFormats oldFormat )
-            throws IOException, KernelException
+            throws IOException
     {
         // Just read from the old store (nodes, relationships, highLabelId, highRelationshipTypeId). This way we don't have to try and figure
         // out which stores, if any, have been migrated to the new format. The counts themselves are equivalent in both the old and the migrated stores.
@@ -257,14 +255,6 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant
         {
             countsStore.start();
             countsStore.checkpoint( IOLimiter.UNLIMITED );
-        }
-        catch ( IOException e )
-        {
-            throw e;
-        }
-        catch ( Exception e )
-        {
-            throw new UnspecifiedKernelException( Status.General.UnknownError, e, "Unable to start and build counts store during migration" );
         }
     }
 

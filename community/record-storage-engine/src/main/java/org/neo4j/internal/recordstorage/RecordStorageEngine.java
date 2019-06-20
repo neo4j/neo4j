@@ -30,6 +30,7 @@ import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.counts.CountsAccessor;
 import org.neo4j.exceptions.KernelException;
+import org.neo4j.exceptions.UnderlyingStorageException;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.internal.counts.CountsBuilder;
 import org.neo4j.internal.counts.GBPTreeCountsStore;
@@ -171,24 +172,31 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
             RecoveryCleanupWorkCollector recoveryCleanupWorkCollector )
     {
         boolean readOnly = config.get( GraphDatabaseSettings.read_only );
-        return new GBPTreeCountsStore( pageCache, layout.countStore(), recoveryCleanupWorkCollector, new CountsBuilder()
+        try
         {
-            private final Log log = logProvider.getLog( MetaDataStore.class );
-
-            @Override
-            public void initialize( CountsAccessor.Updater updater )
+            return new GBPTreeCountsStore( pageCache, layout.countStore(), recoveryCleanupWorkCollector, new CountsBuilder()
             {
-                log.warn( "Missing counts store, rebuilding it." );
-                new CountsComputer( neoStores, pageCache, layout ).initialize( updater );
-                log.warn( "Counts store rebuild completed." );
-            }
+                private final Log log = logProvider.getLog( MetaDataStore.class );
 
-            @Override
-            public long lastCommittedTxId()
-            {
-                return neoStores.getMetaDataStore().getLastCommittedTransactionId();
-            }
-        }, readOnly, GBPTreeCountsStore.NO_MONITOR );
+                @Override
+                public void initialize( CountsAccessor.Updater updater )
+                {
+                    log.warn( "Missing counts store, rebuilding it." );
+                    new CountsComputer( neoStores, pageCache, layout ).initialize( updater );
+                    log.warn( "Counts store rebuild completed." );
+                }
+
+                @Override
+                public long lastCommittedTxId()
+                {
+                    return neoStores.getMetaDataStore().getLastCommittedTransactionId();
+                }
+            }, readOnly, GBPTreeCountsStore.NO_MONITOR );
+        }
+        catch ( IOException e )
+        {
+            throw new UnderlyingStorageException( e );
+        }
     }
 
     @Override

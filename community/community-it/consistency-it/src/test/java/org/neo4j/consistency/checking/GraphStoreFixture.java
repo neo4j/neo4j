@@ -36,9 +36,11 @@ import org.neo4j.consistency.statistics.DefaultCounts;
 import org.neo4j.consistency.statistics.Statistics;
 import org.neo4j.consistency.statistics.VerboseStatistics;
 import org.neo4j.consistency.store.DirectStoreAccess;
+import org.neo4j.counts.CountsAccessor;
 import org.neo4j.counts.CountsStore;
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.exceptions.KernelException;
+import org.neo4j.function.ThrowingSupplier;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
@@ -212,11 +214,6 @@ public abstract class GraphStoreFixture implements AutoCloseable
             fixtureLife.start();
             storeLife.start();
 
-            CountsStore counts =
-                    new GBPTreeCountsStore( pageCache, databaseLayout().countStore(), RecoveryCleanupWorkCollector.immediate(), CountsBuilder.EMPTY, false,
-                            NO_MONITOR );
-            storeLife.add( CountsStore.wrapInLifecycle( counts ) );
-
             IndexStoreView indexStoreView = new NeoStoreIndexStoreView( LockService.NO_LOCK_SERVICE,
                     () -> new RecordStorageReader( nativeStores.getRawNeoStores() ) );
 
@@ -229,14 +226,30 @@ public abstract class GraphStoreFixture implements AutoCloseable
         return directStoreAccess;
     }
 
-    public CountsStore counts()
+    public ThrowingSupplier<CountsStore,IOException> counts()
     {
-        if ( counts == null )
+        return () ->
         {
-            counts = new GBPTreeCountsStore( pageCache, databaseLayout().countStore(), RecoveryCleanupWorkCollector.immediate(), CountsBuilder.EMPTY, true,
-                    NO_MONITOR );
-        }
-        return counts;
+            if ( counts == null )
+            {
+                counts = new GBPTreeCountsStore( pageCache, databaseLayout().countStore(), RecoveryCleanupWorkCollector.immediate(), new CountsBuilder()
+                {
+                    @Override
+                    public void initialize( CountsAccessor.Updater updater )
+                    {
+                        throw new UnsupportedOperationException( "Should not be rebuilt" );
+                    }
+
+                    @Override
+                    public long lastCommittedTxId()
+                    {
+                        return 0;
+                    }
+                }, true, NO_MONITOR );
+                counts.start();
+            }
+            return counts;
+        };
     }
 
     private LabelScanStore startLabelScanStore( PageCache pageCache, IndexStoreView indexStoreView, Monitors monitors, boolean readOnly )

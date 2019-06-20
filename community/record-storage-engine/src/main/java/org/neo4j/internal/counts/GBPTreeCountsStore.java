@@ -48,7 +48,6 @@ import org.neo4j.index.internal.gbptree.Seeker;
 import org.neo4j.index.internal.gbptree.Writer;
 import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.storageengine.api.TransactionIdStore;
 import org.neo4j.util.Preconditions;
 import org.neo4j.util.concurrent.ArrayQueueOutOfOrderSequence;
 import org.neo4j.util.concurrent.OutOfOrderSequence;
@@ -60,6 +59,7 @@ import static org.neo4j.internal.counts.CountsKey.nodeKey;
 import static org.neo4j.internal.counts.CountsKey.relationshipKey;
 import static org.neo4j.internal.counts.TreeWriter.merge;
 import static org.neo4j.io.IOUtils.closeAllUnchecked;
+import static org.neo4j.storageengine.api.TransactionIdStore.BASE_TX_ID;
 
 /**
  * Counts store build on top of the {@link GBPTree}.
@@ -84,11 +84,13 @@ public class GBPTreeCountsStore implements CountsStore
     private volatile boolean started;
 
     public GBPTreeCountsStore( PageCache pageCache, File file, RecoveryCleanupWorkCollector recoveryCollector,
-            CountsBuilder initialCountsBuilder, boolean readOnly, Monitor monitor )
+            CountsBuilder initialCountsBuilder, boolean readOnly, Monitor monitor ) throws IOException
     {
         this.readOnly = readOnly;
         this.monitor = monitor;
-        CountsHeader header = new CountsHeader( TransactionIdStore.BASE_TX_ID );
+
+        // First just read the header so that we can avoid creating it if this store is read-only
+        CountsHeader header = new CountsHeader( 0 );
         this.tree = new GBPTree<>( pageCache, file, layout, 0, GBPTree.NO_MONITOR, header, header, recoveryCollector );
         boolean successful = false;
         try
@@ -99,12 +101,8 @@ public class GBPTreeCountsStore implements CountsStore
             this.txIdInformation.strayTxIds.forEach( txId -> idSequence.offer( txId, EMPTY_LONG_ARRAY ) );
             // Only care about initial counts rebuilding if the tree was created right now when opening this tree
             // The actual rebuilding will happen in start()
-            this.initialCountsBuilder = header.wasRead() ? null : initialCountsBuilder;
+            this.initialCountsBuilder = header.wasRead() && header.highestGapFreeTxId() != 0 ? null : initialCountsBuilder;
             successful = true;
-        }
-        catch ( IOException e )
-        {
-            throw new UncheckedIOException( e );
         }
         finally
         {
@@ -117,7 +115,7 @@ public class GBPTreeCountsStore implements CountsStore
 
     // === Life cycle ===
 
-    public void start() throws Exception
+    public void start() throws IOException
     {
         // Execute the initial counts building if we need to, i.e. if instantiation of this counts store had to create it
         if ( initialCountsBuilder != null )
@@ -367,7 +365,7 @@ public class GBPTreeCountsStore implements CountsStore
     public static void dump( PageCache pageCache, File file, PrintStream out ) throws IOException
     {
         // First check if it even exists as we don't really want to create it as part of dumping it. readHeader will throw if not found
-        CountsHeader header = new CountsHeader( TransactionIdStore.BASE_TX_ID );
+        CountsHeader header = new CountsHeader( BASE_TX_ID );
         GBPTree.readHeader( pageCache, file, header );
 
         // Now open it and dump its contents

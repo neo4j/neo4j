@@ -128,12 +128,10 @@ public class DetectAllRelationshipInconsistenciesIT
 
             int threads = random.intBetween( 2, 10 );
             FullCheck checker = new FullCheck( ConsistencyFlags.DEFAULT,
-                    getTuningConfiguration(), ProgressMonitorFactory.NONE, Statistics.NONE, threads, true );
+                    getTuningConfiguration(), ProgressMonitorFactory.NONE, Statistics.NONE, threads );
             AssertableLogProvider logProvider = new AssertableLogProvider( true );
-            ConsistencySummaryStatistics summary = checker.execute( directStoreAccess, counts,
-                    logProvider.getLog( FullCheck.class ) );
-            int relationshipInconsistencies = summary.getInconsistencyCountForRecordType(
-                    RecordType.RELATIONSHIP );
+            ConsistencySummaryStatistics summary = checker.execute( directStoreAccess, () -> counts, logProvider.getLog( FullCheck.class ) );
+            int relationshipInconsistencies = summary.getInconsistencyCountForRecordType( RecordType.RELATIONSHIP );
 
             assertTrue( relationshipInconsistencies > 0, "Couldn't detect sabotaged relationship " + sabotage );
             logProvider.rawMessageMatcher().assertContains( sabotage.after.toString() );

@@ -143,7 +143,7 @@ public class ExecutionOrderIntegrationTest
         CacheAccess cacheAccess = new DefaultCacheAccess( defaultArray( store.getNodeStore().getHighId() ), new DefaultCounts( threads ), threads );
         RecordAccess access = FullCheck.recordAccess( store, cacheAccess );
 
-        FullCheck singlePass = new FullCheck( ConsistencyFlags.DEFAULT, getTuningConfiguration(), ProgressMonitorFactory.NONE, Statistics.NONE, threads, true );
+        FullCheck singlePass = new FullCheck( ConsistencyFlags.DEFAULT, getTuningConfiguration(), ProgressMonitorFactory.NONE, Statistics.NONE, threads );
 
         ConsistencySummaryStatistics singlePassSummary = new ConsistencySummaryStatistics();
         InconsistencyLogger logger = mock( InconsistencyLogger.class );

@@ -40,6 +40,7 @@ import org.neo4j.consistency.store.DirectStoreAccess;
 import org.neo4j.counts.CountsAccessor;
 import org.neo4j.counts.CountsStore;
 import org.neo4j.function.Suppliers;
+import org.neo4j.function.ThrowingSupplier;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.internal.counts.CountsBuilder;
 import org.neo4j.internal.counts.GBPTreeCountsStore;
@@ -196,18 +197,10 @@ public class ConsistencyCheckService
         LifeSupport life = new LifeSupport();
         StoreFactory factory =
                 new StoreFactory( databaseLayout, config, new DefaultIdGeneratorFactory( fileSystem, immediate() ), pageCache, fileSystem, logProvider );
-        CountsStore counts = new GBPTreeCountsStore( pageCache, databaseLayout.countStore(), RecoveryCleanupWorkCollector.ignore(),
-                new RebuildPreventingCountsInitializer(), true, GBPTreeCountsStore.NO_MONITOR );
+        CountsManager countsManager = new CountsManager( pageCache, databaseLayout );
         // Don't start the counts store here as part of life, instead only shut down. This is because it's better to let FullCheck
         // start it and add its missing/broken detection where it can report to user.
-        life.add( new LifecycleAdapter()
-        {
-            @Override
-            public void shutdown()
-            {
-                counts.close();
-            }
-        } );
+        life.add( countsManager );
 
         ConsistencySummaryStatistics summary;
         final File reportFile = chooseReportPath( reportDir );
@@ -255,8 +248,8 @@ public class ConsistencyCheckService
             }
             storeAccess.initialize();
             DirectStoreAccess stores = new DirectStoreAccess( storeAccess, labelScanStore, indexes, tokenHolders );
-            FullCheck check = new FullCheck( progressFactory, statistics, numberOfThreads, consistencyFlags, config, true );
-            summary = check.execute( stores, counts, new DuplicatingLog( log, reportLog ) );
+            FullCheck check = new FullCheck( progressFactory, statistics, numberOfThreads, consistencyFlags, config );
+            summary = check.execute( stores, countsManager, new DuplicatingLog( log, reportLog ) );
         }
         finally
         {
@@ -383,6 +376,42 @@ public class ConsistencyCheckService
         public long lastCommittedTxId()
         {
             return 0;
+        }
+    }
+
+    /**
+     * This weird little thing exists because we want to provide {@link CountsStore} from outside checker, but we want to actually instantiate
+     * and start it inside the checker where we have the report instance available. So we pass in something that can supply the store...
+     * and it can also close it (we do here in {@link ConsistencyCheckService}.
+     */
+    private class CountsManager extends LifecycleAdapter implements ThrowingSupplier<CountsStore,IOException>
+    {
+        private final PageCache pageCache;
+        private final DatabaseLayout databaseLayout;
+        private GBPTreeCountsStore counts;
+
+        CountsManager( PageCache pageCache, DatabaseLayout databaseLayout )
+        {
+            this.pageCache = pageCache;
+            this.databaseLayout = databaseLayout;
+        }
+
+        @Override
+        public CountsStore get() throws IOException
+        {
+            counts = new GBPTreeCountsStore( pageCache, databaseLayout.countStore(), RecoveryCleanupWorkCollector.ignore(),
+                    new RebuildPreventingCountsInitializer(), true, GBPTreeCountsStore.NO_MONITOR );
+            counts.start();
+            return counts;
+        }
+
+        @Override
+        public void shutdown()
+        {
+            if ( counts != null )
+            {
+                counts.close();
+            }
         }
     }
 }

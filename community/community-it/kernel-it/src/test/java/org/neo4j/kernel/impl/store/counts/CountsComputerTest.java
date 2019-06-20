@@ -23,6 +23,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.io.File;
+import java.io.IOException;
 
 import org.neo4j.common.ProgressReporter;
 import org.neo4j.configuration.Config;
@@ -116,7 +117,7 @@ class CountsComputerTest
     }
 
     @Test
-    void shouldCreateACountsStoreWhenThereAreNodesInTheDB()
+    void shouldCreateACountsStoreWhenThereAreNodesInTheDB() throws IOException
     {
         DatabaseManagementService managementService = dbBuilder.build();
         final GraphDatabaseAPI db = (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );
@@ -145,7 +146,7 @@ class CountsComputerTest
     }
 
     @Test
-    void shouldCreateACountsStoreWhenThereAreUnusedNodeRecordsInTheDB()
+    void shouldCreateACountsStoreWhenThereAreUnusedNodeRecordsInTheDB() throws IOException
     {
         DatabaseManagementService managementService = dbBuilder.build();
         final GraphDatabaseAPI db = (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );
@@ -175,7 +176,7 @@ class CountsComputerTest
     }
 
     @Test
-    void shouldCreateACountsStoreWhenThereAreUnusedRelationshipRecordsInTheDB()
+    void shouldCreateACountsStoreWhenThereAreUnusedRelationshipRecordsInTheDB() throws IOException
     {
         DatabaseManagementService managementService = dbBuilder.build();
         final GraphDatabaseAPI db = (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );
@@ -207,7 +208,7 @@ class CountsComputerTest
     }
 
     @Test
-    void shouldCreateACountsStoreWhenThereAreNodesAndRelationshipsInTheDB()
+    void shouldCreateACountsStoreWhenThereAreNodesAndRelationshipsInTheDB() throws IOException
     {
         DatabaseManagementService managementService = dbBuilder.build();
         final GraphDatabaseAPI db = (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );
@@ -244,7 +245,7 @@ class CountsComputerTest
     }
 
     @Test
-    void shouldCreateACountStoreWhenDBContainsDenseNodes()
+    void shouldCreateACountStoreWhenDBContainsDenseNodes() throws IOException
     {
         DatabaseManagementService managementService = dbBuilder.
                 setConfig( GraphDatabaseSettings.dense_node_threshold, 2 ).build();
@@ -314,7 +315,7 @@ class CountsComputerTest
                 }
             }
         }
-        catch ( Exception e )
+        catch ( IOException e )
         {
             throw new RuntimeException( e );
         }
@@ -325,12 +326,12 @@ class CountsComputerTest
         fileSystem.deleteFile( countsStoreFile() );
     }
 
-    private GBPTreeCountsStore createCountsStore()
+    private GBPTreeCountsStore createCountsStore() throws IOException
     {
         return createCountsStore( CountsBuilder.EMPTY );
     }
 
-    private GBPTreeCountsStore createCountsStore( CountsBuilder builder )
+    private GBPTreeCountsStore createCountsStore( CountsBuilder builder ) throws IOException
     {
         return new GBPTreeCountsStore( pageCache, testDirectory.databaseLayout().countStore(), immediate(), builder, false, GBPTreeCountsStore.NO_MONITOR );
     }
@@ -360,7 +361,7 @@ class CountsComputerTest
                 countsStore.start();
                 countsStore.checkpoint( IOLimiter.UNLIMITED );
             }
-            catch ( Exception e )
+            catch ( IOException e )
             {
                 throw new RuntimeException( e );
             }

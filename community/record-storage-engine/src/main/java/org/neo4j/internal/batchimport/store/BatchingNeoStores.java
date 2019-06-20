@@ -21,6 +21,7 @@ package org.neo4j.internal.batchimport.store;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.nio.file.OpenOption;
 import java.nio.file.StandardOpenOption;
 import java.util.function.Predicate;
@@ -356,9 +357,9 @@ public class BatchingNeoStores implements AutoCloseable, MemoryStatsVisitor.Visi
             countsStore.start();
             countsStore.checkpoint( UNLIMITED );
         }
-        catch ( Exception e )
+        catch ( IOException e )
         {
-            throw new RuntimeException( e );
+            throw new UncheckedIOException( e );
         }
     }
 
