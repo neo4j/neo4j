@@ -471,22 +471,4 @@ abstract class AggregationTestBase[CONTEXT <: RuntimeContext](
     // then
     runtimeResult should beColumns("countStar", "count", "avg", "collect", "max", "min", "sum").withSingleRow(0, 0, null, Collections.emptyList(),  null, null, 0)
   }
-
-  test("should keep input order") {
-    // given
-    val input = inputColumns(10, sizeHint / 10, identity)
-
-    // when
-    val logicalQuery = new LogicalQueryBuilder(this)
-      .produceResults("i", "count")
-      .aggregation(Seq("i AS i"), Seq("count(i) AS count"))
-      .input(variables = Seq("i"))
-      .build()
-
-    val runtimeResult = execute(logicalQuery, runtime, input)
-
-    // then
-    runtimeResult should beColumns("i", "count")
-      .withRows(inOrder((0 until sizeHint).map(Array[Any](_, 1))))
-  }
 }
