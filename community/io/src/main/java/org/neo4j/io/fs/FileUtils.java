@@ -96,7 +96,10 @@ public class FileUtils
         }
         catch ( Exception e )
         {
-            throw new RuntimeException( "Unable to get channel file descriptor field.", e );
+            if ( PRINT_REFLECTION_EXCEPTIONS )
+            {
+                e.printStackTrace();
+            }
         }
     }
 
@@ -110,6 +113,10 @@ public class FileUtils
         requireNonNull( fileChannel );
         try
         {
+            if ( (FILE_DESCRIPTOR_FIELD == null) || (CHANNEL_FILE_DESCRIPTOR == null) )
+            {
+                return INVALID_FILE_DESCRIPTOR;
+            }
             FileDescriptor fileDescriptor = (FileDescriptor) CHANNEL_FILE_DESCRIPTOR.get( fileChannel );
             return FILE_DESCRIPTOR_FIELD.getInt( fileDescriptor );
         }
