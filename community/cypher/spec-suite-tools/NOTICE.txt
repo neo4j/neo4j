@@ -49,7 +49,6 @@ BSD - Scala License
   Scala Library
 
 BSD License
-  ANTLR 4 Runtime
   Scala Compiler
 
 Bouncy Castle License
@@ -68,8 +67,10 @@ GNU Lesser General Public License, Version 2.1
   Java Native Access
 
 MIT License
+  fastparse_2.12
   Gherkin
   SLF4J API Module
+  sourcecode
 
 Unlicense
   Gherkin Repackaged Dependencies

@@ -99,7 +99,7 @@
     <junit.version>5.4.2</junit.version>
     <junit.platform.version>1.4.2</junit.platform.version>
     <currentYear>2019</currentYear>
-    <opencypher.version>1.0.0-M13</opencypher.version>
+    <opencypher.version>1.0.0-M14</opencypher.version>
     <caffeine.version>2.7.0</caffeine.version>
     <required.maven.version>3.5.4</required.maven.version>
     <jackson.version>1.9.13</jackson.version>
