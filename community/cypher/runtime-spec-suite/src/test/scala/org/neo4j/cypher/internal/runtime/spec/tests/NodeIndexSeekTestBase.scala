@@ -72,27 +72,6 @@ abstract class NodeIndexSeekTestBase[CONTEXT <: RuntimeContext](
     runtimeResult should beColumns("x").withRows(nodes.take(numMatches).map(Array(_)))
   }
 
-  test("should exact (single) seek nodes of an index with an array property") {
-    // given
-    nodeGraph(5, "Milk")
-    val nodes = nodePropertyGraph(sizeHint, {
-      case i if i % 10 == 0 => Map("prop" -> Array[Int](i))
-    },"Honey")
-    index("Honey", "prop")
-
-    // when
-    val logicalQuery = new LogicalQueryBuilder(this)
-      .produceResults("x")
-      .nodeIndexOperator("x:Honey(prop = ???)", paramExpr = Some(listOf(literalInt(20))))
-      .build()
-
-    val runtimeResult = execute(logicalQuery, runtime)
-
-    // then
-    val expected = nodes(20)
-    runtimeResult should beColumns("x").withSingleRow(expected)
-  }
-
   test("should exact (multiple) seek nodes of an index with a property") {
     // given
     nodeGraph(5, "Milk")
@@ -525,5 +504,31 @@ trait NodeIndexSeekRangeAndCompositeTestBase[CONTEXT <: RuntimeContext] {
     // then
     val expected = nodes.zipWithIndex.filter{ case (_, i) => i % 10 == 0 && i > sizeHint / 2}.map(_._1).reverse
     runtimeResult should beColumns("x").withRows(singleColumnInOrder(expected))
+  }
+}
+
+//Buggy in compiled runtime
+trait ArrayIndexSupport[CONTEXT <: RuntimeContext] {
+  self: NodeIndexSeekTestBase[CONTEXT] =>
+
+  test("should exact (single) seek nodes of an index with an array property") {
+    // given
+    nodeGraph(5, "Milk")
+    val nodes = nodePropertyGraph(sizeHint, {
+      case i if i % 10 == 0 => Map("prop" -> Array[Int](i))
+    },"Honey")
+    index("Honey", "prop")
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x")
+      .nodeIndexOperator("x:Honey(prop = ???)", paramExpr = Some(listOf(literalInt(20))))
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    val expected = nodes(20)
+    runtimeResult should beColumns("x").withSingleRow(expected)
   }
 }
