@@ -69,7 +69,7 @@ abstract class NodeIndexSeekTestBase[CONTEXT <: RuntimeContext](
     val runtimeResult = execute(logicalQuery, runtime)
 
     // then
-    runtimeResult should beColumns("x").withRows(RowCount(numMatches))
+    runtimeResult should beColumns("x").withRows(nodes.take(numMatches).map(Array(_)))
   }
 
   test("should exact (single) seek nodes of an index with an array property") {
