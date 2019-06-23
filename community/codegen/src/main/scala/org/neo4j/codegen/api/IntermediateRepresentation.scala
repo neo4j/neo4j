@@ -155,12 +155,28 @@ case class Subtract(lhs: IntermediateRepresentation, rhs: IntermediateRepresenta
 case class Lt(lhs: IntermediateRepresentation, rhs: IntermediateRepresentation) extends IntermediateRepresentation
 
 /**
+  * Defines {{{lhs <= rhs}}}
+  *
+  * @param lhs the left-hand side to compare
+  * @param rhs the right-hand side to compare
+  */
+case class Lte(lhs: IntermediateRepresentation, rhs: IntermediateRepresentation) extends IntermediateRepresentation
+
+/**
   * Defines {{{lhs > rhs}}}
   *
   * @param lhs the left-hand side to compare
   * @param rhs the right-hand side to compare
   */
 case class Gt(lhs: IntermediateRepresentation, rhs: IntermediateRepresentation) extends IntermediateRepresentation
+
+/**
+  * Defines {{{lhs >= rhs}}}
+  *
+  * @param lhs the left-hand side to compare
+  * @param rhs the right-hand side to compare
+  */
+case class Gte(lhs: IntermediateRepresentation, rhs: IntermediateRepresentation) extends IntermediateRepresentation
 
 /**
   * Defines equality or identy, i.e. {{{lhs == rhs}}}
@@ -553,8 +569,14 @@ object IntermediateRepresentation {
   def lessThan(lhs: IntermediateRepresentation, rhs: IntermediateRepresentation): IntermediateRepresentation =
     Lt(lhs, rhs)
 
+  def lessThanOrEqual(lhs: IntermediateRepresentation, rhs: IntermediateRepresentation): IntermediateRepresentation =
+    Lte(lhs, rhs)
+
   def greaterThan(lhs: IntermediateRepresentation, rhs: IntermediateRepresentation): IntermediateRepresentation =
     Gt(lhs, rhs)
+
+  def greaterThanOrEqual(lhs: IntermediateRepresentation, rhs: IntermediateRepresentation): IntermediateRepresentation =
+    Gte(lhs, rhs)
 
   def equal(lhs: IntermediateRepresentation, rhs: IntermediateRepresentation): IntermediateRepresentation =
     Eq(lhs, rhs)

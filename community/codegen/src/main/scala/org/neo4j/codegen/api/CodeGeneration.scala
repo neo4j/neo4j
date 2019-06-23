@@ -151,9 +151,17 @@ object CodeGeneration {
     case Lt(lhs, rhs) =>
       codegen.Expression.lt(compileExpression(lhs, block), compileExpression(rhs, block))
 
+    //lhs <= rhs
+    case Lte(lhs, rhs) =>
+      codegen.Expression.lte(compileExpression(lhs, block), compileExpression(rhs, block))
+
     //lhs > rhs
     case Gt(lhs, rhs) =>
       codegen.Expression.gt(compileExpression(lhs, block), compileExpression(rhs, block))
+
+    //lhs > rhs
+    case Gte(lhs, rhs) =>
+      codegen.Expression.gte(compileExpression(lhs, block), compileExpression(rhs, block))
 
     //lhs == rhs
     case Eq(lhs, rhs) =>
