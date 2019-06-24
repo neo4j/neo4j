@@ -24,13 +24,14 @@ import org.neo4j.cypher.internal.runtime.spec._
 import org.neo4j.cypher.internal.{CypherRuntime, RuntimeContext}
 import org.neo4j.cypher.result.QueryProfile
 
-abstract class ProfileDbHitsTestBase[CONTEXT <: RuntimeContext](edition: Edition[CONTEXT],
-                                                                runtime: CypherRuntime[CONTEXT],
-                                                                sizeHint: Int,
-                                                                costOfProperty: Int,
-                                                                costOfLabelLookup: Int,
-                                                                costOfExpand: Int,
-                                                                costOfRelationshipTypeLookup: Int
+abstract class ProfileDbHitsTestBase[CONTEXT <: RuntimeContext](
+                                  edition: Edition[CONTEXT],
+                                  runtime: CypherRuntime[CONTEXT],
+                                  sizeHint: Int,
+                                  costOfProperty: Int, // the reported dbHits for a single property lookup
+                                  costOfLabelLookup: Int, // the reported dbHits for finding the id of a label
+                                  costOfExpand: Int, // the reported dbHits for expanding a one-relationship node
+                                  costOfRelationshipTypeLookup: Int // the reported dbHits for finding the id of a relationship type
                                                          ) extends RuntimeTestSuite[CONTEXT](edition, runtime) {
 
   test("should profile dbHits of all nodes scan") {
@@ -71,7 +72,7 @@ abstract class ProfileDbHitsTestBase[CONTEXT <: RuntimeContext](edition: Edition
     queryProfile.operatorProfile(1).dbHits() should be (sizeHint + 1 + costOfLabelLookup) // label scan
   }
 
-  test("should profile dbHits of node index seek + scan") {
+  test("should profile dbHits of node index seek") {
     // given
     nodePropertyGraph(sizeHint, {
       case i if i % 10 == 0 => Map("difficulty" -> i)
@@ -83,6 +84,15 @@ abstract class ProfileDbHitsTestBase[CONTEXT <: RuntimeContext](edition: Edition
     val seekProfile = profileIndexSeek(s"x:Language(difficulty >= ${sizeHint / 2})")
     // then
     seekProfile.operatorProfile(1).dbHits() should be (sizeHint / 10 / 2 + 1) // node index seek
+  }
+
+  test("should profile dbHits of node index scan") {
+    // given
+    nodePropertyGraph(sizeHint, {
+      case i if i % 10 == 0 => Map("difficulty" -> i)
+    },"Language")
+
+    index("Language", "difficulty")
 
     // when
     val scanProfile = profileIndexSeek("x:Language(difficulty)")
@@ -322,9 +332,8 @@ abstract class ProfileDbHitsTestBase[CONTEXT <: RuntimeContext](edition: Edition
 
     // then
     val queryProfile = runtimeResult.runtimeResult.queryProfile()
-    // assertions on property dbHits is tricky because in morsel it's more expensive to
-    // traverse properties late in the chain, which in interpreted/slotted all property reads
-    // cost 1 dbHit
+    // assertions on property dbHits are tricky because in morsel more dbHits are reported for
+    // properties late in the chain, while in interpreted/slotted all property reads cost only 1 dbHit
     queryProfile.operatorProfile(1).dbHits() should (be (sizeHint * costOfProperty * (1+2)) or  // 1 x.list + 2 x.prop
                                                      (be (sizeHint * costOfProperty * (2+2)) or // late x.list in morsel
                                                       be (sizeHint * costOfProperty * (1+4))))  // late x.prop in morsel

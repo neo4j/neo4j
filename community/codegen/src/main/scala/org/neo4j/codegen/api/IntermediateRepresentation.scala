@@ -633,6 +633,8 @@ object IntermediateRepresentation {
 
   def isNull(test: IntermediateRepresentation): IntermediateRepresentation = IsNull(test)
 
+  def isNotNull(test: IntermediateRepresentation): IntermediateRepresentation = Not(IsNull(test))
+
   def newInstance(constructor: Constructor, params: IntermediateRepresentation*) = NewInstance(constructor, params)
 
   def newArray(baseType: codegen.TypeReference, size: Int) = NewArray(baseType, size)
