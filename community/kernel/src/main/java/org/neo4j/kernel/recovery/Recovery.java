@@ -19,10 +19,12 @@
  */
 package org.neo4j.kernel.recovery;
 
+import java.io.File;
 import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 import org.neo4j.collection.Dependencies;
 import org.neo4j.common.ProgressReporter;
@@ -70,7 +72,6 @@ import org.neo4j.kernel.impl.transaction.log.checkpoint.StoreCopyCheckPointMutex
 import org.neo4j.kernel.impl.transaction.log.entry.VersionAwareLogEntryReader;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
 import org.neo4j.kernel.impl.transaction.log.files.LogFilesBuilder;
-import org.neo4j.kernel.impl.transaction.log.files.TransactionLogFilesHelper;
 import org.neo4j.kernel.impl.transaction.log.pruning.LogPruning;
 import org.neo4j.kernel.impl.transaction.log.rotation.LogRotation;
 import org.neo4j.kernel.impl.transaction.state.DefaultIndexProviderMap;
@@ -81,6 +82,7 @@ import org.neo4j.kernel.impl.util.monitoring.LogProgressReporter;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
+import org.neo4j.kernel.recovery.RecoveryStoreFileHelper.StoreFilesInfo;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.NullLog;
@@ -101,11 +103,13 @@ import org.neo4j.token.DelegatingTokenHolder;
 import org.neo4j.token.ReadOnlyTokenCreator;
 import org.neo4j.token.TokenHolders;
 
+import static java.lang.String.format;
 import static java.util.Objects.requireNonNull;
 import static java.util.stream.Collectors.toList;
 import static org.neo4j.configuration.Config.defaults;
 import static org.neo4j.internal.helpers.collection.Iterables.stream;
 import static org.neo4j.kernel.impl.constraints.ConstraintSemantics.getConstraintSemantics;
+import static org.neo4j.kernel.recovery.RecoveryStoreFileHelper.checkStoreFiles;
 import static org.neo4j.lock.LockService.NO_LOCK_SERVICE;
 import static org.neo4j.storageengine.api.StorageEngineFactory.selectStorageEngine;
 import static org.neo4j.token.api.TokenHolder.TYPE_LABEL;
@@ -266,8 +270,7 @@ public final class Recovery
         {
             return;
         }
-        StoreInfo storeInfo = new StoreInfo( databaseLayout, fs );
-        checkAllFilesPresence( storeInfo, config, recoveryLog );
+        checkAllFilesPresence( databaseLayout, fs );
         LifeSupport recoveryLife = new LifeSupport();
         Monitors monitors = new Monitors( globalMonitors );
         DatabasePageCache databasePageCache = new DatabasePageCache( pageCache, EmptyVersionContextSupplier.EMPTY );
@@ -337,7 +340,7 @@ public final class Recovery
         TransactionLogsRecovery transactionLogsRecovery =
                 transactionLogRecovery( fs, transactionIdStore, logTailScanner, monitors.newMonitor( RecoveryMonitor.class ),
                         monitors.newMonitor( RecoveryStartInformationProvider.Monitor.class ), logFiles, storageEngine, transactionStore, logVersionRepository,
-                        schemaLife, databaseLayout, storeInfo, failOnCorruptedLogFiles, recoveryLog );
+                        schemaLife, databaseLayout, failOnCorruptedLogFiles, recoveryLog );
 
         CheckPointerImpl.ForceOperation forceOperation = new DefaultForceOperation( indexingService, labelScanStore, storageEngine );
         CheckPointerImpl checkPointer =
@@ -370,35 +373,29 @@ public final class Recovery
         }
     }
 
-    private static void checkAllFilesPresence( StoreInfo storeInfo, Config config, Log recoveryLog )
+    private static void checkAllFilesPresence( DatabaseLayout databaseLayout, FileSystemAbstraction fs )
     {
-        if ( storeInfo.isAllStoreFilesPresent() )
+        StoreFilesInfo storeFilesInfo = checkStoreFiles( databaseLayout, fs );
+        if ( storeFilesInfo.allFilesPresent() )
         {
             return;
         }
-        if ( storeInfo.isFirstLogFileExist() )
-        {
-            return;
-        }
-        if ( config.get( GraphDatabaseSettings.fail_on_missing_files ) )
-        {
-            throw new RuntimeException(
-                    "Transaction logs are missing and recovery is not possible. To force the database to start anyway, you can specify '" +
-                            GraphDatabaseSettings.fail_on_missing_files.name() + "=false'. This will create new transaction log and " +
-                            "will update database metadata accordingly. Doing this means your database " +
-                            "integrity might be compromised, please consider restoring from a consistent backup instead." );
-        }
-        recoveryLog.warn(
-                "Recovery detected that some store files are missing and full transaction logs are not present, but recovery was forced by user." );
+        throw new RuntimeException( format( "Store files %s is(are) missing and recovery is not possible. Please restore from a consistent backup.",
+                getMissingStoreFiles( storeFilesInfo ) ) );
+    }
+
+    private static String getMissingStoreFiles( StoreFilesInfo storeFilesInfo )
+    {
+        return storeFilesInfo.getMissingStoreFiles().stream().map( File::getName ).collect( Collectors.joining( "," ) );
     }
 
     private static TransactionLogsRecovery transactionLogRecovery( FileSystemAbstraction fileSystemAbstraction, TransactionIdStore transactionIdStore,
             LogTailScanner tailScanner, RecoveryMonitor recoveryMonitor, RecoveryStartInformationProvider.Monitor positionMonitor, LogFiles logFiles,
             StorageEngine storageEngine, LogicalTransactionStore logicalTransactionStore, LogVersionRepository logVersionRepository,
-            Lifecycle schemaLife, DatabaseLayout databaseLayout, StoreInfo storeInfo, boolean failOnCorruptedLogFiles, Log log )
+            Lifecycle schemaLife, DatabaseLayout databaseLayout, boolean failOnCorruptedLogFiles, Log log )
     {
         RecoveryService recoveryService = new DefaultRecoveryService( storageEngine, tailScanner, transactionIdStore, logicalTransactionStore,
-                logVersionRepository, logFiles, storeInfo, positionMonitor, log );
+                logVersionRepository, positionMonitor, log );
         CorruptedLogsTruncator logsTruncator = new CorruptedLogsTruncator( databaseLayout.databaseDirectory(), logFiles, fileSystemAbstraction );
         ProgressReporter progressReporter = new LogProgressReporter( log );
         return new TransactionLogsRecovery( recoveryService, logsTruncator, schemaLife, recoveryMonitor, progressReporter, failOnCorruptedLogFiles );
@@ -449,12 +446,6 @@ public final class Recovery
                         GraphDatabaseSettings.fail_on_corrupted_log_files.name() + "=false'. This will try to recover as much " +
                         "as possible and then truncate the corrupt part of the transaction log. Doing this means your database " +
                         "integrity might be compromised, please consider restoring from a consistent backup instead.", t );
-    }
-
-    private static boolean isFirstTransactionLogFileExist( DatabaseLayout databaseLayout, FileSystemAbstraction fileSystem )
-    {
-        TransactionLogFilesHelper logFilesHelper = new TransactionLogFilesHelper( fileSystem, databaseLayout.getTransactionLogsDirectory() );
-        return fileSystem.fileExists( logFilesHelper.getLogFileForVersion( 0 ) );
     }
 
     // We need to create monitors that do not allow listener registration here since at this point another version of extensions already stared by owning

@@ -110,7 +110,6 @@ class TransactionLogsRecoveryTest
     private LogFiles logFiles;
     private File storeDir;
     private Lifecycle schemaLife;
-    private StoreInfo storeInfo;
 
     @BeforeEach
     void setUp() throws Exception
@@ -122,8 +121,6 @@ class TransactionLogsRecoveryTest
                 .withTransactionIdStore( transactionIdStore )
                 .withLogEntryReader( logEntryReader() )
                 .build();
-        storeInfo = mock( StoreInfo.class );
-        when( storeInfo.isAllStoreFilesPresent() ).thenReturn( true );
         schemaLife = new LifecycleAdapter();
     }
 
@@ -174,7 +171,7 @@ class TransactionLogsRecoveryTest
                     monitors, false );
             CorruptedLogsTruncator logPruner = new CorruptedLogsTruncator( storeDir, logFiles, fileSystem );
             life.add( new TransactionLogsRecovery( new DefaultRecoveryService( storageEngine, tailScanner, transactionIdStore,
-                    txStore, versionRepository, logFiles, storeInfo, NO_MONITOR, mock( Log.class ) )
+                    txStore, versionRepository, NO_MONITOR, mock( Log.class ) )
             {
                 private int nr;
 
@@ -274,7 +271,7 @@ class TransactionLogsRecoveryTest
                     monitors, false );
             CorruptedLogsTruncator logPruner = new CorruptedLogsTruncator( storeDir, logFiles, fileSystem );
             life.add( new TransactionLogsRecovery( new DefaultRecoveryService( storageEngine, tailScanner, transactionIdStore,
-                    txStore, versionRepository, logFiles, storeInfo, NO_MONITOR, mock( Log.class ) )
+                    txStore, versionRepository, NO_MONITOR, mock( Log.class ) )
             {
                 @Override
                 public void startRecovery()
@@ -447,7 +444,7 @@ class TransactionLogsRecoveryTest
             LogicalTransactionStore txStore = new PhysicalLogicalTransactionStore( logFiles, metadataCache, reader, monitors, false );
             CorruptedLogsTruncator logPruner = new CorruptedLogsTruncator( storeDir, logFiles, fileSystem );
             life.add( new TransactionLogsRecovery( new DefaultRecoveryService( storageEngine, tailScanner, transactionIdStore,
-                    txStore, versionRepository, logFiles, storeInfo, NO_MONITOR, mock( Log.class ) )
+                    txStore, versionRepository, NO_MONITOR, mock( Log.class ) )
             {
                 @Override
                 public void startRecovery()

@@ -35,7 +35,7 @@ import org.neo4j.storageengine.api.StorageEngineFactory;
 
 import static org.neo4j.kernel.recovery.RecoveryStartInformationProvider.NO_MONITOR;
 import static org.neo4j.kernel.recovery.RecoveryStoreFileHelper.allIdFilesExist;
-import static org.neo4j.kernel.recovery.RecoveryStoreFileHelper.allStoreFilesExist;
+import static org.neo4j.kernel.recovery.RecoveryStoreFileHelper.checkStoreFiles;
 
 /**
  * Utility that can determine if a given store will need recovery.
@@ -71,7 +71,7 @@ class RecoveryRequiredChecker
         {
             return true;
         }
-        if ( !allStoreFilesExist( databaseLayout, fs ) )
+        if ( !checkStoreFiles( databaseLayout, fs ).allFilesPresent() )
         {
             return true;
         }

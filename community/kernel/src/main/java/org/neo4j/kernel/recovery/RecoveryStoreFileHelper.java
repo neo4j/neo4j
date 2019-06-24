@@ -20,7 +20,9 @@
 package org.neo4j.kernel.recovery;
 
 import java.io.File;
+import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
@@ -36,7 +38,7 @@ class RecoveryStoreFileHelper
         return databaseLayout.idFiles().stream().allMatch( fileSystem::fileExists );
     }
 
-    static boolean allStoreFilesExist( DatabaseLayout databaseLayout, FileSystemAbstraction fileSystem )
+    static StoreFilesInfo checkStoreFiles( DatabaseLayout databaseLayout, FileSystemAbstraction fileSystem )
     {
         Set<File> storeFiles = databaseLayout.storeFiles();
         // count store files will be checked separately since presence of both files is not required
@@ -45,11 +47,32 @@ class RecoveryStoreFileHelper
         // index statistics and label scan store are not mandatory stores to have
         storeFiles.remove( databaseLayout.indexStatisticsStore() );
         storeFiles.remove( databaseLayout.labelScanStore() );
-        return storeFiles.stream().allMatch( fileSystem::fileExists ) && oneOfCountStoreFilesExist( databaseLayout, fileSystem );
+        return collectStoreFilesInfo( fileSystem, storeFiles );
     }
 
-    private static boolean oneOfCountStoreFilesExist( DatabaseLayout databaseLayout, FileSystemAbstraction fileSystem )
+    private static StoreFilesInfo collectStoreFilesInfo( FileSystemAbstraction fileSystem, Set<File> storeFiles )
     {
-        return fileSystem.fileExists( databaseLayout.countStoreA() ) || fileSystem.fileExists( databaseLayout.countStoreB() );
+        List<File> missingFiles = storeFiles.stream().filter( file -> !fileSystem.fileExists( file ) ).collect( Collectors.toList() );
+        return new StoreFilesInfo( missingFiles );
+    }
+
+    static class StoreFilesInfo
+    {
+        private final List<File> missingStoreFiles;
+
+        StoreFilesInfo( List<File> missingFiles )
+        {
+            this.missingStoreFiles = missingFiles;
+        }
+
+        List<File> getMissingStoreFiles()
+        {
+            return missingStoreFiles;
+        }
+
+        boolean allFilesPresent()
+        {
+            return missingStoreFiles.isEmpty();
+        }
     }
 }

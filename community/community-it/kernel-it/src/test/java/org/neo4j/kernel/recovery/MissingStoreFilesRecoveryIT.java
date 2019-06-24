@@ -32,41 +32,31 @@ import org.neo4j.dbms.database.DatabaseManager;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.internal.recordstorage.RecordStorageEngine;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.kernel.database.DatabaseId;
-import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
-import org.neo4j.kernel.impl.store.counts.CountsTracker;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointer;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.SimpleTriggerInfo;
 import org.neo4j.kernel.impl.transaction.log.files.LogFile;
 import org.neo4j.kernel.impl.transaction.log.files.TransactionLogFiles;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
-import org.neo4j.register.Register;
-import org.neo4j.register.Registers;
 import org.neo4j.test.extension.DefaultFileSystemExtension;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.TestDirectoryExtension;
 import org.neo4j.test.rule.TestDirectory;
 
 import static java.lang.String.valueOf;
-import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
-import static org.neo4j.configuration.GraphDatabaseSettings.fail_on_missing_files;
-import static org.neo4j.configuration.Settings.FALSE;
 import static org.neo4j.graphdb.RelationshipType.withName;
-import static org.neo4j.internal.helpers.collection.Iterables.count;
 import static org.neo4j.kernel.database.TestDatabaseIdRepository.DEFAULT_DATABASE_ID;
 
 @ExtendWith( {DefaultFileSystemExtension.class, TestDirectoryExtension.class} )
 class MissingStoreFilesRecoveryIT
 {
     private static final DatabaseId databaseId = DEFAULT_DATABASE_ID;
-    private static final long EXPECTED_NUMBER_OF_NODES = 400;
 
     @Inject
     private TestDirectory testDirectory;
@@ -110,42 +100,6 @@ class MissingStoreFilesRecoveryIT
     }
 
     @Test
-    void databaseStartForcedOnMissingFilesAndMissedTxLogs() throws IOException
-    {
-        fileSystem.deleteFile( databaseLayout.nodeStore() );
-        fileSystem.deleteRecursively( databaseLayout.getTransactionLogsDirectory() );
-
-        managementService = serviceBuilder.setConfig( fail_on_missing_files, FALSE ).build();
-        DatabaseManager<?> databaseManager = getDatabaseManager();
-        var databaseContext = databaseManager.getDatabaseContext( databaseId ).get();
-        assertFalse( databaseContext.isFailed() );
-    }
-
-    @Test
-    void databaseFilesRestoredAfterRecovery()
-    {
-        fileSystem.deleteFile( databaseLayout.relationshipGroupStore() );
-
-        DatabaseManager<?> databaseManager = getDatabaseManager();
-        var databaseContext = databaseManager.getDatabaseContext( databaseId ).get();
-        assertFalse( databaseContext.isFailed() );
-        fileSystem.fileExists( databaseLayout.relationshipGroupStore() );
-    }
-
-    @Test
-    void databaseFilesRestoredOnMissingFilesAndAllTransactionLogs()
-    {
-        fileSystem.deleteFile( databaseLayout.nodeStore() );
-
-        managementService = serviceBuilder.build();
-        DatabaseManager<?> databaseManager = getDatabaseManager();
-        var databaseContext = databaseManager.getDatabaseContext( databaseId ).get();
-        assertFalse( databaseContext.isFailed() );
-
-        verifyCounts( databaseContext.databaseFacade(), EXPECTED_NUMBER_OF_NODES, EXPECTED_NUMBER_OF_NODES );
-    }
-
-    @Test
     void failToStartOnMissingFilesAndPartialTransactionLogs() throws IOException
     {
         TransactionLogFiles logFiles = prepareDatabaseWithTwoTxLogFiles();
@@ -157,22 +111,6 @@ class MissingStoreFilesRecoveryIT
         var databaseContext = databaseManager.getDatabaseContext( databaseId ).get();
         assertFalse( databaseContext.isFailed() );
         assertFalse( fileSystem.fileExists( databaseLayout.nodeStore() ) );
-    }
-
-    @Test
-    void restoreAsMuchAsPossibleOnMissingFilesAndPartialTransactionLogsWithForce() throws IOException
-    {
-        TransactionLogFiles logFiles = prepareDatabaseWithTwoTxLogFiles();
-
-        fileSystem.deleteFile( logFiles.getLogFileForVersion( 0 ) );
-        fileSystem.deleteFile( databaseLayout.nodeStore() );
-
-        managementService = serviceBuilder.setConfig( fail_on_missing_files, FALSE ).build();
-        DatabaseManager<?> databaseManager = getDatabaseManager();
-        var databaseContext = databaseManager.getDatabaseContext( databaseId ).get();
-        assertFalse( databaseContext.isFailed() );
-
-        verifyCounts( databaseContext.databaseFacade(), EXPECTED_NUMBER_OF_NODES, EXPECTED_NUMBER_OF_NODES * 2 );
     }
 
     private TransactionLogFiles prepareDatabaseWithTwoTxLogFiles() throws IOException
@@ -202,22 +140,6 @@ class MissingStoreFilesRecoveryIT
         LogFile logFile = logFiles.getLogFile();
         logFile.rotate();
         return logFiles;
-    }
-
-    private static void verifyCounts( GraphDatabaseFacade databaseFacade, long expectedNumberOfNodes, long expectedNumberOfNodesCountStore )
-    {
-        CountsTracker countsTracker = databaseFacade.getDependencyResolver().resolveDependency( RecordStorageEngine.class ).testAccessCountsStore();
-        try ( Transaction ignored = databaseFacade.beginTx() )
-        {
-            assertEquals( expectedNumberOfNodes, count( databaseFacade.getAllNodes() ) );
-            assertEquals( expectedNumberOfNodesCountStore, getCounterNumberOfNodes( countsTracker ) );
-        }
-    }
-
-    private static long getCounterNumberOfNodes( CountsTracker countsTracker )
-    {
-        Register.DoubleLongRegister resultRegister = Registers.newDoubleLongRegister();
-        return countsTracker.nodeCount( 0, resultRegister ).readSecond();
     }
 
     private static void createSomeData( GraphDatabaseAPI databaseApi ) throws IOException
