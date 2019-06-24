@@ -202,7 +202,7 @@ class TransactionLogFile extends LifecycleAdapter implements LogFile
     {
         int fileDescriptor = fileSystem.getFileDescriptor( currentLog );
         int result = nativeAccess.tryEvictFromCache( fileDescriptor );
-        if ( result < 0 )
+        if ( result != 0 )
         {
             log.warn( "Unable to evict from cache transaction log version: " + currentLog.getVersion() + ". Error code: " + result );
         }

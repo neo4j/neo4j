@@ -33,6 +33,7 @@ import java.io.RandomAccessFile;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.internal.nativeimpl.NativeAccess.ERROR;
 
@@ -59,10 +60,14 @@ class LinuxNativeAccessTest
 
     @Test
     @EnabledOnOs( OS.LINUX )
-    void failToSkipCacheOnLinuxForIncorrectDescriptor()
+    void failToSkipCacheOnLinuxForIncorrectDescriptor() throws IOException, IllegalAccessException
     {
         assertEquals( ERROR, nativeAccess.tryEvictFromCache( 0 ) );
         assertEquals( ERROR, nativeAccess.tryEvictFromCache( -1 ) );
+
+        File file = new File( tempFile, "file" );
+        int descriptor = getClosedDescriptor( file );
+        assertNotEquals( 0, nativeAccess.tryEvictFromCache( descriptor ) );
     }
 
     @Test
@@ -72,9 +77,22 @@ class LinuxNativeAccessTest
         File file = new File( tempFile, "file" );
         try ( RandomAccessFile randomFile = new RandomAccessFile( file, "rw" ) )
         {
-            FileDescriptor fd = randomFile.getFD();
-            int descriptor = FieldUtils.getDeclaredField( FileDescriptor.class, "fd", true ).getInt( fd );
+            int descriptor = getDescriptor( randomFile );
             assertEquals( 0, nativeAccess.tryEvictFromCache( descriptor ) );
         }
+    }
+
+    private int getClosedDescriptor( File file ) throws IOException, IllegalAccessException
+    {
+        try ( RandomAccessFile randomFile = new RandomAccessFile( file, "rw" ) )
+        {
+            return getDescriptor( randomFile );
+        }
+    }
+
+    private int getDescriptor( RandomAccessFile randomFile ) throws IOException, IllegalAccessException
+    {
+        FileDescriptor fd = randomFile.getFD();
+        return FieldUtils.getDeclaredField( FileDescriptor.class, "fd", true ).getInt( fd );
     }
 }
