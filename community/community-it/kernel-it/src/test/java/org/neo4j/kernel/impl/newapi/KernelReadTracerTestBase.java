@@ -74,7 +74,7 @@ public abstract class KernelReadTracerTestBase<G extends KernelAPIReadTestSuppor
             Node bar = graphDb.createNode( label( "Bar" ) );
             graphDb.createNode( label( "Baz" ) );
             graphDb.createNode( label( "Bar" ), label( "Baz" ) );
-            (deleted = graphDb.createNode()).getId();
+            deleted = graphDb.createNode();
             Node bare = graphDb.createNode();
 
             has = foo.createRelationshipTo( bar, RelationshipType.withName( "HAS" ) ).getId();
@@ -185,7 +185,7 @@ public abstract class KernelReadTracerTestBase<G extends KernelAPIReadTestSuppor
 
             cursor.setTracer( tracer );
             read.singleNode( bare, cursor );
-            cursor.next();
+            assertTrue( cursor.next() );
             tracer.assertEvents( OnNode( bare ) );
         }
     }
@@ -307,8 +307,8 @@ public abstract class KernelReadTracerTestBase<G extends KernelAPIReadTestSuppor
             assertTrue( cursor.next() );
             tracer.assertEvents( OnRelationship( cursor.relationshipReference() ) );
 
-            cursor.next(); // skip last two
-            cursor.next();
+            assertTrue( cursor.next() ); // skip last two
+            assertTrue( cursor.next() );
             tracer.clear();
 
             assertFalse( cursor.next() );

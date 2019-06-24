@@ -78,10 +78,10 @@ abstract class KernelReadTracerTxStateTestBase<G extends KernelAPIWriteTestSuppo
             tx.dataRead().allNodesScan( cursor );
             tracer.assertEvents( OnAllNodesScan );
 
-            cursor.next();
+            assertTrue( cursor.next() );
             tracer.assertEvents( OnNode( cursor.nodeReference() ) );
 
-            cursor.next();
+            assertTrue( cursor.next() );
             tracer.assertEvents( OnNode( cursor.nodeReference() ) );
 
             assertFalse( cursor.next() );
@@ -107,7 +107,7 @@ abstract class KernelReadTracerTxStateTestBase<G extends KernelAPIWriteTestSuppo
             tx.dataRead().nodeLabelScan( barId, cursor );
             tracer.assertEvents( OnLabelScan( barId ) );
 
-            cursor.next();
+            assertTrue( cursor.next() );
             tracer.assertEvents( OnNode( cursor.nodeReference() ) );
 
             assertFalse( cursor.next() );
@@ -155,7 +155,7 @@ abstract class KernelReadTracerTxStateTestBase<G extends KernelAPIWriteTestSuppo
         tx.dataRead().nodeIndexSeek( session, cursor, order, needsValues, IndexQuery.stringPrefix( user, Values.stringValue( "B" ) ) );
         tracer.assertEvents( OnIndexSeek() );
 
-        cursor.next();
+        assertTrue( cursor.next() );
         tracer.assertEvents( OnNode( cursor.nodeReference() ) );
 
         assertFalse( cursor.next() );
@@ -179,7 +179,7 @@ abstract class KernelReadTracerTxStateTestBase<G extends KernelAPIWriteTestSuppo
             cursor.setTracer( tracer );
             tx.dataRead().singleRelationship( r, cursor );
 
-            cursor.next();
+            assertTrue( cursor.next() );
             tracer.assertEvents( OnRelationship( r ) );
 
             long deleted = tx.dataWrite().relationshipCreate( n1, tx.token().relationshipTypeGetOrCreateForName( "R" ), n2 );
@@ -208,10 +208,10 @@ abstract class KernelReadTracerTxStateTestBase<G extends KernelAPIWriteTestSuppo
             // when
             cursor.setTracer( tracer );
             tx.dataRead().singleNode( n1, nodeCursor );
-            nodeCursor.next();
+            assertTrue( nodeCursor.next() );
             nodeCursor.allRelationships( cursor );
 
-            cursor.next();
+            assertTrue( cursor.next() );
             tracer.assertEvents( OnRelationship( r ) );
 
             assertFalse( cursor.next() );
@@ -236,10 +236,10 @@ abstract class KernelReadTracerTxStateTestBase<G extends KernelAPIWriteTestSuppo
             // when
             cursor.setTracer( tracer );
             tx.dataRead().singleNode( n1, nodeCursor );
-            nodeCursor.next();
+            assertTrue( nodeCursor.next() );
             nodeCursor.relationships( cursor );
 
-            cursor.next();
+            assertTrue( cursor.next() );
             int expectedType = cursor.type();
             tracer.assertEvents( OnRelationshipGroup( expectedType ) );
 
@@ -266,10 +266,10 @@ abstract class KernelReadTracerTxStateTestBase<G extends KernelAPIWriteTestSuppo
             propertyCursor.setTracer( tracer );
 
             tx.dataRead().singleNode( n, nodeCursor );
-            nodeCursor.next();
+            assertTrue( nodeCursor.next() );
             nodeCursor.properties( propertyCursor );
 
-            propertyCursor.next();
+            assertTrue( propertyCursor.next() );
             tracer.assertEvents( OnProperty( name ) );
 
             assertFalse( propertyCursor.next() );
