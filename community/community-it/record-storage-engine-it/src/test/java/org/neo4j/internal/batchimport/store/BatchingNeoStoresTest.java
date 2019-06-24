@@ -21,7 +21,6 @@ package org.neo4j.internal.batchimport.store;
 
 import org.junit.jupiter.api.Test;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Stream;
@@ -37,6 +36,7 @@ import org.neo4j.internal.id.DefaultIdGeneratorFactory;
 import org.neo4j.internal.recordstorage.RecordStorageEngine;
 import org.neo4j.internal.recordstorage.RecordStorageReader;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracerSupplier;
@@ -51,7 +51,6 @@ import org.neo4j.kernel.impl.scheduler.JobSchedulerFactory;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.PropertyStore;
 import org.neo4j.kernel.impl.store.RecordStore;
-import org.neo4j.kernel.impl.store.RelationshipStore;
 import org.neo4j.kernel.impl.store.StoreType;
 import org.neo4j.kernel.impl.store.TokenStore;
 import org.neo4j.kernel.impl.store.format.ForcedSecondaryUnitRecordFormats;
@@ -59,7 +58,6 @@ import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.kernel.impl.store.record.PropertyBlock;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
-import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.impl.transaction.log.PhysicalTransactionRepresentation;
 import org.neo4j.kernel.lifecycle.Lifespan;
 import org.neo4j.lock.LockService;
@@ -100,7 +98,6 @@ import static org.neo4j.internal.batchimport.store.BatchingNeoStores.batchingNeo
 import static org.neo4j.internal.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.kernel.impl.store.format.RecordFormatSelector.selectForConfig;
 import static org.neo4j.kernel.impl.store.format.standard.Standard.LATEST_RECORD_FORMATS;
-import static org.neo4j.kernel.impl.store.record.Record.NULL_REFERENCE;
 import static org.neo4j.storageengine.api.TransactionIdStore.BASE_TX_ID;
 
 @PageCacheExtension
@@ -264,39 +261,6 @@ class BatchingNeoStoresTest
         }
     }
 
-    @Test
-    void shouldDeleteIdGeneratorsWhenOpeningExistingStore() throws IOException
-    {
-        // given
-        long expectedHighId;
-        try ( BatchingNeoStores stores = BatchingNeoStores.batchingNeoStoresWithExternalPageCache( fileSystem,
-                pageCache, PageCacheTracer.NULL, testDirectory.databaseLayout(), LATEST_RECORD_FORMATS, Configuration.DEFAULT,
-                NullLogService.getInstance(), EMPTY, Config.defaults() ) )
-        {
-            stores.createNew();
-            RelationshipStore relationshipStore = stores.getRelationshipStore();
-            RelationshipRecord record = relationshipStore.newRecord();
-            long no = NULL_REFERENCE.longValue();
-            record.initialize( true, no, 1, 2, 0, no, no, no, no, true, true );
-            record.setId( relationshipStore.nextId() );
-            expectedHighId = relationshipStore.getHighId();
-            relationshipStore.updateRecord( record );
-            // fiddle with the highId
-            relationshipStore.setHighId( record.getId() + 999 );
-        }
-
-        // when
-        try ( BatchingNeoStores stores = BatchingNeoStores.batchingNeoStoresWithExternalPageCache( fileSystem,
-                pageCache, PageCacheTracer.NULL, testDirectory.databaseLayout(), LATEST_RECORD_FORMATS, Configuration.DEFAULT,
-                NullLogService.getInstance(), EMPTY, Config.defaults() ) )
-        {
-            stores.pruneAndOpenExistingStore( Predicates.alwaysTrue(), Predicates.alwaysTrue() );
-
-            // then
-            assertEquals( expectedHighId, stores.getRelationshipStore().getHighId() );
-        }
-    }
-
     private StoreType[] relevantRecordStores()
     {
         return Stream.of( StoreType.values() )
@@ -380,6 +344,7 @@ class BatchingNeoStoresTest
             txState.nodeDoCreate( node2 );
             txState.relationshipDoCreate( commandCreationContext.reserveRelationship(), relTypeId, node1, node2 );
             apply( txState, commandCreationContext, storageEngine );
+            neoStores.flush( IOLimiter.UNLIMITED );
         }
     }
 

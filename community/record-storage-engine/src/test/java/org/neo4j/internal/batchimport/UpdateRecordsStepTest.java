@@ -86,10 +86,10 @@ class UpdateRecordsStepTest
         step.process( batch, mock( BatchSender.class ) );
 
         verify( store ).prepareForCommit( eq( node1 ), any( IdSequence.class ) );
-        verify( store ).updateRecord( node1 );
+        verify( store ).updateRecord( eq( node1 ), any() );
         verify( store ).prepareForCommit( eq( node2 ), any( IdSequence.class ) );
-        verify( store ).updateRecord( node2 );
+        verify( store ).updateRecord( eq( node2 ), any() );
         verify( store, never() ).prepareForCommit( eq( nodeWithReservedId ), any( IdSequence.class ) );
-        verify( store, never() ).updateRecord( nodeWithReservedId );
+        verify( store, never() ).updateRecord( eq( nodeWithReservedId ), any() );
     }
 }

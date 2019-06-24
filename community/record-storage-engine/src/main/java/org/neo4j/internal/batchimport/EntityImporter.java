@@ -36,6 +36,8 @@ import org.neo4j.kernel.impl.store.record.Record;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 
+import static org.neo4j.kernel.impl.store.IdUpdateListener.NOTE_HIGH_ID;
+
 /**
  * Abstract class containing logic for importing properties for an entity (node/relationship).
  */
@@ -147,7 +149,7 @@ abstract class EntityImporter extends InputEntityVisitor.Adapter
                 long nextPropertyId = propertyIds.next();
                 long prevId = currentRecord.getId();
                 currentRecord.setNextProp( nextPropertyId );
-                propertyStore.updateRecord( currentRecord );
+                propertyStore.updateRecord( currentRecord, NOTE_HIGH_ID );
                 currentRecord = propertyRecord( nextPropertyId );
                 currentRecord.setPrevProp( prevId );
             }
@@ -158,7 +160,7 @@ abstract class EntityImporter extends InputEntityVisitor.Adapter
 
         if ( currentRecord.size() > 0 )
         {
-            propertyStore.updateRecord( currentRecord );
+            propertyStore.updateRecord( currentRecord, NOTE_HIGH_ID );
         }
 
         return firstRecordId;

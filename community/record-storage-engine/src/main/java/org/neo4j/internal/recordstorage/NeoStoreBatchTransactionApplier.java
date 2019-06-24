@@ -60,7 +60,7 @@ public class NeoStoreBatchTransactionApplier extends BatchTransactionApplier.Ada
         this.idGeneratorWorkSyncs = idGeneratorWorkSyncs;
 
         // There's no need to update the id generators when recovery is on its way back
-        this.idUpdateListener = mode == TransactionApplicationMode.REVERSE_RECOVERY ? IdUpdateListener.EMPTY : new EnqueuingIdUpdateListener( idUpdatesMap );
+        this.idUpdateListener = mode == TransactionApplicationMode.REVERSE_RECOVERY ? IdUpdateListener.IGNORE : new EnqueuingIdUpdateListener( idUpdatesMap );
     }
 
     @Override
