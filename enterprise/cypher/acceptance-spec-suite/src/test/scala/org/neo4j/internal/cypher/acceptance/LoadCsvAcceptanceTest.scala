@@ -90,6 +90,45 @@ class LoadCsvAcceptanceTest
     }
   }
 
+  test("should be able to use multiple index hints with load csv") {
+    val startNodes = (0 to 9 map (i => createLabeledNode(Map("loginId" -> i.toString), "Login"))).toArray
+    val endNodes = (0 to 9 map (i => createLabeledNode(Map("platformId" -> i.toString), "Permission"))).toArray
+
+    for( a <- 0 to 9 ) {
+      for( b <- 0 to 9) {
+        relate( startNodes(a), endNodes(b), "prop" -> (10 * a + b))
+      }
+    }
+
+    val urls = csvUrls({
+      writer =>
+        writer.println("USER_ID,PLATFORM")
+        writer.println("1,5")
+        writer.println("2,4")
+        writer.println("3,4")
+    })
+
+    innerExecuteDeprecated("CREATE INDEX ON :Permission(platformId)")
+    innerExecuteDeprecated("CREATE INDEX ON :Login(loginId)")
+
+    val query =
+      s"""
+         |    LOAD CSV WITH HEADERS FROM '${urls.head}' AS line
+         |    WITH line
+         |    MATCH (l:Login {loginId: line.USER_ID}), (p:Permission {platformId: line.PLATFORM})
+         |    USING INDEX l:Login(loginId)
+         |    USING INDEX p:Permission(platformId)
+         |    MATCH (l)-[r: REL]->(p)
+         |    RETURN r.prop
+      """.stripMargin
+
+    val result = executeWith(Configs.Interpreted - Configs.Cost3_3 - Configs.Cost3_1 - Configs.Version2_3, query,
+      planComparisonStrategy = ComparePlansWithAssertion(_  should useOperatorTimes("NodeIndexSeek", 2),
+        expectPlansToFail = Configs.AllRulePlanners))
+
+    result.toSet should be(Set(Map("r.prop" -> 15), Map("r.prop" -> 24), Map("r.prop" -> 34)))
+  }
+
   test("import should not be eager") {
     createNode(Map("OrderId" -> "4", "field1" -> "REPLACE_ME"))
 

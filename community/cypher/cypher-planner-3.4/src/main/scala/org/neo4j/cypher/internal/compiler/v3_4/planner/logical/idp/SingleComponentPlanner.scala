@@ -30,7 +30,7 @@ import org.neo4j.cypher.internal.frontend.v3_4.ast.RelationshipStartItem
 import org.neo4j.cypher.internal.ir.v3_4.{PatternRelationship, QueryGraph}
 import org.neo4j.cypher.internal.planner.v3_4.spi.PlanningAttributes.{Cardinalities, Solveds}
 import org.neo4j.cypher.internal.util.v3_4.InternalException
-import org.neo4j.cypher.internal.v3_4.logical.plans.LogicalPlan
+import org.neo4j.cypher.internal.v3_4.logical.plans.{Argument, LogicalPlan}
 
 /**
   * This class contains the main IDP loop in the cost planner.
@@ -124,8 +124,8 @@ object SingleComponentPlanner {
 
         val startJoinNodes = Set(start)
         val endJoinNodes = Set(end)
-        val maybeStartPlan = leaves.find(_.availableSymbols == startJoinNodes)
-        val maybeEndPlan = leaves.find(_.availableSymbols == endJoinNodes)
+        val maybeStartPlan = leaves.find(leaf => solveds(leaf.id).queryGraph.patternNodes == startJoinNodes && !leaf.isInstanceOf[Argument])
+        val maybeEndPlan = leaves.find(leaf => solveds(leaf.id).queryGraph.patternNodes == endJoinNodes && !leaf.isInstanceOf[Argument])
         val cartesianProduct = planSinglePatternCartesian(qg, pattern, start, maybeStartPlan, maybeEndPlan, context)
         val joins = planSinglePatternJoins(qg, leftExpand, rightExpand, startJoinNodes, endJoinNodes, maybeStartPlan, maybeEndPlan, context)
         leftExpand ++ rightExpand ++ cartesianProduct ++ joins
