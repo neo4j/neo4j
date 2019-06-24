@@ -63,10 +63,10 @@ case class Cypher34Planner(configv3_5: CypherPlannerConfiguration,
                            plannerOption: CypherPlannerOption,
                            updateStrategy: CypherUpdateStrategy,
                            txIdProvider: () => Long)
-  extends BasePlanner[StatementV3_4, BaseState](configv3_5, clock, kernelMonitors, log, txIdProvider) with CypherPlanner {
+  extends BasePlanner[StatementV3_4, BaseState](configv3_5, clock, kernelMonitors, txIdProvider) with CypherPlanner {
 
   val monitorsV3_4: MonitorsV3_4 = WrappedMonitors(kernelMonitors)
-  monitorsV3_4.addMonitorListener(logStalePlanRemovalMonitor(logger), "cypher3.4")
+  monitorsV3_4.addMonitorListener(logStalePlanRemovalMonitor(log), "cypher3.4")
 
   val configV3_4: v3_4.CypherCompilerConfiguration = helpers.as3_4(configv3_5)
   val plannerName: spiV3_4.CostBasedPlannerName = plannerOption match {
