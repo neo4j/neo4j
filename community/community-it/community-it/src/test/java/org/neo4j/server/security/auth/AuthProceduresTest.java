@@ -32,6 +32,7 @@ import org.neo4j.values.AnyValue;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.neo4j.configuration.SettingValueParsers.TRUE;
 import static org.neo4j.internal.kernel.api.procs.ProcedureSignature.procedureName;
 import static org.neo4j.kernel.api.ResourceManager.EMPTY_RESOURCE_MANAGER;
 import static org.neo4j.values.storable.Values.stringValue;
@@ -58,6 +59,6 @@ class AuthProceduresTest extends KernelIntegrationTest
     @Override
     protected TestDatabaseManagementServiceBuilder configure( TestDatabaseManagementServiceBuilder databaseManagementServiceBuilder )
     {
-        return databaseManagementServiceBuilder.setConfig( GraphDatabaseSettings.auth_enabled, "true" );
+        return databaseManagementServiceBuilder.setConfig( GraphDatabaseSettings.auth_enabled, TRUE );
     }
 }

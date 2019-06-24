@@ -20,37 +20,45 @@
 package org.neo4j.server.database;
 
 import org.apache.commons.io.FileUtils;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.io.File;
 import java.io.IOException;
 
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
+import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.graphdb.facade.GraphDatabaseDependencies;
 import org.neo4j.kernel.StoreLockException;
 import org.neo4j.logging.AssertableLogProvider;
-import org.neo4j.test.rule.ImpermanentDbmsRule;
-import org.neo4j.test.rule.SuppressOutput;
+import org.neo4j.test.TestDatabaseManagementServiceBuilder;
+import org.neo4j.test.extension.ExtensionCallback;
+import org.neo4j.test.extension.ImpermanentDbmsExtension;
+import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.SuppressOutputExtension;
 
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.IsInstanceOf.instanceOf;
-import static org.junit.Assert.assertThat;
 import static org.neo4j.logging.AssertableLogProvider.inLog;
 import static org.neo4j.server.ServerTestUtils.createTempDir;
-import static org.neo4j.test.rule.SuppressOutput.suppressAll;
 
-public class TestLifecycleManagedDatabase
+@ExtendWith( SuppressOutputExtension.class )
+@ImpermanentDbmsExtension( configurationCallback = "configure" )
+class TestLifecycleManagedDatabase
 {
-    @Rule
-    public SuppressOutput suppressOutput = suppressAll();
-
     private final AssertableLogProvider logProvider = new AssertableLogProvider();
 
-    @Rule
-    public ImpermanentDbmsRule dbRule = new ImpermanentDbmsRule( logProvider );
+    @Inject
+    private DatabaseManagementService dbms;
+
+    @ExtensionCallback
+    void configure( TestDatabaseManagementServiceBuilder builder )
+    {
+        builder.setInternalLogProvider( logProvider );
+    }
 
     private File dataDirectory;
     private DatabaseService theDatabase;
@@ -58,12 +66,12 @@ public class TestLifecycleManagedDatabase
     private GraphFactory dbFactory;
     private Config dbConfig;
 
-    @Before
-    public void setup() throws Exception
+    @BeforeEach
+    void setup() throws Exception
     {
         dataDirectory = createTempDir();
 
-        dbFactory = new SimpleGraphFactory( dbRule.getManagementService() );
+        dbFactory = new SimpleGraphFactory( dbms );
         dbConfig = Config.defaults( GraphDatabaseSettings.data_directory, dataDirectory.getAbsolutePath() );
         theDatabase = newDatabase();
     }
@@ -74,8 +82,8 @@ public class TestLifecycleManagedDatabase
                 GraphDatabaseDependencies.newDependencies().userLogProvider( logProvider ) );
     }
 
-    @After
-    public void shutdownDatabase() throws Throwable
+    @AfterEach
+    void shutdownDatabase() throws Throwable
     {
         this.theDatabase.stop();
 
@@ -96,7 +104,7 @@ public class TestLifecycleManagedDatabase
     }
 
     @Test
-    public void shouldLogOnSuccessfulStartup() throws Throwable
+    void shouldLogOnSuccessfulStartup() throws Throwable
     {
         theDatabase.start();
 
@@ -106,7 +114,7 @@ public class TestLifecycleManagedDatabase
     }
 
     @Test
-    public void shouldShutdownCleanly() throws Throwable
+    void shouldShutdownCleanly() throws Throwable
     {
         theDatabase.start();
         theDatabase.stop();
@@ -117,7 +125,7 @@ public class TestLifecycleManagedDatabase
     }
 
     @Test
-    public void shouldComplainIfDatabaseLocationIsAlreadyInUse() throws Throwable
+    void shouldComplainIfDatabaseLocationIsAlreadyInUse() throws Throwable
     {
         deletionFailureOk = true;
         theDatabase.start();

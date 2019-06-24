@@ -20,17 +20,15 @@
 package org.neo4j.batchinsert;
 
 import java.io.IOException;
-import java.util.Map;
 
 import org.neo4j.batchinsert.internal.BatchInserterImpl;
 import org.neo4j.batchinsert.internal.FileSystemClosingBatchInserter;
+import org.neo4j.configuration.Config;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.kernel.extension.ExtensionFactory;
 import org.neo4j.service.Services;
-
-import static org.neo4j.internal.helpers.collection.MapUtil.stringMap;
 
 /**
  * Provides instances of {@link BatchInserter}.
@@ -47,36 +45,36 @@ public final class BatchInserters
     public static BatchInserter inserter( DatabaseLayout databaseLayout ) throws IOException
     {
         DefaultFileSystemAbstraction fileSystem = createFileSystem();
-        BatchInserter batchInserter = inserter( databaseLayout, fileSystem, stringMap() );
+        BatchInserter batchInserter = inserter( databaseLayout, fileSystem, Config.defaults() );
         return new FileSystemClosingBatchInserter( batchInserter, fileSystem );
     }
 
     public static BatchInserter inserter( DatabaseLayout databaseLayout, FileSystemAbstraction fs ) throws IOException
     {
-        return inserter( databaseLayout, fs, stringMap(), loadExtension() );
+        return inserter( databaseLayout, fs, Config.defaults(), loadExtension() );
     }
 
-    public static BatchInserter inserter( DatabaseLayout databaseLayout, Map<String,String> config ) throws IOException
+    public static BatchInserter inserter( DatabaseLayout databaseLayout, Config config ) throws IOException
     {
         DefaultFileSystemAbstraction fileSystem = createFileSystem();
         BatchInserter inserter = inserter( databaseLayout, fileSystem, config, loadExtension() );
         return new FileSystemClosingBatchInserter( inserter, fileSystem );
     }
 
-    public static BatchInserter inserter( DatabaseLayout databaseLayout, FileSystemAbstraction fs, Map<String,String> config ) throws IOException
+    public static BatchInserter inserter( DatabaseLayout databaseLayout, FileSystemAbstraction fs, Config config ) throws IOException
     {
         return inserter( databaseLayout, fs, config, loadExtension() );
     }
 
     public static BatchInserter inserter( DatabaseLayout databaseLayout,
-            Map<String, String> config, Iterable<ExtensionFactory<?>> extensions ) throws IOException
+            Config config, Iterable<ExtensionFactory<?>> extensions ) throws IOException
     {
         DefaultFileSystemAbstraction fileSystem = createFileSystem();
         BatchInserterImpl inserter = new BatchInserterImpl( databaseLayout, fileSystem, config, extensions );
         return new FileSystemClosingBatchInserter( inserter, fileSystem );
     }
 
-    public static BatchInserter inserter( DatabaseLayout layout, FileSystemAbstraction fileSystem, Map<String,String> config,
+    public static BatchInserter inserter( DatabaseLayout layout, FileSystemAbstraction fileSystem, Config config,
             Iterable<ExtensionFactory<?>> extensions ) throws IOException
     {
         return new BatchInserterImpl( layout, fileSystem, config, extensions );

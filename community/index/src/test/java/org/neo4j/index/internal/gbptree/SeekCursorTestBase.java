@@ -48,7 +48,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTimeout;
+import static org.junit.jupiter.api.Assertions.assertTimeoutPreemptively;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.index.internal.gbptree.GBPTree.NO_MONITOR;
 import static org.neo4j.index.internal.gbptree.GenerationSafePointerPair.pointer;
@@ -1044,7 +1044,7 @@ abstract class SeekCursorTestBase<KEY, VALUE>
     @Test
     void mustThrowIfStuckInInfiniteRootCatchup()
     {
-        assertTimeout( Duration.ofSeconds( 10 ), () ->
+        assertTimeoutPreemptively( Duration.ofSeconds( 10 ), () ->
         {
             // given
             rootWithTwoLeaves();

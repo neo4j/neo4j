@@ -19,22 +19,23 @@
  */
 package org.neo4j.kernel.impl.core;
 
-import org.junit.ClassRule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.test.rule.DbmsRule;
-import org.neo4j.test.rule.ImpermanentDbmsRule;
+import org.neo4j.kernel.internal.GraphDatabaseAPI;
+import org.neo4j.test.extension.ImpermanentDbmsExtension;
+import org.neo4j.test.extension.Inject;
 
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.fail;
 
-public class GraphPropertiesProxyTest
+@ImpermanentDbmsExtension
+class GraphPropertiesProxyTest
 {
-    @ClassRule
-    public static DbmsRule db = new ImpermanentDbmsRule();
+    @Inject
+    private GraphDatabaseAPI db;
 
     @Test
-    public void testGraphAddPropertyWithNullKey()
+    void testGraphAddPropertyWithNullKey()
     {
         try ( Transaction transaction = db.beginTx() )
         {
@@ -47,7 +48,7 @@ public class GraphPropertiesProxyTest
     }
 
     @Test
-    public void testGraphAddPropertyWithNullValue()
+    void testGraphAddPropertyWithNullValue()
     {
         try ( Transaction transaction = db.beginTx() )
         {

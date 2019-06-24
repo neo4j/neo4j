@@ -41,8 +41,9 @@ import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
 import static org.neo4j.bolt.v1.transport.integration.Neo4jWithSocket.DEFAULT_CONNECTOR_KEY;
-import static org.neo4j.configuration.ssl.LegacySslPolicyConfig.tls_certificate_file;
-import static org.neo4j.configuration.ssl.LegacySslPolicyConfig.tls_key_file;
+import static org.neo4j.configuration.GraphDatabaseSettings.tls_certificate_file;
+import static org.neo4j.configuration.GraphDatabaseSettings.tls_key_file;
+import static org.neo4j.configuration.SettingValueParsers.TRUE;
 
 public class CertificatesIT
 {
@@ -54,11 +55,10 @@ public class CertificatesIT
     @Rule
     public Neo4jWithSocket server = new Neo4jWithSocket( getClass(), settings ->
     {
-        settings.put( tls_certificate_file.name(), certFile.getAbsolutePath() );
-        settings.put( tls_key_file.name(), keyFile.getAbsolutePath() );
-        settings.put( new BoltConnector( DEFAULT_CONNECTOR_KEY ).type.name(), "BOLT" );
-        settings.put( new BoltConnector( DEFAULT_CONNECTOR_KEY ).enabled.name(), "true" );
-        settings.put( new BoltConnector( DEFAULT_CONNECTOR_KEY ).listen_address.name(), "localhost:0" );
+        settings.put( tls_certificate_file, certFile.getAbsolutePath() );
+        settings.put( tls_key_file, keyFile.getAbsolutePath() );
+        settings.put( BoltConnector.group( DEFAULT_CONNECTOR_KEY ).enabled, TRUE );
+        settings.put( BoltConnector.group( DEFAULT_CONNECTOR_KEY ).listen_address, "localhost:0" );
     } );
 
     @Test

@@ -19,19 +19,15 @@
  */
 package org.neo4j.graphdb.factory;
 
-import org.apache.commons.lang3.StringUtils;
-
 import java.time.Clock;
 
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
-import org.neo4j.graphdb.factory.module.edition.CommunityEditionModule;
 import org.neo4j.kernel.impl.locking.DynamicLocksFactory;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.locking.LocksFactory;
 import org.neo4j.kernel.impl.locking.community.CommunityLocksFactory;
 import org.neo4j.lock.ResourceTypes;
-import org.neo4j.logging.internal.LogService;
 import org.neo4j.service.Services;
 
 public final class EditionLocksFactories
@@ -41,7 +37,7 @@ public final class EditionLocksFactories
         return locksFactory.newInstance( config, clock, ResourceTypes.values() );
     }
 
-    public static LocksFactory createLockFactory( Config config, LogService logging )
+    public static LocksFactory createLockFactory( Config config )
     {
         String key = config.get( GraphDatabaseSettings.lock_manager );
         for ( DynamicLocksFactory candidate : Services.loadAll( DynamicLocksFactory.class ) )
@@ -50,22 +46,10 @@ public final class EditionLocksFactories
             {
                 return candidate;
             }
-            else if ( "".equals( key ) )
-            {
-                logging.getInternalLog( CommunityEditionModule.class )
-                        .info( "No locking implementation specified, defaulting to '" + candidate.getName() + "'" );
-                return candidate;
-            }
         }
 
-        if ( "community".equals( key ) )
+        if ( CommunityLocksFactory.NAME.equals( key ) )
         {
-            return new CommunityLocksFactory();
-        }
-        else if ( StringUtils.isEmpty( key ) )
-        {
-            logging.getInternalLog( CommunityEditionModule.class )
-                    .info( "No locking implementation specified, defaulting to 'community'" );
             return new CommunityLocksFactory();
         }
 

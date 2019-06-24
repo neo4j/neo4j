@@ -140,7 +140,7 @@ public class DatabaseRule extends ExternalResource
         // Satisfy non-satisfied dependencies
         mutableDependencies.satisfyDependency( mock( CompositeDatabaseAvailabilityGuard.class ) );
         Config config = dependency( mutableDependencies, Config.class, deps -> Config.defaults() );
-        config.augment( default_schema_provider, EMPTY.getProviderDescriptor().name() );
+        config.set( default_schema_provider, EMPTY.getProviderDescriptor().name() );
         LogService logService = dependency( mutableDependencies, LogService.class,
                 deps -> new SimpleLogService( NullLogProvider.getInstance() ) );
         IdGeneratorFactory idGeneratorFactory = dependency( mutableDependencies, IdGeneratorFactory.class,

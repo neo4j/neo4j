@@ -1337,8 +1337,8 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
 
     private void registerConfigChangeListeners( Config config )
     {
-        config.registerDynamicUpdateListener( transaction_tracing_level, ( before, after ) -> traceProvider = getTraceProvider( config ) );
-        config.registerDynamicUpdateListener( transaction_sampling_percentage, ( before, after ) -> traceProvider = getTraceProvider( config ) );
+        config.addListener( transaction_tracing_level, ( before, after ) -> traceProvider = getTraceProvider( config ) );
+        config.addListener( transaction_sampling_percentage, ( before, after ) -> traceProvider = getTraceProvider( config ) );
     }
 
     /**

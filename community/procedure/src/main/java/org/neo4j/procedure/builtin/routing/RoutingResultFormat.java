@@ -26,8 +26,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.neo4j.internal.helpers.AdvertisedSocketAddress;
-import org.neo4j.internal.helpers.SocketAddress;
+import org.neo4j.configuration.helpers.SocketAddress;
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.storable.LongValue;
 import org.neo4j.values.storable.TextValue;
@@ -103,7 +102,7 @@ public class RoutingResultFormat
         LongValue timeToLiveSeconds = (LongValue) record[0];
         ListValue endpointData = (ListValue) record[1];
 
-        Map<Role,List<AdvertisedSocketAddress>> endpoints = parseRows( endpointData );
+        Map<Role,List<SocketAddress>> endpoints = parseRows( endpointData );
 
         return new RoutingResult(
                 endpoints.get( ROUTE ),
@@ -120,9 +119,9 @@ public class RoutingResultFormat
         } );
     }
 
-    public static List<AdvertisedSocketAddress> parseEndpoints( ListValue addresses )
+    public static List<SocketAddress> parseEndpoints( ListValue addresses )
     {
-        List<AdvertisedSocketAddress> result = new ArrayList<>( addresses.size() );
+        List<SocketAddress> result = new ArrayList<>( addresses.size() );
         for ( AnyValue address : addresses )
         {
             result.add( parseAddress( ((TextValue) address).stringValue() ) );
@@ -130,14 +129,14 @@ public class RoutingResultFormat
         return result;
     }
 
-    private static Map<Role,List<AdvertisedSocketAddress>> parseRows( ListValue rows )
+    private static Map<Role,List<SocketAddress>> parseRows( ListValue rows )
     {
-        Map<Role,List<AdvertisedSocketAddress>> endpoints = new HashMap<>();
+        Map<Role,List<SocketAddress>> endpoints = new HashMap<>();
         for ( AnyValue single : rows )
         {
             MapValue row = (MapValue) single;
             Role role = Role.valueOf( ((TextValue) row.get( "role" )).stringValue() );
-            List<AdvertisedSocketAddress> addresses = parseEndpoints( (ListValue) row.get( "addresses" ) );
+            List<SocketAddress> addresses = parseEndpoints( (ListValue) row.get( "addresses" ) );
             endpoints.put( role, addresses );
         }
 
@@ -146,13 +145,13 @@ public class RoutingResultFormat
         return endpoints;
     }
 
-    private static AdvertisedSocketAddress parseAddress( String address )
+    private static SocketAddress parseAddress( String address )
     {
         String[] split = address.split( ":" );
-        return new AdvertisedSocketAddress( split[0], Integer.valueOf( split[1] ) );
+        return new SocketAddress( split[0], Integer.valueOf( split[1] ) );
     }
 
-    private static AnyValue[] asValues( List<AdvertisedSocketAddress> addresses )
+    private static AnyValue[] asValues( List<SocketAddress> addresses )
     {
         return addresses.stream()
                 .map( SocketAddress::toString )

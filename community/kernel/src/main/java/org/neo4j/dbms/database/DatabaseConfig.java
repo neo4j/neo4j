@@ -20,43 +20,31 @@
 package org.neo4j.dbms.database;
 
 import java.util.Collection;
-import java.util.List;
 import java.util.Map;
-import java.util.Optional;
-import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
-import javax.annotation.Nonnull;
 
 import org.neo4j.configuration.Config;
-import org.neo4j.configuration.ConfigValue;
-import org.neo4j.configuration.GraphDatabaseSettings;
+import org.neo4j.configuration.GroupSetting;
 import org.neo4j.configuration.SettingChangeListener;
-import org.neo4j.configuration.connectors.BoltConnector;
-import org.neo4j.configuration.connectors.HttpConnector;
-import org.neo4j.graphdb.config.InvalidSettingException;
+import org.neo4j.configuration.SettingImpl;
+import org.neo4j.configuration.SettingObserver;
 import org.neo4j.graphdb.config.Setting;
-import org.neo4j.internal.helpers.collection.MapUtil;
 import org.neo4j.kernel.database.DatabaseId;
 import org.neo4j.kernel.lifecycle.Lifecycle;
+import org.neo4j.logging.Log;
 
 public class DatabaseConfig extends Config implements Lifecycle
 {
-    Config globalConfig;
-    private Map<Setting,Collection<SettingChangeListener>> registeredListeners = new ConcurrentHashMap<>();
+    private final Config globalConfig;
+    private Map<Setting<Object>,Collection<SettingChangeListener<Object>>> registeredListeners = new ConcurrentHashMap<>();
 
     public static DatabaseConfig from( Config globalConfig, DatabaseId databaseId )
     {
-        if ( DatabaseId.isSystemDatabase( databaseId ) )
-        {
-            Map<String,String> overriddenConfigs = MapUtil.stringMap( GraphDatabaseSettings.record_format.name(), "" );
-            return new OverriddenDatabaseConfig( globalConfig, overriddenConfigs );
-        }
-
         return new DatabaseConfig( globalConfig );
     }
 
-    DatabaseConfig( Config globalConfig )
+    private DatabaseConfig( Config globalConfig )
     {
         this.globalConfig = globalConfig;
     }
@@ -68,154 +56,100 @@ public class DatabaseConfig extends Config implements Lifecycle
     }
 
     @Override
-    public boolean isConfigured( Setting<?> setting )
+    public <T> void addListener( Setting<T> setting, SettingChangeListener<T> listener )
     {
-        return globalConfig.isConfigured( setting );
+        registeredListeners.computeIfAbsent( (SettingImpl<Object>) setting, v -> new ConcurrentLinkedQueue<>() ).add(
+                (SettingChangeListener<Object>) listener );
+        globalConfig.addListener( setting, listener );
     }
 
     @Override
-    public Set<String> identifiersFromGroup( Class<?> groupClass )
+    public <T> void removeListener( Setting<T> setting, SettingChangeListener<T> listener )
     {
-        return globalConfig.identifiersFromGroup( groupClass );
-    }
-
-    @Override
-    public void augment( Map<String,String> settings ) throws InvalidSettingException
-    {
-        globalConfig.augment( settings );
-    }
-
-    @Override
-    public void augment( String setting, String value ) throws InvalidSettingException
-    {
-        globalConfig.augment( setting, value );
-    }
-
-    @Override
-    public void augment( Setting<?> setting, String value )
-    {
-        globalConfig.augment( setting, value );
-    }
-
-    @Override
-    public void augment( Config config ) throws InvalidSettingException
-    {
-        globalConfig.augment( config );
-    }
-
-    @Override
-    public void augmentDefaults( Setting<?> setting, String value ) throws InvalidSettingException
-    {
-        globalConfig.augmentDefaults( setting, value );
-    }
-
-    @Override
-    public Optional<String> getRaw( @Nonnull String key )
-    {
-        return globalConfig.getRaw( key );
-    }
-
-    @Override
-    public Map<String,String> getRaw()
-    {
-        return globalConfig.getRaw();
-    }
-
-    @Override
-    public Optional<Object> getValue( @Nonnull String key )
-    {
-        return globalConfig.getValue( key );
-    }
-
-    @Override
-    public void updateDynamicSetting( String setting, String update, String origin ) throws IllegalArgumentException, InvalidSettingException
-    {
-        globalConfig.updateDynamicSetting( setting, update, origin );
-    }
-
-    @Override
-    public <V> void registerDynamicUpdateListener( Setting<V> setting, SettingChangeListener<V> listener )
-    {
-        registeredListeners.computeIfAbsent( setting, v -> new ConcurrentLinkedQueue<>() ).add( listener );
-        globalConfig.registerDynamicUpdateListener( setting, listener );
-    }
-
-    @Override
-    public <V> void unregisterDynamicUpdateListener( Setting<V> setting, SettingChangeListener<V> externalListener )
-    {
-        Collection<SettingChangeListener> listeners = registeredListeners.get( setting );
+        Collection<SettingChangeListener<Object>> listeners = registeredListeners.get( setting );
         if ( listeners != null )
         {
-            listeners.remove( externalListener );
+            listeners.remove( listener );
         }
-        globalConfig.unregisterDynamicUpdateListener( setting, externalListener );
+        globalConfig.removeListener( setting, listener );
     }
 
     @Override
-    public Map<String,ConfigValue> getConfigValues()
+    public void setLogger( Log internalLog )
     {
-        return globalConfig.getConfigValues();
+        globalConfig.setLogger( internalLog );
     }
 
     @Override
-    public String obfuscateIfSecret( Map.Entry<String,String> param )
+    public <T extends GroupSetting> Map<String,T> getGroups( Class<T> group )
     {
-        return globalConfig.obfuscateIfSecret( param );
+        return globalConfig.getGroups( group );
     }
 
     @Override
-    @Nonnull
-    public Set<String> allConnectorIdentifiers()
+    public <T extends GroupSetting, U extends T> Map<Class<U>,Map<String,U>> getGroupsFromInheritance( Class<T> parentClass )
     {
-        return globalConfig.allConnectorIdentifiers();
+        return globalConfig.getGroupsFromInheritance( parentClass );
     }
 
     @Override
-    @Nonnull
-    public Set<String> allConnectorIdentifiers( @Nonnull Map<String,String> params )
+    public <T> SettingObserver<T> getObserver( Setting<T> setting )
     {
-        return globalConfig.allConnectorIdentifiers( params );
+        return globalConfig.getObserver( setting );
     }
 
     @Override
-    @Nonnull
-    public List<BoltConnector> boltConnectors()
+    public <T> void setDynamic( Setting<T> setting, T value, String scope )
     {
-        return globalConfig.boltConnectors();
+        globalConfig.setDynamic( setting, value, scope );
     }
 
     @Override
-    @Nonnull
-    public List<BoltConnector> enabledBoltConnectors()
+    public <T> void set( Setting<T> setting, T value )
     {
-        return globalConfig.enabledBoltConnectors();
+        globalConfig.set( setting, value );
     }
 
     @Override
-    @Nonnull
-    public List<BoltConnector> enabledBoltConnectors( @Nonnull Map<String,String> params )
+    public <T> void setIfNotSet( Setting<T> setting, T value )
     {
-        return globalConfig.enabledBoltConnectors( params );
+        globalConfig.setIfNotSet( setting, value );
     }
 
     @Override
-    @Nonnull
-    public List<HttpConnector> httpConnectors()
+    public boolean isExplicitlySet( Setting<?> setting )
     {
-        return globalConfig.httpConnectors();
-    }
-
-    @Override
-    @Nonnull
-    public List<HttpConnector> enabledHttpConnectors()
-    {
-        return globalConfig.enabledHttpConnectors();
+        return globalConfig.isExplicitlySet( setting );
     }
 
     @Override
     public String toString()
     {
         return globalConfig.toString();
+    }
+
+    @Override
+    public Map<Setting<Object>,Object> getValues()
+    {
+        return globalConfig.getValues();
+    }
+
+    @Override
+    public Map<String,Setting<Object>> getDeclaredSettings()
+    {
+        return globalConfig.getDeclaredSettings();
+    }
+
+    @Override
+    public String toString( boolean includeNullValues )
+    {
+        return globalConfig.toString( includeNullValues );
+    }
+
+    @Override
+    public Setting<Object> getSetting( String name )
+    {
+        return globalConfig.getSetting( name );
     }
 
     @Override
@@ -233,13 +167,13 @@ public class DatabaseConfig extends Config implements Lifecycle
     @Override
     public void stop() throws Exception
     {
-        for ( Map.Entry<Setting,Collection<SettingChangeListener>> settingListeners : registeredListeners.entrySet() )
+        for ( var settingListeners : registeredListeners.entrySet() )
         {
-            Setting setting = settingListeners.getKey();
-            Collection<SettingChangeListener> listeners = settingListeners.getValue();
-            for ( SettingChangeListener listener : listeners )
+            Setting<Object> setting = settingListeners.getKey();
+            Collection<SettingChangeListener<Object>> listeners = settingListeners.getValue();
+            for ( SettingChangeListener<Object> listener : listeners )
             {
-                globalConfig.unregisterDynamicUpdateListener( setting, listener );
+                globalConfig.removeListener( setting, listener );
             }
         }
         registeredListeners = new ConcurrentHashMap<>();

@@ -32,13 +32,13 @@ import java.util.regex.Pattern;
 
 import org.neo4j.common.DependencyResolver;
 import org.neo4j.configuration.Config;
+import org.neo4j.configuration.ConfigUtils;
 import org.neo4j.configuration.connectors.ConnectorPortRegister;
 import org.neo4j.configuration.connectors.HttpConnector;
-import org.neo4j.configuration.connectors.HttpConnector.Encryption;
+import org.neo4j.configuration.connectors.HttpsConnector;
+import org.neo4j.configuration.helpers.SocketAddress;
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.graphdb.facade.ExternalDependencies;
-import org.neo4j.internal.helpers.AdvertisedSocketAddress;
-import org.neo4j.internal.helpers.ListenSocketAddress;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.api.security.AuthManager;
 import org.neo4j.kernel.api.security.UserManagerSupplier;
@@ -99,10 +99,10 @@ public abstract class AbstractNeoServer implements NeoServer
     private final SimpleUriBuilder uriBuilder = new SimpleUriBuilder();
     private final Config config;
     private final LifeSupport life = new LifeSupport();
-    private final ListenSocketAddress httpListenAddress;
-    private final ListenSocketAddress httpsListenAddress;
-    private AdvertisedSocketAddress httpAdvertisedAddress;
-    private AdvertisedSocketAddress httpsAdvertisedAddress;
+    private final SocketAddress httpListenAddress;
+    private final SocketAddress httpsListenAddress;
+    private SocketAddress httpAdvertisedAddress;
+    private SocketAddress httpsAdvertisedAddress;
 
     protected final DatabaseService databaseService;
     protected WebServer webServer;
@@ -113,7 +113,7 @@ public abstract class AbstractNeoServer implements NeoServer
 
     private ConnectorPortRegister connectorPortRegister;
     private HttpConnector httpConnector;
-    private HttpConnector httpsConnector;
+    private HttpsConnector httpsConnector;
     private RotatingRequestLog requestLog;
 
     protected abstract Iterable<ServerModule> createServerModules();
@@ -129,11 +129,11 @@ public abstract class AbstractNeoServer implements NeoServer
 
         verifyConnectorsConfiguration( config );
 
-        httpConnector = findConnector( config, Encryption.NONE );
+        httpConnector = findConnector( config );
         httpListenAddress = listenAddressFor( config, httpConnector );
         httpAdvertisedAddress = advertisedAddressFor( config, httpConnector );
 
-        httpsConnector = findConnector( config, Encryption.TLS );
+        httpsConnector = findSecureConnector( config );
         httpsListenAddress = listenAddressFor( config, httpsConnector );
         httpsAdvertisedAddress = advertisedAddressFor( config, httpsConnector );
 
@@ -256,7 +256,7 @@ public abstract class AbstractNeoServer implements NeoServer
         }
         catch ( Exception e )
         {
-            ListenSocketAddress address = httpListenAddress != null ? httpListenAddress : httpsListenAddress;
+            SocketAddress address = httpListenAddress != null ? httpListenAddress : httpsListenAddress;
             log.error( "Failed to start Neo4j on %s: %s", address, e.getMessage() );
             throw e;
         }
@@ -267,10 +267,10 @@ public abstract class AbstractNeoServer implements NeoServer
         if ( httpConnector != null )
         {
             InetSocketAddress localHttpAddress = webServer.getLocalHttpAddress();
-            connectorPortRegister.register( httpConnector.key(), localHttpAddress );
+            connectorPortRegister.register( httpConnector.name(), localHttpAddress );
             if ( httpAdvertisedAddress.getPort() == 0 )
             {
-                httpAdvertisedAddress = new AdvertisedSocketAddress( localHttpAddress.getHostString(), localHttpAddress.getPort() );
+                httpAdvertisedAddress = new SocketAddress( localHttpAddress.getHostString(), localHttpAddress.getPort() );
             }
         }
     }
@@ -280,10 +280,10 @@ public abstract class AbstractNeoServer implements NeoServer
         if ( httpsConnector != null )
         {
             InetSocketAddress localHttpsAddress = webServer.getLocalHttpsAddress();
-            connectorPortRegister.register( httpsConnector.key(), localHttpsAddress );
+            connectorPortRegister.register( httpsConnector.name(), localHttpsAddress );
             if ( httpsAdvertisedAddress.getPort() == 0 )
             {
-                httpsAdvertisedAddress = new AdvertisedSocketAddress( localHttpsAddress.getHostString(), localHttpsAddress.getPort() );
+                httpsAdvertisedAddress = new SocketAddress( localHttpsAddress.getHostString(), localHttpsAddress.getPort() );
             }
         }
     }
@@ -390,8 +390,8 @@ public abstract class AbstractNeoServer implements NeoServer
 
     private static void verifyConnectorsConfiguration( Config config )
     {
-        HttpConnector httpConnector = findConnector( config, Encryption.NONE );
-        HttpConnector httpsConnector = findConnector( config, Encryption.TLS );
+        HttpConnector httpConnector = findConnector( config );
+        HttpsConnector httpsConnector = findSecureConnector( config );
 
         if ( httpConnector == null && httpsConnector == null )
         {
@@ -399,21 +399,32 @@ public abstract class AbstractNeoServer implements NeoServer
         }
     }
 
-    private static HttpConnector findConnector( Config config, Encryption encryption )
+    private static HttpConnector findConnector( Config config )
     {
-        return config.enabledHttpConnectors()
-                .stream()
-                .filter( connector -> connector.encryptionLevel() == encryption )
-                .findFirst()
-                .orElse( null );
+        return ConfigUtils.getEnabledHttpConnectors(config).stream().findFirst().orElse( null );
     }
 
-    private static ListenSocketAddress listenAddressFor( Config config, HttpConnector connector )
+    private static HttpsConnector findSecureConnector( Config config )
+    {
+        return ConfigUtils.getEnabledHttpsConnectors(config).stream().findFirst().orElse( null );
+    }
+
+    private static SocketAddress listenAddressFor( Config config, HttpConnector connector )
     {
         return connector == null ? null : config.get( connector.listen_address );
     }
 
-    private static AdvertisedSocketAddress advertisedAddressFor( Config config, HttpConnector connector )
+    private static SocketAddress advertisedAddressFor( Config config, HttpConnector connector )
+    {
+        return connector == null ? null : config.get( connector.advertised_address );
+    }
+
+    private static SocketAddress listenAddressFor( Config config, HttpsConnector connector )
+    {
+        return connector == null ? null : config.get( connector.listen_address );
+    }
+
+    private static SocketAddress advertisedAddressFor( Config config, HttpsConnector connector )
     {
         return connector == null ? null : config.get( connector.advertised_address );
     }

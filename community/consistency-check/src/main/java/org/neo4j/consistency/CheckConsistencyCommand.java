@@ -32,6 +32,7 @@ import org.neo4j.cli.AbstractCommand;
 import org.neo4j.cli.CommandFailedException;
 import org.neo4j.cli.ExecutionContext;
 import org.neo4j.configuration.Config;
+import org.neo4j.configuration.ConfigUtils;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.configuration.LayoutConfig;
 import org.neo4j.consistency.checking.full.ConsistencyCheckIncompleteException;
@@ -114,7 +115,7 @@ public class CheckConsistencyCommand extends AbstractCommand
         {
             DatabaseLayout databaseLayout = Optional.ofNullable( target.backup )
                     .map( Path::toFile ).map( DatabaseLayout::of )
-                    .orElse( DatabaseLayout.of( config.get( databases_root_path ), LayoutConfig.of( config ), target.database ) );
+                    .orElse( DatabaseLayout.of( config.get( databases_root_path ).toFile(), LayoutConfig.of( config ), target.database ) );
             checkDbState( databaseLayout, config );
             ZoneId logTimeZone = config.get( GraphDatabaseSettings.db_timezone ).getZoneId();
             // Only output progress indicator if a console receives the output
@@ -143,6 +144,24 @@ public class CheckConsistencyCommand extends AbstractCommand
         }
     }
 
+    private static Config loadAdditionalConfig( Optional<Path> additionalConfigFile )
+    {
+        if ( additionalConfigFile.isPresent() )
+        {
+            try
+            {
+                return Config.newBuilder().fromFile( additionalConfigFile.get().toFile() ).build();
+            }
+            catch ( Exception e )
+            {
+                throw new IllegalArgumentException(
+                        String.format( "Could not read configuration file [%s]", additionalConfigFile ), e );
+            }
+        }
+
+        return Config.defaults();
+    }
+
     private static void checkDbState( DatabaseLayout databaseLayout, Config additionalConfiguration )
     {
         if ( checkRecoveryState( databaseLayout, additionalConfiguration ) )
@@ -167,17 +186,12 @@ public class CheckConsistencyCommand extends AbstractCommand
 
     private static Config loadNeo4jConfig( Path homeDir, Path configDir, Path additionalConfig )
     {
-        Config config = Config.fromFile( configDir.resolve( Config.DEFAULT_CONFIG_FILE_NAME ) )
-                .withHome( homeDir )
-                .withConnectorsDisabled()
-                .withNoThrowOnFileLoadFailure()
+        Config cfg = Config.newBuilder()
+                .fromFileNoThrow( configDir.resolve( Config.DEFAULT_CONFIG_FILE_NAME ) )
+                .fromFileNoThrow( additionalConfig )
+                .set( GraphDatabaseSettings.neo4j_home, homeDir.toString() )
                 .build();
-
-        if ( additionalConfig != null )
-        {
-            config.augment( Config.fromFile( additionalConfig ).build() );
-        }
-
-        return config;
+        ConfigUtils.disableAllConnectors( cfg );
+        return cfg;
     }
 }

@@ -73,7 +73,7 @@ public class JvmChecker
         }
     }
 
-    static String memorySettingWarning( Setting<String> setting, long currentUsage )
+    static String memorySettingWarning( Setting<?> setting, long currentUsage )
     {
         return "The " + setting.name() + " setting has not been configured. It is recommended that this " +
                 "setting is always explicitly configured, to ensure the system has a balanced configuration. " +

@@ -60,6 +60,7 @@ import static org.neo4j.bolt.v1.messaging.util.MessageMatchers.msgFailure;
 import static org.neo4j.bolt.v1.messaging.util.MessageMatchers.msgSuccess;
 import static org.neo4j.bolt.v1.transport.integration.TransportTestUtil.eventuallyDisconnects;
 import static org.neo4j.configuration.GraphDatabaseSettings.auth_enabled;
+import static org.neo4j.configuration.SettingValueParsers.FALSE;
 import static org.neo4j.values.storable.Values.pointValue;
 
 @RunWith( Parameterized.class )
@@ -68,7 +69,7 @@ public class UnsupportedStructTypesV1IT
     private static final String USER_AGENT = "TestClient/1.0";
 
     @Rule
-    public Neo4jWithSocket server = new Neo4jWithSocket( getClass(), settings -> settings.put( auth_enabled.name(), "false" ) );
+    public Neo4jWithSocket server = new Neo4jWithSocket( getClass(), settings -> settings.put( auth_enabled, FALSE ) );
 
     @Parameterized.Parameter
     public Class<? extends TransportConnection> connectionClass;

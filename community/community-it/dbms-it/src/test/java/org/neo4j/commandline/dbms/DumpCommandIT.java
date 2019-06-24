@@ -43,9 +43,10 @@ import java.util.function.Predicate;
 import org.neo4j.cli.CommandFailedException;
 import org.neo4j.cli.ExecutionContext;
 import org.neo4j.configuration.Config;
+import org.neo4j.configuration.ConfigUtils;
+import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.configuration.LayoutConfig;
 import org.neo4j.dbms.api.DatabaseManagementService;
-import org.neo4j.dbms.api.DatabaseManagementServiceBuilder;
 import org.neo4j.dbms.archive.Dumper;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
@@ -54,6 +55,7 @@ import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.layout.StoreLayout;
 import org.neo4j.kernel.impl.transaction.log.files.TransactionLogFilesHelper;
 import org.neo4j.kernel.internal.locker.StoreLocker;
+import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.TestDirectoryExtension;
 import org.neo4j.test.rule.TestDirectory;
@@ -77,6 +79,7 @@ import static org.mockito.Mockito.verify;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_TX_LOGS_ROOT_DIR_NAME;
 import static org.neo4j.configuration.GraphDatabaseSettings.data_directory;
+import static org.neo4j.configuration.GraphDatabaseSettings.databases_root_path;
 import static org.neo4j.configuration.GraphDatabaseSettings.default_database;
 import static org.neo4j.configuration.GraphDatabaseSettings.transaction_logs_root_path;
 import static org.neo4j.dbms.archive.CompressionFormat.ZSTD;
@@ -106,9 +109,12 @@ class DumpCommandIT
 
     private Config buildConfig()
     {
-        return Config.fromFile( configDir.resolve( Config.DEFAULT_CONFIG_FILE_NAME ) )
-                .withHome( homeDir )
-                .withConnectorsDisabled().withNoThrowOnFileLoadFailure().build();
+        Config config = Config.newBuilder()
+                .fromFileNoThrow( configDir.resolve( Config.DEFAULT_CONFIG_FILE_NAME ) )
+                .set( GraphDatabaseSettings.neo4j_home, homeDir.toAbsolutePath().toString() )
+                .build();
+        ConfigUtils.disableAllConnectors( config );
+        return config;
     }
 
     @Test
@@ -151,8 +157,7 @@ class DumpCommandIT
     @DisabledOnOs( OS.WINDOWS )
     void shouldHandleDatabaseSymlink() throws Exception
     {
-        Path symDir = testDirectory.directory( "path-to-links" ).toPath();
-        Path realDatabaseDir = symDir.resolve( "foo" );
+        Path realDatabaseDir = testDirectory.directory( "path-to-links/foo" ).toPath();
 
         Path dataDir = testDirectory.directory( "some-other-path" ).toPath();
         Path databaseDir = dataDir.resolve( "databases/foo" );
@@ -204,7 +209,7 @@ class DumpCommandIT
     @Test
     void databaseThatRequireRecoveryIsNotDumpable() throws IOException
     {
-        Config config = Config.builder().withHome( homeDir ).build();
+        Config config = Config.defaults( GraphDatabaseSettings.neo4j_home, homeDir.toString() );
         DatabaseLayout databaseLayout = testDirectory.databaseLayout( "foo", LayoutConfig.of( config ) );
         testDirectory.getFileSystem().mkdirs( databaseLayout.getTransactionLogsDirectory() );
         File logFile = new File( databaseLayout.getTransactionLogsDirectory(), TransactionLogFilesHelper.DEFAULT_NAME + ".0" );
@@ -353,12 +358,13 @@ class DumpCommandIT
         }
     }
 
-    private static void putStoreInDirectory( Config config, Path databaseDirectory )
+    private void putStoreInDirectory( Config config, Path databaseDirectory )
     {
         String databaseName = databaseDirectory.toFile().getName();
-        DatabaseManagementService managementService = new DatabaseManagementServiceBuilder( databaseDirectory.getParent().toFile() )
-                .setConfigRaw( config.getRaw() )
+        DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder( databaseDirectory.getParent().getParent().getParent().toFile() )
+                .setConfig( config )
                 .setConfig( default_database, databaseName )
+                .setConfig( databases_root_path, databases_root_path.defaultValue().toString() )
                 .build();
         managementService.shutdown();
     }

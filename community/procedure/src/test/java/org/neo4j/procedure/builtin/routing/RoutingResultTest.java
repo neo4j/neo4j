@@ -23,7 +23,7 @@ import org.junit.jupiter.api.Test;
 
 import java.util.List;
 
-import org.neo4j.internal.helpers.AdvertisedSocketAddress;
+import org.neo4j.configuration.helpers.SocketAddress;
 
 import static java.util.Collections.emptyList;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -48,9 +48,9 @@ class RoutingResultTest
     @Test
     void shouldExposeEndpoints()
     {
-        var address1 = new AdvertisedSocketAddress( "localhost", 1 );
-        var address2 = new AdvertisedSocketAddress( "localhost", 2 );
-        var address3 = new AdvertisedSocketAddress( "localhost", 3 );
+        var address1 = new SocketAddress( "localhost", 1 );
+        var address2 = new SocketAddress( "localhost", 2 );
+        var address3 = new SocketAddress( "localhost", 3 );
 
         var readers = List.of( address1, address3 );
         var writers = List.of( address3, address2 );
@@ -74,7 +74,7 @@ class RoutingResultTest
     @Test
     void shouldCheckIfContainsEndpoints()
     {
-        var address = new AdvertisedSocketAddress( "localhost", 1 );
+        var address = new SocketAddress( "localhost", 1 );
         var emptyResult = new RoutingResult( emptyList(), emptyList(), emptyList(), 42 );
         var nonEmptyResult = new RoutingResult( List.of( address ), List.of( address ), List.of( address ), 42 );
 

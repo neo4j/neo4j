@@ -27,6 +27,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.neo4j.configuration.Config;
+import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.graphdb.facade.GraphDatabaseDependencies;
 import org.neo4j.kernel.impl.factory.DatabaseInfo;
 import org.neo4j.kernel.impl.scheduler.BufferingExecutor;
@@ -75,7 +76,8 @@ class GlobalModuleTest
         assertThat( counter.get(), equalTo( 0 ) );
 
         // When I construct a GlobalModule...
-        GlobalModule pm = new GlobalModule( testDirectory.storeDir(), Config.defaults(), DatabaseInfo.UNKNOWN, externalDependencies );
+        Config cfg = Config.defaults( GraphDatabaseSettings.neo4j_home, testDirectory.absolutePath().getAbsolutePath() );
+        GlobalModule pm = new GlobalModule( testDirectory.storeDir(), cfg, DatabaseInfo.UNKNOWN, externalDependencies );
 
         // then the tasks that I queued up earlier should be run...
         // the timeout here is really high to ensure that this test does not become flaky because of a slow running JVM

@@ -24,7 +24,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.io.File;
 
-import org.neo4j.configuration.ssl.LegacySslPolicyConfig;
+import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.harness.internal.InProcessNeo4j;
@@ -217,9 +217,9 @@ class FixturesTestIT
 
     private Neo4jBuilder getServerBuilder( File targetFolder )
     {
-        String relativePath = ServerTestUtils.getRelativePath( testDir.directory(), LegacySslPolicyConfig.certificates_directory );
+        String relativePath = ServerTestUtils.getRelativePath( testDir.directory(), GraphDatabaseSettings.legacy_certificates_directory);
         return newInProcessBuilder( targetFolder )
-                .withConfig( LegacySslPolicyConfig.certificates_directory.name(), relativePath );
+                .withConfig( GraphDatabaseSettings.legacy_certificates_directory.name(), relativePath );
     }
 
 }

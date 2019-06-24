@@ -31,7 +31,7 @@ import static org.hamcrest.Matchers.lessThan;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 import static org.neo4j.configuration.GraphDatabaseSettings.pagecache_memory;
-import static org.neo4j.configuration.Settings.parseLongWithUnit;
+import static org.neo4j.configuration.SettingValueParsers.parseLongWithUnit;
 import static org.neo4j.io.os.OsBeanUtil.VALUE_UNAVAILABLE;
 
 class ConfigurationTest

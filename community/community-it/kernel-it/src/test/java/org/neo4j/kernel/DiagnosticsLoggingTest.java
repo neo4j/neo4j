@@ -22,11 +22,12 @@ package org.neo4j.kernel;
 import org.junit.jupiter.api.Test;
 
 import org.neo4j.configuration.GraphDatabaseSettings;
-import org.neo4j.configuration.Settings;
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
+
+import static org.neo4j.configuration.SettingValueParsers.TRUE;
 
 class DiagnosticsLoggingTest
 {
@@ -38,7 +39,7 @@ class DiagnosticsLoggingTest
         DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder()
                 .setInternalLogProvider( logProvider )
                 .impermanent()
-                .setConfig( GraphDatabaseSettings.dump_configuration, Settings.TRUE )
+                .setConfig( GraphDatabaseSettings.dump_configuration, TRUE )
                 .setConfig( GraphDatabaseSettings.pagecache_memory, "4M" )
                 .build();
         try

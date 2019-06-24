@@ -116,7 +116,7 @@ public class DbRepresentation
         Dependencies dependencies = new Dependencies();
         dependencies.satisfyDependencies( SystemGraphInitializer.NO_OP );   // disable system graph construction because it will change the backup
         DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder( storeDirectory )
-                .setConfigRaw( config.getRaw() )
+                .setConfig( config )
                 .setExternalDependencies( dependencies )
                 .build();
         GraphDatabaseService db = managementService.database( databaseName );
@@ -133,16 +133,19 @@ public class DbRepresentation
     public static DbRepresentation of( DatabaseLayout databaseLayout )
     {
         return of( databaseLayout.databaseDirectory(),
-                Config.builder().withSetting( transaction_logs_root_path, databaseLayout.getTransactionLogsDirectory().getParentFile().getAbsolutePath() )
-                                .withSetting( default_database, databaseLayout.getDatabaseName() )
+                Config.newBuilder()
+                        .set( transaction_logs_root_path, databaseLayout.getTransactionLogsDirectory().getParentFile().getAbsolutePath() )
+                        .set( default_database, databaseLayout.getDatabaseName() )
                         .build());
     }
 
     public static DbRepresentation of( DatabaseLayout databaseLayout, Config config )
     {
-        config.augment( transaction_logs_root_path, databaseLayout.getTransactionLogsDirectory().getParentFile().getAbsolutePath() );
-        config.augment( default_database, databaseLayout.getDatabaseName() );
-        return of( databaseLayout.databaseDirectory(), config );
+        Config cfg = Config.newBuilder().fromConfig( config )
+                .set( transaction_logs_root_path, databaseLayout.getTransactionLogsDirectory().getParentFile().toPath().toString() )
+                .set( default_database, databaseLayout.getDatabaseName() )
+                .build();
+        return of( databaseLayout.databaseDirectory(), cfg );
     }
 
     @Override

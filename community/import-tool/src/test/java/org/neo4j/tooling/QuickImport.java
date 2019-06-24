@@ -26,7 +26,6 @@ import java.util.Collection;
 
 import org.neo4j.batchinsert.internal.TransactionLogsInitializer;
 import org.neo4j.configuration.Config;
-import org.neo4j.configuration.Settings;
 import org.neo4j.csv.reader.CharSeeker;
 import org.neo4j.csv.reader.CharSeekers;
 import org.neo4j.csv.reader.Configuration;
@@ -54,6 +53,7 @@ import org.neo4j.logging.internal.SimpleLogService;
 import org.neo4j.scheduler.JobScheduler;
 
 import static java.lang.System.currentTimeMillis;
+import static org.neo4j.configuration.SettingValueParsers.parseLongWithUnit;
 import static org.neo4j.internal.batchimport.AdditionalInitialIds.EMPTY;
 import static org.neo4j.internal.batchimport.Configuration.calculateMaxMemoryFromPercent;
 import static org.neo4j.internal.batchimport.ImportLogic.NO_MONITOR;
@@ -83,8 +83,8 @@ public class QuickImport
     public static void main( String[] arguments ) throws IOException
     {
         Args args = Args.parse( arguments );
-        long nodeCount = Settings.parseLongWithUnit( args.get( "nodes", null ) );
-        long relationshipCount = Settings.parseLongWithUnit( args.get( "relationships", null ) );
+        long nodeCount = parseLongWithUnit( args.get( "nodes", null ) );
+        long relationshipCount = parseLongWithUnit( args.get( "relationships", null ) );
         int labelCount = args.getNumber( "labels", 4 ).intValue();
         int relationshipTypeCount = args.getNumber( "relationship-types", 4 ).intValue();
         File dir = new File( args.get( "into" ) );
@@ -102,7 +102,7 @@ public class QuickImport
         String dbConfigFileName = args.get( "db-config", null );
         if ( dbConfigFileName != null )
         {
-            dbConfig = new Config.Builder().withFile( new File( dbConfigFileName ) ).build();
+            dbConfig = Config.newBuilder().fromFile( new File( dbConfigFileName ) ).build();
         }
         else
         {
@@ -215,7 +215,7 @@ public class QuickImport
                 long result = calculateMaxMemoryFromPercent( percent );
                 return result;
             }
-            return Settings.parseLongWithUnit( maxMemoryString );
+            return parseLongWithUnit( maxMemoryString );
         }
         return null;
     }

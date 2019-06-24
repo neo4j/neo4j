@@ -76,7 +76,6 @@ import org.neo4j.test.rule.RandomRule;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.scheduler.ThreadPoolJobScheduler;
 
-import static java.lang.Integer.parseInt;
 import static java.lang.Math.abs;
 import static java.lang.Math.toIntExact;
 import static java.util.Arrays.asList;
@@ -117,8 +116,8 @@ class CsvInputEstimateCalculationIT
         RecordFormats format = LATEST_RECORD_FORMATS;
         Input.Estimates estimates = input.calculateEstimates( new PropertyValueRecordSizeCalculator(
                 format.property().getRecordSize( NO_STORE_HEADER ),
-                parseInt( GraphDatabaseSettings.string_block_size.getDefaultValue() ), 0,
-                parseInt( GraphDatabaseSettings.array_block_size.getDefaultValue() ), 0 ) );
+                GraphDatabaseSettings.string_block_size.defaultValue(), 0,
+                GraphDatabaseSettings.array_block_size.defaultValue(), 0 ) );
 
         // when
         DatabaseLayout databaseLayout = directory.databaseLayout();
@@ -161,8 +160,8 @@ class CsvInputEstimateCalculationIT
         // when
         Input.Estimates estimates = input.calculateEstimates( new PropertyValueRecordSizeCalculator(
                 LATEST_RECORD_FORMATS.property().getRecordSize( NO_STORE_HEADER ),
-                parseInt( GraphDatabaseSettings.string_block_size.getDefaultValue() ), 0,
-                parseInt( GraphDatabaseSettings.array_block_size.getDefaultValue() ), 0 ) );
+                GraphDatabaseSettings.string_block_size.defaultValue(), 0,
+                GraphDatabaseSettings.array_block_size.defaultValue(), 0 ) );
 
         // then
         assertEquals( 0, estimates.numberOfNodes() );

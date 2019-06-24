@@ -19,9 +19,6 @@
  */
 package org.neo4j.kernel.impl.storemigration;
 
-import java.util.HashMap;
-import java.util.Map;
-
 import org.neo4j.common.ProgressReporter;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
@@ -106,25 +103,19 @@ class DirectRecordStoreMigrator
      */
     private Config withPersistedStoreHeadersAsConfigFrom( NeoStores legacyStores, StoreType[] types )
     {
-        Map<String,String> config = new HashMap<>();
         if ( contains( types, StoreType.RELATIONSHIP_GROUP ) )
         {
-            config.put( GraphDatabaseSettings.dense_node_threshold.name(),
-                    String.valueOf( legacyStores.getRelationshipGroupStore().getStoreHeaderInt() ) );
+            config.set( GraphDatabaseSettings.dense_node_threshold, legacyStores.getRelationshipGroupStore().getStoreHeaderInt() );
         }
         if ( contains( types, StoreType.PROPERTY ) )
         {
-            config.put( GraphDatabaseSettings.array_block_size.name(),
-                    String.valueOf( legacyStores.getPropertyStore().getArrayStore().getRecordDataSize() ) );
-            config.put( GraphDatabaseSettings.string_block_size.name(),
-                    String.valueOf( legacyStores.getPropertyStore().getStringStore().getRecordDataSize() ) );
+            config.set( GraphDatabaseSettings.array_block_size, legacyStores.getPropertyStore().getArrayStore().getRecordDataSize() );
+            config.set( GraphDatabaseSettings.string_block_size, legacyStores.getPropertyStore().getStringStore().getRecordDataSize() );
         }
         if ( contains( types, StoreType.NODE_LABEL ) )
         {
-            config.put( GraphDatabaseSettings.label_block_size.name(),
-                    String.valueOf( legacyStores.getNodeStore().getDynamicLabelStore().getRecordDataSize() ) );
+            config.set( GraphDatabaseSettings.label_block_size, legacyStores.getNodeStore().getDynamicLabelStore().getRecordDataSize() );
         }
-        this.config.augment( config );
-        return this.config;
+        return config;
     }
 }

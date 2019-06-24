@@ -75,8 +75,6 @@ import org.neo4j.token.TokenHolders;
 import org.neo4j.token.api.TokenHolder;
 
 import static java.lang.String.format;
-import static org.neo4j.configuration.Settings.FALSE;
-import static org.neo4j.configuration.Settings.TRUE;
 import static org.neo4j.consistency.checking.full.ConsistencyFlags.DEFAULT;
 import static org.neo4j.consistency.internal.SchemaIndexExtensionLoader.instantiateExtensions;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
@@ -190,8 +188,8 @@ public class ConsistencyCheckService
     {
         assertRecovered( databaseLayout, config, fileSystem );
         Log log = logProvider.getLog( getClass() );
-        config.augment( GraphDatabaseSettings.read_only, TRUE );
-        config.augment( GraphDatabaseSettings.pagecache_warmup_enabled, FALSE );
+        config.set( GraphDatabaseSettings.read_only, true );
+        config.set( GraphDatabaseSettings.pagecache_warmup_enabled, false );
 
         LifeSupport life = new LifeSupport();
         StoreFactory factory = new StoreFactory( databaseLayout, config, new DefaultIdGeneratorFactory( fileSystem, immediate() ),
@@ -324,10 +322,10 @@ public class ConsistencyCheckService
     {
         if ( tuningConfiguration.get( GraphDatabaseSettings.neo4j_home ) == null )
         {
-            tuningConfiguration.augment( GraphDatabaseSettings.neo4j_home, storeDir.getAbsolutePath() );
+            tuningConfiguration.set( GraphDatabaseSettings.neo4j_home, storeDir.toPath() );
         }
 
-        return tuningConfiguration.get( GraphDatabaseSettings.logs_directory );
+        return tuningConfiguration.get( GraphDatabaseSettings.logs_directory ).toFile();
     }
 
     private static String defaultLogFileName( Date date )

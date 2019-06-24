@@ -19,9 +19,8 @@
  */
 package org.neo4j.cypher;
 
-import org.junit.After;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Test;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -31,30 +30,39 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.neo4j.configuration.GraphDatabaseSettings;
-import org.neo4j.test.rule.DbmsRule;
-import org.neo4j.test.rule.ImpermanentDbmsRule;
+import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.test.TestDatabaseManagementServiceBuilder;
+import org.neo4j.test.extension.ExtensionCallback;
+import org.neo4j.test.extension.ImpermanentDbmsExtension;
+import org.neo4j.test.extension.Inject;
 
-import static org.junit.Assert.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 
-public class CreateIndexStressIT
+@ImpermanentDbmsExtension( configurationCallback = "configure" )
+class CreateIndexStressIT
 {
     private static final int NUM_PROPS = 400;
     private final AtomicBoolean hasFailed = new AtomicBoolean( false );
 
-    @Rule
-    public DbmsRule db = new ImpermanentDbmsRule()
-        .withSetting( GraphDatabaseSettings.query_cache_size, "0" );
+    @Inject
+    private GraphDatabaseService db;
+
+    @ExtensionCallback
+    static void configure( TestDatabaseManagementServiceBuilder builder )
+    {
+        builder.setConfig( GraphDatabaseSettings.query_cache_size, "0" );
+    }
 
     private final ExecutorService executorService = Executors.newFixedThreadPool( 10 );
 
-    @After
-    public void tearDown()
+    @AfterEach
+    void tearDown()
     {
         executorService.shutdown();
     }
 
     @Test
-    public void shouldHandleConcurrentIndexCreationAndUsage() throws InterruptedException
+    void shouldHandleConcurrentIndexCreationAndUsage() throws InterruptedException
     {
         // Given
         HashMap<String,Object> params = new HashMap<>();

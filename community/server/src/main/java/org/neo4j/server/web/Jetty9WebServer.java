@@ -60,8 +60,8 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.neo4j.configuration.Config;
-import org.neo4j.internal.helpers.ListenSocketAddress;
-import org.neo4j.internal.helpers.PortBindException;
+import org.neo4j.configuration.helpers.PortBindException;
+import org.neo4j.configuration.helpers.SocketAddress;
 import org.neo4j.kernel.api.net.NetworkConnectionTracker;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
@@ -79,7 +79,7 @@ public class Jetty9WebServer implements WebServer
 {
     private static final int JETTY_THREAD_POOL_IDLE_TIMEOUT = 60000;
 
-    public static final ListenSocketAddress DEFAULT_ADDRESS = new ListenSocketAddress( "0.0.0.0", 80 );
+    public static final SocketAddress DEFAULT_ADDRESS = new SocketAddress( "0.0.0.0", 80 );
 
     private boolean wadlEnabled;
     private ComponentsBinder binder;
@@ -88,8 +88,8 @@ public class Jetty9WebServer implements WebServer
 
     private Server jetty;
     private HandlerCollection handlers;
-    private ListenSocketAddress httpAddress = DEFAULT_ADDRESS;
-    private ListenSocketAddress httpsAddress;
+    private SocketAddress httpAddress = DEFAULT_ADDRESS;
+    private SocketAddress httpsAddress;
 
     private ServerConnector httpConnector;
     private ServerConnector httpsConnector;
@@ -191,13 +191,13 @@ public class Jetty9WebServer implements WebServer
     }
 
     @Override
-    public void setHttpAddress( ListenSocketAddress address )
+    public void setHttpAddress( SocketAddress address )
     {
         httpAddress = address;
     }
 
     @Override
-    public void setHttpsAddress( ListenSocketAddress address )
+    public void setHttpsAddress( SocketAddress address )
     {
         httpsAddress = address;
     }

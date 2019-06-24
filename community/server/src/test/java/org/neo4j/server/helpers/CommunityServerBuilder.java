@@ -30,11 +30,10 @@ import java.util.Properties;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.configuration.connectors.HttpConnector;
-import org.neo4j.configuration.connectors.HttpConnector.Encryption;
-import org.neo4j.configuration.ssl.LegacySslPolicyConfig;
+import org.neo4j.configuration.connectors.HttpsConnector;
+import org.neo4j.configuration.helpers.SocketAddress;
 import org.neo4j.graphdb.facade.ExternalDependencies;
 import org.neo4j.graphdb.facade.GraphDatabaseDependencies;
-import org.neo4j.internal.helpers.ListenSocketAddress;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.NullLogProvider;
@@ -46,16 +45,17 @@ import org.neo4j.server.database.CommunityGraphFactory;
 import org.neo4j.server.database.InMemoryGraphFactory;
 import org.neo4j.server.preflight.PreFlightTasks;
 
+import static org.neo4j.configuration.SettingValueParsers.FALSE;
 import static org.neo4j.internal.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.server.ServerTestUtils.asOneLine;
 
 public class CommunityServerBuilder
 {
-    private static final ListenSocketAddress ANY_ADDRESS = new ListenSocketAddress( "localhost", 0 );
+    private static final SocketAddress ANY_ADDRESS = new SocketAddress( "localhost", 0 );
 
     protected final LogProvider logProvider;
-    private ListenSocketAddress address = new ListenSocketAddress( "localhost", Encryption.NONE.defaultPort );
-    private ListenSocketAddress httpsAddress = new ListenSocketAddress( "localhost", Encryption.TLS.defaultPort );
+    private SocketAddress address = new SocketAddress( "localhost", HttpConnector.DEFAULT_PORT );
+    private SocketAddress httpsAddress = new SocketAddress( "localhost", HttpsConnector.DEFAULT_PORT );
     private String maxThreads;
     private String dataDir;
     private String managementUri = "/db/manage/";
@@ -69,8 +69,6 @@ public class CommunityServerBuilder
         System.setProperty( "sun.net.http.allowRestrictedHeaders", "true" );
     }
 
-    private String[] autoIndexedNodeKeys;
-    private final String[] autoIndexedRelationshipKeys = null;
     private String[] securityRuleClassNames;
     private boolean persistent;
     private boolean httpEnabled = true;
@@ -100,7 +98,10 @@ public class CommunityServerBuilder
         final File configFile = buildBefore();
 
         Log log = logProvider.getLog( getClass() );
-        Config config = Config.fromFile( configFile ).withServerDefaults().build();
+        Config config = Config.newBuilder()
+                .set( GraphDatabaseSettings.SERVER_DEFAULTS )
+                .fromFile( configFile )
+                .build();
         config.setLogger( log );
         return build( configFile, config, GraphDatabaseDependencies.newDependencies().userLogProvider( logProvider )
                 .monitors( new Monitors() ) );
@@ -145,42 +146,24 @@ public class CommunityServerBuilder
             properties.put( ServerSettings.third_party_packages.name(), asOneLine( thirdPartyPackages ) );
         }
 
-        if ( autoIndexedNodeKeys != null && autoIndexedNodeKeys.length > 0 )
-        {
-            properties.put( "dbms.auto_index.nodes.enabled", "true" );
-            String propertyKeys = org.apache.commons.lang.StringUtils.join( autoIndexedNodeKeys, "," );
-            properties.put( "dbms.auto_index.nodes.keys", propertyKeys );
-        }
-
-        if ( autoIndexedRelationshipKeys != null && autoIndexedRelationshipKeys.length > 0 )
-        {
-            properties.put( "dbms.auto_index.relationships.enabled", "true" );
-            String propertyKeys = org.apache.commons.lang.StringUtils.join( autoIndexedRelationshipKeys, "," );
-            properties.put( "dbms.auto_index.relationships.keys", propertyKeys );
-        }
-
         if ( securityRuleClassNames != null && securityRuleClassNames.length > 0 )
         {
             String propertyKeys = org.apache.commons.lang.StringUtils.join( securityRuleClassNames, "," );
             properties.put( ServerSettings.security_rules.name(), propertyKeys );
         }
 
-        HttpConnector httpConnector = new HttpConnector( "http", Encryption.NONE );
-        HttpConnector httpsConnector = new HttpConnector( "https", Encryption.TLS );
+        HttpConnector httpConnector = HttpConnector.group( "http" );
+        HttpsConnector httpsConnector = HttpsConnector.group( "https" );
 
-        properties.put( httpConnector.type.name(), "HTTP" );
         properties.put( httpConnector.enabled.name(), String.valueOf( httpEnabled ) );
-        properties.put( httpConnector.address.name(), address.toString() );
-        properties.put( httpConnector.encryption.name(), "NONE" );
+        properties.put( httpConnector.listen_address.name(), address.toString() );
 
-        properties.put( httpsConnector.type.name(), "HTTP" );
         properties.put( httpsConnector.enabled.name(), String.valueOf( httpsEnabled ) );
-        properties.put( httpsConnector.address.name(), httpsAddress.toString() );
-        properties.put( httpsConnector.encryption.name(), "TLS" );
+        properties.put( httpsConnector.listen_address.name(), httpsAddress.toString() );
 
-        properties.put( GraphDatabaseSettings.auth_enabled.name(), "false" );
-        properties.put( LegacySslPolicyConfig.certificates_directory.name(),
-                new File( temporaryFolder, "certificates" ).getAbsolutePath() );
+        properties.put( GraphDatabaseSettings.neo4j_home.name(), temporaryFolder.getAbsolutePath() );
+
+        properties.put( GraphDatabaseSettings.auth_enabled.name(), FALSE );
         properties.put( GraphDatabaseSettings.logs_directory.name(),
                 new File( temporaryFolder, "logs" ).getAbsolutePath() );
         properties.put( GraphDatabaseSettings.transaction_logs_root_path.name(),
@@ -271,12 +254,6 @@ public class CommunityServerBuilder
         return this;
     }
 
-    public CommunityServerBuilder withAutoIndexingEnabledForNodes( String... keys )
-    {
-        autoIndexedNodeKeys = keys;
-        return this;
-    }
-
     public CommunityServerBuilder onRandomPorts()
     {
         this.onHttpsAddress( ANY_ADDRESS );
@@ -284,13 +261,13 @@ public class CommunityServerBuilder
         return this;
     }
 
-    public CommunityServerBuilder onAddress( ListenSocketAddress address )
+    public CommunityServerBuilder onAddress( SocketAddress address )
     {
         this.address = address;
         return this;
     }
 
-    public CommunityServerBuilder onHttpsAddress( ListenSocketAddress address )
+    public CommunityServerBuilder onHttpsAddress( SocketAddress address )
     {
         this.httpsAddress = address;
         return this;

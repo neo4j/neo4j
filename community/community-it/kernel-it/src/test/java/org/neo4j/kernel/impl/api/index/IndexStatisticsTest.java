@@ -80,6 +80,7 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.junit.runners.Parameterized.Parameter;
 import static org.junit.runners.Parameterized.Parameters;
+import static org.neo4j.configuration.SettingValueParsers.FALSE;
 import static org.neo4j.internal.helpers.ArrayUtil.single;
 import static org.neo4j.internal.helpers.collection.Iterables.filter;
 import static org.neo4j.internal.schema.SchemaDescriptor.forLabel;
@@ -114,7 +115,7 @@ public class IndexStatisticsTest
 
     @Rule
     public final DbmsRule dbRule = new EmbeddedDbmsRule()
-            .withSetting( GraphDatabaseSettings.index_background_sampling_enabled, "false" )
+            .withSetting( GraphDatabaseSettings.index_background_sampling_enabled, FALSE )
             .startLazily();
     @Rule
     public final RandomRule random = new RandomRule();

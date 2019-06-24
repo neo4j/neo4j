@@ -185,7 +185,7 @@ public class RecordFormatSelector
     public static RecordFormats selectForStoreOrConfig(
             Config config, DatabaseLayout databaseLayout, FileSystemAbstraction fs, PageCache pageCache, LogProvider logProvider )
     {
-        RecordFormats configuredFormat = loadRecordFormat( configuredRecordFormat( config ) );
+        RecordFormats configuredFormat = getConfiguredRecordFormat( config, databaseLayout );
         boolean formatConfigured = configuredFormat != null;
 
         RecordFormats currentFormat = selectForStore( databaseLayout, fs, pageCache, logProvider );
@@ -218,6 +218,16 @@ public class RecordFormatSelector
         }
 
         return DEFAULT_FORMAT;
+    }
+
+    private static RecordFormats getConfiguredRecordFormat( Config config, DatabaseLayout databaseLayout )
+    {
+        if ( databaseLayout.getDatabaseName().equals( GraphDatabaseSettings.SYSTEM_DATABASE_NAME ) )
+        {
+            // TODO: System database does not support multiple formats, remove this when it does!
+            return null;
+        }
+        return loadRecordFormat( configuredRecordFormat( config ) );
     }
 
     /**

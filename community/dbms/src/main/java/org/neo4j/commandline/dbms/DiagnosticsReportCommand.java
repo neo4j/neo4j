@@ -40,6 +40,8 @@ import org.neo4j.cli.AbstractCommand;
 import org.neo4j.cli.CommandFailedException;
 import org.neo4j.cli.ExecutionContext;
 import org.neo4j.configuration.Config;
+import org.neo4j.configuration.ConfigUtils;
+import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.dbms.diagnostics.jmx.JMXDumper;
 import org.neo4j.dbms.diagnostics.jmx.JmxDump;
 import org.neo4j.kernel.database.DatabaseIdRepository;
@@ -188,7 +190,7 @@ public class DiagnosticsReportCommand extends AbstractCommand
         File configFile = ctx.confDir().resolve( Config.DEFAULT_CONFIG_FILE_NAME ).toFile();
         Config config = getConfig( configFile );
 
-        File storeDirectory = config.get( databases_root_path );
+        File storeDirectory = config.get( databases_root_path ).toFile();
         DatabaseIdRepository databaseIdRepository = new PlaceholderDatabaseIdRepository( config );
 
         reporter.registerAllOfflineProviders( config, storeDirectory, ctx.fs(), databaseIdRepository );
@@ -231,7 +233,11 @@ public class DiagnosticsReportCommand extends AbstractCommand
         }
         try
         {
-            return Config.fromFile( configFile ).withHome( ctx.homeDir() ).withConnectorsDisabled().build();
+            Config cfg = Config.newBuilder()
+                    .fromFileNoThrow( configFile )
+                    .set( GraphDatabaseSettings.neo4j_home, ctx.homeDir().toString() ).build();
+            ConfigUtils.disableAllConnectors( cfg );
+            return cfg;
         }
         catch ( Exception e )
         {

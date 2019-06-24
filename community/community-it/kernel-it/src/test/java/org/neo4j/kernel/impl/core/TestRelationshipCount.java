@@ -49,7 +49,6 @@ import org.neo4j.kernel.impl.MyRelTypes;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 
-import static java.lang.Integer.parseInt;
 import static java.util.Arrays.asList;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
@@ -65,7 +64,7 @@ public class TestRelationshipCount
     public static Collection<Object[]> data()
     {
         Collection<Object[]> data = new ArrayList<>();
-        int max = parseInt( GraphDatabaseSettings.dense_node_threshold.getDefaultValue() );
+        int max = GraphDatabaseSettings.dense_node_threshold.defaultValue();
         for ( int i = 1; i < max; i++ )
         {
             data.add( new Object[] {i} );

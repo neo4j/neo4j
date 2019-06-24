@@ -27,6 +27,7 @@ import org.junit.Assert.assertThat
 import org.mockito.Mockito._
 import org.neo4j.configuration.GraphDatabaseSettings
 import org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME
+import org.neo4j.configuration.SettingValueParsers.FALSE
 import org.neo4j.cypher.internal.javacompat
 import org.neo4j.cypher.internal.javacompat.GraphDatabaseCypherService
 import org.neo4j.cypher.internal.runtime.interpreted.TransactionBoundQueryContext.IndexSearchMonitor
@@ -188,7 +189,7 @@ class TransactionBoundQueryContextTest extends CypherFunSuite {
   test("should deny file URLs when not allowed by config") {
     // GIVEN
     managementService.shutdown()
-    startGraph(GraphDatabaseSettings.allow_file_urls -> "false")
+    startGraph(GraphDatabaseSettings.allow_file_urls -> FALSE)
     val tx = graph.beginTransaction(Type.explicit, AnonymousContext.read())
     val transactionalContext = TransactionalContextWrapper(createTransactionContext(graph, tx))
     val context = new TransactionBoundQueryContext(transactionalContext)(indexSearchMonitor)

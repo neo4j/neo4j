@@ -33,6 +33,7 @@ import org.neo4j.cli.AbstractCommand;
 import org.neo4j.cli.CommandFailedException;
 import org.neo4j.cli.ExecutionContext;
 import org.neo4j.configuration.Config;
+import org.neo4j.configuration.ConfigUtils;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.dbms.archive.CompressionFormat;
 import org.neo4j.dbms.archive.Dumper;
@@ -110,16 +111,17 @@ class DumpCommand extends AbstractCommand
 
     private static Path getDatabaseDirectory( Config config )
     {
-        return config.get( databases_root_path ).toPath();
+        return config.get( databases_root_path );
     }
 
     private Config buildConfig()
     {
-        return Config.fromFile( ctx.confDir().resolve( Config.DEFAULT_CONFIG_FILE_NAME ) )
-                .withHome( ctx.homeDir() )
-                .withConnectorsDisabled()
-                .withNoThrowOnFileLoadFailure()
-                .build();
+        Config cfg = Config.newBuilder()
+                .fromFileNoThrow( ctx.confDir().resolve( Config.DEFAULT_CONFIG_FILE_NAME ) )
+                .set( GraphDatabaseSettings.neo4j_home, ctx.homeDir().toString() ).build();
+        ConfigUtils.disableAllConnectors( cfg );
+        return cfg;
+
     }
 
     private static Path calculateArchive( String database, Path to )

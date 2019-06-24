@@ -26,7 +26,6 @@ import java.io.IOException;
 
 import org.neo4j.batchinsert.BatchInserter;
 import org.neo4j.batchinsert.BatchInserters;
-import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.layout.StoreLayout;
@@ -49,7 +48,8 @@ import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.lessThan;
 import static org.hamcrest.Matchers.startsWith;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.neo4j.internal.helpers.collection.MapUtil.stringMap;
+import static org.neo4j.configuration.Config.defaults;
+import static org.neo4j.configuration.GraphDatabaseSettings.pagecache_memory;
 import static org.neo4j.io.ByteUnit.kibiBytes;
 
 @ExtendWith( {DefaultFileSystemExtension.class, TestDirectoryExtension.class} )
@@ -63,8 +63,8 @@ class BatchInserterImplTest
     @Test
     void testHonorsPassedInParams() throws Exception
     {
-        BatchInserter inserter = BatchInserters.inserter( testDirectory.databaseLayout(), fileSystem,
-                stringMap( GraphDatabaseSettings.pagecache_memory.name(), "280K" ) );
+        BatchInserter inserter =
+                BatchInserters.inserter( testDirectory.databaseLayout(), fileSystem, defaults( pagecache_memory, "280K" ) );
         NeoStores neoStores = ReflectionUtil.getPrivateField( inserter, "neoStores", NeoStores.class );
         PageCache pageCache = ReflectionUtil.getPrivateField( neoStores, "pageCache", PageCache.class );
         inserter.shutdown();

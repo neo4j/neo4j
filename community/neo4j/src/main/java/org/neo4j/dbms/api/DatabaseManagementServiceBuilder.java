@@ -37,7 +37,6 @@ import org.neo4j.common.DependencyResolver;
 import org.neo4j.common.Edition;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
-import org.neo4j.configuration.Settings;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.event.DatabaseEventListener;
 import org.neo4j.graphdb.facade.DatabaseManagementServiceFactory;
@@ -53,7 +52,6 @@ import org.neo4j.monitoring.Monitors;
 import org.neo4j.service.Services;
 
 import static org.neo4j.graphdb.facade.GraphDatabaseDependencies.newDependencies;
-import static org.neo4j.internal.helpers.collection.MapUtil.stringMap;
 
 /**
  * Creates a {@link DatabaseManagementService} with Community Edition features.
@@ -67,23 +65,27 @@ public class DatabaseManagementServiceBuilder
     protected LogProvider userLogProvider;
     protected DependencyResolver dependencies = new Dependencies();
     protected final Map<String,URLAccessRule> urlAccessRules = new HashMap<>();
-    protected File databaseRootDir;
+    protected File homeDirectory;
     protected Map<String,String> config = new HashMap<>();
 
-    public DatabaseManagementServiceBuilder( File databaseRootDirectory )
+    public DatabaseManagementServiceBuilder( File homeDirectory )
     {
-        this.databaseRootDir = databaseRootDirectory;
+        this.homeDirectory = homeDirectory;
         Services.loadAll( ExtensionFactory.class ).forEach( extensions::add );
     }
 
     public DatabaseManagementService build()
     {
-        return newDatabaseManagementService( databaseRootDir, Config.defaults( config ), databaseDependencies() );
+        Config cfg = Config.newBuilder()
+                .set( GraphDatabaseSettings.neo4j_home, homeDirectory.getAbsolutePath() )
+                .set( config )
+                .build();
+        return newDatabaseManagementService( homeDirectory, cfg, databaseDependencies() );
     }
 
     protected DatabaseManagementService newDatabaseManagementService( File storeDir, Config config, ExternalDependencies dependencies )
     {
-        config.augment( GraphDatabaseSettings.ephemeral, Settings.FALSE );
+        config.set( GraphDatabaseSettings.ephemeral, false );
         return new DatabaseManagementServiceFactory( getDatabaseInfo(), getEditionFactory() )
                 .build( storeDir, augmentConfig( config ), dependencies );
     }
@@ -101,7 +103,6 @@ public class DatabaseManagementServiceBuilder
     /**
      * Override to augment config values
      * @param config
-     * @return
      */
     protected Config augmentConfig( Config config )
     {
@@ -143,7 +144,7 @@ public class DatabaseManagementServiceBuilder
         return Edition.COMMUNITY.toString();
     }
 
-    private ExternalDependencies databaseDependencies()
+    protected ExternalDependencies databaseDependencies()
     {
         return newDependencies()
                 .monitors( monitors )
@@ -162,36 +163,7 @@ public class DatabaseManagementServiceBuilder
         }
         else
         {
-            // Test if we can get this setting with an updated config
-            Map<String,String> testValue = stringMap( setting.name(), value );
-            setting.apply( key -> testValue.containsKey( key ) ? testValue.get( key ) : config.get( key ) );
-
-            // No exception thrown, add it to existing config
             config.put( setting.name(), value );
-        }
-        return this;
-    }
-
-    @Deprecated
-    public DatabaseManagementServiceBuilder setConfig( String name, String value )
-    {
-        if ( value == null )
-        {
-            config.remove( name );
-        }
-        else
-        {
-            config.put( name, value );
-        }
-        return this;
-    }
-
-    @Deprecated
-    public DatabaseManagementServiceBuilder setConfigRaw( Map<String,String> config )
-    {
-        for ( Map.Entry<String,String> stringStringEntry : config.entrySet() )
-        {
-            setConfig( stringStringEntry.getKey(), stringStringEntry.getValue() );
         }
         return this;
     }
@@ -236,7 +208,7 @@ public class DatabaseManagementServiceBuilder
         {
             String key = (String) entry.getKey();
             String value = (String) entry.getValue();
-            setConfig( key, value );
+            config.put( key, value );
         }
 
         return this;

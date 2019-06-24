@@ -25,6 +25,7 @@ import java.util.concurrent.ForkJoinPool;
 
 import org.neo4j.bolt.BoltChannel;
 import org.neo4j.configuration.Config;
+import org.neo4j.configuration.ConfigUtils;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.internal.LogService;
@@ -57,14 +58,14 @@ public class ExecutorBoltSchedulerProvider extends LifecycleAdapter implements B
     {
         scheduler.setThreadFactory( Group.BOLT_WORKER, NettyThreadFactory::new );
         forkJoinThreadPool = new ForkJoinPool();
-        config.enabledBoltConnectors().forEach( connector ->
+        ConfigUtils.getEnabledBoltConnectors( config ).forEach( connector ->
         {
             BoltScheduler boltScheduler =
-                    new ExecutorBoltScheduler( connector.key(), executorFactory, scheduler, logService, config.get( connector.thread_pool_min_size ),
+                    new ExecutorBoltScheduler( connector.name(), executorFactory, scheduler, logService, config.get( connector.thread_pool_min_size ),
                             config.get( connector.thread_pool_max_size ), config.get( connector.thread_pool_keep_alive ),
                             config.get( connector.unsupported_thread_pool_queue_size ), forkJoinThreadPool );
             boltScheduler.start();
-            boltSchedulers.put( connector.key(), boltScheduler );
+            boltSchedulers.put( connector.name(), boltScheduler );
         } );
     }
 

@@ -147,11 +147,9 @@ public class GlobalModule
         globalClock = globalDependencies.satisfyDependency( createClock() );
         globalLife = createLife();
 
-        File storeDirectory = globalConfig.isConfigured( databases_root_path ) ? globalConfig.get( databases_root_path )
-                                                                               : providedStoreDir;
+        File storeDirectory = globalConfig.isExplicitlySet( databases_root_path ) ? globalConfig.get( databases_root_path ).toFile() : providedStoreDir;
         this.storeLayout = StoreLayout.of( storeDirectory, of( globalConfig ) );
 
-        globalConfig.augmentDefaults( GraphDatabaseSettings.neo4j_home, storeLayout.storeDirectory().getPath() );
         this.globalConfig = globalDependencies.satisfyDependency( globalConfig );
 
         fileSystem = globalDependencies.satisfyDependency( createFileSystemAbstraction() );
@@ -254,7 +252,7 @@ public class GlobalModule
 
     private void checkLegacyDefaultDatabase()
     {
-        if ( !globalConfig.isConfigured( default_database ) )
+        if ( !globalConfig.isExplicitlySet( default_database ) )
         {
             DatabaseLayout defaultDatabaseLayout = storeLayout.databaseLayout( globalConfig.get( default_database ) );
             if ( storageEngineFactory.storageExists( fileSystem, defaultDatabaseLayout, pageCache ) )
@@ -266,7 +264,7 @@ public class GlobalModule
             if ( storageEngineFactory.storageExists( fileSystem, legacyDatabaseLayout, pageCache ) )
             {
                 Log internalLog = logService.getInternalLog( getClass() );
-                globalConfig.augment( default_database, legacyDatabaseName );
+                globalConfig.set( default_database, legacyDatabaseName );
                 internalLog.warn(
                         "Legacy `%s` database was found and default database was set to point to into it. Please consider setting default database explicitly.",
                         legacyDatabaseName );
@@ -348,7 +346,7 @@ public class GlobalModule
         builder.withDefaultLevel( globalConfig.get( GraphDatabaseSettings.store_internal_log_level ) )
                .withTimeZone( globalConfig.get( GraphDatabaseSettings.db_timezone ).getZoneId() );
 
-        File logFile = globalConfig.get( store_internal_log_path );
+        File logFile = globalConfig.get( store_internal_log_path ).toFile();
         if ( !logFile.getParentFile().exists() )
         {
             logFile.getParentFile().mkdirs();
@@ -363,9 +361,9 @@ public class GlobalModule
             throw new RuntimeException( ex );
         }
         // Listen to changes to the dynamic log level settings.
-        globalConfig.registerDynamicUpdateListener( GraphDatabaseSettings.store_internal_log_level,
+        globalConfig.addListener( GraphDatabaseSettings.store_internal_log_level,
                 ( before, after ) -> logService.setDefaultLogLevel( after ) );
-        globalConfig.registerDynamicUpdateListener( GraphDatabaseSettings.store_internal_debug_contexts,
+        globalConfig.addListener( GraphDatabaseSettings.store_internal_debug_contexts,
                 ( before, after ) -> logService.setContextLogLevels( asDebugLogLevels( after ) ) );
         return globalLife.add( logService );
     }

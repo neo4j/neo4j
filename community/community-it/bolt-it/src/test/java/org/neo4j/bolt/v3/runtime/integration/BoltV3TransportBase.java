@@ -45,6 +45,7 @@ import static org.neo4j.bolt.v1.transport.integration.TransportTestUtil.eventual
 import static org.neo4j.bolt.v3.messaging.BoltProtocolV3ComponentFactory.newMessageEncoder;
 import static org.neo4j.bolt.v3.messaging.BoltProtocolV3ComponentFactory.newNeo4jPack;
 import static org.neo4j.configuration.GraphDatabaseSettings.auth_enabled;
+import static org.neo4j.configuration.SettingValueParsers.FALSE;
 
 @RunWith( Parameterized.class )
 public abstract class BoltV3TransportBase
@@ -52,7 +53,7 @@ public abstract class BoltV3TransportBase
     protected static final String USER_AGENT = "TestClient/3.0";
 
     @Rule
-    public Neo4jWithSocket server = new Neo4jWithSocket( getClass(), settings -> settings.put( auth_enabled.name(), "false" ) );
+    public Neo4jWithSocket server = new Neo4jWithSocket( getClass(), settings -> settings.put( auth_enabled, FALSE ) );
 
     @Parameterized.Parameter
     public Class<? extends TransportConnection> connectionClass;

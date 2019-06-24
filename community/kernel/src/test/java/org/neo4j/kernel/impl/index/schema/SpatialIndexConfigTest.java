@@ -53,7 +53,7 @@ class SpatialIndexConfigTest
         for ( CoordinateReferenceSystem crs : CoordinateReferenceSystem.all() )
         {
             Config config = Config.defaults();
-            config.augment( SpatialIndexSettings.space_filling_curve_max_bits, random.nextBoolean() ? "60" : "30" ); // Introduce some randomness
+            config.set( SpatialIndexSettings.space_filling_curve_max_bits, random.nextBoolean() ? 60 : 30 ); // Introduce some randomness
             SpaceFillingCurveSettings spaceFillingCurveSettings = new ConfiguredSpaceFillingCurveSettingsCache( config ).forCRS( crs );
             SpatialIndexConfig.addSpatialConfig( map, crs, spaceFillingCurveSettings );
 
@@ -75,7 +75,7 @@ class SpatialIndexConfigTest
         for ( CoordinateReferenceSystem crs : CoordinateReferenceSystem.all() )
         {
             Config config = Config.defaults();
-            config.augment( SpatialIndexSettings.space_filling_curve_max_bits, random.nextBoolean() ? "60" : "30" ); // Introduce some randomness
+            config.set( SpatialIndexSettings.space_filling_curve_max_bits, random.nextBoolean() ? 60 : 30 ); // Introduce some randomness
             SpaceFillingCurveSettings spaceFillingCurveSettings = new ConfiguredSpaceFillingCurveSettingsCache( config ).forCRS( crs );
             expectedMap.put( crs, spaceFillingCurveSettings );
             indexConfig = SpatialIndexConfig.addSpatialConfig( indexConfig, crs, spaceFillingCurveSettings );

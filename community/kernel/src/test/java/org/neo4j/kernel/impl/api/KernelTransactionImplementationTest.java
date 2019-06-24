@@ -35,7 +35,6 @@ import java.util.function.Consumer;
 import java.util.stream.Stream;
 
 import org.neo4j.configuration.GraphDatabaseSettings;
-import org.neo4j.configuration.TransactionTracingLevel;
 import org.neo4j.graphdb.TransactionTerminatedException;
 import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.internal.kernel.api.security.LoginContext;
@@ -117,7 +116,7 @@ class KernelTransactionImplementationTest extends KernelTransactionTestBase
             assertSame( TransactionInitializationTrace.NONE, transaction.getInitializationTrace() );
             transaction.success();
         }
-        config.updateDynamicSetting( GraphDatabaseSettings.transaction_tracing_level.name(), TransactionTracingLevel.ALL.name(), "test" );
+        config.setDynamic( GraphDatabaseSettings.transaction_tracing_level, GraphDatabaseSettings.TransactionTracingLevel.ALL, getClass().getSimpleName() );
         try ( KernelTransactionImplementation transaction = newTransaction( loginContext( isWriteTx ) ) )
         {
             // WHEN

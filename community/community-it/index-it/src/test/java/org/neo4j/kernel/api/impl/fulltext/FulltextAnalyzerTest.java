@@ -41,7 +41,7 @@ public class FulltextAnalyzerTest extends LuceneFulltextTestSupport
     @Test
     public void shouldBeAbleToSpecifyEnglishAnalyzer() throws Exception
     {
-        applySetting( FulltextConfig.fulltext_default_analyzer, ENGLISH );
+        applySetting( FulltextSettings.fulltext_default_analyzer, ENGLISH );
 
         SchemaDescriptor descriptor = indexProvider.schemaFor( NODE, new String[]{LABEL.name()}, indexConfig, PROP );
         IndexDescriptor nodes;
@@ -77,7 +77,7 @@ public class FulltextAnalyzerTest extends LuceneFulltextTestSupport
     @Test
     public void shouldBeAbleToSpecifySwedishAnalyzer() throws Exception
     {
-        applySetting( FulltextConfig.fulltext_default_analyzer, SWEDISH );
+        applySetting( FulltextSettings.fulltext_default_analyzer, SWEDISH );
         SchemaDescriptor descriptor = indexProvider.schemaFor( NODE, new String[]{LABEL.name()}, indexConfig, PROP );
         IndexDescriptor nodes;
         try ( KernelTransactionImplementation transaction = getKernelTransaction() )
@@ -113,7 +113,7 @@ public class FulltextAnalyzerTest extends LuceneFulltextTestSupport
     public void shouldNotReindexNodesWhenDefaultAnalyzerIsChanged() throws Exception
     {
         long secondID;
-        applySetting( FulltextConfig.fulltext_default_analyzer, ENGLISH );
+        applySetting( FulltextSettings.fulltext_default_analyzer, ENGLISH );
         SchemaDescriptor descriptor = indexProvider.schemaFor( NODE, new String[]{LABEL.name()}, indexConfig, PROP );
         IndexDescriptor nodes;
         try ( KernelTransactionImplementation transaction = getKernelTransaction() )
@@ -143,7 +143,7 @@ public class FulltextAnalyzerTest extends LuceneFulltextTestSupport
             assertQueryFindsIds( ktx, true, "nodes", "ett", secondID );
         }
 
-        applySetting( FulltextConfig.fulltext_default_analyzer, SWEDISH );
+        applySetting( FulltextSettings.fulltext_default_analyzer, SWEDISH );
         try ( KernelTransactionImplementation ktx = getKernelTransaction() )
         {
             SchemaRead schemaRead = ktx.schemaRead();

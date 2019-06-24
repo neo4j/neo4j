@@ -37,7 +37,6 @@ import java.util.Map;
 import org.neo4j.collection.Dependencies;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
-import org.neo4j.configuration.Settings;
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.exceptions.UnderlyingStorageException;
@@ -834,7 +833,7 @@ public class NeoStoresTest
     {
         Dependencies dependencies = new Dependencies();
         Config config = Config.defaults( additionalConfig );
-        config.augment( GraphDatabaseSettings.fail_on_missing_files, Settings.FALSE );
+        config.set( GraphDatabaseSettings.fail_on_missing_files, false );
         dependencies.satisfyDependency( config );
         ds = dsRule.getDatabase( databaseLayout, fs.get(), pageCache, dependencies );
         ds.start();

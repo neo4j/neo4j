@@ -24,7 +24,6 @@ import java.io.File
 import org.neo4j.configuration.Config
 import org.neo4j.configuration.GraphDatabaseSettings.{DEFAULT_DATABASE_NAME, SYSTEM_DATABASE_NAME, default_database}
 import org.neo4j.cypher.internal.javacompat.GraphDatabaseCypherService
-import org.neo4j.graphdb.config.InvalidSettingException
 import org.neo4j.dbms.database.DefaultSystemGraphInitializer
 import org.neo4j.graphdb.config.Setting
 import org.neo4j.kernel.database.TestDatabaseIdRepository
@@ -41,52 +40,50 @@ class CommunityMultiDatabaseDDLAcceptanceTest extends CommunityDDLAcceptanceTest
 
   test("should fail at startup when config setting for default database name is invalid") {
     // GIVEN
-    val config = Config.defaults()
-    def startOfError( dbName: String ): String = s"Bad value '$dbName' for setting 'dbms.default_database': "
+    val startOfError = "Error evaluate setting 'dbms.default_database' "
 
     // Empty name
-    the[InvalidSettingException] thrownBy {
+    the[IllegalArgumentException] thrownBy {
       // WHEN
-      config.augment(default_database, "")
+      Config.defaults(default_database, "")
       // THEN
-    } should have message (startOfError("") + "The provided database name is empty.")
+    } should have message startOfError + "The provided database name is empty."
 
     // Starting on invalid character
-    the[InvalidSettingException] thrownBy {
+    the[IllegalArgumentException] thrownBy {
       // WHEN
-      config.augment(default_database, "_default")
+      Config.defaults(default_database, "_default")
       // THEN
-    } should have message (startOfError("_default") + "Database name '_default' is not starting with an ASCII alphabetic character.")
+    } should have message startOfError + "Database name '_default' is not starting with an ASCII alphabetic character."
 
     // Has prefix 'system'
-    the[InvalidSettingException] thrownBy {
+    the[IllegalArgumentException] thrownBy {
       // WHEN
-      config.augment(default_database, "system-mine")
+      Config.defaults(default_database, "system-mine")
       // THEN
-    } should have message (startOfError("system-mine") + "Database name 'system-mine' is invalid, due to the prefix 'system'.")
+    } should have message startOfError + "Database name 'system-mine' is invalid, due to the prefix 'system'."
 
     // Contains invalid characters
-    the[InvalidSettingException] thrownBy {
+    the[IllegalArgumentException] thrownBy {
       // WHEN
-      config.augment(default_database, "mydbwith_and%")
+      Config.defaults(default_database, "mydbwith_and%")
       // THEN
-    } should have message (startOfError("mydbwith_and%") +
-      "Database name 'mydbwith_and%' contains illegal characters. Use simple ascii characters, numbers, dots and dashes.")
+    } should have message startOfError + "Database name 'mydbwith_and%' contains illegal characters. Use simple ascii characters, numbers, dots and dashes."
 
     // Too short name
-    the[InvalidSettingException] thrownBy {
+    the[IllegalArgumentException] thrownBy {
       // WHEN
-      config.augment(default_database, "me")
+      Config.defaults(default_database, "me")
       // THEN
-    } should have message (startOfError("me") + "The provided database name must have a length between 3 and 63 characters.")
+    } should have message startOfError + "The provided database name must have a length between 3 and 63 characters."
 
     // Too long name
     val name = "ihaveallooootoflettersclearlymorethenishould-ihaveallooootoflettersclearlymorethenishould"
-    the[InvalidSettingException] thrownBy {
+    the[IllegalArgumentException] thrownBy {
       // WHEN
-      config.augment(default_database, name)
+      Config.defaults(default_database, name)
       // THEN
-    } should have message (startOfError(name) + "The provided database name must have a length between 3 and 63 characters.")
+    } should have message startOfError + "The provided database name must have a length between 3 and 63 characters."
   }
 
   // SHOW DEFAULT DATABASE tests
@@ -105,7 +102,7 @@ class CommunityMultiDatabaseDDLAcceptanceTest extends CommunityDDLAcceptanceTest
   test("should show custom default database using show default database command") {
     // GIVEN
     val config = Config.defaults()
-    config.augment(default_database, "foo")
+    config.set(default_database, "foo")
     setup(config)
 
     // WHEN
@@ -127,7 +124,7 @@ class CommunityMultiDatabaseDDLAcceptanceTest extends CommunityDDLAcceptanceTest
     result.toSet should be(Set(Map("name" -> DEFAULT_DATABASE_NAME)))
 
     // GIVEN
-    config.augment(default_database, "foo")
+    config.set(default_database, "foo")
     initSystemGraph(config)
 
     // WHEN
@@ -214,7 +211,7 @@ class CommunityMultiDatabaseDDLAcceptanceTest extends CommunityDDLAcceptanceTest
   override protected def initTest() {}
 
   private def setup(config: Config): Unit = {
-    managementService = graphDatabaseFactory(new File("test")).impermanent().setConfigRaw(config.getRaw).setInternalLogProvider(logProvider).build()
+    managementService = graphDatabaseFactory(new File("test")).impermanent().setConfig( Config.newBuilder().fromConfig(config).build() ).setInternalLogProvider(logProvider).build()
     graphOps = managementService.database(SYSTEM_DATABASE_NAME)
     graph = new GraphDatabaseCypherService(graphOps)
 

@@ -44,6 +44,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.configuration.GraphDatabaseSettings.SYSTEM_DATABASE_NAME;
+import static org.neo4j.configuration.GraphDatabaseSettings.neo4j_home;
 
 @ExtendWith( TestDirectoryExtension.class )
 class DatabaseManagementServiceFactoryIT
@@ -120,7 +121,8 @@ class DatabaseManagementServiceFactoryIT
     {
         DatabaseManagementServiceFactory databaseManagementServiceFactory =
                 new DatabaseManagementServiceFactory( DatabaseInfo.COMMUNITY, CommunityEditionModule::new );
-        return databaseManagementServiceFactory.build( testDirectory.storeDir(), Config.defaults(), GraphDatabaseDependencies.newDependencies() );
+        Config cfg = Config.defaults( neo4j_home, testDirectory.absolutePath().getAbsolutePath() );
+        return databaseManagementServiceFactory.build( testDirectory.storeDir(), cfg, GraphDatabaseDependencies.newDependencies() );
     }
 
     private static class ShutdownListenerDatabaseEventListener extends DatabaseEventListenerAdapter

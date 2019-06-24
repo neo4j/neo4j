@@ -60,6 +60,7 @@ import org.neo4j.consistency.store.RecordReference;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.RelationshipType;
+import org.neo4j.graphdb.config.Setting;
 import org.neo4j.internal.helpers.progress.ProgressMonitorFactory;
 import org.neo4j.kernel.impl.store.StoreAccess;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
@@ -103,6 +104,12 @@ public class ExecutionOrderIntegrationTest
                 node1.createRelationshipTo( node2, RelationshipType.withName( "C" ) );
                 tx.success();
             }
+        }
+
+        @Override
+        protected Map<Setting<?>,String> getConfig()
+        {
+            return getSettings();
         }
     };
 
@@ -332,6 +339,11 @@ public class ExecutionOrderIntegrationTest
             }
             return invocation.callRealMethod();
         }
+    }
+
+    protected Map<Setting<?>,String> getSettings()
+    {
+        return new HashMap<>();
     }
 
     private static class ComparativeLogging implements RecordAccess

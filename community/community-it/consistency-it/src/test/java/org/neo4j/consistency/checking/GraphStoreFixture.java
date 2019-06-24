@@ -28,6 +28,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
+import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.neo4j.common.DependencyResolver;
@@ -40,9 +41,9 @@ import org.neo4j.consistency.statistics.Statistics;
 import org.neo4j.consistency.statistics.VerboseStatistics;
 import org.neo4j.consistency.store.DirectStoreAccess;
 import org.neo4j.dbms.api.DatabaseManagementService;
-import org.neo4j.dbms.api.DatabaseManagementServiceBuilder;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.graphdb.config.Setting;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.internal.id.DefaultIdGeneratorFactory;
 import org.neo4j.internal.index.label.LabelScanStore;
@@ -107,8 +108,8 @@ import org.neo4j.token.api.TokenHolder;
 
 import static java.lang.System.currentTimeMillis;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
-import static org.neo4j.configuration.Settings.FALSE;
-import static org.neo4j.configuration.Settings.TRUE;
+import static org.neo4j.configuration.SettingValueParsers.FALSE;
+import static org.neo4j.configuration.SettingValueParsers.TRUE;
 import static org.neo4j.consistency.ConsistencyCheckService.defaultConsistencyCheckThreadsNumber;
 import static org.neo4j.consistency.internal.SchemaIndexExtensionLoader.instantiateExtensions;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
@@ -663,9 +664,7 @@ public abstract class GraphStoreFixture extends ConfigurablePageCacheRule implem
 
         Applier()
         {
-            managementService = new TestDatabaseManagementServiceBuilder( directory.storeDir() )
-                    .setConfig( "dbms.backup.enabled", "false" )
-                    .build();
+            managementService = new TestDatabaseManagementServiceBuilder( directory.storeDir() ).setConfig( getConfig() ).build();
             database = (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );
             DependencyResolver dependencyResolver = database.getDependencyResolver();
 
@@ -713,14 +712,14 @@ public abstract class GraphStoreFixture extends ConfigurablePageCacheRule implem
 
     private void generateInitialData()
     {
-        DatabaseManagementServiceBuilder builder = new TestDatabaseManagementServiceBuilder( directory.storeDir() );
+        TestDatabaseManagementServiceBuilder builder = new TestDatabaseManagementServiceBuilder( directory.storeDir() );
         DatabaseManagementService managementService = builder
                 .setConfig( GraphDatabaseSettings.record_format, formatName )
                 // Some tests using this fixture were written when the label_block_size was 60 and so hardcoded
                 // tests and records around that. Those tests could change, but the simpler option is to just
                 // keep the block size to 60 and let them be.
                 .setConfig( GraphDatabaseSettings.label_block_size, "60" )
-                .setConfig( "dbms.backup.enabled", "false" ).build();
+                .setConfig( getConfig() ).build();
         // Some tests using this fixture were written when the label_block_size was 60 and so hardcoded
         // tests and records around that. Those tests could change, but the simpler option is to just
         // keep the block size to 60 and let them be.
@@ -747,6 +746,8 @@ public abstract class GraphStoreFixture extends ConfigurablePageCacheRule implem
             managementService.shutdown();
         }
     }
+
+    protected abstract Map<Setting<?>, String> getConfig();
 
     @Override
     public Statement apply( final Statement base, Description description )

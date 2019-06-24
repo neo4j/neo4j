@@ -20,6 +20,7 @@
 package org.neo4j.cypher
 
 import java.io.File
+import java.nio.file.Files
 
 import org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME
 import org.neo4j.cypher.internal.javacompat.GraphDatabaseCypherService
@@ -61,7 +62,7 @@ trait GraphDatabaseTestSupport extends CypherTestSupport with GraphIcing {
   }
 
   protected def startGraphDatabase(config: Map[Setting[_], String] = databaseConfig()): Unit = {
-    managementService = graphDatabaseFactory(new File("test")).impermanent().setConfig(config.asJava).setInternalLogProvider(logProvider).build()
+    managementService = graphDatabaseFactory(Files.createTempDirectory("test").getParent.toFile).impermanent().setConfig(config.asJava).setInternalLogProvider(logProvider).build()
     graphOps = managementService.database(DEFAULT_DATABASE_NAME)
     graph = new GraphDatabaseCypherService(graphOps)
     onNewGraphDatabase()

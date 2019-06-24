@@ -117,6 +117,11 @@ public class StoreUpgrader
 
     public void migrateIfNeeded( DatabaseLayout layout ) throws IOException
     {
+        if ( layout.getDatabaseName().equals( GraphDatabaseSettings.SYSTEM_DATABASE_NAME ) )
+        {
+            // TODO: System database does not (yet) support migration, remove this when it does!
+            return;
+        }
         DatabaseLayout migrationStructure = DatabaseLayout.of( layout.databaseDirectory(), MIGRATION_DIRECTORY );
 
         cleanupLegacyLeftOverDirsIn( layout.databaseDirectory() );

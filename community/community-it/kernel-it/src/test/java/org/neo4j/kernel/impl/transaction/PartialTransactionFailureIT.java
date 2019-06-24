@@ -38,6 +38,7 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.graphdb.config.Setting;
 import org.neo4j.internal.recordstorage.Command;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointer;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.SimpleTriggerInfo;
@@ -52,7 +53,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.fail;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
-import static org.neo4j.internal.helpers.collection.MapUtil.stringMap;
 
 /**
  * Here we are verifying that even if we get an exception from the storage layer during commit,
@@ -83,10 +83,10 @@ class PartialTransactionFailureIT
         adversary.disable();
 
         File storeDir = testDirectory.storeDir();
-        final Map<String,String> params = stringMap( GraphDatabaseSettings.pagecache_memory.name(), "8m" );
+        final Map<Setting<?>,String> params = Map.of( GraphDatabaseSettings.pagecache_memory, "8m" );
         managementService = new TestDatabaseManagementServiceBuilder( storeDir )
                 .setFileSystem( new AdversarialFileSystemAbstraction( adversary ) )
-                .setConfigRaw( params )
+                .setConfig( params )
                 .build();
         GraphDatabaseAPI db = (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );
         Node a;
@@ -119,7 +119,7 @@ class PartialTransactionFailureIT
         managementService.shutdown();
 
         // We should observe the store in a consistent state
-        managementService = new TestDatabaseManagementServiceBuilder( storeDir ).setConfigRaw( params ).build();
+        managementService = new TestDatabaseManagementServiceBuilder( storeDir ).setConfig( params ).build();
         GraphDatabaseService database = managementService.database( DEFAULT_DATABASE_NAME );
         try ( Transaction tx = database.beginTx() )
         {

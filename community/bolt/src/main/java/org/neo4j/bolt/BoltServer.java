@@ -45,10 +45,11 @@ import org.neo4j.bolt.transport.SocketTransport;
 import org.neo4j.bolt.transport.TransportThrottleGroup;
 import org.neo4j.common.DependencyResolver;
 import org.neo4j.configuration.Config;
+import org.neo4j.configuration.ConfigUtils;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.configuration.connectors.BoltConnector;
 import org.neo4j.configuration.connectors.ConnectorPortRegister;
-import org.neo4j.internal.helpers.ListenSocketAddress;
+import org.neo4j.configuration.helpers.SocketAddress;
 import org.neo4j.kernel.api.net.NetworkConnectionTracker;
 import org.neo4j.kernel.api.security.AuthManager;
 import org.neo4j.kernel.api.security.UserManagerSupplier;
@@ -117,7 +118,7 @@ public class BoltServer extends LifecycleAdapter
 
         BoltProtocolFactory boltProtocolFactory = createBoltProtocolFactory( boltConnectionFactory, boltStateMachineFactory );
 
-        if ( !config.enabledBoltConnectors().isEmpty() )
+        if ( !ConfigUtils.getEnabledBoltConnectors( config ).isEmpty() )
         {
             jobScheduler.setThreadFactory( Group.BOLT_NETWORK_IO, NettyThreadFactory::new );
             NettyServer server = new NettyServer( jobScheduler.threadFactory( Group.BOLT_NETWORK_IO ),
@@ -144,8 +145,7 @@ public class BoltServer extends LifecycleAdapter
     private Map<BoltConnector,ProtocolInitializer> createConnectors( BoltProtocolFactory boltProtocolFactory,
             TransportThrottleGroup throttleGroup, Log log )
     {
-        return config.enabledBoltConnectors()
-                .stream()
+        return ConfigUtils.getEnabledBoltConnectors( config ).stream()
                 .collect( toMap( identity(), connector -> createProtocolInitializer( connector, boltProtocolFactory, throttleGroup, log ) ) );
     }
 
@@ -185,8 +185,8 @@ public class BoltServer extends LifecycleAdapter
             break;
         }
 
-        ListenSocketAddress listenAddress = config.get( connector.listen_address );
-        return new SocketTransport( connector.key(), listenAddress, sslCtx, requireEncryption, logService.getInternalLogProvider(),
+        SocketAddress listenAddress = config.get( connector.listen_address );
+        return new SocketTransport( connector.name(), listenAddress, sslCtx, requireEncryption, logService.getInternalLogProvider(),
                 throttleGroup, boltProtocolFactory, connectionTracker );
     }
 

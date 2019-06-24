@@ -295,7 +295,7 @@ public class Database extends LifecycleAdapter
             databaseMonitors = new Monitors( parentMonitors );
 
             life = new LifeSupport();
-            life.add( databaseConfig);
+            life.add( databaseConfig );
 
             databaseHealth = databaseHealthFactory.newInstance();
             DatabaseAvailability databaseAvailability =
@@ -569,10 +569,6 @@ public class Database extends LifecycleAdapter
             LogEntryReader<ReadableClosablePositionAwareChannel> logEntryReader, TransactionIdStore transactionIdStore, Monitors monitors )
     {
         TransactionMetadataCache transactionMetadataCache = new TransactionMetadataCache();
-        if ( config.get( GraphDatabaseSettings.ephemeral ) )
-        {
-            config.augmentDefaults( GraphDatabaseSettings.keep_logical_logs, "1 files" );
-        }
 
         final LogPruning logPruning =
                 new LogPruningImpl( fs, logFiles, logProvider, new LogPruneStrategyFactory(), clock, config );
@@ -658,7 +654,7 @@ public class Database extends LifecycleAdapter
             }
         };
         cpuClockUpdater.accept( null, databaseConfig.get( GraphDatabaseSettings.track_query_cpu_time ) );
-        databaseConfig.registerDynamicUpdateListener( GraphDatabaseSettings.track_query_cpu_time, cpuClockUpdater );
+        databaseConfig.addListener( GraphDatabaseSettings.track_query_cpu_time, cpuClockUpdater );
         return cpuClock;
     }
 
@@ -677,7 +673,7 @@ public class Database extends LifecycleAdapter
             }
         };
         heapAllocationUpdater.accept( null, databaseConfig.get( GraphDatabaseSettings.track_query_allocation ) );
-        databaseConfig.registerDynamicUpdateListener( GraphDatabaseSettings.track_query_allocation, heapAllocationUpdater );
+        databaseConfig.addListener( GraphDatabaseSettings.track_query_allocation, heapAllocationUpdater );
         return heapAllocation;
     }
 

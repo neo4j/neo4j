@@ -22,21 +22,15 @@ package org.neo4j.cypher.security;
 import org.mockito.Mockito;
 
 import java.time.Clock;
-import java.util.Collection;
 import java.util.function.Supplier;
 
 import org.neo4j.configuration.Config;
-import org.neo4j.configuration.GraphDatabaseSettings;
-import org.neo4j.cypher.internal.javacompat.GraphDatabaseCypherService;
-import org.neo4j.dbms.DatabaseManagementSystemSettings;
 import org.neo4j.dbms.database.DefaultSystemGraphInitializer;
-import org.neo4j.graphdb.event.TransactionEventListener;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.database.DatabaseIdRepository;
 import org.neo4j.kernel.database.TestDatabaseIdRepository;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
-import org.neo4j.kernel.impl.transaction.events.GlobalTransactionEventListeners;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.server.security.auth.AuthenticationStrategy;
@@ -54,6 +48,7 @@ import org.neo4j.test.rule.TestDirectory;
 
 import static org.mockito.Mockito.mock;
 import static org.neo4j.cypher.security.BasicSystemGraphRealmTestHelper.TestDatabaseManager;
+import static org.neo4j.dbms.DatabaseManagementSystemSettings.auth_store_directory;
 
 public class TestBasicSystemGraphRealm
 {
@@ -69,9 +64,12 @@ public class TestBasicSystemGraphRealm
                 dbManager, executor, config );
     }
 
-    static BasicSystemGraphRealm testRealm( TestDatabaseManager dbManager, TestDirectory testDirectory, Config config ) throws Throwable
+    static BasicSystemGraphRealm testRealm( TestDatabaseManager dbManager, TestDirectory testDirectory, Config cfg ) throws Throwable
     {
-        config.augment(  DatabaseManagementSystemSettings.auth_store_directory, testDirectory.directory( "data/dbms" ).toString()  );
+        Config config = Config.newBuilder()
+                .fromConfig( cfg )
+                .set( auth_store_directory, testDirectory.directory( "data/dbms" ).toString() )
+                .build();
         LogProvider logProvider = mock(LogProvider.class);
         FileSystemAbstraction fileSystem = testDirectory.getFileSystem();
 

@@ -48,6 +48,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.fail;
 import static org.neo4j.configuration.GraphDatabaseSettings.SYSTEM_DATABASE_NAME;
+import static org.neo4j.configuration.SettingValueParsers.FALSE;
 
 public class BasicSystemGraphRealmTestHelper
 {
@@ -59,7 +60,7 @@ public class BasicSystemGraphRealmTestHelper
         TestDatabaseManager( TestDirectory testDir )
         {
             managementService = new TestDatabaseManagementServiceBuilder( testDir.databaseDir() ).impermanent()
-                    .setConfig( GraphDatabaseSettings.auth_enabled, "false" ).build();
+                    .setConfig( GraphDatabaseSettings.auth_enabled, FALSE ).build();
             testSystemDb = (GraphDatabaseFacade) managementService.database( SYSTEM_DATABASE_NAME );
         }
 

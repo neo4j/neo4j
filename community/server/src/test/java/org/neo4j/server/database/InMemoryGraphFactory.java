@@ -24,7 +24,6 @@ import java.io.File;
 import org.neo4j.collection.Dependencies;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
-import org.neo4j.configuration.Settings;
 import org.neo4j.configuration.connectors.BoltConnector;
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.dbms.database.SystemGraphInitializer;
@@ -32,6 +31,7 @@ import org.neo4j.graphdb.facade.ExternalDependencies;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
+import static org.neo4j.configuration.SettingValueParsers.TRUE;
 
 public class InMemoryGraphFactory implements GraphFactory
 {
@@ -40,15 +40,15 @@ public class InMemoryGraphFactory implements GraphFactory
     {
         Dependencies deps = new Dependencies();
         deps.satisfyDependencies( SystemGraphInitializer.NO_OP );   // disable system graph construction because it will interfere with some tests
-        File storeDir = new File( config.get( GraphDatabaseSettings.databases_root_path ), DEFAULT_DATABASE_NAME );
+        File storeDir = new File( config.get( GraphDatabaseSettings.databases_root_path ).toFile(), DEFAULT_DATABASE_NAME );
         return new TestDatabaseManagementServiceBuilder( storeDir )
                 .setExtensions( dependencies.extensions() )
                 .setMonitors( dependencies.monitors() )
                 .setExternalDependencies( deps )
                 .impermanent()
-                .setConfig( new BoltConnector( "bolt" ).listen_address, "localhost:0" )
-                .setConfig( new BoltConnector( "bolt" ).enabled, Settings.TRUE )
-                .setConfigRaw( config.getRaw() )
+                .setConfig( BoltConnector.group( "bolt" ).listen_address, "localhost:0" )
+                .setConfig( BoltConnector.group( "bolt" ).enabled, TRUE )
+                .setConfig( config )
                 .build();
     }
 }

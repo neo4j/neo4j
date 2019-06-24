@@ -249,7 +249,7 @@ public class LogFilesBuilder
             return new AtomicLong( Long.MAX_VALUE );
         }
         AtomicLong configThreshold = new AtomicLong( config.get( logical_log_rotation_threshold ) );
-        config.registerDynamicUpdateListener( logical_log_rotation_threshold, ( prev, update ) -> configThreshold.set( update ) );
+        config.addListener( logical_log_rotation_threshold, ( prev, update ) -> configThreshold.set( update ) );
         return configThreshold;
     }
 
@@ -260,7 +260,7 @@ public class LogFilesBuilder
             return new AtomicBoolean( false );
         }
         AtomicBoolean tryToPreallocate = new AtomicBoolean( config.get( preallocate_logical_logs ) );
-        config.registerDynamicUpdateListener( preallocate_logical_logs, ( prev, update ) ->
+        config.addListener( preallocate_logical_logs, ( prev, update ) ->
         {
             String logMessage = "Updating " + preallocate_logical_logs.name() + " from " + prev + " to " + update;
             logProvider.getLog( LogFiles.class ).debug( logMessage );

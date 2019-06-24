@@ -360,7 +360,6 @@ class TestNeo4jCacheAndPersistence extends AbstractNeo4jTestCase
     void testLowGrabSize()
     {
         Map<String,String> config = new HashMap<>();
-        config.put( "relationship_grab_size", "1" );
         GraphDatabaseService graphDb = getImpermanentDatabase( config );
 
         Node node1;
@@ -415,7 +414,6 @@ class TestNeo4jCacheAndPersistence extends AbstractNeo4jTestCase
     private void testLowGrabSize( boolean includeLoops )
     {
         Map<String, String> config = new HashMap<>();
-        config.put( "relationship_grab_size", "2" );
         GraphDatabaseService graphDb = getImpermanentDatabase( config );
         Transaction tx = graphDb.beginTx();
         Node node1 = graphDb.createNode();

@@ -20,6 +20,7 @@
 package org.neo4j.cypher
 
 import org.neo4j.configuration.GraphDatabaseSettings
+import org.neo4j.configuration.SettingValueParsers.TRUE
 import org.neo4j.cypher.ExecutionEngineHelper._
 import org.neo4j.graphdb.InputPosition
 import org.neo4j.graphdb.impl.notification.NotificationCode.RUNTIME_UNSUPPORTED
@@ -36,7 +37,7 @@ class RuntimeUnsupportedNotificationTest extends ExecutionEngineFunSuite {
   }
 
   test("can also be configured to fail hard") {
-    restartWithConfig(Map(GraphDatabaseSettings.cypher_hints_error -> "true"))
+    restartWithConfig(Map(GraphDatabaseSettings.cypher_hints_error -> TRUE))
     eengine = createEngine(graph)
 
     val exception = intercept[RuntimeUnsupportedException](execute("CYPHER runtime=morsel EXPLAIN RETURN 1"))

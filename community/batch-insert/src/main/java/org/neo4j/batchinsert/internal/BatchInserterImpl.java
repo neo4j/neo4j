@@ -165,11 +165,11 @@ import org.neo4j.token.api.TokenNotFoundException;
 import org.neo4j.util.VisibleForTesting;
 import org.neo4j.values.storable.Value;
 
-import static java.lang.Boolean.parseBoolean;
 import static java.util.Collections.emptyIterator;
 import static java.util.Collections.emptyList;
 import static org.neo4j.collection.PrimitiveLongCollections.map;
 import static org.neo4j.configuration.GraphDatabaseSettings.logs_directory;
+import static org.neo4j.configuration.GraphDatabaseSettings.neo4j_home;
 import static org.neo4j.configuration.GraphDatabaseSettings.store_internal_log_path;
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
@@ -242,12 +242,15 @@ public class BatchInserterImpl implements BatchInserter
     private final long maxNodeId;
 
     public BatchInserterImpl( final DatabaseLayout databaseLayout, final FileSystemAbstraction fileSystem,
-                       Map<String, String> stringParams, Iterable<ExtensionFactory<?>> extensions ) throws IOException
+                       Config fromConfig, Iterable<ExtensionFactory<?>> extensions ) throws IOException
     {
-        rejectAutoUpgrade( stringParams );
-        Map<String, String> params = getDefaultParams();
-        params.putAll( stringParams );
-        this.config = Config.defaults( params );
+        rejectAutoUpgrade( fromConfig );
+        this.config = Config.newBuilder()
+                .setDefaults( getDefaultParams() )
+                .set( neo4j_home, databaseLayout.databaseDirectory().getAbsolutePath() )
+                .set( logs_directory, "" )
+                .fromConfig( fromConfig )
+                .build();
         this.fileSystem = fileSystem;
 
         life = new LifeSupport();
@@ -265,8 +268,7 @@ public class BatchInserterImpl implements BatchInserter
             PageCache pageCache = pageCacheFactory.getOrCreatePageCache();
             life.add( new PageCacheLifecycle( pageCache ) );
 
-            config.augment( logs_directory, databaseLayout.databaseDirectory().getAbsolutePath() );
-            File internalLog = config.get( store_internal_log_path );
+            File internalLog = config.get( store_internal_log_path ).toFile();
 
             logService = life.add( StoreLogService.withInternalLog( internalLog ).build( fileSystem ) );
             msgLog = logService.getInternalLog( getClass() );
@@ -284,7 +286,7 @@ public class BatchInserterImpl implements BatchInserter
 
             if ( dump )
             {
-                dumpConfiguration( params, System.out );
+                dumpConfiguration( config, System.out );
             }
             msgLog.info( Thread.currentThread() + " Starting BatchInserter(" + this + ")" );
             life.start();
@@ -721,9 +723,9 @@ public class BatchInserterImpl implements BatchInserter
                 recordAccess.getPropertyRecords(), false ) != Record.NO_NEXT_PROPERTY.intValue();
     }
 
-    private static void rejectAutoUpgrade( Map<String,String> params )
+    private static void rejectAutoUpgrade( Config config )
     {
-        if ( parseBoolean( params.get( GraphDatabaseSettings.allow_upgrade.name() ) ) )
+        if ( config.get( GraphDatabaseSettings.allow_upgrade ) )
         {
             throw new IllegalArgumentException( "Batch inserter is not allowed to do upgrade of a store." );
         }
@@ -1115,15 +1117,9 @@ public class BatchInserterImpl implements BatchInserter
         return databaseLayout.databaseDirectory().getPath();
     }
 
-    private static void dumpConfiguration( Map<String,String> config, PrintStream out )
+    private static void dumpConfiguration( Config config, PrintStream out )
     {
-        for ( Entry<String,String> entry : config.entrySet() )
-        {
-            if ( entry.getValue() != null )
-            {
-                out.println( entry.getKey() + "=" + entry.getValue() );
-            }
-        }
+        out.print( config.toString() );
     }
 
     @VisibleForTesting

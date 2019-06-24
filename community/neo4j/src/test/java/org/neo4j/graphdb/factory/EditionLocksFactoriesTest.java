@@ -28,7 +28,6 @@ import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.kernel.impl.locking.LocksFactory;
 import org.neo4j.kernel.impl.locking.community.CommunityLocksFactory;
 import org.neo4j.lock.ResourceTypes;
-import org.neo4j.logging.internal.NullLogService;
 import org.neo4j.time.Clocks;
 
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -60,7 +59,7 @@ class EditionLocksFactoriesTest
     void createCommunityLocksFactoryWhenNotConfigured()
     {
         Config config = Config.defaults();
-        LocksFactory lockFactory = createLockFactory( config, NullLogService.getInstance() );
+        LocksFactory lockFactory = createLockFactory( config );
 
         assertThat( lockFactory, instanceOf( CommunityLocksFactory.class ) );
     }
@@ -70,7 +69,7 @@ class EditionLocksFactoriesTest
     {
         Config config = Config.defaults( GraphDatabaseSettings.lock_manager, "community");
 
-        LocksFactory lockFactory = createLockFactory( config, NullLogService.getInstance() );
+        LocksFactory lockFactory = createLockFactory( config );
 
         assertThat( lockFactory, instanceOf( CommunityLocksFactory.class ) );
     }
@@ -81,7 +80,7 @@ class EditionLocksFactoriesTest
         Config config = Config.defaults(GraphDatabaseSettings.lock_manager, "notFoundManager");
 
         IllegalArgumentException exception =
-                assertThrows( IllegalArgumentException.class, () -> createLockFactory( config, NullLogService.getInstance() ) );
+                assertThrows( IllegalArgumentException.class, () -> createLockFactory( config ) );
 
         assertEquals( "No lock manager found with the name 'notFoundManager'.", exception.getMessage() );
     }

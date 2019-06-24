@@ -103,7 +103,7 @@ public class CommunityEditionModule extends StandaloneEditionModule
         this.sslPolicyLoader = SslPolicyLoader.create( globalConfig, logService.getInternalLogProvider() );
         globalDependencies.satisfyDependency( sslPolicyLoader ); // for bolt and web server
 
-        LocksFactory lockFactory = createLockFactory( globalConfig, logService );
+        LocksFactory lockFactory = createLockFactory( globalConfig );
         locksSupplier = () -> createLockManager( lockFactory, globalConfig, globalClock );
         statementLocksFactoryProvider = locks -> createStatementLocksFactory( locks, globalConfig, logService );
 

@@ -35,7 +35,7 @@ public class CommunityGraphFactory implements GraphFactory
     @Override
     public DatabaseManagementService newDatabaseManagementService( Config config, ExternalDependencies dependencies )
     {
-        File storeDir = config.get( GraphDatabaseSettings.databases_root_path );
+        File storeDir = config.get( GraphDatabaseSettings.databases_root_path ).toFile();
         DatabaseManagementServiceFactory facadeFactory = new DatabaseManagementServiceFactory( COMMUNITY, CommunityEditionModule::new );
         return facadeFactory.build( storeDir, config, dependencies );
     }

@@ -554,7 +554,7 @@ class KernelTransactionsTest
 
         assertThrows( MaximumTransactionLimitExceededException.class, () -> kernelTransactions.newInstance( explicit, none(), EMBEDDED_CONNECTION, 0L ) );
 
-        config.updateDynamicSetting( GraphDatabaseSettings.max_concurrent_transactions.name(), "3", "test" );
+        config.setDynamic( GraphDatabaseSettings.max_concurrent_transactions, 3, getClass().getSimpleName() );
 
         // fine to start again
         kernelTransactions.newInstance( explicit, none(), EMBEDDED_CONNECTION, 0L );
