@@ -131,12 +131,6 @@ public class CentralJobScheduler extends LifecycleAdapter implements JobSchedule
     }
 
     @Override
-    public ThreadFactory interruptableThreadFactory( Group group )
-    {
-        return getThreadPool( group ).getInterruptableThreadFactory();
-    }
-
-    @Override
     public JobHandle schedule( Group group, Runnable job )
     {
         if ( !started )

@@ -71,12 +71,6 @@ public class CountingJobScheduler implements JobScheduler
     }
 
     @Override
-    public ThreadFactory interruptableThreadFactory( Group group )
-    {
-        return delegate.interruptableThreadFactory( group );
-    }
-
-    @Override
     public JobHandle schedule( Group group, Runnable job )
     {
         counter.getAndIncrement();
