@@ -114,8 +114,4 @@ public interface KernelReadTracer
         }
     };
 
-    static void assertNonNull( KernelReadTracer tracer )
-    {
-        Preconditions.checkArgument( tracer != null, "tracer cannot be null, use KernelReadTracer.NONE instead" );
-    }
 }

@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.newapi;
 
 import org.neo4j.internal.kernel.api.Cursor;
 import org.neo4j.internal.kernel.api.KernelReadTracer;
+import org.neo4j.util.Preconditions;
 
 abstract class TraceableCursor implements Cursor
 {
@@ -34,7 +35,7 @@ abstract class TraceableCursor implements Cursor
     @Override
     public final void setTracer( KernelReadTracer tracer )
     {
-        KernelReadTracer.assertNonNull( tracer );
+        Preconditions.checkArgument( tracer != null, "tracer cannot be null, use KernelReadTracer.NONE instead" );
         this.tracer = tracer;
     }
 
