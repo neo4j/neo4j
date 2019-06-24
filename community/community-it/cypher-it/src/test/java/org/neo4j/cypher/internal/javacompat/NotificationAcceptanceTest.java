@@ -131,21 +131,6 @@ public class NotificationAcceptanceTest extends NotificationTestSupport
     }
 
     @Test
-    public void shouldNotNotifyUsingJoinHintWithCost()
-    {
-        List<String> queries = Arrays.asList( "CYPHER planner=cost EXPLAIN MATCH (a)-->(b) USING JOIN ON b RETURN a, b",
-                "CYPHER planner=cost EXPLAIN MATCH (a)-->(x)<--(b) USING JOIN ON x RETURN a, b" );
-
-        Stream.of( "CYPHER 3.5", "CYPHER 4.0" ).forEach( version ->
-        {
-            for ( String query : queries )
-            {
-                assertNotifications( version + query, containsNoItem( joinHintUnsupportedWarning ) );
-            }
-        } );
-    }
-
-    @Test
     public void shouldWarnOnPotentiallyCachedQueries()
     {
         Stream.of( "CYPHER 3.5", "CYPHER 4.0" ).forEach( version ->

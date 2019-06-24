@@ -208,10 +208,6 @@ public class NotificationTestSupport
         result.close();
     }
 
-    Matcher<Notification> rulePlannerUnavailable = notification( "Neo.ClientNotification.Statement.PlannerUnavailableWarning", containsString(
-            "Using RULE planner is unsupported for current CYPHER version, the query has been executed by an older CYPHER version" ),
-                                                                           any( InputPosition.class ), SeverityLevel.WARNING );
-
     Matcher<Notification> cartesianProductWarning = notification( "Neo.ClientNotification.Statement.CartesianProductWarning", containsString(
             "If a part of a query contains multiple disconnected patterns, this will build a " +
                     "cartesian product between all those parts. This may produce a large amount of data and slow down" + " query processing. " +
@@ -244,9 +240,5 @@ public class NotificationTestSupport
 
     Matcher<Notification> dynamicPropertyWarning = notification( "Neo.ClientNotification.Statement.DynamicPropertyWarning",
             containsString( "Using a dynamic property makes it impossible to use an index lookup for this query" ), any( InputPosition.class ),
-            SeverityLevel.WARNING );
-
-    Matcher<Notification> joinHintUnsupportedWarning = notification( "Neo.Status.Statement.JoinHintUnsupportedWarning",
-            containsString( "Using RULE planner is unsupported for queries with join hints, please use COST planner instead" ), any( InputPosition.class ),
             SeverityLevel.WARNING );
 }

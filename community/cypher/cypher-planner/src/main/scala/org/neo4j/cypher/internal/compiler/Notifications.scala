@@ -31,17 +31,11 @@ case class CreateUniqueUnavailableFallback(position: InputPosition) extends Inte
 
 case class CreateUniqueDeprecated(position: InputPosition) extends InternalNotification
 
-case object RulePlannerUnavailableFallbackNotification extends InternalNotification
-
-case object PlannerUnsupportedNotification extends InternalNotification
-
 case object RuntimeUnsupportedNotification extends InternalNotification
 
 case class IndexHintUnfulfillableNotification(label: String, propertyKeys: Seq[String]) extends InternalNotification
 
 case class JoinHintUnfulfillableNotification(identified: Seq[String]) extends InternalNotification
-
-case class JoinHintUnsupportedNotification(identified: Seq[String]) extends InternalNotification
 
 case class IndexLookupUnfulfillableNotification(labels: Set[String]) extends InternalNotification
 
@@ -62,8 +56,6 @@ case class DeprecatedProcedureNotification(position: InputPosition, oldName: Str
 case class ProcedureWarningNotification(position: InputPosition, procedure: String, warning: String) extends InternalNotification
 
 case class DeprecatedFieldNotification(position: InputPosition, procedure: String, field: String) extends InternalNotification
-
-case object DeprecatedRulePlannerNotification extends InternalNotification
 
 case object DeprecatedCompiledRuntimeNotification extends InternalNotification
 
