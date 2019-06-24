@@ -1904,8 +1904,8 @@ class ImportCommandTest
 
         // THEN go and read the debug.log where it's expected to be and see if there's an IMPORT DONE line in it
         File dbDirParent = new File( dbDir ).getParentFile();
-        File logsDir = new File( dbDirParent, logs_directory.getDefaultValue() );
-        File internalLogFile = new File( logsDir, Config.defaults().get( store_internal_log_path ).getName() );
+        File logsDir = new File( dbDirParent, logs_directory.defaultValue().toString() );
+        File internalLogFile = new File( logsDir, Config.defaults().get( store_internal_log_path ).toFile().getName() );
         assertTrue( internalLogFile.exists() );
         List<String> lines = Files.readAllLines( internalLogFile.toPath() );
         assertTrue( lines.stream().anyMatch( line -> line.contains( "Import completed successfully" ) ) );

@@ -30,6 +30,7 @@ import org.neo4j.cli.AbstractCommand;
 import org.neo4j.cli.CommandFailedException;
 import org.neo4j.cli.ExecutionContext;
 import org.neo4j.configuration.Config;
+import org.neo4j.configuration.ConfigUtils;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.configuration.LayoutConfig;
 import org.neo4j.dbms.archive.IncorrectFormat;
@@ -75,7 +76,7 @@ class LoadCommand extends AbstractCommand
     {
         Config config = buildConfig();
 
-        DatabaseLayout databaseLayout = DatabaseLayout.of( config.get( databases_root_path ), LayoutConfig.of( config ), database );
+        DatabaseLayout databaseLayout = DatabaseLayout.of( config.get( databases_root_path ).toFile(), LayoutConfig.of( config ), database );
 
         deleteIfNecessary( databaseLayout, force );
         load( from, databaseLayout );
@@ -83,11 +84,11 @@ class LoadCommand extends AbstractCommand
 
     private Config buildConfig()
     {
-        return Config.fromFile( ctx.confDir().resolve( Config.DEFAULT_CONFIG_FILE_NAME ) )
-                .withHome( ctx.homeDir() )
-                .withConnectorsDisabled()
-                .withNoThrowOnFileLoadFailure()
-                .build();
+        Config cfg = Config.newBuilder()
+                .fromFileNoThrow( ctx.confDir().resolve( Config.DEFAULT_CONFIG_FILE_NAME ) )
+                .set( GraphDatabaseSettings.neo4j_home, ctx.homeDir().toString() ).build();
+        ConfigUtils.disableAllConnectors( cfg );
+        return cfg;
     }
 
     private static void deleteIfNecessary( DatabaseLayout databaseLayout, boolean force )

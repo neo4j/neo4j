@@ -34,7 +34,6 @@ import java.util.function.Consumer;
 import java.util.stream.Stream;
 
 import org.neo4j.configuration.GraphDatabaseSettings;
-import org.neo4j.configuration.Settings;
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.dbms.api.DatabaseManagementServiceBuilder;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -76,6 +75,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
+import static org.neo4j.configuration.SettingValueParsers.TRUE;
 import static org.neo4j.internal.helpers.ArrayUtil.concat;
 import static org.neo4j.internal.helpers.collection.Iterables.asList;
 import static org.neo4j.test.Unzip.unzip;
@@ -331,7 +331,7 @@ class StartOldDbOnCurrentVersionAndCreateFusionIndexIT
         monitors.addMonitorListener( indexRecoveryTracker );
         return new DatabaseManagementServiceBuilder( storeDir )
                 .setMonitors( monitors )
-                .setConfig( GraphDatabaseSettings.allow_upgrade, Settings.TRUE )
+                .setConfig( GraphDatabaseSettings.allow_upgrade, TRUE )
                 .build();
     }
 

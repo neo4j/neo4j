@@ -19,6 +19,9 @@
  */
 package org.neo4j.logging;
 
+import org.neo4j.annotations.api.PublicApi;
+
+@PublicApi
 public enum Level
 {
     DEBUG,

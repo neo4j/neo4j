@@ -26,7 +26,7 @@ import org.junit.Test;
 import java.util.concurrent.CountDownLatch;
 
 import org.neo4j.configuration.Config;
-import org.neo4j.internal.helpers.ListenSocketAddress;
+import org.neo4j.configuration.helpers.SocketAddress;
 import org.neo4j.kernel.api.net.NetworkConnectionTracker;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.rule.SuppressOutput;
@@ -49,7 +49,7 @@ public class JettyThreadLimitIT
         int selectorThreads = 1; // ... and 1 thread will become a selector...
         int jobThreads = configuredMaxThreads - acceptorThreads - selectorThreads; // ... and the rest are job threads
         server.setMaxThreads( numCores );
-        server.setHttpAddress( new ListenSocketAddress( "localhost", 0 ) );
+        server.setHttpAddress( new SocketAddress( "localhost", 0 ) );
         try
         {
             server.start();

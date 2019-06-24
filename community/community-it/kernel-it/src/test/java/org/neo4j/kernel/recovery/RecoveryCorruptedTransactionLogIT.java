@@ -36,7 +36,6 @@ import java.util.function.Supplier;
 
 import org.neo4j.common.DependencyResolver;
 import org.neo4j.configuration.GraphDatabaseSettings;
-import org.neo4j.configuration.Settings;
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.dbms.database.DatabaseContext;
 import org.neo4j.dbms.database.DatabaseManager;
@@ -94,6 +93,7 @@ import static org.hamcrest.Matchers.not;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
+import static org.neo4j.configuration.SettingValueParsers.FALSE;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryByteCodes.TX_START;
 
 @ExtendWith( {DefaultFileSystemExtension.class, TestDirectoryExtension.class, RandomExtension.class} )
@@ -629,7 +629,7 @@ class RecoveryCorruptedTransactionLogIT
     private void startStopDbNoRecoveryOfCorruptedLogs()
     {
         DatabaseManagementService managementService = databaseFactory
-                .setConfig( GraphDatabaseSettings.fail_on_corrupted_log_files, Settings.FALSE ).build();
+                .setConfig( GraphDatabaseSettings.fail_on_corrupted_log_files, FALSE ).build();
         managementService.shutdown();
     }
 

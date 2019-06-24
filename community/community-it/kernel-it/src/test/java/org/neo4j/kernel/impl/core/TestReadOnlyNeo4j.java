@@ -24,7 +24,6 @@ import org.junit.Test;
 import org.junit.rules.RuleChain;
 
 import org.neo4j.configuration.GraphDatabaseSettings;
-import org.neo4j.configuration.Settings;
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -44,6 +43,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
+import static org.neo4j.configuration.SettingValueParsers.TRUE;
 import static org.neo4j.graphdb.RelationshipType.withName;
 import static org.neo4j.test.mockito.matcher.Neo4jMatchers.hasProperty;
 import static org.neo4j.test.mockito.matcher.Neo4jMatchers.inTx;
@@ -62,7 +62,7 @@ public class TestReadOnlyNeo4j
         DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder( testDirectory.storeDir() )
                 .setFileSystem( new UncloseableDelegatingFileSystemAbstraction( fs.get() ) )
                 .impermanent()
-                .setConfig( GraphDatabaseSettings.read_only, Settings.TRUE )
+                .setConfig( GraphDatabaseSettings.read_only, TRUE )
                 .build();
         GraphDatabaseService readGraphDb = managementService.database( DEFAULT_DATABASE_NAME );
         assertEquals( someData, DbRepresentation.of( readGraphDb ) );

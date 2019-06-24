@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.javacompat;
 
 import org.hamcrest.Matcher;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.Arrays;
 import java.util.List;
@@ -33,19 +33,19 @@ import org.neo4j.graphdb.SeverityLevel;
 import org.neo4j.kernel.api.procedure.GlobalProcedures;
 import org.neo4j.procedure.Procedure;
 
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.any;
 import static org.hamcrest.Matchers.containsString;
-import static org.junit.Assert.assertThat;
 
 public class DeprecationAcceptanceTest extends NotificationTestSupport
 {
     // DEPRECATED PRE-PARSER OPTIONS
 
     @Test
-    public void deprecatedCompiledRuntime()
+    void deprecatedCompiledRuntime()
     {
         // when
-        Result result = db().execute( "EXPLAIN CYPHER runtime=compiled RETURN 1" );
+        Result result = db.execute( "EXPLAIN CYPHER runtime=compiled RETURN 1" );
 
         // then
         assertThat( result.getNotifications(), containsItem( deprecatedCompiledRuntime ) );
@@ -55,7 +55,7 @@ public class DeprecationAcceptanceTest extends NotificationTestSupport
     // DEPRECATED FUNCTIONS
 
     @Test
-    public void deprecatedToInt()
+    void deprecatedToInt()
     {
         Stream.of( "CYPHER 3.5", "CYPHER 4.0" )
                 .forEach( version -> assertNotifications( version + " EXPLAIN RETURN toInt('1') AS one",
@@ -63,7 +63,7 @@ public class DeprecationAcceptanceTest extends NotificationTestSupport
     }
 
     @Test
-    public void deprecatedUpper()
+    void deprecatedUpper()
     {
         Stream.of( "CYPHER 3.5", "CYPHER 4.0" )
                 .forEach( version -> assertNotifications( version + " EXPLAIN RETURN upper('foo') AS one",
@@ -71,7 +71,7 @@ public class DeprecationAcceptanceTest extends NotificationTestSupport
     }
 
     @Test
-    public void deprecatedLower()
+    void deprecatedLower()
     {
         Stream.of( "CYPHER 3.5", "CYPHER 4.0" )
                 .forEach( version -> assertNotifications( version + " EXPLAIN RETURN lower('BAR') AS one",
@@ -79,7 +79,7 @@ public class DeprecationAcceptanceTest extends NotificationTestSupport
     }
 
     @Test
-    public void deprecatedRels()
+    void deprecatedRels()
     {
         Stream.of( "CYPHER 3.5", "CYPHER 4.0" )
                 .forEach( version -> assertNotifications( version + " EXPLAIN MATCH p = ()-->() RETURN rels(p) AS r",
@@ -87,23 +87,23 @@ public class DeprecationAcceptanceTest extends NotificationTestSupport
     }
 
     @Test
-    public void deprecatedFilter()
+    void deprecatedFilter()
     {
         assertNotifications( "EXPLAIN WITH [1,2,3] AS list RETURN filter(x IN list WHERE x % 2 = 1) AS odds",
                                                           containsItem( deprecatedFeatureWarning ) );
     }
 
     @Test
-    public void deprecatedExtract()
+    void deprecatedExtract()
     {
         assertNotifications( "EXPLAIN WITH [1,2,3] AS list RETURN extract(x IN list | x * 10) AS tens",
                              containsItem( deprecatedFeatureWarning ) );
     }
 
     @Test
-    public void deprecatedProcedureCalls() throws Exception
+    void deprecatedProcedureCalls() throws Exception
     {
-        db().getDependencyResolver().provideDependency( GlobalProcedures.class ).get().registerProcedure( TestProcedures.class );
+        db.getDependencyResolver().provideDependency( GlobalProcedures.class ).get().registerProcedure( TestProcedures.class );
         Stream.of( "CYPHER 3.5", "CYPHER 4.0" ).forEach( version ->
                                                          {
                                                              assertNotifications( version + "explain CALL oldProc()",
@@ -116,9 +116,9 @@ public class DeprecationAcceptanceTest extends NotificationTestSupport
     // DEPRECATED PROCEDURE THINGS
 
     @Test
-    public void deprecatedProcedureResultField() throws Exception
+    void deprecatedProcedureResultField() throws Exception
     {
-        db().getDependencyResolver().provideDependency( GlobalProcedures.class ).get().registerProcedure( TestProcedures.class );
+        db.getDependencyResolver().provideDependency( GlobalProcedures.class ).get().registerProcedure( TestProcedures.class );
         Stream.of( "CYPHER 4.0" ).forEach(
                 version -> assertNotifications(
                         version + "explain CALL changedProc() YIELD oldField RETURN oldField",
@@ -129,7 +129,7 @@ public class DeprecationAcceptanceTest extends NotificationTestSupport
     // DEPRECATED SYNTAX
 
     @Test
-    public void deprecatedFutureAmbiguousRelTypeSeparator()
+    void deprecatedFutureAmbiguousRelTypeSeparator()
     {
         List<String> deprecatedQueries = Arrays.asList( "explain MATCH (a)-[:A|:B|:C {foo:'bar'}]-(b) RETURN a,b", "explain MATCH (a)-[x:A|:B|:C]-() RETURN a",
                                                         "explain MATCH (a)-[:A|:B|:C*]-() RETURN a" );
@@ -150,7 +150,7 @@ public class DeprecationAcceptanceTest extends NotificationTestSupport
     }
 
     @Test
-    public void deprecatedBindingVariableLengthRelationship()
+    void deprecatedBindingVariableLengthRelationship()
     {
         assertNotifications( "CYPHER 4.0 explain MATCH ()-[rs*]-() RETURN rs", containsItem( deprecatedBindingWarning
         ) );
@@ -210,7 +210,7 @@ public class DeprecationAcceptanceTest extends NotificationTestSupport
                          "types in conjunction with the use of variable binding, inlined property " +
                          "predicates, or variable length will change in a future version." );
 
-    private Matcher<Notification> deprecation( String message )
+    private static Matcher<Notification> deprecation( String message )
     {
         return notification( "Neo.ClientNotification.Statement.FeatureDeprecationWarning",
                              containsString( message ), any( InputPosition.class ), SeverityLevel.WARNING );

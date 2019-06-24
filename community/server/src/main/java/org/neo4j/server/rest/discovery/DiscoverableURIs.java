@@ -29,10 +29,10 @@ import java.util.function.BiConsumer;
 import java.util.stream.Collectors;
 
 import org.neo4j.configuration.Config;
+import org.neo4j.configuration.ConfigUtils;
 import org.neo4j.configuration.connectors.ConnectorPortRegister;
-import org.neo4j.graphdb.config.InvalidSettingException;
+import org.neo4j.configuration.helpers.SocketAddress;
 import org.neo4j.graphdb.config.Setting;
-import org.neo4j.internal.helpers.AdvertisedSocketAddress;
 
 import static org.neo4j.server.rest.discovery.DiscoverableURIs.Precedence.HIGH;
 import static org.neo4j.server.rest.discovery.DiscoverableURIs.Precedence.HIGHEST;
@@ -100,7 +100,7 @@ public class DiscoverableURIs
         {
             if ( entries.stream().anyMatch( e -> e.key.equals( key ) && e.precedence == precedence ) )
             {
-                throw new InvalidSettingException(
+                throw new IllegalArgumentException(
                         String.format( "Unable to add two entries with the same precedence using key '%s' and precedence '%s'", key, precedence ) );
             }
 
@@ -116,8 +116,8 @@ public class DiscoverableURIs
             }
             catch ( URISyntaxException e )
             {
-                throw new InvalidSettingException( String.format( "Unable to construct bolt discoverable URI using '%s' as uri: " + "%s", uri, e.getMessage() ),
-                        e );
+                throw new IllegalArgumentException(
+                        String.format( "Unable to construct bolt discoverable URI using '%s' as uri: " + "%s", uri, e.getMessage() ), e );
             }
         }
 
@@ -129,7 +129,7 @@ public class DiscoverableURIs
             }
             catch ( URISyntaxException e )
             {
-                throw new InvalidSettingException(
+                throw new IllegalArgumentException(
                         String.format( "Unable to construct bolt discoverable URI using '%s' as hostname: " + "%s", hostname, e.getMessage() ), e );
             }
         }
@@ -137,22 +137,22 @@ public class DiscoverableURIs
         public Builder addBoltConnectorFromConfig( String key, String scheme, Config config, Setting<URI> override, ConnectorPortRegister portRegister )
         {
             // If an override is configured, add it with the HIGHEST precedence
-            if ( config.isConfigured( override ) )
+            if ( config.isExplicitlySet( override ) )
             {
                 add( key, config.get( override ), HIGHEST );
             }
 
-            config.enabledBoltConnectors().stream().findFirst().ifPresent( c ->
+            ConfigUtils.getEnabledBoltConnectors( config ).stream().findFirst().ifPresent( c ->
             {
-                AdvertisedSocketAddress address = config.get( c.advertised_address );
+                SocketAddress address = config.get( c.advertised_address );
                 int port = address.getPort();
                 if ( port == 0 )
                 {
-                    port = portRegister.getLocalAddress( c.key() ).getPort();
+                    port = portRegister.getLocalAddress( c.name() ).getPort();
                 }
 
                 // If advertised address is explicitly set, set the precedence to HIGH - eitherwise set it as LOWEST (default)
-                add( key, scheme, address.getHostname(), port, config.isConfigured( c.advertised_address ) ? HIGH : LOWEST );
+                add( key, scheme, address.getHostname(), port, config.isExplicitlySet( c.advertised_address ) ? HIGH : LOWEST );
             } );
 
             return this;

@@ -27,6 +27,7 @@ import java.io.File;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
@@ -35,7 +36,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 import org.neo4j.configuration.GraphDatabaseSettings;
-import org.neo4j.configuration.Settings;
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.dbms.api.DatabaseManagementServiceBuilder;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -57,6 +57,7 @@ import org.neo4j.kernel.api.index.IndexDirectoryStructure;
 import org.neo4j.kernel.impl.api.index.IndexProxy;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
+import org.neo4j.kernel.impl.index.schema.config.CrsConfig;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.TestDirectoryExtension;
@@ -72,9 +73,9 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.configuration.GraphDatabaseSettings.SchemaIndex.NATIVE_BTREE10;
+import static org.neo4j.configuration.SettingValueParsers.TRUE;
 import static org.neo4j.kernel.impl.index.schema.FulltextIndexSettingsKeys.ANALYZER;
 import static org.neo4j.kernel.impl.index.schema.FulltextIndexSettingsKeys.EVENTUALLY_CONSISTENT;
-import static org.neo4j.kernel.impl.index.schema.config.SpatialIndexSettings.makeCRSRangeSetting;
 import static org.neo4j.kernel.impl.index.schema.config.SpatialIndexSettings.space_filling_curve_max_bits;
 import static org.neo4j.test.Unzip.unzip;
 import static org.neo4j.values.storable.CoordinateReferenceSystem.Cartesian;
@@ -90,33 +91,25 @@ import static org.neo4j.values.storable.Values.COMPARATOR;
 @ExtendWith( TestDirectoryExtension.class )
 class IndexConfigMigrationIT
 {
+    private static CrsConfig wgs84 = CrsConfig.group( WGS84 );
     private enum MinMaxSetting
     {
-        wgs84MinX( makeCRSRangeSetting( WGS84, 0, "min" ), "-1" ),
-        wgs84MinY( makeCRSRangeSetting( WGS84, 1, "min" ), "-2" ),
-        wgs84MaxX( makeCRSRangeSetting( WGS84, 0, "max" ), "3" ),
-        wgs84MaxY( makeCRSRangeSetting( WGS84, 1, "max" ), "4" ),
-        wgs84_3DMinX( makeCRSRangeSetting( WGS84_3D, 0, "min" ), "-5" ),
-        wgs84_3DMinY( makeCRSRangeSetting( WGS84_3D, 1, "min" ), "-6" ),
-        wgs84_3DMinZ( makeCRSRangeSetting( WGS84_3D, 2, "min" ), "-7" ),
-        wgs84_3DMaxX( makeCRSRangeSetting( WGS84_3D, 0, "max" ), "8" ),
-        wgs84_3DMaxY( makeCRSRangeSetting( WGS84_3D, 1, "max" ), "9" ),
-        wgs84_3DMaxZ( makeCRSRangeSetting( WGS84_3D, 2, "max" ), "10" ),
-        cartesianMinX( makeCRSRangeSetting( Cartesian, 0, "min" ), "-11" ),
-        cartesianMinY( makeCRSRangeSetting( Cartesian, 1, "min" ), "-12" ),
-        cartesianMaxX( makeCRSRangeSetting( Cartesian, 0, "max" ), "13" ),
-        cartesianMaxY( makeCRSRangeSetting( Cartesian, 1, "max" ), "14" ),
-        cartesian_3DMinX( makeCRSRangeSetting( Cartesian_3D, 0, "min" ), "-15" ),
-        cartesian_3DMinY( makeCRSRangeSetting( Cartesian_3D, 1, "min" ), "-16" ),
-        cartesian_3DMinZ( makeCRSRangeSetting( Cartesian_3D, 2, "min" ), "-17" ),
-        cartesian_3DMaxX( makeCRSRangeSetting( Cartesian_3D, 0, "max" ), "18" ),
-        cartesian_3DMaxY( makeCRSRangeSetting( Cartesian_3D, 1, "max" ), "19" ),
-        cartesian_3DMaxZ( makeCRSRangeSetting( Cartesian_3D, 2, "max" ), "20" );
+        wgs84Min( CrsConfig.group( WGS84 ).min, "-1,-2" ),
+        wgs84Max( CrsConfig.group( WGS84 ).max, "3,4" ),
 
-        private final Setting<Double> setting;
+        wgs84_3DMin( CrsConfig.group( WGS84_3D ).min, "-5,-6,-7" ),
+        wgs84_3DMax( CrsConfig.group( WGS84_3D ).max, "8,9,10" ),
+
+        cartesianMin( CrsConfig.group( Cartesian ).min, "-11,-12" ),
+        cartesianMax( CrsConfig.group( Cartesian ).max, "13,14" ),
+
+        cartesian_3DMin( CrsConfig.group( Cartesian_3D ).min, "-15,-16,-17" ),
+        cartesian_3DMax( CrsConfig.group( Cartesian_3D ).max, "18,19,20" );
+
+        private final Setting<List<Double>> setting;
         private final String settingValue;
 
-        MinMaxSetting( Setting<Double> setting, String settingValue )
+        MinMaxSetting( Setting<List<Double>> setting, String settingValue )
         {
             this.setting = setting;
             this.settingValue = settingValue;
@@ -232,7 +225,7 @@ class IndexConfigMigrationIT
         unzip( getClass(), ZIP_FILE_3_5, databaseDir );
         // when
         DatabaseManagementServiceBuilder builder = new DatabaseManagementServiceBuilder( directory.storeDir() )
-                .setConfig( GraphDatabaseSettings.allow_upgrade, Settings.TRUE );
+                .setConfig( GraphDatabaseSettings.allow_upgrade, TRUE );
         DatabaseManagementService dbms = builder.build();
         try
         {

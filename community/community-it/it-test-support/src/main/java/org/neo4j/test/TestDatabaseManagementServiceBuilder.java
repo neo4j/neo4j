@@ -44,7 +44,7 @@ import org.neo4j.monitoring.Monitors;
 import org.neo4j.time.SystemNanoClock;
 import org.neo4j.util.Preconditions;
 
-import static org.neo4j.configuration.connectors.Connector.ConnectorType.BOLT;
+import static org.neo4j.configuration.SettingValueParsers.FALSE;
 
 /**
  * Test factory for graph databases.
@@ -53,13 +53,14 @@ import static org.neo4j.configuration.connectors.Connector.ConnectorType.BOLT;
  */
 public class TestDatabaseManagementServiceBuilder extends DatabaseManagementServiceBuilder
 {
-    private static final File EPHEMERAL_PATH = new File( "target/test data/" + GraphDatabaseSettings.DEFAULT_DATABASE_NAME );
+    private static final File EPHEMERAL_PATH = new File( "/target/test data/" + GraphDatabaseSettings.DEFAULT_DATABASE_NAME );
     public static final Predicate<ExtensionFactory<?>> INDEX_PROVIDERS_FILTER = extension -> extension instanceof AbstractIndexProviderFactory;
 
     protected FileSystemAbstraction fileSystem;
     protected LogProvider internalLogProvider;
     protected SystemNanoClock clock;
     protected boolean impermanent;
+    private Config fromConfig;
 
     public TestDatabaseManagementServiceBuilder()
     {
@@ -67,10 +68,21 @@ public class TestDatabaseManagementServiceBuilder extends DatabaseManagementServ
         setUserLogProvider( NullLogProvider.getInstance() );
     }
 
-    public TestDatabaseManagementServiceBuilder( File databaseRootDir )
+    public TestDatabaseManagementServiceBuilder( File homeDirectory )
     {
-        super( databaseRootDir );
+        super( homeDirectory );
         setUserLogProvider( NullLogProvider.getInstance() );
+    }
+
+    @Override
+    public DatabaseManagementService build()
+    {
+        Config cfg = Config.newBuilder()
+                .set( GraphDatabaseSettings.neo4j_home, homeDirectory.getAbsolutePath() )
+                .fromConfig( fromConfig )
+                .set( config )
+                .build();
+        return newDatabaseManagementService( homeDirectory, cfg, databaseDependencies() );
     }
 
     @Override
@@ -84,10 +96,11 @@ public class TestDatabaseManagementServiceBuilder extends DatabaseManagementServ
     @Override
     protected Config augmentConfig( Config config )
     {
-        config.augmentDefaults( GraphDatabaseSettings.pagecache_memory, "8m" );
-        config.augmentDefaults( new BoltConnector( "bolt" ).type, BOLT.name() );
-        config.augmentDefaults( new BoltConnector( "bolt" ).enabled, "false" );
-        return config;
+        return Config.newBuilder()
+                .fromConfig( config )
+                .setDefault( GraphDatabaseSettings.pagecache_memory, "8m" )
+                .setDefault( BoltConnector.group( "bolt" ).enabled, FALSE )
+                .build();
     }
 
     public FileSystemAbstraction getFileSystem()
@@ -103,7 +116,7 @@ public class TestDatabaseManagementServiceBuilder extends DatabaseManagementServ
 
     public TestDatabaseManagementServiceBuilder setDatabaseRootDirectory( File storeDir )
     {
-        this.databaseRootDir = storeDir;
+        this.homeDirectory = storeDir;
         return this;
     }
 
@@ -149,10 +162,39 @@ public class TestDatabaseManagementServiceBuilder extends DatabaseManagementServ
     public TestDatabaseManagementServiceBuilder impermanent()
     {
         impermanent = true;
-        if ( databaseRootDir == null )
+        if ( homeDirectory == null )
         {
-            databaseRootDir = EPHEMERAL_PATH;
+            homeDirectory = EPHEMERAL_PATH;
         }
+        return this;
+    }
+
+    public TestDatabaseManagementServiceBuilder setConfig( Config fromConfig )
+    {
+        if ( this.fromConfig != null )
+        {
+            throw new IllegalStateException( "You can only set config once." );
+        }
+        this.fromConfig = fromConfig;
+        return this;
+    }
+
+    public DatabaseManagementServiceBuilder setConfig( String name, String value )
+    {
+        if ( value == null )
+        {
+            config.remove( name );
+        }
+        else
+        {
+            config.put( name, value );
+        }
+        return this;
+    }
+
+    public DatabaseManagementServiceBuilder setConfigRaw( Map<String, String> raw )
+    {
+        raw.forEach( this::setConfig );
         return this;
     }
 
@@ -183,12 +225,6 @@ public class TestDatabaseManagementServiceBuilder extends DatabaseManagementServ
     }
 
     @Override
-    public TestDatabaseManagementServiceBuilder setConfig( String name, String value )
-    {
-        return (TestDatabaseManagementServiceBuilder) super.setConfig( name, value );
-    }
-
-    @Override
     public TestDatabaseManagementServiceBuilder setConfig( Setting<?> setting, String value )
     {
         return (TestDatabaseManagementServiceBuilder) super.setConfig( setting, value );
@@ -198,11 +234,5 @@ public class TestDatabaseManagementServiceBuilder extends DatabaseManagementServ
     public TestDatabaseManagementServiceBuilder setConfig( Map<Setting<?>,String> config )
     {
         return (TestDatabaseManagementServiceBuilder) super.setConfig( config );
-    }
-
-    @Override
-    public TestDatabaseManagementServiceBuilder setConfigRaw( Map<String,String> config )
-    {
-        return (TestDatabaseManagementServiceBuilder) super.setConfigRaw( config );
     }
 }

@@ -29,7 +29,6 @@ import java.util.Map;
 
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
-import org.neo4j.configuration.Settings;
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
@@ -51,6 +50,7 @@ import org.neo4j.test.rule.TestDirectory;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
+import static org.neo4j.configuration.SettingValueParsers.FALSE;
 
 @EphemeralPageCacheExtension
 class IdGeneratorRebuildTest
@@ -79,7 +79,7 @@ class IdGeneratorRebuildTest
         createInitialData( graphdb );
         managementService.shutdown();
         Map<String, String> params = new HashMap<>();
-        params.put( GraphDatabaseSettings.rebuild_idgenerators_fast.name(), Settings.FALSE );
+        params.put( GraphDatabaseSettings.rebuild_idgenerators_fast.name(), FALSE );
         Config config = Config.defaults( params );
         factory = new StoreFactory( databaseLayout, config, new DefaultIdGeneratorFactory( fs ), pageCache, fs, NullLogProvider.getInstance() );
     }

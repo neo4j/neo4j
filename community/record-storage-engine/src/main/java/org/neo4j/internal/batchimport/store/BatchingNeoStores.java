@@ -77,7 +77,6 @@ import org.neo4j.scheduler.JobScheduler;
 
 import static java.lang.String.valueOf;
 import static org.neo4j.configuration.GraphDatabaseSettings.pagecache_memory;
-import static org.neo4j.internal.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.io.IOUtils.closeAll;
 import static org.neo4j.io.mem.MemoryAllocator.createAllocator;
 import static org.neo4j.io.pagecache.IOLimiter.UNLIMITED;
@@ -287,7 +286,7 @@ public class BatchingNeoStores implements AutoCloseable, MemoryStatsVisitor.Visi
 
     private static Config getNeo4jConfig( Configuration config, Config dbConfig )
     {
-        dbConfig.augment( stringMap( pagecache_memory.name(), valueOf( config.pageCacheMemory() ) ) );
+        dbConfig.set( pagecache_memory, valueOf( config.pageCacheMemory() ) );
         return dbConfig;
     }
 

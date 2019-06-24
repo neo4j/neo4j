@@ -61,6 +61,7 @@ import static org.neo4j.configuration.GraphDatabaseSettings.store_user_log_max_a
 import static org.neo4j.configuration.GraphDatabaseSettings.store_user_log_rotation_delay;
 import static org.neo4j.configuration.GraphDatabaseSettings.store_user_log_rotation_threshold;
 import static org.neo4j.configuration.GraphDatabaseSettings.store_user_log_to_stdout;
+import static org.neo4j.configuration.SettingValueParsers.FALSE;
 import static org.neo4j.internal.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.server.ServerBootstrapper.OK;
 
@@ -116,7 +117,7 @@ class ServerUserLogTest
         // when
         try
         {
-            int returnCode = serverBootstrapper.start( dir, Optional.empty(), stringMap( store_user_log_to_stdout.name(), "false" ) );
+            int returnCode = serverBootstrapper.start( dir, Optional.empty(), stringMap( store_user_log_to_stdout.name(), FALSE ) );
             // then no exceptions are thrown and
             assertEquals( OK, returnCode );
             assertTrue( serverBootstrapper.getServer().getDatabaseService().isRunning() );
@@ -148,7 +149,7 @@ class ServerUserLogTest
         {
             int returnCode = serverBootstrapper.start( dir, Optional.empty(),
                     stringMap(
-                            store_user_log_to_stdout.name(), "false",
+                            store_user_log_to_stdout.name(), FALSE,
                             store_user_log_rotation_delay.name(), "0",
                             store_user_log_rotation_threshold.name(), "16",
                             store_user_log_max_archives.name(), Integer.toString( maxArchives )

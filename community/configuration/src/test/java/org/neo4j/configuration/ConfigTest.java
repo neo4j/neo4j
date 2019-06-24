@@ -19,56 +19,46 @@
  */
 package org.neo4j.configuration;
 
-import org.hamcrest.CoreMatchers;
-import org.hamcrest.Matchers;
+import org.apache.commons.lang3.mutable.MutableInt;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InOrder;
 
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.Set;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.function.Function;
-import javax.annotation.Nonnull;
 
 import org.neo4j.configuration.connectors.BoltConnector;
-import org.neo4j.configuration.connectors.Connector;
 import org.neo4j.configuration.connectors.HttpConnector;
-import org.neo4j.graphdb.config.InvalidSettingException;
+import org.neo4j.configuration.connectors.HttpsConnector;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.logging.Log;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.TestDirectoryExtension;
 import org.neo4j.test.rule.TestDirectory;
 
-import static java.util.Collections.singletonList;
-import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.equalTo;
-import static org.hamcrest.Matchers.not;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assertions.fail;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
-import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoMoreInteractions;
-import static org.neo4j.configuration.Settings.BOOLEAN;
-import static org.neo4j.configuration.Settings.STRING;
-import static org.neo4j.configuration.Settings.setting;
-import static org.neo4j.internal.helpers.collection.MapUtil.stringMap;
+import static org.neo4j.configuration.SettingImpl.newBuilder;
+import static org.neo4j.configuration.SettingValueParsers.BOOL;
+import static org.neo4j.configuration.SettingValueParsers.FALSE;
+import static org.neo4j.configuration.SettingValueParsers.INT;
+import static org.neo4j.configuration.SettingValueParsers.PATH;
+import static org.neo4j.configuration.SettingValueParsers.STRING;
+import static org.neo4j.configuration.SettingValueParsers.TRUE;
 
 @ExtendWith( TestDirectoryExtension.class )
 class ConfigTest
@@ -76,112 +66,385 @@ class ConfigTest
     @Inject
     private TestDirectory testDirectory;
 
-    private static final String ORIGIN = "test";
-    private static final MyMigratingSettings myMigratingSettings = new MyMigratingSettings();
-    private static final MySettingsWithDefaults mySettingsWithDefaults = new MySettingsWithDefaults();
-
     @Test
-    void shouldApplyDefaults()
+    void testLoadSettingsToConfig()
     {
-        Config config = newConfig();
-
-        assertThat( config.get( MySettingsWithDefaults.hello ), is( "Hello, World!" ) );
+        Config config = Config.newBuilder().addSettingsClass( TestSettings.class ).build();
+        assertEquals( "hello", config.get( TestSettings.stringSetting ) );
+        assertEquals( 1, config.get( TestSettings.intSetting ) );
+        assertNull( config.get( TestSettings.boolSetting ) );
     }
 
     @Test
-    void shouldApplyMigrations()
+    void testFetchAbsentSetting()
     {
-        // When
-        Config config = Config( stringMap( "old", "hello!" ) );
-
-        // Then
-        assertThat( config.get( MyMigratingSettings.newer ), is( "hello!" ) );
+        Config config = Config.newBuilder().addSettingsClass( TestSettings.class ).build();
+        Setting<Boolean> absentSetting = newBuilder( "test.absent.bool", BOOL, null ).build();
+        assertThrows( IllegalArgumentException.class, () -> config.get( absentSetting ) );
     }
 
     @Test
-    void shouldNotAllowSettingInvalidValues()
+    void testUpdateValue()
     {
-        assertThrows( InvalidSettingException.class, () -> Config( stringMap( MySettingsWithDefaults.boolSetting.name(), "asd" ) ) );
+        Config config = Config.newBuilder()
+                .addSettingsClass( TestSettings.class )
+                .set( TestSettings.intSetting, "3" )
+                .build();
+        assertEquals( 3, config.get( TestSettings.intSetting ) );
+        config.setDynamic( TestSettings.intSetting, 2, getClass().getSimpleName() );
+        assertEquals( 2, config.get( TestSettings.intSetting ) );
+        config.setDynamic( TestSettings.intSetting, null, getClass().getSimpleName() );
+        assertEquals( 1, config.get( TestSettings.intSetting ) );
     }
 
     @Test
-    void shouldBeAbleToAugmentConfig()
+    void testOverrideAbsentSetting()
     {
-        // Given
-        Config config = newConfig();
-
-        assertTrue( config.get( MySettingsWithDefaults.boolSetting ) );
-        assertEquals( "Hello, World!",  config.get( MySettingsWithDefaults.hello ) );
-
-        // When
-        config.augment( MySettingsWithDefaults.boolSetting, Settings.FALSE );
-        config.augment( MySettingsWithDefaults.hello, "Bye" );
-
-        // Then
-        assertThat( config.get( MySettingsWithDefaults.boolSetting ), equalTo( false ) );
-        assertThat( config.get( MySettingsWithDefaults.hello ), equalTo( "Bye" ) );
+        Map<String,String> settings = Map.of( "test.absent.bool", FALSE );
+        Config.Builder builder = Config.newBuilder().addSettingsClass( TestSettings.class ).set( settings );
+        assertThrows( IllegalArgumentException.class, builder::build );
     }
 
     @Test
-    void augmentAnotherConfig()
+    void testOverrideDefault()
     {
-        Config config = newConfig();
-        config.augment( MySettingsWithDefaults.hello, "Hi" );
 
-        Config anotherConfig = newConfig();
-        anotherConfig.augment( stringMap( MySettingsWithDefaults.boolSetting.name(),
-                Settings.FALSE, MySettingsWithDefaults.hello.name(), "Bye" ) );
+        Map<String,String> overriddenDefaults =
+                Map.of( TestSettings.stringSetting.name(), "foo",
+                        TestSettings.intSetting.name(), "11",
+                        TestSettings.boolSetting.name(), TRUE );
 
-        config.augment( anotherConfig );
+        Config config = Config.newBuilder()
+                .addSettingsClass( TestSettings.class )
+                .setDefaults( overriddenDefaults )
+                .build();
 
-        assertThat( config.get( MySettingsWithDefaults.boolSetting ), equalTo( false ) );
-        assertThat( config.get( MySettingsWithDefaults.hello ), equalTo( "Bye" ) );
+        assertEquals( "foo", config.get( TestSettings.stringSetting ) );
+        assertEquals( 11, config.get( TestSettings.intSetting ) );
+        assertEquals( true, config.get( TestSettings.boolSetting ) );
     }
 
     @Test
-    void shouldWarnAndDiscardUnknownOptionsInReservedNamespaceAndPassOnBufferedLogInWithMethods() throws Exception
+    void testUpdateStatic()
     {
-        // Given
-        Log log = mock( Log.class );
-        File confFile = testDirectory.file( "test.conf" );
-        assertTrue( confFile.createNewFile() );
-
-        Config config = Config.fromFile( confFile )
-                              .withSetting( GraphDatabaseSettings.strict_config_validation, "false" )
-                              .withSetting( "dbms.jibberish", "booh" ).build();
-
-        // When
-        config.setLogger( log );
-        config.augment( "causal_clustering.jibberish", "baah" );
-
-        // Then
-        verify( log ).warn( "Unknown config option: %s", "dbms.jibberish" );
-        verifyNoMoreInteractions( log );
+        Config config = Config.newBuilder().addSettingsClass( TestSettings.class ).build();
+        assertThrows( IllegalArgumentException.class, () -> config.setDynamic( TestSettings.stringSetting, "not allowed", getClass().getSimpleName() ) );
+        assertEquals( "hello", config.get( TestSettings.stringSetting ) );
+        config.set( TestSettings.stringSetting, "allowed internally" );
+        assertEquals( "allowed internally", config.get( TestSettings.stringSetting ) );
     }
 
     @Test
-    void shouldLogDeprecationWarnings() throws Exception
+    void testUpdateImmutable()
     {
-        // Given
-        Log log = mock( Log.class );
-        File confFile = testDirectory.file( "test.conf" );
-        assertTrue( confFile.createNewFile() );
+        Config config = Config.newBuilder().addSettingsClass( TestSettings.class ).build();
+        assertThrows( IllegalArgumentException.class, () -> config.setDynamic( TestSettings.boolSetting, true, getClass().getSimpleName() ) );
+        assertThrows( IllegalArgumentException.class, () -> config.set( TestSettings.boolSetting, true ) );
+    }
 
-        Config config = Config.fromFile( confFile )
-                              .withSetting( MySettingsWithDefaults.oldHello, "baah" )
-                              .withSetting( MySettingsWithDefaults.oldSetting, "booh" )
-                              .withConfigClasses( Arrays.asList( mySettingsWithDefaults, myMigratingSettings,
-                                      new GraphDatabaseSettings() ) )
-                              .build();
+    @Test
+    void testObserver()
+    {
+        Config config = Config.newBuilder().addSettingsClass( TestSettings.class ).build();
 
-        // When
-        config.setLogger( log );
+        MutableInt observedOld = new MutableInt( 0 );
+        MutableInt observedNew = new MutableInt( 0 );
+        SettingChangeListener<Integer> listener = ( oldValue, newValue ) ->
+        {
+            observedOld.setValue( oldValue );
+            observedNew.setValue( newValue );
+        };
 
-        // Then
-        verify( log ).warn( "%s is deprecated. Replaced by %s", MySettingsWithDefaults.oldHello.name(),
-                MySettingsWithDefaults.hello.name() );
-        verify( log ).warn( "%s is deprecated.", MySettingsWithDefaults.oldSetting.name() );
-        verifyNoMoreInteractions( log );
+        config.addListener( TestSettings.intSetting, listener );
+
+        assertEquals( 0, observedOld.getValue() );
+        assertEquals( 0, observedNew.getValue() );
+
+        config.setDynamic( TestSettings.intSetting, 2, getClass().getSimpleName() );
+        assertEquals( 1, observedOld.getValue() );
+        assertEquals( 2, observedNew.getValue() );
+
+        config.setDynamic( TestSettings.intSetting, 7, getClass().getSimpleName() );
+        assertEquals( 2, observedOld.getValue() );
+        assertEquals( 7, observedNew.getValue() );
+
+        config.removeListener( TestSettings.intSetting, listener );
+
+        config.setDynamic( TestSettings.intSetting, 9, getClass().getSimpleName() );
+        assertEquals( 2, observedOld.getValue() );
+        assertEquals( 7, observedNew.getValue() );
+
+        assertThrows( IllegalArgumentException.class, () -> config.addListener( TestSettings.boolSetting, ( oV, nV ) -> {} ) );
+    }
+
+    @Test
+    void testGroup()
+    {
+        Map<String,String> settings =
+                Map.of( "test.connection.http.1.port", "1111",
+                        "test.connection.http.1.hostname", "0.0.0.0",
+                        "test.connection.http.1.secure", FALSE,
+                        "test.connection.http.2.port", "2222",
+                        "test.connection.http.2.hostname", "127.0.0.1" );
+
+        Config config = Config.newBuilder()
+                .addGroupSettingClass( TestConnectionGroupSetting.class )
+                .set( settings )
+                .build();
+
+        assertEquals(1111, config.get( TestConnectionGroupSetting.group( "1" ).port) );
+        assertEquals(2222, config.get( TestConnectionGroupSetting.group( "2" ).port) );
+        assertEquals(false, config.get( TestConnectionGroupSetting.group( "1" ).secure) );
+        assertEquals(true, config.get( TestConnectionGroupSetting.group( "2" ).secure) );
+
+        assertThrows( IllegalArgumentException.class, () -> config.get( TestConnectionGroupSetting.group( "not_specified_id" ).port ) );
+    }
+
+    @Test
+    void testGroupInheritance()
+    {
+        Config config = Config.newBuilder()
+                .addGroupSettingClass( ChildGroup.class )
+                .set( Map.of( "test.inheritance.1.child", "child" ) )
+                .build();
+
+        ChildGroup group = new ChildGroup( "1" );
+        assertEquals( "child", config.get( group.childSetting ) );
+        assertEquals( "parent", config.get( group.parentSetting ) );
+    }
+
+    @Test
+    void testValidator()
+    {
+        Map<String,String> settings = Map.of( "test.connection.http.1.port", "1111","test.connection.http.2.port", "1111" );
+
+        Config.Builder builder = Config.newBuilder()
+                .addSettingsClass( TestSettings.class )
+                .addGroupSettingClass( TestConnectionGroupSetting.class )
+                .addValidator( TestConnectionGroupSetting.class )
+                .set( settings );
+
+        Exception e = assertThrows( IllegalArgumentException.class, builder::build );
+        assertEquals( "Need unique ports", e.getMessage() );
+    }
+
+    @Test
+    void testInvalidValidator()
+    {
+
+        Config.Builder builder = Config.newBuilder()
+                .addValidator( InvalidValidator.class );
+
+        Exception e = assertThrows( IllegalArgumentException.class, builder::build );
+        assertTrue( e.getMessage().contains( "Failed to create instance of" ) );
+    }
+
+    @Test
+    void testMalformedGroupSetting()
+    {
+        Map<String,String> settings = Map.of( "test.connection.http.1.foo.bar", "1111");
+
+        Config.Builder builder = Config.newBuilder()
+                .addGroupSettingClass( TestConnectionGroupSetting.class )
+                .set( settings );
+
+        assertThrows( IllegalArgumentException.class, builder::build );
+    }
+
+    @Test
+    void testGetGroups()
+    {
+        Map<String,String> settings =
+                Map.of( "test.connection.http.default.port", "7474",
+                        "test.connection.http.1.port", "1111",
+                        "test.connection.http.1.hostname", "0.0.0.0",
+                        "test.connection.http.1.secure", FALSE,
+                        "test.connection.http.2.port", "2222",
+                        "test.connection.http.2.hostname", "127.0.0.1" );
+        Config config = Config.newBuilder()
+                .addGroupSettingClass( TestConnectionGroupSetting.class )
+                .set( settings )
+                .build();
+
+        var groups = config.getGroups( TestConnectionGroupSetting.class );
+        assertEquals( Set.of( "default", "1", "2" ), groups.keySet() );
+        assertEquals( 7474, config.get( groups.get( "default" ).port ) );
+        assertEquals( true, config.get( groups.get( "2" ).secure ) );
+
+    }
+
+    @Test
+    void testFromConfig()
+    {
+        Config fromConfig = Config.newBuilder()
+                .addSettingsClass( TestSettings.class )
+                .setDefaults( Map.of( TestSettings.boolSetting.name(), FALSE ) )
+                .set( TestSettings.intSetting, "3" ).build();
+
+        Config config1 = Config.newBuilder().fromConfig( fromConfig ).build();
+        assertEquals( 3, config1.get( TestSettings.intSetting ) );
+        assertEquals( "hello", config1.get( TestSettings.stringSetting ) );
+
+        Config config2 = Config.newBuilder()
+                .fromConfig( fromConfig )
+                .set( TestSettings.intSetting, "5" )
+                .build();
+
+        assertEquals( 5, config2.get( TestSettings.intSetting ) );
+
+        Config config3 = Config.newBuilder()
+                .addSettingsClass( TestSettings.class )
+                .fromConfig( fromConfig )
+                .set( TestSettings.intSetting, "7" )
+                .build();
+
+        assertEquals( 7, config3.get( TestSettings.intSetting ) );
+        assertEquals( false, config3.get( TestSettings.boolSetting ) );
+
+    }
+
+    @Test
+    void shouldThrowIfMultipleFromConfig()
+    {
+        Config fromConfig = Config.newBuilder()
+                .addSettingsClass( TestSettings.class )
+                .setDefaults( Map.of( TestSettings.boolSetting.name(), FALSE ) )
+                .set( TestSettings.intSetting, "3" ).build();
+
+        assertThrows( IllegalArgumentException.class, () -> Config.newBuilder().fromConfig( fromConfig ).fromConfig( fromConfig ).build() );
+    }
+
+    @Test
+    void testGroupFromConfig()
+    {
+        Map<String,String> fromSettings =
+                Map.of( "test.connection.http.default.port", "7474",
+                        "test.connection.http.1.port", "1111",
+                        "test.connection.http.1.hostname", "0.0.0.0",
+                        "test.connection.http.1.secure", FALSE );
+        Config fromConfig = Config.newBuilder()
+                .addGroupSettingClass( TestConnectionGroupSetting.class )
+                .set( fromSettings )
+                .build();
+
+        Config config1 = Config.newBuilder()
+                .fromConfig( fromConfig )
+                .build();
+
+        var groups1 = config1.getGroups( TestConnectionGroupSetting.class );
+        assertEquals( Set.of( "default", "1" ), groups1.keySet() );
+        assertEquals( 7474, config1.get( groups1.get( "default" ).port ) );
+
+        Map<String,String> settings =
+                Map.of( "test.connection.http.1.port", "3333",
+                        "test.connection.http.2.port", "2222",
+                        "test.connection.http.2.hostname", "127.0.0.1" );
+        Config config2 = Config.newBuilder()
+                .fromConfig( fromConfig )
+                .addGroupSettingClass( TestConnectionGroupSetting.class )
+                .set( settings )
+                .build();
+
+        var groups2 = config2.getGroups( TestConnectionGroupSetting.class );
+        assertEquals( Set.of( "default", "1", "2" ), groups2.keySet() );
+        assertEquals( 7474, config2.get( groups2.get( "default" ).port ) );
+        assertEquals( 3333, config2.get( groups2.get( "1" ).port ) );
+        assertEquals( true, config2.get( groups2.get( "default" ).secure ) );
+        assertEquals( true, config2.get( groups2.get( "2" ).secure ) );
+    }
+
+    @Test
+    void testResolveDefaultSettingDependency()
+    {
+        Config.Builder builder = Config.newBuilder().addSettingsClass( DependencySettings.class );
+
+        {
+            Config config = builder.build();
+            assertEquals( config.get( DependencySettings.baseString ), config.get( DependencySettings.dependingString ) );
+        }
+        {
+            String value = "default overrides dependency";
+            builder.setDefaults( Map.of(DependencySettings.dependingString.name(), value) );
+            Config config = builder.build();
+            assertEquals( value, config.get( DependencySettings.dependingString ) );
+        }
+
+        {
+            String value = "value overrides dependency";
+            builder.set( DependencySettings.dependingString, value);
+            Config config = builder.build();
+            assertEquals( value, config.get( DependencySettings.dependingString ) );
+        }
+    }
+
+    @Test
+    void testResolvePathSettingDependency()
+    {
+        Config config = Config.newBuilder()
+                .addSettingsClass( DependencySettings.class )
+                .build();
+
+        assertEquals( Path.of( "/base/" ), config.get( DependencySettings.basePath ) );
+        assertEquals( Path.of( "/base/mid/" ), config.get( DependencySettings.midPath ) );
+        assertEquals( Path.of( "/base/mid/end/file" ), config.get( DependencySettings.endPath ) );
+        assertEquals( Path.of( "/another/path/file" ), config.get( DependencySettings.absolute ) );
+
+        config.set( DependencySettings.endPath, Path.of("/path/another_file") );
+        config.set( DependencySettings.absolute, Path.of("path/another_file") );
+        assertEquals( Path.of( "/path/another_file" ), config.get( DependencySettings.endPath ) );
+        assertEquals( Path.of( "/base/mid/path/another_file" ), config.get( DependencySettings.absolute ) );
+    }
+
+    private static final class BrokenDependencySettings implements SettingsDeclaration
+    {
+        static Setting<Path> broken = newBuilder( "test.base.path", PATH, Path.of( "/base/" ) )
+                .setDependency( newBuilder( "test.not.present.dependency", PATH, Path.of("/broken/" ) ).immutable().build() )
+                .immutable()
+                .build();
+    }
+
+    @Test
+    void testResolveBrokenSettingDependency()
+    {
+        Config.Builder builder = Config.newBuilder().addSettingsClass( BrokenDependencySettings.class );
+        assertThrows( IllegalArgumentException.class, builder::build );
+    }
+
+    private static final class SingleSettingGroup extends GroupSetting
+    {
+        final Setting<String> singleSetting = getBuilder( STRING, null ).build();
+        static SingleSettingGroup group( String name )
+        {
+            return new SingleSettingGroup( name );
+        }
+        private SingleSettingGroup( String name )
+        {
+            super( name );
+        }
+
+        @Override
+        public String getPrefix()
+        {
+            return "test.single_setting";
+        }
+    }
+
+    @Test
+    void testSingleSettingGroup()
+    {
+        Map<String,String> fromSettings =
+                Map.of( "test.single_setting.default", "default value",
+                        "test.single_setting.foo", "foo",
+                        "test.single_setting.bar", "bar" );
+        Config config = Config.newBuilder()
+                .addGroupSettingClass( SingleSettingGroup.class )
+                .set( fromSettings )
+                .build();
+
+        assertEquals( 3, config.getGroups( SingleSettingGroup.class ).size() );
+        assertEquals( "default value", config.get( SingleSettingGroup.group( "default" ).singleSetting ) );
+        assertEquals( "foo", config.get( SingleSettingGroup.group( "foo" ).singleSetting ) );
+        assertEquals( "bar", config.get( SingleSettingGroup.group( "bar" ).singleSetting ) );
     }
 
     @Test
@@ -190,7 +453,7 @@ class ConfigTest
         Log log = mock( Log.class );
         File confFile = testDirectory.file( "test.conf" ); // Note: we don't create the file.
 
-        Config config = Config.fromFile( confFile ).withNoThrowOnFileLoadFailure().build();
+        Config config = Config.emptyBuilder().fromFileNoThrow( confFile ).build();
 
         config.setLogger( log );
 
@@ -205,7 +468,7 @@ class ConfigTest
         assertTrue( confFile.createNewFile() );
         assumeTrue( confFile.setReadable( false ) );
 
-        Config config = Config.fromFile( confFile ).withNoThrowOnFileLoadFailure().build();
+        Config config = Config.emptyBuilder().fromFileNoThrow( confFile ).build();
 
         config.setLogger( log );
 
@@ -213,13 +476,24 @@ class ConfigTest
     }
 
     @Test
+    void canReadConfigFile() throws IOException
+    {
+        File confFile = testDirectory.file( "test.conf" );
+        Files.write( confFile.toPath(), Collections.singletonList( GraphDatabaseSettings.default_database.name() + "=foo" ) );
+
+        assertEquals( "foo", Config.newBuilder().fromFile( confFile ).build().get( GraphDatabaseSettings.default_database ) );
+        assertEquals( "foo", Config.newBuilder().fromFileNoThrow( confFile ).build().get( GraphDatabaseSettings.default_database ) );
+        assertEquals( "foo", Config.newBuilder().fromFileNoThrow( confFile.toPath() ).build().get( GraphDatabaseSettings.default_database ) );
+    }
+
+    @Test
     void mustThrowIfConfigFileCouldNotBeFound()
     {
-        assertThrows( ConfigLoadIOException.class, () ->
+        assertThrows( IllegalArgumentException.class, () ->
         {
             File confFile = testDirectory.file( "test.conf" );
 
-            Config.fromFile( confFile ).build();
+            Config.emptyBuilder().fromFile( confFile ).build();
         } );
     }
 
@@ -229,10 +503,7 @@ class ConfigTest
         File confFile = testDirectory.file( "test.conf" );
         assertTrue( confFile.createNewFile() );
         assumeTrue( confFile.setReadable( false ) );
-        assertThrows( ConfigLoadIOException.class, () ->
-        {
-            Config.fromFile( confFile ).build();
-        } );
+        assertThrows( IllegalArgumentException.class, () -> Config.emptyBuilder().fromFile( confFile ).build() );
     }
 
     @Test
@@ -247,7 +518,12 @@ class ConfigTest
                 ExternalSettings.maxHeapSize.name() + "=10g",
                 ExternalSettings.maxHeapSize.name() + "=11g" ) );
 
-        Config config = Config.fromFile( confFile ).build();
+        Config config = Config.newBuilder()
+                .fromFile( confFile )
+                .setDefault( ExternalSettings.initialHeapSize, "1g" )
+                .setDefault( ExternalSettings.initialHeapSize, "2g" )
+                .build();
+
         config.setLogger( log );
 
         // We should only log the warning once for each.
@@ -260,455 +536,239 @@ class ConfigTest
     }
 
     @Test
-    void mustNotWarnAboutDuplicateJvmAdditionalSettings() throws Exception
+    void testDisableAllConnectors()
     {
-        Log log = mock( Log.class );
+        BoltConnector bolt1 = BoltConnector.group( "1" );
+        BoltConnector bolt2 = BoltConnector.group( "2" );
+        Config config = Config.defaults( Map.of( bolt1.enabled.name(), TRUE , bolt2.enabled.name(), TRUE ) );
+
+        ConfigUtils.disableAllConnectors( config );
+
+        assertFalse( config.get( bolt1.enabled ) );
+        assertFalse( config.get( bolt2.enabled ) );
+    }
+
+    @Test
+    void testAmendIfNotSet()
+    {
+        Config config = Config.newBuilder().addSettingsClass( TestSettings.class ).build();
+        config.setIfNotSet( TestSettings.intSetting, 77 );
+        assertEquals( 77, config.get( TestSettings.intSetting ) );
+
+        Config configWithSetting = Config.newBuilder().addSettingsClass( TestSettings.class ).set( TestSettings.intSetting, "66" ).build();
+        configWithSetting.setIfNotSet( TestSettings.intSetting, 77 );
+        assertEquals( 66, configWithSetting.get( TestSettings.intSetting ) );
+    }
+
+    @Test
+    void testIsExplicitlySet()
+    {
+        Config config = Config.emptyBuilder().addSettingsClass( TestSettings.class ).build();
+        assertFalse( config.isExplicitlySet( TestSettings.intSetting ) );
+        config.set( TestSettings.intSetting, 77 );
+        assertTrue( config.isExplicitlySet( TestSettings.intSetting ) );
+
+        Config configWithSetting = Config.emptyBuilder().addSettingsClass( TestSettings.class ).set( TestSettings.intSetting, "66" ).build();
+        assertTrue( configWithSetting.isExplicitlySet( TestSettings.intSetting ) );
+        configWithSetting.set( TestSettings.intSetting, null );
+        assertFalse( configWithSetting.isExplicitlySet( TestSettings.intSetting ) );
+    }
+
+    @Test
+    void testDefaultDatabaseMigrator() throws IOException
+    {
+        File confFile = testDirectory.createFile( "test.conf" );
+        Files.write( confFile.toPath(), List.of( "dbms.active_database=foo") );
+
+        {
+            Config config = Config.newBuilder()
+                    .fromFile( confFile )
+                    .build();
+            Log log = mock( Log.class );
+            config.setLogger( log );
+
+            assertEquals( "foo", config.get( GraphDatabaseSettings.default_database ) );
+            verify( log ).warn( "Use of deprecated setting dbms.active_database. Replaced by %s.", GraphDatabaseSettings.default_database.name() );
+        }
+        {
+            Config config = Config.newBuilder()
+                    .fromFile( confFile )
+                    .set( GraphDatabaseSettings.default_database, "bar" )
+                    .build();
+            Log log = mock( Log.class );
+            config.setLogger( log );
+
+            assertEquals( "bar", config.get( GraphDatabaseSettings.default_database ) );
+            verify( log ).warn( "Use of deprecated setting dbms.active_database. Replaced by %s.", GraphDatabaseSettings.default_database.name() );
+        }
+
+    }
+
+    @Test
+    void testConnectorMigration() throws IOException
+    {
         File confFile = testDirectory.createFile( "test.conf" );
         Files.write( confFile.toPath(), Arrays.asList(
-                ExternalSettings.additionalJvm.name() + "=-Dsysprop=val",
-                ExternalSettings.additionalJvm.name() + "=-XX:+UseG1GC",
-                ExternalSettings.additionalJvm.name() + "=-XX:+AlwaysPreTouch" ) );
+                "dbms.connector.bolt.enabled=true",
+                "dbms.connector.http.enabled=true",
+                "dbms.connector.https.enabled=true",
+                "dbms.connector.bolt2.type=bolt",
+                "dbms.connector.bolt2.listen_address=:1234" ) );
 
-        Config config = Config.fromFile( confFile ).build();
-        config.setLogger( log );
-
-        // The ExternalSettings.additionalJvm setting is allowed to be specified more than once.
-        verifyNoMoreInteractions( log );
-    }
-
-    @Test
-    void shouldSetInternalParameter()
-    {
-        // Given
-        Config config = Config.builder()
-                .withSetting( MySettingsWithDefaults.secretSetting, "false" )
-                .withSetting( MySettingsWithDefaults.hello, "ABC" )
-                .withConfigClasses( Arrays.asList( mySettingsWithDefaults, myMigratingSettings ) )
+        Config config = Config.newBuilder()
+                .set( BoltConnector.group( "bolt3" ).enabled, TRUE )
+                .fromFile( confFile )
                 .build();
 
-        // Then
-        assertTrue( config.getConfigValues().get( MySettingsWithDefaults.secretSetting.name() ).internal() );
-        assertFalse( config.getConfigValues().get( MySettingsWithDefaults.hello.name() ).internal() );
+        assertTrue( config.get( BoltConnector.group( "bolt" ).enabled ) );
+        assertTrue( config.get( HttpConnector.group( "http" ).enabled ) );
+        assertTrue( config.get( HttpsConnector.group( "https" ).enabled ) );
+        assertEquals( 1234, config.get( BoltConnector.group( "bolt2" ).listen_address ).getPort() );
+        assertTrue( config.get( BoltConnector.group( "bolt3" ).enabled ) );
     }
 
     @Test
-    public void shouldSetSecretParameter()
+    void testStrictValidation() throws IOException
     {
-        // Given
-        Config config = Config.builder()
-                .withSetting( MySettingsWithDefaults.password, "this should not be visible" )
-                .withSetting( MySettingsWithDefaults.hello, "ABC" )
-                .withConfigClasses( Arrays.asList( mySettingsWithDefaults, myMigratingSettings ) )
-                .build();
+        File confFile = testDirectory.createFile( "test.conf" );
+        Files.write( confFile.toPath(), Collections.singletonList( "some_unrecognized_garbage=true" ) );
 
-        // Then
-        assertTrue( config.getConfigValues().get( MySettingsWithDefaults.password.name() ).secret() );
-        assertFalse( config.getConfigValues().get( MySettingsWithDefaults.hello.name() ).secret() );
-        String configText = config.toString();
-        assertTrue( configText.contains( Secret.OBFUSCATED ) );
-        assertFalse( configText.contains( "this should not be visible" ) );
-        assertFalse( configText.contains( config.get( MySettingsWithDefaults.password ) ) );
+        Config.Builder builder = Config.newBuilder().fromFile( confFile );
+        assertThrows( IllegalArgumentException.class, builder::build );
+
+        builder.set( GraphDatabaseSettings.strict_config_validation, "false" );
+        assertDoesNotThrow( builder::build );
     }
 
-    @Test
-    void shouldSetDocumentedDefaultValue()
+    private static final class TestSettings implements SettingsDeclaration
     {
-        // Given
-        Config config = Config.builder()
-                              .withSetting( MySettingsWithDefaults.secretSetting, "false" )
-                              .withSetting( MySettingsWithDefaults.hello, "ABC" )
-                              .withConfigClasses( Arrays.asList( new MySettingsWithDefaults(), myMigratingSettings ) )
-                              .build();
-
-        // Then
-        assertEquals( Optional.of( "<documented default value>" ),
-                config.getConfigValues().get( MySettingsWithDefaults.secretSetting.name() )
-                      .documentedDefaultValue() );
-        assertEquals( Optional.empty(),
-                config.getConfigValues().get( MySettingsWithDefaults.hello.name() ).documentedDefaultValue() );
+        static Setting<String> stringSetting = newBuilder( "test.setting.string", STRING, "hello" ).build();
+        static Setting<Integer> intSetting = newBuilder( "test.setting.integer", INT, 1 ).dynamic().build();
+        static Setting<Boolean> boolSetting = newBuilder( "test.setting.bool", BOOL, null ).immutable().build();
     }
 
-    @Test
-    void validatorsShouldBeCalledWhenBuilding()
+    public static class TestConnectionGroupSetting extends GroupSetting implements GroupSettingValidator
     {
-        // Should not throw
-        Config.builder()
-              .withSetting( MySettingsWithDefaults.hello, "neo4j" )
-              .withValidator( new HelloHasToBeNeo4jConfigurationValidator() )
-              .withConfigClasses( Arrays.asList( mySettingsWithDefaults, myMigratingSettings ) ).build();
 
-        InvalidSettingException exception = assertThrows( InvalidSettingException.class,
-                        () -> Config.builder().withSetting( MySettingsWithDefaults.hello, "not-neo4j" )
-                                .withValidator( new HelloHasToBeNeo4jConfigurationValidator() )
-                                .withConfigClasses( Arrays.asList( mySettingsWithDefaults, myMigratingSettings ) ).build() );
-        assertThat( exception.getMessage(), Matchers.containsString( "Setting hello has to set to neo4j" ) );
-    }
-
-    @Group( "a.b.c" )
-    private static class GroupedSetting
-    {
-    }
-
-    @Test
-    void identifiersFromGroup() throws Exception
-    {
-        // Given
-        File confFile = testDirectory.file( "test.conf" );
-        assertTrue( confFile.createNewFile() );
-
-        Config config = Config.fromFile( confFile )
-                              .withSetting( GraphDatabaseSettings.strict_config_validation, "false" )
-                              .withSetting( "a.b.c.first.jibberish", "baah" )
-                              .withSetting( "a.b.c.second.jibberish", "baah" )
-                              .withSetting( "a.b.c.third.jibberish", "baah" )
-                              .withSetting( "a.b.c.forth.jibberish", "baah" ).build();
-
-        Set<String> identifiers = config.identifiersFromGroup( GroupedSetting.class );
-        Set<String> expectedIdentifiers = new HashSet<>( Arrays.asList( "first", "second", "third", "forth" ) );
-
-        assertEquals( expectedIdentifiers, identifiers );
-    }
-
-    @Test
-    void isConfigured()
-    {
-        Config config = newConfig();
-        assertFalse( config.isConfigured( MySettingsWithDefaults.hello ) );
-        config.augment( MySettingsWithDefaults.hello, "Hi" );
-        assertTrue( config.isConfigured( MySettingsWithDefaults.hello ) );
-    }
-
-    @Test
-    void isConfiguredShouldNotReturnTrueEvenThoughDefaultValueExists()
-    {
-        Config config = newConfig();
-        assertFalse( config.isConfigured( MySettingsWithDefaults.hello ) );
-        assertEquals( "Hello, World!", config.get( MySettingsWithDefaults.hello ) );
-    }
-
-    @Test
-    void withConnectorsDisabled()
-    {
-        Connector httpConnector = new HttpConnector();
-        Connector boltConnector = new BoltConnector();
-        Config config = Config.builder()
-                              .withSetting( httpConnector.enabled, "true" )
-                              .withSetting( httpConnector.type, Connector.ConnectorType.HTTP.name() )
-                              .withSetting( boltConnector.enabled, "true" )
-                              .withSetting( boltConnector.type, Connector.ConnectorType.BOLT.name() )
-                              .withConnectorsDisabled().build();
-        assertFalse( config.get( httpConnector.enabled ) );
-        assertFalse( config.get( boltConnector.enabled ) );
-    }
-
-    @Test
-    void augmentDefaults()
-    {
-        Config config = newConfig();
-        assertEquals( "Hello, World!", config.get( MySettingsWithDefaults.hello ) );
-        config.augmentDefaults( MySettingsWithDefaults.hello, "new default" );
-        assertEquals( "new default", config.get( MySettingsWithDefaults.hello ) );
-    }
-
-    @Test
-    void updateDynamicShouldLogChanges()
-    {
-        String settingName = MyDynamicSettings.boolSetting.name();
-        String changedMessage = "Setting changed: '%s' changed from '%s' to '%s' via '%s'";
-        Config config = Config.builder().withConfigClasses( singletonList( new MyDynamicSettings() ) ).build();
-
-        Log log = mock( Log.class );
-        config.setLogger( log );
-
-        config.updateDynamicSetting( settingName, "false", ORIGIN );
-        config.updateDynamicSetting( settingName, "true", ORIGIN );
-        config.updateDynamicSetting( settingName, "", ORIGIN );
-
-        InOrder order = inOrder( log );
-        order.verify( log ).info( changedMessage, settingName, "default (true)", "false", "test" );
-        order.verify( log ).info( changedMessage, settingName, "false", "true", "test" );
-        order.verify( log ).info( changedMessage, settingName, "true", "default (true)", "test" );
-        verifyNoMoreInteractions( log );
-    }
-
-    @Test
-    void doNotParsePropertyOnEachLookup()
-    {
-        ParseCounterSettings counterSettings = new ParseCounterSettings();
-        Config config = Config.builder().withConfigClasses( singletonList( counterSettings ) ).build();
-        // we parse property first time during validation and throw that value away
-        assertEquals( 1, ParseCounterSettings.countingIntegerConverter.getCounterValue() );
-
-        assertEquals( 1, (int) config.get( ParseCounterSettings.integerSetting ) );
-        assertEquals( 2, ParseCounterSettings.countingIntegerConverter.getCounterValue() );
-
-        assertEquals( 1, (int) config.get( ParseCounterSettings.integerSetting ) );
-        assertEquals( 1, (int) config.get( ParseCounterSettings.integerSetting ) );
-        assertEquals( 1, (int) config.get( ParseCounterSettings.integerSetting ) );
-        assertEquals( 2, ParseCounterSettings.countingIntegerConverter.getCounterValue() );
-    }
-
-    @Test
-    void updateDynamicConfig()
-    {
-        Config config = Config.builder().withConfigClasses( singletonList( new MyDynamicSettings() ) ).build();
-        assertTrue( config.get( MyDynamicSettings.boolSetting ) );
-        config.updateDynamicSetting( MyDynamicSettings.boolSetting.name(), Settings.FALSE, "test" );
-        assertFalse( config.get( MyDynamicSettings.boolSetting ) );
-    }
-
-    @Test
-    void updateDynamicShouldThrowIfSettingIsNotDynamic()
-    {
-        Config config = Config.builder().withConfigClasses( singletonList( mySettingsWithDefaults ) ).build();
-        assertThrows( IllegalArgumentException.class, () -> config.updateDynamicSetting( MySettingsWithDefaults.hello.name(), "hello", ORIGIN ) );
-    }
-
-    @Test
-    void updateDynamicShouldInformRegisteredListeners()
-    {
-        Config config = Config.builder().withConfigClasses( singletonList( new MyDynamicSettings() ) ).build();
-        AtomicInteger counter = new AtomicInteger( 0 );
-        config.registerDynamicUpdateListener( MyDynamicSettings.boolSetting, ( previous, update ) ->
+        public static TestConnectionGroupSetting group( String name )
         {
-            counter.getAndIncrement();
-            assertTrue( previous );
-            assertFalse( update );
-        } );
-        config.updateDynamicSetting( MyDynamicSettings.boolSetting.name(), "false", ORIGIN );
-        assertThat( counter.get(), is( 1 ) );
-    }
-
-    @Test
-    void updateDynamicShouldNotAllowInvalidSettings()
-    {
-        Config config = Config.builder().withConfigClasses( singletonList( new MyDynamicSettings() ) ).build();
-        assertThrows( InvalidSettingException.class,
-                () -> config.updateDynamicSetting( MyDynamicSettings.boolSetting.name(), "this is not a boolean", ORIGIN ) );
-    }
-
-    @Test
-    void registeringUpdateListenerOnNonDynamicSettingMustThrow()
-    {
-        Config config = Config.builder().withConfigClasses( singletonList( mySettingsWithDefaults ) ).build();
-        assertThrows( IllegalArgumentException.class,
-                () -> config.registerDynamicUpdateListener( MySettingsWithDefaults.hello, ( a, b ) -> fail( "never called" ) ) );
-    }
-
-    @Test
-    void updateDynamicShouldLogExceptionsFromUpdateListeners()
-    {
-        Config config = Config.builder().withConfigClasses( singletonList( new MyDynamicSettings() ) ).build();
-        IllegalStateException exception = new IllegalStateException( "Boo" );
-        config.registerDynamicUpdateListener( MyDynamicSettings.boolSetting, ( a, b ) ->
+            return new TestConnectionGroupSetting( name );
+        }
+        @Override
+        public String getPrefix()
         {
-            throw exception;
-        } );
-        Log log = mock( Log.class );
-        config.setLogger( log );
-        String settingName = MyDynamicSettings.boolSetting.name();
+            return "test.connection.http";
+        }
 
-        config.updateDynamicSetting( settingName, "", ORIGIN );
+        public final Setting<Integer> port = getBuilder( "port", INT, 1 ).build();
 
-        verify( log ).error( "Failure when notifying listeners after dynamic setting change; " +
-                             "new setting might not have taken effect: Boo", exception );
-    }
-
-    @Test
-    public void updateDynamicShouldWorkWithSecret() throws Exception
-    {
-        // Given a secret dynamic setting with a registered update listener
-        String settingName = MyDynamicSettings.secretSetting.name();
-        String changedMessage = "Setting changed: '%s' changed from '%s' to '%s' via '%s'";
-        Config config = Config.builder().withConfigClasses( singletonList( new MyDynamicSettings() ) ).build();
-
-        Log log = mock( Log.class );
-        config.setLogger( log );
-
-        AtomicInteger counter = new AtomicInteger( 0 );
-        config.registerDynamicUpdateListener( MyDynamicSettings.secretSetting, ( previous, update ) ->
+        public final Setting<String> hostname = getBuilder( "hostname" , STRING, "0.0.0.0" ).build();
+        public final Setting<Boolean> secure = getBuilder( "secure", BOOL, true ).build();
+        TestConnectionGroupSetting( String id )
         {
-            counter.getAndIncrement();
-            assertThat( "Update listener should not see obfuscated secret", previous, not( CoreMatchers.equalTo( Secret.OBFUSCATED ) ) );
-            assertThat( "Update listener should not see obfuscated secret", update, not( CoreMatchers.equalTo( Secret.OBFUSCATED ) ) );
-        } );
+            super( id );
+        }
 
-        // When changing secret settings three times
-        config.updateDynamicSetting( settingName, "another", ORIGIN );
-        config.updateDynamicSetting( settingName, "secret2", ORIGIN );
-        config.updateDynamicSetting( settingName, "", ORIGIN );
-
-        // Then we should see obfuscated log messages
-        InOrder order = inOrder( log );
-        order.verify( log ).info( changedMessage, settingName, "default (" + Secret.OBFUSCATED + ")", Secret.OBFUSCATED, ORIGIN );
-        order.verify( log ).info( changedMessage, settingName, Secret.OBFUSCATED, Secret.OBFUSCATED, ORIGIN );
-        order.verify( log ).info( changedMessage, settingName, Secret.OBFUSCATED, "default (" + Secret.OBFUSCATED + ")", ORIGIN );
-        verifyNoMoreInteractions( log );
-
-        // And see 3 calls to the update listener
-        assertThat( counter.get(), is( 3 ) );
-    }
-
-    @Test
-    void removeRegisteredSettingChangeListener()
-    {
-        Config config = Config.builder().withConfigClasses( singletonList( new MyDynamicSettings() ) ).build();
-        AtomicInteger updateCounter = new AtomicInteger( 0 );
-        SettingChangeListener<Boolean> listener = ( previous, update ) -> updateCounter.getAndIncrement();
-
-        config.registerDynamicUpdateListener( MyDynamicSettings.boolSetting, listener );
-        config.updateDynamicSetting( MyDynamicSettings.boolSetting.name(), "false", ORIGIN );
-        assertThat( updateCounter.get(), is( 1 ) );
-
-        config.unregisterDynamicUpdateListener( MyDynamicSettings.boolSetting, listener );
-
-        config.updateDynamicSetting( MyDynamicSettings.boolSetting.name(), "true", ORIGIN );
-        assertThat( updateCounter.get(), is( 1 ) );
-    }
-
-    @Test
-    void buildWithNullValues()
-    {
-        var config1 = Config.builder()
-                .withSetting( MySettingsWithDefaults.hello, "Hi" )
-                .withSetting( MySettingsWithDefaults.hello, null )
-                .build();
-
-        assertEquals( MySettingsWithDefaults.hello.getDefaultValue(), config1.get( MySettingsWithDefaults.hello ) );
-
-        var initialSettings = new HashMap<String,String>();
-        initialSettings.put( MySettingsWithDefaults.hello.name(), null );
-        var config2 = Config.builder()
-                .withSettings( Map.of( MySettingsWithDefaults.hello.name(), "Hi" ) )
-                .withSettings( initialSettings )
-                .build();
-
-        assertEquals( MySettingsWithDefaults.hello.getDefaultValue(), config2.get( MySettingsWithDefaults.hello ) );
-    }
-
-    @Test
-    void augmentWithNullValues()
-    {
-        var config = Config.builder()
-                .withConfigClasses( List.of( mySettingsWithDefaults ) )
-                .build();
-
-        config.augmentDefaults( MySettingsWithDefaults.hello, null );
-
-        assertEquals( MySettingsWithDefaults.hello.getDefaultValue(), config.get( MySettingsWithDefaults.hello ) );
-    }
-
-    @Test
-    void updateDynamicSettingWithNullValue()
-    {
-        var config = Config.builder()
-                .withConfigClasses( List.of( new MyDynamicSettings() ) )
-                .build();
-
-        config.updateDynamicSetting( MyDynamicSettings.boolSetting.name(), null, "test" );
-
-        assertEquals( Boolean.valueOf( MyDynamicSettings.boolSetting.getDefaultValue() ), config.get( MyDynamicSettings.boolSetting ) );
-    }
-
-    private static Config newConfig()
-    {
-        return Config( Collections.emptyMap() );
-    }
-
-    private static Config Config( Map<String,String> params )
-    {
-        return Config.fromSettings( params )
-                .withConfigClasses( Arrays.asList( mySettingsWithDefaults, myMigratingSettings ) ).build();
-    }
-
-    public static class MyMigratingSettings implements LoadableConfig
-    {
-        @SuppressWarnings( "unused" ) // accessed by reflection
-        @Migrator
-        public static ConfigurationMigrator migrator = new BaseConfigurationMigrator()
+        @Override
+        public void validate( Map<Setting<?>,Object> values, Config config )
         {
+            Set<Integer> ports = new HashSet<>();
+            values.forEach( ( S, V ) ->
             {
-                add( new SpecificPropertyMigration( "old", "Old has been replaced by newer!" )
+                if ( ((SettingImpl<Object>) S).suffix().equals( "port" ) )
                 {
-                    @Override
-                    public void setValueWithOldSetting( String value, Map<String,String> rawConfiguration )
+                    if ( !ports.add( (Integer) V ) )
                     {
-                        rawConfiguration.put( newer.name(), value );
+                        throw new IllegalArgumentException( "Need unique ports" );
                     }
-                } );
+                }
+            } );
+        }
+
+        @Override
+        public String getDescription()
+        {
+            return "With unique ports";
+        }
+
+    }
+
+    static class InvalidValidator implements GroupSettingValidator
+    {
+        InvalidValidator( Object invalidConstructor )
+        {
+        }
+
+        @Override
+        public String getPrefix()
+        {
+            return "test.validator";
+        }
+
+        @Override
+        public String getDescription()
+        {
+            return null;
+        }
+
+        @Override
+        public void validate( Map<Setting<?>,Object> values, Config config )
+        {
+
+        }
+    }
+
+    abstract static class ParentGroup extends GroupSetting
+    {
+
+        final Setting<String> parentSetting = getBuilder( "parent" , STRING, "parent" ).build();
+
+        ParentGroup( String name )
+        {
+            super( name );
+        }
+
+    }
+    static class ChildGroup extends ParentGroup
+    {
+        final Setting<String> childSetting = getBuilder( "child" , STRING, null ).build();
+        private ChildGroup( String name )
+        {
+            super( name );
+        }
+        @Override
+        public String getPrefix()
+        {
+            return "test.inheritance";
+        }
+
+    }
+
+    private static final class DependencySettings implements SettingsDeclaration
+    {
+        static Setting<Path> basePath = newBuilder( "test.base.path", PATH, Path.of( "/base/" ) ).immutable().build();
+        static Setting<Path> midPath = newBuilder( "test.mid.path", PATH, Path.of( "mid/" ) ).setDependency( basePath ).immutable().build();
+        static Setting<Path> endPath = newBuilder( "test.end.path", PATH, Path.of( "end/file" ) ).setDependency( midPath ).build();
+        static Setting<Path> absolute = newBuilder( "test.absolute.path", PATH, Path.of( "/another/path/file" ) ).setDependency( midPath ).build();
+
+        private static SettingValueParser<String> DefaultParser = new SettingValueParser<>()
+        {
+            @Override
+            public String parse( String value )
+            {
+                return value;
+            }
+
+            @Override
+            public String getDescription()
+            {
+                return "";
             }
         };
 
-        public static Setting<String> newer = setting( "newer", STRING, "" );
-    }
+        static Setting<String> baseString = newBuilder( "test.default.dependency.base", DefaultParser, "base" ).immutable().build();
 
-    public static class MySettingsWithDefaults implements LoadableConfig
-    {
-        public static final Setting<String> hello = setting( "hello", STRING, "Hello, World!" );
-
-        public static final Setting<Boolean> boolSetting = setting( "bool_setting", BOOLEAN, Settings.TRUE );
-
-        @Internal
-        @DocumentedDefaultValue( "<documented default value>" )
-        public static final Setting<Boolean> secretSetting = setting( "secret_setting", BOOLEAN, Settings.TRUE );
-
-        @Deprecated
-        @ReplacedBy( "hello" )
-        public static final Setting<String> oldHello = setting( "old_hello", STRING, "Hello, Bob" );
-
-        @Deprecated
-        public static final Setting<String> oldSetting = setting( "some_setting", STRING, "Has no replacement" );
-
-        @Secret
-        public static final Setting<String> password = setting( "password", STRING, "This text should not appear in logs or toString" );
-    }
-
-    private static class HelloHasToBeNeo4jConfigurationValidator implements ConfigurationValidator
-    {
-        @Override
-        public Map<String,String> validate( @Nonnull Config config, @Nonnull Log log ) throws InvalidSettingException
-        {
-            if ( !config.get( MySettingsWithDefaults.hello ).equals( "neo4j" ) )
-            {
-                throw new InvalidSettingException( "Setting hello has to set to neo4j" );
-            }
-
-            return Collections.emptyMap();
-        }
-    }
-
-    public static class MyDynamicSettings implements LoadableConfig
-    {
-        @Dynamic
-        public static final Setting<Boolean> boolSetting = setting( "bool_setting", BOOLEAN, Settings.TRUE );
-
-        @Dynamic
-        @Secret
-        public static final Setting<String> secretSetting = setting( "password", STRING, "secret" );
-    }
-
-    public static class ParseCounterSettings implements LoadableConfig
-    {
-        static final CountingIntegerConverter countingIntegerConverter = new CountingIntegerConverter();
-        @Dynamic
-        public static final Setting<Integer> integerSetting = setting( "integer_setting", countingIntegerConverter, "1" );
-
-        private static class CountingIntegerConverter implements Function<String,Integer>
-        {
-            private final AtomicInteger counter = new AtomicInteger();
-
-            @Override
-            public Integer apply( String rawValue )
-            {
-                counter.incrementAndGet();
-                return Integer.valueOf( rawValue );
-            }
-
-            int getCounterValue()
-            {
-                return counter.get();
-            }
-        }
+        static Setting<String> dependingString = newBuilder( "test.default.dependency.dep", DefaultParser, null ).setDependency( baseString ).build();
     }
 
 }

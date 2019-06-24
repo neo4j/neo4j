@@ -38,6 +38,7 @@ import org.neo4j.bolt.v1.transport.socket.client.TransportConnection;
 import org.neo4j.collection.RawIterator;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.graphdb.config.Setting;
 import org.neo4j.internal.helpers.HostnamePort;
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
 import org.neo4j.internal.kernel.api.procs.Neo4jTypes;
@@ -60,6 +61,7 @@ import static org.hamcrest.CoreMatchers.anything;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.neo4j.bolt.v1.messaging.util.MessageMatchers.msgSuccess;
+import static org.neo4j.configuration.SettingValueParsers.FALSE;
 import static org.neo4j.internal.kernel.api.procs.ProcedureSignature.procedureSignature;
 
 public class BoltChannelAutoReadLimiterIT
@@ -87,9 +89,9 @@ public class BoltChannelAutoReadLimiterIT
 
     }
 
-    protected Consumer<Map<String,String>> getSettingsFunction()
+    protected Consumer<Map<Setting<?>,String>> getSettingsFunction()
     {
-        return settings -> settings.put( GraphDatabaseSettings.auth_enabled.name(), "false" );
+        return settings -> settings.put( GraphDatabaseSettings.auth_enabled, FALSE );
     }
 
     @Before

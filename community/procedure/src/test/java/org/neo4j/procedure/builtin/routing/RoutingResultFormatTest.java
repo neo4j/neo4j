@@ -23,7 +23,7 @@ import org.junit.jupiter.api.Test;
 
 import java.util.List;
 
-import org.neo4j.internal.helpers.AdvertisedSocketAddress;
+import org.neo4j.configuration.helpers.SocketAddress;
 import org.neo4j.values.AnyValue;
 
 import static java.util.Arrays.asList;
@@ -37,17 +37,17 @@ class RoutingResultFormatTest
     void shouldSerializeToAndFromRecordFormat()
     {
         // given
-        List<AdvertisedSocketAddress> writers = asList(
-                new AdvertisedSocketAddress( "write", 1 ),
-                new AdvertisedSocketAddress( "write", 2 ),
-                new AdvertisedSocketAddress( "write", 3 ) );
-        List<AdvertisedSocketAddress> readers = asList(
-                new AdvertisedSocketAddress( "read", 4 ),
-                new AdvertisedSocketAddress( "read", 5 ),
-                new AdvertisedSocketAddress( "read", 6 ),
-                new AdvertisedSocketAddress( "read", 7 ) );
-        List<AdvertisedSocketAddress> routers = singletonList(
-                new AdvertisedSocketAddress( "route", 8 ) );
+        List<SocketAddress> writers = asList(
+                new SocketAddress( "write", 1 ),
+                new SocketAddress( "write", 2 ),
+                new SocketAddress( "write", 3 ) );
+        List<SocketAddress> readers = asList(
+                new SocketAddress( "read", 4 ),
+                new SocketAddress( "read", 5 ),
+                new SocketAddress( "read", 6 ),
+                new SocketAddress( "read", 7 ) );
+        List<SocketAddress> routers = singletonList(
+                new SocketAddress( "route", 8 ) );
 
         long ttlSeconds = 5;
         RoutingResult original = new RoutingResult( routers, writers, readers, ttlSeconds * 1000 );
@@ -65,9 +65,9 @@ class RoutingResultFormatTest
     void shouldSerializeToAndFromRecordFormatWithNoEntries()
     {
         // given
-        List<AdvertisedSocketAddress> writers = emptyList();
-        List<AdvertisedSocketAddress> readers = emptyList();
-        List<AdvertisedSocketAddress> routers = emptyList();
+        List<SocketAddress> writers = emptyList();
+        List<SocketAddress> readers = emptyList();
+        List<SocketAddress> routers = emptyList();
 
         long ttlSeconds = 0;
         RoutingResult original = new RoutingResult( routers, writers, readers, ttlSeconds * 1000 );

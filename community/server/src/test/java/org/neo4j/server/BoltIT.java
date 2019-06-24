@@ -41,6 +41,7 @@ import static java.net.http.HttpResponse.BodyHandlers.ofString;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.equalTo;
+import static org.neo4j.configuration.SettingValueParsers.TRUE;
 import static org.neo4j.server.helpers.CommunityServerBuilder.serverOnRandomPorts;
 
 public class BoltIT extends ExclusiveServerTestBase
@@ -63,10 +64,11 @@ public class BoltIT extends ExclusiveServerTestBase
     public void shouldLaunchBolt() throws Throwable
     {
         // When I run Neo4j with Bolt enabled
-        server = serverOnRandomPorts().withProperty( new BoltConnector( "bolt" ).type.name(), "BOLT" )
-                .withProperty( new BoltConnector( "bolt" ).enabled.name(), "true" )
-                .withProperty( new BoltConnector( "bolt" ).encryption_level.name(), "REQUIRED" )
-                .withProperty( new BoltConnector( "bolt" ).listen_address.name(), "localhost:0" )
+        BoltConnector bolt = BoltConnector.group( "default" );
+        server = serverOnRandomPorts()
+                .withProperty( bolt.enabled.name(), TRUE )
+                .withProperty( bolt.encryption_level.name(), "REQUIRED" )
+                .withProperty( bolt.listen_address.name(), "localhost:0" )
                 .usingDataDir( tmpDir.getRoot().getAbsolutePath() ).build();
         server.start();
         ConnectorPortRegister connectorPortRegister = getDependency( ConnectorPortRegister.class );
@@ -112,13 +114,13 @@ public class BoltIT extends ExclusiveServerTestBase
     private void startServerWithBoltEnabled( String advertisedHost, int advertisedPort, String listenHost,
             int listenPort ) throws IOException
     {
+        BoltConnector bolt = BoltConnector.group( "default" );
         server = serverOnRandomPorts()
-                .withProperty( new BoltConnector( "bolt" ).type.name(), "BOLT" )
-                .withProperty( new BoltConnector( "bolt" ).enabled.name(), "true" )
-                .withProperty( new BoltConnector( "bolt" ).encryption_level.name(), "REQUIRED" )
-                .withProperty( new BoltConnector( "bolt" ).advertised_address.name(), advertisedHost + ":" +
+                .withProperty( bolt.enabled.name(), TRUE )
+                .withProperty( bolt.encryption_level.name(), "REQUIRED" )
+                .withProperty( bolt.advertised_address.name(), advertisedHost + ":" +
                         advertisedPort )
-                .withProperty( new BoltConnector( "bolt" ).listen_address.name(), listenHost + ":" + listenPort )
+                .withProperty( bolt.listen_address.name(), listenHost + ":" + listenPort )
                 .usingDataDir( tmpDir.getRoot().getAbsolutePath() ).build();
         server.start();
     }

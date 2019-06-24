@@ -119,16 +119,17 @@ public class CommunitySecurityModule extends SecurityModule
     private static File getUserRepositoryFile( Config config, String fileName )
     {
         // Resolve auth store file names
-        File authStoreDir = config.get( DatabaseManagementSystemSettings.auth_store_directory );
 
         // Because it contains sensitive information there is a legacy setting to configure
         // the location of the user store file that we still respect
-        File userStoreFile = config.get( GraphDatabaseSettings.auth_store );
-        if ( userStoreFile == null )
+
+        File authStore = config.get( GraphDatabaseSettings.auth_store ).toFile();
+        if ( authStore.isFile() )
         {
-            userStoreFile = new File( authStoreDir, fileName );
+            return authStore;
         }
-        return userStoreFile;
+        File authStoreDir = config.get( DatabaseManagementSystemSettings.auth_store_directory ).toFile();
+        return new File( authStoreDir, fileName );
     }
 
     private BasicSystemGraphRealm createBasicSystemGraphRealm( Config config, LogProvider logProvider, FileSystemAbstraction fileSystem,

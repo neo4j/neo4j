@@ -44,6 +44,6 @@ public class LayoutConfig implements StoreLayoutConfig
     @Override
     public Optional<File> getTransactionLogsRootDirectory()
     {
-        return ofNullable( config.get( transaction_logs_root_path ) );
+        return ofNullable( config.get( transaction_logs_root_path ).toFile() );
     }
 }

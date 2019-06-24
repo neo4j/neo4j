@@ -19,9 +19,12 @@
  */
 package org.neo4j.logging;
 
+import org.neo4j.annotations.api.PublicApi;
+
 /**
  * Used to obtain a {@link Log} for a specified context
  */
+@PublicApi
 public interface LogProvider
 {
     /**

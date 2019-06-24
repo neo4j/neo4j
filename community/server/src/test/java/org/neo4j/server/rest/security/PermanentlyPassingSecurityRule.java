@@ -37,7 +37,7 @@ public class PermanentlyPassingSecurityRule implements SecurityRule
     @Override
     public String forUriPath()
     {
-        return ServerSettings.rest_api_path.getDefaultValue();
+        return ServerSettings.rest_api_path.defaultValue().toString();
     }
 
     @Override

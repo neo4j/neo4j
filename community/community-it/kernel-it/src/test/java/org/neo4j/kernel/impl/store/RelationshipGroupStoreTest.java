@@ -55,7 +55,6 @@ import org.neo4j.test.extension.TestDirectoryExtension;
 import org.neo4j.test.extension.pagecache.PageCacheSupportExtension;
 import org.neo4j.test.rule.TestDirectory;
 
-import static java.lang.Integer.parseInt;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -81,7 +80,7 @@ class RelationshipGroupStoreTest
     @BeforeEach
     void before()
     {
-        defaultThreshold = parseInt( dense_node_threshold.getDefaultValue() );
+        defaultThreshold = dense_node_threshold.defaultValue();
     }
 
     @AfterEach

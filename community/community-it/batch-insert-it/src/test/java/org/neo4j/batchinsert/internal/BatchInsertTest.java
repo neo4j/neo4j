@@ -41,6 +41,7 @@ import java.util.stream.Stream;
 import org.neo4j.batchinsert.BatchInserter;
 import org.neo4j.batchinsert.BatchInserters;
 import org.neo4j.collection.PrimitiveLongResourceIterator;
+import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.graphdb.ConstraintViolationException;
@@ -99,7 +100,6 @@ import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.token.TokenHolders;
 import org.neo4j.values.storable.Values;
 
-import static java.lang.Integer.parseInt;
 import static java.lang.String.format;
 import static java.util.Collections.singletonList;
 import static org.hamcrest.CoreMatchers.containsString;
@@ -121,6 +121,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.mockito.hamcrest.MockitoHamcrest.argThat;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
+import static org.neo4j.configuration.GraphDatabaseSettings.neo4j_home;
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.internal.helpers.collection.Iterables.map;
 import static org.neo4j.internal.helpers.collection.Iterables.single;
@@ -128,7 +129,6 @@ import static org.neo4j.internal.helpers.collection.Iterators.asCollection;
 import static org.neo4j.internal.helpers.collection.Iterators.asSet;
 import static org.neo4j.internal.helpers.collection.Iterators.iterator;
 import static org.neo4j.internal.helpers.collection.MapUtil.map;
-import static org.neo4j.internal.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.kernel.impl.api.index.SchemaIndexTestHelper.singleInstanceIndexProviderFactory;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.NORMAL;
 import static org.neo4j.storageengine.api.IndexEntryUpdate.add;
@@ -186,7 +186,7 @@ class BatchInsertTest
     {
         return Stream.of(
             arguments( 5 ),
-            arguments( parseInt( GraphDatabaseSettings.dense_node_threshold.getDefaultValue() ) )
+            arguments( GraphDatabaseSettings.dense_node_threshold.defaultValue() )
         );
     }
     private enum RelTypes implements RelationshipType
@@ -582,7 +582,8 @@ class BatchInsertTest
     void messagesLogGetsClosed() throws IOException
     {
         DatabaseLayout databaseLayout = testDirectory.databaseLayout();
-        BatchInserter inserter = BatchInserters.inserter( databaseLayout, fs, stringMap() );
+        BatchInserter inserter = BatchInserters.inserter( databaseLayout, fs,
+                Config.defaults( neo4j_home, databaseLayout.databaseDirectory().getAbsolutePath() ) );
         inserter.shutdown();
         assertTrue( new File( databaseLayout.databaseDirectory(), INTERNAL_LOG_FILE ).delete() );
     }
@@ -1381,9 +1382,13 @@ class BatchInsertTest
         inserter.shutdown();
     }
 
-    private static Map<String, String> configuration( int denseNodeThreshold )
+    private Config configuration( int denseNodeThreshold )
     {
-        return stringMap( GraphDatabaseSettings.dense_node_threshold.name(), String.valueOf( denseNodeThreshold ) );
+
+        return Config.newBuilder()
+                .set( neo4j_home, testDirectory.absolutePath().getAbsolutePath() )
+                .set( GraphDatabaseSettings.dense_node_threshold, String.valueOf( denseNodeThreshold ) )
+                .build();
     }
 
     private BatchInserter newBatchInserter( int denseNodeThreshold ) throws Exception
@@ -1394,8 +1399,8 @@ class BatchInsertTest
     private BatchInserter newBatchInserterWithIndexProvider( ExtensionFactory<?> provider, IndexProviderDescriptor providerDescriptor, int denseNodeThreshold )
         throws Exception
     {
-        Map<String,String> configuration = configuration( denseNodeThreshold );
-        configuration.put( GraphDatabaseSettings.default_schema_provider.name(), providerDescriptor.name() );
+        Config configuration = configuration( denseNodeThreshold );
+        configuration.set( GraphDatabaseSettings.default_schema_provider, providerDescriptor.name() );
         return BatchInserters.inserter( testDirectory.databaseLayout(), fs, configuration, singletonList( provider ) );
     }
 
@@ -1406,7 +1411,7 @@ class BatchInsertTest
         factory.setFileSystem( fs );
         managementService = factory.impermanent()
             // Shouldn't be necessary to set dense node threshold since it's a stick config
-            .setConfigRaw( configuration( denseNodeThreshold ) ).build();
+            .setConfig( configuration( denseNodeThreshold ) ).build();
         return managementService.database( DEFAULT_DATABASE_NAME );
     }
 
@@ -1419,22 +1424,23 @@ class BatchInsertTest
     private static void assertLabelScanStoreContains( LabelScanStore labelScanStore, int labelId, long... nodes )
     {
         LabelScanReader labelScanReader = labelScanStore.newReader();
-        List<Long> actualNodeIds = extractPrimitiveLongIteratorAsList( labelScanReader.nodesWithLabel( labelId ) );
         List<Long> expectedNodeIds = Arrays.stream( nodes ).boxed().collect( Collectors.toList() );
+        List<Long> actualNodeIds;
+        try ( PrimitiveLongResourceIterator itr = labelScanReader.nodesWithLabel( labelId ) )
+        {
+            actualNodeIds = extractPrimitiveLongIteratorAsList( itr );
+        }
         assertEquals( expectedNodeIds, actualNodeIds );
     }
 
     private static List<Long> extractPrimitiveLongIteratorAsList( PrimitiveLongResourceIterator longIterator )
     {
-        try ( longIterator )
+        List<Long> actualNodeIds = new ArrayList<>();
+        while ( longIterator.hasNext() )
         {
-            List<Long> actualNodeIds = new ArrayList<>();
-            while ( longIterator.hasNext() )
-            {
-                actualNodeIds.add( longIterator.next() );
-            }
-            return actualNodeIds;
+            actualNodeIds.add( longIterator.next() );
         }
+        return actualNodeIds;
     }
 
     private static void createRelationships( BatchInserter inserter, long node, RelationshipType relType, int out )

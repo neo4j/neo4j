@@ -40,11 +40,12 @@ import javax.net.ssl.X509TrustManager;
 import org.neo4j.bolt.v1.transport.socket.client.SocketConnection;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
+import org.neo4j.configuration.connectors.BoltConnector;
 import org.neo4j.configuration.connectors.HttpConnector;
-import org.neo4j.configuration.connectors.HttpConnector.Encryption;
+import org.neo4j.configuration.connectors.HttpsConnector;
 import org.neo4j.configuration.ssl.ClientAuth;
+import org.neo4j.configuration.ssl.PemSslPolicyConfig;
 import org.neo4j.dbms.api.DatabaseManagementService;
-import org.neo4j.dbms.api.DatabaseManagementServiceBuilder;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
@@ -60,6 +61,7 @@ import org.neo4j.kernel.extension.context.ExtensionContext;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
+import org.neo4j.server.configuration.ServerSettings;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.SuppressOutputExtension;
@@ -83,7 +85,8 @@ import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_TX_LOGS_ROOT
 import static org.neo4j.configuration.GraphDatabaseSettings.data_directory;
 import static org.neo4j.configuration.GraphDatabaseSettings.databases_root_path;
 import static org.neo4j.configuration.GraphDatabaseSettings.transaction_logs_root_path;
-import static org.neo4j.configuration.ssl.BaseSslPolicyConfig.Format.PEM;
+import static org.neo4j.configuration.SettingValueParsers.FALSE;
+import static org.neo4j.configuration.SettingValueParsers.TRUE;
 import static org.neo4j.harness.internal.TestNeo4jBuilders.newInProcessBuilder;
 import static org.neo4j.internal.helpers.collection.Iterables.asIterable;
 import static org.neo4j.internal.helpers.collection.Iterators.single;
@@ -125,27 +128,24 @@ class InProcessServerBuilderIT
         String[] defaultCiphers = ssf.getDefaultCipherSuites();
 
         // When
-        HttpConnector httpConnector = new HttpConnector( "0", Encryption.NONE );
-        HttpConnector httpsConnector = new HttpConnector( "1", Encryption.TLS );
+        HttpConnector httpConnector = HttpConnector.group( "0" );
+        HttpsConnector httpsConnector = HttpsConnector.group( "1" );
+        PemSslPolicyConfig pem = PemSslPolicyConfig.group( "test" );
+
         try ( InProcessNeo4j neo4j = getTestBuilder( directory.directory() )
-                .withConfig( httpConnector.type, "HTTP" )
-                .withConfig( httpConnector.enabled, "true" )
-                .withConfig( httpConnector.encryption, "NONE" )
+                .withConfig( httpConnector.enabled, TRUE )
                 .withConfig( httpConnector.listen_address, "localhost:0" )
-                .withConfig( httpsConnector.type, "HTTP" )
-                .withConfig( httpsConnector.enabled, "true" )
-                .withConfig( httpsConnector.encryption, "TLS" )
+                .withConfig( httpsConnector.enabled, TRUE )
                 .withConfig( httpsConnector.listen_address, "localhost:0" )
                 .withConfig( GraphDatabaseSettings.dense_node_threshold, "20" )
                 // override legacy policy
-                .withConfig( "https.ssl_policy", "test" )
-                .withConfig( "dbms.ssl.policy.test.base_directory", directory.directory( "certificates" ).getAbsolutePath() )
-                .withConfig( "dbms.ssl.policy.test.format", PEM.name() )
-                .withConfig( "dbms.ssl.policy.test.allow_key_generation", "true" )
-                .withConfig( "dbms.ssl.policy.test.ciphers", String.join( ",", defaultCiphers ) )
-                .withConfig( "dbms.ssl.policy.test.tls_versions", "TLSv1.2, TLSv1.1, TLSv1" )
-                .withConfig( "dbms.ssl.policy.test.client_auth", ClientAuth.NONE.name() )
-                .withConfig( "dbms.ssl.policy.test.trust_all", "true" )
+                .withConfig( ServerSettings.ssl_policy, "test" )
+                .withConfig( pem.base_directory, directory.directory( "certificates" ).getAbsolutePath() )
+                .withConfig( pem.allow_key_generation, TRUE )
+                .withConfig( pem.ciphers, String.join( ",", defaultCiphers ) )
+                .withConfig( pem.tls_versions, "TLSv1.2, TLSv1.1, TLSv1" )
+                .withConfig( pem.client_auth, ClientAuth.NONE.name() )
+                .withConfig( pem.trust_all, TRUE )
                 .build() )
         {
             // Then
@@ -237,10 +237,9 @@ class InProcessServerBuilderIT
         // create graph db with one node upfront
         File existingStoreDir = directory.directory( "existingStore" );
         Config config = Config.defaults( data_directory, existingStoreDir.toPath().toString() );
-        File rootDirectory = config.get( databases_root_path );
-        DatabaseManagementServiceBuilder databaseBuilder = new TestDatabaseManagementServiceBuilder( rootDirectory )
-                .setConfig( transaction_logs_root_path, new File( existingStoreDir, DEFAULT_TX_LOGS_ROOT_DIR_NAME ).getAbsolutePath() );
-        DatabaseManagementService managementService = databaseBuilder.build();
+        File rootDirectory = config.get( databases_root_path ).toFile();
+        DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder( rootDirectory )
+                .setConfig( transaction_logs_root_path, new File( existingStoreDir, DEFAULT_TX_LOGS_ROOT_DIR_NAME ).getAbsolutePath() ).build();
         GraphDatabaseService db = managementService.database( DEFAULT_DATABASE_NAME );
         try
         {
@@ -267,7 +266,8 @@ class InProcessServerBuilderIT
         }
 
         // Then: we still only have one node since the server is supposed to work on a copy
-        managementService = databaseBuilder.build();
+        managementService = new TestDatabaseManagementServiceBuilder( rootDirectory )
+                .setConfig( transaction_logs_root_path, new File( existingStoreDir, DEFAULT_TX_LOGS_ROOT_DIR_NAME ).getAbsolutePath() ).build();
         db = managementService.database( DEFAULT_DATABASE_NAME );
         try
         {
@@ -313,12 +313,14 @@ class InProcessServerBuilderIT
     @Test
     void shouldReturnBoltUriWhenMultipleBoltConnectorsConfigured()
     {
+        BoltConnector bolt = BoltConnector.group( "bolt" );
+        BoltConnector anotherBolt = BoltConnector.group( "another_bolt" );
+
         Neo4jBuilder serverBuilder = newInProcessBuilder( directory.directory() )
-                .withConfig( "dbms.connector.another_bolt.type", "BOLT" )
-                .withConfig( "dbms.connector.another_bolt.enabled", "true" )
-                .withConfig( "dbms.connector.another_bolt.listen_address", ":0" )
-                .withConfig( "dbms.connector.bolt.enabled", "true" )
-                .withConfig( "dbms.connector.bolt.listen_address", ":0" );
+                .withConfig( anotherBolt.enabled, TRUE )
+                .withConfig( anotherBolt.listen_address, ":0" )
+                .withConfig( bolt.enabled, TRUE )
+                .withConfig( bolt.listen_address, ":0" );
 
         try ( InProcessNeo4j neo4j = serverBuilder.build() )
         {
@@ -339,11 +341,13 @@ class InProcessServerBuilderIT
     @Test
     void shouldReturnBoltUriWhenDefaultBoltConnectorOffAndOtherConnectorConfigured()
     {
+        BoltConnector bolt = BoltConnector.group( "bolt" );
+        BoltConnector anotherBolt = BoltConnector.group( "another_bolt" );
+
         Neo4jBuilder serverBuilder = newInProcessBuilder( directory.directory() )
-                .withConfig( "dbms.connector.bolt.enabled", "false" )
-                .withConfig( "dbms.connector.another_bolt.type", "BOLT" )
-                .withConfig( "dbms.connector.another_bolt.enabled", "true" )
-                .withConfig( "dbms.connector.another_bolt.listen_address", ":0" );
+                .withConfig( bolt.enabled, FALSE )
+                .withConfig( anotherBolt.enabled, TRUE )
+                .withConfig( anotherBolt.listen_address, ":0" );
 
         try ( InProcessNeo4j neo4j = serverBuilder.build() )
         {
@@ -404,13 +408,17 @@ class InProcessServerBuilderIT
 
     private void testStartupWithConnectors( boolean httpEnabled, boolean httpsEnabled, boolean boltEnabled )
     {
+        BoltConnector bolt = BoltConnector.group( "bolt" );
+        HttpsConnector https = HttpsConnector.group( "https" );
+        HttpConnector http = HttpConnector.group( "http" );
+
         Neo4jBuilder serverBuilder = newInProcessBuilder( directory.directory() )
-                .withConfig( "dbms.connector.http.enabled", Boolean.toString( httpEnabled ) )
-                .withConfig( "dbms.connector.http.listen_address", ":0" )
-                .withConfig( "dbms.connector.https.enabled", Boolean.toString( httpsEnabled ) )
-                .withConfig( "dbms.connector.https.listen_address", ":0" )
-                .withConfig( "dbms.connector.bolt.enabled", Boolean.toString( boltEnabled ) )
-                .withConfig( "dbms.connector.bolt.listen_address", ":0" );
+                .withConfig( http.enabled, Boolean.toString( httpEnabled ) )
+                .withConfig( http.listen_address, ":0" )
+                .withConfig( https.enabled, Boolean.toString( httpsEnabled ) )
+                .withConfig( https.listen_address, ":0" )
+                .withConfig( bolt.enabled, Boolean.toString( boltEnabled ) )
+                .withConfig( bolt.listen_address, ":0" );
 
         try ( InProcessNeo4j neo4j = serverBuilder.build() )
         {

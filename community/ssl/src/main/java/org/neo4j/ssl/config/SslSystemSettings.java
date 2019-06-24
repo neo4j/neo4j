@@ -23,18 +23,16 @@ import io.netty.handler.ssl.SslProvider;
 
 import org.neo4j.annotations.service.ServiceProvider;
 import org.neo4j.configuration.Description;
-import org.neo4j.configuration.LoadableConfig;
-import org.neo4j.configuration.Settings;
+import org.neo4j.configuration.SettingImpl;
+import org.neo4j.configuration.SettingsDeclaration;
 import org.neo4j.graphdb.config.Setting;
 
-/**
- * System-wide settings for SSL.
- */
-@Description( "System-wide settings for SSL." )
+import static org.neo4j.configuration.SettingValueParsers.ofEnum;
+
 @ServiceProvider
-public class SslSystemSettings implements LoadableConfig
+public class SslSystemSettings implements SettingsDeclaration
 {
     @Description( "Netty SSL provider" )
     public static final Setting<SslProvider> netty_ssl_provider =
-            Settings.setting( "dbms.netty.ssl.provider", Settings.optionsObeyCase( SslProvider.class ), SslProvider.JDK.name() );
+            SettingImpl.newBuilder( "dbms.netty.ssl.provider", ofEnum( SslProvider.class ), SslProvider.JDK ).build();
 }

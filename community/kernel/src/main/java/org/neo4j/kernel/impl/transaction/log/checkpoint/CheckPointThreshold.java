@@ -79,7 +79,7 @@ public interface CheckPointThreshold
     static CheckPointThreshold createThreshold(
             Config config, Clock clock, LogPruning logPruning, LogProvider logProvider )
     {
-        String policyName = config.get( check_point_policy );
+        String policyName = config.get( check_point_policy ).name().toLowerCase();
         CheckPointThresholdPolicy policy;
         try
         {

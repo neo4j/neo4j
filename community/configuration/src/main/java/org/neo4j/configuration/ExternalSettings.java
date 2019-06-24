@@ -19,139 +19,56 @@
  */
 package org.neo4j.configuration;
 
-import java.io.File;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
-import java.util.function.Function;
+import java.nio.file.Path;
 
 import org.neo4j.annotations.service.ServiceProvider;
-import org.neo4j.graphdb.config.BaseSetting;
-import org.neo4j.graphdb.config.Configuration;
 import org.neo4j.graphdb.config.Setting;
 
-import static org.neo4j.configuration.Settings.BOOLEAN;
-import static org.neo4j.configuration.Settings.FALSE;
-import static org.neo4j.configuration.Settings.pathSetting;
-import static org.neo4j.configuration.Settings.setting;
+import static org.neo4j.configuration.GraphDatabaseSettings.neo4j_home;
+import static org.neo4j.configuration.SettingImpl.newBuilder;
+import static org.neo4j.configuration.SettingValueParsers.BOOL;
+import static org.neo4j.configuration.SettingValueParsers.INT;
+import static org.neo4j.configuration.SettingValueParsers.LONG;
+import static org.neo4j.configuration.SettingValueParsers.PATH;
+import static org.neo4j.configuration.SettingValueParsers.STRING;
 
-/**
- * This class holds settings which are used external to the java code. This includes things present in the
- * configuration which are only read and used by the wrapper scripts. By including them here, we suppress warning
- * messages about Unknown configuration options, and make it possible to document these options via the normal methods.
- *
- * Be aware that values are still validated.
- */
-@SuppressWarnings( "unused" )
 @ServiceProvider
-public class ExternalSettings implements LoadableConfig
+public class ExternalSettings implements SettingsDeclaration
 {
     @Description( "Name of the Windows Service." )
-    public static final Setting<String> windowsServiceName = dummySetting( "dbms.windows_service_name",
-            "neo4j" );
+    public static final Setting<String> windowsServiceName = newBuilder( "dbms.windows_service_name", STRING, "neo4j" ).build();
+
     @Description( "Additional JVM arguments. Argument order can be significant. To use a Java commercial feature, the argument to unlock " +
             "commercial features must precede the argument to enable the specific feature in the config value string. For example, " +
             "to use Flight Recorder, `-XX:+UnlockCommercialFeatures` must come before `-XX:+FlightRecorder`." )
-    public static final Setting<String> additionalJvm = dummySetting( "dbms.jvm.additional" );
+    public static final Setting<String> additionalJvm = newBuilder( "dbms.jvm.additional", STRING, "" ).build();
 
-    @Description( "Initial heap size. By default it is calculated based on available system resources." )
-    public static final Setting<String> initialHeapSize = dummySetting( "dbms.memory.heap.initial_size",
-            "", "a byte size (valid units are `k`, `K`, `m`, `M`, `g`, `G`)" );
+    @Description( "Initial heap size. By default it is calculated based on available system resources. (valid units are `k`, `K`, `m`, `M`, `g`, `G`)." )
+    public static final Setting<String> initialHeapSize = newBuilder( "dbms.memory.heap.initial_size", STRING , "").build();
 
-    @Description( "Maximum heap size. By default it is calculated based on available system resources." )
-    public static final Setting<String> maxHeapSize = dummySetting( "dbms.memory.heap.max_size", "",
-            "a byte size (valid units are `k`, `K`, `m`, `M`, `g`, `G`)" );
+    @Description( "Maximum heap size. By default it is calculated based on available system resources. (valid units are `k`, `K`, `m`, `M`, `g`, `G`)." )
+    public static final Setting<String> maxHeapSize = newBuilder( "dbms.memory.heap.max_size", STRING, "" ).build();
 
     @Description( "GC Logging Options" )
-    public static final Setting<String> gc_logging_options = dummySetting( "dbms.logs.gc.options" );
+    public static final Setting<String> gc_logging_options = newBuilder("dbms.logs.gc.options", STRING, null ).build();
 
     @Description( "Number of GC logs to keep." )
-    public static final Setting<String> gc_logging_rotation_keep_number =
-            dummySetting( "dbms.logs.gc.rotation.keep_number", "0" );
+    public static final Setting<Integer> gc_logging_rotation_keep_number =
+            newBuilder( "dbms.logs.gc.rotation.keep_number", INT, 0 ).build();
 
     @Description( "Size of each GC log that is kept." )
-    public static final Setting<String> gc_logging_rotation_size = dummySetting( "dbms.logs.gc.rotation.size", "" );
+    public static final Setting<Long> gc_logging_rotation_size = newBuilder( "dbms.logs.gc.rotation.size", LONG, null ).build();
 
     @Description( "Enable GC Logging" )
-    public static final Setting<Boolean> gc_logging_enabled = setting( "dbms.logs.gc.enabled", BOOLEAN, FALSE);
+    public static final Setting<Boolean> gc_logging_enabled = newBuilder( "dbms.logs.gc.enabled", BOOL, false ).build();
 
     @Description( "Path of the run directory. This directory holds Neo4j's runtime state, such as a pidfile when it " +
             "is running in the background. The pidfile is created when starting neo4j and removed when stopping it." +
             " It may be placed on an in-memory filesystem such as tmpfs." )
-    public static final Setting<File> run_directory = pathSetting( "dbms.directories.run", "run" );
+    public static final Setting<Path> run_directory =
+            newBuilder( "dbms.directories.run", PATH, Path.of( "run" ) ).setDependency( neo4j_home ).immutable().build();
 
     @Description( "Path of the lib directory" )
-    public static final Setting<File> lib_directory = pathSetting( "dbms.directories.lib", "lib" );
-
-    private static DummySetting dummySetting( String name )
-    {
-        return new DummySetting( name, "", "a string" );
-    }
-
-    private static DummySetting dummySetting( String name, String defVal )
-    {
-        return new DummySetting( name, defVal, "a string" );
-    }
-
-    private static DummySetting dummySetting( String name, String defVal, String valDesc )
-    {
-        return new DummySetting( name, defVal, valDesc );
-    }
-
-    static class DummySetting extends BaseSetting<String>
-    {
-
-        private final String name;
-        private final String defaultValue;
-        private final String valueDescription;
-
-        DummySetting( String name, String defVal, String valueDescription )
-        {
-            this.name = name;
-            this.defaultValue = defVal;
-            this.valueDescription = valueDescription;
-        }
-
-        @Override
-        public String name()
-        {
-            return name;
-        }
-
-        @Override
-        public void withScope( Function<String,String> scopingRule )
-        {
-
-        }
-
-        @Override
-        public String getDefaultValue()
-        {
-            return defaultValue;
-        }
-
-        @Override
-        public String from( Configuration config )
-        {
-            return config.get( this );
-        }
-
-        @Override
-        public String apply( Function<String,String> provider )
-        {
-            return provider.apply( name );
-        }
-
-        @Override
-        public List<Setting<String>> settings( Map<String,String> params )
-        {
-            return Collections.singletonList( this );
-        }
-
-        @Override
-        public String valueDescription()
-        {
-            return valueDescription;
-        }
-    }
+    public static final Setting<Path> lib_directory =
+            newBuilder( "dbms.directories.lib", PATH, Path.of( "lib" ) ).setDependency( neo4j_home ).immutable().build();
 }

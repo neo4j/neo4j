@@ -27,7 +27,6 @@ import java.io.IOException;
 
 import org.neo4j.collection.Dependencies;
 import org.neo4j.configuration.Config;
-import org.neo4j.graphdb.config.InvalidSettingException;
 import org.neo4j.io.ByteUnit;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
@@ -131,20 +130,6 @@ class LogFilesBuilderTest
         assertEquals( ByteUnit.mebiBytes( 250 ), context.getRotationThreshold().get() );
         assertEquals( 1, context.getLastCommittedTransactionId() );
         assertEquals( 2, context.getLogVersionRepository().getCurrentLogVersion() );
-    }
-
-    @Test
-    void buildContextWithCustomLogFilesLocations()
-    {
-        String customLogLocation = "customLogLocation";
-        assertThrows( InvalidSettingException.class, () ->
-        {
-            Config customLogLocationConfig = Config.defaults( transaction_logs_root_path, customLogLocation );
-            DatabaseLayout databaseLayout = testDirectory.databaseLayout( of( customLogLocationConfig ) );
-            builder( databaseLayout, fileSystem ).withConfig( customLogLocationConfig ).withLogVersionRepository(
-                    new SimpleLogVersionRepository() ).withTransactionIdStore( new SimpleTransactionIdStore() ).build();
-
-        } );
     }
 
     @Test

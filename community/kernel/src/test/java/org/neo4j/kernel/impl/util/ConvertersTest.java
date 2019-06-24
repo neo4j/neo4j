@@ -25,7 +25,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import java.io.File;
 import java.io.IOException;
 
-import org.neo4j.internal.helpers.AdvertisedSocketAddress;
+import org.neo4j.configuration.helpers.SocketAddress;
 import org.neo4j.internal.helpers.HostnamePort;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.TestDirectoryExtension;
@@ -60,53 +60,53 @@ class ConvertersTest
     }
 
     @Test
-    void shouldConvertFullHostnamePortToAdvertisedSocketAddress()
+    void shouldConvertFullHostnamePortToSocketAddress()
     {
         HostnamePort hostnamePort = new HostnamePort( "neo4j.com", 7474 );
 
-        AdvertisedSocketAddress address = Converters.toAdvertisedSocketAddress( hostnamePort, "", -1 );
+        SocketAddress address = Converters.toSocketAddress( hostnamePort, "", -1 );
 
-        assertEquals( new AdvertisedSocketAddress( "neo4j.com", 7474 ), address );
+        assertEquals( new SocketAddress( "neo4j.com", 7474 ), address );
     }
 
     @Test
-    void shouldConvertFullIpV6HostnamePortToAdvertisedSocketAddress()
+    void shouldConvertFullIpV6HostnamePortToSocketAddress()
     {
         HostnamePort hostnamePort = new HostnamePort( "[fe80:1:2:3:4::5:123]", 7687 );
 
-        AdvertisedSocketAddress address = Converters.toAdvertisedSocketAddress( hostnamePort, "", -1 );
+        SocketAddress address = Converters.toSocketAddress( hostnamePort, "", -1 );
 
-        assertEquals( new AdvertisedSocketAddress( "fe80:1:2:3:4::5:123", 7687 ), address );
+        assertEquals( new SocketAddress( "fe80:1:2:3:4::5:123", 7687 ), address );
     }
 
     @Test
-    void shouldConvertHostnamePortWithOnlyHostnameToAdvertisedSocketAddress()
+    void shouldConvertHostnamePortWithOnlyHostnameToSocketAddress()
     {
         HostnamePort hostnamePort = new HostnamePort( "hostname.neo4j.org" );
 
-        AdvertisedSocketAddress address = Converters.toAdvertisedSocketAddress( hostnamePort, "", 4242 );
+        SocketAddress address = Converters.toSocketAddress( hostnamePort, "", 4242 );
 
-        assertEquals( new AdvertisedSocketAddress( "hostname.neo4j.org", 4242 ), address );
+        assertEquals( new SocketAddress( "hostname.neo4j.org", 4242 ), address );
     }
 
     @Test
-    void shouldConvertHostnamePortWithOnlyIpV6HostnameToAdvertisedSocketAddress()
+    void shouldConvertHostnamePortWithOnlyIpV6HostnameToSocketAddress()
     {
         HostnamePort hostnamePort = new HostnamePort( "[fe80:1:2:3:4::5]" );
 
-        AdvertisedSocketAddress address = Converters.toAdvertisedSocketAddress( hostnamePort, "", 1234 );
+        SocketAddress address = Converters.toSocketAddress( hostnamePort, "", 1234 );
 
-        assertEquals( new AdvertisedSocketAddress( "fe80:1:2:3:4::5", 1234 ), address );
+        assertEquals( new SocketAddress( "fe80:1:2:3:4::5", 1234 ), address );
     }
 
     @Test
-    void shouldConvertHostnamePortWithOnlyPortToAdvertisedSocketAddress()
+    void shouldConvertHostnamePortWithOnlyPortToSocketAddress()
     {
         HostnamePort hostnamePort = new HostnamePort( ":7687" );
 
-        AdvertisedSocketAddress address = Converters.toAdvertisedSocketAddress( hostnamePort, "neo4j.com", -1 );
+        SocketAddress address = Converters.toSocketAddress( hostnamePort, "neo4j.com", -1 );
 
-        assertEquals( new AdvertisedSocketAddress( "neo4j.com", 7687 ), address );
+        assertEquals( new SocketAddress( "neo4j.com", 7687 ), address );
     }
 
     private File existenceOfFile( String name ) throws IOException

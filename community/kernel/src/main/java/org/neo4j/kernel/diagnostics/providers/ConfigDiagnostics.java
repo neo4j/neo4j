@@ -22,6 +22,7 @@ package org.neo4j.kernel.diagnostics.providers;
 import java.util.Map;
 
 import org.neo4j.configuration.Config;
+import org.neo4j.configuration.SettingImpl;
 import org.neo4j.internal.diagnostics.NamedDiagnosticsProvider;
 import org.neo4j.logging.Logger;
 
@@ -38,16 +39,19 @@ public class ConfigDiagnostics extends NamedDiagnosticsProvider
     @Override
     public void dump( Logger logger )
     {
-        Map<String,String> configRaw = config.getRaw();
-        if ( configRaw.isEmpty() )
+        if ( config.getDeclaredSettings().values().stream().noneMatch( config::isExplicitlySet ) )
         {
             logger.log( "No provided DBMS settings." );
             return;
         }
         logger.log( "DBMS provided settings:" );
-        for ( Map.Entry<String,String> param : configRaw.entrySet() )
-        {
-            logger.log( "%s=%s", param.getKey(), config.obfuscateIfSecret( param ) );
-        }
+        config.getDeclaredSettings().entrySet().stream()
+                .filter( entry -> config.isExplicitlySet( entry.getValue() ) )
+                .sorted( Map.Entry.comparingByKey() )
+                .forEachOrdered( e ->
+                {
+                    String value = ((SettingImpl<Object>) e.getValue()).valueToString( config.get( e.getValue() ) );
+                    logger.log( "%s=%s", e.getKey(), value );
+                } );
     }
 }

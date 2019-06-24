@@ -19,15 +19,15 @@
  */
 package org.neo4j.cypher.internal.compiler.phases
 
-import org.neo4j.configuration.{GraphDatabaseSettings, Settings}
+import org.neo4j.configuration.GraphDatabaseSettings
 import org.neo4j.cypher.internal.compiler.StatsDivergenceCalculator
 import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
 
 class StatsDivergenceCalculatorTest extends CypherFunSuite {
-  val defaultInitialThreshold = GraphDatabaseSettings.query_statistics_divergence_threshold.getDefaultValue().toDouble
-  val defaultTargetThreshold = GraphDatabaseSettings.query_statistics_divergence_target.getDefaultValue.toDouble
-  val defaultInitialInterval = Settings.DURATION.apply(GraphDatabaseSettings.cypher_min_replan_interval.getDefaultValue).toMillis
-  val defaultTargetInterval = Settings.DURATION.apply(GraphDatabaseSettings.cypher_replan_interval_target.getDefaultValue).toMillis
+  val defaultInitialThreshold = GraphDatabaseSettings.query_statistics_divergence_threshold.defaultValue.toDouble
+  val defaultTargetThreshold = GraphDatabaseSettings.query_statistics_divergence_target.defaultValue.toDouble
+  val defaultInitialInterval = GraphDatabaseSettings.cypher_min_replan_interval.defaultValue.toMillis
+  val defaultTargetInterval = GraphDatabaseSettings.cypher_replan_interval_target.defaultValue.toMillis
   val marginOfError = 0.0001
 
   test("Disabling decay should show no decay") {
@@ -40,7 +40,7 @@ class StatsDivergenceCalculatorTest extends CypherFunSuite {
   }
 
   test("Default values should make sense") {
-    assertDecaysMakeSense(Settings.DEFAULT, defaultInitialThreshold, defaultTargetThreshold, defaultInitialInterval, defaultTargetInterval)
+    assertDecaysMakeSense("default", defaultInitialThreshold, defaultTargetThreshold, defaultInitialInterval, defaultTargetInterval)
   }
 
   test("Default values should make sense with inverse decay") {

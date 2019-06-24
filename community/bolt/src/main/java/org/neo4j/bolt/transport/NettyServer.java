@@ -37,9 +37,8 @@ import org.neo4j.bolt.transport.configuration.NioConfigurationProvider;
 import org.neo4j.bolt.transport.configuration.ServerConfigurationProvider;
 import org.neo4j.configuration.connectors.BoltConnector;
 import org.neo4j.configuration.connectors.ConnectorPortRegister;
-import org.neo4j.internal.helpers.ListenSocketAddress;
-import org.neo4j.internal.helpers.PortBindException;
-import org.neo4j.internal.helpers.SocketAddress;
+import org.neo4j.configuration.helpers.PortBindException;
+import org.neo4j.configuration.helpers.SocketAddress;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.logging.Log;
 import org.neo4j.util.FeatureToggles;
@@ -69,7 +68,7 @@ public class NettyServer extends LifecycleAdapter
     public interface ProtocolInitializer
     {
         ChannelInitializer<Channel> channelInitializer();
-        ListenSocketAddress address();
+        SocketAddress address();
     }
 
     /**
@@ -105,7 +104,7 @@ public class NettyServer extends LifecycleAdapter
                 channels.add( channel );
 
                 var localAddress = (InetSocketAddress) channel.localAddress();
-                portRegister.register( boltConnector.key(), localAddress );
+                portRegister.register( boltConnector.name(), localAddress );
 
                 var host = protocolInitializer.address().getHostname();
                 var port = localAddress.getPort();
@@ -157,7 +156,7 @@ public class NettyServer extends LifecycleAdapter
     {
         for ( var connector : bootstrappersMap.keySet() )
         {
-            portRegister.deregister( connector.key() );
+            portRegister.deregister( connector.name() );
         }
     }
 

@@ -21,10 +21,8 @@ package org.neo4j.kernel.impl.index.schema.config;
 
 import java.util.Arrays;
 import java.util.HashMap;
-import java.util.Map;
 
 import org.neo4j.configuration.Config;
-import org.neo4j.configuration.ConfigValue;
 import org.neo4j.gis.spatial.index.Envelope;
 import org.neo4j.values.storable.CoordinateReferenceSystem;
 
@@ -39,14 +37,14 @@ class EnvelopeSettings
     private static final double DEFAULT_MAX_LONGITUDE = 180;
 
     private CoordinateReferenceSystem crs;
-    private double[] min;
-    private double[] max;
+    private Double[] min;
+    private Double[] max;
 
     EnvelopeSettings( CoordinateReferenceSystem crs )
     {
         this.crs = crs;
-        this.min = new double[crs.getDimension()];
-        this.max = new double[crs.getDimension()];
+        this.min = new Double[crs.getDimension()];
+        this.max = new Double[crs.getDimension()];
         Arrays.fill( this.min, Double.NaN );
         Arrays.fill( this.max, Double.NaN );
     }
@@ -54,45 +52,14 @@ class EnvelopeSettings
     static HashMap<CoordinateReferenceSystem,EnvelopeSettings> envelopeSettingsFromConfig( Config config )
     {
         HashMap<CoordinateReferenceSystem,EnvelopeSettings> env = new HashMap<>();
-        for ( Map.Entry<String,ConfigValue> entry : config.getConfigValues().entrySet() )
+        config.getGroups( CrsConfig.class ).forEach( ( id, crsConfig ) ->
         {
-            String key = entry.getKey();
-            String value = entry.getValue().toString();
-            if ( key.startsWith( SPATIAL_SETTING_PREFIX ) )
-            {
-                String[] fields = key.replace( SPATIAL_SETTING_PREFIX, "" ).split( "\\." );
-                if ( fields.length != 3 )
-                {
-                    throw new IllegalArgumentException(
-                            "Invalid spatial config settings, expected three fields after '" + SPATIAL_SETTING_PREFIX + "': " + key );
-                }
-                else
-                {
-                    CoordinateReferenceSystem crs = CoordinateReferenceSystem.byName( fields[0] );
-                    EnvelopeSettings envelopeSettings = env.computeIfAbsent( crs, EnvelopeSettings::new );
-                    int index = "xyz".indexOf( fields[1].toLowerCase() );
-                    if ( index < 0 )
-                    {
-                        throw new IllegalArgumentException( "Invalid spatial coordinate key (should be one of 'x', 'y' or 'z'): " + fields[1] );
-                    }
-                    if ( index >= crs.getDimension() )
-                    {
-                        throw new IllegalArgumentException( "Invalid spatial coordinate key for " + crs.getDimension() + "D: " + fields[1] );
-                    }
-                    switch ( fields[2].toLowerCase() )
-                    {
-                    case "min":
-                        envelopeSettings.min[index] = Double.parseDouble( value );
-                        break;
-                    case "max":
-                        envelopeSettings.max[index] = Double.parseDouble( value );
-                        break;
-                    default:
-                        throw new IllegalArgumentException( "Invalid spatial coordinate range key (should be one of 'max' or 'min'): " + fields[2] );
-                    }
-                }
-            }
-        }
+            EnvelopeSettings envelopeSettings = new EnvelopeSettings( crsConfig.crs );
+            envelopeSettings.min = config.get( crsConfig.min ).toArray( Double[]::new );
+            envelopeSettings.max = config.get( crsConfig.max ).toArray( Double[]::new );
+            env.put( crsConfig.crs, envelopeSettings );
+        } );
+
         return env;
     }
 

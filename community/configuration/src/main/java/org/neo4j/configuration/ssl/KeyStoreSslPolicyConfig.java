@@ -19,59 +19,40 @@
  */
 package org.neo4j.configuration.ssl;
 
-import java.io.File;
-import java.util.function.Function;
+import java.nio.file.Path;
 
-import org.neo4j.annotations.service.ServiceProvider;
+import org.neo4j.annotations.api.PublicApi;
 import org.neo4j.configuration.Description;
-import org.neo4j.configuration.Group;
-import org.neo4j.configuration.GroupSettingSupport;
-import org.neo4j.configuration.LoadableConfig;
-import org.neo4j.configuration.Settings;
 import org.neo4j.graphdb.config.Setting;
+import org.neo4j.string.SecureString;
 
-import static org.neo4j.configuration.Settings.NO_DEFAULT;
-import static org.neo4j.configuration.Settings.PATH;
-import static org.neo4j.configuration.Settings.STRING;
-import static org.neo4j.configuration.Settings.derivedSetting;
-import static org.neo4j.configuration.Settings.setting;
+import static org.neo4j.configuration.SettingValueParsers.PATH;
+import static org.neo4j.configuration.SettingValueParsers.SECURE_STRING;
+import static org.neo4j.configuration.SettingValueParsers.STRING;
 
-@ServiceProvider
-@Group( "dbms.ssl.policy" )
-public class KeyStoreSslPolicyConfig extends BaseSslPolicyConfig implements LoadableConfig
+@PublicApi
+public abstract class KeyStoreSslPolicyConfig extends SslPolicyConfig
 {
     @Description( "File containing private key and certificate chain, managed with Java Keytool." )
-    public final Setting<File> keystore;
+    public final Setting<Path> keystore = getBuilder( "keystore", PATH, Path.of( ".keystore" ) ).setDependency( base_directory ).immutable().build();
 
     @Description( "The password for the keystore." )
-    public final Setting<String> keystore_pass;
+    public final Setting<SecureString> keystore_pass = getBuilder( "keystore_pass", SECURE_STRING, null ).immutable().build();
 
     @Description( "File containing trusted certificates, managed by Java Keytool. Defaults to value of 'keystore'." )
-    public final Setting<File> truststore;
+    public final Setting<Path> truststore = getBuilder( "truststore", PATH, null ).setDependency( keystore ).build();
 
     @Description( "The password for the truststore." )
-    public final Setting<String> truststore_pass;
+    public final Setting<SecureString> truststore_pass = getBuilder( "truststore_pass", SECURE_STRING, null ).setDependency( keystore_pass ).build();
 
     @Description( "The alias for the private key entry in the keystore, including the associated certificate chain." )
-    public final Setting<String> entry_alias;
+    public final Setting<String> entry_alias = getBuilder( "entry_alias", STRING, null ).build();
 
     @Description( "The password for the private key entry. Should not be set if format is PKCS12." )
-    public final Setting<String> entry_pass;
+    public final Setting<SecureString> entry_pass = getBuilder( "entry_pass", SECURE_STRING, null ).setDependency( keystore_pass ).build();
 
-    public KeyStoreSslPolicyConfig()
+    protected KeyStoreSslPolicyConfig( String name )
     {
-        this( "<keystore_policyname>" );
-    }
-
-    public KeyStoreSslPolicyConfig( String policyName )
-    {
-        super( new GroupSettingSupport( KeyStoreSslPolicyConfig.class, policyName ), Format.PKCS12 );
-
-        this.keystore = group.scope( derivedDefault( "keystore", base_directory, ".keystore" ) );
-        this.keystore_pass = group.scope( setting( "keystore_pass", Settings.STRING, NO_DEFAULT ) );
-        this.truststore = group.scope( derivedSetting( "truststore", keystore, Function.identity(), PATH ) );
-        this.truststore_pass = group.scope( derivedSetting( "truststore_pass", keystore_pass, Function.identity(), STRING ) );
-        this.entry_alias = group.scope( setting( "entry_alias", Settings.STRING, NO_DEFAULT ) );
-        this.entry_pass = group.scope( derivedSetting( "entry_pass", keystore_pass, Function.identity(), STRING ) );
+        super( name );
     }
 }

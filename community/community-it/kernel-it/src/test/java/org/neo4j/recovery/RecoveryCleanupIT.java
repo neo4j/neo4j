@@ -38,7 +38,6 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
-import java.util.concurrent.atomic.AtomicReference;
 
 import org.neo4j.common.DependencyResolver;
 import org.neo4j.configuration.GraphDatabaseSettings;
@@ -58,7 +57,6 @@ import org.neo4j.monitoring.DatabaseHealth;
 import org.neo4j.monitoring.Health;
 import org.neo4j.monitoring.Monitors;
 import org.neo4j.test.Barrier;
-import org.neo4j.test.Race;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.TestDirectoryExtension;
@@ -82,7 +80,7 @@ class RecoveryCleanupIT
     private final ExecutorService executor = Executors.newFixedThreadPool( 2 );
     private final Label label = Label.label( "label" );
     private final String propKey = "propKey";
-    private Map<Setting,String> testSpecificConfig = new HashMap<>();
+    private Map<Setting<?>,String> testSpecificConfig = new HashMap<>();
     private DatabaseManagementService managementService;
 
     @BeforeEach
@@ -252,18 +250,6 @@ class RecoveryCleanupIT
         {
             db.schema().awaitIndexesOnline( 1, TimeUnit.MINUTES );
             tx.success();
-        }
-    }
-
-    private static void reportError( Race.ThrowingRunnable checkpoint, AtomicReference<Throwable> error )
-    {
-        try
-        {
-            checkpoint.run();
-        }
-        catch ( Throwable t )
-        {
-            error.compareAndSet( null, t );
         }
     }
 

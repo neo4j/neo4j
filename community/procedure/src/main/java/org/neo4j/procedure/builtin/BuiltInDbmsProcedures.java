@@ -19,6 +19,7 @@
  */
 package org.neo4j.procedure.builtin;
 
+import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Stream;
@@ -58,13 +59,18 @@ public class BuiltInDbmsProcedures
     @Procedure( name = "dbms.listConfig", mode = DBMS )
     public Stream<ConfigResult> listConfig( @Name( value = "searchString", defaultValue = "" ) String searchString )
     {
-        Config config = graph.getDependencyResolver().resolveDependency( Config.class );
         String lowerCasedSearchString = searchString.toLowerCase();
-        return config.getConfigValues().values().stream()
-                .filter( c -> !c.internal() )
-                .filter( c -> c.name().toLowerCase().contains( lowerCasedSearchString ) )
-                .map( ConfigResult::new )
-                .sorted( Comparator.comparing( c -> c.name ) );
+        List<ConfigResult> results = new ArrayList<>();
+
+        Config config = graph.getDependencyResolver().resolveDependency( Config.class );
+
+        config.getValues().forEach( ( setting, value ) -> {
+            if ( !setting.internal() && setting.name().toLowerCase().contains( lowerCasedSearchString ) )
+            {
+                results.add( new ConfigResult( setting, value ) );
+            }
+        } );
+        return results.stream().sorted( Comparator.comparing( c -> c.name ) );
     }
 
     @Description( "List all procedures in the DBMS." )

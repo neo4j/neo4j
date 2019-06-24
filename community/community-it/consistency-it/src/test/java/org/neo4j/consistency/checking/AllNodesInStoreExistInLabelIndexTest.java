@@ -75,7 +75,7 @@ public class AllNodesInStoreExistInLabelIndexTest
     {
         // given
         someData();
-        db.shutdownAndKeepStore();
+        db.shutdown();
 
         // when
         ConsistencyCheckService.Result result = fullConsistencyCheck();
@@ -99,7 +99,7 @@ public class AllNodesInStoreExistInLabelIndexTest
             tx.success();
         }
 
-        db.shutdownAndKeepStore();
+        db.shutdown();
 
         copyFile( labelIndexFileCopy, databaseLayout.labelScanStore() );
 
@@ -117,7 +117,7 @@ public class AllNodesInStoreExistInLabelIndexTest
         File labelIndexFileCopy = databaseLayout.file( "label_index_copy" );
         copyFile( databaseLayout.labelScanStore(), labelIndexFileCopy );
 
-        db.shutdownAndKeepStore();
+        db.shutdown();
 
         copyFile( labelIndexFileCopy, databaseLayout.labelScanStore() );
 
@@ -142,7 +142,7 @@ public class AllNodesInStoreExistInLabelIndexTest
 
         // and
         replaceLabelIndexWithCopy( labelIndexFileCopy );
-        db.shutdownAndKeepStore();
+        db.shutdown();
 
         // then
         ConsistencyCheckService.Result result = fullConsistencyCheck();
@@ -165,7 +165,7 @@ public class AllNodesInStoreExistInLabelIndexTest
 
         // and
         replaceLabelIndexWithCopy( labelIndexFileCopy );
-        db.shutdownAndKeepStore();
+        db.shutdown();
 
         // then
         ConsistencyCheckService.Result result = fullConsistencyCheck();
@@ -188,7 +188,7 @@ public class AllNodesInStoreExistInLabelIndexTest
 
         // and
         replaceLabelIndexWithCopy( labelIndexFileCopy );
-        db.shutdownAndKeepStore();
+        db.shutdown();
 
         // then
         ConsistencyCheckService.Result result = fullConsistencyCheck();
@@ -211,7 +211,7 @@ public class AllNodesInStoreExistInLabelIndexTest
 
         // and
         replaceLabelIndexWithCopy( labelIndexFileCopy );
-        db.shutdownAndKeepStore();
+        db.shutdown();
 
         // then
         ConsistencyCheckService.Result result = fullConsistencyCheck();

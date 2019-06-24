@@ -34,7 +34,7 @@ public final class TimeUtil
 {
     public static final TimeUnit DEFAULT_TIME_UNIT = TimeUnit.SECONDS;
 
-    public static final String VALID_TIME_DESCRIPTION = "Valid units are: 'ms', 's', 'm' and 'h'; default unit is 's'";
+    public static final String VALID_TIME_DESCRIPTION = "Valid units are: 'ns', 'ms', 's', 'm' and 'h'; default unit is 's'";
 
     public static final Function<String,Long> parseTimeMillis = timeWithOrWithoutUnit ->
     {
@@ -63,6 +63,8 @@ public final class TimeUtil
         int amount = Integer.parseInt( timeWithOrWithoutUnit.substring( 0, unitIndex ) );
         switch ( unit )
         {
+        case "ns":
+            return TimeUnit.NANOSECONDS.toMillis( amount );
         case "ms":
             return TimeUnit.MILLISECONDS.toMillis( amount );
         case "s":

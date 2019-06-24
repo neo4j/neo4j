@@ -235,7 +235,7 @@ class StoreMigratorTest
 
     private void extractTransactionalInformationFromLogs( String customLogsLocation ) throws IOException
     {
-        Config config = Config.builder().withSetting( transaction_logs_root_path, customLogsLocation ).build();
+        Config config = Config.defaults( transaction_logs_root_path, customLogsLocation );
         LogService logService = new SimpleLogService( NullLogProvider.getInstance(), NullLogProvider.getInstance() );
         DatabaseLayout databaseLayout = testDirectory.databaseLayout( LayoutConfig.of( config ) );
         File neoStore = databaseLayout.metadataStore();

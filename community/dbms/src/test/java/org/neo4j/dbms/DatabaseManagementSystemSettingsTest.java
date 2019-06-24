@@ -21,7 +21,7 @@ package org.neo4j.dbms;
 
 import org.junit.jupiter.api.Test;
 
-import java.io.File;
+import java.nio.file.Path;
 
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
@@ -35,6 +35,6 @@ class DatabaseManagementSystemSettingsTest
     void shouldPutDatabasesDirectoriesIntoData()
     {
         Config config = Config.defaults( GraphDatabaseSettings.data_directory, "the-data-directory" );
-        assertThat( config.get( GraphDatabaseSettings.databases_root_path ), equalTo( new File( "the-data-directory/databases/" ) ) );
+        assertThat( config.get( GraphDatabaseSettings.databases_root_path ), equalTo( Path.of( "the-data-directory/databases/" ).toAbsolutePath() ) );
     }
 }

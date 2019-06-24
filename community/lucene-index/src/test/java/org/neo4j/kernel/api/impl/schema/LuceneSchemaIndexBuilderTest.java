@@ -24,7 +24,6 @@ import org.junit.jupiter.api.extension.ExtendWith;
 
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
-import org.neo4j.configuration.Settings;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.api.schema.index.TestIndexDescriptorFactory;
 import org.neo4j.kernel.impl.factory.OperationalMode;
@@ -36,6 +35,7 @@ import org.neo4j.test.rule.TestDirectory;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.neo4j.configuration.SettingValueParsers.TRUE;
 
 @ExtendWith( {DefaultFileSystemExtension.class, TestDirectoryExtension.class} )
 class LuceneSchemaIndexBuilderTest
@@ -80,6 +80,6 @@ class LuceneSchemaIndexBuilderTest
 
     private static Config getReadOnlyConfig()
     {
-        return Config.defaults( GraphDatabaseSettings.read_only, Settings.TRUE );
+        return Config.defaults( GraphDatabaseSettings.read_only, TRUE );
     }
 }

@@ -39,7 +39,7 @@ import org.neo4j.service.Services;
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
 import static org.neo4j.configuration.GraphDatabaseSettings.pagecache_memory;
 import static org.neo4j.configuration.GraphDatabaseSettings.pagecache_swapper;
-import static org.neo4j.configuration.Settings.BYTES;
+import static org.neo4j.configuration.SettingValueParsers.BYTES;
 
 public class ConfiguringPageCacheFactory
 {
@@ -116,7 +116,7 @@ public class ConfiguringPageCacheFactory
         String defaultMemoryOverride = System.getProperty( "dbms.pagecache.memory.default.override" );
         if ( defaultMemoryOverride != null )
         {
-            return BYTES.apply( defaultMemoryOverride );
+            return BYTES.parse( defaultMemoryOverride );
         }
 
         double ratioOfFreeMem = 0.50;

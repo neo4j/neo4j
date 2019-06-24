@@ -50,9 +50,8 @@ class DenseNodeRelChainPositionTest
     {
         // Given
         final int denseNodeThreshold =
-                Integer.parseInt( GraphDatabaseSettings.dense_node_threshold.getDefaultValue() )
-                + 1 // We must be over the dense node threshold for the bug to manifest
-                ;
+                GraphDatabaseSettings.dense_node_threshold.defaultValue()
+                + 1; // We must be over the dense node threshold for the bug to manifest
 
         Node node1;
         try ( Transaction tx = db.beginTx() )

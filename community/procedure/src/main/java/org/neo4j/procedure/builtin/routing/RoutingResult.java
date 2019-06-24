@@ -22,7 +22,7 @@ package org.neo4j.procedure.builtin.routing;
 import java.util.List;
 import java.util.Objects;
 
-import org.neo4j.internal.helpers.AdvertisedSocketAddress;
+import org.neo4j.configuration.helpers.SocketAddress;
 
 /**
  * The outcome of applying a load balancing plugin, which will be used by client
@@ -30,13 +30,13 @@ import org.neo4j.internal.helpers.AdvertisedSocketAddress;
  */
 public class RoutingResult
 {
-    private final List<AdvertisedSocketAddress> routeEndpoints;
-    private final List<AdvertisedSocketAddress> writeEndpoints;
-    private final List<AdvertisedSocketAddress> readEndpoints;
+    private final List<SocketAddress> routeEndpoints;
+    private final List<SocketAddress> writeEndpoints;
+    private final List<SocketAddress> readEndpoints;
     private final long timeToLiveMillis;
 
-    public RoutingResult( List<AdvertisedSocketAddress> routeEndpoints, List<AdvertisedSocketAddress> writeEndpoints,
-            List<AdvertisedSocketAddress> readEndpoints, long timeToLiveMillis )
+    public RoutingResult( List<SocketAddress> routeEndpoints, List<SocketAddress> writeEndpoints,
+            List<SocketAddress> readEndpoints, long timeToLiveMillis )
     {
         this.routeEndpoints = routeEndpoints;
         this.writeEndpoints = writeEndpoints;
@@ -49,17 +49,17 @@ public class RoutingResult
         return timeToLiveMillis;
     }
 
-    public List<AdvertisedSocketAddress> routeEndpoints()
+    public List<SocketAddress> routeEndpoints()
     {
         return routeEndpoints;
     }
 
-    public List<AdvertisedSocketAddress> writeEndpoints()
+    public List<SocketAddress> writeEndpoints()
     {
         return writeEndpoints;
     }
 
-    public List<AdvertisedSocketAddress> readEndpoints()
+    public List<SocketAddress> readEndpoints()
     {
         return readEndpoints;
     }

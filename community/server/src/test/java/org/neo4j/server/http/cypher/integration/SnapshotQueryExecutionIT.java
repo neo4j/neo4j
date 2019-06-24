@@ -24,7 +24,6 @@ import org.junit.Before;
 import org.junit.Test;
 
 import org.neo4j.configuration.GraphDatabaseSettings;
-import org.neo4j.configuration.Settings;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
@@ -35,6 +34,7 @@ import org.neo4j.test.server.HTTP;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.neo4j.configuration.SettingValueParsers.TRUE;
 import static org.neo4j.server.helpers.CommunityServerBuilder.serverOnRandomPorts;
 import static org.neo4j.test.server.HTTP.RawPayload.quotedJson;
 
@@ -46,7 +46,7 @@ public class SnapshotQueryExecutionIT extends ExclusiveServerTestBase
     @Before
     public void setUp() throws Exception
     {
-        server = serverOnRandomPorts().withProperty( GraphDatabaseSettings.snapshot_query.name(), Settings.TRUE ).build();
+        server = serverOnRandomPorts().withProperty( GraphDatabaseSettings.snapshot_query.name(), TRUE ).build();
         server.start();
     }
 

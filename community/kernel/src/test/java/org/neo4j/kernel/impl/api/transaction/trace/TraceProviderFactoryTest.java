@@ -30,9 +30,9 @@ import org.neo4j.configuration.GraphDatabaseSettings;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.neo4j.configuration.TransactionTracingLevel.ALL;
-import static org.neo4j.configuration.TransactionTracingLevel.DISABLED;
-import static org.neo4j.configuration.TransactionTracingLevel.SAMPLE;
+import static org.neo4j.configuration.GraphDatabaseSettings.TransactionTracingLevel.ALL;
+import static org.neo4j.configuration.GraphDatabaseSettings.TransactionTracingLevel.DISABLED;
+import static org.neo4j.configuration.GraphDatabaseSettings.TransactionTracingLevel.SAMPLE;
 import static org.neo4j.kernel.impl.api.transaction.trace.TraceProviderFactory.getTraceProvider;
 import static org.neo4j.kernel.impl.api.transaction.trace.TransactionInitializationTrace.NONE;
 
@@ -54,7 +54,7 @@ class TraceProviderFactoryTest
     void samplingTracerCreation()
     {
         Config config = Config.defaults( GraphDatabaseSettings.transaction_tracing_level, SAMPLE.name() );
-        config.augment( GraphDatabaseSettings.transaction_sampling_percentage, "50" );
+        config.set( GraphDatabaseSettings.transaction_sampling_percentage, 50 );
         TraceProvider traceProvider = getTraceProvider( config );
         Set<TransactionInitializationTrace> traces = new HashSet<>();
         for ( int i = 0; i < 100; i++ )

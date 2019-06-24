@@ -19,89 +19,45 @@
  */
 package org.neo4j.configuration.connectors;
 
+import org.neo4j.annotations.service.ServiceProvider;
 import org.neo4j.configuration.Description;
-import org.neo4j.configuration.ReplacedBy;
+import org.neo4j.configuration.GraphDatabaseSettings;
+import org.neo4j.configuration.helpers.SocketAddress;
 import org.neo4j.graphdb.config.Setting;
-import org.neo4j.internal.helpers.AdvertisedSocketAddress;
-import org.neo4j.internal.helpers.ListenSocketAddress;
 
-import static org.neo4j.configuration.Settings.NO_DEFAULT;
-import static org.neo4j.configuration.Settings.advertisedAddress;
-import static org.neo4j.configuration.Settings.legacyFallback;
-import static org.neo4j.configuration.Settings.listenAddress;
-import static org.neo4j.configuration.Settings.optionsObeyCase;
-import static org.neo4j.configuration.Settings.setting;
+import static org.neo4j.configuration.SettingValueParsers.SOCKET_ADDRESS;
 
-@Description( "Configuration options for HTTP connectors. " +
-        "\"(http-connector-key)\" is a placeholder for a unique name for the connector, for instance " +
-        "\"http-public\" or some other name that describes what the connector is for." )
+@ServiceProvider
 public class HttpConnector extends Connector
 {
-    @Description( "Enable TLS for this connector" )
-    public final Setting<Encryption> encryption;
-
-    @Description( "Address the connector should bind to. " +
-            "This setting is deprecated and will be replaced by `+listen_address+`" )
-    @Deprecated
-    @ReplacedBy( "dbms.connector.X.listen_address" )
-    public final Setting<ListenSocketAddress> address;
+    public static final int DEFAULT_PORT = 7474;
 
     @Description( "Address the connector should bind to" )
-    public final Setting<ListenSocketAddress> listen_address;
+    public final Setting<SocketAddress> listen_address = getBuilder( "listen_address", SOCKET_ADDRESS, new SocketAddress( DEFAULT_PORT ) )
+                    .setDependency( GraphDatabaseSettings.default_listen_address )
+                    .immutable()
+                    .build();
 
     @Description( "Advertised address for this connector" )
-    public final Setting<AdvertisedSocketAddress> advertised_address;
-    private final Encryption encryptionLevel;
+    public final Setting<SocketAddress> advertised_address = getBuilder( "advertised_address", SOCKET_ADDRESS, null ).setDependency( listen_address ).build();
 
-    // Used by config doc generator
+    public static HttpConnector group( String name )
+    {
+        return new HttpConnector( name );
+    }
+
+    private HttpConnector( String name )
+    {
+        super( name );
+    }
     public HttpConnector()
     {
-        this( "(http-connector-key)" );
+        super( null );  // For ServiceLoader
     }
 
-    public HttpConnector( Encryption encryptionLevel )
+    @Override
+    public String getPrefix()
     {
-        this( "(http-connector-key)", encryptionLevel );
-    }
-
-    public HttpConnector( String key )
-    {
-        this( key, Encryption.NONE );
-    }
-
-    public HttpConnector( String key, Encryption encryptionLevel )
-    {
-        super( key );
-        this.encryptionLevel = encryptionLevel;
-        encryption = group.scope( setting( "encryption", optionsObeyCase( HttpConnector.Encryption.class ), NO_DEFAULT ) );
-        Setting<ListenSocketAddress> legacyAddressSetting = listenAddress( "address", encryptionLevel.defaultPort );
-        Setting<ListenSocketAddress> listenAddressSetting = legacyFallback( legacyAddressSetting,
-                listenAddress( "listen_address", encryptionLevel.defaultPort ) );
-
-        this.address = group.scope( legacyAddressSetting );
-        this.listen_address = group.scope( listenAddressSetting );
-        this.advertised_address = group.scope( advertisedAddress( "advertised_address", listenAddressSetting ) );
-    }
-
-    /**
-     * @return this connector's configured encryption level
-     */
-    public Encryption encryptionLevel()
-    {
-        return encryptionLevel;
-    }
-
-    public enum Encryption
-    {
-        NONE( "http", 7474 ), TLS( "https", 7473 );
-
-        public final String uriScheme;
-        public final int defaultPort;
-
-        Encryption( String uriScheme, int defaultPort )
-        {
-            this.uriScheme = uriScheme;
-            this.defaultPort = defaultPort;
-        }
+        return super.getPrefix() + ".http";
     }
 }

@@ -39,13 +39,13 @@ import org.neo4j.consistency.ConsistencyCheckService.Result;
 import org.neo4j.consistency.checking.GraphStoreFixture;
 import org.neo4j.consistency.checking.full.ConsistencyCheckIncompleteException;
 import org.neo4j.dbms.api.DatabaseManagementService;
-import org.neo4j.dbms.api.DatabaseManagementServiceBuilder;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.internal.helpers.Strings;
 import org.neo4j.internal.helpers.progress.ProgressMonitorFactory;
@@ -75,6 +75,8 @@ import static org.junit.Assert.fail;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.configuration.GraphDatabaseSettings.SchemaIndex.NATIVE30;
 import static org.neo4j.configuration.GraphDatabaseSettings.SchemaIndex.NATIVE_BTREE10;
+import static org.neo4j.configuration.GraphDatabaseSettings.record_format;
+import static org.neo4j.configuration.SettingValueParsers.FALSE;
 import static org.neo4j.internal.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.test.Property.property;
 import static org.neo4j.test.Property.set;
@@ -94,6 +96,12 @@ public class ConsistencyCheckServiceIntegrationTest
                 tx.success();
             }
         }
+
+        @Override
+        protected Map<Setting<?>,String> getConfig()
+        {
+            return settings();
+        }
     };
 
     private final DefaultFileSystemAbstraction fs = new DefaultFileSystemAbstraction();
@@ -109,7 +117,7 @@ public class ConsistencyCheckServiceIntegrationTest
 
         Date timestamp = new Date();
         ConsistencyCheckService service = new ConsistencyCheckService( timestamp );
-        Config configuration = Config.defaults( settings() );
+        Config configuration = Config.defaults( stringSettings() );
 
         ConsistencyCheckService.Result result = runFullConsistencyCheck( service, configuration );
 
@@ -129,8 +137,7 @@ public class ConsistencyCheckServiceIntegrationTest
         ConsistencyCheckService service = new ConsistencyCheckService();
         try
         {
-            Map<String,String> settings = settings();
-            Config defaults = Config.defaults( settings );
+            Config defaults = Config.defaults( stringSettings() );
             runFullConsistencyCheck( service, defaults );
             fail();
         }
@@ -147,7 +154,7 @@ public class ConsistencyCheckServiceIntegrationTest
     {
         prepareDbWithDeletedRelationshipPartOfTheChain();
         ConsistencyCheckService service = new ConsistencyCheckService();
-        Result consistencyCheck = runFullConsistencyCheck( service, Config.defaults( settings() ) );
+        Result consistencyCheck = runFullConsistencyCheck( service, Config.defaults( stringSettings() ) );
         assertFalse( consistencyCheck.isSuccessful() );
         // using commons file utils since they do not forgive not closed file descriptors on windows
         org.apache.commons.io.FileUtils.deleteDirectory( fixture.databaseLayout().databaseDirectory() );
@@ -159,7 +166,7 @@ public class ConsistencyCheckServiceIntegrationTest
         // given
         Date timestamp = new Date();
         ConsistencyCheckService service = new ConsistencyCheckService( timestamp );
-        Config configuration = Config.defaults( settings() );
+        Config configuration = Config.defaults( stringSettings() );
 
         // when
         ConsistencyCheckService.Result result = runFullConsistencyCheck( service, configuration );
@@ -178,8 +185,10 @@ public class ConsistencyCheckServiceIntegrationTest
         Date timestamp = new Date();
         ConsistencyCheckService service = new ConsistencyCheckService( timestamp );
         String logsDir = testDirectory.directory().getPath();
-        Config configuration = Config.defaults(
-                settings( GraphDatabaseSettings.logs_directory.name(), logsDir ) );
+        Config configuration = Config.newBuilder()
+                .set( stringSettings() )
+                .set( GraphDatabaseSettings.logs_directory, logsDir )
+                .build();
 
         // when
         ConsistencyCheckService.Result result = runFullConsistencyCheck( service, configuration );
@@ -197,10 +206,8 @@ public class ConsistencyCheckServiceIntegrationTest
     {
         // given
         ConsistencyCheckService service = new ConsistencyCheckService();
-        Config configuration = Config.defaults( settings() );
-        DatabaseManagementService managementService =
-                new TestDatabaseManagementServiceBuilder( testDirectory.storeDir() ).setConfig( GraphDatabaseSettings.record_format, getRecordFormatName() )
-                .setConfig( "dbms.backup.enabled", "false" ).build();
+        Config configuration = Config.defaults( stringSettings() );
+        DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder( testDirectory.storeDir() ).setConfig( settings() ).build();
         GraphDatabaseService db = managementService.database( DEFAULT_DATABASE_NAME );
 
         String propertyKey = "itemId";
@@ -243,7 +250,7 @@ public class ConsistencyCheckServiceIntegrationTest
         FileUtils.deleteRecursively( schemaDir );
 
         ConsistencyCheckService service = new ConsistencyCheckService();
-        Config configuration = Config.defaults( settings() );
+        Config configuration = Config.defaults( stringSettings() );
         Result result = runFullConsistencyCheck( service, configuration, databaseLayout );
 
         // then
@@ -261,12 +268,13 @@ public class ConsistencyCheckServiceIntegrationTest
     public void oldLuceneSchemaIndexShouldBeConsideredConsistentWithFusionProvider() throws Exception
     {
         DatabaseLayout databaseLayout = testDirectory.databaseLayout();
-        String defaultSchemaProvider = GraphDatabaseSettings.default_schema_provider.name();
+
         Label label = Label.label( "label" );
         String propKey = "propKey";
 
         // Given a lucene index
-        GraphDatabaseService db = getGraphDatabaseService( databaseLayout.databaseDirectory(), defaultSchemaProvider, NATIVE30.providerName() );
+        GraphDatabaseService db =
+                getGraphDatabaseService( databaseLayout.databaseDirectory(), GraphDatabaseSettings.default_schema_provider.name(), NATIVE30.providerName() );
         createIndex( db, label, propKey );
         try ( Transaction tx = db.beginTx() )
         {
@@ -277,8 +285,10 @@ public class ConsistencyCheckServiceIntegrationTest
         managementService.shutdown();
 
         ConsistencyCheckService service = new ConsistencyCheckService();
-        Config configuration =
-                Config.defaults( settings( defaultSchemaProvider, NATIVE_BTREE10.providerName() ) );
+        Config configuration = Config.newBuilder()
+                .set( stringSettings() )
+                .set( GraphDatabaseSettings.default_schema_provider, NATIVE_BTREE10.providerName() )
+                .build();
         Result result = runFullConsistencyCheck( service, configuration, databaseLayout );
         assertTrue( result.isSuccessful() );
     }
@@ -322,8 +332,8 @@ public class ConsistencyCheckServiceIntegrationTest
 
     private GraphDatabaseService getGraphDatabaseService( File storeDir, String... settings )
     {
-        DatabaseManagementServiceBuilder builder = new TestDatabaseManagementServiceBuilder( storeDir );
-        builder.setConfigRaw( settings( settings ) );
+        TestDatabaseManagementServiceBuilder builder = new TestDatabaseManagementServiceBuilder( storeDir );
+        builder.setConfigRaw( stringMap( stringSettings(), settings ) );
 
         managementService = builder.build();
         return managementService.database( DEFAULT_DATABASE_NAME );
@@ -332,8 +342,7 @@ public class ConsistencyCheckServiceIntegrationTest
     private void prepareDbWithDeletedRelationshipPartOfTheChain()
     {
         DatabaseManagementService managementService =
-                new TestDatabaseManagementServiceBuilder( testDirectory.storeDir() ).setConfig( GraphDatabaseSettings.record_format, getRecordFormatName() )
-                .setConfig( "dbms.backup.enabled", "false" ).build();
+                new TestDatabaseManagementServiceBuilder( testDirectory.storeDir() ).setConfig( record_format, getRecordFormatName() ).build();
         GraphDatabaseAPI db = (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );
         try
         {
@@ -373,8 +382,7 @@ public class ConsistencyCheckServiceIntegrationTest
         fs.mkdir( tmpLogDir );
         var databaseLayout = testDirectory.databaseLayout();
         DatabaseManagementService managementService =
-                new TestDatabaseManagementServiceBuilder( testDirectory.storeDir() ).setConfig( GraphDatabaseSettings.record_format, getRecordFormatName() )
-                .setConfig( "dbms.backup.enabled", "false" ).build();
+                new TestDatabaseManagementServiceBuilder( testDirectory.storeDir() ).setConfig( settings() ).build();
         GraphDatabaseAPI db = (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );
 
         RelationshipType relationshipType = RelationshipType.withName( "testRelationshipType" );
@@ -402,13 +410,19 @@ public class ConsistencyCheckServiceIntegrationTest
         }
     }
 
-    protected Map<String,String> settings( String... strings )
+    private Map<String,String> stringSettings()
     {
-        Map<String, String> defaults = new HashMap<>();
-        defaults.put( GraphDatabaseSettings.pagecache_memory.name(), "8m" );
-        defaults.put( GraphDatabaseSettings.record_format.name(), getRecordFormatName() );
-        defaults.put( "dbms.backup.enabled", "false" );
-        return stringMap( defaults, strings );
+        Map<String, String> cfg = new HashMap<>();
+        settings().forEach( ( setting, s ) -> cfg.put( setting.name(), s ) );
+        return cfg;
+    }
+
+    protected Map<Setting<?>,String> settings()
+    {
+        Map<Setting<?>, String> defaults = new HashMap<>();
+        defaults.put( GraphDatabaseSettings.pagecache_memory, "8m" );
+        defaults.put( record_format, getRecordFormatName() );
+        return defaults;
     }
 
     private void breakNodeStore() throws KernelException

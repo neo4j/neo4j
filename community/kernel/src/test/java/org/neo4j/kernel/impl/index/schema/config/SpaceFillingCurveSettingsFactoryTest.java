@@ -21,7 +21,8 @@ package org.neo4j.kernel.impl.index.schema.config;
 
 import org.junit.jupiter.api.Test;
 
-import java.util.HashMap;
+import java.util.Arrays;
+import java.util.stream.Collectors;
 
 import org.neo4j.configuration.Config;
 import org.neo4j.gis.spatial.index.Envelope;
@@ -133,17 +134,13 @@ class SpaceFillingCurveSettingsFactoryTest
 
     private void shouldGetCustomSettingsFor( CoordinateReferenceSystem crs, int maxBits, double[] min, double[] max )
     {
-        String crsPrefix = "unsupported.dbms.db.spatial.crs." + crs.getName();
-        HashMap<String,String> settings = new HashMap<>();
-        settings.put( "unsupported.dbms.index.spatial.curve.max_bits", Integer.toString( maxBits ) );
-        for ( int i = 0; i < min.length; i++ )
-        {
-            char var = "xyz".toCharArray()[i];
-            settings.put( crsPrefix + "." + var + ".min", Double.toString( min[i] ) );
-            settings.put( crsPrefix + "." + var + ".max", Double.toString( max[i] ) );
-        }
-        Config config = Config.defaults();
-        config.augment( settings );
+        CrsConfig crsConf = CrsConfig.group( crs );
+
+        Config config = Config.newBuilder()
+                .set( SpatialIndexSettings.space_filling_curve_max_bits , Integer.toString( maxBits ) )
+                .set( crsConf.min, Arrays.stream( min ).boxed().map( String::valueOf ).collect( Collectors.joining(",") ) )
+                .set( crsConf.max, Arrays.stream( max ).boxed().map( String::valueOf ).collect( Collectors.joining(",") ) )
+                .build();
         shouldGetSettingsFor( config, crs, min.length, maxBits, new Envelope( min, max ) );
     }
 

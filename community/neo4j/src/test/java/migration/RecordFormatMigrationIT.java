@@ -52,7 +52,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.configuration.GraphDatabaseSettings.allow_upgrade;
 import static org.neo4j.configuration.GraphDatabaseSettings.record_format;
-import static org.neo4j.configuration.Settings.TRUE;
+import static org.neo4j.configuration.SettingValueParsers.TRUE;
 import static org.neo4j.internal.helpers.Exceptions.rootCause;
 
 @ExtendWith( TestDirectoryExtension.class )
@@ -215,8 +215,7 @@ class RecordFormatMigrationIT
 
     private DatabaseManagementService startManagementService( String name )
     {
-        return new DatabaseManagementServiceBuilder( databaseDirectory ).setConfig( record_format,
-                name ).build();
+        return new DatabaseManagementServiceBuilder( databaseDirectory ).setConfig( record_format, name ).build();
     }
 
     private static DatabaseManagementService startDatabaseServiceWithUpgrade( File storeDir, String formatName )

@@ -24,6 +24,8 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
 
+import java.util.Map;
+
 import org.neo4j.common.DependencyResolver;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
@@ -36,6 +38,7 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.graphdb.config.Setting;
 import org.neo4j.internal.helpers.progress.ProgressMonitorFactory;
 import org.neo4j.internal.index.label.LabelScanStore;
 import org.neo4j.internal.recordstorage.RecordStorageEngine;
@@ -145,8 +148,7 @@ public class DetectAllRelationshipInconsistenciesIT
     private GraphDatabaseAPI getGraphDatabaseAPI()
     {
         managementService = new TestDatabaseManagementServiceBuilder( directory.storeDir() )
-                .setConfig( GraphDatabaseSettings.record_format, getRecordFormatName() )
-                .setConfig( "dbms.backup.enabled", "false" ).build();
+                .setConfig( getConfig() ).build();
         GraphDatabaseService database = managementService.database( DEFAULT_DATABASE_NAME );
         return (GraphDatabaseAPI) database;
     }
@@ -154,6 +156,11 @@ public class DetectAllRelationshipInconsistenciesIT
     protected String getRecordFormatName()
     {
         return StringUtils.EMPTY;
+    }
+
+    protected Map<Setting<?>,String> getConfig()
+    {
+        return Map.of( GraphDatabaseSettings.record_format, getRecordFormatName() );
     }
 
     private static class Sabotage

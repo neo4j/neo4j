@@ -19,57 +19,24 @@
  */
 package org.neo4j.configuration.connectors;
 
-import org.neo4j.configuration.Description;
-import org.neo4j.configuration.Group;
-import org.neo4j.configuration.GroupSettingSupport;
+import org.neo4j.configuration.GroupSetting;
+import org.neo4j.configuration.SettingValueParsers;
 import org.neo4j.graphdb.config.Setting;
 
-import static org.neo4j.configuration.Settings.BOOLEAN;
-import static org.neo4j.configuration.Settings.NO_DEFAULT;
-import static org.neo4j.configuration.Settings.optionsObeyCase;
-import static org.neo4j.configuration.Settings.setting;
-
-@Group( "dbms.connector" )
-public class Connector
+//Not public API, will Connectors as a GroupSetting will be replaced by single connectors
+public abstract class Connector extends GroupSetting
 {
-    @Description( "Enable this connector" )
-    public final Setting<Boolean> enabled;
+    public final Setting<Boolean> enabled = getBuilder( "enabled", SettingValueParsers.BOOL, false ).build();
+    private static final String PREFIX = "dbms.connector";
 
-    @Description( "Connector type. You should always set this to the connector type you want" )
-    public final Setting<ConnectorType> type;
-
-    // Note: Be careful about adding things here that does not apply to all connectors,
-    //       consider future options like non-tcp transports, making `address` a bad choice
-    //       as a setting that applies to every connector, for instance.
-
-    public final GroupSettingSupport group;
-
-    /**
-     * Deprecated, please use other constructor. This constructor will be removed in 4.0.
-     *
-     * @param key of connector
-     * @param typeDefault unused parameter
-     */
-    @Deprecated
-    public Connector( String key, @SuppressWarnings( "UnusedParameters" ) String typeDefault )
+    protected Connector( String name )
     {
-        this( key );
+        super( name );
     }
 
-    public Connector( String key )
+    @Override
+    public String getPrefix()
     {
-        group = new GroupSettingSupport( Connector.class, key );
-        enabled = group.scope( setting( "enabled", BOOLEAN, "false" ) );
-        type = group.scope( setting( "type", optionsObeyCase( ConnectorType.class ), NO_DEFAULT ) );
-    }
-
-    public enum ConnectorType
-    {
-        BOLT, HTTP
-    }
-
-    public String key()
-    {
-        return group.groupKey;
+        return PREFIX;
     }
 }

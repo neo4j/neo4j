@@ -192,9 +192,9 @@ public class RecordStorageEngineRule extends ExternalResource
             return this;
         }
 
-        public Builder setting( Setting<?> setting, String value )
+        public <T> Builder setting( Setting<T> setting, T value )
         {
-            config.augment( setting, value );
+            config.set( setting, value );
             return this;
         }
 

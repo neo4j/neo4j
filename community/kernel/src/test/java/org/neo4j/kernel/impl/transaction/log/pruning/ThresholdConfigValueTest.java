@@ -24,6 +24,8 @@ import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.neo4j.configuration.SettingValueParsers.FALSE;
+import static org.neo4j.configuration.SettingValueParsers.TRUE;
 import static org.neo4j.kernel.impl.transaction.log.pruning.ThresholdConfigParser.parse;
 
 class ThresholdConfigValueTest
@@ -49,14 +51,14 @@ class ThresholdConfigValueTest
     @Test
     void shouldReturnNoPruningForTrue()
     {
-        ThresholdConfigParser.ThresholdConfigValue value = parse( "true" );
+        ThresholdConfigParser.ThresholdConfigValue value = parse( TRUE );
         assertSame( ThresholdConfigParser.ThresholdConfigValue.NO_PRUNING, value );
     }
 
     @Test
     void shouldReturnKeepOneEntryForFalse()
     {
-        ThresholdConfigParser.ThresholdConfigValue value = parse( "false" );
+        ThresholdConfigParser.ThresholdConfigValue value = parse( FALSE );
         assertEquals( "entries", value.type );
         assertEquals( 1, value.value );
     }

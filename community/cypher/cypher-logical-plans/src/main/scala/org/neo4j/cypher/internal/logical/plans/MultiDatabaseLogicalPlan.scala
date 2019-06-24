@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.logical.plans
 
-import org.neo4j.configuration.NormalizedDatabaseName
+import org.neo4j.configuration.helpers.NormalizedDatabaseName
 import org.neo4j.cypher.internal.ir.{LazyMode, StrictnessMode}
 import org.neo4j.cypher.internal.v4_0.ast.{ActionResource, GraphScope, PrivilegeQualifier, ShowPrivilegeScope}
 import org.neo4j.cypher.internal.v4_0.expressions.Parameter

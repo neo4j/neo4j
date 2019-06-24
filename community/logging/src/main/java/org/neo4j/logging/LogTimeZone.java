@@ -22,6 +22,9 @@ package org.neo4j.logging;
 import java.time.ZoneId;
 import java.time.ZoneOffset;
 
+import org.neo4j.annotations.api.PublicApi;
+
+@PublicApi
 public enum LogTimeZone
 {
     UTC

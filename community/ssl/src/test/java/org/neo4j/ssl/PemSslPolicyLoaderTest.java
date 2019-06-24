@@ -25,10 +25,8 @@ import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.io.File;
 import java.io.FileNotFoundException;
-import java.util.Map;
 
 import org.neo4j.configuration.Config;
-import org.neo4j.configuration.ssl.LegacySslPolicyConfig;
 import org.neo4j.configuration.ssl.PemSslPolicyConfig;
 import org.neo4j.io.fs.FileUtils;
 import org.neo4j.logging.NullLogProvider;
@@ -42,9 +40,8 @@ import static org.hamcrest.Matchers.instanceOf;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.neo4j.configuration.Config.newBuilder;
 import static org.neo4j.configuration.GraphDatabaseSettings.neo4j_home;
-import static org.neo4j.configuration.ssl.BaseSslPolicyConfig.Format.PEM;
-import static org.neo4j.internal.helpers.collection.MapUtil.stringMap;
 
 @ExtendWith( TestDirectoryExtension.class )
 class PemSslPolicyLoaderTest
@@ -77,14 +74,12 @@ class PemSslPolicyLoaderTest
     void shouldLoadBaseCryptographicObjects() throws Exception
     {
         // given
-        Map<String,String> params = stringMap();
+        PemSslPolicyConfig policyConfig = PemSslPolicyConfig.group( "default" );
 
-        PemSslPolicyConfig policyConfig = new PemSslPolicyConfig( "default" );
-
-        params.put( neo4j_home.name(), home.getAbsolutePath() );
-        params.put( policyConfig.base_directory.name(), "certificates/default" );
-        params.put( policyConfig.format.name(), PEM.name() );
-        Config config = Config.defaults( params );
+        Config config = newBuilder()
+                .set( neo4j_home, home.getAbsolutePath() )
+                .set( policyConfig.base_directory, "certificates/default" )
+                .build();
 
         // when
         SslPolicyLoader sslPolicyLoader = SslPolicyLoader.create( config, NullLogProvider.getInstance() );
@@ -115,15 +110,12 @@ class PemSslPolicyLoaderTest
         // given
         FileUtils.deleteFile( file );
 
-        Map<String,String> params = stringMap();
+        PemSslPolicyConfig policyConfig = PemSslPolicyConfig.group( "default" );
 
-        PemSslPolicyConfig policyConfig = new PemSslPolicyConfig( "default" );
-
-        params.put( neo4j_home.name(), home.getAbsolutePath() );
-        params.put( policyConfig.base_directory.name(), "certificates/default" );
-        params.put( policyConfig.format.name(), PEM.name() );
-
-        Config config = Config.defaults( params );
+        Config config = newBuilder()
+                .set( neo4j_home, home.getAbsolutePath() )
+                .set( policyConfig.base_directory, "certificates/default" )
+                .build();
 
         // when
         Exception exception = assertThrows( Exception.class, () -> SslPolicyLoader.create( config, NullLogProvider.getInstance() ) );
@@ -134,15 +126,12 @@ class PemSslPolicyLoaderTest
     void shouldThrowIfPolicyNameDoesNotExist()
     {
         // given
-        Map<String,String> params = stringMap();
+        PemSslPolicyConfig policyConfig = PemSslPolicyConfig.group( "default" );
 
-        PemSslPolicyConfig policyConfig = new PemSslPolicyConfig( "default" );
-
-        params.put( neo4j_home.name(), home.getAbsolutePath() );
-        params.put( policyConfig.base_directory.name(), "certificates/default" );
-        params.put( policyConfig.format.name(), PEM.name() );
-
-        Config config = Config.defaults( params );
+        Config config = newBuilder()
+                .set( neo4j_home, home.getAbsolutePath() )
+                .set( policyConfig.base_directory, "certificates/default" )
+                .build();
 
         SslPolicyLoader sslPolicyLoader = SslPolicyLoader.create( config, NullLogProvider.getInstance() );
 
@@ -161,22 +150,5 @@ class PemSslPolicyLoaderTest
 
         // then
         assertNull( sslPolicy );
-    }
-
-    @Test
-    void shouldNotAllowLegacyPolicyToBeConfigured()
-    {
-        // given
-        Map<String,String> params = stringMap();
-
-        PemSslPolicyConfig policyConfig = new PemSslPolicyConfig( LegacySslPolicyConfig.LEGACY_POLICY_NAME );
-
-        params.put( neo4j_home.name(), home.getAbsolutePath() );
-        params.put( policyConfig.base_directory.name(), "certificates/default" );
-        params.put( policyConfig.format.name(), PEM.name() );
-
-        Config config = Config.defaults( params );
-
-        assertThrows( IllegalArgumentException.class, () -> SslPolicyLoader.create( config, NullLogProvider.getInstance() ) );
     }
 }

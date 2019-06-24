@@ -31,9 +31,9 @@ import java.util.Map;
 import org.neo4j.bolt.transport.NettyServer;
 import org.neo4j.configuration.connectors.BoltConnector;
 import org.neo4j.configuration.connectors.ConnectorPortRegister;
-import org.neo4j.internal.helpers.ListenSocketAddress;
+import org.neo4j.configuration.helpers.PortBindException;
+import org.neo4j.configuration.helpers.SocketAddress;
 import org.neo4j.internal.helpers.NamedThreadFactory;
-import org.neo4j.internal.helpers.PortBindException;
 import org.neo4j.logging.NullLog;
 
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -62,10 +62,10 @@ class NettyServerTest
         var port = 16000;
         try ( ServerSocketChannel ignore = ServerSocketChannel.open().bind( new InetSocketAddress( "localhost", port ) ) )
         {
-            var address = new ListenSocketAddress( "localhost", port );
+            var address = new SocketAddress( "localhost", port );
 
             // When
-            var initializersMap = Map.of( new BoltConnector( "test" ), protocolOnAddress( address ) );
+            var initializersMap = Map.of( BoltConnector.group( "test" ), protocolOnAddress( address ) );
             server = new NettyServer( newThreadFactory(), initializersMap, new ConnectorPortRegister(), NullLog.getInstance() );
 
             // Then
@@ -79,8 +79,8 @@ class NettyServerTest
         var connector = "bolt";
         var portRegister = new ConnectorPortRegister();
 
-        var address = new ListenSocketAddress( "localhost", 0 );
-        var initializersMap = Map.of( new BoltConnector( connector ), protocolOnAddress( address ) );
+        var address = new SocketAddress( "localhost", 0 );
+        var initializersMap = Map.of( BoltConnector.group( connector ), protocolOnAddress( address ) );
         server = new NettyServer( newThreadFactory(), initializersMap, portRegister, NullLog.getInstance() );
 
         assertNull( portRegister.getLocalAddress( connector ) );
@@ -94,7 +94,7 @@ class NettyServerTest
         assertNull( portRegister.getLocalAddress( connector ) );
     }
 
-    private static NettyServer.ProtocolInitializer protocolOnAddress( ListenSocketAddress address )
+    private static NettyServer.ProtocolInitializer protocolOnAddress( SocketAddress address )
     {
         return new NettyServer.ProtocolInitializer()
         {
@@ -111,7 +111,7 @@ class NettyServerTest
             }
 
             @Override
-            public ListenSocketAddress address()
+            public SocketAddress address()
             {
                 return address;
             }
