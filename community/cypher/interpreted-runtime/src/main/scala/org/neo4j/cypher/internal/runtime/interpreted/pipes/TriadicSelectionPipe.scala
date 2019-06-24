@@ -20,11 +20,10 @@
 package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
 import org.eclipse.collections.impl.set.mutable.primitive.LongHashSet
-import org.neo4j.cypher.internal.runtime.ExecutionContext
+import org.neo4j.cypher.internal.runtime.{ExecutionContext, IsNoValue}
 import org.neo4j.cypher.internal.v4_0.util.CypherTypeException
 import org.neo4j.cypher.internal.v4_0.util.attribution.Id
 import org.neo4j.values.AnyValue
-import org.neo4j.values.storable.Values
 import org.neo4j.values.virtual.VirtualNodeValue
 
 import scala.collection.mutable.ListBuffer
@@ -42,7 +41,7 @@ extends PipeWithSource(left) {
 
       override def getValue(row: ExecutionContext): Option[Long] = row.getByName(seen) match {
         case n: VirtualNodeValue => Some(n.id())
-        case x if x eq Values.NO_VALUE => None
+        case IsNoValue() => None
         case x => throw new CypherTypeException(s"Expected a node at `$seen` but got $x")
       }
 

@@ -19,11 +19,10 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
-import org.neo4j.cypher.internal.runtime.ExecutionContext
+import org.neo4j.cypher.internal.runtime.{ExecutionContext, IsNoValue}
 import org.neo4j.cypher.internal.v4_0.expressions.SemanticDirection
 import org.neo4j.cypher.internal.v4_0.util.InternalException
 import org.neo4j.cypher.internal.v4_0.util.attribution.Id
-import org.neo4j.values.storable.Values
 import org.neo4j.values.virtual.{NodeValue, RelationshipValue}
 
 case class ExpandAllPipe(source: Pipe,
@@ -45,7 +44,7 @@ case class ExpandAllPipe(source: Pipe,
                 executionContextFactory.copyWith(row, relName, r, toName, other)
             }
 
-          case x if x eq Values.NO_VALUE => None
+          case IsNoValue() => None
 
           case value => throw new InternalException(s"Expected to find a node at '$fromName' but found $value instead")
         }

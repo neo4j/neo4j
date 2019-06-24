@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
 import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates.Predicate
-import org.neo4j.cypher.internal.runtime.{ExecutionContext, RelationshipContainer}
+import org.neo4j.cypher.internal.runtime.{ExecutionContext, IsNoValue, RelationshipContainer}
 import org.neo4j.cypher.internal.v4_0.expressions.SemanticDirection
 import org.neo4j.cypher.internal.v4_0.util.InternalException
 import org.neo4j.cypher.internal.v4_0.util.attribution.Id
@@ -108,7 +108,7 @@ case class VarLengthExpandPipe(source: Pipe,
             val node = state.query.nodeOps.getById(nodeRef.id)
             expand(row, node)
 
-          case x if x eq Values.NO_VALUE =>
+          case IsNoValue() =>
             if (nodeInScope)
               row.set(relName, Values.NO_VALUE)
             else

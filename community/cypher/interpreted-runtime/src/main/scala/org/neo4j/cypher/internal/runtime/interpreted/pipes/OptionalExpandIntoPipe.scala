@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
-import org.neo4j.cypher.internal.runtime.ExecutionContext
+import org.neo4j.cypher.internal.runtime.{ExecutionContext, IsNoValue}
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expression
 import org.neo4j.cypher.internal.v4_0.expressions.SemanticDirection
 import org.neo4j.cypher.internal.v4_0.util.attribution.Id
@@ -48,7 +48,7 @@ case class OptionalExpandIntoPipe(source: Pipe, fromName: String, relName: Strin
             val toNode = getRowNode(row, toName)
 
             toNode match {
-              case x if x eq Values.NO_VALUE =>
+              case IsNoValue() =>
                 row.set(relName, Values.NO_VALUE)
                 Iterator.single(row)
               case n: NodeValue =>
@@ -71,7 +71,7 @@ case class OptionalExpandIntoPipe(source: Pipe, fromName: String, relName: Strin
                 else filteredRows
             }
 
-          case x if x eq Values.NO_VALUE =>
+          case IsNoValue() =>
             row.set(relName, Values.NO_VALUE)
             Iterator(row)
         }

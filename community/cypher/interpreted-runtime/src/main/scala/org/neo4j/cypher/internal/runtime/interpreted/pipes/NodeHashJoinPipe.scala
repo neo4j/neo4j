@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
-import org.neo4j.cypher.internal.runtime.ExecutionContext
+import org.neo4j.cypher.internal.runtime.{ExecutionContext, IsNoValue}
 import org.neo4j.cypher.internal.v4_0.util.CypherTypeException
 import org.neo4j.cypher.internal.v4_0.util.attribution.Id
 import org.neo4j.values.storable.Values
@@ -80,7 +80,7 @@ case class NodeHashJoinPipe(nodeVariables: Set[String], left: Pipe, right: Pipe)
     for (idx <- cachedVariables.indices) {
       key(idx) = context.getByName(cachedVariables(idx)) match {
         case n: VirtualNodeValue => n.id()
-        case x if x eq Values.NO_VALUE => return None
+        case IsNoValue() => return None
         case _ => throw new CypherTypeException("Created a plan that uses non-nodes when expecting a node")
       }
     }

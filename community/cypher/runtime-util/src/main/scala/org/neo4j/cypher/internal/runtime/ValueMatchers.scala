@@ -17,23 +17,19 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.runtime.interpreted.pipes.aggregation
+package org.neo4j.cypher.internal.runtime
 
-import org.neo4j.cypher.internal.runtime.{ExecutionContext, IsNoValue}
-import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expression
-import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.Values
 
-class CountFunction(value: Expression) extends AggregationFunction {
-  var count: Long = 0
+object IsNoValue {
+  def unapply(arg: AnyValue): Boolean = arg eq Values.NO_VALUE
+}
 
-  override def apply(data: ExecutionContext, state: QueryState) {
-    value(data, state) match {
-      case IsNoValue() =>
-      case _    => count += 1
-    }
-  }
+object IsTrueValue {
+  def unapply(arg: AnyValue): Boolean = arg eq Values.TRUE
+}
 
-  override def result(state: QueryState): AnyValue = Values.longValue(count)
+object IsFalseValue {
+  def unapply(arg: AnyValue): Boolean = arg eq Values.FALSE
 }

@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.pipes.aggregation
 
-import org.neo4j.cypher.internal.runtime.ExecutionContext
+import org.neo4j.cypher.internal.runtime.{ExecutionContext, IsNoValue}
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expression
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
 import org.neo4j.values.storable.Values
@@ -36,7 +36,7 @@ trait MinMax extends AggregationFunction {
 
   override def apply(data: ExecutionContext, state: QueryState) {
     value(data, state) match {
-      case x if x eq Values.NO_VALUE =>
+      case IsNoValue() =>
       case x: AnyValue => checkIfLargest(x)
     }
   }

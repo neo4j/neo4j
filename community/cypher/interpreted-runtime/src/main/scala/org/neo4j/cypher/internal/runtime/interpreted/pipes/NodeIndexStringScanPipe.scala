@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
-import org.neo4j.cypher.internal.runtime.ExecutionContext
+import org.neo4j.cypher.internal.runtime.{ExecutionContext, IsNoValue}
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expression
 import org.neo4j.cypher.internal.logical.plans.{IndexOrder, IndexedProperty}
 import org.neo4j.internal.kernel.api.{IndexReadSession, NodeValueIndexCursor}
@@ -47,7 +47,7 @@ abstract class AbstractNodeIndexStringScanPipe(ident: String,
     val resultNodes = value match {
       case value: TextValue =>
         new IndexIterator(state.query, baseContext, queryContextCall(state, state.queryIndexes(queryIndexId), value ))
-      case x if x eq Values.NO_VALUE =>
+      case IsNoValue() =>
         Iterator.empty
       case x => throw new CypherTypeException(s"Expected a string value, but got $x")
     }

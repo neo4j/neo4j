@@ -83,14 +83,14 @@ case class CypherCurrentCompiler[CONTEXT <: RuntimeContext](planner: CypherPlann
         case c@CreateUser(_, _, Some(paramPassword), _, _) =>
           val paramString = params.get(paramPassword.name) match {
             case param: TextValue => param.stringValue()
-            case x if x eq Values.NO_VALUE => throw new ParameterNotFoundException("Expected parameter(s): " + paramPassword.name)
+            case IsNoValue() => throw new ParameterNotFoundException("Expected parameter(s): " + paramPassword.name)
             case param => throw new ParameterWrongTypeException("Only string values are accepted as password, got: " + param.getTypeName)
           }
           CreateUser(c.userName, Some(paramString), None, c.requirePasswordChange, c.suspended)(new SequentialIdGen(c.id.x + 1))
         case a@AlterUser(_, _, Some(paramPassword), _, _) =>
           val paramString = params.get(paramPassword.name) match {
             case param: TextValue => param.stringValue()
-            case x if x eq Values.NO_VALUE => throw new ParameterNotFoundException("Expected parameter(s): " + paramPassword.name)
+            case IsNoValue() => throw new ParameterNotFoundException("Expected parameter(s): " + paramPassword.name)
             case param => throw new ParameterWrongTypeException("Only string values are accepted as password, got: " + param.getTypeName)
           }
           AlterUser(a.userName, Some(paramString), None, a.requirePasswordChange, a.suspended)(new SequentialIdGen(a.id.x + 1))

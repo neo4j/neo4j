@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.compatibility
 
+import org.neo4j.cypher.internal.runtime.IsNoValue
 import org.neo4j.function.ThrowingBiConsumer
 import org.neo4j.kernel.impl.util.{NodeProxyWrappingNodeValue, PathWrappingPathValue, RelationshipProxyWrappingValue}
 import org.neo4j.values.AnyValue
@@ -45,7 +46,7 @@ object valueHelper {
     case p: PathWrappingPathValue => p.path()
     case a: ArrayValue => a.asObjectCopy()
     case a: ListValue => Vector(a.asArray().map(fromValue): _*)
-    case x if x eq Values.NO_VALUE => null
+    case IsNoValue() => null
   }
 
 }

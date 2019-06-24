@@ -22,6 +22,7 @@ package org.neo4j.cypher.internal.runtime.interpreted.pipes
 import org.neo4j.cypher.internal.runtime._
 import org.neo4j.cypher.internal.runtime.interpreted._
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expression
+import org.neo4j.cypher.internal.runtime.{ExecutionContext, IsNoValue, LenientCreateRelationship, Operations, QueryContext}
 import org.neo4j.cypher.internal.v4_0.util.attribution.Id
 import org.neo4j.cypher.internal.v4_0.util.{CypherTypeException, InternalException, InvalidSemanticsException}
 import org.neo4j.values.AnyValue
@@ -119,7 +120,7 @@ abstract class EntityCreatePipe(src: Pipe) extends BaseCreatePipe(src) {
   private def getNode(row: ExecutionContext, relName: String, name: String, lenient: Boolean): NodeValue =
     row.getByName(name) match {
       case n: NodeValue => n
-      case x if x eq Values.NO_VALUE =>
+      case IsNoValue() =>
         if (lenient) null
         else throw new InternalException(LenientCreateRelationship.errorMsg(relName, name))
       case x => throw new InternalException(s"Expected to find a node at '$name' but found instead: $x")

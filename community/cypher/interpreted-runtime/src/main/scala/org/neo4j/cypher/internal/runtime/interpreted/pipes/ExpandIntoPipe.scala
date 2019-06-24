@@ -20,10 +20,9 @@
 package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
 import org.neo4j.cypher.InternalException
-import org.neo4j.cypher.internal.runtime.ExecutionContext
+import org.neo4j.cypher.internal.runtime.{ExecutionContext, IsNoValue}
 import org.neo4j.cypher.internal.v4_0.expressions.SemanticDirection
 import org.neo4j.cypher.internal.v4_0.util.attribution.Id
-import org.neo4j.values.storable.Values
 import org.neo4j.values.virtual.NodeValue
 
 /**
@@ -57,7 +56,7 @@ case class ExpandIntoPipe(source: Pipe,
           case fromNode: NodeValue =>
             val toNode = getRowNode(row, toName)
             toNode match {
-              case x if x eq Values.NO_VALUE => Iterator.empty
+              case IsNoValue() => Iterator.empty
               case n: NodeValue =>
 
                 val relationships = relCache.get(fromNode, n, dir)
@@ -68,7 +67,7 @@ case class ExpandIntoPipe(source: Pipe,
               case _ => throw new InternalException(s"$toNode must be node or null")
             }
 
-          case x if x eq Values.NO_VALUE => Iterator.empty
+          case IsNoValue() => Iterator.empty
         }
     }
   }

@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.commands.expressions
 
-import org.neo4j.cypher.internal.runtime.ExecutionContext
+import org.neo4j.cypher.internal.runtime.{ExecutionContext, IsNoValue}
 import org.neo4j.cypher.internal.runtime.interpreted.IsMap
 import org.neo4j.cypher.internal.runtime.interpreted.commands.values.KeyToken
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
@@ -34,7 +34,7 @@ case class Property(mapExpr: Expression, propertyKey: KeyToken)
   extends Expression with Product with Serializable
 {
   def apply(ctx: ExecutionContext, state: QueryState): AnyValue = mapExpr(ctx, state) match {
-    case x if x eq Values.NO_VALUE => Values.NO_VALUE
+    case IsNoValue() => Values.NO_VALUE
     case n: VirtualNodeValue =>
       propertyKey.getOptId(state.query) match {
         case None => Values.NO_VALUE

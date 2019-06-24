@@ -19,10 +19,11 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.pipes.aggregation
 
-import org.neo4j.cypher.internal.v4_0.util.CypherTypeException
+import org.neo4j.cypher.internal.runtime.IsNoValue
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expression
+import org.neo4j.cypher.internal.v4_0.util.CypherTypeException
 import org.neo4j.values.AnyValue
-import org.neo4j.values.storable.{NumberValue, Values}
+import org.neo4j.values.storable.NumberValue
 
 trait NumericExpressionOnly {
   def name: String
@@ -31,7 +32,7 @@ trait NumericExpressionOnly {
 
   def actOnNumber[U](obj: AnyValue, f: NumberValue => U) {
     obj match {
-      case x if x eq Values.NO_VALUE =>
+      case IsNoValue() =>
       case number: NumberValue => f(number)
       case _ =>
         throw new CypherTypeException("%s(%s) can only handle numerical values, or null.".format(name, value))

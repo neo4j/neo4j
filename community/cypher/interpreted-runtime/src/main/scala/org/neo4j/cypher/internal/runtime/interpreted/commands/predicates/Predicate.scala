@@ -26,7 +26,7 @@ import org.neo4j.cypher.internal.runtime.interpreted.commands.AstNode
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.{AbstractCachedNodeProperty, AbstractCachedRelationshipProperty, Expression, Literal}
 import org.neo4j.cypher.internal.runtime.interpreted.commands.values.KeyToken
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
-import org.neo4j.cypher.internal.runtime.{CastSupport, ExecutionContext, IsList}
+import org.neo4j.cypher.internal.runtime.{CastSupport, ExecutionContext, IsList, IsNoValue}
 import org.neo4j.cypher.internal.v4_0.util.{CypherTypeException, NonEmptyList}
 import org.neo4j.cypher.operations.CypherBoolean
 import org.neo4j.kernel.api.StatementConstants
@@ -131,7 +131,7 @@ case class Xor(a: Predicate, b: Predicate) extends Predicate {
 
 case class IsNull(expression: Expression) extends Predicate {
   override def isMatch(m: ExecutionContext, state: QueryState): Option[Boolean] = expression(m, state) match {
-    case x if x eq Values.NO_VALUE => Some(true)
+    case IsNoValue() => Some(true)
     case _ => Some(false)
   }
 
@@ -166,7 +166,7 @@ case class PropertyExists(variable: Expression, propertyKey: KeyToken) extends P
     case IsMap(map) =>
       Some(map(state).get(propertyKey.name) != Values.NO_VALUE)
 
-    case x if x eq Values.NO_VALUE => None
+    case IsNoValue() => None
     case _ => throw new CypherTypeException("Expected " + variable + " to be a property container.")
   }
 
@@ -202,7 +202,7 @@ case class CachedNodePropertyExists(cachedNodeProperty: Expression) extends Pred
                      // Re-cache the value
                      cp.setCachedProperty(m, property)
                      Some(!(property eq Values.NO_VALUE))
-                   case x if x eq Values.NO_VALUE =>
+                   case IsNoValue() =>
                      Some(false)
                    case _ =>
                      Some(true)
@@ -248,7 +248,7 @@ case class CachedRelationshipPropertyExists(cachedRelProperty: Expression) exten
                       // Re-cache the value
                       cp.setCachedProperty(m, property)
                       Some(!(property eq Values.NO_VALUE))
-                    case x if x eq Values.NO_VALUE =>
+                    case IsNoValue() =>
                       Some(false)
                     case _ =>
                       Some(true)
@@ -365,7 +365,7 @@ case class NonEmpty(collection: Expression) extends Predicate {
   override def isMatch(m: ExecutionContext, state: QueryState): Option[Boolean] = {
     collection(m, state) match {
       case IsList(x) => Some(x.nonEmpty)
-      case x if x eq Values.NO_VALUE => None
+      case IsNoValue() => None
       case x => throw new CypherTypeException(s"Expected a collection, got `$x`")
     }
   }
@@ -385,7 +385,7 @@ case class HasLabel(entity: Expression, label: KeyToken) extends Predicate {
 
   override def isMatch(m: ExecutionContext, state: QueryState): Option[Boolean] = entity(m, state) match {
 
-    case x if x eq Values.NO_VALUE =>
+    case IsNoValue() =>
       None
 
     case value =>
@@ -419,7 +419,7 @@ case class CoercedPredicate(inner: Expression) extends Predicate {
 
   override def isMatch(m: ExecutionContext, state: QueryState): Option[Boolean] = inner(m, state) match {
     case x: BooleanValue => Some(x.booleanValue())
-    case x if x eq Values.NO_VALUE => None
+    case IsNoValue() => None
     case IsList(coll) => Some(coll.nonEmpty)
     case x => throw new CypherTypeException(s"Don't know how to treat that as a predicate: $x")
   }

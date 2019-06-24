@@ -20,12 +20,11 @@
 package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
 import org.neo4j.cypher.internal.v4_0.util.CypherTypeException
-import org.neo4j.cypher.internal.runtime.ExecutionContext
+import org.neo4j.cypher.internal.runtime.{ExecutionContext, IsNoValue}
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expression
 import org.neo4j.cypher.internal.runtime.interpreted.GraphElementPropertyFunctions
 import org.neo4j.cypher.internal.v4_0.util.attribution.Id
-import org.neo4j.values.storable.Values
-import org.neo4j.values.virtual.{RelationshipValue, NodeValue, PathValue}
+import org.neo4j.values.virtual.{NodeValue, PathValue, RelationshipValue}
 
 import scala.collection.JavaConverters._
 
@@ -40,7 +39,7 @@ case class DeletePipe(src: Pipe, expression: Expression, forced: Boolean)
                                                state: QueryState): Iterator[ExecutionContext] = {
     input.map { row =>
       expression(row, state) match {
-        case x if x eq Values.NO_VALUE => // do nothing
+        case IsNoValue() => // do nothing
         case r: RelationshipValue =>
           deleteRelationship(r, state)
         case n: NodeValue =>

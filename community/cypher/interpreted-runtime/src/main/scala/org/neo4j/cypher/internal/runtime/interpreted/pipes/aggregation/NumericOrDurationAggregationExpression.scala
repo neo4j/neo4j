@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.pipes.aggregation
 
+import org.neo4j.cypher.internal.runtime.IsNoValue
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expression
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.{DurationValue, NumberValue, Values}
@@ -39,7 +40,7 @@ trait NumericOrDurationAggregationExpression {
 
   protected def actOnNumberOrDuration(vl: AnyValue, aggNumber: NumberValue => Unit, aggDuration: DurationValue => Unit) = {
     vl match {
-      case x if x eq Values.NO_VALUE =>
+      case IsNoValue() =>
       case number: NumberValue =>
         aggregatingType match {
           case None =>

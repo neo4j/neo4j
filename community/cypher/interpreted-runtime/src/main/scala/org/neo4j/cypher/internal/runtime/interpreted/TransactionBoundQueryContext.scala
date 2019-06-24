@@ -486,7 +486,7 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
         val nodePropertyInTx = reads().nodePropertyChangeInTransactionOrNull(nodeId, propertyKeyId)
         nodePropertyInTx match {
           case null => None // no changes in TxState.
-          case x if x eq Values.NO_VALUE => Some(false) // property removed in TxState
+          case IsNoValue() => Some(false) // property removed in TxState
           case _ => Some(true) // property changed in TxState
         }
       }
@@ -687,7 +687,7 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
         val relPropertyInTx = reads().relationshipPropertyChangeInTransactionOrNull(relId, propertyKeyId)
         relPropertyInTx match {
           case null => None // no changes in TxState.
-          case x if x eq Values.NO_VALUE => Some(false) // property removed in TxState
+          case IsNoValue() => Some(false) // property removed in TxState
           case _ => Some(true) // property changed in TxState
         }
       }

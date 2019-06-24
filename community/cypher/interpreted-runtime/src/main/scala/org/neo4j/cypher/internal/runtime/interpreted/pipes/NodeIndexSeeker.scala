@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
 import org.neo4j.cypher.internal.logical.plans._
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.{Expression, InequalitySeekRangeExpression, PointDistanceSeekRangeExpression, PrefixSeekRangeExpression}
-import org.neo4j.cypher.internal.runtime.{ExecutionContext, IsList, makeValueNeoSafe}
+import org.neo4j.cypher.internal.runtime.{ExecutionContext, IsList, IsNoValue, makeValueNeoSafe}
 import org.neo4j.cypher.internal.v4_0.frontend.helpers.SeqCombiner.combine
 import org.neo4j.cypher.internal.v4_0.util.{CypherTypeException, InternalException}
 import org.neo4j.internal.kernel.api.{IndexQuery, IndexReadSession, NodeValueIndexCursor}
@@ -109,7 +109,7 @@ trait NodeIndexSeeker {
         expr(row, state) match {
           case text: TextValue =>
             Array(IndexQuery.stringPrefix(propertyId, text))
-          case x if x eq Values.NO_VALUE =>
+          case IsNoValue() =>
             Nil
           case other =>
             throw new CypherTypeException("Expected TextValue, got " + other)
