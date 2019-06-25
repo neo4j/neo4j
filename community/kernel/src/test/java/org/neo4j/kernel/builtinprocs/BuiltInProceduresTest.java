@@ -189,7 +189,19 @@ public class BuiltInProceduresTest
                 "INDEX ON :User(name)", "Unnamed index", singletonList( "User" ), singletonList( "name" ), "ONLINE", "node_unique_property", 100D,
                 getIndexProviderDescriptorMap( EMPTY.getProviderDescriptor() ), 42L, "" ) ) );
     }
-    // todo db.indexes should cope with index not found exception
+
+    @Test
+    public void listingIndexesShouldGiveMessageForConcurrentlyDeletedIndexes() throws Throwable
+    {
+        // Given
+        givenIndex( "User", "name" );
+        when( schemaReadCore.indexGetState( any( IndexReference.class) ) ).thenThrow( new IndexNotFoundKernelException( "Not found." ) );
+
+        // When/Then
+        assertThat( call( "db.indexes" ), contains( record(
+                "INDEX ON :User(name)", "Unnamed index", singletonList( "User" ), singletonList( "name" ), "NOT FOUND", "node_label_property", 0D,
+                getIndexProviderDescriptorMap( EMPTY.getProviderDescriptor() ), 42L, "Index not found. It might have been concurrently dropped." ) ) );
+    }
 
     @Test
     public void shouldListPropertyKeys() throws Throwable
