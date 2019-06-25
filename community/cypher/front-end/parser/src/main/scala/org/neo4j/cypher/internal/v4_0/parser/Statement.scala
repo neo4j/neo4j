@@ -42,8 +42,15 @@ trait Statement extends Parser
   }
 
   def PrivilegeManagementCommand: Rule1[CatalogDDL] = rule("Security privilege management statement") {
-    optional(keyword("CATALOG")) ~~
-      (ShowPrivileges | GrantRole | RevokeRole | GrantTraverse | RevokeTraverse | GrantRead | RevokeRead | GrantMatch | RevokeMatch | GrantWrite | RevokeWrite)
+    optional(keyword("CATALOG")) ~~ (ShowPrivileges | GrantCommand | RevokeCommand)
+  }
+
+  def GrantCommand: Rule1[CatalogDDL] = rule("Security privilege grant statement") {
+      GrantRole | GrantTraverse | GrantRead | GrantMatch | GrantWrite
+  }
+
+  def RevokeCommand: Rule1[CatalogDDL] = rule("Security privilege revoke statement") {
+    RevokeRole | RevokeTraverse | RevokeRead | RevokeMatch | RevokeWrite
   }
 
   def ShowUsers: Rule1[ShowUsers] = rule("CATALOG SHOW USERS") {

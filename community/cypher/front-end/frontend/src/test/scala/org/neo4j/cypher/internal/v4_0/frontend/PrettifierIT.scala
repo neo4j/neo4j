@@ -395,6 +395,9 @@ class PrettifierIT extends CypherFunSuite {
       "grant writes (*) on graph * nodes * (*) to role" ->
         "GRANT WRITE (*) ON GRAPH * NODES * (*) TO role",
 
+      "grant writes (*) on graph foo to role" ->
+        "GRANT WRITE (*) ON GRAPH foo NODES * (*) TO role",
+
       "grant writes (*) on graph foo nodes * (*) to role" ->
         "GRANT WRITE (*) ON GRAPH foo NODES * (*) TO role",
 
@@ -454,6 +457,9 @@ class PrettifierIT extends CypherFunSuite {
 
       "revoke writes (*) on graph * nodes * (*) from role" ->
         "REVOKE WRITE (*) ON GRAPH * NODES * (*) FROM role",
+
+      "revoke writes (*) on graph foo from role" ->
+        "REVOKE WRITE (*) ON GRAPH foo NODES * (*) FROM role",
 
       "revoke writes (*) on graph foo nodes * (*) from role" ->
         "REVOKE WRITE (*) ON GRAPH foo NODES * (*) FROM role",
