@@ -19,8 +19,8 @@
  */
 package org.neo4j.cypher.internal.runtime.spec.tests
 
-import org.neo4j.cypher.internal.runtime.spec._
 import org.neo4j.cypher.internal.logical.plans.GetValue
+import org.neo4j.cypher.internal.runtime.spec._
 import org.neo4j.cypher.internal.{CypherRuntime, RuntimeContext}
 
 abstract class NodeIndexScanTestBase[CONTEXT <: RuntimeContext](
@@ -68,6 +68,28 @@ abstract class NodeIndexScanTestBase[CONTEXT <: RuntimeContext](
 
     // then
     val expected = nodes.filter{ _.hasProperty("calories") }
+    runtimeResult should beColumns("x").withRows(singleColumn(expected))
+  }
+
+  test("should scan all nodes of an index with multiple properties") {
+    // given
+    nodeGraph(5, "Milk")
+    val nodes = nodePropertyGraph(sizeHint, {
+      case i if i % 10 == 0 => Map("calories" -> i, "taste" -> i)
+      case i if i % 5 == 0 => Map("calories" -> i)
+    },"Honey")
+    index("Honey", "calories", "taste")
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x")
+      .nodeIndexOperator("x:Honey(calories,taste)")
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    val expected = nodes.filter{ n => n.hasProperty("calories") && n.hasProperty("taste") }
     runtimeResult should beColumns("x").withRows(singleColumn(expected))
   }
 
