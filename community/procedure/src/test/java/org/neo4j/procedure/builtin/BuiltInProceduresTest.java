@@ -174,8 +174,17 @@ class BuiltInProceduresTest
 
         // When/Then
         assertThat( call( "db.indexes" ), contains( record(
-                "INDEX ON :User(name)", "index_1000", singletonList( "User" ), singletonList( "name" ), "ONLINE", "node_label_property", 100D,
-                getIndexProviderDescriptorMap( EMPTY.getProviderDescriptor() ), 42L, "" ) ) );
+                42L,
+                "index_1000",
+                "ONLINE",
+                100D,
+                "NONUNIQUE",
+                "BTREE",
+                "NODE",
+                singletonList( "User" ),
+                singletonList( "name" ),
+                "no-index-provider-1.0" )
+        ) );
     }
 
     @Test
@@ -186,8 +195,17 @@ class BuiltInProceduresTest
 
         // When/Then
         assertThat( call( "db.indexes" ), contains( record(
-                "INDEX ON :User(name)", "constraint_1000", singletonList( "User" ), singletonList( "name" ), "ONLINE", "node_unique_property", 100D,
-                getIndexProviderDescriptorMap( EMPTY.getProviderDescriptor() ), 42L, "" ) ) );
+                42L,
+                "constraint_1000",
+                "ONLINE",
+                100D,
+                "UNIQUE",
+                "BTREE",
+                "NODE",
+                singletonList( "User" ),
+                singletonList( "name" ),
+                "no-index-provider-1.0" )
+        ) );
     }
 
     @Test

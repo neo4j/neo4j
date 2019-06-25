@@ -172,11 +172,10 @@ public class FulltextProceduresTest
             result = tx.execute( DB_INDEXES );
             assertTrue( result.hasNext() );
             row = result.next();
-            assertEquals( "INDEX ON :Label1,Label2(prop1, prop2)", row.get( "description" ) );
-            assertEquals( asList( "Label1", "Label2" ), row.get( "tokenNames" ) );
+            assertEquals( asList( "Label1", "Label2" ), row.get( "labelsOrTypes" ) );
             assertEquals( asList( "prop1", "prop2" ), row.get( "properties" ) );
-            assertEquals( "test-index", row.get( "indexName" ) );
-            assertEquals( "node_fulltext", row.get( "type" ) );
+            assertEquals( "test-index", row.get( "name" ) );
+            assertEquals( "FULLTEXT", row.get( "type" ) );
             assertFalse( result.hasNext() );
             result.close();
             tx.commit();
@@ -199,7 +198,10 @@ public class FulltextProceduresTest
             result = tx.execute( DB_INDEXES );
             assertTrue( result.hasNext() );
             row = result.next();
-            assertEquals( "INDEX ON :Label1,Label2(prop1, prop2)", row.get( "description" ) );
+            assertEquals( asList( "Label1", "Label2" ), row.get( "labelsOrTypes" ) );
+            assertEquals( asList( "prop1", "prop2" ), row.get( "properties" ) );
+            assertEquals( "test-index", row.get( "name" ) );
+            assertEquals( "FULLTEXT", row.get( "type" ) );
             assertEquals( "ONLINE", row.get( "state" ) );
             assertFalse( result.hasNext() );
             assertFalse( result.hasNext() );
@@ -224,11 +226,10 @@ public class FulltextProceduresTest
             result = tx.execute( DB_INDEXES );
             assertTrue( result.hasNext() );
             row = result.next();
-            assertEquals( "INDEX ON -[:Reltype1,Reltype2(prop1, prop2)]-", row.get( "description" ) );
-            assertEquals( asList( "Reltype1", "Reltype2" ), row.get( "tokenNames" ) );
+            assertEquals( asList( "Reltype1", "Reltype2" ), row.get( "labelsOrTypes" ) );
             assertEquals( asList( "prop1", "prop2" ), row.get( "properties" ) );
-            assertEquals( "test-index", row.get( "indexName" ) );
-            assertEquals( "relationship_fulltext", row.get( "type" ) );
+            assertEquals( "test-index", row.get( "name" ) );
+            assertEquals( "FULLTEXT", row.get( "type" ) );
             assertFalse( result.hasNext() );
             result.close();
             tx.commit();
@@ -251,7 +252,10 @@ public class FulltextProceduresTest
             result = tx.execute( DB_INDEXES );
             assertTrue( result.hasNext() );
             row = result.next();
-            assertEquals( "INDEX ON -[:Reltype1,Reltype2(prop1, prop2)]-", row.get( "description" ) );
+            assertEquals( asList( "Reltype1", "Reltype2" ), row.get( "labelsOrTypes" ) );
+            assertEquals( asList( "prop1", "prop2" ), row.get( "properties" ) );
+            assertEquals( "test-index", row.get( "name" ) );
+            assertEquals( "FULLTEXT", row.get( "type" ) );
             assertEquals( "ONLINE", row.get( "state" ) );
             assertFalse( result.hasNext() );
             assertFalse( result.hasNext() );
@@ -269,20 +273,20 @@ public class FulltextProceduresTest
             transaction.execute( format( NODE_CREATE, "node", array( "Label1", "Label2" ), array( "prop1", "prop2" ) ) ).close();
             transaction.execute( format( RELATIONSHIP_CREATE, "rel", array( "Reltype1", "Reltype2" ), array( "prop1", "prop2" ) ) ).close();
             Map<String,String> indexes = new HashMap<>();
-            transaction.execute( "call db.indexes()" ).forEachRemaining( m -> indexes.put( (String) m.get( "indexName" ), (String) m.get( "description" ) ) );
+            transaction.execute( "call db.indexes()" ).forEachRemaining( m -> indexes.put( (String) m.get( "name" ), (String) m.get( "description" ) ) );
 
             transaction.execute( format( DROP, "node" ) );
             indexes.remove( "node" );
             Map<String,String> newIndexes = new HashMap<>();
             transaction.execute( "call db.indexes()" ).forEachRemaining(
-                    m -> newIndexes.put( (String) m.get( "indexName" ), (String) m.get( "description" ) ) );
+                    m -> newIndexes.put( (String) m.get( "name" ), (String) m.get( "description" ) ) );
             assertEquals( indexes, newIndexes );
 
             transaction.execute( format( DROP, "rel" ) );
             indexes.remove( "rel" );
             newIndexes.clear();
             transaction.execute( "call db.indexes()" ).forEachRemaining(
-                    m -> newIndexes.put( (String) m.get( "indexName" ), (String) m.get( "description" ) ) );
+                    m -> newIndexes.put( (String) m.get( "name" ), (String) m.get( "description" ) ) );
             assertEquals( indexes, newIndexes );
             transaction.commit();
         }
@@ -2096,7 +2100,7 @@ public class FulltextProceduresTest
             try ( Result result = tx.execute( "call db.indexes()" ) )
             {
                 assertTrue( result.hasNext() );
-                schemaIndexName = result.next().get( "indexName" ).toString();
+                schemaIndexName = result.next().get( "name" ).toString();
             }
             expectedException.expect( QueryExecutionException.class );
             tx.execute( format( DROP, schemaIndexName ) ).close();

@@ -25,7 +25,9 @@ import org.hamcrest.TypeSafeMatcher;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
 
+import java.util.Arrays;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.FutureTask;
@@ -57,9 +59,12 @@ import org.neo4j.kernel.internal.Version;
 import org.neo4j.monitoring.Monitors;
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.storable.TextValue;
+import org.neo4j.values.storable.Values;
+import org.neo4j.values.virtual.ListValue;
 import org.neo4j.values.virtual.MapValue;
 import org.neo4j.values.virtual.VirtualValues;
 
+import static java.util.Collections.singletonList;
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.arrayContaining;
@@ -195,9 +200,9 @@ class BuiltInProceduresIT extends KernelIntegrationTest
                 proc( "dbms.listConfig", "(searchString =  :: STRING?) :: (name :: STRING?, description :: STRING?, value :: STRING?, dynamic :: BOOLEAN?)",
                         "List the currently active config of Neo4j.", "DBMS" ),
                 proc( "db.constraints", "() :: (description :: STRING?)", "List all constraints in the database.", "READ" ),
-                proc( "db.indexes", "() :: (description :: STRING?, indexName :: STRING?, tokenNames :: LIST? OF STRING?, properties :: " +
-                                "LIST? OF STRING?, state :: STRING?, type :: STRING?, progress :: FLOAT?, provider :: MAP?, id :: INTEGER?, " +
-                                "failureMessage :: STRING?)",
+                proc( "db.indexes",
+                        "() :: (id :: INTEGER?, name :: STRING?, state :: STRING?, populationPercent :: FLOAT?, uniqueness :: STRING?, type :: STRING?, " +
+                                "entityType :: STRING?, labelsOrTypes :: LIST? OF STRING?, properties :: LIST? OF STRING?, provider :: STRING?)",
                         "List all indexes in the database.", "READ" ),
                 proc( "db.awaitIndex", "(index :: STRING?, timeOutSeconds = 300 :: INTEGER?) :: VOID",
                         "Wait for an index to come online (for example: CALL db.awaitIndex(\":Person(name)\")).", "READ" ),
@@ -351,31 +356,64 @@ class BuiltInProceduresIT extends KernelIntegrationTest
         }
 
         // Then
-        IndexProviderMap indexProviderMap = db.getDependencyResolver().resolveDependency( IndexProviderMap.class );
-        IndexingService indexingService = db.getDependencyResolver().resolveDependency( IndexingService.class );
-        IndexProvider provider = indexProviderMap.getDefaultProvider();
-        MapValue pdm = ValueUtils.asMapValue( MapUtil.map( // Provider Descriptor Map.
-                "key", provider.getProviderDescriptor().getKey(), "version",
-                provider.getProviderDescriptor().getVersion() ) );
         assertThat( result, containsInAnyOrder(
-                new AnyValue[]{stringValue( "INDEX ON :Age(foo)" ), stringValue( ageFooIndex.getName() ),
-                        VirtualValues.list( stringValue( "Age" ) ), VirtualValues.list( stringValue( "foo" ) ),
-                        stringValue( "ONLINE" ),
-                        stringValue( "node_unique_property" ), doubleValue( 100D ), pdm,
-                        longValue( indexingService.getIndexId( ageFooDescriptor ) ),
-                        EMPTY_STRING},
-                new AnyValue[]{stringValue( "INDEX ON :Person(foo)" ), stringValue( personFooIndex.getName() ),
-                        VirtualValues.list( stringValue( "Person" ) ),
-                        VirtualValues.list( stringValue( "foo" ) ), stringValue( "ONLINE" ),
-                        stringValue( "node_label_property" ), doubleValue( 100D ), pdm,
-                        longValue( indexingService.getIndexId( personFooDescriptor ) ), EMPTY_STRING},
-                new AnyValue[]{stringValue( "INDEX ON :Person(foo, bar)" ), stringValue( personFooBarIndex.getName() ),
-                        VirtualValues.list( stringValue( "Person" ) ),
-                        VirtualValues.list( stringValue( "foo" ), stringValue( "bar" ) ), stringValue( "ONLINE" ),
-                        stringValue( "node_label_property" ), doubleValue( 100D ), pdm,
-                        longValue( indexingService.getIndexId( personFooBarDescriptor ) ), EMPTY_STRING}
+                dbIndexesResult(
+                        ageFooIndex.getId(),
+                        ageFooIndex.getName(),
+                        "ONLINE",
+                        100D,
+                        "UNIQUE",
+                        "BTREE",
+                        "NODE",
+                        singletonList( "Age" ),
+                        singletonList( "foo" ),
+                        ageFooIndex.getIndexProvider().name() ),
+
+                dbIndexesResult(
+                        personFooIndex.getId(),
+                        personFooIndex.getName(),
+                        "ONLINE",
+                        100D,
+                        "NONUNIQUE",
+                        "BTREE",
+                        "NODE",
+                        singletonList( "Person" ),
+                        singletonList( "foo" ),
+                        personFooIndex.getIndexProvider().name() ),
+
+                dbIndexesResult(
+                        personFooBarIndex.getId(),
+                        personFooBarIndex.getName(),
+                        "ONLINE",
+                        100D,
+                        "NONUNIQUE",
+                        "BTREE",
+                        "NODE",
+                        singletonList( "Person" ),
+                        Arrays.asList( "foo", "bar" ),
+                        personFooBarIndex.getIndexProvider().name() )
         ) );
         commit();
+    }
+
+    private static AnyValue[] dbIndexesResult( long id, String name, String state, Double populationPercent, String uniqueness, String type, String entityType,
+            List<String> labelsOrTypes, List<String> properties, String provider )
+    {
+        ListValue labelsOrTypesList = VirtualValues.list( labelsOrTypes.stream().map( Values::stringValue ).toArray( AnyValue[]::new ) );
+        ListValue propertiesList = VirtualValues.list( properties.stream().map( Values::stringValue ).toArray( AnyValue[]::new ) );
+        return new AnyValue[]
+                {
+                        longValue( id ),
+                        stringValue( name ),
+                        stringValue( state ),
+                        doubleValue( populationPercent ),
+                        stringValue( uniqueness ),
+                        stringValue( type ),
+                        stringValue( entityType ),
+                        labelsOrTypesList,
+                        propertiesList,
+                        stringValue( provider )
+                };
     }
 
     @Test
