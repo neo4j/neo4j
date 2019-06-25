@@ -133,4 +133,27 @@ abstract class DistinctTestBase[CONTEXT <: RuntimeContext](
     runtimeResult should beColumns("x")
       .withRows(inOrder((0 until sizeHint).map(f).distinct.sorted.map(Array[Any](_))))
   }
+
+  test("should work on RHS of apply") {
+
+    val as = Seq(10,11,12,12,12)
+    val bs = Seq(1,1,2,3,4,4,5)
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("b")
+      .apply()
+      .|.distinct("b AS b")
+      .|.unwind(s"[${bs.mkString(",")}] AS b")
+      .|.argument()
+      .unwind(s"[${as.mkString(",")}] AS a")
+      .argument()
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    val expected = for {a <- as; b <- bs.distinct} yield b
+    runtimeResult should beColumns("b").withRows(singleColumn(expected))
+  }
 }
