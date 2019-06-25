@@ -45,17 +45,18 @@ public class VersionAwareLogEntryReader<SOURCE extends ReadableClosablePositionA
 {
     private final CommandReaderFactory commandReaderFactory;
     private final InvalidLogEntryHandler invalidLogEntryHandler;
+    private final LogPositionMarker positionMarker;
 
     public VersionAwareLogEntryReader()
     {
         this( new ServiceLoadingCommandReaderFactory(), InvalidLogEntryHandler.STRICT );
     }
 
-    public VersionAwareLogEntryReader( CommandReaderFactory commandReaderFactory,
-            InvalidLogEntryHandler invalidLogEntryHandler )
+    public VersionAwareLogEntryReader( CommandReaderFactory commandReaderFactory, InvalidLogEntryHandler invalidLogEntryHandler )
     {
         this.commandReaderFactory = commandReaderFactory;
         this.invalidLogEntryHandler = invalidLogEntryHandler;
+        this.positionMarker = new LogPositionMarker();
     }
 
     @Override
@@ -63,7 +64,6 @@ public class VersionAwareLogEntryReader<SOURCE extends ReadableClosablePositionA
     {
         try
         {
-            LogPositionMarker positionMarker = new LogPositionMarker();
             LogEntryVersion version = LogEntryVersion.LATEST_VERSION;
             long skipped = 0;
             while ( true )
@@ -71,6 +71,21 @@ public class VersionAwareLogEntryReader<SOURCE extends ReadableClosablePositionA
                 channel.getCurrentPosition( positionMarker );
 
                 byte versionCode = channel.get();
+                if ( versionCode == 0 )
+                {
+                    // we reached the end of available records but still have space available in pre-allocated file
+                    // we reset channel position to restore last read byte in case someone would like to re-read or check it again if possible
+                    // and we report that we reach end of record stream from our point of view
+                    if ( channel instanceof PositionableChannel )
+                    {
+                        resetChannelPosition( channel );
+                    }
+                    else
+                    {
+                        throw new IllegalStateException( "Log reader expects positionable channel to be able to reset offset. Current channel: " + channel );
+                    }
+                    return null;
+                }
                 byte typeCode = channel.get();
 
                 LogEntryParser<LogEntry> entryReader;
@@ -107,7 +122,7 @@ public class VersionAwareLogEntryReader<SOURCE extends ReadableClosablePositionA
                     e = withMessage( e, e.getMessage() + ". At position " + position +
                             " and entry version " + version );
 
-                    if ( channelSupportsPositioning( channel ) &&
+                    if ( channel instanceof PositionableChannel &&
                             invalidLogEntryHandler.handleInvalidEntry( e, position ) )
                     {
                         ((PositionableChannel)channel).setCurrentPosition( positionMarker.getByteOffset() + 1 );
@@ -127,8 +142,19 @@ public class VersionAwareLogEntryReader<SOURCE extends ReadableClosablePositionA
         }
     }
 
-    private boolean channelSupportsPositioning( SOURCE channel )
+    private void resetChannelPosition( SOURCE channel ) throws IOException
     {
-        return channel instanceof PositionableChannel;
+        //take current position
+        channel.getCurrentPosition( positionMarker );
+        PositionableChannel positionableChannel = (PositionableChannel) channel;
+        positionableChannel.setCurrentPosition( positionMarker.getByteOffset() - 1 );
+        // refresh with reset position
+        channel.getCurrentPosition( positionMarker );
+    }
+
+    @Override
+    public LogPosition lastPosition()
+    {
+        return positionMarker.newPosition();
     }
 }

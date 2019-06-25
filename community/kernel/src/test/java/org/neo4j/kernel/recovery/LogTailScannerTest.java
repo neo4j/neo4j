@@ -140,7 +140,7 @@ class LogTailScannerTest
         LogTailInformation logTailInformation = tailScanner.getTailInformation();
 
         // then
-        assertLatestCheckPoint( false, true, NO_TRANSACTION_ID, endLogVersion, logTailInformation );
+        assertLatestCheckPoint( false, false, NO_TRANSACTION_ID, endLogVersion, logTailInformation );
         assertFalse( logTailInformation.logsMissing() );
     }
 
@@ -170,7 +170,7 @@ class LogTailScannerTest
         LogTailInformation logTailInformation = tailScanner.getTailInformation();
 
         // then
-        assertLatestCheckPoint( false, true, NO_TRANSACTION_ID, startLogVersion, logTailInformation );
+        assertLatestCheckPoint( false, false, NO_TRANSACTION_ID, startLogVersion, logTailInformation );
     }
 
     @ParameterizedTest
@@ -419,7 +419,7 @@ class LogTailScannerTest
         LogTailInformation logTailInformation = tailScanner.getTailInformation();
 
         // then
-        assertLatestCheckPoint( true, true, NO_TRANSACTION_ID, startLogVersion, logTailInformation );
+        assertLatestCheckPoint( true, false, NO_TRANSACTION_ID, startLogVersion, logTailInformation );
     }
 
     @ParameterizedTest

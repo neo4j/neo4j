@@ -59,7 +59,6 @@ class DatabaseTransactionLogModule
     {
         dependencies.satisfyDependencies( checkPointer,
                                           logFiles,
-                                          logFiles.getLogFileInformation(),
                                           logicalTransactionStore,
                                           logRotation,
                                           appender );

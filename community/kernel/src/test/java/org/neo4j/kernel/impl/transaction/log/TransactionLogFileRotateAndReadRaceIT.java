@@ -116,11 +116,12 @@ class TransactionLogFileRotateAndReadRaceIT
         // one thread constantly writing to and rotating the channel
         AtomicInteger rotations = new AtomicInteger();
         CountDownLatch startSignal = new CountDownLatch( 1 );
+        long maxEndTime = currentTimeMillis() + LIMIT_TIME;
         Future<Void> writeFuture = t2.execute( ignored ->
         {
             ThreadLocalRandom random = ThreadLocalRandom.current();
             startSignal.countDown();
-            while ( !end.get() )
+            while ( !end.get() && (currentTimeMillis() < maxEndTime) )
             {
                 writer.put( dataChunk, random.nextInt( 1, dataChunk.length ) );
                 if ( logFile.rotationNeeded() )
@@ -136,7 +137,6 @@ class TransactionLogFileRotateAndReadRaceIT
         } );
         assertTrue( startSignal.await( 10, SECONDS ) );
         // one thread reading through the channel
-        long maxEndTime = currentTimeMillis() + LIMIT_TIME;
         int reads = 0;
         try
         {

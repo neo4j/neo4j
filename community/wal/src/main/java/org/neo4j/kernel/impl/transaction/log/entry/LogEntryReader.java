@@ -22,6 +22,7 @@ package org.neo4j.kernel.impl.transaction.log.entry;
 import java.io.IOException;
 
 import org.neo4j.io.fs.ReadableClosableChannel;
+import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.ReadableClosablePositionAwareChannel;
 
 /**
@@ -40,4 +41,6 @@ public interface LogEntryReader<S extends ReadableClosablePositionAwareChannel>
      * @throws IOException if source throws exception.
      */
     LogEntry readLogEntry( S source ) throws IOException;
+
+    LogPosition lastPosition();
 }

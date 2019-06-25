@@ -192,7 +192,7 @@ class ReversedSingleFileTransactionCursorTest
         appendCorruptedTransaction();
         writeTransactions( readableTransactions, 1, 1 );
 
-        assertThrows( UnsupportedLogVersionException.class, this::readAllFromReversedCursorFailOnCorrupted );
+        assertThrows( IOException.class, this::readAllFromReversedCursorFailOnCorrupted );
     }
 
     private CommittedTransactionRepresentation[] readAllFromReversedCursor() throws IOException
@@ -280,6 +280,10 @@ class ReversedSingleFileTransactionCursorTest
                 byte[] additionalHeaderData ) throws IOException
         {
             writeLogEntryHeader( TX_START, channel );
+            for ( int i = 0; i < 100; i++ )
+            {
+                channel.put( (byte) -1 );
+            }
         }
     }
 }

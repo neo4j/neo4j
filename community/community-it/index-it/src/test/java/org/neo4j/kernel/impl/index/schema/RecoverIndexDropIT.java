@@ -38,8 +38,13 @@ import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.LogicalTransactionStore;
+import org.neo4j.kernel.impl.transaction.log.ReadableClosablePositionAwareChannel;
+import org.neo4j.kernel.impl.transaction.log.ReadableLogChannel;
 import org.neo4j.kernel.impl.transaction.log.TransactionCursor;
+import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReader;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryWriter;
+import org.neo4j.kernel.impl.transaction.log.entry.VersionAwareLogEntryReader;
+import org.neo4j.kernel.impl.transaction.log.files.LogFile;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
 import org.neo4j.kernel.impl.transaction.log.files.LogFilesBuilder;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
@@ -56,6 +61,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.internal.helpers.collection.Iterables.count;
+import static org.neo4j.kernel.impl.transaction.log.entry.LogHeader.LOG_HEADER_SIZE;
 import static org.neo4j.test.TestLabels.LABEL_ONE;
 
 /**
@@ -83,7 +89,6 @@ class RecoverIndexDropIT
     {
         // given a transaction stream ending in an INDEX DROP command.
         CommittedTransactionRepresentation dropTransaction = prepareDropTransaction();
-        var databaseLayout = directory.databaseLayout();
         DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder( directory.storeDir() ).build();
         GraphDatabaseService db = managementService.database( DEFAULT_DATABASE_NAME );
         createIndex( db );
@@ -128,12 +133,21 @@ class RecoverIndexDropIT
     private void appendDropTransactionToTransactionLog( File transactionLogsDirectory, CommittedTransactionRepresentation dropTransaction ) throws IOException
     {
         LogFiles logFiles = LogFilesBuilder.logFilesBasedOnlyBuilder( transactionLogsDirectory, fs ).build();
-        File logFile = logFiles.getLogFileForVersion( logFiles.getHighestLogVersion() );
-        StoreChannel writeStoreChannel = fs.write( logFile );
-        writeStoreChannel.position( writeStoreChannel.size() );
-        try ( PhysicalFlushableChannel writeChannel = new PhysicalFlushableChannel( writeStoreChannel ) )
+        LogFile logFile = logFiles.getLogFile();
+
+        try ( ReadableLogChannel reader = logFile.getReader( new LogPosition( 0, LOG_HEADER_SIZE ) ) )
         {
-            new LogEntryWriter( writeChannel ).serialize( dropTransaction );
+            LogEntryReader<ReadableClosablePositionAwareChannel> logEntryReader = new VersionAwareLogEntryReader<>();
+            while ( logEntryReader.readLogEntry( reader ) != null )
+            {
+            }
+            LogPosition position = logEntryReader.lastPosition();
+            StoreChannel writeStoreChannel = fs.write( logFiles.getLogFileForVersion( logFiles.getHighestLogVersion() ) );
+            writeStoreChannel.position( position.getByteOffset() );
+            try ( PhysicalFlushableChannel writeChannel = new PhysicalFlushableChannel( writeStoreChannel ) )
+            {
+                new LogEntryWriter( writeChannel ).serialize( dropTransaction );
+            }
         }
     }
 

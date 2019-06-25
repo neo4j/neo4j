@@ -150,8 +150,9 @@ public interface TransactionIdStore
      * @param transactionId new last closed transaction id.
      * @param logVersion new last closed transaction log version
      * @param byteOffset new last closed transaction offset
+     * @param missingLogs flag to record missing logs date
      */
-    void resetLastClosedTransaction( long transactionId, long logVersion, long byteOffset );
+    void resetLastClosedTransaction( long transactionId, long logVersion, long byteOffset, boolean missingLogs );
 
     /**
      * Forces the transaction id counters to persistent storage.

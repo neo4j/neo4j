@@ -28,6 +28,7 @@ import java.io.OutputStream;
 import java.nio.ByteBuffer;
 import java.nio.channels.ReadableByteChannel;
 
+import org.neo4j.io.ByteUnit;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.IoPrimitiveUtils;
 import org.neo4j.kernel.impl.transaction.log.InMemoryClosableChannel;
@@ -39,8 +40,10 @@ import org.neo4j.test.rule.TestDirectory;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogHeader.LOG_HEADER_SIZE;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogHeaderReader.readLogHeader;
@@ -69,7 +72,7 @@ class LogHeaderReaderTest
         {
             buffer.putLong( encodeLogVersion( expectedLogVersion ) );
             buffer.putLong( expectedTxId );
-            return 8 + 8;
+            return Long.BYTES * 2;
         } );
 
         // when
@@ -130,13 +133,8 @@ class LogHeaderReaderTest
         // given
 
         // build a string longer than 32k
-        int stringSize = 32 * 1024 + 1;
-        StringBuilder sb = new StringBuilder();
-        for ( int i = 0; i < stringSize; i++ )
-        {
-            sb.append( "x" );
-        }
-        String lengthyString = sb.toString();
+        int stringSize = (int) (ByteUnit.kibiBytes( 32 )  + 1);
+        String lengthyString = "x".repeat( stringSize );
 
         // we need 3 more bytes for writing the string length
         InMemoryClosableChannel channel = new InMemoryClosableChannel( stringSize + 3 );
@@ -148,5 +146,24 @@ class LogHeaderReaderTest
 
         // then
         assertEquals( lengthyString, stringFromChannel );
+    }
+
+    @Test
+    void readEmptyPreallocatedFileHeaderAsNoHeader() throws IOException
+    {
+        ByteBuffer buffer = ByteBuffer.allocate( LOG_HEADER_SIZE );
+        ReadableByteChannel channel = mock( ReadableByteChannel.class );
+
+        when( channel.read( buffer ) ).thenAnswer( invocation ->
+        {
+            buffer.putLong( 0L );
+            buffer.putLong( 0L );
+            return Long.BYTES * 2;
+        } );
+
+        LogHeader result = readLogHeader( buffer, channel, true, null );
+
+        assertNull( result );
+        verify( channel ).read( buffer );
     }
 }

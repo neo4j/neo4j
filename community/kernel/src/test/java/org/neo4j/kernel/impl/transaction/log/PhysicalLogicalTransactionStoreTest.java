@@ -231,7 +231,7 @@ class PhysicalLogicalTransactionStoreTest
             }
 
             @Override
-            public void transactionsRecovered( CommittedTransactionRepresentation lastRecoveredTransaction,
+            public void transactionsRecovered( CommittedTransactionRepresentation lastRecoveredTransaction, LogPosition lastTransactionPosition,
                     LogPosition positionAfterLastRecoveredTransaction, boolean missingLogs )
             {
             }

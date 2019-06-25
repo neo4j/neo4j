@@ -38,6 +38,8 @@ import org.neo4j.kernel.impl.transaction.log.PositionAwarePhysicalFlushableChann
 import org.neo4j.kernel.impl.transaction.log.ReadAheadLogChannel;
 import org.neo4j.kernel.impl.transaction.log.ReadableLogChannel;
 import org.neo4j.kernel.impl.transaction.log.ReaderLogVersionBridge;
+import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReader;
+import org.neo4j.kernel.impl.transaction.log.entry.LogHeader;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.logging.Log;
 import org.neo4j.storageengine.api.LogVersionRepository;
@@ -83,15 +85,49 @@ class TransactionLogFile extends LifecycleAdapter implements LogFile
     @Override
     public void start() throws IOException
     {
-        // Recovery has taken place before this, so the log file has been truncated to last known good tx
-        // Just read header and move to the end
-        long lastLogVersionUsed = logVersionRepository.getCurrentLogVersion();
-        channel = logFiles.createLogChannelForVersion( lastLogVersionUsed, context::getLastCommittedTransactionId );
-        // Move to the end
-        channel.position( channel.size() );
+        long currentLogVersion = logVersionRepository.getCurrentLogVersion();
+        channel = logFiles.createLogChannelForVersion( currentLogVersion, context::getLastCommittedTransactionId );
+
+        //try to set position
+        seekChannelPosition( currentLogVersion );
+
         ByteBuffer byteBuffer = ByteBuffer.allocateDirect( calculateLogBufferSize() );
         closeableByteBuffer = new CloseableByteBuffer( byteBuffer );
         writer = new PositionAwarePhysicalFlushableChannel( channel, byteBuffer );
+    }
+
+    private void seekChannelPosition( long currentLogVersion ) throws IOException
+    {
+        scrollToTheLastClosedTxPosition( currentLogVersion );
+        LogPosition position = scrollOverCheckpointRecords();
+        channel.position( position.getByteOffset() );
+    }
+
+    private LogPosition scrollOverCheckpointRecords() throws IOException
+    {
+        // scroll all over possible checkpoints
+        ReadAheadLogChannel readAheadLogChannel = new ReadAheadLogChannel( channel );
+        LogEntryReader logEntryReader = context.getLogEntryReader();
+        while ( logEntryReader.readLogEntry( readAheadLogChannel ) != null )
+        {
+            // seek to the end the records.
+        }
+        return logEntryReader.lastPosition();
+    }
+
+    private void scrollToTheLastClosedTxPosition( long currentLogVersion ) throws IOException
+    {
+        LogPosition logPosition = context.getLastClosedTransactionPosition();
+        long lastTxOffset = logPosition.getByteOffset();
+        long lastTxLogVersion = logPosition.getLogVersion();
+        if ( lastTxOffset < LogHeader.LOG_HEADER_SIZE || channel.size() < lastTxOffset )
+        {
+            return;
+        }
+        if ( lastTxLogVersion == currentLogVersion )
+        {
+            channel.position( lastTxOffset );
+        }
     }
 
     // In order to be able to write into a logfile after life.stop during shutdown sequence
@@ -194,6 +230,7 @@ class TransactionLogFile extends LifecycleAdapter implements LogFile
          */
         PhysicalLogVersionedStoreChannel newLog = logFiles.createLogChannelForVersion( newLogVersion, context::committingTransactionId );
         tryEvictFromSystemCache( currentLog );
+        currentLog.truncate( currentLog.position() );
         currentLog.close();
         return newLog;
     }

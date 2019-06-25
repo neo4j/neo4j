@@ -824,13 +824,16 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord,NoStoreHea
     }
 
     @Override
-    public void resetLastClosedTransaction( long transactionId, long logVersion, long byteOffset )
+    public void resetLastClosedTransaction( long transactionId, long logVersion, long byteOffset, boolean missingLogs )
     {
         assertNotClosed();
         setRecord( Position.LAST_TRANSACTION_ID, transactionId );
         setRecord( Position.LAST_CLOSED_TRANSACTION_LOG_VERSION, logVersion );
         setRecord( Position.LAST_CLOSED_TRANSACTION_LOG_BYTE_OFFSET, byteOffset );
-        setRecord( Position.LAST_MISSING_STORE_FILES_RECOVERY_TIMESTAMP, System.currentTimeMillis() );
+        if ( missingLogs )
+        {
+            setRecord( Position.LAST_MISSING_STORE_FILES_RECOVERY_TIMESTAMP, System.currentTimeMillis() );
+        }
         lastClosedTx.set( transactionId, new long[]{logVersion, byteOffset} );
     }
 

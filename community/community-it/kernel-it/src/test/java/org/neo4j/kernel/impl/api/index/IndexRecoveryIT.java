@@ -157,8 +157,8 @@ class IndexRecoveryIT
             {
                 when( mockedIndexProvider.getPopulator( any( IndexDescriptor.class ), any( IndexSamplingConfig.class ), any() ) ).thenReturn(
                         indexPopulatorWithControlledCompletionTiming( recoverySemaphore ) );
-                monitors.addMonitorListener( new MyRecoveryMonitor( recoverySemaphore ) );
                 boolean recoveryRequired = Recovery.isRecoveryRequired( fs, testDirectory.databaseLayout(), defaults() );
+                monitors.addMonitorListener( new MyRecoveryMonitor( recoverySemaphore ) );
                 // When
                 startDb();
 
@@ -429,10 +429,9 @@ class IndexRecoveryIT
         };
     }
 
-    private static class MyRecoveryMonitor implements RecoveryMonitor
+    private class MyRecoveryMonitor implements RecoveryMonitor
     {
         private final Semaphore recoverySemaphore;
-        private int invocationCounter;
 
         MyRecoveryMonitor( Semaphore recoverySemaphore )
         {
@@ -442,13 +441,7 @@ class IndexRecoveryIT
         @Override
         public void recoveryCompleted( int numberOfRecoveredTransactions, long recoveryTimeInMilliseconds )
         {
-            // monitor invoked multiple times: first time for system db and second type for db we interested in.
-            // and we will release semaphore only when default database recovery is completed.
-            if ( invocationCounter > 0 )
-            {
-                recoverySemaphore.release();
-            }
-            invocationCounter++;
+            recoverySemaphore.release();
         }
     }
 }

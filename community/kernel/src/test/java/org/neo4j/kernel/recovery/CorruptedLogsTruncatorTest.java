@@ -57,7 +57,7 @@ import static org.neo4j.kernel.impl.transaction.log.TestLogEntryReader.logEntryR
 @ExtendWith( {DefaultFileSystemExtension.class, TestDirectoryExtension.class,} )
 class CorruptedLogsTruncatorTest
 {
-    private static final int SINGLE_LOG_FILE_SIZE = 25;
+    private static final long SINGLE_LOG_FILE_SIZE = LogHeader.LOG_HEADER_SIZE + 9L;
     private static final int TOTAL_NUMBER_OF_LOG_FILES = 12;
 
     @Inject
@@ -78,7 +78,7 @@ class CorruptedLogsTruncatorTest
         SimpleLogVersionRepository logVersionRepository = new SimpleLogVersionRepository();
         SimpleTransactionIdStore transactionIdStore = new SimpleTransactionIdStore();
         logFiles = LogFilesBuilder.logFilesBasedOnlyBuilder( databaseDirectory, fs )
-                .withRotationThreshold( LogHeader.LOG_HEADER_SIZE + 9L )
+                .withRotationThreshold( SINGLE_LOG_FILE_SIZE )
                 .withLogVersionRepository( logVersionRepository )
                 .withTransactionIdStore( transactionIdStore )
                 .withLogEntryReader( logEntryReader() )
@@ -160,6 +160,7 @@ class CorruptedLogsTruncatorTest
         long highestCorrectLogFileIndex = 5;
         File highestCorrectLogFile = logFiles.getLogFileForVersion( highestCorrectLogFileIndex );
         long fileSizeBeforePrune = highestCorrectLogFile.length();
+        long highestLogFileLength = logFiles.getHighestLogFile().length();
         int bytesToPrune = 7;
         long byteOffset = fileSizeBeforePrune - bytesToPrune;
         LogPosition prunePosition = new LogPosition( highestCorrectLogFileIndex, byteOffset );
@@ -189,12 +190,11 @@ class CorruptedLogsTruncatorTest
             {
                 checkEntryNameAndSize( zipFile, TransactionLogFilesHelper.DEFAULT_NAME + "." + index, SINGLE_LOG_FILE_SIZE );
             }
-            checkEntryNameAndSize( zipFile, TransactionLogFilesHelper.DEFAULT_NAME + "." + lastFileIndex,
-                    SINGLE_LOG_FILE_SIZE - 1 );
+            checkEntryNameAndSize( zipFile, TransactionLogFilesHelper.DEFAULT_NAME + "." + lastFileIndex, highestLogFileLength );
         }
     }
 
-    private void checkEntryNameAndSize( ZipFile zipFile, String entryName, int expectedSize ) throws IOException
+    private void checkEntryNameAndSize( ZipFile zipFile, String entryName, long expectedSize ) throws IOException
     {
         ZipEntry entry = zipFile.getEntry( entryName );
         InputStream inputStream = zipFile.getInputStream( entry );

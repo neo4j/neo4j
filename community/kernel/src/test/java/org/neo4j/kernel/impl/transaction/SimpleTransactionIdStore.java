@@ -129,7 +129,7 @@ public class SimpleTransactionIdStore implements TransactionIdStore
     }
 
     @Override
-    public void resetLastClosedTransaction( long transactionId, long byteOffset, long logVersion )
+    public void resetLastClosedTransaction( long transactionId, long byteOffset, long logVersion, boolean missingLogs )
     {
         closedTransactionId.set( transactionId, new long[]{logVersion, byteOffset} );
     }

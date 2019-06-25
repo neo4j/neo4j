@@ -32,6 +32,7 @@ import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.kernel.impl.api.TestCommandReaderFactory;
 import org.neo4j.kernel.impl.transaction.SimpleLogVersionRepository;
 import org.neo4j.kernel.impl.transaction.SimpleTransactionIdStore;
+import org.neo4j.kernel.impl.transaction.log.PhysicalLogVersionedStoreChannel;
 import org.neo4j.kernel.impl.transaction.log.entry.InvalidLogEntryHandler;
 import org.neo4j.kernel.impl.transaction.log.entry.VersionAwareLogEntryReader;
 import org.neo4j.test.extension.DefaultFileSystemExtension;
@@ -41,10 +42,12 @@ import org.neo4j.test.rule.TestDirectory;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsInAnyOrder;
+import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.neo4j.kernel.impl.transaction.log.entry.LogHeader.LOG_HEADER_SIZE;
 
 @ExtendWith( {DefaultFileSystemExtension.class, TestDirectoryExtension.class} )
 class TransactionLogFilesTest
@@ -183,6 +186,25 @@ class TransactionLogFilesTest
         assertFalse( logFiles.isLogFile( new File( "aaa.tx.log" ) ) );
         assertTrue( logFiles.isLogFile( new File( "filename.0" ) ) );
         assertTrue( logFiles.isLogFile( new File( "filename.17" ) ) );
+    }
+
+    @Test
+    void emptyFileWithoutEntriesDoesNotHaveThem() throws IOException
+    {
+        LogFiles logFiles = createLogFiles();
+        DatabaseLayout databaseLayout = testDirectory.databaseLayout();
+        String file = getVersionedLogFileName( "1" );
+        fileSystem.write( createTransactionLogFile( databaseLayout, file ) ).close();
+        assertFalse( logFiles.hasAnyEntries( 1 ) );
+    }
+
+    @Test
+    void fileWithoutEntriesDoesNotHaveThemIndependentlyOfItsSize() throws IOException
+    {
+        LogFiles logFiles = createLogFiles();
+        PhysicalLogVersionedStoreChannel channel = logFiles.createLogChannelForVersion( 1, () -> 1L );
+        assertThat( channel.size(), greaterThanOrEqualTo( (long) LOG_HEADER_SIZE ) );
+        assertFalse( logFiles.hasAnyEntries( 1 ) );
     }
 
     private File createTransactionLogFile( DatabaseLayout databaseLayout, String fileName )

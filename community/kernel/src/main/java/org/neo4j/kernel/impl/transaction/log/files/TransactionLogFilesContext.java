@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.transaction.log.files;
 
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.LongSupplier;
 import java.util.function.Supplier;
@@ -26,6 +27,7 @@ import java.util.function.Supplier;
 import org.neo4j.internal.nativeimpl.NativeAccess;
 import org.neo4j.internal.nativeimpl.NativeAccessProvider;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReader;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.storageengine.api.LogVersionRepository;
@@ -33,23 +35,28 @@ import org.neo4j.storageengine.api.LogVersionRepository;
 class TransactionLogFilesContext
 {
     private final AtomicLong rotationThreshold;
+    private final AtomicBoolean tryPreallocateTransactionLogs;
     private final LogEntryReader logEntryReader;
     private final LongSupplier lastCommittedTransactionIdSupplier;
     private final LongSupplier committingTransactionIdSupplier;
+    private final Supplier<LogPosition> lastClosedPositionSupplier;
     private final Supplier<LogVersionRepository> logVersionRepositorySupplier;
     private final LogFileCreationMonitor logFileCreationMonitor;
     private final FileSystemAbstraction fileSystem;
     private final LogProvider logProvider;
 
-    TransactionLogFilesContext( AtomicLong rotationThreshold, LogEntryReader logEntryReader,
+    TransactionLogFilesContext( AtomicLong rotationThreshold, AtomicBoolean tryPreallocateTransactionLogs, LogEntryReader logEntryReader,
             LongSupplier lastCommittedTransactionIdSupplier, LongSupplier committingTransactionIdSupplier,
+            Supplier<LogPosition>  lastClosedPositionSupplier,
             LogFileCreationMonitor logFileCreationMonitor, Supplier<LogVersionRepository> logVersionRepositorySupplier,
             FileSystemAbstraction fileSystem, LogProvider logProvider )
     {
         this.rotationThreshold = rotationThreshold;
+        this.tryPreallocateTransactionLogs = tryPreallocateTransactionLogs;
         this.logEntryReader = logEntryReader;
         this.lastCommittedTransactionIdSupplier = lastCommittedTransactionIdSupplier;
         this.committingTransactionIdSupplier = committingTransactionIdSupplier;
+        this.lastClosedPositionSupplier = lastClosedPositionSupplier;
         this.logVersionRepositorySupplier = logVersionRepositorySupplier;
         this.logFileCreationMonitor = logFileCreationMonitor;
         this.fileSystem = fileSystem;
@@ -81,6 +88,11 @@ class TransactionLogFilesContext
         return committingTransactionIdSupplier.getAsLong();
     }
 
+    LogPosition getLastClosedTransactionPosition()
+    {
+        return lastClosedPositionSupplier.get();
+    }
+
     LogFileCreationMonitor getLogFileCreationMonitor()
     {
         return logFileCreationMonitor;
@@ -96,7 +108,12 @@ class TransactionLogFilesContext
         return logProvider;
     }
 
-    public NativeAccess getNativeAccess()
+    AtomicBoolean getTryPreallocateTransactionLogs()
+    {
+        return tryPreallocateTransactionLogs;
+    }
+
+    NativeAccess getNativeAccess()
     {
         return NativeAccessProvider.getNativeAccess();
     }

@@ -63,13 +63,16 @@ import static java.lang.System.currentTimeMillis;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
+import static org.neo4j.kernel.impl.store.MetaDataStore.Position.LAST_MISSING_STORE_FILES_RECOVERY_TIMESTAMP;
 import static org.neo4j.kernel.impl.store.MetaDataStore.versionStringToLong;
+import static org.neo4j.kernel.impl.store.record.RecordLoad.FORCE;
 import static org.neo4j.storageengine.api.TransactionIdStore.BASE_TX_COMMIT_TIMESTAMP;
 import static org.neo4j.test.Race.throwing;
 import static org.neo4j.test.rule.PageCacheConfig.config;
@@ -250,17 +253,31 @@ class MetaDataStoreTest
     {
         MetaDataStore metaDataStore = newMetaDataStore();
         metaDataStore.close();
-        assertThrows( StoreFileClosedException.class, () -> metaDataStore.resetLastClosedTransaction( 1, 2, 3 ) );
+        assertThrows( StoreFileClosedException.class, () -> metaDataStore.resetLastClosedTransaction( 1, 2, 3, true ) );
     }
 
     @Test
-    void setLastClosedTransactionOverridesLastClosedTransactionInformation()
+    void setLastClosedTransactionOverridesLastClosedTransactionInformation() throws IOException
     {
         MetaDataStore metaDataStore = newMetaDataStore();
-        metaDataStore.resetLastClosedTransaction( 3, 4, 5 );
+        metaDataStore.resetLastClosedTransaction( 3, 4, 5, true );
 
         assertEquals( 3L, metaDataStore.getLastClosedTransactionId() );
         assertArrayEquals( new long[]{3, 4, 5}, metaDataStore.getLastClosedTransaction() );
+        MetaDataRecord record = metaDataStore.getRecord( LAST_MISSING_STORE_FILES_RECOVERY_TIMESTAMP.id(), new MetaDataRecord(), FORCE );
+        assertThat( record.getValue(), greaterThan( 0L ) );
+    }
+
+    @Test
+    void setLastClosedTransactionOverridesLastClosedTransactionInformationWithoutMissingLogsUpdate() throws IOException
+    {
+        MetaDataStore metaDataStore = newMetaDataStore();
+        metaDataStore.resetLastClosedTransaction( 3, 4, 5, false );
+
+        assertEquals( 3L, metaDataStore.getLastClosedTransactionId() );
+        assertArrayEquals( new long[]{3, 4, 5}, metaDataStore.getLastClosedTransaction() );
+        MetaDataRecord record = metaDataStore.getRecord( LAST_MISSING_STORE_FILES_RECOVERY_TIMESTAMP.id(), new MetaDataRecord(), FORCE );
+        assertEquals( -1, record.getValue() );
     }
 
     @Test

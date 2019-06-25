@@ -38,7 +38,7 @@ import org.neo4j.kernel.database.DatabaseId;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointer;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.SimpleTriggerInfo;
 import org.neo4j.kernel.impl.transaction.log.files.LogFile;
-import org.neo4j.kernel.impl.transaction.log.files.TransactionLogFiles;
+import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.extension.DefaultFileSystemExtension;
 import org.neo4j.test.extension.Inject;
@@ -102,7 +102,7 @@ class MissingStoreFilesRecoveryIT
     @Test
     void failToStartOnMissingFilesAndPartialTransactionLogs() throws IOException
     {
-        TransactionLogFiles logFiles = prepareDatabaseWithTwoTxLogFiles();
+        LogFiles logFiles = prepareDatabaseWithTwoTxLogFiles();
 
         fileSystem.deleteFile( logFiles.getLogFileForVersion( 0 ) );
         fileSystem.deleteFile( databaseLayout.nodeStore() );
@@ -113,11 +113,11 @@ class MissingStoreFilesRecoveryIT
         assertFalse( fileSystem.fileExists( databaseLayout.nodeStore() ) );
     }
 
-    private TransactionLogFiles prepareDatabaseWithTwoTxLogFiles() throws IOException
+    private LogFiles prepareDatabaseWithTwoTxLogFiles() throws IOException
     {
         managementService = serviceBuilder.build();
         var databaseApi = defaultDatabase( managementService );
-        TransactionLogFiles logFiles = rotateTransactionLogs( databaseApi );
+        LogFiles logFiles = rotateTransactionLogs( databaseApi );
         assertNotNull( logFiles.getLogFileForVersion( 1 ) );
         createSomeData( databaseApi );
         managementService.shutdown();
@@ -134,9 +134,9 @@ class MissingStoreFilesRecoveryIT
         return (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );
     }
 
-    private static TransactionLogFiles rotateTransactionLogs( GraphDatabaseAPI databaseApi ) throws IOException
+    private static LogFiles rotateTransactionLogs( GraphDatabaseAPI databaseApi ) throws IOException
     {
-        TransactionLogFiles logFiles = databaseApi.getDependencyResolver().resolveDependency( TransactionLogFiles.class );
+        LogFiles logFiles = databaseApi.getDependencyResolver().resolveDependency( LogFiles.class );
         LogFile logFile = logFiles.getLogFile();
         logFile.rotate();
         return logFiles;

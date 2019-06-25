@@ -88,6 +88,11 @@ public class LogHeaderReader
         byte logFormatVersion = decodeLogFormatVersion( encodedLogVersions );
         long logVersion = decodeLogVersion( encodedLogVersions );
         long previousCommittedTx = buffer.getLong();
+        if ( (encodedLogVersions == 0) && (previousCommittedTx == 0) )
+        {
+            // we reading pre-allocated file
+            return null;
+        }
         return new LogHeader( logFormatVersion, logVersion, previousCommittedTx );
     }
 

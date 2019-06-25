@@ -108,11 +108,12 @@ class RecoveryIT
     @Test
     void recoverEmptyDatabase() throws Exception
     {
-        GraphDatabaseService database = createDatabase();
+        createDatabase();
         managementService.shutdown();
         removeLastCheckpointRecordFromLastLogFile();
 
-        recoverDatabase();
+        DatabaseLayout databaseLayout = directory.databaseLayout();
+        assertFalse( isRecoveryRequired( databaseLayout, defaults() ) );
     }
 
     @Test

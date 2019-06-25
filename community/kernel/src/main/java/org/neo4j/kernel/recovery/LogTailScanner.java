@@ -20,7 +20,9 @@
 package org.neo4j.kernel.recovery;
 
 import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.nio.channels.ClosedByInterruptException;
+import java.util.Arrays;
 
 import org.neo4j.exceptions.UnderlyingStorageException;
 import org.neo4j.kernel.impl.transaction.log.LogEntryCursor;
@@ -38,6 +40,12 @@ import org.neo4j.kernel.impl.transaction.log.entry.LogEntryVersion;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
 import org.neo4j.monitoring.Monitors;
 
+import static java.lang.Math.min;
+import static java.lang.Math.subtractExact;
+import static java.lang.String.format;
+import static org.neo4j.internal.helpers.Numbers.safeCastLongToInt;
+import static org.neo4j.io.ByteUnit.kibiBytes;
+import static org.neo4j.io.fs.FileUtils.getCanonicalFile;
 import static org.neo4j.kernel.recovery.Recovery.throwUnableToCleanRecover;
 import static org.neo4j.storageengine.api.LogVersionRepository.INITIAL_LOG_VERSION;
 
@@ -94,7 +102,6 @@ public class LogTailScanner
                   LogEntryCursor cursor = new LogEntryCursor( logEntryReader, readAheadLogChannel ) )
             {
                 LogEntry entry;
-                long maxEntryReadPosition = 0;
                 while ( cursor.next() )
                 {
                     entry = cursor.get();
@@ -126,12 +133,9 @@ public class LogTailScanner
                     {
                         latestLogEntryVersion = entry.getVersion();
                     }
-                    maxEntryReadPosition = readAheadLogChannel.position();
                 }
-                if ( hasUnreadableBytes( channel, maxEntryReadPosition ) )
-                {
-                    corruptedTransactionLogs = true;
-                }
+
+                verifyReaderPosition( highestLogVersion, version, channel );
             }
              catch ( Error | ClosedByInterruptException e )
             {
@@ -167,9 +171,68 @@ public class LogTailScanner
                 oldestStartEntryTransaction, oldestVersionFound, highestLogVersion, latestLogEntryVersion );
     }
 
-    private static boolean hasUnreadableBytes( LogVersionedStoreChannel channel, long maxEntryReadEndPosition ) throws IOException
+    private void verifyReaderPosition( long highestLogVersion, long version, LogVersionedStoreChannel channel ) throws IOException
     {
-        return channel.position() > maxEntryReadEndPosition;
+        LogPosition logPosition = logEntryReader.lastPosition();
+
+        verifyLogVersion( version, logPosition );
+        long logFileSize = channel.size();
+        long channelLeftovers = subtractExact( logFileSize, logPosition.getByteOffset() );
+        if ( channelLeftovers != 0 )
+        {
+            // channel has more data than entry reader can read. Only one valid case for this kind of situation is
+            // pre-allocated log file that has some space left
+
+            // if this log file is not the last one and we have some unreadable bytes in the end its an indication of corrupted log files
+            verifyLastFile( highestLogVersion, version, logPosition, logFileSize, channelLeftovers );
+
+            // to double check that even when we encountered end of records position we do not have anything after that
+            // we will try to read some data (up to 12K) in advance to check that only zero's are available there
+            verifyNoMoreRedableDataAvailable( version, channel, logPosition, channelLeftovers );
+        }
+    }
+
+    private void verifyLogVersion( long version, LogPosition logPosition )
+    {
+        if ( logPosition.getLogVersion() != version )
+        {
+            throw new IllegalStateException( format( "Expected to observe log positions only for log file with version %d but encountered " +
+                            "version %d while reading %s.", version, logPosition.getLogVersion(),
+                    getCanonicalFile( logFiles.getLogFileForVersion( version ) ).toPath() ) );
+        }
+    }
+
+    private void verifyLastFile( long highestLogVersion, long version, LogPosition logPosition, long logFileSize, long channelLeftovers )
+    {
+        if ( version != highestLogVersion )
+        {
+            throw new RuntimeException(
+                    format( "Transaction log files with version %d has %d unreadable bytes. Was able to read upto %d but %d is available.",
+                            version, channelLeftovers, logPosition.getByteOffset(), logFileSize ) );
+        }
+    }
+
+    private void verifyNoMoreRedableDataAvailable( long version, LogVersionedStoreChannel channel, LogPosition logPosition, long channelLeftovers )
+            throws IOException
+    {
+        long initialPosition = channel.position();
+        try
+        {
+            channel.position( logPosition.getByteOffset() );
+            ByteBuffer byteBuffer = ByteBuffer.allocate( safeCastLongToInt( min( kibiBytes( 12 ), channelLeftovers ) ) );
+            channel.readAll( byteBuffer );
+            byteBuffer.flip();
+            if ( !isAllZerosBuffer( byteBuffer ) )
+            {
+                throw new RuntimeException( format( "Transaction log files with version %d has some data available after last readable log entry. " +
+                                "Last readable position %d, read ahead buffer content: %s.", version, logPosition.getByteOffset(),
+                        dumpBufferToString( byteBuffer ) ) );
+            }
+        }
+        finally
+        {
+            channel.position( initialPosition );
+        }
     }
 
     protected LogTailInformation checkpointTailInformation( long highestLogVersion, LogEntryStart latestStartEntry,
@@ -277,6 +340,39 @@ public class LogTailScanner
         {
             return null;
         }
+    }
+
+    private static String dumpBufferToString( ByteBuffer byteBuffer )
+    {
+        byte[] data = new byte[byteBuffer.limit()];
+        byteBuffer.get( data );
+        return Arrays.toString( data );
+    }
+
+    private static boolean isAllZerosBuffer( ByteBuffer byteBuffer )
+    {
+        if ( byteBuffer.hasArray() )
+        {
+            byte[] array = byteBuffer.array();
+            for ( byte b : array )
+            {
+                if ( b != 0 )
+                {
+                    return false;
+                }
+            }
+        }
+        else
+        {
+            while ( byteBuffer.hasRemaining() )
+            {
+                if ( byteBuffer.get() != 0 )
+                {
+                    return false;
+                }
+            }
+        }
+        return true;
     }
 
     static class ExtractedTransactionRecord

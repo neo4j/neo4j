@@ -68,9 +68,9 @@ public class PhysicalLogVersionedStoreChannel implements LogVersionedStoreChanne
     }
 
     @Override
-    public void readAll( ByteBuffer dst )
+    public void readAll( ByteBuffer dst ) throws IOException
     {
-        throw new UnsupportedOperationException( "Not needed" );
+        delegateChannel.readAll( dst );
     }
 
     @Override

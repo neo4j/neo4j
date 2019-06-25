@@ -74,12 +74,13 @@ public class TransactionLogsRecovery extends LifecycleAdapter
 
         long recoveryStartTimeInMilliseconds = currentTimeMillis();
 
-        LogPosition recoveryPosition = recoveryStartInformation.getRecoveryPosition();
+        LogPosition recoveryStartPosition = recoveryStartInformation.getRecoveryPosition();
 
-        monitor.recoveryRequired( recoveryPosition );
+        monitor.recoveryRequired( recoveryStartPosition );
         recoveryService.startRecovery();
 
-        LogPosition recoveryToPosition = recoveryPosition;
+        LogPosition recoveryToPosition = recoveryStartPosition;
+        LogPosition lastTransactionPosition = recoveryStartPosition;
         CommittedTransactionRepresentation lastTransaction = null;
         CommittedTransactionRepresentation lastReversedTransaction = null;
         if ( !recoveryStartInformation.isMissingLogs() )
@@ -87,7 +88,7 @@ public class TransactionLogsRecovery extends LifecycleAdapter
             try
             {
                 long lowestRecoveredTxId = TransactionIdStore.BASE_TX_ID;
-                try ( TransactionCursor transactionsToRecover = recoveryService.getTransactionsInReverseOrder( recoveryPosition );
+                try ( TransactionCursor transactionsToRecover = recoveryService.getTransactionsInReverseOrder( recoveryStartPosition );
                         RecoveryApplier recoveryVisitor = recoveryService.getRecoveryApplier( REVERSE_RECOVERY ) )
                 {
                     while ( transactionsToRecover.next() )
@@ -111,7 +112,7 @@ public class TransactionLogsRecovery extends LifecycleAdapter
                 // of the schema life until after we've done the reverse recovery.
                 schemaLife.init();
 
-                try ( TransactionCursor transactionsToRecover = recoveryService.getTransactions( recoveryPosition );
+                try ( TransactionCursor transactionsToRecover = recoveryService.getTransactions( recoveryStartPosition );
                         RecoveryApplier recoveryVisitor = recoveryService.getRecoveryApplier( RECOVERY ) )
                 {
                     while ( transactionsToRecover.next() )
@@ -121,7 +122,8 @@ public class TransactionLogsRecovery extends LifecycleAdapter
                         recoveryVisitor.visit( lastTransaction );
                         monitor.transactionRecovered( txId );
                         numberOfRecoveredTransactions++;
-                        recoveryToPosition = transactionsToRecover.position();
+                        lastTransactionPosition = transactionsToRecover.position();
+                        recoveryToPosition = lastTransactionPosition;
                         reportProgress();
                     }
                     recoveryToPosition = transactionsToRecover.position();
@@ -146,15 +148,14 @@ public class TransactionLogsRecovery extends LifecycleAdapter
                 }
                 else
                 {
-                    monitor.failToRecoverTransactionsAfterPosition( t, recoveryPosition );
-                    recoveryToPosition = recoveryPosition;
+                    monitor.failToRecoverTransactionsAfterPosition( t, recoveryStartPosition );
                 }
             }
             progressReporter.completed();
             logsTruncator.truncate( recoveryToPosition );
         }
 
-        recoveryService.transactionsRecovered( lastTransaction, recoveryToPosition, recoveryStartInformation.isMissingLogs() );
+        recoveryService.transactionsRecovered( lastTransaction, lastTransactionPosition, recoveryToPosition, recoveryStartInformation.isMissingLogs() );
         long totalRecoveryTimeInMilliseconds = currentTimeMillis() - recoveryStartTimeInMilliseconds;
         monitor.recoveryCompleted( numberOfRecoveredTransactions, totalRecoveryTimeInMilliseconds );
     }

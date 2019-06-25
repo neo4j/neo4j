@@ -95,7 +95,7 @@ public class DefaultRecoveryService implements RecoveryService
     }
 
     @Override
-    public void transactionsRecovered( CommittedTransactionRepresentation lastRecoveredTransaction,
+    public void transactionsRecovered( CommittedTransactionRepresentation lastRecoveredTransaction, LogPosition lastRecoveredTransactionPosition,
             LogPosition positionAfterLastRecoveredTransaction, boolean missingLogs )
     {
         if ( missingLogs )
@@ -108,22 +108,31 @@ public class DefaultRecoveryService implements RecoveryService
             long logVersion = lastClosedTransaction[1];
             log.warn( "Recovery detected that transaction logs were missing. " +
                     "Resetting offset of last closed transaction to point to the head of %d transaction log file.", logVersion );
-            transactionIdStore.resetLastClosedTransaction( lastClosedTransaction[0], logVersion, LogHeader.LOG_HEADER_SIZE );
+            transactionIdStore.resetLastClosedTransaction( lastClosedTransaction[0], logVersion, LogHeader.LOG_HEADER_SIZE, true );
             return;
         }
-        long recoveredTransactionLogVersion = positionAfterLastRecoveredTransaction.getLogVersion();
-        long recoveredTransactionOffset = positionAfterLastRecoveredTransaction.getByteOffset();
         if ( lastRecoveredTransaction != null )
         {
             LogEntryCommit commitEntry = lastRecoveredTransaction.getCommitEntry();
-            transactionIdStore.setLastCommittedAndClosedTransactionId(
-                    commitEntry.getTxId(),
-                    LogEntryStart.checksum( lastRecoveredTransaction.getStartEntry() ),
-                    commitEntry.getTimeWritten(),
-                    recoveredTransactionOffset,
-                    recoveredTransactionLogVersion );
+            transactionIdStore.setLastCommittedAndClosedTransactionId( commitEntry.getTxId(),
+                                            LogEntryStart.checksum( lastRecoveredTransaction.getStartEntry() ),
+                                            commitEntry.getTimeWritten(),
+                                            lastRecoveredTransactionPosition.getByteOffset(),
+                                            lastRecoveredTransactionPosition.getLogVersion() );
         }
-        logVersionRepository.setCurrentLogVersion( recoveredTransactionLogVersion );
+        else
+        {
+            // we do not have last recovered transaction but recovery was still triggered
+            // this happens when we read past end of the log file or can't read it at all but recovery was enforced
+            // which means that log files after last recovered position can't be trusted and we need to reset last closed tx log info
+            long lastClosedTransactionId = transactionIdStore.getLastClosedTransactionId();
+            log.warn( "Recovery detected that transaction logs tail can't be trusted. " +
+                    "Resetting offset of last closed transaction to point to the last recoverable log position: " + positionAfterLastRecoveredTransaction );
+            transactionIdStore.resetLastClosedTransaction( lastClosedTransactionId, positionAfterLastRecoveredTransaction.getLogVersion(),
+                    positionAfterLastRecoveredTransaction.getByteOffset(), false );
+        }
+
+        logVersionRepository.setCurrentLogVersion( positionAfterLastRecoveredTransaction.getLogVersion() );
     }
 
     static class RecoveryVisitor implements RecoveryApplier

@@ -27,9 +27,6 @@ import org.neo4j.internal.batchimport.LogFilesInitializer;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.kernel.impl.store.NeoStores;
-import org.neo4j.kernel.impl.transaction.log.ReadableClosablePositionAwareChannel;
-import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReader;
-import org.neo4j.kernel.impl.transaction.log.entry.VersionAwareLogEntryReader;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
 import org.neo4j.kernel.impl.transaction.log.files.LogFilesBuilder;
 import org.neo4j.kernel.lifecycle.Lifespan;
@@ -47,9 +44,7 @@ public class TransactionLogsInitializer implements LogFilesInitializer
     {
         try
         {
-            final LogEntryReader<ReadableClosablePositionAwareChannel> logEntryReader = new VersionAwareLogEntryReader<>();
             LogFiles logFiles = LogFilesBuilder.builder( databaseLayout, fileSystem )
-                    .withLogEntryReader( logEntryReader )
                     .withTransactionIdStore( neoStores.getMetaDataStore() )
                     .withLogVersionRepository( neoStores.getMetaDataStore() )
                     .withConfig( config ).build();

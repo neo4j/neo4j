@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.transaction.log.files;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.LongSupplier;
 import java.util.function.Supplier;
@@ -30,6 +31,7 @@ import org.neo4j.configuration.Config;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReader;
 import org.neo4j.kernel.impl.transaction.log.entry.VersionAwareLogEntryReader;
 import org.neo4j.logging.LogProvider;
@@ -37,10 +39,10 @@ import org.neo4j.logging.NullLogProvider;
 import org.neo4j.storageengine.api.LogVersionRepository;
 import org.neo4j.storageengine.api.StorageEngineFactory;
 import org.neo4j.storageengine.api.TransactionIdStore;
-import org.neo4j.util.FeatureToggles;
 
 import static java.util.Objects.requireNonNull;
 import static org.neo4j.configuration.GraphDatabaseSettings.logical_log_rotation_threshold;
+import static org.neo4j.configuration.GraphDatabaseSettings.preallocate_logical_logs;
 
 /**
  * Transactional log files facade class builder.
@@ -56,8 +58,6 @@ import static org.neo4j.configuration.GraphDatabaseSettings.logical_log_rotation
  */
 public class LogFilesBuilder
 {
-    private static final boolean EXPERIMENTAL_LOGS = FeatureToggles.flag( LogFilesBuilder.class, "experimental", false );
-
     private boolean readOnly;
     private PageCache pageCache;
     private DatabaseLayout databaseLayout;
@@ -72,6 +72,7 @@ public class LogFilesBuilder
     private LogVersionRepository logVersionRepository;
     private TransactionIdStore transactionIdStore;
     private LongSupplier lastCommittedTransactionIdSupplier;
+    private Supplier<LogPosition> lastClosedPositionSupplier;
     private String logFileName = TransactionLogFilesHelper.DEFAULT_NAME;
     private boolean fileBasedOperationsOnly;
 
@@ -128,6 +129,12 @@ public class LogFilesBuilder
     LogFilesBuilder withLogFileName( String name )
     {
         this.logFileName = name;
+        return this;
+    }
+
+    public LogFilesBuilder withLastClosedTransactionPositionSupplier( Supplier<LogPosition> lastClosedPositionSupplier )
+    {
+        this.lastClosedPositionSupplier = lastClosedPositionSupplier;
         return this;
     }
 
@@ -190,10 +197,6 @@ public class LogFilesBuilder
         TransactionLogFilesContext filesContext = buildContext();
         File logsDirectory = getLogsDirectory();
         filesContext.getFileSystem().mkdirs( logsDirectory );
-        if ( EXPERIMENTAL_LOGS )
-        {
-            return new ExperimentalTransactionLogFiles( logsDirectory, logFileName, filesContext );
-        }
         return new TransactionLogFiles( logsDirectory, logFileName, filesContext );
     }
 
@@ -224,12 +227,15 @@ public class LogFilesBuilder
         Supplier<LogVersionRepository> logVersionRepositorySupplier = getLogVersionRepositorySupplier();
         LongSupplier lastCommittedIdSupplier = lastCommittedIdSupplier();
         LongSupplier committingTransactionIdSupplier = committingIdSupplier();
+        Supplier<LogPosition> lastClosedTransactionPositionSupplier = closePositionSupplier();
 
         // Register listener for rotation threshold
         AtomicLong rotationThreshold = getRotationThresholdAndRegisterForUpdates();
+        AtomicBoolean tryPreallocateTransactionLogs = getTryToPreallocateTransactionLogs();
 
-        return new TransactionLogFilesContext( rotationThreshold, logEntryReader,
-                lastCommittedIdSupplier, committingTransactionIdSupplier, logFileCreationMonitor, logVersionRepositorySupplier, fileSystem, logProvider );
+        return new TransactionLogFilesContext( rotationThreshold, tryPreallocateTransactionLogs, logEntryReader, lastCommittedIdSupplier,
+                committingTransactionIdSupplier, lastClosedTransactionPositionSupplier, logFileCreationMonitor, logVersionRepositorySupplier, fileSystem,
+                logProvider );
     }
 
     private AtomicLong getRotationThresholdAndRegisterForUpdates()
@@ -245,6 +251,17 @@ public class LogFilesBuilder
         AtomicLong configThreshold = new AtomicLong( config.get( logical_log_rotation_threshold ) );
         config.registerDynamicUpdateListener( logical_log_rotation_threshold, ( prev, update ) -> configThreshold.set( update ) );
         return configThreshold;
+    }
+
+    private AtomicBoolean getTryToPreallocateTransactionLogs()
+    {
+        if ( readOnly )
+        {
+            return new AtomicBoolean( false );
+        }
+        AtomicBoolean tryToPreallocate = new AtomicBoolean( config.get( preallocate_logical_logs ) );
+        config.registerDynamicUpdateListener( preallocate_logical_logs, ( prev, update ) -> tryToPreallocate.set( update ) );
+        return tryToPreallocate;
     }
 
     private Supplier<LogVersionRepository> getLogVersionRepositorySupplier() throws IOException
@@ -309,6 +326,52 @@ public class LogFilesBuilder
             requireNonNull( dependencies, TransactionIdStore.class.getSimpleName() + " is required. " +
                     "Please provide an instance or a dependencies where it can be found." );
             return () -> resolveDependency( TransactionIdStore.class ).getLastCommittedTransactionId();
+        }
+    }
+
+    private Supplier<LogPosition> closePositionSupplier() throws IOException
+    {
+        if ( lastClosedPositionSupplier != null )
+        {
+            return lastClosedPositionSupplier;
+        }
+        if ( transactionIdStore != null )
+        {
+            return () ->
+            {
+                long[] lastClosedTransaction = transactionIdStore.getLastClosedTransaction();
+                return new LogPosition( lastClosedTransaction[1], lastClosedTransaction[2] );
+            };
+        }
+        if ( fileBasedOperationsOnly )
+        {
+            return () ->
+            {
+                throw new UnsupportedOperationException( "Current version of log files can't perform any " +
+                        "operation that require availability of transaction id store. Please build full version of log files " +
+                        "to be able to use them." );
+            };
+        }
+        if ( readOnly )
+        {
+            requireNonNull( pageCache, "Read only log files require page cache to be able to read commited " +
+                    "transaction info from store store." );
+            requireNonNull( databaseLayout, "Store directory is required." );
+            TransactionIdStore transactionIdStore = readOnlyTransactionIdStore();
+            return () ->
+            {
+                long[] lastClosedTransaction = transactionIdStore.getLastClosedTransaction();
+                return new LogPosition( lastClosedTransaction[1], lastClosedTransaction[2] );
+            };
+        }
+        else
+        {
+            requireNonNull( dependencies, TransactionIdStore.class.getSimpleName() + " is required. " +
+                    "Please provide an instance or a dependencies where it can be found." );
+            return () -> {
+                long[] lastClosedTransaction = resolveDependency( TransactionIdStore.class ).getLastClosedTransaction();
+                return new LogPosition( lastClosedTransaction[1], lastClosedTransaction[2] );
+            };
         }
     }
 

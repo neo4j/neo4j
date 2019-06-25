@@ -649,6 +649,10 @@ public class GraphDatabaseSettings implements LoadableConfig
     public static final Setting<Long> logical_log_rotation_threshold =
             buildSetting( "dbms.tx_log.rotation.size", BYTES, "250M" ).constraint( min( ByteUnit.mebiBytes( 1 ) ) ).build();
 
+    @Description( "Specify if Neo4j should try to preallocate logical log file in advance." )
+    @Dynamic
+    public static final Setting<Boolean> preallocate_logical_logs = buildSetting( "dbms.tx_log.preallocate", BOOLEAN, TRUE ).build();
+
     @Description( "If `true`, Neo4j will abort recovery if any errors are encountered in the logical log. Setting " +
             "this to `false` will allow Neo4j to restore as much as possible from the corrupted log files and ignore " +
             "the rest, but, the integrity of the database might be compromised." )

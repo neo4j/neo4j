@@ -20,6 +20,9 @@
 package org.neo4j.io.fs;
 
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.DisabledOnOs;
+import org.junit.jupiter.api.condition.EnabledOnOs;
+import org.junit.jupiter.api.condition.OS;
 
 import java.io.File;
 import java.io.IOException;
@@ -44,6 +47,7 @@ public class DefaultFileSystemAbstractionTest extends FileSystemAbstractionTest
     }
 
     @Test
+    @DisabledOnOs( OS.WINDOWS )
     void retrieveFileDescriptor() throws IOException
     {
         File testFile = testDirectory.file( "testFile" );
@@ -51,6 +55,18 @@ public class DefaultFileSystemAbstractionTest extends FileSystemAbstractionTest
         {
             int fileDescriptor = fsa.getFileDescriptor( storeChannel );
             assertThat( fileDescriptor, greaterThan( 0 ) );
+        }
+    }
+
+    @Test
+    @EnabledOnOs( OS.WINDOWS )
+    void retrieveWindowsFileDescriptor() throws IOException
+    {
+        File testFile = testDirectory.file( "testFile" );
+        try ( StoreChannel storeChannel = fsa.write( testFile ) )
+        {
+            int fileDescriptor = fsa.getFileDescriptor( storeChannel );
+            assertThat( fileDescriptor, equalTo( INVALID_FILE_DESCRIPTOR ) );
         }
     }
 
