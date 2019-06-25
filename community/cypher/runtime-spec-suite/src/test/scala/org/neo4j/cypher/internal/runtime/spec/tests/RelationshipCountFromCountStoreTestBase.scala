@@ -27,10 +27,13 @@ abstract class RelationshipCountFromCountStoreTestBase[CONTEXT <: RuntimeContext
                                                                                    runtime: CypherRuntime[CONTEXT],
                                                                                    sizeHint: Int
                                                                                  ) extends RuntimeTestSuite[CONTEXT](edition, runtime) {
+  // these tests use bipartite graph, which creates nodes^2 relationships
+  private val actualSize = Math.sqrt(sizeHint).toInt
+
   test("should get count when both wildcard labels") {
     // given
-    val (aNodes1, bNodes1) = bipartiteGraph(sizeHint, "LabelA", "LabelB", "RelType")
-    val (aNodes2, bNodes2) = bipartiteGraph(sizeHint, "LabelC", "LabelD", "RelType")
+    val (aNodes1, bNodes1) = bipartiteGraph(actualSize, "LabelA", "LabelB", "RelType")
+    val (aNodes2, bNodes2) = bipartiteGraph(actualSize, "LabelC", "LabelD", "RelType")
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -47,7 +50,7 @@ abstract class RelationshipCountFromCountStoreTestBase[CONTEXT <: RuntimeContext
 
   test("should get count for single relationship type and start label") {
     // given
-    val (aNodes, bNodes) = bipartiteGraph(sizeHint, "LabelA", "LabelB", "RelType")
+    val (aNodes, bNodes) = bipartiteGraph(actualSize, "LabelA", "LabelB", "RelType")
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -63,7 +66,7 @@ abstract class RelationshipCountFromCountStoreTestBase[CONTEXT <: RuntimeContext
 
   test("should get count for single relationship type and end label") {
     // given
-    val (aNodes, bNodes) = bipartiteGraph(sizeHint, "LabelA", "LabelB", "RelType")
+    val (aNodes, bNodes) = bipartiteGraph(actualSize, "LabelA", "LabelB", "RelType")
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -79,7 +82,7 @@ abstract class RelationshipCountFromCountStoreTestBase[CONTEXT <: RuntimeContext
 
   test("should get count for wildcard relationship type and one label") {
     // given
-    val (aNodes, bNodes) = bipartiteGraph(sizeHint, "LabelA", "LabelB", "RelType")
+    val (aNodes, bNodes) = bipartiteGraph(actualSize, "LabelA", "LabelB", "RelType")
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -95,7 +98,7 @@ abstract class RelationshipCountFromCountStoreTestBase[CONTEXT <: RuntimeContext
 
   test("should work on rhs of apply") {
     // given
-    val (aNodes, bNodes) = bipartiteGraph(sizeHint, "LabelA", "LabelB", "RelType")
+    val (aNodes, bNodes) = bipartiteGraph(actualSize, "LabelA", "LabelB", "RelType")
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -116,8 +119,8 @@ abstract class RelationshipCountFromCountStoreTestBase[CONTEXT <: RuntimeContext
 
   test("should get count for multiple relationship types and one provided label") {
     // given
-    val (aNodes1, bNodes1) = bipartiteGraph(sizeHint, "LabelA", "LabelB", "RelType1")
-    val (aNodes2, bNodes2) = bipartiteGraph(sizeHint, "LabelA", "LabelC", "RelType2")
+    val (aNodes1, bNodes1) = bipartiteGraph(actualSize, "LabelA", "LabelB", "RelType1")
+    val (aNodes2, bNodes2) = bipartiteGraph(actualSize, "LabelA", "LabelC", "RelType2")
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -134,7 +137,7 @@ abstract class RelationshipCountFromCountStoreTestBase[CONTEXT <: RuntimeContext
 
   test("should return zero for count of non-existent label") {
     // given
-    bipartiteGraph(sizeHint, "LabelA", "LabelB", "RelType")
+    bipartiteGraph(actualSize, "LabelA", "LabelB", "RelType")
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -150,7 +153,7 @@ abstract class RelationshipCountFromCountStoreTestBase[CONTEXT <: RuntimeContext
 
   test("should get count when all wildcards") {
     // given
-    val (aNodes, bNodes) = bipartiteGraph(sizeHint, "LabelA", "LabelB", "RelType")
+    val (aNodes, bNodes) = bipartiteGraph(actualSize, "LabelA", "LabelB", "RelType")
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -166,7 +169,7 @@ abstract class RelationshipCountFromCountStoreTestBase[CONTEXT <: RuntimeContext
 
   test("should return zero for count of non-existent relationship type") {
     // given
-    bipartiteGraph(sizeHint, "LabelA", "LabelB", "RelType")
+    bipartiteGraph(actualSize, "LabelA", "LabelB", "RelType")
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
