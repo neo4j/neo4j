@@ -30,6 +30,8 @@ import java.io.File;
 import java.io.FileDescriptor;
 import java.io.IOException;
 import java.io.RandomAccessFile;
+import java.nio.file.FileStore;
+import java.nio.file.Files;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -60,6 +62,40 @@ class LinuxNativeAccessTest
 
     @Test
     @EnabledOnOs( OS.LINUX )
+    void failToPreallocateOnLinuxForIncorrectDescriptor() throws IOException, IllegalAccessException
+    {
+        assertEquals( ERROR, nativeAccess.tryPreallocateSpace( 0, 1024 ) );
+        assertEquals( ERROR, nativeAccess.tryPreallocateSpace( -1, 1024 ) );
+
+        File file = new File( tempFile, "file" );
+        int descriptor = getClosedDescriptor( file );
+        assertNotEquals( 0, nativeAccess.tryPreallocateSpace( descriptor, 1024 ) );
+    }
+
+    @Test
+    @EnabledOnOs( OS.LINUX )
+    void preallocateCacheOnLinuxForCorrectDescriptor() throws IOException, IllegalAccessException
+    {
+        FileStore fileStore = Files.getFileStore( tempFile.toPath() );
+        long blockSize = fileStore.getBlockSize();
+        File file = new File( tempFile, "preallocated1" );
+        File file2 = new File( tempFile, "preallocated2" );
+        File file3 = new File( tempFile, "preallocated3" );
+        long size1 = blockSize - 1;
+        long size2 = blockSize;
+        long size3 = 2 * blockSize;
+
+        preallocate( file, size1 );
+        preallocate( file2, size2 );
+        preallocate( file3, size3 );
+
+        assertEquals( size1, file.length() );
+        assertEquals( size2, file2.length() );
+        assertEquals( size3, file3.length() );
+    }
+
+    @Test
+    @EnabledOnOs( OS.LINUX )
     void failToSkipCacheOnLinuxForIncorrectDescriptor() throws IOException, IllegalAccessException
     {
         assertEquals( ERROR, nativeAccess.tryEvictFromCache( 0 ) );
@@ -79,6 +115,15 @@ class LinuxNativeAccessTest
         {
             int descriptor = getDescriptor( randomFile );
             assertEquals( 0, nativeAccess.tryEvictFromCache( descriptor ) );
+        }
+    }
+
+    private void preallocate( File file, long bytes ) throws IOException, IllegalAccessException
+    {
+        try ( RandomAccessFile randomFile = new RandomAccessFile( file, "rw" ) )
+        {
+            int descriptor = getDescriptor( randomFile );
+            assertEquals( 0, nativeAccess.tryPreallocateSpace( descriptor, bytes ) );
         }
     }
 

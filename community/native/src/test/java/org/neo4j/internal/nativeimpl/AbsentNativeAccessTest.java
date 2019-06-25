@@ -41,4 +41,12 @@ class AbsentNativeAccessTest
         assertEquals( 0, absentNativeAccess.tryEvictFromCache( 2 ) );
         assertEquals( 0, absentNativeAccess.tryEvictFromCache( -1 ) );
     }
+
+    @Test
+    void absentNativeAccessPreallocationsAlwaysFinishSuccessfully()
+    {
+        assertEquals( 0, absentNativeAccess.tryPreallocateSpace( 0, 1L ) );
+        assertEquals( 0, absentNativeAccess.tryPreallocateSpace( 1, 2L ) );
+        assertEquals( 0, absentNativeAccess.tryPreallocateSpace( 3, 4L ) );
+    }
 }

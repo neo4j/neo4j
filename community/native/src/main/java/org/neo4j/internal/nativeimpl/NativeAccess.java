@@ -41,9 +41,17 @@ public interface NativeAccess
      * Try to evict cached pages of file referenced by provided file descriptor.
      * Useful for files that we do not need to access ever again. For example: log files, WAL files, etc.
      * @param fd file descriptor
-     * @return result code
+     * @return returns zero on success, or an error number on failure
      */
     int tryEvictFromCache( int fd );
+
+    /**
+     * Try to preallocate disk space for file referenced by provided file descriptor.
+     * @param fd file descriptor
+     * @param bytes number of bytes to preallocate
+     * @return returns zero on success, or an error number on failure
+     */
+    int tryPreallocateSpace( int fd, long bytes );
 
     /**
      * Details about native access provider

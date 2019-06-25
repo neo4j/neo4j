@@ -34,6 +34,12 @@ public class AbsentNativeAccess implements NativeAccess
     }
 
     @Override
+    public int tryPreallocateSpace( int fd, long bytes )
+    {
+        return SUCCESS;
+    }
+
+    @Override
     public String describe()
     {
         return "Native access is not available for current platform.";

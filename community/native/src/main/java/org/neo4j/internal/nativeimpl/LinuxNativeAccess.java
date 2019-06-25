@@ -69,6 +69,18 @@ public class LinuxNativeAccess implements NativeAccess
      */
     private static native int posix_fadvise( int fd, long offset, long len, int flag );
 
+    /**
+     *  Ensures that disk space is allocated for the file referred to by the file descriptor fd for the bytes in the range starting at offset
+     *  and continuing for len bytes.
+     *  After a successful call to posix_fallocate, subsequent writes to bytes in the specified range are guaranteed not to fail because of lack of disk space.
+     *  If the size of the file is less than offset+len, then the file is increased to this size; otherwise the file size is left unchanged.
+     * @param fd file descriptor
+     * @param offset offset in the file
+     * @param len len in bytes
+     * @return returns zero on success, or an error number on failure
+     */
+    private static native int posix_fallocate( int fd, long offset, long len );
+
     @Override
     public boolean isAvailable()
     {
@@ -83,6 +95,20 @@ public class LinuxNativeAccess implements NativeAccess
             return NativeAccess.ERROR;
         }
         return posix_fadvise( fd, 0, 0, POSIX_FADV_DONTNEED );
+    }
+
+    @Override
+    public int tryPreallocateSpace( int fd, long bytes )
+    {
+        if ( fd <= 0 )
+        {
+            return NativeAccess.ERROR;
+        }
+        if ( bytes <= 0 )
+        {
+            return NativeAccess.ERROR;
+        }
+        return posix_fallocate( fd, 0, bytes );
     }
 
     @Override
