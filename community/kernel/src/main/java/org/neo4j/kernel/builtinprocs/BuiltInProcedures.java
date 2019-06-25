@@ -172,7 +172,7 @@ public class BuiltInProcedures
         catch ( IndexNotFoundKernelException e )
         {
             status.state = "NOT FOUND";
-            status.populationProgress = Float.NaN;
+            status.populationProgress = 0;
             status.failureMessage = "Index not found. It might have been concurrently dropped.";
         }
         return status;
