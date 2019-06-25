@@ -24,11 +24,9 @@ import org.neo4j.cypher.internal.{CypherRuntime, RuntimeContext}
 
 abstract class RelationshipCountFromCountStoreTestBase[CONTEXT <: RuntimeContext](
                                                                                    edition: Edition[CONTEXT],
-                                                                                   runtime: CypherRuntime[CONTEXT],
-                                                                                   sizeHint: Int
+                                                                                   runtime: CypherRuntime[CONTEXT]
                                                                                  ) extends RuntimeTestSuite[CONTEXT](edition, runtime) {
-  // these tests use bipartite graph, which creates nodes^2 relationships
-  private val actualSize = Math.sqrt(sizeHint).toInt
+  private val actualSize = 11
 
   test("should get count when both wildcard labels") {
     // given

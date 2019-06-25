@@ -24,12 +24,13 @@ import org.neo4j.cypher.internal.{CypherRuntime, RuntimeContext}
 
 abstract class NodeCountFromCountStoreTestBase[CONTEXT <: RuntimeContext](
                                                                            edition: Edition[CONTEXT],
-                                                                           runtime: CypherRuntime[CONTEXT],
-                                                                           sizeHint: Int
+                                                                           runtime: CypherRuntime[CONTEXT]
                                                                          ) extends RuntimeTestSuite[CONTEXT](edition, runtime) {
+  private val actualSize = 11
+
   test("should get count for single label node") {
     // given
-    val nodes = nodeGraph(sizeHint, "LabelA")
+    val nodes = nodeGraph(actualSize, "LabelA")
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -45,7 +46,7 @@ abstract class NodeCountFromCountStoreTestBase[CONTEXT <: RuntimeContext](
 
   test("should get count for label wildcard") {
     // given
-    val nodes = nodeGraph(sizeHint, "LabelA")
+    val nodes = nodeGraph(actualSize, "LabelA")
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -61,7 +62,7 @@ abstract class NodeCountFromCountStoreTestBase[CONTEXT <: RuntimeContext](
 
   test("should return zero for count when non-existent label") {
     // given
-    nodeGraph(sizeHint, "LabelA")
+    nodeGraph(actualSize, "LabelA")
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -77,7 +78,7 @@ abstract class NodeCountFromCountStoreTestBase[CONTEXT <: RuntimeContext](
 
   test("should return zero for count when one label is non-existent") {
     // given
-    nodeGraph(sizeHint, "LabelA")
+    nodeGraph(actualSize, "LabelA")
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -93,7 +94,7 @@ abstract class NodeCountFromCountStoreTestBase[CONTEXT <: RuntimeContext](
 
   test("should get count for cartesian product of labels") {
     // given
-    val nodes = nodeGraph(sizeHint, "LabelA", "LabelB")
+    val nodes = nodeGraph(actualSize, "LabelA", "LabelB")
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -109,7 +110,7 @@ abstract class NodeCountFromCountStoreTestBase[CONTEXT <: RuntimeContext](
 
   test("should work when followed by other operators") {
     // given
-    val nodes = nodeGraph(sizeHint, "LabelA", "LabelB")
+    val nodes = nodeGraph(actualSize, "LabelA", "LabelB")
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -126,7 +127,7 @@ abstract class NodeCountFromCountStoreTestBase[CONTEXT <: RuntimeContext](
 
   test("should work on rhs of apply") {
     // given
-    val nodes = nodeGraph(sizeHint, "LabelA", "LabelB")
+    val nodes = nodeGraph(actualSize, "LabelA", "LabelB")
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
