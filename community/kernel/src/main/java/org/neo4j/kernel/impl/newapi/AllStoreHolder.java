@@ -369,7 +369,7 @@ public class AllStoreHolder extends Read
         return indexGetForSchema( storageReader, schema );
     }
 
-    private IndexReference indexGetForSchema( StorageSchemaReader reader, SchemaDescriptor schema )
+    IndexReference indexGetForSchema( StorageSchemaReader reader, SchemaDescriptor schema )
     {
         CapableIndexDescriptor indexDescriptor = reader.indexGetForSchema( schema );
         if ( ktx.hasTxStateWithChanges() )
@@ -425,7 +425,7 @@ public class AllStoreHolder extends Read
         return indexesGetForLabel( storageReader, labelId );
     }
 
-    private Iterator<IndexReference> indexesGetForLabel( StorageSchemaReader reader, int labelId )
+    Iterator<IndexReference> indexesGetForLabel( StorageSchemaReader reader, int labelId )
     {
         Iterator<? extends IndexDescriptor> iterator = reader.indexesGetForLabel( labelId );
         if ( ktx.hasTxStateWithChanges() )
@@ -443,7 +443,7 @@ public class AllStoreHolder extends Read
         return indexesGetForRelationshipType( storageReader, relationshipType );
     }
 
-    private Iterator<IndexReference> indexesGetForRelationshipType( StorageSchemaReader reader, int relationshipType )
+    Iterator<IndexReference> indexesGetForRelationshipType( StorageSchemaReader reader, int relationshipType )
     {
         Iterator<? extends IndexDescriptor> iterator = reader.indexesGetForRelationshipType( relationshipType );
         if ( ktx.hasTxStateWithChanges() )
@@ -498,7 +498,7 @@ public class AllStoreHolder extends Read
         }, iterator );
     }
 
-    private Iterator<? extends IndexDescriptor> indexesGetAll( StorageSchemaReader reader )
+    Iterator<? extends IndexDescriptor> indexesGetAll( StorageSchemaReader reader )
     {
         Iterator<? extends IndexDescriptor> iterator = reader.indexesGetAll();
         if ( ktx.hasTxStateWithChanges() )
@@ -525,7 +525,7 @@ public class AllStoreHolder extends Read
         return indexGetPopulationProgress( storageReader, index );
     }
 
-    private PopulationProgress indexGetPopulationProgress( StorageSchemaReader reader, IndexReference index )
+    PopulationProgress indexGetPopulationProgress( StorageSchemaReader reader, IndexReference index )
             throws IndexNotFoundKernelException
     {
         if ( ktx.hasTxStateWithChanges() )
@@ -657,7 +657,7 @@ public class AllStoreHolder extends Read
         return indexGetState( storageReader, descriptor );
     }
 
-    private InternalIndexState indexGetState( StorageSchemaReader reader, IndexDescriptor descriptor ) throws IndexNotFoundKernelException
+    InternalIndexState indexGetState( StorageSchemaReader reader, IndexDescriptor descriptor ) throws IndexNotFoundKernelException
     {
         // If index is in our state, then return populating
         if ( ktx.hasTxStateWithChanges() )
@@ -741,7 +741,7 @@ public class AllStoreHolder extends Read
         return constraintsGetForLabel( storageReader, labelId );
     }
 
-    private Iterator<ConstraintDescriptor> constraintsGetForLabel( StorageSchemaReader reader, int labelId )
+    Iterator<ConstraintDescriptor> constraintsGetForLabel( StorageSchemaReader reader, int labelId )
     {
         Iterator<ConstraintDescriptor> constraints = reader.constraintsGetForLabel( labelId );
         if ( ktx.hasTxStateWithChanges() )
@@ -759,7 +759,7 @@ public class AllStoreHolder extends Read
         return Iterators.map( this::lockConstraint, constraints );
     }
 
-    private Iterator<ConstraintDescriptor> constraintsGetAll( StorageSchemaReader reader )
+    Iterator<ConstraintDescriptor> constraintsGetAll( StorageSchemaReader reader )
     {
         Iterator<ConstraintDescriptor> constraints = reader.constraintsGetAll();
         if ( ktx.hasTxStateWithChanges() )
@@ -776,7 +776,7 @@ public class AllStoreHolder extends Read
         return constraintsGetForRelationshipType( storageReader, typeId );
     }
 
-    private Iterator<ConstraintDescriptor> constraintsGetForRelationshipType( StorageSchemaReader reader, int typeId )
+    Iterator<ConstraintDescriptor> constraintsGetForRelationshipType( StorageSchemaReader reader, int typeId )
     {
         Iterator<ConstraintDescriptor> constraints = reader.constraintsGetForRelationshipType( typeId );
         if ( ktx.hasTxStateWithChanges() )
@@ -791,81 +791,7 @@ public class AllStoreHolder extends Read
     {
         ktx.assertOpen();
         StorageSchemaReader snapshot = storageReader.schemaSnapshot();
-        return new SchemaReadCore()
-        {
-            @Override
-            public IndexReference index( SchemaDescriptor schema )
-            {
-                ktx.assertOpen();
-                return indexGetForSchema( snapshot, schema );
-            }
-
-            @Override
-            public Iterator<IndexReference> indexesGetForLabel( int labelId )
-            {
-                ktx.assertOpen();
-                return AllStoreHolder.this.indexesGetForLabel( snapshot, labelId );
-            }
-
-            @Override
-            public Iterator<IndexReference> indexesGetForRelationshipType( int relationshipType )
-            {
-                ktx.assertOpen();
-                return AllStoreHolder.this.indexesGetForRelationshipType( snapshot, relationshipType );
-            }
-
-            @Override
-            public Iterator<IndexReference> indexesGetAll()
-            {
-                ktx.assertOpen();
-                //noinspection unchecked
-                return (Iterator) AllStoreHolder.this.indexesGetAll( snapshot );
-            }
-
-            @Override
-            public InternalIndexState indexGetState( IndexReference index ) throws IndexNotFoundKernelException
-            {
-                assertValidIndex( index );
-                ktx.assertOpen();
-                return AllStoreHolder.this.indexGetState( snapshot, (IndexDescriptor) index );
-            }
-
-            @Override
-            public PopulationProgress indexGetPopulationProgress( IndexReference index ) throws IndexNotFoundKernelException
-            {
-                assertValidIndex( index );
-                ktx.assertOpen();
-                return AllStoreHolder.this.indexGetPopulationProgress( snapshot, index );
-            }
-
-            @Override
-            public String indexGetFailure( IndexReference index ) throws IndexNotFoundKernelException
-            {
-                assertValidIndex( index );
-                return snapshot.indexGetFailure( index.schema() );
-            }
-
-            @Override
-            public Iterator<ConstraintDescriptor> constraintsGetForLabel( int labelId )
-            {
-                ktx.assertOpen();
-                return AllStoreHolder.this.constraintsGetForLabel( snapshot, labelId );
-            }
-
-            @Override
-            public Iterator<ConstraintDescriptor> constraintsGetForRelationshipType( int typeId )
-            {
-                ktx.assertOpen();
-                return AllStoreHolder.this.constraintsGetForRelationshipType( snapshot, typeId );
-            }
-
-            @Override
-            public Iterator<ConstraintDescriptor> constraintsGetAll()
-            {
-                ktx.assertOpen();
-                return AllStoreHolder.this.constraintsGetAll( snapshot );
-            }
-        };
+        return new SchemaReadCoreSnapshot( snapshot, ktx, this );
     }
 
     boolean nodeExistsInStore( long id )
@@ -1270,7 +1196,7 @@ public class AllStoreHolder extends Read
         return ctx;
     }
 
-    private static void assertValidIndex( IndexReference index ) throws IndexNotFoundKernelException
+    static void assertValidIndex( IndexReference index ) throws IndexNotFoundKernelException
     {
         if ( index == IndexReference.NO_INDEX )
         {
