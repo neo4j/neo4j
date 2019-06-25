@@ -52,6 +52,7 @@ class AbstractLogicalPlanBuilderTest extends CypherFunSuite with TestName
 
   class TestBuilder extends AbstractLogicalPlanBuilder[LogicalPlan, TestBuilder](null) {
     override def newNode(node: Variable): Unit = {}
+    override def newRelationship(relationship: Variable): Unit = {}
     override def build(readOnly: Boolean): LogicalPlan = buildLogicalPlan()
   }
 }

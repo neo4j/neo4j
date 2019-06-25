@@ -37,6 +37,10 @@ class LogicalQueryBuilder(tokenResolver: TokenResolver)
     semanticTable = semanticTable.addNode(node)
   }
 
+  override def newRelationship(relationship: Variable): Unit = {
+    semanticTable = semanticTable.addRelationship(relationship)
+  }
+
   def build(readOnly: Boolean = true): LogicalQuery = {
     val logicalPlan = buildLogicalPlan()
     LogicalQuery(logicalPlan,

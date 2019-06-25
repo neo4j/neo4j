@@ -262,6 +262,19 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
     appendAtCurrentIndent(LeafOperator(NodeByIdSeek(node, input, Set.empty)(_)))
   }
 
+  def directedRelationshipByIdSeek(relationship: String, from: String, to: String, ids: Long*): IMPL = {
+    newRelationship(varFor(relationship))
+    val idExpressions = ids.map(l => UnsignedDecimalIntegerLiteral(l.toString)(pos))
+    val input =
+      if (idExpressions.length == 1) {
+        SingleSeekableArg(idExpressions.head)
+      } else {
+        ManySeekableArgs(ListLiteral(idExpressions)(pos))
+      }
+
+    appendAtCurrentIndent(LeafOperator(DirectedRelationshipByIdSeek(relationship, input, from, to, Set.empty)(_)))
+  }
+
   def nodeCountFromCountStore(node: String, labels: List[Option[String]]): IMPL = {
     val labelNames = labels.map(maybeLabel => maybeLabel.map(labelName))
     appendAtCurrentIndent(LeafOperator(NodeCountFromCountStore(node, labelNames, Set.empty)(_)))
@@ -352,6 +365,11 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
     * Called everytime a new node is introduced by some logical operator.
     */
   def newNode(node: Variable): Unit
+
+  /**
+    * Called everytime a new relationship is introduced by some logical operator.
+    */
+  def newRelationship(relationship: Variable): Unit
 
   /**
     * Returns the finalized output of the builder.
