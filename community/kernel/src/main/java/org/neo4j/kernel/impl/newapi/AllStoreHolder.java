@@ -422,6 +422,7 @@ public class AllStoreHolder extends Read
     public Iterator<IndexReference> indexesGetForLabel( int labelId )
     {
         acquireSharedLock( ResourceTypes.LABEL, labelId );
+        ktx.assertOpen();
         return indexesGetForLabel( storageReader, labelId );
     }
 
@@ -440,6 +441,7 @@ public class AllStoreHolder extends Read
     public Iterator<IndexReference> indexesGetForRelationshipType( int relationshipType )
     {
         acquireSharedLock( ResourceTypes.RELATIONSHIP_TYPE, relationshipType );
+        ktx.assertOpen();
         return indexesGetForRelationshipType( storageReader, relationshipType );
     }
 
@@ -513,6 +515,7 @@ public class AllStoreHolder extends Read
     {
         assertValidIndex( index );
         acquireSharedSchemaLock( index.schema() );
+        ktx.assertOpen();
         return indexGetState( (IndexDescriptor) index );
     }
 
@@ -522,6 +525,7 @@ public class AllStoreHolder extends Read
     {
         assertValidIndex( index );
         acquireSharedSchemaLock( index.schema() );
+        ktx.assertOpen();
         return indexGetPopulationProgress( storageReader, index );
     }
 
@@ -723,6 +727,7 @@ public class AllStoreHolder extends Read
     {
         SchemaDescriptor schema = descriptor.schema();
         acquireSharedSchemaLock( schema );
+        ktx.assertOpen();
         boolean inStore = storageReader.constraintExists( descriptor );
         if ( ktx.hasTxStateWithChanges() )
         {
@@ -738,6 +743,7 @@ public class AllStoreHolder extends Read
     public Iterator<ConstraintDescriptor> constraintsGetForLabel( int labelId )
     {
         acquireSharedLock( ResourceTypes.LABEL, labelId );
+        ktx.assertOpen();
         return constraintsGetForLabel( storageReader, labelId );
     }
 
@@ -773,6 +779,7 @@ public class AllStoreHolder extends Read
     public Iterator<ConstraintDescriptor> constraintsGetForRelationshipType( int typeId )
     {
         acquireSharedLock( ResourceTypes.RELATIONSHIP_TYPE, typeId );
+        ktx.assertOpen();
         return constraintsGetForRelationshipType( storageReader, typeId );
     }
 

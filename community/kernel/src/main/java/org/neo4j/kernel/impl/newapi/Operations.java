@@ -526,6 +526,7 @@ public class Operations implements Write, ExplicitIndexWrite, SchemaWrite
     public boolean nodeRemoveLabel( long node, int labelId ) throws EntityNotFoundException
     {
         acquireExclusiveNodeLock( node );
+        ktx.assertOpen();
 
         singleNode( node );
 
@@ -549,6 +550,7 @@ public class Operations implements Write, ExplicitIndexWrite, SchemaWrite
             throws EntityNotFoundException, ConstraintValidationException, AutoIndexingKernelException
     {
         acquireExclusiveNodeLock( node );
+        ktx.assertOpen();
 
         singleNode( node );
         long[] labels = acquireSharedNodeLabelLocks();
@@ -605,6 +607,7 @@ public class Operations implements Write, ExplicitIndexWrite, SchemaWrite
             throws EntityNotFoundException, AutoIndexingKernelException
     {
         acquireExclusiveNodeLock( node );
+        ktx.assertOpen();
         singleNode( node );
         Value existingValue = readNodeProperty( propertyKey );
 
@@ -627,6 +630,7 @@ public class Operations implements Write, ExplicitIndexWrite, SchemaWrite
             throws EntityNotFoundException, AutoIndexingKernelException
     {
         acquireExclusiveRelationshipLock( relationship );
+        ktx.assertOpen();
         singleRelationship( relationship );
         Value existingValue = readRelationshipProperty( propertyKey );
         if ( existingValue == NO_VALUE )
@@ -654,6 +658,7 @@ public class Operations implements Write, ExplicitIndexWrite, SchemaWrite
             throws EntityNotFoundException, AutoIndexingKernelException
     {
         acquireExclusiveRelationshipLock( relationship );
+        ktx.assertOpen();
         singleRelationship( relationship );
         Value existingValue = readRelationshipProperty( propertyKey );
 
@@ -671,6 +676,7 @@ public class Operations implements Write, ExplicitIndexWrite, SchemaWrite
     {
         ktx.statementLocks().optimistic()
                 .acquireExclusive( ktx.lockTracer(), ResourceTypes.GRAPH_PROPS, ResourceTypes.graphPropertyResource() );
+        ktx.assertOpen();
 
         Value existingValue = readGraphProperty( propertyKey );
         if ( !existingValue.equals( value ) )
@@ -685,6 +691,7 @@ public class Operations implements Write, ExplicitIndexWrite, SchemaWrite
     {
         ktx.statementLocks().optimistic()
                 .acquireExclusive( ktx.lockTracer(), ResourceTypes.GRAPH_PROPS, ResourceTypes.graphPropertyResource() );
+        ktx.assertOpen();
 
         Value existingValue = readGraphProperty( propertyKey );
         if ( existingValue != Values.NO_VALUE )
@@ -963,6 +970,7 @@ public class Operations implements Write, ExplicitIndexWrite, SchemaWrite
     public IndexReference indexCreate( SchemaDescriptor descriptor, String provider, Optional<String> name ) throws SchemaKernelException
     {
         exclusiveSchemaLock( descriptor );
+        ktx.assertOpen();
         assertValidDescriptor( descriptor, SchemaKernelException.OperationContext.INDEX_CREATION );
         assertIndexDoesNotExist( SchemaKernelException.OperationContext.INDEX_CREATION, descriptor, name );
 
@@ -994,6 +1002,7 @@ public class Operations implements Write, ExplicitIndexWrite, SchemaWrite
         SchemaDescriptor schema = index.schema();
 
         exclusiveSchemaLock( schema );
+        ktx.assertOpen();
         try
         {
             IndexDescriptor existingIndex = allStoreHolder.indexGetForSchema( schema );
@@ -1029,6 +1038,7 @@ public class Operations implements Write, ExplicitIndexWrite, SchemaWrite
     {
         //Lock
         exclusiveSchemaLock( descriptor );
+        ktx.assertOpen();
         UniquenessConstraintDescriptor constraint;
 
         try
@@ -1062,6 +1072,7 @@ public class Operations implements Write, ExplicitIndexWrite, SchemaWrite
     {
         //Lock
         exclusiveSchemaLock( descriptor );
+        ktx.assertOpen();
         NodeKeyConstraintDescriptor constraint;
 
         try
@@ -1126,6 +1137,7 @@ public class Operations implements Write, ExplicitIndexWrite, SchemaWrite
     {
         // Lock constraint schema.
         exclusiveSchemaLock( descriptor );
+        ktx.assertOpen();
 
         try
         {
@@ -1163,6 +1175,7 @@ public class Operations implements Write, ExplicitIndexWrite, SchemaWrite
         //Lock
         SchemaDescriptor schema = descriptor.schema();
         exclusiveOptimisticLock( schema.keyType(), schema.keyId() );
+        ktx.assertOpen();
 
         //verify data integrity
         try
