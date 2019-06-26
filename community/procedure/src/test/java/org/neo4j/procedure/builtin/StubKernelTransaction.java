@@ -39,13 +39,13 @@ import org.neo4j.internal.kernel.api.Write;
 import org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo;
 import org.neo4j.internal.kernel.api.security.AuthSubject;
 import org.neo4j.internal.kernel.api.security.SecurityContext;
+import org.neo4j.internal.schema.IndexDescriptor2;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.availability.AvailabilityGuard;
 import org.neo4j.kernel.impl.api.ClockContext;
-import org.neo4j.kernel.impl.index.schema.IndexDescriptor;
 
 public class StubKernelTransaction implements KernelTransaction
 {
@@ -61,7 +61,7 @@ public class StubKernelTransaction implements KernelTransaction
     }
 
     @Override
-    public IndexDescriptor indexUniqueCreate( SchemaDescriptor schema, String provider )
+    public IndexDescriptor2 indexUniqueCreate( SchemaDescriptor schema, String provider )
     {
         throw new UnsupportedOperationException( "not implemented" );
     }

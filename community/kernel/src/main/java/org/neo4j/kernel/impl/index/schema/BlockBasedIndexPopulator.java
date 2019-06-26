@@ -40,6 +40,7 @@ import org.neo4j.index.internal.gbptree.Seeker;
 import org.neo4j.index.internal.gbptree.Writer;
 import org.neo4j.internal.helpers.Exceptions;
 import org.neo4j.internal.kernel.api.PopulationProgress;
+import org.neo4j.internal.schema.IndexDescriptor2;
 import org.neo4j.io.ByteUnit;
 import org.neo4j.io.IOUtils;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -53,7 +54,6 @@ import org.neo4j.kernel.impl.api.index.PhaseTracker;
 import org.neo4j.kernel.impl.index.schema.ByteBufferFactory.Allocator;
 import org.neo4j.kernel.impl.index.schema.config.IndexSpecificSpaceFillingCurveSettings;
 import org.neo4j.storageengine.api.IndexEntryUpdate;
-import org.neo4j.storageengine.api.StorageIndexReference;
 import org.neo4j.util.FeatureToggles;
 import org.neo4j.util.Preconditions;
 import org.neo4j.values.storable.Value;
@@ -107,7 +107,7 @@ public abstract class BlockBasedIndexPopulator<KEY extends NativeIndexKey<KEY>,V
     private volatile long numberOfAppliedExternalUpdates;
 
     BlockBasedIndexPopulator( PageCache pageCache, FileSystemAbstraction fs, IndexFiles indexFiles, IndexLayout<KEY,VALUE> layout,
-            IndexProvider.Monitor monitor, StorageIndexReference descriptor, IndexSpecificSpaceFillingCurveSettings spatialSettings,
+            IndexProvider.Monitor monitor, IndexDescriptor2 descriptor, IndexSpecificSpaceFillingCurveSettings spatialSettings,
             boolean archiveFailedIndex, ByteBufferFactory bufferFactory )
     {
         this( pageCache, fs, indexFiles, layout, monitor, descriptor, spatialSettings, archiveFailedIndex, bufferFactory,
@@ -115,7 +115,7 @@ public abstract class BlockBasedIndexPopulator<KEY extends NativeIndexKey<KEY>,V
     }
 
     BlockBasedIndexPopulator( PageCache pageCache, FileSystemAbstraction fs, IndexFiles indexFiles, IndexLayout<KEY,VALUE> layout,
-            IndexProvider.Monitor monitor, StorageIndexReference descriptor, IndexSpecificSpaceFillingCurveSettings spatialSettings,
+            IndexProvider.Monitor monitor, IndexDescriptor2 descriptor, IndexSpecificSpaceFillingCurveSettings spatialSettings,
             boolean archiveFailedIndex, ByteBufferFactory bufferFactory, int mergeFactor, BlockStorage.Monitor blockStorageMonitor )
     {
         super( pageCache, fs, indexFiles, layout, monitor, descriptor, NO_HEADER_WRITER );

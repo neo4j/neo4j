@@ -23,11 +23,11 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.neo4j.gis.spatial.index.curves.SpaceFillingCurveConfiguration;
+import org.neo4j.internal.schema.IndexDescriptor2;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.impl.index.schema.config.IndexSpecificSpaceFillingCurveSettings;
-import org.neo4j.storageengine.api.StorageIndexReference;
 import org.neo4j.values.storable.Value;
 
 class GenericBlockBasedIndexPopulator extends BlockBasedIndexPopulator<GenericKey,NativeIndexValue>
@@ -36,7 +36,7 @@ class GenericBlockBasedIndexPopulator extends BlockBasedIndexPopulator<GenericKe
     private final SpaceFillingCurveConfiguration configuration;
 
     GenericBlockBasedIndexPopulator( PageCache pageCache, FileSystemAbstraction fs, IndexFiles indexFiles, IndexLayout<GenericKey,NativeIndexValue> layout,
-            IndexProvider.Monitor monitor, StorageIndexReference descriptor, IndexSpecificSpaceFillingCurveSettings spatialSettings,
+            IndexProvider.Monitor monitor, IndexDescriptor2 descriptor, IndexSpecificSpaceFillingCurveSettings spatialSettings,
             SpaceFillingCurveConfiguration configuration, boolean archiveFailedIndex, ByteBufferFactory bufferFactory )
     {
         super( pageCache, fs, indexFiles, layout, monitor, descriptor, spatialSettings, archiveFailedIndex, bufferFactory );

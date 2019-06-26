@@ -22,9 +22,9 @@ package org.neo4j.kernel.impl.api.index.sampling;
 import java.util.function.Predicate;
 
 import org.neo4j.common.TokenNameLookup;
+import org.neo4j.internal.schema.IndexDescriptor2;
 import org.neo4j.kernel.impl.api.index.IndexMapSnapshotProvider;
 import org.neo4j.kernel.impl.api.index.stats.IndexStatisticsStore;
-import org.neo4j.kernel.impl.index.schema.StoreIndexDescriptor;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.register.Register.DoubleLongRegister;
@@ -91,7 +91,7 @@ public class IndexSamplingControllerFactory
             private final DoubleLongRegister register = newDoubleLongRegister();
 
             @Override
-            public boolean test( StoreIndexDescriptor descriptor )
+            public boolean test( IndexDescriptor2 descriptor )
             {
                 final long samples = indexStatisticsStore.indexSample( descriptor.getId(), register ).readSecond();
                 final long size = indexStatisticsStore.indexUpdatesAndSize( descriptor.getId(), register ).readSecond();

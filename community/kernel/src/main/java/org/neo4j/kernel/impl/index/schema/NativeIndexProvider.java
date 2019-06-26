@@ -27,16 +27,16 @@ import org.neo4j.index.internal.gbptree.Layout;
 import org.neo4j.index.internal.gbptree.MetadataMismatchException;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.internal.kernel.api.InternalIndexState;
+import org.neo4j.internal.schema.IndexDescriptor2;
+import org.neo4j.internal.schema.IndexProviderDescriptor;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexDirectoryStructure.Factory;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.IndexProvider;
-import org.neo4j.internal.schema.IndexProviderDescriptor;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.storageengine.api.StorageEngineFactory;
-import org.neo4j.storageengine.api.StorageIndexReference;
 import org.neo4j.storageengine.migration.StoreMigrationParticipant;
 
 /**
@@ -69,47 +69,47 @@ abstract class NativeIndexProvider<KEY extends NativeIndexKey<KEY>,VALUE extends
     /**
      * Instantiates the {@link Layout} which is used in the index backing this native index provider.
      *
-     * @param descriptor the {@link StoreIndexDescriptor} for this index.
+     * @param descriptor the {@link IndexDescriptor2} for this index.
      * @param storeFile index store file, since some layouts may depend on contents of the header.
      * If {@code null} it means that nothing must be read from the file before or while instantiating the layout.
      * @return the correct {@link Layout} for the index.
      */
-    abstract LAYOUT layout( StorageIndexReference descriptor, File storeFile );
+    abstract LAYOUT layout( IndexDescriptor2 descriptor, File storeFile );
 
     @Override
-    public IndexPopulator getPopulator( StorageIndexReference descriptor, IndexSamplingConfig samplingConfig, ByteBufferFactory bufferFactory )
+    public IndexPopulator getPopulator( IndexDescriptor2 descriptor, IndexSamplingConfig samplingConfig, ByteBufferFactory bufferFactory )
     {
         if ( readOnly )
         {
             throw new UnsupportedOperationException( "Can't create populator for read only index" );
         }
 
-        IndexFiles indexFiles = new IndexFiles.Directory( fs, directoryStructure(), descriptor.indexReference() );
+        IndexFiles indexFiles = new IndexFiles.Directory( fs, directoryStructure(), descriptor.getId() );
         return newIndexPopulator( indexFiles, layout( descriptor, null /*meaning don't read from this file since we're recreating it anyway*/ ), descriptor,
                 bufferFactory );
     }
 
-    protected abstract IndexPopulator newIndexPopulator( IndexFiles indexFiles, LAYOUT layout, StorageIndexReference descriptor,
+    protected abstract IndexPopulator newIndexPopulator( IndexFiles indexFiles, LAYOUT layout, IndexDescriptor2 descriptor,
             ByteBufferFactory bufferFactory );
 
     @Override
-    public IndexAccessor getOnlineAccessor( StorageIndexReference descriptor, IndexSamplingConfig samplingConfig ) throws IOException
+    public IndexAccessor getOnlineAccessor( IndexDescriptor2 descriptor, IndexSamplingConfig samplingConfig ) throws IOException
     {
-        IndexFiles indexFiles = new IndexFiles.Directory( fs, directoryStructure(), descriptor.indexReference() );
+        IndexFiles indexFiles = new IndexFiles.Directory( fs, directoryStructure(), descriptor.getId() );
         return newIndexAccessor( indexFiles, layout( descriptor, indexFiles.getStoreFile() ), descriptor );
     }
 
-    protected abstract IndexAccessor newIndexAccessor( IndexFiles indexFiles, LAYOUT layout, StorageIndexReference descriptor ) throws IOException;
+    protected abstract IndexAccessor newIndexAccessor( IndexFiles indexFiles, LAYOUT layout, IndexDescriptor2 descriptor ) throws IOException;
 
     @Override
-    public String getPopulationFailure( StorageIndexReference descriptor ) throws IllegalStateException
+    public String getPopulationFailure( IndexDescriptor2 descriptor ) throws IllegalStateException
     {
         try
         {
             String failureMessage = NativeIndexes.readFailureMessage( pageCache, storeFile( descriptor ) );
             if ( failureMessage == null )
             {
-                throw new IllegalStateException( "Index " + descriptor.indexReference() + " isn't failed" );
+                throw new IllegalStateException( "Index " + descriptor.getId() + " isn't failed" );
             }
             return failureMessage;
         }
@@ -120,7 +120,7 @@ abstract class NativeIndexProvider<KEY extends NativeIndexKey<KEY>,VALUE extends
     }
 
     @Override
-    public InternalIndexState getInitialState( StorageIndexReference descriptor )
+    public InternalIndexState getInitialState( IndexDescriptor2 descriptor )
     {
         try
         {
@@ -141,9 +141,9 @@ abstract class NativeIndexProvider<KEY extends NativeIndexKey<KEY>,VALUE extends
         return StoreMigrationParticipant.NOT_PARTICIPATING;
     }
 
-    private File storeFile( StorageIndexReference descriptor )
+    private File storeFile( IndexDescriptor2 descriptor )
     {
-        IndexFiles indexFiles = new IndexFiles.Directory( fs, directoryStructure(), descriptor.indexReference() );
+        IndexFiles indexFiles = new IndexFiles.Directory( fs, directoryStructure(), descriptor.getId() );
         return indexFiles.getStoreFile();
     }
 }

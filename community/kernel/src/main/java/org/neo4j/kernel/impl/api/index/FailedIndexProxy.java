@@ -25,10 +25,10 @@ import java.util.concurrent.TimeUnit;
 
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.internal.kernel.api.InternalIndexState;
+import org.neo4j.internal.schema.IndexDescriptor2;
 import org.neo4j.kernel.api.exceptions.index.IndexPopulationFailedKernelException;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.impl.api.index.stats.IndexStatisticsStore;
-import org.neo4j.kernel.impl.index.schema.CapableIndexDescriptor;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.values.storable.Value;
@@ -42,14 +42,14 @@ public class FailedIndexProxy extends AbstractSwallowingIndexProxy
     private final IndexStatisticsStore indexStatisticsStore;
     private final Log log;
 
-    FailedIndexProxy( CapableIndexDescriptor capableIndexDescriptor,
+    FailedIndexProxy( IndexDescriptor2 descriptor,
             String indexUserDescription,
             IndexPopulator populator,
             IndexPopulationFailure populationFailure,
             IndexStatisticsStore indexStatisticsStore,
             LogProvider logProvider )
     {
-        super( capableIndexDescriptor, populationFailure );
+        super( descriptor, populationFailure );
         this.populator = populator;
         this.indexUserDescription = indexUserDescription;
         this.indexStatisticsStore = indexStatisticsStore;

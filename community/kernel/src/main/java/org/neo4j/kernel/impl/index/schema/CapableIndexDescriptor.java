@@ -30,6 +30,7 @@ import org.neo4j.values.storable.ValueCategory;
 /**
  * A committed index with specified capabilities.
  */
+@Deprecated
 public class CapableIndexDescriptor extends StoreIndexDescriptor
 {
     private final IndexCapability indexCapability;

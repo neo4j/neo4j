@@ -20,9 +20,9 @@
 package org.neo4j.kernel.impl.api.index;
 
 import org.neo4j.internal.kernel.api.exceptions.schema.MisconfiguredIndexException;
+import org.neo4j.internal.schema.IndexRef;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.internal.schema.IndexProviderDescriptor;
-import org.neo4j.kernel.impl.index.schema.IndexDescriptor;
 import org.neo4j.values.storable.Value;
 
 public interface IndexingProvidersService
@@ -51,5 +51,5 @@ public interface IndexingProvidersService
      * @return The blessed index descriptor.
      * @throws MisconfiguredIndexException if the provider cannot be bless the given index descriptor.
      */
-    IndexDescriptor getBlessedDescriptorFromProvider( IndexDescriptor index ) throws MisconfiguredIndexException;
+    <T extends IndexRef<T>> T getBlessedDescriptorFromProvider( T index ) throws MisconfiguredIndexException;
 }

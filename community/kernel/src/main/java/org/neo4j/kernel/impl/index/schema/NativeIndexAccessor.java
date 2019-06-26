@@ -26,6 +26,7 @@ import java.util.function.Consumer;
 
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.internal.helpers.collection.BoundedIterable;
+import org.neo4j.internal.schema.IndexDescriptor2;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.io.pagecache.PageCache;
@@ -36,7 +37,6 @@ import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.index.IndexReader;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
 import org.neo4j.storageengine.api.NodePropertyAccessor;
-import org.neo4j.storageengine.api.StorageIndexReference;
 
 import static org.neo4j.internal.helpers.collection.Iterators.asResourceIterator;
 import static org.neo4j.internal.helpers.collection.Iterators.iterator;
@@ -49,7 +49,7 @@ public abstract class NativeIndexAccessor<KEY extends NativeIndexKey<KEY>, VALUE
     final NativeIndexHeaderWriter headerWriter;
 
     NativeIndexAccessor( PageCache pageCache, FileSystemAbstraction fs, IndexFiles indexFiles, IndexLayout<KEY,VALUE> layout,
-            IndexProvider.Monitor monitor, StorageIndexReference descriptor, Consumer<PageCursor> additionalHeaderWriter )
+            IndexProvider.Monitor monitor, IndexDescriptor2 descriptor, Consumer<PageCursor> additionalHeaderWriter )
     {
         super( pageCache, fs, indexFiles, layout, monitor, descriptor );
         singleUpdater = new NativeIndexUpdater<>( layout.newKey(), layout.newValue() );

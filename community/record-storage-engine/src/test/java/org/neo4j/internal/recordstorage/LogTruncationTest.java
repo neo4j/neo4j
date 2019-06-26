@@ -29,6 +29,8 @@ import java.util.Map;
 
 import org.neo4j.internal.recordstorage.Command.NodeCountsCommand;
 import org.neo4j.internal.recordstorage.Command.RelationshipCountsCommand;
+import org.neo4j.internal.schema.IndexDescriptor2;
+import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.io.fs.ReadPastEndException;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
@@ -41,9 +43,7 @@ import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
 import org.neo4j.kernel.impl.store.record.SchemaRecord;
 import org.neo4j.kernel.impl.transaction.log.InMemoryClosableChannel;
-import org.neo4j.storageengine.api.DefaultStorageIndexReference;
 import org.neo4j.storageengine.api.StorageCommand;
-import org.neo4j.storageengine.api.StorageIndexReference;
 
 import static java.lang.reflect.Modifier.isAbstract;
 import static java.util.Arrays.asList;
@@ -76,7 +76,7 @@ class LogTruncationTest
         permutations.put( Command.RelationshipGroupCommand.class,
                 new Command[] { new Command.LabelTokenCommand( new LabelTokenRecord( 1 ),
                         createLabelTokenRecord( 1 ) ) } );
-        StorageIndexReference schemaRule = new DefaultStorageIndexReference( SchemaDescriptor.forLabel( 3, 4 ), false, 1, null );
+        IndexDescriptor2 schemaRule = IndexPrototype.forSchema( SchemaDescriptor.forLabel( 3, 4 ) ).materialise( 1 );
         permutations.put( Command.SchemaRuleCommand.class, new Command[]{
                 new Command.SchemaRuleCommand( new SchemaRecord( 1 ).initialize( true, 41 ), new SchemaRecord( 1 ).initialize( true, 42 ), schemaRule ),
                 new Command.SchemaRuleCommand( new SchemaRecord( 1 ), new SchemaRecord( 1 ).initialize( true, 42 ), schemaRule ),

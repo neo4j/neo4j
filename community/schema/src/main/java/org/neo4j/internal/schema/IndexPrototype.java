@@ -141,4 +141,20 @@ public class IndexPrototype implements IndexRef<IndexPrototype>
     {
         return new IndexDescriptor2( id, this );
     }
+
+    @Override
+    public boolean equals( Object o )
+    {
+        if ( o instanceof IndexRef )
+        {
+            return IndexRef.equals( this, (IndexRef<?>) o );
+        }
+        return false;
+    }
+
+    @Override
+    public int hashCode()
+    {
+        return IndexRef.hashCode( this );
+    }
 }

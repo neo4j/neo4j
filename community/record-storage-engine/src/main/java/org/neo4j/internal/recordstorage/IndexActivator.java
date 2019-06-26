@@ -23,8 +23,8 @@ import java.util.HashSet;
 import java.util.Set;
 
 import org.neo4j.exceptions.KernelException;
+import org.neo4j.internal.schema.IndexDescriptor2;
 import org.neo4j.storageengine.api.IndexUpdateListener;
-import org.neo4j.storageengine.api.StorageIndexReference;
 
 /**
  * Delayed activation of indexes. At the point in time when a transaction that creates a uniqueness constraint
@@ -36,22 +36,22 @@ import org.neo4j.storageengine.api.StorageIndexReference;
 public class IndexActivator implements AutoCloseable
 {
     private final IndexUpdateListener listener;
-    private Set<StorageIndexReference> indexesToActivate;
+    private Set<IndexDescriptor2> indexesToActivate;
 
-    public IndexActivator( IndexUpdateListener listener )
+    IndexActivator( IndexUpdateListener listener )
     {
         this.listener = listener;
     }
 
     /**
-     * Activates any index that needs activation, i.e. have been added with {@link #activateIndex(StorageIndexReference)}.
+     * Activates any index that needs activation, i.e. have been added with {@link #activateIndex(IndexDescriptor2)}.
      */
     @Override
     public void close()
     {
         if ( indexesToActivate != null )
         {
-            for ( StorageIndexReference indexId : indexesToActivate )
+            for ( IndexDescriptor2 indexId : indexesToActivate )
             {
                 try
                 {
@@ -69,7 +69,7 @@ public class IndexActivator implements AutoCloseable
      * Makes a note to activate index after batch of transaction have been applied, i.e. in {@link #close()}.
      * @param index index.
      */
-    void activateIndex( StorageIndexReference index )
+    void activateIndex( IndexDescriptor2 index )
     {
         if ( indexesToActivate == null )
         {
@@ -82,7 +82,7 @@ public class IndexActivator implements AutoCloseable
      * Called when an index is dropped, so that a previously noted index to activate is removed from this internal list.
      * @param index index.
      */
-    void indexDropped( StorageIndexReference index )
+    void indexDropped( IndexDescriptor2 index )
     {
         if ( indexesToActivate != null )
         {

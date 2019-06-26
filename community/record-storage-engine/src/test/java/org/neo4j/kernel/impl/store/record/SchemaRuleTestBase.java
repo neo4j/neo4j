@@ -19,10 +19,8 @@
  */
 package org.neo4j.kernel.impl.store.record;
 
-import java.util.Optional;
-
-import org.neo4j.internal.schema.DefaultIndexDescriptor;
-import org.neo4j.internal.schema.IndexDescriptor;
+import org.neo4j.internal.schema.IndexPrototype;
+import org.neo4j.internal.schema.IndexProviderDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptor;
 
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -30,45 +28,41 @@ import static org.hamcrest.Matchers.equalTo;
 
 abstract class SchemaRuleTestBase
 {
-    protected static final long RULE_ID = 1;
-    protected static final long RULE_ID_2 = 2;
-    protected static final int LABEL_ID = 10;
-    protected static final int LABEL_ID_2 = 11;
-    protected static final int REL_TYPE_ID = 20;
-    protected static final int PROPERTY_ID_1 = 30;
-    protected static final int PROPERTY_ID_2 = 31;
+    static final long RULE_ID = 1;
+    static final long RULE_ID_2 = 2;
+    static final int LABEL_ID = 10;
+    static final int REL_TYPE_ID = 20;
+    static final int PROPERTY_ID_1 = 30;
+    static final int PROPERTY_ID_2 = 31;
 
-    protected static final String PROVIDER_KEY = "index-provider";
-    protected static final String PROVIDER_VERSION = "1.0";
+    static final String PROVIDER_KEY = "index-provider";
+    static final String PROVIDER_VERSION = "1.0";
+    static final IndexProviderDescriptor PROVIDER = new IndexProviderDescriptor( PROVIDER_KEY, PROVIDER_VERSION );
 
-    protected void assertEquality( Object o1, Object o2 )
+    void assertEquality( Object o1, Object o2 )
     {
         assertThat( o1, equalTo( o2 ) );
         assertThat( o2, equalTo( o1 ) );
         assertThat( o1.hashCode(), equalTo( o2.hashCode() ) );
     }
 
-    public static IndexDescriptor forLabel( int labelId, int... propertyIds )
+    public static IndexPrototype forLabel( int labelId, int... propertyIds )
     {
-        return new DefaultIndexDescriptor( SchemaDescriptor.forLabel( labelId, propertyIds ),
-                PROVIDER_KEY, PROVIDER_VERSION, Optional.empty(), false );
+        return IndexPrototype.forSchema( SchemaDescriptor.forLabel( labelId, propertyIds ), PROVIDER );
     }
 
-    public static IndexDescriptor namedForLabel( String name, int labelId, int... propertyIds )
+    public static IndexPrototype namedForLabel( String name, int labelId, int... propertyIds )
     {
-        return new DefaultIndexDescriptor( SchemaDescriptor.forLabel( labelId, propertyIds ),
-                PROVIDER_KEY, PROVIDER_VERSION, Optional.of( name ), false );
+        return IndexPrototype.forSchema( SchemaDescriptor.forLabel( labelId, propertyIds ), PROVIDER ).withName( name );
     }
 
-    public static IndexDescriptor uniqueForLabel( int labelId, int... propertyIds )
+    public static IndexPrototype uniqueForLabel( int labelId, int... propertyIds )
     {
-        return new DefaultIndexDescriptor( SchemaDescriptor.forLabel( labelId, propertyIds ),
-                PROVIDER_KEY, PROVIDER_VERSION, Optional.empty(), true );
+        return IndexPrototype.uniqueForSchema( SchemaDescriptor.forLabel( labelId, propertyIds ), PROVIDER );
     }
 
-    public static IndexDescriptor namedUniqueForLabel( String name, int labelId, int... propertyIds )
+    public static IndexPrototype namedUniqueForLabel( String name, int labelId, int... propertyIds )
     {
-        return new DefaultIndexDescriptor( SchemaDescriptor.forLabel( labelId, propertyIds ),
-                PROVIDER_KEY, PROVIDER_VERSION, Optional.empty(), true );
+        return IndexPrototype.uniqueForSchema( SchemaDescriptor.forLabel( labelId, propertyIds ), PROVIDER ).withName( name );
     }
 }

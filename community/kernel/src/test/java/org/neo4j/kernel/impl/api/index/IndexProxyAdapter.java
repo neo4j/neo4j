@@ -27,11 +27,11 @@ import java.util.concurrent.TimeUnit;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.kernel.api.PopulationProgress;
+import org.neo4j.internal.schema.IndexDescriptor2;
 import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.kernel.api.index.IndexReader;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.impl.api.index.updater.SwallowingIndexUpdater;
-import org.neo4j.kernel.impl.index.schema.CapableIndexDescriptor;
 import org.neo4j.values.storable.Value;
 
 import static org.neo4j.internal.helpers.collection.Iterators.emptyResourceIterator;
@@ -76,7 +76,7 @@ public class IndexProxyAdapter implements IndexProxy
     }
 
     @Override
-    public CapableIndexDescriptor getDescriptor()
+    public IndexDescriptor2 getDescriptor()
     {
         return null;
     }

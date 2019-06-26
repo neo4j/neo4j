@@ -22,7 +22,7 @@ package org.neo4j.kernel.api.impl.schema.populator;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 
-import org.neo4j.internal.schema.IndexDescriptor;
+import org.neo4j.internal.schema.IndexDescriptor2;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.impl.schema.SchemaIndex;
 import org.neo4j.kernel.api.index.IndexSample;
@@ -42,7 +42,7 @@ public class UniqueLuceneIndexPopulator extends LuceneIndexPopulator<SchemaIndex
     private final int[] propertyKeyIds;
     private final UniqueIndexSampler sampler;
 
-    public UniqueLuceneIndexPopulator( SchemaIndex index, IndexDescriptor descriptor )
+    public UniqueLuceneIndexPopulator( SchemaIndex index, IndexDescriptor2 descriptor )
     {
         super( index );
         this.propertyKeyIds = descriptor.schema().getPropertyIds();

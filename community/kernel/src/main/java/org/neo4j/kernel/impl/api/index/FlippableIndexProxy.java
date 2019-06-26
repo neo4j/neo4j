@@ -31,6 +31,7 @@ import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.kernel.api.PopulationProgress;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
+import org.neo4j.internal.schema.IndexDescriptor2;
 import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.kernel.api.exceptions.index.ExceptionDuringFlipKernelException;
 import org.neo4j.kernel.api.exceptions.index.FlipFailedKernelException;
@@ -42,7 +43,6 @@ import org.neo4j.kernel.api.exceptions.schema.UniquePropertyValueValidationExcep
 import org.neo4j.kernel.api.index.IndexReader;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.impl.api.index.updater.DelegatingIndexUpdater;
-import org.neo4j.kernel.impl.index.schema.CapableIndexDescriptor;
 import org.neo4j.storageengine.api.NodePropertyAccessor;
 import org.neo4j.values.storable.Value;
 
@@ -213,7 +213,7 @@ public class FlippableIndexProxy implements IndexProxy
     }
 
     @Override
-    public CapableIndexDescriptor getDescriptor()
+    public IndexDescriptor2 getDescriptor()
     {
         lock.readLock().lock();
         try

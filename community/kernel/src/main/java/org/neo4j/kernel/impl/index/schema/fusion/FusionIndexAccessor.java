@@ -27,6 +27,7 @@ import java.util.Map;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.internal.helpers.collection.BoundedIterable;
 import org.neo4j.internal.helpers.collection.Iterables;
+import org.neo4j.internal.schema.IndexDescriptor2;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
@@ -38,25 +39,24 @@ import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
 import org.neo4j.kernel.impl.index.schema.IndexFiles;
 import org.neo4j.storageengine.api.NodePropertyAccessor;
-import org.neo4j.storageengine.api.StorageIndexReference;
 import org.neo4j.values.storable.Value;
 
 import static org.neo4j.internal.helpers.collection.Iterators.concatResourceIterators;
 
 class FusionIndexAccessor extends FusionIndexBase<IndexAccessor> implements IndexAccessor
 {
-    private final StorageIndexReference descriptor;
+    private final IndexDescriptor2 descriptor;
     private final IndexFiles indexFiles;
 
     FusionIndexAccessor( SlotSelector slotSelector,
             InstanceSelector<IndexAccessor> instanceSelector,
-            StorageIndexReference descriptor,
+            IndexDescriptor2 descriptor,
             FileSystemAbstraction fs,
             IndexDirectoryStructure directoryStructure )
     {
         super( slotSelector, instanceSelector );
         this.descriptor = descriptor;
-        this.indexFiles = new IndexFiles.Directory( fs, directoryStructure, descriptor.indexReference() );
+        this.indexFiles = new IndexFiles.Directory( fs, directoryStructure, descriptor.getId() );
     }
 
     @Override

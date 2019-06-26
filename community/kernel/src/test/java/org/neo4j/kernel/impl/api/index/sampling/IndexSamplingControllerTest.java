@@ -24,11 +24,10 @@ import org.junit.jupiter.api.Test;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.neo4j.function.Predicates;
+import org.neo4j.internal.schema.IndexDescriptor2;
 import org.neo4j.kernel.impl.api.index.IndexMap;
 import org.neo4j.kernel.impl.api.index.IndexMapSnapshotProvider;
 import org.neo4j.kernel.impl.api.index.IndexProxy;
-import org.neo4j.kernel.impl.index.schema.CapableIndexDescriptor;
-import org.neo4j.kernel.impl.index.schema.StoreIndexDescriptor;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.test.DoubleLatch;
 
@@ -42,11 +41,11 @@ import static org.mockito.Mockito.when;
 import static org.neo4j.internal.kernel.api.InternalIndexState.FAILED;
 import static org.neo4j.internal.kernel.api.InternalIndexState.ONLINE;
 import static org.neo4j.internal.kernel.api.InternalIndexState.POPULATING;
+import static org.neo4j.internal.schema.IndexPrototype.forSchema;
 import static org.neo4j.internal.schema.SchemaDescriptor.forLabel;
 import static org.neo4j.kernel.impl.api.index.TestIndexProviderDescriptor.PROVIDER_DESCRIPTOR;
 import static org.neo4j.kernel.impl.api.index.sampling.IndexSamplingMode.BACKGROUND_REBUILD_UPDATED;
 import static org.neo4j.kernel.impl.api.index.sampling.IndexSamplingMode.TRIGGER_REBUILD_UPDATED;
-import static org.neo4j.kernel.impl.index.schema.IndexDescriptorFactory.forSchema;
 
 class IndexSamplingControllerTest
 {
@@ -61,10 +60,10 @@ class IndexSamplingControllerTest
     private final long anotherIndexId = 3;
     private final IndexProxy indexProxy = mock( IndexProxy.class );
     private final IndexProxy anotherIndexProxy = mock( IndexProxy.class );
-    private final CapableIndexDescriptor descriptor =
-            forSchema( forLabel( 3, 4 ), PROVIDER_DESCRIPTOR ).withId( indexId ).withoutCapabilities();
-    private final CapableIndexDescriptor anotherDescriptor =
-            forSchema( forLabel( 5, 6 ), PROVIDER_DESCRIPTOR ).withId( anotherIndexId ).withoutCapabilities();
+    private final IndexDescriptor2 descriptor =
+            forSchema( forLabel( 3, 4 ), PROVIDER_DESCRIPTOR ).materialise( indexId );
+    private final IndexDescriptor2 anotherDescriptor =
+            forSchema( forLabel( 5, 6 ), PROVIDER_DESCRIPTOR ).materialise( anotherIndexId );
     private final IndexSamplingJob job = mock( IndexSamplingJob.class );
     private final IndexSamplingJob anotherJob = mock( IndexSamplingJob.class );
     {
@@ -371,17 +370,17 @@ class IndexSamplingControllerTest
 
     private static class Always implements IndexSamplingController.RecoveryCondition
     {
-        private final boolean ans;
+        private final boolean answer;
 
-        Always( boolean ans )
+        Always( boolean answer )
         {
-            this.ans = ans;
+            this.answer = answer;
         }
 
         @Override
-        public boolean test( StoreIndexDescriptor descriptor )
+        public boolean test( IndexDescriptor2 descriptor )
         {
-            return ans;
+            return answer;
         }
     }
 

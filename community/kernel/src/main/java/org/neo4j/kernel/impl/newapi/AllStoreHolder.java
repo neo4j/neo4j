@@ -20,7 +20,6 @@
 package org.neo4j.kernel.impl.newapi;
 
 import java.util.Iterator;
-import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.function.Predicate;
@@ -35,6 +34,7 @@ import org.neo4j.internal.kernel.api.IndexReadSession;
 import org.neo4j.internal.kernel.api.IndexReference;
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.kernel.api.PopulationProgress;
+import org.neo4j.internal.kernel.api.SchemaReadCore;
 import org.neo4j.internal.kernel.api.TokenRead;
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
@@ -48,13 +48,14 @@ import org.neo4j.internal.kernel.api.security.AccessMode;
 import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.internal.schema.ConstraintDescriptor;
 import org.neo4j.internal.schema.IndexDescriptor;
+import org.neo4j.internal.schema.IndexDescriptor2;
+import org.neo4j.internal.schema.IndexPrototype;
+import org.neo4j.internal.schema.IndexProviderDescriptor;
 import org.neo4j.internal.schema.LabelSchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptor;
-import org.neo4j.internal.schema.SchemaRule;
 import org.neo4j.internal.schema.SchemaState;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.Statement;
-import org.neo4j.internal.schema.IndexProviderDescriptor;
 import org.neo4j.kernel.api.index.IndexReader;
 import org.neo4j.kernel.api.procedure.Context;
 import org.neo4j.kernel.api.procedure.GlobalProcedures;
@@ -65,15 +66,11 @@ import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.index.stats.IndexStatisticsStore;
 import org.neo4j.kernel.impl.api.security.OverriddenAccessMode;
 import org.neo4j.kernel.impl.api.security.RestrictedAccessMode;
-import org.neo4j.kernel.impl.index.schema.IndexDescriptorFactory;
-import org.neo4j.kernel.impl.index.schema.StoreIndexDescriptor;
 import org.neo4j.kernel.impl.util.DefaultValueMapper;
 import org.neo4j.lock.ResourceTypes;
 import org.neo4j.register.Register.DoubleLongRegister;
 import org.neo4j.register.Registers;
 import org.neo4j.storageengine.api.CountsDelta;
-import org.neo4j.storageengine.api.StorageIndexReference;
-import org.neo4j.internal.kernel.api.SchemaReadCore;
 import org.neo4j.storageengine.api.StorageReader;
 import org.neo4j.storageengine.api.StorageSchemaReader;
 import org.neo4j.storageengine.api.txstate.DiffSets;
@@ -304,7 +301,7 @@ public class AllStoreHolder extends Read
     }
 
     @Override
-    public IndexReader indexReader( IndexReference index, boolean fresh ) throws IndexNotFoundKernelException
+    public IndexReader indexReader( IndexDescriptor2 index, boolean fresh ) throws IndexNotFoundKernelException
     {
         assertValidIndex( index );
         return fresh ? indexReaderCache.newUnCachedReader( index )
@@ -312,7 +309,7 @@ public class AllStoreHolder extends Read
     }
 
     @Override
-    public IndexReadSession indexReadSession( IndexReference index ) throws IndexNotFoundKernelException
+    public IndexReadSession indexReadSession( IndexDescriptor2 index ) throws IndexNotFoundKernelException
     {
         assertValidIndex( index );
         return new DefaultIndexReadSession( indexReaderCache.getOrCreate( index ), index );
@@ -335,7 +332,7 @@ public class AllStoreHolder extends Read
     }
 
     @Override
-    public IndexReference index( int label, int... properties )
+    public IndexDescriptor2 index( int label, int... properties )
     {
         ktx.assertOpen();
 
@@ -347,12 +344,12 @@ public class AllStoreHolder extends Read
         catch ( IllegalArgumentException ignore )
         {
             // This means we have invalid label or property ids.
-            return IndexReference.NO_INDEX;
+            return IndexDescriptor2.NO_INDEX;
         }
-        IndexDescriptor index = storageReader.indexGetForSchema( descriptor );
+        IndexDescriptor2 index = storageReader.indexGetForSchema( descriptor );
         if ( ktx.hasTxStateWithChanges() )
         {
-            DiffSets<IndexDescriptor> diffSets = ktx.txState().indexDiffSetsByLabel( label );
+            DiffSets<IndexDescriptor2> diffSets = ktx.txState().indexDiffSetsByLabel( label );
             if ( index != null )
             {
                 if ( diffSets.isRemoved( index ) )
@@ -362,7 +359,7 @@ public class AllStoreHolder extends Read
             }
             else
             {
-                Iterator<IndexDescriptor> fromTxState =
+                Iterator<IndexDescriptor2> fromTxState =
                         filter( SchemaDescriptor.equalTo( descriptor ), diffSets.getAdded().iterator() );
                 if ( fromTxState.hasNext() )
                 {
@@ -376,73 +373,59 @@ public class AllStoreHolder extends Read
 
     /**
      * Mapping between {@link IndexDescriptor} --> {@link IndexReference}. {@link IndexDescriptor} can come from {@link StorageReader}
-     * in the form of an {@link StorageIndexReference}, or as just an index added in this transaction.
+     * in the form of an StorageIndexReference, or as just an index added in this transaction.
      * @param index committed, transaction-added or even null.
      * @return an {@link IndexReference} for the given {@link IndexDescriptor}.
      */
-    public IndexReference indexReference( IndexDescriptor index )
+    public IndexDescriptor2 indexReference( IndexDescriptor2 index )
     {
         return mapToIndexReference( index, true );
     }
 
     /**
-     * Maps all index descriptors according to {@link #indexReference(IndexDescriptor)}.
+     * Maps all index descriptors according to {@link #indexReference(IndexDescriptor2)}.
      */
-    public Iterator<IndexReference> indexReference( Iterator<? extends IndexDescriptor> indexes )
+    public Iterator<IndexDescriptor2> indexReference( Iterator<? extends IndexDescriptor2> indexes )
     {
         return Iterators.map( index -> mapToIndexReference( index, true ), indexes );
     }
 
     /**
-     * The same as {@link #indexReference(IndexDescriptor)}, except no schema lock is taken.
+     * The same as {@link #indexReference(IndexDescriptor2)}, except no schema lock is taken.
      */
-    public IndexReference indexReferenceNoLocking( IndexDescriptor index )
+    public IndexDescriptor2 indexReferenceNoLocking( IndexDescriptor2 index )
     {
         return mapToIndexReference( index, false );
     }
 
     /**
-     * Maps all index descriptors according to {@link #indexReferenceNoLocking(IndexDescriptor)}.
+     * Maps all index descriptors according to {@link #indexReferenceNoLocking(IndexDescriptor2)}.
      */
-    public Iterator<IndexReference> indexReferenceNoLocking( Iterator<? extends IndexDescriptor> indexes )
+    public Iterator<IndexDescriptor2> indexReferenceNoLocking( Iterator<? extends IndexDescriptor2> indexes )
     {
         return Iterators.map( index -> mapToIndexReference( index, false ), indexes );
     }
 
-    private IndexReference mapToIndexReference( IndexDescriptor index, boolean takeSchemaLock )
+    private IndexDescriptor2 mapToIndexReference( IndexDescriptor2 index, boolean takeSchemaLock )
     {
         if ( index == null )
         {
             // This is OK since storage may not have it and it wasn't added in this tx.
-            return IndexReference.NO_INDEX;
+            return IndexDescriptor2.NO_INDEX;
         }
-        if ( index instanceof StorageIndexReference )
+        try
         {
-            // This is a committed index. We can look up its descriptor from IndexingService
-            try
+            if ( takeSchemaLock )
             {
-                if ( takeSchemaLock )
-                {
-                    acquireSharedSchemaLock( index.schema() );
-                }
-                return indexingService.getIndexProxy( index.schema() ).getDescriptor();
+                acquireSharedSchemaLock( index.schema() );
             }
-            catch ( IndexNotFoundKernelException e )
-            {
-                if ( index instanceof IndexReference )
-                {
-                    // OK we tried lookup in the indexing service, but it wasn't there. Not loaded yet?
-                    // However this is already an IndexReference so go ahead and return it.
-                    return (IndexReference) index;
-                }
-
-                // The index is committed since it's a StorageIndexReference, but we couldn't look it up in IndexingService for some reason.
-                // Anyway we know how to make this into an IndexReference that the rest of the stack understands. This should be a rare event.
-                return new StoreIndexDescriptor( (StorageIndexReference) index );
-            }
+            return indexingService.getIndexProxy( index.schema() ).getDescriptor();
         }
-        // This index isn't committed yet, go for the kernel-version of IndexDescriptor
-        return new org.neo4j.kernel.impl.index.schema.IndexDescriptor( index );
+        catch ( IndexNotFoundKernelException e )
+        {
+            // OK we tried lookup in the indexing service, but it wasn't there. Not loaded yet?
+        }
+        return index;
     }
 
     /**
@@ -451,30 +434,26 @@ public class AllStoreHolder extends Read
      * @param index an index reference to get {@link IndexDescriptor} for.
      * @return the {@link IndexDescriptor} for the {@link IndexReference}.
      */
-    public IndexDescriptor storageIndexDescriptor( IndexReference index )
+    public IndexDescriptor2 storageIndexDescriptor( IndexDescriptor2 index )
     {
-        if ( index instanceof org.neo4j.kernel.impl.index.schema.IndexDescriptor )
-        {
-            // Fast path for when this is, as in most cases it is, a kernel IndexDescriptor
-            return (IndexDescriptor) index;
-        }
+        // TODO we should be able to remove this method entirely, since we no longer map between index descriptor types...
         // Go and look this up by schema from storage.
         return storageReader.indexGetForSchema( index.schema() );
     }
 
     @Override
-    public IndexReference index( SchemaDescriptor schema )
+    public IndexDescriptor2 index( SchemaDescriptor schema )
     {
         ktx.assertOpen();
         return indexReference( indexGetForSchema( storageReader, schema ) );
     }
 
-    IndexDescriptor indexGetForSchema( StorageSchemaReader reader, SchemaDescriptor schema )
+    IndexDescriptor2 indexGetForSchema( StorageSchemaReader reader, SchemaDescriptor schema )
     {
-        IndexDescriptor index = reader.indexGetForSchema( schema );
+        IndexDescriptor2 index = reader.indexGetForSchema( schema );
         if ( ktx.hasTxStateWithChanges() )
         {
-            DiffSets<IndexDescriptor> diffSets = ktx.txState().indexDiffSetsBySchema( schema );
+            DiffSets<IndexDescriptor2> diffSets = ktx.txState().indexDiffSetsBySchema( schema );
             if ( index != null )
             {
                 if ( diffSets.isRemoved( index ) )
@@ -484,7 +463,7 @@ public class AllStoreHolder extends Read
             }
             else
             {
-                Iterator<IndexDescriptor> fromTxState =
+                Iterator<IndexDescriptor2> fromTxState =
                         filter( SchemaDescriptor.equalTo( schema ), diffSets.getAdded().iterator() );
                 if ( fromTxState.hasNext() )
                 {
@@ -497,30 +476,28 @@ public class AllStoreHolder extends Read
     }
 
     @Override
-    public IndexReference indexReferenceUnchecked( int label, int... properties )
+    public IndexPrototype indexReferenceUnchecked( int label, int... properties )
     {
-        return IndexDescriptorFactory.forSchema( SchemaDescriptor.forLabel( label, properties ),
-                                                 Optional.empty(),
-                                                 IndexProviderDescriptor.UNDECIDED );
+        return indexReferenceUnchecked( SchemaDescriptor.forLabel( label, properties ) );
     }
 
     @Override
-    public IndexReference indexReferenceUnchecked( SchemaDescriptor schema )
+    public IndexPrototype indexReferenceUnchecked( SchemaDescriptor schema )
     {
-        return IndexDescriptorFactory.forSchema( schema, Optional.empty(), IndexProviderDescriptor.UNDECIDED );
+        return IndexPrototype.forSchema( schema, IndexProviderDescriptor.UNDECIDED );
     }
 
     @Override
-    public Iterator<IndexReference> indexesGetForLabel( int labelId )
+    public Iterator<IndexDescriptor2> indexesGetForLabel( int labelId )
     {
         acquireSharedLock( ResourceTypes.LABEL, labelId );
         ktx.assertOpen();
         return Iterators.map( this::indexReference, indexesGetForLabel( storageReader, labelId ) );
     }
 
-    Iterator<? extends IndexDescriptor> indexesGetForLabel( StorageSchemaReader reader, int labelId )
+    Iterator<? extends IndexDescriptor2> indexesGetForLabel( StorageSchemaReader reader, int labelId )
     {
-        Iterator<? extends IndexDescriptor> iterator = reader.indexesGetForLabel( labelId );
+        Iterator<? extends IndexDescriptor2> iterator = reader.indexesGetForLabel( labelId );
         if ( ktx.hasTxStateWithChanges() )
         {
             iterator = ktx.txState().indexDiffSetsByLabel( labelId ).apply( iterator );
@@ -529,16 +506,16 @@ public class AllStoreHolder extends Read
     }
 
     @Override
-    public Iterator<IndexReference> indexesGetForRelationshipType( int relationshipType )
+    public Iterator<IndexDescriptor2> indexesGetForRelationshipType( int relationshipType )
     {
         acquireSharedLock( ResourceTypes.RELATIONSHIP_TYPE, relationshipType );
         ktx.assertOpen();
         return indexReference( indexesGetForRelationshipType( storageReader, relationshipType ) );
     }
 
-    Iterator<? extends IndexDescriptor> indexesGetForRelationshipType( StorageSchemaReader reader, int relationshipType )
+    Iterator<? extends IndexDescriptor2> indexesGetForRelationshipType( StorageSchemaReader reader, int relationshipType )
     {
-        Iterator<? extends IndexDescriptor> iterator = reader.indexesGetForRelationshipType( relationshipType );
+        Iterator<? extends IndexDescriptor2> iterator = reader.indexesGetForRelationshipType( relationshipType );
         if ( ktx.hasTxStateWithChanges() )
         {
             iterator = ktx.txState().indexDiffSetsByRelationshipType( relationshipType ).apply( iterator );
@@ -547,41 +524,33 @@ public class AllStoreHolder extends Read
     }
 
     @Override
-    public IndexReference indexGetForName( String name )
+    public IndexDescriptor2 indexGetForName( String name )
     {
         ktx.assertOpen();
 
-        IndexDescriptor index = storageReader.indexGetForName( name );
+        IndexDescriptor2 index = storageReader.indexGetForName( name );
         if ( ktx.hasTxStateWithChanges() )
         {
-            Predicate<IndexDescriptor> namePredicate = indexDescriptor ->
-            {
-                if ( indexDescriptor.hasUserSuppliedName() )
-                {
-                    return indexDescriptor.name().equals( name );
-                }
-                //No name cannot match a name.
-                return false;
-            };
-            Iterator<IndexDescriptor> indexes = ktx.txState().indexChanges().filterAdded( namePredicate ).apply( Iterators.iterator( index ) );
+            Predicate<IndexDescriptor2> namePredicate = indexDescriptor -> indexDescriptor.getName().equals( name );
+            Iterator<IndexDescriptor2> indexes = ktx.txState().indexChanges().filterAdded( namePredicate ).apply( Iterators.iterator( index ) );
             index = singleOrNull( indexes );
         }
         return indexReference( index );
     }
 
     @Override
-    public Iterator<IndexReference> indexesGetAll()
+    public Iterator<IndexDescriptor2> indexesGetAll()
     {
         ktx.assertOpen();
 
-        Iterator<? extends IndexDescriptor> iterator = indexesGetAll( storageReader );
+        Iterator<IndexDescriptor2> iterator = indexesGetAll( storageReader );
 
         return Iterators.map( this::indexReference, iterator );
     }
 
-    Iterator<? extends IndexDescriptor> indexesGetAll( StorageSchemaReader reader )
+    Iterator<IndexDescriptor2> indexesGetAll( StorageSchemaReader reader )
     {
-        Iterator<? extends IndexDescriptor> iterator = reader.indexesGetAll();
+        Iterator<IndexDescriptor2> iterator = reader.indexesGetAll();
         if ( ktx.hasTxStateWithChanges() )
         {
             iterator = ktx.txState().indexChanges().apply( iterator );
@@ -590,7 +559,7 @@ public class AllStoreHolder extends Read
     }
 
     @Override
-    public InternalIndexState indexGetState( IndexReference index ) throws IndexNotFoundKernelException
+    public InternalIndexState indexGetState( IndexDescriptor2 index ) throws IndexNotFoundKernelException
     {
         assertValidIndex( index );
         SchemaDescriptor schema = index.schema();
@@ -600,7 +569,7 @@ public class AllStoreHolder extends Read
         return indexGetStateLocked( index );
     }
 
-    InternalIndexState indexGetStateLocked( IndexReference index ) throws IndexNotFoundKernelException
+    InternalIndexState indexGetStateLocked( IndexDescriptor2 index ) throws IndexNotFoundKernelException
     {
         SchemaDescriptor schema = index.schema();
         // If index is in our state, then return populating
@@ -616,7 +585,7 @@ public class AllStoreHolder extends Read
     }
 
     @Override
-    public PopulationProgress indexGetPopulationProgress( IndexReference index )
+    public PopulationProgress indexGetPopulationProgress( IndexDescriptor2 index )
             throws IndexNotFoundKernelException
     {
         assertValidIndex( index );
@@ -625,7 +594,7 @@ public class AllStoreHolder extends Read
         return indexGetPopulationProgressLocked( index );
     }
 
-    PopulationProgress indexGetPopulationProgressLocked( IndexReference index ) throws IndexNotFoundKernelException
+    PopulationProgress indexGetPopulationProgressLocked( IndexDescriptor2 index ) throws IndexNotFoundKernelException
     {
         if ( ktx.hasTxStateWithChanges() )
         {
@@ -639,7 +608,7 @@ public class AllStoreHolder extends Read
     }
 
     @Override
-    public Long indexGetOwningUniquenessConstraintId( IndexReference index )
+    public Long indexGetOwningUniquenessConstraintId( IndexDescriptor2 index )
     {
         acquireSharedSchemaLock( index.schema() );
         ktx.assertOpen();
@@ -647,62 +616,60 @@ public class AllStoreHolder extends Read
     }
 
     @Override
-    public long indexGetCommittedId( IndexReference index ) throws SchemaRuleNotFoundException
+    public long indexGetCommittedId( IndexDescriptor2 index ) throws SchemaRuleNotFoundException
     {
+        // todo can we remove this method or something?
         acquireSharedSchemaLock( index.schema() );
         ktx.assertOpen();
-        if ( index instanceof StorageIndexReference )
-        {
-            return ((StorageIndexReference) index).indexReference();
-        }
-        else
+        if ( ktx.hasTxStateWithChanges() && ktx.txState().indexChanges().isAdded( index ) )
         {
             throw new SchemaRuleNotFoundException( index );
         }
+        return index.getId();
     }
 
     @Override
-    public String indexGetFailure( IndexReference index ) throws IndexNotFoundKernelException
+    public String indexGetFailure( IndexDescriptor2 index ) throws IndexNotFoundKernelException
     {
         assertValidIndex( index );
         return indexingService.getIndexProxy( index.schema() ).getPopulationFailure().asString();
     }
 
     @Override
-    public double indexUniqueValuesSelectivity( IndexReference index ) throws IndexNotFoundKernelException
+    public double indexUniqueValuesSelectivity( IndexDescriptor2 index ) throws IndexNotFoundKernelException
     {
         assertValidIndex( index );
         SchemaDescriptor schema = index.schema();
         acquireSharedSchemaLock( schema );
         ktx.assertOpen();
-        StorageIndexReference storageIndex = storageReader.indexGetForSchema( index.schema() );
+        IndexDescriptor2 storageIndex = storageReader.indexGetForSchema( index.schema() );
         if ( storageIndex == null )
         {
             throw new IndexNotFoundKernelException( "No index found for " + index.schema() );
         }
-        DoubleLongRegister output = indexStatisticsStore.indexSample( storageIndex.indexReference(), Registers.newDoubleLongRegister() );
+        DoubleLongRegister output = indexStatisticsStore.indexSample( storageIndex.getId(), Registers.newDoubleLongRegister() );
         long unique = output.readFirst();
         long size = output.readSecond();
         return size == 0 ? 1.0d : ((double) unique) / ((double) size);
     }
 
     @Override
-    public long indexSize( IndexReference index ) throws IndexNotFoundKernelException
+    public long indexSize( IndexDescriptor2 index ) throws IndexNotFoundKernelException
     {
         assertValidIndex( index );
         SchemaDescriptor schema = index.schema();
         acquireSharedSchemaLock( schema );
         ktx.assertOpen();
-        StorageIndexReference storageIndex = storageReader.indexGetForSchema( index.schema() );
+        IndexDescriptor2 storageIndex = storageReader.indexGetForSchema( index.schema() );
         if ( storageIndex == null )
         {
             throw new IndexNotFoundKernelException( "No index found for " + index.schema() );
         }
-        return indexStatisticsStore.indexUpdatesAndSize( storageIndex.indexReference(), Registers.newDoubleLongRegister() ).readSecond();
+        return indexStatisticsStore.indexUpdatesAndSize( storageIndex.getId(), Registers.newDoubleLongRegister() ).readSecond();
     }
 
     @Override
-    public long nodesCountIndexed( IndexReference index, long nodeId, int propertyKeyId, Value value ) throws KernelException
+    public long nodesCountIndexed( IndexDescriptor2 index, long nodeId, int propertyKeyId, Value value ) throws KernelException
     {
         ktx.assertOpen();
         assertValidIndex( index );
@@ -727,39 +694,39 @@ public class AllStoreHolder extends Read
     }
 
     @Override
-    public DoubleLongRegister indexUpdatesAndSize( IndexReference index, DoubleLongRegister target )
+    public DoubleLongRegister indexUpdatesAndSize( IndexDescriptor2 index, DoubleLongRegister target )
             throws IndexNotFoundKernelException
     {
         ktx.assertOpen();
         assertValidIndex( index );
-        StorageIndexReference storageIndex = storageReader.indexGetForSchema( index.schema() );
+        IndexDescriptor2 storageIndex = storageReader.indexGetForSchema( index.schema() );
         if ( storageIndex == null )
         {
             throw new IndexNotFoundKernelException( "No index found for " + index.schema() );
         }
-        return indexStatisticsStore.indexUpdatesAndSize( storageIndex.indexReference(), target );
+        return indexStatisticsStore.indexUpdatesAndSize( storageIndex.getId(), target );
 
     }
 
     @Override
-    public DoubleLongRegister indexSample( IndexReference index, DoubleLongRegister target )
+    public DoubleLongRegister indexSample( IndexDescriptor2 index, DoubleLongRegister target )
             throws IndexNotFoundKernelException
     {
         ktx.assertOpen();
         assertValidIndex( index );
-        StorageIndexReference storageIndex = storageReader.indexGetForSchema( index.schema() );
+        IndexDescriptor2 storageIndex = storageReader.indexGetForSchema( index.schema() );
         if ( storageIndex == null )
         {
             throw new IndexNotFoundKernelException( "No index found for " + index.schema() );
         }
 
-        return indexStatisticsStore.indexSample( storageIndex.indexReference(), target );
+        return indexStatisticsStore.indexSample( storageIndex.getId(), target );
     }
 
-    IndexReference indexGetForSchema( SchemaDescriptor descriptor )
+    IndexDescriptor2 indexGetForSchema( SchemaDescriptor descriptor )
     {
-        IndexDescriptor index = storageReader.indexGetForSchema( descriptor );
-        Iterator<IndexDescriptor> indexes = iterator( index );
+        IndexDescriptor2 index = storageReader.indexGetForSchema( descriptor );
+        Iterator<IndexDescriptor2> indexes = iterator( index );
         if ( ktx.hasTxStateWithChanges() )
         {
             indexes = filter(
@@ -769,7 +736,7 @@ public class AllStoreHolder extends Read
         return indexReference( singleOrNull( indexes ) );
     }
 
-    private boolean checkIndexState( IndexDescriptor index, DiffSets<IndexDescriptor> diffSet )
+    private boolean checkIndexState( IndexDescriptor2 index, DiffSets<IndexDescriptor2> diffSet )
             throws IndexNotFoundKernelException
     {
         if ( diffSet.isAdded( index ) )
@@ -1044,7 +1011,7 @@ public class AllStoreHolder extends Read
     private RawIterator<AnyValue[],ProcedureException> createIterator( SecurityContext procedureSecurityContext,
             RawIterator<AnyValue[],ProcedureException> procedureCall )
     {
-        return new RawIterator<AnyValue[],ProcedureException>()
+        return new RawIterator<>()
         {
             @Override
             public boolean hasNext() throws ProcedureException
@@ -1100,6 +1067,14 @@ public class AllStoreHolder extends Read
     static void assertValidIndex( IndexReference index ) throws IndexNotFoundKernelException
     {
         if ( index == IndexReference.NO_INDEX )
+        {
+            throw new IndexNotFoundKernelException( "No index was found" );
+        }
+    }
+
+    static void assertValidIndex( IndexDescriptor2 index ) throws IndexNotFoundKernelException
+    {
+        if ( index == IndexDescriptor2.NO_INDEX )
         {
             throw new IndexNotFoundKernelException( "No index was found" );
         }

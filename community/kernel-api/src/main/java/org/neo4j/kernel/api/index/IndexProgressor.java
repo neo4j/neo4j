@@ -19,10 +19,10 @@
  */
 package org.neo4j.kernel.api.index;
 
-import org.neo4j.internal.schema.IndexOrder;
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.internal.kernel.api.LabelSet;
-import org.neo4j.internal.schema.IndexDescriptor;
+import org.neo4j.internal.schema.IndexDescriptor2;
+import org.neo4j.internal.schema.IndexOrder;
 import org.neo4j.values.storable.Value;
 
 /**
@@ -83,7 +83,7 @@ public interface IndexProgressor extends AutoCloseable
          * then the client does not need to do its own transaction state filtering. This is the case for the fulltext schema indexes, for instance.
          * Otherwise if this parameter is {@code false}, then the client needs to filter and merge the transaction state in on their own.
          */
-        void initialize( IndexDescriptor descriptor, IndexProgressor progressor,
+        void initialize( IndexDescriptor2 descriptor, IndexProgressor progressor,
                          IndexQuery[] query, IndexOrder indexOrder, boolean needsValues, boolean indexIncludesTransactionState );
 
         /**

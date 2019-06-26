@@ -21,11 +21,14 @@ package org.neo4j.kernel.impl.store.record;
 
 import org.junit.jupiter.api.Test;
 
-import java.util.Optional;
+import java.util.NoSuchElementException;
+import java.util.OptionalLong;
+import java.util.function.BiFunction;
 
-import org.neo4j.internal.schema.IndexDescriptor;
-import org.neo4j.storageengine.api.DefaultStorageIndexReference;
-import org.neo4j.storageengine.api.StorageIndexReference;
+import org.neo4j.internal.schema.IndexDescriptor2;
+import org.neo4j.internal.schema.IndexPrototype;
+import org.neo4j.internal.schema.IndexProviderDescriptor;
+import org.neo4j.internal.schema.SchemaDescriptor;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
@@ -39,38 +42,38 @@ class IndexRuleTest extends SchemaRuleTestBase
     void shouldCreateGeneralIndex()
     {
         // GIVEN
-        IndexDescriptor descriptor = forLabel( LABEL_ID, PROPERTY_ID_1 );
-        StorageIndexReference indexRule = new DefaultStorageIndexReference( descriptor, RULE_ID, null );
+        IndexPrototype prototype = forLabel( LABEL_ID, PROPERTY_ID_1 );
+        IndexDescriptor2 indexRule = prototype.materialise( RULE_ID );
 
         // THEN
         assertThat( indexRule.getId(), equalTo( RULE_ID ) );
         assertFalse( indexRule.isUnique() );
-        assertThat( indexRule.schema(), equalTo( descriptor.schema() ) );
-        assertThat( indexRule, equalTo( descriptor ) );
-        assertThat( indexRule.providerKey(), equalTo( PROVIDER_KEY ) );
-        assertThat( indexRule.providerVersion(), equalTo( PROVIDER_VERSION ) );
-        assertException( indexRule::owningConstraintReference, IllegalStateException.class );
+        assertThat( indexRule.schema(), equalTo( prototype.schema() ) );
+        assertThat( indexRule, equalTo( prototype ) );
+        assertThat( indexRule.getIndexProvider(), equalTo( PROVIDER ) );
+        assertException( indexRule.getOwningConstraintId()::getAsLong, NoSuchElementException.class );
     }
 
     @Test
     void shouldCreateUniqueIndex()
     {
         // GIVEN
-        IndexDescriptor descriptor = uniqueForLabel( LABEL_ID, PROPERTY_ID_1 );
-        StorageIndexReference indexRule = new DefaultStorageIndexReference( descriptor, RULE_ID, null );
+        IndexPrototype descriptor = uniqueForLabel( LABEL_ID, PROPERTY_ID_1 );
+        IndexDescriptor2 indexRule = descriptor.materialise( RULE_ID );
 
         // THEN
         assertThat( indexRule.getId(), equalTo( RULE_ID ) );
         assertTrue( indexRule.isUnique() );
         assertThat( indexRule.schema(), equalTo( descriptor.schema() ) );
         assertThat( indexRule, equalTo( descriptor ) );
-        assertThat( indexRule.providerKey(), equalTo( PROVIDER_KEY ) );
-        assertThat( indexRule.providerVersion(), equalTo( PROVIDER_VERSION ) );
-        assertThat( indexRule.hasOwningConstraintReference(), equalTo( false ) );
+        assertThat( indexRule.getIndexProvider(), equalTo( PROVIDER ) );
+        assertTrue( indexRule.getOwningConstraintId().isEmpty() );
 
-        StorageIndexReference withConstraint = new DefaultStorageIndexReference( indexRule, RULE_ID_2 );
-        assertThat( withConstraint.owningConstraintReference(), equalTo( RULE_ID_2 ) );
-        assertThat( indexRule.hasOwningConstraintReference(), equalTo( false ) ); // this is unchanged
+        IndexDescriptor2 withConstraint = indexRule.withOwningConstraintId( RULE_ID_2 );
+        OptionalLong owningConstraintId = withConstraint.getOwningConstraintId();
+        assertTrue( owningConstraintId.isPresent() );
+        assertThat( owningConstraintId.getAsLong(), equalTo( RULE_ID_2 ) );
+        assertTrue( indexRule.getOwningConstraintId().isEmpty() ); // this is unchanged
     }
 
     @Test
@@ -85,18 +88,20 @@ class IndexRuleTest extends SchemaRuleTestBase
     @Test
     void detectUniqueIndexWithoutOwningConstraint()
     {
-        IndexDescriptor descriptor = uniqueForLabel( LABEL_ID, PROPERTY_ID_1 );
-        StorageIndexReference indexRule = new DefaultStorageIndexReference( descriptor, RULE_ID, null );
+        IndexPrototype descriptor = uniqueForLabel( LABEL_ID, PROPERTY_ID_1 );
+        IndexDescriptor2 indexRule = descriptor.materialise( RULE_ID );
 
-        assertTrue( indexRule.isUnique() && !indexRule.hasOwningConstraintReference() );
+        assertTrue( indexRule.isUnique() && indexRule.getOwningConstraintId().isEmpty() );
     }
 
-    private void assertEqualityByDescriptor( IndexDescriptor descriptor )
+    private void assertEqualityByDescriptor( IndexPrototype descriptor )
     {
-        StorageIndexReference rule1 = new DefaultStorageIndexReference( descriptor, RULE_ID, null );
-        StorageIndexReference rule2 = new DefaultStorageIndexReference( descriptor, RULE_ID_2, null );
-        StorageIndexReference rule3 = new DefaultStorageIndexReference( descriptor.schema(), descriptor.providerKey(), descriptor.providerVersion(),
-                RULE_ID, Optional.empty(), descriptor.isUnique(), null );
+        IndexDescriptor2 rule1 = descriptor.materialise( RULE_ID );
+        IndexDescriptor2 rule2 = descriptor.materialise( RULE_ID_2 );
+
+        BiFunction<SchemaDescriptor,IndexProviderDescriptor,IndexPrototype> factory =
+                descriptor.isUnique() ? IndexPrototype::uniqueForSchema : IndexPrototype::forSchema;
+        IndexDescriptor2 rule3 = factory.apply( descriptor.schema(), descriptor.getIndexProvider() ).materialise( RULE_ID );
 
         assertEquality( rule1, rule2 );
         assertEquality( rule1, rule3 );

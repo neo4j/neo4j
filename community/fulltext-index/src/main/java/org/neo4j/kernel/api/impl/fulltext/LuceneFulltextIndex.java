@@ -27,13 +27,12 @@ import java.io.IOException;
 import java.util.List;
 
 import org.neo4j.common.EntityType;
-import org.neo4j.internal.schema.IndexDescriptor;
+import org.neo4j.internal.schema.IndexDescriptor2;
 import org.neo4j.kernel.api.impl.index.AbstractLuceneIndex;
 import org.neo4j.kernel.api.impl.index.SearcherReference;
 import org.neo4j.kernel.api.impl.index.partition.AbstractIndexPartition;
 import org.neo4j.kernel.api.impl.index.partition.IndexPartitionFactory;
 import org.neo4j.kernel.api.impl.index.storage.PartitionedIndexStorage;
-import org.neo4j.storageengine.api.StorageIndexReference;
 import org.neo4j.token.api.TokenHolder;
 
 import static org.neo4j.common.TokenNameLookup.idTokenNameLookup;
@@ -46,16 +45,16 @@ public class LuceneFulltextIndex extends AbstractLuceneIndex<FulltextIndexReader
     private final TokenHolder propertyKeyTokenHolder;
     private final String[] propertyNames;
     private final File transactionsFolder;
-    private final StorageIndexReference descriptor;
+    private final IndexDescriptor2 descriptor;
 
-    LuceneFulltextIndex( PartitionedIndexStorage storage, IndexPartitionFactory partitionFactory, StorageIndexReference descriptor,
+    LuceneFulltextIndex( PartitionedIndexStorage storage, IndexPartitionFactory partitionFactory, IndexDescriptor2 descriptor,
             TokenHolder propertyKeyTokenHolder, Analyzer analyzer, String[] propertyNames )
     {
         super( storage, partitionFactory, descriptor );
         this.descriptor = descriptor;
         this.analyzer = analyzer;
         this.propertyNames = propertyNames;
-        this.identifier = descriptor.name();
+        this.identifier = descriptor.getName();
         this.type = descriptor.schema().entityType();
         this.propertyKeyTokenHolder = propertyKeyTokenHolder;
         File indexFolder = storage.getIndexFolder();
@@ -93,7 +92,7 @@ public class LuceneFulltextIndex extends AbstractLuceneIndex<FulltextIndexReader
     }
 
     @Override
-    public IndexDescriptor getDescriptor()
+    public IndexDescriptor2 getDescriptor()
     {
         return descriptor;
     }

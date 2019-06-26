@@ -19,13 +19,15 @@
  */
 package org.neo4j.internal.recordstorage;
 
-import java.util.Optional;
 import java.util.SplittableRandom;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
 
 import org.neo4j.common.EntityType;
 import org.neo4j.internal.schema.IndexConfig;
+import org.neo4j.internal.schema.IndexDescriptor2;
+import org.neo4j.internal.schema.IndexPrototype;
+import org.neo4j.internal.schema.IndexProviderDescriptor;
 import org.neo4j.internal.schema.LabelSchemaDescriptor;
 import org.neo4j.internal.schema.RelationTypeSchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptor;
@@ -33,8 +35,6 @@ import org.neo4j.internal.schema.SchemaRule;
 import org.neo4j.internal.schema.constraints.ConstraintDescriptorFactory;
 import org.neo4j.kernel.impl.store.format.standard.StandardFormatSettings;
 import org.neo4j.storageengine.api.ConstraintRule;
-import org.neo4j.storageengine.api.DefaultStorageIndexReference;
-import org.neo4j.storageengine.api.StorageIndexReference;
 import org.neo4j.values.storable.RandomValues;
 import org.neo4j.values.storable.TextValue;
 import org.neo4j.values.storable.ValueGroup;
@@ -144,34 +144,48 @@ public class RandomSchema implements Supplier<SchemaRule>
         }
     }
 
-    public StorageIndexReference nextIndex()
+    public IndexDescriptor2 nextIndex()
     {
-        long ruleId = nextRuleIdForIndex();
-
-        int choice = rng.nextInt( 9 );
-        boolean isUnique = rng.nextBoolean();
-        Long owningConstraint = rng.nextBoolean() ? existingConstraintId() : null;
+        int choice = rng.nextInt( 4 );
+        SchemaDescriptor schema;
         switch ( choice )
         {
-        case 0: return new DefaultStorageIndexReference( nextNodeSchema(), isUnique, ruleId, owningConstraint );
-        case 1: return new DefaultStorageIndexReference( nextNodeSchema(), nextName(), nextName(), ruleId, Optional.empty(), isUnique, owningConstraint );
-        case 2: return new DefaultStorageIndexReference( nextNodeSchema(), nextName(), nextName(), ruleId, nextNameOpt(), isUnique, owningConstraint );
-        case 3: return new DefaultStorageIndexReference( nextNodeFulltextSchema(), isUnique, ruleId, owningConstraint );
-        case 4: return new DefaultStorageIndexReference( nextNodeFulltextSchema(), nextName(), nextName(), ruleId, Optional.empty(), isUnique,
-                owningConstraint );
-        case 5: return new DefaultStorageIndexReference( nextNodeFulltextSchema(), nextName(), nextName(), ruleId, nextNameOpt(), isUnique, owningConstraint );
-        case 6: return new DefaultStorageIndexReference( nextRelationshipFulltextSchema(), isUnique, ruleId, owningConstraint );
-        case 7: return new DefaultStorageIndexReference( nextRelationshipFulltextSchema(), nextName(), nextName(), ruleId, Optional.empty(), isUnique,
-                owningConstraint );
-        case 8: return new DefaultStorageIndexReference( nextRelationshipFulltextSchema(), nextName(), nextName(), ruleId, nextNameOpt(), isUnique,
-                owningConstraint );
-        default: throw new RuntimeException( "Bad index choice: " + choice );
+        case 0:
+            schema = nextNodeSchema();
+            break;
+        case 1:
+            schema = nextNodeFulltextSchema();
+            break;
+        case 2:
+            schema = nextRelationshipSchema();
+            break;
+        case 3:
+            schema = nextRelationshipFulltextSchema();
+            break;
+        default:
+            throw new RuntimeException( "Bad index choice: " + choice );
         }
-    }
 
-    public Optional<String> nextNameOpt()
-    {
-        return Optional.of( nextName() );
+        boolean isUnique = rng.nextBoolean();
+        IndexPrototype prototype = isUnique ? IndexPrototype.uniqueForSchema( schema ) : IndexPrototype.forSchema( schema );
+
+        IndexProviderDescriptor providerDescriptor = new IndexProviderDescriptor( nextName(), nextName() );
+        prototype = prototype.withIndexProvider( providerDescriptor );
+
+        if ( rng.nextBoolean() )
+        {
+            prototype = prototype.withName( nextName() );
+        }
+
+        long ruleId = nextRuleIdForIndex();
+        IndexDescriptor2 index = prototype.materialise( ruleId );
+
+        if ( rng.nextBoolean() )
+        {
+            index = index.withOwningConstraintId( existingConstraintId() );
+        }
+
+        return index;
     }
 
     public long nextRuleIdForIndex()

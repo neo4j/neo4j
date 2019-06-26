@@ -24,12 +24,12 @@ import java.util.Collection;
 
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.kernel.api.PopulationProgress;
+import org.neo4j.internal.schema.IndexDescriptor2;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.impl.api.index.PhaseTracker;
 import org.neo4j.kernel.impl.api.index.updater.SwallowingIndexUpdater;
 import org.neo4j.storageengine.api.IndexEntryUpdate;
 import org.neo4j.storageengine.api.NodePropertyAccessor;
-import org.neo4j.storageengine.api.StorageIndexReference;
 import org.neo4j.storageengine.api.UpdateMode;
 
 /**
@@ -109,28 +109,22 @@ public interface IndexPopulator extends IndexConfigProvider
      * Close this populator and releases any resources related to it.
      * If {@code populationCompletedSuccessfully} is {@code true} then it must mark this index
      * as {@link InternalIndexState#ONLINE} so that future invocations of its parent
-     * {@link IndexProvider#getInitialState(StorageIndexReference)} also returns {@link InternalIndexState#ONLINE}.
+     * {@link IndexProvider#getInitialState(IndexDescriptor2)} also returns {@link InternalIndexState#ONLINE}.
      *
      * @param populationCompletedSuccessfully {@code true} if the index population was successful, where the index should
-<<<<<<< HEAD
-     * be marked as {@link InternalIndexState#ONLINE}, otherwise {@code false} where index should be marked as
-     * {@link InternalIndexState#FAILED} and the failure, previously handed to this populator using {@link #markAsFailed(String)}
-     * should be stored and made available for later requests from {@link IndexProvider#getPopulationFailure(StorageIndexReference)}.
-     * @throws UncheckedIOException on I/O error.
-=======
      * be marked as {@link InternalIndexState#ONLINE}. Supplying {@code false} can have two meanings:
      * <ul>
      *     <li>if {@link #markAsFailed(String)} have been called the end state should be {@link InternalIndexState#FAILED}.
-     *     This method call should also make sure that the failure message gets stored for retrieval the next open too.</li>
+     *     This method call should also make sure that the failure message gets stored for retrieval the next open, and made available for later requests
+     *     via {@link IndexProvider#getPopulationFailure(IndexDescriptor2)}.</li>
      *     <li>if {@link #markAsFailed(String)} have NOT been called the end state should be {@link InternalIndexState#POPULATING}</li>
      * </ul>
->>>>>>> 3.6
      */
     void close( boolean populationCompletedSuccessfully );
 
     /**
      * Called then a population failed. The failure string should be stored for future retrieval by
-     * {@link IndexProvider#getPopulationFailure(StorageIndexReference)}. Called before {@link #close(boolean)}
+     * {@link IndexProvider#getPopulationFailure(IndexDescriptor2)}. Called before {@link #close(boolean)}
      * if there was a failure during population.
      *
      * @param failure the description of the failure.
@@ -217,7 +211,7 @@ public interface IndexPopulator extends IndexConfigProvider
         }
 
         @Override
-        public void verifyDeferredConstraints( NodePropertyAccessor nodePropertyAccessor ) throws IndexEntryConflictException
+        public void verifyDeferredConstraints( NodePropertyAccessor nodePropertyAccessor )
         {
         }
     }

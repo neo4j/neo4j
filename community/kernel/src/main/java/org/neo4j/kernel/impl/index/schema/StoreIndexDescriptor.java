@@ -19,12 +19,16 @@
  */
 package org.neo4j.kernel.impl.index.schema;
 
+import java.util.Optional;
+import java.util.OptionalLong;
+
 import org.neo4j.common.TokenNameLookup;
 import org.neo4j.internal.schema.IndexCapability;
+import org.neo4j.internal.schema.IndexDescriptor2;
 import org.neo4j.internal.schema.IndexProviderDescriptor;
+import org.neo4j.internal.schema.IndexRef;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.internal.schema.SchemaRule;
-import org.neo4j.storageengine.api.StorageIndexReference;
 
 import static org.neo4j.common.TokenNameLookup.idTokenNameLookup;
 
@@ -33,7 +37,8 @@ import static org.neo4j.common.TokenNameLookup.idTokenNameLookup;
  *
  * Adds an index id, a name, and optionally an owning constraint id to the general IndexDescriptor.
  */
-public class StoreIndexDescriptor extends IndexDescriptor implements StorageIndexReference
+@Deprecated
+public class StoreIndexDescriptor extends IndexDescriptor implements IndexRef<StoreIndexDescriptor>
 {
     private final long id;
     private final Long owningConstraintId;
@@ -53,20 +58,12 @@ public class StoreIndexDescriptor extends IndexDescriptor implements StorageInde
 
     // ** General purpose constructors.
 
-    /**
-     * Convert a {@link StorageIndexReference} to a {@link StoreIndexDescriptor}.
-     */
-    public StoreIndexDescriptor( StorageIndexReference descriptor )
+    public StoreIndexDescriptor( IndexDescriptor2 descriptor )
     {
-        this( descriptor, descriptor.indexReference(), null );
-    }
-
-    /**
-     * Convert a {@link StorageIndexReference} to a {@link StoreIndexDescriptor} having an owning constraint id.
-     */
-    public StoreIndexDescriptor( StorageIndexReference descriptor, Long owningConstraintId )
-    {
-        this( descriptor, descriptor.indexReference(), owningConstraintId );
+        super( descriptor.schema(), descriptor.isUnique(), Optional.of( descriptor.getName() ), descriptor.getIndexProvider() );
+        this.id = descriptor.getId();
+        OptionalLong owningConstraintId = descriptor.getOwningConstraintId();
+        this.owningConstraintId = owningConstraintId.isPresent() ? owningConstraintId.getAsLong() : null;
     }
 
     /**
@@ -103,61 +100,10 @@ public class StoreIndexDescriptor extends IndexDescriptor implements StorageInde
     }
 
     @Override
-    public String name()
+    public String getName()
     {
         // Override the otherwise bland default to provide a bit more information now that we at least know the id
         return name.orElse( "index_" + id );
-    }
-
-    // ** Owning constraint
-
-    @Override
-    public boolean hasOwningConstraintReference()
-    {
-        assertUniqueTypeIndex();
-        return owningConstraintId != null;
-    }
-
-    private void assertUniqueTypeIndex()
-    {
-        if ( !isUnique() )
-        {
-            throw new IllegalStateException( "Can only get owner from constraint indexes." );
-        }
-    }
-
-    /**
-     * Return the owning constraints of this index.
-     *
-     * The owning constraint can be null during the construction of a uniqueness constraint. This construction first
-     * creates the unique index, and then waits for the index to become fully populated and online before creating
-     * the actual constraint. During unique index population the owning constraint will be null.
-     *
-     * @return the id of the owning constraint, or null if this has not been set yet.
-     * @throws IllegalStateException if this IndexRule cannot support uniqueness constraints (ei. the index is not
-     *                               unique)
-     */
-    @Override
-    public long owningConstraintReference()
-    {
-        assertUniqueTypeIndex();
-        if ( owningConstraintId == null )
-        {
-            throw new IllegalStateException( "No owning constraint for this descriptor" );
-        }
-        return owningConstraintId;
-    }
-
-    /**
-     * Create a {@link StoreIndexDescriptor} with the given owning constraint id.
-     *
-     * @param constraintId an id >= 0, or null if no owning constraint exists.
-     * @return a new StoreIndexDescriptor with modified owning constraint.
-     */
-    public StoreIndexDescriptor withOwningConstraint( Long constraintId )
-    {
-        assertUniqueTypeIndex();
-        return new StoreIndexDescriptor( this, constraintId );
     }
 
     // ** Upgrade to capable
@@ -210,13 +156,11 @@ public class StoreIndexDescriptor extends IndexDescriptor implements StorageInde
                 ", provider=" + this.providerDescriptor() + ownerString + "]";
     }
 
-    @Override
     public long getId()
     {
         return id;
     }
 
-    @Override
     public long indexReference()
     {
         return id;

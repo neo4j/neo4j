@@ -31,13 +31,13 @@ import java.util.Set;
 import org.neo4j.common.EntityType;
 import org.neo4j.internal.helpers.collection.Iterators;
 import org.neo4j.internal.helpers.collection.Pair;
+import org.neo4j.internal.schema.IndexDescriptor2;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptorSupplier;
 import org.neo4j.internal.schema.constraints.NodeExistenceConstraintDescriptor;
 import org.neo4j.internal.schema.constraints.NodeKeyConstraintDescriptor;
 import org.neo4j.internal.schema.constraints.RelExistenceConstraintDescriptor;
 import org.neo4j.internal.schema.constraints.UniquenessConstraintDescriptor;
-import org.neo4j.kernel.impl.index.schema.IndexDescriptor;
 
 import static java.lang.String.format;
 
@@ -191,7 +191,7 @@ public class DbStructureCollector implements DbStructureVisitor
     }
 
     @Override
-    public void visitIndex( IndexDescriptor descriptor, String userDescription,
+    public void visitIndex( IndexDescriptor2 descriptor, String userDescription,
                             double uniqueValuesPercentage, long size )
     {
         IndexDescriptorMap indices = descriptor.isUnique() ? uniqueIndices : regularIndices;

@@ -25,6 +25,7 @@ import java.util.List;
 import java.util.concurrent.ExecutionException;
 
 import org.neo4j.internal.recordstorage.Command.PropertyCommand;
+import org.neo4j.internal.schema.IndexDescriptor2;
 import org.neo4j.internal.schema.SchemaRule;
 import org.neo4j.kernel.impl.store.NodeLabels;
 import org.neo4j.kernel.impl.store.NodeStore;
@@ -36,7 +37,6 @@ import org.neo4j.storageengine.api.IndexUpdateListener;
 import org.neo4j.storageengine.api.NodeLabelUpdate;
 import org.neo4j.storageengine.api.NodeLabelUpdateListener;
 import org.neo4j.storageengine.api.StorageEngine;
-import org.neo4j.storageengine.api.StorageIndexReference;
 import org.neo4j.util.concurrent.AsyncApply;
 import org.neo4j.util.concurrent.WorkSync;
 
@@ -141,7 +141,7 @@ public class IndexBatchTransactionApplier extends BatchTransactionApplier.Adapte
         private final NodeStore nodeStore;
         private RelationshipStore relationshipStore;
         private final PropertyCommandsExtractor indexUpdatesExtractor = new PropertyCommandsExtractor();
-        private List<StorageIndexReference> createdIndexes;
+        private List<IndexDescriptor2> createdIndexes;
 
         SingleTransactionApplier( NodeStore nodeStore, RelationshipStore relationshipStore )
         {
@@ -163,7 +163,7 @@ public class IndexBatchTransactionApplier extends BatchTransactionApplier.Adapte
             // Created pending indexes
             if ( createdIndexes != null )
             {
-                indexUpdateListener.createIndexes( createdIndexes.toArray( new StorageIndexReference[0] ) );
+                indexUpdateListener.createIndexes( createdIndexes.toArray( new IndexDescriptor2[0] ) );
                 createdIndexes = null;
             }
         }
@@ -228,9 +228,9 @@ public class IndexBatchTransactionApplier extends BatchTransactionApplier.Adapte
 
         private void processSchemaCommand( Command.Mode commandMode, SchemaRule schemaRule ) throws IOException
         {
-            if ( schemaRule instanceof StorageIndexReference )
+            if ( schemaRule instanceof IndexDescriptor2 )
             {
-                StorageIndexReference indexRule = (StorageIndexReference) schemaRule;
+                IndexDescriptor2 indexRule = (IndexDescriptor2) schemaRule;
                 // Why apply index updates here? Here's the thing... this is a batch applier, which means that
                 // index updates are gathered throughout the batch and applied in the end of the batch.
                 // Assume there are some transactions creating or modifying nodes that may not be covered

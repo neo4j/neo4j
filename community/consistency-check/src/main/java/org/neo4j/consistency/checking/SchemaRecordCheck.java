@@ -27,6 +27,7 @@ import org.neo4j.consistency.report.ConsistencyReport;
 import org.neo4j.consistency.store.RecordAccess;
 import org.neo4j.internal.kernel.api.exceptions.schema.MalformedSchemaRuleException;
 import org.neo4j.internal.recordstorage.SchemaRuleAccess;
+import org.neo4j.internal.schema.IndexDescriptor2;
 import org.neo4j.internal.schema.LabelSchemaDescriptor;
 import org.neo4j.internal.schema.RelationTypeSchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptor;
@@ -37,7 +38,6 @@ import org.neo4j.kernel.impl.store.record.PropertyKeyTokenRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
 import org.neo4j.kernel.impl.store.record.SchemaRecord;
 import org.neo4j.storageengine.api.ConstraintRule;
-import org.neo4j.storageengine.api.StorageIndexReference;
 
 /**
  * Note that this class builds up an in-memory representation of the complete schema store by being used in
@@ -108,9 +108,9 @@ public class SchemaRecordCheck implements RecordCheck<SchemaRecord, ConsistencyR
                 return;
             }
 
-            if ( rule instanceof StorageIndexReference )
+            if ( rule instanceof IndexDescriptor2 )
             {
-                strategy.checkIndexRule( (StorageIndexReference)rule, record, records, engine );
+                strategy.checkIndexRule( (IndexDescriptor2)rule, record, records, engine );
             }
             else if ( rule instanceof ConstraintRule )
             {
@@ -125,7 +125,7 @@ public class SchemaRecordCheck implements RecordCheck<SchemaRecord, ConsistencyR
 
     private interface CheckStrategy
     {
-        void checkIndexRule( StorageIndexReference rule, SchemaRecord record, RecordAccess records,
+        void checkIndexRule( IndexDescriptor2 rule, SchemaRecord record, RecordAccess records,
                              CheckerEngine<SchemaRecord,ConsistencyReport.SchemaConsistencyReport> engine );
 
         void checkConstraintRule( ConstraintRule rule, SchemaRecord record,
@@ -141,14 +141,14 @@ public class SchemaRecordCheck implements RecordCheck<SchemaRecord, ConsistencyR
     private class RulesCheckStrategy implements CheckStrategy
     {
         @Override
-        public void checkIndexRule( StorageIndexReference rule, SchemaRecord record, RecordAccess records,
+        public void checkIndexRule( IndexDescriptor2 rule, SchemaRecord record, RecordAccess records,
                                     CheckerEngine<SchemaRecord,ConsistencyReport.SchemaConsistencyReport> engine )
         {
             checkSchema( rule, record, records, engine );
 
-            if ( rule.isUnique() && rule.hasOwningConstraintReference() )
+            if ( rule.isUnique() && rule.getOwningConstraintId().isPresent() )
             {
-                SchemaRecord previousObligation = constraintObligations.put( rule.owningConstraintReference(), cloneRecord( record ) );
+                SchemaRecord previousObligation = constraintObligations.put( rule.getOwningConstraintId().getAsLong(), cloneRecord( record ) );
                 if ( previousObligation != null )
                 {
                     engine.report().duplicateObligation( previousObligation );
@@ -185,7 +185,7 @@ public class SchemaRecordCheck implements RecordCheck<SchemaRecord, ConsistencyR
     private class ObligationsCheckStrategy implements CheckStrategy
     {
         @Override
-        public void checkIndexRule( StorageIndexReference rule, SchemaRecord record, RecordAccess records,
+        public void checkIndexRule( IndexDescriptor2 rule, SchemaRecord record, RecordAccess records,
                                     CheckerEngine<SchemaRecord,ConsistencyReport.SchemaConsistencyReport> engine )
         {
             if ( rule.isUnique() )
@@ -193,7 +193,7 @@ public class SchemaRecordCheck implements RecordCheck<SchemaRecord, ConsistencyR
                 SchemaRecord obligation = indexObligations.get( rule.getId() );
                 if ( obligation == null ) // no pointer to here
                 {
-                    if ( rule.hasOwningConstraintReference() ) // we only expect a pointer if we have an owner
+                    if ( rule.getOwningConstraintId().isPresent() ) // we only expect a pointer if we have an owner
                     {
                         engine.report().missingObligation( "UNIQUENESS_CONSTRAINT" );
                     }
@@ -201,7 +201,7 @@ public class SchemaRecordCheck implements RecordCheck<SchemaRecord, ConsistencyR
                 else
                 {
                     // if someone points to here, it must be our owner
-                    if ( obligation.getId() != rule.owningConstraintReference() )
+                    if ( obligation.getId() != rule.getOwningConstraintId().getAsLong() )
                     {
                         engine.report().constraintIndexRuleNotReferencingBack( obligation );
                     }

@@ -26,12 +26,12 @@ import java.util.function.Predicate;
 import org.neo4j.function.Predicates;
 import org.neo4j.internal.helpers.collection.PrefetchingIterator;
 import org.neo4j.internal.kernel.api.exceptions.schema.MalformedSchemaRuleException;
+import org.neo4j.internal.schema.IndexDescriptor2;
 import org.neo4j.internal.schema.SchemaRule;
 import org.neo4j.kernel.impl.store.InvalidRecordException;
 import org.neo4j.kernel.impl.store.RecordStore;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.RecordLoad;
-import org.neo4j.storageengine.api.StorageIndexReference;
 
 /**
  * A stripped down 3.5.x version of SchemaStorage, used for schema store migration.
@@ -50,18 +50,18 @@ public class SchemaStorage35
         return this::loadAllSchemaRules;
     }
 
-    public Iterator<StorageIndexReference> indexesGetAll()
+    public Iterator<IndexDescriptor2> indexesGetAll()
     {
-        return loadAllSchemaRules( Predicates.alwaysTrue(), StorageIndexReference.class );
+        return loadAllSchemaRules( Predicates.alwaysTrue(), IndexDescriptor2.class );
     }
 
-    public StorageIndexReference indexGetForName( String indexName )
+    public IndexDescriptor2 indexGetForName( String indexName )
     {
-        Iterator<StorageIndexReference> itr = indexesGetAll();
+        Iterator<IndexDescriptor2> itr = indexesGetAll();
         while ( itr.hasNext() )
         {
-            StorageIndexReference sid = itr.next();
-            if ( sid.hasUserSuppliedName() && sid.name().equals( indexName ) )
+            IndexDescriptor2 sid = itr.next();
+            if ( sid.getName().equals( indexName ) )
             {
                 return sid;
             }

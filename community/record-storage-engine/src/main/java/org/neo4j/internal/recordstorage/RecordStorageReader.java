@@ -21,11 +21,13 @@ package org.neo4j.internal.recordstorage;
 
 import java.util.Collection;
 import java.util.Iterator;
+import java.util.OptionalLong;
 import java.util.function.Function;
 
 import org.neo4j.collection.PrimitiveLongCollections;
 import org.neo4j.common.EntityType;
 import org.neo4j.internal.schema.ConstraintDescriptor;
+import org.neo4j.internal.schema.IndexDescriptor2;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.internal.schema.constraints.IndexBackedConstraintDescriptor;
 import org.neo4j.kernel.impl.store.MetaDataStore;
@@ -37,7 +39,6 @@ import org.neo4j.kernel.impl.store.RelationshipStore;
 import org.neo4j.kernel.impl.store.counts.CountsTracker;
 import org.neo4j.storageengine.api.AllNodeScan;
 import org.neo4j.storageengine.api.AllRelationshipsScan;
-import org.neo4j.storageengine.api.StorageIndexReference;
 import org.neo4j.storageengine.api.StoragePropertyCursor;
 import org.neo4j.storageengine.api.StorageReader;
 import org.neo4j.storageengine.api.StorageRelationshipGroupCursor;
@@ -89,31 +90,31 @@ public class RecordStorageReader implements StorageReader
     }
 
     @Override
-    public StorageIndexReference indexGetForSchema( SchemaDescriptor descriptor )
+    public IndexDescriptor2 indexGetForSchema( SchemaDescriptor descriptor )
     {
         return schemaCache.indexDescriptor( descriptor );
     }
 
     @Override
-    public Iterator<StorageIndexReference> indexesGetForLabel( int labelId )
+    public Iterator<IndexDescriptor2> indexesGetForLabel( int labelId )
     {
         return map( descriptor -> descriptor, schemaCache.indexDescriptorsForLabel( labelId ) );
     }
 
     @Override
-    public Iterator<StorageIndexReference> indexesGetForRelationshipType( int relationshipType )
+    public Iterator<IndexDescriptor2> indexesGetForRelationshipType( int relationshipType )
     {
         return null;
     }
 
     @Override
-    public StorageIndexReference indexGetForName( String name )
+    public IndexDescriptor2 indexGetForName( String name )
     {
         return schemaCache.indexDescriptorForName( name );
     }
 
     @Override
-    public Iterator<StorageIndexReference> indexesGetAll()
+    public Iterator<IndexDescriptor2> indexesGetAll()
     {
         return map( descriptor -> descriptor, schemaCache.indexDescriptors().iterator() );
     }
@@ -185,10 +186,14 @@ public class RecordStorageReader implements StorageReader
     }
 
     @Override
-    public Long indexGetOwningUniquenessConstraintId( StorageIndexReference index )
+    public Long indexGetOwningUniquenessConstraintId( IndexDescriptor2 index )
     {
-        return index.hasOwningConstraintReference() && schemaCache.hasConstraintRule( index.owningConstraintReference() ) ? index.owningConstraintReference()
-                                                                                                                          : null;
+        if ( index == null )
+        {
+            return null;
+        }
+        OptionalLong owningConstraintId = index.getOwningConstraintId();
+        return owningConstraintId.isPresent() ? owningConstraintId.getAsLong() : null;
     }
 
     @Override

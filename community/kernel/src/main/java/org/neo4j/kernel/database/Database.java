@@ -49,6 +49,7 @@ import org.neo4j.internal.index.label.LabelScanStore;
 import org.neo4j.internal.index.label.LoggingMonitor;
 import org.neo4j.internal.index.label.NativeLabelScanStore;
 import org.neo4j.internal.kernel.api.Kernel;
+import org.neo4j.internal.schema.IndexDescriptor2;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemUtils;
 import org.neo4j.io.fs.watcher.DatabaseLayoutWatcher;
@@ -151,7 +152,6 @@ import org.neo4j.resources.HeapAllocation;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.storageengine.api.StorageEngine;
 import org.neo4j.storageengine.api.StorageEngineFactory;
-import org.neo4j.storageengine.api.StorageIndexReference;
 import org.neo4j.storageengine.api.StorageReader;
 import org.neo4j.storageengine.api.StoreFileMetadata;
 import org.neo4j.storageengine.api.StoreId;
@@ -893,7 +893,7 @@ public class Database extends LifecycleAdapter
         return life;
     }
 
-    public static Iterable<StorageIndexReference> initialSchemaRulesLoader( StorageEngine storageEngine )
+    public static Iterable<IndexDescriptor2> initialSchemaRulesLoader( StorageEngine storageEngine )
     {
         return () ->
         {

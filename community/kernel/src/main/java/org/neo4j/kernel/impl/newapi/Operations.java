@@ -51,6 +51,8 @@ import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotApplicableKernelE
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
 import org.neo4j.internal.kernel.api.exceptions.schema.SchemaKernelException;
 import org.neo4j.internal.schema.ConstraintDescriptor;
+import org.neo4j.internal.schema.IndexDescriptor2;
+import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.LabelSchemaDescriptor;
 import org.neo4j.internal.schema.RelationTypeSchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptor;
@@ -483,7 +485,7 @@ public class Operations implements Write, SchemaWrite
             IndexQuery.ExactPredicate[] propertyValues, long modifiedNode )
             throws UniquePropertyValueValidationException, UnableToValidateConstraintException
     {
-        IndexReference schemaIndexDescriptor = allStoreHolder.indexGetForSchema( constraint.ownedIndexDescriptor().schema() );
+        IndexDescriptor2 schemaIndexDescriptor = allStoreHolder.indexGetForSchema( constraint.ownedIndexDescriptor() );
         try ( DefaultNodeValueIndexCursor valueCursor = cursors.allocateNodeValueIndexCursor();
               IndexReaders indexReaders = new IndexReaders( schemaIndexDescriptor, allStoreHolder ) )
         {
@@ -518,7 +520,7 @@ public class Operations implements Write, SchemaWrite
         }
     }
 
-    private void assertIndexOnline( IndexReference descriptor )
+    private void assertIndexOnline( IndexDescriptor2 descriptor )
             throws IndexNotFoundKernelException, IndexBrokenKernelException
     {
         if ( allStoreHolder.indexGetState( descriptor ) != InternalIndexState.ONLINE )
@@ -820,19 +822,32 @@ public class Operations implements Write, SchemaWrite
     }
 
     @Override
-    public IndexReference indexCreate( SchemaDescriptor descriptor ) throws SchemaKernelException
+    public IndexDescriptor2 indexCreate( IndexPrototype prototype ) throws SchemaKernelException
+    {
+        exclusiveSchemaLock( prototype.schema() );
+        ktx.assertOpen();
+        assertValidDescriptor( prototype.schema(), SchemaKernelException.OperationContext.INDEX_CREATION );
+        assertIndexDoesNotExist( SchemaKernelException.OperationContext.INDEX_CREATION, prototype );
+
+        IndexPrototype index = indexProviders.getBlessedDescriptorFromProvider( prototype );
+        ktx.txState().indexDoAdd( index );
+        return index;
+    }
+
+    @Override
+    public IndexDescriptor2 indexCreate( SchemaDescriptor descriptor ) throws SchemaKernelException
     {
         return indexCreate( descriptor, config.get( GraphDatabaseSettings.default_schema_provider ), Optional.empty() );
     }
 
     @Override
-    public IndexReference indexCreate( SchemaDescriptor descriptor, Optional<String> indexName ) throws SchemaKernelException
+    public IndexDescriptor2 indexCreate( SchemaDescriptor descriptor, Optional<String> indexName ) throws SchemaKernelException
     {
         return indexCreate( descriptor, config.get( GraphDatabaseSettings.default_schema_provider ), indexName );
     }
 
     @Override
-    public IndexReference indexCreate( SchemaDescriptor descriptor, String provider, Optional<String> name ) throws SchemaKernelException
+    public IndexDescriptor2 indexCreate( SchemaDescriptor descriptor, String provider, Optional<String> name ) throws SchemaKernelException
     {
         exclusiveSchemaLock( descriptor );
         ktx.assertOpen();
@@ -840,27 +855,30 @@ public class Operations implements Write, SchemaWrite
         assertIndexDoesNotExist( SchemaKernelException.OperationContext.INDEX_CREATION, descriptor, name );
 
         IndexProviderDescriptor providerDescriptor = indexProviders.indexProviderByName( provider );
-        IndexDescriptor index = IndexDescriptorFactory.forSchema( descriptor, name, providerDescriptor );
-        index = indexProviders.getBlessedDescriptorFromProvider( index );
+        IndexPrototype prototype = IndexPrototype.forSchema( descriptor, providerDescriptor );
+        if ( name.isPresent() )
+        {
+            prototype = prototype.withName( name.get() );
+        }
+        prototype = indexProviders.getBlessedDescriptorFromProvider( prototype );
+        IndexDescriptor2 index = prototype;
         ktx.txState().indexDoAdd( index );
         return index;
     }
 
     // Note: this will be sneakily executed by an internal transaction, so no additional locking is required.
-    public IndexReference indexUniqueCreate( SchemaDescriptor schema, String provider ) throws SchemaKernelException
+    public IndexDescriptor2 indexUniqueCreate( SchemaDescriptor schema, String provider ) throws SchemaKernelException
     {
         IndexProviderDescriptor providerDescriptor = indexProviders.indexProviderByName( provider );
-        IndexDescriptor index =
-                IndexDescriptorFactory.uniqueForSchema( schema,
-                        Optional.empty(),
-                        providerDescriptor );
-        index = indexProviders.getBlessedDescriptorFromProvider( index );
+        IndexPrototype prototype = IndexPrototype.uniqueForSchema( schema, providerDescriptor );
+        prototype = indexProviders.getBlessedDescriptorFromProvider( prototype );
+        IndexDescriptor2 index = prototype;
         ktx.txState().indexDoAdd( index );
         return index;
     }
 
     @Override
-    public void indexDrop( IndexReference indexReference ) throws SchemaKernelException
+    public void indexDrop( IndexDescriptor2 indexReference ) throws SchemaKernelException
     {
         assertValidIndex( indexReference );
         SchemaDescriptor schema = indexReference.schema();
@@ -869,9 +887,9 @@ public class Operations implements Write, SchemaWrite
         ktx.assertOpen();
         try
         {
-            IndexReference existingIndex = allStoreHolder.indexGetForSchema( schema );
+            IndexDescriptor2 existingIndex = allStoreHolder.indexGetForSchema( schema );
 
-            if ( existingIndex == IndexReference.NO_INDEX )
+            if ( existingIndex == IndexDescriptor2.NO_INDEX )
             {
                 throw new NoSuchIndexException( schema );
             }
@@ -1043,16 +1061,27 @@ public class Operations implements Write, SchemaWrite
     private void assertIndexDoesNotExist( SchemaKernelException.OperationContext context, SchemaDescriptor descriptor, Optional<String> name )
             throws AlreadyIndexedException, AlreadyConstrainedException
     {
-        IndexReference existingIndex = allStoreHolder.indexGetForSchema( descriptor );
-        if ( existingIndex == IndexReference.NO_INDEX && name.isPresent() )
+        IndexPrototype prototype = IndexPrototype.forSchema( descriptor );
+        if ( name.isPresent() )
         {
-            IndexReference indexReference = allStoreHolder.indexGetForName( name.get() );
-            if ( indexReference != IndexReference.NO_INDEX )
+            prototype = prototype.withName( name.get() );
+        }
+        assertIndexDoesNotExist( context, prototype );
+    }
+
+    private void assertIndexDoesNotExist( SchemaKernelException.OperationContext context, IndexPrototype prototype )
+            throws AlreadyIndexedException, AlreadyConstrainedException
+    {
+        IndexDescriptor2 existingIndex = allStoreHolder.indexGetForSchema( prototype.schema() );
+        if ( existingIndex == IndexDescriptor2.NO_INDEX && prototype.getName().isPresent() )
+        {
+            IndexDescriptor2 indexReference = allStoreHolder.indexGetForName( prototype.getName().get() );
+            if ( indexReference != IndexDescriptor2.NO_INDEX )
             {
                 existingIndex = indexReference;
             }
         }
-        if ( existingIndex != IndexReference.NO_INDEX )
+        if ( existingIndex != IndexDescriptor2.NO_INDEX )
         {
             // OK so we found a matching constraint index. We check whether or not it has an owner
             // because this may have been a left-over constraint index from a previously failed
@@ -1061,13 +1090,13 @@ public class Operations implements Write, SchemaWrite
             {
                 if ( context != CONSTRAINT_CREATION || constraintIndexHasOwner( existingIndex ) )
                 {
-                    throw new AlreadyConstrainedException( ConstraintDescriptorFactory.uniqueForSchema( descriptor ),
+                    throw new AlreadyConstrainedException( ConstraintDescriptorFactory.uniqueForSchema( prototype.schema() ),
                             context, new SilentTokenNameLookup( token ) );
                 }
             }
             else
             {
-                throw new AlreadyIndexedException( descriptor, context );
+                throw new AlreadyIndexedException( prototype.schema(), context );
             }
         }
     }
@@ -1137,7 +1166,7 @@ public class Operations implements Write, SchemaWrite
         }
     }
 
-    private boolean constraintIndexHasOwner( IndexReference index )
+    private boolean constraintIndexHasOwner( IndexDescriptor2 index )
     {
         return allStoreHolder.indexGetOwningUniquenessConstraintId( index ) != null;
     }
@@ -1183,8 +1212,9 @@ public class Operations implements Write, SchemaWrite
         SchemaDescriptor descriptor = constraint.schema();
         try
         {
-            if ( ktx.hasTxStateWithChanges() &&
-                    ktx.txState().indexDoUnRemove( constraint.ownedIndexDescriptor() ) ) // ..., DROP, *CREATE*
+            LabelSchemaDescriptor labelSchemaDescriptor = constraint.ownedIndexDescriptor();
+            IndexDescriptor2 constraintIndex = allStoreHolder.index( labelSchemaDescriptor );
+            if ( ktx.hasTxStateWithChanges() && ktx.txState().indexDoUnRemove( constraintIndex ) ) // ..., DROP, *CREATE*
             { // creation is undoing a drop
                 if ( !ktx.txState().constraintDoUnRemove( constraint ) ) // CREATE, ..., DROP, *CREATE*
                 { // ... the drop we are undoing did itself undo a prior create...
@@ -1221,9 +1251,9 @@ public class Operations implements Write, SchemaWrite
         }
     }
 
-    private static void assertValidIndex( IndexReference index ) throws NoSuchIndexException
+    private static void assertValidIndex( IndexDescriptor2 index ) throws NoSuchIndexException
     {
-        if ( index == IndexReference.NO_INDEX )
+        if ( index == IndexDescriptor2.NO_INDEX )
         {
             throw new NoSuchIndexException( index.schema() );
         }

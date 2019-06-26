@@ -30,6 +30,7 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
 import java.util.Arrays;
+import java.util.Iterator;
 
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.internal.kernel.api.Kernel;
@@ -37,6 +38,8 @@ import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.Transaction;
 import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.internal.kernel.api.security.LoginContext;
+import org.neo4j.internal.schema.ConstraintDescriptor;
+import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.internal.schema.constraints.ConstraintDescriptorFactory;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.exceptions.schema.UniquePropertyValueValidationException;
@@ -45,6 +48,7 @@ import org.neo4j.test.rule.ImpermanentDbmsRule;
 import org.neo4j.values.storable.Values;
 
 import static org.junit.Assert.fail;
+import static org.neo4j.internal.helpers.collection.Iterators.single;
 import static org.neo4j.internal.schema.SchemaDescriptor.forLabel;
 import static org.neo4j.test.assertion.Assert.assertException;
 
@@ -121,8 +125,8 @@ public class CompositeUniquenessConstraintValidationIT
         }
 
         newTransaction();
-        transaction.schemaWrite()
-                .constraintDrop( ConstraintDescriptorFactory.uniqueForLabel( label, propertyIds() ) );
+        ConstraintDescriptor constraint = single( transaction.schemaRead().constraintsGetForSchema( forLabel( label, propertyIds() ) ) );
+        transaction.schemaWrite().constraintDrop( constraint );
         commit();
 
         try ( Transaction tx = kernel.beginTransaction( Transaction.Type.implicit, LoginContext.AUTH_DISABLED );

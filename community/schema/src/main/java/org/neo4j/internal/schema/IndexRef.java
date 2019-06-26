@@ -61,4 +61,34 @@ public interface IndexRef<T extends IndexRef<T>> extends SchemaDescriptorSupplie
      * @return A new index reference with the given schema descriptor.
      */
     T withSchemaDescriptor( SchemaDescriptor schema );
+
+    /**
+     * Compute the structural equivalence between the two index references.
+     *
+     * Two index references are structurally equivalent if their schemas are equal, and they have the same uniqueness setting.
+     *
+     * @param a the first reference.
+     * @param b the other reference.
+     * @return {@code true} if the two references are structurally equivalent.
+     */
+    static boolean equals( IndexRef<?> a, IndexRef<?> b )
+    {
+        return a.isUnique() == b.isUnique() && a.schema().equals( b.schema() );
+    }
+
+    /**
+     * Compute the structural hash code of this index reference.
+     *
+     * The structural hash code is based on the uniqueness setting, and the schema of the index reference.
+     *
+     * @param ref the index reference to compute the hash code for.
+     * @return the hash code of the given index reference.
+     */
+    static int hashCode( IndexRef<?> ref )
+    {
+        int result = 1;
+        result = 31 * result + Boolean.hashCode( ref.isUnique() );
+        result = 31 * result + ref.schema().hashCode();
+        return result;
+    }
 }

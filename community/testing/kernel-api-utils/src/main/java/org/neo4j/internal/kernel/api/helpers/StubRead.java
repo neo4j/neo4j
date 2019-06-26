@@ -19,11 +19,8 @@
  */
 package org.neo4j.internal.kernel.api.helpers;
 
-import org.neo4j.exceptions.KernelException;
-import org.neo4j.internal.schema.IndexOrder;
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.internal.kernel.api.IndexReadSession;
-import org.neo4j.internal.kernel.api.IndexReference;
 import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.NodeLabelIndexCursor;
 import org.neo4j.internal.kernel.api.NodeValueIndexCursor;
@@ -34,13 +31,14 @@ import org.neo4j.internal.kernel.api.RelationshipIndexCursor;
 import org.neo4j.internal.kernel.api.RelationshipScanCursor;
 import org.neo4j.internal.kernel.api.RelationshipTraversalCursor;
 import org.neo4j.internal.kernel.api.Scan;
-import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
+import org.neo4j.internal.schema.IndexDescriptor2;
+import org.neo4j.internal.schema.IndexOrder;
 import org.neo4j.values.storable.Value;
 
 public class StubRead implements Read
 {
     @Override
-    public IndexReadSession indexReadSession( IndexReference index ) throws IndexNotFoundKernelException
+    public IndexReadSession indexReadSession( IndexDescriptor2 index )
     {
         throw new UnsupportedOperationException();
     }
@@ -51,7 +49,7 @@ public class StubRead implements Read
     }
 
     @Override
-    public void nodeIndexDistinctValues( IndexReference index, NodeValueIndexCursor cursor, boolean needsValues )
+    public void nodeIndexDistinctValues( IndexDescriptor2 index, NodeValueIndexCursor cursor, boolean needsValues )
     {
         throw new UnsupportedOperationException();
     }
@@ -63,15 +61,15 @@ public class StubRead implements Read
     }
 
     @Override
-    public void relationshipIndexSeek( IndexReference index, RelationshipIndexCursor cursor, IndexQuery... query )
+    public void relationshipIndexSeek( IndexDescriptor2 index, RelationshipIndexCursor cursor, IndexQuery... query )
     {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public long lockingNodeUniqueIndexSeek( IndexReference index,
+    public long lockingNodeUniqueIndexSeek( IndexDescriptor2 index,
                                             NodeValueIndexCursor cursor,
-                                            IndexQuery.ExactPredicate... predicates ) throws KernelException
+                                            IndexQuery.ExactPredicate... predicates )
     {
         throw new UnsupportedOperationException();
     }

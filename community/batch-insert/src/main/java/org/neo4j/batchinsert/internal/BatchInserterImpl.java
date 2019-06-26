@@ -75,6 +75,7 @@ import org.neo4j.internal.recordstorage.SchemaCache;
 import org.neo4j.internal.recordstorage.SchemaRuleAccess;
 import org.neo4j.internal.recordstorage.StoreTokens;
 import org.neo4j.internal.schema.ConstraintDescriptor;
+import org.neo4j.internal.schema.IndexDescriptor2;
 import org.neo4j.internal.schema.IndexProviderDescriptor;
 import org.neo4j.internal.schema.LabelSchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptor;
@@ -548,9 +549,9 @@ public class BatchInserterImpl implements BatchInserter
         life.add( indexingService );
         try
         {
-            StorageIndexReference[] descriptors = getIndexesNeedingPopulation();
+            IndexDescriptor2[] descriptors = getIndexesNeedingPopulation();
             indexingService.createIndexes( true /*verify constraints before flipping over*/, descriptors );
-            for ( StorageIndexReference descriptor : descriptors )
+            for ( IndexDescriptor2 descriptor : descriptors )
             {
                 IndexProxy indexProxy = getIndexProxy( indexingService, descriptor );
                 try
@@ -571,7 +572,7 @@ public class BatchInserterImpl implements BatchInserter
         }
     }
 
-    private static IndexProxy getIndexProxy( IndexingService indexingService, StorageIndexReference descriptpr )
+    private static IndexProxy getIndexProxy( IndexingService indexingService, IndexDescriptor2 descriptpr )
     {
         try
         {
@@ -593,19 +594,18 @@ public class BatchInserterImpl implements BatchInserter
         TransactionLogsInitializer.INSTANCE.initializeLogFiles( config, databaseLayout, neoStores, fileSystem );
     }
 
-    private StorageIndexReference[] getIndexesNeedingPopulation()
+    private IndexDescriptor2[] getIndexesNeedingPopulation()
     {
-        List<StorageIndexReference> indexesNeedingPopulation = new ArrayList<>();
-        for ( StorageIndexReference descriptor : schemaCache.indexDescriptors() )
+        List<IndexDescriptor2> indexesNeedingPopulation = new ArrayList<>();
+        for ( IndexDescriptor2 descriptor : schemaCache.indexDescriptors() )
         {
-            StoreIndexDescriptor storeIndexDescriptor = new StoreIndexDescriptor( descriptor );
-            IndexProvider provider = indexProviderMap.lookup( storeIndexDescriptor.providerDescriptor() );
+            IndexProvider provider = indexProviderMap.lookup( descriptor.getIndexProvider() );
             if ( provider.getInitialState( descriptor ) != InternalIndexState.FAILED )
             {
                 indexesNeedingPopulation.add( descriptor );
             }
         }
-        return indexesNeedingPopulation.toArray( new StorageIndexReference[0] );
+        return indexesNeedingPopulation.toArray( new IndexDescriptor2[0] );
     }
 
     @Override

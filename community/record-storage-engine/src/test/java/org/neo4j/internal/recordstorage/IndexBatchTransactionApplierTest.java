@@ -21,9 +21,10 @@ package org.neo4j.internal.recordstorage;
 
 import org.junit.jupiter.api.Test;
 
-import java.util.Optional;
-
 import org.neo4j.internal.recordstorage.Command.NodeCommand;
+import org.neo4j.internal.schema.IndexDescriptor2;
+import org.neo4j.internal.schema.IndexPrototype;
+import org.neo4j.internal.schema.IndexProviderDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.internal.schema.SchemaRule;
 import org.neo4j.kernel.impl.store.NodeLabelsField;
@@ -32,12 +33,10 @@ import org.neo4j.kernel.impl.store.PropertyStore;
 import org.neo4j.kernel.impl.store.RelationshipStore;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.SchemaRecord;
-import org.neo4j.storageengine.api.DefaultStorageIndexReference;
 import org.neo4j.storageengine.api.IndexUpdateListener;
 import org.neo4j.storageengine.api.NodeLabelUpdate;
 import org.neo4j.storageengine.api.NodeLabelUpdateListener;
 import org.neo4j.storageengine.api.StorageEngine;
-import org.neo4j.storageengine.api.StorageIndexReference;
 import org.neo4j.util.concurrent.WorkSync;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -96,9 +95,9 @@ class IndexBatchTransactionApplierTest
         long constraintId3 = 12;
         String providerKey = "index-key";
         String providerVersion = "v1";
-        StorageIndexReference rule1 = uniqueForSchema( forLabel( 1, 1 ), providerKey, providerVersion, indexId1, constraintId1 );
-        StorageIndexReference rule2 = uniqueForSchema( forLabel( 2, 1 ), providerKey, providerVersion, indexId2, constraintId2 );
-        StorageIndexReference rule3 = uniqueForSchema( forLabel( 3, 1 ), providerKey, providerVersion, indexId3, constraintId3 );
+        IndexDescriptor2 rule1 = uniqueForSchema( forLabel( 1, 1 ), providerKey, providerVersion, indexId1, constraintId1 );
+        IndexDescriptor2 rule2 = uniqueForSchema( forLabel( 2, 1 ), providerKey, providerVersion, indexId2, constraintId2 );
+        IndexDescriptor2 rule3 = uniqueForSchema( forLabel( 3, 1 ), providerKey, providerVersion, indexId3, constraintId3 );
         try ( IndexBatchTransactionApplier applier = new IndexBatchTransactionApplier( indexUpdateListener, labelScanSync,
                 indexUpdatesSync, mock( NodeStore.class ), mock( RelationshipStore.class ), propertyStore,
                 mock( StorageEngine.class ), mock( SchemaCache.class ), indexActivator ) )
@@ -127,9 +126,10 @@ class IndexBatchTransactionApplierTest
         verifyNoMoreInteractions( indexUpdateListener );
     }
 
-    private StorageIndexReference uniqueForSchema( SchemaDescriptor schema, String providerKey, String providerVersion, long id, long owningConstraint )
+    private IndexDescriptor2 uniqueForSchema( SchemaDescriptor schema, String providerKey, String providerVersion, long id, long owningConstraint )
     {
-        return new DefaultStorageIndexReference( schema, providerKey, providerVersion, id, Optional.empty(), true, owningConstraint );
+        final IndexProviderDescriptor indexProvider = new IndexProviderDescriptor( providerKey, providerVersion );
+        return IndexPrototype.uniqueForSchema( schema, indexProvider ).materialise( id ).withOwningConstraintId( owningConstraint );
     }
 
     private SchemaRecord asSchemaRecord( SchemaRule rule, boolean inUse )

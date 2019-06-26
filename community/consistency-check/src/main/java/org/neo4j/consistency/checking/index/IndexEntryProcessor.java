@@ -24,16 +24,16 @@ import org.neo4j.consistency.checking.full.IndexCheck;
 import org.neo4j.consistency.checking.full.RecordProcessor;
 import org.neo4j.consistency.report.ConsistencyReporter;
 import org.neo4j.consistency.store.synthetic.IndexEntry;
-import org.neo4j.storageengine.api.StorageIndexReference;
+import org.neo4j.internal.schema.IndexDescriptor2;
 
 public class IndexEntryProcessor extends RecordProcessor.Adapter<Long>
 {
     private final ConsistencyReporter reporter;
     private final IndexCheck indexCheck;
-    private final StorageIndexReference indexDescriptor;
+    private final IndexDescriptor2 indexDescriptor;
     private final TokenNameLookup tokenNameLookup;
 
-    public IndexEntryProcessor( ConsistencyReporter reporter, IndexCheck indexCheck, StorageIndexReference indexDescriptor, TokenNameLookup tokenNameLookup )
+    public IndexEntryProcessor( ConsistencyReporter reporter, IndexCheck indexCheck, IndexDescriptor2 indexDescriptor, TokenNameLookup tokenNameLookup )
     {
         this.reporter = reporter;
         this.indexCheck = indexCheck;

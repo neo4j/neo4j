@@ -28,6 +28,7 @@ import org.neo4j.internal.id.DefaultIdGeneratorFactory;
 import org.neo4j.internal.recordstorage.Command.NodeCommand;
 import org.neo4j.internal.recordstorage.Command.RelationshipCommand;
 import org.neo4j.internal.recordstorage.Command.RelationshipGroupCommand;
+import org.neo4j.internal.schema.IndexProviderDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.io.fs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
@@ -48,6 +49,8 @@ import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.imme
 @EphemeralPageCacheExtension
 class HighIdTransactionApplierTest
 {
+    private static final IndexProviderDescriptor PROVIDER_DESCRIPTOR = new IndexProviderDescriptor( "empty", "1" );
+
     @Inject
     private PageCache pageCache;
     @Inject
@@ -103,10 +106,8 @@ class HighIdTransactionApplierTest
         tracker.visitRelationshipGroupCommand( Commands.createRelationshipGroup( 20, 2 ) );
 
         // Schema rules
-        tracker.visitSchemaRuleCommand( Commands.createIndexRule(
-                "empty", "1", 10, SchemaDescriptor.forLabel( 0, 1 ) ) );
-        tracker.visitSchemaRuleCommand( Commands.createIndexRule(
-                "empty", "1", 20, SchemaDescriptor.forLabel( 1, 2 ) ) );
+        tracker.visitSchemaRuleCommand( Commands.createIndexRule( PROVIDER_DESCRIPTOR, 10, SchemaDescriptor.forLabel( 0, 1 ) ) );
+        tracker.visitSchemaRuleCommand( Commands.createIndexRule( PROVIDER_DESCRIPTOR, 20, SchemaDescriptor.forLabel( 1, 2 ) ) );
 
         // Properties
         tracker.visitPropertyCommand( Commands.createProperty( 10, PropertyType.STRING, 0, 6, 7 ) );

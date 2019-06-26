@@ -27,6 +27,7 @@ import java.util.concurrent.TimeUnit;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.kernel.api.PopulationProgress;
+import org.neo4j.internal.schema.IndexDescriptor2;
 import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexAccessor;
@@ -34,14 +35,13 @@ import org.neo4j.kernel.api.index.IndexReader;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.impl.api.index.stats.IndexStatisticsStore;
 import org.neo4j.kernel.impl.api.index.updater.UpdateCountingIndexUpdater;
-import org.neo4j.kernel.impl.index.schema.CapableIndexDescriptor;
 import org.neo4j.storageengine.api.NodePropertyAccessor;
 import org.neo4j.values.storable.Value;
 
 public class OnlineIndexProxy implements IndexProxy
 {
     private final long indexId;
-    private final CapableIndexDescriptor capableIndexDescriptor;
+    private final IndexDescriptor2 descriptor;
     final IndexAccessor accessor;
     private final IndexStatisticsStore indexStatisticsStore;
     private boolean started;
@@ -72,12 +72,12 @@ public class OnlineIndexProxy implements IndexProxy
     //   slightly more costly, but shouldn't make that big of a difference hopefully.
     private final boolean forcedIdempotentMode;
 
-    OnlineIndexProxy( CapableIndexDescriptor capableIndexDescriptor, IndexAccessor accessor, IndexStatisticsStore indexStatisticsStore,
+    OnlineIndexProxy( IndexDescriptor2 descriptor, IndexAccessor accessor, IndexStatisticsStore indexStatisticsStore,
             boolean forcedIdempotentMode )
     {
         assert accessor != null;
-        this.indexId = capableIndexDescriptor.getId();
-        this.capableIndexDescriptor = capableIndexDescriptor;
+        this.indexId = descriptor.getId();
+        this.descriptor = descriptor;
         this.accessor = accessor;
         this.indexStatisticsStore = indexStatisticsStore;
         this.forcedIdempotentMode = forcedIdempotentMode;
@@ -124,9 +124,9 @@ public class OnlineIndexProxy implements IndexProxy
     }
 
     @Override
-    public CapableIndexDescriptor getDescriptor()
+    public IndexDescriptor2 getDescriptor()
     {
-        return capableIndexDescriptor;
+        return descriptor;
     }
 
     @Override
@@ -210,7 +210,7 @@ public class OnlineIndexProxy implements IndexProxy
     @Override
     public String toString()
     {
-        return getClass().getSimpleName() + "[accessor:" + accessor + ", descriptor:" + capableIndexDescriptor + "]";
+        return getClass().getSimpleName() + "[accessor:" + accessor + ", descriptor:" + descriptor + "]";
     }
 
     @Override

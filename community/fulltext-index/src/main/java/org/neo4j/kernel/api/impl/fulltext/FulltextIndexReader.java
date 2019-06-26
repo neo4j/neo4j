@@ -31,11 +31,11 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.neo4j.internal.schema.IndexOrder;
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.internal.kernel.api.QueryContext;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotApplicableKernelException;
-import org.neo4j.internal.schema.IndexDescriptor;
+import org.neo4j.internal.schema.IndexDescriptor2;
+import org.neo4j.internal.schema.IndexOrder;
 import org.neo4j.io.IOUtils;
 import org.neo4j.kernel.api.impl.index.SearcherReference;
 import org.neo4j.kernel.api.impl.index.collector.DocValuesCollector;
@@ -56,12 +56,12 @@ public class FulltextIndexReader implements IndexReader
 {
     private final List<SearcherReference> searchers;
     private final TokenHolder propertyKeyTokenHolder;
-    private final IndexDescriptor descriptor;
+    private final IndexDescriptor2 descriptor;
     private final Analyzer analyzer;
     private final String[] propertyNames;
     private final FulltextIndexTransactionState transactionState;
 
-    FulltextIndexReader( List<SearcherReference> searchers, TokenHolder propertyKeyTokenHolder, IndexDescriptor descriptor,
+    FulltextIndexReader( List<SearcherReference> searchers, TokenHolder propertyKeyTokenHolder, IndexDescriptor2 descriptor,
             Analyzer analyzer, String[] propertyNames )
     {
         this.searchers = searchers;
@@ -198,7 +198,7 @@ public class FulltextIndexReader implements IndexReader
         return propertyKeyTokenHolder.getTokenById( propertyKey ).name();
     }
 
-    private IndexDescriptor getDescriptor()
+    private IndexDescriptor2 getDescriptor()
     {
         return descriptor;
     }

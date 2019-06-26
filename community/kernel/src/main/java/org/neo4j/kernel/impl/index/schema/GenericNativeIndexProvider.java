@@ -27,13 +27,15 @@ import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.gis.spatial.index.curves.SpaceFillingCurveConfiguration;
 import org.neo4j.index.internal.gbptree.GBPTree;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
+import org.neo4j.internal.kernel.api.exceptions.schema.MisconfiguredIndexException;
 import org.neo4j.internal.schema.IndexCapability;
+import org.neo4j.internal.schema.IndexConfig;
+import org.neo4j.internal.schema.IndexDescriptor2;
 import org.neo4j.internal.schema.IndexLimitation;
 import org.neo4j.internal.schema.IndexOrder;
-import org.neo4j.internal.schema.IndexValueCapability;
-import org.neo4j.internal.kernel.api.exceptions.schema.MisconfiguredIndexException;
-import org.neo4j.internal.schema.IndexConfig;
 import org.neo4j.internal.schema.IndexProviderDescriptor;
+import org.neo4j.internal.schema.IndexRef;
+import org.neo4j.internal.schema.IndexValueCapability;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
@@ -43,7 +45,6 @@ import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.impl.index.schema.config.ConfiguredSpaceFillingCurveSettingsCache;
 import org.neo4j.kernel.impl.index.schema.config.IndexSpecificSpaceFillingCurveSettings;
 import org.neo4j.kernel.impl.index.schema.config.SpaceFillingCurveSettings;
-import org.neo4j.storageengine.api.StorageIndexReference;
 import org.neo4j.util.FeatureToggles;
 import org.neo4j.values.storable.CoordinateReferenceSystem;
 import org.neo4j.values.storable.ValueCategory;
@@ -134,7 +135,7 @@ public class GenericNativeIndexProvider extends NativeIndexProvider<GenericKey,N
     }
 
     @Override
-    public <T extends org.neo4j.internal.schema.IndexDescriptor> T bless( T index ) throws MisconfiguredIndexException
+    public <T extends IndexRef<T>> T bless( T index ) throws MisconfiguredIndexException
     {
         SchemaDescriptor sinfulSchema = index.schema();
         IndexConfig indexConfig = sinfulSchema.getIndexConfig();
@@ -149,7 +150,7 @@ public class GenericNativeIndexProvider extends NativeIndexProvider<GenericKey,N
     }
 
     @Override
-    GenericLayout layout( StorageIndexReference descriptor, File storeFile )
+    GenericLayout layout( IndexDescriptor2 descriptor, File storeFile )
     {
         int numberOfSlots = descriptor.schema().getPropertyIds().length;
         IndexConfig indexConfig = descriptor.schema().getIndexConfig();
@@ -158,7 +159,7 @@ public class GenericNativeIndexProvider extends NativeIndexProvider<GenericKey,N
     }
 
     @Override
-    protected IndexPopulator newIndexPopulator( IndexFiles indexFiles, GenericLayout layout, StorageIndexReference descriptor, ByteBufferFactory bufferFactory )
+    protected IndexPopulator newIndexPopulator( IndexFiles indexFiles, GenericLayout layout, IndexDescriptor2 descriptor, ByteBufferFactory bufferFactory )
     {
         if ( blockBasedPopulation )
         {
@@ -171,14 +172,14 @@ public class GenericNativeIndexProvider extends NativeIndexProvider<GenericKey,N
     }
 
     @Override
-    protected IndexAccessor newIndexAccessor( IndexFiles indexFiles, GenericLayout layout, StorageIndexReference descriptor )
+    protected IndexAccessor newIndexAccessor( IndexFiles indexFiles, GenericLayout layout, IndexDescriptor2 descriptor )
     {
         return new GenericNativeIndexAccessor( pageCache, fs, indexFiles, layout, recoveryCleanupWorkCollector, monitor, descriptor,
                 layout.getSpaceFillingCurveSettings(), configuration );
     }
 
     @Override
-    public IndexCapability getCapability( StorageIndexReference descriptor )
+    public IndexCapability getCapability( IndexDescriptor2 descriptor )
     {
         return CAPABILITY;
     }

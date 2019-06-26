@@ -24,7 +24,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 
 import org.neo4j.graphdb.TransactionTerminatedException;
-import org.neo4j.internal.kernel.api.IndexReference;
 import org.neo4j.internal.kernel.api.Kernel;
 import org.neo4j.internal.kernel.api.SchemaRead;
 import org.neo4j.internal.kernel.api.TokenRead;
@@ -34,6 +33,7 @@ import org.neo4j.internal.kernel.api.exceptions.schema.CreateConstraintFailureEx
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
 import org.neo4j.internal.kernel.api.exceptions.schema.SchemaKernelException;
 import org.neo4j.internal.kernel.api.exceptions.schema.SchemaKernelException.OperationContext;
+import org.neo4j.internal.schema.IndexDescriptor2;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.internal.schema.constraints.ConstraintDescriptorFactory;
 import org.neo4j.internal.schema.constraints.UniquenessConstraintDescriptor;
@@ -96,10 +96,11 @@ public class ConstraintIndexCreator
             throws TransactionFailureException, CreateConstraintFailureException,
             UniquePropertyValueValidationException, AlreadyConstrainedException
     {
-        UniquenessConstraintDescriptor constraint = ConstraintDescriptorFactory.uniqueForSchema( descriptor );
-        log.info( "Starting constraint creation: %s.", constraint.ownedIndexDescriptor() );
 
-        IndexReference index;
+        UniquenessConstraintDescriptor constraint = ConstraintDescriptorFactory.uniqueForSchema( descriptor );
+        log.info( "Starting constraint creation: %s.", constraint );
+
+        IndexDescriptor2 index;
         SchemaRead schemaRead = transaction.schemaRead();
         try
         {
@@ -183,16 +184,16 @@ public class ConstraintIndexCreator
         }
     }
 
-    private boolean indexStillExists( SchemaRead schemaRead, SchemaDescriptor descriptor, IndexReference index )
+    private boolean indexStillExists( SchemaRead schemaRead, SchemaDescriptor descriptor, IndexDescriptor2 index )
     {
-        IndexReference existingIndex = schemaRead.index( descriptor );
-        return existingIndex != IndexReference.NO_INDEX && existingIndex.equals( index );
+        IndexDescriptor2 existingIndex = schemaRead.index( descriptor );
+        return existingIndex != IndexDescriptor2.NO_INDEX && existingIndex.equals( index );
     }
 
     /**
      * You MUST hold a schema write lock before you call this method.
      */
-    public void dropUniquenessConstraintIndex( IndexReference index )
+    public void dropUniquenessConstraintIndex( IndexDescriptor2 index )
             throws TransactionFailureException
     {
         try ( Transaction transaction = kernelSupplier.get().beginTransaction( implicit, AUTH_DISABLED );
@@ -234,11 +235,11 @@ public class ConstraintIndexCreator
         }
     }
 
-    private IndexReference getOrCreateUniquenessConstraintIndex( SchemaRead schemaRead, TokenRead tokenRead, SchemaDescriptor schema, String provider )
+    private IndexDescriptor2 getOrCreateUniquenessConstraintIndex( SchemaRead schemaRead, TokenRead tokenRead, SchemaDescriptor schema, String provider )
             throws SchemaKernelException, IndexNotFoundKernelException
     {
-        IndexReference descriptor = schemaRead.index( schema );
-        if ( descriptor != IndexReference.NO_INDEX )
+        IndexDescriptor2 descriptor = schemaRead.index( schema );
+        if ( descriptor != IndexDescriptor2.NO_INDEX )
         {
             if ( descriptor.isUnique() )
             {
@@ -257,16 +258,16 @@ public class ConstraintIndexCreator
             // There's already an index for this schema descriptor, which isn't of the type we're after.
             throw new AlreadyIndexedException( schema, CONSTRAINT_CREATION );
         }
-        IndexReference indexReference = createConstraintIndex( schema, provider );
-        IndexProxy indexProxy = indexingService.getIndexProxy( indexReference.schema() );
+        IndexDescriptor2 indexReference = createConstraintIndex( schema, provider );
+        IndexProxy indexProxy = indexingService.getIndexProxy( indexReference.schema() ); // todo remove this derefence?
         return indexProxy.getDescriptor();
     }
 
-    public IndexReference createConstraintIndex( final SchemaDescriptor schema, String provider )
+    public IndexDescriptor2 createConstraintIndex( final SchemaDescriptor schema, String provider )
     {
         try ( Transaction transaction = kernelSupplier.get().beginTransaction( implicit, AUTH_DISABLED ) )
         {
-            IndexReference index = ((KernelTransaction) transaction).indexUniqueCreate( schema, provider );
+            IndexDescriptor2 index = ((KernelTransaction) transaction).indexUniqueCreate( schema, provider );
             transaction.success();
             return index;
         }

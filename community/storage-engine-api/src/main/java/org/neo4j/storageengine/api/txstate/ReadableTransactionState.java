@@ -27,7 +27,7 @@ import javax.annotation.Nullable;
 
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.internal.schema.ConstraintDescriptor;
-import org.neo4j.internal.schema.IndexDescriptor;
+import org.neo4j.internal.schema.IndexDescriptor2;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.storageengine.api.RelationshipVisitor;
 import org.neo4j.values.storable.ValueTuple;
@@ -90,15 +90,15 @@ public interface ReadableTransactionState
 
     // SCHEMA RELATED
 
-    DiffSets<IndexDescriptor> indexDiffSetsByLabel( int labelId );
+    DiffSets<IndexDescriptor2> indexDiffSetsByLabel( int labelId );
 
-    DiffSets<IndexDescriptor> indexDiffSetsByRelationshipType( int relationshipType );
+    DiffSets<IndexDescriptor2> indexDiffSetsByRelationshipType( int relationshipType );
 
-    DiffSets<IndexDescriptor> indexDiffSetsBySchema( SchemaDescriptor schema );
+    DiffSets<IndexDescriptor2> indexDiffSetsBySchema( SchemaDescriptor schema );
 
-    DiffSets<IndexDescriptor> indexChanges();
+    DiffSets<IndexDescriptor2> indexChanges();
 
-    Iterable<IndexDescriptor> constraintIndexesCreatedInTx();
+    Iterable<IndexDescriptor2> constraintIndexesCreatedInTx();
 
     DiffSets<ConstraintDescriptor> constraintsChanges();
 

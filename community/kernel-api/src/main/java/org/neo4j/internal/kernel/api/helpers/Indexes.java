@@ -24,9 +24,9 @@ import java.util.Iterator;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
-import org.neo4j.internal.kernel.api.IndexReference;
 import org.neo4j.internal.kernel.api.SchemaRead;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
+import org.neo4j.internal.schema.IndexDescriptor2;
 import org.neo4j.register.Register;
 import org.neo4j.register.Registers;
 
@@ -41,14 +41,14 @@ public class Indexes
      */
     public static void awaitResampling( SchemaRead schemaRead, long timeout ) throws TimeoutException
     {
-        final Iterator<IndexReference> indexes = schemaRead.indexesGetAll();
+        final Iterator<IndexDescriptor2> indexes = schemaRead.indexesGetAll();
         final Register.DoubleLongRegister register = Registers.newDoubleLongRegister();
         final long t0 = System.currentTimeMillis();
         final long timeoutMillis = 1000 * timeout;
 
         while ( indexes.hasNext() )
         {
-            final IndexReference index = indexes.next();
+            IndexDescriptor2 index = indexes.next();
             try
             {
                 long readUpdates = readUpdates( index, schemaRead, register );
@@ -80,7 +80,7 @@ public class Indexes
         }
     }
 
-    private static long readUpdates( IndexReference index, SchemaRead schemaRead, Register.DoubleLongRegister register ) throws IndexNotFoundKernelException
+    private static long readUpdates( IndexDescriptor2 index, SchemaRead schemaRead, Register.DoubleLongRegister register ) throws IndexNotFoundKernelException
     {
         schemaRead.indexUpdatesAndSize( index, register );
         return register.readFirst();

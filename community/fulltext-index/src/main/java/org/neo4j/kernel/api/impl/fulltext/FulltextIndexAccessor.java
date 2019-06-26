@@ -26,7 +26,7 @@ import java.io.UncheckedIOException;
 import java.util.Map;
 
 import org.neo4j.internal.helpers.collection.BoundedIterable;
-import org.neo4j.internal.schema.IndexDescriptor;
+import org.neo4j.internal.schema.IndexDescriptor2;
 import org.neo4j.kernel.api.impl.index.AbstractLuceneIndexAccessor;
 import org.neo4j.kernel.api.impl.index.DatabaseIndex;
 import org.neo4j.kernel.api.index.IndexUpdater;
@@ -41,10 +41,10 @@ import static org.neo4j.kernel.api.impl.fulltext.LuceneFulltextDocumentStructure
 public class FulltextIndexAccessor extends AbstractLuceneIndexAccessor<FulltextIndexReader,DatabaseIndex<FulltextIndexReader>>
 {
     private final IndexUpdateSink indexUpdateSink;
-    private final IndexDescriptor descriptor;
+    private final IndexDescriptor2 descriptor;
     private final String[] propertyNames;
 
-    FulltextIndexAccessor( IndexUpdateSink indexUpdateSink, DatabaseIndex<FulltextIndexReader> luceneIndex, IndexDescriptor descriptor,
+    FulltextIndexAccessor( IndexUpdateSink indexUpdateSink, DatabaseIndex<FulltextIndexReader> luceneIndex, IndexDescriptor2 descriptor,
             String[] propertyNames )
     {
         super( luceneIndex, descriptor );

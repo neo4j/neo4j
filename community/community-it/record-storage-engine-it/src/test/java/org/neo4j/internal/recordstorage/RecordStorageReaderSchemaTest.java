@@ -25,11 +25,10 @@ import java.util.Set;
 
 import org.neo4j.graphdb.Label;
 import org.neo4j.internal.schema.ConstraintDescriptor;
-import org.neo4j.internal.schema.IndexDescriptor;
+import org.neo4j.internal.schema.IndexDescriptor2;
+import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.internal.schema.constraints.ConstraintDescriptorFactory;
-import org.neo4j.kernel.impl.index.schema.IndexDescriptorFactory;
-import org.neo4j.storageengine.api.StorageIndexReference;
 import org.neo4j.storageengine.api.StorageSchemaReader;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -45,10 +44,10 @@ class RecordStorageReaderSchemaTest extends RecordStorageReaderTestBase
         createIndex( label2, propertyKey );
 
         // When
-        Set<StorageIndexReference> indexes = asSet( storageReader.indexesGetAll() );
+        Set<IndexDescriptor2> indexes = asSet( storageReader.indexesGetAll() );
 
         // Then
-        Set<?> expectedIndexes = asSet(
+        Set<IndexDescriptor2> expectedIndexes = asSet(
                 indexDescriptor( label1, propertyKey ),
                 indexDescriptor( label2, propertyKey ) );
 
@@ -64,10 +63,10 @@ class RecordStorageReaderSchemaTest extends RecordStorageReaderTestBase
         // When
         StorageSchemaReader snapshot = storageReader.schemaSnapshot();
         createIndex( label2, propertyKey );
-        Set<StorageIndexReference> indexes = asSet( snapshot.indexesGetAll() );
+        Set<IndexDescriptor2> indexes = asSet( snapshot.indexesGetAll() );
 
         // Then
-        Set<?> expectedIndexes = asSet(
+        Set<IndexDescriptor2> expectedIndexes = asSet(
                 indexDescriptor( label1, propertyKey ) );
 
         assertEquals( expectedIndexes, indexes );
@@ -84,7 +83,7 @@ class RecordStorageReaderSchemaTest extends RecordStorageReaderTestBase
         Set<ConstraintDescriptor> constraints = asSet( storageReader.constraintsGetAll() );
 
         // Then
-        Set<?> expectedConstraints = asSet(
+        Set<ConstraintDescriptor> expectedConstraints = asSet(
                 uniqueConstraintDescriptor( label1, propertyKey ),
                 uniqueConstraintDescriptor( label2, propertyKey ) );
 
@@ -103,7 +102,7 @@ class RecordStorageReaderSchemaTest extends RecordStorageReaderTestBase
         Set<ConstraintDescriptor> constraints = asSet( snapshot.constraintsGetAll() );
 
         // Then
-        Set<?> expectedConstraints = asSet(
+        Set<ConstraintDescriptor> expectedConstraints = asSet(
                 uniqueConstraintDescriptor( label1, propertyKey ) );
 
         assertEquals( expectedConstraints, constraints );
@@ -120,7 +119,7 @@ class RecordStorageReaderSchemaTest extends RecordStorageReaderTestBase
         Set<ConstraintDescriptor> constraints = asSet( storageReader.constraintsGetForLabel( labelId( label1 ) ) );
 
         // Then
-        Set<?> expectedConstraints = asSet( uniqueConstraintDescriptor( label1, propertyKey ) );
+        Set<ConstraintDescriptor> expectedConstraints = asSet( uniqueConstraintDescriptor( label1, propertyKey ) );
 
         assertEquals( expectedConstraints, constraints );
     }
@@ -138,7 +137,7 @@ class RecordStorageReaderSchemaTest extends RecordStorageReaderTestBase
         Set<ConstraintDescriptor> constraints = asSet( snapshot.constraintsGetForLabel( labelId( label1 ) ) );
 
         // Then
-        Set<?> expectedConstraints = asSet( uniqueConstraintDescriptor( label1, propertyKey ) );
+        Set<ConstraintDescriptor> expectedConstraints = asSet( uniqueConstraintDescriptor( label1, propertyKey ) );
 
         assertEquals( expectedConstraints, constraints );
     }
@@ -155,17 +154,17 @@ class RecordStorageReaderSchemaTest extends RecordStorageReaderTestBase
                 storageReader.constraintsGetForSchema( uniqueConstraintDescriptor( label1, propertyKey ).schema() ) );
 
         // Then
-        Set<?> expectedConstraints = asSet(
+        Set<ConstraintDescriptor> expectedConstraints = asSet(
                 uniqueConstraintDescriptor( label1, propertyKey ) );
 
         assertEquals( expectedConstraints, constraints );
     }
 
-    private IndexDescriptor indexDescriptor( Label label, String propertyKey )
+    private IndexDescriptor2 indexDescriptor( Label label, String propertyKey )
     {
         int labelId = labelId( label );
         int propKeyId = propertyKeyId( propertyKey );
-        return IndexDescriptorFactory.forSchema( SchemaDescriptor.forLabel( labelId, propKeyId ) );
+        return IndexPrototype.forSchema( SchemaDescriptor.forLabel( labelId, propKeyId ) ).materialise( 0 );
     }
 
     private ConstraintDescriptor uniqueConstraintDescriptor( Label label, String propertyKey )

@@ -22,24 +22,22 @@ package org.neo4j.internal.recordstorage;
 import org.eclipse.collections.api.IntIterable;
 import org.eclipse.collections.api.set.primitive.LongSet;
 
-import java.util.Arrays;
 import java.util.Iterator;
+import java.util.OptionalLong;
 import java.util.stream.Stream;
 
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.internal.kernel.api.exceptions.schema.DuplicateSchemaRuleException;
 import org.neo4j.internal.kernel.api.exceptions.schema.SchemaRuleNotFoundException;
 import org.neo4j.internal.schema.ConstraintDescriptor;
-import org.neo4j.internal.schema.IndexDescriptor;
+import org.neo4j.internal.schema.IndexDescriptor2;
+import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.SchemaRule;
 import org.neo4j.internal.schema.SchemaState;
-import org.neo4j.internal.schema.constraints.IndexBackedConstraintDescriptor;
 import org.neo4j.internal.schema.constraints.NodeKeyConstraintDescriptor;
 import org.neo4j.internal.schema.constraints.UniquenessConstraintDescriptor;
 import org.neo4j.storageengine.api.ConstraintRule;
 import org.neo4j.storageengine.api.ConstraintRuleAccessor;
-import org.neo4j.storageengine.api.DefaultStorageIndexReference;
-import org.neo4j.storageengine.api.StorageIndexReference;
 import org.neo4j.storageengine.api.StorageProperty;
 import org.neo4j.storageengine.api.txstate.TxStateVisitor;
 
@@ -164,51 +162,51 @@ class TransactionToRecordStateVisitor extends TxStateVisitor.Adapter
     }
 
     @Override
-    public void visitAddedIndex( IndexDescriptor index ) throws KernelException
+    public void visitAddedIndex( IndexDescriptor2 index ) throws KernelException
     {
-        SchemaRule rule = new DefaultStorageIndexReference( index, schemaStorage.newRuleId(), null );
-        schemaStateChanger.createSchemaRule( recordState, rule );
+        schemaStateChanger.createSchemaRule( recordState, index );
     }
 
     @Override
-    public void visitRemovedIndex( IndexDescriptor index )
+    public void visitRemovedIndex( IndexDescriptor2 index )
     {
-        StorageIndexReference rule = null;
-        if ( index instanceof StorageIndexReference )
-        {
-            rule = (StorageIndexReference) index;
-        }
-        else if ( index.hasUserSuppliedName() )
-        {
-            String indexName = index.name();
-            rule = schemaStorage.indexGetForName( indexName );
-        }
-        else
-        {
-            // TODO we'll need to rethink this whole thing once multiple identical schemas are allowed.
-            StorageIndexReference[] rules = schemaStorage.indexGetForSchema( index, true );
-            if ( rules.length == 0 )
-            {
-                // Loosen the filtering a bit. The reason we do this during drop is this scenario where a uniqueness constraint creation
-                // crashed or similar, where the UNIQUE index exists, but not its constraint and so the only way to drop it
-                // (if you don't want to go the route of first creating a constraint and then drop that, where the index would be dropped along with it),
-                // is to do "DROP INDEX ON :Label(name) which has the type as GENERAL and would miss it.
-                rules = schemaStorage.indexGetForSchema( index, false );
-            }
-            if ( rules.length > 1 )
-            {
-                throw new IllegalStateException( "More than one index matched schema '" + index +
-                        "', don't know which one to remove: " + Arrays.toString( rules ) );
-            }
-            if ( rules.length > 0 )
-            {
-                rule = rules[0];
-            }
-        }
-        if ( rule != null )
-        {
-            schemaStateChanger.dropSchemaRule( recordState, rule );
-        }
+//        StorageIndexReference rule = null;
+//        if ( index instanceof StorageIndexReference )
+//        {
+//            rule = (StorageIndexReference) index;
+//        }
+//        else if ( index.hasUserSuppliedName() )
+//        {
+//            String indexName = index.getName();
+//            rule = schemaStorage.indexGetForName( indexName );
+//        }
+//        else
+//        {
+//            // TODO we'll need to rethink this whole thing once multiple identical schemas are allowed.
+//            StorageIndexReference[] rules = schemaStorage.indexGetForSchema( index, true );
+//            if ( rules.length == 0 )
+//            {
+//                // Loosen the filtering a bit. The reason we do this during drop is this scenario where a uniqueness constraint creation
+//                // crashed or similar, where the UNIQUE index exists, but not its constraint and so the only way to drop it
+//                // (if you don't want to go the route of first creating a constraint and then drop that, where the index would be dropped along with it),
+//                // is to do "DROP INDEX ON :Label(name) which has the type as GENERAL and would miss it.
+//                rules = schemaStorage.indexGetForSchema( index, false );
+//            }
+//            if ( rules.length > 1 )
+//            {
+//                throw new IllegalStateException( "More than one index matched schema '" + index +
+//                        "', don't know which one to remove: " + Arrays.toString( rules ) );
+//            }
+//            if ( rules.length > 0 )
+//            {
+//                rule = rules[0];
+//            }
+//        }
+//        if ( rule != null )
+//        {
+//            schemaStateChanger.dropSchemaRule( recordState, rule );
+//        }
+        schemaStateChanger.dropSchemaRule( recordState, index );
     }
 
     @Override
@@ -239,7 +237,7 @@ class TransactionToRecordStateVisitor extends TxStateVisitor.Adapter
 
     private void visitAddedUniquenessConstraint( UniquenessConstraintDescriptor uniqueConstraint, long constraintId ) throws KernelException
     {
-        StorageIndexReference indexRule = firstUniqueConstraintIndex( schemaStorage.indexGetForSchema( uniqueConstraint.ownedIndexDescriptor() ) );
+        IndexDescriptor2 indexRule = firstUniqueConstraintIndex( schemaStorage.indexGetForSchema( uniqueConstraint.ownedIndexDescriptor() ) );
         ConstraintRule constraintRule = constraintSemantics.createUniquenessConstraintRule( constraintId, uniqueConstraint, indexRule.getId() );
         schemaStateChanger.createSchemaRule( recordState, constraintRule );
         schemaStateChanger.setConstraintIndexOwner( recordState, indexRule, constraintId );
@@ -247,15 +245,15 @@ class TransactionToRecordStateVisitor extends TxStateVisitor.Adapter
 
     private void visitAddedNodeKeyConstraint( NodeKeyConstraintDescriptor uniqueConstraint, long constraintId ) throws KernelException
     {
-        StorageIndexReference indexRule = firstUniqueConstraintIndex( schemaStorage.indexGetForSchema( uniqueConstraint.ownedIndexDescriptor() ) );
+        IndexDescriptor2 indexRule = firstUniqueConstraintIndex( schemaStorage.indexGetForSchema( uniqueConstraint.ownedIndexDescriptor() ) );
         ConstraintRule constraintRule = constraintSemantics.createNodeKeyConstraintRule( constraintId, uniqueConstraint, indexRule.getId() );
         schemaStateChanger.createSchemaRule( recordState, constraintRule );
         schemaStateChanger.setConstraintIndexOwner( recordState, indexRule, constraintId );
     }
 
-    private StorageIndexReference firstUniqueConstraintIndex( StorageIndexReference[] indexGetForSchema )
+    private IndexDescriptor2 firstUniqueConstraintIndex( IndexDescriptor2[] indexGetForSchema )
     {
-        return Stream.of( indexGetForSchema ).filter( StorageIndexReference::isUnique ).findFirst().orElse( null );
+        return Stream.of( indexGetForSchema ).filter( IndexDescriptor2::isUnique ).findFirst().orElse( null );
     }
 
     @Override
@@ -266,6 +264,24 @@ class TransactionToRecordStateVisitor extends TxStateVisitor.Adapter
         {
             ConstraintRule rule = schemaStorage.constraintsGetSingle( constraint );
             schemaStateChanger.dropSchemaRule( recordState, rule );
+
+            if ( constraint.enforcesUniqueness() )
+            {
+                // Remove the index for the constraint as well
+                IndexDescriptor2[] indexes = schemaStorage.indexGetForSchema( constraint.schema() );
+                for ( IndexDescriptor2 index : indexes )
+                {
+                    OptionalLong owningConstraintId = index.getOwningConstraintId();
+                    if ( owningConstraintId.isPresent() && owningConstraintId.getAsLong() == rule.getId() )
+                    {
+                        visitRemovedIndex( index );
+                    }
+                    // Note that we _could_ also go through all the matching indexes that have isUnique == true and no owning constraint id, and remove those
+                    // as well. These might be oprhaned indexes from failed constraint creations. However, since we want to allow multiple indexes and
+                    // constraints on the same schema, they could also be constraint indexes that are currently populating for other constraints, and if that's
+                    // the case, then we cannot remove them, since that would ruin the constraint they are being built for.
+                }
+            }
         }
         catch ( SchemaRuleNotFoundException e )
         {
@@ -276,11 +292,6 @@ class TransactionToRecordStateVisitor extends TxStateVisitor.Adapter
         catch ( DuplicateSchemaRuleException e )
         {
             throw new IllegalStateException( "Multiple constraints found for specified label and property." );
-        }
-        if ( constraint.enforcesUniqueness() )
-        {
-            // Remove the index for the constraint as well
-            visitRemovedIndex( ((IndexBackedConstraintDescriptor)constraint).ownedIndexDescriptor() );
         }
     }
 

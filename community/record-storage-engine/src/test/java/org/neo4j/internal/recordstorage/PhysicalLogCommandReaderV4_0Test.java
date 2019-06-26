@@ -25,6 +25,7 @@ import org.junit.jupiter.api.Test;
 import java.io.IOException;
 import java.util.concurrent.ThreadLocalRandom;
 
+import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.internal.schema.SchemaRule;
 import org.neo4j.kernel.impl.store.PropertyType;
@@ -40,7 +41,6 @@ import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
 import org.neo4j.kernel.impl.store.record.SchemaRecord;
 import org.neo4j.kernel.impl.transaction.log.InMemoryClosableChannel;
 import org.neo4j.storageengine.api.CommandReader;
-import org.neo4j.storageengine.api.DefaultStorageIndexReference;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -499,7 +499,7 @@ class PhysicalLogCommandReaderV4_0Test
         SchemaRecord after = createRandomSchemaRecord();
         markAfterRecordAsCreatedIfCommandLooksCreated( before, after );
 
-        SchemaRule rule = new DefaultStorageIndexReference( SchemaDescriptor.forLabel( 1, 2, 3 ), false, after.getId(), null );
+        SchemaRule rule = IndexPrototype.forSchema( SchemaDescriptor.forLabel( 1, 2, 3 ) ).materialise( after.getId() );
         new Command.SchemaRuleCommand( before, after, rule ).serialize( channel );
 
         CommandReader reader = createReader();

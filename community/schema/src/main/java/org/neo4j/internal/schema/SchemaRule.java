@@ -78,5 +78,5 @@ public interface SchemaRule extends SchemaDescriptorSupplier
     /**
      * @return The (possibly user supplied) name of this schema rule.
      */
-    String name();
+    String getName();
 }

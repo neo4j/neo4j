@@ -19,13 +19,13 @@
  */
 package org.neo4j.kernel.api.index;
 
-import org.neo4j.internal.schema.IndexDescriptor;
+import org.neo4j.internal.schema.IndexDescriptor2;
 
 public abstract class AbstractIndexReader implements IndexReader
 {
-    protected final IndexDescriptor descriptor;
+    protected final IndexDescriptor2 descriptor;
 
-    protected AbstractIndexReader( IndexDescriptor descriptor )
+    protected AbstractIndexReader( IndexDescriptor2 descriptor )
     {
         this.descriptor = descriptor;
     }

@@ -21,6 +21,7 @@ package org.neo4j.internal.schema;
 
 import org.neo4j.common.TokenNameLookup;
 
+@Deprecated
 public interface IndexDescriptor extends SchemaDescriptorSupplier
 {
     /**
@@ -29,7 +30,7 @@ public interface IndexDescriptor extends SchemaDescriptorSupplier
     boolean isUnique();
 
     /**
-     * @return whether or not this descriptor has a user-specified {@link #name()}. Regardless the {@link #name()} method will
+     * @return whether or not this descriptor has a user-specified {@link #getName()}. Regardless the {@link #getName()} method will
      * return some name, at the very least an automatically generated one.
      */
     boolean hasUserSuppliedName();
@@ -37,7 +38,7 @@ public interface IndexDescriptor extends SchemaDescriptorSupplier
     /**
      * The unique name for this index - either automatically generated or user supplied at creation.
      */
-    String name();
+    String getName();
 
     /**
      * Returns a user friendly description of what this index indexes.

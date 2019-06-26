@@ -22,8 +22,8 @@ package org.neo4j.internal.recordstorage;
 import java.util.Iterator;
 
 import org.neo4j.internal.schema.ConstraintDescriptor;
+import org.neo4j.internal.schema.IndexDescriptor2;
 import org.neo4j.internal.schema.SchemaDescriptor;
-import org.neo4j.storageengine.api.StorageIndexReference;
 import org.neo4j.storageengine.api.StorageSchemaReader;
 
 class StorageSchemaReaderSnapshot implements StorageSchemaReader
@@ -36,25 +36,25 @@ class StorageSchemaReaderSnapshot implements StorageSchemaReader
     }
 
     @Override
-    public StorageIndexReference indexGetForSchema( SchemaDescriptor descriptor )
+    public IndexDescriptor2 indexGetForSchema( SchemaDescriptor descriptor )
     {
         return schema.indexDescriptor( descriptor );
     }
 
     @Override
-    public Iterator<StorageIndexReference> indexesGetForLabel( int labelId )
+    public Iterator<IndexDescriptor2> indexesGetForLabel( int labelId )
     {
         return schema.indexDescriptorsForLabel( labelId );
     }
 
     @Override
-    public Iterator<StorageIndexReference> indexesGetForRelationshipType( int relationshipType )
+    public Iterator<IndexDescriptor2> indexesGetForRelationshipType( int relationshipType )
     {
         return schema.indexDescriptorsForRelationshipType( relationshipType );
     }
 
     @Override
-    public Iterator<StorageIndexReference> indexesGetAll()
+    public Iterator<IndexDescriptor2> indexesGetAll()
     {
         return schema.indexDescriptors().iterator();
     }

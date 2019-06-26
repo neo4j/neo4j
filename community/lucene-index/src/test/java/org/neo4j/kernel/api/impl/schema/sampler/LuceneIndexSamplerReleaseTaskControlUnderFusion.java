@@ -28,7 +28,10 @@ import java.io.IOException;
 
 import org.neo4j.configuration.Config;
 import org.neo4j.internal.helpers.TaskControl;
+import org.neo4j.internal.schema.IndexDescriptor2;
+import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.IndexProviderDescriptor;
+import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.impl.index.storage.DirectoryFactory;
@@ -46,12 +49,9 @@ import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingJob;
 import org.neo4j.kernel.impl.api.index.sampling.OnlineIndexSamplingJobFactory;
 import org.neo4j.kernel.impl.factory.OperationalMode;
-import org.neo4j.kernel.impl.index.schema.CapableIndexDescriptor;
-import org.neo4j.kernel.impl.index.schema.StoreIndexDescriptor;
 import org.neo4j.kernel.impl.index.schema.fusion.FusionIndexProvider;
 import org.neo4j.kernel.impl.index.schema.fusion.SlotSelector;
 import org.neo4j.storageengine.api.IndexEntryUpdate;
-import org.neo4j.storageengine.api.StorageIndexReference;
 import org.neo4j.test.extension.EphemeralFileSystemExtension;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.TestDirectoryExtension;
@@ -59,18 +59,15 @@ import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.values.storable.Values;
 
 import static org.junit.jupiter.api.Assertions.assertSame;
-import static org.neo4j.internal.schema.IndexCapability.NO_CAPABILITY;
 import static org.neo4j.kernel.api.index.IndexDirectoryStructure.directoriesByProvider;
 import static org.neo4j.kernel.api.schema.SchemaTestUtil.simpleNameLookup;
-import static org.neo4j.kernel.api.schema.index.TestIndexDescriptorFactory.forLabel;
 import static org.neo4j.logging.NullLogProvider.getInstance;
 
 @ExtendWith( {EphemeralFileSystemExtension.class, TestDirectoryExtension.class} )
 class LuceneIndexSamplerReleaseTaskControlUnderFusion
 {
     private static final int indexId = 1;
-    private static final StoreIndexDescriptor storeIndexDescriptor = forLabel( 1, 1 ).withId( indexId );
-    private static final CapableIndexDescriptor capableIndexDescriptor = new CapableIndexDescriptor( storeIndexDescriptor, NO_CAPABILITY );
+    private static final IndexDescriptor2 descriptor = IndexPrototype.forSchema( SchemaDescriptor.forLabel( 1, 1 ) ).materialise( indexId );
     private static final IndexProviderDescriptor providerDescriptor = IndexProviderDescriptor.UNDECIDED;
     private static final DirectoryFactory.InMemoryDirectoryFactory luceneDirectoryFactory = new DirectoryFactory.InMemoryDirectoryFactory();
     private static final Config config = Config.defaults();
@@ -112,7 +109,7 @@ class LuceneIndexSamplerReleaseTaskControlUnderFusion
 
         IndexProvider failingProvider = failingProvider();
         FusionIndexProvider fusionProvider = createFusionProvider( luceneProvider, failingProvider );
-        try ( IndexAccessor fusionAccessor = fusionProvider.getOnlineAccessor( storeIndexDescriptor, samplingConfig ) )
+        try ( IndexAccessor fusionAccessor = fusionProvider.getOnlineAccessor( descriptor, samplingConfig ) )
         {
             IndexSamplingJob indexSamplingJob = createIndexSamplingJob( fusionAccessor );
 
@@ -134,10 +131,10 @@ class LuceneIndexSamplerReleaseTaskControlUnderFusion
 
     private void makeSureIndexHasSomeData( IndexProvider provider ) throws IOException, IndexEntryConflictException
     {
-        try ( IndexAccessor accessor = provider.getOnlineAccessor(storeIndexDescriptor, samplingConfig );
+        try ( IndexAccessor accessor = provider.getOnlineAccessor( descriptor, samplingConfig );
               IndexUpdater updater = accessor.newUpdater( IndexUpdateMode.ONLINE ) )
         {
-            updater.process( IndexEntryUpdate.add( 1, storeIndexDescriptor, Values.of( "some string" ) ) );
+            updater.process( IndexEntryUpdate.add( 1, descriptor, Values.of( "some string" ) ) );
         }
     }
 
@@ -153,9 +150,9 @@ class LuceneIndexSamplerReleaseTaskControlUnderFusion
         IndexProxyAdapter indexProxy = new IndexProxyAdapter()
         {
             @Override
-            public CapableIndexDescriptor getDescriptor()
+            public IndexDescriptor2 getDescriptor()
             {
-                return capableIndexDescriptor;
+                return descriptor;
             }
 
             @Override
@@ -182,7 +179,7 @@ class LuceneIndexSamplerReleaseTaskControlUnderFusion
         return new IndexProvider.Adaptor( providerDescriptor, directoryFactory )
         {
             @Override
-            public IndexAccessor getOnlineAccessor( StorageIndexReference descriptor, IndexSamplingConfig samplingConfig ) throws IOException
+            public IndexAccessor getOnlineAccessor( IndexDescriptor2 descriptor, IndexSamplingConfig samplingConfig ) throws IOException
             {
                 return failingIndexAccessor();
             }

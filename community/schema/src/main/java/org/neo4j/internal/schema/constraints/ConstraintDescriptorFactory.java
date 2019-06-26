@@ -20,6 +20,7 @@
 package org.neo4j.internal.schema.constraints;
 
 import org.neo4j.common.TokenNameLookup;
+import org.neo4j.internal.schema.IndexDescriptor2;
 import org.neo4j.internal.schema.LabelSchemaDescriptor;
 import org.neo4j.internal.schema.RelationTypeSchemaDescriptor;
 import org.neo4j.internal.schema.SchemaComputer;
@@ -45,12 +46,12 @@ public class ConstraintDescriptorFactory
 
     public static UniquenessConstraintDescriptor uniqueForLabel( int labelId, int... propertyIds )
     {
-        return new UniquenessConstraintDescriptor( SchemaDescriptor.forLabel( labelId, propertyIds ) );
+        return uniqueForSchema( SchemaDescriptor.forLabel( labelId, propertyIds ) );
     }
 
     public static NodeKeyConstraintDescriptor nodeKeyForLabel( int labelId, int... propertyIds )
     {
-        return new NodeKeyConstraintDescriptor( SchemaDescriptor.forLabel( labelId, propertyIds ) );
+        return nodeKeyForSchema( SchemaDescriptor.forLabel( labelId, propertyIds ) );
     }
 
     public static AbstractConstraintDescriptor existsForSchema( SchemaDescriptor schema )

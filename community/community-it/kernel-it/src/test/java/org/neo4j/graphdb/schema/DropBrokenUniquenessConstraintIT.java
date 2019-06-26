@@ -26,9 +26,8 @@ import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.internal.recordstorage.RecordStorageEngine;
 import org.neo4j.internal.recordstorage.SchemaRuleAccess;
-import org.neo4j.kernel.impl.index.schema.StoreIndexDescriptor;
+import org.neo4j.internal.schema.IndexDescriptor2;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
-import org.neo4j.storageengine.api.StorageIndexReference;
 import org.neo4j.test.extension.DbmsExtension;
 import org.neo4j.test.extension.Inject;
 
@@ -174,9 +173,9 @@ class DropBrokenUniquenessConstraintIT
 
     private void writeSchemaRulesWithoutConstraint( SchemaRuleAccess schemaRules ) throws KernelException
     {
-        for ( StorageIndexReference rule : loop( schemaRules.indexesGetAll() ) )
+        for ( IndexDescriptor2 rule : loop( schemaRules.indexesGetAll() ) )
         {
-            schemaRules.writeSchemaRule( new StoreIndexDescriptor( rule, null ) );
+            schemaRules.writeSchemaRule( rule );
         }
     }
 }

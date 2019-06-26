@@ -24,6 +24,8 @@ import org.junit.jupiter.api.Test;
 import java.util.Collection;
 import java.util.Collections;
 
+import org.neo4j.internal.schema.IndexDescriptor2;
+import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.PropertyStore;
 import org.neo4j.kernel.impl.store.RelationshipStore;
@@ -31,11 +33,9 @@ import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.SchemaRecord;
 import org.neo4j.storageengine.api.CommandsToApply;
-import org.neo4j.storageengine.api.DefaultStorageIndexReference;
 import org.neo4j.storageengine.api.IndexUpdateListener;
 import org.neo4j.storageengine.api.NodeLabelUpdateListener;
 import org.neo4j.storageengine.api.StorageEngine;
-import org.neo4j.storageengine.api.StorageIndexReference;
 import org.neo4j.util.concurrent.WorkSync;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -58,12 +58,12 @@ class NeoTransactionIndexApplierTest
     void shouldUpdateLabelStoreScanOnNodeCommands() throws Exception
     {
         // given
-        final IndexBatchTransactionApplier applier = newIndexTransactionApplier();
-        final NodeRecord before = new NodeRecord( 11 );
+        IndexBatchTransactionApplier applier = newIndexTransactionApplier();
+        NodeRecord before = new NodeRecord( 11 );
         before.setLabelField( 17, emptyDynamicRecords );
-        final NodeRecord after = new NodeRecord( 12 );
+        NodeRecord after = new NodeRecord( 12 );
         after.setLabelField( 18, emptyDynamicRecords );
-        final Command.NodeCommand command = new Command.NodeCommand( before, after );
+        Command.NodeCommand command = new Command.NodeCommand( before, after );
 
         // when
         boolean result;
@@ -87,15 +87,14 @@ class NeoTransactionIndexApplierTest
     void shouldCreateIndexGivenCreateSchemaRuleCommand() throws Exception
     {
         // Given
-        final StorageIndexReference indexRule = indexRule( 1, 42, 42 );
+        IndexDescriptor2 indexRule = indexRule( 1, 42, 42 );
 
-        final IndexBatchTransactionApplier applier = newIndexTransactionApplier();
+        IndexBatchTransactionApplier applier = newIndexTransactionApplier();
 
         SchemaRecord before = new SchemaRecord( 1 );
         SchemaRecord after = before.clone().initialize( true, 39 );
         after.setCreated();
-        final Command.SchemaRuleCommand command =
-                new Command.SchemaRuleCommand( before, after, indexRule );
+        Command.SchemaRuleCommand command = new Command.SchemaRuleCommand( before, after, indexRule );
 
         // When
         boolean result;
@@ -109,23 +108,22 @@ class NeoTransactionIndexApplierTest
         verify( indexingService ).createIndexes( indexRule );
     }
 
-    private StorageIndexReference indexRule( long ruleId, int labelId, int propertyId )
+    private IndexDescriptor2 indexRule( long ruleId, int labelId, int propertyId )
     {
-        return new DefaultStorageIndexReference( forLabel( labelId, propertyId ), false, ruleId, null );
+        return IndexPrototype.forSchema( forLabel( labelId, propertyId ) ).materialise( ruleId );
     }
 
     @Test
     void shouldDropIndexGivenDropSchemaRuleCommand() throws Exception
     {
         // Given
-        final StorageIndexReference indexRule = indexRule( 1, 42, 42 );
+        IndexDescriptor2 indexRule = indexRule( 1, 42, 42 );
 
-        final IndexBatchTransactionApplier applier = newIndexTransactionApplier();
+        IndexBatchTransactionApplier applier = newIndexTransactionApplier();
 
         SchemaRecord before = new SchemaRecord( 1 ).initialize( true, 39 );
         SchemaRecord after = new SchemaRecord( 1 );
-        final Command.SchemaRuleCommand command = new Command.SchemaRuleCommand(
-                before, after, indexRule );
+        Command.SchemaRuleCommand command = new Command.SchemaRuleCommand( before, after, indexRule );
 
         // When
         boolean result;

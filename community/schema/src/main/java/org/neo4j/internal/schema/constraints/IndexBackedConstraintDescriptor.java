@@ -20,8 +20,6 @@
 package org.neo4j.internal.schema.constraints;
 
 import org.neo4j.common.TokenNameLookup;
-import org.neo4j.internal.schema.DefaultIndexDescriptor;
-import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.LabelSchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptorSupplier;
 import org.neo4j.token.api.TokenIdPrettyPrinter;
@@ -29,13 +27,13 @@ import org.neo4j.token.api.TokenIdPrettyPrinter;
 public abstract class IndexBackedConstraintDescriptor extends AbstractConstraintDescriptor implements SchemaDescriptorSupplier
 {
     private final LabelSchemaDescriptor schema;
-    private final IndexDescriptor ownedIndexDescriptor;
+    private final LabelSchemaDescriptor ownedIndexSchema;
 
-    IndexBackedConstraintDescriptor( Type type, LabelSchemaDescriptor schema )
+    IndexBackedConstraintDescriptor( Type type, LabelSchemaDescriptor ownedIndexSchema )
     {
         super( type );
-        this.schema = schema;
-        this.ownedIndexDescriptor = new DefaultIndexDescriptor( schema, true );
+        this.schema = ownedIndexSchema;
+        this.ownedIndexSchema = ownedIndexSchema;
     }
 
     @Override
@@ -44,9 +42,9 @@ public abstract class IndexBackedConstraintDescriptor extends AbstractConstraint
         return schema;
     }
 
-    public IndexDescriptor ownedIndexDescriptor()
+    public LabelSchemaDescriptor ownedIndexDescriptor()
     {
-        return ownedIndexDescriptor;
+        return ownedIndexSchema;
     }
 
     @Override

@@ -26,13 +26,11 @@ import org.neo4j.internal.kernel.api.exceptions.schema.DuplicateSchemaRuleExcept
 import org.neo4j.internal.kernel.api.exceptions.schema.MalformedSchemaRuleException;
 import org.neo4j.internal.kernel.api.exceptions.schema.SchemaRuleNotFoundException;
 import org.neo4j.internal.schema.ConstraintDescriptor;
-import org.neo4j.internal.schema.IndexDescriptor;
-import org.neo4j.internal.schema.SchemaDescriptor;
+import org.neo4j.internal.schema.IndexDescriptor2;
 import org.neo4j.internal.schema.SchemaDescriptorSupplier;
 import org.neo4j.internal.schema.SchemaRule;
 import org.neo4j.kernel.impl.store.SchemaStore;
 import org.neo4j.storageengine.api.ConstraintRule;
-import org.neo4j.storageengine.api.StorageIndexReference;
 import org.neo4j.token.TokenHolders;
 import org.neo4j.util.VisibleForTesting;
 
@@ -49,25 +47,15 @@ public interface SchemaRuleAccess
 
     SchemaRule loadSingleSchemaRule( long ruleId ) throws MalformedSchemaRuleException;
 
-    Iterator<StorageIndexReference> indexesGetAll();
+    Iterator<IndexDescriptor2> indexesGetAll();
 
     /**
      * Find the IndexRule that matches the given {@link SchemaDescriptorSupplier}.
      *
      * @return an array of all the matching index rules. Empty array if none found.
-     * @param index the target {@link StorageIndexReference}
+     * @param index the target {@link IndexDescriptor2}
      */
-    StorageIndexReference[] indexGetForSchema( SchemaDescriptorSupplier index );
-
-    /**
-     * Find the IndexRule that matches the given IndexDescriptor.
-     *
-     * @return an array of all the matching index rules. Empty array if none found.
-     * @throws IllegalStateException if more than one matching rule.
-     * @param descriptor the target IndexDescriptor
-     * @param filterOnType whether or not to filter on index type. If {@code false} then only {@link SchemaDescriptor} will be compared.
-     */
-    StorageIndexReference[] indexGetForSchema( IndexDescriptor descriptor, boolean filterOnType );
+    IndexDescriptor2[] indexGetForSchema( SchemaDescriptorSupplier index );
 
     /**
      * Find the IndexRule that has the given user supplied name.
@@ -75,7 +63,7 @@ public interface SchemaRuleAccess
      * @param indexName the user supplied index name to look for.
      * @return the matching IndexRule, or null if no matching index rule was found.
      */
-    StorageIndexReference indexGetForName( String indexName );
+    IndexDescriptor2 indexGetForName( String indexName );
 
     /**
      * Get the constraint rule that matches the given ConstraintDescriptor

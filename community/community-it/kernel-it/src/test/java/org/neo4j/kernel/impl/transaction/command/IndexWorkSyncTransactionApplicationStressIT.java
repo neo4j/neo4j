@@ -98,7 +98,7 @@ public class IndexWorkSyncTransactionApplicationStressIT
                 .getWith( fs, pageCache, directory.databaseLayout() )
                 .indexUpdateListener( index )
                 .build();
-        storageEngine.apply( tx( singletonList( Commands.createIndexRule( DESCRIPTOR.getKey(), DESCRIPTOR.getVersion(), 1, descriptor ) ) ), EXTERNAL );
+        storageEngine.apply( tx( singletonList( Commands.createIndexRule( DESCRIPTOR, 1, descriptor ) ) ), EXTERNAL );
 
         // WHEN
         Workers<Worker> workers = new Workers<>( getClass().getSimpleName() );

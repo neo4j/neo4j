@@ -423,7 +423,7 @@ public class ConsistencyReporterTest
                 }
 
                 @Override
-                public String name()
+                public String getName()
                 {
                     return null;
                 }

@@ -91,9 +91,4 @@ public class IndexProviderDescriptor
     {
         return "{key=" + key + ", version=" + version + "}";
     }
-
-    public static IndexProviderDescriptor from( IndexDescriptor descriptor )
-    {
-        return new IndexProviderDescriptor( descriptor.providerKey(), descriptor.providerVersion() );
-    }
 }

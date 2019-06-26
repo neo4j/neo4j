@@ -112,7 +112,7 @@ public class ConstraintRule implements SchemaRule, StorageConstraintReference
     }
 
     @Override
-    public String name()
+    public String getName()
     {
         return name;
     }

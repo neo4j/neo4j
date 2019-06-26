@@ -51,10 +51,8 @@ import org.neo4j.graphdb.traversal.BidirectionalTraversalDescription;
 import org.neo4j.graphdb.traversal.TraversalDescription;
 import org.neo4j.internal.helpers.collection.Iterators;
 import org.neo4j.internal.helpers.collection.PrefetchingResourceIterator;
-import org.neo4j.internal.schema.IndexOrder;
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.internal.kernel.api.IndexReadSession;
-import org.neo4j.internal.kernel.api.IndexReference;
 import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.NodeIndexCursor;
 import org.neo4j.internal.kernel.api.NodeLabelIndexCursor;
@@ -72,6 +70,8 @@ import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.internal.kernel.api.exceptions.schema.ConstraintValidationException;
 import org.neo4j.internal.kernel.api.exceptions.schema.SchemaKernelException;
 import org.neo4j.internal.kernel.api.security.LoginContext;
+import org.neo4j.internal.schema.IndexDescriptor2;
+import org.neo4j.internal.schema.IndexOrder;
 import org.neo4j.io.IOUtils;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.kernel.GraphDatabaseQueryService;
@@ -601,8 +601,8 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI, EmbeddedProxySPI
             statement.close();
             return emptyResourceIterator();
         }
-        IndexReference index = transaction.schemaRead().index( labelId, query.propertyKeyId() );
-        if ( index != IndexReference.NO_INDEX )
+        IndexDescriptor2 index = transaction.schemaRead().index( labelId, query.propertyKeyId() );
+        if ( index != IndexDescriptor2.NO_INDEX )
         {
             // Ha! We found an index - let's use it to find matching nodes
             try
@@ -635,15 +635,15 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI, EmbeddedProxySPI
         }
 
         int[] propertyIds = getPropertyIds( queries );
-        IndexReference index = findMatchingIndex( transaction, labelId, propertyIds );
+        IndexDescriptor2 index = findMatchingIndex( transaction, labelId, propertyIds );
 
-        if ( index != IndexReference.NO_INDEX )
+        if ( index != IndexDescriptor2.NO_INDEX )
         {
             try
             {
                 NodeValueIndexCursor cursor = transaction.cursors().allocateNodeValueIndexCursor();
                 IndexReadSession indexSession = read.indexReadSession( index );
-                read.nodeIndexSeek( indexSession, cursor, IndexOrder.NONE, false, getReorderedIndexQueries( index.properties(), queries ) );
+                read.nodeIndexSeek( indexSession, cursor, IndexOrder.NONE, false, getReorderedIndexQueries( index.schema().getPropertyIds(), queries ) );
                 return new NodeCursorResourceIterator<>( cursor, statement, this::newNodeProxy );
             }
             catch ( KernelException e )
@@ -654,10 +654,10 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI, EmbeddedProxySPI
         return getNodesByLabelAndPropertyWithoutIndex( statement, labelId, queries );
     }
 
-    private static IndexReference findMatchingIndex( KernelTransaction transaction, int labelId, int[] propertyIds )
+    private static IndexDescriptor2 findMatchingIndex( KernelTransaction transaction, int labelId, int[] propertyIds )
     {
-        IndexReference index = transaction.schemaRead().index( labelId, propertyIds );
-        if ( index != IndexReference.NO_INDEX )
+        IndexDescriptor2 index = transaction.schemaRead().index( labelId, propertyIds );
+        if ( index != IndexDescriptor2.NO_INDEX )
         {
             // index found with property order matching the query
             return index;
@@ -670,18 +670,18 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI, EmbeddedProxySPI
 
             int[] workingCopy = new int[propertyIds.length];
 
-            Iterator<IndexReference> indexes = transaction.schemaRead().indexesGetForLabel( labelId );
+            Iterator<IndexDescriptor2> indexes = transaction.schemaRead().indexesGetForLabel( labelId );
             while ( indexes.hasNext() )
             {
                 index = indexes.next();
-                int[] original = index.properties();
+                int[] original = index.schema().getPropertyIds();
                 if ( hasSamePropertyIds( original, workingCopy, propertyIds ) )
                 {
                     // Ha! We found an index with the same properties in another order
                     return index;
                 }
             }
-            return IndexReference.NO_INDEX;
+            return IndexDescriptor2.NO_INDEX;
         }
     }
 

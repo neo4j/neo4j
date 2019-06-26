@@ -51,6 +51,8 @@ import org.neo4j.internal.recordstorage.Command.RelationshipCommand;
 import org.neo4j.internal.recordstorage.Command.RelationshipGroupCommand;
 import org.neo4j.internal.recordstorage.Command.SchemaRuleCommand;
 import org.neo4j.internal.recordstorage.RecordAccess.RecordProxy;
+import org.neo4j.internal.schema.IndexDescriptor2;
+import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.internal.schema.SchemaRule;
 import org.neo4j.internal.schema.constraints.ConstraintDescriptorFactory;
@@ -81,11 +83,9 @@ import org.neo4j.lock.ResourceLocker;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.storageengine.api.CommandsToApply;
 import org.neo4j.storageengine.api.ConstraintRule;
-import org.neo4j.storageengine.api.DefaultStorageIndexReference;
 import org.neo4j.storageengine.api.IndexEntryUpdate;
 import org.neo4j.storageengine.api.StandardConstraintRuleAccessor;
 import org.neo4j.storageengine.api.StorageCommand;
-import org.neo4j.storageengine.api.StorageIndexReference;
 import org.neo4j.storageengine.api.StorageReader;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.pagecache.EphemeralPageCacheExtension;
@@ -263,10 +263,10 @@ class TransactionRecordStateTest
         // -- indexes
         long nodeRuleId = 0;
         TransactionRecordState recordState = newTransactionRecordState();
-        SchemaRule nodeRule = new DefaultStorageIndexReference( forLabel( labelId, propertyKeyId ), false, nodeRuleId, null );
+        SchemaRule nodeRule = IndexPrototype.forSchema( forLabel( labelId, propertyKeyId ) ).materialise( nodeRuleId );
         recordState.schemaRuleCreate( nodeRuleId, false, nodeRule );
         long relRuleId = 1;
-        SchemaRule relRule = new DefaultStorageIndexReference( forRelType( relTypeId, propertyKeyId ), false, relRuleId, null );
+        SchemaRule relRule = IndexPrototype.forSchema( forRelType( relTypeId, propertyKeyId ) ).materialise( relRuleId );
         recordState.schemaRuleCreate( relRuleId, false, relRule );
         apply( recordState );
 
@@ -368,8 +368,8 @@ class TransactionRecordStateTest
         recordState.nodeAddProperty( nodeId, propertyId1, value1 );
         recordState.nodeAddProperty( nodeId, propertyId2, value2 );
         apply( recordState );
-        StorageIndexReference rule1 = createIndex( labelIdOne, propertyId1 );
-        StorageIndexReference rule2 = createIndex( labelIdOne, propertyId2 );
+        IndexDescriptor2 rule1 = createIndex( labelIdOne, propertyId1 );
+        IndexDescriptor2 rule2 = createIndex( labelIdOne, propertyId2 );
 
         // WHEN
         recordState = newTransactionRecordState();
@@ -394,8 +394,8 @@ class TransactionRecordStateTest
         recordState.nodeAddProperty( nodeId, propertyId1, value1 );
         addLabelsToNode( recordState, nodeId, oneLabelId );
         apply( recordState );
-        StorageIndexReference rule1 = createIndex( labelIdOne, propertyId2 );
-        StorageIndexReference rule2 = createIndex( labelIdOne, propertyId1, propertyId2 );
+        IndexDescriptor2 rule1 = createIndex( labelIdOne, propertyId2 );
+        IndexDescriptor2 rule2 = createIndex( labelIdOne, propertyId1, propertyId2 );
 
         // WHEN
         recordState = newTransactionRecordState();
@@ -422,7 +422,7 @@ class TransactionRecordStateTest
         recordState.nodeAddProperty( nodeId, propertyId2, value2 );
         addLabelsToNode( recordState, nodeId, oneLabelId );
         apply( recordState );
-        StorageIndexReference rule = createIndex( labelIdOne, propertyId1 );
+        IndexDescriptor2 rule = createIndex( labelIdOne, propertyId1 );
 
         // WHEN
         recordState = newTransactionRecordState();
@@ -444,8 +444,8 @@ class TransactionRecordStateTest
         recordState.nodeAddProperty( nodeId, propertyId1, value1 );
         addLabelsToNode( recordState, nodeId, bothLabelIds );
         apply( recordState );
-        StorageIndexReference rule1 = createIndex( labelIdOne, propertyId1 );
-        StorageIndexReference rule2 = createIndex( labelIdSecond, propertyId1 );
+        IndexDescriptor2 rule1 = createIndex( labelIdOne, propertyId1 );
+        IndexDescriptor2 rule2 = createIndex( labelIdSecond, propertyId1 );
 
         // WHEN
         recordState = newTransactionRecordState();
@@ -471,8 +471,8 @@ class TransactionRecordStateTest
         recordState.nodeAddProperty( nodeId, propertyId1, value1 );
         addLabelsToNode( recordState, nodeId, bothLabelIds );
         apply( recordState );
-        StorageIndexReference rule2 = createIndex( labelIdOne, propertyId2 );
-        StorageIndexReference rule3 = createIndex( labelIdSecond, propertyId1 );
+        IndexDescriptor2 rule2 = createIndex( labelIdOne, propertyId2 );
+        IndexDescriptor2 rule3 = createIndex( labelIdSecond, propertyId1 );
 
         // WHEN
         recordState = newTransactionRecordState();
@@ -499,9 +499,9 @@ class TransactionRecordStateTest
         recordState.nodeAddProperty( nodeId, propertyId2, value2 );
         addLabelsToNode( recordState, nodeId, oneLabelId );
         apply( transaction( recordState ) );
-        StorageIndexReference rule1 = createIndex( labelIdOne, propertyId1 );
-        StorageIndexReference rule2 = createIndex( labelIdOne, propertyId2 );
-        StorageIndexReference rule3 = createIndex( labelIdOne, propertyId1, propertyId2 );
+        IndexDescriptor2 rule1 = createIndex( labelIdOne, propertyId1 );
+        IndexDescriptor2 rule2 = createIndex( labelIdOne, propertyId2 );
+        IndexDescriptor2 rule3 = createIndex( labelIdOne, propertyId1, propertyId2 );
 
         // WHEN
         Value newValue1 = Values.of( "new" );
@@ -531,9 +531,9 @@ class TransactionRecordStateTest
         recordState.nodeAddProperty( nodeId, propertyId1, value1 );
         recordState.nodeAddProperty( nodeId, propertyId2, value2 );
         apply( transaction( recordState ) );
-        StorageIndexReference rule1 = createIndex( labelIdOne, propertyId1 );
-        StorageIndexReference rule2 = createIndex( labelIdOne, propertyId2 );
-        StorageIndexReference rule3 = createIndex( labelIdOne, propertyId1, propertyId2 );
+        IndexDescriptor2 rule1 = createIndex( labelIdOne, propertyId1 );
+        IndexDescriptor2 rule2 = createIndex( labelIdOne, propertyId2 );
+        IndexDescriptor2 rule3 = createIndex( labelIdOne, propertyId1, propertyId2 );
 
         // WHEN
         recordState = newTransactionRecordState();
@@ -792,9 +792,9 @@ class TransactionRecordStateTest
         // GIVEN
         long nodeId = 0;
         TransactionRecordState recordState = newTransactionRecordState();
-        StorageIndexReference rule1 = createIndex( labelIdOne, propertyId1 );
-        StorageIndexReference rule2 = createIndex( labelIdOne, propertyId2 );
-        StorageIndexReference rule3 = createIndex( labelIdOne, propertyId1, propertyId2 );
+        IndexDescriptor2 rule1 = createIndex( labelIdOne, propertyId1 );
+        IndexDescriptor2 rule2 = createIndex( labelIdOne, propertyId2 );
+        IndexDescriptor2 rule3 = createIndex( labelIdOne, propertyId1, propertyId2 );
 
         // WHEN
         recordState.nodeCreate( nodeId );
@@ -1220,7 +1220,7 @@ class TransactionRecordStateTest
         neoStores = createStores();
         TransactionRecordState state = newTransactionRecordState();
         long ruleId = neoStores.getSchemaStore().nextId();
-        StorageIndexReference rule = new DefaultStorageIndexReference( forLabel( 0, 1 ), false, ruleId, null );
+        IndexDescriptor2 rule = IndexPrototype.forSchema( forLabel( 0, 1 ) ).materialise( ruleId );
         state.schemaRuleCreate( ruleId, false, rule );
 
         List<StorageCommand> commands = new ArrayList<>();
@@ -1268,7 +1268,7 @@ class TransactionRecordStateTest
         neoStores = createStores();
         TransactionRecordState state = newTransactionRecordState();
         long ruleId = neoStores.getSchemaStore().nextId();
-        StorageIndexReference rule = new DefaultStorageIndexReference( forLabel( 0, 1 ), false, ruleId, null );
+        IndexDescriptor2 rule = IndexPrototype.forSchema( forLabel( 0, 1 ) ).materialise( ruleId );
         state.schemaRuleCreate( ruleId, false, rule );
 
         apply( state );
@@ -1317,7 +1317,7 @@ class TransactionRecordStateTest
         neoStores = createStores();
         TransactionRecordState state = newTransactionRecordState();
         long ruleId = neoStores.getSchemaStore().nextId();
-        StorageIndexReference rule = new DefaultStorageIndexReference( forLabel( 0, 1 ), false, ruleId, null );
+        IndexDescriptor2 rule = IndexPrototype.forSchema( forLabel( 0, 1 ) ).materialise( ruleId );
         state.schemaRuleCreate( ruleId, false, rule );
         state.schemaRuleSetProperty( ruleId, 42, Values.booleanValue( true ), rule );
 
@@ -1347,7 +1347,7 @@ class TransactionRecordStateTest
         neoStores = createStores();
         TransactionRecordState state = newTransactionRecordState();
         long ruleId = neoStores.getSchemaStore().nextId();
-        StorageIndexReference rule = new DefaultStorageIndexReference( forLabel( 0, 1 ), true, ruleId, null );
+        IndexDescriptor2 rule = IndexPrototype.uniqueForSchema( forLabel( 0, 1 ) ).materialise( ruleId );
         state.schemaRuleCreate( ruleId, false, rule );
 
         apply( state );
@@ -1386,7 +1386,7 @@ class TransactionRecordStateTest
         neoStores = createStores();
         TransactionRecordState state = newTransactionRecordState();
         long ruleId = neoStores.getSchemaStore().nextId();
-        StorageIndexReference rule = new DefaultStorageIndexReference( forLabel( 0, 1 ), true, ruleId, null );
+        IndexDescriptor2 rule = IndexPrototype.uniqueForSchema( forLabel( 0, 1 ) ).materialise( ruleId );
         state.schemaRuleCreate( ruleId, false, rule );
         state.schemaRuleSetProperty( ruleId, 42, Values.booleanValue( true ), rule );
 
@@ -1499,6 +1499,7 @@ class TransactionRecordStateTest
         assertTrue( klass.isInstance( next ), "Expected " + klass + ". was: " + next );
     }
 
+    @SuppressWarnings( "InfiniteLoopStatement" )
     private static CommandsToApply readFromChannel( ReadableLogChannel channel ) throws IOException
     {
         PhysicalLogCommandReaderV4_0 reader = new PhysicalLogCommandReaderV4_0();
@@ -1633,9 +1634,9 @@ class TransactionRecordStateTest
         return (RelationshipGroupCommand) single( filter( t -> t instanceof RelationshipGroupCommand, commands ) );
     }
 
-    private StorageIndexReference createIndex( int labeId, int... propertyKeyIds )
+    private IndexDescriptor2 createIndex( int labeId, int... propertyKeyIds )
     {
-        StorageIndexReference descriptor = new DefaultStorageIndexReference( forLabel( labeId, propertyKeyIds ), false, nextRuleId++, null );
+        IndexDescriptor2 descriptor = IndexPrototype.forSchema( forLabel( labeId, propertyKeyIds ) ).materialise( nextRuleId++ );
         schemaCache.addSchemaRule( descriptor );
         return descriptor;
     }
@@ -1645,10 +1646,13 @@ class TransactionRecordStateTest
         LongArrayList list = new LongArrayList();
         if ( cursor.nextEntity() )
         {
-            while ( cursor.nextProperty() != null )
+            PropertyCommand propertyCommand;
+            do
             {
                 // Just get any potential property commands out of the way
+                propertyCommand = cursor.nextProperty();
             }
+            while ( propertyCommand != null );
             list.add( cursor.currentEntityId() );
         }
         return list;

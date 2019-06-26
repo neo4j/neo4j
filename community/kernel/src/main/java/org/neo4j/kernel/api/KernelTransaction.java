@@ -20,7 +20,6 @@
 package org.neo4j.kernel.api;
 
 import org.neo4j.graphdb.NotInTransactionException;
-import org.neo4j.internal.kernel.api.IndexReference;
 import org.neo4j.internal.kernel.api.Kernel;
 import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.PropertyCursor;
@@ -31,6 +30,7 @@ import org.neo4j.internal.kernel.api.exceptions.schema.SchemaKernelException;
 import org.neo4j.internal.kernel.api.security.AuthSubject;
 import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.internal.kernel.api.security.SecurityContext;
+import org.neo4j.internal.schema.IndexDescriptor2;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.kernel.availability.AvailabilityGuard;
 import org.neo4j.kernel.impl.api.ClockContext;
@@ -67,7 +67,7 @@ public interface KernelTransaction extends Transaction, AssertOpen
      * @param provider index provider identifier
      * @return IndexReference for the index to be created.
      */
-    IndexReference indexUniqueCreate( SchemaDescriptor schema, String provider ) throws SchemaKernelException;
+    IndexDescriptor2 indexUniqueCreate( SchemaDescriptor schema, String provider ) throws SchemaKernelException;
 
     /**
      * @return the security context this transaction is currently executing in.

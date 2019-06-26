@@ -25,15 +25,16 @@ import org.junit.jupiter.api.Test;
 
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.Optional;
 import java.util.stream.IntStream;
 
 import org.neo4j.common.EntityType;
 import org.neo4j.configuration.Config;
-import org.neo4j.internal.helpers.collection.Iterables;
 import org.neo4j.internal.id.DefaultIdGeneratorFactory;
 import org.neo4j.internal.id.IdType;
 import org.neo4j.internal.schema.IndexConfig;
+import org.neo4j.internal.schema.IndexDescriptor2;
+import org.neo4j.internal.schema.IndexPrototype;
+import org.neo4j.internal.schema.IndexProviderDescriptor;
 import org.neo4j.internal.schema.SchemaRule;
 import org.neo4j.internal.schema.constraints.ConstraintDescriptorFactory;
 import org.neo4j.io.fs.EphemeralFileSystemAbstraction;
@@ -42,8 +43,6 @@ import org.neo4j.kernel.impl.store.format.standard.StandardV3_4;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.storageengine.api.ConstraintRule;
-import org.neo4j.storageengine.api.DefaultStorageIndexReference;
-import org.neo4j.storageengine.api.StorageIndexReference;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.pagecache.EphemeralPageCacheExtension;
 import org.neo4j.test.rule.TestDirectory;
@@ -60,6 +59,7 @@ class SchemaStore35Test
 {
     private static final String PROVIDER_KEY = "quantum-dex";
     private static final String PROVIDER_VERSION = "25.0";
+    private static final IndexProviderDescriptor PROVIDER = new IndexProviderDescriptor( PROVIDER_KEY, PROVIDER_VERSION );
 
     @Inject
     private PageCache pageCache;
@@ -91,19 +91,17 @@ class SchemaStore35Test
     void storeAndLoadSchemaRule() throws Exception
     {
         // GIVEN
-        StorageIndexReference indexRule =
-                new DefaultStorageIndexReference( forLabel( 1, 4 ), PROVIDER_KEY, PROVIDER_VERSION, store.nextId(), Optional.empty(), false, null );
+        IndexDescriptor2 indexRule = IndexPrototype.forSchema( forLabel( 1, 4 ), PROVIDER ).materialise( store.nextId() );
 
         // WHEN
-        StorageIndexReference readIndexRule = (StorageIndexReference) SchemaRuleSerialization35.deserialize(
+        IndexDescriptor2 readIndexRule = (IndexDescriptor2) SchemaRuleSerialization35.deserialize(
                 indexRule.getId(), wrap( SchemaRuleSerialization35.serialize( indexRule ) ) );
 
         // THEN
         assertEquals( indexRule.getId(), readIndexRule.getId() );
         assertEquals( indexRule.schema(), readIndexRule.schema() );
         assertEquals( indexRule, readIndexRule );
-        assertEquals( indexRule.providerKey(), readIndexRule.providerKey() );
-        assertEquals( indexRule.providerVersion(), readIndexRule.providerVersion() );
+        assertEquals( indexRule.getIndexProvider(), readIndexRule.getIndexProvider() );
     }
 
     @Test
@@ -111,19 +109,17 @@ class SchemaStore35Test
     {
         // GIVEN
         int[] propertyIds = {4, 5, 6, 7};
-        StorageIndexReference indexRule = new DefaultStorageIndexReference( forLabel( 2, propertyIds ), PROVIDER_KEY, PROVIDER_VERSION, store.nextId(),
-                Optional.empty(), false, null );
+        IndexDescriptor2 indexRule = IndexPrototype.forSchema( forLabel( 2, propertyIds ), PROVIDER ).materialise( store.nextId() );
 
         // WHEN
-        StorageIndexReference readIndexRule = (StorageIndexReference) SchemaRuleSerialization35.deserialize(
+        IndexDescriptor2 readIndexRule = (IndexDescriptor2) SchemaRuleSerialization35.deserialize(
                 indexRule.getId(), wrap( SchemaRuleSerialization35.serialize( indexRule ) ) );
 
         // THEN
         assertEquals( indexRule.getId(), readIndexRule.getId() );
         assertEquals( indexRule.schema(), readIndexRule.schema() );
         assertEquals( indexRule, readIndexRule );
-        assertEquals( indexRule.providerKey(), readIndexRule.providerKey() );
-        assertEquals( indexRule.providerVersion(), readIndexRule.providerVersion() );
+        assertEquals( indexRule.getIndexProvider(), readIndexRule.getIndexProvider() );
     }
 
     @Test
@@ -132,61 +128,56 @@ class SchemaStore35Test
         // GIVEN
         int[] propertyIds = {4, 5, 6, 7};
         int[] entityTokens = {2, 3, 4};
-        StorageIndexReference indexRule =
-                new DefaultStorageIndexReference( fulltext( EntityType.RELATIONSHIP, IndexConfig.empty(), entityTokens, propertyIds ),
-                        PROVIDER_KEY, PROVIDER_VERSION, store.nextId(), Optional.empty(), false, null );
+        IndexDescriptor2 indexRule = IndexPrototype.forSchema(
+                fulltext( EntityType.RELATIONSHIP, IndexConfig.empty(), entityTokens, propertyIds ), PROVIDER ).materialise( store.nextId() );
 
         // WHEN
-        StorageIndexReference readIndexRule =
-                (StorageIndexReference) SchemaRuleSerialization35.deserialize( indexRule.getId(),
+        IndexDescriptor2 readIndexRule =
+                (IndexDescriptor2) SchemaRuleSerialization35.deserialize( indexRule.getId(),
                         wrap( SchemaRuleSerialization35.serialize( indexRule ) ) );
 
         // THEN
         assertEquals( indexRule.getId(), readIndexRule.getId() );
         assertEquals( indexRule.schema(), readIndexRule.schema() );
         assertEquals( indexRule, readIndexRule );
-        assertEquals( indexRule.providerKey(), readIndexRule.providerKey() );
-        assertEquals( indexRule.providerVersion(), readIndexRule.providerVersion() );
+        assertEquals( indexRule.getIndexProvider(), readIndexRule.getIndexProvider() );
     }
 
     @Test
     void storeAndLoad_Big_CompositeSchemaRule() throws Exception
     {
         // GIVEN
-        StorageIndexReference indexRule =
-                new DefaultStorageIndexReference( forLabel( 2, IntStream.range( 1, 200 ).toArray() ), PROVIDER_KEY, PROVIDER_VERSION, store.nextId(),
-                        Optional.empty(), false, null );
+        IndexDescriptor2 indexRule =
+                IndexPrototype.forSchema( forLabel( 2, IntStream.range( 1, 200 ).toArray() ), PROVIDER ).materialise( store.nextId() );
 
         // WHEN
-        StorageIndexReference readIndexRule = (StorageIndexReference) SchemaRuleSerialization35.deserialize(
+        IndexDescriptor2 readIndexRule = (IndexDescriptor2) SchemaRuleSerialization35.deserialize(
                 indexRule.getId(), wrap( SchemaRuleSerialization35.serialize( indexRule ) ) );
 
         // THEN
         assertEquals( indexRule.getId(), readIndexRule.getId() );
         assertEquals( indexRule.schema(), readIndexRule.schema() );
         assertEquals( indexRule, readIndexRule );
-        assertEquals( indexRule.providerKey(), readIndexRule.providerKey() );
-        assertEquals( indexRule.providerVersion(), readIndexRule.providerVersion() );
+        assertEquals( indexRule.getIndexProvider(), readIndexRule.getIndexProvider() );
     }
 
     @Test
     void storeAndLoad_Big_CompositeMultiTokenSchemaRule() throws Exception
     {
         // GIVEN
-        StorageIndexReference indexRule = new DefaultStorageIndexReference(
+        IndexDescriptor2 indexRule = IndexPrototype.forSchema(
                 fulltext( EntityType.RELATIONSHIP, IndexConfig.empty(), IntStream.range( 1, 200 ).toArray(), IntStream.range( 1, 200 ).toArray() ),
-                PROVIDER_KEY, PROVIDER_VERSION, store.nextId(), Optional.empty(), false, null );
+                PROVIDER ).materialise( store.nextId() );
 
         // WHEN
-        StorageIndexReference readIndexRule = (StorageIndexReference) SchemaRuleSerialization35.deserialize( indexRule.getId(),
+        IndexDescriptor2 readIndexRule = (IndexDescriptor2) SchemaRuleSerialization35.deserialize( indexRule.getId(),
                 wrap( SchemaRuleSerialization35.serialize( indexRule ) ) );
 
         // THEN
         assertEquals( indexRule.getId(), readIndexRule.getId() );
         assertEquals( indexRule.schema(), readIndexRule.schema() );
         assertEquals( indexRule, readIndexRule );
-        assertEquals( indexRule.providerKey(), readIndexRule.providerKey() );
-        assertEquals( indexRule.providerVersion(), readIndexRule.providerVersion() );
+        assertEquals( indexRule.getIndexProvider(), readIndexRule.getIndexProvider() );
     }
 
     @Test
@@ -216,24 +207,23 @@ class SchemaStore35Test
         assertEquals( rules, readRules );
     }
 
-    private long storeRule( SchemaRule rule )
+    private void storeRule( SchemaRule rule )
     {
         Collection<DynamicRecord> records = store.allocateFrom( rule );
         for ( DynamicRecord record : records )
         {
             store.updateRecord( record );
         }
-        return Iterables.first( records ).getId();
     }
 
-    private static StorageIndexReference indexRule( long ruleId, int labelId, int... propertyIds )
+    private static IndexDescriptor2 indexRule( long ruleId, int labelId, int... propertyIds )
     {
-        return new DefaultStorageIndexReference( forLabel( labelId, propertyIds ), PROVIDER_KEY, PROVIDER_VERSION, ruleId, Optional.empty(), false, null );
+        return IndexPrototype.forSchema( forLabel( labelId, propertyIds ), PROVIDER ).materialise( ruleId );
     }
 
-    private static StorageIndexReference uniqueIndexRule( long ruleId, long owningConstraint, int labelId, int... propertyIds )
+    private static IndexDescriptor2 uniqueIndexRule( long ruleId, long owningConstraint, int labelId, int... propertyIds )
     {
-        return new DefaultStorageIndexReference( forLabel( labelId, propertyIds ), PROVIDER_KEY, PROVIDER_VERSION, ruleId, Optional.empty(), true, null );
+        return IndexPrototype.uniqueForSchema( forLabel( labelId, propertyIds ), PROVIDER ).materialise( ruleId ).withOwningConstraintId( owningConstraint );
     }
 
     private static ConstraintRule constraintUniqueRule( long ruleId, long ownedIndexId, int labelId, int... propertyIds )

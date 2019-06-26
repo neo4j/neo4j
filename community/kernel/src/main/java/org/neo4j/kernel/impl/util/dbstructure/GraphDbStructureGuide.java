@@ -29,12 +29,12 @@ import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.internal.helpers.collection.Visitable;
-import org.neo4j.internal.kernel.api.IndexReference;
 import org.neo4j.internal.kernel.api.Read;
 import org.neo4j.internal.kernel.api.SchemaRead;
 import org.neo4j.internal.kernel.api.TokenRead;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
 import org.neo4j.internal.schema.ConstraintDescriptor;
+import org.neo4j.internal.schema.IndexDescriptor2;
 import org.neo4j.internal.schema.constraints.NodeExistenceConstraintDescriptor;
 import org.neo4j.internal.schema.constraints.NodeKeyConstraintDescriptor;
 import org.neo4j.internal.schema.constraints.RelExistenceConstraintDescriptor;
@@ -42,12 +42,10 @@ import org.neo4j.internal.schema.constraints.UniquenessConstraintDescriptor;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.SilentTokenNameLookup;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
-import org.neo4j.kernel.impl.index.schema.IndexDescriptor;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 
 import static java.lang.String.format;
 import static org.neo4j.internal.helpers.collection.Iterators.loop;
-import static org.neo4j.internal.kernel.api.IndexReference.sortByType;
 import static org.neo4j.internal.kernel.api.TokenRead.ANY_LABEL;
 import static org.neo4j.internal.kernel.api.TokenRead.ANY_RELATIONSHIP_TYPE;
 
@@ -137,12 +135,12 @@ public class GraphDbStructureGuide implements Visitable<DbStructureVisitor>
             throws IndexNotFoundKernelException
     {
         SchemaRead schemaRead = ktx.schemaRead();
-        for ( IndexReference reference : loop( sortByType( schemaRead.indexesGetAll() ) ) )
+        for ( IndexDescriptor2 reference : loop( IndexDescriptor2.sortByType( schemaRead.indexesGetAll() ) ) )
         {
             String userDescription = reference.schema().userDescription( nameLookup );
             double uniqueValuesPercentage = schemaRead.indexUniqueValuesSelectivity( reference );
             long size = schemaRead.indexSize( reference );
-            visitor.visitIndex( (IndexDescriptor) reference, userDescription, uniqueValuesPercentage, size );
+            visitor.visitIndex( reference, userDescription, uniqueValuesPercentage, size );
         }
     }
 

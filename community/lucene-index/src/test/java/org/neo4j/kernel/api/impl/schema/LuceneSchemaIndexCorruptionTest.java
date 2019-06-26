@@ -33,6 +33,7 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import org.neo4j.configuration.Config;
 import org.neo4j.internal.kernel.api.InternalIndexState;
+import org.neo4j.internal.schema.IndexDescriptor2;
 import org.neo4j.io.fs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.api.impl.index.storage.DirectoryFactory;
@@ -42,7 +43,6 @@ import org.neo4j.kernel.api.index.IndexDirectoryStructure;
 import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.index.LoggingMonitor;
 import org.neo4j.kernel.impl.factory.OperationalMode;
-import org.neo4j.kernel.impl.index.schema.StoreIndexDescriptor;
 import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.test.extension.EphemeralFileSystemExtension;
 import org.neo4j.test.extension.Inject;
@@ -56,9 +56,9 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
+import static org.neo4j.internal.schema.IndexPrototype.forSchema;
 import static org.neo4j.internal.schema.SchemaDescriptor.forLabel;
 import static org.neo4j.kernel.api.index.IndexDirectoryStructure.directoriesByProvider;
-import static org.neo4j.kernel.impl.index.schema.IndexDescriptorFactory.forSchema;
 import static org.neo4j.logging.AssertableLogProvider.inLog;
 
 @ExtendWith( {EphemeralFileSystemExtension.class, TestDirectoryExtension.class} )
@@ -81,7 +81,7 @@ class LuceneSchemaIndexCorruptionTest
         LuceneIndexProvider provider = newFaultyIndexProvider( faultyIndexId, error );
 
         // When
-        StoreIndexDescriptor descriptor = forSchema( forLabel( 1, 1 ), provider.getProviderDescriptor() ).withId( faultyIndexId );
+        IndexDescriptor2 descriptor = forSchema( forLabel( 1, 1 ), provider.getProviderDescriptor() ).materialise( faultyIndexId );
         InternalIndexState initialState = provider.getInitialState( descriptor );
 
         // Then
@@ -99,7 +99,7 @@ class LuceneSchemaIndexCorruptionTest
         LuceneIndexProvider provider = newFaultyIndexProvider( faultyIndexId, error );
 
         // When
-        StoreIndexDescriptor descriptor = forSchema( forLabel( 1, 1 ), provider.getProviderDescriptor() ).withId( faultyIndexId );
+        IndexDescriptor2 descriptor = forSchema( forLabel( 1, 1 ), provider.getProviderDescriptor() ).materialise( faultyIndexId );
         InternalIndexState initialState = provider.getInitialState( descriptor );
 
         // Then
@@ -117,7 +117,7 @@ class LuceneSchemaIndexCorruptionTest
         LuceneIndexProvider provider = newFaultyIndexProvider( faultyIndexId, error );
 
         // When
-        StoreIndexDescriptor descriptor = forSchema( forLabel( 1, 1 ), provider.getProviderDescriptor() ).withId( faultyIndexId );
+        IndexDescriptor2 descriptor = forSchema( forLabel( 1, 1 ), provider.getProviderDescriptor() ).materialise( faultyIndexId );
         InternalIndexState initialState = provider.getInitialState( descriptor );
 
         // Then

@@ -38,7 +38,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.internal.helpers.ArrayUtil;
 import org.neo4j.internal.helpers.collection.Iterators;
-import org.neo4j.internal.schema.IndexDescriptor;
+import org.neo4j.internal.schema.IndexDescriptor2;
 import org.neo4j.io.IOUtils;
 import org.neo4j.kernel.api.impl.index.backup.WritableIndexSnapshotFileIterator;
 import org.neo4j.kernel.api.impl.index.partition.AbstractIndexPartition;
@@ -65,7 +65,7 @@ public abstract class AbstractLuceneIndex<READER extends IndexReader>
     private static final String ONLINE = "online";
     private static final Set<Map.Entry<String,String>> ONLINE_COMMIT_USER_DATA = Set.of( Map.entry( KEY_STATUS, ONLINE ) );
     protected final PartitionedIndexStorage indexStorage;
-    protected final IndexDescriptor descriptor;
+    protected final IndexDescriptor2 descriptor;
     private final IndexPartitionFactory partitionFactory;
 
     // Note that we rely on the thread-safe internal snapshot feature of the CopyOnWriteArrayList
@@ -74,7 +74,7 @@ public abstract class AbstractLuceneIndex<READER extends IndexReader>
 
     private volatile boolean open;
 
-    public AbstractLuceneIndex( PartitionedIndexStorage indexStorage, IndexPartitionFactory partitionFactory, IndexDescriptor descriptor )
+    public AbstractLuceneIndex( PartitionedIndexStorage indexStorage, IndexPartitionFactory partitionFactory, IndexDescriptor2 descriptor )
     {
         this.indexStorage = indexStorage;
         this.partitionFactory = partitionFactory;
@@ -183,7 +183,10 @@ public abstract class AbstractLuceneIndex<READER extends IndexReader>
         }
         finally
         {
-            IOUtils.closeAllSilently( directories );
+            if ( directories != null )
+            {
+                IOUtils.closeAllSilently( directories );
+            }
         }
         return true;
     }
@@ -201,7 +204,7 @@ public abstract class AbstractLuceneIndex<READER extends IndexReader>
         return hasSinglePartition( partitions ) ? createSimpleReader( partitions ) : createPartitionedReader( partitions );
     }
 
-    public IndexDescriptor getDescriptor()
+    public IndexDescriptor2 getDescriptor()
     {
         return descriptor;
     }

@@ -24,7 +24,7 @@ import org.apache.lucene.index.IndexWriterConfig;
 
 import org.neo4j.configuration.Config;
 import org.neo4j.function.Factory;
-import org.neo4j.internal.schema.IndexDescriptor;
+import org.neo4j.internal.schema.IndexDescriptor2;
 import org.neo4j.kernel.api.impl.index.IndexWriterConfigs;
 import org.neo4j.kernel.api.impl.index.builder.AbstractLuceneIndexBuilder;
 import org.neo4j.kernel.api.impl.index.partition.ReadOnlyIndexPartitionFactory;
@@ -42,11 +42,11 @@ import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
  */
 public class LuceneSchemaIndexBuilder extends AbstractLuceneIndexBuilder<LuceneSchemaIndexBuilder>
 {
-    private final IndexDescriptor descriptor;
+    private final IndexDescriptor2 descriptor;
     private IndexSamplingConfig samplingConfig;
     private Factory<IndexWriterConfig> writerConfigFactory = IndexWriterConfigs::standard;
 
-    private LuceneSchemaIndexBuilder( IndexDescriptor descriptor, Config config )
+    private LuceneSchemaIndexBuilder( IndexDescriptor2 descriptor, Config config )
     {
         super( config );
         this.descriptor = descriptor;
@@ -59,7 +59,7 @@ public class LuceneSchemaIndexBuilder extends AbstractLuceneIndexBuilder<LuceneS
      * @return new LuceneSchemaIndexBuilder
      * @param descriptor The descriptor for this index
      */
-    public static LuceneSchemaIndexBuilder create( IndexDescriptor descriptor, Config config )
+    public static LuceneSchemaIndexBuilder create( IndexDescriptor2 descriptor, Config config )
     {
         return new LuceneSchemaIndexBuilder( descriptor, config );
     }

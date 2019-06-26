@@ -24,7 +24,6 @@ import org.junit.jupiter.api.Test;
 
 import java.util.EnumMap;
 import java.util.Map;
-import java.util.Optional;
 
 import org.neo4j.internal.id.IdGenerator;
 import org.neo4j.internal.id.IdType;
@@ -33,6 +32,9 @@ import org.neo4j.internal.recordstorage.Command.LabelTokenCommand;
 import org.neo4j.internal.recordstorage.Command.PropertyKeyTokenCommand;
 import org.neo4j.internal.recordstorage.Command.RelationshipTypeTokenCommand;
 import org.neo4j.internal.recordstorage.CommandHandlerContract.ApplyFunction;
+import org.neo4j.internal.schema.IndexDescriptor2;
+import org.neo4j.internal.schema.IndexPrototype;
+import org.neo4j.internal.schema.IndexProviderDescriptor;
 import org.neo4j.internal.schema.constraints.ConstraintDescriptorFactory;
 import org.neo4j.kernel.impl.store.CommonAbstractStore;
 import org.neo4j.kernel.impl.store.DynamicArrayStore;
@@ -60,11 +62,9 @@ import org.neo4j.kernel.impl.store.record.SchemaRecord;
 import org.neo4j.lock.LockService;
 import org.neo4j.storageengine.api.CommandsToApply;
 import org.neo4j.storageengine.api.ConstraintRule;
-import org.neo4j.storageengine.api.DefaultStorageIndexReference;
 import org.neo4j.storageengine.api.IndexUpdateListener;
 import org.neo4j.storageengine.api.NodeLabelUpdateListener;
 import org.neo4j.storageengine.api.StorageEngine;
-import org.neo4j.storageengine.api.StorageIndexReference;
 import org.neo4j.token.api.NamedToken;
 import org.neo4j.util.concurrent.WorkSync;
 
@@ -148,13 +148,13 @@ class NeoStoreTransactionApplierTest
     void shouldApplyNodeCommandToTheStore() throws Exception
     {
         // given
-        final BatchTransactionApplier applier = newApplier( false );
-        final NodeRecord before = new NodeRecord( 11 );
+        BatchTransactionApplier applier = newApplier( false );
+        NodeRecord before = new NodeRecord( 11 );
         before.setLabelField( 42, asList( one, two ) );
-        final NodeRecord after = new NodeRecord( 12 );
+        NodeRecord after = new NodeRecord( 12 );
         after.setInUse( true );
         after.setLabelField( 42, asList( one, two, three ) );
-        final Command.NodeCommand command = new Command.NodeCommand( before, after );
+        Command.NodeCommand command = new Command.NodeCommand( before, after );
 
         // when
         boolean result = apply( applier, command::handle, transactionToApply );
@@ -170,13 +170,13 @@ class NeoStoreTransactionApplierTest
     void shouldApplyNodeCommandToTheStoreAndInvalidateTheCache() throws Exception
     {
         // given
-        final BatchTransactionApplier applier = newApplier( false );
-        final NodeRecord before = new NodeRecord( 11 );
+        BatchTransactionApplier applier = newApplier( false );
+        NodeRecord before = new NodeRecord( 11 );
         before.setLabelField( 42, asList( one, two ) );
-        final NodeRecord after = new NodeRecord( 12 );
+        NodeRecord after = new NodeRecord( 12 );
         after.setInUse( false );
         after.setLabelField( 42, asList( one, two, three ) );
-        final Command.NodeCommand command = new Command.NodeCommand( before, after );
+        Command.NodeCommand command = new Command.NodeCommand( before, after );
 
         // when
         boolean result = apply( applier, command::handle, transactionToApply );
@@ -192,13 +192,13 @@ class NeoStoreTransactionApplierTest
     void shouldApplyNodeCommandToTheStoreInRecoveryMode() throws Exception
     {
         // given
-        final BatchTransactionApplier applier = newApplier( true );
-        final NodeRecord before = new NodeRecord( 11 );
+        BatchTransactionApplier applier = newApplier( true );
+        NodeRecord before = new NodeRecord( 11 );
         before.setLabelField( 42, asList( one, two ) );
-        final NodeRecord after = new NodeRecord( 12 );
+        NodeRecord after = new NodeRecord( 12 );
         after.setInUse( true );
         after.setLabelField( 42, asList( one, two, three ) );
-        final Command.NodeCommand command = new Command.NodeCommand( before, after );
+        Command.NodeCommand command = new Command.NodeCommand( before, after );
 
         // when
         boolean result = apply( applier, command::handle, transactionToApply );
@@ -216,16 +216,16 @@ class NeoStoreTransactionApplierTest
     void shouldInvalidateTheCacheWhenTheNodeBecomesDense() throws Exception
     {
         // given
-        final BatchTransactionApplier applier = newApplier( false );
-        final NodeRecord before = new NodeRecord( 11 );
+        BatchTransactionApplier applier = newApplier( false );
+        NodeRecord before = new NodeRecord( 11 );
         before.setLabelField( 42, singletonList( one ) );
         before.setInUse( true );
         before.setDense( false );
-        final NodeRecord after = new NodeRecord( 12 );
+        NodeRecord after = new NodeRecord( 12 );
         after.setInUse( true );
         after.setDense( true );
         after.setLabelField( 42, asList( one, two, three ) );
-        final Command.NodeCommand command = new Command.NodeCommand( before, after );
+        Command.NodeCommand command = new Command.NodeCommand( before, after );
 
         // when
         boolean result = apply( applier, command::handle, transactionToApply );
@@ -243,12 +243,12 @@ class NeoStoreTransactionApplierTest
     void shouldApplyRelationshipCommandToTheStore() throws Exception
     {
         // given
-        final BatchTransactionApplier applier = newApplier( false );
-        final RelationshipRecord before = new RelationshipRecord( 12 );
-        final RelationshipRecord record = new RelationshipRecord( 12, 3, 4, 5 );
+        BatchTransactionApplier applier = newApplier( false );
+        RelationshipRecord before = new RelationshipRecord( 12 );
+        RelationshipRecord record = new RelationshipRecord( 12, 3, 4, 5 );
         record.setInUse( true );
 
-        final Command command = new Command.RelationshipCommand( before, record );
+        Command command = new Command.RelationshipCommand( before, record );
         // when
         boolean result = apply( applier, command::handle, transactionToApply );
 
@@ -262,12 +262,12 @@ class NeoStoreTransactionApplierTest
     void shouldApplyRelationshipCommandToTheStoreAndInvalidateTheCache() throws Exception
     {
         // given
-        final BatchTransactionApplier applier = newApplier( false );
-        final RelationshipRecord before = new RelationshipRecord( 12 );
-        final RelationshipRecord record = new RelationshipRecord( 12, 3, 4, 5 );
+        BatchTransactionApplier applier = newApplier( false );
+        RelationshipRecord before = new RelationshipRecord( 12 );
+        RelationshipRecord record = new RelationshipRecord( 12, 3, 4, 5 );
         record.setInUse( false );
 
-        final Command command = new Command.RelationshipCommand( before, record );
+        Command command = new Command.RelationshipCommand( before, record );
 
         // when
         boolean result = apply( applier, command::handle, transactionToApply );
@@ -282,11 +282,11 @@ class NeoStoreTransactionApplierTest
     void shouldApplyRelationshipCommandToTheStoreInRecovery() throws Exception
     {
         // given
-        final BatchTransactionApplier applier = newApplier( true );
-        final RelationshipRecord before = new RelationshipRecord( 12 );
-        final RelationshipRecord record = new RelationshipRecord( 12, 3, 4, 5 );
+        BatchTransactionApplier applier = newApplier( true );
+        RelationshipRecord before = new RelationshipRecord( 12 );
+        RelationshipRecord record = new RelationshipRecord( 12, 3, 4, 5 );
         record.setInUse( true );
-        final Command command = new Command.RelationshipCommand( before, record );
+        Command command = new Command.RelationshipCommand( before, record );
 
         // when
         boolean result = apply( applier, command::handle, transactionToApply );
@@ -304,11 +304,11 @@ class NeoStoreTransactionApplierTest
     void shouldApplyNodePropertyCommandToTheStore() throws Exception
     {
         // given
-        final BatchTransactionApplier applier = newApplier( false );
-        final PropertyRecord before = new PropertyRecord( 11 );
-        final PropertyRecord after = new PropertyRecord( 12 );
+        BatchTransactionApplier applier = newApplier( false );
+        PropertyRecord before = new PropertyRecord( 11 );
+        PropertyRecord after = new PropertyRecord( 12 );
         after.setNodeId( 42 );
-        final Command command = new Command.PropertyCommand( before, after );
+        Command command = new Command.PropertyCommand( before, after );
 
         // when
         boolean result = apply( applier, command::handle, transactionToApply );
@@ -324,11 +324,11 @@ class NeoStoreTransactionApplierTest
     void shouldApplyNodePropertyCommandToTheStoreInRecovery() throws Exception
     {
         // given
-        final BatchTransactionApplier applier = newApplier( true );
-        final PropertyRecord before = new PropertyRecord( 11 );
-        final PropertyRecord after = new PropertyRecord( 12 );
+        BatchTransactionApplier applier = newApplier( true );
+        PropertyRecord before = new PropertyRecord( 11 );
+        PropertyRecord after = new PropertyRecord( 12 );
         after.setNodeId( 42 );
-        final Command command = new Command.PropertyCommand( before, after );
+        Command command = new Command.PropertyCommand( before, after );
 
         // when
         boolean result = apply( applier, command::handle, transactionToApply );
@@ -345,11 +345,11 @@ class NeoStoreTransactionApplierTest
     void shouldApplyRelPropertyCommandToTheStore() throws Exception
     {
         // given
-        final BatchTransactionApplier applier = newApplier( false );
-        final PropertyRecord before = new PropertyRecord( 11 );
-        final PropertyRecord after = new PropertyRecord( 12 );
+        BatchTransactionApplier applier = newApplier( false );
+        PropertyRecord before = new PropertyRecord( 11 );
+        PropertyRecord after = new PropertyRecord( 12 );
         after.setRelId( 42 );
-        final Command command = new Command.PropertyCommand( before, after );
+        Command command = new Command.PropertyCommand( before, after );
 
         // when
         boolean result = apply( applier, command::handle, transactionToApply );
@@ -364,11 +364,11 @@ class NeoStoreTransactionApplierTest
     void shouldApplyRelPropertyCommandToTheStoreInRecovery() throws Exception
     {
         // given
-        final BatchTransactionApplier applier = newApplier( true );
-        final PropertyRecord before = new PropertyRecord( 11 );
-        final PropertyRecord after = new PropertyRecord( 12 );
+        BatchTransactionApplier applier = newApplier( true );
+        PropertyRecord before = new PropertyRecord( 11 );
+        PropertyRecord after = new PropertyRecord( 12 );
         after.setRelId( 42 );
-        final Command command = new Command.PropertyCommand( before, after );
+        Command command = new Command.PropertyCommand( before, after );
 
         // when
         boolean result = apply( applier, command::handle, transactionToApply );
@@ -386,12 +386,12 @@ class NeoStoreTransactionApplierTest
     void shouldApplyRelationshipGroupCommandToTheStore() throws Exception
     {
         // given
-        final BatchTransactionApplier applier = newApplier( false );
+        BatchTransactionApplier applier = newApplier( false );
         // when
-        final RelationshipGroupRecord before = new RelationshipGroupRecord( 42, 1 );
-        final RelationshipGroupRecord after = new RelationshipGroupRecord( 42, 1, 2, 3, 4, 5, 6, true );
-        final Command command = new Command.RelationshipGroupCommand( before, after );
-        final boolean result = apply( applier, command::handle, transactionToApply );
+        RelationshipGroupRecord before = new RelationshipGroupRecord( 42, 1 );
+        RelationshipGroupRecord after = new RelationshipGroupRecord( 42, 1, 2, 3, 4, 5, 6, true );
+        Command command = new Command.RelationshipGroupCommand( before, after );
+        boolean result = apply( applier, command::handle, transactionToApply );
 
         // then
         assertFalse( result );
@@ -403,11 +403,11 @@ class NeoStoreTransactionApplierTest
     void shouldApplyRelationshipGroupCommandToTheStoreInRecovery() throws Exception
     {
         // given
-        final BatchTransactionApplier applier = newApplier( true );
+        BatchTransactionApplier applier = newApplier( true );
         // when
-        final RelationshipGroupRecord before = new RelationshipGroupRecord( 42, 1 );
-        final RelationshipGroupRecord after = new RelationshipGroupRecord( 42, 1, 2, 3, 4, 5, 6, true );
-        final Command command = new Command.RelationshipGroupCommand( before, after );
+        RelationshipGroupRecord before = new RelationshipGroupRecord( 42, 1 );
+        RelationshipGroupRecord after = new RelationshipGroupRecord( 42, 1, 2, 3, 4, 5, 6, true );
+        Command command = new Command.RelationshipGroupCommand( before, after );
 
         boolean result = apply( applier, command::handle, transactionToApply );
 
@@ -424,12 +424,12 @@ class NeoStoreTransactionApplierTest
     void shouldApplyRelationshipTypeTokenCommandToTheStore() throws Exception
     {
         // given
-        final BatchTransactionApplier applier = newApplier( false );
-        final RelationshipTypeTokenRecord before = new RelationshipTypeTokenRecord( 42 );
-        final RelationshipTypeTokenRecord after = new RelationshipTypeTokenRecord( 42 );
+        BatchTransactionApplier applier = newApplier( false );
+        RelationshipTypeTokenRecord before = new RelationshipTypeTokenRecord( 42 );
+        RelationshipTypeTokenRecord after = new RelationshipTypeTokenRecord( 42 );
         after.setInUse( true );
         after.setNameId( 323 );
-        final Command command = new RelationshipTypeTokenCommand( before, after );
+        Command command = new RelationshipTypeTokenCommand( before, after );
 
         // when
         boolean result = apply( applier, command::handle, transactionToApply );
@@ -444,15 +444,15 @@ class NeoStoreTransactionApplierTest
     void shouldApplyRelationshipTypeTokenCommandToTheStoreInRecovery() throws Exception
     {
         // given
-        final BatchTransactionApplier applier = newApplier( true );
+        BatchTransactionApplier applier = newApplier( true );
 
-        final RelationshipTypeTokenRecord before = new RelationshipTypeTokenRecord( 42 );
-        final RelationshipTypeTokenRecord after = new RelationshipTypeTokenRecord( 42 );
+        RelationshipTypeTokenRecord before = new RelationshipTypeTokenRecord( 42 );
+        RelationshipTypeTokenRecord after = new RelationshipTypeTokenRecord( 42 );
         after.setInUse( true );
         after.setNameId( 323 );
-        final Command.RelationshipTypeTokenCommand command =
+        Command.RelationshipTypeTokenCommand command =
                 new Command.RelationshipTypeTokenCommand( before, after );
-        final NamedToken token = new NamedToken( "token", 21 );
+        NamedToken token = new NamedToken( "token", 21 );
         when( relationshipTypeTokenStore.getToken( command.tokenId() ) ).thenReturn( token );
 
         // when
@@ -472,12 +472,12 @@ class NeoStoreTransactionApplierTest
     void shouldApplyLabelTokenCommandToTheStore() throws Exception
     {
         // given
-        final BatchTransactionApplier applier = newApplier( false );
-        final LabelTokenRecord before = new LabelTokenRecord( 42 );
-        final LabelTokenRecord after = new LabelTokenRecord( 42 );
+        BatchTransactionApplier applier = newApplier( false );
+        LabelTokenRecord before = new LabelTokenRecord( 42 );
+        LabelTokenRecord after = new LabelTokenRecord( 42 );
         after.setInUse( true );
         after.setNameId( 323 );
-        final Command command = new LabelTokenCommand( before, after );
+        Command command = new LabelTokenCommand( before, after );
 
         // when
         boolean result = apply( applier, command::handle, transactionToApply );
@@ -492,14 +492,14 @@ class NeoStoreTransactionApplierTest
     void shouldApplyLabelTokenCommandToTheStoreInRecovery() throws Exception
     {
         // given
-        final BatchTransactionApplier applier = newApplier( true );
-        final LabelTokenRecord before = new LabelTokenRecord( 42 );
-        final LabelTokenRecord after = new LabelTokenRecord( 42 );
+        BatchTransactionApplier applier = newApplier( true );
+        LabelTokenRecord before = new LabelTokenRecord( 42 );
+        LabelTokenRecord after = new LabelTokenRecord( 42 );
         after.setInUse( true );
         after.setNameId( 323 );
-        final Command.LabelTokenCommand command =
+        Command.LabelTokenCommand command =
                 new Command.LabelTokenCommand( before, after );
-        final NamedToken token = new NamedToken( "token", 21 );
+        NamedToken token = new NamedToken( "token", 21 );
         when( labelTokenStore.getToken( command.tokenId() ) ).thenReturn( token );
 
         // when
@@ -519,12 +519,12 @@ class NeoStoreTransactionApplierTest
     void shouldApplyPropertyKeyTokenCommandToTheStore() throws Exception
     {
         // given
-        final BatchTransactionApplier applier = newApplier( false );
-        final PropertyKeyTokenRecord before = new PropertyKeyTokenRecord( 42 );
-        final PropertyKeyTokenRecord after = new PropertyKeyTokenRecord( 42 );
+        BatchTransactionApplier applier = newApplier( false );
+        PropertyKeyTokenRecord before = new PropertyKeyTokenRecord( 42 );
+        PropertyKeyTokenRecord after = new PropertyKeyTokenRecord( 42 );
         after.setInUse( true );
         after.setNameId( 323 );
-        final Command command = new PropertyKeyTokenCommand( before, after );
+        Command command = new PropertyKeyTokenCommand( before, after );
 
         // when
         boolean result = apply( applier, command::handle, transactionToApply );
@@ -539,15 +539,15 @@ class NeoStoreTransactionApplierTest
     void shouldApplyPropertyKeyTokenCommandToTheStoreInRecovery() throws Exception
     {
         // given
-        final BatchTransactionApplier applier = newApplier( true );
+        BatchTransactionApplier applier = newApplier( true );
 
-        final PropertyKeyTokenRecord before = new PropertyKeyTokenRecord( 42 );
-        final PropertyKeyTokenRecord after = new PropertyKeyTokenRecord( 42 );
+        PropertyKeyTokenRecord before = new PropertyKeyTokenRecord( 42 );
+        PropertyKeyTokenRecord after = new PropertyKeyTokenRecord( 42 );
         after.setInUse( true );
         after.setNameId( 323 );
-        final Command.PropertyKeyTokenCommand command =
+        Command.PropertyKeyTokenCommand command =
                 new Command.PropertyKeyTokenCommand( before, after );
-        final NamedToken token = new NamedToken( "token", 21 );
+        NamedToken token = new NamedToken( "token", 21 );
         when( propertyKeyTokenStore.getToken( command.tokenId() ) ).thenReturn( token );
 
         // when
@@ -565,12 +565,12 @@ class NeoStoreTransactionApplierTest
     void shouldApplyCreateIndexRuleSchemaRuleCommandToTheStore() throws Exception
     {
         // given
-        final BatchTransactionApplier applier = newApplierFacade( newApplier( false ), newIndexApplier() );
-        final StorageIndexReference rule = indexRule( 0, 1, 2, "K", "X.Y" );
+        BatchTransactionApplier applier = newApplierFacade( newApplier( false ), newIndexApplier() );
+        IndexDescriptor2 rule = indexRule( 0, 1, 2, "K", "X.Y" );
         SchemaRecord before = new SchemaRecord( rule.getId() );
         SchemaRecord after = before.clone().initialize( true, Record.NO_NEXT_PROPERTY.longValue() );
         after.setCreated();
-        final Command.SchemaRuleCommand command = new Command.SchemaRuleCommand( before, after, rule );
+        Command.SchemaRuleCommand command = new Command.SchemaRuleCommand( before, after, rule );
 
         // when
         boolean result = apply( applier, command::handle, transactionToApply );
@@ -587,12 +587,12 @@ class NeoStoreTransactionApplierTest
     void shouldApplyCreateIndexRuleSchemaRuleCommandToTheStoreInRecovery() throws Exception
     {
         // given
-        final BatchTransactionApplier applier = newApplierFacade( newIndexApplier(), newApplier( true ) );
+        BatchTransactionApplier applier = newApplierFacade( newIndexApplier(), newApplier( true ) );
         SchemaRecord before = new SchemaRecord( 21 );
         SchemaRecord after = before.clone().initialize( true, Record.NO_NEXT_PROPERTY.longValue() );
         after.setCreated();
-        final StorageIndexReference rule = indexRule( 21, 1, 2, "K", "X.Y" );
-        final Command.SchemaRuleCommand command = new Command.SchemaRuleCommand( before, after, rule );
+        IndexDescriptor2 rule = indexRule( 21, 1, 2, "K", "X.Y" );
+        Command.SchemaRuleCommand command = new Command.SchemaRuleCommand( before, after, rule );
 
         // when
         boolean result = apply( applier, command::handle, transactionToApply );
@@ -610,12 +610,12 @@ class NeoStoreTransactionApplierTest
     void shouldApplyUpdateIndexRuleSchemaRuleCommandToTheStore() throws Exception
     {
         // given
-        final BatchTransactionApplier applier = newApplierFacade( newIndexApplier(), newApplier( false ) );
+        BatchTransactionApplier applier = newApplierFacade( newIndexApplier(), newApplier( false ) );
         SchemaRecord before = new SchemaRecord( 21 );
         SchemaRecord after = before.clone().initialize( true, Record.NO_NEXT_PROPERTY.longValue() );
         after.setConstraint( true );
-        final StorageIndexReference rule = constraintIndexRule( 21, 1, 2, "K", "X.Y", 42L );
-        final Command.SchemaRuleCommand command = new Command.SchemaRuleCommand( before, after, rule );
+        IndexDescriptor2 rule = constraintIndexRule( 21, 1, 2, "K", "X.Y", 42L );
+        Command.SchemaRuleCommand command = new Command.SchemaRuleCommand( before, after, rule );
 
         // when
         boolean result = apply( applier, command::handle, transactionToApply );
@@ -632,11 +632,11 @@ class NeoStoreTransactionApplierTest
     void shouldApplyUpdateIndexRuleSchemaRuleCommandToTheStoreInRecovery() throws Exception
     {
         // given
-        final BatchTransactionApplier applier = newApplierFacade( newIndexApplier(), newApplier( true ) );
+        BatchTransactionApplier applier = newApplierFacade( newIndexApplier(), newApplier( true ) );
         SchemaRecord before = new SchemaRecord( 21 );
         SchemaRecord after = before.clone().initialize( true, Record.NO_NEXT_PROPERTY.longValue() );
-        final StorageIndexReference rule = constraintIndexRule( 0, 1, 2, "K", "X.Y", 42L );
-        final Command.SchemaRuleCommand command = new Command.SchemaRuleCommand( before, after, rule );
+        IndexDescriptor2 rule = constraintIndexRule( 0, 1, 2, "K", "X.Y", 42L );
+        Command.SchemaRuleCommand command = new Command.SchemaRuleCommand( before, after, rule );
 
         // when
         boolean result = apply( applier, command::handle, transactionToApply );
@@ -654,13 +654,13 @@ class NeoStoreTransactionApplierTest
     void shouldApplyUpdateIndexRuleSchemaRuleCommandToTheStoreThrowingIndexProblem() throws Exception
     {
         // given
-        final BatchTransactionApplier applier = newIndexApplier( );
+        BatchTransactionApplier applier = newIndexApplier( );
         doThrow( new IndexNotFoundKernelException( "" ) ).when( indexingService ).activateIndex( any() );
 
         SchemaRecord before = new SchemaRecord( 21 );
         SchemaRecord after = before.clone().initialize( true, Record.NO_NEXT_PROPERTY.longValue() );
-        final StorageIndexReference rule = constraintIndexRule( 0, 1, 2, "K", "X.Y", 42L );
-        final Command.SchemaRuleCommand command = new Command.SchemaRuleCommand( before, after, rule );
+        IndexDescriptor2 rule = constraintIndexRule( 0, 1, 2, "K", "X.Y", 42L );
+        Command.SchemaRuleCommand command = new Command.SchemaRuleCommand( before, after, rule );
 
         var e = assertThrows( Exception.class, () -> apply( applier, command::handle, transactionToApply ) );
         assertThat( e.getCause(), instanceOf( IndexNotFoundKernelException.class ) );
@@ -670,13 +670,13 @@ class NeoStoreTransactionApplierTest
     void shouldApplyDeleteIndexRuleSchemaRuleCommandToTheStore() throws Exception
     {
         // given
-        final BatchTransactionApplier base = newApplier( false );
-        final BatchTransactionApplier indexApplier = newIndexApplier();
-        final BatchTransactionApplierFacade applier = new BatchTransactionApplierFacade( base, indexApplier );
+        BatchTransactionApplier base = newApplier( false );
+        BatchTransactionApplier indexApplier = newIndexApplier();
+        BatchTransactionApplierFacade applier = new BatchTransactionApplierFacade( base, indexApplier );
         SchemaRecord before = new SchemaRecord( 21 ).initialize( true, Record.NO_NEXT_PROPERTY.longValue() );
         SchemaRecord after = before.clone().initialize( false, Record.NO_NEXT_PROPERTY.longValue() );
-        final StorageIndexReference rule = indexRule( 0, 1, 2, "K", "X.Y" );
-        final Command.SchemaRuleCommand command = new Command.SchemaRuleCommand( before, after, rule );
+        IndexDescriptor2 rule = indexRule( 0, 1, 2, "K", "X.Y" );
+        Command.SchemaRuleCommand command = new Command.SchemaRuleCommand( before, after, rule );
 
         // when
         boolean result = apply( applier, command::handle, transactionToApply );
@@ -693,11 +693,11 @@ class NeoStoreTransactionApplierTest
     void shouldApplyDeleteIndexRuleSchemaRuleCommandToTheStoreInRecovery() throws Exception
     {
         // given
-        final BatchTransactionApplier applier = newApplierFacade( newIndexApplier(), newApplier( true ) );
+        BatchTransactionApplier applier = newApplierFacade( newIndexApplier(), newApplier( true ) );
         SchemaRecord before = new SchemaRecord( 21 ).initialize( true, Record.NO_NEXT_PROPERTY.longValue() );
         SchemaRecord after = before.clone().initialize( false, Record.NO_NEXT_PROPERTY.longValue() );
-        final StorageIndexReference rule = indexRule( 0, 1, 2, "K", "X.Y" );
-        final Command.SchemaRuleCommand command = new Command.SchemaRuleCommand( before, after, rule );
+        IndexDescriptor2 rule = indexRule( 0, 1, 2, "K", "X.Y" );
+        Command.SchemaRuleCommand command = new Command.SchemaRuleCommand( before, after, rule );
 
         // when
         boolean result = apply( applier, command::handle, transactionToApply );
@@ -715,13 +715,13 @@ class NeoStoreTransactionApplierTest
     void shouldApplyCreateUniquenessConstraintRuleSchemaRuleCommandToTheStore() throws Exception
     {
         // given
-        final BatchTransactionApplier applier = newApplier( false );
+        BatchTransactionApplier applier = newApplier( false );
         SchemaRecord before = new SchemaRecord( 21 );
         SchemaRecord after = before.clone().initialize( true, Record.NO_NEXT_PROPERTY.longValue() );
         after.setCreated();
         after.setConstraint( true );
-        final ConstraintRule rule = uniquenessConstraintRule( 0L, 1, 2, 3L );
-        final Command.SchemaRuleCommand command = new Command.SchemaRuleCommand( before, after, rule );
+        ConstraintRule rule = uniquenessConstraintRule( 0L, 1, 2, 3L );
+        Command.SchemaRuleCommand command = new Command.SchemaRuleCommand( before, after, rule );
 
         // when
         boolean result = apply( applier, command::handle, transactionToApply );
@@ -738,13 +738,13 @@ class NeoStoreTransactionApplierTest
     void shouldApplyCreateUniquenessConstraintRuleSchemaRuleCommandToTheStoreInRecovery() throws Exception
     {
         // given
-        final BatchTransactionApplier applier = newApplier( true );
+        BatchTransactionApplier applier = newApplier( true );
         SchemaRecord before = new SchemaRecord( 21 );
         SchemaRecord after = before.clone().initialize( true, Record.NO_NEXT_PROPERTY.longValue() );
         after.setCreated();
         after.setConstraint( true );
-        final ConstraintRule rule = uniquenessConstraintRule( 0L, 1, 2, 3L );
-        final Command.SchemaRuleCommand command = new Command.SchemaRuleCommand( before, after, rule );
+        ConstraintRule rule = uniquenessConstraintRule( 0L, 1, 2, 3L );
+        Command.SchemaRuleCommand command = new Command.SchemaRuleCommand( before, after, rule );
 
         // when
         boolean result = apply( applier, command::handle, transactionToApply );
@@ -762,12 +762,12 @@ class NeoStoreTransactionApplierTest
     void shouldApplyUpdateUniquenessConstraintRuleSchemaRuleCommandToTheStore() throws Exception
     {
         // given
-        final BatchTransactionApplier applier = newApplier( false );
+        BatchTransactionApplier applier = newApplier( false );
         SchemaRecord before = new SchemaRecord( 21 );
         SchemaRecord after = before.clone().initialize( true, Record.NO_NEXT_PROPERTY.longValue() );
         after.setConstraint( true );
-        final ConstraintRule rule = uniquenessConstraintRule( 0L, 1, 2, 3L );
-        final Command.SchemaRuleCommand command = new Command.SchemaRuleCommand( before, after, rule );
+        ConstraintRule rule = uniquenessConstraintRule( 0L, 1, 2, 3L );
+        Command.SchemaRuleCommand command = new Command.SchemaRuleCommand( before, after, rule );
 
         // when
         boolean result = apply( applier, command::handle, transactionToApply );
@@ -784,12 +784,12 @@ class NeoStoreTransactionApplierTest
     void shouldApplyUpdateUniquenessConstraintRuleSchemaRuleCommandToTheStoreInRecovery() throws Exception
     {
         // given
-        final BatchTransactionApplier applier = newApplier( true );
+        BatchTransactionApplier applier = newApplier( true );
         SchemaRecord before = new SchemaRecord( 21 );
         SchemaRecord after = before.clone().initialize( true, Record.NO_NEXT_PROPERTY.longValue() );
         after.setConstraint( true );
-        final ConstraintRule rule = uniquenessConstraintRule( 0L, 1, 2, 3L );
-        final Command.SchemaRuleCommand command = new Command.SchemaRuleCommand( before, after, rule );
+        ConstraintRule rule = uniquenessConstraintRule( 0L, 1, 2, 3L );
+        Command.SchemaRuleCommand command = new Command.SchemaRuleCommand( before, after, rule );
 
         // when
         boolean result = apply( applier, command::handle, transactionToApply );
@@ -807,11 +807,11 @@ class NeoStoreTransactionApplierTest
     void shouldApplyDeleteUniquenessConstraintRuleSchemaRuleCommandToTheStore() throws Exception
     {
         // given
-        final BatchTransactionApplier applier = newApplier( false );
+        BatchTransactionApplier applier = newApplier( false );
         SchemaRecord before = new SchemaRecord( 21 ).initialize( true, Record.NO_NEXT_PROPERTY.longValue() );
         SchemaRecord after = before.clone().initialize( false, Record.NO_NEXT_PROPERTY.longValue() );
-        final ConstraintRule rule = uniquenessConstraintRule( 0L, 1, 2, 3L );
-        final Command.SchemaRuleCommand command = new Command.SchemaRuleCommand( before, after, rule );
+        ConstraintRule rule = uniquenessConstraintRule( 0L, 1, 2, 3L );
+        Command.SchemaRuleCommand command = new Command.SchemaRuleCommand( before, after, rule );
 
         // when
         boolean result = apply( applier, command::handle, transactionToApply );
@@ -828,11 +828,11 @@ class NeoStoreTransactionApplierTest
     void shouldApplyDeleteUniquenessConstraintRuleSchemaRuleCommandToTheStoreInRecovery() throws Exception
     {
         // given
-        final BatchTransactionApplier applier = newApplier( true );
+        BatchTransactionApplier applier = newApplier( true );
         SchemaRecord before = new SchemaRecord( 21 ).initialize( true, Record.NO_NEXT_PROPERTY.longValue() );
         SchemaRecord after = before.clone().initialize( false, Record.NO_NEXT_PROPERTY.longValue() );
-        final ConstraintRule rule = uniquenessConstraintRule( 0L, 1, 2, 3L );
-        final Command.SchemaRuleCommand command = new Command.SchemaRuleCommand( before, after, rule );
+        ConstraintRule rule = uniquenessConstraintRule( 0L, 1, 2, 3L );
+        Command.SchemaRuleCommand command = new Command.SchemaRuleCommand( before, after, rule );
 
         // when
         boolean result = apply( applier, command::handle, transactionToApply );
@@ -852,11 +852,11 @@ class NeoStoreTransactionApplierTest
     void shouldApplyNeoStoreCommandToTheStore() throws Exception
     {
         // given
-        final BatchTransactionApplier applier = newApplier( false );
-        final NeoStoreRecord before = new NeoStoreRecord();
-        final NeoStoreRecord after = new NeoStoreRecord();
+        BatchTransactionApplier applier = newApplier( false );
+        NeoStoreRecord before = new NeoStoreRecord();
+        NeoStoreRecord after = new NeoStoreRecord();
         after.setNextProp( 42 );
-        final Command command = new Command.NeoStoreCommand( before, after );
+        Command command = new Command.NeoStoreCommand( before, after );
 
         // when
         boolean result = apply( applier, command::handle, transactionToApply );
@@ -871,11 +871,11 @@ class NeoStoreTransactionApplierTest
     void shouldApplyNeoStoreCommandToTheStoreInRecovery() throws Exception
     {
         // given
-        final BatchTransactionApplier applier = newApplier( true );
-        final NeoStoreRecord before = new NeoStoreRecord();
-        final NeoStoreRecord after = new NeoStoreRecord();
+        BatchTransactionApplier applier = newApplier( true );
+        NeoStoreRecord before = new NeoStoreRecord();
+        NeoStoreRecord after = new NeoStoreRecord();
         after.setNextProp( 42 );
-        final Command command = new Command.NeoStoreCommand( before, after );
+        Command command = new Command.NeoStoreCommand( before, after );
 
         // when
         boolean result = apply( applier, command::handle, transactionToApply );
@@ -928,15 +928,15 @@ class NeoStoreTransactionApplierTest
 
     // SCHEMA RULE COMMAND
 
-    private static StorageIndexReference indexRule( long id, int label, int propertyKeyId, String providerKey, String providerVersion )
+    private static IndexDescriptor2 indexRule( long id, int label, int propertyKeyId, String providerKey, String providerVersion )
     {
-        return new DefaultStorageIndexReference( forLabel( label, propertyKeyId ), providerKey, providerVersion, id, Optional.empty(), false, null );
+        return IndexPrototype.forSchema( forLabel( label, propertyKeyId ), new IndexProviderDescriptor( providerKey, providerVersion ) ).materialise( id );
     }
 
-    private static StorageIndexReference constraintIndexRule( long id, int label, int propertyKeyId, String providerKey, String providerVersion,
-            Long owningConstraint )
+    private static IndexDescriptor2 constraintIndexRule( long id, int label, int propertyKeyId, String providerKey, String providerVersion, long constraintId )
     {
-        return new DefaultStorageIndexReference( forLabel( label, propertyKeyId ), providerKey, providerVersion, id, Optional.empty(), true, owningConstraint );
+        return IndexPrototype.uniqueForSchema( forLabel( label, propertyKeyId ), new IndexProviderDescriptor( providerKey, providerVersion ) )
+                .materialise( id ).withOwningConstraintId( constraintId );
     }
 
     private static ConstraintRule uniquenessConstraintRule( long id, int labelId, int propertyKeyId, long ownedIndexRule )

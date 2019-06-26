@@ -19,13 +19,24 @@
  */
 package org.neo4j.internal.schema;
 
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
 import java.util.Objects;
 import java.util.OptionalLong;
+import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
 
 import org.neo4j.common.TokenNameLookup;
 
-public class IndexDescriptor2 implements IndexRef<IndexDescriptor2>
+public final class IndexDescriptor2 implements IndexRef<IndexDescriptor2>, SchemaRule
 {
+    /**
+     * A special index descriptor used to represent the absence of an index.
+     * This descriptor <em>cannot</em> be modified by any of the {@code with*} methods.
+     */
+    public static final IndexDescriptor2 NO_INDEX = new IndexDescriptor2();
+
     private final long id;
     private final String name;
     private final SchemaDescriptor schema;
@@ -63,6 +74,20 @@ public class IndexDescriptor2 implements IndexRef<IndexDescriptor2>
         this.capability = capability;
     }
 
+    /**
+     * This constructor is used <em>exclusively</em> for the {@link #NO_INDEX} field!
+     */
+    private IndexDescriptor2()
+    {
+        this.id = -1;
+        this.name = "No index";
+        this.schema = SchemaDescriptor.noSchema();
+        this.isUnique = false;
+        this.indexProvider = IndexProviderDescriptor.UNDECIDED;
+        this.owningConstraintId = null;
+        this.capability = IndexCapability.NO_CAPABILITY;
+    }
+
     @Override
     public SchemaDescriptor schema()
     {
@@ -73,6 +98,12 @@ public class IndexDescriptor2 implements IndexRef<IndexDescriptor2>
     public boolean isUnique()
     {
         return isUnique;
+    }
+
+    @Override
+    public long getId()
+    {
+        return id;
     }
 
     /**
@@ -159,5 +190,35 @@ public class IndexDescriptor2 implements IndexRef<IndexDescriptor2>
     public IndexDescriptor2 withIndexCapability( IndexCapability capability )
     {
         return new IndexDescriptor2( id, name, schema, isUnique, indexProvider, owningConstraintId, capability );
+    }
+
+    @Override
+    public boolean equals( Object o )
+    {
+        if ( o instanceof IndexRef )
+        {
+            return IndexRef.equals( this, (IndexRef<?>) o );
+        }
+        return false;
+    }
+
+    @Override
+    public int hashCode()
+    {
+        return IndexRef.hashCode( this );
+    }
+
+    /**
+     * Sorts indexes by type, returning first GENERAL indexes, followed by UNIQUE. Implementation is not suitable in hot path.
+     *
+     * @param indexes Indexes to sort
+     * @return sorted indexes
+     */
+    public static Iterator<IndexDescriptor2> sortByType( Iterator<IndexDescriptor2> indexes )
+    {
+        List<IndexDescriptor2> nonUnique = new ArrayList<>();
+        List<IndexDescriptor2> unique = new ArrayList<>();
+        indexes.forEachRemaining( index -> (index.isUnique() ? unique : nonUnique).add( index ) );
+        return Stream.concat( nonUnique.stream(), unique.stream() ).iterator();
     }
 }

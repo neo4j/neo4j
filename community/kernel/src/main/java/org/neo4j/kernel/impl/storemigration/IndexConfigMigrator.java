@@ -26,6 +26,8 @@ import org.neo4j.configuration.Config;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.internal.kernel.api.exceptions.schema.MisconfiguredIndexException;
 import org.neo4j.internal.schema.IndexConfig;
+import org.neo4j.internal.schema.IndexDescriptor2;
+import org.neo4j.internal.schema.IndexProviderDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.internal.schema.SchemaRule;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -35,7 +37,6 @@ import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.impl.api.index.IndexProviderMap;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.internal.LogService;
-import org.neo4j.storageengine.api.DefaultStorageIndexReference;
 import org.neo4j.storageengine.api.StorageEngineFactory;
 import org.neo4j.storageengine.migration.AbstractStoreMigrationParticipant;
 import org.neo4j.storageengine.migration.SchemaRuleMigrationAccess;
@@ -84,17 +85,18 @@ public class IndexConfigMigrator extends AbstractStoreMigrationParticipant
 
     private SchemaRule migrateIndexConfig( SchemaRule rule, DatabaseLayout directoryLayout ) throws IOException, MisconfiguredIndexException
     {
-        if ( rule instanceof DefaultStorageIndexReference )
+        if ( rule instanceof IndexDescriptor2 )
         {
-            DefaultStorageIndexReference oldIndexReference = (DefaultStorageIndexReference) rule;
-            long indexId = oldIndexReference.indexReference();
+            IndexDescriptor2 old = (IndexDescriptor2) rule;
+            long indexId = old.getId();
+            IndexProviderDescriptor provider = old.getIndexProvider();
 
-            IndexMigration indexMigration = IndexMigration.migrationFromOldProvider( oldIndexReference.providerKey(), oldIndexReference.providerVersion() );
+            IndexMigration indexMigration = IndexMigration.migrationFromOldProvider( provider.getKey(), provider.getVersion() );
 
             IndexConfig indexConfig = indexMigration.extractIndexConfig( fs, pageCache, directoryLayout, indexId, log );
 
-            SchemaDescriptor schemaDescriptorWithIndexConfig = oldIndexReference.schema().withIndexConfig( indexConfig );
-            DefaultStorageIndexReference newIndexReference = oldIndexReference.withSchemaDescriptor( schemaDescriptorWithIndexConfig );
+            SchemaDescriptor schemaDescriptorWithIndexConfig = old.schema().withIndexConfig( indexConfig );
+            IndexDescriptor2 newIndexReference = old.withSchemaDescriptor( schemaDescriptorWithIndexConfig );
             IndexProvider indexProvider = indexProviderMap.lookup( indexMigration.desiredAlternativeProvider );
             return indexProvider.bless( newIndexReference );
         }

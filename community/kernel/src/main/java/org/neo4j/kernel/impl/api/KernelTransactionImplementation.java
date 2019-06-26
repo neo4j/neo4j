@@ -38,7 +38,6 @@ import org.neo4j.graphdb.TransactionTerminatedException;
 import org.neo4j.internal.index.label.LabelScanStore;
 import org.neo4j.internal.kernel.api.CursorFactory;
 import org.neo4j.internal.kernel.api.ExecutionStatistics;
-import org.neo4j.internal.kernel.api.IndexReference;
 import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.PropertyCursor;
 import org.neo4j.internal.kernel.api.Read;
@@ -59,7 +58,7 @@ import org.neo4j.internal.kernel.api.exceptions.schema.SchemaKernelException;
 import org.neo4j.internal.kernel.api.security.AccessMode;
 import org.neo4j.internal.kernel.api.security.AuthSubject;
 import org.neo4j.internal.kernel.api.security.SecurityContext;
-import org.neo4j.internal.schema.IndexDescriptor;
+import org.neo4j.internal.schema.IndexDescriptor2;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.internal.schema.SchemaState;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
@@ -435,7 +434,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     }
 
     @Override
-    public IndexReference indexUniqueCreate( SchemaDescriptor schema, String provider ) throws SchemaKernelException
+    public IndexDescriptor2 indexUniqueCreate( SchemaDescriptor schema, String provider ) throws SchemaKernelException
     {
         return operations.indexUniqueCreate( schema, provider );
     }
@@ -471,7 +470,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     {
         if ( hasTxStateWithChanges() )
         {
-            for ( IndexDescriptor createdConstraintIndex : txState().constraintIndexesCreatedInTx() )
+            for ( IndexDescriptor2 createdConstraintIndex : txState().constraintIndexesCreatedInTx() )
             {
                 // TODO logically, which statement should this operation be performed on?
 
@@ -1185,7 +1184,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         return storageEngine.newReader();
     }
 
-    public void addIndexDoDropToTxState( IndexReference index )
+    public void addIndexDoDropToTxState( IndexDescriptor2 index )
     {
         txState().indexDoDrop( allStoreHolder.storageIndexDescriptor( index ) );
     }

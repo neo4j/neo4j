@@ -43,6 +43,7 @@ import org.neo4j.internal.id.IdController;
 import org.neo4j.internal.index.label.LabelScanReader;
 import org.neo4j.internal.schema.IndexCapability;
 import org.neo4j.internal.kernel.api.InternalIndexState;
+import org.neo4j.internal.schema.IndexDescriptor2;
 import org.neo4j.internal.schema.IndexProviderDescriptor;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
@@ -222,7 +223,7 @@ public class IndexPopulationMissConcurrentUpdateIT
             return new IndexProvider( INDEX_PROVIDER, directoriesByProvider( new File( "not-even-persistent" ) ) )
             {
                 @Override
-                public IndexPopulator getPopulator( StorageIndexReference descriptor, IndexSamplingConfig samplingConfig, ByteBufferFactory bufferFactory )
+                public IndexPopulator getPopulator( IndexDescriptor2 descriptor, IndexSamplingConfig samplingConfig, ByteBufferFactory bufferFactory )
                 {
                     return new IndexPopulator()
                     {
@@ -301,25 +302,25 @@ public class IndexPopulationMissConcurrentUpdateIT
                 }
 
                 @Override
-                public IndexAccessor getOnlineAccessor( StorageIndexReference descriptor, IndexSamplingConfig samplingConfig )
+                public IndexAccessor getOnlineAccessor( IndexDescriptor2 descriptor, IndexSamplingConfig samplingConfig )
                 {
                     return mock( IndexAccessor.class );
                 }
 
                 @Override
-                public String getPopulationFailure( StorageIndexReference descriptor )
+                public String getPopulationFailure( IndexDescriptor2 descriptor )
                 {
                     throw new IllegalStateException();
                 }
 
                 @Override
-                public InternalIndexState getInitialState( StorageIndexReference descriptor )
+                public InternalIndexState getInitialState( IndexDescriptor2 descriptor )
                 {
                     return POPULATING;
                 }
 
                 @Override
-                public IndexCapability getCapability( StorageIndexReference descriptor )
+                public IndexCapability getCapability( IndexDescriptor2 descriptor )
                 {
                     return IndexCapability.NO_CAPABILITY;
                 }

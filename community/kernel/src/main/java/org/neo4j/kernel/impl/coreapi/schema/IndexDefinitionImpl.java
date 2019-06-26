@@ -26,7 +26,7 @@ import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.hashing.HashFunction;
-import org.neo4j.internal.kernel.api.IndexReference;
+import org.neo4j.internal.schema.IndexDescriptor2;
 
 import static java.util.Arrays.asList;
 import static java.util.stream.Collectors.joining;
@@ -36,13 +36,13 @@ public class IndexDefinitionImpl implements IndexDefinition
 {
     private final InternalSchemaActions actions;
 
-    private final IndexReference indexReference;
+    private final IndexDescriptor2 indexReference;
     private final Label[] labels;
     private final RelationshipType[] relTypes;
     private final String[] propertyKeys;
     private final boolean constraintIndex;
 
-    public IndexDefinitionImpl( InternalSchemaActions actions, IndexReference ref, Label[] labels, String[] propertyKeys, boolean constraintIndex )
+    public IndexDefinitionImpl( InternalSchemaActions actions, IndexDescriptor2 ref, Label[] labels, String[] propertyKeys, boolean constraintIndex )
     {
         this.actions = actions;
         this.indexReference = ref;
@@ -54,7 +54,7 @@ public class IndexDefinitionImpl implements IndexDefinition
         assertInUnterminatedTransaction();
     }
 
-    public IndexDefinitionImpl( InternalSchemaActions actions, IndexReference ref, RelationshipType[] relTypes, String[] propertyKeys, boolean constraintIndex )
+    IndexDefinitionImpl( InternalSchemaActions actions, IndexDescriptor2 ref, RelationshipType[] relTypes, String[] propertyKeys, boolean constraintIndex )
     {
         this.actions = actions;
         this.indexReference = ref;
@@ -66,7 +66,7 @@ public class IndexDefinitionImpl implements IndexDefinition
         assertInUnterminatedTransaction();
     }
 
-    public IndexReference getIndexReference()
+    public IndexDescriptor2 getIndexReference()
     {
         return indexReference;
     }
@@ -216,7 +216,8 @@ public class IndexDefinitionImpl implements IndexDefinition
     @Override
     public String getName()
     {
-        return indexReference == null ? IndexReference.UNNAMED_INDEX : indexReference.name();
+        IndexDescriptor2 descriptor = indexReference == null ? IndexDescriptor2.NO_INDEX : indexReference;
+        return descriptor.getName();
     }
 
     @Override
@@ -304,7 +305,7 @@ public class IndexDefinitionImpl implements IndexDefinition
                 (indexReference == null ? "" : " (" + indexReference + ")");
     }
 
-    public static String labelNameList( Iterable<Label> labels, String prefix, String postfix )
+    static String labelNameList( Iterable<Label> labels, String prefix, String postfix )
     {
         return stream( labels ).map( Label::name ).collect( joining( ", ", prefix, postfix ) );
     }

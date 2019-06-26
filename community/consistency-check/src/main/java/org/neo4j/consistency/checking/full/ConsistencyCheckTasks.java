@@ -49,12 +49,12 @@ import org.neo4j.internal.index.label.LabelScanStore;
 import org.neo4j.internal.index.label.NativeLabelScanStore;
 import org.neo4j.internal.recordstorage.SchemaRuleAccess;
 import org.neo4j.internal.recordstorage.StoreTokens;
+import org.neo4j.internal.schema.IndexDescriptor2;
 import org.neo4j.kernel.impl.api.NonTransactionalTokenNameLookup;
 import org.neo4j.kernel.impl.store.RecordStore;
 import org.neo4j.kernel.impl.store.Scanner;
 import org.neo4j.kernel.impl.store.StoreAccess;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
-import org.neo4j.storageengine.api.StorageIndexReference;
 import org.neo4j.token.TokenHolders;
 
 import static java.lang.String.format;
@@ -156,7 +156,7 @@ public class ConsistencyCheckTasks
                     new IterableStore<>( nativeStores.getPropertyStore(), true ) ) );
 
             // Checking that relationships are in their expected relationship indexes.
-            List<StorageIndexReference> relationshipIndexes = Iterables.stream( indexes.onlineRules() )
+            List<IndexDescriptor2> relationshipIndexes = Iterables.stream( indexes.onlineRules() )
                     .filter( rule -> rule.schema().entityType() == EntityType.RELATIONSHIP )
                     .collect( Collectors.toList() );
             if ( checkIndexes && !relationshipIndexes.isEmpty() )
@@ -215,7 +215,7 @@ public class ConsistencyCheckTasks
         {
             tasks.add( new IndexDirtyCheckTask() );
             TokenNameLookup tokenNameLookup = new NonTransactionalTokenNameLookup( tokenHolders, true /*include token ids too*/ );
-            for ( StorageIndexReference indexRule : indexes.onlineRules() )
+            for ( IndexDescriptor2 indexRule : indexes.onlineRules() )
             {
                 tasks.add( recordScanner( format( "Index_%d", indexRule.getId() ),
                         new IndexIterator( indexes.accessorFor( indexRule ) ),
@@ -283,7 +283,7 @@ public class ConsistencyCheckTasks
         @Override
         public void run()
         {
-            for ( StorageIndexReference indexRule : indexes.onlineRules() )
+            for ( IndexDescriptor2 indexRule : indexes.onlineRules() )
             {
                 if ( indexes.accessorFor( indexRule ).isDirty() )
                 {

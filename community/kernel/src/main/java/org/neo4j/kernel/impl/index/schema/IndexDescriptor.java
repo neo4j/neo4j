@@ -23,6 +23,7 @@ import java.util.Optional;
 
 import org.neo4j.internal.schema.IndexOrder;
 import org.neo4j.internal.kernel.api.IndexReference;
+import org.neo4j.internal.schema.IndexRef;
 import org.neo4j.internal.schema.IndexValueCapability;
 import org.neo4j.internal.schema.DefaultIndexDescriptor;
 import org.neo4j.internal.schema.IndexProviderDescriptor;
@@ -41,15 +42,16 @@ import org.neo4j.values.storable.ValueCategory;
  * This class extends {@link DefaultIndexDescriptor} just to cut down on the code duplication of implementing these methods,
  * it doesn't <strong>have to</strong> extend it.
  */
+@Deprecated
 public class IndexDescriptor extends DefaultIndexDescriptor
-        implements SchemaDescriptorSupplier, IndexReference, org.neo4j.internal.schema.IndexDescriptor
+        implements SchemaDescriptorSupplier, IndexReference, org.neo4j.internal.schema.IndexDescriptor, IndexRef<IndexDescriptor>
 {
     protected final IndexProviderDescriptor providerDescriptor;
 
     public IndexDescriptor( org.neo4j.internal.schema.IndexDescriptor indexDescriptor )
     {
         super( indexDescriptor );
-        this.providerDescriptor = IndexProviderDescriptor.from( indexDescriptor );
+        this.providerDescriptor = new IndexProviderDescriptor( indexDescriptor.providerKey(), indexDescriptor.providerVersion() );
     }
 
     public IndexDescriptor( SchemaDescriptor schema, boolean isUnique, Optional<String> userSuppliedName, IndexProviderDescriptor providerDescriptor )
@@ -73,9 +75,15 @@ public class IndexDescriptor extends DefaultIndexDescriptor
     }
 
     @Override
-    public String name()
+    public String getName()
     {
         return name.orElse( UNNAMED_INDEX );
+    }
+
+    @Override
+    public IndexProviderDescriptor getIndexProvider()
+    {
+        return providerDescriptor;
     }
 
     @Override

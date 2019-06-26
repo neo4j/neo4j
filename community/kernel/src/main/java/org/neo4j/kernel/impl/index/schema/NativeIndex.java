@@ -26,12 +26,12 @@ import java.util.function.Consumer;
 
 import org.neo4j.index.internal.gbptree.GBPTree;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
+import org.neo4j.internal.schema.IndexDescriptor2;
 import org.neo4j.io.IOUtils;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.kernel.api.index.IndexProvider;
-import org.neo4j.storageengine.api.StorageIndexReference;
 
 import static org.neo4j.index.internal.gbptree.GBPTree.NO_HEADER_READER;
 
@@ -41,13 +41,13 @@ abstract class NativeIndex<KEY extends NativeIndexKey<KEY>, VALUE extends Native
     final IndexFiles indexFiles;
     final IndexLayout<KEY,VALUE> layout;
     final FileSystemAbstraction fileSystem;
-    final StorageIndexReference descriptor;
+    final IndexDescriptor2 descriptor;
     private final IndexProvider.Monitor monitor;
 
     protected GBPTree<KEY,VALUE> tree;
 
     NativeIndex( PageCache pageCache, FileSystemAbstraction fs, IndexFiles indexFiles, IndexLayout<KEY,VALUE> layout, IndexProvider.Monitor monitor,
-            StorageIndexReference descriptor )
+            IndexDescriptor2 descriptor )
     {
         this.pageCache = pageCache;
         this.indexFiles = indexFiles;

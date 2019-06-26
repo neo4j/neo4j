@@ -32,6 +32,7 @@ import org.neo4j.internal.helpers.collection.Iterables;
 import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.internal.recordstorage.Command.Mode;
 import org.neo4j.internal.recordstorage.RecordAccess.RecordProxy;
+import org.neo4j.internal.schema.IndexDescriptor2;
 import org.neo4j.internal.schema.SchemaRule;
 import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.store.NeoStores;
@@ -55,9 +56,7 @@ import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
 import org.neo4j.kernel.impl.store.record.SchemaRecord;
 import org.neo4j.kernel.impl.store.record.TokenRecord;
 import org.neo4j.lock.ResourceLocker;
-import org.neo4j.storageengine.api.DefaultStorageIndexReference;
 import org.neo4j.storageengine.api.StorageCommand;
-import org.neo4j.storageengine.api.StorageIndexReference;
 import org.neo4j.storageengine.api.StorageProperty;
 import org.neo4j.util.IntCounter;
 import org.neo4j.values.storable.Value;
@@ -302,9 +301,7 @@ public class TransactionRecordState implements RecordState
         relationshipDeleter.relDelete( relId, recordChangeSet, locks );
     }
 
-    @SafeVarargs
-    private final void addFiltered( Collection<StorageCommand> target, Mode mode,
-                                    Command[]... commands )
+    private void addFiltered( Collection<StorageCommand> target, Mode mode, Command[]... commands )
     {
         for ( Command[] c : commands )
         {
@@ -513,7 +510,7 @@ public class TransactionRecordState implements RecordState
         // TODO Move this neo store record thingie into RecordAccessSet
         if ( neoStoreRecord == null )
         {
-            neoStoreRecord = new RecordChanges<>( new RecordChanges.Loader<NeoStoreRecord, Void>()
+            neoStoreRecord = new RecordChanges<>( new RecordChanges.Loader<>()
             {
                 @Override
                 public NeoStoreRecord newUnused( long key, Void additionalData )
@@ -606,14 +603,14 @@ public class TransactionRecordState implements RecordState
         propertyCreator.primitiveSetProperty( record, propertyKeyId, value, recordChangeSet.getPropertyRecords() );
     }
 
-    void schemaRuleSetIndexOwner( StorageIndexReference rule, long constraintId, int propertyKeyId, Value value )
+    void schemaRuleSetIndexOwner( IndexDescriptor2 rule, long constraintId, int propertyKeyId, Value value )
     {
         // It is possible that the added property will only modify the property chain and leave the owning record untouched.
         // However, we need the schema record to be marked as updated so that an UPDATE schema command is generated.
         // Otherwise, the command appliers, who are responsible for activating index proxies and clearing the schema cache,
         // will not notice our change.
         long ruleId = rule.getId();
-        rule = new DefaultStorageIndexReference( rule, constraintId );
+        rule = rule.withOwningConstraintId( constraintId );
         RecordAccess<SchemaRecord,SchemaRule> changes = recordChangeSet.getSchemaRuleChanges();
         RecordProxy<SchemaRecord,SchemaRule> record = changes.getOrLoad( ruleId, rule );
         changes.setRecord( ruleId, record.forReadingData(), rule ).forChangingData();

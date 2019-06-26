@@ -25,9 +25,9 @@ import org.neo4j.token.api.TokenIdPrettyPrinter;
 
 public class NodeKeyConstraintDescriptor extends IndexBackedConstraintDescriptor
 {
-    NodeKeyConstraintDescriptor( LabelSchemaDescriptor schema )
+    NodeKeyConstraintDescriptor( LabelSchemaDescriptor ownedSchema )
     {
-        super( Type.UNIQUE_EXISTS, schema );
+        super( Type.UNIQUE_EXISTS, ownedSchema );
     }
 
     @Override

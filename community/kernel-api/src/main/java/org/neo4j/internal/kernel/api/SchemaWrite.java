@@ -23,6 +23,8 @@ import java.util.Optional;
 
 import org.neo4j.internal.kernel.api.exceptions.schema.SchemaKernelException;
 import org.neo4j.internal.schema.ConstraintDescriptor;
+import org.neo4j.internal.schema.IndexDescriptor2;
+import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.LabelSchemaDescriptor;
 import org.neo4j.internal.schema.RelationTypeSchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptor;
@@ -32,13 +34,15 @@ import org.neo4j.internal.schema.SchemaDescriptor;
  */
 public interface SchemaWrite
 {
+    IndexDescriptor2 indexCreate( IndexPrototype prototype ) throws SchemaKernelException;
+
     /**
      * Create index from schema descriptor
      *
      * @param descriptor description of the index
      * @return the newly created index
      */
-    IndexReference indexCreate( SchemaDescriptor descriptor ) throws SchemaKernelException;
+    IndexDescriptor2 indexCreate( SchemaDescriptor descriptor ) throws SchemaKernelException;
 
     /**
      * Create index from schema descriptor
@@ -47,7 +51,7 @@ public interface SchemaWrite
      * @param name name of the index
      * @return the newly created index
      */
-    IndexReference indexCreate( SchemaDescriptor descriptor, Optional<String> name ) throws SchemaKernelException;
+    IndexDescriptor2 indexCreate( SchemaDescriptor descriptor, Optional<String> name ) throws SchemaKernelException;
 
     /**
      * Create index from schema descriptor
@@ -57,14 +61,14 @@ public interface SchemaWrite
      * @param name name of the index
      * @return the newly created index
      */
-    IndexReference indexCreate( SchemaDescriptor descriptor, String provider, Optional<String> name ) throws SchemaKernelException;
+    IndexDescriptor2 indexCreate( SchemaDescriptor descriptor, String provider, Optional<String> name ) throws SchemaKernelException;
 
     /**
      * Drop the given index
      *
      * @param index the index to drop
      */
-    void indexDrop( IndexReference index ) throws SchemaKernelException;
+    void indexDrop( IndexDescriptor2 index ) throws SchemaKernelException;
 
     /**
      * Create unique property constraint

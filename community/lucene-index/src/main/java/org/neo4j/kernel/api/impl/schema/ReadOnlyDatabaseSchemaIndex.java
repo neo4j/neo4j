@@ -22,7 +22,7 @@ package org.neo4j.kernel.api.impl.schema;
 import java.io.IOException;
 import java.util.List;
 
-import org.neo4j.internal.schema.IndexDescriptor;
+import org.neo4j.internal.schema.IndexDescriptor2;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.impl.index.ReadOnlyAbstractDatabaseIndex;
 import org.neo4j.kernel.api.impl.index.partition.ReadOnlyIndexPartitionFactory;
@@ -37,7 +37,7 @@ import org.neo4j.values.storable.Value;
  */
 public class ReadOnlyDatabaseSchemaIndex extends ReadOnlyAbstractDatabaseIndex<LuceneSchemaIndex,IndexReader> implements SchemaIndex
 {
-    public ReadOnlyDatabaseSchemaIndex( PartitionedIndexStorage indexStorage, IndexDescriptor descriptor,
+    ReadOnlyDatabaseSchemaIndex( PartitionedIndexStorage indexStorage, IndexDescriptor2 descriptor,
             IndexSamplingConfig samplingConfig, ReadOnlyIndexPartitionFactory readOnlyIndexPartitionFactory )
     {
         super( new LuceneSchemaIndex( indexStorage, descriptor, samplingConfig, readOnlyIndexPartitionFactory ) );

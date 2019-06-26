@@ -28,6 +28,7 @@ import static java.lang.String.format;
 /**
  * Default implementation of a {@link IndexDescriptor}. Mainly used as data carrier between the storage engine API and kernel.
  */
+@Deprecated
 public class DefaultIndexDescriptor implements IndexDescriptor
 {
     protected final Optional<String> name;
@@ -79,7 +80,7 @@ public class DefaultIndexDescriptor implements IndexDescriptor
     }
 
     @Override
-    public String name()
+    public String getName()
     {
         return name.orElse( "Unnamed index" );
     }
@@ -151,6 +152,6 @@ public class DefaultIndexDescriptor implements IndexDescriptor
 
     public static Optional<String> optionalName( IndexDescriptor indexDescriptor )
     {
-        return indexDescriptor.hasUserSuppliedName() ? Optional.of( indexDescriptor.name() ) : Optional.empty();
+        return indexDescriptor.hasUserSuppliedName() ? Optional.of( indexDescriptor.getName() ) : Optional.empty();
     }
 }

@@ -25,13 +25,13 @@ import java.io.IOException;
 import org.neo4j.common.ProgressReporter;
 import org.neo4j.configuration.Config;
 import org.neo4j.exceptions.KernelException;
+import org.neo4j.internal.schema.IndexDescriptor2;
 import org.neo4j.internal.schema.IndexProviderDescriptor;
 import org.neo4j.internal.schema.SchemaRule;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.logging.internal.LogService;
-import org.neo4j.storageengine.api.DefaultStorageIndexReference;
 import org.neo4j.storageengine.api.StorageEngineFactory;
 import org.neo4j.storageengine.migration.AbstractStoreMigrationParticipant;
 import org.neo4j.storageengine.migration.SchemaRuleMigrationAccess;
@@ -95,19 +95,20 @@ public class IndexProviderMigrator extends AbstractStoreMigrationParticipant
 
     private SchemaRule upgradeIndexProvider( SchemaRule rule )
     {
-        if ( rule instanceof DefaultStorageIndexReference )
+        if ( rule instanceof IndexDescriptor2 )
         {
-            DefaultStorageIndexReference oldIndexReference = (DefaultStorageIndexReference) rule;
+            IndexDescriptor2 old = (IndexDescriptor2) rule;
+            IndexProviderDescriptor provider = old.getIndexProvider();
 
-            String currentKey = oldIndexReference.providerKey();
-            String currentVersion = oldIndexReference.providerVersion();
+            String currentKey = provider.getKey();
+            String currentVersion = provider.getVersion();
 
             for ( IndexMigration retired : IndexMigration.retired() )
             {
                 if ( currentKey.equals( retired.providerKey ) && currentVersion.equals( retired.providerVersion ) )
                 {
                     IndexProviderDescriptor replacement = retired.desiredAlternativeProvider;
-                    return oldIndexReference.withIndexProvider( replacement);
+                    return old.withIndexProvider( replacement);
                 }
             }
         }

@@ -34,6 +34,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.OptionalLong;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -63,6 +64,7 @@ import org.neo4j.internal.index.label.LabelScanStore;
 import org.neo4j.internal.index.label.NativeLabelScanStore;
 import org.neo4j.internal.recordstorage.RecordStorageEngine;
 import org.neo4j.internal.recordstorage.SchemaRuleAccess;
+import org.neo4j.internal.schema.IndexDescriptor2;
 import org.neo4j.internal.schema.IndexProviderDescriptor;
 import org.neo4j.internal.schema.SchemaRule;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -78,7 +80,6 @@ import org.neo4j.kernel.impl.MyRelTypes;
 import org.neo4j.kernel.impl.api.index.TestIndexProviderDescriptor;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.kernel.impl.index.schema.IndexDescriptor;
-import org.neo4j.kernel.impl.index.schema.StoreIndexDescriptor;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.NodeLabels;
 import org.neo4j.kernel.impl.store.NodeLabelsField;
@@ -91,7 +92,6 @@ import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.monitoring.Monitors;
 import org.neo4j.storageengine.api.ConstraintRule;
 import org.neo4j.storageengine.api.NodePropertyAccessor;
-import org.neo4j.storageengine.api.StorageIndexReference;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.pagecache.PageCacheExtension;
@@ -143,8 +143,8 @@ class BatchInsertTest
     private static final String KEY = DESCRIPTOR.getKey();
     private static final String INTERNAL_LOG_FILE = "debug.log";
     // This is the assumed internal index descriptor based on knowledge of what ids get assigned
-    private static final IndexDescriptor internalIndex = TestIndexDescriptorFactory.forLabel( 0, 0 );
-    private static final IndexDescriptor internalUniqueIndex = TestIndexDescriptorFactory.uniqueForLabel( 0, 0 );
+    private static final IndexDescriptor2 internalIndex = TestIndexDescriptorFactory.forLabel( 0, 0 );
+    private static final IndexDescriptor2 internalUniqueIndex = TestIndexDescriptorFactory.uniqueForLabel( 0, 0 );
     private static final Map<String, Object> properties = new HashMap<>();
     private static final RelationshipType[] relTypeArray = {
         RelTypes.REL_TYPE1, RelTypes.REL_TYPE2, RelTypes.REL_TYPE3,
@@ -768,20 +768,22 @@ class BatchInsertTest
             assertEquals( 2, inUse.size(), "records in use" );
             SchemaRule rule0 = schemaRuleAccess.loadSingleSchemaRule( inUse.get( 0 ) );
             SchemaRule rule1 = schemaRuleAccess.loadSingleSchemaRule( inUse.get( 1 ) );
-            StorageIndexReference indexRule;
+            IndexDescriptor2 indexRule;
             ConstraintRule constraintRule;
-            if ( rule0 instanceof StorageIndexReference )
+            if ( rule0 instanceof IndexDescriptor2 )
             {
-                indexRule = (StorageIndexReference) rule0;
+                indexRule = (IndexDescriptor2) rule0;
                 constraintRule = (ConstraintRule) rule1;
             }
             else
             {
                 constraintRule = (ConstraintRule) rule0;
-                indexRule = (StorageIndexReference) rule1;
+                indexRule = (IndexDescriptor2) rule1;
             }
+            OptionalLong owningConstraintId = indexRule.getOwningConstraintId();
+            assertTrue( "index should have owning constraint", owningConstraintId.isPresent() );
             assertEquals(
-                constraintRule.getId(), indexRule.owningConstraintReference(), "index should reference constraint" );
+                constraintRule.getId(), owningConstraintId.getAsLong(), "index should reference constraint" );
             assertEquals(
                 indexRule.getId(), constraintRule.ownedIndexReference(), "constraint should reference index" );
         }
@@ -864,9 +866,9 @@ class BatchInsertTest
         IndexAccessor accessor = mock( IndexAccessor.class );
 
         when( provider.getProviderDescriptor() ).thenReturn( DESCRIPTOR );
-        when( provider.getPopulator( any( StoreIndexDescriptor.class ), any( IndexSamplingConfig.class ), any() ) ).thenReturn( populator );
+        when( provider.getPopulator( any( IndexDescriptor2.class ), any( IndexSamplingConfig.class ), any() ) ).thenReturn( populator );
         when( populator.sampleResult() ).thenReturn( new IndexSample() );
-        when( provider.getOnlineAccessor( any( StoreIndexDescriptor.class ), any( IndexSamplingConfig.class ) ) ).thenReturn( accessor );
+        when( provider.getOnlineAccessor( any( IndexDescriptor2.class ), any( IndexSamplingConfig.class ) ) ).thenReturn( accessor );
         when( provider.bless( any( IndexDescriptor.class ) ) ).thenCallRealMethod();
 
         BatchInserter inserter = newBatchInserterWithIndexProvider(
@@ -882,7 +884,7 @@ class BatchInsertTest
         // THEN
         verify( provider ).init();
         verify( provider ).start();
-        verify( provider ).getPopulator( any( StoreIndexDescriptor.class ), any( IndexSamplingConfig.class ), any() );
+        verify( provider ).getPopulator( any( IndexDescriptor2.class ), any( IndexSamplingConfig.class ), any() );
         verify( populator ).create();
         verify( populator ).add( argThat( matchesCollection( add( nodeId, internalIndex.schema(), Values.of( "Jakewins" ) ) ) ) );
         verify( populator ).verifyDeferredConstraints( any( NodePropertyAccessor.class ) );
@@ -901,9 +903,9 @@ class BatchInsertTest
         IndexAccessor accessor = mock( IndexAccessor.class );
 
         when( provider.getProviderDescriptor() ).thenReturn( DESCRIPTOR );
-        when( provider.getPopulator( any( StoreIndexDescriptor.class ), any( IndexSamplingConfig.class ), any() ) ).thenReturn( populator );
+        when( provider.getPopulator( any( IndexDescriptor2.class ), any( IndexSamplingConfig.class ), any() ) ).thenReturn( populator );
         when( populator.sampleResult() ).thenReturn( new IndexSample() );
-        when( provider.getOnlineAccessor( any( StoreIndexDescriptor.class ), any( IndexSamplingConfig.class ) ) ).thenReturn( accessor );
+        when( provider.getOnlineAccessor( any( IndexDescriptor2.class ), any( IndexSamplingConfig.class ) ) ).thenReturn( accessor );
         when( provider.bless( any( IndexDescriptor.class ) ) ).thenCallRealMethod();
 
         BatchInserter inserter = newBatchInserterWithIndexProvider(
@@ -919,7 +921,7 @@ class BatchInsertTest
         // THEN
         verify( provider ).init();
         verify( provider ).start();
-        verify( provider ).getPopulator( any( StoreIndexDescriptor.class ), any( IndexSamplingConfig.class ), any() );
+        verify( provider ).getPopulator( any( IndexDescriptor2.class ), any( IndexSamplingConfig.class ), any() );
         verify( populator ).create();
         verify( populator ).add( argThat( matchesCollection( add( nodeId, internalUniqueIndex.schema(), Values.of( "Jakewins" ) ) ) ) );
         verify( populator ).verifyDeferredConstraints( any( NodePropertyAccessor.class ) );
@@ -940,9 +942,9 @@ class BatchInsertTest
         IndexAccessor accessor = mock( IndexAccessor.class );
 
         when( provider.getProviderDescriptor() ).thenReturn( DESCRIPTOR );
-        when( provider.getPopulator( any( StoreIndexDescriptor.class ), any( IndexSamplingConfig.class ), any() ) ).thenReturn( populator );
+        when( provider.getPopulator( any( IndexDescriptor2.class ), any( IndexSamplingConfig.class ), any() ) ).thenReturn( populator );
         when( populator.sampleResult() ).thenReturn( new IndexSample() );
-        when( provider.getOnlineAccessor( any( StoreIndexDescriptor.class ), any( IndexSamplingConfig.class ) ) ).thenReturn( accessor );
+        when( provider.getOnlineAccessor( any( IndexDescriptor2.class ), any( IndexSamplingConfig.class ) ) ).thenReturn( accessor );
 
         BatchInserter inserter = newBatchInserterWithIndexProvider(
                 singleInstanceIndexProviderFactory( KEY, provider ), provider.getProviderDescriptor(), denseNodeThreshold );
@@ -955,7 +957,7 @@ class BatchInsertTest
         // THEN
         verify( provider ).init();
         verify( provider ).start();
-        verify( provider ).getPopulator( any( StoreIndexDescriptor.class ), any( IndexSamplingConfig.class ), any() );
+        verify( provider ).getPopulator( any( IndexDescriptor2.class ), any( IndexSamplingConfig.class ), any() );
         verify( populator ).create();
         verify( populator ).add( argThat( matchesCollection(
                 add( jakewins, internalIndex.schema(), Values.of( "Jakewins" ) ),
@@ -1459,9 +1461,9 @@ class BatchInsertTest
         IndexProvider provider = mock( IndexProvider.class );
 
         when( provider.getProviderDescriptor() ).thenReturn( DESCRIPTOR );
-        when( provider.getPopulator( any( StoreIndexDescriptor.class ), any( IndexSamplingConfig.class ), any() ) )
+        when( provider.getPopulator( any( IndexDescriptor2.class ), any( IndexSamplingConfig.class ), any() ) )
                 .thenReturn( populator );
-        when( provider.bless( any( IndexDescriptor.class ) ) ).thenCallRealMethod();
+        when( provider.bless( any( IndexDescriptor2.class ) ) ).thenCallRealMethod();
 
         BatchInserter inserter = newBatchInserterWithIndexProvider(
                 singleInstanceIndexProviderFactory( KEY, provider ), provider.getProviderDescriptor(), denseNodeThreshold );

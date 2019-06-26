@@ -30,11 +30,13 @@ import org.neo4j.configuration.Config;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.graphdb.schema.AnalyzerProvider;
-import org.neo4j.internal.schema.IndexCapability;
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.kernel.api.exceptions.schema.MisconfiguredIndexException;
+import org.neo4j.internal.schema.IndexCapability;
 import org.neo4j.internal.schema.IndexConfig;
+import org.neo4j.internal.schema.IndexDescriptor2;
 import org.neo4j.internal.schema.IndexProviderDescriptor;
+import org.neo4j.internal.schema.IndexRef;
 import org.neo4j.internal.schema.IndexType;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -59,7 +61,6 @@ import org.neo4j.logging.Log;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.service.Services;
 import org.neo4j.storageengine.api.StorageEngineFactory;
-import org.neo4j.storageengine.api.StorageIndexReference;
 import org.neo4j.storageengine.migration.StoreMigrationParticipant;
 import org.neo4j.token.TokenHolders;
 import org.neo4j.values.storable.Values;
@@ -103,7 +104,7 @@ class FulltextIndexProvider extends IndexProvider implements FulltextAdapter
         return new IndexStorageFactory( directoryFactory, fileSystem, directoryStructure() );
     }
 
-    private boolean indexIsOnline( PartitionedIndexStorage indexStorage, StorageIndexReference descriptor ) throws IOException
+    private boolean indexIsOnline( PartitionedIndexStorage indexStorage, IndexDescriptor2 descriptor ) throws IOException
     {
         try ( SchemaIndex index = LuceneSchemaIndexBuilder.create( descriptor, config ).withIndexStorage( indexStorage ).build() )
         {
@@ -130,13 +131,13 @@ class FulltextIndexProvider extends IndexProvider implements FulltextAdapter
     }
 
     @Override
-    public IndexCapability getCapability( StorageIndexReference descriptor )
+    public IndexCapability getCapability( IndexDescriptor2 descriptor )
     {
         return new FulltextIndexCapability( isEventuallyConsistent( descriptor.schema() ) );
     }
 
     @Override
-    public <T extends org.neo4j.internal.schema.IndexDescriptor> T bless( T index ) throws MisconfiguredIndexException
+    public <T extends IndexRef<T>> T bless( T index ) throws MisconfiguredIndexException
     {
         index = super.bless( index );
         SchemaDescriptor schema = index.schema();
@@ -150,26 +151,25 @@ class FulltextIndexProvider extends IndexProvider implements FulltextAdapter
         IndexConfig indexConfig = schema.getIndexConfig();
         indexConfig = addMissingDefaultIndexConfig( indexConfig );
         schema = schema.withIndexConfig( indexConfig );
-        //noinspection unchecked
-        index = (T) index.withSchemaDescriptor( schema );
+        index = index.withSchemaDescriptor( schema );
         return index;
     }
 
     @Override
-    public String getPopulationFailure( StorageIndexReference descriptor ) throws IllegalStateException
+    public String getPopulationFailure( IndexDescriptor2 descriptor ) throws IllegalStateException
     {
-        String failure = getIndexStorage( descriptor.indexReference() ).getStoredIndexFailure();
+        String failure = getIndexStorage( descriptor.getId() ).getStoredIndexFailure();
         if ( failure == null )
         {
-            throw new IllegalStateException( "Index " + descriptor.indexReference() + " isn't failed" );
+            throw new IllegalStateException( "Index " + descriptor.getId() + " isn't failed" );
         }
         return failure;
     }
 
     @Override
-    public InternalIndexState getInitialState( StorageIndexReference descriptor )
+    public InternalIndexState getInitialState( IndexDescriptor2 descriptor )
     {
-        PartitionedIndexStorage indexStorage = getIndexStorage( descriptor.indexReference() );
+        PartitionedIndexStorage indexStorage = getIndexStorage( descriptor.getId() );
         String failure = indexStorage.getStoredIndexFailure();
         if ( failure != null )
         {
@@ -186,7 +186,7 @@ class FulltextIndexProvider extends IndexProvider implements FulltextAdapter
     }
 
     @Override
-    public IndexPopulator getPopulator( StorageIndexReference descriptor, IndexSamplingConfig samplingConfig, ByteBufferFactory bufferFactory )
+    public IndexPopulator getPopulator( IndexDescriptor2 descriptor, IndexSamplingConfig samplingConfig, ByteBufferFactory bufferFactory )
     {
         try
         {
@@ -196,7 +196,7 @@ class FulltextIndexProvider extends IndexProvider implements FulltextAdapter
         {
             throw new RuntimeException( e );
         }
-        PartitionedIndexStorage indexStorage = getIndexStorage( descriptor.indexReference() );
+        PartitionedIndexStorage indexStorage = getIndexStorage( descriptor.getId() );
         NonTransactionalTokenNameLookup tokenNameLookup = new NonTransactionalTokenNameLookup( tokenHolders );
         Analyzer analyzer = createAnalyzer( descriptor, tokenNameLookup );
         String[] propertyNames = createPropertyNames( descriptor, tokenNameLookup );
@@ -216,7 +216,7 @@ class FulltextIndexProvider extends IndexProvider implements FulltextAdapter
     }
 
     @Override
-    public IndexAccessor getOnlineAccessor( StorageIndexReference descriptor, IndexSamplingConfig samplingConfig ) throws IOException
+    public IndexAccessor getOnlineAccessor( IndexDescriptor2 descriptor, IndexSamplingConfig samplingConfig ) throws IOException
     {
         try
         {
@@ -226,7 +226,7 @@ class FulltextIndexProvider extends IndexProvider implements FulltextAdapter
         {
             throw new RuntimeException( e );
         }
-        PartitionedIndexStorage indexStorage = getIndexStorage( descriptor.indexReference() );
+        PartitionedIndexStorage indexStorage = getIndexStorage( descriptor.getId() );
         NonTransactionalTokenNameLookup tokenNameLookup = new NonTransactionalTokenNameLookup( tokenHolders );
         Analyzer analyzer = createAnalyzer( descriptor, tokenNameLookup );
         String[] propertyNames = createPropertyNames( descriptor, tokenNameLookup );

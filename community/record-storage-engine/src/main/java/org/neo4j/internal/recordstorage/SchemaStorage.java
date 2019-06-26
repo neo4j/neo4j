@@ -33,7 +33,7 @@ import org.neo4j.internal.kernel.api.exceptions.schema.DuplicateSchemaRuleExcept
 import org.neo4j.internal.kernel.api.exceptions.schema.MalformedSchemaRuleException;
 import org.neo4j.internal.kernel.api.exceptions.schema.SchemaRuleNotFoundException;
 import org.neo4j.internal.schema.ConstraintDescriptor;
-import org.neo4j.internal.schema.IndexDescriptor;
+import org.neo4j.internal.schema.IndexDescriptor2;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptorSupplier;
 import org.neo4j.internal.schema.SchemaRule;
@@ -46,7 +46,6 @@ import org.neo4j.kernel.impl.store.record.Record;
 import org.neo4j.kernel.impl.store.record.RecordLoad;
 import org.neo4j.kernel.impl.store.record.SchemaRecord;
 import org.neo4j.storageengine.api.ConstraintRule;
-import org.neo4j.storageengine.api.StorageIndexReference;
 import org.neo4j.token.TokenHolders;
 import org.neo4j.util.VisibleForTesting;
 import org.neo4j.values.storable.Value;
@@ -84,34 +83,25 @@ public class SchemaStorage implements SchemaRuleAccess
     }
 
     @Override
-    public Iterator<StorageIndexReference> indexesGetAll()
+    public Iterator<IndexDescriptor2> indexesGetAll()
     {
         return indexRules( streamAllSchemaRules( false ) ).iterator();
     }
 
     @Override
-    public StorageIndexReference[] indexGetForSchema( SchemaDescriptorSupplier supplier )
+    public IndexDescriptor2[] indexGetForSchema( SchemaDescriptorSupplier supplier )
     {
         SchemaDescriptor schema = supplier.schema();
         return indexRules( streamAllSchemaRules( false ) )
                 .filter( rule -> rule.schema().equals( schema ) )
-                .toArray( StorageIndexReference[]::new );
+                .toArray( IndexDescriptor2[]::new );
     }
 
     @Override
-    public StorageIndexReference[] indexGetForSchema( IndexDescriptor descriptor, boolean filterOnType )
-    {
-        SchemaDescriptor schema = descriptor.schema();
-        return indexRules( streamAllSchemaRules( false ) )
-                .filter( filterOnType ? descriptor::equals : index -> index.schema().equals( schema ) )
-                .toArray( StorageIndexReference[]::new );
-    }
-
-    @Override
-    public StorageIndexReference indexGetForName( String indexName )
+    public IndexDescriptor2 indexGetForName( String indexName )
     {
         return indexRules( streamAllSchemaRules( false ) )
-                .filter( idx -> idx.hasUserSuppliedName() && idx.name().equals( indexName ) )
+                .filter( idx -> idx.getName().equals( indexName ) )
                 .findAny().orElse( null );
     }
 
@@ -247,11 +237,11 @@ public class SchemaStorage implements SchemaRuleAccess
                 .flatMap( record -> readSchemaRuleThrowingRuntimeException( record, ignoreMalformed ) );
     }
 
-    private Stream<StorageIndexReference> indexRules( Stream<SchemaRule> stream )
+    private Stream<IndexDescriptor2> indexRules( Stream<SchemaRule> stream )
     {
         return stream
-                .filter( rule -> rule instanceof StorageIndexReference )
-                .map( rule -> (StorageIndexReference) rule );
+                .filter( rule -> rule instanceof IndexDescriptor2 )
+                .map( rule -> (IndexDescriptor2) rule );
     }
 
     private Stream<ConstraintRule> constraintRules( Stream<SchemaRule> stream )

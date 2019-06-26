@@ -22,7 +22,6 @@ package org.neo4j.internal.recordstorage;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
-import java.util.Optional;
 
 import org.neo4j.internal.recordstorage.Command.LabelTokenCommand;
 import org.neo4j.internal.recordstorage.Command.NodeCommand;
@@ -32,6 +31,8 @@ import org.neo4j.internal.recordstorage.Command.RelationshipCommand;
 import org.neo4j.internal.recordstorage.Command.RelationshipGroupCommand;
 import org.neo4j.internal.recordstorage.Command.RelationshipTypeTokenCommand;
 import org.neo4j.internal.recordstorage.Command.SchemaRuleCommand;
+import org.neo4j.internal.schema.IndexPrototype;
+import org.neo4j.internal.schema.IndexProviderDescriptor;
 import org.neo4j.internal.schema.LabelSchemaDescriptor;
 import org.neo4j.internal.schema.SchemaRule;
 import org.neo4j.kernel.impl.store.DynamicNodeLabels;
@@ -50,7 +51,6 @@ import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
 import org.neo4j.kernel.impl.store.record.SchemaRecord;
 import org.neo4j.kernel.impl.store.record.TokenRecord;
 import org.neo4j.storageengine.api.CommandsToApply;
-import org.neo4j.storageengine.api.DefaultStorageIndexReference;
 import org.neo4j.values.storable.Values;
 
 public class Commands
@@ -139,10 +139,9 @@ public class Commands
         return new RelationshipGroupCommand( before, after );
     }
 
-    public static SchemaRuleCommand createIndexRule( String providerKey, String providerVersion,
-            long id, LabelSchemaDescriptor descriptor )
+    public static SchemaRuleCommand createIndexRule( IndexProviderDescriptor providerDescriptor, long id, LabelSchemaDescriptor descriptor )
     {
-        SchemaRule rule = new DefaultStorageIndexReference( descriptor, providerKey, providerVersion, id, Optional.empty(), false, null );
+        SchemaRule rule = IndexPrototype.forSchema( descriptor, providerDescriptor ).materialise( id );
         SchemaRecord before = new SchemaRecord( id ).initialize( false, Record.NO_NEXT_PROPERTY.longValue() );
         SchemaRecord after = new SchemaRecord( id ).initialize( true, 33 );
         return new SchemaRuleCommand( before, after, rule );

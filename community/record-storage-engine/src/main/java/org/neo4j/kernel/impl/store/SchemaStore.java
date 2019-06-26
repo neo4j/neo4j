@@ -31,7 +31,6 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
-import java.util.Optional;
 
 import org.neo4j.common.EntityType;
 import org.neo4j.configuration.Config;
@@ -41,6 +40,9 @@ import org.neo4j.internal.id.IdType;
 import org.neo4j.internal.kernel.api.exceptions.schema.MalformedSchemaRuleException;
 import org.neo4j.internal.schema.ConstraintDescriptor;
 import org.neo4j.internal.schema.IndexConfig;
+import org.neo4j.internal.schema.IndexDescriptor2;
+import org.neo4j.internal.schema.IndexPrototype;
+import org.neo4j.internal.schema.IndexProviderDescriptor;
 import org.neo4j.internal.schema.PropertySchemaType;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.internal.schema.SchemaRule;
@@ -56,10 +58,8 @@ import org.neo4j.kernel.impl.store.record.RecordLoad;
 import org.neo4j.kernel.impl.store.record.SchemaRecord;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.storageengine.api.ConstraintRule;
-import org.neo4j.storageengine.api.DefaultStorageIndexReference;
 import org.neo4j.storageengine.api.PropertyKeyValue;
 import org.neo4j.storageengine.api.StorageConstraintReference;
-import org.neo4j.storageengine.api.StorageIndexReference;
 import org.neo4j.token.TokenHolders;
 import org.neo4j.token.api.NamedToken;
 import org.neo4j.token.api.TokenNotFoundException;
@@ -187,15 +187,15 @@ public class SchemaStore extends CommonAbstractStore<SchemaRecord,IntStoreHeader
     public static Map<String,Value> mapifySchemaRule( SchemaRule rule )
     {
         Map<String,Value> map = new HashMap<>();
-        putStringProperty( map, PROP_SCHEMA_RULE_NAME, rule.name() );
+        putStringProperty( map, PROP_SCHEMA_RULE_NAME, rule.getName() );
 
         // Schema
         schemaDescriptorToMap( rule.schema(), map );
 
         // Rule
-        if ( rule instanceof StorageIndexReference )
+        if ( rule instanceof IndexDescriptor2 )
         {
-            schemaIndexToMap( (StorageIndexReference) rule, map );
+            schemaIndexToMap( (IndexDescriptor2) rule, map );
         }
         else if ( rule instanceof StorageConstraintReference )
         {
@@ -257,16 +257,16 @@ public class SchemaStore extends CommonAbstractStore<SchemaRecord,IntStoreHeader
         }
     }
 
-    private static void schemaIndexToMap( StorageIndexReference rule, Map<String,Value> map )
+    private static void schemaIndexToMap( IndexDescriptor2 rule, Map<String,Value> map )
     {
         // Rule
         putStringProperty( map, PROP_SCHEMA_RULE_TYPE, "INDEX" );
         if ( rule.isUnique() )
         {
             putStringProperty( map, PROP_INDEX_RULE_TYPE, "UNIQUE" );
-            if ( rule.isUnique() && rule.hasOwningConstraintReference() )
+            if ( rule.getOwningConstraintId().isPresent() )
             {
-                map.put( PROP_OWNING_CONSTRAINT, Values.longValue( rule.owningConstraintReference() ) );
+                map.put( PROP_OWNING_CONSTRAINT, Values.longValue( rule.getOwningConstraintId().getAsLong() ) );
             }
         }
         else
@@ -278,10 +278,11 @@ public class SchemaStore extends CommonAbstractStore<SchemaRecord,IntStoreHeader
         indexProviderToMap( rule, map );
     }
 
-    private static void indexProviderToMap( StorageIndexReference rule, Map<String,Value> map )
+    private static void indexProviderToMap( IndexDescriptor2 rule, Map<String,Value> map )
     {
-        String name = rule.providerKey();
-        String version = rule.providerVersion();
+        IndexProviderDescriptor provider = rule.getIndexProvider();
+        String name = provider.getKey();
+        String version = provider.getVersion();
         putStringProperty( map, PROP_INDEX_PROVIDER_NAME, name );
         putStringProperty( map, PROP_INDEX_PROVIDER_VERSION, version );
     }
@@ -341,13 +342,26 @@ public class SchemaStore extends CommonAbstractStore<SchemaRecord,IntStoreHeader
     private static SchemaRule buildIndexRule( long schemaRuleId, Map<String,Value> props ) throws MalformedSchemaRuleException
     {
         SchemaDescriptor schema = buildSchemaDescriptor( props );
-        String name = getString( PROP_SCHEMA_RULE_NAME, props );
         String indexRuleType = getString( PROP_INDEX_RULE_TYPE, props );
-        Long owningConstraint = props.containsKey( PROP_OWNING_CONSTRAINT ) ? getLong( PROP_OWNING_CONSTRAINT, props ) : null;
+        boolean unique = parseIndexType( indexRuleType );
+
+        IndexPrototype prototype = unique ? IndexPrototype.uniqueForSchema( schema ) : IndexPrototype.forSchema( schema );
+
+        prototype = prototype.withName( getString( PROP_SCHEMA_RULE_NAME, props ) );
+
         String providerKey = getString( PROP_INDEX_PROVIDER_NAME, props );
         String providerVersion = getString( PROP_INDEX_PROVIDER_VERSION, props );
-        boolean unique = parseIndexType( indexRuleType );
-        return new DefaultStorageIndexReference( schema, providerKey, providerVersion, schemaRuleId, Optional.of( name ), unique, owningConstraint );
+        IndexProviderDescriptor providerDescriptor = new IndexProviderDescriptor( providerKey, providerVersion );
+        prototype = prototype.withIndexProvider( providerDescriptor );
+
+        IndexDescriptor2 index = prototype.materialise( schemaRuleId );
+
+        if ( props.containsKey( PROP_OWNING_CONSTRAINT ) )
+        {
+            index = index.withOwningConstraintId( getLong( PROP_OWNING_CONSTRAINT, props ) );
+        }
+
+        return index;
     }
 
     private static boolean parseIndexType( String indexRuleType ) throws MalformedSchemaRuleException

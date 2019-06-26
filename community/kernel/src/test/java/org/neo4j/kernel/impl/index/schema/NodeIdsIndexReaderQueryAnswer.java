@@ -23,6 +23,7 @@ import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 
 import org.neo4j.internal.kernel.api.IndexQuery;
+import org.neo4j.internal.schema.IndexDescriptor2;
 import org.neo4j.kernel.api.index.IndexProgressor;
 import org.neo4j.kernel.api.index.NodeValueIndexProgressor;
 
@@ -32,10 +33,10 @@ import static org.neo4j.internal.helpers.collection.Iterators.array;
 
 public class NodeIdsIndexReaderQueryAnswer implements Answer
 {
-    private final IndexDescriptor descriptor;
+    private final IndexDescriptor2 descriptor;
     private final long[] nodeIds;
 
-    public NodeIdsIndexReaderQueryAnswer( IndexDescriptor descriptor, long... nodeIds )
+    public NodeIdsIndexReaderQueryAnswer( IndexDescriptor2 descriptor, long... nodeIds )
     {
         this.descriptor = descriptor;
         this.nodeIds = nodeIds;

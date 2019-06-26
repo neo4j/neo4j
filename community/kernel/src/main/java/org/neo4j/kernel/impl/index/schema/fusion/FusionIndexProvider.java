@@ -24,10 +24,12 @@ import java.util.EnumMap;
 import java.util.List;
 
 import org.neo4j.internal.helpers.collection.Iterables;
-import org.neo4j.internal.schema.IndexCapability;
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.kernel.api.exceptions.schema.MisconfiguredIndexException;
+import org.neo4j.internal.schema.IndexCapability;
+import org.neo4j.internal.schema.IndexDescriptor2;
 import org.neo4j.internal.schema.IndexProviderDescriptor;
+import org.neo4j.internal.schema.IndexRef;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.api.index.IndexAccessor;
@@ -38,7 +40,6 @@ import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.kernel.impl.index.schema.ByteBufferFactory;
 import org.neo4j.kernel.impl.storemigration.SchemaIndexMigrator;
 import org.neo4j.storageengine.api.StorageEngineFactory;
-import org.neo4j.storageengine.api.StorageIndexReference;
 import org.neo4j.storageengine.migration.StoreMigrationParticipant;
 
 import static org.neo4j.internal.kernel.api.InternalIndexState.FAILED;
@@ -84,7 +85,7 @@ public class FusionIndexProvider extends IndexProvider
     }
 
     @Override
-    public <T extends org.neo4j.internal.schema.IndexDescriptor> T bless( T index ) throws MisconfiguredIndexException
+    public <T extends IndexRef<T>> T bless( T index ) throws MisconfiguredIndexException
     {
         for ( IndexSlot slot : IndexSlot.values() )
         {
@@ -94,22 +95,22 @@ public class FusionIndexProvider extends IndexProvider
     }
 
     @Override
-    public IndexPopulator getPopulator( StorageIndexReference descriptor, IndexSamplingConfig samplingConfig, ByteBufferFactory bufferFactory )
+    public IndexPopulator getPopulator( IndexDescriptor2 descriptor, IndexSamplingConfig samplingConfig, ByteBufferFactory bufferFactory )
     {
         EnumMap<IndexSlot,IndexPopulator> populators = providers.map( provider -> provider.getPopulator( descriptor, samplingConfig, bufferFactory ) );
-        return new FusionIndexPopulator( slotSelector, new InstanceSelector<>( populators ), descriptor.indexReference(), fs, directoryStructure(),
+        return new FusionIndexPopulator( slotSelector, new InstanceSelector<>( populators ), descriptor.getId(), fs, directoryStructure(),
                 archiveFailedIndex );
     }
 
     @Override
-    public IndexAccessor getOnlineAccessor( StorageIndexReference descriptor, IndexSamplingConfig samplingConfig ) throws IOException
+    public IndexAccessor getOnlineAccessor( IndexDescriptor2 descriptor, IndexSamplingConfig samplingConfig ) throws IOException
     {
         EnumMap<IndexSlot,IndexAccessor> accessors = providers.map( provider -> provider.getOnlineAccessor( descriptor, samplingConfig ) );
         return new FusionIndexAccessor( slotSelector, new InstanceSelector<>( accessors ), descriptor, fs, directoryStructure() );
     }
 
     @Override
-    public String getPopulationFailure( StorageIndexReference descriptor ) throws IllegalStateException
+    public String getPopulationFailure( IndexDescriptor2 descriptor ) throws IllegalStateException
     {
         StringBuilder builder = new StringBuilder();
         providers.forAll( p -> writeFailure( p.getClass().getSimpleName(), builder, p, descriptor ) );
@@ -121,7 +122,7 @@ public class FusionIndexProvider extends IndexProvider
         throw new IllegalStateException( "None of the indexes were in a failed state" );
     }
 
-    private void writeFailure( String indexName, StringBuilder builder, IndexProvider provider, StorageIndexReference descriptor )
+    private void writeFailure( String indexName, StringBuilder builder, IndexProvider provider, IndexDescriptor2 descriptor )
     {
         try
         {
@@ -137,7 +138,7 @@ public class FusionIndexProvider extends IndexProvider
     }
 
     @Override
-    public InternalIndexState getInitialState( StorageIndexReference descriptor )
+    public InternalIndexState getInitialState( IndexDescriptor2 descriptor )
     {
         Iterable<InternalIndexState> statesIterable = providers.transform( p -> p.getInitialState( descriptor ) );
         List<InternalIndexState> states = Iterables.asList( statesIterable );
@@ -156,7 +157,7 @@ public class FusionIndexProvider extends IndexProvider
     }
 
     @Override
-    public IndexCapability getCapability( StorageIndexReference descriptor )
+    public IndexCapability getCapability( IndexDescriptor2 descriptor )
     {
         EnumMap<IndexSlot,IndexCapability> capabilities = providers.map( provider -> provider.getCapability( descriptor ) );
         return new FusionIndexCapability( slotSelector, new InstanceSelector<>( capabilities ) );

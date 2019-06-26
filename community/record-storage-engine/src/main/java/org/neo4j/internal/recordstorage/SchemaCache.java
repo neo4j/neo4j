@@ -37,6 +37,7 @@ import java.util.function.Function;
 import org.neo4j.common.EntityType;
 import org.neo4j.internal.helpers.collection.Iterators;
 import org.neo4j.internal.schema.ConstraintDescriptor;
+import org.neo4j.internal.schema.IndexDescriptor2;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptorLookupSet;
 import org.neo4j.internal.schema.SchemaDescriptorPredicates;
@@ -45,7 +46,6 @@ import org.neo4j.internal.schema.SchemaRule;
 import org.neo4j.internal.schema.constraints.IndexBackedConstraintDescriptor;
 import org.neo4j.storageengine.api.ConstraintRule;
 import org.neo4j.storageengine.api.ConstraintRuleAccessor;
-import org.neo4j.storageengine.api.StorageIndexReference;
 
 import static org.apache.commons.lang3.ArrayUtils.EMPTY_INT_ARRAY;
 import static org.apache.commons.lang3.ArrayUtils.EMPTY_LONG_ARRAY;
@@ -74,7 +74,7 @@ public class SchemaCache
         this.schemaCacheState = schemaCacheState;
     }
 
-    public Iterable<StorageIndexReference> indexDescriptors()
+    public Iterable<IndexDescriptor2> indexDescriptors()
     {
         return schemaCacheState.indexDescriptors();
     }
@@ -168,22 +168,22 @@ public class SchemaCache
         }
     }
 
-    public StorageIndexReference indexDescriptor( SchemaDescriptor descriptor )
+    public IndexDescriptor2 indexDescriptor( SchemaDescriptor descriptor )
     {
         return schemaCacheState.indexDescriptor( descriptor );
     }
 
-    Iterator<StorageIndexReference> indexDescriptorsForLabel( int labelId )
+    Iterator<IndexDescriptor2> indexDescriptorsForLabel( int labelId )
     {
         return schemaCacheState.indexDescriptorsForLabel( labelId );
     }
 
-    Iterator<StorageIndexReference> indexDescriptorsForRelationshipType( int relationshipType )
+    Iterator<IndexDescriptor2> indexDescriptorsForRelationshipType( int relationshipType )
     {
         return schemaCacheState.indexDescriptorsForRelationshipType( relationshipType );
     }
 
-    StorageIndexReference indexDescriptorForName( String name )
+    IndexDescriptor2 indexDescriptorForName( String name )
     {
         return schemaCacheState.indexDescriptorByName( name );
     }
@@ -220,15 +220,15 @@ public class SchemaCache
     {
         private final ConstraintRuleAccessor constraintSemantics;
         private final Set<ConstraintDescriptor> constraints;
-        private final MutableLongObjectMap<StorageIndexReference> indexDescriptorById;
+        private final MutableLongObjectMap<IndexDescriptor2> indexDescriptorById;
         private final MutableLongObjectMap<ConstraintRule> constraintRuleById;
 
-        private final Map<SchemaDescriptor,StorageIndexReference> indexDescriptors;
+        private final Map<SchemaDescriptor,IndexDescriptor2> indexDescriptors;
         private final SchemaDescriptorLookupSet<SchemaDescriptor> indexDescriptorsByNode;
         private final SchemaDescriptorLookupSet<SchemaDescriptor> indexDescriptorsByRelationship;
         private final SchemaDescriptorLookupSet<IndexBackedConstraintDescriptor> uniquenessConstraintsByNode;
         private final SchemaDescriptorLookupSet<IndexBackedConstraintDescriptor> uniquenessConstraintsByRelationship;
-        private final Map<String,StorageIndexReference> indexDescriptorsByName;
+        private final Map<String,IndexDescriptor2> indexDescriptorsByName;
 
         private final Map<Class<?>,Object> dependantState;
 
@@ -285,7 +285,7 @@ public class SchemaCache
             }
         }
 
-        Iterable<StorageIndexReference> indexDescriptors()
+        Iterable<IndexDescriptor2> indexDescriptors()
         {
             return indexDescriptorById.values();
         }
@@ -315,23 +315,23 @@ public class SchemaCache
             return constraints.iterator();
         }
 
-        StorageIndexReference indexDescriptor( SchemaDescriptor descriptor )
+        IndexDescriptor2 indexDescriptor( SchemaDescriptor descriptor )
         {
             return indexDescriptors.get( descriptor );
         }
 
-        StorageIndexReference indexDescriptorByName( String name )
+        IndexDescriptor2 indexDescriptorByName( String name )
         {
             return indexDescriptorsByName.get( name );
         }
 
-        Iterator<StorageIndexReference> indexDescriptorsForLabel( int labelId )
+        Iterator<IndexDescriptor2> indexDescriptorsForLabel( int labelId )
         {
             return Iterators.map( indexDescriptors::get,
                     getSchemaRelatedTo( indexDescriptorsByNode, new long[]{labelId}, EMPTY_LONG_ARRAY, EMPTY_INT_ARRAY, false ).iterator() );
         }
 
-        Iterator<StorageIndexReference> indexDescriptorsForRelationshipType( int relationshipType )
+        Iterator<IndexDescriptor2> indexDescriptorsForRelationshipType( int relationshipType )
         {
             return Iterators.map( indexDescriptors::get,
                     getSchemaRelatedTo( indexDescriptorsByRelationship, new long[]{relationshipType}, EMPTY_LONG_ARRAY, EMPTY_INT_ARRAY, false ).iterator() );
@@ -444,13 +444,13 @@ public class SchemaCache
                 constraints.add( constraintSemantics.readConstraint( constraintRule ) );
                 cacheUniquenessConstraint( constraintRule );
             }
-            else if ( rule instanceof StorageIndexReference )
+            else if ( rule instanceof IndexDescriptor2 )
             {
-                StorageIndexReference index = (StorageIndexReference) rule;
-                indexDescriptorById.put( index.indexReference(), index );
+                IndexDescriptor2 index = (IndexDescriptor2) rule;
+                indexDescriptorById.put( index.getId(), index );
                 SchemaDescriptor schemaDescriptor = index.schema();
                 indexDescriptors.put( schemaDescriptor, index );
-                indexDescriptorsByName.put( rule.name(), index );
+                indexDescriptorsByName.put( rule.getName(), index );
                 selectIndexSetByEntityType( schemaDescriptor.entityType() ).add( schemaDescriptor );
             }
         }
@@ -470,10 +470,10 @@ public class SchemaCache
             }
             else if ( indexDescriptorById.containsKey( id ) )
             {
-                StorageIndexReference index = indexDescriptorById.remove( id );
+                IndexDescriptor2 index = indexDescriptorById.remove( id );
                 SchemaDescriptor schema = index.schema();
                 indexDescriptors.remove( schema );
-                indexDescriptorsByName.remove( index.name(), index );
+                indexDescriptorsByName.remove( index.getName(), index );
                 selectIndexSetByEntityType( schema.entityType() ).remove( schema );
             }
         }

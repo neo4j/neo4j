@@ -20,16 +20,16 @@
 package org.neo4j.kernel.impl.storemigration.legacy;
 
 import java.nio.ByteBuffer;
-import java.util.Optional;
 
 import org.neo4j.internal.kernel.api.exceptions.schema.MalformedSchemaRuleException;
+import org.neo4j.internal.schema.IndexDescriptor2;
+import org.neo4j.internal.schema.IndexPrototype;
+import org.neo4j.internal.schema.IndexProviderDescriptor;
 import org.neo4j.internal.schema.LabelSchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.internal.schema.SchemaRule;
 import org.neo4j.internal.schema.constraints.ConstraintDescriptorFactory;
 import org.neo4j.storageengine.api.ConstraintRule;
-import org.neo4j.storageengine.api.DefaultStorageIndexReference;
-import org.neo4j.storageengine.api.StorageIndexReference;
 
 import static org.neo4j.internal.helpers.Numbers.safeCastLongToInt;
 import static org.neo4j.string.UTF8.getDecodedStringFrom;
@@ -91,15 +91,21 @@ public class SchemaRuleDeserializer2_0to3_1
 
     // === INDEX RULES ===
 
-    private static StorageIndexReference readIndexRule( long id, boolean constraintIndex, int label, ByteBuffer serialized )
+    private static IndexDescriptor2 readIndexRule( long id, boolean constraintIndex, int label, ByteBuffer serialized )
     {
         String providerKey = getDecodedStringFrom( serialized );
         String providerVersion = getDecodedStringFrom( serialized );
+        IndexProviderDescriptor providerDescriptor = new IndexProviderDescriptor( providerKey, providerVersion );
         int[] propertyKeyIds = readIndexPropertyKeys( serialized );
         LabelSchemaDescriptor schema = SchemaDescriptor.forLabel( label, propertyKeyIds );
-        Optional<String> name = Optional.empty();
-        Long owningConstraintReference = constraintIndex ? readOwningConstraint( serialized ) : null;
-        return new DefaultStorageIndexReference( schema, providerKey, providerVersion, id, name, constraintIndex, owningConstraintReference );
+        if ( constraintIndex )
+        {
+            return IndexPrototype.uniqueForSchema( schema, providerDescriptor ).materialise( id ).withOwningConstraintId( readOwningConstraint( serialized ) );
+        }
+        else
+        {
+            return IndexPrototype.forSchema( schema, providerDescriptor ).materialise( id );
+        }
     }
 
     private static int[] readIndexPropertyKeys( ByteBuffer serialized )

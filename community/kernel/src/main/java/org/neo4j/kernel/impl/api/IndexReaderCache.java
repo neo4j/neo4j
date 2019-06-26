@@ -22,8 +22,8 @@ package org.neo4j.kernel.impl.api;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.neo4j.internal.kernel.api.IndexReference;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
+import org.neo4j.internal.schema.IndexDescriptor2;
 import org.neo4j.kernel.api.index.IndexReader;
 import org.neo4j.kernel.impl.api.index.IndexProxy;
 import org.neo4j.kernel.impl.api.index.IndexingService;
@@ -33,7 +33,7 @@ import org.neo4j.kernel.impl.api.index.IndexingService;
  */
 public class IndexReaderCache
 {
-    private final Map<IndexReference,IndexReader> indexReaders;
+    private final Map<IndexDescriptor2,IndexReader> indexReaders;
     private final IndexingService indexingService;
 
     public IndexReaderCache( IndexingService indexingService )
@@ -42,7 +42,7 @@ public class IndexReaderCache
         this.indexReaders = new HashMap<>();
     }
 
-    public IndexReader getOrCreate( IndexReference descriptor ) throws IndexNotFoundKernelException
+    public IndexReader getOrCreate( IndexDescriptor2 descriptor ) throws IndexNotFoundKernelException
     {
         IndexReader reader = indexReaders.get( descriptor );
         if ( reader == null )
@@ -53,7 +53,7 @@ public class IndexReaderCache
         return reader;
     }
 
-    public IndexReader newUnCachedReader( IndexReference descriptor ) throws IndexNotFoundKernelException
+    public IndexReader newUnCachedReader( IndexDescriptor2 descriptor ) throws IndexNotFoundKernelException
     {
         IndexProxy index = indexingService.getIndexProxy( descriptor.schema() );
         return index.newReader();
