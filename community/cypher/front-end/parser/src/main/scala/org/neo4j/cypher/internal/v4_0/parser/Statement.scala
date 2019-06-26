@@ -163,13 +163,13 @@ trait Statement extends Parser
       keyword("FROM") ~~ SymbolicNamesList) ~~>> (ast.RevokeRolesFromUsers(_, _))
   }
 
-  //`GRANT TRAVERSE ON GRAPH foo NODES A (*) TO role`
+  //`GRANT TRAVERSE ON GRAPH foo ELEMENTS A (*) TO role`
   def GrantTraverse: Rule1[GrantPrivilege] = rule("CATALOG GRANT TRAVERSE") {
     group(keyword("GRANT TRAVERSE") ~~ Graph ~~ ScopeQualifier ~~ keyword("TO") ~~ SymbolicNamesList) ~~>>
       ((scope, qualifier, grantees) => ast.GrantPrivilege.traverse(scope, qualifier, grantees))
   }
 
-  //`REVOKE TRAVERSE ON GRAPH foo NODES A (*) FROM role`
+  //`REVOKE TRAVERSE ON GRAPH foo ELEMENTS A (*) FROM role`
   def RevokeTraverse: Rule1[RevokePrivilege] = rule("CATALOG REVOKE TRAVERSE") {
     group(keyword("REVOKE TRAVERSE") ~~ Graph ~~ ScopeQualifier ~~ keyword("FROM") ~~ SymbolicNamesList) ~~>>
       ((scope, qualifier, grantees) => ast.RevokePrivilege.traverse(scope, qualifier, grantees))
@@ -177,25 +177,25 @@ trait Statement extends Parser
 
   //`GRANT READ (a) ON GRAPH foo NODES A (*) TO role`
   def GrantRead: Rule1[GrantPrivilege] = rule("CATALOG GRANT READ") {
-    group(keyword("GRANT READ") ~~ PrivilegeProperty ~~ Graph ~~ ScopeQualifier ~~ keyword("TO") ~~ SymbolicNamesList) ~~>>
+    group(keyword("GRANT READ") ~~ PrivilegeProperty ~~ Graph ~~ NodeScopeQualifier ~~ keyword("TO") ~~ SymbolicNamesList) ~~>>
       ((prop, scope, qualifier, grantees) => ast.GrantPrivilege.read(prop, scope, qualifier, grantees))
   }
 
   //`REVOKE READ (a) ON GRAPH foo NODES A (*) FROM role`
   def RevokeRead: Rule1[RevokePrivilege] = rule("CATALOG REVOKE READ") {
-    group(keyword("REVOKE READ") ~~ PrivilegeProperty ~~ Graph ~~ ScopeQualifier ~~ keyword("FROM") ~~ SymbolicNamesList) ~~>>
+    group(keyword("REVOKE READ") ~~ PrivilegeProperty ~~ Graph ~~ NodeScopeQualifier ~~ keyword("FROM") ~~ SymbolicNamesList) ~~>>
       ((prop, scope, qualifier, grantees) => ast.RevokePrivilege.read(prop, scope, qualifier, grantees))
   }
 
   //`GRANT MATCH (a) ON GRAPH foo NODES A (*) TO role`
   def GrantMatch: Rule1[GrantPrivilege] = rule("CATALOG GRANT MATCH") {
-    group(keyword("GRANT MATCH") ~~ PrivilegeProperty ~~ Graph ~~ ScopeQualifier ~~ keyword("TO") ~~ SymbolicNamesList) ~~>>
+    group(keyword("GRANT MATCH") ~~ PrivilegeProperty ~~ Graph ~~ NodeScopeQualifier ~~ keyword("TO") ~~ SymbolicNamesList) ~~>>
       ((prop, scope, qualifier, grantees) => ast.GrantPrivilege.asMatch(prop, scope, qualifier, grantees))
   }
 
   //`REVOKE MATCH (a) ON GRAPH foo NODES A (*) FROM role`
   def RevokeMatch: Rule1[RevokePrivilege] = rule("CATALOG REVOKE MATCH") {
-    group(keyword("REVOKE MATCH") ~~ PrivilegeProperty ~~ Graph ~~ ScopeQualifier ~~ keyword("FROM") ~~ SymbolicNamesList) ~~>>
+    group(keyword("REVOKE MATCH") ~~ PrivilegeProperty ~~ Graph ~~ NodeScopeQualifier ~~ keyword("FROM") ~~ SymbolicNamesList) ~~>>
       ((prop, scope, qualifier, grantees) => ast.RevokePrivilege.asMatch(prop, scope, qualifier, grantees))
   }
 
@@ -225,12 +225,16 @@ trait Statement extends Parser
       group("(" ~~ "*" ~~ ")") ~~~> {ast.AllResource()}
   )
 
-  private def ScopeQualifier: Rule1[PrivilegeQualifier] = rule("which element type and associated labels (props) qualifier combination")(
+  private def NodeScopeQualifier: Rule1[PrivilegeQualifier] = rule("which element type and associated labels (props) qualifier combination")(
     group(NodeKeyword ~~ SymbolicNamesList ~~ optional("(" ~~ "*" ~~ ")")) ~~>> {ast.LabelsQualifier(_)} |
     group(NodeKeyword ~~ "*" ~~ optional("(" ~~ "*" ~~ ")")) ~~~> {ast.LabelAllQualifier()} |
+    optional(ElementKeyword ~~ "*" ~~ optional("(" ~~ "*" ~~ ")")) ~~~> {ast.AllQualifier()}
+  )
+
+  private def ScopeQualifier: Rule1[PrivilegeQualifier] = rule("which element type and associated labels/relTypes (props) qualifier combination")(
     group(RelationshipKeyword ~~ SymbolicNamesList ~~ optional("(" ~~ "*" ~~ ")")) ~~>> {ast.RelationshipsQualifier(_)} |
     group(RelationshipKeyword ~~ "*" ~~ optional("(" ~~ "*" ~~ ")")) ~~~> {ast.RelationshipAllQualifier()} |
-    optional(ElementKeyword ~~ "*" ~~ optional("(" ~~ "*" ~~ ")")) ~~~> {ast.AllQualifier()}
+    NodeScopeQualifier
   )
 
   // TODO can be removed once we have more fine-grained writes
