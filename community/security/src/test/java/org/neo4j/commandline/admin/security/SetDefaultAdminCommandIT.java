@@ -105,7 +105,7 @@ public class SetDefaultAdminCommandIT
         try
         {
             execute( "bob" );
-            fail("must fail");
+            fail( "must fail" );
         }
         catch ( CommandFailedException e )
         {
