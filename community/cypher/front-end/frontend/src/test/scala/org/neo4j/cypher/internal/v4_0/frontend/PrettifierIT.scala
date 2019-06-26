@@ -269,6 +269,12 @@ class PrettifierIT extends CypherFunSuite {
       "create role `ab%$c`" ->
         "CREATE ROLE `ab%$c`",
 
+      "create role abc as copy of def" ->
+        "CREATE ROLE abc AS COPY OF def",
+
+      "create role `ab%$c` as copy of `$d3f`" ->
+        "CREATE ROLE `ab%$c` AS COPY OF `$d3f`",
+
       "drop role abc" ->
         "DROP ROLE abc",
 
