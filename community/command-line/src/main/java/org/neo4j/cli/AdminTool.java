@@ -70,7 +70,7 @@ public final class AdminTool
         if ( args.length == 0 )
         {
             cmd.usage( System.out );
-            return 0;
+            return ExitCode.USAGE;
         }
 
         return cmd.execute( args );
