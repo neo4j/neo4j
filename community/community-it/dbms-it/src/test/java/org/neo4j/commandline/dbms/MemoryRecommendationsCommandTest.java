@@ -102,30 +102,30 @@ class MemoryRecommendationsCommandTest
         {
             CommandLine.usage( command, new PrintStream( out ) );
         }
-        assertThat( baos.toString().trim(), equalTo(
-                "Print Neo4j heap and pagecache memory settings recommendations.\n" +
-                        "\n" +
-                        "USAGE\n" +
-                        "\n" +
-                        "memrec [--verbose] [--memory=<size>]\n" +
-                        "\n" +
-                        "DESCRIPTION\n" +
-                        "\n" +
-                        "Print heuristic memory setting recommendations for the Neo4j JVM heap and\n" +
-                        "pagecache. The heuristic is based on the total memory of the system the command\n" +
-                        "is running on, or on the amount of memory specified with the --memory argument.\n" +
-                        "The heuristic assumes that the system is dedicated to running Neo4j. If this is\n" +
-                        "not the case, then use the --memory argument to specify how much memory can be\n" +
-                        "expected to be dedicated to Neo4j. The output is formatted such that it can be\n" +
-                        "copy-pasted into the neo4j.conf file.\n" +
-                        "\n" +
-                        "OPTIONS\n" +
-                        "\n" +
-                        "      --verbose         Enable verbose output.\n" +
-                        "      --memory=<size>   Recommend memory settings with respect to the given amount\n" +
-                        "                          of memory, instead of the total memory of the system\n" +
-                        "                          running the command."
-        ) );
+        assertThat( baos.toString().trim(), equalTo( String.format(
+                "Print Neo4j heap and pagecache memory settings recommendations.%n" +
+                "%n" +
+                "USAGE%n" +
+                "%n" +
+                "memrec [--verbose] [--memory=<size>]%n" +
+                "%n" +
+                "DESCRIPTION%n" +
+                "%n" +
+                "Print heuristic memory setting recommendations for the Neo4j JVM heap and%n" +
+                "pagecache. The heuristic is based on the total memory of the system the command%n" +
+                "is running on, or on the amount of memory specified with the --memory argument.%n" +
+                "The heuristic assumes that the system is dedicated to running Neo4j. If this is%n" +
+                "not the case, then use the --memory argument to specify how much memory can be%n" +
+                "expected to be dedicated to Neo4j. The output is formatted such that it can be%n" +
+                "copy-pasted into the neo4j.conf file.%n" +
+                "%n" +
+                "OPTIONS%n" +
+                "%n" +
+                "      --verbose         Enable verbose output.%n" +
+                "      --memory=<size>   Recommend memory settings with respect to the given amount%n" +
+                "                          of memory, instead of the total memory of the system%n" +
+                "                          running the command."
+        ) ) );
     }
 
     @Test

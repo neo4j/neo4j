@@ -45,27 +45,27 @@ class DumpCommandTest
         {
             CommandLine.usage( command, new PrintStream( out ) );
         }
-        assertThat( baos.toString().trim(), equalTo(
-                "Dump a database into a single-file archive.\n" +
-                        "\n" +
-                        "USAGE\n" +
-                        "\n" +
-                        "dump [--verbose] [--database=<database>] --to=<path>\n" +
-                        "\n" +
-                        "DESCRIPTION\n" +
-                        "\n" +
-                        "Dump a database into a single-file archive. The archive can be used by the load\n" +
-                        "command. <destination-path> can be a file or directory (in which case a file\n" +
-                        "called <database>.dump will be created). It is not possible to dump a database\n" +
-                        "that is mounted in a running Neo4j server.\n" +
-                        "\n" +
-                        "OPTIONS\n" +
-                        "\n" +
-                        "      --verbose     Enable verbose output.\n" +
-                        "      --database=<database>\n" +
-                        "                    Name of database.\n" +
-                        "                      Default: neo4j\n" +
-                        "      --to=<path>   Destination (file or folder) of database dump."
-        ) );
+        assertThat( baos.toString().trim(), equalTo( String.format(
+                "Dump a database into a single-file archive.%n" +
+                "%n" +
+                "USAGE%n" +
+                "%n" +
+                "dump [--verbose] [--database=<database>] --to=<path>%n" +
+                "%n" +
+                "DESCRIPTION%n" +
+                "%n" +
+                "Dump a database into a single-file archive. The archive can be used by the load%n" +
+                "command. <destination-path> can be a file or directory (in which case a file%n" +
+                "called <database>.dump will be created). It is not possible to dump a database%n" +
+                "that is mounted in a running Neo4j server.%n" +
+                "%n" +
+                "OPTIONS%n" +
+                "%n" +
+                "      --verbose     Enable verbose output.%n" +
+                "      --database=<database>%n" +
+                "                    Name of database.%n" +
+                "                      Default: neo4j%n" +
+                "      --to=<path>   Destination (file or folder) of database dump."
+        ) ) );
     }
 }

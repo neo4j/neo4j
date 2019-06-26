@@ -87,23 +87,23 @@ public class SetDefaultAdminCommandTest
         {
             CommandLine.usage( command, new PrintStream( out ) );
         }
-        assertThat( baos.toString().trim(), equalTo(
-                "USAGE\n" +
-                        "\n" +
-                        "set-default-admin [--verbose] <username>\n" +
-                        "\n" +
-                        "DESCRIPTION\n" +
-                        "\n" +
-                        "Sets the default admin user when no roles are present.\n" +
-                        "\n" +
-                        "PARAMETERS\n" +
-                        "\n" +
-                        "      <username>\n" +
-                        "\n" +
-                        "OPTIONS\n" +
-                        "\n" +
-                        "      --verbose    Enable verbose output."
-        ) );
+        assertThat( baos.toString().trim(), equalTo( String.format(
+                "USAGE%n" +
+                "%n" +
+                "set-default-admin [--verbose] <username>%n" +
+                "%n" +
+                "DESCRIPTION%n" +
+                "%n" +
+                "Sets the default admin user when no roles are present.%n" +
+                "%n" +
+                "PARAMETERS%n" +
+                "%n" +
+                "      <username>%n" +
+                "%n" +
+                "OPTIONS%n" +
+                "%n" +
+                "      --verbose    Enable verbose output."
+        ) ) );
     }
 
     @Test

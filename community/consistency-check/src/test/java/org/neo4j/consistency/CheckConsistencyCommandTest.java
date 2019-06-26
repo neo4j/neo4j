@@ -73,53 +73,53 @@ class CheckConsistencyCommandTest
         {
             CommandLine.usage( command, new PrintStream( out ) );
         }
-        assertThat( baos.toString().trim(), equalTo(
-                "Check the consistency of a database.\n" +
-                        "\n" +
-                        "USAGE\n" +
-                        "\n" +
-                        "check-consistency ([--database=<database>] | [--backup=<path>]) [--verbose]\n" +
-                        "                  [--additional-config=<path>] [--check-graph=<true/false>]\n" +
-                        "                  [--check-indexes=<true/false>]\n" +
-                        "                  [--check-label-scan-store=<true/false>]\n" +
-                        "                  [--check-property-owners=<true/false>] [--report-dir=<path>]\n" +
-                        "\n" +
-                        "DESCRIPTION\n" +
-                        "\n" +
-                        "This command allows for checking the consistency of a database or a backup\n" +
-                        "thereof. It cannot be used with a database which is currently in use.\n" +
-                        "\n" +
-                        "All checks except 'check-graph' can be quite expensive so it may be useful to\n" +
-                        "turn them off for very large databases. Increasing the heap size can also be a\n" +
-                        "good idea. See 'neo4j-admin help' for details.\n" +
-                        "\n" +
-                        "OPTIONS\n" +
-                        "\n" +
-                        "      --verbose             Enable verbose output.\n" +
-                        "      --database=<database> Name of the database.\n" +
-                        "                              Default: neo4j\n" +
-                        "      --backup=<path>       Path to backup to check consistency of. Cannot be used\n" +
-                        "                              together with --database.\n" +
-                        "      --additional-config=<path>\n" +
-                        "                            Configuration file to supply additional configuration in.\n" +
-                        "      --report-dir=<path>   Directory where consistency report will be written.\n" +
-                        "                              Default: .\n" +
-                        "      --check-graph=<true/false>\n" +
-                        "                            Perform consistency checks between nodes, relationships,\n" +
-                        "                              properties, types and tokens.\n" +
-                        "                              Default: true\n" +
-                        "      --check-indexes=<true/false>\n" +
-                        "                            Perform consistency checks on indexes.\n" +
-                        "                              Default: true\n" +
-                        "      --check-label-scan-store=<true/false>\n" +
-                        "                            Perform consistency checks on the label scan store.\n" +
-                        "                              Default: true\n" +
-                        "      --check-property-owners=<true/false>\n" +
-                        "                            Perform additional consistency checks on property\n" +
-                        "                              ownership. This check is very expensive in time and\n" +
-                        "                              memory.\n" +
-                        "                              Default: false"
-        ) );
+        assertThat( baos.toString().trim(), equalTo( String.format(
+                "Check the consistency of a database.%n" +
+                "%n" +
+                "USAGE%n" +
+                "%n" +
+                "check-consistency ([--database=<database>] | [--backup=<path>]) [--verbose]%n" +
+                "                  [--additional-config=<path>] [--check-graph=<true/false>]%n" +
+                "                  [--check-indexes=<true/false>]%n" +
+                "                  [--check-label-scan-store=<true/false>]%n" +
+                "                  [--check-property-owners=<true/false>] [--report-dir=<path>]%n" +
+                "%n" +
+                "DESCRIPTION%n" +
+                "%n" +
+                "This command allows for checking the consistency of a database or a backup%n" +
+                "thereof. It cannot be used with a database which is currently in use.%n" +
+                "%n" +
+                "All checks except 'check-graph' can be quite expensive so it may be useful to%n" +
+                "turn them off for very large databases. Increasing the heap size can also be a%n" +
+                "good idea. See 'neo4j-admin help' for details.%n" +
+                "%n" +
+                "OPTIONS%n" +
+                "%n" +
+                "      --verbose             Enable verbose output.%n" +
+                "      --database=<database> Name of the database.%n" +
+                "                              Default: neo4j%n" +
+                "      --backup=<path>       Path to backup to check consistency of. Cannot be used%n" +
+                "                              together with --database.%n" +
+                "      --additional-config=<path>%n" +
+                "                            Configuration file to supply additional configuration in.%n" +
+                "      --report-dir=<path>   Directory where consistency report will be written.%n" +
+                "                              Default: .%n" +
+                "      --check-graph=<true/false>%n" +
+                "                            Perform consistency checks between nodes, relationships,%n" +
+                "                              properties, types and tokens.%n" +
+                "                              Default: true%n" +
+                "      --check-indexes=<true/false>%n" +
+                "                            Perform consistency checks on indexes.%n" +
+                "                              Default: true%n" +
+                "      --check-label-scan-store=<true/false>%n" +
+                "                            Perform consistency checks on the label scan store.%n" +
+                "                              Default: true%n" +
+                "      --check-property-owners=<true/false>%n" +
+                "                            Perform additional consistency checks on property%n" +
+                "                              ownership. This check is very expensive in time and%n" +
+                "                              memory.%n" +
+                "                              Default: false"
+        ) ) );
     }
 
     @Test

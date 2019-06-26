@@ -87,26 +87,26 @@ class StoreInfoCommandTest
         {
             CommandLine.usage( command, new PrintStream( out ) );
         }
-        assertThat( baos.toString().trim(), equalTo(
-                        "Print information about a Neo4j database store.\n" +
-                        "\n" +
-                        "USAGE\n" +
-                        "\n" +
-                        "store-info [--verbose] <storePath>\n" +
-                        "\n" +
-                        "DESCRIPTION\n" +
-                        "\n" +
-                        "Print information about a Neo4j database store, such as what version of Neo4j\n" +
-                        "created it.\n" +
-                        "\n" +
-                        "PARAMETERS\n" +
-                        "\n" +
-                        "      <storePath>   Path to database store.\n" +
-                        "\n" +
-                        "OPTIONS\n" +
-                        "\n" +
+        assertThat( baos.toString().trim(), equalTo( String.format(
+                        "Print information about a Neo4j database store.%n" +
+                        "%n" +
+                        "USAGE%n" +
+                        "%n" +
+                        "store-info [--verbose] <storePath>%n" +
+                        "%n" +
+                        "DESCRIPTION%n" +
+                        "%n" +
+                        "Print information about a Neo4j database store, such as what version of Neo4j%n" +
+                        "created it.%n" +
+                        "%n" +
+                        "PARAMETERS%n" +
+                        "%n" +
+                        "      <storePath>   Path to database store.%n" +
+                        "%n" +
+                        "OPTIONS%n" +
+                        "%n" +
                         "      --verbose     Enable verbose output."
-        ) );
+        ) ) );
     }
 
     @Test

@@ -127,34 +127,34 @@ public class DiagnosticsReportCommandTest
         {
             CommandLine.usage( command, new PrintStream( out ) );
         }
-        assertThat( baos.toString().trim(), equalTo(
-                "Produces a zip/tar of the most common information needed for remote assessments.\n" +
-                        "\n" +
-                        "USAGE\n" +
-                        "\n" +
-                        "report [--force] [--list] [--verbose] [--pid=<pid>] [--to=<path>]\n" +
-                        "       [<classifier>...]\n" +
-                        "\n" +
-                        "DESCRIPTION\n" +
-                        "\n" +
-                        "Will collect information about the system and package everything in an archive.\n" +
-                        "If you specify 'all', everything will be included. You can also fine tune the\n" +
-                        "selection by passing classifiers to the tool, e.g 'logs tx threads'.\n" +
-                        "\n" +
-                        "PARAMETERS\n" +
-                        "\n" +
-                        "      [<classifier>...]     Default: [config, logs, metrics, plugins, ps, sysprop,\n" +
-                        "                            threads, tree]\n" +
-                        "\n" +
-                        "OPTIONS\n" +
-                        "\n" +
-                        "      --verbose           Enable verbose output.\n" +
-                        "      --list              List all available classifiers\n" +
-                        "      --force             Ignore disk full warning\n" +
-                        "      --to=<path>         Destination directory for reports. Defaults to a system\n" +
-                        "                            tmp directory.\n" +
-                        "      --pid=<pid>         Specify process id of running neo4j instance"
-        ) );
+        assertThat( baos.toString().trim(), equalTo( String.format(
+                "Produces a zip/tar of the most common information needed for remote assessments.%n" +
+                "%n" +
+                "USAGE%n" +
+                "%n" +
+                "report [--force] [--list] [--verbose] [--pid=<pid>] [--to=<path>]%n" +
+                "       [<classifier>...]%n" +
+                "%n" +
+                "DESCRIPTION%n" +
+                "%n" +
+                "Will collect information about the system and package everything in an archive.%n" +
+                "If you specify 'all', everything will be included. You can also fine tune the%n" +
+                "selection by passing classifiers to the tool, e.g 'logs tx threads'.%n" +
+                "%n" +
+                "PARAMETERS%n" +
+                "%n" +
+                "      [<classifier>...]     Default: [config, logs, metrics, plugins, ps, sysprop,%n" +
+                "                            threads, tree]%n" +
+                "%n" +
+                "OPTIONS%n" +
+                "%n" +
+                "      --verbose           Enable verbose output.%n" +
+                "      --list              List all available classifiers%n" +
+                "      --force             Ignore disk full warning%n" +
+                "      --to=<path>         Destination directory for reports. Defaults to a system%n" +
+                "                            tmp directory.%n" +
+                "      --pid=<pid>         Specify process id of running neo4j instance"
+        ) ) );
     }
 
     @Test

@@ -98,29 +98,29 @@ class LoadCommandTest
         {
             CommandLine.usage( command, new PrintStream( out ) );
         }
-        assertThat( baos.toString().trim(), equalTo(
-                "Load a database from an archive created with the dump command.\n" +
-                        "\n" +
-                        "USAGE\n" +
-                        "\n" +
-                        "load [--force] [--verbose] [--database=<database>] --from=<path>\n" +
-                        "\n" +
-                        "DESCRIPTION\n" +
-                        "\n" +
-                        "Load a database from an archive. <archive-path> must be an archive created with\n" +
-                        "the dump command. <database> is the name of the database to create. Existing\n" +
-                        "databases can be replaced by specifying --force. It is not possible to replace\n" +
-                        "a database that is mounted in a running Neo4j server.\n" +
-                        "\n" +
-                        "OPTIONS\n" +
-                        "\n" +
-                        "      --verbose       Enable verbose output.\n" +
-                        "      --from=<path>   Path to archive created with the dump command.\n" +
-                        "      --database=<database>\n" +
-                        "                      Name of database.\n" +
-                        "                        Default: neo4j\n" +
+        assertThat( baos.toString().trim(), equalTo( String.format(
+                "Load a database from an archive created with the dump command.%n" +
+                        "%n" +
+                        "USAGE%n" +
+                        "%n" +
+                        "load [--force] [--verbose] [--database=<database>] --from=<path>%n" +
+                        "%n" +
+                        "DESCRIPTION%n" +
+                        "%n" +
+                        "Load a database from an archive. <archive-path> must be an archive created with%n" +
+                        "the dump command. <database> is the name of the database to create. Existing%n" +
+                        "databases can be replaced by specifying --force. It is not possible to replace%n" +
+                        "a database that is mounted in a running Neo4j server.%n" +
+                        "%n" +
+                        "OPTIONS%n" +
+                        "%n" +
+                        "      --verbose       Enable verbose output.%n" +
+                        "      --from=<path>   Path to archive created with the dump command.%n" +
+                        "      --database=<database>%n" +
+                        "                      Name of database.%n" +
+                        "                        Default: neo4j%n" +
                         "      --force         If an existing database should be replaced."
-        ) );
+        ) ) );
     }
 
     @Test

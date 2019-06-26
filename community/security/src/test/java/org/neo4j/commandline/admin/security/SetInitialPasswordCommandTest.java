@@ -79,23 +79,23 @@ public class SetInitialPasswordCommandTest
         {
             CommandLine.usage( command, new PrintStream( out ) );
         }
-        assertThat( baos.toString().trim(), equalTo(
-                "USAGE\n" +
-                        "\n" +
-                        "set-initial-password [--verbose] <password>\n" +
-                        "\n" +
-                        "DESCRIPTION\n" +
-                        "\n" +
-                        "Sets the initial password of the initial admin user ('neo4j').\n" +
-                        "\n" +
-                        "PARAMETERS\n" +
-                        "\n" +
-                        "      <password>\n" +
-                        "\n" +
-                        "OPTIONS\n" +
-                        "\n" +
-                        "      --verbose    Enable verbose output."
-        ) );
+        assertThat( baos.toString().trim(), equalTo( String.format(
+                "USAGE%n" +
+                "%n" +
+                "set-initial-password [--verbose] <password>%n" +
+                "%n" +
+                "DESCRIPTION%n" +
+                "%n" +
+                "Sets the initial password of the initial admin user ('neo4j').%n" +
+                "%n" +
+                "PARAMETERS%n" +
+                "%n" +
+                "      <password>%n" +
+                "%n" +
+                "OPTIONS%n" +
+                "%n" +
+                "      --verbose    Enable verbose output."
+        ) ) );
     }
 
     @Test
