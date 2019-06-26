@@ -179,6 +179,11 @@ class OptionalMatchRemoverTest extends CypherFunSuite with LogicalPlanningTestSu
           RETURN DISTINCT b as b""")
 
   assert_that(
+    """OPTIONAL MATCH (a)-[r1]->(b)-[r2]->(c) WHERE a:A and b:B and c:C and a <> b
+          RETURN DISTINCT c as c""").
+    is_not_rewritten()
+
+  assert_that(
     """MATCH (a)
       |OPTIONAL MATCH (a)-[r]->(b)
       |DELETE r

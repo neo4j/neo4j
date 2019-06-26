@@ -74,15 +74,9 @@ case object OptionalMatchRemover extends PlannerQueryRewriter {
         // and it can't change cardinality, it's safe to ignore it
           None
         else {
-          val (predicatesForPatterns, remaining) = {
+          val (predicatesForPatterns, remaining, elementsToKeep) = {
             val elementsToKeep1 = smallestGraphIncluding(original, mustInclude ++ original.argumentIds)
-            partitionPredicates(original.selections.predicates, elementsToKeep1)
-          }
-
-          val elementsToKeep = {
-            val variablesNeededForPredicates =
-              remaining.flatMap(expression => expression.dependencies.map(_.name))
-            smallestGraphIncluding(original, mustInclude ++ original.argumentIds ++ variablesNeededForPredicates)
+            extractElementsAndPatterns(original, mustInclude, elementsToKeep1)
           }
 
           val (patternsToKeep, patternsToFilter) = original.patternRelationships.partition(r => elementsToKeep(r.name))
@@ -102,6 +96,21 @@ case object OptionalMatchRemover extends PlannerQueryRewriter {
     val matches = graph.withOptionalMatches(optionalMatches)
     RegularPlannerQuery(matches, interestingOrder, horizon = proj, tail = tail)
 
+  }
+
+  private def extractElementsAndPatterns(original: QueryGraph, mustInclude: Set[String], elementsToKeepInitial: Set[String]):
+  (Map[String, LabelsAndEquality], Set[Expression], Set[String]) = {
+    val (predicatesForPatterns, remaining) =
+      partitionPredicates(original.selections.predicates, elementsToKeepInitial)
+
+    val variablesNeededForPredicates = remaining.flatMap(expression => expression.dependencies.map(_.name))
+    val elementsToKeep = smallestGraphIncluding(original, mustInclude ++ original.argumentIds ++ variablesNeededForPredicates)
+
+    if ( elementsToKeep.equals(elementsToKeepInitial) ) {
+      (predicatesForPatterns, remaining, elementsToKeep)
+    } else {
+      extractElementsAndPatterns(original, mustInclude, elementsToKeep)
+    }
   }
 
   private object LabelsAndEquality {
