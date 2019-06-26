@@ -65,12 +65,6 @@ public class IdContextFactoryBuilder
         return builder;
     }
 
-    public IdContextFactoryBuilder withFileSystem( FileSystemAbstraction fileSystem )
-    {
-        this.fileSystemAbstraction = fileSystem;
-        return this;
-    }
-
     public IdContextFactoryBuilder withIdGenerationFactoryProvider( Function<DatabaseId,IdGeneratorFactory> idGeneratorFactoryProvider )
     {
         this.idGeneratorFactoryProvider = idGeneratorFactoryProvider;
