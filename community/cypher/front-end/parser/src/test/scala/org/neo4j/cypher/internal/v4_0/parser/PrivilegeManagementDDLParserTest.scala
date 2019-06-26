@@ -817,7 +817,7 @@ class PrivilegeManagementDDLParserTest extends DDLParserTestBase {
             case (properties: String, resource: ActionResource, dbName: String, graphScope: GraphScope) =>
 
               test(s"$command ${privilege.name} ($properties) ON $graphKeyword $dbName $preposition role") {
-                yields(func(privilege, resource, graphScope, ast.AllQualifier() _, Seq("role")))
+                yields(func(privilege, resource, graphScope, ast.LabelAllQualifier() _, Seq("role")))
               }
           }
       }

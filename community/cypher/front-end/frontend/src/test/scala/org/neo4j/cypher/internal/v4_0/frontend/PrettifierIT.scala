@@ -466,7 +466,7 @@ class PrettifierIT extends CypherFunSuite {
             s"$action TRAVERSE ON GRAPH foo RELATIONSHIPS A, B, C (*) $preposition x, y, z",
 
           s"$action read (*) on graph * $preposition role" ->
-            s"$action READ (*) ON GRAPH * ELEMENTS * (*) $preposition role",
+            s"$action READ (*) ON GRAPH * NODES * (*) $preposition role",
 
           s"$action read (*) on graph * nodes * $preposition role" ->
             s"$action READ (*) ON GRAPH * NODES * (*) $preposition role",
