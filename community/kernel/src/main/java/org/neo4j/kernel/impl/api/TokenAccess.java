@@ -27,7 +27,7 @@ import org.neo4j.graphdb.Resource;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.helpers.collection.PrefetchingResourceIterator;
 import org.neo4j.internal.kernel.api.NamedToken;
-import org.neo4j.internal.kernel.api.SchemaRead;
+import org.neo4j.internal.kernel.api.SchemaReadCore;
 import org.neo4j.internal.kernel.api.TokenRead;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.Statement;
@@ -52,10 +52,11 @@ public abstract class TokenAccess<R>
         }
 
         @Override
-        boolean inUse( KernelTransaction transaction, int tokenId )
+        boolean inUse( KernelTransaction transaction, SchemaReadCore schemaReadCore, int tokenId )
         {
-            return hasAny( transaction.schemaRead().constraintsGetForRelationshipType( tokenId ) ) ||   // used by constraint
-                   transaction.dataRead().countsForRelationship( ANY_LABEL, tokenId, ANY_LABEL ) > 0; // used by data
+            return hasAny( schemaReadCore.indexesGetForRelationshipType( tokenId ) ) ||                // used by indexes
+                    hasAny( schemaReadCore.constraintsGetForRelationshipType( tokenId ) ) ||           // used by constraint
+                    transaction.dataRead().countsForRelationship( ANY_LABEL, tokenId, ANY_LABEL ) > 0; // used by data
         }
     };
     public static final TokenAccess<Label> LABELS = new TokenAccess<Label>()
@@ -73,13 +74,11 @@ public abstract class TokenAccess<R>
         }
 
         @Override
-        boolean inUse( KernelTransaction transaction, int tokenId )
+        boolean inUse( KernelTransaction transaction, SchemaReadCore schemaReadCore, int tokenId )
         {
-
-            SchemaRead schemaRead = transaction.schemaRead();
-            return hasAny( schemaRead.indexesGetForLabel( tokenId ) ) ||     // used by index
-                   hasAny( schemaRead.constraintsGetForLabel( tokenId ) ) || // used by constraint
-                   transaction.dataRead().countsForNode( tokenId ) > 0;                  // used by data
+            return hasAny( schemaReadCore.indexesGetForLabel( tokenId ) ) ||     // used by index
+                   hasAny( schemaReadCore.constraintsGetForLabel( tokenId ) ) || // used by constraint
+                   transaction.dataRead().countsForNode( tokenId ) > 0;          // used by data
         }
     };
 
@@ -98,7 +97,7 @@ public abstract class TokenAccess<R>
         }
 
         @Override
-        boolean inUse( KernelTransaction transaction, int tokenId )
+        boolean inUse( KernelTransaction transaction, SchemaReadCore schemaReadCore, int tokenId )
         {
             return true; // TODO: add support for telling if a property key is in use or not
         }
@@ -160,6 +159,7 @@ public abstract class TokenAccess<R>
 
         static <T> ResourceIterator<T> inUse( KernelTransaction transaction, TokenAccess<T> access )
         {
+            SchemaReadCore schemaReadCore = transaction.schemaRead().snapshot();
             return new TokenIterator<T>( transaction, access )
             {
                 @Override
@@ -168,7 +168,7 @@ public abstract class TokenAccess<R>
                     while ( tokens.hasNext() )
                     {
                         NamedToken token = tokens.next();
-                        if ( this.access.inUse( transaction, token.id() ) )
+                        if ( this.access.inUse( transaction, schemaReadCore, token.id() ) )
                         {
                             return this.access.token( token );
                         }
@@ -204,5 +204,5 @@ public abstract class TokenAccess<R>
 
     abstract R token( NamedToken token );
 
-    abstract boolean inUse( KernelTransaction transaction, int tokenId );
+    abstract boolean inUse( KernelTransaction transaction, SchemaReadCore schemaReadCore, int tokenId );
 }

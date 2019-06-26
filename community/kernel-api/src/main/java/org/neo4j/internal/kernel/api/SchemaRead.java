@@ -28,13 +28,12 @@ import org.neo4j.internal.kernel.api.exceptions.schema.SchemaKernelException;
 import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
 import org.neo4j.internal.kernel.api.schema.constraints.ConstraintDescriptor;
 import org.neo4j.register.Register;
-import org.neo4j.storageengine.api.schema.PopulationProgress;
 import org.neo4j.values.storable.Value;
 
 /**
  * Surface for getting schema information, such as fetching specific indexes or constraints.
  */
-public interface SchemaRead
+public interface SchemaRead extends SchemaReadCore
 {
     /**
      * Acquire a reference to the index mapping the given {@code label} and {@code properties}.
@@ -44,14 +43,6 @@ public interface SchemaRead
      * @return the IndexReference, or {@link IndexReference#NO_INDEX} if such an index does not exist.
      */
     IndexReference index( int label, int... properties );
-
-    /**
-     * Acquire a reference to the index mapping the given {@code SchemaDescriptor}.
-     *
-     * @param schema {@link SchemaDescriptor} for the index
-     * @return the IndexReference, or {@link IndexReference#NO_INDEX} if such an index does not exist.
-     */
-    IndexReference index( SchemaDescriptor schema );
 
     /**
      * Acquire an index reference of the given {@code label} and {@code properties}. This method does not assert
@@ -73,14 +64,6 @@ public interface SchemaRead
     IndexReference indexReferenceUnchecked( SchemaDescriptor schema );
 
     /**
-     * Returns all indexes associated with the given label
-     *
-     * @param labelId The id of the label which associated indexes you are looking for
-     * @return The indexes associated with the given label
-     */
-    Iterator<IndexReference> indexesGetForLabel( int labelId );
-
-    /**
      * Returns the index with the given name
      *
      * @param name The name of the index you are looking for
@@ -89,45 +72,10 @@ public interface SchemaRead
     IndexReference indexGetForName( String name );
 
     /**
-     * Returns all indexes used in the database
-     *
-     * @return all indexes used in the database
-     */
-    Iterator<IndexReference> indexesGetAll();
-
-    /**
-     * Retrieves the state of an index
-     *
-     * @param index the index which state to retrieve
-     * @return The state of the provided index
-     * @throws IndexNotFoundKernelException if the index was not found in the database
-     */
-    InternalIndexState indexGetState( IndexReference index ) throws IndexNotFoundKernelException;
-
-    /**
-     * Retrives the population progress of the index
-     *
-     * @param index The index whose progress to retrieve
-     * @return The population progress of the given index
-     * @throws IndexNotFoundKernelException if the index was not found in the database
-     */
-    PopulationProgress indexGetPopulationProgress( IndexReference index ) throws
-            IndexNotFoundKernelException;
-
-    /**
      * Get the index id (the id or the schema rule record) for a committed index
      * - throws exception for indexes that aren't committed.
      */
     long indexGetCommittedId( IndexReference index ) throws SchemaKernelException;
-
-    /**
-     * Returns the failure description of a failed index.
-     *
-     * @param index the failed index
-     * @return The failure message from the index
-     * @throws IndexNotFoundKernelException if the index was not found in the database
-     */
-    String indexGetFailure( IndexReference index ) throws IndexNotFoundKernelException;
 
     /**
      * Computes the selectivity of the unique values.
@@ -203,27 +151,15 @@ public interface SchemaRead
     boolean constraintExists( ConstraintDescriptor descriptor );
 
     /**
-     * Finds all constraints for the given label
-     *
-     * @param labelId The id of the label
-     * @return All constraints for the given label
+     * Produce a snapshot of the current schema, which can be accessed without acquiring any schema locks.
+     * <p>
+     * This is useful for inspecting schema elements when you have no intention of updating the schema,
+     * and where waiting on schema locks from, for instance, constraint creating transactions,
+     * would be inconvenient.
+     * <p>
+     * The snapshot observes transaction state of the current transaction.
      */
-    Iterator<ConstraintDescriptor> constraintsGetForLabel( int labelId );
-
-    /**
-     * Find all constraints in the database
-     *
-     * @return An iterator of all the constraints in the database.
-     */
-    Iterator<ConstraintDescriptor> constraintsGetAll();
-
-    /**
-     * Get all constraints applicable to relationship type.
-     *
-     * @param typeId the id of the relationship type
-     * @return An iterator of constraints associated with the given type.
-     */
-    Iterator<ConstraintDescriptor> constraintsGetForRelationshipType( int typeId );
+    SchemaReadCore snapshot();
 
     /**
      * Get the owning constraint for a constraint index or <tt>null</tt> if the index does not have an owning

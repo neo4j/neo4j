@@ -42,6 +42,7 @@ import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.kernel.api.NamedToken;
 import org.neo4j.internal.kernel.api.Read;
 import org.neo4j.internal.kernel.api.SchemaRead;
+import org.neo4j.internal.kernel.api.SchemaReadCore;
 import org.neo4j.internal.kernel.api.TokenRead;
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
@@ -103,6 +104,7 @@ public class BuiltInProceduresTest
     private final Read read = mock( Read.class );
     private final TokenRead tokens = mock( TokenRead.class );
     private final SchemaRead schemaRead = mock( SchemaRead.class );
+    private final SchemaReadCore schemaReadCore = mock( SchemaReadCore.class );
     private final Statement statement = mock( Statement.class );
     private final KernelTransaction tx = mock( KernelTransaction.class );
     private final DependencyResolver resolver = mock( DependencyResolver.class );
@@ -134,19 +136,20 @@ public class BuiltInProceduresTest
         when( tx.tokenRead() ).thenReturn( tokens );
         when( tx.dataRead() ).thenReturn( read );
         when( tx.schemaRead() ).thenReturn( schemaRead );
+        when( schemaRead.snapshot() ).thenReturn( schemaReadCore );
 
         when( tokens.propertyKeyGetAllTokens() ).thenAnswer( asTokens( propKeys ) );
         when( tokens.labelsGetAllTokens() ).thenAnswer( asTokens( labels ) );
         when( tokens.relationshipTypesGetAllTokens() ).thenAnswer( asTokens( relTypes ) );
-        when( schemaRead.indexesGetAll() ).thenAnswer(
+        when( schemaReadCore.indexesGetAll() ).thenAnswer(
                 i -> Iterators.concat( indexes.iterator(), uniqueIndexes.iterator() ) );
-        when( schemaRead.index( any( SchemaDescriptor.class ) ) ).thenAnswer( (Answer<IndexReference>) invocationOnMock -> {
+        when( schemaReadCore.index( any( SchemaDescriptor.class ) ) ).thenAnswer( (Answer<IndexReference>) invocationOnMock -> {
             SchemaDescriptor schema = invocationOnMock.getArgument( 0 );
             int label = schema.keyId();
             int prop = schema.getPropertyId();
             return getIndexReference( label, prop );
         } );
-        when( schemaRead.constraintsGetAll() ).thenAnswer( i -> constraints.iterator() );
+        when( schemaReadCore.constraintsGetAll() ).thenAnswer( i -> constraints.iterator() );
 
         when( tokens.propertyKeyName( anyInt() ) ).thenAnswer( invocation -> propKeys.get( invocation.getArgument( 0 ) ) );
         when( tokens.nodeLabelName( anyInt() ) ).thenAnswer( invocation -> labels.get( invocation.getArgument( 0 ) ) );
@@ -154,12 +157,13 @@ public class BuiltInProceduresTest
 
         when( indexingService.getIndexId( any( SchemaDescriptor.class ) ) ).thenReturn( 42L );
 
-        when( schemaRead.constraintsGetForRelationshipType( anyInt() ) ).thenReturn( emptyIterator() );
-        when( schemaRead.indexesGetForLabel( anyInt() ) ).thenReturn( emptyIterator() );
-        when( schemaRead.constraintsGetForLabel( anyInt() ) ).thenReturn( emptyIterator() );
+        when( schemaReadCore.constraintsGetForRelationshipType( anyInt() ) ).thenReturn( emptyIterator() );
+        when( schemaReadCore.indexesGetForLabel( anyInt() ) ).thenReturn( emptyIterator() );
+        when( schemaReadCore.indexesGetForRelationshipType( anyInt() ) ).thenReturn( emptyIterator() );
+        when( schemaReadCore.constraintsGetForLabel( anyInt() ) ).thenReturn( emptyIterator() );
         when( read.countsForNode( anyInt() ) ).thenReturn( 1L );
         when( read.countsForRelationship( anyInt(), anyInt(), anyInt() ) ).thenReturn( 1L );
-        when( schemaRead.indexGetState( any( IndexReference.class ) ) ).thenReturn( InternalIndexState.ONLINE );
+        when( schemaReadCore.indexGetState( any( IndexReference.class ) ) ).thenReturn( InternalIndexState.ONLINE );
     }
 
     @Test
@@ -184,6 +188,19 @@ public class BuiltInProceduresTest
         assertThat( call( "db.indexes" ), contains( record(
                 "INDEX ON :User(name)", "Unnamed index", singletonList( "User" ), singletonList( "name" ), "ONLINE", "node_unique_property", 100D,
                 getIndexProviderDescriptorMap( EMPTY.getProviderDescriptor() ), 42L, "" ) ) );
+    }
+
+    @Test
+    public void listingIndexesShouldGiveMessageForConcurrentlyDeletedIndexes() throws Throwable
+    {
+        // Given
+        givenIndex( "User", "name" );
+        when( schemaReadCore.indexGetState( any( IndexReference.class) ) ).thenThrow( new IndexNotFoundKernelException( "Not found." ) );
+
+        // When/Then
+        assertThat( call( "db.indexes" ), contains( record(
+                "INDEX ON :User(name)", "Unnamed index", singletonList( "User" ), singletonList( "name" ), "NOT FOUND", "node_label_property", 0D,
+                getIndexProviderDescriptorMap( EMPTY.getProviderDescriptor() ), 42L, "Index not found. It might have been concurrently dropped." ) ) );
     }
 
     @Test
@@ -604,7 +621,7 @@ public class BuiltInProceduresTest
         when( graphDatabaseAPI.getDependencyResolver() ).thenReturn( resolver );
         when( resolver.resolveDependency( Procedures.class ) ).thenReturn( procs );
         when( resolver.resolveDependency( IndexingService.class ) ).thenReturn( indexingService );
-        when( schemaRead.indexGetPopulationProgress( any( IndexReference.class) ) ).thenReturn( PopulationProgress.DONE );
+        when( schemaReadCore.indexGetPopulationProgress( any( IndexReference.class) ) ).thenReturn( PopulationProgress.DONE );
         return Iterators.asList( procs.callProcedure(
                 ctx, ProcedureSignature.procedureName( name.split( "\\." ) ), args, resourceTracker ) );
     }

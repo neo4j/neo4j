@@ -43,7 +43,7 @@ import static org.neo4j.test.mockito.matcher.Neo4jMatchers.getPropertyKeys;
 public class RecordStorageReaderLabelTest extends RecordStorageReaderTestBase
 {
     @Test
-    public void shouldBeAbleToListLabelsForNode() throws Exception
+    public void shouldBeAbleToListLabelsForNode()
     {
         // GIVEN
         long nodeId;

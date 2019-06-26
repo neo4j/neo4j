@@ -25,7 +25,6 @@ import org.junit.Test;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 import java.util.function.Function;
@@ -61,6 +60,7 @@ import org.neo4j.test.TestGraphDatabaseFactoryState;
 import org.neo4j.test.impl.EphemeralIdGenerator;
 import org.neo4j.test.rule.ImpermanentDatabaseRule;
 import org.neo4j.test.rule.TestDirectory;
+import org.neo4j.util.concurrent.BinaryLatch;
 
 import static java.util.stream.Collectors.toSet;
 import static org.hamcrest.Matchers.hasItems;
@@ -138,7 +138,7 @@ public class LabelsAcceptanceTest
     {
         // Given
         GraphDatabaseService graphDatabase = dbRule.getGraphDatabaseAPI();
-        Node myNode = null;
+        Node myNode;
 
         // When
         try ( Transaction tx = graphDatabase.beginTx() )
@@ -161,7 +161,7 @@ public class LabelsAcceptanceTest
         GraphDatabaseService graphDatabase = dbRule.getGraphDatabaseAPI();
 
         // When I set an empty label
-        try ( Transaction tx = graphDatabase.beginTx() )
+        try ( Transaction ignored = graphDatabase.beginTx() )
         {
             graphDatabase.createNode().addLabel( label( "" ) );
             fail( "Should have thrown exception" );
@@ -171,7 +171,7 @@ public class LabelsAcceptanceTest
         }
 
         // And When I set a null label
-        try ( Transaction tx2 = graphDatabase.beginTx() )
+        try ( Transaction ignored = graphDatabase.beginTx() )
         {
             graphDatabase.createNode().addLabel( () -> null );
             fail( "Should have thrown exception" );
@@ -186,7 +186,7 @@ public class LabelsAcceptanceTest
     {
         // Given
         GraphDatabaseService graphDatabase = dbRule.getGraphDatabaseAPI();
-        Node myNode = null;
+        Node myNode;
 
         // When
         try ( Transaction tx = graphDatabase.beginTx() )
@@ -210,7 +210,7 @@ public class LabelsAcceptanceTest
         GraphDatabaseService graphDatabase = beansAPIWithNoMoreLabelIds();
 
         // When
-        try ( Transaction tx = graphDatabase.beginTx() )
+        try ( Transaction ignored = graphDatabase.beginTx() )
         {
             graphDatabase.createNode().addLabel( Labels.MY_LABEL );
             fail( "Should have thrown exception" );
@@ -248,7 +248,7 @@ public class LabelsAcceptanceTest
         GraphDatabaseService db = dbRule.getGraphDatabaseAPI();
 
         // WHEN
-        Node node = null;
+        Node node;
         try ( Transaction tx = db.beginTx() )
         {
             node = db.createNode( Labels.values() );
@@ -328,7 +328,7 @@ public class LabelsAcceptanceTest
     {
         // GIVEN
         GraphDatabaseService beansAPI = dbRule.getGraphDatabaseAPI();
-        Node node = null;
+        Node node;
         Set<String> expected = asSet( Labels.MY_LABEL.name(), Labels.MY_OTHER_LABEL.name() );
         try ( Transaction tx = beansAPI.beginTx() )
         {
@@ -361,7 +361,7 @@ public class LabelsAcceptanceTest
         GraphDatabaseService beansAPI = dbRule.getGraphDatabaseAPI();
 
         // When
-        Node node = null;
+        Node node;
         try ( Transaction tx = beansAPI.beginTx() )
         {
             node = beansAPI.createNode();
@@ -407,10 +407,10 @@ public class LabelsAcceptanceTest
         // Given
         GraphDatabaseService db = dbRule.getGraphDatabaseAPI();
         createNode( db, Labels.MY_LABEL, Labels.MY_OTHER_LABEL );
-        List<Label> labels = null;
+        List<Label> labels;
 
         // When
-        try ( Transaction tx = db.beginTx() )
+        try ( Transaction ignored = db.beginTx() )
         {
             labels = asList( db.getAllLabels() );
         }
@@ -432,10 +432,10 @@ public class LabelsAcceptanceTest
             node.delete();
             tx.success();
         }
-        List<Label> labels = null;
 
         // When
-        try ( Transaction tx = db.beginTx() )
+        List<Label> labels;
+        try ( Transaction ignored = db.beginTx() )
         {
             labels = asList( db.getAllLabelsInUse() );
         }
@@ -443,6 +443,90 @@ public class LabelsAcceptanceTest
         // Then
         assertEquals( 1, labels.size() );
         assertThat( map( Label::name, labels ), hasItems( Labels.MY_LABEL.name() ) );
+    }
+
+    @Test( timeout = 30_000 )
+    public void shouldListAllLabelsInUseEvenWhenExclusiveLabelLocksAreTaken() throws Exception
+    {
+        // Given
+        GraphDatabaseService db = dbRule.getGraphDatabaseAPI();
+        createNode( db, Labels.MY_LABEL );
+        Node node = createNode( db, Labels.MY_OTHER_LABEL );
+        try ( Transaction tx = db.beginTx() )
+        {
+            node.delete();
+            tx.success();
+        }
+
+        BinaryLatch indexCreateStarted = new BinaryLatch();
+        BinaryLatch indexCreateAllowToFinish = new BinaryLatch();
+        Thread indexCreator = new Thread( () ->
+        {
+            try ( Transaction tx = db.beginTx() )
+            {
+                db.schema().indexFor( Labels.MY_LABEL ).on( "prop" ).create();
+                indexCreateStarted.release();
+                indexCreateAllowToFinish.await();
+                tx.success();
+            }
+        } );
+        indexCreator.start();
+
+        // When
+        indexCreateStarted.await();
+        List<Label> labels;
+        try ( Transaction ignored = db.beginTx() )
+        {
+            labels = asList( db.getAllLabelsInUse() );
+        }
+        indexCreateAllowToFinish.release();
+        indexCreator.join();
+
+        // Then
+        assertEquals( 1, labels.size() );
+        assertThat( map( Label::name, labels ), hasItems( Labels.MY_LABEL.name() ) );
+    }
+
+    @Test( timeout = 30_000 )
+    public void shouldListAllRelationshipTypesInUseEvenWhenExclusiveRelationshipTypeLocksAreTaken() throws Exception
+    {
+        // Given
+        GraphDatabaseService db = dbRule.getGraphDatabaseAPI();
+        RelationshipType relType = RelationshipType.withName( "REL" );
+        Node node = createNode( db, Labels.MY_LABEL );
+        try ( Transaction tx = db.beginTx() )
+        {
+            node.createRelationshipTo( node, relType ).setProperty( "prop", "val" );
+            tx.success();
+        }
+
+        BinaryLatch indexCreateStarted = new BinaryLatch();
+        BinaryLatch indexCreateAllowToFinish = new BinaryLatch();
+        Thread indexCreator = new Thread( () ->
+        {
+            try ( Transaction tx = db.beginTx() )
+            {
+                db.execute( "CALL db.index.fulltext.createRelationshipIndex('myIndex', ['REL'], ['prop'] )" ).close();
+                indexCreateStarted.release();
+                indexCreateAllowToFinish.await();
+                tx.success();
+            }
+        } );
+        indexCreator.start();
+
+        // When
+        indexCreateStarted.await();
+        List<RelationshipType> relTypes;
+        try ( Transaction ignored = db.beginTx() )
+        {
+            relTypes = asList( db.getAllRelationshipTypesInUse() );
+        }
+        indexCreateAllowToFinish.release();
+        indexCreator.join();
+
+        // Then
+        assertEquals( 1, relTypes.size() );
+        assertThat( map( RelationshipType::name, relTypes ), hasItems( relType.name() ) );
     }
 
     @Test
@@ -471,7 +555,7 @@ public class LabelsAcceptanceTest
         } // tx.close(); - here comes the exception
 
         // THEN
-        try ( Transaction transaction = db.beginTx() )
+        try ( Transaction ignored = db.beginTx() )
         {
             assertEquals( 0, Iterables.count( db.getAllNodes() ) );
         }
@@ -509,11 +593,9 @@ public class LabelsAcceptanceTest
             node.setProperty( "name", "Horst" );
             node.setProperty( "age", "72" );
 
-            Iterator<String> iterator = node.getPropertyKeys().iterator();
-
-            while ( iterator.hasNext() )
+            for ( String key : node.getPropertyKeys() )
             {
-                node.removeProperty( iterator.next() );
+                node.removeProperty( key );
             }
             tx.success();
         }
@@ -550,7 +632,7 @@ public class LabelsAcceptanceTest
         }
 
         // then
-        try ( Transaction transaction = db.beginTx() )
+        try ( Transaction ignored = db.beginTx() )
         {
             List<String> labels = new ArrayList<>();
             for ( Label label : node.getLabels() )
@@ -562,7 +644,7 @@ public class LabelsAcceptanceTest
     }
 
     @Test
-    public void shouldAllowManyLabelsAndPropertyCursor() throws Exception
+    public void shouldAllowManyLabelsAndPropertyCursor()
     {
         int propertyCount = 10;
         int labelCount = 15;
@@ -658,7 +740,6 @@ public class LabelsAcceptanceTest
             Set<String> labelNames = Iterables.asList( node.getLabels() )
                     .stream()
                     .map( Label::name )
-                    .sorted()
                     .collect( toSet() );
 
             assertEquals( count, labelNames.size() );

@@ -24,6 +24,7 @@ import org.junit.Test;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Iterator;
 import java.util.Set;
 
 import org.neo4j.helpers.collection.Iterables;
@@ -35,6 +36,7 @@ import org.neo4j.kernel.api.schema.index.TestIndexDescriptorFactory;
 import org.neo4j.kernel.impl.api.index.IndexProviderMap;
 import org.neo4j.kernel.impl.constraints.StandardConstraintSemantics;
 import org.neo4j.kernel.impl.store.record.ConstraintRule;
+import org.neo4j.storageengine.api.schema.CapableIndexDescriptor;
 import org.neo4j.storageengine.api.schema.IndexDescriptor;
 import org.neo4j.storageengine.api.schema.SchemaRule;
 import org.neo4j.storageengine.api.schema.StoreIndexDescriptor;
@@ -46,6 +48,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
+import static org.junit.Assert.fail;
 import static org.neo4j.helpers.collection.Iterators.asSet;
 import static org.neo4j.kernel.api.schema.SchemaDescriptorFactory.forLabel;
 import static org.neo4j.kernel.api.schema.constraints.ConstraintDescriptorFactory.uniqueForLabel;
@@ -205,6 +208,37 @@ public class SchemaCacheTest
 
         // Then
         assertThat( descriptor.schema(), equalTo( schema ) );
+    }
+
+    @Test
+    public void schemaCacheSnapshotsShouldBeReadOnly()
+    {
+        // Given
+        SchemaCache cache = newSchemaCache();
+
+        cache.addSchemaRule( newIndexRule( 1L, 1, 2 ) );
+        cache.addSchemaRule( newIndexRule( 2L, 2, 3 ) );
+
+        SchemaCache snapshot = cache.snapshot();
+
+        cache.addSchemaRule( newIndexRule( 3L, 1, 2 ) );
+
+        // When
+        Set<CapableIndexDescriptor> indexes = asSet( snapshot.indexDescriptorsForLabel( 1 ) );
+
+        // Then
+        Set<StoreIndexDescriptor> expected = asSet( newIndexRule( 1L, 1, 2 ) );
+        assertEquals( expected, indexes );
+
+        try
+        {
+            snapshot.addSchemaRule( newIndexRule( 3L, 1, 2 ) );
+            fail( "SchemaCache snapshots should not permit mutation." );
+        }
+        catch ( IllegalStateException ignore )
+        {
+            // Good.
+        }
     }
 
     @Test

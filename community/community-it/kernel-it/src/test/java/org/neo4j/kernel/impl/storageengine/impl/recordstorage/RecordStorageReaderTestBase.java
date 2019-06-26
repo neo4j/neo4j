@@ -49,7 +49,6 @@ import static org.neo4j.graphdb.Label.label;
  */
 public abstract class RecordStorageReaderTestBase
 {
-    @SuppressWarnings( "deprecation" )
     protected GraphDatabaseAPI db;
     protected final Label label1 = label( "FirstLabel" );
     protected final Label label2 = label( "SecondLabel" );
