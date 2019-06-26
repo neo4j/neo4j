@@ -41,6 +41,7 @@ import java.util.regex.Pattern;
 import org.neo4j.internal.kernel.api.security.AuthSubject;
 import org.neo4j.internal.kernel.api.security.AuthenticationResult;
 import org.neo4j.internal.kernel.api.security.LoginContext;
+import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.api.exceptions.InvalidArgumentsException;
 import org.neo4j.kernel.api.security.AuthManager;
 import org.neo4j.kernel.api.security.AuthToken;
@@ -417,6 +418,11 @@ public class BasicSystemGraphRealm extends AuthorizingRealm implements AuthManag
     public Credential deserialize( String part ) throws Throwable
     {
         return SystemGraphCredential.deserialize( part, secureHasher );
+    }
+
+    @Override
+    public void log( String message, SecurityContext securityContext )
+    {
     }
 
     private void assertValidScheme( Map<String,Object> token ) throws InvalidAuthTokenException

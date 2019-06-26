@@ -25,6 +25,7 @@ import org.neo4j.cypher.internal.logical.plans
 import org.neo4j.cypher.internal.logical.plans.{LogicalPlan, NameValidator, ResolvedCall}
 import org.neo4j.cypher.internal.planner.spi.ProcedurePlannerName
 import org.neo4j.cypher.internal.v4_0.ast._
+import org.neo4j.cypher.internal.v4_0.ast.prettifier.{ExpressionStringifier, Prettifier}
 import org.neo4j.cypher.internal.v4_0.ast.semantics.{SemanticCheckResult, SemanticState}
 import org.neo4j.cypher.internal.v4_0.frontend.phases.CompilationPhaseTracer.CompilationPhase
 import org.neo4j.cypher.internal.v4_0.frontend.phases.CompilationPhaseTracer.CompilationPhase.PIPE_BUILDING
@@ -36,6 +37,8 @@ import org.neo4j.cypher.internal.v4_0.util.attribution.SequentialIdGen
   * This planner takes on queries that run at the DBMS level for multi-database management
   */
 case object MultiDatabaseManagementCommandPlanBuilder extends Phase[PlannerContext, BaseState, LogicalPlanState] {
+
+  val prettifier = Prettifier(ExpressionStringifier())
 
   override def phase: CompilationPhase = PIPE_BUILDING
 
@@ -51,68 +54,73 @@ case object MultiDatabaseManagementCommandPlanBuilder extends Phase[PlannerConte
         Some(plans.ShowUsers())
 
       // CREATE USER foo
-      case CreateUser(userName, initialStringPassword, initialParameterPassword, requirePasswordChange, suspended) =>
+      case c@CreateUser(userName, initialStringPassword, initialParameterPassword, requirePasswordChange, suspended) =>
         NameValidator.assertValidUsername(userName)
-        Some(plans.CreateUser(userName, initialStringPassword, initialParameterPassword, requirePasswordChange, suspended))
+        Some(plans.LogSystemCommand(
+          plans.CreateUser(userName, initialStringPassword, initialParameterPassword, requirePasswordChange, suspended),
+          prettifier.asString(c)))
 
       // DROP USER foo
-      case DropUser(userName) =>
-        Some(plans.DropUser(userName))
+      case c@DropUser(userName) =>
+        Some(plans.LogSystemCommand(
+          plans.DropUser(userName),
+          prettifier.asString(c)))
 
       // ALTER USER foo
-      case AlterUser(userName, initialStringPassword, initialParameterPassword, requirePasswordChange, suspended) =>
-        Some(plans.AlterUser(userName, initialStringPassword, initialParameterPassword, requirePasswordChange, suspended))
+      case c@AlterUser(userName, initialStringPassword, initialParameterPassword, requirePasswordChange, suspended) =>
+        Some(plans.LogSystemCommand(
+          plans.AlterUser(userName, initialStringPassword, initialParameterPassword, requirePasswordChange, suspended),
+          prettifier.asString(c)))
 
       // SHOW [ ALL | POPULATED ] ROLES [ WITH USERS ]
       case ShowRoles(withUsers, showAll) =>
         Some(plans.ShowRoles(withUsers, showAll))
 
       // CREATE ROLE foo
-      case CreateRole(roleName, None) =>
+      case c@CreateRole(roleName, None) =>
         NameValidator.assertValidRoleName(roleName)
-        Some(plans.CreateRole(None, roleName))
+        Some(plans.LogSystemCommand(plans.CreateRole(None, roleName), prettifier.asString(c)))
 
       // CREATE ROLE foo AS COPY OF bar
-      case CreateRole(roleName, Some(fromName)) =>
+      case c@CreateRole(roleName, Some(fromName)) =>
         NameValidator.assertValidRoleName(roleName)
-        Some(plans.CopyRolePrivileges(
+        Some(plans.LogSystemCommand(plans.CopyRolePrivileges(
           Some(plans.CopyRolePrivileges(
             Some(plans.CreateRole(
               Some(plans.RequireRole(None, fromName)), roleName)
             ), roleName, fromName, "GRANTED")
-          ), roleName, fromName, "DENIED")
-        )
+          ), roleName, fromName, "DENIED"), prettifier.asString(c)))
 
       // DROP ROLE foo
-      case DropRole(roleName) =>
-        Some(plans.DropRole(roleName))
+      case c@DropRole(roleName) =>
+        Some(plans.LogSystemCommand(plans.DropRole(roleName), prettifier.asString(c)))
 
       // GRANT roles TO users
-      case GrantRolesToUsers(roleNames, userNames) =>
+      case c@GrantRolesToUsers(roleNames, userNames) =>
         (for (userName <- userNames; roleName <- roleNames) yield {
           roleName -> userName
         }).foldLeft(Option.empty[plans.GrantRoleToUser]) {
           case (source, (userName, roleName)) => Some(plans.GrantRoleToUser(source, userName, roleName))
-        }
+        }.map(plan => plans.LogSystemCommand(plan, prettifier.asString(c)))
 
       // REVOKE roles FROM users
-      case RevokeRolesFromUsers(roleNames, userNames) =>
+      case c@RevokeRolesFromUsers(roleNames, userNames) =>
         (for (userName <- userNames; roleName <- roleNames) yield {
           roleName -> userName
         }).foldLeft(Option.empty[plans.RevokeRoleFromUser]) {
           case (source, (userName, roleName)) => Some(plans.RevokeRoleFromUser(source, userName, roleName))
-        }
+        }.map(plan => plans.LogSystemCommand(plan, prettifier.asString(c)))
 
       // GRANT TRAVERSE ON GRAPH foo ELEMENTS A (*) TO role
-      case GrantPrivilege(TraversePrivilege(), _, database, segments, roleNames) =>
+      case c@GrantPrivilege(TraversePrivilege(), _, database, segments, roleNames) =>
         (for (roleName <- roleNames; segment <- segments.simplify) yield {
           roleName -> segment
         }).foldLeft(Option.empty[plans.GrantTraverse]) {
           case (source, (roleName, segment)) => Some(plans.GrantTraverse(source, database, segment, roleName))
-        }
+        }.map(plan => plans.LogSystemCommand(plan, prettifier.asString(c)))
 
       // REVOKE TRAVERSE ON GRAPH foo ELEMENTS A (*) FROM role
-      case RevokePrivilege(TraversePrivilege(), _, database, segments, roleNames) =>
+      case c@RevokePrivilege(TraversePrivilege(), _, database, segments, roleNames) =>
         (for (roleName <- roleNames; segment <- segments.simplify) yield {
           roleName -> segment
         }).foldLeft(Option.empty[plans.RevokeTraverse]) {
@@ -133,11 +141,11 @@ case object MultiDatabaseManagementCommandPlanBuilder extends Phase[PlannerConte
           roleName -> segment
         }).foldLeft(Option.empty[plans.RevokeWrite]) {
           case (source, (roleName, segment)) => Some(plans.RevokeWrite(source, AllResource()(InputPosition.NONE), database, segment, roleName))
-        }
+        }.map(plan => plans.LogSystemCommand(plan, prettifier.asString(c)))
 
       // GRANT READ (prop) ON GRAPH foo NODES A (*) TO role
       // GRANT MATCH (prop) ON GRAPH foo NODES A (*) TO role
-      case GrantPrivilege(privilege, resources, database, segments, roleNames) =>
+      case c@GrantPrivilege(privilege, resources, database, segments, roleNames) =>
         val combos = for (roleName <- roleNames; segment <- segments.simplify; resource <- resources.simplify) yield {
           roleName -> (segment, resource)
         }
@@ -149,16 +157,16 @@ case object MultiDatabaseManagementCommandPlanBuilder extends Phase[PlannerConte
         }
         combos.foldLeft(plan) {
           case (source, (roleName, (segment, resource))) => Some(plans.GrantRead(source, resource, database, segment, roleName))
-        }
+        }.map(plan => plans.LogSystemCommand(plan, prettifier.asString(c)))
 
       // REVOKE READ (prop) ON GRAPH foo NODES A (*) FROM role
       // REVOKE MATCH (prop) ON GRAPH foo NODES A (*) FROM role
-      case RevokePrivilege(_, resources, database, segments, roleNames) =>
+      case c@RevokePrivilege(_, resources, database, segments, roleNames) =>
         (for (roleName <- roleNames; segment <- segments.simplify; resource <- resources.simplify) yield {
           roleName -> (segment, resource)
         }).foldLeft(Option.empty[plans.RevokeRead]) {
           case (source, (roleName, (segment, resource))) => Some(plans.RevokeRead(source, resource, database, segment, roleName))
-        }
+        }.map(plan => plans.LogSystemCommand(plan, prettifier.asString(c)))
 
       // SHOW [ALL | USER user | ROLE role] PRIVILEGES
       case ShowPrivileges(scope) =>

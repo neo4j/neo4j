@@ -22,6 +22,7 @@ package org.neo4j.kernel.api.security;
 import java.util.Map;
 
 import org.neo4j.internal.kernel.api.security.LoginContext;
+import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.api.security.exception.InvalidAuthTokenException;
 import org.neo4j.kernel.impl.security.Credential;
 import org.neo4j.kernel.lifecycle.Lifecycle;
@@ -45,6 +46,8 @@ public interface AuthManager extends Lifecycle
     Credential createCredentialForPassword( byte[] password );
 
     Credential deserialize( String part ) throws Throwable;
+
+    void log( String message, SecurityContext securityContext );
 
     /**
      * Implementation that does no authentication.
@@ -88,6 +91,11 @@ public interface AuthManager extends Lifecycle
         public Credential deserialize( String part )
         {
             return Credential.INACCESSIBLE;
+        }
+
+        @Override
+        public void log( String message, SecurityContext securityContext )
+        {
         }
     };
 }

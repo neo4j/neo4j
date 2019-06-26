@@ -80,6 +80,8 @@ case class CypherCurrentCompiler[CONTEXT <: RuntimeContext](planner: CypherPlann
 
     def resolveParameterForManagementCommands(logicalPlan: LogicalPlan): LogicalPlan = {
       logicalPlan match {
+        case l@LogSystemCommand(source, _) =>
+          LogSystemCommand(resolveParameterForManagementCommands(source), l.command)(new SequentialIdGen(l.id.x + 1))
         case c@CreateUser(_, _, Some(paramPassword), _, _) =>
           val paramString = params.get(paramPassword.name) match {
             case param: TextValue => param.stringValue()
@@ -121,8 +123,8 @@ case class CypherCurrentCompiler[CONTEXT <: RuntimeContext](planner: CypherPlann
                                     planState.hasLoadCSV,
                                     planState.maybePeriodicCommit.flatMap(_.map(x => PeriodicCommitInfo(x.batchSize))))
 
-    val currentUser = transactionalContext.securityContext().subject().username()
-    val executionPlan: ExecutionPlan = runtime.compileToExecutable(logicalQuery, runtimeContext, currentUser)
+    val securityContext = transactionalContext.securityContext()
+    val executionPlan: ExecutionPlan = runtime.compileToExecutable(logicalQuery, runtimeContext, securityContext)
 
     new CypherExecutableQuery(
       logicalPlan,

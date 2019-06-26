@@ -31,6 +31,7 @@ import org.neo4j.cypher.internal.v4_0.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.v4_0.frontend.phases.RecordingNotificationLogger
 import org.neo4j.cypher.internal.v4_0.util.InternalNotification
 import org.neo4j.cypher.{CypherMorselRuntimeSchedulerOption, CypherRuntimeOption, RuntimeUnsupportedException, exceptionHandler}
+import org.neo4j.internal.kernel.api.security.SecurityContext
 import org.neo4j.internal.kernel.api.{Cursor, SchemaRead}
 import org.neo4j.logging.Log
 
@@ -49,10 +50,10 @@ trait CypherRuntime[-CONTEXT <: RuntimeContext] {
     *
     * @param logicalQuery the logical query to compile
     * @param context the compilation context
-    * @param username the name of the current user
+    * @param securityContext the security context for the current user
     * @return the executable plan
     */
-  def compileToExecutable(logicalQuery: LogicalQuery, context: CONTEXT, username: String = null): ExecutionPlan
+  def compileToExecutable(logicalQuery: LogicalQuery, context: CONTEXT, securityContext: SecurityContext = null): ExecutionPlan
 
   def name: String
 }
@@ -128,7 +129,7 @@ class RuntimeResourceLeakException(msg: String) extends IllegalStateException(ms
 object UnknownRuntime extends CypherRuntime[RuntimeContext] {
   override def name: String = "unknown"
 
-  override def compileToExecutable(logicalQuery: LogicalQuery, context: RuntimeContext, username: String): ExecutionPlan =
+  override def compileToExecutable(logicalQuery: LogicalQuery, context: RuntimeContext, securityContext: SecurityContext): ExecutionPlan =
     throw new CantCompileQueryException()
 }
 
@@ -148,7 +149,7 @@ class FallbackRuntime[CONTEXT <: RuntimeContext](runtimes: Seq[CypherRuntime[CON
     throw new RuntimeUnsupportedException(message, originalException)
   }
 
-  override def compileToExecutable(logicalQuery: LogicalQuery, context: CONTEXT, username: String): ExecutionPlan = {
+  override def compileToExecutable(logicalQuery: LogicalQuery, context: CONTEXT, securityContext: SecurityContext): ExecutionPlan = {
     val logger = new RecordingNotificationLogger()
 
     var i = 0

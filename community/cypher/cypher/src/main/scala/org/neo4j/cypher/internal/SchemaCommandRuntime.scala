@@ -26,6 +26,7 @@ import org.neo4j.cypher.internal.procs.SchemaWriteExecutionPlan
 import org.neo4j.cypher.internal.runtime._
 import org.neo4j.cypher.internal.v4_0.expressions.{LabelName, PropertyKeyName, RelTypeName}
 import org.neo4j.cypher.internal.v4_0.util.{LabelId, PropertyKeyId}
+import org.neo4j.internal.kernel.api.security.SecurityContext
 
 /**
   * This runtime takes on queries that require no planning such as schema commands
@@ -33,7 +34,7 @@ import org.neo4j.cypher.internal.v4_0.util.{LabelId, PropertyKeyId}
 object SchemaCommandRuntime extends CypherRuntime[RuntimeContext] {
   override def name: String = "schema"
 
-  override def compileToExecutable(state: LogicalQuery, context: RuntimeContext, username: String): ExecutionPlan = {
+  override def compileToExecutable(state: LogicalQuery, context: RuntimeContext, securityContext: SecurityContext): ExecutionPlan = {
 
     def throwCantCompile(unknownPlan: LogicalPlan): Nothing = {
       throw new CantCompileQueryException(
@@ -125,7 +126,7 @@ object SchemaCommandRuntime extends CypherRuntime[RuntimeContext] {
             })
   }
 
-  def isApplicable(logicalPlanState: LogicalPlanState) = logicalToExecutable.isDefinedAt(logicalPlanState.maybeLogicalPlan.get)
+  def isApplicable(logicalPlanState: LogicalPlanState): Boolean = logicalToExecutable.isDefinedAt(logicalPlanState.maybeLogicalPlan.get)
 
   implicit private def labelToId(ctx: QueryContext)(label: LabelName): LabelId =
     LabelId(ctx.getOrCreateLabelId(label.name))

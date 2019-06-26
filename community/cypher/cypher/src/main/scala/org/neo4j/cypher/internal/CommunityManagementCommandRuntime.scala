@@ -27,6 +27,7 @@ import org.neo4j.cypher.internal.compiler.planner.CantCompileQueryException
 import org.neo4j.cypher.internal.logical.plans._
 import org.neo4j.cypher.internal.procs.{QueryHandler, SystemCommandExecutionPlan, UpdatingSystemCommandExecutionPlan}
 import org.neo4j.cypher.internal.runtime._
+import org.neo4j.internal.kernel.api.security.SecurityContext
 import org.neo4j.kernel.api.exceptions.InvalidArgumentsException
 import org.neo4j.kernel.api.security.AuthManager
 import org.neo4j.string.UTF8
@@ -39,7 +40,7 @@ import org.neo4j.values.virtual.VirtualValues
 case class CommunityManagementCommandRuntime(normalExecutionEngine: ExecutionEngine, resolver: DependencyResolver) extends ManagementCommandRuntime {
   override def name: String = "community management-commands"
 
-  override def compileToExecutable(state: LogicalQuery, context: RuntimeContext, username: String): ExecutionPlan = {
+  override def compileToExecutable(state: LogicalQuery, context: RuntimeContext, securityContext: SecurityContext): ExecutionPlan = {
 
     def throwCantCompile(unknownPlan: LogicalPlan): Nothing = {
       throw new CantCompileQueryException(
@@ -49,14 +50,14 @@ case class CommunityManagementCommandRuntime(normalExecutionEngine: ExecutionEng
     val (planWithSlottedParameters, parameterMapping) = slottedParameters(state.logicalPlan)
 
     // Either the logical plan is a command that the partial function logicalToExecutable provides/understands OR we throw an error
-    logicalToExecutable.applyOrElse(planWithSlottedParameters, throwCantCompile).apply(context, parameterMapping, username)
+    logicalToExecutable.applyOrElse(planWithSlottedParameters, throwCantCompile).apply(context, parameterMapping, securityContext)
   }
 
   private lazy val authManager = {
     resolver.resolveDependency(classOf[AuthManager])
   }
 
-  val logicalToExecutable: PartialFunction[LogicalPlan, (RuntimeContext, ParameterMapping, String) => ExecutionPlan] = {
+  val logicalToExecutable: PartialFunction[LogicalPlan, (RuntimeContext, ParameterMapping, SecurityContext) => ExecutionPlan] = {
 
     // SHOW USERS
     case ShowUsers() => (_, _, _) =>
@@ -104,8 +105,8 @@ case class CommunityManagementCommandRuntime(normalExecutionEngine: ExecutionEng
       throw new IllegalStateException("Password not correctly supplied.")
 
     // DROP USER foo
-    case DropUser(userName) => (_, _, currentUser) =>
-      if (userName.equals(currentUser)) throw new InvalidArgumentsException(s"Deleting yourself (user '$userName') is not allowed.")
+    case DropUser(userName) => (_, _, securityContext) =>
+      if (securityContext.subject().hasUsername(userName)) throw new InvalidArgumentsException(s"Deleting yourself (user '$userName') is not allowed.")
       UpdatingSystemCommandExecutionPlan("DropUser", normalExecutionEngine,
         """MATCH (user:User {name: $name}) DETACH DELETE user
           |RETURN user""".stripMargin,

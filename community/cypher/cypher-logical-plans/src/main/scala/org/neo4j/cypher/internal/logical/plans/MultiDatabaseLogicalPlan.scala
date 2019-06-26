@@ -83,6 +83,8 @@ case class RevokeWrite(source: Option[PrivilegePlan], resource: ActionResource, 
 
 case class ShowPrivileges(scope: ShowPrivilegeScope)(implicit idGen: IdGen) extends SecurityManagementLogicalPlan
 
+case class LogSystemCommand(source: LogicalPlan, command: String)(implicit idGen: IdGen) extends SecurityManagementLogicalPlan
+
 // Database management commands
 case class ShowDatabases()(implicit idGen: IdGen) extends DatabaseManagementLogicalPlan
 case class ShowDefaultDatabase()(implicit idGen: IdGen) extends DatabaseManagementLogicalPlan
