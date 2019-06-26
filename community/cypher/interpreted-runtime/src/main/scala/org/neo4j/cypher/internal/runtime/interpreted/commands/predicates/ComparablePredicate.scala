@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.commands.predicates
 
-import org.neo4j.cypher.internal.runtime.{ExecutionContext, IsNoValue}
+import org.neo4j.cypher.internal.runtime.{ExecutionContext, IsFalseValue, IsNoValue, IsTrueValue}
 import org.neo4j.cypher.internal.runtime.interpreted.commands.AstNode
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.{Expression, Literal, Variable}
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
@@ -35,8 +35,8 @@ abstract sealed class ComparablePredicate(val left: Expression, val right: Expre
     val l = left(m, state)
     val r = right(m, state)
     comparator(l, r) match {
-      case Values.TRUE => Some(true)
-      case Values.FALSE => Some(false)
+      case IsTrueValue() => Some(true)
+      case IsFalseValue() => Some(false)
       case IsNoValue() => None
     }
   }
