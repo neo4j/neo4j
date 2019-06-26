@@ -27,6 +27,8 @@ import org.neo4j.index.internal.gbptree.TreeNode.Overflow;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.context.CursorContext;
 
+import static org.neo4j.index.internal.gbptree.GBPPointerType.LEFT_SIBLING;
+import static org.neo4j.index.internal.gbptree.GBPPointerType.RIGHT_SIBLING;
 import static org.neo4j.index.internal.gbptree.KeySearch.childPositionOf;
 import static org.neo4j.index.internal.gbptree.KeySearch.isHit;
 import static org.neo4j.index.internal.gbptree.KeySearch.positionOf;
@@ -322,7 +324,7 @@ class InternalTreeLogic<KEY,VALUE>
             }
 
             long childId = bTreeNode.childAt( cursor, childPos, stableGeneration, unstableGeneration );
-            PointerChecking.checkPointer( childId, false );
+            checkChildPointer( childId, cursor, childPos, bTreeNode, stableGeneration, unstableGeneration );
 
             TreeNode.goTo( cursor, "child", childId );
             level.treeNodeId = cursor.getCurrentPageId();
@@ -489,7 +491,7 @@ class InternalTreeLogic<KEY,VALUE>
     {
         long current = cursor.getCurrentPageId();
         long oldRight = TreeNode.rightSibling( cursor, stableGeneration, unstableGeneration );
-        PointerChecking.checkPointer( oldRight, true );
+        checkRightSiblingPointer( oldRight,true, cursor, stableGeneration, unstableGeneration );
         long newRight = idProvider.acquireNewId( stableGeneration, unstableGeneration, cursorContext );
 
         // Find position to insert new key
@@ -662,7 +664,7 @@ class InternalTreeLogic<KEY,VALUE>
 
         long current = cursor.getCurrentPageId();
         long oldRight = TreeNode.rightSibling( cursor, stableGeneration, unstableGeneration );
-        PointerChecking.checkPointer( oldRight, true );
+        checkRightSiblingPointer( oldRight, true, cursor, stableGeneration, unstableGeneration );
         long newRight = idProvider.acquireNewId( stableGeneration, unstableGeneration, cursorContext );
 
         // BALANCE KEYS AND VALUES
@@ -909,7 +911,7 @@ class InternalTreeLogic<KEY,VALUE>
         {
             long oldRoot = cursor.getCurrentPageId();
             long onlyChildOfRoot = bTreeNode.childAt( cursor, 0, stableGeneration, unstableGeneration );
-            PointerChecking.checkPointer( onlyChildOfRoot, false );
+            checkChildPointer( onlyChildOfRoot, cursor, 0, bTreeNode, stableGeneration, unstableGeneration );
 
             structurePropagation.hasMidChildUpdate = true;
             structurePropagation.midChild = onlyChildOfRoot;
@@ -936,7 +938,7 @@ class InternalTreeLogic<KEY,VALUE>
     {
         long currentPageId = cursor.getCurrentPageId();
         long subtree = bTreeNode.childAt( cursor, subtreePosition, stableGeneration, unstableGeneration );
-        PointerChecking.checkPointer( subtree, false );
+        checkChildPointer( subtree, cursor, subtreePosition, bTreeNode, stableGeneration, unstableGeneration );
 
         TreeNode.goTo( cursor, "child", subtree );
         boolean foundKeyBelow = bubbleRightmostKeyRecursive( cursor, structurePropagation, currentPageId,
@@ -981,7 +983,7 @@ class InternalTreeLogic<KEY,VALUE>
             long currentPageId = cursor.getCurrentPageId();
             int keyCount = TreeNode.keyCount( cursor );
             long rightmostSubtree = bTreeNode.childAt( cursor, keyCount, stableGeneration, unstableGeneration );
-            PointerChecking.checkPointer( rightmostSubtree, false );
+            checkChildPointer( rightmostSubtree, cursor, keyCount, bTreeNode, stableGeneration, unstableGeneration );
 
             TreeNode.goTo( cursor, "child", rightmostSubtree );
 
@@ -1043,7 +1045,7 @@ class InternalTreeLogic<KEY,VALUE>
     {
         long leftSibling = TreeNode.leftSibling( cursor, stableGeneration, unstableGeneration );
         // Left sibling is not allowed to be NO_NODE here because that means there is a child node with no parent
-        PointerChecking.checkPointer( leftSibling, false );
+        checkLeftSiblingPointer( leftSibling, false, cursor, stableGeneration, unstableGeneration );
 
         try ( PageCursor leftSiblingCursor = cursor.openLinkedCursor( leftSibling ) )
         {
@@ -1057,8 +1059,8 @@ class InternalTreeLogic<KEY,VALUE>
             long unstableGeneration ) throws IOException
     {
         long rightSibling = TreeNode.rightSibling( cursor, stableGeneration, unstableGeneration );
-        // Left sibling is not allowed to be NO_NODE here because that means there is a child node with no parent
-        PointerChecking.checkPointer( rightSibling, false );
+        // Right sibling is not allowed to be NO_NODE here because that means there is a child node with no parent
+        checkRightSiblingPointer( rightSibling, false, cursor, stableGeneration, unstableGeneration );
 
         try ( PageCursor rightSiblingCursor = cursor.openLinkedCursor( rightSibling ) )
         {
@@ -1114,9 +1116,9 @@ class InternalTreeLogic<KEY,VALUE>
             long stableGeneration, long unstableGeneration, CursorContext cursorContext ) throws IOException
     {
         long leftSibling = TreeNode.leftSibling( cursor, stableGeneration, unstableGeneration );
-        PointerChecking.checkPointer( leftSibling, true );
+        checkLeftSiblingPointer( leftSibling, true, cursor, stableGeneration, unstableGeneration );
         long rightSibling = TreeNode.rightSibling( cursor, stableGeneration, unstableGeneration );
-        PointerChecking.checkPointer( rightSibling, true );
+        checkRightSiblingPointer( rightSibling, true, cursor, stableGeneration, unstableGeneration );
 
         if ( TreeNode.isNode( leftSibling ) )
         {
@@ -1166,9 +1168,9 @@ class InternalTreeLogic<KEY,VALUE>
     {
         long currentId = cursor.getCurrentPageId();
         long leftSibling = TreeNode.leftSibling( cursor, stableGeneration, unstableGeneration );
-        PointerChecking.checkPointer( leftSibling, true );
+        checkLeftSiblingPointer( leftSibling, true, cursor, stableGeneration, unstableGeneration );
         long rightSibling = TreeNode. rightSibling( cursor, stableGeneration, unstableGeneration );
-        PointerChecking.checkPointer( rightSibling, true );
+        checkRightSiblingPointer( rightSibling, true, cursor, stableGeneration, unstableGeneration );
         if ( TreeNode.isNode( leftSibling ) )
         {
             TreeNode.goTo( cursor, "left sibling", leftSibling );
@@ -1329,9 +1331,9 @@ class InternalTreeLogic<KEY,VALUE>
         //              v                                     v                                      v
         // (leftSiblingOfStableNode) -[rightSibling]-> (newUnstableNode) <-[leftSibling]- (rightSiblingOfStableNode)
         long leftSibling = TreeNode.leftSibling( cursor, stableGeneration, unstableGeneration );
-        PointerChecking.checkPointer( leftSibling, true );
+        checkLeftSiblingPointer( leftSibling, true, cursor, stableGeneration, unstableGeneration );
         long rightSibling = TreeNode.rightSibling( cursor, stableGeneration, unstableGeneration );
-        PointerChecking.checkPointer( rightSibling, true );
+        checkRightSiblingPointer( rightSibling, true, cursor, stableGeneration, unstableGeneration );
         if ( TreeNode.isNode( leftSibling ) )
         {
             TreeNode.goTo( cursor, "left sibling in split", leftSibling );
@@ -1350,5 +1352,25 @@ class InternalTreeLogic<KEY,VALUE>
         structureUpdate.update( structurePropagation, successorId );
 
         idProvider.releaseId( stableGeneration, unstableGeneration, oldId, cursorContext );
+    }
+
+    private static <KEY, VALUE> void checkChildPointer( long childPointer, PageCursor cursor, int childPos, TreeNode<KEY,VALUE> bTreeNode,
+            long stableGeneration, long unstableGeneration )
+    {
+        PointerChecking
+                .checkPointer( childPointer, false, cursor.getCurrentPageId(), GBPPointerType.child( childPos ), stableGeneration, unstableGeneration,
+                        cursor, bTreeNode.childOffset( childPos ) );
+    }
+
+    private static void checkRightSiblingPointer( long siblingPointer, boolean allowNoNode, PageCursor cursor, long stableGeneration, long unstableGeneration )
+    {
+        PointerChecking.checkPointer( siblingPointer, allowNoNode, cursor.getCurrentPageId(), RIGHT_SIBLING, stableGeneration, unstableGeneration, cursor,
+                TreeNode.BYTE_POS_RIGHTSIBLING );
+    }
+
+    private static void checkLeftSiblingPointer( long siblingPointer, boolean allowNoNode, PageCursor cursor, long stableGeneration, long unstableGeneration )
+    {
+        PointerChecking.checkPointer( siblingPointer, allowNoNode, cursor.getCurrentPageId(), LEFT_SIBLING, stableGeneration, unstableGeneration, cursor,
+                TreeNode.BYTE_POS_LEFTSIBLING );
     }
 }

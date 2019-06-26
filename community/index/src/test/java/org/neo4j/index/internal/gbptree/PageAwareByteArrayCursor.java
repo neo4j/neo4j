@@ -109,7 +109,7 @@ class PageAwareByteArrayCursor extends PageCursor
         assertPages();
 
         byte[] page = page( currentPageId );
-        current = wrap( page, 0, page.length );
+        current = wrap( page, 0, page.length, currentPageId );
         return true;
     }
 

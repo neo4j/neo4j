@@ -195,8 +195,9 @@ class TreeNodeFixedSize<KEY,VALUE> extends TreeNode<KEY,VALUE>
     @Override
     void setChildAt( PageCursor cursor, long child, int pos, long stableGeneration, long unstableGeneration )
     {
-        cursor.setOffset( childOffset( pos ) );
-        writeChild( cursor, child, stableGeneration, unstableGeneration );
+        int childOffset = childOffset( pos );
+        cursor.setOffset( childOffset );
+        writeChild( cursor, child, stableGeneration, unstableGeneration, pos, childOffset );
     }
 
     @Override

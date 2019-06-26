@@ -147,8 +147,7 @@ class GenerationSafePointerPairTest
         expectedWriteOutcome.verifyWrite( cursor, written, stateA, stateB, preStatePointerA, preStatePointerB );
     }
 
-    private static void assertFailure( long result, long readOrWrite, int generationComparison,
-            byte pointerStateA, byte pointerStateB )
+    private static void assertFailure( long result, long readOrWrite, int generationComparison, byte pointerStateA, byte pointerStateB )
     {
         assertFalse( GenerationSafePointerPair.isSuccess( result ) );
 
@@ -162,7 +161,12 @@ class GenerationSafePointerPairTest
         assertEquals( pointerStateB, pointerStateFromResult( result, SHIFT_STATE_B ) );
 
         // Failure description
-        String failureDescription = failureDescription( result );
+        int nodeId = 0;
+        String pointerType = "unknown";
+        String gspStringA = "gspStringA";
+        String gspStringB = "gspStringB";
+        String failureDescription =
+                failureDescription( result, nodeId, pointerType, STABLE_GENERATION, UNSTABLE_GENERATION, gspStringA, gspStringB, GSPP_OFFSET );
         assertThat( failureDescription ).contains( isRead( result ) ? "READ" : "WRITE" );
         if ( generationComparison != EXPECTED_GENERATION_DISREGARD )
         {
@@ -170,6 +174,10 @@ class GenerationSafePointerPairTest
         }
         assertThat( failureDescription ).contains( pointerStateName( pointerStateA ) );
         assertThat( failureDescription ).contains( pointerStateName( pointerStateB ) );
+        assertThat( failureDescription ).contains( "Pointer[type=" + pointerType + ", offset=" + GSPP_OFFSET + ", nodeId=" + nodeId + "]" );
+        assertThat( failureDescription ).contains( gspStringA );
+        assertThat( failureDescription ).contains( gspStringB );
+        assertThat( failureDescription ).contains( "stableGeneration=" + STABLE_GENERATION + ", unstableGeneration=" + UNSTABLE_GENERATION );
     }
 
     private static String generationComparisonName( int generationComparison )

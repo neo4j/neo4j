@@ -21,6 +21,7 @@ package org.neo4j.index.internal.gbptree;
 
 import org.neo4j.io.pagecache.PageCursor;
 
+import static java.lang.String.format;
 import static org.neo4j.index.internal.gbptree.PageCursorUtil.get6BLong;
 import static org.neo4j.index.internal.gbptree.PageCursorUtil.getUnsignedInt;
 import static org.neo4j.index.internal.gbptree.PageCursorUtil.put6BLong;
@@ -157,5 +158,11 @@ class GenerationSafePointer
     public static boolean isEmpty( long generation, long pointer )
     {
         return generation == EMPTY_GENERATION && pointer == EMPTY_POINTER;
+    }
+
+    static String toString( long generation, long pointer, short checksum, boolean correctChecksum )
+    {
+        return format( "GSP[generation=%d, pointer=%d, checksum=%s]",
+                generation, pointer, checksum + (correctChecksum ? "(OK)" : "(NOT OK)") );
     }
 }

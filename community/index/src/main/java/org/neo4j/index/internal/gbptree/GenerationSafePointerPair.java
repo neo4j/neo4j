@@ -128,7 +128,7 @@ class GenerationSafePointerPair
 
     /**
      * Reads a GSPP, returning the read pointer or a failure. Check success/failure using {@link #isSuccess(long)}
-     * and if failure extract more information using {@link #failureDescription(long)}.
+     * and if failure extract more information using {@link #failureDescription(long, long, String, long, long, String, String, int)}.
      *
      * @param cursor {@link PageCursor} to read from, placed at the beginning of the GSPP.
      * @param stableGeneration stable index generation.
@@ -204,7 +204,7 @@ class GenerationSafePointerPair
     /**
      * Writes a GSP at one of the GSPP slots A/B, returning the result.
      * Check success/failure using {@link #isSuccess(long)} and if failure extract more information using
-     * {@link #failureDescription(long)}.
+     * {@link #failureDescription(long, long, String, long, long, String, String, int)}.
      *
      * @param cursor {@link PageCursor} to write to, placed at the beginning of the GSPP.
      * @param pointer pageId to write.
@@ -353,7 +353,7 @@ class GenerationSafePointerPair
 
     /**
      * Checks to see if a result from read/write was successful. If not more failure information can be extracted
-     * using {@link #failureDescription(long)}.
+     * using {@link #failureDescription(long, long, String, long, long, String, String, int)}.
      *
      * @param result result from {@link #read(PageCursor, long, long, GBPTreeGenerationTarget)} or {@link #write(PageCursor, long, long, long)}.
      * @return {@code true} if successful read/write, otherwise {@code false}.
@@ -374,6 +374,8 @@ class GenerationSafePointerPair
     }
 
     /**
+     * NOTE! Use only with write cursor. For read cursor use {@link #failureDescription(long, long, String, long, long)}.
+     *
      * Calling {@link #read(PageCursor, long, long, GBPTreeGenerationTarget)} (potentially also {@link #write(PageCursor, long, long, long)})
      * can fail due to seeing an unexpected state of the two GSPs. Failing right there and then isn't an option
      * due to how the page cache works and that something read from a {@link PageCursor} must not be interpreted
@@ -384,30 +386,95 @@ class GenerationSafePointerPair
      *
      * @param result result from {@link #read(PageCursor, long, long, GBPTreeGenerationTarget)} or
      * {@link #write(PageCursor, long, long, long)}.
+     * @param nodeId The id of the node from which result was read.
+     * @param pointerType Describing the pointer that was read, such as CHILD, RIGHT_SIBLING, LEFT_SIBLING, SUCCESSOR
+     * @param stableGeneration The current stable generation of the tree.
+     * @param unstableGeneration The current unstable generation of the tree.
+     * @param gspStringA Full string representation of gsp state A.
+     * @param gspStringB Full string representation of gsp state B.
+     * @param offset The exact offset from which the gspp was read.
      * @return a human-friendly description of the failure.
      */
-    static String failureDescription( long result )
+    static String failureDescription( long result, long nodeId, String pointerType, long stableGeneration, long unstableGeneration,
+            String gspStringA, String gspStringB, int offset )
+    {
+        return failureDescription( result, nodeId, pointerType, stableGeneration, unstableGeneration, gspStringA, gspStringB, Integer.toString( offset) );
+    }
+
+    /**
+     * Useful for when reading with read cursor.
+     * See {@link #failureDescription(long, long, String, long, long, String, String, int)}
+     */
+    static String failureDescription( long result, long nodeId, String pointerType, long stableGeneration, long unstableGeneration )
+    {
+        return failureDescription( result, nodeId, pointerType, stableGeneration, unstableGeneration, "", "", "UNKNOWN" );
+    }
+
+    private static String failureDescription( long result, long nodeId, String pointerType, long stableGeneration, long unstableGeneration, String gspStringA,
+            String gspStringB, String offsetString )
     {
         return "GSPP " + (isRead( result ) ? "READ" : "WRITE") + " failure" +
-                format( "%n  Pointer state A: %s",
-                        pointerStateName( pointerStateFromResult( result, SHIFT_STATE_A ) ) ) +
-                format( "%n  Pointer state B: %s",
-                        pointerStateName( pointerStateFromResult( result, SHIFT_STATE_B ) ) ) +
+                format( "%n  Pointer[type=%s, offset=%s, nodeId=%d]", pointerType, offsetString, nodeId ) +
+                format( "%n  Pointer state A: %s %s",
+                        pointerStateName( pointerStateFromResult( result, SHIFT_STATE_A ) ), gspStringA ) +
+                format( "%n  Pointer state B: %s %s",
+                        pointerStateName( pointerStateFromResult( result, SHIFT_STATE_B ) ), gspStringB ) +
+                format( "%n  stableGeneration=%d, unstableGeneration=%d", stableGeneration, unstableGeneration ) +
                 format( "%n  Generations: " + generationComparisonFromResult( result ) );
     }
 
     /**
+     * NOTE! In the case of exception, cursor will be used to read additional information from tree. If cursor only has read lock, use
+     * {@link #assertSuccess(long, long, String, long, long)} instead.
      * Asserts that a result is {@link #isSuccess(long) successful}, otherwise throws {@link IllegalStateException}.
      *
      * @param result result returned from {@link #read(PageCursor, long, long, GBPTreeGenerationTarget)} or
      * {@link #write(PageCursor, long, long, long)}
+     * @param nodeId The id of the node from which result was read.
+     * @param pointerType Describing the pointer that was read, such as CHILD, RIGHT_SIBLING, LEFT_SIBLING, SUCCESSOR
+     * @param stableGeneration The current stable generation of the tree.
+     * @param unstableGeneration The current unstable generation of the tree.
+     * @param cursor {@link PageCursor} placed at tree node from which result was read.
+     * @param offset The exact offset from which the gspp was read.
      * @return {@code true} if {@link #isSuccess(long) successful}, for interoperability with {@code assert}.
      */
-    static boolean assertSuccess( long result )
+    static boolean assertSuccess( long result, long nodeId, String pointerType, long stableGeneration, long unstableGeneration, PageCursor cursor, int offset )
     {
         if ( !isSuccess( result ) )
         {
-            throw new TreeInconsistencyException( failureDescription( result ) );
+            cursor.setOffset( offset );
+
+            // Try A
+            long generationA = readGeneration( cursor );
+            long pointerA = readPointer( cursor );
+            short readChecksumA = readChecksum( cursor );
+            short checksumA = checksumOf( generationA, pointerA );
+            boolean correctChecksumA = readChecksumA == checksumA;
+
+            // Try B
+            long generationB = readGeneration( cursor );
+            long pointerB = readPointer( cursor );
+            short readChecksumB = readChecksum( cursor );
+            short checksumB = checksumOf( generationB, pointerB );
+            boolean correctChecksumB = readChecksumB == checksumB;
+
+            String gspStringA = GenerationSafePointer.toString( generationA, pointerA, readChecksumA, correctChecksumA );
+            String gspStringB = GenerationSafePointer.toString( generationB, pointerB, readChecksumB, correctChecksumB );
+
+            String failureMessage = failureDescription( result, nodeId, pointerType, stableGeneration, unstableGeneration, gspStringA, gspStringB, offset );
+            throw new TreeInconsistencyException( failureMessage );
+        }
+        return true;
+    }
+
+    /**
+     * See {@link #assertSuccess(long, long, String, long, long, PageCursor, int)}
+     */
+    static boolean assertSuccess( long result, long nodeId, String pointerType, long stableGeneration, long unstableGeneration )
+    {
+        if ( !isSuccess( result ) )
+        {
+            throw new TreeInconsistencyException( failureDescription( result, nodeId, pointerType, stableGeneration, unstableGeneration ) );
         }
         return true;
     }

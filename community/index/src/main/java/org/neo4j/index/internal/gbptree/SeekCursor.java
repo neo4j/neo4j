@@ -559,7 +559,7 @@ class SeekCursor<KEY,VALUE> implements Seeker<KEY,VALUE>
             if ( lookingForChild )
             {
                 monitor.internalNode( completedReadLevel, keyCount );
-                goTo( pointerId, pointerGeneration, "child", false );
+                goTo( pointerId, pointerGeneration, GBPPointerType.child( pos ), false );
                 currentReadLevel++;
             }
         }
@@ -636,7 +636,7 @@ class SeekCursor<KEY,VALUE> implements Seeker<KEY,VALUE>
                     // Below, the cached key/value at slot [0] will be used
                     if ( !seekForward && pos >= keyCount )
                     {
-                        goTo( prevSiblingId, prevSiblingGeneration, "prev sibling", true );
+                        goTo( prevSiblingId, prevSiblingGeneration, GBPPointerType.RIGHT_SIBLING, true );
                         // Continue in the read loop above so that we can continue reading from previous sibling
                         // or on next position
                         continue;
@@ -870,7 +870,7 @@ class SeekCursor<KEY,VALUE> implements Seeker<KEY,VALUE>
      */
     private boolean goTo( long pointerId, long pointerGeneration, String type, boolean allowNoNode ) throws IOException
     {
-        if ( pointerCheckingWithGenerationCatchup( pointerId, allowNoNode ) )
+        if ( pointerCheckingWithGenerationCatchup( pointerId, allowNoNode, type ) )
         {
             concurrentWriteHappened = true;
             return true;
@@ -890,7 +890,7 @@ class SeekCursor<KEY,VALUE> implements Seeker<KEY,VALUE>
      */
     private boolean goToSuccessor() throws IOException
     {
-        return goTo( successor, successorGeneration, "successor", true );
+        return goTo( successor, successorGeneration, GBPPointerType.SUCCESSOR, true );
     }
 
     /**
@@ -992,7 +992,7 @@ class SeekCursor<KEY,VALUE> implements Seeker<KEY,VALUE>
      */
     private boolean goToNextSibling() throws IOException
     {
-        if ( pointerCheckingWithGenerationCatchup( pointerId, true ) )
+        if ( pointerCheckingWithGenerationCatchup( pointerId, true, seekForward ? GBPPointerType.RIGHT_SIBLING : GBPPointerType.LEFT_SIBLING ) )
         {
             // Reading sibling pointer resulted in a bad read, but generation had changed
             // (a checkpoint has occurred since we started this cursor) so the generation fields in this
@@ -1222,10 +1222,11 @@ class SeekCursor<KEY,VALUE> implements Seeker<KEY,VALUE>
      *
      * @param pointer read result to check for success.
      * @param allowNoNode whether or not pointer is allowed to be "null".
+     * @param pointerType string describing type of pointer that was read.
      * @return {@code true} if there was a generation catch-up called and generation was actually updated,
      * this means that caller should retry its most recent read.
      */
-    private boolean pointerCheckingWithGenerationCatchup( long pointer, boolean allowNoNode )
+    private boolean pointerCheckingWithGenerationCatchup( long pointer, boolean allowNoNode, String pointerType )
     {
         if ( !GenerationSafePointerPair.isSuccess( pointer ) )
         {
@@ -1236,7 +1237,7 @@ class SeekCursor<KEY,VALUE> implements Seeker<KEY,VALUE>
             {
                 return true;
             }
-            PointerChecking.checkPointer( pointer, allowNoNode );
+            PointerChecking.checkPointer( pointer, allowNoNode, cursor.getCurrentPageId(), pointerType, stableGeneration, unstableGeneration );
         }
         return false;
     }

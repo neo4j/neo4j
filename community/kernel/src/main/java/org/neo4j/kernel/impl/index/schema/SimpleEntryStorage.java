@@ -93,7 +93,7 @@ public abstract class SimpleEntryStorage<ENTRY, CURSOR> implements Closeable
     {
         if ( !allocated )
         {
-            return reader( new ByteArrayPageCursor( NO_ENTRIES ) );
+            return reader( ByteArrayPageCursor.wrap( NO_ENTRIES ) );
         }
 
         // Reuse the existing buffer because we're not writing while reading anyway

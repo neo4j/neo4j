@@ -37,6 +37,7 @@ import org.neo4j.internal.helpers.Exceptions;
  */
 public class ByteArrayPageCursor extends PageCursor
 {
+    private static final long DEFAULT_PAGE_ID = 0;
     private final MutableLongObjectMap<ByteBuffer> buffers;
     private long pageId;
     // If this is false then the next call to next() will just set it to true, this to adhere to the general PageCursor interaction contract
@@ -44,9 +45,14 @@ public class ByteArrayPageCursor extends PageCursor
     private ByteBuffer buffer;
     private CursorException cursorException;
 
+    public static PageCursor wrap( byte[] array, int offset, int length, long currentPageId )
+    {
+        return new ByteArrayPageCursor( currentPageId, ByteBuffer.wrap( array, offset, length ) );
+    }
+
     public static PageCursor wrap( byte[] array, int offset, int length )
     {
-        return new ByteArrayPageCursor( array, offset, length );
+        return wrap( array, offset, length, DEFAULT_PAGE_ID );
     }
 
     public static PageCursor wrap( byte[] array )
@@ -59,19 +65,9 @@ public class ByteArrayPageCursor extends PageCursor
         return wrap( new byte[length] );
     }
 
-    public ByteArrayPageCursor( byte[] array )
-    {
-        this( array, 0, array.length );
-    }
-
-    public ByteArrayPageCursor( byte[] array, int offset, int length )
-    {
-        this( ByteBuffer.wrap( array, offset, length ) );
-    }
-
     public ByteArrayPageCursor( ByteBuffer buffer )
     {
-        this( 0, buffer );
+        this( DEFAULT_PAGE_ID, buffer );
     }
 
     public ByteArrayPageCursor( long pageId, ByteBuffer buffer )

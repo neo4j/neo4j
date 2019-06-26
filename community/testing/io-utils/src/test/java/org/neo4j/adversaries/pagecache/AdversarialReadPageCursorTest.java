@@ -36,7 +36,7 @@ class AdversarialReadPageCursorTest
         // Given
         byte[] buf = new byte[4];
         byte[] page = new byte[]{7};
-        AdversarialReadPageCursor cursor = new AdversarialReadPageCursor( new ByteArrayPageCursor( page ),
+        AdversarialReadPageCursor cursor = new AdversarialReadPageCursor( ByteArrayPageCursor.wrap( page ),
                 new PageCacheSupport.AtomicBooleanInconsistentReadAdversary( new AtomicBoolean( true ) ) );
 
         // When

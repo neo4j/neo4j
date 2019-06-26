@@ -192,21 +192,24 @@ abstract class TreeNode<KEY,VALUE>
     {
         cursor.setOffset( BYTE_POS_RIGHTSIBLING );
         long result = GenerationSafePointerPair.write( cursor, rightSiblingId, stableGeneration, unstableGeneration );
-        GenerationSafePointerPair.assertSuccess( result );
+        GenerationSafePointerPair.assertSuccess( result, cursor.getCurrentPageId(), GBPPointerType.RIGHT_SIBLING, stableGeneration, unstableGeneration, cursor,
+                BYTE_POS_RIGHTSIBLING );
     }
 
     static void setLeftSibling( PageCursor cursor, long leftSiblingId, long stableGeneration, long unstableGeneration )
     {
         cursor.setOffset( BYTE_POS_LEFTSIBLING );
         long result = GenerationSafePointerPair.write( cursor, leftSiblingId, stableGeneration, unstableGeneration );
-        GenerationSafePointerPair.assertSuccess( result );
+        GenerationSafePointerPair.assertSuccess( result, cursor.getCurrentPageId(), GBPPointerType.LEFT_SIBLING, stableGeneration, unstableGeneration, cursor,
+                BYTE_POS_LEFTSIBLING );
     }
 
     static void setSuccessor( PageCursor cursor, long successorId, long stableGeneration, long unstableGeneration )
     {
         cursor.setOffset( BYTE_POS_SUCCESSOR );
         long result = GenerationSafePointerPair.write( cursor, successorId, stableGeneration, unstableGeneration );
-        GenerationSafePointerPair.assertSuccess( result );
+        GenerationSafePointerPair
+                .assertSuccess( result, cursor.getCurrentPageId(), GBPPointerType.SUCCESSOR, stableGeneration, unstableGeneration, cursor, BYTE_POS_SUCCESSOR );
     }
 
     // BODY METHODS
@@ -291,10 +294,11 @@ abstract class TreeNode<KEY,VALUE>
 
     abstract void setChildAt( PageCursor cursor, long child, int pos, long stableGeneration, long unstableGeneration );
 
-    static void writeChild( PageCursor cursor, long child, long stableGeneration, long unstableGeneration )
+    static void writeChild( PageCursor cursor, long child, long stableGeneration, long unstableGeneration, int childPos, int childOffset )
     {
         long write = GenerationSafePointerPair.write( cursor, child, stableGeneration, unstableGeneration );
-        GenerationSafePointerPair.assertSuccess( write );
+        GenerationSafePointerPair
+                .assertSuccess( write, cursor.getCurrentPageId(), GBPPointerType.child( childPos ), stableGeneration, unstableGeneration, cursor, childOffset );
     }
 
     // HELPERS

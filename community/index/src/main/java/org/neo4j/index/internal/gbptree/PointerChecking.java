@@ -36,16 +36,48 @@ class PointerChecking
     }
 
     /**
+     * Used by tests only that don't care about exception message so much.
+     */
+    static void checkPointer( long result, boolean allowNoNode )
+    {
+        checkPointer( result, allowNoNode, -1, "unknown", 0, 1 );
+    }
+
+    /**
+     * NOTE! If using a read cursor, please use {@link #checkPointer(long, boolean, long, String, long, long)} instead.
+     * <p>
      * Checks a read pointer for success/failure and throws appropriate exception with failure information
      * if failure. Must be called after a consistent read from page cache (after {@link PageCursor#shouldRetry()}.
      *
      * @param result result from {@link GenerationSafePointerPair#FLAG_READ} or
      * {@link GenerationSafePointerPair#write(PageCursor, long, long, long)}.
      * @param allowNoNode If {@link TreeNode#NO_NODE_FLAG} is allowed as pointer value.
+     * @param nodeId id of node from which result was read.
+     * @param pointerType a string describing the type of pointer that was read.
+     * @param stableGeneration current stable generation.
+     * @param unstableGeneration current unstable generation.
+     * @param cursor cursor pinned to the node from which result was read. Cursor will be used to read additional information from tree to construct
+     * exception message if needed.
+     * @param offset offset in node from which result was read.
      */
-    static void checkPointer( long result, boolean allowNoNode )
+    static void checkPointer( long result, boolean allowNoNode, long nodeId, String pointerType, long stableGeneration, long unstableGeneration,
+            PageCursor cursor, int offset )
     {
-        GenerationSafePointerPair.assertSuccess( result );
+        GenerationSafePointerPair.assertSuccess( result, nodeId, pointerType, stableGeneration, unstableGeneration, cursor, offset );
+        assertIdSpace( allowNoNode, result );
+    }
+
+    /**
+     * See {@link #checkPointer(long, boolean, long, String, long, long, PageCursor, int)} but without cursor and offset.
+     */
+    static void checkPointer( long result, boolean allowNoNode, long nodeId, String pointerType, long stableGeneration, long unstableGeneration )
+    {
+        GenerationSafePointerPair.assertSuccess( result, nodeId, pointerType, stableGeneration, unstableGeneration );
+        assertIdSpace( allowNoNode, result );
+    }
+
+    private static void assertIdSpace( boolean allowNoNode, long result )
+    {
         if ( allowNoNode && !TreeNode.isNode( result ) )
         {
             return;
