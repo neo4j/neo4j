@@ -631,43 +631,35 @@ class PrivilegeManagementDDLParserTest extends DDLParserTestBase {
                 case (properties: String, resource: ActionResource, dbName: String, graphScope: GraphScope) =>
 
                   test(s"$command ${privilege.name} ($properties) ON $graphKeyword $dbName $relTypeKeyword * $preposition role") {
-                    //yields(func(privilege, resource, graphScope, ast.RelationshipAllQualifier() _, Seq("role")))
-                    failsToParse
+                    yields(func(privilege, resource, graphScope, ast.RelationshipAllQualifier() _, Seq("role")))
                   }
 
                   test(s"$command ${privilege.name} ($properties) ON $graphKeyword $dbName $relTypeKeyword * (*) $preposition role") {
-                    //yields(func(privilege, resource, graphScope, ast.RelationshipAllQualifier() _, Seq("role")))
-                    failsToParse
+                    yields(func(privilege, resource, graphScope, ast.RelationshipAllQualifier() _, Seq("role")))
                   }
 
                   test(s"$command ${privilege.name} ($properties) ON $graphKeyword $dbName $relTypeKeyword A $preposition role") {
-                    //yields(func(privilege, resource, graphScope, ast.RelationshipsQualifier(Seq("A")) _, Seq("role")))
-                    failsToParse
+                    yields(func(privilege, resource, graphScope, ast.RelationshipsQualifier(Seq("A")) _, Seq("role")))
                   }
 
                   test(s"$command ${privilege.name} ($properties) ON $graphKeyword $dbName $relTypeKeyword A (*) $preposition role") {
-                    //yields(func(privilege, resource, graphScope, ast.RelationshipsQualifier(Seq("A")) _, Seq("role")))
-                    failsToParse
+                    yields(func(privilege, resource, graphScope, ast.RelationshipsQualifier(Seq("A")) _, Seq("role")))
                   }
 
                   test(s"$command ${privilege.name} ($properties) ON $graphKeyword $dbName $relTypeKeyword `A B` (*) $preposition role") {
-                    //yields(func(privilege, resource, graphScope, ast.RelationshipsQualifier(Seq("A B")) _, Seq("role")))
-                    failsToParse
+                    yields(func(privilege, resource, graphScope, ast.RelationshipsQualifier(Seq("A B")) _, Seq("role")))
                   }
 
                   test(s"$command ${privilege.name} ($properties) ON $graphKeyword $dbName $relTypeKeyword A, B (*) $preposition role1, role2") {
-                    //yields(func(privilege, resource, graphScope, ast.RelationshipsQualifier(Seq("A", "B")) _, Seq("role1", "role2")))
-                    failsToParse
+                    yields(func(privilege, resource, graphScope, ast.RelationshipsQualifier(Seq("A", "B")) _, Seq("role1", "role2")))
                   }
 
                   test(s"$command ${privilege.name} ($properties) ON $graphKeyword $dbName $relTypeKeyword * $preposition `r:ole`") {
-                    //yields(func(privilege, resource, graphScope, ast.RelationshipAllQualifier() _, Seq("r:ole")))
-                    failsToParse
+                    yields(func(privilege, resource, graphScope, ast.RelationshipAllQualifier() _, Seq("r:ole")))
                   }
 
                   test(s"$command ${privilege.name} ($properties) ON $graphKeyword $dbName $relTypeKeyword `:A` (*) $preposition role") {
-                    //yields(func(privilege, resource, graphScope, ast.RelationshipsQualifier(Seq(":A")) _, Seq("role")))
-                    failsToParse
+                    yields(func(privilege, resource, graphScope, ast.RelationshipsQualifier(Seq(":A")) _, Seq("role")))
                   }
 
                   test(s"$command ${privilege.name} ($properties) $graphKeyword $dbName $relTypeKeyword * (*) $preposition role") {
@@ -696,18 +688,15 @@ class PrivilegeManagementDDLParserTest extends DDLParserTestBase {
               }
 
               test(s"$command ${privilege.name} (*) ON $graphKeyword `f:oo` $relTypeKeyword * $preposition role") {
-                //yields(func(privilege, ast.AllResource() _, ast.NamedGraphScope("f:oo") _, ast.RelationshipAllQualifier() _, Seq("role")))
-                failsToParse
+                yields(func(privilege, ast.AllResource() _, ast.NamedGraphScope("f:oo") _, ast.RelationshipAllQualifier() _, Seq("role")))
               }
 
               test(s"$command ${privilege.name} (bar) ON $graphKeyword `f:oo` $relTypeKeyword * $preposition role") {
-                //yields(func(privilege, ast.PropertiesResource(Seq("bar")) _, ast.NamedGraphScope("f:oo") _, ast.RelationshipAllQualifier() _, Seq("role")))
-                failsToParse
+                yields(func(privilege, ast.PropertiesResource(Seq("bar")) _, ast.NamedGraphScope("f:oo") _, ast.RelationshipAllQualifier() _, Seq("role")))
               }
 
               test(s"$command ${privilege.name} (`b:ar`) ON $graphKeyword foo $relTypeKeyword * $preposition role") {
-                //yields(func(privilege, ast.PropertiesResource(Seq("b:ar")) _, ast.NamedGraphScope("foo") _, ast.RelationshipAllQualifier() _, Seq("role")))
-                failsToParse
+                yields(func(privilege, ast.PropertiesResource(Seq("b:ar")) _, ast.NamedGraphScope("foo") _, ast.RelationshipAllQualifier() _, Seq("role")))
               }
 
               // Invalid graph name
@@ -817,7 +806,7 @@ class PrivilegeManagementDDLParserTest extends DDLParserTestBase {
             case (properties: String, resource: ActionResource, dbName: String, graphScope: GraphScope) =>
 
               test(s"$command ${privilege.name} ($properties) ON $graphKeyword $dbName $preposition role") {
-                yields(func(privilege, resource, graphScope, ast.LabelAllQualifier() _, Seq("role")))
+                yields(func(privilege, resource, graphScope, ast.AllQualifier() _, Seq("role")))
               }
           }
       }

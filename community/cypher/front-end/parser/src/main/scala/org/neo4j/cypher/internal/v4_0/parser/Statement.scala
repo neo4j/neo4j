@@ -175,27 +175,27 @@ trait Statement extends Parser
       ((scope, qualifier, grantees) => ast.RevokePrivilege.traverse(scope, qualifier, grantees))
   }
 
-  //`GRANT READ (a) ON GRAPH foo NODES A (*) TO role`
+  //`GRANT READ (a) ON GRAPH foo ELEMENTS A (*) TO role`
   def GrantRead: Rule1[GrantPrivilege] = rule("CATALOG GRANT READ") {
-    group(keyword("GRANT READ") ~~ PrivilegeProperty ~~ Graph ~~ NodeScopeQualifier ~~ keyword("TO") ~~ SymbolicNamesList) ~~>>
+    group(keyword("GRANT READ") ~~ PrivilegeProperty ~~ Graph ~~ ScopeQualifier ~~ keyword("TO") ~~ SymbolicNamesList) ~~>>
       ((prop, scope, qualifier, grantees) => ast.GrantPrivilege.read(prop, scope, qualifier, grantees))
   }
 
-  //`REVOKE READ (a) ON GRAPH foo NODES A (*) FROM role`
+  //`REVOKE READ (a) ON GRAPH foo ELEMENTS A (*) FROM role`
   def RevokeRead: Rule1[RevokePrivilege] = rule("CATALOG REVOKE READ") {
-    group(keyword("REVOKE READ") ~~ PrivilegeProperty ~~ Graph ~~ NodeScopeQualifier ~~ keyword("FROM") ~~ SymbolicNamesList) ~~>>
+    group(keyword("REVOKE READ") ~~ PrivilegeProperty ~~ Graph ~~ ScopeQualifier ~~ keyword("FROM") ~~ SymbolicNamesList) ~~>>
       ((prop, scope, qualifier, grantees) => ast.RevokePrivilege.read(prop, scope, qualifier, grantees))
   }
 
-  //`GRANT MATCH (a) ON GRAPH foo NODES A (*) TO role`
+  //`GRANT MATCH (a) ON GRAPH foo ELEMENTS A (*) TO role`
   def GrantMatch: Rule1[GrantPrivilege] = rule("CATALOG GRANT MATCH") {
-    group(keyword("GRANT MATCH") ~~ PrivilegeProperty ~~ Graph ~~ NodeScopeQualifier ~~ keyword("TO") ~~ SymbolicNamesList) ~~>>
+    group(keyword("GRANT MATCH") ~~ PrivilegeProperty ~~ Graph ~~ ScopeQualifier ~~ keyword("TO") ~~ SymbolicNamesList) ~~>>
       ((prop, scope, qualifier, grantees) => ast.GrantPrivilege.asMatch(prop, scope, qualifier, grantees))
   }
 
-  //`REVOKE MATCH (a) ON GRAPH foo NODES A (*) FROM role`
+  //`REVOKE MATCH (a) ON GRAPH foo ELEMENTS A (*) FROM role`
   def RevokeMatch: Rule1[RevokePrivilege] = rule("CATALOG REVOKE MATCH") {
-    group(keyword("REVOKE MATCH") ~~ PrivilegeProperty ~~ Graph ~~ NodeScopeQualifier ~~ keyword("FROM") ~~ SymbolicNamesList) ~~>>
+    group(keyword("REVOKE MATCH") ~~ PrivilegeProperty ~~ Graph ~~ ScopeQualifier ~~ keyword("FROM") ~~ SymbolicNamesList) ~~>>
       ((prop, scope, qualifier, grantees) => ast.RevokePrivilege.asMatch(prop, scope, qualifier, grantees))
   }
 
@@ -222,13 +222,7 @@ trait Statement extends Parser
 
   // TODO can be removed once we have more fine-grained writes
   private def AllPrivilegeProperty: Rule1[ActionResource] = rule("all properties")(
-      group("(" ~~ "*" ~~ ")") ~~~> {ast.AllResource()}
-  )
-
-  private def NodeScopeQualifier: Rule1[PrivilegeQualifier] = rule("which element type and associated labels (props) qualifier combination")(
-    group(NodeKeyword ~~ SymbolicNamesList ~~ optional("(" ~~ "*" ~~ ")")) ~~>> {ast.LabelsQualifier(_)} |
-    group(NodeKeyword ~~ "*" ~~ optional("(" ~~ "*" ~~ ")")) ~~~> {ast.LabelAllQualifier()} |
-    optional(NodeKeyword ~~ "*" ~~ optional("(" ~~ "*" ~~ ")")) ~~~> {ast.LabelAllQualifier()}
+    group("(" ~~ "*" ~~ ")") ~~~> {ast.AllResource()}
   )
 
   private def ScopeQualifier: Rule1[PrivilegeQualifier] = rule("which element type and associated labels/relTypes (props) qualifier combination")(
