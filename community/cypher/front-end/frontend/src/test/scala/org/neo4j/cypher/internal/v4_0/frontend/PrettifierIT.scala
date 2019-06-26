@@ -386,19 +386,19 @@ class PrettifierIT extends CypherFunSuite {
       "grant read (foo,bar) on graph foo nodes A,B,C (*) to x,y,z" ->
         "GRANT READ (foo, bar) ON GRAPH foo NODES A, B, C (*) TO x, y, z",
 
-      "grant writes (*) on graph * to role" ->
+      "grant write (*) on graph * to role" ->
         "GRANT WRITE (*) ON GRAPH * NODES * (*) TO role",
 
-      "grant writes (*) on graph * nodes * to role" ->
+      "grant write (*) on graph * nodes * to role" ->
         "GRANT WRITE (*) ON GRAPH * NODES * (*) TO role",
 
-      "grant writes (*) on graph * nodes * (*) to role" ->
+      "grant write (*) on graph * nodes * (*) to role" ->
         "GRANT WRITE (*) ON GRAPH * NODES * (*) TO role",
 
-      "grant writes (*) on graph foo to role" ->
+      "grant write (*) on graph foo to role" ->
         "GRANT WRITE (*) ON GRAPH foo NODES * (*) TO role",
 
-      "grant writes (*) on graph foo nodes * (*) to role" ->
+      "grant write (*) on graph foo nodes * (*) to role" ->
         "GRANT WRITE (*) ON GRAPH foo NODES * (*) TO role",
 
       "grant write (*) on graphs foo node * (*) to role" ->
@@ -449,19 +449,19 @@ class PrettifierIT extends CypherFunSuite {
       "revoke read (foo,bar) on graph foo nodes A,B,C (*) from x,y,z" ->
         "REVOKE READ (foo, bar) ON GRAPH foo NODES A, B, C (*) FROM x, y, z",
 
-      "revoke writes (*) on graph * from role" ->
+      "revoke write (*) on graph * from role" ->
         "REVOKE WRITE (*) ON GRAPH * NODES * (*) FROM role",
 
-      "revoke writes (*) on graph * nodes * from role" ->
+      "revoke write (*) on graph * nodes * from role" ->
         "REVOKE WRITE (*) ON GRAPH * NODES * (*) FROM role",
 
-      "revoke writes (*) on graph * nodes * (*) from role" ->
+      "revoke write (*) on graph * nodes * (*) from role" ->
         "REVOKE WRITE (*) ON GRAPH * NODES * (*) FROM role",
 
-      "revoke writes (*) on graph foo from role" ->
+      "revoke write (*) on graph foo from role" ->
         "REVOKE WRITE (*) ON GRAPH foo NODES * (*) FROM role",
 
-      "revoke writes (*) on graph foo nodes * (*) from role" ->
+      "revoke write (*) on graph foo nodes * (*) from role" ->
         "REVOKE WRITE (*) ON GRAPH foo NODES * (*) FROM role",
 
       "revoke write (*) on graphs foo node * (*) from role" ->

@@ -199,18 +199,17 @@ trait Statement extends Parser
       ((prop, scope, qualifier, grantees) => ast.RevokePrivilege.asMatch(prop, scope, qualifier, grantees))
   }
 
-  //`GRANT WRITE[S] (*) ON GRAPH foo * (*) TO role`
+  //`GRANT WRITE (*) ON GRAPH foo * (*) TO role`
   def GrantWrite: Rule1[GrantPrivilege] = rule("CATALOG GRANT WRITE") {
-    group(keyword("GRANT") ~~ WriteKeyword ~~ AllPrivilegeProperty ~~ Graph ~~ AllScopeQualifier ~~ keyword("TO") ~~ SymbolicNamesList) ~~>>
+    group(keyword("GRANT WRITE") ~~ AllPrivilegeProperty ~~ Graph ~~ AllScopeQualifier ~~ keyword("TO") ~~ SymbolicNamesList) ~~>>
       ((prop, scope, qualifier, grantees) => ast.GrantPrivilege.write(prop, scope, qualifier, grantees))
   }
 
-  //`REVOKE WRITE[S] (*) ON GRAPH foo * (*) FROM role`
+  //`REVOKE WRITE (*) ON GRAPH foo * (*) FROM role`
   def RevokeWrite: Rule1[RevokePrivilege] = rule("CATALOG REVOKE WRITE") {
-    group(keyword("REVOKE") ~~ WriteKeyword ~~ AllPrivilegeProperty ~~ Graph ~~ AllScopeQualifier ~~ keyword("FROM") ~~ SymbolicNamesList) ~~>>
+    group(keyword("REVOKE WRITE") ~~ AllPrivilegeProperty ~~ Graph ~~ AllScopeQualifier ~~ keyword("FROM") ~~ SymbolicNamesList) ~~>>
       ((prop, scope, qualifier, grantees) => ast.RevokePrivilege.write(prop, scope, qualifier, grantees))
   }
-
 
   def ShowPrivileges: Rule1[ShowPrivileges] = rule("CATALOG SHOW PRIVILEGES") {
     group(keyword("SHOW") ~~ ScopeForShowPrivileges ~~ keyword("PRIVILEGES")) ~~>> (ast.ShowPrivileges(_))
@@ -237,8 +236,6 @@ trait Statement extends Parser
   )
 
   private def NodeKeyword: Rule0 = keyword("NODE") | keyword("NODES")
-
-  private def WriteKeyword: Rule0 = keyword("WRITE") | keyword("WRITES")
 
   private def Graph: Rule1[GraphScope] = rule("on a database/graph")(
     group(keyword("ON") ~~ (keyword("GRAPH") | keyword("GRAPHS"))) ~~
