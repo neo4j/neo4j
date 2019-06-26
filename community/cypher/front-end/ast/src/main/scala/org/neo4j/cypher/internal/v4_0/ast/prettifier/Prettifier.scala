@@ -385,10 +385,10 @@ object Prettifier {
       case _ => "<unknown>"
     }
     val segment = qualifier match {
-      case LabelQualifier(name) => "NODES " + escapeName(name)
+      case LabelQualifier(name) => "NODE " + escapeName(name)
       case LabelsQualifier(names) => "NODES " + names.map(escapeName).mkString(", ")
       case LabelAllQualifier() => "NODES *"
-      case RelationshipQualifier(name) => "RELATIONSHIPS " + escapeName(name)
+      case RelationshipQualifier(name) => "RELATIONSHIP " + escapeName(name)
       case RelationshipsQualifier(names) => "RELATIONSHIPS " + names.map(escapeName).mkString(", ")
       case RelationshipAllQualifier() => "RELATIONSHIPS *"
       case AllQualifier() => "ELEMENTS *"

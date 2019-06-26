@@ -103,7 +103,7 @@ case object MultiDatabaseManagementCommandPlanBuilder extends Phase[PlannerConte
           case (source, (userName, roleName)) => Some(plans.RevokeRoleFromUser(source, userName, roleName))
         }
 
-      // GRANT TRAVERSE ON GRAPH foo NODES A (*) TO role
+      // GRANT TRAVERSE ON GRAPH foo ELEMENTS A (*) TO role
       case GrantPrivilege(TraversePrivilege(), _, database, segments, roleNames) =>
         (for (roleName <- roleNames; label <- segments.simplify) yield {
           roleName -> label
@@ -111,7 +111,7 @@ case object MultiDatabaseManagementCommandPlanBuilder extends Phase[PlannerConte
           case (source, (roleName, label)) => Some(plans.GrantTraverse(source, database, label, roleName))
         }
 
-      // REVOKE TRAVERSE ON GRAPH foo NODES A (*) FROM role
+      // REVOKE TRAVERSE ON GRAPH foo ELEMENTS A (*) FROM role
       case RevokePrivilege(TraversePrivilege(), _, database, segments, roleNames) =>
         (for (roleName <- roleNames; label <- segments.simplify) yield {
           roleName -> label
