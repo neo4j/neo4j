@@ -23,7 +23,6 @@ import java.io.File;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.util.Collection;
-import java.util.Collections;
 
 import org.neo4j.batchinsert.internal.TransactionLogsInitializer;
 import org.neo4j.configuration.Config;
@@ -47,9 +46,7 @@ import org.neo4j.internal.helpers.Args;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
-import org.neo4j.io.os.OsBeanUtil;
 import org.neo4j.kernel.impl.store.format.RecordFormatSelector;
-import org.neo4j.kernel.internal.Version;
 import org.neo4j.kernel.lifecycle.Lifespan;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.NullLogProvider;
@@ -61,7 +58,6 @@ import static org.neo4j.internal.batchimport.AdditionalInitialIds.EMPTY;
 import static org.neo4j.internal.batchimport.Configuration.calculateMaxMemoryFromPercent;
 import static org.neo4j.internal.batchimport.ImportLogic.NO_MONITOR;
 import static org.neo4j.internal.batchimport.staging.ExecutionMonitors.defaultVisible;
-import static org.neo4j.io.ByteUnit.bytesToString;
 import static org.neo4j.kernel.impl.scheduler.JobSchedulerFactory.createScheduler;
 
 /**
@@ -172,29 +168,9 @@ public class QuickImport
                         new SimpleLogService( logging, logging ), defaultVisible(), EMPTY, dbConfig,
                         RecordFormatSelector.selectForConfig( dbConfig, logging ), NO_MONITOR, jobScheduler, Collector.EMPTY,
                         TransactionLogsInitializer.INSTANCE );
-                printOverview( dir, Collections.emptyList(), Collections.emptyList(), importConfig, System.out );
             }
             consumer.doImport( input );
         }
-    }
-
-    static void printOverview( File storeDir, Collection<Args.Option<File[]>> nodesFiles,
-            Collection<Args.Option<File[]>> relationshipsFiles,
-            org.neo4j.internal.batchimport.Configuration configuration, PrintStream out )
-    {
-        out.println( "Neo4j version: " + Version.getNeo4jVersion() );
-        out.println( "Importing the contents of these files into " + storeDir + ":" );
-        printInputFiles( "Nodes", nodesFiles, out );
-        printInputFiles( "Relationships", relationshipsFiles, out );
-        out.println();
-        out.println( "Available resources:" );
-        printIndented( "Total machine memory: " + bytesToString( OsBeanUtil.getTotalPhysicalMemory() ), out );
-        printIndented( "Free machine memory: " + bytesToString( OsBeanUtil.getFreePhysicalMemory() ), out );
-        printIndented( "Max heap memory : " + bytesToString( Runtime.getRuntime().maxMemory() ), out );
-        printIndented( "Processors: " + configuration.maxNumberOfProcessors(), out );
-        printIndented( "Configured max memory: " + bytesToString( configuration.maxMemoryUsage() ), out );
-        printIndented( "High-IO: " + configuration.highIO(), out );
-        out.println();
     }
 
     private static void printInputFiles( String name, Collection<Args.Option<File[]>> files, PrintStream out )
