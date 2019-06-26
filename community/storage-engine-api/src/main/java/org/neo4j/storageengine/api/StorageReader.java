@@ -24,6 +24,7 @@ import java.util.Iterator;
 import java.util.function.Function;
 
 import org.neo4j.common.EntityType;
+import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
 import org.neo4j.internal.schema.ConstraintDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.internal.schema.constraints.IndexBackedConstraintDescriptor;
@@ -32,7 +33,7 @@ import org.neo4j.internal.schema.constraints.IndexBackedConstraintDescriptor;
  * Abstraction for accessing data from a {@link StorageEngine}.
  * A reader is expected to be scoped to one transaction or query or similar.
  */
-public interface StorageReader extends AutoCloseable
+public interface StorageReader extends AutoCloseable, StorageSchemaReader
 {
     /**
      * Closes this reader and all associated resources.
@@ -41,21 +42,10 @@ public interface StorageReader extends AutoCloseable
     void close();
 
     /**
-     * @param labelId label to list indexes for.
-     * @return {@link StorageIndexReference} associated with the given {@code labelId}.
-     */
-    Iterator<StorageIndexReference> indexesGetForLabel( int labelId );
-
-    /**
      * @param name name of index to find
      * @return {@link StorageIndexReference} associated with the given {@code name}.
      */
     StorageIndexReference indexGetForName( String name );
-
-    /**
-     * @return all {@link StorageIndexReference} in storage.
-     */
-    Iterator<StorageIndexReference> indexesGetAll();
 
     /**
      * Returns all indexes (including unique) related to a property, any of the labels and the entity type.
@@ -73,14 +63,6 @@ public interface StorageReader extends AutoCloseable
     boolean hasRelatedSchema( int label, EntityType entityType );
 
     /**
-     * Looks for a stored index by given {@code descriptor}
-     *
-     * @param descriptor a description of the index.
-     * @return {@link StorageIndexReference} for matching index, or {@code null} if not found.
-     */
-    StorageIndexReference indexGetForSchema( SchemaDescriptor descriptor );
-
-    /**
      * @param index {@link StorageIndexReference} to get related uniqueness constraint for.
      * @return schema rule id of uniqueness constraint that owns the given {@code index}, or {@code null}
      * if the given index isn't related to a uniqueness constraint.
@@ -94,23 +76,6 @@ public interface StorageReader extends AutoCloseable
     Iterator<ConstraintDescriptor> constraintsGetForSchema( SchemaDescriptor descriptor );
 
     boolean constraintExists( ConstraintDescriptor descriptor );
-
-    /**
-     * @param labelId label token id.
-     * @return node property constraints associated with the label token id.
-     */
-    Iterator<ConstraintDescriptor> constraintsGetForLabel( int labelId );
-
-    /**
-     * @param typeId relationship type token id .
-     * @return relationship property constraints associated with the relationship type token id.
-     */
-    Iterator<ConstraintDescriptor> constraintsGetForRelationshipType( int typeId );
-
-    /**
-     * @return all stored property constraints.
-     */
-    Iterator<ConstraintDescriptor> constraintsGetAll();
 
     /**
      * Returns number of stored nodes labeled with the label represented by {@code labelId}.
@@ -183,4 +148,15 @@ public interface StorageReader extends AutoCloseable
      * @return a new {@link StorageRelationshipScanCursor} capable of reading relationship data from the underlying storage.
      */
     StorageRelationshipScanCursor allocateRelationshipScanCursor();
+
+    /**
+     * Get a lock-free snapshot of the current schema, for inspecting the current schema when no mutations are intended.
+     * <p>
+     * The index states, such as failure messages and population progress, are not captured in the snapshot, but are instead queried "live".
+     * This means that if an index in the snapshot is then later deleted, then querying for the state of the index via the snapshot will throw an
+     * {@link IndexNotFoundKernelException}.
+     *
+     * @return a snapshot of the current schema.
+     */
+    StorageSchemaReader schemaSnapshot();
 }

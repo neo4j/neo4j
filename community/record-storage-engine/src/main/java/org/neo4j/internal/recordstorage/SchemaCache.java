@@ -56,12 +56,22 @@ import static org.apache.commons.lang3.ArrayUtils.EMPTY_LONG_ARRAY;
  */
 public class SchemaCache
 {
-    private final Lock cacheUpdateLock = new StampedLock().asWriteLock();
+    private final Lock cacheUpdateLock;
     private volatile SchemaCacheState schemaCacheState;
 
     public SchemaCache( ConstraintRuleAccessor constraintSemantics )
     {
+        this.cacheUpdateLock = new StampedLock().asWriteLock();
         this.schemaCacheState = new SchemaCacheState( constraintSemantics, Collections.emptyList() );
+    }
+
+    /**
+     * Snapshot constructor. This is only used by the {@link #snapshot()} method.
+     */
+    private SchemaCache( SchemaCacheState schemaCacheState )
+    {
+        this.cacheUpdateLock = new InaccessibleLock( "Schema cache snapshots are read-only." );
+        this.schemaCacheState = schemaCacheState;
     }
 
     public Iterable<StorageIndexReference> indexDescriptors()
@@ -168,6 +178,11 @@ public class SchemaCache
         return schemaCacheState.indexDescriptorsForLabel( labelId );
     }
 
+    Iterator<StorageIndexReference> indexDescriptorsForRelationshipType( int relationshipType )
+    {
+        return schemaCacheState.indexDescriptorsForRelationshipType( relationshipType );
+    }
+
     StorageIndexReference indexDescriptorForName( String name )
     {
         return schemaCacheState.indexDescriptorByName( name );
@@ -194,6 +209,11 @@ public class SchemaCache
     public boolean hasRelatedSchema( int label, EntityType entityType )
     {
         return schemaCacheState.hasRelatedSchema( label, entityType );
+    }
+
+    public SchemaCache snapshot()
+    {
+        return new SchemaCache( schemaCacheState );
     }
 
     private static class SchemaCacheState
@@ -309,6 +329,12 @@ public class SchemaCache
         {
             return Iterators.map( indexDescriptors::get,
                     getSchemaRelatedTo( indexDescriptorsByNode, new long[]{labelId}, EMPTY_LONG_ARRAY, EMPTY_INT_ARRAY, false ).iterator() );
+        }
+
+        Iterator<StorageIndexReference> indexDescriptorsForRelationshipType( int relationshipType )
+        {
+            return Iterators.map( indexDescriptors::get,
+                    getSchemaRelatedTo( indexDescriptorsByRelationship, new long[]{relationshipType}, EMPTY_LONG_ARRAY, EMPTY_INT_ARRAY, false ).iterator() );
         }
 
         Set<SchemaDescriptor> getIndexesRelatedTo( EntityType entityType, long[] changedEntityTokens,

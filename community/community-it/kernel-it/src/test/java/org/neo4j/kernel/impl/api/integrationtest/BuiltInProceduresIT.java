@@ -28,20 +28,25 @@ import org.junit.rules.ExpectedException;
 
 import java.util.HashSet;
 import java.util.Set;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.FutureTask;
 
 import org.neo4j.collection.RawIterator;
 import org.neo4j.common.DependencyResolver;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.cypher.internal.StringCacheMonitor;
+import org.neo4j.graphdb.Resource;
 import org.neo4j.internal.helpers.collection.MapUtil;
 import org.neo4j.internal.helpers.collection.Pair;
 import org.neo4j.internal.kernel.api.IndexReference;
+import org.neo4j.internal.kernel.api.SchemaWrite;
 import org.neo4j.internal.kernel.api.TokenWrite;
 import org.neo4j.internal.kernel.api.Transaction;
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
 import org.neo4j.internal.kernel.api.procs.ProcedureHandle;
 import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.internal.schema.LabelSchemaDescriptor;
+import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.security.AnonymousContext;
 import org.neo4j.kernel.impl.api.index.IndexProviderMap;
@@ -94,6 +99,53 @@ public class BuiltInProceduresIT extends KernelIntegrationTest
 
         // Then
         assertThat( asList( stream ), contains( equalTo( new AnyValue[]{stringValue("MyLabel"), longValue(1L)} ) ) );
+    }
+
+    @Test( timeout = 360_000 )
+    public void listAllLabelsMustNotBlockOnConstraintCreatingTransaction() throws Throwable
+    {
+        // Given
+        Transaction transaction = newTransaction( AnonymousContext.writeToken() );
+        long nodeId = transaction.dataWrite().nodeCreate();
+        int labelId = transaction.tokenWrite().labelGetOrCreateForName( "MyLabel" );
+        int propKey = transaction.tokenWrite().propertyKeyCreateForName( "prop", false );
+        transaction.dataWrite().nodeAddLabel( nodeId, labelId );
+        commit();
+
+        CountDownLatch constraintLatch = new CountDownLatch( 1 );
+        CountDownLatch commitLatch = new CountDownLatch( 1 );
+        FutureTask<Void> createConstraintTask = new FutureTask<>( () ->
+        {
+            SchemaWrite schemaWrite = schemaWriteInNewTransaction();
+            try ( Resource ignore = captureTransaction() )
+            {
+                schemaWrite.uniquePropertyConstraintCreate( SchemaDescriptor.forLabel( labelId, propKey ) );
+                // We now hold a schema lock on the "MyLabel" label. Let the procedure calling transaction have a go.
+                constraintLatch.countDown();
+                commitLatch.await();
+            }
+            rollback();
+            return null;
+        } );
+        Thread constraintCreator = new Thread( createConstraintTask );
+        constraintCreator.start();
+
+        // When
+        constraintLatch.await();
+        RawIterator<AnyValue[],ProcedureException> stream =
+                procs().procedureCallRead( procs().procedureGet( procedureName( "db", "labels" ) ).id(), new AnyValue[0] );
+
+        // Then
+        try
+        {
+            assertThat( asList( stream ), contains( equalTo( new AnyValue[]{stringValue( "MyLabel" ), longValue( 1 )} ) ) );
+        }
+        finally
+        {
+            commitLatch.countDown();
+        }
+        createConstraintTask.get();
+        constraintCreator.join();
     }
 
     @Test
@@ -327,6 +379,111 @@ public class BuiltInProceduresIT extends KernelIntegrationTest
                         longValue( indexingService.getIndexId( personFooBarDescriptor ) ), EMPTY_STRING}
         ) );
         commit();
+    }
+
+    @Test( timeout = 360_000 )
+    public void listAllIndexesMustNotBlockOnConstraintCreatingTransaction() throws Throwable
+    {
+        // Given
+        Transaction transaction = newTransaction( AUTH_DISABLED );
+        int labelId1 = transaction.tokenWrite().labelGetOrCreateForName( "Person" );
+        int labelId2 = transaction.tokenWrite().labelGetOrCreateForName( "Age" );
+        int propertyKeyId1 = transaction.tokenWrite().propertyKeyGetOrCreateForName( "foo" );
+        int propertyKeyId2 = transaction.tokenWrite().propertyKeyGetOrCreateForName( "bar" );
+        int propertyKeyId3 = transaction.tokenWrite().propertyKeyGetOrCreateForName( "baz" );
+        LabelSchemaDescriptor personFooDescriptor = forLabel( labelId1, propertyKeyId1 );
+        LabelSchemaDescriptor ageFooDescriptor = forLabel( labelId2, propertyKeyId1 );
+        LabelSchemaDescriptor personFooBarDescriptor = forLabel( labelId1, propertyKeyId1, propertyKeyId2 );
+        LabelSchemaDescriptor personBazDescriptor = forLabel( labelId1, propertyKeyId3 );
+        transaction.schemaWrite().indexCreate( personFooDescriptor );
+        transaction.schemaWrite().uniquePropertyConstraintCreate( ageFooDescriptor );
+        transaction.schemaWrite().indexCreate( personFooBarDescriptor );
+        commit();
+
+        transaction = newTransaction();
+        IndexReference personFooIndex = transaction.schemaRead().index( personFooDescriptor );
+        IndexReference ageFooIndex = transaction.schemaRead().index( ageFooDescriptor );
+        IndexReference personFooBarIndex = transaction.schemaRead().index( personFooBarDescriptor );
+        commit();
+
+        //let indexes come online
+        try ( org.neo4j.graphdb.Transaction tx = db.beginTx() )
+        {
+            db.schema().awaitIndexesOnline( 2, MINUTES );
+            tx.success();
+        }
+
+        CountDownLatch constraintLatch = new CountDownLatch( 1 );
+        CountDownLatch commitLatch = new CountDownLatch( 1 );
+        FutureTask<Void> createConstraintTask = new FutureTask<>( () ->
+        {
+            SchemaWrite schemaWrite = schemaWriteInNewTransaction();
+            try ( Resource ignore = captureTransaction() )
+            {
+                schemaWrite.uniquePropertyConstraintCreate( SchemaDescriptor.forLabel( labelId1, propertyKeyId3 ) );
+                // We now hold a schema lock on the "MyLabel" label. Let the procedure calling transaction have a go.
+                constraintLatch.countDown();
+                commitLatch.await();
+            }
+            rollback();
+            return null;
+        } );
+        Thread constraintCreator = new Thread( createConstraintTask );
+        constraintCreator.start();
+
+        // When
+        constraintLatch.await();
+        RawIterator<AnyValue[],ProcedureException> stream =
+                procs().procedureCallRead( procs().procedureGet( procedureName( "db", "indexes" ) ).id(), new AnyValue[0] );
+
+        Set<Object[]> result = new HashSet<>();
+        while ( stream.hasNext() )
+        {
+            result.add( stream.next() );
+        }
+
+        // Then
+        try
+        {
+            IndexProviderMap indexProviderMap = db.getDependencyResolver().resolveDependency( IndexProviderMap.class );
+            IndexingService indexing = db.getDependencyResolver().resolveDependency( IndexingService.class );
+            IndexProvider provider = indexProviderMap.getDefaultProvider();
+            MapValue pdm = ValueUtils.asMapValue( MapUtil.map( // Provider Descriptor Map.
+                    "key", provider.getProviderDescriptor().getKey(), "version",
+                    provider.getProviderDescriptor().getVersion() ) );
+            assertThat( result, containsInAnyOrder(
+                    new AnyValue[]{stringValue( "INDEX ON :Age(foo)" ), stringValue( ageFooIndex.name() ),
+                            VirtualValues.list( stringValue( "Age" ) ), VirtualValues.list( stringValue( "foo" ) ),
+                            stringValue( "ONLINE" ),
+                            stringValue( "node_unique_property" ), doubleValue( 100D ), pdm,
+                            longValue( indexing.getIndexId( ageFooDescriptor ) ), EMPTY_STRING},
+                    new AnyValue[]{stringValue( "INDEX ON :Person(foo)" ), stringValue( personFooIndex.name() ),
+                            VirtualValues.list( stringValue( "Person" ) ),
+                            VirtualValues.list( stringValue( "foo" ) ),
+                            stringValue( "ONLINE" ),
+                            stringValue( "node_label_property" ), doubleValue( 100D ), pdm,
+                            longValue( indexing.getIndexId( personFooDescriptor ) ), EMPTY_STRING},
+                    new AnyValue[]{stringValue( "INDEX ON :Person(foo, bar)" ), stringValue( personFooBarIndex.name() ),
+                            VirtualValues.list( stringValue( "Person" ) ),
+                            VirtualValues.list( stringValue( "foo" ), stringValue( "bar" ) ),
+                            stringValue( "ONLINE" ),
+                            stringValue( "node_label_property" ), doubleValue( 100D ), pdm,
+                            longValue( indexing.getIndexId( personFooBarDescriptor ) ), EMPTY_STRING},
+                    new AnyValue[]{stringValue( "INDEX ON :Person(baz)" ), stringValue( "index_5" ),
+                            VirtualValues.list( stringValue( "Person" ) ),
+                            VirtualValues.list( stringValue( "baz" ) ),
+                            stringValue( "POPULATING" ),
+                            stringValue( "node_unique_property" ), doubleValue( 100D ), pdm,
+                            longValue( indexing.getIndexId( personBazDescriptor ) ), EMPTY_STRING}
+            ) );
+            commit();
+        }
+        finally
+        {
+            commitLatch.countDown();
+        }
+        createConstraintTask.get();
+        constraintCreator.join();
     }
 
     @Test

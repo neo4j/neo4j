@@ -172,6 +172,12 @@ public class StubStorageCursors implements StorageReader
     }
 
     @Override
+    public Iterator<StorageIndexReference> indexesGetForRelationshipType( int relationshipType )
+    {
+        throw new UnsupportedOperationException( "Not implemented yet" );
+    }
+
+    @Override
     public Long indexGetOwningUniquenessConstraintId( StorageIndexReference index )
     {
         throw new UnsupportedOperationException( "Not implemented yet" );
@@ -313,6 +319,12 @@ public class StubStorageCursors implements StorageReader
     public StorageRelationshipScanCursor allocateRelationshipScanCursor()
     {
         return new StubStorageRelationshipScanCursor();
+    }
+
+    @Override
+    public StorageSchemaReader schemaSnapshot()
+    {
+        throw new UnsupportedOperationException( "Not implemented yet" );
     }
 
     public class Data<SELF>

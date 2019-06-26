@@ -87,7 +87,6 @@ public abstract class RecordStorageReaderTestBase
     private RecordStorageReader commitReader;
     private CommandCreationContext commitContext;
 
-    @SuppressWarnings( "deprecation" )
     @Before
     public void before()
     {
@@ -159,7 +158,7 @@ public abstract class RecordStorageReaderTestBase
 
     protected void createUniquenessConstraint( Label label, String propertyKey ) throws Exception
     {
-        createIndex( label, propertyKey );
+        createUniqueIndex( label, propertyKey );
         TxState txState = new TxState();
         txState.constraintDoAdd( ConstraintDescriptorFactory.uniqueForLabel( getOrCreateLabelId( label ), getOrCreatePropertyKeyId( propertyKey ) ) );
         apply( txState );
@@ -167,16 +166,24 @@ public abstract class RecordStorageReaderTestBase
 
     protected void createNodeKeyConstraint( Label label, String propertyKey ) throws Exception
     {
-        createIndex( label, propertyKey );
+        createUniqueIndex( label, propertyKey );
         TxState txState = new TxState();
         txState.constraintDoAdd( ConstraintDescriptorFactory.nodeKeyForLabel( getOrCreateLabelId( label ), getOrCreatePropertyKeyId( propertyKey ) ) );
         apply( txState );
     }
 
-    private void createIndex( Label label, String propertyKey ) throws Exception
+    protected void createUniqueIndex( Label label, String propertyKey ) throws Exception
     {
         TxState txState = new TxState();
         txState.indexDoAdd( IndexDescriptorFactory.uniqueForSchema(
+                SchemaDescriptor.forLabel( getOrCreateLabelId( label ), getOrCreatePropertyKeyId( propertyKey ) ) ) );
+        apply( txState );
+    }
+
+    protected void createIndex( Label label, String propertyKey ) throws Exception
+    {
+        TxState txState = new TxState();
+        txState.indexDoAdd( IndexDescriptorFactory.forSchema(
                 SchemaDescriptor.forLabel( getOrCreateLabelId( label ), getOrCreatePropertyKeyId( propertyKey ) ) ) );
         apply( txState );
     }

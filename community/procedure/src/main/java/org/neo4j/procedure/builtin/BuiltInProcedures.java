@@ -39,13 +39,12 @@ import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
-import org.neo4j.graphdb.schema.IndexPopulationProgress;
 import org.neo4j.internal.helpers.collection.Iterators;
 import org.neo4j.internal.helpers.collection.MapUtil;
 import org.neo4j.internal.kernel.api.IndexReference;
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.kernel.api.PopulationProgress;
-import org.neo4j.internal.kernel.api.SchemaRead;
+import org.neo4j.internal.kernel.api.SchemaReadCore;
 import org.neo4j.internal.kernel.api.TokenRead;
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
@@ -53,7 +52,6 @@ import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.SilentTokenNameLookup;
 import org.neo4j.kernel.api.Statement;
-import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.impl.api.TokenAccess;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.query.QueryExecutionEngine;
@@ -128,48 +126,62 @@ public class BuiltInProcedures
             TokenNameLookup tokens = new SilentTokenNameLookup( tokenRead );
             IndexingService indexingService = resolver.resolveDependency( IndexingService.class );
 
-            SchemaRead schemaRead = tx.schemaRead();
+            SchemaReadCore schemaRead = tx.schemaRead().snapshot();
             List<IndexReference> indexes = asList( schemaRead.indexesGetAll() );
             indexes.sort( Comparator.comparing( a -> a.userDescription( tokens ) ) );
 
             ArrayList<IndexResult> result = new ArrayList<>();
             for ( IndexReference index : indexes )
             {
-                try
-                {
-                    IndexType type = IndexType.getIndexTypeOf( index );
+                IndexType type = IndexType.getIndexTypeOf( index );
 
-                    SchemaDescriptor schema = index.schema();
-                    long indexId = getIndexId( indexingService, schema );
-                    List<String> tokenNames = Arrays.asList( tokens.entityTokensGetNames( schema.entityType(), schema.getEntityTokenIds() ) );
-                    List<String> propertyNames = propertyNames( tokens, index );
-                    String description = "INDEX ON " + schema.userDescription( tokens );
-                    InternalIndexState internalIndexState = schemaRead.indexGetState( index );
-                    String state = internalIndexState.toString();
-                    Map<String,String> providerDescriptorMap = indexProviderDescriptorMap( schemaRead.index( schema ) );
-                    PopulationProgress progress = schemaRead.indexGetPopulationProgress( index );
-                    IndexPopulationProgress indexProgress = progress.toIndexPopulationProgress();
-
-                    String failureMessage = internalIndexState == InternalIndexState.FAILED ? schemaRead.indexGetFailure( index ) : "";
-                    result.add( new IndexResult( indexId,
-                                                 description,
-                                                 index.name(),
-                                                 tokenNames,
-                                                 propertyNames,
-                                                 state,
-                                                 type.typeName(),
-                                                 indexProgress.getCompletedPercentage(),
-                                                 providerDescriptorMap,
-                                                 failureMessage ) );
-                }
-                catch ( IndexNotFoundKernelException e )
-                {
-                    throw new ProcedureException( Status.Schema.IndexNotFound, e,
-                            "No index on ", index.userDescription( tokens ) );
-                }
+                SchemaDescriptor schema = index.schema();
+                long indexId = getIndexId( indexingService, schema );
+                List<String> tokenNames = Arrays.asList( tokens.entityTokensGetNames( schema.entityType(), schema.getEntityTokenIds() ) );
+                List<String> propertyNames = propertyNames( tokens, index );
+                String description = "INDEX ON " + schema.userDescription( tokens );
+                IndexStatus status = getIndexStatus( schemaRead, index );
+                Map<String,String> providerDescriptorMap = indexProviderDescriptorMap( schemaRead.index( schema ) );
+                result.add( new IndexResult( indexId,
+                        description,
+                        index.name(),
+                        tokenNames,
+                        propertyNames,
+                        status.state,
+                        type.typeName(),
+                        status.populationProgress,
+                        providerDescriptorMap,
+                        status.failureMessage ) );
             }
             return result.stream();
         }
+    }
+
+    private static IndexStatus getIndexStatus( SchemaReadCore schemaRead, IndexReference index )
+    {
+        IndexStatus status = new IndexStatus();
+        try
+        {
+            InternalIndexState internalIndexState = schemaRead.indexGetState( index );
+            status.state = internalIndexState.toString();
+            PopulationProgress progress = schemaRead.indexGetPopulationProgress( index );
+            status.populationProgress = progress.toIndexPopulationProgress().getCompletedPercentage();
+            status.failureMessage = internalIndexState == InternalIndexState.FAILED ? schemaRead.indexGetFailure( index ) : "";
+        }
+        catch ( IndexNotFoundKernelException e )
+        {
+            status.state = "NOT FOUND";
+            status.populationProgress = 0;
+            status.failureMessage = "Index not found. It might have been concurrently dropped.";
+        }
+        return status;
+    }
+
+    private static class IndexStatus
+    {
+        String state;
+        String failureMessage;
+        float populationProgress;
     }
 
     @Description( "Wait for an index to come online (for example: CALL db.awaitIndex(\":Person(name)\"))." )
@@ -258,7 +270,7 @@ public class BuiltInProcedures
     public Stream<ConstraintResult> listConstraints()
     {
 
-        SchemaRead schemaRead = tx.schemaRead();
+        SchemaReadCore schemaRead = tx.schemaRead().snapshot();
         TokenNameLookup tokens = new SilentTokenNameLookup( tx.tokenRead() );
 
         return asList( schemaRead.constraintsGetAll() )

@@ -264,7 +264,6 @@ public class Operations implements Write, SchemaWrite
         sharedSchemaLock( ResourceTypes.LABEL, nodeLabel );
         acquireExclusiveNodeLock( node );
 
-        ktx.assertOpen();
         singleNode( node );
 
         if ( nodeCursor.hasLabel( nodeLabel ) )
@@ -688,6 +687,7 @@ public class Operations implements Write, SchemaWrite
         ktx.statementLocks().optimistic()
                 .acquireExclusive( ktx.lockTracer(), ResourceTypes.GRAPH_PROPS, ResourceIds.graphPropertyResource() );
         ktx.assertOpen();
+
         Value existingValue = readGraphProperty( propertyKey );
         if ( existingValue != Values.NO_VALUE )
         {
@@ -832,9 +832,7 @@ public class Operations implements Write, SchemaWrite
     }
 
     @Override
-    public IndexReference indexCreate( SchemaDescriptor descriptor,
-            String provider,
-            Optional<String> name ) throws SchemaKernelException
+    public IndexReference indexCreate( SchemaDescriptor descriptor, String provider, Optional<String> name ) throws SchemaKernelException
     {
         exclusiveSchemaLock( descriptor );
         ktx.assertOpen();
@@ -894,26 +892,33 @@ public class Operations implements Write, SchemaWrite
     }
 
     @Override
-    public ConstraintDescriptor uniquePropertyConstraintCreate( SchemaDescriptor descriptor )
-            throws SchemaKernelException
+    public ConstraintDescriptor uniquePropertyConstraintCreate( SchemaDescriptor descriptor ) throws SchemaKernelException
     {
         return uniquePropertyConstraintCreate( descriptor, config.get( GraphDatabaseSettings.default_schema_provider ) );
     }
 
     @Override
-    public ConstraintDescriptor uniquePropertyConstraintCreate( SchemaDescriptor descriptor, String provider )
-            throws SchemaKernelException
+    public ConstraintDescriptor uniquePropertyConstraintCreate( SchemaDescriptor descriptor, String provider ) throws SchemaKernelException
     {
         //Lock
         exclusiveSchemaLock( descriptor );
         ktx.assertOpen();
+        UniquenessConstraintDescriptor constraint;
 
-        //Check data integrity
-        assertValidDescriptor( descriptor, SchemaKernelException.OperationContext.CONSTRAINT_CREATION );
-        UniquenessConstraintDescriptor constraint = ConstraintDescriptorFactory.uniqueForSchema( descriptor );
-        assertConstraintDoesNotExist( constraint );
-        // It is not allowed to create uniqueness constraints on indexed label/property pairs
-        assertIndexDoesNotExist( SchemaKernelException.OperationContext.CONSTRAINT_CREATION, descriptor, Optional.empty() );
+        try
+        {
+            //Check data integrity
+            assertValidDescriptor( descriptor, SchemaKernelException.OperationContext.CONSTRAINT_CREATION );
+            constraint = ConstraintDescriptorFactory.uniqueForSchema( descriptor );
+            assertConstraintDoesNotExist( constraint );
+            // It is not allowed to create uniqueness constraints on indexed label/property pairs
+            assertIndexDoesNotExist( SchemaKernelException.OperationContext.CONSTRAINT_CREATION, descriptor, Optional.empty() );
+        }
+        catch ( SchemaKernelException e )
+        {
+            exclusiveSchemaUnlock( descriptor ); // Try not to hold on to exclusive schema locks when we don't strictly need them.
+            throw e;
+        }
 
         // Create constraints
         indexBackedConstraintCreate( constraint, provider );
@@ -932,13 +937,22 @@ public class Operations implements Write, SchemaWrite
         //Lock
         exclusiveSchemaLock( descriptor );
         ktx.assertOpen();
+        NodeKeyConstraintDescriptor constraint;
 
-        //Check data integrity
-        assertValidDescriptor( descriptor, SchemaKernelException.OperationContext.CONSTRAINT_CREATION );
-        NodeKeyConstraintDescriptor constraint = ConstraintDescriptorFactory.nodeKeyForSchema( descriptor );
-        assertConstraintDoesNotExist( constraint );
-        // It is not allowed to create node key constraints on indexed label/property pairs
-        assertIndexDoesNotExist( SchemaKernelException.OperationContext.CONSTRAINT_CREATION, descriptor, Optional.empty() );
+        try
+        {
+            //Check data integrity
+            assertValidDescriptor( descriptor, SchemaKernelException.OperationContext.CONSTRAINT_CREATION );
+            constraint = ConstraintDescriptorFactory.nodeKeyForSchema( descriptor );
+            assertConstraintDoesNotExist( constraint );
+            // It is not allowed to create node key constraints on indexed label/property pairs
+            assertIndexDoesNotExist( SchemaKernelException.OperationContext.CONSTRAINT_CREATION, descriptor, Optional.empty() );
+        }
+        catch ( SchemaKernelException e )
+        {
+            exclusiveSchemaUnlock( descriptor );
+            throw e;
+        }
 
         //enforce constraints
         try ( NodeLabelIndexCursor nodes = cursors.allocateNodeLabelIndexCursor() )
@@ -953,17 +967,9 @@ public class Operations implements Write, SchemaWrite
     }
 
     @Override
-    public ConstraintDescriptor nodePropertyExistenceConstraintCreate( LabelSchemaDescriptor descriptor )
-            throws SchemaKernelException
+    public ConstraintDescriptor nodePropertyExistenceConstraintCreate( LabelSchemaDescriptor descriptor ) throws SchemaKernelException
     {
-        //Lock
-        exclusiveSchemaLock( descriptor );
-        ktx.assertOpen();
-
-        //verify data integrity
-        assertValidDescriptor( descriptor, SchemaKernelException.OperationContext.CONSTRAINT_CREATION );
-        ConstraintDescriptor constraint = ConstraintDescriptorFactory.existsForSchema( descriptor );
-        assertConstraintDoesNotExist( constraint );
+        ConstraintDescriptor constraint = lockAndValidatePropertyExistenceConstraint( descriptor );
 
         //enforce constraints
         try ( NodeLabelIndexCursor nodes = cursors.allocateNodeLabelIndexCursor() )
@@ -978,17 +984,9 @@ public class Operations implements Write, SchemaWrite
     }
 
     @Override
-    public ConstraintDescriptor relationshipPropertyExistenceConstraintCreate( RelationTypeSchemaDescriptor descriptor )
-            throws SchemaKernelException
+    public ConstraintDescriptor relationshipPropertyExistenceConstraintCreate( RelationTypeSchemaDescriptor descriptor ) throws SchemaKernelException
     {
-        //Lock
-        exclusiveSchemaLock( descriptor );
-        ktx.assertOpen();
-
-        //verify data integrity
-        assertValidDescriptor( descriptor, SchemaKernelException.OperationContext.CONSTRAINT_CREATION );
-        ConstraintDescriptor constraint = ConstraintDescriptorFactory.existsForSchema( descriptor );
-        assertConstraintDoesNotExist( constraint );
+        ConstraintDescriptor constraint = lockAndValidatePropertyExistenceConstraint( descriptor );
 
         //enforce constraints
         allStoreHolder.relationshipTypeScan( descriptor.getRelTypeId(), relationshipCursor );
@@ -997,7 +995,27 @@ public class Operations implements Write, SchemaWrite
         //Create
         ktx.txState().constraintDoAdd( constraint );
         return constraint;
+    }
 
+    private ConstraintDescriptor lockAndValidatePropertyExistenceConstraint( SchemaDescriptor descriptor ) throws SchemaKernelException
+    {
+        // Lock constraint schema.
+        exclusiveSchemaLock( descriptor );
+        ktx.assertOpen();
+
+        try
+        {
+            // Verify data integrity.
+            assertValidDescriptor( descriptor, SchemaKernelException.OperationContext.CONSTRAINT_CREATION );
+            ConstraintDescriptor constraint = ConstraintDescriptorFactory.existsForSchema( descriptor );
+            assertConstraintDoesNotExist( constraint );
+            return constraint;
+        }
+        catch ( SchemaKernelException e )
+        {
+            exclusiveSchemaUnlock( descriptor );
+            throw e;
+        }
     }
 
     @Override
@@ -1085,6 +1103,12 @@ public class Operations implements Write, SchemaWrite
     {
         long[] lockingIds = schema.lockingKeys();
         ktx.statementLocks().optimistic().acquireExclusive( ktx.lockTracer(), schema.keyType(), lockingIds );
+    }
+
+    private void exclusiveSchemaUnlock( SchemaDescriptor schema )
+    {
+        long[] lockingIds = schema.lockingKeys();
+        ktx.statementLocks().optimistic().releaseExclusive( schema.keyType(), lockingIds );
     }
 
     private void lockRelationshipNodes( long startNodeId, long endNodeId )

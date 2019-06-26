@@ -48,6 +48,7 @@ import static org.hamcrest.Matchers.equalTo;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 import static org.neo4j.common.EntityType.NODE;
 import static org.neo4j.common.EntityType.RELATIONSHIP;
 import static org.neo4j.internal.helpers.collection.Iterators.asSet;
@@ -218,6 +219,37 @@ public class SchemaCacheTest
 
         // Then
         assertThat( descriptor.schema(), equalTo( schema ) );
+    }
+
+    @Test
+    public void schemaCacheSnapshotsShouldBeReadOnly()
+    {
+        // Given
+        SchemaCache cache = newSchemaCache();
+
+        cache.addSchemaRule( newIndexRule( 1L, 1, 2 ) );
+        cache.addSchemaRule( newIndexRule( 2L, 2, 3 ) );
+
+        SchemaCache snapshot = cache.snapshot();
+
+        cache.addSchemaRule( newIndexRule( 3L, 1, 2 ) );
+
+        // When
+        Set<StorageIndexReference> indexes = asSet( snapshot.indexDescriptorsForLabel( 1 ) );
+
+        // Then
+        Set<StorageIndexReference> expected = asSet( newIndexRule( 1L, 1, 2 ) );
+        assertEquals( expected, indexes );
+
+        try
+        {
+            snapshot.addSchemaRule( newIndexRule( 3L, 1, 2 ) );
+            fail( "SchemaCache snapshots should not permit mutation." );
+        }
+        catch ( IllegalStateException ignore )
+        {
+            // Good.
+        }
     }
 
     @Test

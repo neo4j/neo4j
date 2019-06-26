@@ -42,6 +42,7 @@ import org.neo4j.storageengine.api.StoragePropertyCursor;
 import org.neo4j.storageengine.api.StorageReader;
 import org.neo4j.storageengine.api.StorageRelationshipGroupCursor;
 import org.neo4j.storageengine.api.StorageRelationshipTraversalCursor;
+import org.neo4j.storageengine.api.StorageSchemaReader;
 import org.neo4j.token.TokenHolders;
 
 import static org.neo4j.collection.PrimitiveLongCollections.EMPTY_LONG_ARRAY;
@@ -97,6 +98,12 @@ public class RecordStorageReader implements StorageReader
     public Iterator<StorageIndexReference> indexesGetForLabel( int labelId )
     {
         return map( descriptor -> descriptor, schemaCache.indexDescriptorsForLabel( labelId ) );
+    }
+
+    @Override
+    public Iterator<StorageIndexReference> indexesGetForRelationshipType( int relationshipType )
+    {
+        return null;
     }
 
     @Override
@@ -304,6 +311,12 @@ public class RecordStorageReader implements StorageReader
     public RecordRelationshipScanCursor allocateRelationshipScanCursor()
     {
         return new RecordRelationshipScanCursor( relationshipStore, relationshipGroupStore );
+    }
+
+    @Override
+    public StorageSchemaReader schemaSnapshot()
+    {
+        return new StorageSchemaReaderSnapshot( schemaCache.snapshot() );
     }
 
     @Override
