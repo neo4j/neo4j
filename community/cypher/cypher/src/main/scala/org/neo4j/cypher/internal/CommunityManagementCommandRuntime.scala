@@ -40,12 +40,12 @@ import org.neo4j.values.virtual.VirtualValues
 case class CommunityManagementCommandRuntime(normalExecutionEngine: ExecutionEngine, resolver: DependencyResolver) extends ManagementCommandRuntime {
   override def name: String = "community management-commands"
 
-  override def compileToExecutable(state: LogicalQuery, context: RuntimeContext, securityContext: SecurityContext): ExecutionPlan = {
+  def throwCantCompile(unknownPlan: LogicalPlan): Nothing = {
+    throw new CantCompileQueryException(
+      s"Plan is not a recognized database administration command in community edition: ${unknownPlan.getClass.getSimpleName}")
+  }
 
-    def throwCantCompile(unknownPlan: LogicalPlan): Nothing = {
-      throw new CantCompileQueryException(
-        s"Plan is not a recognized database administration command in community edition: ${unknownPlan.getClass.getSimpleName}")
-    }
+  override def compileToExecutable(state: LogicalQuery, context: RuntimeContext, securityContext: SecurityContext): ExecutionPlan = {
 
     val (planWithSlottedParameters, parameterMapping) = slottedParameters(state.logicalPlan)
 
@@ -124,9 +124,20 @@ case class CommunityManagementCommandRuntime(normalExecutionEngine: ExecutionEng
     // SUPPORT PROCEDURES (need to be cleared before here)
     case SystemProcedureCall(queryString, params) => (_, _, _) =>
       SystemCommandExecutionPlan("SystemProcedure", normalExecutionEngine, queryString, params)
+
+    // Ignore the log command in community
+    case LogSystemCommand(source, _) => (context, parameterMapping, securityContext) =>
+      logicalToExecutable.applyOrElse(source, throwCantCompile).apply(context, parameterMapping, securityContext)
   }
 
-  override def isApplicableManagementCommand(logicalPlanState: LogicalPlanState): Boolean = logicalToExecutable.isDefinedAt(logicalPlanState.maybeLogicalPlan.get)
+  override def isApplicableManagementCommand(logicalPlanState: LogicalPlanState): Boolean = {
+    val logicalPlan = logicalPlanState.maybeLogicalPlan.get match {
+      // Ignore the log command in community
+      case LogSystemCommand(source, _) => source
+      case plan => plan
+    }
+    logicalToExecutable.isDefinedAt(logicalPlan)
+  }
 }
 
 object DatabaseStatus extends Enumeration {
