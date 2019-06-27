@@ -42,7 +42,7 @@ trait Statement extends Parser
   }
 
   def PrivilegeManagementCommand: Rule1[CatalogDDL] = rule("Security privilege management statement") {
-    optional(keyword("CATALOG")) ~~ (ShowPrivileges | GrantCommand | RevokeCommand)
+    optional(keyword("CATALOG")) ~~ (ShowPrivileges | GrantCommand | RevokeCommand | DenyCommand)
   }
 
   def GrantCommand: Rule1[CatalogDDL] = rule("Security privilege grant statement") {
@@ -51,6 +51,10 @@ trait Statement extends Parser
 
   def RevokeCommand: Rule1[CatalogDDL] = rule("Security privilege revoke statement") {
     RevokeRole | RevokeTraverse | RevokeRead | RevokeMatch | RevokeWrite
+  }
+
+  def DenyCommand: Rule1[CatalogDDL] = rule("Security privilege deny statement") {
+    DenyTraverse | DenyRead | DenyMatch | DenyWrite
   }
 
   def ShowUsers: Rule1[ShowUsers] = rule("CATALOG SHOW USERS") {
@@ -190,6 +194,12 @@ trait Statement extends Parser
       ((scope, qualifier, grantees) => ast.RevokePrivilege.traverse(scope, qualifier, grantees))
   }
 
+  //`DENY TRAVERSE ON GRAPH foo ELEMENTS A (*) TO role`
+  def DenyTraverse: Rule1[DenyPrivilege] = rule("CATALOG DENY TRAVERSE") {
+    group(keyword("DENY TRAVERSE") ~~ Graph ~~ ScopeQualifier ~~ keyword("TO") ~~ SymbolicNamesList) ~~>>
+      ((scope, qualifier, grantees) => ast.DenyPrivilege.traverse(scope, qualifier, grantees))
+  }
+
   //`GRANT READ (a) ON GRAPH foo ELEMENTS A (*) TO role`
   def GrantRead: Rule1[GrantPrivilege] = rule("CATALOG GRANT READ") {
     group(keyword("GRANT READ") ~~ PrivilegeProperty ~~ Graph ~~ ScopeQualifier ~~ keyword("TO") ~~ SymbolicNamesList) ~~>>
@@ -200,6 +210,12 @@ trait Statement extends Parser
   def RevokeRead: Rule1[RevokePrivilege] = rule("CATALOG REVOKE READ") {
     group(keyword("REVOKE READ") ~~ PrivilegeProperty ~~ Graph ~~ ScopeQualifier ~~ keyword("FROM") ~~ SymbolicNamesList) ~~>>
       ((prop, scope, qualifier, grantees) => ast.RevokePrivilege.read(prop, scope, qualifier, grantees))
+  }
+
+  //`DENY READ (a) ON GRAPH foo ELEMENTS A (*) TO role`
+  def DenyRead: Rule1[DenyPrivilege] = rule("CATALOG DENY READ") {
+    group(keyword("DENY READ") ~~ PrivilegeProperty ~~ Graph ~~ ScopeQualifier ~~ keyword("TO") ~~ SymbolicNamesList) ~~>>
+      ((prop, scope, qualifier, grantees) => ast.DenyPrivilege.read(prop, scope, qualifier, grantees))
   }
 
   //`GRANT MATCH (a) ON GRAPH foo ELEMENTS A (*) TO role`
@@ -214,6 +230,12 @@ trait Statement extends Parser
       ((prop, scope, qualifier, grantees) => ast.RevokePrivilege.asMatch(prop, scope, qualifier, grantees))
   }
 
+  //`DENY MATCH (a) ON GRAPH foo ELEMENTS A (*) TO role`
+  def DenyMatch: Rule1[DenyPrivilege] = rule("CATALOG DENY MATCH") {
+    group(keyword("DENY MATCH") ~~ PrivilegeProperty ~~ Graph ~~ ScopeQualifier ~~ keyword("TO") ~~ SymbolicNamesList) ~~>>
+      ((prop, scope, qualifier, grantees) => ast.DenyPrivilege.asMatch(prop, scope, qualifier, grantees))
+  }
+
   //`GRANT WRITE (*) ON GRAPH foo * (*) TO role`
   def GrantWrite: Rule1[GrantPrivilege] = rule("CATALOG GRANT WRITE") {
     group(keyword("GRANT WRITE") ~~ AllPrivilegeProperty ~~ Graph ~~ AllScopeQualifier ~~ keyword("TO") ~~ SymbolicNamesList) ~~>>
@@ -224,6 +246,12 @@ trait Statement extends Parser
   def RevokeWrite: Rule1[RevokePrivilege] = rule("CATALOG REVOKE WRITE") {
     group(keyword("REVOKE WRITE") ~~ AllPrivilegeProperty ~~ Graph ~~ AllScopeQualifier ~~ keyword("FROM") ~~ SymbolicNamesList) ~~>>
       ((prop, scope, qualifier, grantees) => ast.RevokePrivilege.write(prop, scope, qualifier, grantees))
+  }
+
+  //`DENY WRITE (*) ON GRAPH foo * (*) TO role`
+  def DenyWrite: Rule1[DenyPrivilege] = rule("CATALOG DENY WRITE") {
+    group(keyword("DENY WRITE") ~~ AllPrivilegeProperty ~~ Graph ~~ AllScopeQualifier ~~ keyword("TO") ~~ SymbolicNamesList) ~~>>
+      ((prop, scope, qualifier, grantees) => ast.DenyPrivilege.write(prop, scope, qualifier, grantees))
   }
 
   def ShowPrivileges: Rule1[ShowPrivileges] = rule("CATALOG SHOW PRIVILEGES") {

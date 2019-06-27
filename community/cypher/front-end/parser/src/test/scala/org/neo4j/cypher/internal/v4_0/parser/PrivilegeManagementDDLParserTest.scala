@@ -93,10 +93,11 @@ class PrivilegeManagementDDLParserTest extends DDLParserTestBase {
   //  Granting/revoking traverse to/from role
 
   Seq(
-    ("GRANT", "TO", grant: grantOrRevokeFunc),
-    ("REVOKE", "FROM", revoke: grantOrRevokeFunc)
+    ("GRANT", "TO", grant: privilegeFunc),
+    ("REVOKE", "FROM", revoke: privilegeFunc),
+    ("DENY", "TO", deny: privilegeFunc)
   ).foreach {
-    case (command: String, preposition: String, func: grantOrRevokeFunc) =>
+    case (command: String, preposition: String, func: privilegeFunc) =>
 
       Seq("GRAPH", "GRAPHS").foreach {
         graphKeyword =>
@@ -437,12 +438,14 @@ class PrivilegeManagementDDLParserTest extends DDLParserTestBase {
   // Granting/revoking read and match to/from role
 
   Seq(
-    (ast.ReadPrivilege()(pos), "GRANT", "TO", grant: grantOrRevokeFunc),
-    (ast.ReadPrivilege()(pos), "REVOKE", "FROM", revoke: grantOrRevokeFunc),
-    (ast.MatchPrivilege()(pos), "GRANT", "TO", grant: grantOrRevokeFunc),
-    (ast.MatchPrivilege()(pos), "REVOKE", "FROM", revoke: grantOrRevokeFunc)
+    (ast.ReadPrivilege()(pos), "GRANT", "TO", grant: privilegeFunc),
+    (ast.ReadPrivilege()(pos), "REVOKE", "FROM", revoke: privilegeFunc),
+    (ast.ReadPrivilege()(pos), "DENY", "TO", deny: privilegeFunc),
+    (ast.MatchPrivilege()(pos), "GRANT", "TO", grant: privilegeFunc),
+    (ast.MatchPrivilege()(pos), "REVOKE", "FROM", revoke: privilegeFunc),
+    (ast.MatchPrivilege()(pos), "DENY", "TO", deny: privilegeFunc)
   ).foreach {
-    case (privilege: ast.PrivilegeType, command: String, preposition: String, func: grantOrRevokeFunc) =>
+    case (privilege: ast.PrivilegeType, command: String, preposition: String, func: privilegeFunc) =>
 
       Seq("GRAPH", "GRAPHS").foreach {
         graphKeyword =>
@@ -978,7 +981,7 @@ class PrivilegeManagementDDLParserTest extends DDLParserTestBase {
               }
           }
 
-          // Needs to be separate loop to avoid duplicate tests since the test does not have any $nodeKeyword
+          // Needs to be separate loop to avoid duplicate tests since the test does not have any segment keyword
           Seq(
             ("*", ast.AllResource()(pos), "*", ast.AllGraphsScope()(pos)),
             ("*", ast.AllResource()(pos), "foo", ast.NamedGraphScope("foo")(pos)),
