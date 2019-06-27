@@ -250,6 +250,9 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean, cardinalities: Cardina
         val dbName = Database(Prettifier.escapeName(normalizedName.name))
         PlanDescriptionImpl(id, "EnsureValidNonDefaultDatabase", NoChildren, Seq(dbName), variables)
 
+      case LogSystemCommand(_, _) =>
+        PlanDescriptionImpl(id, "LogSystemCommand", NoChildren, Seq.empty, variables)
+
       case x => throw new InternalException(s"Unknown plan type: ${x.getClass.getSimpleName}. Missing a case?")
     }
 
