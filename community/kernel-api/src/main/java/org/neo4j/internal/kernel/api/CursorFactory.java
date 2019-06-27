@@ -33,6 +33,8 @@ public interface CursorFactory
 
     RelationshipScanCursor allocateRelationshipScanCursor();
 
+    RelationshipScanCursor allocateFullAccessRelationshipScanCursor();
+
     RelationshipTraversalCursor allocateRelationshipTraversalCursor();
 
     // properties

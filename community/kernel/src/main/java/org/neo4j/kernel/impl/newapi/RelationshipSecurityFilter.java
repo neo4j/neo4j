@@ -22,6 +22,7 @@ package org.neo4j.kernel.impl.newapi;
 import org.neo4j.internal.kernel.api.IndexOrder;
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.internal.kernel.api.RelationshipScanCursor;
+import org.neo4j.internal.kernel.api.security.AccessMode;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.io.IOUtils;
 import org.neo4j.kernel.api.index.IndexProgressor;
@@ -32,13 +33,17 @@ class RelationshipSecurityFilter implements IndexProgressor.EntityValueClient, I
     private final EntityValueClient target;
     private final Read read;
     private final RelationshipScanCursor relCursor;
+    private final AccessMode accessMode;
+    private final int[] properties;
     private IndexProgressor progressor;
 
-    RelationshipSecurityFilter( EntityValueClient target, RelationshipScanCursor relCursor, Read read )
+    RelationshipSecurityFilter( int[] properties, EntityValueClient target, RelationshipScanCursor relCursor, Read read, AccessMode accessMode )
     {
         this.target = target;
         this.read = read;
         this.relCursor = relCursor;
+        this.accessMode = accessMode;
+        this.properties = properties;
     }
 
     @Override
@@ -65,7 +70,21 @@ class RelationshipSecurityFilter implements IndexProgressor.EntityValueClient, I
     public boolean acceptEntity( long reference, float score, Value... values )
     {
         read.singleRelationship( reference, relCursor );
-        return relCursor.next() && target.acceptEntity( reference, score, values );
+        if ( !relCursor.next() )
+        {
+            return false;
+        }
+
+        int relType = relCursor.type();
+        for ( int prop : properties )
+        {
+            // TODO this filters out too many...
+            if ( !accessMode.allowsReadRelationshipProperty( () -> relType, prop ) )
+            {
+                return false;
+            }
+        }
+        return target.acceptEntity( reference, score, values );
     }
 
     @Override

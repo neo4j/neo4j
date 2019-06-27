@@ -108,7 +108,7 @@ class DefaultRelationshipScanCursor extends DefaultRelationshipCursor<StorageRel
         return false;
     }
 
-    private boolean allowedToSeeEndNode( AccessMode mode )
+    protected boolean allowedToSeeEndNode( AccessMode mode )
     {
         if ( mode.allowsTraverseAllLabels() )
         {

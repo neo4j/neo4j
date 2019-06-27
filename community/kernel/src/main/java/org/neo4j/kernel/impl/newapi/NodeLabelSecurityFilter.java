@@ -80,7 +80,7 @@ class NodeLabelSecurityFilter implements IndexProgressor.EntityValueClient, Inde
         long[] labels = node.labels().all();
         for ( int prop : properties )
         {
-            allowed &= accessMode.allowsReadProperty( () -> Labels.from( labels ), prop );
+            allowed &= accessMode.allowsReadNodeProperty( () -> Labels.from( labels ), prop );
         }
 
         return allowed && target.acceptEntity( reference, score, values );

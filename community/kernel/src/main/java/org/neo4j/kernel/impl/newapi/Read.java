@@ -142,31 +142,32 @@ abstract class Read implements TxStateHolder,
             IndexReference reference )
     {
         // old property blacklisting
-        for ( int prop : reference.properties() )
+        int[] properties = reference.properties();
+        for ( int prop : properties )
         {
             if ( !accessMode.allowsPropertyReads( prop ) )
             {
-                return new NodeLabelSecurityFilter( reference.properties(), cursor, cursors.allocateNodeCursor(), this, AccessMode.Static.NONE );
+                return new NodeLabelSecurityFilter( properties, cursor, cursors.allocateNodeCursor(), this, AccessMode.Static.NONE );
             }
         }
 
         SchemaDescriptor schema = reference.schema();
 
         boolean allowsForAllLabels = true;
-        for ( int prop : reference.properties() )
+        for ( int prop : properties )
         {
             allowsForAllLabels &= accessMode.allowsReadPropertyAllLabels( prop ) && accessMode.allowsTraverseAllLabels();
         }
 
         if ( schema.entityType().equals( EntityType.NODE ) && !allowsForAllLabels )
         {
-            for ( int prop : reference.properties() )
+            for ( int prop : properties )
             {
                 for ( int label : schema.getEntityTokenIds() )
                 {
-                    if ( !accessMode.allowsTraverseLabels( label ) || !accessMode.allowsReadProperty( () -> Labels.from( label ), prop ) )
+                    if ( !accessMode.allowsTraverseLabels( label ) || !accessMode.allowsReadNodeProperty( () -> Labels.from( label ), prop ) )
                     {
-                        return new NodeLabelSecurityFilter( reference.properties(), cursor, cursors.allocateNodeCursor(), this, ktx.securityContext().mode() );
+                        return new NodeLabelSecurityFilter( properties, cursor, cursors.allocateNodeCursor(), this, accessMode );
                     }
                 }
             }
@@ -174,11 +175,15 @@ abstract class Read implements TxStateHolder,
 
         if ( schema.entityType().equals( EntityType.RELATIONSHIP ) )
         {
-            for ( int relType : schema.getEntityTokenIds() )
+            for ( int prop : properties )
             {
-                if ( !accessMode.allowsTraverseRelType( relType ) || !accessMode.allowsTraverseAllLabels() )
+                for ( int relType : schema.getEntityTokenIds() )
                 {
-                    return new RelationshipSecurityFilter( cursor, cursors.allocateRelationshipScanCursor(), this );
+                    if ( !accessMode.allowsTraverseAllLabels() || !accessMode.allowsTraverseRelType( relType ) ||
+                            !accessMode.allowsReadRelationshipProperty( () -> relType, prop ) )
+                    {
+                        return new RelationshipSecurityFilter( properties, cursor, cursors.allocateRelationshipScanCursor(), this, accessMode );
+                    }
                 }
             }
         }

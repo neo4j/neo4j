@@ -66,6 +66,13 @@ public class DefaultThreadSafeCursors extends DefaultCursors implements CursorFa
     }
 
     @Override
+    public RelationshipScanCursor allocateFullAccessRelationshipScanCursor()
+    {
+        return trace( new FullAccessRelationshipScanCursor(
+                DefaultRelationshipScanCursor::release, storageReader.allocateRelationshipScanCursor() ) );
+    }
+
+    @Override
     public RelationshipTraversalCursor allocateRelationshipTraversalCursor()
     {
         return trace( new DefaultRelationshipTraversalCursor(

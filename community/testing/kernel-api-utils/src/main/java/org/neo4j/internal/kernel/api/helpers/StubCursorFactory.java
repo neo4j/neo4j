@@ -39,6 +39,7 @@ public class StubCursorFactory implements CursorFactory
     private Queue<NodeCursor> nodeCursors = new LinkedList<>();
     private Queue<NodeCursor> fullNodeCursors = new LinkedList<>();
     private Queue<RelationshipScanCursor> relationshipScanCursors = new LinkedList<>();
+    private Queue<RelationshipScanCursor> fullRelationshipScanCursors = new LinkedList<>();
     private Queue<RelationshipTraversalCursor> relationshiTraversalCursors = new LinkedList<>();
     private Queue<PropertyCursor> propertyCursors = new LinkedList<>();
     private Queue<PropertyCursor> fullPropertyCursors = new LinkedList<>();
@@ -73,6 +74,12 @@ public class StubCursorFactory implements CursorFactory
     public RelationshipScanCursor allocateRelationshipScanCursor()
     {
         return poll( relationshipScanCursors );
+    }
+
+    @Override
+    public RelationshipScanCursor allocateFullAccessRelationshipScanCursor()
+    {
+        return poll( fullRelationshipScanCursors );
     }
 
     @Override

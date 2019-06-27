@@ -23,6 +23,7 @@ import java.util.ArrayList;
 
 import org.neo4j.internal.kernel.api.CursorFactory;
 import org.neo4j.internal.kernel.api.RelationshipIndexCursor;
+import org.neo4j.internal.kernel.api.RelationshipScanCursor;
 import org.neo4j.storageengine.api.StorageReader;
 
 /**
@@ -34,6 +35,7 @@ public class DefaultPooledCursors extends DefaultCursors implements CursorFactor
     private DefaultNodeCursor nodeCursor;
     private FullAccessNodeCursor fullAccessNodeCursor;
     private DefaultRelationshipScanCursor relationshipScanCursor;
+    private FullAccessRelationshipScanCursor fullAccessRelationshipScanCursor;
     private DefaultRelationshipTraversalCursor relationshipTraversalCursor;
     private DefaultPropertyCursor propertyCursor;
     private FullAccessPropertyCursor fullAccessPropertyCursor;
@@ -127,6 +129,33 @@ public class DefaultPooledCursors extends DefaultCursors implements CursorFactor
             relationshipScanCursor.release();
         }
         relationshipScanCursor = cursor;
+    }
+
+    @Override
+    public RelationshipScanCursor allocateFullAccessRelationshipScanCursor()
+    {
+        if ( fullAccessRelationshipScanCursor == null )
+        {
+            return trace( new FullAccessRelationshipScanCursor( this::accept, storageReader.allocateRelationshipScanCursor() ) );
+        }
+
+        try
+        {
+            return fullAccessRelationshipScanCursor;
+        }
+        finally
+        {
+            fullAccessRelationshipScanCursor = null;
+        }
+    }
+
+    public void accept( FullAccessRelationshipScanCursor cursor )
+    {
+        if ( fullAccessRelationshipScanCursor != null )
+        {
+            fullAccessRelationshipScanCursor.release();
+        }
+        fullAccessRelationshipScanCursor = cursor;
     }
 
     @Override

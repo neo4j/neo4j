@@ -19,6 +19,7 @@
  */
 package org.neo4j.internal.kernel.api.security;
 
+import java.util.function.IntSupplier;
 import java.util.function.Supplier;
 
 import org.neo4j.graphdb.security.AuthorizationViolationException;
@@ -140,7 +141,19 @@ public interface AccessMode
         }
 
         @Override
-        public boolean allowsReadProperty( Supplier<LabelSet> labels, int propertyKey )
+        public boolean allowsReadNodeProperty( Supplier<LabelSet> labels, int propertyKey )
+        {
+            return read;
+        }
+
+        @Override
+        public boolean allowsReadPropertyAllRelTypes( int propertyKey )
+        {
+            return read;
+        }
+
+        @Override
+        public boolean allowsReadRelationshipProperty( IntSupplier relType, int propertyKey )
         {
             return read;
         }
@@ -177,7 +190,10 @@ public interface AccessMode
     boolean allowsTraverseRelType( int relType );
 
     boolean allowsReadPropertyAllLabels( int propertyKey );
-    boolean allowsReadProperty( Supplier<LabelSet> labels, int propertyKey );
+    boolean allowsReadNodeProperty( Supplier<LabelSet> labels, int propertyKey );
+
+    boolean allowsReadPropertyAllRelTypes( int propertyKey );
+    boolean allowsReadRelationshipProperty( IntSupplier relType, int propertyKey );
 
     boolean allowsPropertyReads( int propertyKey );
 

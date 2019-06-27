@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.api.security;
 
+import java.util.function.IntSupplier;
 import java.util.function.Supplier;
 
 import org.neo4j.internal.kernel.api.LabelSet;
@@ -96,9 +97,21 @@ public class OverriddenAccessMode extends WrappedAccessMode
     }
 
     @Override
-    public boolean allowsReadProperty( Supplier<LabelSet> labels, int propertyKey )
+    public boolean allowsReadNodeProperty( Supplier<LabelSet> labels, int propertyKey )
     {
-        return wrapping.allowsReadProperty( labels, propertyKey );
+        return wrapping.allowsReadNodeProperty( labels, propertyKey );
+    }
+
+    @Override
+    public boolean allowsReadPropertyAllRelTypes( int propertyKey )
+    {
+        return wrapping.allowsReadPropertyAllRelTypes( propertyKey );
+    }
+
+    @Override
+    public boolean allowsReadRelationshipProperty( IntSupplier relType, int propertyKey )
+    {
+        return wrapping.allowsReadRelationshipProperty( relType, propertyKey );
     }
 
     @Override

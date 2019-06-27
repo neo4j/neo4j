@@ -84,6 +84,14 @@ public class ManagedTestCursors implements CursorFactory
     }
 
     @Override
+    public RelationshipScanCursor allocateFullAccessRelationshipScanCursor()
+    {
+        RelationshipScanCursor n = cursors.allocateFullAccessRelationshipScanCursor();
+        allCursors.add( n );
+        return n;
+    }
+
+    @Override
     public RelationshipTraversalCursor allocateRelationshipTraversalCursor()
     {
         RelationshipTraversalCursor n = cursors.allocateRelationshipTraversalCursor();
