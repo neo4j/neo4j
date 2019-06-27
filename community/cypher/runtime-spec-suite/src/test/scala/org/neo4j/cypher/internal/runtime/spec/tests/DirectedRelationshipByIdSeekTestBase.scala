@@ -47,7 +47,7 @@ abstract class DirectedRelationshipByIdSeekTestBase[CONTEXT <: RuntimeContext](
 
     // then
     inTx {
-      runtimeResult should beColumns("r", "x", "y").withRows(Seq(Array(relToFind, relToFind.getStartNode, relToFind.getEndNode)))
+      runtimeResult should beColumns("r", "x", "y").withRows(singleRow(relToFind, relToFind.getStartNode, relToFind.getEndNode))
     }
   }
 
