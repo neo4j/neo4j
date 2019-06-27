@@ -22,6 +22,8 @@ package org.neo4j.internal.id;
 import java.util.Arrays;
 import java.util.Deque;
 import java.util.concurrent.ConcurrentLinkedDeque;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
@@ -62,6 +64,7 @@ public class DelayedBuffer<T>
     private final Consumer<long[]> chunkConsumer;
     private final Deque<Chunk<T>> chunks = new ConcurrentLinkedDeque<>();
     private final int chunkSize;
+    private final Lock consumeLock = new ReentrantLock();
 
     private final long[] chunk;
     private int chunkCursor;
@@ -88,23 +91,31 @@ public class DelayedBuffer<T>
             flush();
         }
 
-        if ( !chunks.isEmpty() )
+        consumeLock.lock();
+        try
         {
-            // Potentially hand over chunks to the consumer
-            while ( !chunks.isEmpty() )
+            if ( !chunks.isEmpty() )
             {
-                Chunk<T> candidate = chunks.peek();
-                if ( safeThreshold.test( candidate.threshold ) )
+                // Potentially hand over chunks to the consumer
+                while ( !chunks.isEmpty() )
                 {
-                    chunkConsumer.accept( candidate.values );
-                    chunks.remove();
-                }
-                else
-                {
-                    // The chunks are ordered by chunkThreshold, so we know that no more chunks will qualify anyway
-                    break;
+                    Chunk<T> candidate = chunks.peek();
+                    if ( safeThreshold.test( candidate.threshold ) )
+                    {
+                        chunkConsumer.accept( candidate.values );
+                        chunks.remove();
+                    }
+                    else
+                    {
+                        // The chunks are ordered by chunkThreshold, so we know that no more chunks will qualify anyway
+                        break;
+                    }
                 }
             }
+        }
+        finally
+        {
+            consumeLock.unlock();
         }
     }
 
