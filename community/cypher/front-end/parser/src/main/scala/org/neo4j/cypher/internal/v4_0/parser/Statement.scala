@@ -240,8 +240,8 @@ trait Statement extends Parser
   )
 
   // TODO can be removed once we have more fine-grained writes
-  private def AllScopeQualifier: Rule1[PrivilegeQualifier] = rule("all element types and associated labels (props) qualifier combinations")(
-    optional(NodeKeyword ~~ "*" ~~ optional("(" ~~ "*" ~~ ")")) ~~~> {ast.AllQualifier()}
+  private def AllScopeQualifier: Rule1[PrivilegeQualifier] = rule("all element types and associated labels/relTypes (props) qualifier combinations")(
+    optional(ElementKeyword ~~ "*" ~~ optional("(" ~~ "*" ~~ ")")) ~~~> {ast.AllQualifier()}
   )
 
   private def ElementKeyword: Rule0 = keyword("ELEMENTS") | keyword("ELEMENT")

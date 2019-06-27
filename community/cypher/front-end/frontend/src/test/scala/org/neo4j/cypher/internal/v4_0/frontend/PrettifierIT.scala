@@ -490,22 +490,22 @@ class PrettifierIT extends CypherFunSuite {
             s"$action READ (foo, bar) ON GRAPH foo NODES A, B, C (*) $preposition x, y, z",
 
           s"$action write (*) on graph * $preposition role" ->
-            s"$action WRITE (*) ON GRAPH * NODES * (*) $preposition role",
+            s"$action WRITE (*) ON GRAPH * ELEMENTS * (*) $preposition role",
 
-          s"$action write (*) on graph * nodes * $preposition role" ->
-            s"$action WRITE (*) ON GRAPH * NODES * (*) $preposition role",
+          s"$action write (*) on graph * elements * $preposition role" ->
+            s"$action WRITE (*) ON GRAPH * ELEMENTS * (*) $preposition role",
 
-          s"$action write (*) on graph * nodes * (*) $preposition role" ->
-            s"$action WRITE (*) ON GRAPH * NODES * (*) $preposition role",
+          s"$action write (*) on graph * elements * (*) $preposition role" ->
+            s"$action WRITE (*) ON GRAPH * ELEMENTS * (*) $preposition role",
 
           s"$action write (*) on graph foo $preposition role" ->
-            s"$action WRITE (*) ON GRAPH foo NODES * (*) $preposition role",
+            s"$action WRITE (*) ON GRAPH foo ELEMENTS * (*) $preposition role",
 
-          s"$action write (*) on graph foo nodes * (*) $preposition role" ->
-            s"$action WRITE (*) ON GRAPH foo NODES * (*) $preposition role",
+          s"$action write (*) on graph foo elements * (*) $preposition role" ->
+            s"$action WRITE (*) ON GRAPH foo ELEMENTS * (*) $preposition role",
 
-          s"$action write (*) on graphs foo node * (*) $preposition role" ->
-            s"$action WRITE (*) ON GRAPH foo NODES * (*) $preposition role"
+          s"$action write (*) on graphs foo elements * (*) $preposition role" ->
+            s"$action WRITE (*) ON GRAPH foo ELEMENTS * (*) $preposition role"
         )
     }
   }

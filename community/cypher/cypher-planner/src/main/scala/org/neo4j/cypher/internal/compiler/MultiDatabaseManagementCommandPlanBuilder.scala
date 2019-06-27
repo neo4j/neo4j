@@ -105,55 +105,59 @@ case object MultiDatabaseManagementCommandPlanBuilder extends Phase[PlannerConte
 
       // GRANT TRAVERSE ON GRAPH foo ELEMENTS A (*) TO role
       case GrantPrivilege(TraversePrivilege(), _, database, segments, roleNames) =>
-        (for (roleName <- roleNames; label <- segments.simplify) yield {
-          roleName -> label
+        (for (roleName <- roleNames; segment <- segments.simplify) yield {
+          roleName -> segment
         }).foldLeft(Option.empty[plans.GrantTraverse]) {
-          case (source, (roleName, label)) => Some(plans.GrantTraverse(source, database, label, roleName))
+          case (source, (roleName, segment)) => Some(plans.GrantTraverse(source, database, segment, roleName))
         }
 
       // REVOKE TRAVERSE ON GRAPH foo ELEMENTS A (*) FROM role
       case RevokePrivilege(TraversePrivilege(), _, database, segments, roleNames) =>
-        (for (roleName <- roleNames; label <- segments.simplify) yield {
-          roleName -> label
+        (for (roleName <- roleNames; segment <- segments.simplify) yield {
+          roleName -> segment
         }).foldLeft(Option.empty[plans.RevokeTraverse]) {
-          case (source, (roleName, label)) => Some(plans.RevokeTraverse(source, database, label, roleName))
+          case (source, (roleName, segment)) => Some(plans.RevokeTraverse(source, database, segment, roleName))
         }
 
       // GRANT WRITE (*) ON GRAPH foo * (*) TO role
-      case GrantPrivilege(WritePrivilege(), _, database, _, roleNames) =>
-        roleNames.foldLeft(Option.empty[plans.GrantWrite]) {
-          case (source, roleName) => Some(plans.GrantWrite(source, AllResource()(InputPosition.NONE), database, AllQualifier()(InputPosition.NONE), roleName))
+      case GrantPrivilege(WritePrivilege(), _, database, segments, roleNames) =>
+        (for (roleName <- roleNames; segment <- segments.simplify) yield {
+          roleName -> segment
+        }).foldLeft(Option.empty[plans.GrantWrite]) {
+          case (source, (roleName, segment)) => Some(plans.GrantWrite(source, AllResource()(InputPosition.NONE), database, segment, roleName))
         }
 
       // REVOKE WRITE (*) ON GRAPH foo * (*) FROM role
-      case RevokePrivilege(WritePrivilege(), _, database, _, roleNames) =>
-        roleNames.foldLeft(Option.empty[plans.RevokeWrite]) {
-          case (source, roleName) => Some(plans.RevokeWrite(source, AllResource()(InputPosition.NONE), database, AllQualifier()(InputPosition.NONE), roleName))
+      case RevokePrivilege(WritePrivilege(), _, database, segments, roleNames) =>
+        (for (roleName <- roleNames; segment <- segments.simplify) yield {
+          roleName -> segment
+        }).foldLeft(Option.empty[plans.RevokeWrite]) {
+          case (source, (roleName, segment)) => Some(plans.RevokeWrite(source, AllResource()(InputPosition.NONE), database, segment, roleName))
         }
 
       // GRANT READ (prop) ON GRAPH foo NODES A (*) TO role
       // GRANT MATCH (prop) ON GRAPH foo NODES A (*) TO role
-      case GrantPrivilege(privilege, resources, database, labels, roleNames) =>
-        val combos = for (roleName <- roleNames; label <- labels.simplify; resource <- resources.simplify) yield {
-          roleName -> (label, resource)
+      case GrantPrivilege(privilege, resources, database, segments, roleNames) =>
+        val combos = for (roleName <- roleNames; segment <- segments.simplify; resource <- resources.simplify) yield {
+          roleName -> (segment, resource)
         }
         val plan = privilege match {
           case ReadPrivilege() => Option.empty[plans.PrivilegePlan]
           case MatchPrivilege() => combos.foldLeft(Option.empty[plans.PrivilegePlan]) {
-            case (source, (roleName, (label, _))) => Some(plans.GrantTraverse(source, database, label, roleName))
+            case (source, (roleName, (segment, _))) => Some(plans.GrantTraverse(source, database, segment, roleName))
           }
         }
         combos.foldLeft(plan) {
-          case (source, (roleName, (label, resource))) => Some(plans.GrantRead(source, resource, database, label, roleName))
+          case (source, (roleName, (segment, resource))) => Some(plans.GrantRead(source, resource, database, segment, roleName))
         }
 
       // REVOKE READ (prop) ON GRAPH foo NODES A (*) FROM role
       // REVOKE MATCH (prop) ON GRAPH foo NODES A (*) FROM role
-      case RevokePrivilege(_, resources, database, labels, roleNames) =>
-        (for (roleName <- roleNames; label <- labels.simplify; resource <- resources.simplify) yield {
-          roleName -> (label, resource)
+      case RevokePrivilege(_, resources, database, segments, roleNames) =>
+        (for (roleName <- roleNames; segment <- segments.simplify; resource <- resources.simplify) yield {
+          roleName -> (segment, resource)
         }).foldLeft(Option.empty[plans.RevokeRead]) {
-          case (source, (roleName, (label, resource))) => Some(plans.RevokeRead(source, resource, database, label, roleName))
+          case (source, (roleName, (segment, resource))) => Some(plans.RevokeRead(source, resource, database, segment, roleName))
         }
 
       // SHOW [ALL | USER user | ROLE role] PRIVILEGES

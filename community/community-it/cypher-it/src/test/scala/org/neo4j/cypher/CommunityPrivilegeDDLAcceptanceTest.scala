@@ -80,7 +80,7 @@ class CommunityPrivilegeDDLAcceptanceTest extends CommunityDDLAcceptanceTestBase
     selectDatabase(SYSTEM_DATABASE_NAME)
 
     // THEN
-    assertFailure("GRANT WRITE (*) ON GRAPH * NODES * (*) TO custom", "Unsupported management command: GRANT WRITE (*) ON GRAPH * NODES * (*) TO custom")
+    assertFailure("GRANT WRITE (*) ON GRAPH * ELEMENTS * (*) TO custom", "Unsupported management command: GRANT WRITE (*) ON GRAPH * ELEMENTS * (*) TO custom")
   }
 
   // Tests for revoking privileges
@@ -114,7 +114,7 @@ class CommunityPrivilegeDDLAcceptanceTest extends CommunityDDLAcceptanceTestBase
     selectDatabase(SYSTEM_DATABASE_NAME)
 
     // THEN
-    assertFailure("REVOKE WRITE (*) ON GRAPH * NODES * (*) FROM custom", "Unsupported management command: REVOKE WRITE (*) ON GRAPH * NODES * (*) FROM custom")
+    assertFailure("REVOKE WRITE (*) ON GRAPH * ELEMENTS * (*) FROM custom", "Unsupported management command: REVOKE WRITE (*) ON GRAPH * ELEMENTS * (*) FROM custom")
   }
 
   // Tests for granting and revoking roles to users
