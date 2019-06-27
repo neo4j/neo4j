@@ -65,11 +65,6 @@ public interface OutOfOrderSequence
     long getHighestGapFreeNumber();
 
     /**
-     * @return true if the pair number/meta data has been offered
-     */
-    boolean seen( long number, long[] meta );
-
-    /**
      * Used in recovery. I don't like the visibility of this method at all.
      */
     void set( long number, long[] meta );
