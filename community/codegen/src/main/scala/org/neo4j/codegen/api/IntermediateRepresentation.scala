@@ -511,7 +511,10 @@ object IntermediateRepresentation {
 
   def invoke(owner: IntermediateRepresentation, method: Method,
              params: IntermediateRepresentation*): IntermediateRepresentation =
-    Invoke(owner, method, params)
+    if (method.returnType == org.neo4j.codegen.TypeReference.VOID)
+      InvokeSideEffect(owner, method, params)
+    else
+      Invoke(owner, method, params)
 
   def invokeSideEffect(owner: IntermediateRepresentation, method: Method,
                        params: IntermediateRepresentation*): IntermediateRepresentation =
