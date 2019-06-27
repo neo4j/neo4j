@@ -125,18 +125,18 @@ case object MultiDatabaseManagementCommandPlanBuilder extends Phase[PlannerConte
           roleName -> segment
         }).foldLeft(Option.empty[plans.RevokeTraverse]) {
           case (source, (roleName, segment)) => Some(plans.RevokeTraverse(source, database, segment, roleName))
-        }
+        }.map(plan => plans.LogSystemCommand(plan, prettifier.asString(c)))
 
-      // GRANT WRITE (*) ON GRAPH foo * (*) TO role
-      case GrantPrivilege(WritePrivilege(), _, database, segments, roleNames) =>
+      // GRANT WRITE (*) ON GRAPH foo ELEMENTS * (*) TO role
+      case c@GrantPrivilege(WritePrivilege(), _, database, segments, roleNames) =>
         (for (roleName <- roleNames; segment <- segments.simplify) yield {
           roleName -> segment
         }).foldLeft(Option.empty[plans.GrantWrite]) {
           case (source, (roleName, segment)) => Some(plans.GrantWrite(source, AllResource()(InputPosition.NONE), database, segment, roleName))
-        }
+        }.map(plan => plans.LogSystemCommand(plan, prettifier.asString(c)))
 
-      // REVOKE WRITE (*) ON GRAPH foo * (*) FROM role
-      case RevokePrivilege(WritePrivilege(), _, database, segments, roleNames) =>
+      // REVOKE WRITE (*) ON GRAPH foo ELEMENTS * (*) FROM role
+      case c@RevokePrivilege(WritePrivilege(), _, database, segments, roleNames) =>
         (for (roleName <- roleNames; segment <- segments.simplify) yield {
           roleName -> segment
         }).foldLeft(Option.empty[plans.RevokeWrite]) {
