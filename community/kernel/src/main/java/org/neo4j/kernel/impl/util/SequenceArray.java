@@ -33,7 +33,7 @@ public class SequenceArray
     private final int longsPerItem;
     private int capacity;
 
-    public SequenceArray( int longsPerItem, int initialCapacity )
+    SequenceArray( int longsPerItem, int initialCapacity )
     {
         this.longsPerItem = longsPerItem;
         this.capacity = initialCapacity;
@@ -77,13 +77,16 @@ public class SequenceArray
         int absIndex = 0;
         for ( int i = 0; i < length; i++ )
         {
+            // Advance the cursor first because this method is only assumed to be called when offering the number immediately after
+            // the current highest gap-free number
             advanceCursor();
-            absIndex = index( cursor );
-            if ( array[absIndex] == UNSET )
+            int tentativeAbsIndex = index( cursor );
+            if ( array[tentativeAbsIndex] == UNSET )
             {   // we found a gap, return the number before the gap
                 break;
             }
 
+            absIndex = tentativeAbsIndex;
             number++;
             assert array[absIndex] == number :
                     "Expected index " + cursor + " to be " + number + ", but was " + array[absIndex] +
