@@ -37,8 +37,13 @@ object Rows {
     if (a.isEmpty)
       sb ++= "<NO ROWS>"
 
-    for (row <- a)
+    // There is a bug in IntelliJ that falsely displays a test as green if there is too much output in certain cases. (It is still red in maveb though)
+    // This .take(1000) is too avoid that situation
+    for (row <- a.take(1000))
       sb ++= row.map(value => Objects.toString(value)).mkString("", ", ", "\n")
+    if (a.length > 1000) {
+      sb ++= "...\n"
+    }
     sb.result()
   }
 }

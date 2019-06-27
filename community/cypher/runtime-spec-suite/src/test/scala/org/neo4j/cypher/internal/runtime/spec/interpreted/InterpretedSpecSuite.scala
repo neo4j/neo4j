@@ -36,7 +36,7 @@ class InterpretedDirectedRelationshipByIdSeekTest extends DirectedRelationshipBy
 class InterpretedNodeCountFromCountStoreTest extends NodeCountFromCountStoreTestBase(COMMUNITY.EDITION, InterpretedRuntime)
 class InterpretedRelationshipCountFromCountStoreTest extends RelationshipCountFromCountStoreTestBase(COMMUNITY.EDITION, InterpretedRuntime)
 class InterpretedExpandAllTest extends ExpandAllTestBase(COMMUNITY.EDITION, InterpretedRuntime, SIZE_HINT)
-                               with ExpandAllWithOptionalTestBase[CommunityRuntimeContext]
+                               with ExpandAllWithOtherOperatorsTestBase[CommunityRuntimeContext]
 class InterpretedLabelScanTest extends LabelScanTestBase(COMMUNITY.EDITION, InterpretedRuntime, SIZE_HINT)
 class InterpretedNodeIndexScanTest extends NodeIndexScanTestBase(COMMUNITY.EDITION, InterpretedRuntime, SIZE_HINT)
 class InterpretedNodeIndexContainsScanTest extends NodeIndexContainsScanTestBase(COMMUNITY.EDITION, InterpretedRuntime, SIZE_HINT)
@@ -59,5 +59,6 @@ class InterpretedLimitTest extends LimitTestBase(COMMUNITY.EDITION, InterpretedR
 class InterpretedNodeHashJoinTest extends NodeHashJoinTestBase(COMMUNITY.EDITION, InterpretedRuntime, SIZE_HINT)
 class InterpretedReactiveResultsTest extends ReactiveResultTestBase(COMMUNITY.EDITION, InterpretedRuntime)
 class InterpretedMiscTest extends MiscTestBase(COMMUNITY.EDITION, InterpretedRuntime)
+class InterpretedOptionalTest extends OptionalTestBase(COMMUNITY.EDITION, InterpretedRuntime, SIZE_HINT)
 class InterpretedProvidedOrderTest extends ProvidedOrderTestBase(COMMUNITY.EDITION, InterpretedRuntime, SIZE_HINT)
 class InterpretedProfileDbHitsTest extends LegacyDbHitsTestBase(COMMUNITY.EDITION, InterpretedRuntime, SIZE_HINT)

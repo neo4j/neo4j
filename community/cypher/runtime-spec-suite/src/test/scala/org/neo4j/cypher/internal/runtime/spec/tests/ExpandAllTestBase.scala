@@ -19,9 +19,10 @@
  */
 package org.neo4j.cypher.internal.runtime.spec.tests
 
+import org.neo4j.cypher.internal.logical.plans.Ascending
 import org.neo4j.cypher.internal.runtime.spec._
 import org.neo4j.cypher.internal.{CypherRuntime, RuntimeContext}
-import org.neo4j.graphdb.{Label, RelationshipType}
+import org.neo4j.graphdb.{Label, Node, RelationshipType}
 
 abstract class ExpandAllTestBase[CONTEXT <: RuntimeContext](
   edition: Edition[CONTEXT],
@@ -307,25 +308,60 @@ abstract class ExpandAllTestBase[CONTEXT <: RuntimeContext](
     execute(executablePlan) should beColumns("x", "y").withRows(RowCount(3))
   }
 
-  test("should handle big expand") {
-    val SIZE = 30
-    val (ns, ms) = bipartiteGraph(30, "N", "M", "R")
+  test("should handle arguments spanning two morsels") {
+    // NOTE: This is a specific test for morsel runtime with morsel size _4_
+    // where an argument will span two morsels that are put into a MorselBuffer
 
+    // given
+    val (a1, a2, b1, b2, b3, c) = smallTestGraph
+
+    // when
     val logicalQuery = new LogicalQueryBuilder(this)
-      .produceResults("m2")
-      .expandAll("(n2)--(m2)")
-      .expandAll("(m1)--(n2)")
-      .expandAll("(n1)--(m1)")
-      .nodeByLabelScan("n1", "N")
+      .produceResults("a", "b", "c")
+      .apply()
+      .|.expandAll("(b)-[:R]->(c)")
+      .|.expandAll("(a)-[:R]->(b)")
+      .|.argument("a")
+      .nodeByLabelScan("a", "A")
       .build()
 
-    val result = execute(logicalQuery, runtime)
-    result should beColumns("m2").withRows(rowCount(SIZE*SIZE*SIZE*SIZE))
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    val expected = for {
+      a <- Seq(a1, a2)
+      b <- Seq(b1, b2, b3)
+    } yield Array(a, b, c)
+
+    // then
+    runtimeResult should beColumns("a", "b", "c").withRows(expected)
+  }
+
+  protected def smallTestGraph: (Node, Node, Node, Node, Node, Node) = {
+    inTx {
+      val a1 = graphDb.createNode(Label.label("A"))
+      val a2 = graphDb.createNode(Label.label("A"))
+      val b1 = graphDb.createNode(Label.label("B"))
+      val b2 = graphDb.createNode(Label.label("B"))
+      val b3 = graphDb.createNode(Label.label("B"))
+      val c = graphDb.createNode(Label.label("C"))
+
+      a1.createRelationshipTo(b1, RelationshipType.withName("R"))
+      a1.createRelationshipTo(b2, RelationshipType.withName("R"))
+      a1.createRelationshipTo(b3, RelationshipType.withName("R"))
+      a2.createRelationshipTo(b1, RelationshipType.withName("R"))
+      a2.createRelationshipTo(b2, RelationshipType.withName("R"))
+      a2.createRelationshipTo(b3, RelationshipType.withName("R"))
+
+      b1.createRelationshipTo(c, RelationshipType.withName("R"))
+      b2.createRelationshipTo(c, RelationshipType.withName("R"))
+      b3.createRelationshipTo(c, RelationshipType.withName("R"))
+      (a1, a2, b1, b2, b3, c)
+    }
   }
 }
 
-// Supported by interpreted, slotted
-trait ExpandAllWithOptionalTestBase[CONTEXT <: RuntimeContext] {
+// Supported by interpreted, slotted, morsel
+trait ExpandAllWithOtherOperatorsTestBase[CONTEXT <: RuntimeContext] {
   self: ExpandAllTestBase[CONTEXT] =>
 
   test("given a null start point, returns an empty iterator") {
@@ -342,5 +378,33 @@ trait ExpandAllWithOptionalTestBase[CONTEXT <: RuntimeContext] {
 
     // then
     runtimeResult should beColumns("x", "y", "r").withNoRows()
+  }
+
+  test("should handle arguments spanning two morsels with sort") {
+    // NOTE: This is a specific test for morsel runtime with morsel size _4_
+    // where an argument will span two morsels that are put into a MorselBuffer
+
+    val (a1, a2, b1, b2, b3, c) = smallTestGraph
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("a", "b", "c")
+      .apply()
+      .|.sort(Seq(Ascending("a"), Ascending("b")))
+      .|.expandAll("(b)-[:R]->(c)")
+      .|.expandAll("(a)-[:R]->(b)")
+      .|.argument("a")
+      .nodeByLabelScan("a", "A")
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    val expected = for {
+      a <- Seq(a1, a2)
+      b <- Seq(b1, b2, b3)
+    } yield Array(a, b, c)
+
+    // then
+    runtimeResult should beColumns("a", "b", "c").withRows(inOrder(expected))
   }
 }

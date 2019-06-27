@@ -190,5 +190,48 @@ abstract class ProvidedOrderTestBase[CONTEXT <: RuntimeContext](
 
       runtimeResult should beColumns("prop").withRows(singleColumnInOrder(expected))
     }
+
+    test(s"optional keeps index provided $orderString order") {
+      // given
+      val n = sizeHint
+      val nInputNodes = 10
+      val modulo = 100
+      val zGTFilter = 50
+
+      val nodes = nodePropertyGraph(n, {
+        case i => Map("prop" -> i % modulo)
+      },"Honey")
+      index("Honey", "prop")
+
+      // when
+      val logicalQuery = new LogicalQueryBuilder(this)
+        .produceResults("x", "z")
+        .apply()
+        .|.optional("x")
+        .|.filter("x.prop % 2 = 0")
+        .|.nodeIndexOperator(s"z:Honey(prop >= $zGTFilter)", indexOrder = indexOrder, getValue = DoNotGetValue, argumentIds = Set("x"))
+        .|.argument("x")
+        .input(Seq("x"))
+        .build()
+
+      val runtimeResult = execute(logicalQuery, runtime, input = inputValues(nodes.take(nInputNodes).map(Array[Any](_)):_*))
+
+      // then
+      val expected = for {
+        x <- nodes.take(nInputNodes)
+        z <-
+        if ((x.getId % modulo) % 2 == 0) {
+          expectedMutation((0 until n)
+            .map(i => (nodes(i), i % modulo))
+            .filter { case (_, i) => i >= zGTFilter }
+            .sortBy { case (_, i) => i }
+            .map { case (z, _) => z })
+        } else {
+          Seq(null)
+        }
+      } yield Array(x, z)
+
+      runtimeResult should beColumns("x", "z").withRows(inOrder(expected))
+    }
   }
 }

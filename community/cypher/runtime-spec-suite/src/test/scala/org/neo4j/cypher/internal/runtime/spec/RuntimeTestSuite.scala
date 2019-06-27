@@ -318,6 +318,48 @@ abstract class RuntimeTestSuite[CONTEXT <: RuntimeContext](edition: Edition[CONT
     (nodes, rels)
   }
 
+  case class Connectivity(atLeast: Int, atMost: Int, relType: String)
+
+  /**
+    * All outgoing relationships of a node
+    * @param from the start node
+    * @param connections the end nodes rels, grouped by rel type
+    */
+  case class NodeConnections(from: Node, connections: Map[String, Seq[Node]])
+
+  /**
+    * Randomly connect nodes.
+    * @param nodes all nodes to connect.
+    * @param connectivities a definition of how many rels of which rel type to create for each node.
+    * @return all actually created connections, grouped by start node.
+    */
+  def randomlyConnect(nodes: Seq[Node], connectivities: Connectivity*): Seq[NodeConnections] = {
+    val random = new Random(12345)
+    inTx {
+      for (from <- nodes) yield {
+
+        val relationshipsByType =
+          for {
+            c <- connectivities
+            numConnections = random.nextInt(c.atMost - c.atLeast)
+            if numConnections > 0
+          } yield {
+            val relType = RelationshipType.withName(c.relType)
+
+            val endNodes =
+              for (_ <- c.atLeast until numConnections) yield {
+                val to = nodes(random.nextInt(nodes.length))
+                from.createRelationshipTo(to, relType)
+                to
+              }
+            (c.relType, endNodes)
+          }
+
+        NodeConnections(from, relationshipsByType.toMap)
+      }
+    }
+  }
+
   def inTx[T](f: => T): T = {
     val tx = graphDb.beginTx()
     try {

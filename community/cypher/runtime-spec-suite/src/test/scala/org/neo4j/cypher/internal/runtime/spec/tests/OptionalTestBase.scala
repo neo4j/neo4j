@@ -1,0 +1,267 @@
+/*
+ * Copyright (c) 2002-2019 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
+ *
+ * This file is part of Neo4j.
+ *
+ * Neo4j is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+package org.neo4j.cypher.internal.runtime.spec.tests
+
+import org.neo4j.cypher.internal.runtime.spec._
+import org.neo4j.cypher.internal.v4_0.util.ArithmeticException
+import org.neo4j.cypher.internal.{CypherRuntime, RuntimeContext}
+import org.neo4j.values.storable.Values
+import org.neo4j.values.virtual.VirtualNodeValue
+
+abstract class OptionalTestBase[CONTEXT <: RuntimeContext](
+  edition: Edition[CONTEXT],
+  runtime: CypherRuntime[CONTEXT],
+  sizeHint: Int
+) extends RuntimeTestSuite[CONTEXT](edition, runtime) {
+
+  test("should optional expand") {
+    // given
+    val n = sizeHint
+
+    val nodes = nodeGraph(n)
+    val nodeConnections = randomlyConnect(nodes, Connectivity(0, 5, "OTHER"), Connectivity(0, 5, "NEXT"))
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x", "y", "z")
+      .apply()
+      .|.optional("x")
+      .|.expandAll("(x)-[:NEXT]->(z)")
+      .|.expandAll("(x)-[:OTHER]->(y)")
+      .|.argument("x")
+      .allNodeScan("x")
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    val expected = for {
+      NodeConnections(x, connections) <- nodeConnections
+      y <- if (connections.size == 2) connections("OTHER") else Seq(null)
+      z <- if (connections.size == 2) connections("NEXT") else Seq(null)
+    } yield Array(x, y, z)
+
+    runtimeResult should beColumns("x", "y", "z").withRows(expected)
+  }
+
+  test("should optional expand - all nulls") {
+    // given
+    val n = sizeHint
+    val nodes = nodeGraph(n)
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x", "y")
+      .apply()
+      .|.optional("x")
+      .|.expandAll("(x)-[:OTHER]->(y)")
+      .|.argument("x")
+      .allNodeScan("x")
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    val expected = for {
+      x <-nodes
+    } yield Array(x, null)
+    runtimeResult should beColumns("x", "y").withRows(expected)
+  }
+
+  test("should support chained optionals") {
+    // given
+    val n = sizeHint
+    val nodes = nodeGraph(n)
+    val nodeConnections = randomlyConnect(nodes, Connectivity(0, 5, "OTHER"), Connectivity(0, 5, "NEXT"))
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x", "y", "z")
+      .apply()
+      .|.optional("x")
+      .|.optional("x")
+      .|.expandAll("(x)-[:NEXT]->(z)")
+      .|.expandAll("(x)-[:OTHER]->(y)")
+      .|.argument("x")
+      .allNodeScan("x")
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    val expected = for {
+      NodeConnections(x, connections) <- nodeConnections
+      y <- if (connections.size == 2) connections("OTHER") else Seq(null)
+      z <- if (connections.size == 2) connections("NEXT") else Seq(null)
+    } yield Array(x, y, z)
+
+    runtimeResult should beColumns("x", "y", "z").withRows(expected)
+  }
+
+  test("should support optional under nested apply") {
+    // given
+    val n = Math.sqrt(sizeHint).toInt
+    val nodes = nodeGraph(n, "Honey")
+    val nodeConnections = randomlyConnect(nodes, Connectivity(0, 5, "NEXT"))
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x", "y", "z1", "z2")
+      .apply()
+      .|.apply()
+      .|.|.optional("x", "y")
+      .|.|.expandAll("(y)-[:NEXT]->(z2)")
+      .|.|.optional("x", "y")
+      .|.|.expandAll("(x)-[:NEXT]->(z1)")
+      .|.|.argument("x", "y")
+      .|.allNodeScan("y")
+      .allNodeScan("x")
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    val expected = for {
+      NodeConnections(x, xConnections) <- nodeConnections
+      NodeConnections(y, yConnections) <- nodeConnections
+      z1 <- if (xConnections.nonEmpty && yConnections.nonEmpty) xConnections("NEXT") else Seq(null)
+      z2 <- if (yConnections.nonEmpty) yConnections("NEXT") else Seq(null)
+    } yield Array(x, y, z1, z2)
+
+    runtimeResult should beColumns("x", "y", "z1", "z2").withRows(expected)
+  }
+
+  test("should support optional with hash join") {
+    // given
+    val n = Math.sqrt(sizeHint).toInt
+    val nodes = nodeGraph(n, "Honey")
+    val nodeConnections = randomlyConnect(nodes, Connectivity(0, 5, "OTHER"), Connectivity(0, 5, "NEXT"))
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x", "z1", "z2")
+      .apply()
+      .|.nodeHashJoin("x")
+      .|.|.optional("x")
+      .|.|.expandAll("(x)-[:NEXT]->(z2)")
+      .|.|.argument("x")
+      .|.optional("x")
+      .|.expandAll("(x)-[:OTHER]->(z1)")
+      .|.argument("x")
+      .allNodeScan("x")
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    val expected = for {
+      NodeConnections(x, connections) <- nodeConnections
+      z1 <- if (connections.contains("OTHER")) connections("OTHER") else Seq(null)
+      z2 <- if (connections.contains("NEXT")) connections("NEXT") else Seq(null)
+    } yield Array(x,  z1, z2)
+
+    runtimeResult should beColumns("x", "z1", "z2").withRows(expected)
+  }
+
+  // This test failed because of expand+limit
+  ignore("should support optional with limit") {
+    // given
+    val n = sizeHint
+    val nodes = nodeGraph(n, "Honey")
+    val nodeConnections = randomlyConnect(nodes, Connectivity(0, 5, "OTHER")).map {
+      case NodeConnections(node, connections) => (node.getId, connections)
+    }.toMap
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x", "y")
+      .apply()
+      .|.limit(1)
+      .|.optional("x")
+      .|.expandAll("(x)-->(y)")
+      .|.argument("x")
+      .allNodeScan("x")
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    runtimeResult should beColumns("x", "y").withRows(matching {
+      case rows:Seq[Array[_]] if rows.forall {
+        case Array(x, y) =>
+          val xid = x.asInstanceOf[VirtualNodeValue].id()
+          val connections = nodeConnections(xid)
+          if (connections.isEmpty) {
+            y == Values.NO_VALUE
+          } else {
+            withClue(s"x id: $xid --") {
+              val yid = y match {
+                case node: VirtualNodeValue => node.id()
+                case _ => y shouldBe a[VirtualNodeValue]
+              }
+              connections.values.flatten.exists(_.getId == yid)
+            }
+          }
+      } && {
+        val xs = rows.map(_(0))
+        xs.distinct.size == xs.size // Check that there is at most one row per x
+      } =>
+    })
+  }
+
+  test("should stream") {
+    // given
+    val stream = batchedInputValues(10, (0 until sizeHint).map(Array[Any](_)): _*).stream()
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x")
+      .optional()
+      .input(variables = Seq("x"))
+      .build()
+
+    val subscriber = new TestSubscriber
+    val runtimeResult = execute(logicalQuery, runtime, stream, subscriber)
+
+    runtimeResult.request(1)
+    runtimeResult.await()
+
+    // then
+    subscriber.allSeen should have size 1
+    stream.hasMore should be(true)
+  }
+
+  test("should cancel outstanding work") {
+    // given
+    val stream = batchedInputValues(10, (0 until sizeHint).map(Array[Any](_)): _*).stream()
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x")
+      .filter("x / 0 == 0")
+      .optional()
+      .input(variables = Seq("x"))
+      .build()
+
+    intercept[ArithmeticException] {
+      consume(execute(logicalQuery, runtime, stream))
+    }
+  }
+}

@@ -108,8 +108,8 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
     self
   }
 
-  def optional(): IMPL = {
-    appendAtCurrentIndent(UnaryOperator(lp => Optional(lp, Set.empty)(_)))
+  def optional(protectedSymbols: String*): IMPL = {
+    appendAtCurrentIndent(UnaryOperator(lp => Optional(lp, protectedSymbols.toSet)(_)))
     self
   }
 

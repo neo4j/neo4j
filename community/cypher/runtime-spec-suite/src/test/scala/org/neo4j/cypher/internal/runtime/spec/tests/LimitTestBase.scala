@@ -23,6 +23,7 @@ import org.neo4j.cypher.internal.logical.plans.Ascending
 import org.neo4j.cypher.internal.runtime.spec._
 import org.neo4j.cypher.internal.v4_0.util.InvalidArgumentException
 import org.neo4j.cypher.internal.{CypherRuntime, RuntimeContext}
+import org.neo4j.values.virtual.VirtualNodeValue
 
 abstract class LimitTestBase[CONTEXT <: RuntimeContext](edition: Edition[CONTEXT],
                                                         runtime: CypherRuntime[CONTEXT],
@@ -204,5 +205,45 @@ abstract class LimitTestBase[CONTEXT <: RuntimeContext](edition: Edition[CONTEXT
     // then
     val runtimeResult = execute(logicalQuery, runtime)
     runtimeResult should beColumns("a2").withRows(rowCount(10))
+  }
+
+  ignore("should support limit with expand") {
+    val nodes = nodeGraph(sizeHint)
+    val nodeConnections = randomlyConnect(nodes, Connectivity(0, 5, "OTHER")).map {
+      case NodeConnections(node, connections) => (node.getId, connections)
+    }.toMap
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x", "y")
+      .apply()
+      .|.limit(1)
+      .|.expandAll("(x)-->(y)")
+      .|.argument("x")
+      .allNodeScan("x")
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    runtimeResult should beColumns("x", "y").withRows(matching {
+      case rows:Seq[Array[_]] if rows.forall {
+        case Array(x, y) =>
+          val xid = x.asInstanceOf[VirtualNodeValue].id()
+          val connections = nodeConnections(xid)
+          connections should not be empty
+          withClue(s"x id: $xid --") {
+            val yid = y match {
+              case node: VirtualNodeValue => node.id()
+              case _ => y shouldBe a[VirtualNodeValue]
+            }
+            connections.values.flatten.exists(_.getId == yid)
+          }
+
+      } && { // Assertion on the whole result
+        val xs = rows.map(_(0))
+        xs.distinct.size == xs.size // Check that there is at most one row per x
+      } =>
+    })
   }
 }
