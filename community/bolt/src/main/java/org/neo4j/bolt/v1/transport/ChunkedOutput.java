@@ -108,15 +108,19 @@ public class ChunkedOutput implements PackOutput
     }
 
     @Override
-    public void messageFailed() throws IOException
+    public void messageFailed()
     {
         assertMessageStarted();
-        int writerIndex = currentMessageStartIndex;
-        currentMessageStartIndex = NO_MESSAGE;
+        reset();
+    }
 
-        // truncate the buffer to remove all data written by an unfinished message
-        buffer.capacity( writerIndex );
-        chunkOpen = false;
+    @Override
+    public void messageReset()
+    {
+        if ( currentMessageStartIndex != NO_MESSAGE )
+        {
+            reset();
+        }
     }
 
     @Override
@@ -304,5 +308,15 @@ public class ChunkedOutput implements PackOutput
                     String.format( "Network channel towards %s is closed. Client has probably been stopped.", channel.remoteAddress() ),
                     String.format( "%s", channel.remoteAddress() ) );
         }
+    }
+
+    private void reset()
+    {
+        int writerIndex = currentMessageStartIndex;
+        currentMessageStartIndex = NO_MESSAGE;
+
+        // truncate the buffer to remove all data written by an unfinished message
+        buffer.capacity( writerIndex );
+        chunkOpen = false;
     }
 }

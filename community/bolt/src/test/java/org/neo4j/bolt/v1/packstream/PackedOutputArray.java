@@ -41,13 +41,19 @@ public class PackedOutputArray implements PackOutput
     }
 
     @Override
-    public void messageSucceeded() throws IOException
+    public void messageSucceeded()
     {
     }
 
     @Override
-    public void messageFailed() throws IOException
+    public void messageFailed()
     {
+    }
+
+    @Override
+    public void messageReset()
+    {
+
     }
 
     @Override

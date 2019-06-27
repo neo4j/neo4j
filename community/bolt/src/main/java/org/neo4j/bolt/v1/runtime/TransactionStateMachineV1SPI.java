@@ -238,14 +238,7 @@ public class TransactionStateMachineV1SPI implements TransactionStateMachineSPI
             //error might occur before the recordConsumer was initialized
             if ( recordConsumer != null )
             {
-                try
-                {
-                    recordConsumer.onError();
-                }
-                catch ( IOException e )
-                {
-                    this.error.addSuppressed( e );
-                }
+                recordConsumer.onError();
             }
         }
 

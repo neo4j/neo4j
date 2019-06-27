@@ -74,7 +74,7 @@ public class ResultHandler extends MessageProcessingHandler
         }
 
         @Override
-        public void onError() throws IOException
+        public void onError()
         {
             messageWriter.onError();
         }

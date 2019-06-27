@@ -159,10 +159,10 @@ public class BoltResponseMessageWriterV1 implements BoltResponseMessageWriter
     }
 
     @Override
-    public void onError() throws IOException
+    public void onError()
     {
         // packing failed, there might be some half-written data in the output buffer right now
         // notify output about the failure so that it cleans up the buffer
-        output.messageFailed();
+        output.messageReset();
     }
 }

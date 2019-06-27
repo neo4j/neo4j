@@ -43,10 +43,13 @@ public interface PackOutput extends Closeable
 
     /**
      * Discard previously started message.
-     *
-     * @throws IOException when message can't be written to the network channel.
      */
-    void messageFailed() throws IOException;
+    void messageFailed();
+
+    /**
+     * Resets all buffers
+     */
+    void messageReset();
 
     /** If implementation has been buffering data, it should flush those buffers now. */
     PackOutput flush() throws IOException;
