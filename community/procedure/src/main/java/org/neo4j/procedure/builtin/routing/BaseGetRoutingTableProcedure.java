@@ -153,6 +153,7 @@ public abstract class BaseGetRoutingTableProcedure implements CallableProcedure
                 .out( SERVERS.parameterName(), Neo4jTypes.NTList( Neo4jTypes.NTMap ) )
                 .mode( Mode.DBMS )
                 .description( description() )
+                .systemProcedure()
                 .build();
     }
 
