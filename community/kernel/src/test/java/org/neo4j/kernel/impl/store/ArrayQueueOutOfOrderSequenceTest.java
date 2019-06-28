@@ -231,7 +231,7 @@ public class ArrayQueueOutOfOrderSequenceTest
         sequence.offer( 4, EMPTY_META );
         assertFalse( done.tryAcquire( 10, TimeUnit.MILLISECONDS ) );
         sequence.offer( 5, EMPTY_META );
-        assertTrue( done.tryAcquire( 60_000, TimeUnit.MILLISECONDS ) );
+        assertTrue( done.tryAcquire( 10_000, TimeUnit.MILLISECONDS ) );
 
         numberWaiter.join();
     }
