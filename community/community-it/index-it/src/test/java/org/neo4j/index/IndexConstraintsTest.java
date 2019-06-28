@@ -160,8 +160,7 @@ public class IndexConstraintsTest
                 // when: DROP, CREATE, DROP => effect: DROP
                 try ( Transaction tx = graphDb.beginTx() )
                 {
-                    recreate( getIndex( LABEL, PROPERTY_KEY ), times )
-                            .drop();
+                    recreate( getIndex( LABEL, PROPERTY_KEY ), times ).drop();
                     tx.success();
                 }
                 // then
@@ -243,7 +242,8 @@ public class IndexConstraintsTest
                 // when: DROP, CREATE => effect: <none>
                 try ( Transaction tx = graphDb.beginTx() )
                 {
-                    recreate( getConstraint( LABEL, PROPERTY_KEY ), times );
+                    ConstraintDefinition constraint = getConstraint( LABEL, PROPERTY_KEY );
+                    recreate( constraint, times );
                     tx.success();
                 }
                 // then
@@ -253,8 +253,7 @@ public class IndexConstraintsTest
                 // when: DROP, CREATE, DROP => effect: DROP
                 try ( Transaction tx = graphDb.beginTx() )
                 {
-                    recreate( getConstraint( LABEL, PROPERTY_KEY ), times )
-                            .drop();
+                    recreate( getConstraint( LABEL, PROPERTY_KEY ), times ).drop();
                     tx.success();
                 }
                 // then

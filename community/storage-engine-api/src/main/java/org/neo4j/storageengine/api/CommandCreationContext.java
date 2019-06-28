@@ -47,7 +47,8 @@ public interface CommandCreationContext extends AutoCloseable
     /**
      * Reserves an id for a schema record, be it for a constraint or an index, for future use to store a schema record. The reason for it being exposed here
      * is that the record ids are used for producing unique names for indexes, which we would like to do before we get to the prepare phase
-     * @return
+     *
+     * @return a reserved schema record id for future use.
      */
     long reserveSchema();
 
@@ -66,6 +67,14 @@ public interface CommandCreationContext extends AutoCloseable
      * @param id reserved relationship id to release.
      */
     void releaseRelationship( long id );
+
+    /**
+     * Releases a previously {@link #reserveSchema() reserved} schema record id if it turns out to not actaually be needed.
+     * For example, in the even of a transaction rollback.
+     *
+     * @param id reserved schema record id to release.
+     */
+    void releaseSchema( long id );
 
     /**
      * Reserves a label token id.

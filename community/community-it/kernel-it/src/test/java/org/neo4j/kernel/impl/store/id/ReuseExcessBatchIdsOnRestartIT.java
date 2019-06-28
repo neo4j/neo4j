@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.store.id;
 
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -42,7 +43,7 @@ public class ReuseExcessBatchIdsOnRestartIT
     // Knowing that ids are grabbed in batches internally we only create one node and later assert
     // that the excess ids that were only grabbed, but not used can be reused.
     @Test
-    public void shouldReuseExcessBatchIdsWhichWereNotUsedBeforeClose() throws Exception
+    public void shouldReuseExcessNodeBatchIdsWhichWereNotUsedBeforeClose() throws Exception
     {
         // given
         Node firstNode;
@@ -56,6 +57,40 @@ public class ReuseExcessBatchIdsOnRestartIT
         {
             db.createNode();
             // This one gets rolled back.
+        }
+
+        // when
+        db.restartDatabase();
+
+        Node secondNode;
+        try ( Transaction tx = db.beginTx() )
+        {
+            secondNode = db.createNode();
+            tx.success();
+        }
+
+        // then
+        assertEquals( firstNode.getId() + 1, secondNode.getId() );
+    }
+
+    @Ignore // Does not pass, but it presently doesn't matter.
+    @Test
+    public void shouldReuseExcessNodeBatchIdsWhichWereReturnedBeforeClose() throws Exception
+    {
+        // given
+        Node firstNode;
+        try ( Transaction tx = db.beginTx() )
+        {
+            firstNode = db.createNode();
+            tx.success();
+        }
+
+        try ( Transaction tx = db.beginTx() )
+        {
+            // This one gets deleted before commit.
+            Node node = db.createNode();
+            node.delete();
+            tx.success();
         }
 
         // when

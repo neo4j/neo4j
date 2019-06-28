@@ -42,7 +42,7 @@ public abstract class IndexBackedConstraintDescriptor extends AbstractConstraint
         return schema;
     }
 
-    public LabelSchemaDescriptor ownedIndexDescriptor()
+    public LabelSchemaDescriptor ownedIndexSchema()
     {
         return ownedIndexSchema;
     }

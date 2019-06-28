@@ -75,6 +75,12 @@ class RecordStorageCommandCreationContext implements CommandCreationContext
     }
 
     @Override
+    public void releaseSchema( long id )
+    {
+        neoStores.getSchemaStore().freeId( id );
+    }
+
+    @Override
     public long reserveNode()
     {
         return nextId( StoreType.NODE );
@@ -84,6 +90,12 @@ class RecordStorageCommandCreationContext implements CommandCreationContext
     public long reserveRelationship()
     {
         return nextId( StoreType.RELATIONSHIP );
+    }
+
+    @Override
+    public long reserveSchema()
+    {
+        return nextId( StoreType.SCHEMA );
     }
 
     @Override

@@ -92,7 +92,7 @@ public class ConstraintIndexCreator
      * and this tx committed, which will create the uniqueness constraint</li>
      * </ol>
      */
-    public long createUniquenessConstraintIndex( KernelTransactionImplementation transaction, SchemaDescriptor descriptor, String provider )
+    public IndexDescriptor2 createUniquenessConstraintIndex( KernelTransactionImplementation transaction, SchemaDescriptor descriptor, String provider )
             throws TransactionFailureException, CreateConstraintFailureException,
             UniquePropertyValueValidationException, AlreadyConstrainedException
     {
@@ -132,7 +132,7 @@ public class ConstraintIndexCreator
             locks.releaseExclusive( keyType, lockingKeys );
 
             awaitConstraintIndexPopulation( constraint, proxy, transaction );
-            log.info( "Constraint %s populated, starting verification.", constraint.ownedIndexDescriptor() );
+            log.info( "Constraint %s populated, starting verification.", constraint.ownedIndexSchema() );
 
             // Index population was successful, but at this point we don't know if the uniqueness constraint holds.
             // Acquire LABEL WRITE lock and verify the constraints here in this user transaction
@@ -145,9 +145,9 @@ public class ConstraintIndexCreator
             {
                 indexingService.getIndexProxy( indexId ).verifyDeferredConstraints( propertyAccessor );
             }
-            log.info( "Constraint %s verified.", constraint.ownedIndexDescriptor() );
+            log.info( "Constraint %s verified.", constraint.ownedIndexSchema() );
             success = true;
-            return indexId;
+            return proxy.getDescriptor();
         }
         catch ( SchemaKernelException e )
         {

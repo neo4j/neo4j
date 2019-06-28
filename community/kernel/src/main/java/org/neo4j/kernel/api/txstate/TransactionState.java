@@ -85,7 +85,7 @@ public interface TransactionState extends ReadableTransactionState
 
     void constraintDoAdd( ConstraintDescriptor constraint );
 
-    void constraintDoAdd( IndexBackedConstraintDescriptor constraint, long indexId );
+    void constraintDoAdd( IndexBackedConstraintDescriptor constraint, IndexDescriptor2 index );
 
     void constraintDoDrop( ConstraintDescriptor constraint );
 

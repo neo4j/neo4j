@@ -19,9 +19,11 @@
  */
 package org.neo4j.storageengine.api.txstate;
 
+import org.eclipse.collections.api.iterator.LongIterator;
 import org.eclipse.collections.api.set.primitive.MutableLongSet;
 import org.eclipse.collections.impl.UnmodifiableMap;
 
+import java.util.Iterator;
 import java.util.NavigableMap;
 import javax.annotation.Nullable;
 
@@ -98,7 +100,7 @@ public interface ReadableTransactionState
 
     DiffSets<IndexDescriptor2> indexChanges();
 
-    Iterable<IndexDescriptor2> constraintIndexesCreatedInTx();
+    Iterator<IndexDescriptor2> constraintIndexesCreatedInTx();
 
     DiffSets<ConstraintDescriptor> constraintsChanges();
 
@@ -108,7 +110,7 @@ public interface ReadableTransactionState
 
     DiffSets<ConstraintDescriptor> constraintsChangesForRelationshipType( int relTypeId );
 
-    Long indexCreatedForConstraint( ConstraintDescriptor constraint );
+    IndexDescriptor2 indexCreatedForConstraint( ConstraintDescriptor constraint );
 
     // INDEX UPDATES
 

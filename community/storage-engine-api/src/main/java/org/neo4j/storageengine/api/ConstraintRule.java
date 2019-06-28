@@ -61,7 +61,7 @@ public class ConstraintRule implements SchemaRule, StorageConstraintReference
         this( id, descriptor, ownedIndex, null );
     }
 
-    ConstraintRule( long id, ConstraintDescriptor descriptor, Long ownedIndex, String name )
+    private ConstraintRule( long id, ConstraintDescriptor descriptor, Long ownedIndex, String name )
     {
         this.id = id;
         this.descriptor = descriptor;

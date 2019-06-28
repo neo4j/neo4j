@@ -418,7 +418,7 @@ class IndexIT extends KernelIntegrationTest
 
         // then/when
         SchemaRead schemaRead = newTransaction().schemaRead();
-        IndexDescriptor2 index2 = schemaRead.index( constraint.ownedIndexDescriptor() );
+        IndexDescriptor2 index2 = schemaRead.index( constraint.ownedIndexSchema() );
         List<IndexDescriptor2> indexes = Iterators.asList( schemaRead.indexesGetAll() );
         assertThat( indexes, containsInAnyOrder( index1, index2 ) );
         commit();

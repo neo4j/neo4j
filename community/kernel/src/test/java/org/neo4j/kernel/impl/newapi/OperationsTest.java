@@ -26,7 +26,9 @@ import org.junit.jupiter.api.Test;
 import org.mockito.InOrder;
 import org.mockito.Mockito;
 
+import java.util.Arrays;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.Iterator;
 import java.util.Optional;
 
@@ -38,11 +40,14 @@ import org.neo4j.internal.index.label.LabelScanStore;
 import org.neo4j.internal.kernel.api.LabelSet;
 import org.neo4j.internal.kernel.api.Write;
 import org.neo4j.internal.kernel.api.exceptions.EntityNotFoundException;
-import org.neo4j.internal.kernel.api.exceptions.InvalidTransactionTypeKernelException;
+import org.neo4j.internal.kernel.api.exceptions.schema.SchemaKernelException;
 import org.neo4j.internal.kernel.api.helpers.StubNodeCursor;
 import org.neo4j.internal.kernel.api.helpers.TestRelationshipChain;
 import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.internal.schema.ConstraintDescriptor;
+import org.neo4j.internal.schema.IndexDescriptor2;
+import org.neo4j.internal.schema.IndexPrototype;
+import org.neo4j.internal.schema.IndexProviderDescriptor;
 import org.neo4j.internal.schema.LabelSchemaDescriptor;
 import org.neo4j.internal.schema.RelationTypeSchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptor;
@@ -54,7 +59,6 @@ import org.neo4j.internal.schema.constraints.RelExistenceConstraintDescriptor;
 import org.neo4j.internal.schema.constraints.UniquenessConstraintDescriptor;
 import org.neo4j.kernel.api.exceptions.schema.AlreadyConstrainedException;
 import org.neo4j.kernel.api.procedure.GlobalProcedures;
-import org.neo4j.kernel.api.schema.index.TestIndexDescriptorFactory;
 import org.neo4j.kernel.api.txstate.TransactionState;
 import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
 import org.neo4j.kernel.impl.api.index.IndexProxy;
@@ -64,7 +68,6 @@ import org.neo4j.kernel.impl.api.index.stats.IndexStatisticsStore;
 import org.neo4j.kernel.impl.api.state.ConstraintIndexCreator;
 import org.neo4j.kernel.impl.api.state.TxState;
 import org.neo4j.kernel.impl.constraints.ConstraintSemantics;
-import org.neo4j.kernel.impl.index.schema.CapableIndexDescriptor;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.locking.SimpleStatementLocks;
 import org.neo4j.kernel.impl.util.DefaultValueMapper;
@@ -81,6 +84,7 @@ import org.neo4j.values.storable.Values;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.empty;
+import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
@@ -94,6 +98,7 @@ import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 import static org.neo4j.collection.PrimitiveLongCollections.EMPTY_LONG_ARRAY;
 import static org.neo4j.configuration.GraphDatabaseSettings.default_schema_provider;
+import static org.neo4j.internal.helpers.collection.Iterables.single;
 import static org.neo4j.internal.helpers.collection.Iterators.asList;
 import static org.neo4j.internal.schema.constraints.ConstraintDescriptorFactory.existsForRelType;
 import static org.neo4j.internal.schema.constraints.ConstraintDescriptorFactory.existsForSchema;
@@ -122,11 +127,15 @@ class OperationsTest
     private ConstraintIndexCreator constraintIndexCreator;
     private IndexingService indexingService;
     private TokenHolders tokenHolders;
+    private CommandCreationContext creationContext;
+    private IndexingProvidersService indexingProvidersService;
+    private TxState realTxState;
 
     @BeforeEach
-    void setUp() throws InvalidTransactionTypeKernelException
+    void setUp() throws Exception
     {
-        txState = Mockito.spy( new TxState() );
+        realTxState = new TxState();
+        txState = Mockito.spy( realTxState );
         when( transaction.getReasonIfTerminated() ).thenReturn( Optional.empty() );
         when( transaction.statementLocks() ).thenReturn( new SimpleStatementLocks( locks ) );
         when( transaction.dataWrite() ).thenReturn( write );
@@ -158,10 +167,14 @@ class OperationsTest
                 mock( LabelScanStore.class ), mock( IndexStatisticsStore.class ), dependencies );
         constraintIndexCreator = mock( ConstraintIndexCreator.class );
         tokenHolders = mockedTokenHolders();
-        CommandCreationContext creationContext = mock( CommandCreationContext.class );
+        creationContext = mock( CommandCreationContext.class );
+        indexingProvidersService = mock( IndexingProvidersService.class );
+        when( indexingProvidersService.indexProviderByName( "native-btree-1.0" ) ).thenReturn( new IndexProviderDescriptor( "native-btree", "1.0" ) );
+        when( indexingProvidersService.indexProviderByName( "provider-1.0" ) ).thenReturn( new IndexProviderDescriptor( "provider", "1.0" ) );
+        when( indexingProvidersService.getBlessedDescriptorFromProvider( any() ) ).thenAnswer( inv -> inv.getArgument( 0 ) );
         operations = new Operations( allStoreHolder, storageReader, mock( IndexTxStateUpdater.class ), creationContext,
                  transaction, new KernelToken( storageReader, creationContext, transaction, tokenHolders ), cursors,
-                constraintIndexCreator, mock( ConstraintSemantics.class ), mock( IndexingProvidersService.class ), Config.defaults() );
+                constraintIndexCreator, mock( ConstraintSemantics.class ), indexingProvidersService, Config.defaults() );
         operations.initialize();
 
         this.order = inOrder( locks, txState, storageReader, storageReaderSnapshot );
@@ -565,7 +578,7 @@ class OperationsTest
     void shouldAcquireSchemaWriteLockBeforeRemovingIndexRule() throws Exception
     {
         // given
-        CapableIndexDescriptor index = TestIndexDescriptorFactory.forLabel( 0, 0 ).withId( 0 ).withoutCapabilities();
+        IndexDescriptor2 index = IndexPrototype.forSchema( SchemaDescriptor.forLabel( 0, 0 ) ).materialise( 0 );
         IndexProxy indexProxy = mock( IndexProxy.class );
         when( indexProxy.getDescriptor() ).thenReturn( index );
         when( indexingService.getIndexProxy( index.schema() ) ).thenReturn( indexProxy );
@@ -771,7 +784,9 @@ class OperationsTest
     {
         // given
         UniquenessConstraintDescriptor constraint = uniqueForSchema( descriptor );
+        IndexDescriptor2 index = IndexPrototype.uniqueForSchema( descriptor ).materialise( 13 );
         when( storageReader.constraintExists( constraint ) ).thenReturn( true );
+        when( storageReader.indexGetForSchema( descriptor ) ).thenReturn( index );
 
         // when
         operations.constraintDrop( constraint );
@@ -779,6 +794,7 @@ class OperationsTest
         // then
         order.verify( locks ).acquireExclusive( LockTracer.NONE, ResourceTypes.LABEL, descriptor.getLabelId() );
         order.verify( txState ).constraintDoDrop( constraint );
+        order.verify( txState ).indexDoDrop( index );
     }
 
     @Test
@@ -910,6 +926,32 @@ class OperationsTest
         order.verify( locks ).acquireExclusive( LockTracer.NONE, ResourceTypes.NODE, nodeId );
         order.verify( locks ).acquireShared( LockTracer.NONE, ResourceTypes.LABEL, labelId1, labelId2 );
         order.verifyNoMoreInteractions();
+    }
+
+    @Test
+    void mustAssignNameToIndexesThatDoNotHaveUserSuppliedName() throws SchemaKernelException
+    {
+        when( creationContext.reserveSchema() ).thenReturn( 1L, 2L, 3L );
+        operations.indexCreate( SchemaDescriptor.forLabel( 1, 1 ) );
+        operations.indexCreate( SchemaDescriptor.forLabel( 2, 1 ), Optional.empty() );
+        operations.indexCreate( SchemaDescriptor.forLabel( 3, 1 ), "provider-1.0", Optional.empty() );
+        IndexDescriptor2[] indexDescriptors = txState.indexChanges().getAdded()
+                .stream()
+                .sorted( Comparator.comparing( d -> d.schema().getLabelId() ) )
+                .toArray( IndexDescriptor2[]::new );
+        assertThat( Arrays.toString( indexDescriptors ), indexDescriptors.length, is( 3 ) );
+        assertThat( indexDescriptors[0].toString(), indexDescriptors[0].getName(), is( "index_1" ) );
+        assertThat( indexDescriptors[1].toString(), indexDescriptors[1].getName(), is( "index_2" ) );
+        assertThat( indexDescriptors[2].toString(), indexDescriptors[2].getName(), is( "index_3" ) );
+    }
+
+    @Test
+    void mustAssignNameToUniqueIndexesThatDoNotHaveUserSuppliedName() throws SchemaKernelException
+    {
+        when( creationContext.reserveSchema() ).thenReturn( 1L, 2L, 3L );
+        operations.indexUniqueCreate( SchemaDescriptor.forLabel( 1, 1 ), "provider-1.0" );
+        IndexDescriptor2 indexDescriptor = single( txState.indexChanges().getAdded() );
+        assertThat( indexDescriptor.toString(), indexDescriptor.getName(), is( "index_1" ) );
     }
 
     private void setStoreRelationship( long relationshipId, long sourceNode, long targetNode, int relationshipLabel )

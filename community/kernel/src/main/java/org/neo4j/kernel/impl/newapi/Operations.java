@@ -33,7 +33,6 @@ import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.internal.kernel.api.CursorFactory;
 import org.neo4j.internal.kernel.api.IndexQuery;
-import org.neo4j.internal.kernel.api.IndexReference;
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.kernel.api.Locks;
 import org.neo4j.internal.kernel.api.NodeLabelIndexCursor;
@@ -53,6 +52,7 @@ import org.neo4j.internal.kernel.api.exceptions.schema.SchemaKernelException;
 import org.neo4j.internal.schema.ConstraintDescriptor;
 import org.neo4j.internal.schema.IndexDescriptor2;
 import org.neo4j.internal.schema.IndexPrototype;
+import org.neo4j.internal.schema.IndexProviderDescriptor;
 import org.neo4j.internal.schema.LabelSchemaDescriptor;
 import org.neo4j.internal.schema.RelationTypeSchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptor;
@@ -74,14 +74,11 @@ import org.neo4j.kernel.api.exceptions.schema.NoSuchIndexException;
 import org.neo4j.kernel.api.exceptions.schema.RepeatedPropertyInCompositeSchemaException;
 import org.neo4j.kernel.api.exceptions.schema.UnableToValidateConstraintException;
 import org.neo4j.kernel.api.exceptions.schema.UniquePropertyValueValidationException;
-import org.neo4j.internal.schema.IndexProviderDescriptor;
 import org.neo4j.kernel.api.txstate.TransactionState;
 import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
 import org.neo4j.kernel.impl.api.index.IndexingProvidersService;
 import org.neo4j.kernel.impl.api.state.ConstraintIndexCreator;
 import org.neo4j.kernel.impl.constraints.ConstraintSemantics;
-import org.neo4j.kernel.impl.index.schema.IndexDescriptor;
-import org.neo4j.kernel.impl.index.schema.IndexDescriptorFactory;
 import org.neo4j.kernel.impl.locking.ResourceIds;
 import org.neo4j.lock.ResourceType;
 import org.neo4j.lock.ResourceTypes;
@@ -486,7 +483,7 @@ public class Operations implements Write, SchemaWrite
             IndexQuery.ExactPredicate[] propertyValues, long modifiedNode )
             throws UniquePropertyValueValidationException, UnableToValidateConstraintException
     {
-        IndexDescriptor2 schemaIndexDescriptor = allStoreHolder.indexGetForSchema( constraint.ownedIndexDescriptor() );
+        IndexDescriptor2 schemaIndexDescriptor = allStoreHolder.indexGetForSchema( constraint.ownedIndexSchema() );
         try ( DefaultNodeValueIndexCursor valueCursor = cursors.allocateNodeValueIndexCursor();
               IndexReaders indexReaders = new IndexReaders( schemaIndexDescriptor, allStoreHolder ) )
         {
@@ -830,7 +827,9 @@ public class Operations implements Write, SchemaWrite
         assertValidDescriptor( prototype.schema(), SchemaKernelException.OperationContext.INDEX_CREATION );
         assertIndexDoesNotExist( SchemaKernelException.OperationContext.INDEX_CREATION, prototype );
 
-        IndexPrototype index = indexProviders.getBlessedDescriptorFromProvider( prototype );
+        prototype = indexProviders.getBlessedDescriptorFromProvider( prototype );
+        long schemaRecordId = commandCreationContext.reserveSchema();
+        IndexDescriptor2 index = prototype.materialise( schemaRecordId );
         ktx.txState().indexDoAdd( index );
         return index;
     }
@@ -862,7 +861,8 @@ public class Operations implements Write, SchemaWrite
             prototype = prototype.withName( name.get() );
         }
         prototype = indexProviders.getBlessedDescriptorFromProvider( prototype );
-        IndexDescriptor2 index = prototype;
+        long schemaRecordId = commandCreationContext.reserveSchema();
+        IndexDescriptor2 index = prototype.materialise( schemaRecordId );
         ktx.txState().indexDoAdd( index );
         return index;
     }
@@ -873,7 +873,8 @@ public class Operations implements Write, SchemaWrite
         IndexProviderDescriptor providerDescriptor = indexProviders.indexProviderByName( provider );
         IndexPrototype prototype = IndexPrototype.uniqueForSchema( schema, providerDescriptor );
         prototype = indexProviders.getBlessedDescriptorFromProvider( prototype );
-        IndexDescriptor2 index = prototype;
+        long schemaRecordId = commandCreationContext.reserveSchema();
+        IndexDescriptor2 index = prototype.materialise( schemaRecordId );
         ktx.txState().indexDoAdd( index );
         return index;
     }
@@ -1056,7 +1057,13 @@ public class Operations implements Write, SchemaWrite
         }
 
         //Drop it like it's hot
-        ktx.txState().constraintDoDrop( descriptor );
+        TransactionState txState = ktx.txState();
+        txState.constraintDoDrop( descriptor );
+        if ( descriptor.enforcesUniqueness() )
+        {
+            IndexDescriptor2 index = allStoreHolder.index( descriptor.schema() );
+            txState.indexDoDrop( index );
+        }
     }
 
     private void assertIndexDoesNotExist( SchemaKernelException.OperationContext context, SchemaDescriptor descriptor, Optional<String> name )
@@ -1213,7 +1220,7 @@ public class Operations implements Write, SchemaWrite
         SchemaDescriptor descriptor = constraint.schema();
         try
         {
-            LabelSchemaDescriptor labelSchemaDescriptor = constraint.ownedIndexDescriptor();
+            LabelSchemaDescriptor labelSchemaDescriptor = constraint.ownedIndexSchema();
             IndexDescriptor2 constraintIndex = allStoreHolder.index( labelSchemaDescriptor );
             if ( ktx.hasTxStateWithChanges() && ktx.txState().indexDoUnRemove( constraintIndex ) ) // ..., DROP, *CREATE*
             { // creation is undoing a drop
@@ -1233,7 +1240,7 @@ public class Operations implements Write, SchemaWrite
                         return;
                     }
                 }
-                long indexId = constraintIndexCreator.createUniquenessConstraintIndex( ktx, descriptor, provider );
+                IndexDescriptor2 index = constraintIndexCreator.createUniquenessConstraintIndex( ktx, descriptor, provider );
                 if ( !allStoreHolder.constraintExists( constraint ) )
                 {
                     // This looks weird, but since we release the label lock while awaiting population of the index
@@ -1242,7 +1249,7 @@ public class Operations implements Write, SchemaWrite
                     // before we do, so now getting out here under the lock we must check again and if it exists
                     // we must at this point consider this an idempotent operation because we verified earlier
                     // that it didn't exist and went on to create it.
-                    ktx.txState().constraintDoAdd( constraint, indexId );
+                    ktx.txState().constraintDoAdd( constraint, index );
                 }
             }
         }

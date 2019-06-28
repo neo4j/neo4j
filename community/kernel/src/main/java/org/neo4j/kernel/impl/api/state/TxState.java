@@ -21,14 +21,13 @@ package org.neo4j.kernel.impl.api.state;
 
 import org.eclipse.collections.api.iterator.LongIterator;
 import org.eclipse.collections.api.map.primitive.MutableLongObjectMap;
-import org.eclipse.collections.api.map.primitive.MutableObjectLongMap;
 import org.eclipse.collections.api.set.primitive.MutableLongSet;
 import org.eclipse.collections.impl.UnmodifiableMap;
 import org.eclipse.collections.impl.map.mutable.primitive.LongObjectHashMap;
-import org.eclipse.collections.impl.map.mutable.primitive.ObjectLongHashMap;
 
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.Map;
 import java.util.NavigableMap;
 import java.util.TreeMap;
@@ -60,7 +59,6 @@ import org.neo4j.util.VisibleForTesting;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.ValueTuple;
 
-import static org.neo4j.internal.helpers.collection.Iterables.map;
 import static org.neo4j.values.storable.Values.NO_VALUE;
 
 /**
@@ -96,7 +94,7 @@ public class TxState implements TransactionState, RelationshipVisitor.Home
     private RemovalsCountingDiffSets nodes;
     private RemovalsCountingDiffSets relationships;
 
-    private MutableObjectLongMap<IndexBackedConstraintDescriptor> createdConstraintIndexesByConstraint;
+    private Map<IndexBackedConstraintDescriptor,IndexDescriptor2> createdConstraintIndexesByConstraint;
 
     private Map<SchemaDescriptor, Map<ValueTuple, MutableLongDiffSets>> indexUpdates;
 
@@ -644,10 +642,13 @@ public class TxState implements TransactionState, RelationshipVisitor.Home
     }
 
     @Override
-    public void constraintDoAdd( IndexBackedConstraintDescriptor constraint, long indexId )
+    public void constraintDoAdd( IndexBackedConstraintDescriptor constraint, IndexDescriptor2 index )
     {
         constraintsChangesDiffSets().add( constraint );
-        createdConstraintIndexesByConstraint().put( constraint, indexId );
+        if ( index != null && index != IndexDescriptor2.NO_INDEX )
+        {
+            createdConstraintIndexesByConstraint().put( constraint, index );
+        }
         changed();
     }
 
@@ -695,10 +696,6 @@ public class TxState implements TransactionState, RelationshipVisitor.Home
     public void constraintDoDrop( ConstraintDescriptor constraint )
     {
         constraintsChangesDiffSets().remove( constraint );
-        if ( constraint.enforcesUniqueness() )
-        {
-            indexDoDrop( getIndexForIndexBackedConstraint( (IndexBackedConstraintDescriptor) constraint ) );
-        }
         changed();
     }
 
@@ -709,20 +706,25 @@ public class TxState implements TransactionState, RelationshipVisitor.Home
     }
 
     @Override
-    public Iterable<IndexDescriptor2> constraintIndexesCreatedInTx()
+    public Iterator<IndexDescriptor2> constraintIndexesCreatedInTx()
     {
         if ( createdConstraintIndexesByConstraint != null && !createdConstraintIndexesByConstraint.isEmpty() )
         {
-            return map( TxState::getIndexForIndexBackedConstraint, createdConstraintIndexesByConstraint.keySet() );
+            return createdConstraintIndexesByConstraint.values().iterator();
         }
-        return Iterables.empty();
+        return Collections.emptyIterator();
     }
 
     @Override
-    public Long indexCreatedForConstraint( ConstraintDescriptor constraint )
+    public IndexDescriptor2 indexCreatedForConstraint( ConstraintDescriptor constraint )
     {
-        return createdConstraintIndexesByConstraint == null ? null :
-                createdConstraintIndexesByConstraint.get( constraint );
+        if ( constraint instanceof IndexBackedConstraintDescriptor )
+        {
+            IndexBackedConstraintDescriptor indexBacked = (IndexBackedConstraintDescriptor) constraint;
+            return createdConstraintIndexesByConstraint == null ? null :
+                   createdConstraintIndexesByConstraint.get( indexBacked );
+        }
+        return IndexDescriptor2.NO_INDEX;
     }
 
     @Override
@@ -818,18 +820,13 @@ public class TxState implements TransactionState, RelationshipVisitor.Home
         return indexUpdates.computeIfAbsent( schema, k -> new HashMap<>() );
     }
 
-    private MutableObjectLongMap<IndexBackedConstraintDescriptor> createdConstraintIndexesByConstraint()
+    private Map<IndexBackedConstraintDescriptor,IndexDescriptor2> createdConstraintIndexesByConstraint()
     {
         if ( createdConstraintIndexesByConstraint == null )
         {
-            createdConstraintIndexesByConstraint = new ObjectLongHashMap<>();
+            createdConstraintIndexesByConstraint = new HashMap<>();
         }
         return createdConstraintIndexesByConstraint;
-    }
-
-    private static IndexDescriptor2 getIndexForIndexBackedConstraint( IndexBackedConstraintDescriptor constraint )
-    {
-        return constraint.ownedIndexDescriptor();
     }
 
     @Override

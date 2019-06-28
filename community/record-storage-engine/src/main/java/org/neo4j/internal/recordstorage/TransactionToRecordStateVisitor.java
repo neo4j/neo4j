@@ -31,8 +31,6 @@ import org.neo4j.internal.kernel.api.exceptions.schema.DuplicateSchemaRuleExcept
 import org.neo4j.internal.kernel.api.exceptions.schema.SchemaRuleNotFoundException;
 import org.neo4j.internal.schema.ConstraintDescriptor;
 import org.neo4j.internal.schema.IndexDescriptor2;
-import org.neo4j.internal.schema.IndexPrototype;
-import org.neo4j.internal.schema.SchemaRule;
 import org.neo4j.internal.schema.SchemaState;
 import org.neo4j.internal.schema.constraints.NodeKeyConstraintDescriptor;
 import org.neo4j.internal.schema.constraints.UniquenessConstraintDescriptor;
@@ -226,7 +224,7 @@ class TransactionToRecordStateVisitor extends TxStateVisitor.Adapter
             break;
 
         case EXISTS:
-            ConstraintRule rule = constraintSemantics.createExistenceConstraint( schemaStorage.newRuleId(), constraint );
+            ConstraintRule rule = constraintSemantics.createExistenceConstraint( constraintId, constraint );
             schemaStateChanger.createSchemaRule( recordState, rule );
             break;
 
@@ -237,7 +235,7 @@ class TransactionToRecordStateVisitor extends TxStateVisitor.Adapter
 
     private void visitAddedUniquenessConstraint( UniquenessConstraintDescriptor uniqueConstraint, long constraintId ) throws KernelException
     {
-        IndexDescriptor2 indexRule = firstUniqueConstraintIndex( schemaStorage.indexGetForSchema( uniqueConstraint.ownedIndexDescriptor() ) );
+        IndexDescriptor2 indexRule = firstUniqueConstraintIndex( schemaStorage.indexGetForSchema( uniqueConstraint.ownedIndexSchema() ) );
         ConstraintRule constraintRule = constraintSemantics.createUniquenessConstraintRule( constraintId, uniqueConstraint, indexRule.getId() );
         schemaStateChanger.createSchemaRule( recordState, constraintRule );
         schemaStateChanger.setConstraintIndexOwner( recordState, indexRule, constraintId );
@@ -245,7 +243,7 @@ class TransactionToRecordStateVisitor extends TxStateVisitor.Adapter
 
     private void visitAddedNodeKeyConstraint( NodeKeyConstraintDescriptor uniqueConstraint, long constraintId ) throws KernelException
     {
-        IndexDescriptor2 indexRule = firstUniqueConstraintIndex( schemaStorage.indexGetForSchema( uniqueConstraint.ownedIndexDescriptor() ) );
+        IndexDescriptor2 indexRule = firstUniqueConstraintIndex( schemaStorage.indexGetForSchema( uniqueConstraint.ownedIndexSchema() ) );
         ConstraintRule constraintRule = constraintSemantics.createNodeKeyConstraintRule( constraintId, uniqueConstraint, indexRule.getId() );
         schemaStateChanger.createSchemaRule( recordState, constraintRule );
         schemaStateChanger.setConstraintIndexOwner( recordState, indexRule, constraintId );

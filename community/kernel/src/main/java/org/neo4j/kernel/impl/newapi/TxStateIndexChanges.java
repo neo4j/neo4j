@@ -33,9 +33,9 @@ import java.util.Collections;
 import java.util.Map;
 import java.util.NavigableMap;
 
-import org.neo4j.internal.schema.IndexOrder;
 import org.neo4j.internal.kernel.api.IndexQuery;
-import org.neo4j.internal.schema.IndexDescriptor;
+import org.neo4j.internal.schema.IndexDescriptor2;
+import org.neo4j.internal.schema.IndexOrder;
 import org.neo4j.storageengine.api.txstate.LongDiffSets;
 import org.neo4j.storageengine.api.txstate.ReadableTransactionState;
 import org.neo4j.values.storable.TextValue;
@@ -59,13 +59,13 @@ class TxStateIndexChanges
 
     // SCAN
 
-    static AddedAndRemoved indexUpdatesForScan( ReadableTransactionState txState, IndexDescriptor descriptor, IndexOrder indexOrder )
+    static AddedAndRemoved indexUpdatesForScan( ReadableTransactionState txState, IndexDescriptor2 descriptor, IndexOrder indexOrder )
     {
         return indexUpdatesForScanAndFilter( txState, descriptor, null, indexOrder );
     }
 
     static AddedWithValuesAndRemoved indexUpdatesWithValuesForScan( ReadableTransactionState txState,
-                                                                    IndexDescriptor descriptor,
+                                                                    IndexDescriptor2 descriptor,
                                                                     IndexOrder indexOrder )
     {
         return indexUpdatesWithValuesScanAndFilter( txState, descriptor, null, indexOrder );
@@ -74,7 +74,7 @@ class TxStateIndexChanges
     // SUFFIX
 
     static AddedAndRemoved indexUpdatesForSuffixOrContains( ReadableTransactionState txState,
-                                                            IndexDescriptor descriptor,
+                                                            IndexDescriptor2 descriptor,
                                                             IndexQuery query,
                                                             IndexOrder indexOrder )
     {
@@ -87,7 +87,7 @@ class TxStateIndexChanges
     }
 
     static AddedWithValuesAndRemoved indexUpdatesWithValuesForSuffixOrContains( ReadableTransactionState txState,
-                                                                                IndexDescriptor descriptor,
+                                                                                IndexDescriptor2 descriptor,
                                                                                 IndexQuery query,
                                                                                 IndexOrder indexOrder )
     {
@@ -102,7 +102,7 @@ class TxStateIndexChanges
     // SEEK
 
     static AddedAndRemoved indexUpdatesForSeek( ReadableTransactionState txState,
-                                                IndexDescriptor descriptor,
+                                                IndexDescriptor2 descriptor,
                                                 ValueTuple values )
     {
         UnmodifiableMap<ValueTuple,? extends LongDiffSets> updates = txState.getIndexUpdates( descriptor.schema() );
@@ -118,7 +118,7 @@ class TxStateIndexChanges
     // RANGE SEEK
 
     static AddedAndRemoved indexUpdatesForRangeSeek( ReadableTransactionState txState,
-                                                     IndexDescriptor descriptor,
+                                                     IndexDescriptor2 descriptor,
                                                      Value[] equalityPrefix,
                                                      IndexQuery.RangePredicate<?> predicate,
                                                      IndexOrder indexOrder )
@@ -159,7 +159,7 @@ class TxStateIndexChanges
     }
 
     static AddedWithValuesAndRemoved indexUpdatesWithValuesForRangeSeek( ReadableTransactionState txState,
-                                                                         IndexDescriptor descriptor,
+                                                                         IndexDescriptor2 descriptor,
                                                                          Value[] equalityPrefix,
                                                                          IndexQuery.RangePredicate<?> predicate,
                                                                          IndexOrder indexOrder )
@@ -203,7 +203,7 @@ class TxStateIndexChanges
     // PREFIX
 
     static AddedAndRemoved indexUpdatesForRangeSeekByPrefix( ReadableTransactionState txState,
-                                                             IndexDescriptor descriptor,
+                                                             IndexDescriptor2 descriptor,
                                                              Value[] equalityPrefix,
                                                              TextValue prefix,
                                                              IndexOrder indexOrder )
@@ -239,7 +239,7 @@ class TxStateIndexChanges
     }
 
     static AddedWithValuesAndRemoved indexUpdatesWithValuesForRangeSeekByPrefix( ReadableTransactionState txState,
-                                                                                 IndexDescriptor descriptor,
+                                                                                 IndexDescriptor2 descriptor,
                                                                                  Value[] equalityPrefix,
                                                                                  TextValue prefix,
                                                                                  IndexOrder indexOrder )
@@ -279,7 +279,7 @@ class TxStateIndexChanges
     // HELPERS
 
     private static AddedAndRemoved indexUpdatesForScanAndFilter( ReadableTransactionState txState,
-                                                                 IndexDescriptor descriptor,
+                                                                 IndexDescriptor2 descriptor,
                                                                  IndexQuery filter,
                                                                  IndexOrder indexOrder )
     {
@@ -307,7 +307,7 @@ class TxStateIndexChanges
     }
 
     private static AddedWithValuesAndRemoved indexUpdatesWithValuesScanAndFilter( ReadableTransactionState txState,
-                                                                                  IndexDescriptor descriptor,
+                                                                                  IndexDescriptor2 descriptor,
                                                                                   IndexQuery filter,
                                                                                   IndexOrder indexOrder )
     {
@@ -336,7 +336,7 @@ class TxStateIndexChanges
     }
 
     private static Map<ValueTuple,? extends LongDiffSets> getUpdates( ReadableTransactionState txState,
-                                                                      IndexDescriptor descriptor,
+                                                                      IndexDescriptor2 descriptor,
                                                                       IndexOrder indexOrder )
     {
         return indexOrder == IndexOrder.NONE ?

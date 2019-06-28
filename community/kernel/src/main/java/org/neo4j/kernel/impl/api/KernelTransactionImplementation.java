@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.api;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -470,12 +471,11 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     {
         if ( hasTxStateWithChanges() )
         {
-            for ( IndexDescriptor2 createdConstraintIndex : txState().constraintIndexesCreatedInTx() )
+            Iterator<IndexDescriptor2> createdIndexIds = txState().constraintIndexesCreatedInTx();
+            while ( createdIndexIds.hasNext() )
             {
-                // TODO logically, which statement should this operation be performed on?
-
-                // Since txState refers to storage IndexDescriptor we need to convert to IndexReference to call this method.
-                constraintIndexCreator.dropUniquenessConstraintIndex( allStoreHolder.indexReference( createdConstraintIndex ) );
+                IndexDescriptor2 createdIndex = createdIndexIds.next();
+                constraintIndexCreator.dropUniquenessConstraintIndex( createdIndex );
             }
         }
     }
@@ -778,6 +778,12 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
                         public void visitCreatedRelationship( long id, int type, long startNode, long endNode )
                         {
                             commandCreationContext.releaseRelationship( id );
+                        }
+
+                        @Override
+                        public void visitAddedIndex( IndexDescriptor2 index )
+                        {
+                            commandCreationContext.releaseSchema( index.getId() );
                         }
                     } );
                 }
