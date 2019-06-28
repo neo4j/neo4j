@@ -144,6 +144,23 @@ abstract class ProfileDbHitsTestBase[CONTEXT <: RuntimeContext](
     result.runtimeResult.queryProfile().operatorProfile(1).dbHits() shouldBe 3 // node by id
   }
 
+  test("should profile dbHits of directed relationship by id") {
+    // given
+    val (_, rels) = circleGraph(17)
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("r", "x", "y")
+      .directedRelationshipByIdSeek("r", "x", "y", rels(13).getId)
+      .build()
+
+    val result = profile(logicalQuery, runtime)
+    consume(result)
+
+    // then
+    result.runtimeResult.queryProfile().operatorProfile(1).dbHits() shouldBe 1
+  }
+
   test("should profile dbHits of NodeCountFromCountStore") {
     // given
     nodeGraph(10, "LabelA")
