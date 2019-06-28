@@ -19,48 +19,35 @@
  */
 package org.neo4j.values.storable;
 
-import java.lang.annotation.ElementType;
-import java.lang.annotation.Retention;
-import java.lang.annotation.RetentionPolicy;
-import java.lang.annotation.Target;
+import org.hamcrest.Matcher;
+import org.hamcrest.TypeSafeDiagnosingMatcher;
+
 import java.time.Clock;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
-import java.time.temporal.ChronoField;
 import java.time.temporal.TemporalAdjuster;
 import java.time.temporal.TemporalField;
 import java.util.Objects;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
-import org.hamcrest.Matcher;
-import org.hamcrest.TypeSafeDiagnosingMatcher;
-import org.junit.rules.TestRule;
-import org.junit.runner.Description;
-import org.junit.runners.model.Statement;
-
-import static java.time.ZoneOffset.UTC;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.allOf;
 import static org.hamcrest.Matchers.equalTo;
-import static org.junit.Assert.assertThat;
 
-public class FrozenClockRule extends Clock implements TestRule, Function<String,Clock>, Supplier<ZoneId>
+class FrozenClock extends Clock implements Supplier<ZoneId>
 {
-    @Target( ElementType.METHOD )
-    @Retention( RetentionPolicy.RUNTIME )
-    @interface TimeZone
-    {
-        String[] value();
-    }
-
-    public static final TemporalAdjuster SECOND_PRECISION = temporal -> temporal.with( ChronoField.NANO_OF_SECOND, 0 );
-    public static final TemporalAdjuster MILLISECOND_PRECISION = temporal -> temporal
-            .with( ChronoField.NANO_OF_SECOND, temporal.get( ChronoField.MILLI_OF_SECOND ) * 1000_000 );
     private Instant instant;
     private ZoneId zone;
+
+    FrozenClock( String zoneId )
+    {
+        instant = Instant.now();
+        zone = ZoneId.of(zoneId);
+    }
 
     @Override
     public ZoneId getZone()
@@ -68,7 +55,7 @@ public class FrozenClockRule extends Clock implements TestRule, Function<String,
         return zone;
     }
 
-    public Clock withZone( String zoneId )
+    Clock withZone( String zoneId )
     {
         return withZone( ZoneId.of( zoneId ) );
     }
@@ -117,67 +104,16 @@ public class FrozenClockRule extends Clock implements TestRule, Function<String,
     }
 
     @Override
-    public Clock apply( String when )
-    {
-        return this;
-    }
-
-    @Override
     public ZoneId get()
     {
         return zone;
-    }
-
-    @Override
-    public Statement apply( Statement base, Description description )
-    {
-        return new Statement()
-        {
-            @Override
-            public void evaluate() throws Throwable
-            {
-                try
-                {
-                    for ( ZoneId zoneId : zonesOf( description ) )
-                    {
-                        instant = Instant.now();
-                        zone = zoneId;
-                        base.evaluate();
-                    }
-                }
-                finally
-                {
-                    instant = null;
-                    zone = null;
-                }
-            }
-
-            private ZoneId[] zonesOf( Description description )
-            {
-                TimeZone zone = description.getAnnotation( TimeZone.class );
-                String[] ids = zone == null ? null : zone.value();
-                if ( ids == null || ids.length == 0 )
-                {
-                    return new ZoneId[] {UTC};
-                }
-                else
-                {
-                    ZoneId[] zones = new ZoneId[ids.length];
-                    for ( int i = 0; i < zones.length; i++ )
-                    {
-                        zones[i] = ZoneId.of( ids[i] );
-                    }
-                    return zones;
-                }
-            }
-        };
     }
 
     static <V extends TemporalValue<?,V>> void assertEqualTemporal( V expected, V actual )
     {
         assertThat( actual, allOf(
                 equalTo( expected ),
-                equalOn( "timezone", FrozenClockRule::timezone, expected ),
+                equalOn( "timezone", FrozenClock::timezone, expected ),
                 equalOn( "temporal", TemporalValue::temporal, expected ) ) );
     }
 

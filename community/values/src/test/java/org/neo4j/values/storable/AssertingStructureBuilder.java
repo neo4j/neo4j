@@ -22,15 +22,15 @@ package org.neo4j.values.storable;
 import org.hamcrest.Description;
 import org.hamcrest.Matcher;
 import org.hamcrest.TypeSafeMatcher;
+import org.junit.jupiter.api.Assertions;
 
 import java.util.LinkedHashMap;
 import java.util.Map;
 
 import org.neo4j.values.StructureBuilder;
 
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.fail;
 
 public final class AssertingStructureBuilder<Input, Result> implements StructureBuilder<Input,Result>
 {
@@ -78,20 +78,15 @@ public final class AssertingStructureBuilder<Input, Result> implements Structure
 
     public void assertThrows( Matcher<Exception> matches )
     {
-        try
+        var e = Assertions.assertThrows( Exception.class, () ->
         {
-            for ( Map.Entry<String,Input> entry : input.entrySet() )
+            for ( Map.Entry<String, Input> entry : input.entrySet() )
             {
                 builder.add( entry.getKey(), entry.getValue() );
             }
             builder.build();
-        }
-        catch ( Exception expected )
-        {
-            assertThat( expected, matches );
-            return;
-        }
-        fail( "expected exception" );
+        } );
+        assertThat( e, matches );
     }
 
     @Override

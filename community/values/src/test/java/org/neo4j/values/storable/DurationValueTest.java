@@ -19,7 +19,6 @@
  */
 package org.neo4j.values.storable;
 
-import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;
 
 import java.time.LocalDate;
@@ -40,7 +39,9 @@ import static java.time.temporal.ChronoUnit.MONTHS;
 import static java.time.temporal.ChronoUnit.NANOS;
 import static java.time.temporal.ChronoUnit.SECONDS;
 import static java.util.Collections.singletonList;
-import static org.junit.Assert.assertThat;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.allOf;
+import static org.hamcrest.Matchers.containsString;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -668,12 +669,12 @@ class DurationValueTest
     {
         InvalidValuesArgumentException e = assertThrows( InvalidValuesArgumentException.class, () -> duration( months, days, seconds, nanos ) );
 
-        assertThat( e.getMessage(), Matchers.allOf(
-                Matchers.containsString( "Invalid value for duration" ),
-                Matchers.containsString( "months=" + months ),
-                Matchers.containsString( "days=" + days ),
-                Matchers.containsString( "seconds=" + seconds ),
-                Matchers.containsString( "nanos=" + nanos )
+        assertThat( e.getMessage(), allOf(
+                containsString( "Invalid value for duration" ),
+                containsString( "months=" + months ),
+                containsString( "days=" + days ),
+                containsString( "seconds=" + seconds ),
+                containsString( "nanos=" + nanos )
         ) );
     }
 }

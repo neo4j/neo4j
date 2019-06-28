@@ -19,11 +19,8 @@
  */
 package org.neo4j.values.storable;
 
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import java.nio.charset.StandardCharsets;
 import java.util.Collection;
@@ -32,26 +29,20 @@ import java.util.function.Function;
 import static java.util.Arrays.asList;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.neo4j.values.storable.Values.stringArray;
 import static org.neo4j.values.storable.Values.utf8Value;
 
-@RunWith( Parameterized.class )
-public class TextValueTest
+class TextValueTest
 {
-    @Rule
-    public ExpectedException exception = ExpectedException.none();
-
-    @Parameterized.Parameter
-    public Function<String,TextValue> value;
-
-    @Parameterized.Parameters
-    public static Collection<Function<String,TextValue>> functions()
+    private static Collection<Function<String, TextValue>> functions()
     {
         return asList( Values::stringValue, s -> utf8Value( s.getBytes( StandardCharsets.UTF_8 ) ) );
     }
 
-    @Test
-    public void replace()
+    @ParameterizedTest
+    @MethodSource( "functions" )
+    void replace( Function<String, TextValue> value )
     {
         assertThat( value.apply( "hello" ).replace( "l", "w" ), equalTo( value.apply( "hewwo" ) ) );
         assertThat( value.apply( "hello" ).replace( "ell", "ipp" ), equalTo( value.apply( "hippo" ) ) );
@@ -60,8 +51,9 @@ public class TextValueTest
         assertThat( value.apply( "" ).replace( "", "⁻" ), equalTo( value.apply( "⁻" ) ) );
     }
 
-    @Test
-    public void substring()
+    @ParameterizedTest
+    @MethodSource( "functions" )
+    void substring( Function<String, TextValue> value )
     {
         assertThat( value.apply( "hello" ).substring( 2, 5 ), equalTo( value.apply( "llo" ) ) );
         assertThat( value.apply( "hello" ).substring( 4, 5 ), equalTo( value.apply( "o" ) ) );
@@ -75,12 +67,12 @@ public class TextValueTest
         assertThat( value.apply( "\uD83D\uDE21\uD83D\uDCA9\uD83D\uDC7B" ).substring( 1, 2 ),
                 equalTo( value.apply( "\uD83D\uDCA9\uD83D\uDC7B" ) ) );
 
-        exception.expect( IndexOutOfBoundsException.class );
-        value.apply( "hello" ).substring( -4, 2 );
+        assertThrows( IndexOutOfBoundsException.class, () -> value.apply( "hello" ).substring( -4, 2 ) );
     }
 
-    @Test
-    public void toLower()
+    @ParameterizedTest
+    @MethodSource( "functions" )
+    void toLower( Function<String, TextValue> value )
     {
         assertThat( value.apply( "HELLO" ).toLower(), equalTo( value.apply( "hello" ) ) );
         assertThat( value.apply( "Hello" ).toLower(), equalTo( value.apply( "hello" ) ) );
@@ -88,8 +80,9 @@ public class TextValueTest
         assertThat( value.apply( "" ).toLower(), equalTo( value.apply( "" ) ) );
     }
 
-    @Test
-    public void toUpper()
+    @ParameterizedTest
+    @MethodSource( "functions" )
+    void toUpper( Function<String, TextValue> value )
     {
         assertThat( value.apply( "HELLO" ).toUpper(), equalTo( value.apply( "HELLO" ) ) );
         assertThat( value.apply( "Hello" ).toUpper(), equalTo( value.apply( "HELLO" ) ) );
@@ -97,8 +90,9 @@ public class TextValueTest
         assertThat( value.apply( "" ).toUpper(), equalTo( value.apply( "" ) ) );
     }
 
-    @Test
-    public void ltrim()
+    @ParameterizedTest
+    @MethodSource( "functions" )
+    void ltrim( Function<String, TextValue> value )
     {
         assertThat( value.apply( "  HELLO" ).ltrim(), equalTo( value.apply( "HELLO" ) ) );
         assertThat( value.apply( " Hello" ).ltrim(), equalTo( value.apply( "Hello" ) ) );
@@ -106,8 +100,9 @@ public class TextValueTest
         assertThat( value.apply( "\u2009㺂࿝鋦毠\u2009" ).ltrim(), equalTo( value.apply( "㺂࿝鋦毠\u2009" ) ) );
     }
 
-    @Test
-    public void rtrim()
+    @ParameterizedTest
+    @MethodSource( "functions" )
+    void rtrim( Function<String, TextValue> value )
     {
         assertThat( value.apply( "HELLO  " ).rtrim(), equalTo( value.apply( "HELLO" ) ) );
         assertThat( value.apply( "Hello  " ).rtrim(), equalTo( value.apply( "Hello" ) ) );
@@ -115,8 +110,9 @@ public class TextValueTest
         assertThat( value.apply( "\u2009㺂࿝鋦毠\u2009" ).rtrim(), equalTo( value.apply( "\u2009㺂࿝鋦毠" ) ) );
     }
 
-    @Test
-    public void trim()
+    @ParameterizedTest
+    @MethodSource( "functions" )
+    void trim( Function<String, TextValue> value )
     {
         assertThat( value.apply( "  hello  " ).trim(), equalTo( value.apply( "hello" ) ) );
         assertThat( value.apply( "  hello " ).trim(), equalTo( value.apply( "hello" ) ) );
@@ -125,8 +121,9 @@ public class TextValueTest
         assertThat( value.apply( "\u2009㺂࿝鋦毠\u2009" ).trim(), equalTo( value.apply( "㺂࿝鋦毠" ) ) );
     }
 
-    @Test
-    public void reverse()
+    @ParameterizedTest
+    @MethodSource( "functions" )
+    void reverse( Function<String, TextValue> value )
     {
         assertThat( value.apply( "Foo" ).reverse(), equalTo( value.apply( "ooF" ) ) );
         assertThat( value.apply( "" ).reverse(), equalTo( StringValue.EMPTY ) );
@@ -139,8 +136,9 @@ public class TextValueTest
                 "\uD83D\uDC7B\uD83D\uDCA9\uD83D\uDE21" ) ) );
     }
 
-    @Test
-    public void split()
+    @ParameterizedTest
+    @MethodSource( "functions" )
+    void split( Function<String, TextValue> value )
     {
         assertThat( value.apply( "HELLO" ).split( "LL" ), equalTo( stringArray( "HE", "O" ) ) );
         assertThat( value.apply( "Separating,by,comma,is,a,common,use,case" ).split( "," ),

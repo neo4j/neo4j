@@ -24,20 +24,18 @@ import java.util.function.Supplier;
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.Equality;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 
 public class AnyValueTestUtil
 {
     public static void assertEqual( AnyValue a, AnyValue b )
     {
-        assertEquals( formatMessage( "should be equivalent to", a, b ), a, b );
-        assertEquals( formatMessage( "should be equivalent to", b, a ), b, a );
-        assertEquals( formatMessage( "should be equal to", a, b ),
-                a.ternaryEquals( b ), Equality.TRUE );
-        assertEquals( formatMessage( "should be equal to", b, a ),
-                b.ternaryEquals( a ), Equality.TRUE );
-        assertEquals( formatMessage( "should have same hashcode as", a, b ), a.hashCode(), b.hashCode() );
+        assertEquals( a, b, formatMessage( "should be equivalent to", a, b ) );
+        assertEquals( b, a, formatMessage( "should be equivalent to", b, a ) );
+        assertEquals( a.ternaryEquals( b ), Equality.TRUE, formatMessage( "should be equal to", a, b ) );
+        assertEquals( b.ternaryEquals( a ), Equality.TRUE, formatMessage( "should be equal to", b, a ) );
+        assertEquals( a.hashCode(), b.hashCode(), formatMessage( "should have same hashcode as", a, b ) );
     }
 
     private static String formatMessage( String should, AnyValue a, AnyValue b )
@@ -47,26 +45,26 @@ public class AnyValueTestUtil
 
     public static void assertEqualValues( AnyValue a, AnyValue b )
     {
-        assertEquals( a + " should be equivalent to " + b, a, b );
-        assertEquals( a + " should be equivalent to " + b, b, a );
-        assertEquals( a + " should be equal to " + b, a.ternaryEquals( b ), Equality.TRUE );
-        assertEquals( a + " should be equal to " + b, b.ternaryEquals( a ), Equality.TRUE );
+        assertEquals( a, b, a + " should be equivalent to " + b );
+        assertEquals( b, a, a + " should be equivalent to " + b );
+        assertEquals( a.ternaryEquals( b ), Equality.TRUE, a + " should be equal to " + b );
+        assertEquals( b.ternaryEquals( a ), Equality.TRUE, a + " should be equal to " + b );
     }
 
     public static void assertNotEqual( AnyValue a, AnyValue b )
     {
-        assertNotEquals( a + " should not be equivalent to " + b, a, b );
-        assertNotEquals( b + " should not be equivalent to " + a, b, a );
-        assertNotEquals( a + " should not equal " + b, a.ternaryEquals( b ), Equality.TRUE );
-        assertNotEquals( b + " should not equal " + a, b.ternaryEquals( a ), Equality.TRUE );
+        assertNotEquals( a, b, a + " should not be equivalent to " + b );
+        assertNotEquals( b, a, b + " should not be equivalent to " + a );
+        assertNotEquals( a.ternaryEquals( b ), Equality.TRUE, a + " should not equal " + b );
+        assertNotEquals( b.ternaryEquals( a ), Equality.TRUE, b + " should not equal " + a );
     }
 
     public static void assertIncomparable( AnyValue a, AnyValue b )
     {
-        assertNotEquals( a + " should not be equivalent to " + b, a, b );
-        assertNotEquals( b + " should not be equivalent to " + a, b, a );
-        assertEquals( a + " should be incomparable to " + b, a.ternaryEquals( b ), Equality.UNDEFINED );
-        assertEquals( b + " should be incomparable to " + a, b.ternaryEquals( a ), Equality.UNDEFINED );
+        assertNotEquals( a, b, a + " should not be equivalent to " + b );
+        assertNotEquals( b, a, b + " should not be equivalent to " + a );
+        assertEquals( a.ternaryEquals( b ), Equality.UNDEFINED, a + " should be incomparable to " + b );
+        assertEquals( b.ternaryEquals( a ), Equality.UNDEFINED, b + " should be incomparable to " + a );
     }
 
     public static <X extends Exception, T> X assertThrows( Class<X> exception, Supplier<T> thunk )
