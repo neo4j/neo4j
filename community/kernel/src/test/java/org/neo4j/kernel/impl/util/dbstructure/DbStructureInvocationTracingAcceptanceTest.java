@@ -19,7 +19,8 @@
  */
 package org.neo4j.kernel.impl.util.dbstructure;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -48,19 +49,18 @@ import org.neo4j.internal.helpers.collection.Visitable;
 import org.neo4j.internal.schema.constraints.ConstraintDescriptorFactory;
 import org.neo4j.kernel.api.schema.index.TestIndexDescriptorFactory;
 
-import static org.junit.Assert.assertEquals;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 
-public class DbStructureInvocationTracingAcceptanceTest
+class DbStructureInvocationTracingAcceptanceTest
 {
-    private final String packageName = "org.neo4j.kernel.impl.util.data";
-    private final String className = "XXYYZZData";
-    private final String classNameWithPackage = packageName + "." + className;
+    private static final String packageName = "org.neo4j.kernel.impl.util.data";
+    private static final String className = "XXYYZZData";
+    private static final String classNameWithPackage = packageName + "." + className;
 
     @Test
-    public void outputCompilesWithoutErrors() throws IOException
+    void outputCompilesWithoutErrors() throws IOException
     {
         // GIVEN
         StringBuilder output = new StringBuilder();
@@ -77,7 +77,7 @@ public class DbStructureInvocationTracingAcceptanceTest
     }
 
     @Test
-    public void compiledOutputCreatesInputTrace() throws IOException
+    void compiledOutputCreatesInputTrace() throws IOException
     {
         // GIVEN
         StringBuilder output = new StringBuilder();
@@ -97,7 +97,7 @@ public class DbStructureInvocationTracingAcceptanceTest
     }
 
     @Test
-    public void compiledOutputProducesSameCompiledOutputIfCompiledAgain() throws IOException
+    void compiledOutputProducesSameCompiledOutputIfCompiledAgain() throws IOException
     {
         // GIVEN
         StringBuilder output1 = new StringBuilder();
@@ -119,10 +119,10 @@ public class DbStructureInvocationTracingAcceptanceTest
         String source2 = output2.toString();
 
         // THEN
-        assertEquals( source1, source2 );
+        Assertions.assertEquals( source1, source2 );
     }
 
-    private void exerciseVisitor( Function<Object, DbStructureVisitor> visitor )
+    private static void exerciseVisitor( Function<Object, DbStructureVisitor> visitor )
     {
         visitor.apply( null ).visitLabel( 0, "Person" );
         visitor.apply( null ).visitLabel( 1, "Party" );

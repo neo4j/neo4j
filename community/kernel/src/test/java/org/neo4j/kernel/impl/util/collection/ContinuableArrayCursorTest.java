@@ -19,25 +19,21 @@
  */
 package org.neo4j.kernel.impl.util.collection;
 
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
+import org.junit.jupiter.api.Test;
 
 import java.util.Arrays;
 import java.util.Iterator;
 import java.util.function.Supplier;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public class ContinuableArrayCursorTest
+class ContinuableArrayCursorTest
 {
-    @Rule
-    public final ExpectedException thrown = ExpectedException.none();
-
     @Test
-    public void shouldNotReturnAnyElementOnEmptySupplier()
+    void shouldNotReturnAnyElementOnEmptySupplier()
     {
         // given
         ContinuableArrayCursor cursor = new ContinuableArrayCursor<>( () -> null );
@@ -47,7 +43,7 @@ public class ContinuableArrayCursorTest
     }
 
     @Test
-    public void shouldNotReturnAnyElementOnSupplierWithOneEmptyArray()
+    void shouldNotReturnAnyElementOnSupplierWithOneEmptyArray()
     {
         // given
         ContinuableArrayCursor cursor = new ContinuableArrayCursor( supply( new Integer[0] ) );
@@ -57,7 +53,7 @@ public class ContinuableArrayCursorTest
     }
 
     @Test
-    public void shouldMoveCursorOverSingleArray()
+    void shouldMoveCursorOverSingleArray()
     {
         // given
         Integer[] array = new Integer[]{1, 2, 3};
@@ -68,7 +64,7 @@ public class ContinuableArrayCursorTest
     }
 
     @Test
-    public void shouldMoveCursorOverMultipleArrays()
+    void shouldMoveCursorOverMultipleArrays()
     {
         // given
         Integer[][] arrays = new Integer[][]{
@@ -83,18 +79,17 @@ public class ContinuableArrayCursorTest
     }
 
     @Test
-    public void callGetBeforeNextShouldThrowIllegalStateException()
+    void callGetBeforeNextShouldThrowIllegalStateException()
     {
         // given
         ContinuableArrayCursor<?> cursor = new ContinuableArrayCursor( supply( new Integer[0] ) );
 
         // then
-        thrown.expect( IllegalStateException.class );
-        cursor.get();
+        assertThrows( IllegalStateException.class, cursor::get );
     }
 
     @Test
-    public void callGetAfterNextReturnsFalseShouldThrowIllegalStateException()
+    void callGetAfterNextReturnsFalseShouldThrowIllegalStateException()
     {
         // given
         ContinuableArrayCursor<Integer> cursor = new ContinuableArrayCursor<>( supply( new Integer[0] ) );
@@ -103,8 +98,7 @@ public class ContinuableArrayCursorTest
         assertFalse( cursor.next() );
 
         // then
-        thrown.expect( IllegalStateException.class );
-        cursor.get();
+        assertThrows( IllegalStateException.class, cursor::get );
     }
 
     private Supplier<Integer[]> supply( Integer[] array )

@@ -22,16 +22,16 @@ package org.neo4j.kernel.impl.util.diffsets;
 import org.eclipse.collections.api.iterator.LongIterator;
 import org.eclipse.collections.api.set.primitive.MutableLongSet;
 import org.eclipse.collections.impl.set.mutable.primitive.LongHashSet;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import org.neo4j.kernel.impl.util.collection.CollectionsFactory;
 import org.neo4j.kernel.impl.util.collection.OnHeapCollectionsFactory;
 
 import static org.eclipse.collections.impl.set.mutable.primitive.LongHashSet.newSetWith;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertSame;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
@@ -41,17 +41,17 @@ import static org.neo4j.collection.PrimitiveLongCollections.iterator;
 import static org.neo4j.collection.PrimitiveLongCollections.toSet;
 import static org.neo4j.internal.helpers.collection.Iterators.asSet;
 
-public class MutableLongDiffSetsImplTest
+class MutableLongDiffSetsImplTest
 {
 
     @Test
-    public void newDiffSetIsEmpty()
+    void newDiffSetIsEmpty()
     {
         assertTrue( createDiffSet().isEmpty() );
     }
 
     @Test
-    public void addElementsToDiffSets()
+    void addElementsToDiffSets()
     {
         MutableLongDiffSetsImpl diffSets = createDiffSet();
 
@@ -64,7 +64,7 @@ public class MutableLongDiffSetsImplTest
     }
 
     @Test
-    public void removeElementsInDiffSets()
+    void removeElementsInDiffSets()
     {
         MutableLongDiffSetsImpl diffSets = createDiffSet();
 
@@ -76,7 +76,7 @@ public class MutableLongDiffSetsImplTest
     }
 
     @Test
-    public void removeAndAddElementsToDiffSets()
+    void removeAndAddElementsToDiffSets()
     {
         MutableLongDiffSetsImpl diffSets = createDiffSet();
 
@@ -93,7 +93,7 @@ public class MutableLongDiffSetsImplTest
     }
 
     @Test
-    public void checkIsElementsAddedOrRemoved()
+    void checkIsElementsAddedOrRemoved()
     {
         MutableLongDiffSetsImpl diffSet = createDiffSet();
 
@@ -112,7 +112,7 @@ public class MutableLongDiffSetsImplTest
     }
 
     @Test
-    public void addAllElements()
+    void addAllElements()
     {
         MutableLongDiffSetsImpl diffSet = createDiffSet();
 
@@ -123,7 +123,7 @@ public class MutableLongDiffSetsImplTest
     }
 
     @Test
-    public void removeAllElements()
+    void removeAllElements()
     {
         MutableLongDiffSetsImpl diffSet = createDiffSet();
 
@@ -134,7 +134,7 @@ public class MutableLongDiffSetsImplTest
     }
 
     @Test
-    public void addedAndRemovedElementsDelta()
+    void addedAndRemovedElementsDelta()
     {
         MutableLongDiffSetsImpl diffSet = createDiffSet();
         assertEquals( 0, diffSet.delta() );
@@ -148,7 +148,7 @@ public class MutableLongDiffSetsImplTest
     }
 
     @Test
-    public void augmentDiffSetWithExternalElements()
+    void augmentDiffSetWithExternalElements()
     {
         MutableLongDiffSets diffSet = createDiffSet();
         diffSet.addAll( newSetWith( 9L, 10L, 11L ) );
@@ -159,7 +159,7 @@ public class MutableLongDiffSetsImplTest
     }
 
     @Test
-    public void useCollectionsFactory()
+    void useCollectionsFactory()
     {
         final MutableLongSet set1 = new LongHashSet();
         final MutableLongSet set2 = new LongHashSet();

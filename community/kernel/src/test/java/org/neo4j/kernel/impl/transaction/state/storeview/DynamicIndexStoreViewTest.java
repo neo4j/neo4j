@@ -19,8 +19,8 @@
  */
 package org.neo4j.kernel.impl.transaction.state.storeview;
 
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import java.util.function.IntPredicate;
 import java.util.function.Supplier;
@@ -45,7 +45,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-public class DynamicIndexStoreViewTest
+class DynamicIndexStoreViewTest
 {
     private final LabelScanStore labelScanStore = mock( LabelScanStore.class );
     private final StubStorageCursors cursors = new StubStorageCursors();
@@ -54,14 +54,14 @@ public class DynamicIndexStoreViewTest
     private final IntPredicate propertyKeyIdFilter = mock( IntPredicate.class );
     private final AllEntriesLabelScanReader nodeLabelRanges = mock( AllEntriesLabelScanReader.class );
 
-    @Before
-    public void setUp()
+    @BeforeEach
+    void setUp()
     {
         when( labelScanStore.allNodeLabelRanges()).thenReturn( nodeLabelRanges );
     }
 
     @Test
-    public void visitOnlyLabeledNodes() throws Exception
+    void visitOnlyLabeledNodes() throws Exception
     {
         LabelScanReader labelScanReader = mock( LabelScanReader.class );
         when( labelScanStore.newReader() ).thenReturn( labelScanReader );

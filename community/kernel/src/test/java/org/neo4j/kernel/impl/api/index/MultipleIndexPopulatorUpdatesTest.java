@@ -19,12 +19,9 @@
  */
 package org.neo4j.kernel.impl.api.index;
 
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.Test;
 import org.mockito.Answers;
-import org.mockito.Mock;
 import org.mockito.Mockito;
-import org.mockito.junit.MockitoJUnitRunner;
 
 import java.util.function.IntPredicate;
 import java.util.function.Supplier;
@@ -59,14 +56,12 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.when;
 
-@RunWith( MockitoJUnitRunner.class )
-public class MultipleIndexPopulatorUpdatesTest
+class MultipleIndexPopulatorUpdatesTest
 {
-    @Mock( answer = Answers.RETURNS_MOCKS )
-    private LogProvider logProvider;
+    private final LogProvider logProvider = mock( LogProvider.class, Answers.RETURNS_MOCKS );
 
     @Test
-    public void updateForHigherNodeIgnoredWhenUsingFullNodeStoreScan()
+    void updateForHigherNodeIgnoredWhenUsingFullNodeStoreScan()
             throws IndexPopulationFailedKernelException, IndexEntryConflictException
     {
         IndexStatisticsStore indexStatisticsStore = mock( IndexStatisticsStore.class );
@@ -92,20 +87,20 @@ public class MultipleIndexPopulatorUpdatesTest
         Mockito.verify( indexUpdater, never() ).process( any(IndexEntryUpdate.class) );
     }
 
-    private IndexPopulator createIndexPopulator()
+    private static IndexPopulator createIndexPopulator()
     {
         return mock( IndexPopulator.class );
     }
 
-    private void addPopulator( MultipleIndexPopulator multipleIndexPopulator,
-            IndexPopulator indexPopulator, long indexId, IndexDescriptor descriptor )
+    private static void addPopulator( MultipleIndexPopulator multipleIndexPopulator,
+        IndexPopulator indexPopulator, long indexId, IndexDescriptor descriptor )
     {
         addPopulator( multipleIndexPopulator, descriptor.withId( indexId ), indexPopulator, mock( FlippableIndexProxy.class ),
                 mock( FailedIndexProxyFactory.class ) );
     }
 
-    private void addPopulator( MultipleIndexPopulator multipleIndexPopulator, StoreIndexDescriptor descriptor,
-            IndexPopulator indexPopulator, FlippableIndexProxy flippableIndexProxy, FailedIndexProxyFactory failedIndexProxyFactory )
+    private static void addPopulator( MultipleIndexPopulator multipleIndexPopulator, StoreIndexDescriptor descriptor,
+        IndexPopulator indexPopulator, FlippableIndexProxy flippableIndexProxy, FailedIndexProxyFactory failedIndexProxyFactory )
     {
         multipleIndexPopulator.addPopulator( indexPopulator, descriptor.withoutCapabilities(), flippableIndexProxy, failedIndexProxyFactory,
                 "userIndexDescription" );
@@ -132,7 +127,7 @@ public class MultipleIndexPopulatorUpdatesTest
         }
     }
 
-    private class ProcessListenableNeoStoreIndexView extends NeoStoreIndexStoreView
+    private static class ProcessListenableNeoStoreIndexView extends NeoStoreIndexStoreView
     {
         private Listener<StorageNodeCursor> processListener;
 
@@ -150,7 +145,7 @@ public class MultipleIndexPopulatorUpdatesTest
         {
 
             return new ListenableNodeScanViewNodeStoreScan<>( storageEngine.get(), locks, labelUpdateVisitor,
-                    propertyUpdatesVisitor, labelIds, propertyKeyIdFilter, processListener );
+                propertyUpdatesVisitor, labelIds, propertyKeyIdFilter, processListener );
         }
 
         void setProcessListener( Listener<StorageNodeCursor> processListener )
@@ -159,7 +154,7 @@ public class MultipleIndexPopulatorUpdatesTest
         }
     }
 
-    private class ListenableNodeScanViewNodeStoreScan<FAILURE extends Exception> extends StoreViewNodeStoreScan<FAILURE>
+    private static class ListenableNodeScanViewNodeStoreScan<FAILURE extends Exception> extends StoreViewNodeStoreScan<FAILURE>
     {
         private final Listener<StorageNodeCursor> processListener;
 

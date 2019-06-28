@@ -19,8 +19,8 @@
  */
 package org.neo4j.kernel.impl.newapi;
 
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.mockito.InOrder;
 
 import org.neo4j.internal.kernel.api.IndexQuery;
@@ -34,7 +34,7 @@ import org.neo4j.lock.LockTracer;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -44,7 +44,7 @@ import static org.neo4j.internal.kernel.api.IndexQuery.exact;
 import static org.neo4j.kernel.impl.locking.ResourceIds.indexEntryResourceId;
 import static org.neo4j.lock.ResourceTypes.INDEX_ENTRY;
 
-public class LockingNodeUniqueIndexSeekTest
+class LockingNodeUniqueIndexSeekTest
 {
     private final int labelId = 1;
     private final int propertyKeyId = 2;
@@ -59,14 +59,14 @@ public class LockingNodeUniqueIndexSeekTest
     private final Read read = mock( Read.class );
     private InOrder order;
 
-    @Before
-    public void setup()
+    @BeforeEach
+    void setup()
     {
         order = inOrder( locks );
     }
 
     @Test
-    public void shouldHoldSharedIndexLockIfNodeIsExists() throws Exception
+    void shouldHoldSharedIndexLockIfNodeIsExists() throws Exception
     {
         // given
         NodeValueIndexCursor cursor = mock( NodeValueIndexCursor.class );
@@ -89,7 +89,7 @@ public class LockingNodeUniqueIndexSeekTest
     }
 
     @Test
-    public void shouldHoldSharedIndexLockIfNodeIsConcurrentlyCreated() throws Exception
+    void shouldHoldSharedIndexLockIfNodeIsConcurrentlyCreated() throws Exception
     {
         // given
         NodeValueIndexCursor cursor = mock( NodeValueIndexCursor.class );
@@ -116,7 +116,7 @@ public class LockingNodeUniqueIndexSeekTest
     }
 
     @Test
-    public void shouldHoldExclusiveIndexLockIfNodeDoesNotExist() throws Exception
+    void shouldHoldExclusiveIndexLockIfNodeDoesNotExist() throws Exception
     {
         // given
         NodeValueIndexCursor cursor = mock( NodeValueIndexCursor.class );

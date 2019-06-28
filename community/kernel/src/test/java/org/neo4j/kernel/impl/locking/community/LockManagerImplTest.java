@@ -19,9 +19,7 @@
  */
 package org.neo4j.kernel.impl.locking.community;
 
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
+import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
 import org.neo4j.configuration.Config;
@@ -29,16 +27,16 @@ import org.neo4j.lock.LockTracer;
 import org.neo4j.lock.ResourceTypes;
 import org.neo4j.time.Clocks;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.startsWith;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public class LockManagerImplTest
+class LockManagerImplTest
 {
-    @Rule
-    public ExpectedException expectedException = ExpectedException.none();
-
     @Test
-    public void shouldAllowGetReadWriteLocks()
+    void shouldAllowGetReadWriteLocks()
     {
         // given
         LockResource node1 = new LockResource( ResourceTypes.NODE, 1L );
@@ -60,23 +58,19 @@ public class LockManagerImplTest
     }
 
     @Test
-    public void shouldNotBePossibleReleaseNotExistingLock()
+    void shouldNotBePossibleReleaseNotExistingLock()
     {
         // given
         LockResource node1 = new LockResource( ResourceTypes.NODE, 1L );
         LockTransaction lockTransaction = new LockTransaction();
         LockManagerImpl lockManager = createLockManager();
 
-        // expect
-        expectedException.expect( LockNotFoundException.class );
-        expectedException.expectMessage("Lock not found for: ");
-
-        // when
-        lockManager.releaseReadLock( node1, lockTransaction );
+        var e = assertThrows( LockNotFoundException.class, () -> lockManager.releaseReadLock( node1, lockTransaction ) );
+        assertThat( e.getMessage(), startsWith( "Lock not found for: " ) );
     }
 
     @Test
-    public void shouldCleanupNotUsedLocks()
+    void shouldCleanupNotUsedLocks()
     {
         // given
         LockResource node = new LockResource( ResourceTypes.NODE, 1L );
@@ -102,7 +96,7 @@ public class LockManagerImplTest
     }
 
     @Test
-    public void shouldReleaseNotAcquiredLocks()
+    void shouldReleaseNotAcquiredLocks()
     {
 
         // given
@@ -120,12 +114,12 @@ public class LockManagerImplTest
         assertEquals( 0, countLocks( lockManager ) );
     }
 
-    private LockManagerImpl createLockManager()
+    private static LockManagerImpl createLockManager()
     {
         return new LockManagerImpl( new RagManager(), Config.defaults(), Clocks.systemClock() );
     }
 
-    private int countLocks( LockManagerImpl lockManager )
+    private static int countLocks( LockManagerImpl lockManager )
     {
         final int[] counter = new int[1];
         lockManager.accept( element ->
@@ -136,10 +130,10 @@ public class LockManagerImplTest
         return counter[0];
     }
 
-    private class MockedLockLockManager extends LockManagerImpl
+    private static class MockedLockLockManager extends LockManagerImpl
     {
 
-        private RWLock lock;
+        private final RWLock lock;
 
         MockedLockLockManager( RagManager ragManager, RWLock lock )
         {

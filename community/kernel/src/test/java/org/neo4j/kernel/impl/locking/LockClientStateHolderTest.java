@@ -19,19 +19,19 @@
  */
 package org.neo4j.kernel.impl.locking;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.instanceOf;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
-public class LockClientStateHolderTest
+class LockClientStateHolderTest
 {
 
     @Test
-    public void shouldAllowIncrementDecrementClientsWhileNotClosed()
+    void shouldAllowIncrementDecrementClientsWhileNotClosed()
     {
         // given
         LockClientStateHolder lockClientStateHolder = new LockClientStateHolder();
@@ -49,7 +49,7 @@ public class LockClientStateHolderTest
     }
 
     @Test
-    public void shouldNotAllowNewClientsWhenClosed()
+    void shouldNotAllowNewClientsWhenClosed()
     {
         // given
         LockClientStateHolder lockClientStateHolder = new LockClientStateHolder();
@@ -71,7 +71,7 @@ public class LockClientStateHolderTest
     }
 
     @Test
-    public void shouldBeAbleToDecrementActiveItemAndDetectWhenFree()
+    void shouldBeAbleToDecrementActiveItemAndDetectWhenFree()
     {
         // given
         LockClientStateHolder lockClientStateHolder = new LockClientStateHolder();
@@ -97,7 +97,7 @@ public class LockClientStateHolderTest
     }
 
     @Test
-    public void shouldBeAbleToResetAndReuseClientState()
+    void shouldBeAbleToResetAndReuseClientState()
     {
         // given
         LockClientStateHolder lockClientStateHolder = new LockClientStateHolder();
@@ -129,5 +129,4 @@ public class LockClientStateHolderTest
         assertTrue( lockClientStateHolder.hasActiveClients() );
         assertFalse( lockClientStateHolder.isStopped() );
     }
-
 }

@@ -21,11 +21,11 @@ package org.neo4j.kernel.impl.locking;
 
 import org.eclipse.collections.api.map.primitive.MutableLongLongMap;
 import org.eclipse.collections.impl.map.mutable.primitive.LongLongHashMap;
-import org.junit.Test;
+import org.hamcrest.MatcherAssert;
+import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.fail;
 import static org.neo4j.internal.kernel.api.IndexQuery.exact;
 import static org.neo4j.kernel.impl.locking.ResourceIds.indexEntryResourceId;
 
@@ -33,10 +33,10 @@ import static org.neo4j.kernel.impl.locking.ResourceIds.indexEntryResourceId;
  * This is an *IT integration test because it uses a large amount of memory.
  * Approximately 1.2 GBs goes into the map we use to check for collisions.
  */
-public class ResourceTypesIT
+class ResourceTypesIT
 {
     @Test
-    public void indexEntryHashing()
+    void indexEntryHashing()
     {
         int collisions = 0;
         int labelIdCount = 50;
@@ -72,10 +72,10 @@ public class ResourceTypesIT
             }
         }
 
-        assertThat( collisions, is( 0 ) );
+        MatcherAssert.assertThat( collisions, is( 0 ) );
     }
 
-    private long packValue( int labelId, int propertyKeyId, int objectId )
+    private static long packValue( int labelId, int propertyKeyId, int objectId )
     {
         long result = labelId;
         result <<= 16;
@@ -85,7 +85,7 @@ public class ResourceTypesIT
         return result;
     }
 
-    private String toValueString( long value )
+    private static String toValueString( long value )
     {
         int objectId = (int) (value & 0x00000000_FFFFFFFFL);
         int propertyKeyId = (int) ((value & 0x0000FFFF_00000000L) >>> 32);
@@ -94,12 +94,12 @@ public class ResourceTypesIT
                 labelId, propertyKeyId, objectId );
     }
 
-    private String[] precomputeValues( int objectCount )
+    private static String[] precomputeValues( int objectCount )
     {
         String[] values = new String[objectCount];
         for ( int i = 0; i < objectCount; i++ )
         {
-            values[i] = "" + i;
+            values[i] = String.valueOf( i );
         }
         return values;
     }

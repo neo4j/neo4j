@@ -19,12 +19,13 @@
  */
 package org.neo4j.kernel.impl.pagecache;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import org.neo4j.configuration.Config;
+import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.impl.muninn.MuninnPageCache;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
@@ -34,40 +35,43 @@ import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.NullLog;
 import org.neo4j.scheduler.JobScheduler;
-import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
+import org.neo4j.test.extension.EphemeralFileSystemExtension;
+import org.neo4j.test.extension.Inject;
 import org.neo4j.test.scheduler.ThreadPoolJobScheduler;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.neo4j.configuration.GraphDatabaseSettings.pagecache_memory;
 import static org.neo4j.configuration.GraphDatabaseSettings.pagecache_swapper;
 import static org.neo4j.internal.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.kernel.impl.pagecache.PageSwapperFactoryForTesting.TEST_PAGESWAPPER_NAME;
 
-public class ConfiguringPageCacheFactoryTest
+@ExtendWith( EphemeralFileSystemExtension.class )
+class ConfiguringPageCacheFactoryTest
 {
-    @Rule
-    public final EphemeralFileSystemRule fsRule = new EphemeralFileSystemRule();
+    @Inject
+    private FileSystemAbstraction fs;
 
     private JobScheduler jobScheduler;
 
-    @Before
-    public void setUp()
+    @BeforeEach
+    void setUp()
     {
         jobScheduler = new ThreadPoolJobScheduler();
         PageSwapperFactoryForTesting.createdCounter.set( 0 );
         PageSwapperFactoryForTesting.configuredCounter.set( 0 );
     }
 
-    @After
-    public void tearDown() throws Exception
+    @AfterEach
+    void tearDown() throws Exception
     {
         jobScheduler.close();
     }
 
     @Test
-    public void shouldFitAsManyPagesAsItCan()
+    void shouldFitAsManyPagesAsItCan()
     {
         // Given
         long pageCount = 60;
@@ -77,7 +81,7 @@ public class ConfiguringPageCacheFactoryTest
 
         // When
         ConfiguringPageCacheFactory factory = new ConfiguringPageCacheFactory(
-                fsRule.get(), config, PageCacheTracer.NULL, PageCursorTracerSupplier.NULL,
+            fs, config, PageCacheTracer.NULL, PageCursorTracerSupplier.NULL,
                 NullLog.getInstance(), EmptyVersionContextSupplier.EMPTY, jobScheduler );
 
         // Then
@@ -89,7 +93,7 @@ public class ConfiguringPageCacheFactoryTest
     }
 
     @Test
-    public void mustUseAndLogConfiguredPageSwapper()
+    void mustUseAndLogConfiguredPageSwapper()
     {
         // Given
         Config config = Config.defaults( stringMap(
@@ -99,7 +103,7 @@ public class ConfiguringPageCacheFactoryTest
         Log log = logProvider.getLog( PageCache.class );
 
         // When
-        ConfiguringPageCacheFactory cacheFactory = new ConfiguringPageCacheFactory( fsRule.get(), config, PageCacheTracer.NULL,
+        ConfiguringPageCacheFactory cacheFactory = new ConfiguringPageCacheFactory( fs, config, PageCacheTracer.NULL,
                         PageCursorTracerSupplier.NULL, log, EmptyVersionContextSupplier.EMPTY, jobScheduler );
         cacheFactory.getOrCreatePageCache().close();
 
@@ -109,8 +113,8 @@ public class ConfiguringPageCacheFactoryTest
         logProvider.rawMessageMatcher().assertContains( TEST_PAGESWAPPER_NAME );
     }
 
-    @Test( expected = IllegalArgumentException.class )
-    public void mustThrowIfConfiguredPageSwapperCannotBeFound()
+    @Test
+    void mustThrowIfConfiguredPageSwapperCannotBeFound()
     {
         // Given
         Config config = Config.defaults( stringMap(
@@ -118,7 +122,7 @@ public class ConfiguringPageCacheFactoryTest
                 pagecache_swapper.name(), "non-existing" ) );
 
         // When
-        new ConfiguringPageCacheFactory( fsRule.get(), config, PageCacheTracer.NULL, PageCursorTracerSupplier.NULL,
-                NullLog.getInstance(), EmptyVersionContextSupplier.EMPTY, jobScheduler ).getOrCreatePageCache().close();
+        assertThrows( IllegalArgumentException.class, () -> new ConfiguringPageCacheFactory( fs, config, PageCacheTracer.NULL, PageCursorTracerSupplier.NULL,
+                NullLog.getInstance(), EmptyVersionContextSupplier.EMPTY, jobScheduler ).getOrCreatePageCache().close() );
     }
 }

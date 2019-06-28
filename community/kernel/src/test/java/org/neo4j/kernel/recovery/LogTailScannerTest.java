@@ -19,22 +19,22 @@
  */
 package org.neo4j.kernel.recovery;
 
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.RuleChain;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import java.io.File;
 import java.io.IOException;
 import java.io.UncheckedIOException;
-import java.util.Arrays;
-import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.stream.Stream;
 
+import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.impl.transaction.SimpleLogVersionRepository;
 import org.neo4j.kernel.impl.transaction.SimpleTransactionIdStore;
 import org.neo4j.kernel.impl.transaction.log.FlushablePositionAwareChannel;
@@ -54,25 +54,26 @@ import org.neo4j.kernel.recovery.LogTailScanner.LogTailInformation;
 import org.neo4j.monitoring.Monitors;
 import org.neo4j.storageengine.api.LogVersionRepository;
 import org.neo4j.storageengine.api.TransactionIdStore;
-import org.neo4j.test.rule.PageCacheRule;
+import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.pagecache.EphemeralPageCacheExtension;
 import org.neo4j.test.rule.TestDirectory;
-import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.params.provider.Arguments.arguments;
 import static org.neo4j.kernel.impl.transaction.log.TestLogEntryReader.logEntryReader;
 import static org.neo4j.kernel.recovery.LogTailScanner.NO_TRANSACTION_ID;
 
-@RunWith( Parameterized.class )
-public class LogTailScannerTest
+@EphemeralPageCacheExtension
+class LogTailScannerTest
 {
-    private final EphemeralFileSystemRule fsRule = new EphemeralFileSystemRule();
-    private final PageCacheRule pageCacheRule = new PageCacheRule();
-    private final TestDirectory testDirectory = TestDirectory.testDirectory( fsRule );
-
-    @Rule
-    public final RuleChain ruleChain = RuleChain.outerRule( fsRule ).around( testDirectory ).around( pageCacheRule );
+    @Inject
+    private FileSystemAbstraction fs;
+    @Inject
+    private PageCache pageCache;
+    @Inject
+    private TestDirectory testDirectory;
 
     private final LogEntryReader<ReadableClosablePositionAwareChannel> reader = logEntryReader();
 
@@ -80,51 +81,46 @@ public class LogTailScannerTest
 
     private final Monitors monitors = new Monitors();
     private LogFiles logFiles;
-    private final int startLogVersion;
-    private final int endLogVersion;
     private final LogEntryVersion latestLogEntryVersion = LogEntryVersion.LATEST_VERSION;
     private LogVersionRepository logVersionRepository;
     private TransactionIdStore transactionIdStore;
 
-    public LogTailScannerTest( Integer startLogVersion, Integer endLogVersion )
+    private static Stream<Arguments> params()
     {
-        this.startLogVersion = startLogVersion;
-        this.endLogVersion = endLogVersion;
+        return Stream.of(
+            arguments( 1, 2 ),
+            arguments( 42, 43 )
+        );
     }
 
-    @Parameterized.Parameters( name = "{0},{1}" )
-    public static Collection<Object[]> params()
-    {
-        return Arrays.asList( new Object[]{1, 2}, new Object[]{42, 43} );
-    }
-
-    @Before
-    public void setUp() throws IOException
+    @BeforeEach
+    void setUp() throws IOException
     {
         logVersionRepository = new SimpleLogVersionRepository();
         transactionIdStore = new SimpleTransactionIdStore();
         logFiles = LogFilesBuilder
-                .activeFilesBuilder( testDirectory.databaseLayout(), fsRule, pageCacheRule.getPageCache( fsRule ) )
-                .withLogVersionRepository( logVersionRepository )
-                .withTransactionIdStore( transactionIdStore )
-                .withLogEntryReader( logEntryReader() )
-                .build();
+            .activeFilesBuilder( testDirectory.databaseLayout(), fs, pageCache )
+            .withLogVersionRepository( logVersionRepository )
+            .withTransactionIdStore( transactionIdStore )
+            .withLogEntryReader( logEntryReader() )
+            .build();
         tailScanner = new LogTailScanner( logFiles, reader, monitors );
     }
 
     @Test
-    public void detectMissingLogFiles()
+    void detectMissingLogFiles()
     {
         LogTailInformation tailInformation = tailScanner.getTailInformation();
         assertTrue( tailInformation.logsMissing() );
         assertTrue( tailInformation.isRecoveryRequired() );
     }
 
-    @Test
-    public void noLogFilesFound()
+    @ParameterizedTest
+    @MethodSource( "params" )
+    void noLogFilesFound( int startLogVersion, int endLogVersion )
     {
         // given no files
-        setupLogFiles();
+        setupLogFiles( endLogVersion );
 
         // when
         LogTailInformation logTailInformation = tailScanner.getTailInformation();
@@ -133,11 +129,12 @@ public class LogTailScannerTest
         assertLatestCheckPoint( false, false, NO_TRANSACTION_ID, -1, logTailInformation );
     }
 
-    @Test
-    public void oneLogFileNoCheckPoints()
+    @ParameterizedTest
+    @MethodSource( "params" )
+    void oneLogFileNoCheckPoints( int startLogVersion, int endLogVersion )
     {
         // given
-        setupLogFiles( logFile() );
+        setupLogFiles( endLogVersion, logFile() );
 
         // when
         LogTailInformation logTailInformation = tailScanner.getTailInformation();
@@ -147,12 +144,13 @@ public class LogTailScannerTest
         assertFalse( logTailInformation.logsMissing() );
     }
 
-    @Test
-    public void oneLogFileNoCheckPointsOneStart()
+    @ParameterizedTest
+    @MethodSource( "params" )
+    void oneLogFileNoCheckPointsOneStart( int startLogVersion, int endLogVersion )
     {
         // given
         long txId = 10;
-        setupLogFiles( logFile( start(), commit( txId ) ) );
+        setupLogFiles( endLogVersion, logFile( start(), commit( txId ) ) );
 
         // when
         LogTailInformation logTailInformation = tailScanner.getTailInformation();
@@ -161,11 +159,12 @@ public class LogTailScannerTest
         assertLatestCheckPoint( false, true, txId, endLogVersion, logTailInformation );
     }
 
-    @Test
-    public void twoLogFilesNoCheckPoints()
+    @ParameterizedTest
+    @MethodSource( "params" )
+    void twoLogFilesNoCheckPoints( int startLogVersion, int endLogVersion )
     {
         // given
-        setupLogFiles( logFile(), logFile() );
+        setupLogFiles( endLogVersion, logFile(), logFile() );
 
         // when
         LogTailInformation logTailInformation = tailScanner.getTailInformation();
@@ -174,12 +173,13 @@ public class LogTailScannerTest
         assertLatestCheckPoint( false, true, NO_TRANSACTION_ID, startLogVersion, logTailInformation );
     }
 
-    @Test
-    public void twoLogFilesNoCheckPointsOneStart()
+    @ParameterizedTest
+    @MethodSource( "params" )
+    void twoLogFilesNoCheckPointsOneStart( int startLogVersion, int endLogVersion )
     {
         // given
         long txId = 21;
-        setupLogFiles( logFile(), logFile( start(), commit( txId ) ) );
+        setupLogFiles( endLogVersion, logFile(), logFile( start(), commit( txId ) ) );
 
         // when
         LogTailInformation logTailInformation = tailScanner.getTailInformation();
@@ -188,11 +188,12 @@ public class LogTailScannerTest
         assertLatestCheckPoint( false, true, txId, startLogVersion, logTailInformation );
     }
 
-    @Test
-    public void twoLogFilesNoCheckPointsOneStartWithoutCommit()
+    @ParameterizedTest
+    @MethodSource( "params" )
+    void twoLogFilesNoCheckPointsOneStartWithoutCommit( int startLogVersion, int endLogVersion )
     {
         // given
-        setupLogFiles( logFile(), logFile( start() ) );
+        setupLogFiles( endLogVersion, logFile(), logFile( start() ) );
 
         // when
         LogTailInformation logTailInformation = tailScanner.getTailInformation();
@@ -201,12 +202,13 @@ public class LogTailScannerTest
         assertLatestCheckPoint( false, true, NO_TRANSACTION_ID, startLogVersion, logTailInformation );
     }
 
-    @Test
-    public void twoLogFilesNoCheckPointsTwoCommits()
+    @ParameterizedTest
+    @MethodSource( "params" )
+    void twoLogFilesNoCheckPointsTwoCommits( int startLogVersion, int endLogVersion )
     {
         // given
         long txId = 21;
-        setupLogFiles( logFile(), logFile( start(), commit( txId ), start(), commit( txId + 1 ) ) );
+        setupLogFiles( endLogVersion, logFile(), logFile( start(), commit( txId ), start(), commit( txId + 1 ) ) );
 
         // when
         LogTailInformation logTailInformation = tailScanner.getTailInformation();
@@ -215,16 +217,17 @@ public class LogTailScannerTest
         assertLatestCheckPoint( false, true, txId, startLogVersion, logTailInformation );
     }
 
-    @Test
-    public void twoLogFilesCheckPointTargetsPrevious()
+    @ParameterizedTest
+    @MethodSource( "params" )
+    void twoLogFilesCheckPointTargetsPrevious( int startLogVersion, int endLogVersion )
     {
         // given
         long txId = 6;
         PositionEntry position = position();
-        setupLogFiles(
-                logFile( start(), commit( txId - 1 ), position ),
-                logFile( start(), commit( txId ) ),
-                logFile( checkPoint( position ) ) );
+        setupLogFiles( endLogVersion,
+            logFile( start(), commit( txId - 1 ), position ),
+            logFile( start(), commit( txId ) ),
+            logFile( checkPoint( position ) ) );
 
         // when
         LogTailInformation logTailInformation = tailScanner.getTailInformation();
@@ -233,14 +236,15 @@ public class LogTailScannerTest
         assertLatestCheckPoint( true, true, txId, endLogVersion, logTailInformation );
     }
 
-    @Test
-    public void twoLogFilesStartAndCommitInDifferentFiles()
+    @ParameterizedTest
+    @MethodSource( "params" )
+    void twoLogFilesStartAndCommitInDifferentFiles( int startLogVersion, int endLogVersion )
     {
         // given
         long txId = 6;
-        setupLogFiles(
-                logFile( start() ),
-                logFile( commit( txId ) ) );
+        setupLogFiles( endLogVersion,
+            logFile( start() ),
+            logFile( commit( txId ) ) );
 
         // when
         LogTailInformation logTailInformation = tailScanner.getTailInformation();
@@ -249,11 +253,12 @@ public class LogTailScannerTest
         assertLatestCheckPoint( false, true, 6, startLogVersion, logTailInformation );
     }
 
-    @Test
-    public void latestLogFileContainingACheckPointOnly()
+    @ParameterizedTest
+    @MethodSource( "params" )
+    void latestLogFileContainingACheckPointOnly( int startLogVersion, int endLogVersion )
     {
         // given
-        setupLogFiles( logFile( checkPoint() ) );
+        setupLogFiles( endLogVersion, logFile( checkPoint() ) );
 
         // when
         LogTailInformation logTailInformation = tailScanner.getTailInformation();
@@ -262,11 +267,12 @@ public class LogTailScannerTest
         assertLatestCheckPoint( true, false, NO_TRANSACTION_ID, endLogVersion, logTailInformation );
     }
 
-    @Test
-    public void latestLogFileContainingACheckPointAndAStartBefore()
+    @ParameterizedTest
+    @MethodSource( "params" )
+    void latestLogFileContainingACheckPointAndAStartBefore( int startLogVersion, int endLogVersion )
     {
         // given
-        setupLogFiles( logFile( start(), checkPoint() ) );
+        setupLogFiles( endLogVersion, logFile( start(), checkPoint() ) );
 
         // when
         LogTailInformation logTailInformation = tailScanner.getTailInformation();
@@ -275,29 +281,31 @@ public class LogTailScannerTest
         assertLatestCheckPoint( true, false, NO_TRANSACTION_ID, endLogVersion, logTailInformation );
     }
 
-    @Test
-    public void bigFileLatestCheckpointFindsStartAfter() throws Throwable
+    @ParameterizedTest
+    @MethodSource( "params" )
+    void bigFileLatestCheckpointFindsStartAfter( int startLogVersion, int endLogVersion ) throws IOException
     {
         long firstTxAfterCheckpoint = Integer.MAX_VALUE + 4L;
 
         LogTailScanner tailScanner =
-                new FirstTxIdConfigurableTailScanner( firstTxAfterCheckpoint, logFiles, reader, monitors );
+            new FirstTxIdConfigurableTailScanner( firstTxAfterCheckpoint, logFiles, reader, monitors );
         LogEntryStart startEntry = new LogEntryStart( 1, 2, 3L, 4L, new byte[]{5, 6},
-                new LogPosition( endLogVersion, Integer.MAX_VALUE + 17L ) );
+            new LogPosition( endLogVersion, Integer.MAX_VALUE + 17L ) );
         CheckPoint checkPoint = new CheckPoint( new LogPosition( endLogVersion, 16L ) );
         LogTailInformation logTailInformation = tailScanner.checkpointTailInformation( endLogVersion, startEntry,
-                endLogVersion, latestLogEntryVersion, checkPoint, false);
+            endLogVersion, latestLogEntryVersion, checkPoint, false );
 
         assertLatestCheckPoint( true, true, firstTxAfterCheckpoint, endLogVersion, logTailInformation );
     }
 
-    @Test
-    public void twoLogFilesSecondIsCorruptedBeforeCommit() throws IOException
+    @ParameterizedTest
+    @MethodSource( "params" )
+    void twoLogFilesSecondIsCorruptedBeforeCommit( int startLogVersion, int endLogVersion ) throws IOException
     {
-        setupLogFiles( logFile( checkPoint() ), logFile( start(), commit( 2 ) ) );
+        setupLogFiles( endLogVersion, logFile( checkPoint() ), logFile( start(), commit( 2 ) ) );
 
         File highestLogFile = logFiles.getHighestLogFile();
-        fsRule.truncate( highestLogFile, fsRule.getFileSize( highestLogFile ) - 3 );
+        fs.truncate( highestLogFile, fs.getFileSize( highestLogFile ) - 3 );
 
         // when
         LogTailInformation logTailInformation = tailScanner.getTailInformation();
@@ -306,14 +314,15 @@ public class LogTailScannerTest
         assertLatestCheckPoint( true, true, NO_TRANSACTION_ID, startLogVersion, logTailInformation );
     }
 
-    @Test
-    public void twoLogFilesSecondIsCorruptedBeforeAfterCommit() throws IOException
+    @ParameterizedTest
+    @MethodSource( "params" )
+    void twoLogFilesSecondIsCorruptedBeforeAfterCommit( int startLogVersion, int endLogVersion ) throws IOException
     {
         int firstTxId = 2;
-        setupLogFiles( logFile( checkPoint() ), logFile( start(), commit( firstTxId ), start(), commit( 3 ) ) );
+        setupLogFiles( endLogVersion, logFile( checkPoint() ), logFile( start(), commit( firstTxId ), start(), commit( 3 ) ) );
 
         File highestLogFile = logFiles.getHighestLogFile();
-        fsRule.truncate( highestLogFile, fsRule.getFileSize( highestLogFile ) - 3 );
+        fs.truncate( highestLogFile, fs.getFileSize( highestLogFile ) - 3 );
 
         // when
         LogTailInformation logTailInformation = tailScanner.getTailInformation();
@@ -322,13 +331,14 @@ public class LogTailScannerTest
         assertLatestCheckPoint( true, true, firstTxId, startLogVersion, logTailInformation );
     }
 
-    @Test
-    public void latestLogFileContainingACheckPointAndAStartAfter()
+    @ParameterizedTest
+    @MethodSource( "params" )
+    void latestLogFileContainingACheckPointAndAStartAfter( int startLogVersion, int endLogVersion )
     {
         // given
         long txId = 35;
         StartEntry start = start();
-        setupLogFiles( logFile( start, commit( txId ), checkPoint( start ) ) );
+        setupLogFiles( endLogVersion, logFile( start, commit( txId ), checkPoint( start ) ) );
 
         // when
         LogTailInformation logTailInformation = tailScanner.getTailInformation();
@@ -337,12 +347,13 @@ public class LogTailScannerTest
         assertLatestCheckPoint( true, true, txId, endLogVersion, logTailInformation );
     }
 
-    @Test
-    public void latestLogFileContainingACheckPointAndAStartWithoutCommitAfter()
+    @ParameterizedTest
+    @MethodSource( "params" )
+    void latestLogFileContainingACheckPointAndAStartWithoutCommitAfter( int startLogVersion, int endLogVersion )
     {
         // given
         StartEntry start = start();
-        setupLogFiles( logFile( start, checkPoint( start ) ) );
+        setupLogFiles( endLogVersion, logFile( start, checkPoint( start ) ) );
 
         // when
         LogTailInformation logTailInformation = tailScanner.getTailInformation();
@@ -351,11 +362,12 @@ public class LogTailScannerTest
         assertLatestCheckPoint( true, true, NO_TRANSACTION_ID, endLogVersion, logTailInformation );
     }
 
-    @Test
-    public void latestLogFileContainingMultipleCheckPointsOneStartInBetween()
+    @ParameterizedTest
+    @MethodSource( "params" )
+    void latestLogFileContainingMultipleCheckPointsOneStartInBetween( int startLogVersion, int endLogVersion )
     {
         // given
-        setupLogFiles( logFile( checkPoint(), start(), checkPoint() ) );
+        setupLogFiles( endLogVersion, logFile( checkPoint(), start(), checkPoint() ) );
 
         // when
         LogTailInformation logTailInformation = tailScanner.getTailInformation();
@@ -364,12 +376,13 @@ public class LogTailScannerTest
         assertLatestCheckPoint( true, false, NO_TRANSACTION_ID, endLogVersion, logTailInformation );
     }
 
-    @Test
-    public void latestLogFileContainingMultipleCheckPointsOneStartAfterBoth()
+    @ParameterizedTest
+    @MethodSource( "params" )
+    void latestLogFileContainingMultipleCheckPointsOneStartAfterBoth( int startLogVersion, int endLogVersion )
     {
         // given
         long txId = 11;
-        setupLogFiles( logFile( checkPoint(), checkPoint(), start(), commit( txId ) ) );
+        setupLogFiles( endLogVersion, logFile( checkPoint(), checkPoint(), start(), commit( txId ) ) );
 
         // when
         LogTailInformation logTailInformation = tailScanner.getTailInformation();
@@ -378,13 +391,14 @@ public class LogTailScannerTest
         assertLatestCheckPoint( true, true, txId, endLogVersion, logTailInformation );
     }
 
-    @Test
-    public void olderLogFileContainingACheckPointAndNewerFileContainingAStart()
+    @ParameterizedTest
+    @MethodSource( "params" )
+    void olderLogFileContainingACheckPointAndNewerFileContainingAStart( int startLogVersion, int endLogVersion )
     {
         // given
         long txId = 11;
         StartEntry start = start();
-        setupLogFiles( logFile( checkPoint() ), logFile( start, commit( txId ) ) );
+        setupLogFiles( endLogVersion, logFile( checkPoint() ), logFile( start, commit( txId ) ) );
 
         // when
         LogTailInformation logTailInformation = tailScanner.getTailInformation();
@@ -393,12 +407,13 @@ public class LogTailScannerTest
         assertLatestCheckPoint( true, true, txId, startLogVersion, logTailInformation );
     }
 
-    @Test
-    public void olderLogFileContainingACheckPointAndNewerFileIsEmpty()
+    @ParameterizedTest
+    @MethodSource( "params" )
+    void olderLogFileContainingACheckPointAndNewerFileIsEmpty( int startLogVersion, int endLogVersion )
     {
         // given
         StartEntry start = start();
-        setupLogFiles( logFile( start, checkPoint() ), logFile() );
+        setupLogFiles( endLogVersion, logFile( start, checkPoint() ), logFile() );
 
         // when
         LogTailInformation logTailInformation = tailScanner.getTailInformation();
@@ -407,13 +422,14 @@ public class LogTailScannerTest
         assertLatestCheckPoint( true, true, NO_TRANSACTION_ID, startLogVersion, logTailInformation );
     }
 
-    @Test
-    public void olderLogFileContainingAStartAndNewerFileContainingACheckPointPointingToAPreviousPositionThanStart()
+    @ParameterizedTest
+    @MethodSource( "params" )
+    void olderLogFileContainingAStartAndNewerFileContainingACheckPointPointingToAPreviousPositionThanStart( int startLogVersion, int endLogVersion )
     {
         // given
         long txId = 123;
         StartEntry start = start();
-        setupLogFiles( logFile( start, commit( txId ) ), logFile( checkPoint( start ) ) );
+        setupLogFiles( endLogVersion, logFile( start, commit( txId ) ), logFile( checkPoint( start ) ) );
 
         // when
         LogTailInformation logTailInformation = tailScanner.getTailInformation();
@@ -422,12 +438,14 @@ public class LogTailScannerTest
         assertLatestCheckPoint( true, true, txId, endLogVersion, logTailInformation );
     }
 
-    @Test
-    public void olderLogFileContainingAStartAndNewerFileContainingACheckPointPointingToAPreviousPositionThanStartWithoutCommit()
+    @ParameterizedTest
+    @MethodSource( "params" )
+    void olderLogFileContainingAStartAndNewerFileContainingACheckPointPointingToAPreviousPositionThanStartWithoutCommit( int startLogVersion,
+        int endLogVersion )
     {
         // given
         StartEntry start = start();
-        setupLogFiles( logFile( start ), logFile( checkPoint( start ) ) );
+        setupLogFiles( endLogVersion, logFile( start ), logFile( checkPoint( start ) ) );
 
         // when
         LogTailInformation logTailInformation = tailScanner.getTailInformation();
@@ -436,12 +454,13 @@ public class LogTailScannerTest
         assertLatestCheckPoint( true, false, NO_TRANSACTION_ID, endLogVersion, logTailInformation );
     }
 
-    @Test
-    public void olderLogFileContainingAStartAndNewerFileContainingACheckPointPointingToALaterPositionThanStart()
+    @ParameterizedTest
+    @MethodSource( "params" )
+    void olderLogFileContainingAStartAndNewerFileContainingACheckPointPointingToALaterPositionThanStart( int startLogVersion, int endLogVersion )
     {
         // given
         PositionEntry position = position();
-        setupLogFiles( logFile( start(), commit( 3 ), position ), logFile( checkPoint( position ) ) );
+        setupLogFiles( endLogVersion, logFile( start(), commit( 3 ), position ), logFile( checkPoint( position ) ) );
 
         // when
         LogTailInformation logTailInformation = tailScanner.getTailInformation();
@@ -450,12 +469,13 @@ public class LogTailScannerTest
         assertLatestCheckPoint( true, false, NO_TRANSACTION_ID, endLogVersion, logTailInformation );
     }
 
-    @Test
-    public void latestLogEmptyStartEntryBeforeAndAfterCheckPointInTheLastButOneLog()
+    @ParameterizedTest
+    @MethodSource( "params" )
+    void latestLogEmptyStartEntryBeforeAndAfterCheckPointInTheLastButOneLog( int startLogVersion, int endLogVersion )
     {
         // given
         long txId = 432;
-        setupLogFiles( logFile( start(), checkPoint(), start(), commit( txId ) ), logFile() );
+        setupLogFiles( endLogVersion, logFile( start(), checkPoint(), start(), commit( txId ) ), logFile() );
 
         // when
         LogTailInformation logTailInformation = tailScanner.getTailInformation();
@@ -466,9 +486,9 @@ public class LogTailScannerTest
 
     // === Below is code for helping the tests above ===
 
-    private void setupLogFiles( LogCreator... logFiles )
+    private void setupLogFiles( long endLogVersion, LogCreator... logFiles )
     {
-        Map<Entry,LogPosition> positions = new HashMap<>();
+        Map<Entry, LogPosition> positions = new HashMap<>();
         long version = endLogVersion - logFiles.length;
         for ( LogCreator logFile : logFiles )
         {
@@ -524,7 +544,6 @@ public class LogTailScannerTest
                         {
                             throw new IllegalArgumentException( "Unknown entry " + entry );
                         }
-
                     }
                 }
                 finally
@@ -541,7 +560,7 @@ public class LogTailScannerTest
 
     interface LogCreator
     {
-        void create( long version, Map<Entry,LogPosition> positions );
+        void create( long version, Map<Entry, LogPosition> positions );
     }
 
     // Marker interface, helping compilation/test creation
@@ -602,8 +621,8 @@ public class LogTailScannerTest
     {
     }
 
-    private void assertLatestCheckPoint( boolean hasCheckPointEntry, boolean commitsAfterLastCheckPoint,
-            long firstTxIdAfterLastCheckPoint, long logVersion, LogTailInformation logTailInformation )
+    private static void assertLatestCheckPoint( boolean hasCheckPointEntry, boolean commitsAfterLastCheckPoint,
+        long firstTxIdAfterLastCheckPoint, long logVersion, LogTailInformation logTailInformation )
     {
         assertEquals( hasCheckPointEntry, logTailInformation.lastCheckPoint != null );
         assertEquals( commitsAfterLastCheckPoint, logTailInformation.commitsAfterLastCheckpoint() );
@@ -620,7 +639,7 @@ public class LogTailScannerTest
         private final long txId;
 
         FirstTxIdConfigurableTailScanner( long txId, LogFiles logFiles,
-                LogEntryReader<ReadableClosablePositionAwareChannel> logEntryReader, Monitors monitors )
+            LogEntryReader<ReadableClosablePositionAwareChannel> logEntryReader, Monitors monitors )
         {
             super( logFiles, logEntryReader, monitors );
             this.txId = txId;

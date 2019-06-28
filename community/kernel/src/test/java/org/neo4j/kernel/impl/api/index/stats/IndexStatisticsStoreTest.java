@@ -19,10 +19,10 @@
  */
 package org.neo4j.kernel.impl.api.index.stats;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -30,45 +30,50 @@ import java.util.concurrent.atomic.AtomicIntegerArray;
 
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.io.pagecache.IOLimiter;
+import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.register.Register.DoubleLongRegister;
 import org.neo4j.test.Race;
-import org.neo4j.test.rule.PageCacheAndDependenciesRule;
+import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.pagecache.EphemeralPageCacheExtension;
+import org.neo4j.test.rule.TestDirectory;
 
-import static org.junit.Assert.assertEquals;
 import static org.neo4j.register.Registers.newDoubleLongRegister;
 import static org.neo4j.test.Race.throwing;
 
-public class IndexStatisticsStoreTest
+@EphemeralPageCacheExtension
+class IndexStatisticsStoreTest
 {
-    @Rule
-    public final PageCacheAndDependenciesRule storage = new PageCacheAndDependenciesRule();
-
     private LifeSupport lifeSupport = new LifeSupport();
+
+    @Inject
+    private PageCache pageCache;
+    @Inject
+    private TestDirectory testDirectory;
 
     private IndexStatisticsStore store;
 
-    @Before
-    public void start()
+    @BeforeEach
+    void start()
     {
         store = openStore();
         lifeSupport.start();
     }
 
-    private IndexStatisticsStore openStore()
-    {
-        return lifeSupport.add(
-                new IndexStatisticsStore( storage.pageCache(), storage.directory().file( "stats" ), RecoveryCleanupWorkCollector.immediate() ) );
-    }
-
-    @After
-    public void stop()
+    @AfterEach
+    void stop()
     {
         lifeSupport.shutdown();
     }
 
+    private IndexStatisticsStore openStore()
+    {
+        return lifeSupport.add(
+                new IndexStatisticsStore( pageCache, testDirectory.file( "stats" ), RecoveryCleanupWorkCollector.immediate() ) );
+    }
+
     @Test
-    public void shouldReplaceIndexSample()
+    void shouldReplaceIndexSample()
     {
         // given
         long indexId = 4;
@@ -87,7 +92,7 @@ public class IndexStatisticsStoreTest
     }
 
     @Test
-    public void shouldReplaceIndexStatistics()
+    void shouldReplaceIndexStatistics()
     {
         // given
         long indexId = 4;
@@ -106,7 +111,7 @@ public class IndexStatisticsStoreTest
     }
 
     @Test
-    public void shouldIncrementIndexUpdates()
+    void shouldIncrementIndexUpdates()
     {
         // given
         long indexId = 4;
@@ -120,7 +125,7 @@ public class IndexStatisticsStoreTest
     }
 
     @Test
-    public void shouldStoreDataOnCheckpoint() throws IOException
+    void shouldStoreDataOnCheckpoint() throws IOException
     {
         // given
         long indexId1 = 1;
@@ -148,7 +153,7 @@ public class IndexStatisticsStoreTest
     }
 
     @Test
-    public void shouldAllowMultipleThreadsIncrementIndexUpdates() throws Throwable
+    void shouldAllowMultipleThreadsIncrementIndexUpdates() throws Throwable
     {
         // given
         long indexId = 5;
@@ -166,7 +171,7 @@ public class IndexStatisticsStoreTest
     }
 
     @Test
-    public void shouldHandleConcurrentUpdatesWithCheckpointing() throws Throwable
+    void shouldHandleConcurrentUpdatesWithCheckpointing() throws Throwable
     {
         // given
         Race race = new Race();
@@ -213,9 +218,9 @@ public class IndexStatisticsStoreTest
         }
     }
 
-    private void assertRegister( long first, long second, DoubleLongRegister register )
+    private static void assertRegister( long first, long second, DoubleLongRegister register )
     {
-        assertEquals( first, register.readFirst() );
-        assertEquals( second, register.readSecond() );
+        Assertions.assertEquals( first, register.readFirst() );
+        Assertions.assertEquals( second, register.readSecond() );
     }
 }

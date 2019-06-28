@@ -19,7 +19,7 @@
  */
 package org.neo4j.kernel.impl.newapi;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.mockito.InOrder;
 
 import java.util.HashSet;
@@ -36,8 +36,8 @@ import org.neo4j.internal.kernel.api.helpers.StubRelationshipCursor;
 import org.neo4j.internal.kernel.api.helpers.TestRelationshipChain;
 import org.neo4j.kernel.impl.locking.Locks;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -47,15 +47,15 @@ import static org.neo4j.internal.helpers.collection.Iterators.set;
 import static org.neo4j.lock.LockTracer.NONE;
 import static org.neo4j.lock.ResourceTypes.NODE;
 
-public class TwoPhaseNodeForRelationshipLockingTest
+class TwoPhaseNodeForRelationshipLockingTest
 {
+    private static final long nodeId = 42L;
+    private static final int TYPE = 77;
     private final Transaction transaction = mock( Transaction.class );
     private final Locks.Client locks = mock( Locks.Client.class );
-    private final long nodeId = 42L;
-    private static int TYPE = 77;
 
     @Test
-    public void shouldLockNodesInOrderAndConsumeTheRelationships() throws Throwable
+    void shouldLockNodesInOrderAndConsumeTheRelationships() throws Throwable
     {
         // given
         Collector collector = new Collector();
@@ -81,7 +81,7 @@ public class TwoPhaseNodeForRelationshipLockingTest
     }
 
     @Test
-    public void shouldLockNodesInOrderAndConsumeTheRelationshipsAndRetryIfTheNewRelationshipsAreCreated()
+    void shouldLockNodesInOrderAndConsumeTheRelationshipsAndRetryIfTheNewRelationshipsAreCreated()
             throws Throwable
     {
         // given
@@ -109,7 +109,7 @@ public class TwoPhaseNodeForRelationshipLockingTest
     }
 
     @Test
-    public void lockNodeWithoutRelationships() throws Exception
+    void lockNodeWithoutRelationships() throws Exception
     {
         Collector collector = new Collector();
         TwoPhaseNodeForRelationshipLocking locking = new TwoPhaseNodeForRelationshipLocking( collector, locks, NONE );

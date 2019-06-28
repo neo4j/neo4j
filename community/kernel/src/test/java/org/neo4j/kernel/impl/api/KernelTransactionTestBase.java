@@ -22,7 +22,7 @@ package org.neo4j.kernel.impl.api;
 import org.eclipse.collections.api.map.primitive.MutableLongObjectMap;
 import org.eclipse.collections.api.set.primitive.MutableLongSet;
 import org.eclipse.collections.impl.map.mutable.primitive.LongObjectHashMap;
-import org.junit.Before;
+import org.junit.jupiter.api.BeforeEach;
 import org.mockito.Mockito;
 
 import java.util.ArrayList;
@@ -92,7 +92,7 @@ import static org.neo4j.internal.kernel.api.security.LoginContext.AUTH_DISABLED;
 import static org.neo4j.storageengine.api.TransactionIdStore.BASE_TX_COMMIT_TIMESTAMP;
 import static org.neo4j.test.rule.DatabaseRule.mockedTokenHolders;
 
-public class KernelTransactionTestBase
+class KernelTransactionTestBase
 {
     protected final StorageEngine storageEngine = mock( StorageEngine.class );
     protected final StorageReader storageReader = mock( StorageReader.class );
@@ -110,7 +110,7 @@ public class KernelTransactionTestBase
     protected final Config config = Config.defaults();
     private final long defaultTransactionTimeoutMillis = config.get( GraphDatabaseSettings.transaction_timeout ).toMillis();
 
-    @Before
+    @BeforeEach
     public void before() throws Exception
     {
         collectionsFactory = Mockito.spy( new TestCollectionsFactory() );
@@ -174,7 +174,7 @@ public class KernelTransactionTestBase
         return tx;
     }
 
-    public KernelTransactionImplementation newNotInitializedTransaction()
+    KernelTransactionImplementation newNotInitializedTransaction()
     {
         Dependencies dependencies = new Dependencies();
         dependencies.satisfyDependency( mock( DefaultValueMapper.class ) );
@@ -188,7 +188,7 @@ public class KernelTransactionTestBase
                 new TestDatabaseIdRepository().defaultDatabase() );
     }
 
-    public class CapturingCommitProcess implements TransactionCommitProcess
+    public static class CapturingCommitProcess implements TransactionCommitProcess
     {
         private long txId = TransactionIdStore.BASE_TX_ID;
         public List<TransactionRepresentation> transactions = new ArrayList<>();
@@ -202,7 +202,7 @@ public class KernelTransactionTestBase
         }
     }
 
-    private class TestCollectionsFactory implements CollectionsFactory
+    private static class TestCollectionsFactory implements CollectionsFactory
     {
 
         @Override

@@ -26,7 +26,8 @@ import org.neo4j.values.storable.ValueType;
 import static org.neo4j.kernel.impl.index.schema.NativeIndexPopulatorTestCases.genericPopulatorFactory;
 import static org.neo4j.kernel.impl.index.schema.NativeIndexPopulatorTestCases.spaceFillingCurveSettings;
 
-class GenericNativeNonUniqueIndexPopulatorTest<KEY extends NativeIndexKey<KEY>, VALUE extends NativeIndexValue> extends NativeNonUniqueIndexPopulatorTest<KEY, VALUE>
+class GenericNativeNonUniqueIndexPopulatorTest<KEY extends NativeIndexKey<KEY>, VALUE extends NativeIndexValue>
+    extends NativeNonUniqueIndexPopulatorTest<KEY, VALUE>
 {
     GenericNativeNonUniqueIndexPopulatorTest()
     {

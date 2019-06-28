@@ -17,21 +17,30 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.index.schema;
 
-import org.neo4j.configuration.Config;
-import org.neo4j.values.storable.Values;
+package org.neo4j.kernel.impl.api.state;
 
-import static org.neo4j.internal.kernel.api.InternalIndexState.POPULATING;
+import org.neo4j.kernel.impl.util.collection.CollectionsFactory;
+import org.neo4j.kernel.impl.util.collection.CollectionsFactorySupplier;
 
-class NativeIndexProviderTest extends NativeIndexProviderTests
+class TxStateOnHeapTest extends TxStateTest
 {
-    private static final ProviderFactory factory =
-        ( pageCache, fs, dir, monitor, collector, readOnly ) -> new GenericNativeIndexProvider( dir, pageCache, fs, monitor, collector, readOnly,
-            Config.defaults() );
-
-    NativeIndexProviderTest()
+    TxStateOnHeapTest()
     {
-        super( factory, POPULATING, Values.of( 1 ) );
+        super( new CollectionsFactorySupplier()
+               {
+                   @Override
+                   public CollectionsFactory create()
+                   {
+                       return CollectionsFactorySupplier.ON_HEAP.create();
+                   }
+
+                   @Override
+                   public String toString()
+                   {
+                       return "On heap";
+                   }
+               }
+        );
     }
 }

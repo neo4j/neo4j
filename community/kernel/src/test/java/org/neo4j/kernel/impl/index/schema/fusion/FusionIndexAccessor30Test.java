@@ -20,7 +20,8 @@
 
 package org.neo4j.kernel.impl.index.schema.fusion;
 
-class FusionIndexAccessor30Test extends FusionIndexAccessorTest {
+class FusionIndexAccessor30Test extends FusionIndexAccessorTest
+{
 
     FusionIndexAccessor30Test()
     {

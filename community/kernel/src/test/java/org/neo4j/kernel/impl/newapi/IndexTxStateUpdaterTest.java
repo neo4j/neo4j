@@ -19,8 +19,8 @@
  */
 package org.neo4j.kernel.impl.newapi;
 
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import java.util.Arrays;
 import java.util.HashMap;
@@ -59,7 +59,7 @@ import static org.neo4j.internal.schema.SchemaDescriptorPredicates.hasLabel;
 import static org.neo4j.kernel.impl.newapi.IndexTxStateUpdater.LabelChangeType.ADDED_LABEL;
 import static org.neo4j.kernel.impl.newapi.IndexTxStateUpdater.LabelChangeType.REMOVED_LABEL;
 
-public class IndexTxStateUpdaterTest
+class IndexTxStateUpdaterTest
 {
     private static final int labelId1 = 10;
     private static final int labelId2 = 11;
@@ -69,7 +69,7 @@ public class IndexTxStateUpdaterTest
     private static final int propId3 = 22;
     private static final int newPropId = 23;
     private static final int unIndexedPropId = 24;
-    private static final int[] props = new int[]{propId1, propId2, propId3};
+    private static final int[] props = {propId1, propId2, propId3};
 
     private TransactionState txState;
     private IndexTxStateUpdater indexTxUpdater;
@@ -85,8 +85,8 @@ public class IndexTxStateUpdaterTest
     private StubNodeCursor node;
     private StubPropertyCursor propertyCursor;
 
-    @Before
-    public void setup() throws IndexNotFoundKernelException
+    @BeforeEach
+    void setup() throws IndexNotFoundKernelException
     {
         txState = mock( TransactionState.class );
 
@@ -161,7 +161,7 @@ public class IndexTxStateUpdaterTest
     // LABELS
 
     @Test
-    public void shouldNotUpdateIndexesOnChangedIrrelevantLabel()
+    void shouldNotUpdateIndexesOnChangedIrrelevantLabel()
     {
         // WHEN
         indexTxUpdater.onLabelChange( unIndexedLabelId, props, node, propertyCursor, ADDED_LABEL );
@@ -172,7 +172,7 @@ public class IndexTxStateUpdaterTest
     }
 
     @Test
-    public void shouldUpdateIndexesOnAddedLabel()
+    void shouldUpdateIndexesOnAddedLabel()
     {
         // WHEN
         indexTxUpdater.onLabelChange( labelId1, props, node, propertyCursor, ADDED_LABEL );
@@ -184,7 +184,7 @@ public class IndexTxStateUpdaterTest
     }
 
     @Test
-    public void shouldUpdateIndexesOnRemovedLabel()
+    void shouldUpdateIndexesOnRemovedLabel()
     {
         // WHEN
         indexTxUpdater.onLabelChange( labelId2, props, node, propertyCursor, REMOVED_LABEL );
@@ -195,7 +195,7 @@ public class IndexTxStateUpdaterTest
     }
 
     @Test
-    public void shouldNotUpdateIndexesOnChangedIrrelevantProperty()
+    void shouldNotUpdateIndexesOnChangedIrrelevantProperty()
     {
         // WHEN
         indexTxUpdater.onPropertyAdd( node, propertyCursor, node.labels().all(), unIndexedPropId, props, Values.of( "whAt" ) );
@@ -207,7 +207,7 @@ public class IndexTxStateUpdaterTest
     }
 
     @Test
-    public void shouldUpdateIndexesOnAddedProperty()
+    void shouldUpdateIndexesOnAddedProperty()
     {
         // WHEN
         indexTxUpdater.onPropertyAdd( node, propertyCursor, node.labels().all(), newPropId, props, Values.of( "newHi" ) );
@@ -219,7 +219,7 @@ public class IndexTxStateUpdaterTest
     }
 
     @Test
-    public void shouldUpdateIndexesOnRemovedProperty()
+    void shouldUpdateIndexesOnRemovedProperty()
     {
         // WHEN
         indexTxUpdater.onPropertyRemove( node, propertyCursor, node.labels().all(), propId2, props, Values.of( "hi2" ) );
@@ -231,7 +231,7 @@ public class IndexTxStateUpdaterTest
     }
 
     @Test
-    public void shouldUpdateIndexesOnChangesProperty()
+    void shouldUpdateIndexesOnChangesProperty()
     {
         // WHEN
         indexTxUpdater.onPropertyChange( node, propertyCursor, node.labels().all(), propId2, props, Values.of( "hi2" ), Values.of( "new2" ) );
@@ -242,7 +242,7 @@ public class IndexTxStateUpdaterTest
         verify( txState, times( 2 ) ).indexDoUpdateEntry( any(), anyLong(), any(), any() );
     }
 
-    private ValueTuple values( Object... values )
+    private static ValueTuple values( Object... values )
     {
         return ValueTuple.of( values );
     }

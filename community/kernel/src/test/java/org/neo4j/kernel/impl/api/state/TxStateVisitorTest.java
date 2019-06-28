@@ -23,8 +23,8 @@ import org.eclipse.collections.api.IntIterable;
 import org.eclipse.collections.api.list.primitive.IntList;
 import org.eclipse.collections.impl.factory.primitive.IntSets;
 import org.hamcrest.Matcher;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -43,12 +43,12 @@ import org.neo4j.values.storable.Values;
 
 import static java.util.Arrays.asList;
 import static org.hamcrest.CoreMatchers.equalTo;
-import static org.junit.Assert.assertThat;
+import static org.hamcrest.MatcherAssert.assertThat;
 
-public class TxStateVisitorTest
+class TxStateVisitorTest
 {
     @Test
-    public void shouldSeeAddedRelationshipProperties() throws Exception
+    void shouldSeeAddedRelationshipProperties() throws Exception
     {
         // Given
         long relId = 1L;
@@ -79,8 +79,8 @@ public class TxStateVisitorTest
     private TransactionState state;
     private final Collection<StorageProperty> noProperty = Collections.emptySet();
 
-    @Before
-    public void before()
+    @BeforeEach
+    void before()
     {
         state = new TxState();
     }
@@ -163,9 +163,9 @@ public class TxStateVisitorTest
             }
         }
 
-        public List<PropertyChange> nodePropertyChanges = new ArrayList<>();
-        public List<PropertyChange> relPropertyChanges = new ArrayList<>();
-        public List<PropertyChange> graphPropertyChanges = new ArrayList<>();
+        List<PropertyChange> nodePropertyChanges = new ArrayList<>();
+        List<PropertyChange> relPropertyChanges = new ArrayList<>();
+        List<PropertyChange> graphPropertyChanges = new ArrayList<>();
 
         @Override
         public void visitNodePropertyChanges( long id, Iterator<StorageProperty> added, Iterator<StorageProperty>

@@ -23,8 +23,7 @@ import org.hamcrest.CoreMatchers;
 import org.hamcrest.Description;
 import org.hamcrest.Matcher;
 import org.hamcrest.TypeSafeMatcher;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.time.ZonedDateTime;
 import java.util.Arrays;
@@ -44,35 +43,31 @@ import org.neo4j.lock.ResourceType;
 import org.neo4j.lock.WaitStrategy;
 import org.neo4j.resources.HeapAllocation;
 import org.neo4j.test.FakeCpuClock;
-import org.neo4j.test.FakeHeapAllocation;
 import org.neo4j.time.Clocks;
 import org.neo4j.time.FakeClock;
 
 import static java.util.Collections.emptyList;
 import static org.hamcrest.CoreMatchers.equalTo;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.hasEntry;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.values.virtual.VirtualValues.EMPTY_MAP;
 
-public class ExecutingQueryTest
+class ExecutingQueryTest
 {
     private final FakeClock clock = Clocks.fakeClock( ZonedDateTime.parse( "2016-12-03T15:10:00+01:00" ) );
-    @Rule
-    public final FakeCpuClock cpuClock = new FakeCpuClock().add( randomLong( 0x1_0000_0000L ) );
-    @Rule
-    public final FakeHeapAllocation heapAllocation = new FakeHeapAllocation().add( randomLong( 0x1_0000_0000L ) );
+    private final FakeCpuClock cpuClock = new FakeCpuClock().add( randomLong( 0x1_0000_0000L ) );
     private final PageCursorCountersStub page = new PageCursorCountersStub();
+    private final DatabaseIdRepository databaseIdRepository = new TestDatabaseIdRepository();
+    private final ExecutingQuery query = createExecutingquery( 1, "hello world", page, clock, cpuClock );
+    private final ExecutingQuery subQuery = createExecutingquery( 2, "goodbye world", page, clock, cpuClock );
     private long lockCount;
-    private DatabaseIdRepository databaseIdRepository = new TestDatabaseIdRepository();
-    private ExecutingQuery query = createExecutingquery( 1, "hello world", page, clock, cpuClock, heapAllocation );
-    private ExecutingQuery subQuery = createExecutingquery( 2, "goodbye world", page, clock, cpuClock, heapAllocation );
 
     @Test
-    public void shouldReportElapsedTime()
+    void shouldReportElapsedTime()
     {
         // when
         clock.forward( 10, TimeUnit.MILLISECONDS );
@@ -83,7 +78,7 @@ public class ExecutingQueryTest
     }
 
     @Test
-    public void shouldTransitionBetweenStates()
+    void shouldTransitionBetweenStates()
     {
         // initial
         assertEquals( "planning", query.snapshot().status() );
@@ -117,7 +112,7 @@ public class ExecutingQueryTest
     }
 
     @Test
-    public void shouldReportPlanningTime()
+    void shouldReportPlanningTime()
     {
         // when
         clock.forward( 124, TimeUnit.MICROSECONDS );
@@ -138,7 +133,7 @@ public class ExecutingQueryTest
     }
 
     @Test
-    public void shouldReportWaitTime()
+    void shouldReportWaitTime()
     {
         // given
         query.compilationCompleted( new CompilerInfo( "the-planner", "the-runtime", emptyList() ), null );
@@ -190,7 +185,7 @@ public class ExecutingQueryTest
     }
 
     @Test
-    public void shouldReportQueryWaitTime()
+    void shouldReportQueryWaitTime()
     {
         // given
         query.compilationCompleted( new CompilerInfo( "the-planner", "the-runtime", emptyList() ), null );
@@ -219,7 +214,7 @@ public class ExecutingQueryTest
     }
 
     @Test
-    public void shouldReportCpuTime()
+    void shouldReportCpuTime()
     {
         // given
         cpuClock.add( 60, TimeUnit.MICROSECONDS );
@@ -232,7 +227,7 @@ public class ExecutingQueryTest
     }
 
     @Test
-    public void shouldNotReportCpuTimeIfUnavailable()
+    void shouldNotReportCpuTimeIfUnavailable()
     {
         // given
         ExecutingQuery query = new ExecutingQuery( 17,
@@ -255,27 +250,7 @@ public class ExecutingQueryTest
     }
 
     @Test
-    public void shouldReportHeapAllocation()
-    {
-        // given
-        heapAllocation.add( 4096 );
-
-        // when
-        long allocatedBytes = query.snapshot().allocatedBytes();
-
-        // then
-        assertEquals( 4096, allocatedBytes );
-
-        // when
-        heapAllocation.add( 4096 );
-        allocatedBytes = query.snapshot().allocatedBytes();
-
-        // then
-        assertEquals( 8192, allocatedBytes );
-    }
-
-    @Test
-    public void shouldNotReportHeapAllocationIfUnavailable()
+    void shouldNotReportHeapAllocationIfUnavailable()
     {
         // given
         ExecutingQuery query = new ExecutingQuery( 17,
@@ -298,7 +273,7 @@ public class ExecutingQueryTest
     }
 
     @Test
-    public void shouldReportLockCount()
+    void shouldReportLockCount()
     {
         // given
         lockCount = 11;
@@ -314,7 +289,7 @@ public class ExecutingQueryTest
     }
 
     @Test
-    public void shouldReportPageHitsAndFaults()
+    void shouldReportPageHitsAndFaults()
     {
         // given
         page.hits( 7 );
@@ -338,7 +313,7 @@ public class ExecutingQueryTest
     }
 
     @Test
-    public void includeQueryExecutorThreadName()
+    void includeQueryExecutorThreadName()
     {
         String queryDescription = query.toString();
         assertTrue( queryDescription.contains( "threadExecutingTheQueryName=" + Thread.currentThread().getName() ) );
@@ -404,11 +379,11 @@ public class ExecutingQueryTest
     }
 
     private ExecutingQuery createExecutingquery( int queryId, String hello_world, PageCursorCountersStub page,
-            FakeClock clock, FakeCpuClock cpuClock, FakeHeapAllocation heapAllocation )
+            FakeClock clock, FakeCpuClock cpuClock )
     {
         return new ExecutingQuery( queryId, ClientConnectionInfo.EMBEDDED_CONNECTION, databaseIdRepository.defaultDatabase(), "neo4j", hello_world,
                 EMPTY_MAP, Collections.emptyMap(), () -> lockCount, page, Thread.currentThread().getId(),
-                Thread.currentThread().getName(), clock, cpuClock, heapAllocation );
+                Thread.currentThread().getName(), clock, cpuClock, HeapAllocation.HEAP_ALLOCATION );
     }
 
     private static class PageCursorCountersStub implements PageCursorCounters

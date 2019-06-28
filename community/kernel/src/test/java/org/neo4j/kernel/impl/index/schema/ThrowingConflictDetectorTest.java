@@ -19,7 +19,7 @@
  */
 package org.neo4j.kernel.impl.index.schema;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import org.neo4j.configuration.Config;
 import org.neo4j.index.internal.gbptree.ValueMerger.MergeResult;
@@ -28,18 +28,18 @@ import org.neo4j.kernel.impl.index.schema.config.IndexSpecificSpaceFillingCurveS
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.neo4j.internal.helpers.ArrayUtil.array;
 
-public class ThrowingConflictDetectorTest
+class ThrowingConflictDetectorTest
 {
     private static final IndexSpecificSpaceFillingCurveSettings specificSettings = IndexSpecificSpaceFillingCurveSettings.fromConfig( Config.defaults() );
     private final ThrowingConflictDetector<GenericKey,NativeIndexValue> detector = new ThrowingConflictDetector<>( true );
 
     @Test
-    public void shouldReportConflictOnSameValueAndDifferentEntityIds()
+    void shouldReportConflictOnSameValueAndDifferentEntityIds()
     {
         // given
         Value value = Values.of( 123 );
@@ -55,21 +55,14 @@ public class ThrowingConflictDetectorTest
 
         // then
         assertSame( MergeResult.UNCHANGED, mergeResult );
-        try
-        {
-            detector.checkConflict( array( value ) );
-            fail( "Should've detected conflict" );
-        }
-        catch ( IndexEntryConflictException e )
-        {
-            assertEquals( entityId1, e.getExistingNodeId() );
-            assertEquals( entityId2, e.getAddedNodeId() );
-            assertEquals( value, e.getSinglePropertyValue() );
-        }
+        var e = assertThrows( IndexEntryConflictException.class, () -> detector.checkConflict( array( value ) ) );
+        assertEquals( entityId1, e.getExistingNodeId() );
+        assertEquals( entityId2, e.getAddedNodeId() );
+        assertEquals( value, e.getSinglePropertyValue() );
     }
 
     @Test
-    public void shouldNotReportConflictOnSameValueSameEntityId() throws IndexEntryConflictException
+    void shouldNotReportConflictOnSameValueSameEntityId() throws IndexEntryConflictException
     {
         // given
         Value value = Values.of( 123 );

@@ -19,12 +19,11 @@
  */
 package org.neo4j.kernel.impl.index.schema;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.io.File;
 import java.io.IOException;
@@ -44,6 +43,8 @@ import org.neo4j.internal.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.internal.kernel.api.exceptions.schema.MisconfiguredIndexException;
 import org.neo4j.internal.schema.IndexProviderDescriptor;
 import org.neo4j.internal.unsafe.UnsafeUtil;
+import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexDirectoryStructure;
@@ -56,29 +57,27 @@ import org.neo4j.storageengine.api.IndexEntryUpdate;
 import org.neo4j.storageengine.api.NodePropertyAccessor;
 import org.neo4j.storageengine.api.schema.SimpleNodeValueClient;
 import org.neo4j.test.Race;
-import org.neo4j.test.rule.PageCacheAndDependenciesRule;
+import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.RandomExtension;
+import org.neo4j.test.extension.pagecache.PageCacheExtension;
 import org.neo4j.test.rule.RandomRule;
-import org.neo4j.test.rule.fs.DefaultFileSystemRule;
+import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.values.storable.RandomValues;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.ValueTuple;
 
 import static org.apache.commons.lang3.ArrayUtils.toArray;
-import static org.junit.Assert.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
-import static org.neo4j.configuration.Config.defaults;
-import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
 import static org.neo4j.internal.kernel.api.QueryContext.NULL_CONTEXT;
 import static org.neo4j.internal.schema.SchemaDescriptor.forLabel;
 import static org.neo4j.io.ByteUnit.kibiBytes;
 import static org.neo4j.kernel.api.index.IndexDirectoryStructure.directoriesByProvider;
 import static org.neo4j.kernel.api.index.IndexDirectoryStructure.directoriesBySubProvider;
-import static org.neo4j.kernel.api.index.IndexProvider.Monitor.EMPTY;
 import static org.neo4j.kernel.impl.index.schema.ByteBufferFactory.heapBufferFactory;
 import static org.neo4j.kernel.impl.index.schema.IndexDescriptorFactory.forSchema;
 import static org.neo4j.storageengine.api.IndexEntryUpdate.add;
@@ -86,72 +85,67 @@ import static org.neo4j.storageengine.api.IndexEntryUpdate.change;
 import static org.neo4j.storageengine.api.IndexEntryUpdate.remove;
 import static org.neo4j.test.Race.throwing;
 
-@RunWith( Parameterized.class )
-public class IndexPopulationStressTest
+@PageCacheExtension
+@ExtendWith( RandomExtension.class )
+abstract class IndexPopulationStressTest
 {
     private static final IndexProviderDescriptor PROVIDER = new IndexProviderDescriptor( "provider", "1.0" );
     private static final int THREADS = 50;
     private static final int MAX_BATCH_SIZE = 100;
     private static final int BATCHES_PER_THREAD = 100;
 
-    @Parameterized.Parameters( name = "{0}" )
-    public static Collection<Object[]> providers()
-    {
-        Collection<Object[]> parameters = new ArrayList<>();
-        // GenericNativeIndexProvider
-        parameters.add( of( "generic", true, RandomValues::nextValue, test ->
-                new GenericNativeIndexProvider( test.directory(), test.rules.pageCache(), test.rules.fileSystem(), EMPTY, immediate(), false, defaults() ) ) );
-        return parameters;
-    }
+    @Inject
+    private RandomRule random;
+    @Inject
+    PageCache pageCache;
+    @Inject
+    FileSystemAbstraction fs;
+    @Inject
+    private TestDirectory testDirectory;
 
-    private static Object[] of( String name, boolean hasValues, Function<RandomValues,Value> valueGenerator,
-            Function<IndexPopulationStressTest,IndexProvider> providerCreator )
-    {
-        return toArray( name, hasValues, valueGenerator, providerCreator );
-    }
-
-    @Rule
-    public final RandomRule random = new RandomRule();
-    @Rule
-    public PageCacheAndDependenciesRule rules = new PageCacheAndDependenciesRule().with( new DefaultFileSystemRule() );
+    private final String name;
+    private final boolean hasValues;
+    private final Function<RandomValues, Value> valueGenerator;
+    private final Function<IndexPopulationStressTest, IndexProvider> providerCreator;
 
     private StoreIndexDescriptor descriptor;
     private StoreIndexDescriptor descriptor2;
     private final IndexSamplingConfig samplingConfig = new IndexSamplingConfig( 1000, 0.2, true );
     private final NodePropertyAccessor nodePropertyAccessor = mock( NodePropertyAccessor.class );
-    @Parameterized.Parameter
-    public String name;
-    @Parameterized.Parameter( 1 )
-    public boolean hasValues;
-    @Parameterized.Parameter( 2 )
-    public Function<RandomValues,Value> valueGenerator;
-    @Parameterized.Parameter( 3 )
-    public Function<IndexPopulationStressTest,IndexProvider> providerCreator;
-
     private IndexPopulator populator;
     private IndexProvider indexProvider;
     private boolean prevAccessCheck;
 
-    private IndexDirectoryStructure.Factory directory()
+    IndexPopulationStressTest( String name, boolean hasValues,
+        Function<RandomValues, Value> valueGenerator,
+        Function<IndexPopulationStressTest, IndexProvider> providerCreator )
     {
-        File storeDir = rules.directory().storeDir();
+        this.name = name;
+        this.hasValues = hasValues;
+        this.valueGenerator = valueGenerator;
+        this.providerCreator = providerCreator;
+    }
+
+    IndexDirectoryStructure.Factory directory()
+    {
+        File storeDir = testDirectory.storeDir();
         return directoriesBySubProvider( directoriesByProvider( storeDir ).forProvider( PROVIDER ) );
     }
 
-    @Before
-    public void setup() throws IOException, EntityNotFoundException, MisconfiguredIndexException
+    @BeforeEach
+    void setup() throws IOException, EntityNotFoundException, MisconfiguredIndexException
     {
         indexProvider = providerCreator.apply( this );
         descriptor = indexProvider.bless( forSchema( forLabel( 0, 0 ), PROVIDER ) ).withId( 0 );
         descriptor2 = indexProvider.bless( forSchema( forLabel( 1, 0 ), PROVIDER ) ).withId( 1 );
-        rules.fileSystem().mkdirs( indexProvider.directoryStructure().rootDirectory() );
+        fs.mkdirs( indexProvider.directoryStructure().rootDirectory() );
         populator = indexProvider.getPopulator( descriptor, samplingConfig, heapBufferFactory( (int) kibiBytes( 40 ) ) );
         when( nodePropertyAccessor.getNodePropertyValue( anyLong(), anyInt() ) ).thenThrow( UnsupportedOperationException.class );
         prevAccessCheck = UnsafeUtil.exchangeNativeAccessCheckEnabled( false );
     }
 
-    @After
-    public void teardown()
+    @AfterEach
+    void teardown()
     {
         UnsafeUtil.exchangeNativeAccessCheckEnabled( prevAccessCheck );
         if ( populator != null )
@@ -161,7 +155,7 @@ public class IndexPopulationStressTest
     }
 
     @Test
-    public void stressIt() throws Throwable
+    void stressIt() throws Throwable
     {
         Race race = new Race();
         AtomicReferenceArray<List<? extends IndexEntryUpdate<?>>> lastBatches = new AtomicReferenceArray<>( THREADS );
@@ -184,9 +178,9 @@ public class IndexPopulationStressTest
         // then assert that a tree built by a single thread ends up exactly the same
         buildReferencePopulatorSingleThreaded( generators, updates );
         try ( IndexAccessor accessor = indexProvider.getOnlineAccessor( descriptor, samplingConfig );
-              IndexAccessor referenceAccessor = indexProvider.getOnlineAccessor( descriptor2, samplingConfig );
-              IndexReader reader = accessor.newReader();
-              IndexReader referenceReader = referenceAccessor.newReader() )
+            IndexAccessor referenceAccessor = indexProvider.getOnlineAccessor( descriptor2, samplingConfig );
+            IndexReader reader = accessor.newReader();
+            IndexReader referenceReader = referenceAccessor.newReader() )
         {
             SimpleNodeValueClient entries = new SimpleNodeValueClient();
             SimpleNodeValueClient referenceEntries = new SimpleNodeValueClient();
@@ -201,12 +195,12 @@ public class IndexPopulationStressTest
                     assertEquals( ValueTuple.of( referenceEntries.values ), ValueTuple.of( entries.values ) );
                 }
             }
-            assertFalse( entries.next() );
+            Assertions.assertFalse( entries.next() );
         }
     }
 
     private Runnable updater( AtomicReferenceArray<List<? extends IndexEntryUpdate<?>>> lastBatches, CountDownLatch insertersDone, ReadWriteLock updateLock,
-            Collection<IndexEntryUpdate<?>> updates )
+        Collection<IndexEntryUpdate<?>> updates )
     {
         return throwing( () ->
         {
@@ -264,7 +258,7 @@ public class IndexPopulationStressTest
     }
 
     private Runnable inserter( AtomicReferenceArray<List<? extends IndexEntryUpdate<?>>> lastBatches, Generator[] generators, CountDownLatch insertersDone,
-            ReadWriteLock updateLock, int slot )
+        ReadWriteLock updateLock, int slot )
     {
         int worstCaseEntriesPerThread = BATCHES_PER_THREAD * MAX_BATCH_SIZE;
         return throwing( () ->
@@ -296,7 +290,7 @@ public class IndexPopulationStressTest
     }
 
     private void buildReferencePopulatorSingleThreaded( Generator[] generators, Collection<IndexEntryUpdate<?>> updates )
-            throws IndexEntryConflictException
+        throws IndexEntryConflictException
     {
         IndexPopulator referencePopulator = indexProvider.getPopulator( descriptor2, samplingConfig, heapBufferFactory( (int) kibiBytes( 40 ) ) );
         referencePopulator.create();

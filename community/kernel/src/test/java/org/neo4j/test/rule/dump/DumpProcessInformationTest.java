@@ -19,9 +19,10 @@
  */
 package org.neo4j.test.rule.dump;
 
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -35,63 +36,64 @@ import java.util.stream.Stream;
 import org.neo4j.internal.helpers.collection.Iterables;
 import org.neo4j.internal.helpers.collection.Pair;
 import org.neo4j.logging.NullLogProvider;
+import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.TestDirectoryExtension;
 import org.neo4j.test.rule.TestDirectory;
 
 import static java.lang.Runtime.getRuntime;
 import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.greaterThan;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
-import static org.junit.Assume.assumeThat;
-import static org.junit.Assume.assumeTrue;
+import static org.junit.jupiter.api.Assertions.fail;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 import static org.neo4j.internal.helpers.collection.Iterators.asSet;
 import static org.neo4j.test.proc.ProcessUtil.getClassPath;
 import static org.neo4j.test.proc.ProcessUtil.getJavaExecutable;
 
-public class DumpProcessInformationTest
+@ExtendWith( TestDirectoryExtension.class )
+class DumpProcessInformationTest
 {
     private static final String SIGNAL = "here";
 
-    @Rule
-    public final TestDirectory testDirectory = TestDirectory.testDirectory();
+    @Inject
+    private TestDirectory testDirectory;
 
-    @Before
-    public void checkEnvironment()
+    @BeforeEach
+    void checkEnvironment()
     {
         assumeTrue( commandExists( "jps" ) );
         assumeTrue( commandExists( "jstack -h" ) );
     }
 
-    private boolean commandExists( String command )
+    private static boolean commandExists( String command )
     {
         try
         {
-            return Runtime.getRuntime().exec( command ).waitFor() == 0;
+            return getRuntime().exec( command ).waitFor() == 0;
         }
         catch ( Throwable e )
         {
             return false;
         }
     }
+
     @Test
-    public void shouldDumpProcessInformation() throws Exception
+    void shouldDumpProcessInformation() throws Exception
     {
         // GIVEN
         File directory = testDirectory.directory( "dump" );
         // a process spawned from this test which pauses at a specific point of execution
         String java = getJavaExecutable().toString();
-        Process process = getRuntime().exec( new String[] {java, "-cp", getClassPath(),
-                DumpableProcess.class.getName(), SIGNAL } );
+        Process process = getRuntime().exec( new String[]{java, "-cp", getClassPath(),
+            DumpableProcess.class.getName(), SIGNAL} );
         awaitSignal( process );
 
         // WHEN
         // dumping process information for that spawned process (knowing it's in the expected position)
         DumpProcessInformation dumper = new DumpProcessInformation( NullLogProvider.getInstance(), directory );
-        Collection<Pair<Long,String>> pids =
-                dumper.getJPids( containsString( DumpableProcess.class.getSimpleName() ) );
+        Collection<Pair<Long, String>> pids =
+            dumper.getJPids( containsString( DumpableProcess.class.getSimpleName() ) );
 
         // bail if our Java installation is wonky and `jps` doesn't work
-        assumeThat( pids.size(), greaterThan( 0 ) );
+        assumeTrue( !pids.isEmpty() );
 
         Pair<Long, String> pid = Iterables.single( pids );
         File threaddumpFile = dumper.doThreadDump( pid );
@@ -99,7 +101,7 @@ public class DumpProcessInformationTest
 
         // THEN
         // the produced thread dump should contain that expected method at least
-        assertTrue( fileContains( threaddumpFile, "traceableMethod", DumpableProcess.class.getName() ) );
+        Assertions.assertTrue( fileContains( threaddumpFile, "traceableMethod", DumpableProcess.class.getName() ) );
     }
 
     private static boolean fileContains( File file, String... expectedStrings ) throws IOException

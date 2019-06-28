@@ -19,16 +19,15 @@
  */
 package org.neo4j.graphdb;
 
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import java.lang.reflect.Field;
-import java.util.Arrays;
-import java.util.List;
+import java.util.stream.Stream;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.neo4j.graphdb.QueryExecutionType.QueryType.READ_ONLY;
 import static org.neo4j.graphdb.QueryExecutionType.QueryType.READ_WRITE;
 import static org.neo4j.graphdb.QueryExecutionType.QueryType.SCHEMA_WRITE;
@@ -37,70 +36,84 @@ import static org.neo4j.graphdb.QueryExecutionType.explained;
 import static org.neo4j.graphdb.QueryExecutionType.profiled;
 import static org.neo4j.graphdb.QueryExecutionType.query;
 
-@RunWith( Parameterized.class )
-public class QueryExecutionTypeTest
+class QueryExecutionTypeTest
 {
-    @Parameterized.Parameters( name = "{0}" )
-    public static List<Object[]> cases()
+
+    private static Stream<Arguments> parameters()
     {
-        return Arrays.asList(
+        return Stream.of(
+            Arguments.of(
                 verify( that( query( READ_ONLY ) )
-                                .canContainResults() ),
+                    .canContainResults() ) ),
+            Arguments.of(
                 verify( that( query( READ_WRITE ) )
-                                .canContainResults()
-                                .canUpdateData() ),
+                    .canContainResults()
+                    .canUpdateData() ) ),
+            Arguments.of(
                 verify( that( query( WRITE ) )
-                                .canUpdateData() ),
+                    .canUpdateData() ) ),
+            Arguments.of(
                 verify( that( query( SCHEMA_WRITE ) )
-                                .canUpdateSchema() ),
-                // PROFILE
+                    .canUpdateSchema() ) ),
+            // PROFILE
+            Arguments.of(
                 verify( that( profiled( READ_ONLY ) )
-                                .isExplained()
-                                .isProfiled()
-                                .canContainResults() ),
+                    .isExplained()
+                    .isProfiled()
+                    .canContainResults() ) ),
+            Arguments.of(
                 verify( that( profiled( READ_WRITE ) )
-                                .isExplained()
-                                .isProfiled()
-                                .canContainResults()
-                                .canUpdateData() ),
+                    .isExplained()
+                    .isProfiled()
+                    .canContainResults()
+                    .canUpdateData() ) ),
+            Arguments.of(
                 verify( that( profiled( WRITE ) )
-                                .isExplained()
-                                .isProfiled()
-                                .canUpdateData() ),
+                    .isExplained()
+                    .isProfiled()
+                    .canUpdateData() ) ),
+            Arguments.of(
                 verify( that( profiled( SCHEMA_WRITE ) )
-                                .isExplained()
-                                .isProfiled()
-                                .canUpdateSchema() ),
-                // EXPLAIN
+                    .isExplained()
+                    .isProfiled()
+                    .canUpdateSchema() ) ),
+            // EXPLAIN
+            Arguments.of(
                 verify( that( explained( READ_ONLY ) )
-                                .isExplained()
-                                .isOnlyExplained() ),
+                    .isExplained()
+                    .isOnlyExplained() ) ),
+            Arguments.of(
                 verify( that( explained( READ_WRITE ) )
-                                .isExplained()
-                                .isOnlyExplained() ),
+                    .isExplained()
+                    .isOnlyExplained() ) ),
+            Arguments.of(
                 verify( that( explained( WRITE ) )
-                                .isExplained()
-                                .isOnlyExplained() ),
+                    .isExplained()
+                    .isOnlyExplained() ) ),
+            Arguments.of(
                 verify( that( explained( SCHEMA_WRITE ) )
-                                .isExplained()
-                                .isOnlyExplained() ),
-                // query of EXPLAIN
+                    .isExplained()
+                    .isOnlyExplained() ) ),
+            // query of EXPLAIN
+            Arguments.of(
                 verify( thatQueryOf( explained( READ_ONLY ) )
-                                .canContainResults() ),
+                    .canContainResults() ) ),
+            Arguments.of(
                 verify( thatQueryOf( explained( READ_WRITE ) )
-                                .canContainResults()
-                                .canUpdateData() ),
+                    .canContainResults()
+                    .canUpdateData() ) ),
+            Arguments.of(
                 verify( thatQueryOf( explained( WRITE ) )
-                                .canUpdateData() ),
+                    .canUpdateData() ) ),
+            Arguments.of(
                 verify( thatQueryOf( explained( SCHEMA_WRITE ) )
-                                .canUpdateSchema() )
+                    .canUpdateSchema() ) )
         );
     }
 
-    private final Assumptions expected;
-
-    @Test
-    public void verify()
+    @ParameterizedTest
+    @MethodSource( "parameters" )
+    void verifyTest( Assumptions expected )
     {
         QueryExecutionType executionType = expected.type();
         assertEquals( expected.isProfiled, executionType.isProfiled() );
@@ -111,34 +124,28 @@ public class QueryExecutionTypeTest
         assertEquals( expected.canUpdateSchema, executionType.canUpdateSchema() );
     }
 
-    @Test
-    public void noneOtherLikeIt()
+    @ParameterizedTest
+    @MethodSource( "parameters" )
+    void noneOtherLikeIt( Assumptions expected )
     {
         for ( QueryExecutionType.QueryType queryType : QueryExecutionType.QueryType.values() )
         {
             for ( QueryExecutionType type : new QueryExecutionType[]{
-                    query( queryType ), profiled( queryType ), explained( queryType )} )
+                query( queryType ), profiled( queryType ), explained( queryType )} )
             {
                 // the very same object will have the same flags, as will all the explained ones...
                 if ( type != expected.type() && !(expected.type().isExplained() && type.isExplained()) )
                 {
-                    assertFalse(
-                            expected.type().toString(),
-                            expected.isProfiled == type.isProfiled() &&
+                    assertFalse( expected.isProfiled == type.isProfiled() &&
                             expected.requestedExecutionPlanDescription == type.requestedExecutionPlanDescription() &&
                             expected.isExplained == type.isExplained() &&
                             expected.canContainResults == type.canContainResults() &&
                             expected.canUpdateData == type.canUpdateData() &&
-                            expected.canUpdateSchema == type.canUpdateSchema() );
+                            expected.canUpdateSchema == type.canUpdateSchema(),
+                        expected.type().toString() );
                 }
             }
         }
-    }
-
-    public QueryExecutionTypeTest( Assumptions expected )
-    {
-
-        this.expected = expected;
     }
 
     private static Object[] verify( Assumptions assumptions )
@@ -203,37 +210,37 @@ public class QueryExecutionTypeTest
             return result.toString();
         }
 
-        public Assumptions isProfiled()
+        Assumptions isProfiled()
         {
             this.isProfiled = true;
             return this;
         }
 
-        public Assumptions isExplained()
+        Assumptions isExplained()
         {
             this.requestedExecutionPlanDescription = true;
             return this;
         }
 
-        public Assumptions isOnlyExplained()
+        Assumptions isOnlyExplained()
         {
             this.isExplained = true;
             return this;
         }
 
-        public Assumptions canContainResults()
+        Assumptions canContainResults()
         {
             this.canContainResults = true;
             return this;
         }
 
-        public Assumptions canUpdateData()
+        Assumptions canUpdateData()
         {
             this.canUpdateData = true;
             return this;
         }
 
-        public Assumptions canUpdateSchema()
+        Assumptions canUpdateSchema()
         {
             this.canUpdateSchema = true;
             return this;

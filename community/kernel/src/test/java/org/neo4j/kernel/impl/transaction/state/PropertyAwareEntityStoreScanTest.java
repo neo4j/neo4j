@@ -21,7 +21,7 @@ package org.neo4j.kernel.impl.transaction.state;
 
 import org.apache.commons.lang3.mutable.MutableInt;
 import org.eclipse.collections.impl.block.factory.primitive.IntPredicates;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.function.Supplier;
 
@@ -33,18 +33,18 @@ import org.neo4j.storageengine.api.StorageNodeCursor;
 import org.neo4j.storageengine.api.StorageReader;
 import org.neo4j.storageengine.api.StubStorageCursors;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.mockito.Mockito.RETURNS_MOCKS;
 import static org.mockito.Mockito.mock;
 
-public class PropertyAwareEntityStoreScanTest
+class PropertyAwareEntityStoreScanTest
 {
     private final LockService locks = mock( LockService.class, RETURNS_MOCKS );
     private final StubStorageCursors cursors = new StubStorageCursors();
 
     @Test
-    public void shouldGiveBackCompletionPercentage()
+    void shouldGiveBackCompletionPercentage()
     {
         // given
         long total = 10;
@@ -66,7 +66,7 @@ public class PropertyAwareEntityStoreScanTest
                         read.incrementAndGet();
                         float expected = (float) read.intValue() / total;
                         float actual = percentageSupplier.get();
-                        assertEquals( String.format( "%f==%f", expected, actual ), expected, actual, 0.0 );
+                        assertEquals( expected, actual, 0.0, String.format( "%f==%f", expected, actual ) );
                         return false;
                     }
 

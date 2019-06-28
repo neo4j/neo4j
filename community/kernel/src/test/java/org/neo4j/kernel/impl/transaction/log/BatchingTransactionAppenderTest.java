@@ -19,9 +19,9 @@
  */
 package org.neo4j.kernel.impl.transaction.log;
 
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mockito;
 
 import java.io.Flushable;
@@ -42,20 +42,21 @@ import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
 import org.neo4j.kernel.impl.transaction.log.files.TransactionLogFiles;
 import org.neo4j.kernel.impl.transaction.tracing.LogAppendEvent;
 import org.neo4j.kernel.impl.transaction.tracing.LogCheckPointEvent;
+import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.monitoring.DatabaseHealth;
 import org.neo4j.monitoring.Health;
 import org.neo4j.storageengine.api.StorageCommand;
 import org.neo4j.storageengine.api.TransactionIdStore;
-import org.neo4j.test.rule.CleanupRule;
-import org.neo4j.test.rule.LifeRule;
+import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.LifeExtension;
 
 import static org.hamcrest.CoreMatchers.containsString;
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertSame;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.fail;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyByte;
 import static org.mockito.ArgumentMatchers.anyInt;
@@ -72,12 +73,11 @@ import static org.mockito.Mockito.when;
 import static org.neo4j.kernel.impl.transaction.log.TestLogEntryReader.logEntryReader;
 import static org.neo4j.kernel.impl.transaction.log.rotation.LogRotation.NO_ROTATION;
 
-public class BatchingTransactionAppenderTest
+@ExtendWith( LifeExtension.class )
+class BatchingTransactionAppenderTest
 {
-    @Rule
-    public final LifeRule life = new LifeRule( true );
-    @Rule
-    public final CleanupRule cleanup = new CleanupRule();
+    @Inject
+    private LifeSupport life;
 
     private final InMemoryVersionableReadableClosablePositionAwareChannel channel =
             new InMemoryVersionableReadableClosablePositionAwareChannel();
@@ -88,14 +88,14 @@ public class BatchingTransactionAppenderTest
     private final TransactionIdStore transactionIdStore = mock( TransactionIdStore.class );
     private final TransactionMetadataCache positionCache = new TransactionMetadataCache();
 
-    @Before
-    public void setUp()
+    @BeforeEach
+    void setUp()
     {
         when( logFiles.getLogFile() ).thenReturn( logFile );
     }
 
     @Test
-    public void shouldAppendSingleTransaction() throws Exception
+    void shouldAppendSingleTransaction() throws Exception
     {
         // GIVEN
         when( logFile.getWriter() ).thenReturn( channel );
@@ -126,7 +126,7 @@ public class BatchingTransactionAppenderTest
     }
 
     @Test
-    public void shouldAppendBatchOfTransactions() throws Exception
+    void shouldAppendBatchOfTransactions() throws Exception
     {
         // GIVEN
         when( logFile.getWriter() ).thenReturn( channel );
@@ -151,7 +151,7 @@ public class BatchingTransactionAppenderTest
     }
 
     @Test
-    public void shouldAppendCommittedTransactions() throws Exception
+    void shouldAppendCommittedTransactions() throws Exception
     {
         // GIVEN
         when( logFile.getWriter() ).thenReturn( channel );
@@ -198,7 +198,7 @@ public class BatchingTransactionAppenderTest
     }
 
     @Test
-    public void shouldNotAppendCommittedTransactionsWhenTooFarAhead()
+    void shouldNotAppendCommittedTransactionsWhenTooFarAhead()
     {
         // GIVEN
         InMemoryClosableChannel channel = new InMemoryClosableChannel();
@@ -225,20 +225,13 @@ public class BatchingTransactionAppenderTest
         CommittedTransactionRepresentation transaction =
                 new CommittedTransactionRepresentation( start, transactionRepresentation, commit );
 
-        try
-        {
-            appender.append( new TransactionToApply( transaction.getTransactionRepresentation(),
-                    transaction.getCommitEntry().getTxId() ), logAppendEvent );
-            fail( "should have thrown" );
-        }
-        catch ( Throwable e )
-        {
-            assertThat( e.getMessage(), containsString( "to be applied, but appending it ended up generating an" ) );
-        }
+        var e = assertThrows( Exception.class, () -> appender.append( new TransactionToApply( transaction.getTransactionRepresentation(),
+            transaction.getCommitEntry().getTxId() ), logAppendEvent ) );
+        assertThat( e.getMessage(), containsString( "to be applied, but appending it ended up generating an" ) );
     }
 
     @Test
-    public void shouldNotCallTransactionClosedOnFailedAppendedTransaction() throws Exception
+    void shouldNotCallTransactionClosedOnFailedAppendedTransaction() throws Exception
     {
         // GIVEN
         long txId = 3;
@@ -255,23 +248,16 @@ public class BatchingTransactionAppenderTest
         // WHEN
         TransactionRepresentation transaction = mock( TransactionRepresentation.class );
         when( transaction.additionalHeader() ).thenReturn( new byte[0] );
-        try
-        {
-            appender.append( new TransactionToApply( transaction ), logAppendEvent );
-            fail( "Expected append to fail. Something is wrong with the test itself" );
-        }
-        catch ( IOException e )
-        {
-            // THEN
-            assertSame( failure, e );
-            verify( transactionIdStore ).nextCommittingTransactionId();
-            verify( transactionIdStore, never() ).transactionClosed( eq( txId ), anyLong(), anyLong() );
-            verify( databaseHealth ).panic( failure );
-        }
+
+        var e = assertThrows( IOException.class, () -> appender.append( new TransactionToApply( transaction ), logAppendEvent ) );
+        assertSame( failure, e );
+        verify( transactionIdStore ).nextCommittingTransactionId();
+        verify( transactionIdStore, never() ).transactionClosed( eq( txId ), anyLong(), anyLong() );
+        verify( databaseHealth ).panic( failure );
     }
 
     @Test
-    public void shouldNotCallTransactionClosedOnFailedForceLogToDisk() throws Exception
+    void shouldNotCallTransactionClosedOnFailedForceLogToDisk() throws Exception
     {
         // GIVEN
         long txId = 3;
@@ -296,23 +282,16 @@ public class BatchingTransactionAppenderTest
         // WHEN
         TransactionRepresentation transaction = mock( TransactionRepresentation.class );
         when( transaction.additionalHeader() ).thenReturn( new byte[0] );
-        try
-        {
-            appender.append( new TransactionToApply( transaction ), logAppendEvent );
-            fail( "Expected append to fail. Something is wrong with the test itself" );
-        }
-        catch ( IOException e )
-        {
-            // THEN
-            assertSame( failure, e );
-            verify( transactionIdStore ).nextCommittingTransactionId();
-            verify( transactionIdStore, never() ).transactionClosed( eq( txId ), anyLong(), anyLong() );
-            verify( databaseHealth ).panic( failure );
-        }
+
+        var e = assertThrows( IOException.class, () -> appender.append( new TransactionToApply( transaction ), logAppendEvent ) );
+        assertSame( failure, e );
+        verify( transactionIdStore ).nextCommittingTransactionId();
+        verify( transactionIdStore, never() ).transactionClosed( eq( txId ), anyLong(), anyLong() );
+        verify( databaseHealth ).panic( failure );
     }
 
     @Test
-    public void shouldBeAbleToWriteACheckPoint() throws Throwable
+    void shouldBeAbleToWriteACheckPoint() throws Throwable
     {
         // Given
         FlushablePositionAwareChannel channel = mock( FlushablePositionAwareChannel.class, RETURNS_MOCKS );
@@ -334,7 +313,7 @@ public class BatchingTransactionAppenderTest
     }
 
     @Test
-    public void shouldKernelPanicIfNotAbleToWriteACheckPoint() throws Throwable
+    void shouldKernelPanicIfNotAbleToWriteACheckPoint() throws Throwable
     {
         // Given
         IOException ioex = new IOException( "boom!" );
@@ -346,40 +325,24 @@ public class BatchingTransactionAppenderTest
         BatchingTransactionAppender appender = life.add( createTransactionAppender() );
 
         // When
-        try
-        {
-            appender.checkPoint( new LogPosition( 0L, 0L ), LogCheckPointEvent.NULL );
-            fail( "should have thrown " );
-        }
-        catch ( IOException ex )
-        {
-            assertEquals( ioex, ex );
-        }
+        var e = assertThrows( IOException.class, () -> appender.checkPoint( new LogPosition( 0L, 0L ), LogCheckPointEvent.NULL ) );
+        assertEquals( ioex, e );
 
         // Then
         verify( databaseHealth ).panic( ioex );
     }
 
     @Test
-    public void shouldKernelPanicIfTransactionIdsMismatch() throws Throwable
+    void shouldKernelPanicIfTransactionIdsMismatch() throws Throwable
     {
         // Given
         BatchingTransactionAppender appender = life.add( createTransactionAppender() );
         when( transactionIdStore.nextCommittingTransactionId() ).thenReturn( 42L );
         TransactionToApply batch = new TransactionToApply( mock( TransactionRepresentation.class ), 43L );
-
         // When
-        try
-        {
-            appender.append( batch, LogAppendEvent.NULL );
-            fail( "should have thrown " );
-        }
-        catch ( IllegalStateException ex )
-        {
-            // Then
-            verify( databaseHealth ).panic( ex );
-        }
-
+        var e = assertThrows( IllegalStateException.class, () -> appender.append( batch, LogAppendEvent.NULL ) );
+        // Then
+        verify( databaseHealth ).panic( e );
     }
 
     private BatchingTransactionAppender createTransactionAppender()

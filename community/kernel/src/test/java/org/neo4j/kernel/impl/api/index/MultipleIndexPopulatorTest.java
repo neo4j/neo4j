@@ -19,10 +19,8 @@
  */
 package org.neo4j.kernel.impl.api.index;
 
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.mockito.junit.MockitoJUnitRunner;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -44,13 +42,12 @@ import org.neo4j.kernel.api.schema.index.TestIndexDescriptorFactory;
 import org.neo4j.kernel.impl.api.index.MultipleIndexPopulator.IndexPopulation;
 import org.neo4j.kernel.impl.api.index.stats.IndexStatisticsStore;
 import org.neo4j.kernel.impl.index.schema.StoreIndexDescriptor;
-import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.storageengine.api.IndexEntryUpdate;
 import org.neo4j.storageengine.api.NodePropertyAccessor;
 
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyLong;
@@ -68,30 +65,28 @@ import static org.mockito.Mockito.verifyZeroInteractions;
 import static org.mockito.Mockito.when;
 import static org.neo4j.kernel.api.index.IndexQueryHelper.add;
 
-@RunWith( MockitoJUnitRunner.class )
-public class MultipleIndexPopulatorTest
+class MultipleIndexPopulatorTest
 {
     private final LabelSchemaDescriptor index1 = SchemaDescriptor.forLabel( 1, 1 );
     private IndexStoreView indexStoreView;
-    private LogProvider logProvider;
     private SchemaState schemaState;
     private MultipleIndexPopulator multipleIndexPopulator;
     private IndexStatisticsStore indexStatisticsStore;
 
-    @Before
-    public void before()
+    @BeforeEach
+    void before()
     {
         indexStatisticsStore = mock( IndexStatisticsStore.class );
         indexStoreView = mock( IndexStoreView.class );
         when( indexStoreView.newPropertyAccessor() ).thenReturn( mock( NodePropertyAccessor.class ) );
         when( indexStoreView.visitNodes( any(), any(), any(), any(), anyBoolean() ) ).thenReturn( mock( StoreScan.class ) );
         schemaState = mock( SchemaState.class );
-        logProvider = NullLogProvider.getInstance();
-        multipleIndexPopulator = new MultipleIndexPopulator( indexStoreView, logProvider, EntityType.NODE, schemaState, indexStatisticsStore );
+        multipleIndexPopulator =
+            new MultipleIndexPopulator( indexStoreView, NullLogProvider.getInstance(), EntityType.NODE, schemaState, indexStatisticsStore );
     }
 
     @Test
-    public void canceledPopulationNotAbleToCreateNewIndex() throws FlipFailedKernelException
+    void canceledPopulationNotAbleToCreateNewIndex() throws FlipFailedKernelException
     {
         IndexPopulator populator = createIndexPopulator();
         IndexPopulation indexPopulation = addPopulator( populator, 1 );
@@ -104,7 +99,7 @@ public class MultipleIndexPopulatorTest
     }
 
     @Test
-    public void canceledPopulationNotAbleToFlip() throws FlipFailedKernelException
+    void canceledPopulationNotAbleToFlip() throws FlipFailedKernelException
     {
         IndexPopulator populator = createIndexPopulator();
         IndexPopulation indexPopulation = addPopulator( populator, 1 );
@@ -117,7 +112,7 @@ public class MultipleIndexPopulatorTest
     }
 
     @Test
-    public void flippedPopulationAreNotCanceable() throws FlipFailedKernelException
+    void flippedPopulationAreNotCanceable() throws FlipFailedKernelException
     {
         IndexPopulator populator = createIndexPopulator();
         IndexPopulation indexPopulation = addPopulator( populator, 1 );
@@ -130,7 +125,7 @@ public class MultipleIndexPopulatorTest
     }
 
     @Test
-    public void cancelAndDropShouldCallDropOnPopulator() throws FlipFailedKernelException
+    void cancelAndDropShouldCallDropOnPopulator() throws FlipFailedKernelException
     {
         IndexPopulator populator = createIndexPopulator();
         IndexPopulation indexPopulation = addPopulator( populator, 1 );
@@ -142,7 +137,7 @@ public class MultipleIndexPopulatorTest
     }
 
     @Test
-    public void testMultiplePopulatorsCreation() throws FlipFailedKernelException
+    void testMultiplePopulatorsCreation() throws FlipFailedKernelException
     {
         IndexPopulator indexPopulator1 = createIndexPopulator();
         IndexPopulator indexPopulator2 = createIndexPopulator();
@@ -156,7 +151,7 @@ public class MultipleIndexPopulatorTest
     }
 
     @Test
-    public void testMultiplePopulatorCreationFailure() throws FlipFailedKernelException
+    void testMultiplePopulatorCreationFailure() throws FlipFailedKernelException
     {
         IndexPopulator indexPopulator1 = createIndexPopulator();
         IndexPopulator indexPopulator2 = createIndexPopulator();
@@ -178,7 +173,7 @@ public class MultipleIndexPopulatorTest
     }
 
     @Test
-    public void testHasPopulators() throws FlipFailedKernelException
+    void testHasPopulators() throws FlipFailedKernelException
     {
         assertFalse( multipleIndexPopulator.hasPopulators() );
 
@@ -188,7 +183,7 @@ public class MultipleIndexPopulatorTest
     }
 
     @Test
-    public void cancelingSinglePopulatorDoNotCancelAnyOther() throws FlipFailedKernelException
+    void cancelingSinglePopulatorDoNotCancelAnyOther() throws FlipFailedKernelException
     {
         IndexPopulator indexPopulator1 = createIndexPopulator();
         IndexPopulator indexPopulator2 = createIndexPopulator();
@@ -210,7 +205,7 @@ public class MultipleIndexPopulatorTest
     }
 
     @Test
-    public void canceledPopulatorDoNotFlipWhenPopulationCompleted() throws FlipFailedKernelException
+    void canceledPopulatorDoNotFlipWhenPopulationCompleted() throws FlipFailedKernelException
     {
         IndexPopulator indexPopulator1 = createIndexPopulator();
         IndexPopulator indexPopulator2 = createIndexPopulator();
@@ -232,7 +227,7 @@ public class MultipleIndexPopulatorTest
     }
 
     @Test
-    public void testIndexAllNodes() throws FlipFailedKernelException
+    void testIndexAllNodes() throws FlipFailedKernelException
     {
         IndexPopulator indexPopulator1 = createIndexPopulator();
         IndexPopulator indexPopulator2 = createIndexPopulator();
@@ -244,12 +239,12 @@ public class MultipleIndexPopulatorTest
         multipleIndexPopulator.indexAllEntities();
 
         verify( indexStoreView )
-                .visitNodes( any( int[].class ), any( IntPredicate.class ), any( Visitor.class ), isNull(),
-                        anyBoolean() );
+            .visitNodes( any( int[].class ), any( IntPredicate.class ), any( Visitor.class ), isNull(),
+                anyBoolean() );
     }
 
     @Test
-    public void testFailPopulator() throws FlipFailedKernelException
+    void testFailPopulator() throws FlipFailedKernelException
     {
         IndexPopulator indexPopulator1 = createIndexPopulator();
         IndexPopulator indexPopulator2 = createIndexPopulator();
@@ -264,7 +259,7 @@ public class MultipleIndexPopulatorTest
     }
 
     @Test
-    public void testFailByPopulation() throws FlipFailedKernelException
+    void testFailByPopulation() throws FlipFailedKernelException
     {
         IndexPopulator populator1 = createIndexPopulator();
         IndexPopulator populator2 = createIndexPopulator();
@@ -279,7 +274,7 @@ public class MultipleIndexPopulatorTest
     }
 
     @Test
-    public void testFailByPopulationRemovesPopulator() throws FlipFailedKernelException
+    void testFailByPopulationRemovesPopulator() throws FlipFailedKernelException
     {
         IndexPopulator populator1 = createIndexPopulator();
         IndexPopulator populator2 = createIndexPopulator();
@@ -296,7 +291,7 @@ public class MultipleIndexPopulatorTest
     }
 
     @Test
-    public void testFailByNonExistingPopulation() throws FlipFailedKernelException
+    void testFailByNonExistingPopulation() throws FlipFailedKernelException
     {
         IndexPopulation nonExistingPopulation = mock( IndexPopulation.class );
         IndexPopulator populator = createIndexPopulator();
@@ -309,7 +304,7 @@ public class MultipleIndexPopulatorTest
     }
 
     @Test
-    public void testFlipAfterPopulation() throws FlipFailedKernelException
+    void testFlipAfterPopulation() throws FlipFailedKernelException
     {
         IndexPopulator indexPopulator1 = createIndexPopulator();
         IndexPopulator indexPopulator2 = createIndexPopulator();
@@ -324,7 +319,7 @@ public class MultipleIndexPopulatorTest
     }
 
     @Test
-    public void populationsRemovedDuringFlip() throws FlipFailedKernelException
+    void populationsRemovedDuringFlip() throws FlipFailedKernelException
     {
         IndexPopulator indexPopulator1 = createIndexPopulator();
         IndexPopulator indexPopulator2 = createIndexPopulator();
@@ -340,7 +335,7 @@ public class MultipleIndexPopulatorTest
     }
 
     @Test
-    public void testCancelPopulation() throws FlipFailedKernelException
+    void testCancelPopulation() throws FlipFailedKernelException
     {
         IndexPopulator indexPopulator1 = createIndexPopulator();
         IndexPopulator indexPopulator2 = createIndexPopulator();
@@ -356,7 +351,7 @@ public class MultipleIndexPopulatorTest
     }
 
     @Test
-    public void testIndexFlip()
+    void testIndexFlip()
     {
         IndexProxyFactory indexProxyFactory = mock( IndexProxyFactory.class );
         FailedIndexProxyFactory failedIndexProxyFactory = mock( FailedIndexProxyFactory.class );
@@ -383,7 +378,7 @@ public class MultipleIndexPopulatorTest
     }
 
     @Test
-    public void testMultiplePopulatorUpdater() throws IndexEntryConflictException, FlipFailedKernelException
+    void testMultiplePopulatorUpdater() throws IndexEntryConflictException, FlipFailedKernelException
     {
         IndexUpdater indexUpdater1 = mock( IndexUpdater.class );
         IndexPopulator indexPopulator1 = createIndexPopulator( indexUpdater1 );
@@ -392,11 +387,11 @@ public class MultipleIndexPopulatorTest
         addPopulator( indexPopulator1, 1 );
         addPopulator( indexPopulator2, 2 );
 
-        doThrow(getPopulatorException() ).when( indexPopulator2 )
-                .newPopulatingUpdater( any( NodePropertyAccessor.class ) );
+        doThrow( getPopulatorException() ).when( indexPopulator2 )
+            .newPopulatingUpdater( any( NodePropertyAccessor.class ) );
 
         IndexUpdater multipleIndexUpdater =
-                multipleIndexPopulator.newPopulatingUpdater( mock( NodePropertyAccessor.class ) );
+            multipleIndexPopulator.newPopulatingUpdater( mock( NodePropertyAccessor.class ) );
         IndexEntryUpdate<?> propertyUpdate = createIndexEntryUpdate( index1 );
         multipleIndexUpdater.process( propertyUpdate );
 
@@ -405,7 +400,7 @@ public class MultipleIndexPopulatorTest
     }
 
     @Test
-    public void testNonApplicableUpdaterDoNotUpdatePopulator() throws IndexEntryConflictException, FlipFailedKernelException
+    void testNonApplicableUpdaterDoNotUpdatePopulator() throws IndexEntryConflictException, FlipFailedKernelException
     {
         IndexUpdater indexUpdater1 = mock( IndexUpdater.class );
         IndexPopulator indexPopulator1 = createIndexPopulator( indexUpdater1 );
@@ -413,7 +408,7 @@ public class MultipleIndexPopulatorTest
         addPopulator( indexPopulator1, 2 );
 
         IndexUpdater multipleIndexUpdater =
-                multipleIndexPopulator.newPopulatingUpdater( mock( NodePropertyAccessor.class ) );
+            multipleIndexPopulator.newPopulatingUpdater( mock( NodePropertyAccessor.class ) );
 
         IndexEntryUpdate<?> propertyUpdate = createIndexEntryUpdate( index1 );
         multipleIndexUpdater.process( propertyUpdate );
@@ -422,7 +417,7 @@ public class MultipleIndexPopulatorTest
     }
 
     @Test
-    public void testPropertyUpdateFailure() throws IndexEntryConflictException, FlipFailedKernelException
+    void testPropertyUpdateFailure() throws IndexEntryConflictException, FlipFailedKernelException
     {
         IndexEntryUpdate<?> propertyUpdate = createIndexEntryUpdate( index1 );
         IndexUpdater indexUpdater1 = mock( IndexUpdater.class );
@@ -433,7 +428,7 @@ public class MultipleIndexPopulatorTest
         doThrow( getPopulatorException() ).when( indexUpdater1 ).process( propertyUpdate );
 
         IndexUpdater multipleIndexUpdater =
-                multipleIndexPopulator.newPopulatingUpdater( mock( NodePropertyAccessor.class ) );
+            multipleIndexPopulator.newPopulatingUpdater( mock( NodePropertyAccessor.class ) );
 
         multipleIndexUpdater.process( propertyUpdate );
 
@@ -442,7 +437,7 @@ public class MultipleIndexPopulatorTest
     }
 
     @Test
-    public void testMultiplePropertyUpdateFailures() throws IndexEntryConflictException, FlipFailedKernelException
+    void testMultiplePropertyUpdateFailures() throws IndexEntryConflictException, FlipFailedKernelException
     {
         NodePropertyAccessor nodePropertyAccessor = mock( NodePropertyAccessor.class );
         IndexEntryUpdate<?> update1 = add( 1, index1, "foo" );
@@ -466,7 +461,7 @@ public class MultipleIndexPopulatorTest
     }
 
     @Test
-    public void shouldVerifyConstraintsBeforeFlippingIfToldTo() throws IndexEntryConflictException
+    void shouldVerifyConstraintsBeforeFlippingIfToldTo() throws IndexEntryConflictException
     {
         // given
         IndexProxyFactory indexProxyFactory = mock( IndexProxyFactory.class );
@@ -486,7 +481,7 @@ public class MultipleIndexPopulatorTest
         verify( indexPopulator ).close( true );
     }
 
-    private IndexEntryUpdate<?> createIndexEntryUpdate( LabelSchemaDescriptor schemaDescriptor )
+    private static IndexEntryUpdate<?> createIndexEntryUpdate( LabelSchemaDescriptor schemaDescriptor )
     {
         return add( 1, schemaDescriptor, "theValue" );
     }
@@ -522,23 +517,23 @@ public class MultipleIndexPopulatorTest
     }
 
     private IndexPopulation addPopulator( IndexPopulator indexPopulator, int id,
-            FlippableIndexProxy flippableIndexProxy, FailedIndexProxyFactory failedIndexProxyFactory )
+        FlippableIndexProxy flippableIndexProxy, FailedIndexProxyFactory failedIndexProxyFactory )
     {
         return addPopulator( multipleIndexPopulator, indexPopulator, id, flippableIndexProxy, failedIndexProxyFactory );
     }
 
     private IndexPopulation addPopulator( MultipleIndexPopulator multipleIndexPopulator, IndexPopulator indexPopulator,
-            int id, FlippableIndexProxy flippableIndexProxy, FailedIndexProxyFactory failedIndexProxyFactory )
+        int id, FlippableIndexProxy flippableIndexProxy, FailedIndexProxyFactory failedIndexProxyFactory )
     {
         return addPopulator( multipleIndexPopulator, TestIndexDescriptorFactory.forLabel( id, id ).withId( id ),
-                             indexPopulator, flippableIndexProxy, failedIndexProxyFactory );
+            indexPopulator, flippableIndexProxy, failedIndexProxyFactory );
     }
 
     private IndexPopulation addPopulator( MultipleIndexPopulator multipleIndexPopulator, StoreIndexDescriptor descriptor, IndexPopulator indexPopulator,
-                                          FlippableIndexProxy flippableIndexProxy, FailedIndexProxyFactory failedIndexProxyFactory )
+        FlippableIndexProxy flippableIndexProxy, FailedIndexProxyFactory failedIndexProxyFactory )
     {
         return multipleIndexPopulator.addPopulator( indexPopulator, descriptor.withoutCapabilities(),
-                flippableIndexProxy, failedIndexProxyFactory, "userIndexDescription" );
+            flippableIndexProxy, failedIndexProxyFactory, "userIndexDescription" );
     }
 
     private IndexPopulation addPopulator( IndexPopulator indexPopulator, int id ) throws FlipFailedKernelException

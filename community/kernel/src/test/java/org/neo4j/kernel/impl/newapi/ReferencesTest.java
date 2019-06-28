@@ -20,16 +20,16 @@
 package org.neo4j.kernel.impl.newapi;
 
 import org.eclipse.collections.api.block.function.primitive.LongToLongFunction;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.function.IntToLongFunction;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.internal.kernel.api.Read.NO_ID;
 import static org.neo4j.kernel.impl.newapi.RelationshipReferenceEncoding.DENSE;
 import static org.neo4j.kernel.impl.newapi.RelationshipReferenceEncoding.DENSE_SELECTION;
@@ -40,13 +40,13 @@ import static org.neo4j.kernel.impl.newapi.RelationshipReferenceEncoding.SELECTI
 import static org.neo4j.kernel.impl.newapi.RelationshipReferenceEncoding.clearEncoding;
 import static org.neo4j.kernel.impl.newapi.RelationshipReferenceEncoding.parseEncoding;
 
-public class ReferencesTest
+class ReferencesTest
 {
     // This value the largest possible high limit id +1 (see HighLimitV3_1_0)
     private static long MAX_ID_LIMIT = 1L << 50;
 
     @Test
-    public void shouldPreserveNoId()
+    void shouldPreserveNoId()
     {
         assertThat( RelationshipReferenceEncoding.encodeDense( NO_ID ), equalTo( NO_ID ) );
         assertThat( RelationshipReferenceEncoding.encodeSelection( NO_ID ), equalTo( NO_ID ) );
@@ -57,7 +57,7 @@ public class ReferencesTest
     }
 
     @Test
-    public void shouldClearFlags()
+    void shouldClearFlags()
     {
         ThreadLocalRandom random = ThreadLocalRandom.current();
         for ( int i = 0; i < 1000; i++ )
@@ -75,37 +75,37 @@ public class ReferencesTest
     }
 
     @Test
-    public void encodeDense()
+    void encodeDense()
     {
         testLongFlag( DENSE, RelationshipReferenceEncoding::encodeDense );
     }
 
     @Test
-    public void encodeSelection()
+    void encodeSelection()
     {
         testLongFlag( SELECTION, RelationshipReferenceEncoding::encodeSelection );
     }
 
     @Test
-    public void encodeDenseSelection()
+    void encodeDenseSelection()
     {
         testLongFlag( DENSE_SELECTION, RelationshipReferenceEncoding::encodeDenseSelection );
     }
 
     @Test
-    public void encodeNoIncomingRels()
+    void encodeNoIncomingRels()
     {
         testIntFlag( NO_INCOMING_OF_TYPE, RelationshipReferenceEncoding::encodeNoIncoming );
     }
 
     @Test
-    public void encodeNoOutgoingRels()
+    void encodeNoOutgoingRels()
     {
         testIntFlag( NO_OUTGOING_OF_TYPE, RelationshipReferenceEncoding::encodeNoOutgoing );
     }
 
     @Test
-    public void encodeNoLoopRels()
+    void encodeNoLoopRels()
     {
         testIntFlag( NO_LOOPS_OF_TYPE, RelationshipReferenceEncoding::encodeNoLoops );
     }
@@ -118,7 +118,7 @@ public class ReferencesTest
             long reference = random.nextLong( MAX_ID_LIMIT );
             assertNotEquals( flag, parseEncoding( reference ) );
             assertEquals( flag, parseEncoding( encoder.applyAsLong( reference ) ) );
-            assertTrue( "encoded reference is negative", encoder.applyAsLong( reference ) < 0 );
+            assertTrue( encoder.applyAsLong( reference ) < 0, "encoded reference is negative" );
         }
     }
 
@@ -130,7 +130,7 @@ public class ReferencesTest
             int token = random.nextInt( Integer.MAX_VALUE );
             assertNotEquals( flag, parseEncoding( token ) );
             assertEquals( flag, parseEncoding( encoder.applyAsLong( token ) ) );
-            assertTrue( "encoded reference is negative", encoder.applyAsLong( token ) < 0 );
+            assertTrue( encoder.applyAsLong( token ) < 0, "encoded reference is negative" );
         }
     }
 }

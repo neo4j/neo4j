@@ -17,21 +17,20 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+
 package org.neo4j.kernel.impl.index.schema;
 
-import org.neo4j.configuration.Config;
-import org.neo4j.values.storable.Values;
+import org.neo4j.values.storable.RandomValues;
 
-import static org.neo4j.internal.kernel.api.InternalIndexState.POPULATING;
+import static org.neo4j.configuration.Config.defaults;
+import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
+import static org.neo4j.kernel.api.index.IndexProvider.Monitor.EMPTY;
 
-class NativeIndexProviderTest extends NativeIndexProviderTests
+class GenericNativeIndexPopulationStressTest extends IndexPopulationStressTest
 {
-    private static final ProviderFactory factory =
-        ( pageCache, fs, dir, monitor, collector, readOnly ) -> new GenericNativeIndexProvider( dir, pageCache, fs, monitor, collector, readOnly,
-            Config.defaults() );
-
-    NativeIndexProviderTest()
+    GenericNativeIndexPopulationStressTest()
     {
-        super( factory, POPULATING, Values.of( 1 ) );
+        super( "generic", true, RandomValues::nextValue, test ->
+            new GenericNativeIndexProvider( test.directory(), test.pageCache, test.fs, EMPTY, immediate(), false, defaults() ) );
     }
 }

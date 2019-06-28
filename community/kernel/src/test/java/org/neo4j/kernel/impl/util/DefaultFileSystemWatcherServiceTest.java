@@ -19,9 +19,9 @@
  */
 package org.neo4j.kernel.impl.util;
 
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
 import java.util.concurrent.CountDownLatch;
@@ -34,26 +34,26 @@ import org.neo4j.scheduler.JobScheduler;
 import static org.mockito.Mockito.verify;
 import static org.neo4j.kernel.impl.scheduler.JobSchedulerFactory.createInitialisedScheduler;
 
-public class DefaultFileSystemWatcherServiceTest
+class DefaultFileSystemWatcherServiceTest
 {
 
     private static JobScheduler jobScheduler;
     private final FileWatcher fileWatcher = Mockito.mock( FileWatcher.class );
 
-    @BeforeClass
-    public static void setUp()
+    @BeforeAll
+    static void setUp()
     {
         jobScheduler = createInitialisedScheduler();
     }
 
-    @AfterClass
-    public static void tearDown() throws Throwable
+    @AfterAll
+    static void tearDown() throws Throwable
     {
         jobScheduler.shutdown();
     }
 
     @Test
-    public void startMonitoringWhenLifecycleStarting() throws Throwable
+    void startMonitoringWhenLifecycleStarting() throws Throwable
     {
         CountDownLatch latch = new CountDownLatch( 1 );
         FileWatcher watcher = new TestFileWatcher( latch );
@@ -65,7 +65,7 @@ public class DefaultFileSystemWatcherServiceTest
     }
 
     @Test
-    public void stopMonitoringWhenLifecycleStops() throws Throwable
+    void stopMonitoringWhenLifecycleStops() throws Throwable
     {
         DefaultFileSystemWatcherService service = new DefaultFileSystemWatcherService( jobScheduler, fileWatcher );
         service.init();
@@ -76,7 +76,7 @@ public class DefaultFileSystemWatcherServiceTest
     }
 
     @Test
-    public void closeFileWatcherOnShutdown() throws Throwable
+    void closeFileWatcherOnShutdown() throws Throwable
     {
         DefaultFileSystemWatcherService service = new DefaultFileSystemWatcherService( jobScheduler, fileWatcher );
         service.init();

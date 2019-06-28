@@ -19,11 +19,10 @@
  */
 package org.neo4j.kernel.impl.index.schema;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.RuleChain;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -36,7 +35,7 @@ import org.neo4j.internal.kernel.api.IndexOrder;
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.internal.kernel.api.QueryContext;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotApplicableKernelException;
-import org.neo4j.io.fs.DefaultFileSystemAbstraction;
+import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexReader;
@@ -45,55 +44,57 @@ import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
 import org.neo4j.kernel.impl.index.schema.config.IndexSpecificSpaceFillingCurveSettings;
 import org.neo4j.storageengine.api.IndexEntryUpdate;
 import org.neo4j.storageengine.api.schema.SimpleNodeValueClient;
-import org.neo4j.test.rule.PageCacheRule;
+import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.RandomExtension;
+import org.neo4j.test.extension.pagecache.PageCacheExtension;
 import org.neo4j.test.rule.RandomRule;
 import org.neo4j.test.rule.TestDirectory;
-import org.neo4j.test.rule.fs.DefaultFileSystemRule;
 import org.neo4j.values.storable.CoordinateReferenceSystem;
 import org.neo4j.values.storable.PointArray;
 import org.neo4j.values.storable.PointValue;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.rules.RuleChain.outerRule;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.kernel.api.index.IndexProvider.Monitor.EMPTY;
-import static org.neo4j.test.rule.PageCacheConfig.config;
 import static org.neo4j.values.storable.CoordinateReferenceSystem.WGS84;
 
-public class GenericAccessorPointsTest
+@PageCacheExtension
+@ExtendWith( RandomExtension.class )
+class GenericAccessorPointsTest
 {
     private static final CoordinateReferenceSystem crs = CoordinateReferenceSystem.WGS84;
     private static final Config config = Config.defaults();
     private static final IndexSpecificSpaceFillingCurveSettings indexSettings = IndexSpecificSpaceFillingCurveSettings.fromConfig( config );
     private static final SpaceFillingCurve curve = indexSettings.forCrs( crs );
 
-    private final DefaultFileSystemRule fs = new DefaultFileSystemRule();
-    private final TestDirectory directory = TestDirectory.testDirectory( getClass(), fs.get() );
-    private final PageCacheRule pageCacheRule = new PageCacheRule( config().withAccessChecks( true ) );
-    private final RandomRule random = new RandomRule();
-    @Rule
-    public final RuleChain rules = outerRule( random ).around( fs ).around( directory ).around( pageCacheRule );
+    @Inject
+    private FileSystemAbstraction fs;
+    @Inject
+    private TestDirectory directory;
+    @Inject
+    private PageCache pageCache;
+    @Inject
+    private RandomRule random;
 
     private NativeIndexAccessor accessor;
     private StoreIndexDescriptor descriptor;
 
-    @Before
-    public void setup()
+    @BeforeEach
+    void setup()
     {
-        DefaultFileSystemAbstraction fs = this.fs.get();
-        PageCache pc = pageCacheRule.getPageCache( fs );
         IndexFiles indexFiles = new IndexFiles.SingleFile( fs, directory.file( "index" ) );
         GenericLayout layout = new GenericLayout( 1, indexSettings );
         RecoveryCleanupWorkCollector collector = RecoveryCleanupWorkCollector.ignore();
         descriptor = TestIndexDescriptorFactory.forLabel( 1, 1 ).withId( 1 );
-        accessor = new GenericNativeIndexAccessor( pc, fs, indexFiles, layout, collector, EMPTY, descriptor, indexSettings, new StandardConfiguration() );
+        accessor =
+            new GenericNativeIndexAccessor( pageCache, fs, indexFiles, layout, collector, EMPTY, descriptor, indexSettings, new StandardConfiguration() );
     }
 
-    @After
-    public void tearDown()
+    @AfterEach
+    void tearDown()
     {
         accessor.close();
     }
@@ -104,7 +105,7 @@ public class GenericAccessorPointsTest
      * We verify this by asserting that we always get exactly one hit on an exact match and that the value is what we expect.
      */
     @Test
-    public void mustHandlePointsWithinSameTile() throws IndexEntryConflictException, IndexNotApplicableKernelException
+    void mustHandlePointsWithinSameTile() throws IndexEntryConflictException, IndexNotApplicableKernelException
     {
         // given
         // Many random points that all are close enough to each other to belong to the same tile on the space filling curve.
@@ -144,7 +145,7 @@ public class GenericAccessorPointsTest
      * We verify this by asserting that we always get exactly one hit on an exact match and that the value is what we expect.
      */
     @Test
-    public void mustHandlePointArraysWithinSameTile() throws IndexEntryConflictException, IndexNotApplicableKernelException
+    void mustHandlePointArraysWithinSameTile() throws IndexEntryConflictException, IndexNotApplicableKernelException
     {
         // given
         // Many random points that all are close enough to each other to belong to the same tile on the space filling curve.
@@ -187,7 +188,7 @@ public class GenericAccessorPointsTest
      * This test uses a specific point that triggers that exact failure in a non-flaky way.
      */
     @Test
-    public void shouldNotGetRoundingErrorsWithPointsJustWithinTheTileUpperBound()
+    void shouldNotGetRoundingErrorsWithPointsJustWithinTheTileUpperBound()
     {
         PointValue origin = Values.pointValue( WGS84, 0.0, 0.0 );
         long derivedValueForCenterPoint = curve.derivedValueFor( origin.coordinate() );
@@ -196,13 +197,13 @@ public class GenericAccessorPointsTest
         double xWidthMultiplier = curve.getTileWidth( 0, curve.getMaxLevel() ) / 2; // 1.6763806343078613E-7
         double yWidthMultiplier = curve.getTileWidth( 1, curve.getMaxLevel() ) / 2; // 8.381903171539307E-8
 
-        double[] faultyCoords = new double[]{1.874410632171803E-8, 1.6763806281859016E-7};
+        double[] faultyCoords = {1.874410632171803E-8, 1.6763806281859016E-7};
 
-        assertTrue( "inside upper x limit", centerPoint[0] + xWidthMultiplier > faultyCoords[0] );
-        assertTrue( "inside lower x limit", centerPoint[0] - xWidthMultiplier < faultyCoords[0] );
+        assertTrue( centerPoint[0] + xWidthMultiplier > faultyCoords[0], "inside upper x limit" );
+        assertTrue( centerPoint[0] - xWidthMultiplier < faultyCoords[0], "inside lower x limit" );
 
-        assertTrue( "inside upper y limit", centerPoint[1] + yWidthMultiplier > faultyCoords[1] );
-        assertTrue( "inside lower y limit", centerPoint[1] - yWidthMultiplier < faultyCoords[1] );
+        assertTrue( centerPoint[1] + yWidthMultiplier > faultyCoords[1], "inside upper y limit" );
+        assertTrue( centerPoint[1] - yWidthMultiplier < faultyCoords[1], "inside lower y limit" );
 
         long derivedValueForFaultyCoords = curve.derivedValueFor( faultyCoords );
         assertEquals( derivedValueForCenterPoint, derivedValueForFaultyCoords, "expected same derived value" );
@@ -218,7 +219,7 @@ public class GenericAccessorPointsTest
         return nodeId;
     }
 
-    private void assertDerivedValue( Long targetDerivedValue, PointValue... values )
+    private static void assertDerivedValue( Long targetDerivedValue, PointValue... values )
     {
         for ( PointValue value : values )
         {

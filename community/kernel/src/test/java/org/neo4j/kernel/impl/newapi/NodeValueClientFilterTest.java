@@ -19,8 +19,8 @@
  */
 package org.neo4j.kernel.impl.newapi;
 
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -38,21 +38,24 @@ import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.kernel.api.index.IndexProgressor;
 import org.neo4j.kernel.api.index.IndexProgressor.EntityValueClient;
 import org.neo4j.kernel.api.schema.index.TestIndexDescriptorFactory;
+import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.RandomExtension;
 import org.neo4j.test.rule.RandomRule;
 import org.neo4j.values.storable.Value;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.neo4j.internal.helpers.collection.MapUtil.genericMap;
 import static org.neo4j.values.storable.Values.NO_VALUE;
 import static org.neo4j.values.storable.Values.stringValue;
 
-public class NodeValueClientFilterTest implements IndexProgressor, EntityValueClient
+@ExtendWith( RandomExtension.class )
+class NodeValueClientFilterTest implements IndexProgressor, EntityValueClient
 {
-    @Rule
-    public final RandomRule random = new RandomRule();
+    @Inject
+    private RandomRule random;
 
     private final Read read = mock( Read.class );
     private final List<Event> events = new ArrayList<>();
@@ -60,7 +63,7 @@ public class NodeValueClientFilterTest implements IndexProgressor, EntityValueCl
     private final StubPropertyCursor property = new StubPropertyCursor();
 
     @Test
-    public void shouldAcceptAllNodesOnNoFilters()
+    void shouldAcceptAllNodesOnNoFilters()
     {
         // given
         float score = 0.42f;
@@ -77,7 +80,7 @@ public class NodeValueClientFilterTest implements IndexProgressor, EntityValueCl
     }
 
     @Test
-    public void shouldRejectNodeNotInUse()
+    void shouldRejectNodeNotInUse()
     {
         // given
         NodeValueClientFilter filter = initializeFilter( IndexQuery.exists( 12 ) );
@@ -92,7 +95,7 @@ public class NodeValueClientFilterTest implements IndexProgressor, EntityValueCl
     }
 
     @Test
-    public void shouldRejectNodeWithNoProperties()
+    void shouldRejectNodeWithNoProperties()
     {
         // given
         node.withNode( 17 );
@@ -108,7 +111,7 @@ public class NodeValueClientFilterTest implements IndexProgressor, EntityValueCl
     }
 
     @Test
-    public void shouldAcceptNodeWithMatchingProperty()
+    void shouldAcceptNodeWithMatchingProperty()
     {
         // given
         float score = 0.42f;
@@ -125,7 +128,7 @@ public class NodeValueClientFilterTest implements IndexProgressor, EntityValueCl
     }
 
     @Test
-    public void shouldNotAcceptNodeWithoutMatchingProperty()
+    void shouldNotAcceptNodeWithoutMatchingProperty()
     {
         // given
         node.withNode( 17, new long[0], genericMap( 7, stringValue( "wrong" ) ) );
@@ -141,25 +144,25 @@ public class NodeValueClientFilterTest implements IndexProgressor, EntityValueCl
     }
 
     @Test
-    public void shouldConsultProvidedAcceptingFiltersForMixOfValuesAndNoValues()
+    void shouldConsultProvidedAcceptingFiltersForMixOfValuesAndNoValues()
     {
         shouldConsultProvidedFilters( Function.identity(), true );
     }
 
     @Test
-    public void shouldConsultProvidedAcceptingFiltersForNullValues()
+    void shouldConsultProvidedAcceptingFiltersForNullValues()
     {
         shouldConsultProvidedFilters( v -> null, true );
     }
 
     @Test
-    public void shouldConsultProvidedDenyingFiltersForMixOfValuesAndNoValues()
+    void shouldConsultProvidedDenyingFiltersForMixOfValuesAndNoValues()
     {
         shouldConsultProvidedFilters( Function.identity(), false );
     }
 
     @Test
-    public void shouldConsultProvidedDenyingFiltersForNullValues()
+    void shouldConsultProvidedDenyingFiltersForNullValues()
     {
         shouldConsultProvidedFilters( v -> null, false );
     }

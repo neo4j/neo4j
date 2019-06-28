@@ -19,25 +19,25 @@
  */
 package org.neo4j.kernel.impl.util.dbstructure;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 
 import org.neo4j.internal.schema.constraints.ConstraintDescriptorFactory;
 import org.neo4j.kernel.api.schema.index.TestIndexDescriptorFactory;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
-public class DbStructureArgumentFormatterTest
+class DbStructureArgumentFormatterTest
 {
     @Test
-    public void shouldFormatNull()
+    void shouldFormatNull()
     {
         assertEquals( "null", formatArgument( null ) );
     }
 
     @Test
-    public void shouldFormatInts()
+    void shouldFormatInts()
     {
         assertEquals( "0", formatArgument( 0 ) );
         assertEquals( "1", formatArgument( 1 ) );
@@ -45,7 +45,7 @@ public class DbStructureArgumentFormatterTest
     }
 
     @Test
-    public void shouldFormatLongs()
+    void shouldFormatLongs()
     {
         assertEquals( "0L", formatArgument( 0L ) );
         assertEquals( "-1L", formatArgument( -1L ) );
@@ -53,7 +53,7 @@ public class DbStructureArgumentFormatterTest
     }
 
     @Test
-    public void shouldFormatDoubles()
+    void shouldFormatDoubles()
     {
         assertEquals( "1.0d", formatArgument( 1.0d ) );
         assertEquals( "Double.NaN", formatArgument( Double.NaN ) );
@@ -62,14 +62,14 @@ public class DbStructureArgumentFormatterTest
     }
 
     @Test
-    public void shouldFormatIndexDescriptors()
+    void shouldFormatIndexDescriptors()
     {
         assertEquals( "IndexDescriptorFactory.forSchema( SchemaDescriptor.forLabel( 23, 42 ) )",
                 formatArgument( TestIndexDescriptorFactory.forLabel( 23, 42 ) ) );
     }
 
     @Test
-    public void shouldFormatUniquenessConstraints()
+    void shouldFormatUniquenessConstraints()
     {
         assertEquals( "ConstraintDescriptorFactory.uniqueForLabel( 23, 42 )",
                 formatArgument(
@@ -77,20 +77,20 @@ public class DbStructureArgumentFormatterTest
     }
 
     @Test
-    public void shouldFormatCompositeUniquenessConstraints()
+    void shouldFormatCompositeUniquenessConstraints()
     {
         assertEquals( "ConstraintDescriptorFactory.uniqueForLabel( 23, 42, 43 )",
                 formatArgument( ConstraintDescriptorFactory.uniqueForLabel( 23, 42, 43 ) ) );
     }
 
     @Test
-    public void shouldFormatNodeKeyConstraints()
+    void shouldFormatNodeKeyConstraints()
     {
         assertEquals( "ConstraintDescriptorFactory.nodeKeyForLabel( 23, 42, 43 )",
                 formatArgument( ConstraintDescriptorFactory.nodeKeyForLabel( 23, 42, 43 ) ) );
     }
 
-    private String formatArgument( Object arg )
+    private static String formatArgument( Object arg )
     {
         StringBuilder builder = new StringBuilder();
         try

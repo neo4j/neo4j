@@ -19,54 +19,37 @@
  */
 package org.neo4j.internal.id.configuration;
 
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
-
-import java.util.Arrays;
-import java.util.List;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 
 import org.neo4j.internal.id.IdType;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
-@RunWith( Parameterized.class )
-public class CommunityIdTypeConfigurationProviderTest
+class CommunityIdTypeConfigurationProviderTest
 {
-    private IdType reusableType;
-
-    @Parameterized.Parameters
-    public static List<IdType> data()
-    {
-        return Arrays.asList( IdType.PROPERTY, IdType.STRING_BLOCK, IdType.ARRAY_BLOCK, IdType.NODE_LABELS );
-    }
-
-    public CommunityIdTypeConfigurationProviderTest( IdType reusableType )
-    {
-        this.reusableType = reusableType;
-    }
-
     @Test
-    public void nonReusableTypeConfiguration()
+    void nonReusableTypeConfiguration()
     {
         IdTypeConfigurationProvider provider = createIdTypeProvider();
         IdTypeConfiguration typeConfiguration = provider.getIdTypeConfiguration( IdType.RELATIONSHIP );
-        assertFalse( "Relationship ids are not reusable.", typeConfiguration.allowAggressiveReuse() );
-        assertEquals( "Relationship ids are not reusable.", IdTypeConfiguration.DEFAULT_GRAB_SIZE, typeConfiguration.getGrabSize() );
+        Assertions.assertFalse( typeConfiguration.allowAggressiveReuse(), "Relationship ids are not reusable." );
+        assertEquals( IdTypeConfiguration.DEFAULT_GRAB_SIZE, typeConfiguration.getGrabSize(), "Relationship ids are not reusable." );
     }
 
-    @Test
-    public void reusableTypeConfiguration()
+    @ParameterizedTest
+    @EnumSource( value = IdType.class, names = {"PROPERTY", "STRING_BLOCK", "ARRAY_BLOCK", "NODE_LABELS"} )
+    void reusableTypeConfiguration( IdType reusableType )
     {
         IdTypeConfigurationProvider provider = createIdTypeProvider();
         IdTypeConfiguration typeConfiguration = provider.getIdTypeConfiguration( reusableType );
-        assertTrue( typeConfiguration.allowAggressiveReuse() );
+        Assertions.assertTrue( typeConfiguration.allowAggressiveReuse() );
         assertEquals( IdTypeConfiguration.AGGRESSIVE_GRAB_SIZE, typeConfiguration.getGrabSize() );
     }
 
-    private IdTypeConfigurationProvider createIdTypeProvider()
+    private static IdTypeConfigurationProvider createIdTypeProvider()
     {
         return new CommunityIdTypeConfigurationProvider();
     }

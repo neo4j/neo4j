@@ -19,7 +19,7 @@
  */
 package org.neo4j.kernel.impl.index.schema;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -33,11 +33,11 @@ import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 
 import static java.util.Collections.unmodifiableList;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.kernel.impl.index.schema.NativeIndexKey.Inclusion.NEUTRAL;
 
-public class RawBitsTest
+class RawBitsTest
 {
     private static final IndexSpecificSpaceFillingCurveSettings specificSettings = IndexSpecificSpaceFillingCurveSettings.fromConfig( Config.defaults() );
     public GenericLayout layout = new GenericLayout( 1, specificSettings );
@@ -91,7 +91,7 @@ public class RawBitsTest
     );
 
     @Test
-    public void mustSortInSameOrderAsValueComparator()
+    void mustSortInSameOrderAsValueComparator()
     {
         // given
         List<Value> values = asValueObjects( objects );
@@ -109,7 +109,7 @@ public class RawBitsTest
     }
 
     @Test
-    public void shouldCompareAllValuesToAllOtherValuesLikeValueComparator()
+    void shouldCompareAllValuesToAllOtherValuesLikeValueComparator()
     {
         // given
         List<Value> values = asValueObjects( objects );
@@ -136,7 +136,7 @@ public class RawBitsTest
     }
 
     @Test
-    public void shouldHaveSameCompareResultsAsValueCompare()
+    void shouldHaveSameCompareResultsAsValueCompare()
     {
         // given
         List<Value> values = asValueObjects( objects );
@@ -160,14 +160,14 @@ public class RawBitsTest
         }
     }
 
-    private List<Value> asValues( List<GenericKey> numberIndexKeys )
+    private static List<Value> asValues( List<GenericKey> numberIndexKeys )
     {
         return numberIndexKeys.stream()
                 .map( k -> RawBits.asNumberValue( k.long0, (byte) k.long1 ) )
                 .collect( Collectors.toList() );
     }
 
-    private void assertSameOrder( List<Value> actual, List<Value> values )
+    private static void assertSameOrder( List<Value> actual, List<Value> values )
     {
         assertEquals( actual.size(), values.size() );
         for ( int i = 0; i < actual.size(); i++ )
@@ -186,7 +186,7 @@ public class RawBitsTest
         }
     }
 
-    private List<Value> asValueObjects( List<Object> objects )
+    private static List<Value> asValueObjects( List<Object> objects )
     {
         List<Value> values = new ArrayList<>();
         for ( Object object : objects )

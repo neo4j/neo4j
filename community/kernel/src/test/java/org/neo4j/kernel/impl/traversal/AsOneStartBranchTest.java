@@ -19,7 +19,7 @@
  */
 package org.neo4j.kernel.impl.traversal;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.Iterator;
 
@@ -33,10 +33,10 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-public class AsOneStartBranchTest
+class AsOneStartBranchTest
 {
     @Test
-    public void donNotExhaustIteratorWhenUsingRelationshipPath()
+    void donNotExhaustIteratorWhenUsingRelationshipPath()
     {
         // Given
         Iterable<Node> nodeIterable = mock( Iterable.class );

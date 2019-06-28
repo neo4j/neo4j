@@ -19,7 +19,9 @@
  */
 package org.neo4j.kernel.impl.api;
 
-import org.junit.Test;
+import org.hamcrest.MatcherAssert;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Timeout;
 
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -64,11 +66,10 @@ import org.neo4j.time.Clocks;
 
 import static java.lang.System.currentTimeMillis;
 import static org.hamcrest.Matchers.instanceOf;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.Mockito.RETURNS_MOCKS;
 import static org.mockito.Mockito.mock;
 import static org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo.EMBEDDED_CONNECTION;
@@ -76,64 +77,65 @@ import static org.neo4j.internal.kernel.api.security.SecurityContext.AUTH_DISABL
 import static org.neo4j.kernel.impl.util.collection.CollectionsFactorySupplier.ON_HEAP;
 import static org.neo4j.test.rule.DatabaseRule.mockedTokenHolders;
 
-public class KernelTransactionTerminationTest
+class KernelTransactionTerminationTest
 {
-    private static final int TEST_RUN_TIME_MS = 5_000;
+    private static final int TEST_RUN_TIME_SECS = 5;
 
-    @Test( timeout = TEST_RUN_TIME_MS * 20 )
-    public void transactionCantBeTerminatedAfterItIsClosed() throws Throwable
+    @Test
+    @Timeout( TEST_RUN_TIME_SECS * 20 )
+    void transactionCantBeTerminatedAfterItIsClosed() throws Throwable
     {
         runTwoThreads(
-                tx -> tx.markForTermination( Status.Transaction.TransactionMarkedAsFailed ),
-                tx ->
-                {
-                    close( tx );
-                    assertFalse( tx.getReasonIfTerminated().isPresent() );
-                    tx.initialize();
-                }
-        );
+            tx -> tx.markForTermination( Status.Transaction.TransactionMarkedAsFailed ),
+            tx ->
+            {
+                close( tx );
+                assertFalse( tx.getReasonIfTerminated().isPresent() );
+                tx.initialize();
+            } );
     }
 
-    @Test( timeout = TEST_RUN_TIME_MS * 20 )
-    public void closeTransaction() throws Throwable
+    @Test
+    @Timeout( TEST_RUN_TIME_SECS * 20 )
+    void closeTransaction() throws Throwable
     {
         BlockingQueue<Boolean> committerToTerminator = new LinkedBlockingQueue<>( 1 );
         BlockingQueue<TerminatorAction> terminatorToCommitter = new LinkedBlockingQueue<>( 1 );
 
         runTwoThreads(
-                tx ->
+            tx ->
+            {
+                Boolean terminatorShouldAct = committerToTerminator.poll();
+                if ( terminatorShouldAct != null && terminatorShouldAct )
                 {
-                    Boolean terminatorShouldAct = committerToTerminator.poll();
-                    if ( terminatorShouldAct != null && terminatorShouldAct )
+                    TerminatorAction action = TerminatorAction.random();
+                    action.executeOn( tx );
+                    assertTrue( terminatorToCommitter.add( action ) );
+                }
+            },
+            tx ->
+            {
+                tx.initialize();
+                CommitterAction committerAction = CommitterAction.random();
+                committerAction.executeOn( tx );
+                if ( committerToTerminator.offer( true ) )
+                {
+                    TerminatorAction terminatorAction;
+                    try
                     {
-                        TerminatorAction action = TerminatorAction.random();
-                        action.executeOn( tx );
-                        assertTrue( terminatorToCommitter.add( action ) );
+                        terminatorAction = terminatorToCommitter.poll( 1, TimeUnit.SECONDS );
                     }
-                },
-                tx ->
-                {
-                    tx.initialize();
-                    CommitterAction committerAction = CommitterAction.random();
-                    committerAction.executeOn( tx );
-                    if ( committerToTerminator.offer( true ) )
+                    catch ( InterruptedException e )
                     {
-                        TerminatorAction terminatorAction;
-                        try
-                        {
-                            terminatorAction = terminatorToCommitter.poll( 1, TimeUnit.SECONDS );
-                        }
-                        catch ( InterruptedException e )
-                        {
-                            Thread.currentThread().interrupt();
-                            return;
-                        }
-                        if ( terminatorAction != null )
-                        {
-                            close( tx, committerAction, terminatorAction );
-                        }
+                        Thread.currentThread().interrupt();
+                        return;
+                    }
+                    if ( terminatorAction != null )
+                    {
+                        close( tx, committerAction, terminatorAction );
                     }
                 }
+            }
         );
     }
 
@@ -143,7 +145,7 @@ public class KernelTransactionTerminationTest
         TestKernelTransaction tx = TestKernelTransaction.create().initialize();
         AtomicLong t1Count = new AtomicLong();
         AtomicLong t2Count = new AtomicLong();
-        long endTime = currentTimeMillis() + TEST_RUN_TIME_MS;
+        long endTime = currentTimeMillis() + TEST_RUN_TIME_SECS * 1000;
         int limit = 20_000;
 
         Race race = new Race();
@@ -263,7 +265,7 @@ public class KernelTransactionTerminationTest
                         }
                         catch ( Exception e )
                         {
-                            assertThat( e, instanceOf( TransactionTerminatedException.class ) );
+                            MatcherAssert.assertThat( e, instanceOf( TransactionTerminatedException.class ) );
                         }
                         tx.assertRolledBack();
                     }
@@ -322,7 +324,7 @@ public class KernelTransactionTerminationTest
                         }
                         catch ( Exception e )
                         {
-                            assertThat( e, instanceOf( TransactionFailureException.class ) );
+                            MatcherAssert.assertThat( e, instanceOf( TransactionFailureException.class ) );
                         }
                         tx.assertRolledBack();
                     }

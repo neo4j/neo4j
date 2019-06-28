@@ -21,48 +21,39 @@ package org.neo4j.kernel.impl.api;
 
 import org.apache.commons.lang3.RandomStringUtils;
 import org.apache.commons.lang3.RandomUtils;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
+import org.junit.jupiter.api.Test;
 
 import org.neo4j.values.storable.Value;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
-import static org.hamcrest.Matchers.containsString;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.neo4j.values.storable.Values.NO_VALUE;
 import static org.neo4j.values.storable.Values.stringValue;
 
-public class IndexTextValueLengthValidatorTest
+class IndexTextValueLengthValidatorTest
 {
     private static final int MAX_BYTE_LENGTH = 20_000;
 
     private IndexTextValueLengthValidator validator = new IndexTextValueLengthValidator( MAX_BYTE_LENGTH );
 
-    @Rule
-    public final ExpectedException expectedException = ExpectedException.none();
-
     @Test
-    public void tooLongByteArrayIsNotAllowed()
+    void tooLongByteArrayIsNotAllowed()
     {
         int length = MAX_BYTE_LENGTH * 2;
-        expectedException.expect( IllegalArgumentException.class );
-        expectedException.expectMessage(
-                containsString( "Property value is too large to index into this particular index. Please see index documentation for limitations." ) );
-        validator.validate( RandomUtils.nextBytes( length ) );
+        var e = assertThrows( IllegalArgumentException.class, () -> validator.validate( RandomUtils.nextBytes( length ) ),
+            "Property value is too large to index into this particular index. Please see index documentation for limitations." );
     }
 
     @Test
-    public void tooLongStringIsNotAllowed()
+    void tooLongStringIsNotAllowed()
     {
         int length = MAX_BYTE_LENGTH * 2;
-        expectedException.expect( IllegalArgumentException.class );
-        expectedException.expectMessage(
-                containsString( "Property value is too large to index into this particular index. Please see index documentation for limitations." ) );
-        validator.validate( string( length ) );
+        var e = assertThrows( IllegalArgumentException.class, () -> validator.validate( string( length ) ),
+            "Property value is too large to index into this particular index. Please see index documentation for limitations." );
     }
 
     @Test
-    public void shortByteArrayIsValid()
+    void shortByteArrayIsValid()
     {
         validator.validate( RandomUtils.nextBytes( 3 ) );
         validator.validate( RandomUtils.nextBytes( 30 ) );
@@ -73,7 +64,7 @@ public class IndexTextValueLengthValidatorTest
     }
 
     @Test
-    public void shortStringIsValid()
+    void shortStringIsValid()
     {
         validator.validate( string( 3 ) );
         validator.validate( string( 30 ) );
@@ -84,41 +75,35 @@ public class IndexTextValueLengthValidatorTest
     }
 
     @Test
-    public void nullIsNotAllowed()
+    void nullIsNotAllowed()
     {
-        expectedException.expect( IllegalArgumentException.class );
-        expectedException.expectMessage( "Null value" );
-        validator.validate( (byte[]) null );
+        assertThrows(IllegalArgumentException.class, () -> validator.validate( (byte[]) null ), "Null value");
     }
 
     @Test
-    public void nullValueIsNotAllowed()
+    void nullValueIsNotAllowed()
     {
-        expectedException.expect( IllegalArgumentException.class );
-        expectedException.expectMessage( "Null value" );
-        validator.validate( (Value) null );
+        assertThrows(IllegalArgumentException.class, () -> validator.validate( (Value) null ), "Null value");
     }
 
     @Test
-    public void noValueIsNotAllowed()
+    void noValueIsNotAllowed()
     {
-        expectedException.expect( IllegalArgumentException.class );
-        expectedException.expectMessage( "Null value" );
-        validator.validate( NO_VALUE );
+        assertThrows(IllegalArgumentException.class, () -> validator.validate( NO_VALUE ), "Null value");
     }
 
-    @Test( expected = IllegalArgumentException.class )
-    public void shouldFailOnTooLongNonLatinString()
+    @Test
+    void shouldFailOnTooLongNonLatinString()
     {
         // given
         byte[] facesBytes = stringOfEmojis( 1 );
 
         // when
-        validator.validate( stringValue( new String( facesBytes, UTF_8 ) ) );
+        assertThrows( IllegalArgumentException.class, () -> validator.validate( stringValue( new String( facesBytes, UTF_8 ) ) ) );
     }
 
     @Test
-    public void shouldSucceedOnReasonablyLongNonLatinString()
+    void shouldSucceedOnReasonablyLongNonLatinString()
     {
         // given
         byte[] facesBytes = stringOfEmojis( 0 );

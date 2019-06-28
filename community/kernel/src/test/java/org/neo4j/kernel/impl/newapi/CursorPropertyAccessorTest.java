@@ -19,7 +19,7 @@
  */
 package org.neo4j.kernel.impl.newapi;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import org.neo4j.internal.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.internal.kernel.api.helpers.StubNodeCursor;
@@ -28,15 +28,15 @@ import org.neo4j.internal.kernel.api.helpers.StubRead;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.neo4j.internal.helpers.collection.MapUtil.genericMap;
 import static org.neo4j.values.storable.Values.NO_VALUE;
 
-public class CursorPropertyAccessorTest
+class CursorPropertyAccessorTest
 {
     @Test
-    public void shouldLookupProperty() throws EntityNotFoundException
+    void shouldLookupProperty() throws EntityNotFoundException
     {
         // given
         long nodeId = 10;
@@ -53,7 +53,7 @@ public class CursorPropertyAccessorTest
     }
 
     @Test
-    public void shouldReturnNoValueOnMissingProperty() throws EntityNotFoundException
+    void shouldReturnNoValueOnMissingProperty() throws EntityNotFoundException
     {
         // given
         long nodeId = 10;
@@ -68,7 +68,7 @@ public class CursorPropertyAccessorTest
     }
 
     @Test
-    public void shouldThrowOnEntityNotFound()
+    void shouldThrowOnEntityNotFound()
     {
         // given
         long nodeId = 10;
@@ -78,14 +78,6 @@ public class CursorPropertyAccessorTest
         CursorPropertyAccessor accessor = new CursorPropertyAccessor( nodeCursor, new StubPropertyCursor(), new StubRead() );
 
         // when
-        try
-        {
-            accessor.getNodePropertyValue( nodeId + 1, propertyKeyId );
-            fail();
-        }
-        catch ( EntityNotFoundException e )
-        {
-            // then good
-        }
+        assertThrows( EntityNotFoundException.class, () -> accessor.getNodePropertyValue( nodeId + 1, propertyKeyId ) );
     }
 }

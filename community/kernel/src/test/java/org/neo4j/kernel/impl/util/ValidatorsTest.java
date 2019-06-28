@@ -19,24 +19,28 @@
  */
 package org.neo4j.kernel.impl.util;
 
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.io.IOException;
 
+import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.TestDirectoryExtension;
 import org.neo4j.test.rule.TestDirectory;
 
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
-public class ValidatorsTest
+@ExtendWith( TestDirectoryExtension.class )
+class ValidatorsTest
 {
-    @Rule
-    public final TestDirectory directory = TestDirectory.testDirectory();
+    @Inject
+    private TestDirectory directory;
 
     @Test
-    public void shouldFindFilesByRegex() throws Exception
+    void shouldFindFilesByRegex() throws Exception
     {
         // GIVEN
         existenceOfFile( "abc" );
@@ -52,38 +56,17 @@ public class ValidatorsTest
     }
 
     @Test
-    public void shouldValidateInList()
+    void shouldValidateInList()
     {
-        try
-        {
-            Validators.inList(new String[] { "foo", "bar", "baz" }).validate( "qux" );
-            fail( "Should have failed to find item in list." );
-        }
-        catch ( IllegalArgumentException e )
-        {
-            assertThat( e.getMessage(), containsString( "'qux' found but must be one of: [foo, bar, baz]." ) );
-        }
+        var e = assertThrows( IllegalArgumentException.class, () -> Validators.inList( new String[]{"foo", "bar", "baz"} ).validate( "qux" ) );
+        assertThat( e.getMessage(), containsString( "'qux' found but must be one of: [foo, bar, baz]." ) );
 
-        try
-        {
-            Validators.inList(new String[] { "foo", "bar", "baz" }).validate( "bar" );
-        }
-        catch ( IllegalArgumentException e )
-        {
-            fail( "Should have found item in list." );
-        }
+        assertDoesNotThrow( () -> Validators.inList( new String[]{"foo", "bar", "baz"} ).validate( "bar" ), "Should have found item in list." );
     }
 
     private void assertNotValid( String string )
     {
-        try
-        {
-            validate( string );
-            fail( "Should have failed" );
-        }
-        catch ( IllegalArgumentException e )
-        {   // Good
-        }
+        assertThrows( IllegalArgumentException.class, () -> validate( string ) );
     }
 
     private void assertValid( String fileByName )

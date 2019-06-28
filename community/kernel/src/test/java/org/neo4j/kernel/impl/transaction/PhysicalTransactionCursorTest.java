@@ -19,8 +19,8 @@
  */
 package org.neo4j.kernel.impl.transaction;
 
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 
@@ -37,15 +37,15 @@ import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReader;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryStart;
 
 import static java.util.Collections.singletonList;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNull;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.mockito.Mockito.RETURNS_MOCKS;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-public class PhysicalTransactionCursorTest
+class PhysicalTransactionCursorTest
 {
     private final ReadableLogChannel channel = mock( ReadableLogChannel.class, RETURNS_MOCKS );
     private final LogEntryReader<ReadableLogChannel> entryReader = mock( LogEntryReader.class );
@@ -57,14 +57,14 @@ public class PhysicalTransactionCursorTest
     private static final LogEntryCommand A_COMMAND_ENTRY = new LogEntryCommand( new TestCommand() );
     private PhysicalTransactionCursor<ReadableLogChannel> cursor;
 
-    @Before
-    public void setup() throws IOException
+    @BeforeEach
+    void setup() throws IOException
     {
         cursor = new PhysicalTransactionCursor<>( channel, entryReader );
     }
 
     @Test
-    public void shouldCloseTheUnderlyingChannel() throws IOException
+    void shouldCloseTheUnderlyingChannel() throws IOException
     {
         // when
         cursor.close();
@@ -74,7 +74,7 @@ public class PhysicalTransactionCursorTest
     }
 
     @Test
-    public void shouldReturnFalseWhenThereAreNoEntries() throws IOException
+    void shouldReturnFalseWhenThereAreNoEntries() throws IOException
     {
         // given
         when( entryReader.readLogEntry( channel ) ).thenReturn( NULL_ENTRY );
@@ -88,7 +88,7 @@ public class PhysicalTransactionCursorTest
     }
 
     @Test
-    public void shouldReturnFalseWhenThereIsAStartEntryButNoCommitEntries() throws IOException
+    void shouldReturnFalseWhenThereIsAStartEntryButNoCommitEntries() throws IOException
     {
         // given
         when( entryReader.readLogEntry( channel ) ).thenReturn( A_START_ENTRY, NULL_ENTRY );
@@ -102,7 +102,7 @@ public class PhysicalTransactionCursorTest
     }
 
     @Test
-    public void shouldCallTheVisitorWithTheFoundTransaction() throws IOException
+    void shouldCallTheVisitorWithTheFoundTransaction() throws IOException
     {
         // given
         when( entryReader.readLogEntry( channel ) ).thenReturn( A_START_ENTRY, A_COMMAND_ENTRY, A_COMMIT_ENTRY );
@@ -120,7 +120,7 @@ public class PhysicalTransactionCursorTest
     }
 
     @Test
-    public void shouldSkipCheckPoints() throws IOException
+    void shouldSkipCheckPoints() throws IOException
     {
         // given
         when( entryReader.readLogEntry( channel ) ).thenReturn(

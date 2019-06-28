@@ -19,9 +19,8 @@
  */
 package org.neo4j.kernel.impl.newapi;
 
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -39,39 +38,30 @@ import org.neo4j.values.storable.Values;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 
-@RunWith( Parameterized.class )
-public class SortedMergeJoinTest
+class SortedMergeJoinTest
 {
-    @Parameterized.Parameters()
-    public static Iterable<Object[]> data()
+    @ParameterizedTest
+    @EnumSource( value = IndexOrder.class, names = {"ASCENDING", "DESCENDING"} )
+    void shouldWorkWithEmptyLists( IndexOrder indexOrder )
     {
-        return Arrays.asList(new Object[][] {
-                { IndexOrder.ASCENDING }, { IndexOrder.DESCENDING }
-        });
+        assertThatItWorksOneWay( Collections.emptyList(), Collections.emptyList(), indexOrder );
     }
 
-    @Parameterized.Parameter
-    public IndexOrder indexOrder;
-
-    @Test
-    public void shouldWorkWithEmptyLists()
-    {
-        assertThatItWorksOneWay( Collections.emptyList(), Collections.emptyList() );
-    }
-
-    @Test
-    public void shouldWorkWithAList()
+    @ParameterizedTest
+    @EnumSource( value = IndexOrder.class, names = {"ASCENDING", "DESCENDING"} )
+    void shouldWorkWithAList( IndexOrder indexOrder )
     {
         assertThatItWorks( Arrays.asList(
                                    node( 1L, "a" ),
                                    node( 3L, "aa" ),
                                    node( 5L, "c" ),
                                    node( 7L, "g" ) ),
-                           Collections.emptyList() );
+                           Collections.emptyList(), indexOrder );
     }
 
-    @Test
-    public void shouldWorkWith2Lists()
+    @ParameterizedTest
+    @EnumSource( value = IndexOrder.class, names = {"ASCENDING", "DESCENDING"} )
+    void shouldWorkWith2Lists( IndexOrder indexOrder )
     {
         assertThatItWorks( Arrays.asList(
                                    node( 1L, "a" ),
@@ -82,11 +72,12 @@ public class SortedMergeJoinTest
                                    node( 2L, "b" ),
                                    node( 4L, "ba" ),
                                    node( 6L, "ca" ),
-                                   node( 8L, "d" ) ) );
+                                   node( 8L, "d" ) ), indexOrder );
     }
 
-    @Test
-    public void shouldWorkWithSameElements()
+    @ParameterizedTest
+    @EnumSource( value = IndexOrder.class, names = {"ASCENDING", "DESCENDING"} )
+    void shouldWorkWithSameElements( IndexOrder indexOrder )
     {
         assertThatItWorks( Arrays.asList(
                 node( 1L, "a" ),
@@ -95,11 +86,12 @@ public class SortedMergeJoinTest
                            Arrays.asList(
                                    node( 2L, "aa" ),
                                    node( 3L, "b" ),
-                                   node( 6L, "ca" ) ) );
+                                   node( 6L, "ca" ) ), indexOrder );
     }
 
-    @Test
-    public void shouldWorkWithCompositeValues()
+    @ParameterizedTest
+    @EnumSource( value = IndexOrder.class, names = {"ASCENDING", "DESCENDING"} )
+    void shouldWorkWithCompositeValues( IndexOrder indexOrder )
     {
         assertThatItWorks( Arrays.asList(
                                    node( 1L, "a", "a" ),
@@ -109,16 +101,16 @@ public class SortedMergeJoinTest
                            Arrays.asList(
                                    node( 2L, "a", "b" ),
                                    node( 5L, "b", "b" ),
-                                   node( 6L, "c", "e" ) ) );
+                                   node( 6L, "c", "e" ) ), indexOrder );
     }
 
-    private void assertThatItWorks( List<NodeWithPropertyValues> listA, List<NodeWithPropertyValues> listB )
+    private void assertThatItWorks( List<NodeWithPropertyValues> listA, List<NodeWithPropertyValues> listB, IndexOrder indexOrder )
     {
-        assertThatItWorksOneWay( listA, listB );
-        assertThatItWorksOneWay( listB, listA );
+        assertThatItWorksOneWay( listA, listB, indexOrder );
+        assertThatItWorksOneWay( listB, listA, indexOrder );
     }
 
-    private void assertThatItWorksOneWay( List<NodeWithPropertyValues> listA, List<NodeWithPropertyValues> listB )
+    private void assertThatItWorksOneWay( List<NodeWithPropertyValues> listA, List<NodeWithPropertyValues> listB, IndexOrder indexOrder )
     {
         SortedMergeJoin sortedMergeJoin = new SortedMergeJoin();
         sortedMergeJoin.initialize( indexOrder );
@@ -168,7 +160,7 @@ public class SortedMergeJoinTest
         return new NodeWithPropertyValues( id, Stream.of( values ).map( Values::of ).toArray( Value[]::new ) );
     }
 
-    class Collector implements SortedMergeJoin.Sink
+    static class Collector implements SortedMergeJoin.Sink
     {
         final List<NodeWithPropertyValues> result = new ArrayList<>();
         boolean done;

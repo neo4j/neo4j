@@ -20,8 +20,8 @@
 package org.neo4j.kernel.impl.transaction.state.storeview;
 
 import org.hamcrest.Matchers;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import java.util.List;
 import java.util.function.IntPredicate;
@@ -37,11 +37,11 @@ import org.neo4j.storageengine.api.EntityUpdates;
 import org.neo4j.storageengine.api.NodeLabelUpdate;
 import org.neo4j.storageengine.api.StubStorageCursors;
 
-import static org.junit.Assert.assertThat;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-public class LabelScanViewNodeStoreScanTest
+class LabelScanViewNodeStoreScanTest
 {
     private final StubStorageCursors cursors = new StubStorageCursors();
     private final LabelScanStore labelScanStore = mock( LabelScanStore.class );
@@ -50,14 +50,14 @@ public class LabelScanViewNodeStoreScanTest
     private final Visitor<NodeLabelUpdate,Exception> labelUpdateVisitor = mock( Visitor.class );
     private final Visitor<EntityUpdates,Exception> propertyUpdateVisitor = mock( Visitor.class );
 
-    @Before
-    public void setUp()
+    @BeforeEach
+    void setUp()
     {
         when( labelScanStore.newReader() ).thenReturn( labelScanReader );
     }
 
     @Test
-    public void iterateOverLabeledNodeIds()
+    void iterateOverLabeledNodeIds()
     {
         PrimitiveLongResourceIterator labeledNodes = PrimitiveLongResourceCollections.iterator( null, 1, 2, 4, 8 );
 

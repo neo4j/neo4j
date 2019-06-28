@@ -19,8 +19,8 @@
  */
 package org.neo4j.kernel.impl.newapi;
 
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -39,7 +39,7 @@ import static org.neo4j.internal.helpers.collection.Iterators.iterator;
 import static org.neo4j.kernel.api.schema.index.TestIndexDescriptorFactory.forLabel;
 import static org.neo4j.values.storable.Values.stringValue;
 
-public class NodeSchemaMatcherTest
+class NodeSchemaMatcherTest
 {
     private static final int labelId1 = 10;
     private static final int labelId2 = 11;
@@ -49,17 +49,17 @@ public class NodeSchemaMatcherTest
     private static final int unIndexedPropId = 22;
     private static final int nonExistentPropId = 23;
     private static final int specialPropId = 24;
-    private static final int[] props = new int[]{propId1, propId2, unIndexedPropId};
+    private static final int[] props = {propId1, propId2, unIndexedPropId};
 
-    IndexDescriptor index1 = forLabel( labelId1, propId1 );
-    IndexDescriptor index1_2 = forLabel( labelId1, propId1, propId2 );
-    IndexDescriptor indexWithMissingProperty = forLabel( labelId1, propId1, nonExistentPropId );
-    IndexDescriptor indexWithMissingLabel = forLabel( nonExistentLabelId, propId1, propId2 );
-    IndexDescriptor indexOnSpecialProperty = forLabel( labelId1, propId1, specialPropId );
+    private final IndexDescriptor index1 = forLabel( labelId1, propId1 );
+    private final IndexDescriptor index1_2 = forLabel( labelId1, propId1, propId2 );
+    private final IndexDescriptor indexWithMissingProperty = forLabel( labelId1, propId1, nonExistentPropId );
+    private final IndexDescriptor indexWithMissingLabel = forLabel( nonExistentLabelId, propId1, propId2 );
+    private final IndexDescriptor indexOnSpecialProperty = forLabel( labelId1, propId1, specialPropId );
     private StubNodeCursor node;
 
-    @Before
-    public void setup()
+    @BeforeEach
+    void setup()
     {
         HashMap<Integer,Value> map = new HashMap<>();
         map.put( propId1, stringValue( "hello" ) );
@@ -71,7 +71,7 @@ public class NodeSchemaMatcherTest
     }
 
     @Test
-    public void shouldMatchOnSingleProperty()
+    void shouldMatchOnSingleProperty()
     {
         // when
         List<IndexDescriptor> matched = new ArrayList<>();
@@ -82,7 +82,7 @@ public class NodeSchemaMatcherTest
     }
 
     @Test
-    public void shouldMatchOnTwoProperties()
+    void shouldMatchOnTwoProperties()
     {
         // when
         List<IndexDescriptor> matched = new ArrayList<>();
@@ -93,7 +93,7 @@ public class NodeSchemaMatcherTest
     }
 
     @Test
-    public void shouldNotMatchIfNodeIsMissingProperty()
+    void shouldNotMatchIfNodeIsMissingProperty()
     {
         // when
         List<IndexDescriptor> matched = new ArrayList<>();
@@ -104,7 +104,7 @@ public class NodeSchemaMatcherTest
     }
 
     @Test
-    public void shouldNotMatchIfNodeIsMissingLabel()
+    void shouldNotMatchIfNodeIsMissingLabel()
     {
         // when
         List<IndexDescriptor> matched = new ArrayList<>();
@@ -115,7 +115,7 @@ public class NodeSchemaMatcherTest
     }
 
     @Test
-    public void shouldMatchOnSpecialProperty()
+    void shouldMatchOnSpecialProperty()
     {
         // when
         List<IndexDescriptor> matched = new ArrayList<>();
@@ -126,7 +126,7 @@ public class NodeSchemaMatcherTest
     }
 
     @Test
-    public void shouldMatchSeveralTimes()
+    void shouldMatchSeveralTimes()
     {
         // given
         List<IndexDescriptor> indexes = Arrays.asList( index1, index1, index1_2, index1_2 );

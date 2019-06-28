@@ -34,21 +34,19 @@ import org.neo4j.values.storable.ValueType;
 import static org.neo4j.kernel.api.schema.index.TestIndexDescriptorFactory.forLabel;
 import static org.neo4j.kernel.impl.index.schema.ValueCreatorUtil.FRACTION_DUPLICATE_NON_UNIQUE;
 
-
-class NativeIndexAccessorTest<KEY extends NativeIndexKey<KEY>, VALUE extends NativeIndexValue> extends NativeIndexAccessorTests<KEY,VALUE>
+class NativeIndexAccessorTest<KEY extends NativeIndexKey<KEY>, VALUE extends NativeIndexValue> extends NativeIndexAccessorTests<KEY, VALUE>
 {
     private static final IndexSpecificSpaceFillingCurveSettings spaceFillingCurveSettings =
-            IndexSpecificSpaceFillingCurveSettings.fromConfig( Config.defaults() );
+        IndexSpecificSpaceFillingCurveSettings.fromConfig( Config.defaults() );
     private static final StandardConfiguration configuration = new StandardConfiguration();
 
-    private final AccessorFactory<KEY,VALUE> accessorFactory = (AccessorFactory<KEY, VALUE>) genericAccessorFactory();
+    private final AccessorFactory<KEY, VALUE> accessorFactory = (AccessorFactory<KEY, VALUE>) genericAccessorFactory();
     private final ValueType[] supportedTypes = ValueType.values();
-    private final IndexLayoutFactory<KEY,VALUE> indexLayoutFactory = (IndexLayoutFactory) () -> new GenericLayout( 1, spaceFillingCurveSettings );
+    private final IndexLayoutFactory<KEY, VALUE> indexLayoutFactory = (IndexLayoutFactory) () -> new GenericLayout( 1, spaceFillingCurveSettings );
     private final IndexCapability indexCapability = GenericNativeIndexProvider.CAPABILITY;
 
-
     @Override
-    NativeIndexAccessor<KEY,VALUE> makeAccessor() throws IOException
+    NativeIndexAccessor<KEY, VALUE> makeAccessor() throws IOException
     {
         return accessorFactory.create( pageCache, fs, indexFiles, layout, RecoveryCleanupWorkCollector.immediate(), monitor, indexDescriptor );
     }
@@ -60,28 +58,28 @@ class NativeIndexAccessorTest<KEY extends NativeIndexKey<KEY>, VALUE extends Nat
     }
 
     @Override
-    ValueCreatorUtil<KEY,VALUE> createValueCreatorUtil()
+    ValueCreatorUtil<KEY, VALUE> createValueCreatorUtil()
     {
         return new ValueCreatorUtil<>( forLabel( 42, 666 ).withId( 0 ), supportedTypes, FRACTION_DUPLICATE_NON_UNIQUE );
     }
 
     @Override
-    IndexLayout<KEY,VALUE> createLayout()
+    IndexLayout<KEY, VALUE> createLayout()
     {
         return indexLayoutFactory.create();
     }
 
     /* Helpers */
-    private static AccessorFactory<GenericKey,NativeIndexValue> genericAccessorFactory()
+    private static AccessorFactory<GenericKey, NativeIndexValue> genericAccessorFactory()
     {
         return ( pageCache, fs, storeFiles, layout, cleanup, monitor, descriptor ) ->
-                new GenericNativeIndexAccessor( pageCache, fs, storeFiles, layout, cleanup, monitor, descriptor, spaceFillingCurveSettings, configuration );
+            new GenericNativeIndexAccessor( pageCache, fs, storeFiles, layout, cleanup, monitor, descriptor, spaceFillingCurveSettings, configuration );
     }
 
     @FunctionalInterface
     private interface AccessorFactory<KEY extends NativeIndexKey<KEY>, VALUE extends NativeIndexValue>
     {
-        NativeIndexAccessor<KEY,VALUE> create( PageCache pageCache, FileSystemAbstraction fs, IndexFiles indexFiles, IndexLayout<KEY,VALUE> layout,
-                RecoveryCleanupWorkCollector recoveryCleanupWorkCollector, IndexProvider.Monitor monitor, StoreIndexDescriptor descriptor ) throws IOException;
+        NativeIndexAccessor<KEY, VALUE> create( PageCache pageCache, FileSystemAbstraction fs, IndexFiles indexFiles, IndexLayout<KEY, VALUE> layout,
+            RecoveryCleanupWorkCollector recoveryCleanupWorkCollector, IndexProvider.Monitor monitor, StoreIndexDescriptor descriptor ) throws IOException;
     }
 }

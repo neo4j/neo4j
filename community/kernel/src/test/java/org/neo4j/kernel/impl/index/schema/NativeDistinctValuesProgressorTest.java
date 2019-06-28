@@ -21,8 +21,9 @@ package org.neo4j.kernel.impl.index.schema;
 
 import org.apache.commons.lang3.mutable.MutableInt;
 import org.apache.commons.lang3.tuple.Pair;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -36,28 +37,28 @@ import org.neo4j.index.internal.gbptree.Seeker;
 import org.neo4j.internal.kernel.api.IndexOrder;
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.kernel.impl.index.schema.config.IndexSpecificSpaceFillingCurveSettings;
+import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.RandomExtension;
 import org.neo4j.test.rule.RandomRule;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
 import static org.neo4j.kernel.impl.index.schema.NativeIndexKey.Inclusion.NEUTRAL;
 import static org.neo4j.kernel.impl.index.schema.NativeIndexValue.INSTANCE;
 import static org.neo4j.values.storable.Values.stringValue;
 
-public class NativeDistinctValuesProgressorTest
+@ExtendWith( RandomExtension.class )
+class NativeDistinctValuesProgressorTest
 {
     private static final Config config = Config.defaults();
     private static final IndexSpecificSpaceFillingCurveSettings specificSettings = IndexSpecificSpaceFillingCurveSettings.fromConfig( config );
     private final GenericLayout layout = new GenericLayout( 1, specificSettings );
 
-    @Rule
-    public final RandomRule random = new RandomRule();
+    @Inject
+    private RandomRule random;
 
     @Test
-    public void shouldCountDistinctValues()
+    void shouldCountDistinctValues()
     {
         // given
         Value[] strings = generateRandomStrings();
@@ -77,8 +78,8 @@ public class NativeDistinctValuesProgressorTest
         {
             Value string = client.values[0];
             MutableInt expectedCount = expectedCounts.remove( string );
-            assertNotNull( expectedCount );
-            assertEquals( expectedCount.intValue(), client.reference );
+            Assertions.assertNotNull( expectedCount );
+            Assertions.assertEquals( expectedCount.intValue(), client.reference );
 
             if ( expectedCount.intValue() > 1 )
             {
@@ -89,12 +90,12 @@ public class NativeDistinctValuesProgressorTest
                 uniqueValues++;
             }
         }
-        assertTrue( expectedCounts.isEmpty() );
-        assertTrue( uniqueValues > 0 );
-        assertTrue( nonUniqueValues > 0 );
+        Assertions.assertTrue( expectedCounts.isEmpty() );
+        Assertions.assertTrue( uniqueValues > 0 );
+        Assertions.assertTrue( nonUniqueValues > 0 );
     }
 
-    private Map<Value,MutableInt> asDistinctCounts( Value[] strings )
+    private static Map<Value, MutableInt> asDistinctCounts( Value[] strings )
     {
         Map<Value,MutableInt> map = new HashMap<>();
         for ( Value string : strings )

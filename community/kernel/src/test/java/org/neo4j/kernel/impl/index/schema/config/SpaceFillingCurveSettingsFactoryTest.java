@@ -19,7 +19,7 @@
  */
 package org.neo4j.kernel.impl.index.schema.config;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.HashMap;
 
@@ -30,36 +30,36 @@ import org.neo4j.values.storable.CoordinateReferenceSystem;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
 
-public class SpaceFillingCurveSettingsFactoryTest
+class SpaceFillingCurveSettingsFactoryTest
 {
     @Test
-    public void shouldGetDefaultSpaceFillingCurveSettingsForWGS84()
+    void shouldGetDefaultSpaceFillingCurveSettingsForWGS84()
     {
         shouldGetSettingsFor( Config.defaults(), CoordinateReferenceSystem.WGS84, 2, 60, new Envelope( -180, 180, -90, 90 ) );
     }
 
     @Test
-    public void shouldGetDefaultSpaceFillingCurveSettingsForWGS84_3D()
+    void shouldGetDefaultSpaceFillingCurveSettingsForWGS84_3D()
     {
         shouldGetSettingsFor( Config.defaults(), CoordinateReferenceSystem.WGS84_3D, 3, 60,
                 new Envelope( new double[]{-180, -90, -1000000}, new double[]{180, 90, 1000000} ) );
     }
 
     @Test
-    public void shouldGetDefaultSpaceFillingCurveSettingsForCartesian()
+    void shouldGetDefaultSpaceFillingCurveSettingsForCartesian()
     {
         shouldGetSettingsFor( Config.defaults(), CoordinateReferenceSystem.Cartesian, 2, 60, new Envelope( -1000000, 1000000, -1000000, 1000000 ) );
     }
 
     @Test
-    public void shouldGetDefaultSpaceFillingCurveSettingsForCartesian_3D()
+    void shouldGetDefaultSpaceFillingCurveSettingsForCartesian_3D()
     {
         shouldGetSettingsFor( Config.defaults(), CoordinateReferenceSystem.Cartesian_3D, 3, 60,
                 new Envelope( new double[]{-1000000, -1000000, -1000000}, new double[]{1000000, 1000000, 1000000} ) );
     }
 
     @Test
-    public void shouldGetModifiedSpaceFillingCurveSettingsForWGS84()
+    void shouldGetModifiedSpaceFillingCurveSettingsForWGS84()
     {
         CoordinateReferenceSystem crs = CoordinateReferenceSystem.WGS84;
         for ( int maxBits = 30; maxBits <= 60; maxBits += 10 )
@@ -81,7 +81,7 @@ public class SpaceFillingCurveSettingsFactoryTest
     }
 
     @Test
-    public void shouldGetModifiedSpaceFillingCurveSettingsForWGS84_3D()
+    void shouldGetModifiedSpaceFillingCurveSettingsForWGS84_3D()
     {
         CoordinateReferenceSystem crs = CoordinateReferenceSystem.WGS84_3D;
         shouldGetCustomSettingsFor( crs, 60, new double[]{-180, -90, -1000000}, new double[]{180, 90, 1000000} );
@@ -96,7 +96,7 @@ public class SpaceFillingCurveSettingsFactoryTest
     }
 
     @Test
-    public void shouldGetModifiedSpaceFillingCurveSettingsForCartesian()
+    void shouldGetModifiedSpaceFillingCurveSettingsForCartesian()
     {
         CoordinateReferenceSystem crs = CoordinateReferenceSystem.Cartesian;
         for ( int maxBits = 30; maxBits <= 60; maxBits += 10 )
@@ -118,7 +118,7 @@ public class SpaceFillingCurveSettingsFactoryTest
     }
 
     @Test
-    public void shouldGetModifiedSpaceFillingCurveSettingsForCartesian_3D()
+    void shouldGetModifiedSpaceFillingCurveSettingsForCartesian_3D()
     {
         CoordinateReferenceSystem crs = CoordinateReferenceSystem.Cartesian_3D;
         shouldGetCustomSettingsFor( crs, 60, new double[]{-1000000, -1000000, -1000000}, new double[]{1000000, 1000000, 1000000} );

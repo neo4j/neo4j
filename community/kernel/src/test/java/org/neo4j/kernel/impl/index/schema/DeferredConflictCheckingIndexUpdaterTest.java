@@ -19,7 +19,9 @@
  */
 package org.neo4j.kernel.impl.index.schema;
 
-import org.junit.Test;
+import org.hamcrest.MatcherAssert;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -35,8 +37,6 @@ import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 
 import static org.hamcrest.CoreMatchers.containsString;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.fail;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.eq;
@@ -48,14 +48,14 @@ import static org.neo4j.storageengine.api.IndexEntryUpdate.add;
 import static org.neo4j.storageengine.api.IndexEntryUpdate.change;
 import static org.neo4j.storageengine.api.IndexEntryUpdate.remove;
 
-public class DeferredConflictCheckingIndexUpdaterTest
+class DeferredConflictCheckingIndexUpdaterTest
 {
-    private final int labelId = 1;
+    private static final int labelId = 1;
     private final int[] propertyKeyIds = {2, 3};
     private final IndexDescriptor descriptor = TestIndexDescriptorFactory.forLabel( labelId, propertyKeyIds );
 
     @Test
-    public void shouldQueryAboutAddedAndChangedValueTuples() throws Exception
+    void shouldQueryAboutAddedAndChangedValueTuples() throws Exception
     {
         // given
         IndexUpdater actual = mock( IndexUpdater.class );
@@ -97,7 +97,7 @@ public class DeferredConflictCheckingIndexUpdaterTest
     }
 
     @Test
-    public void shouldThrowOnIndexEntryConflict() throws Exception
+    void shouldThrowOnIndexEntryConflict() throws Exception
     {
         // given
         IndexUpdater actual = mock( IndexUpdater.class );
@@ -110,17 +110,17 @@ public class DeferredConflictCheckingIndexUpdaterTest
         try
         {
             updater.close();
-            fail( "Should have failed" );
+            Assertions.fail( "Should have failed" );
         }
         catch ( IndexEntryConflictException e )
         {
             // then good
-            assertThat( e.getMessage(), containsString( "101" ) );
-            assertThat( e.getMessage(), containsString( "202" ) );
+            MatcherAssert.assertThat( e.getMessage(), containsString( "101" ) );
+            MatcherAssert.assertThat( e.getMessage(), containsString( "202" ) );
         }
     }
 
-    private Value[] tuple( Object... values )
+    private static Value[] tuple( Object... values )
     {
         Value[] result = new Value[values.length];
         for ( int i = 0; i < values.length; i++ )

@@ -21,10 +21,9 @@ package org.neo4j.kernel.impl.api.state;
 
 import org.eclipse.collections.api.iterator.LongIterator;
 import org.hamcrest.Matcher;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import org.neo4j.collection.PrimitiveLongCollections;
-import org.neo4j.storageengine.api.RelationshipDirection;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
@@ -32,11 +31,11 @@ import static org.neo4j.storageengine.api.RelationshipDirection.INCOMING;
 import static org.neo4j.storageengine.api.RelationshipDirection.LOOP;
 import static org.neo4j.storageengine.api.RelationshipDirection.OUTGOING;
 
-public class RelationshipChangesForNodeTest
+class RelationshipChangesForNodeTest
 {
 
     @Test
-    public void shouldGetRelationships()
+    void shouldGetRelationships()
     {
         RelationshipChangesForNode changes = new RelationshipChangesForNode(
                 RelationshipChangesForNode.DiffStrategy.ADD );
@@ -55,7 +54,7 @@ public class RelationshipChangesForNodeTest
     }
 
     @Test
-    public void shouldGetRelationshipsByTypeAndDirection()
+    void shouldGetRelationshipsByTypeAndDirection()
     {
         RelationshipChangesForNode changes = new RelationshipChangesForNode(
                 RelationshipChangesForNode.DiffStrategy.ADD );
@@ -75,19 +74,19 @@ public class RelationshipChangesForNodeTest
         changes.addRelationship( 12, DECOY_TYPE, LOOP );
 
         LongIterator rawIncoming =
-                changes.getRelationships( RelationshipDirection.INCOMING, TYPE );
+                changes.getRelationships( INCOMING, TYPE );
         assertThat( PrimitiveLongCollections.asArray( rawIncoming ), ids( 1 ) );
 
         LongIterator rawOutgoing =
-                changes.getRelationships( RelationshipDirection.OUTGOING, TYPE );
+                changes.getRelationships( OUTGOING, TYPE );
         assertThat( PrimitiveLongCollections.asArray( rawOutgoing ), ids( 2, 3 ) );
 
         LongIterator rawLoops =
-                changes.getRelationships( RelationshipDirection.LOOP, TYPE );
+                changes.getRelationships( LOOP, TYPE );
         assertThat( PrimitiveLongCollections.asArray( rawLoops ), ids( 4, 5, 6 ) );
     }
 
-    private Matcher<long[]> ids( long... ids )
+    private static Matcher<long[]> ids( long... ids )
     {
         return equalTo( ids );
     }

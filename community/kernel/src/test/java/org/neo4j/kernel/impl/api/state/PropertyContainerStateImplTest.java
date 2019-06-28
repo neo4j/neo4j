@@ -19,7 +19,7 @@
  */
 package org.neo4j.kernel.impl.api.state;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.Iterator;
 
@@ -31,14 +31,14 @@ import org.neo4j.values.storable.Values;
 
 import static java.util.Arrays.asList;
 import static org.hamcrest.CoreMatchers.equalTo;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public class PropertyContainerStateImplTest
+class PropertyContainerStateImplTest
 {
     @Test
-    public void shouldListAddedProperties()
+    void shouldListAddedProperties()
     {
         // Given
         PropertyContainerStateImpl state = new PropertyContainerStateImpl( 1, OnHeapCollectionsFactory.INSTANCE );
@@ -55,7 +55,7 @@ public class PropertyContainerStateImplTest
     }
 
     @Test
-    public void shouldListAddedPropertiesEvenIfPropertiesHaveBeenReplaced()
+    void shouldListAddedPropertiesEvenIfPropertiesHaveBeenReplaced()
     {
         // Given
         PropertyContainerStateImpl state = new PropertyContainerStateImpl( 1, OnHeapCollectionsFactory.INSTANCE );
@@ -75,7 +75,7 @@ public class PropertyContainerStateImplTest
     }
 
     @Test
-    public void shouldConvertAddRemoveToChange()
+    void shouldConvertAddRemoveToChange()
     {
         // Given
         PropertyContainerStateImpl state = new PropertyContainerStateImpl( 1, OnHeapCollectionsFactory.INSTANCE );

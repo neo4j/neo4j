@@ -19,8 +19,7 @@
  */
 package org.neo4j.kernel.impl.index.schema;
 
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.io.File;
 
@@ -30,31 +29,35 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.api.index.IndexDirectoryStructure;
 import org.neo4j.kernel.impl.index.schema.config.IndexSpecificSpaceFillingCurveSettings;
-import org.neo4j.test.rule.PageCacheAndDependenciesRule;
-import org.neo4j.test.rule.fs.DefaultFileSystemRule;
+import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.pagecache.PageCacheExtension;
+import org.neo4j.test.rule.TestDirectory;
 
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.neo4j.kernel.api.index.IndexProvider.Monitor.EMPTY;
 
-public class GenericNativeIndexPopulatorTest
+@PageCacheExtension
+class GenericNativeIndexPopulatorTest
 {
-    @Rule
-    public final PageCacheAndDependenciesRule storage = new PageCacheAndDependenciesRule().with( new DefaultFileSystemRule() );
+    @Inject
+    private PageCache pageCache;
+    @Inject
+    private TestDirectory testDirectory;
+    @Inject
+    private FileSystemAbstraction fs;
 
     @Test
-    public void dropShouldDeleteEntireIndexFolder()
+    void dropShouldDeleteEntireIndexFolder()
     {
         // given
-        File root = storage.directory().directory( "root" );
+        File root = testDirectory.directory( "root" );
         IndexDirectoryStructure directoryStructure = IndexDirectoryStructure.directoriesByProvider( root ).forProvider( GenericNativeIndexProvider.DESCRIPTOR );
         long indexId = 8;
         File indexDirectory = directoryStructure.directoryForIndex( indexId );
         StoreIndexDescriptor descriptor = IndexDescriptorFactory.forSchema( SchemaDescriptor.forLabel( 1, 1 ) ).withId( indexId );
         IndexSpecificSpaceFillingCurveSettings spatialSettings = mock( IndexSpecificSpaceFillingCurveSettings.class );
-        PageCache pageCache = storage.pageCache();
-        FileSystemAbstraction fs = storage.fileSystem();
         IndexFiles.Directory indexFiles = new IndexFiles.Directory( fs, directoryStructure, indexId );
         GenericLayout layout = new GenericLayout( 1, spatialSettings );
         GenericNativeIndexPopulator populator = new GenericNativeIndexPopulator( pageCache, fs, indexFiles, layout,
