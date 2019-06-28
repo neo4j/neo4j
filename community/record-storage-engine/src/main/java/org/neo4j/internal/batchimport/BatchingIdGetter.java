@@ -21,6 +21,8 @@ package org.neo4j.internal.batchimport;
 
 import org.eclipse.collections.api.iterator.LongIterator;
 
+import java.util.function.LongConsumer;
+
 import org.neo4j.collection.PrimitiveLongCollections;
 import org.neo4j.internal.id.IdRange;
 import org.neo4j.internal.id.IdRangeIterator;
@@ -28,6 +30,8 @@ import org.neo4j.internal.id.IdSequence;
 import org.neo4j.internal.id.IdValidator;
 import org.neo4j.kernel.impl.store.RecordStore;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
+
+import static org.neo4j.internal.id.IdRangeIterator.VALUE_REPRESENTING_NULL;
 
 /**
  * Exposes batches of ids from a {@link RecordStore} as a {@link LongIterator}.
@@ -40,12 +44,12 @@ public class BatchingIdGetter extends PrimitiveLongCollections.AbstractPrimitive
     private IdRangeIterator batch;
     private final int batchSize;
 
-    public BatchingIdGetter( RecordStore<? extends AbstractBaseRecord> source )
+    BatchingIdGetter( RecordStore<? extends AbstractBaseRecord> source )
     {
         this( source, source.getRecordsPerPage() );
     }
 
-    public BatchingIdGetter( RecordStore<? extends AbstractBaseRecord> source, int batchSize )
+    BatchingIdGetter( RecordStore<? extends AbstractBaseRecord> source, int batchSize )
     {
         this.source = source;
         this.batchSize = batchSize;
@@ -61,7 +65,7 @@ public class BatchingIdGetter extends PrimitiveLongCollections.AbstractPrimitive
     public long nextId()
     {
         long id;
-        if ( batch == null || (id = batch.nextId()) == -1 )
+        if ( batch == null || (id = batch.nextId()) == VALUE_REPRESENTING_NULL )
         {
             IdRange idRange = source.nextIdBatch( batchSize );
             while ( IdValidator.hasReservedIdInRange( idRange.getRangeStart(), idRange.getRangeStart() + idRange.getRangeLength() ) )
@@ -78,5 +82,17 @@ public class BatchingIdGetter extends PrimitiveLongCollections.AbstractPrimitive
     public IdRange nextIdBatch( int size )
     {
         throw new UnsupportedOperationException();
+    }
+
+    void visitUnused( LongConsumer visitor )
+    {
+        if ( batch != null )
+        {
+            long unusedId;
+            while ( (unusedId = batch.nextId()) != VALUE_REPRESENTING_NULL )
+            {
+                visitor.accept( unusedId );
+            }
+        }
     }
 }

@@ -35,8 +35,7 @@ public class RelationshipGroupStage extends Stage
 {
     public static final String NAME = "RelationshipGroup";
 
-    public RelationshipGroupStage( String topic, Configuration config,
-            RecordStore<RelationshipGroupRecord> store, NodeRelationshipCache cache )
+    RelationshipGroupStage( String topic, Configuration config, RecordStore<RelationshipGroupRecord> store, NodeRelationshipCache cache )
     {
         super( NAME, topic, config, Step.RECYCLE_BATCHES );
         add( new ReadGroupRecordsByCacheStep( control(), config, store, cache ) );

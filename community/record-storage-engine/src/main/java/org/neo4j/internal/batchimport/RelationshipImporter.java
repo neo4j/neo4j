@@ -228,4 +228,11 @@ public class RelationshipImporter extends EntityImporter
         typeCounts.close();
         monitor.relationshipsImported( relationshipCount );
     }
+
+    @Override
+    void freeUnusedIds()
+    {
+        super.freeUnusedIds();
+        freeUnusedIds( relationshipStore, relationshipIds );
+    }
 }

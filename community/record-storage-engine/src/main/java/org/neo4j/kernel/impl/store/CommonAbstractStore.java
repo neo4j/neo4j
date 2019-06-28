@@ -19,6 +19,9 @@
  */
 package org.neo4j.kernel.impl.store;
 
+import org.eclipse.collections.api.set.primitive.MutableLongSet;
+import org.eclipse.collections.impl.factory.primitive.LongSets;
+
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.NoSuchFileException;
@@ -28,9 +31,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.function.LongPredicate;
-
-import org.eclipse.collections.api.set.primitive.MutableLongSet;
-import org.eclipse.collections.impl.factory.primitive.LongSets;
 
 import org.neo4j.configuration.Config;
 import org.neo4j.exceptions.UnderlyingStorageException;
@@ -1096,7 +1096,7 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord,HEAD
         cursor.setOffsetToMark();
     }
 
-    IdGenerator getIdGenerator()
+    public IdGenerator getIdGenerator()
     {
         return idGenerator;
     }

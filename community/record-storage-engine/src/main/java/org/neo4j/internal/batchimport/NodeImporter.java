@@ -61,7 +61,7 @@ public class NodeImporter extends EntityImporter
     private long highestId = -1;
     private boolean hasLabelField;
 
-    public NodeImporter( BatchingNeoStores stores, IdMapper idMapper, Monitor monitor )
+    NodeImporter( BatchingNeoStores stores, IdMapper idMapper, Monitor monitor )
     {
         super( stores, monitor );
         this.labelTokenRepository = stores.getLabelRepository();
@@ -163,5 +163,12 @@ public class NodeImporter extends EntityImporter
         super.close();
         monitor.nodesImported( nodeCount );
         nodeStore.setHighestPossibleIdInUse( highestId ); // for the case of #id(long)
+    }
+
+    @Override
+    void freeUnusedIds()
+    {
+        super.freeUnusedIds();
+        freeUnusedIds( nodeStore, nodeIds );
     }
 }

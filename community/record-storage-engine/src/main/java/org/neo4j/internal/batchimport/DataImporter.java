@@ -24,6 +24,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -131,12 +132,14 @@ public class DataImporter
                 writeMonitor, memoryStatsProvider );
         StageExecution execution = new StageExecution( title, null, Configuration.DEFAULT, Collections.singletonList( step ), 0 );
         long startTime = currentTimeMillis();
+        List<EntityImporter> importers = new ArrayList<>();
         try ( InputIterator dataIterator = data.iterator() )
         {
             for ( int i = 0; i < numRunners; i++ )
             {
-                pool.submit( new ExhaustingEntityImporterRunnable(
-                        execution, dataIterator, visitors.get(), roughEntityCountProgress ) );
+                EntityImporter importer = visitors.get();
+                importers.add( importer );
+                pool.submit( new ExhaustingEntityImporterRunnable( execution, dataIterator, importer, roughEntityCountProgress ) );
             }
             pool.shutdown();
 
@@ -158,6 +161,7 @@ public class DataImporter
         }
 
         execution.assertHealthy();
+        importers.forEach( EntityImporter::freeUnusedIds );
         step.markAsCompleted();
         writeMonitor.stop();
         executionMonitor.end( execution, currentTimeMillis() - startTime );
@@ -166,7 +170,7 @@ public class DataImporter
         return roughEntityCountProgress.sum();
     }
 
-    public static void importNodes( int numRunners, Input input, BatchingNeoStores stores, IdMapper idMapper, Collector badCollector,
+    static void importNodes( int numRunners, Input input, BatchingNeoStores stores, IdMapper idMapper, Collector badCollector,
             ExecutionMonitor executionMonitor, Monitor monitor )
                     throws IOException
     {
@@ -175,7 +179,7 @@ public class DataImporter
                 new MemoryUsageStatsProvider( stores, idMapper ) );
     }
 
-    public static DataStatistics importRelationships( int numRunners, Input input,
+    static DataStatistics importRelationships( int numRunners, Input input,
             BatchingNeoStores stores, IdMapper idMapper, Collector badCollector, ExecutionMonitor executionMonitor,
             Monitor monitor, boolean validateRelationshipData )
                     throws IOException

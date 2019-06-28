@@ -25,6 +25,8 @@ import org.neo4j.internal.batchimport.DataImporter.Monitor;
 import org.neo4j.internal.batchimport.input.InputEntityVisitor;
 import org.neo4j.internal.batchimport.store.BatchingNeoStores;
 import org.neo4j.internal.batchimport.store.BatchingTokenRepository;
+import org.neo4j.internal.id.IdGenerator;
+import org.neo4j.kernel.impl.store.CommonAbstractStore;
 import org.neo4j.kernel.impl.store.DynamicRecordAllocator;
 import org.neo4j.kernel.impl.store.PropertyStore;
 import org.neo4j.kernel.impl.store.PropertyType;
@@ -49,6 +51,8 @@ abstract class EntityImporter extends InputEntityVisitor.Adapter
     private PropertyBlock[] propertyBlocks = new PropertyBlock[100];
     private int propertyBlocksCursor;
     private final BatchingIdGetter propertyIds;
+    private final BatchingIdGetter stringPropertyIds;
+    private final BatchingIdGetter arrayPropertyIds;
     protected final Monitor monitor;
     private long propertyCount;
     private boolean hasPropertyId;
@@ -56,7 +60,7 @@ abstract class EntityImporter extends InputEntityVisitor.Adapter
     private final DynamicRecordAllocator dynamicStringRecordAllocator;
     private final DynamicRecordAllocator dynamicArrayRecordAllocator;
 
-    protected EntityImporter( BatchingNeoStores stores, Monitor monitor )
+    EntityImporter( BatchingNeoStores stores, Monitor monitor )
     {
         this.propertyStore = stores.getPropertyStore();
         this.propertyKeyTokenRepository = stores.getPropertyKeyRepository();
@@ -67,12 +71,10 @@ abstract class EntityImporter extends InputEntityVisitor.Adapter
         }
         this.propertyRecord = propertyStore.newRecord();
         this.propertyIds = new BatchingIdGetter( propertyStore );
-        this.dynamicStringRecordAllocator = new StandardDynamicRecordAllocator(
-                new BatchingIdGetter( propertyStore.getStringStore(), propertyStore.getStringStore().getRecordsPerPage() ),
-                propertyStore.getStringStore().getRecordDataSize() );
-        this.dynamicArrayRecordAllocator = new StandardDynamicRecordAllocator(
-                new BatchingIdGetter( propertyStore.getArrayStore(), propertyStore.getArrayStore().getRecordsPerPage() ),
-                propertyStore.getStringStore().getRecordDataSize() );
+        this.stringPropertyIds = new BatchingIdGetter( propertyStore.getStringStore(), propertyStore.getStringStore().getRecordsPerPage() );
+        this.dynamicStringRecordAllocator = new StandardDynamicRecordAllocator( stringPropertyIds, propertyStore.getStringStore().getRecordDataSize() );
+        this.arrayPropertyIds = new BatchingIdGetter( propertyStore.getArrayStore(), propertyStore.getArrayStore().getRecordsPerPage() );
+        this.dynamicArrayRecordAllocator = new StandardDynamicRecordAllocator( arrayPropertyIds, propertyStore.getStringStore().getRecordDataSize() );
     }
 
     @Override
@@ -126,7 +128,7 @@ abstract class EntityImporter extends InputEntityVisitor.Adapter
         PropertyStore.encodeValue( block, key, value, dynamicStringRecordAllocator, dynamicArrayRecordAllocator, propertyStore.allowStorePointsAndTemporal() );
     }
 
-    protected long createAndWritePropertyChain()
+    long createAndWritePropertyChain()
     {
         if ( hasPropertyId )
         {
@@ -182,5 +184,21 @@ abstract class EntityImporter extends InputEntityVisitor.Adapter
     public void close()
     {
         monitor.propertiesImported( propertyCount );
+    }
+
+    void freeUnusedIds()
+    {
+        freeUnusedIds( propertyStore, propertyIds );
+        freeUnusedIds( propertyStore.getStringStore(), stringPropertyIds );
+        freeUnusedIds( propertyStore.getArrayStore(), arrayPropertyIds );
+    }
+
+    void freeUnusedIds( CommonAbstractStore<?,?> store, BatchingIdGetter idBatch )
+    {
+        // Free unused property ids still in the last pre-allocated batch
+        try ( IdGenerator.ReuseMarker marker = store.getIdGenerator().reuseMarker() )
+        {
+            idBatch.visitUnused( marker::markFree );
+        }
     }
 }
