@@ -19,23 +19,23 @@
  */
 package org.neo4j.internal.recordstorage;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import org.neo4j.storageengine.api.StorageNodeCursor;
 import org.neo4j.storageengine.api.StorageRelationshipScanCursor;
 
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.graphdb.RelationshipType.withName;
 import static org.neo4j.internal.helpers.collection.MapUtil.map;
 
 /**
  * Test reading committed node and relationships from disk.
  */
-public class RecordStorageReaderNodeAndRelTest extends RecordStorageReaderTestBase
+class RecordStorageReaderNodeAndRelTest extends RecordStorageReaderTestBase
 {
     @Test
-    public void shouldTellIfNodeExists() throws Exception
+    void shouldTellIfNodeExists() throws Exception
     {
         // Given
         long created = createNode( map() );
@@ -51,7 +51,7 @@ public class RecordStorageReaderNodeAndRelTest extends RecordStorageReaderTestBa
     }
 
     @Test
-    public void shouldTellIfRelExists() throws Exception
+    void shouldTellIfRelExists() throws Exception
     {
         // Given
         long node = createNode( map() );

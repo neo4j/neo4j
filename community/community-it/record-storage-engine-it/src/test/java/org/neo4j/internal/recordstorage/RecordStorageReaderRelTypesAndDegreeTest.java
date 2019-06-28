@@ -19,8 +19,8 @@
  */
 package org.neo4j.internal.recordstorage;
 
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.util.HashSet;
 import java.util.Set;
@@ -38,14 +38,16 @@ import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.storageengine.api.RelationshipDirection;
 import org.neo4j.storageengine.api.StorageNodeCursor;
 import org.neo4j.storageengine.api.StorageRelationshipGroupCursor;
+import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.RandomExtension;
 import org.neo4j.test.rule.RandomRule;
 import org.neo4j.test.rule.RecordStorageEngineRule;
 
 import static java.util.Arrays.asList;
 import static java.util.Collections.emptySet;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.internal.helpers.collection.Iterators.asSet;
 import static org.neo4j.internal.helpers.collection.MapUtil.map;
 import static org.neo4j.internal.kernel.api.TokenRead.ANY_RELATIONSHIP_TYPE;
@@ -57,12 +59,13 @@ import static org.neo4j.kernel.impl.store.record.Record.NO_NEXT_RELATIONSHIP;
 import static org.neo4j.storageengine.api.RelationshipDirection.INCOMING;
 import static org.neo4j.storageengine.api.RelationshipDirection.OUTGOING;
 
-public class RecordStorageReaderRelTypesAndDegreeTest extends RecordStorageReaderTestBase
+@ExtendWith( RandomExtension.class )
+class RecordStorageReaderRelTypesAndDegreeTest extends RecordStorageReaderTestBase
 {
     private static final int RELATIONSHIPS_COUNT = 20;
 
-    @Rule
-    public final RandomRule random = new RandomRule();
+    @Inject
+    private RandomRule random;
 
     @Override
     protected RecordStorageEngineRule.Builder modify( RecordStorageEngineRule.Builder builder )
@@ -71,7 +74,7 @@ public class RecordStorageReaderRelTypesAndDegreeTest extends RecordStorageReade
     }
 
     @Test
-    public void degreesForDenseNodeWithPartiallyDeletedRelGroupChain() throws Exception
+    void degreesForDenseNodeWithPartiallyDeletedRelGroupChain() throws Exception
     {
         testDegreesForDenseNodeWithPartiallyDeletedRelGroupChain();
 
@@ -87,7 +90,7 @@ public class RecordStorageReaderRelTypesAndDegreeTest extends RecordStorageReade
     }
 
     @Test
-    public void degreesForDenseNodeWithPartiallyDeletedRelChains() throws Exception
+    void degreesForDenseNodeWithPartiallyDeletedRelChains() throws Exception
     {
         testDegreesForDenseNodeWithPartiallyDeletedRelChains( false, false, false );
 
@@ -103,7 +106,7 @@ public class RecordStorageReaderRelTypesAndDegreeTest extends RecordStorageReade
     }
 
     @Test
-    public void degreeByDirectionForDenseNodeWithPartiallyDeletedRelGroupChain() throws Exception
+    void degreeByDirectionForDenseNodeWithPartiallyDeletedRelGroupChain() throws Exception
     {
         testDegreeByDirectionForDenseNodeWithPartiallyDeletedRelGroupChain();
 
@@ -120,7 +123,7 @@ public class RecordStorageReaderRelTypesAndDegreeTest extends RecordStorageReade
     }
 
     @Test
-    public void degreeByDirectionForDenseNodeWithPartiallyDeletedRelChains() throws Exception
+    void degreeByDirectionForDenseNodeWithPartiallyDeletedRelChains() throws Exception
     {
         testDegreeByDirectionForDenseNodeWithPartiallyDeletedRelChains( false, false, false );
 
@@ -136,7 +139,7 @@ public class RecordStorageReaderRelTypesAndDegreeTest extends RecordStorageReade
     }
 
     @Test
-    public void degreeByDirectionAndTypeForDenseNodeWithPartiallyDeletedRelGroupChain() throws Exception
+    void degreeByDirectionAndTypeForDenseNodeWithPartiallyDeletedRelGroupChain() throws Exception
     {
         testDegreeByDirectionAndTypeForDenseNodeWithPartiallyDeletedRelGroupChain();
 
@@ -153,7 +156,7 @@ public class RecordStorageReaderRelTypesAndDegreeTest extends RecordStorageReade
     }
 
     @Test
-    public void degreeByDirectionAndTypeForDenseNodeWithPartiallyDeletedRelChains() throws Exception
+    void degreeByDirectionAndTypeForDenseNodeWithPartiallyDeletedRelChains() throws Exception
     {
         testDegreeByDirectionAndTypeForDenseNodeWithPartiallyDeletedRelChains( false, false, false );
 
@@ -343,7 +346,7 @@ public class RecordStorageReaderRelTypesAndDegreeTest extends RecordStorageReade
     }
 
     @Test
-    public void relationshipTypesForDenseNodeWithPartiallyDeletedRelGroupChain() throws Exception
+    void relationshipTypesForDenseNodeWithPartiallyDeletedRelGroupChain() throws Exception
     {
         testRelationshipTypesForDenseNode( this::noNodeChange,
                 asSet( IN, OUT, LOOP ) );
@@ -368,7 +371,7 @@ public class RecordStorageReaderRelTypesAndDegreeTest extends RecordStorageReade
     }
 
     @Test
-    public void relationshipTypesForDenseNodeWithPartiallyDeletedRelChains() throws Exception
+    void relationshipTypesForDenseNodeWithPartiallyDeletedRelChains() throws Exception
     {
         testRelationshipTypesForDenseNode( this::markRandomRelsNotInUse,
                 asSet( IN, OUT, LOOP ) );
@@ -496,7 +499,6 @@ public class RecordStorageReaderRelTypesAndDegreeTest extends RecordStorageReade
         return degrees;
     }
 
-    @SuppressWarnings( "unchecked" )
     private StorageNodeCursor newCursor( long nodeId )
     {
         StorageNodeCursor nodeCursor = storageReader.allocateNodeCursor();

@@ -19,7 +19,8 @@
  */
 package org.neo4j.internal.recordstorage;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
 
 import java.util.Set;
 
@@ -34,10 +35,9 @@ import org.neo4j.test.rule.RecordStorageEngineRule;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsInAnyOrder;
-import static org.junit.Assert.assertEquals;
 import static org.neo4j.internal.helpers.collection.Iterators.asSet;
 
-public class RecordStorageReaderSchemaWithPECTest extends RecordStorageReaderTestBase
+class RecordStorageReaderSchemaWithPECTest extends RecordStorageReaderTestBase
 {
     @Override
     RecordStorageEngineRule.Builder modify( RecordStorageEngineRule.Builder builder )
@@ -47,7 +47,7 @@ public class RecordStorageReaderSchemaWithPECTest extends RecordStorageReaderTes
     }
 
     @Test
-    public void shouldListAllConstraints() throws Exception
+    void shouldListAllConstraints() throws Exception
     {
         // Given
         createUniquenessConstraint( label1, propertyKey );
@@ -79,7 +79,7 @@ public class RecordStorageReaderSchemaWithPECTest extends RecordStorageReaderTes
     }
 
     @Test
-    public void shouldListAllConstraintsForLabel() throws Exception
+    void shouldListAllConstraintsForLabel() throws Exception
     {
         // Given
         createNodePropertyExistenceConstraint( label1, propertyKey );
@@ -98,11 +98,11 @@ public class RecordStorageReaderSchemaWithPECTest extends RecordStorageReaderTes
                 nodeKeyConstraintDescriptor( label1, otherPropertyKey ),
                 nodePropertyExistenceDescriptor( label1, propertyKey ) );
 
-        assertEquals( expectedConstraints, constraints );
+        Assertions.assertEquals( expectedConstraints, constraints );
     }
 
     @Test
-    public void shouldListAllConstraintsForLabelAndProperty() throws Exception
+    void shouldListAllConstraintsForLabelAndProperty() throws Exception
     {
         // Given
         createUniquenessConstraint( label2, propertyKey );
@@ -122,11 +122,11 @@ public class RecordStorageReaderSchemaWithPECTest extends RecordStorageReaderTes
                 nodeKeyConstraintDescriptor( label1, propertyKey ),
                 nodePropertyExistenceDescriptor( label1, propertyKey ) );
 
-        assertEquals( expected, constraints );
+        Assertions.assertEquals( expected, constraints );
     }
 
     @Test
-    public void shouldListAllConstraintsForRelationshipType() throws Exception
+    void shouldListAllConstraintsForRelationshipType() throws Exception
     {
         // Given
         createRelPropertyExistenceConstraint( relType1, propertyKey );
@@ -142,11 +142,11 @@ public class RecordStorageReaderSchemaWithPECTest extends RecordStorageReaderTes
                 relationshipPropertyExistenceDescriptor( relType2, propertyKey ),
                 relationshipPropertyExistenceDescriptor( relType2, otherPropertyKey ) );
 
-        assertEquals( expectedConstraints, constraints );
+        Assertions.assertEquals( expectedConstraints, constraints );
     }
 
     @Test
-    public void shouldListAllConstraintsForRelationshipTypeAndProperty() throws Exception
+    void shouldListAllConstraintsForRelationshipTypeAndProperty() throws Exception
     {
         // Given
         createRelPropertyExistenceConstraint( relType1, propertyKey );
@@ -165,7 +165,7 @@ public class RecordStorageReaderSchemaWithPECTest extends RecordStorageReaderTes
         Set<ConstraintDescriptor> expectedConstraints = Iterators.asSet(
                 relationshipPropertyExistenceDescriptor( relType1, propertyKey ) );
 
-        assertEquals( expectedConstraints, constraints );
+        Assertions.assertEquals( expectedConstraints, constraints );
     }
 
     private ConstraintDescriptor uniqueConstraintDescriptor( Label label, String propertyKey )

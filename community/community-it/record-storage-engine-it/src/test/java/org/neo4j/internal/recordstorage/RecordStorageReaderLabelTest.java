@@ -19,24 +19,24 @@
  */
 package org.neo4j.internal.recordstorage;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import org.neo4j.storageengine.api.StorageNodeCursor;
 import org.neo4j.storageengine.api.StoragePropertyCursor;
 
 import static org.eclipse.collections.impl.set.mutable.primitive.LongHashSet.newSetWith;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.internal.helpers.collection.MapUtil.map;
 
 /**
  * Test read access to committed label data.
  */
-public class RecordStorageReaderLabelTest extends RecordStorageReaderTestBase
+class RecordStorageReaderLabelTest extends RecordStorageReaderTestBase
 {
     @Test
-    public void shouldBeAbleToListLabelsForNode() throws Exception
+    void shouldBeAbleToListLabelsForNode() throws Exception
     {
         // GIVEN
         long nodeId;
@@ -52,7 +52,7 @@ public class RecordStorageReaderLabelTest extends RecordStorageReaderTestBase
     }
 
     @Test
-    public void labelsShouldNotLeakOutAsProperties() throws Exception
+    void labelsShouldNotLeakOutAsProperties() throws Exception
     {
         // GIVEN
         long nodeId = createNode( map( "name", "Node" ), label1 );
@@ -70,7 +70,7 @@ public class RecordStorageReaderLabelTest extends RecordStorageReaderTestBase
     }
 
     @Test
-    public void shouldCountAllNodes() throws Exception
+    void shouldCountAllNodes() throws Exception
     {
         // given
         int nodeCountPerLabel = 5;

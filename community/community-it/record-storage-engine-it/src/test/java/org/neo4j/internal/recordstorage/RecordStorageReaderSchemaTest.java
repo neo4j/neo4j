@@ -19,7 +19,8 @@
  */
 package org.neo4j.internal.recordstorage;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
 
 import java.util.Set;
 
@@ -32,13 +33,12 @@ import org.neo4j.kernel.impl.index.schema.IndexDescriptorFactory;
 import org.neo4j.storageengine.api.StorageIndexReference;
 import org.neo4j.storageengine.api.StorageSchemaReader;
 
-import static org.junit.Assert.assertEquals;
 import static org.neo4j.internal.helpers.collection.Iterators.asSet;
 
-public class RecordStorageReaderSchemaTest extends RecordStorageReaderTestBase
+class RecordStorageReaderSchemaTest extends RecordStorageReaderTestBase
 {
     @Test
-    public void shouldListAllIndexes() throws Exception
+    void shouldListAllIndexes() throws Exception
     {
         // Given
         createIndex( label1, propertyKey );
@@ -52,11 +52,11 @@ public class RecordStorageReaderSchemaTest extends RecordStorageReaderTestBase
                 indexDescriptor( label1, propertyKey ),
                 indexDescriptor( label2, propertyKey ) );
 
-        assertEquals( expectedIndexes, indexes );
+        Assertions.assertEquals( expectedIndexes, indexes );
     }
 
     @Test
-    public void shouldListAllIndexesAtTimeOfSnapshot() throws Exception
+    void shouldListAllIndexesAtTimeOfSnapshot() throws Exception
     {
         // Given
         createIndex( label1, propertyKey );
@@ -70,11 +70,11 @@ public class RecordStorageReaderSchemaTest extends RecordStorageReaderTestBase
         Set<?> expectedIndexes = asSet(
                 indexDescriptor( label1, propertyKey ) );
 
-        assertEquals( expectedIndexes, indexes );
+        Assertions.assertEquals( expectedIndexes, indexes );
     }
 
     @Test
-    public void shouldListAllConstraints() throws Exception
+    void shouldListAllConstraints() throws Exception
     {
         // Given
         createUniquenessConstraint( label1, propertyKey );
@@ -88,11 +88,11 @@ public class RecordStorageReaderSchemaTest extends RecordStorageReaderTestBase
                 uniqueConstraintDescriptor( label1, propertyKey ),
                 uniqueConstraintDescriptor( label2, propertyKey ) );
 
-        assertEquals( expectedConstraints, constraints );
+        Assertions.assertEquals( expectedConstraints, constraints );
     }
 
     @Test
-    public void shouldListAllConstraintsAtTimeOfSnapshot() throws Exception
+    void shouldListAllConstraintsAtTimeOfSnapshot() throws Exception
     {
         // Given
         createUniquenessConstraint( label1, propertyKey );
@@ -106,11 +106,11 @@ public class RecordStorageReaderSchemaTest extends RecordStorageReaderTestBase
         Set<?> expectedConstraints = asSet(
                 uniqueConstraintDescriptor( label1, propertyKey ) );
 
-        assertEquals( expectedConstraints, constraints );
+        Assertions.assertEquals( expectedConstraints, constraints );
     }
 
     @Test
-    public void shouldListAllConstraintsForLabel() throws Exception
+    void shouldListAllConstraintsForLabel() throws Exception
     {
         // Given
         createUniquenessConstraint( label1, propertyKey );
@@ -122,11 +122,11 @@ public class RecordStorageReaderSchemaTest extends RecordStorageReaderTestBase
         // Then
         Set<?> expectedConstraints = asSet( uniqueConstraintDescriptor( label1, propertyKey ) );
 
-        assertEquals( expectedConstraints, constraints );
+        Assertions.assertEquals( expectedConstraints, constraints );
     }
 
     @Test
-    public void shouldListAllConstraintsForLabelAtTimeOfSnapshot() throws Exception
+    void shouldListAllConstraintsForLabelAtTimeOfSnapshot() throws Exception
     {
         // Given
         createUniquenessConstraint( label1, propertyKey );
@@ -140,11 +140,11 @@ public class RecordStorageReaderSchemaTest extends RecordStorageReaderTestBase
         // Then
         Set<?> expectedConstraints = asSet( uniqueConstraintDescriptor( label1, propertyKey ) );
 
-        assertEquals( expectedConstraints, constraints );
+        Assertions.assertEquals( expectedConstraints, constraints );
     }
 
     @Test
-    public void shouldListAllConstraintsForLabelAndProperty() throws Exception
+    void shouldListAllConstraintsForLabelAndProperty() throws Exception
     {
         // Given
         createUniquenessConstraint( label1, propertyKey );
@@ -158,7 +158,7 @@ public class RecordStorageReaderSchemaTest extends RecordStorageReaderTestBase
         Set<?> expectedConstraints = asSet(
                 uniqueConstraintDescriptor( label1, propertyKey ) );
 
-        assertEquals( expectedConstraints, constraints );
+        Assertions.assertEquals( expectedConstraints, constraints );
     }
 
     private IndexDescriptor indexDescriptor( Label label, String propertyKey )

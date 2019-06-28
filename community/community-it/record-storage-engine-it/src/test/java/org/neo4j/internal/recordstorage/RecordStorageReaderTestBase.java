@@ -19,9 +19,8 @@
  */
 package org.neo4j.internal.recordstorage;
 
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.rules.RuleChain;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -34,6 +33,8 @@ import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.internal.schema.constraints.ConstraintDescriptorFactory;
+import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier;
 import org.neo4j.kernel.api.exceptions.RelationshipTypeIdNotFoundKernelException;
 import org.neo4j.kernel.database.TestDatabaseIdRepository;
@@ -49,53 +50,60 @@ import org.neo4j.storageengine.api.CommandCreationContext;
 import org.neo4j.storageengine.api.StorageCommand;
 import org.neo4j.storageengine.api.TransactionApplicationMode;
 import org.neo4j.storageengine.api.TransactionIdStore;
-import org.neo4j.test.rule.PageCacheAndDependenciesRule;
+import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.pagecache.EphemeralPageCacheExtension;
 import org.neo4j.test.rule.RecordStorageEngineRule;
+import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.token.DelegatingTokenHolder;
 import org.neo4j.token.TokenHolders;
 import org.neo4j.token.api.TokenHolder;
 import org.neo4j.token.api.TokenNotFoundException;
 import org.neo4j.values.storable.Values;
 
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.graphdb.Label.label;
 
 /**
  * Base class for disk layer tests, which test read-access to committed data.
  */
+@EphemeralPageCacheExtension
 public abstract class RecordStorageReaderTestBase
 {
     private static final ResourceLocker IGNORE_LOCKING = ( tracer, resourceType, resourceIds ) -> {};
 
-    private final PageCacheAndDependenciesRule storage = new PageCacheAndDependenciesRule();
     private final RecordStorageEngineRule storageEngineRule = new RecordStorageEngineRule();
 
-    @Rule
-    public final RuleChain rules = RuleChain.outerRule( storage ).around( storageEngineRule );
+    @Inject
+    private PageCache pageCache;
+    @Inject
+    private FileSystemAbstraction fs;
+    @Inject
+    private TestDirectory testDirectory;
 
-    protected final Label label1 = label( "FirstLabel" );
-    protected final Label label2 = label( "SecondLabel" );
-    protected final RelationshipType relType1 = RelationshipType.withName( "type1" );
-    protected final RelationshipType relType2 = RelationshipType.withName( "type2" );
-    protected final String propertyKey = "name";
-    protected final String otherPropertyKey = "age";
+    final Label label1 = label( "FirstLabel" );
+    final Label label2 = label( "SecondLabel" );
+    final RelationshipType relType1 = RelationshipType.withName( "type1" );
+    final RelationshipType relType2 = RelationshipType.withName( "type2" );
+    final String propertyKey = "name";
+    final String otherPropertyKey = "age";
     private final AtomicLong nextTxId = new AtomicLong( TransactionIdStore.BASE_TX_ID );
     private TokenHolders tokenHolders;
-    protected KernelStatement state;
-    protected RecordStorageReader storageReader;
-    protected RecordStorageEngine storageEngine;
+    private KernelStatement state;
+    RecordStorageReader storageReader;
+    RecordStorageEngine storageEngine;
     private RecordStorageReader commitReader;
     private CommandCreationContext commitContext;
 
-    @Before
-    public void before()
+    @BeforeEach
+    public void before() throws Throwable
     {
         this.tokenHolders = new TokenHolders(
                 new DelegatingTokenHolder( new SimpleTokenCreator(), TokenHolder.TYPE_PROPERTY_KEY ),
                 new DelegatingTokenHolder( new SimpleTokenCreator(), TokenHolder.TYPE_LABEL ),
                 new DelegatingTokenHolder( new SimpleTokenCreator(), TokenHolder.TYPE_RELATIONSHIP_TYPE ) );
         RecordStorageEngineRule.Builder builder =
-                storageEngineRule.getWith( storage.fileSystem(), storage.pageCache(), storage.directory().databaseLayout() ).tokenHolders( tokenHolders );
+                storageEngineRule.getWith( fs, pageCache, testDirectory.databaseLayout() ).tokenHolders( tokenHolders );
+
         builder = modify( builder );
         this.storageEngine = builder.build();
         this.storageReader = storageEngine.newReader();
@@ -104,6 +112,13 @@ public abstract class RecordStorageReaderTestBase
                 new TestDatabaseIdRepository().defaultDatabase() );
         this.commitReader = storageEngine.newReader();
         this.commitContext = storageEngine.newCommandCreationContext();
+        storageEngineRule.before();
+    }
+
+    @AfterEach
+    void after() throws Throwable
+    {
+        storageEngineRule.after( true );
     }
 
     RecordStorageEngineRule.Builder modify( RecordStorageEngineRule.Builder builder )
@@ -111,7 +126,7 @@ public abstract class RecordStorageReaderTestBase
         return builder;
     }
 
-    protected long createNode( Map<String,Object> properties, Label... labels ) throws Exception
+    long createNode( Map<String, Object> properties, Label... labels ) throws Exception
     {
         TxState txState = new TxState();
         long nodeId = commitContext.reserveNode();
@@ -128,14 +143,14 @@ public abstract class RecordStorageReaderTestBase
         return nodeId;
     }
 
-    protected void deleteNode( long nodeId ) throws Exception
+    void deleteNode( long nodeId ) throws Exception
     {
         TxState txState = new TxState();
         txState.nodeDoDelete( nodeId );
         apply( txState );
     }
 
-    protected long createRelationship( long sourceNode, long targetNode, RelationshipType relationshipType ) throws Exception
+    long createRelationship( long sourceNode, long targetNode, RelationshipType relationshipType ) throws Exception
     {
         TxState txState = new TxState();
         long relationshipId = commitContext.reserveRelationship();
@@ -144,7 +159,7 @@ public abstract class RecordStorageReaderTestBase
         return relationshipId;
     }
 
-    protected void deleteRelationship( long relationshipId ) throws Exception
+    void deleteRelationship( long relationshipId ) throws Exception
     {
         TxState txState = new TxState();
         try ( RecordRelationshipScanCursor cursor = commitReader.allocateRelationshipScanCursor() )
@@ -156,7 +171,7 @@ public abstract class RecordStorageReaderTestBase
         apply( txState );
     }
 
-    protected void createUniquenessConstraint( Label label, String propertyKey ) throws Exception
+    void createUniquenessConstraint( Label label, String propertyKey ) throws Exception
     {
         createUniqueIndex( label, propertyKey );
         TxState txState = new TxState();
@@ -164,7 +179,7 @@ public abstract class RecordStorageReaderTestBase
         apply( txState );
     }
 
-    protected void createNodeKeyConstraint( Label label, String propertyKey ) throws Exception
+    void createNodeKeyConstraint( Label label, String propertyKey ) throws Exception
     {
         createUniqueIndex( label, propertyKey );
         TxState txState = new TxState();
@@ -172,7 +187,7 @@ public abstract class RecordStorageReaderTestBase
         apply( txState );
     }
 
-    protected void createUniqueIndex( Label label, String propertyKey ) throws Exception
+    private void createUniqueIndex( Label label, String propertyKey ) throws Exception
     {
         TxState txState = new TxState();
         txState.indexDoAdd( IndexDescriptorFactory.uniqueForSchema(
@@ -180,7 +195,7 @@ public abstract class RecordStorageReaderTestBase
         apply( txState );
     }
 
-    protected void createIndex( Label label, String propertyKey ) throws Exception
+    void createIndex( Label label, String propertyKey ) throws Exception
     {
         TxState txState = new TxState();
         txState.indexDoAdd( IndexDescriptorFactory.forSchema(
@@ -188,14 +203,14 @@ public abstract class RecordStorageReaderTestBase
         apply( txState );
     }
 
-    protected void createNodePropertyExistenceConstraint( Label label, String propertyKey ) throws Exception
+    void createNodePropertyExistenceConstraint( Label label, String propertyKey ) throws Exception
     {
         TxState txState = new TxState();
         txState.constraintDoAdd( ConstraintDescriptorFactory.existsForLabel( getOrCreateLabelId( label ), getOrCreatePropertyKeyId( propertyKey ) ) );
         apply( txState );
     }
 
-    protected void createRelPropertyExistenceConstraint( RelationshipType relationshipType, String propertyKey ) throws Exception
+    void createRelPropertyExistenceConstraint( RelationshipType relationshipType, String propertyKey ) throws Exception
     {
         TxState txState = new TxState();
         txState.constraintDoAdd( ConstraintDescriptorFactory.existsForRelType( getOrCreateRelationshipTypeId( relationshipType ),
@@ -226,17 +241,17 @@ public abstract class RecordStorageReaderTestBase
         storageEngine.apply( new GroupOfCommands( txId, commands.toArray( new StorageCommand[0] ) ), TransactionApplicationMode.EXTERNAL );
     }
 
-    protected int labelId( Label label )
+    int labelId( Label label )
     {
         return tokenHolders.labelTokens().getIdByName( label.name() );
     }
 
-    protected int relationshipTypeId( RelationshipType type )
+    int relationshipTypeId( RelationshipType type )
     {
         return tokenHolders.relationshipTypeTokens().getIdByName( type.name() );
     }
 
-    protected String relationshipType( int id ) throws KernelException
+    String relationshipType( int id ) throws KernelException
     {
         try
         {
@@ -248,7 +263,7 @@ public abstract class RecordStorageReaderTestBase
         }
     }
 
-    protected int propertyKeyId( String propertyKey )
+    int propertyKeyId( String propertyKey )
     {
         return tokenHolders.propertyKeyTokens().getIdByName( propertyKey );
     }

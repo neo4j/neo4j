@@ -19,7 +19,7 @@
  */
 package org.neo4j.internal.recordstorage;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.lang.reflect.Array;
 
@@ -29,16 +29,16 @@ import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 
 import static java.util.Collections.singletonMap;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 /**
  * Test read access to committed properties.
  */
-public class RecordStorageReaderPropertyTest extends RecordStorageReaderTestBase
+class RecordStorageReaderPropertyTest extends RecordStorageReaderTestBase
 {
     @Test
-    public void shouldGetAllNodeProperties() throws Exception
+    void shouldGetAllNodeProperties() throws Exception
     {
         // GIVEN
         String longString =
@@ -102,8 +102,7 @@ public class RecordStorageReaderPropertyTest extends RecordStorageReaderTestBase
                         Value propVal = props.propertyValue();
 
                         //then
-                        assertTrue( propVal + ".equals(" + value + ")",
-                                propVal.equals( Values.of( value ) ) );
+                        assertTrue( propVal.equals( Values.of( value ) ), propVal + ".equals(" + value + ")" );
                     }
                     else
                     {
@@ -115,7 +114,7 @@ public class RecordStorageReaderPropertyTest extends RecordStorageReaderTestBase
         }
     }
 
-    private Object array( int length, Class<?> componentType )
+    private static Object array( int length, Class<?> componentType )
     {
         Object array = Array.newInstance( componentType, length );
         for ( int i = 0; i < length; i++ )
@@ -125,7 +124,7 @@ public class RecordStorageReaderPropertyTest extends RecordStorageReaderTestBase
         return array;
     }
 
-    private Object createNew( Class<?> type )
+    private static Object createNew( Class<?> type )
     {
         if ( type == int.class )
         {
