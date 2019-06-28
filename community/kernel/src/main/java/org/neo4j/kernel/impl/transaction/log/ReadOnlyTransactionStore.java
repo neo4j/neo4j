@@ -25,7 +25,6 @@ import org.neo4j.configuration.Config;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.kernel.impl.transaction.log.TransactionMetadataCache.TransactionMetadata;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReader;
 import org.neo4j.kernel.impl.transaction.log.entry.VersionAwareLogEntryReader;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
@@ -72,12 +71,6 @@ public class ReadOnlyTransactionStore implements Lifecycle, LogicalTransactionSt
     public TransactionCursor getTransactionsInReverseOrder( LogPosition backToPosition ) throws IOException
     {
         return physicalStore.getTransactionsInReverseOrder( backToPosition );
-    }
-
-    @Override
-    public TransactionMetadata getMetadataFor( long transactionId ) throws IOException
-    {
-        return physicalStore.getMetadataFor( transactionId );
     }
 
     @Override

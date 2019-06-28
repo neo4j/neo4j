@@ -22,7 +22,6 @@ package org.neo4j.kernel.impl.transaction.log;
 import java.io.IOException;
 
 import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
-import org.neo4j.kernel.impl.transaction.log.TransactionMetadataCache.TransactionMetadata;
 import org.neo4j.kernel.impl.transaction.log.entry.CheckPoint;
 
 /**
@@ -42,8 +41,7 @@ public interface LogicalTransactionStore
      * or if the transaction has been committed, but information about it is no longer available for some reason.
      * @throws IOException if there was an I/O related error looking for the start transaction.
      */
-    TransactionCursor getTransactions( long transactionIdToStartFrom )
-            throws IOException;
+    TransactionCursor getTransactions( long transactionIdToStartFrom ) throws IOException;
 
     /**
      * Acquires a {@link TransactionCursor cursor} which will provide {@link CommittedTransactionRepresentation}
@@ -72,18 +70,5 @@ public interface LogicalTransactionStore
      * for committed transactions in the given range in reverse order.
      * @throws IOException if there was an I/O related error looking for the start transaction.
      */
-    TransactionCursor getTransactionsInReverseOrder( LogPosition backToPosition )
-            throws IOException;
-
-    /**
-     * Looks up meta data about a committed transaction.
-     *
-     * @param transactionId id of the transaction to look up meta data for.
-     * @return {@link TransactionMetadata} containing meta data about the specified transaction.
-     * @throws NoSuchTransactionException if the requested transaction hasn't been committed,
-     * or if the transaction has been committed, but information about it is no longer available for some reason.
-     * @throws IOException if there was an I/O related error during reading the meta data.
-     */
-    TransactionMetadataCache.TransactionMetadata getMetadataFor( long transactionId )
-            throws IOException;
+    TransactionCursor getTransactionsInReverseOrder( LogPosition backToPosition ) throws IOException;
 }

@@ -26,12 +26,13 @@ import org.neo4j.internal.helpers.collection.LruCache;
 public class TransactionMetadataCache
 {
     private static final int DEFAULT_TRANSACTION_CACHE_SIZE = 100_000;
-    private final LruCache<Long /*tx id*/, TransactionMetadata> txStartPositionCache;
+    private final LruCache<Long /*tx id*/,TransactionMetadata> txStartPositionCache;
 
     public TransactionMetadataCache()
     {
         this( DEFAULT_TRANSACTION_CACHE_SIZE );
     }
+
     public TransactionMetadataCache( int transactionCacheSize )
     {
         this.txStartPositionCache = new LruCache<>( "Tx start position cache", transactionCacheSize );
@@ -47,7 +48,7 @@ public class TransactionMetadataCache
         return txStartPositionCache.get( txId );
     }
 
-    public TransactionMetadata cacheTransactionMetadata( long txId, LogPosition position, int masterId,
+    public void cacheTransactionMetadata( long txId, LogPosition position, int masterId,
                                                          int authorId, long checksum, long timeWritten )
     {
         if ( position.getByteOffset() == -1 )
@@ -57,7 +58,6 @@ public class TransactionMetadataCache
 
         TransactionMetadata result = new TransactionMetadata( masterId, authorId, position, checksum, timeWritten );
         txStartPositionCache.put( txId, result );
-        return result;
     }
 
     public static class TransactionMetadata

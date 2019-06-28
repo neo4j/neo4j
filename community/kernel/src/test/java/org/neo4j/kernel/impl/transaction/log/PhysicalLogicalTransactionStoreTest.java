@@ -37,7 +37,6 @@ import org.neo4j.kernel.impl.api.TransactionToApply;
 import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.SimpleTransactionIdStore;
 import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
-import org.neo4j.kernel.impl.transaction.log.TransactionMetadataCache.TransactionMetadata;
 import org.neo4j.kernel.impl.transaction.log.files.LogFile;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
 import org.neo4j.kernel.impl.transaction.log.files.LogFilesBuilder;
@@ -124,7 +123,7 @@ class PhysicalLogicalTransactionStoreTest
         positionCache.clear();
 
         final LogicalTransactionStore store = new PhysicalLogicalTransactionStore( logFiles, positionCache, logEntryReader(), monitors, true );
-        verifyTransaction( transactionIdStore, positionCache, additionalHeader, masterId, authorId, timeStarted,
+        verifyTransaction( positionCache, additionalHeader, masterId, authorId, timeStarted,
                 latestCommittedTxWhenStarted, timeCommitted, store );
     }
 
@@ -291,30 +290,8 @@ class PhysicalLogicalTransactionStoreTest
         life.start();
         try
         {
-            verifyTransaction( transactionIdStore, positionCache, additionalHeader, masterId, authorId, timeStarted,
+            verifyTransaction( positionCache, additionalHeader, masterId, authorId, timeStarted,
                     latestCommittedTxWhenStarted, timeCommitted, store );
-        }
-        finally
-        {
-            life.shutdown();
-        }
-    }
-
-    @Test
-    void shouldThrowNoSuchTransactionExceptionIfMetadataNotFound()
-    {
-        // GIVEN
-        LogFiles logFiles = mock( LogFiles.class );
-        TransactionMetadataCache cache = new TransactionMetadataCache();
-
-        LifeSupport life = new LifeSupport();
-
-        final LogicalTransactionStore txStore = new PhysicalLogicalTransactionStore( logFiles, cache, logEntryReader(), monitors, true );
-
-        try
-        {
-            life.start();
-            assertThrows( NoSuchTransactionException.class, () -> txStore.getMetadataFor( 10 ) );
         }
         finally
         {
@@ -374,11 +351,9 @@ class PhysicalLogicalTransactionStoreTest
         return Collections.singletonList( new TestCommand() );
     }
 
-    private void verifyTransaction( TransactionIdStore transactionIdStore, TransactionMetadataCache positionCache,
-            byte[] additionalHeader, int masterId, int authorId, long timeStarted, long latestCommittedTxWhenStarted,
-            long timeCommitted, LogicalTransactionStore store ) throws IOException
+    private void verifyTransaction( TransactionMetadataCache positionCache, byte[] additionalHeader, int masterId, int authorId, long timeStarted,
+            long latestCommittedTxWhenStarted, long timeCommitted, LogicalTransactionStore store ) throws IOException
     {
-        TransactionMetadata expectedMetadata;
         try ( TransactionCursor cursor = store.getTransactions( TransactionIdStore.BASE_TX_ID + 1 ) )
         {
             boolean hasNext = cursor.next();
@@ -391,14 +366,9 @@ class PhysicalLogicalTransactionStoreTest
             assertEquals( timeStarted, transaction.getTimeStarted() );
             assertEquals( timeCommitted, transaction.getTimeCommitted() );
             assertEquals( latestCommittedTxWhenStarted, transaction.getLatestCommittedTxWhenStarted() );
-            expectedMetadata = new TransactionMetadata( masterId, authorId,
-                    tx.getStartEntry().getStartPosition(), tx.getStartEntry().checksum(), timeCommitted );
         }
 
         positionCache.clear();
-
-        TransactionMetadata actualMetadata = store.getMetadataFor( transactionIdStore.getLastCommittedTransactionId() );
-        assertEquals( expectedMetadata, actualMetadata );
     }
 
     private static class FakeRecoveryVisitor implements RecoveryApplier

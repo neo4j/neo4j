@@ -22,9 +22,6 @@ package org.neo4j.kernel.impl.transaction.log;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 
-import org.neo4j.cursor.IOCursor;
-import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
-import org.neo4j.kernel.impl.transaction.log.TransactionMetadataCache.TransactionMetadata;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntry;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryCommit;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReader;
@@ -38,16 +35,9 @@ import org.neo4j.monitoring.Monitors;
 
 import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryByteCodes.TX_COMMIT;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryByteCodes.TX_START;
-import static org.neo4j.storageengine.api.TransactionIdStore.BASE_TX_CHECKSUM;
-import static org.neo4j.storageengine.api.TransactionIdStore.BASE_TX_COMMIT_TIMESTAMP;
-import static org.neo4j.storageengine.api.TransactionIdStore.BASE_TX_ID;
 
 public class PhysicalLogicalTransactionStore implements LogicalTransactionStore
 {
-    private static final TransactionMetadataCache.TransactionMetadata METADATA_FOR_EMPTY_STORE =
-            new TransactionMetadataCache.TransactionMetadata( -1, -1, LogPosition.start( 0 ), BASE_TX_CHECKSUM,
-                    BASE_TX_COMMIT_TIMESTAMP );
-
     private final LogFile logFile;
     private final TransactionMetadataCache transactionMetadataCache;
     private final LogEntryReader<ReadableClosablePositionAwareChannel> logEntryReader;
@@ -119,45 +109,6 @@ public class PhysicalLogicalTransactionStore implements LogicalTransactionStore
         }
     }
 
-    @Override
-    public TransactionMetadata getMetadataFor( long transactionId ) throws IOException
-    {
-        if ( transactionId <= BASE_TX_ID )
-        {
-            return METADATA_FOR_EMPTY_STORE;
-        }
-
-        TransactionMetadata transactionMetadata =
-                transactionMetadataCache.getTransactionMetadata( transactionId );
-        if ( transactionMetadata == null )
-        {
-            try ( IOCursor<CommittedTransactionRepresentation> cursor = getTransactions( transactionId ) )
-            {
-                while ( cursor.next() )
-                {
-                    CommittedTransactionRepresentation tx = cursor.get();
-                    LogEntryCommit commitEntry = tx.getCommitEntry();
-                    long committedTxId = commitEntry.getTxId();
-                    long timeWritten = commitEntry.getTimeWritten();
-                    TransactionMetadata metadata = transactionMetadataCache.cacheTransactionMetadata( committedTxId,
-                            tx.getStartEntry().getStartPosition(), tx.getStartEntry().getMasterId(),
-                            tx.getStartEntry().getLocalId(), LogEntryStart.checksum( tx.getStartEntry() ),
-                            timeWritten );
-                    if ( committedTxId == transactionId )
-                    {
-                        transactionMetadata = metadata;
-                    }
-                }
-            }
-            if ( transactionMetadata == null )
-            {
-                throw new NoSuchTransactionException( transactionId );
-            }
-        }
-
-        return transactionMetadata;
-    }
-
     public static class TransactionPositionLocator implements LogFile.LogFileVisitor
     {
         private final long startTransactionId;
@@ -199,8 +150,7 @@ public class PhysicalLogicalTransactionStore implements LogicalTransactionStore
             return true;
         }
 
-        public LogPosition getAndCacheFoundLogPosition( TransactionMetadataCache transactionMetadataCache )
-                throws NoSuchTransactionException
+        LogPosition getAndCacheFoundLogPosition( TransactionMetadataCache transactionMetadataCache ) throws NoSuchTransactionException
         {
             if ( startEntryForFoundTransaction == null )
             {
