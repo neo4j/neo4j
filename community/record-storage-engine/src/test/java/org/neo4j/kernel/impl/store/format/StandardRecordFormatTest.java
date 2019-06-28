@@ -21,9 +21,9 @@ package org.neo4j.kernel.impl.store.format;
 
 import org.neo4j.kernel.impl.store.format.standard.Standard;
 
-public class StandardRecordFormatTest extends AbstractRecordFormatTest
+class StandardRecordFormatTest extends AbstractRecordFormatTest
 {
-    public StandardRecordFormatTest()
+    StandardRecordFormatTest()
     {
         super( Standard.LATEST_RECORD_FORMATS, 35, 36 );
     }

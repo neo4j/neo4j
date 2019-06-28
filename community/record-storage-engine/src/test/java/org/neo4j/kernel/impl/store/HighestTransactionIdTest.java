@@ -19,7 +19,7 @@
  */
 package org.neo4j.kernel.impl.store;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -28,14 +28,14 @@ import org.neo4j.test.Race;
 
 import static java.lang.Math.max;
 import static java.lang.Runtime.getRuntime;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public class HighestTransactionIdTest
+class HighestTransactionIdTest
 {
     @Test
-    public void shouldHardSetHighest()
+    void shouldHardSetHighest()
     {
         // GIVEN
         HighestTransactionId highest = new HighestTransactionId( 10, 10, 10 );
@@ -48,7 +48,7 @@ public class HighestTransactionIdTest
     }
 
     @Test
-    public void shouldOnlyKeepTheHighestOffered()
+    void shouldOnlyKeepTheHighestOffered()
     {
         // GIVEN
         HighestTransactionId highest = new HighestTransactionId( -1, -1, -1 );
@@ -62,7 +62,7 @@ public class HighestTransactionIdTest
     }
 
     @Test
-    public void shouldKeepHighestDuringConcurrentOfferings() throws Throwable
+    void shouldKeepHighestDuringConcurrentOfferings() throws Throwable
     {
         // GIVEN
         final HighestTransactionId highest = new HighestTransactionId( -1, -1, -1 );

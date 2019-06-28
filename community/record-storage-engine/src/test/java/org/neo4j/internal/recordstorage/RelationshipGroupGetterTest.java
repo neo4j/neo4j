@@ -19,14 +19,14 @@
  */
 package org.neo4j.internal.recordstorage;
 
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.RuleChain;
+import org.junit.jupiter.api.Test;
 import org.mockito.InOrder;
 
 import org.neo4j.configuration.Config;
 import org.neo4j.internal.id.DefaultIdGeneratorFactory;
 import org.neo4j.internal.recordstorage.RelationshipGroupGetter.RelationshipGroupPosition;
+import org.neo4j.io.fs.EphemeralFileSystemAbstraction;
+import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.RecordStore;
 import org.neo4j.kernel.impl.store.StoreFactory;
@@ -36,34 +36,35 @@ import org.neo4j.kernel.impl.store.record.RecordLoad;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.NullLogProvider;
-import org.neo4j.test.rule.PageCacheRule;
+import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.pagecache.EphemeralPageCacheExtension;
 import org.neo4j.test.rule.TestDirectory;
-import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNull;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.spy;
 
-public class RelationshipGroupGetterTest
+@EphemeralPageCacheExtension
+class RelationshipGroupGetterTest
 {
-    private final EphemeralFileSystemRule fs = new EphemeralFileSystemRule();
-    private final PageCacheRule pageCache = new PageCacheRule();
-    private final TestDirectory testDirectory = TestDirectory.testDirectory( fs );
-    @Rule
-    public final RuleChain ruleChain = RuleChain.outerRule( fs ).around( testDirectory ).around( pageCache );
+    @Inject
+    private EphemeralFileSystemAbstraction fs;
+    @Inject
+    private PageCache pageCache;
+    @Inject
+    private TestDirectory testDirectory;
 
     @Test
-    public void shouldAbortLoadingGroupChainIfComeTooFar()
+    void shouldAbortLoadingGroupChainIfComeTooFar()
     {
         // GIVEN a node with relationship group chain 2-->4-->10-->23
         LogProvider logProvider = NullLogProvider.getInstance();
-        StoreFactory storeFactory = new StoreFactory( testDirectory.databaseLayout(), Config.defaults(), new DefaultIdGeneratorFactory( fs.get() ),
-                pageCache.getPageCache( fs.get() ), fs.get(),
-                logProvider );
+        StoreFactory storeFactory = new StoreFactory( testDirectory.databaseLayout(), Config.defaults(), new DefaultIdGeneratorFactory( fs  ),
+                pageCache, fs, logProvider );
         try ( NeoStores stores = storeFactory.openNeoStores( true, StoreType.RELATIONSHIP_GROUP ) )
         {
             RecordStore<RelationshipGroupRecord> store = spy( stores.getRelationshipGroupStore() );
@@ -115,7 +116,7 @@ public class RelationshipGroupGetterTest
         }
     }
 
-    private RelationshipGroupRecord group( long id, int type )
+    private static RelationshipGroupRecord group( long id, int type )
     {
         RelationshipGroupRecord group = new RelationshipGroupRecord( id, type );
         group.setInUse( true );

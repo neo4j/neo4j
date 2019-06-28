@@ -19,8 +19,7 @@
  */
 package org.neo4j.internal.batchimport.staging;
 
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.Arrays;
 import java.util.concurrent.atomic.AtomicLong;
@@ -28,13 +27,13 @@ import java.util.concurrent.atomic.AtomicLong;
 import org.neo4j.internal.batchimport.Configuration;
 import org.neo4j.internal.batchimport.stats.Keys;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.internal.batchimport.Configuration.DEFAULT;
 
-public class StageTest
+class StageTest
 {
     @Test
-    public void shouldReceiveBatchesInOrder()
+    void shouldReceiveBatchesInOrder()
     {
         // GIVEN
         Configuration config = new Configuration.Overridden( DEFAULT )
@@ -92,7 +91,7 @@ public class StageTest
         // THEN
         for ( Step<?> step : execution.steps() )
         {
-            Assert.assertEquals( "For " + step, batches, step.stats().stat( Keys.done_batches ).asLong() );
+            assertEquals( batches, step.stats().stat( Keys.done_batches ).asLong(), "For " + step );
         }
         stage.close();
     }
@@ -114,7 +113,7 @@ public class StageTest
         @Override
         public long receive( long ticket, Object batch )
         {
-            assertEquals( "For " + batch + " in " + name(), lastTicket.getAndIncrement(), ticket );
+            assertEquals( lastTicket.getAndIncrement(), ticket, "For " + batch + " in " + name() );
             return super.receive( ticket, batch );
         }
 

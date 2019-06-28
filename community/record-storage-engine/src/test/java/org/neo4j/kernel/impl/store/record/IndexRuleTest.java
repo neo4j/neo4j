@@ -19,7 +19,7 @@
  */
 package org.neo4j.kernel.impl.store.record;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.Optional;
 
@@ -29,14 +29,14 @@ import org.neo4j.storageengine.api.StorageIndexReference;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.test.assertion.Assert.assertException;
 
-public class IndexRuleTest extends SchemaRuleTestBase
+class IndexRuleTest extends SchemaRuleTestBase
 {
     @Test
-    public void shouldCreateGeneralIndex()
+    void shouldCreateGeneralIndex()
     {
         // GIVEN
         IndexDescriptor descriptor = forLabel( LABEL_ID, PROPERTY_ID_1 );
@@ -53,7 +53,7 @@ public class IndexRuleTest extends SchemaRuleTestBase
     }
 
     @Test
-    public void shouldCreateUniqueIndex()
+    void shouldCreateUniqueIndex()
     {
         // GIVEN
         IndexDescriptor descriptor = uniqueForLabel( LABEL_ID, PROPERTY_ID_1 );
@@ -74,7 +74,7 @@ public class IndexRuleTest extends SchemaRuleTestBase
     }
 
     @Test
-    public void indexRulesAreEqualBasedOnIndexDescriptor()
+    void indexRulesAreEqualBasedOnIndexDescriptor()
     {
         assertEqualityByDescriptor( forLabel( LABEL_ID, PROPERTY_ID_1 ) );
         assertEqualityByDescriptor( uniqueForLabel( LABEL_ID, PROPERTY_ID_1 ) );
@@ -83,7 +83,7 @@ public class IndexRuleTest extends SchemaRuleTestBase
     }
 
     @Test
-    public void detectUniqueIndexWithoutOwningConstraint()
+    void detectUniqueIndexWithoutOwningConstraint()
     {
         IndexDescriptor descriptor = uniqueForLabel( LABEL_ID, PROPERTY_ID_1 );
         StorageIndexReference indexRule = new DefaultStorageIndexReference( descriptor, RULE_ID, null );

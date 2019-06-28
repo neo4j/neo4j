@@ -19,28 +19,31 @@
  */
 package org.neo4j.kernel.impl.store.format;
 
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import org.neo4j.storageengine.api.format.CapabilityType;
+import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.RandomExtension;
 import org.neo4j.test.rule.RandomRule;
 
-import static org.junit.Assert.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.neo4j.internal.helpers.collection.Iterators.array;
 
-public class BaseRecordFormatsTest
+@ExtendWith( RandomExtension.class )
+class BaseRecordFormatsTest
 {
     private static final RecordStorageCapability[] CAPABILITIES = RecordStorageCapability.values();
     private static final CapabilityType[] CAPABILITY_TYPES = CapabilityType.values();
 
-    @Rule
-    public final RandomRule random = new RandomRule();
+    @Inject
+    private RandomRule random;
 
     @Test
-    public void shouldReportCompatibilityBetweenTwoEqualSetsOfCapabilities()
+    void shouldReportCompatibilityBetweenTwoEqualSetsOfCapabilities()
     {
         // given
         RecordStorageCapability[] capabilities = random.selection( CAPABILITIES, CAPABILITIES.length / 2, CAPABILITIES.length, false );
@@ -50,19 +53,19 @@ public class BaseRecordFormatsTest
     }
 
     @Test
-    public void shouldReportCompatibilityForAdditiveAdditionalCapabilities()
+    void shouldReportCompatibilityForAdditiveAdditionalCapabilities()
     {
         // given
         RecordStorageCapability[] from = array( RecordStorageCapability.SCHEMA );
         RecordStorageCapability[] to = array( RecordStorageCapability.SCHEMA, RecordStorageCapability.POINT_PROPERTIES,
-                RecordStorageCapability.TEMPORAL_PROPERTIES );
+            RecordStorageCapability.TEMPORAL_PROPERTIES );
 
         // then
         assertCompatibility( from, to, true, CAPABILITY_TYPES );
     }
 
     @Test
-    public void shouldReportIncompatibilityForChangingAdditionalCapabilities()
+    void shouldReportIncompatibilityForChangingAdditionalCapabilities()
     {
         // given
         RecordStorageCapability[] from = array( RecordStorageCapability.SCHEMA );
@@ -73,7 +76,7 @@ public class BaseRecordFormatsTest
     }
 
     @Test
-    public void shouldReportIncompatibilityForAdditiveRemovedCapabilities()
+    void shouldReportIncompatibilityForAdditiveRemovedCapabilities()
     {
         // given
         RecordStorageCapability[] from = array( RecordStorageCapability.SCHEMA, RecordStorageCapability.POINT_PROPERTIES,
@@ -88,7 +91,7 @@ public class BaseRecordFormatsTest
     {
         for ( CapabilityType type : capabilityTypes )
         {
-            assertEquals( compatible, format( from ).hasCompatibleCapabilities( format( to ), type ) );
+            Assertions.assertEquals( compatible, format( from ).hasCompatibleCapabilities( format( to ), type ) );
         }
     }
 

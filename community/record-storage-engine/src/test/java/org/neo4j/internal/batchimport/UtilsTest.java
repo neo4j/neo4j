@@ -19,26 +19,26 @@
  */
 package org.neo4j.internal.batchimport;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.Arrays;
 import java.util.Random;
 import java.util.concurrent.ThreadLocalRandom;
 
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public class UtilsTest
+class UtilsTest
 {
 
     @Test
-    public void shouldDetectCollisions()
+    void shouldDetectCollisions()
     {
         // GIVEN
-        long[] first = new long[] {1, 4, 7, 10, 100, 101};
-        long[] other = new long[] {2, 3, 34, 75, 101};
+        long[] first = {1, 4, 7, 10, 100, 101};
+        long[] other = {2, 3, 34, 75, 101};
 
         // WHEN
         boolean collides = Utils.anyIdCollides( first, first.length, other, other.length );
@@ -48,11 +48,11 @@ public class UtilsTest
     }
 
     @Test
-    public void shouldNotReportDisjointArraysAsCollision()
+    void shouldNotReportDisjointArraysAsCollision()
     {
         // GIVEN
-        long[] first = new long[] {1, 4, 7, 10, 100, 101};
-        long[] other = new long[] {2, 3, 34, 75, 102};
+        long[] first = {1, 4, 7, 10, 100, 101};
+        long[] other = {2, 3, 34, 75, 102};
 
         // WHEN
         boolean collides = Utils.anyIdCollides( first, first.length, other, other.length );
@@ -62,7 +62,7 @@ public class UtilsTest
     }
 
     @Test
-    public void shouldBeCorrectForSomeRandomBatches()
+    void shouldBeCorrectForSomeRandomBatches()
     {
         // GIVEN
         Random random = ThreadLocalRandom.current();
@@ -85,11 +85,11 @@ public class UtilsTest
     }
 
     @Test
-    public void shouldMergeIdsInto()
+    void shouldMergeIdsInto()
     {
         // GIVEN
-        long[] values = new long[]{2, 4, 10, 11, 14};
-        long[] into = new long[]{1, 5, 6, 11, 25};
+        long[] values = {2, 4, 10, 11, 14};
+        long[] into = {1, 5, 6, 11, 25};
         int intoLengthBefore = into.length;
         into = Arrays.copyOf( into, into.length + values.length );
 
@@ -97,11 +97,11 @@ public class UtilsTest
         Utils.mergeSortedInto( values, into, intoLengthBefore );
 
         // THEN
-        assertArrayEquals( new long[] {1, 2, 4, 5, 6, 10, 11, 11, 14, 25}, into );
+        assertArrayEquals( new long[]{1, 2, 4, 5, 6, 10, 11, 11, 14, 25}, into );
     }
 
     @Test
-    public void shouldMergeSomeRandomIdsInto()
+    void shouldMergeSomeRandomIdsInto()
     {
         // GIVEN
         Random random = ThreadLocalRandom.current();
@@ -119,7 +119,7 @@ public class UtilsTest
         }
     }
 
-    private long[] manuallyMerge( long[] values, long[] into )
+    private static long[] manuallyMerge( long[] values, long[] into )
     {
         long[] all = new long[values.length + into.length];
         System.arraycopy( values, 0, all, 0, values.length );
@@ -128,7 +128,7 @@ public class UtilsTest
         return all;
     }
 
-    private boolean actuallyCollides( long[] b1, long[] b2 )
+    private static boolean actuallyCollides( long[] b1, long[] b2 )
     {
         for ( int i = 0; i < b1.length; i++ )
         {
@@ -143,14 +143,14 @@ public class UtilsTest
         return false;
     }
 
-    private long[] randomBatch( int length, Random random, int max )
+    private static long[] randomBatch( int length, Random random, int max )
     {
         long[] result = new long[length];
         randomBatchInto( result, length, random, max );
         return result;
     }
 
-    private void randomBatchInto( long[] into, int length, Random random, int max )
+    private static void randomBatchInto( long[] into, int length, Random random, int max )
     {
         for ( int i = 0; i < length; i++ )
         {

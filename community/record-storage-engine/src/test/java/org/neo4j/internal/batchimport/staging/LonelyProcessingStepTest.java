@@ -19,25 +19,26 @@
  */
 package org.neo4j.internal.batchimport.staging;
 
-import org.junit.ClassRule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Timeout;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.util.ArrayList;
 import java.util.List;
 
 import org.neo4j.internal.batchimport.Configuration;
-import org.neo4j.test.rule.SuppressOutput;
+import org.neo4j.test.extension.SuppressOutputExtension;
 
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public class LonelyProcessingStepTest
+@ExtendWith( SuppressOutputExtension.class )
+class LonelyProcessingStepTest
 {
-    @ClassRule
-    public static SuppressOutput mute = SuppressOutput.suppressAll();
 
-    @Test( timeout = 10_000 )
-    public void issuePanicBeforeCompletionOnError() throws InterruptedException
+    @Test
+    @Timeout( 10 )
+    void issuePanicBeforeCompletionOnError() throws Exception
     {
         List<Step<?>> stepsPipeline = new ArrayList<>();
         FaultyLonelyProcessingStepTest faultyStep = new FaultyLonelyProcessingStepTest( stepsPipeline );
@@ -47,14 +48,14 @@ public class LonelyProcessingStepTest
         faultyStep.awaitCompleted();
 
         assertTrue( faultyStep.endOfUpstreamCalled );
-        assertTrue( "On upstream end step should be already on panic in case of exception",
-                faultyStep.isPanicOnEndUpstream() );
+        assertTrue(
+            faultyStep.isPanicOnEndUpstream(), "On upstream end step should be already on panic in case of exception" );
         assertTrue( faultyStep.isPanic() );
         assertFalse( faultyStep.stillWorking() );
         assertTrue( faultyStep.isCompleted() );
     }
 
-    private class FaultyLonelyProcessingStepTest extends LonelyProcessingStep
+    private static class FaultyLonelyProcessingStepTest extends LonelyProcessingStep
     {
         private volatile boolean endOfUpstreamCalled;
         private volatile boolean panicOnEndUpstream;

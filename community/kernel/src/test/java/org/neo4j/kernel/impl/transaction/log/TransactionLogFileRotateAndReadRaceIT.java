@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.transaction.log;
 
+import org.junit.After;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
@@ -67,12 +68,18 @@ public class TransactionLogFileRotateAndReadRaceIT
     private final DefaultFileSystemRule fileSystemRule = new DefaultFileSystemRule();
     private final OtherThreadRule<Void> t2 = new OtherThreadRule<>( getClass().getName() + "-T2" );
     @Rule
-    public final RuleChain rules = RuleChain.outerRule( directory ).around( life ).around( t2 ).around( fileSystemRule );
+    public final RuleChain rules = RuleChain.outerRule( directory ).around( life ).around( fileSystemRule );
 
     // If any of these limits are reached the test ends, that or if there's a failure of course
     private static final long LIMIT_TIME = SECONDS.toMillis( 5 );
     private static final int LIMIT_ROTATIONS = 500;
     private static final int LIMIT_READS = 1_000;
+
+    @After
+    public void tearDown() throws Exception
+    {
+        t2.close();
+    }
 
     @Test
     public void shouldNotSeeEmptyLogFileWhenReadingTransactionStream() throws Exception

@@ -19,9 +19,8 @@
  */
 package org.neo4j.internal.batchimport;
 
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.RuleChain;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.io.File;
 import java.io.IOException;
@@ -43,58 +42,52 @@ import org.neo4j.internal.batchimport.input.csv.CsvInput;
 import org.neo4j.internal.batchimport.input.csv.DataFactories;
 import org.neo4j.internal.batchimport.input.csv.DataFactory;
 import org.neo4j.internal.batchimport.staging.ExecutionMonitors;
-import org.neo4j.io.fs.DefaultFileSystemAbstraction;
-import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.impl.store.format.standard.StandardV3_4;
 import org.neo4j.logging.internal.NullLogService;
 import org.neo4j.scheduler.JobScheduler;
+import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.RandomExtension;
+import org.neo4j.test.extension.TestDirectoryExtension;
 import org.neo4j.test.rule.RandomRule;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.scheduler.ThreadPoolJobScheduler;
 
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.csv.reader.Configuration.COMMAS;
 
-public class ImportPanicIT
+@ExtendWith( {RandomExtension.class, TestDirectoryExtension.class} )
+class ImportPanicIT
 {
     private static final int BUFFER_SIZE = 1000;
 
-    private final FileSystemAbstraction fs = new DefaultFileSystemAbstraction();
-    private final TestDirectory directory = TestDirectory.testDirectory();
-    private final RandomRule random = new RandomRule();
-
-    @Rule
-    public final RuleChain rules = RuleChain.outerRule( random ).around( directory );
+    @Inject
+    private TestDirectory directory;
+    @Inject
+    private RandomRule random;
 
     /**
      * There was this problem where some steps and in particular parallel CSV input parsing that
      * paniced would hang the import entirely.
      */
     @Test
-    public void shouldExitAndThrowExceptionOnPanic() throws Exception
+    void shouldExitAndThrowExceptionOnPanic() throws Exception
     {
         try ( JobScheduler jobScheduler = new ThreadPoolJobScheduler() )
         {
-            BatchImporter importer = new ParallelBatchImporter( directory.databaseLayout(), fs, null, Configuration.DEFAULT,
-                    NullLogService.getInstance(), ExecutionMonitors.invisible(), AdditionalInitialIds.EMPTY,
-                    Config.defaults(), StandardV3_4.RECORD_FORMATS, ImportLogic.NO_MONITOR, jobScheduler, Collector.EMPTY, EmptyLogFilesInitializer.INSTANCE );
+            BatchImporter importer = new ParallelBatchImporter( directory.databaseLayout(), directory.getFileSystem(), null,
+                Configuration.DEFAULT, NullLogService.getInstance(), ExecutionMonitors.invisible(), AdditionalInitialIds.EMPTY,
+                Config.defaults(), StandardV3_4.RECORD_FORMATS, ImportLogic.NO_MONITOR, jobScheduler, Collector.EMPTY, EmptyLogFilesInitializer.INSTANCE );
             Iterable<DataFactory> nodeData =
-                    DataFactories.datas( DataFactories.data( InputEntityDecorators.NO_DECORATOR, fileAsCharReadable( nodeCsvFileWithBrokenEntries() ) ) );
+                DataFactories.datas( DataFactories.data( InputEntityDecorators.NO_DECORATOR, fileAsCharReadable( nodeCsvFileWithBrokenEntries() ) ) );
             Input brokenCsvInput = new CsvInput(
-                    nodeData, DataFactories.defaultFormatNodeFileHeader(),
-                    DataFactories.datas(), DataFactories.defaultFormatRelationshipFileHeader(),
-                    IdType.ACTUAL,
-                    csvConfigurationWithLowBufferSize(),
-                    CsvInput.NO_MONITOR );
-            importer.doImport( brokenCsvInput );
-            fail( "Should have failed properly" );
-        }
-        catch ( InputException e )
-        {
-            // THEN
+                nodeData, DataFactories.defaultFormatNodeFileHeader(),
+                DataFactories.datas(), DataFactories.defaultFormatRelationshipFileHeader(),
+                IdType.ACTUAL,
+                csvConfigurationWithLowBufferSize(),
+                CsvInput.NO_MONITOR );
+            var e = assertThrows( InputException.class, () -> importer.doImport( brokenCsvInput ) );
             assertTrue( e.getCause() instanceof DataAfterQuoteException );
-            // and we managed to shut down properly
         }
     }
 
@@ -122,7 +115,7 @@ public class ImportPanicIT
     {
         File file = directory.file( "broken-node-data.csv" );
         try ( PrintWriter writer = new PrintWriter(
-                fs.openAsWriter( file, StandardCharsets.UTF_8, false ) ) )
+            directory.getFileSystem().openAsWriter( file, StandardCharsets.UTF_8, false ) ) )
         {
             writer.println( ":ID,name" );
             int numberOfLines = BUFFER_SIZE * 10;

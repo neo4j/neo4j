@@ -19,9 +19,10 @@
  */
 package org.neo4j.internal.recordstorage;
 
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.RuleChain;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Timeout;
 import org.mockito.ArgumentCaptor;
 import org.mockito.InOrder;
 
@@ -39,7 +40,7 @@ import org.neo4j.exceptions.KernelException;
 import org.neo4j.exceptions.UnderlyingStorageException;
 import org.neo4j.internal.helpers.Exceptions;
 import org.neo4j.internal.helpers.collection.Visitor;
-import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.fs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.DelegatingPageCache;
 import org.neo4j.io.pagecache.IOLimiter;
@@ -56,18 +57,18 @@ import org.neo4j.storageengine.api.CommandsToApply;
 import org.neo4j.storageengine.api.StorageCommand;
 import org.neo4j.storageengine.api.StoreFileMetadata;
 import org.neo4j.storageengine.api.TransactionApplicationMode;
-import org.neo4j.test.rule.PageCacheRule;
+import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.pagecache.EphemeralPageCacheExtension;
 import org.neo4j.test.rule.RecordStorageEngineRule;
 import org.neo4j.test.rule.TestDirectory;
-import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.sameInstance;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertSame;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.inOrder;
@@ -75,22 +76,34 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-public class RecordStorageEngineTest
+@EphemeralPageCacheExtension
+class RecordStorageEngineTest
 {
-    private final RecordStorageEngineRule storageEngineRule = new RecordStorageEngineRule();
-    private final EphemeralFileSystemRule fsRule = new EphemeralFileSystemRule();
-    private final PageCacheRule pageCacheRule = new PageCacheRule();
-    private final TestDirectory testDirectory = TestDirectory.testDirectory( fsRule );
+    @Inject
+    private EphemeralFileSystemAbstraction fs;
+    @Inject
+    private PageCache pageCache;
+    @Inject
+    private TestDirectory testDirectory;
+
     private final Health databaseHealth = mock( DatabaseHealth.class );
+    private final RecordStorageEngineRule storageEngineRule = new RecordStorageEngineRule();
 
-    @Rule
-    public RuleChain ruleChain = RuleChain.outerRule( fsRule )
-            .around( pageCacheRule )
-            .around( testDirectory )
-            .around( storageEngineRule );
+    @BeforeEach
+    void before() throws Throwable
+    {
+        storageEngineRule.before();
+    }
 
-    @Test( timeout = 30_000 )
-    public void shutdownRecordStorageEngineAfterFailedTransaction() throws Throwable
+    @AfterEach
+    void after() throws Throwable
+    {
+        storageEngineRule.after( true );
+    }
+
+    @Test
+    @Timeout( 30 )
+    void shutdownRecordStorageEngineAfterFailedTransaction() throws Exception
     {
         RecordStorageEngine engine = buildRecordStorageEngine();
         Exception applicationError = executeFailingTransaction( engine );
@@ -98,10 +111,10 @@ public class RecordStorageEngineTest
     }
 
     @Test
-    public void panicOnExceptionDuringCommandsApply()
+    void panicOnExceptionDuringCommandsApply()
     {
         IllegalStateException failure = new IllegalStateException( "Too many open files" );
-        RecordStorageEngine engine = storageEngineRule.getWith( fsRule.get(), pageCacheRule.getPageCache( fsRule.get() ), testDirectory.databaseLayout() )
+        RecordStorageEngine engine = storageEngineRule.getWith( fs, pageCache, testDirectory.databaseLayout() )
                 .databaseHealth( databaseHealth )
                 .transactionApplierTransformer( facade -> transactionApplierFacadeTransformer( facade, failure ) )
                 .build();
@@ -127,7 +140,7 @@ public class RecordStorageEngineTest
     }
 
     @Test
-    public void databasePanicIsRaisedWhenTxApplicationFails() throws Throwable
+    void databasePanicIsRaisedWhenTxApplicationFails() throws Throwable
     {
         RecordStorageEngine engine = buildRecordStorageEngine();
         Exception applicationError = executeFailingTransaction( engine );
@@ -142,8 +155,9 @@ public class RecordStorageEngineTest
         assertThat( exception, is( applicationError ) );
     }
 
-    @Test( timeout = 30_000 )
-    public void obtainCountsStoreResetterAfterFailedTransaction() throws Throwable
+    @Test
+    @Timeout( 30 )
+    void obtainCountsStoreResetterAfterFailedTransaction() throws Exception
     {
         RecordStorageEngine engine = buildRecordStorageEngine();
         Exception applicationError = executeFailingTransaction( engine );
@@ -158,12 +172,11 @@ public class RecordStorageEngineTest
     }
 
     @Test
-    public void mustFlushStoresWithGivenIOLimiter() throws IOException
+    void mustFlushStoresWithGivenIOLimiter() throws IOException
     {
         IOLimiter limiter = IOLimiter.UNLIMITED;
-        FileSystemAbstraction fs = fsRule.get();
         AtomicReference<IOLimiter> observedLimiter = new AtomicReference<>();
-        PageCache pageCache = new DelegatingPageCache( pageCacheRule.getPageCache( fs ) )
+        PageCache pageCache2 = new DelegatingPageCache( pageCache )
         {
             @Override
             public void flushAndForce( IOLimiter limiter ) throws IOException
@@ -173,14 +186,14 @@ public class RecordStorageEngineTest
             }
         };
 
-        RecordStorageEngine engine = storageEngineRule.getWith( fs, pageCache, testDirectory.databaseLayout() ).build();
+        RecordStorageEngine engine = storageEngineRule.getWith( fs, pageCache2, testDirectory.databaseLayout() ).build();
         engine.flushAndForce( limiter );
 
         assertThat( observedLimiter.get(), sameInstance( limiter ) );
     }
 
     @Test
-    public void shouldListAllStoreFiles()
+    void shouldListAllStoreFiles()
     {
         RecordStorageEngine engine = buildRecordStorageEngine();
         final Collection<StoreFileMetadata> files = engine.listStorageFiles();
@@ -196,7 +209,7 @@ public class RecordStorageEngineTest
     }
 
     @Test
-    public void shouldCloseLockGroupAfterAppliers() throws Exception
+    void shouldCloseLockGroupAfterAppliers() throws Exception
     {
         // given
         long nodeId = 5;
@@ -239,7 +252,7 @@ public class RecordStorageEngineTest
     private RecordStorageEngineRule.Builder recordStorageEngineBuilder()
     {
         return storageEngineRule
-                .getWith( fsRule.get(), pageCacheRule.getPageCache( fsRule.get() ), testDirectory.databaseLayout() )
+                .getWith( fs, pageCache, testDirectory.databaseLayout() )
                 .databaseHealth( databaseHealth );
     }
 
@@ -285,7 +298,7 @@ public class RecordStorageEngineTest
         }
     }
 
-    private class CapturingBatchTransactionApplierFacade extends BatchTransactionApplierFacade
+    private static class CapturingBatchTransactionApplierFacade extends BatchTransactionApplierFacade
     {
         private final Consumer<Boolean> applierCloseCall;
         private BatchTransactionApplierFacade actual;

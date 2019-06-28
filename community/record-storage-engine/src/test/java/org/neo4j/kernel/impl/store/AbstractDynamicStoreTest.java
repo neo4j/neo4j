@@ -20,9 +20,8 @@
 package org.neo4j.kernel.impl.store;
 
 import org.apache.commons.lang3.RandomUtils;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import java.io.File;
 import java.io.IOException;
@@ -32,42 +31,39 @@ import java.util.Iterator;
 import org.neo4j.configuration.Config;
 import org.neo4j.internal.id.DefaultIdGeneratorFactory;
 import org.neo4j.internal.id.IdType;
-import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.fs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.kernel.impl.store.format.standard.Standard;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.logging.NullLogProvider;
-import org.neo4j.test.rule.PageCacheRule;
-import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
+import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.pagecache.EphemeralPageCacheExtension;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.FORCE;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.NORMAL;
 
-public class AbstractDynamicStoreTest
+@EphemeralPageCacheExtension
+class AbstractDynamicStoreTest
 {
     private static final int BLOCK_SIZE = 60;
 
-    @Rule
-    public final EphemeralFileSystemRule fsr = new EphemeralFileSystemRule();
-    @Rule
-    public final PageCacheRule pageCacheRule = new PageCacheRule();
+    @Inject
+    private EphemeralFileSystemAbstraction fs;
+    @Inject
+    private PageCache pageCache;
 
     private final File storeFile = new File( "store" );
     private final File idFile = new File( "idStore" );
     private final RecordFormats formats = Standard.LATEST_RECORD_FORMATS;
-    private PageCache pageCache;
-    private FileSystemAbstraction fs;
 
-    @Before
-    public void before() throws IOException
+    @BeforeEach
+    void before() throws IOException
     {
-        fs = fsr.get();
-        pageCache = pageCacheRule.getPageCache( fsr.get() );
         try ( StoreChannel channel = fs.write( storeFile ) )
         {
             ByteBuffer buffer = ByteBuffer.allocate( 4 );
@@ -78,7 +74,7 @@ public class AbstractDynamicStoreTest
     }
 
     @Test
-    public void dynamicRecordCursorReadsInUseRecords()
+    void dynamicRecordCursorReadsInUseRecords()
     {
         try ( AbstractDynamicStore store = newTestableDynamicStore() )
         {
@@ -104,7 +100,7 @@ public class AbstractDynamicStoreTest
     }
 
     @Test
-    public void dynamicRecordCursorReadsNotInUseRecords()
+    void dynamicRecordCursorReadsNotInUseRecords()
     {
         try ( AbstractDynamicStore store = newTestableDynamicStore() )
         {

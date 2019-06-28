@@ -19,32 +19,61 @@
  */
 package org.neo4j.internal.recordstorage;
 
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
+import org.neo4j.configuration.Config;
+import org.neo4j.internal.id.DefaultIdGeneratorFactory;
 import org.neo4j.internal.recordstorage.Command.NodeCommand;
 import org.neo4j.internal.recordstorage.Command.RelationshipCommand;
 import org.neo4j.internal.recordstorage.Command.RelationshipGroupCommand;
 import org.neo4j.internal.schema.SchemaDescriptor;
+import org.neo4j.io.fs.EphemeralFileSystemAbstraction;
+import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.PropertyType;
+import org.neo4j.kernel.impl.store.StoreFactory;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
-import org.neo4j.test.rule.NeoStoresRule;
+import org.neo4j.logging.NullLogProvider;
+import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.pagecache.EphemeralPageCacheExtension;
+import org.neo4j.test.rule.TestDirectory;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
-public class HighIdTransactionApplierTest
+@EphemeralPageCacheExtension
+class HighIdTransactionApplierTest
 {
-    @Rule
-    public final NeoStoresRule neoStoresRule = new NeoStoresRule( getClass() );
+    @Inject
+    private PageCache pageCache;
+    @Inject
+    private TestDirectory testDirectory;
+    @Inject
+    private EphemeralFileSystemAbstraction fs;
+
+    private NeoStores neoStores;
+
+    @BeforeEach
+    void before()
+    {
+        var storeFactory = new StoreFactory( testDirectory.databaseLayout(), Config.defaults(), new DefaultIdGeneratorFactory( fs ),
+            pageCache, fs, NullLogProvider.getInstance() );
+        neoStores = storeFactory.openAllNeoStores( true );
+    }
+
+    @AfterEach
+    void after()
+    {
+        neoStores.close();
+    }
 
     @Test
-    public void shouldUpdateHighIdsOnExternalTransaction() throws Exception
+    void shouldUpdateHighIdsOnExternalTransaction() throws Exception
     {
         // GIVEN
-        NeoStores neoStores = neoStoresRule.builder().build();
         HighIdTransactionApplier tracker = new HighIdTransactionApplier( neoStores );
 
         // WHEN
@@ -85,28 +114,27 @@ public class HighIdTransactionApplierTest
         tracker.close();
 
         // THEN
-        assertEquals( "NodeStore", 20 + 1, neoStores.getNodeStore().getHighId() );
-        assertEquals( "DynamicNodeLabelStore", 5 + 1, neoStores.getNodeStore().getDynamicLabelStore().getHighId() );
-        assertEquals( "RelationshipStore", 45 + 1, neoStores.getRelationshipStore().getHighId() );
-        assertEquals( "RelationshipTypeStore", 5 + 1, neoStores.getRelationshipTypeTokenStore().getHighId() );
-        assertEquals( "RelationshipType NameStore", 1 + 1,
-                neoStores.getRelationshipTypeTokenStore().getNameStore().getHighId() );
-        assertEquals( "PropertyKeyStore", 5 + 1, neoStores.getPropertyKeyTokenStore().getHighId() );
-        assertEquals( "PropertyKey NameStore", 1 + 1,
-                neoStores.getPropertyKeyTokenStore().getNameStore().getHighId() );
-        assertEquals( "LabelStore", 5 + 1, neoStores.getLabelTokenStore().getHighId() );
-        assertEquals( "Label NameStore", 1 + 1, neoStores.getLabelTokenStore().getNameStore().getHighId() );
-        assertEquals( "PropertyStore", 20 + 1, neoStores.getPropertyStore().getHighId() );
-        assertEquals( "PropertyStore DynamicStringStore", 7 + 1, neoStores.getPropertyStore().getStringStore().getHighId() );
-        assertEquals( "PropertyStore DynamicArrayStore", 9 + 1, neoStores.getPropertyStore().getArrayStore().getHighId() );
-        assertEquals( "SchemaStore", 20 + 1, neoStores.getSchemaStore().getHighId() );
+        assertEquals( 20 + 1, neoStores.getNodeStore().getHighId(), "NodeStore" );
+        assertEquals( 5 + 1, neoStores.getNodeStore().getDynamicLabelStore().getHighId(), "DynamicNodeLabelStore" );
+        assertEquals( 45 + 1, neoStores.getRelationshipStore().getHighId(), "RelationshipStore" );
+        assertEquals( 5 + 1, neoStores.getRelationshipTypeTokenStore().getHighId(), "RelationshipTypeStore" );
+        assertEquals( 1 + 1,
+                neoStores.getRelationshipTypeTokenStore().getNameStore().getHighId(), "RelationshipType NameStore" );
+        assertEquals( 5 + 1, neoStores.getPropertyKeyTokenStore().getHighId(), "PropertyKeyStore" );
+        assertEquals( 1 + 1,
+                neoStores.getPropertyKeyTokenStore().getNameStore().getHighId(), "PropertyKey NameStore" );
+        assertEquals( 5 + 1, neoStores.getLabelTokenStore().getHighId(), "LabelStore" );
+        assertEquals( 1 + 1, neoStores.getLabelTokenStore().getNameStore().getHighId(), "Label NameStore" );
+        assertEquals( 20 + 1, neoStores.getPropertyStore().getHighId(), "PropertyStore" );
+        assertEquals( 7 + 1, neoStores.getPropertyStore().getStringStore().getHighId(), "PropertyStore DynamicStringStore" );
+        assertEquals( 9 + 1, neoStores.getPropertyStore().getArrayStore().getHighId(), "PropertyStore DynamicArrayStore" );
+        assertEquals( 20 + 1, neoStores.getSchemaStore().getHighId(), "SchemaStore" );
     }
 
     @Test
-    public void shouldTrackSecondaryUnitIdsAsWell() throws Exception
+    void shouldTrackSecondaryUnitIdsAsWell() throws Exception
     {
         // GIVEN
-        NeoStores neoStores = neoStoresRule.builder().build();
         HighIdTransactionApplier tracker = new HighIdTransactionApplier( neoStores );
 
         NodeRecord node = new NodeRecord( 5 ).initialize( true, 123, true, 456, 0 );

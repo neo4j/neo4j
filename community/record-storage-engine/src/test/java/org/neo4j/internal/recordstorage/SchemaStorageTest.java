@@ -19,33 +19,39 @@
  */
 package org.neo4j.internal.recordstorage;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
-import java.io.IOException;
 import java.util.stream.Stream;
 
 import org.neo4j.common.EntityType;
 import org.neo4j.common.TokenNameLookup;
+import org.neo4j.configuration.Config;
+import org.neo4j.internal.id.DefaultIdGeneratorFactory;
 import org.neo4j.internal.kernel.api.exceptions.schema.DuplicateSchemaRuleException;
 import org.neo4j.internal.kernel.api.exceptions.schema.SchemaRuleNotFoundException;
 import org.neo4j.internal.schema.constraints.ConstraintDescriptorFactory;
+import org.neo4j.io.fs.EphemeralFileSystemAbstraction;
+import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.impl.store.NeoStores;
-import org.neo4j.kernel.impl.store.SchemaStore;
+import org.neo4j.kernel.impl.store.StoreFactory;
 import org.neo4j.kernel.impl.store.StoreType;
+import org.neo4j.logging.NullLogProvider;
 import org.neo4j.storageengine.api.ConstraintRule;
+import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.pagecache.EphemeralPageCacheExtension;
 import org.neo4j.test.mockito.matcher.KernelExceptionUserMessageMatcher;
-import org.neo4j.test.rule.NeoStoresRule;
-import org.neo4j.test.rule.PageCacheAndDependenciesRule;
+import org.neo4j.test.rule.TestDirectory;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-public class SchemaStorageTest
+@EphemeralPageCacheExtension
+class SchemaStorageTest
 {
     private static final String LABEL1 = "Label1";
     private static final int LABEL1_ID = 1;
@@ -54,112 +60,94 @@ public class SchemaStorageTest
     private static final String PROP1 = "prop1";
     private static final int PROP1_ID = 1;
 
-    @Rule
-    public PageCacheAndDependenciesRule storageRule = new PageCacheAndDependenciesRule();
-
-    @Rule
-    public NeoStoresRule storesRule = new NeoStoresRule( SchemaStorageTest.class,
-            StoreType.SCHEMA, StoreType.PROPERTY_KEY_TOKEN, StoreType.LABEL_TOKEN, StoreType.RELATIONSHIP_TYPE_TOKEN );
-
-    @Rule
-    public ExpectedException expectedException = ExpectedException.none();
+    @Inject
+    private PageCache pageCache;
+    @Inject
+    private TestDirectory testDirectory;
+    @Inject
+    private EphemeralFileSystemAbstraction fs;
 
     private SchemaStorage storage;
     private NeoStores neoStores;
 
-    @Before
-    public void setup() throws IOException
+    @BeforeEach
+    void before()
     {
-        neoStores = storesRule.builder().with( storageRule.fileSystem() ).with( storageRule.pageCache() ).build();
-        SchemaStore store = neoStores.getSchemaStore();
-        storage = new SchemaStorage( store, StoreTokens.readOnlyTokenHolders( neoStores ) );
+        var storeFactory = new StoreFactory( testDirectory.databaseLayout(), Config.defaults(), new DefaultIdGeneratorFactory( fs ),
+            pageCache, fs, NullLogProvider.getInstance() );
+        neoStores = storeFactory.openNeoStores( true, StoreType.SCHEMA, StoreType.PROPERTY_KEY_TOKEN, StoreType.LABEL_TOKEN,
+            StoreType.RELATIONSHIP_TYPE_TOKEN );
+        storage = new SchemaStorage( neoStores.getSchemaStore(), StoreTokens.readOnlyTokenHolders( neoStores ) );
     }
 
-    @After
-    public void close()
+    @AfterEach
+    void after()
     {
         neoStores.close();
     }
 
     @Test
-    public void shouldThrowExceptionOnNodeRuleNotFound()
-            throws DuplicateSchemaRuleException, SchemaRuleNotFoundException
-    {
-        // GIVEN
-        TokenNameLookup tokenNameLookup = getDefaultTokenNameLookup();
-
-        // EXPECT
-        expectedException.expect( SchemaRuleNotFoundException.class );
-        expectedException.expect( new KernelExceptionUserMessageMatcher( tokenNameLookup,
-                "No node property existence constraint was found for :Label1(prop1)." ) );
-
-        // WHEN
-        storage.constraintsGetSingle( ConstraintDescriptorFactory.existsForLabel( LABEL1_ID, PROP1_ID ) );
-    }
-
-    @Test
-    public void shouldThrowExceptionOnNodeDuplicateRuleFound()
-            throws DuplicateSchemaRuleException, SchemaRuleNotFoundException
-    {
-        // GIVEN
-        TokenNameLookup tokenNameLookup = getDefaultTokenNameLookup();
-
-        SchemaStorage schemaStorageSpy = Mockito.spy( storage );
-        Mockito.when( schemaStorageSpy.streamAllSchemaRules( false ) ).thenReturn(
-                Stream.of(
-                        getUniquePropertyConstraintRule( 1L, LABEL1_ID, PROP1_ID ),
-                        getUniquePropertyConstraintRule( 2L, LABEL1_ID, PROP1_ID ) ) );
-
-        //EXPECT
-        expectedException.expect( DuplicateSchemaRuleException.class );
-        expectedException.expect( new KernelExceptionUserMessageMatcher( tokenNameLookup,
-                "Multiple uniqueness constraints found for :Label1(prop1)." ) );
-
-        // WHEN
-        schemaStorageSpy.constraintsGetSingle(
-                ConstraintDescriptorFactory.uniqueForLabel( LABEL1_ID, PROP1_ID ) );
-    }
-
-    @Test
-    public void shouldThrowExceptionOnRelationshipRuleNotFound()
-            throws DuplicateSchemaRuleException, SchemaRuleNotFoundException
+    void shouldThrowExceptionOnNodeRuleNotFound()
     {
         TokenNameLookup tokenNameLookup = getDefaultTokenNameLookup();
 
-        // EXPECT
-        expectedException.expect( SchemaRuleNotFoundException.class );
-        expectedException.expect( new KernelExceptionUserMessageMatcher<>( tokenNameLookup,
-                "No relationship property existence constraint was found for -[:Type1(prop1)]-." ) );
+        var e = assertThrows( SchemaRuleNotFoundException.class, () ->
+            storage.constraintsGetSingle( ConstraintDescriptorFactory.existsForLabel( LABEL1_ID, PROP1_ID ) ) );
 
-        //WHEN
-        storage.constraintsGetSingle(
-                ConstraintDescriptorFactory.existsForRelType( TYPE1_ID, PROP1_ID ) );
+        assertThat( e, new KernelExceptionUserMessageMatcher( tokenNameLookup,
+            "No node property existence constraint was found for :Label1(prop1)." ) );
     }
 
     @Test
-    public void shouldThrowExceptionOnRelationshipDuplicateRuleFound()
-            throws DuplicateSchemaRuleException, SchemaRuleNotFoundException
+    void shouldThrowExceptionOnNodeDuplicateRuleFound()
     {
-        // GIVEN
         TokenNameLookup tokenNameLookup = getDefaultTokenNameLookup();
 
         SchemaStorage schemaStorageSpy = Mockito.spy( storage );
         when( schemaStorageSpy.streamAllSchemaRules( false ) ).thenReturn(
-                Stream.of(
-                        getRelationshipPropertyExistenceConstraintRule( 1L, TYPE1_ID, PROP1_ID ),
-                        getRelationshipPropertyExistenceConstraintRule( 2L, TYPE1_ID, PROP1_ID ) ) );
+            Stream.of(
+                getUniquePropertyConstraintRule( 1L, LABEL1_ID, PROP1_ID ),
+                getUniquePropertyConstraintRule( 2L, LABEL1_ID, PROP1_ID ) ) );
 
-        //EXPECT
-        expectedException.expect( DuplicateSchemaRuleException.class );
-        expectedException.expect( new KernelExceptionUserMessageMatcher( tokenNameLookup,
-                "Multiple relationship property existence constraints found for -[:Type1(prop1)]-." ) );
+        var e = assertThrows( DuplicateSchemaRuleException.class, () ->
+            schemaStorageSpy.constraintsGetSingle( ConstraintDescriptorFactory.uniqueForLabel( LABEL1_ID, PROP1_ID ) ) );
 
-        // WHEN
-        schemaStorageSpy.constraintsGetSingle(
-                ConstraintDescriptorFactory.existsForRelType( TYPE1_ID, PROP1_ID ) );
+        assertThat( e, new KernelExceptionUserMessageMatcher( tokenNameLookup,
+            "Multiple uniqueness constraints found for :Label1(prop1)." ) );
     }
 
-    private TokenNameLookup getDefaultTokenNameLookup()
+    @Test
+    void shouldThrowExceptionOnRelationshipRuleNotFound()
+    {
+        TokenNameLookup tokenNameLookup = getDefaultTokenNameLookup();
+
+        var e = assertThrows( SchemaRuleNotFoundException.class, () ->
+            storage.constraintsGetSingle( ConstraintDescriptorFactory.existsForRelType( TYPE1_ID, PROP1_ID ) ) );
+        assertThat( e,
+            new KernelExceptionUserMessageMatcher( tokenNameLookup,
+                "No relationship property existence constraint was found for -[:Type1(prop1)]-." ) );
+    }
+
+    @Test
+    void shouldThrowExceptionOnRelationshipDuplicateRuleFound()
+    {
+        TokenNameLookup tokenNameLookup = getDefaultTokenNameLookup();
+
+        SchemaStorage schemaStorageSpy = Mockito.spy( storage );
+        when( schemaStorageSpy.streamAllSchemaRules( false ) ).thenReturn(
+            Stream.of(
+                getRelationshipPropertyExistenceConstraintRule( 1L, TYPE1_ID, PROP1_ID ),
+                getRelationshipPropertyExistenceConstraintRule( 2L, TYPE1_ID, PROP1_ID ) ) );
+
+        var e = assertThrows( DuplicateSchemaRuleException.class, () ->
+            schemaStorageSpy.constraintsGetSingle( ConstraintDescriptorFactory.existsForRelType( TYPE1_ID, PROP1_ID ) ) );
+
+        assertThat( e,
+            new KernelExceptionUserMessageMatcher( tokenNameLookup,
+                "Multiple relationship property existence constraints found for -[:Type1(prop1)]-." ) );
+    }
+
+    private static TokenNameLookup getDefaultTokenNameLookup()
     {
         TokenNameLookup tokenNameLookup = mock( TokenNameLookup.class );
         when( tokenNameLookup.labelGetName( LABEL1_ID ) ).thenReturn( LABEL1 );
@@ -170,12 +158,12 @@ public class SchemaStorageTest
         return tokenNameLookup;
     }
 
-    private ConstraintRule getUniquePropertyConstraintRule( long id, int label, int property )
+    private static ConstraintRule getUniquePropertyConstraintRule( long id, int label, int property )
     {
         return ConstraintRule.constraintRule( id, ConstraintDescriptorFactory.uniqueForLabel( label, property ), 0L );
     }
 
-    private ConstraintRule getRelationshipPropertyExistenceConstraintRule( long id, int type, int property )
+    private static ConstraintRule getRelationshipPropertyExistenceConstraintRule( long id, int type, int property )
     {
         return ConstraintRule.constraintRule( id, ConstraintDescriptorFactory.existsForRelType( type, property ) );
     }

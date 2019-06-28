@@ -19,7 +19,7 @@
  */
 package org.neo4j.internal.recordstorage;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.Collection;
 import java.util.Collections;
@@ -38,12 +38,12 @@ import org.neo4j.storageengine.api.StorageEngine;
 import org.neo4j.storageengine.api.StorageIndexReference;
 import org.neo4j.util.concurrent.WorkSync;
 
-import static org.junit.Assert.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.neo4j.internal.schema.SchemaDescriptor.forLabel;
 
-public class NeoTransactionIndexApplierTest
+class NeoTransactionIndexApplierTest
 {
     private final IndexUpdateListener indexingService = mock( IndexUpdateListener.class );
     private final IndexUpdateListener indexUpdateListener = mock( IndexUpdateListener.class );
@@ -55,7 +55,7 @@ public class NeoTransactionIndexApplierTest
     private final CommandsToApply transactionToApply = new GroupOfCommands( 1L );
 
     @Test
-    public void shouldUpdateLabelStoreScanOnNodeCommands() throws Exception
+    void shouldUpdateLabelStoreScanOnNodeCommands() throws Exception
     {
         // given
         final IndexBatchTransactionApplier applier = newIndexTransactionApplier();
@@ -84,7 +84,7 @@ public class NeoTransactionIndexApplierTest
     }
 
     @Test
-    public void shouldCreateIndexGivenCreateSchemaRuleCommand() throws Exception
+    void shouldCreateIndexGivenCreateSchemaRuleCommand() throws Exception
     {
         // Given
         final StorageIndexReference indexRule = indexRule( 1, 42, 42 );
@@ -115,7 +115,7 @@ public class NeoTransactionIndexApplierTest
     }
 
     @Test
-    public void shouldDropIndexGivenDropSchemaRuleCommand() throws Exception
+    void shouldDropIndexGivenDropSchemaRuleCommand() throws Exception
     {
         // Given
         final StorageIndexReference indexRule = indexRule( 1, 42, 42 );

@@ -19,14 +19,14 @@
  */
 package org.neo4j.internal.batchimport.input.csv;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import org.neo4j.csv.reader.Configuration;
 import org.neo4j.csv.reader.Extractors;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
-public class StringDeserializationTest
+class StringDeserializationTest
 {
     private final Configuration configuration = Configuration.COMMAS;
     private final Extractors extractors = new Extractors( configuration.arrayDelimiter() );
@@ -35,7 +35,7 @@ public class StringDeserializationTest
     private final Header.Entry entry3 = new Header.Entry( null, Type.END_ID, null, extractors.int_() );
 
     @Test
-    public void shouldProvideDelimiterAfterFirstEmptyField()
+    void shouldProvideDelimiterAfterFirstEmptyField()
     {
         // given
         StringDeserialization deserialization = new StringDeserialization( configuration );
@@ -51,7 +51,7 @@ public class StringDeserializationTest
     }
 
     @Test
-    public void shouldProvideDelimiterBeforeLastEmptyField()
+    void shouldProvideDelimiterBeforeLastEmptyField()
     {
         // given
         StringDeserialization deserialization = new StringDeserialization( configuration );

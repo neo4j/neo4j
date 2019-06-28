@@ -19,29 +19,24 @@
  */
 package org.neo4j.internal.batchimport.staging;
 
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.time.Clock;
 import java.util.Arrays;
 import java.util.concurrent.TimeUnit;
 
-import org.neo4j.test.rule.CleanupRule;
 import org.neo4j.time.Clocks;
 import org.neo4j.time.FakeClock;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.lessThanOrEqualTo;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.fail;
 
-public class MultiExecutionMonitorTest
+class MultiExecutionMonitorTest
 {
-    @Rule
-    public final CleanupRule cleanup = new CleanupRule();
-
     @Test
-    public void shouldCheckMultipleMonitors()
+    void shouldCheckMultipleMonitors()
     {
         // GIVEN
         FakeClock clock = Clocks.fakeClock();

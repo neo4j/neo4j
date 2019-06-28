@@ -19,10 +19,10 @@
  */
 package org.neo4j.internal.recordstorage;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.util.HashMap;
 import java.util.Iterator;
@@ -31,54 +31,55 @@ import java.util.Map;
 import org.neo4j.configuration.Config;
 import org.neo4j.internal.helpers.collection.IteratorWrapper;
 import org.neo4j.internal.id.DefaultIdGeneratorFactory;
+import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.StoreFactory;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.PropertyBlock;
 import org.neo4j.logging.NullLogProvider;
-import org.neo4j.test.rule.PageCacheAndDependenciesRule;
+import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.RandomExtension;
+import org.neo4j.test.extension.pagecache.EphemeralPageCacheExtension;
 import org.neo4j.test.rule.RandomRule;
-import org.neo4j.values.storable.RandomValues;
+import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.values.storable.Value;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.internal.helpers.collection.Iterators.iterator;
 
-public class RecordPropertyCursorTest
+@EphemeralPageCacheExtension
+@ExtendWith( RandomExtension.class )
+class RecordPropertyCursorTest
 {
-    @Rule
-    public final PageCacheAndDependenciesRule storage = new PageCacheAndDependenciesRule();
-    @Rule
-    public final RandomRule random = new RandomRule().withConfiguration( new RandomValues.Default()
-    {
-        @Override
-        public int stringMaxLength()
-        {
-            return 10_000;
-        }
-    } );
+    @Inject
+    private RandomRule random;
+    @Inject
+    private TestDirectory testDirectory;
+    @Inject
+    private PageCache pageCache;
+
     private NeoStores neoStores;
     private PropertyCreator creator;
     private NodeRecord owner;
 
-    @Before
-    public void setup()
+    @BeforeEach
+    void setup()
     {
-        neoStores = new StoreFactory( storage.directory().databaseLayout(), Config.defaults(), new DefaultIdGeneratorFactory( storage.fileSystem() ),
-                storage.pageCache(), storage.fileSystem(), NullLogProvider.getInstance() ).openAllNeoStores( true );
+        neoStores = new StoreFactory( testDirectory.databaseLayout(), Config.defaults(), new DefaultIdGeneratorFactory( testDirectory.getFileSystem() ),
+            pageCache, testDirectory.getFileSystem(), NullLogProvider.getInstance() ).openAllNeoStores( true );
         creator = new PropertyCreator( neoStores.getPropertyStore(), new PropertyTraverser() );
         owner = neoStores.getNodeStore().newRecord();
     }
 
-    @After
-    public void closeStore()
+    @AfterEach
+    void closeStore()
     {
         neoStores.close();
     }
 
     @Test
-    public void shouldReadPropertyChain()
+    void shouldReadPropertyChain()
     {
         // given
         Value[] values = createValues();
@@ -89,7 +90,7 @@ public class RecordPropertyCursorTest
     }
 
     @Test
-    public void shouldReuseCursor()
+    void shouldReuseCursor()
     {
         // given
         Value[] valuesA = createValues();
@@ -104,7 +105,7 @@ public class RecordPropertyCursorTest
     }
 
     @Test
-    public void closeShouldBeIdempotent()
+    void closeShouldBeIdempotent()
     {
         // given
         RecordPropertyCursor cursor = createCursor();
@@ -121,9 +122,9 @@ public class RecordPropertyCursorTest
         return new RecordPropertyCursor( neoStores.getPropertyStore(), neoStores.getMetaDataStore() );
     }
 
-    private void assertPropertyChain( Value[] values, long firstPropertyId, RecordPropertyCursor cursor )
+    private static void assertPropertyChain( Value[] values, long firstPropertyId, RecordPropertyCursor cursor )
     {
-        Map<Integer,Value> expectedValues = asMap( values );
+        Map<Integer, Value> expectedValues = asMap( values );
         // This is a specific test for RecordPropertyCursor and we know that node/relationships init methods are the same
         cursor.initNodeProperties( firstPropertyId );
         while ( cursor.next() )
@@ -153,9 +154,9 @@ public class RecordPropertyCursorTest
         return firstPropertyId;
     }
 
-    private Map<Integer,Value> asMap( Value[] values )
+    private static Map<Integer, Value> asMap( Value[] values )
     {
-        Map<Integer,Value> map = new HashMap<>();
+        Map<Integer, Value> map = new HashMap<>();
         for ( int key = 0; key < values.length; key++ )
         {
             map.put( key, values[key] );
@@ -163,9 +164,9 @@ public class RecordPropertyCursorTest
         return map;
     }
 
-    private Iterator<PropertyBlock> blocksOf( PropertyCreator creator, Value[] values )
+    private static Iterator<PropertyBlock> blocksOf( PropertyCreator creator, Value[] values )
     {
-        return new IteratorWrapper<PropertyBlock,Value>( iterator( values ) )
+        return new IteratorWrapper<>( iterator( values ) )
         {
             int key;
 

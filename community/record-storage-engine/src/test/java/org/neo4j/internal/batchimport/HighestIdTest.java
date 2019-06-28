@@ -19,28 +19,21 @@
  */
 package org.neo4j.internal.batchimport;
 
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.RepeatedTest;
 
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicLongArray;
 
 import org.neo4j.test.Race;
-import org.neo4j.test.rule.RepeatRule;
-import org.neo4j.test.rule.RepeatRule.Repeat;
 
 import static java.lang.Math.max;
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
-public class HighestIdTest
+class HighestIdTest
 {
-    @Rule
-    public final RepeatRule repeater = new RepeatRule();
-
-    @Repeat( times = 100 )
-    @Test
-    public void shouldKeepHighest() throws Throwable
+    @RepeatedTest( 100 )
+    void shouldKeepHighest() throws Throwable
     {
         // GIVEN
         Race race = new Race();

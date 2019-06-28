@@ -20,20 +20,20 @@
 package org.neo4j.kernel.impl.store.kvstore;
 
 import org.hamcrest.Matcher;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.lessThan;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
-public class BigEndianByteArrayBufferTest
+class BigEndianByteArrayBufferTest
 {
-    BigEndianByteArrayBuffer buffer = new BigEndianByteArrayBuffer( new byte[8] );
+    private BigEndianByteArrayBuffer buffer = new BigEndianByteArrayBuffer( new byte[8] );
 
     @Test
-    public void shouldWriteLong()
+    void shouldWriteLong()
     {
         // when
         buffer.putLong( 0, 0xABCDEF0123456789L );
@@ -51,7 +51,7 @@ public class BigEndianByteArrayBufferTest
     }
 
     @Test
-    public void shouldWriteInt()
+    void shouldWriteInt()
     {
         // when
         buffer.putInt( 0, 0x12345678 );
@@ -64,7 +64,7 @@ public class BigEndianByteArrayBufferTest
     }
 
     @Test
-    public void shouldWriteShort()
+    void shouldWriteShort()
     {
         // when
         buffer.putShort( 0, (short) 0x1234 );
@@ -80,7 +80,7 @@ public class BigEndianByteArrayBufferTest
     }
 
     @Test
-    public void shouldWriteChar()
+    void shouldWriteChar()
     {
         // when
         buffer.putChar( 0, 'H' );
@@ -96,7 +96,7 @@ public class BigEndianByteArrayBufferTest
     }
 
     @Test
-    public void shouldWriteByte()
+    void shouldWriteByte()
     {
         // when
         for ( int i = 0; i < buffer.size(); i++ )
@@ -112,7 +112,7 @@ public class BigEndianByteArrayBufferTest
     }
 
     @Test
-    public void shouldCompareByteArrays()
+    void shouldCompareByteArrays()
     {
         // given
         final Matcher<Integer> LESS_THAN = lessThan( 0 );

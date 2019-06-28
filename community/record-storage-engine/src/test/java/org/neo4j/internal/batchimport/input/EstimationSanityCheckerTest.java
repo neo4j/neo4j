@@ -19,7 +19,7 @@
  */
 package org.neo4j.internal.batchimport.input;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import org.neo4j.internal.batchimport.ImportLogic;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
@@ -29,10 +29,10 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 
-public class EstimationSanityCheckerTest
+class EstimationSanityCheckerTest
 {
     @Test
-    public void shouldWarnAboutCountGettingCloseToCapacity()
+    void shouldWarnAboutCountGettingCloseToCapacity()
     {
         // given
         RecordFormats formats = Standard.LATEST_RECORD_FORMATS;
@@ -49,7 +49,7 @@ public class EstimationSanityCheckerTest
     }
 
     @Test
-    public void shouldWarnAboutCounthigherThanCapacity()
+    void shouldWarnAboutCounthigherThanCapacity()
     {
         // given
         RecordFormats formats = Standard.LATEST_RECORD_FORMATS;
@@ -66,7 +66,7 @@ public class EstimationSanityCheckerTest
     }
 
     @Test
-    public void shouldNotWantIfCountWayLowerThanCapacity()
+    void shouldNotWantIfCountWayLowerThanCapacity()
     {
         // given
         RecordFormats formats = Standard.LATEST_RECORD_FORMATS;

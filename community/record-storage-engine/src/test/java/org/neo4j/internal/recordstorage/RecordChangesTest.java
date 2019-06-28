@@ -19,16 +19,16 @@
  */
 package org.neo4j.internal.recordstorage;
 
-import org.junit.Test;
+import org.hamcrest.MatcherAssert;
+import org.junit.jupiter.api.Test;
 
 import org.neo4j.util.IntCounter;
 
 import static org.hamcrest.CoreMatchers.equalTo;
-import static org.junit.Assert.assertThat;
 
-public class RecordChangesTest
+class RecordChangesTest
 {
-    private final RecordAccess.Loader<Object, Object> loader = new RecordAccess.Loader<Object, Object>()
+    private final RecordAccess.Loader<Object, Object> loader = new RecordAccess.Loader<>()
     {
         @Override
         public Object newUnused( long o, Object additionalData )
@@ -56,7 +56,7 @@ public class RecordChangesTest
     };
 
     @Test
-    public void shouldCountChanges()
+    void shouldCountChanges()
     {
         // Given
         RecordChanges<Object, Object> change = new RecordChanges<>( loader, new IntCounter() );
@@ -68,6 +68,6 @@ public class RecordChangesTest
         change.getOrLoad( 3, null ).forReadingData();
 
         // Then
-        assertThat( change.changeSize(), equalTo( 2 ) );
+        MatcherAssert.assertThat( change.changeSize(), equalTo( 2 ) );
     }
 }

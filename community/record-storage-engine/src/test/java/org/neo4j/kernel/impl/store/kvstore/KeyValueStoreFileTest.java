@@ -19,11 +19,7 @@
  */
 package org.neo4j.kernel.impl.store.kvstore;
 
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
-import org.junit.rules.RuleChain;
-import org.junit.rules.Timeout;
+import org.junit.jupiter.api.Test;
 
 import java.io.File;
 import java.io.IOException;
@@ -31,29 +27,20 @@ import java.io.IOException;
 import org.neo4j.exceptions.UnderlyingStorageException;
 import org.neo4j.io.pagecache.PageCursor;
 
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-public class KeyValueStoreFileTest
+class KeyValueStoreFileTest
 {
-    public ExpectedException exception = ExpectedException.none();
-
-    @Rule
-    public RuleChain ruleChain = RuleChain.outerRule( Timeout.seconds( 1000 ) ).around( exception );
-
     @Test
-    public void shouldFailAfterEnoughAttempts() throws IOException
+    void shouldFailAfterEnoughAttempts() throws IOException
     {
-        // given
         WritableBuffer buffer = mock( WritableBuffer.class );
         PageCursor cursor = mock( PageCursor.class );
         when( cursor.shouldRetry() ).thenReturn( true );
         when( cursor.getCurrentFile() ).thenReturn( new File( "foo/bar.a" ) );
 
-        // then
-        exception.expect( UnderlyingStorageException.class );
-
-        // when
-        KeyValueStoreFile.readKeyValuePair( cursor, 42, buffer, buffer );
+        assertThrows( UnderlyingStorageException.class, () -> KeyValueStoreFile.readKeyValuePair( cursor, 42, buffer, buffer ) );
     }
 }

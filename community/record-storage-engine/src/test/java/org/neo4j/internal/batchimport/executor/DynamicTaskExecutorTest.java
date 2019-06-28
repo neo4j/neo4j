@@ -19,9 +19,8 @@
  */
 package org.neo4j.internal.batchimport.executor;
 
-import org.junit.Assert;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.RepeatedTest;
+import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 import java.util.concurrent.Future;
@@ -31,26 +30,21 @@ import org.neo4j.test.Barrier;
 import org.neo4j.test.DoubleLatch;
 import org.neo4j.test.OtherThreadExecutor;
 import org.neo4j.test.Race;
-import org.neo4j.test.rule.RepeatRule;
-import org.neo4j.test.rule.RepeatRule.Repeat;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertSame;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
-public class DynamicTaskExecutorTest
+class DynamicTaskExecutorTest
 {
     private static final ParkStrategy.Park PARK = new ParkStrategy.Park( 1, MILLISECONDS );
 
-    @Rule
-    public final RepeatRule repeater = new RepeatRule();
-
     @Test
-    public void shouldExecuteTasksInParallel()
+    void shouldExecuteTasksInParallel()
     {
         // GIVEN
         TaskExecutor<Void> executor = new DynamicTaskExecutor<>( 2, 0, 5, PARK,
@@ -79,7 +73,7 @@ public class DynamicTaskExecutorTest
     }
 
     @Test
-    public void shouldIncrementNumberOfProcessorsWhenRunning()
+    void shouldIncrementNumberOfProcessorsWhenRunning()
     {
         // GIVEN
         TaskExecutor<Void> executor = new DynamicTaskExecutor<>( 1, 0, 5, PARK,
@@ -109,7 +103,7 @@ public class DynamicTaskExecutorTest
     }
 
     @Test
-    public void shouldDecrementNumberOfProcessorsWhenRunning() throws Exception
+    void shouldDecrementNumberOfProcessorsWhenRunning() throws Exception
     {
         // GIVEN
         TaskExecutor<Void> executor = new DynamicTaskExecutor<>( 2, 0, 5, PARK,
@@ -143,7 +137,7 @@ public class DynamicTaskExecutorTest
     }
 
     @Test
-    public void shouldExecuteMultipleTasks()
+    void shouldExecuteMultipleTasks()
     {
         // GIVEN
         TaskExecutor<Void> executor = new DynamicTaskExecutor<>( 30, 0, 5, PARK,
@@ -165,7 +159,7 @@ public class DynamicTaskExecutorTest
     }
 
     @Test
-    public void shouldShutDownOnTaskFailure() throws Exception
+    void shouldShutDownOnTaskFailure() throws Exception
     {
         // GIVEN
         TaskExecutor<Void> executor = new DynamicTaskExecutor<>( 30, 0, 5, PARK,
@@ -183,7 +177,7 @@ public class DynamicTaskExecutorTest
     }
 
     @Test
-    public void shouldShutDownOnTaskFailureEvenIfOtherTasksArePending() throws Exception
+    void shouldShutDownOnTaskFailureEvenIfOtherTasksArePending() throws Exception
     {
         // GIVEN
         TaskExecutor<Void> executor = new DynamicTaskExecutor<>( 2, 0, 10, PARK,
@@ -215,7 +209,7 @@ public class DynamicTaskExecutorTest
     }
 
     @Test
-    public void shouldSurfaceTaskErrorInAssertHealthy() throws Exception
+    void shouldSurfaceTaskErrorInAssertHealthy() throws Exception
     {
         // GIVEN
         TaskExecutor<Void> executor = new DynamicTaskExecutor<>( 2, 0, 10, PARK,
@@ -247,7 +241,7 @@ public class DynamicTaskExecutorTest
     }
 
     @Test
-    public void shouldLetShutdownCompleteInEventOfPanic() throws Exception
+    void shouldLetShutdownCompleteInEventOfPanic() throws Exception
     {
         // GIVEN
         final TaskExecutor<Void> executor = new DynamicTaskExecutor<>( 2, 0, 10, PARK,
@@ -283,7 +277,7 @@ public class DynamicTaskExecutorTest
     }
 
     @Test
-    public void shouldRespectMaxProcessors()
+    void shouldRespectMaxProcessors()
     {
         // GIVEN
         int maxProcessors = 4;
@@ -291,21 +285,20 @@ public class DynamicTaskExecutorTest
                 getClass().getSimpleName() );
 
         // WHEN/THEN
-        Assert.assertEquals( 1, executor.processors( 0 ) );
-        Assert.assertEquals( 2, executor.processors( 1 ) );
-        Assert.assertEquals( 4, executor.processors( 3 ) /*would have gone to 5 otherwise*/ );
-        Assert.assertEquals( 4, executor.processors( 0 ) );
-        Assert.assertEquals( 4, executor.processors( 1 ) );
-        Assert.assertEquals( 3, executor.processors( -1 ) );
-        Assert.assertEquals( 1, executor.processors( -2 ) );
-        Assert.assertEquals( 1, executor.processors( -2 ) );
-        Assert.assertEquals( 1, executor.processors( 0 ) );
+        assertEquals( 1, executor.processors( 0 ) );
+        assertEquals( 2, executor.processors( 1 ) );
+        assertEquals( 4, executor.processors( 3 ) /*would have gone to 5 otherwise*/ );
+        assertEquals( 4, executor.processors( 0 ) );
+        assertEquals( 4, executor.processors( 1 ) );
+        assertEquals( 3, executor.processors( -1 ) );
+        assertEquals( 1, executor.processors( -2 ) );
+        assertEquals( 1, executor.processors( -2 ) );
+        assertEquals( 1, executor.processors( 0 ) );
         executor.close();
     }
 
-    @Repeat( times = 10 )
-    @Test
-    public void shouldCopeWithConcurrentIncrementOfProcessorsAndShutdown() throws Throwable
+    @RepeatedTest( 10 )
+    void shouldCopeWithConcurrentIncrementOfProcessorsAndShutdown() throws Throwable
     {
         // GIVEN
         TaskExecutor<Void> executor = new DynamicTaskExecutor<>( 1, 2, 2, PARK, "test" );
@@ -321,7 +314,7 @@ public class DynamicTaskExecutorTest
     }
 
     @Test
-    public void shouldNoticeBadHealthBeforeBeingClosed()
+    void shouldNoticeBadHealthBeforeBeingClosed()
     {
         // GIVEN
         TaskExecutor<Void> executor = new DynamicTaskExecutor<>( 1, 2, 2, PARK, "test" );
@@ -377,7 +370,7 @@ public class DynamicTaskExecutorTest
 
     private static class TestTask implements Task<Void>
     {
-        protected volatile int executed;
+        volatile int executed;
 
         @Override
         public void run( Void nothing )

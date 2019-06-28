@@ -19,22 +19,22 @@
  */
 package org.neo4j.kernel.impl.store.kvstore;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.concurrent.TimeUnit;
 
 import org.neo4j.time.Clocks;
 import org.neo4j.time.FakeClock;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotSame;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotSame;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public class RotationTimerFactoryTest
+class RotationTimerFactoryTest
 {
     @Test
-    public void testTimer()
+    void testTimer()
     {
         // GIVEN
         FakeClock fakeClock = Clocks.fakeClock( 10000 , TimeUnit.MILLISECONDS );
@@ -47,7 +47,7 @@ public class RotationTimerFactoryTest
         // THEN
         assertFalse( timer.isTimedOut() );
         assertEquals( 0, timer.getElapsedTimeMillis() );
-        assertNotSame( "Factory should construct different timers", timer, anotherTimer );
+        assertNotSame( timer, anotherTimer, "Factory should construct different timers" );
 
         // WHEN
         fakeClock = Clocks.fakeClock();

@@ -19,28 +19,25 @@
  */
 package org.neo4j.internal.batchimport;
 
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import org.neo4j.configuration.Config;
 import org.neo4j.io.os.OsBeanUtil;
 
 import static java.lang.Math.abs;
-import static java.lang.Math.max;
-import static java.lang.Math.min;
 import static java.lang.String.valueOf;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.lessThan;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assume.assumeTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 import static org.neo4j.configuration.GraphDatabaseSettings.pagecache_memory;
 import static org.neo4j.configuration.Settings.parseLongWithUnit;
 import static org.neo4j.io.os.OsBeanUtil.VALUE_UNAVAILABLE;
 
-public class ConfigurationTest
+class ConfigurationTest
 {
     @Test
-    public void shouldOverrideBigPageCacheMemorySettingContainingUnit()
+    void shouldOverrideBigPageCacheMemorySettingContainingUnit()
     {
         // GIVEN
         Config dbConfig = Config.defaults( pagecache_memory, "2g" );
@@ -50,11 +47,11 @@ public class ConfigurationTest
         long memory = config.pageCacheMemory();
 
         // THEN
-        Assert.assertEquals( Configuration.MAX_PAGE_CACHE_MEMORY, memory );
+        assertEquals( Configuration.MAX_PAGE_CACHE_MEMORY, memory );
     }
 
     @Test
-    public void shouldOverrideSmallPageCacheMemorySettingContainingUnit()
+    void shouldOverrideSmallPageCacheMemorySettingContainingUnit()
     {
         // GIVEN
         long overridden = parseLongWithUnit( "10m" );
@@ -69,7 +66,7 @@ public class ConfigurationTest
     }
 
     @Test
-    public void shouldCalculateCorrectMaxMemorySetting()
+    void shouldCalculateCorrectMaxMemorySetting()
     {
         long totalMachineMemory = OsBeanUtil.getTotalPhysicalMemory();
         assumeTrue( totalMachineMemory != VALUE_UNAVAILABLE );
@@ -92,10 +89,5 @@ public class ConfigurationTest
         long expected = (long) ((totalMachineMemory - Runtime.getRuntime().maxMemory()) * (percent / 100D));
         long diff = abs( expected - memory );
         assertThat( diff, lessThan( (long)(expected / 10D) ) );
-    }
-
-    private boolean within( long value, long firstBound, long otherBound )
-    {
-        return value >= min( firstBound, otherBound ) && value <= max( firstBound, otherBound );
     }
 }

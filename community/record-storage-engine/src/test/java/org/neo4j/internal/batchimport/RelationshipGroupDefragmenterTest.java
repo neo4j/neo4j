@@ -19,18 +19,14 @@
  */
 package org.neo4j.internal.batchimport;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.RuleChain;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
-import org.junit.runners.Parameterized.Parameter;
-import org.junit.runners.Parameterized.Parameters;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import java.util.BitSet;
-import java.util.Collection;
+import java.util.stream.Stream;
 
 import org.neo4j.configuration.Config;
 import org.neo4j.internal.batchimport.cache.NumberArrayFactory;
@@ -47,14 +43,15 @@ import org.neo4j.kernel.impl.store.record.Record;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.logging.internal.NullLogService;
 import org.neo4j.scheduler.JobScheduler;
+import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.RandomExtension;
+import org.neo4j.test.extension.TestDirectoryExtension;
 import org.neo4j.test.rule.RandomRule;
 import org.neo4j.test.rule.TestDirectory;
-import org.neo4j.test.rule.fs.DefaultFileSystemRule;
 import org.neo4j.test.scheduler.ThreadPoolJobScheduler;
 
-import static java.util.Arrays.asList;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.atLeast;
 import static org.mockito.Mockito.atMost;
@@ -62,54 +59,50 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.CHECK;
 
-@RunWith( Parameterized.class )
-public class RelationshipGroupDefragmenterTest
+@ExtendWith( {RandomExtension.class, TestDirectoryExtension.class} )
+class RelationshipGroupDefragmenterTest
 {
     private static final Configuration CONFIG = Configuration.DEFAULT;
 
-    @Parameters
-    public static Collection<Object[]> formats()
+    @Inject
+    private TestDirectory directory;
+    @Inject
+    private RandomRule random;
+
+    private static Stream<Arguments> parameters()
     {
-        return asList(
-                new Object[] {Standard.LATEST_RECORD_FORMATS, 1},
-                new Object[] {new ForcedSecondaryUnitRecordFormats( Standard.LATEST_RECORD_FORMATS ), 2} );
+        return Stream.of(
+            Arguments.of( Standard.LATEST_RECORD_FORMATS, 1 ),
+            Arguments.of( new ForcedSecondaryUnitRecordFormats( Standard.LATEST_RECORD_FORMATS ), 2 )
+        );
     }
-
-    private final TestDirectory directory = TestDirectory.testDirectory();
-    private final RandomRule random = new RandomRule();
-    private final DefaultFileSystemRule fileSystemRule = new DefaultFileSystemRule();
-
-    @Rule
-    public final RuleChain ruleChain = RuleChain.outerRule( directory ).around( random ).around( fileSystemRule );
-
-    @Parameter( 0 )
-    public RecordFormats format;
-    @Parameter( 1 )
-    public int units;
 
     private BatchingNeoStores stores;
     private JobScheduler jobScheduler;
+    private int units;
 
-    @Before
-    public void start()
+    private void init( RecordFormats format, int units )
     {
+        this.units = units;
         jobScheduler = new ThreadPoolJobScheduler();
-        stores = BatchingNeoStores.batchingNeoStores( fileSystemRule.get(),
-                directory.databaseLayout(), format, CONFIG, NullLogService.getInstance(),
-                AdditionalInitialIds.EMPTY, Config.defaults(), jobScheduler );
+        stores = BatchingNeoStores.batchingNeoStores( directory.getFileSystem(),
+            directory.databaseLayout(), format, CONFIG, NullLogService.getInstance(),
+            AdditionalInitialIds.EMPTY, Config.defaults(), jobScheduler );
         stores.createNew();
     }
 
-    @After
-    public void stop() throws Exception
+    @AfterEach
+    void stop() throws Exception
     {
         stores.close();
         jobScheduler.close();
     }
 
-    @Test
-    public void shouldDefragmentRelationshipGroupsWhenAllDense()
+    @ParameterizedTest
+    @MethodSource( "parameters" )
+    void shouldDefragmentRelationshipGroupsWhenAllDense( RecordFormats format, int units )
     {
+        init( format, units );
         // GIVEN some nodes which has their groups scattered
         int nodeCount = 100;
         int relationshipTypeCount = 50;
@@ -146,9 +139,11 @@ public class RelationshipGroupDefragmenterTest
         verifyGroupsAreSequentiallyOrderedByNode();
     }
 
-    @Test
-    public void shouldDefragmentRelationshipGroupsWhenSomeDense()
+    @ParameterizedTest
+    @MethodSource( "parameters" )
+    void shouldDefragmentRelationshipGroupsWhenSomeDense( RecordFormats format, int units )
     {
+        init( format, units );
         // GIVEN some nodes which has their groups scattered
         int nodeCount = 100;
         int relationshipTypeCount = 50;
@@ -198,7 +193,7 @@ public class RelationshipGroupDefragmenterTest
     {
         RelationshipGroupDefragmenter.Monitor monitor = mock( RelationshipGroupDefragmenter.Monitor.class );
         RelationshipGroupDefragmenter defragmenter = new RelationshipGroupDefragmenter( CONFIG,
-                ExecutionMonitors.invisible(), monitor, NumberArrayFactory.AUTO_WITHOUT_PAGECACHE );
+            ExecutionMonitors.invisible(), monitor, NumberArrayFactory.AUTO_WITHOUT_PAGECACHE );
 
         // Calculation below correlates somewhat to calculation in RelationshipGroupDefragmenter.
         // Anyway we verify below that we exercise the multi-pass bit, which is what we want
@@ -236,8 +231,7 @@ public class RelationshipGroupDefragmenterTest
 
             long nodeId = groupRecord.getOwningNode();
             assertTrue(
-                    "Expected a group for node >= " + currentNodeId + ", but was " + nodeId + " in " + groupRecord,
-                    nodeId >= currentNodeId );
+                nodeId >= currentNodeId, "Expected a group for node >= " + currentNodeId + ", but was " + nodeId + " in " + groupRecord );
             if ( nodeId != currentNodeId )
             {
                 currentNodeId = nodeId;
@@ -250,12 +244,12 @@ public class RelationshipGroupDefragmenterTest
             }
             currentGroupLength++;
 
-            assertTrue( "Expected this group to have a next of current + " + units + " OR NULL, " +
-                    "but was " + groupRecord.toString(),
-                    groupRecord.getNext() == groupRecord.getId() + 1 ||
-                    groupRecord.getNext() == Record.NO_NEXT_RELATIONSHIP.intValue() );
-            assertTrue( "Expected " + groupRecord + " to have type > " + currentTypeId,
-                    groupRecord.getType() > currentTypeId );
+            assertTrue(
+                groupRecord.getNext() == groupRecord.getId() + 1 ||
+                    groupRecord.getNext() == Record.NO_NEXT_RELATIONSHIP.intValue(), "Expected this group to have a next of current + " + units + " OR NULL, " +
+                    "but was " + groupRecord.toString() );
+            assertTrue(
+                groupRecord.getType() > currentTypeId, "Expected " + groupRecord + " to have type > " + currentTypeId );
             currentTypeId = groupRecord.getType();
         }
         assertEquals( groupCount, newGroupCount );

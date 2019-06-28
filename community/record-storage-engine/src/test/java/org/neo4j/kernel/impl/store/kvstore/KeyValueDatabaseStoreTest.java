@@ -19,7 +19,7 @@
  */
 package org.neo4j.kernel.impl.store.kvstore;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 import java.util.Arrays;
@@ -29,35 +29,36 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.neo4j.exceptions.UnderlyingStorageException;
 import org.neo4j.io.pagecache.StubPageCursor;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.neo4j.kernel.impl.store.kvstore.KeyValueDatabaseStoreTest.CataloguePage.findPage;
 import static org.neo4j.kernel.impl.store.kvstore.KeyValueDatabaseStoreTest.CataloguePage.page;
 import static org.neo4j.kernel.impl.store.kvstore.KeyValueStoreFile.maxPage;
 
-public class KeyValueDatabaseStoreTest
+class KeyValueDatabaseStoreTest
 {
     @Test
-    public void shouldFindPageInPageCatalogue()
+    void shouldFindPageInPageCatalogue()
     {
-        assertEquals( "(single page) in middle of range", 0, findPage( 50, page( 1, 100 ) ) );
-        assertEquals( "(single page) at beginning of range", 0, findPage( 1, page( 1, 100 ) ) );
-        assertEquals( "(single page) at end of range", 0, findPage( 100, page( 1, 100 ) ) );
-        assertEquals( "(single page) before range", 0, findPage( 1, page( 10, 100 ) ) );
-        assertEquals( "(single page) after range", 1, findPage( 200, page( 1, 100 ) ) );
+        assertEquals( 0, findPage( 50, page( 1, 100 ) ), "(single page) in middle of range" );
+        assertEquals( 0, findPage( 1, page( 1, 100 ) ), "(single page) at beginning of range" );
+        assertEquals( 0, findPage( 100, page( 1, 100 ) ), "(single page) at end of range" );
+        assertEquals( 0, findPage( 1, page( 10, 100 ) ), "(single page) before range" );
+        assertEquals( 1, findPage( 200, page( 1, 100 ) ), "(single page) after range" );
 
-        assertEquals( "(two pages) at beginning of second page", 1, findPage( 11, page( 1, 10 ), page( 11, 20 ) ) );
-        assertEquals( "(two pages) at end of first page", 0, findPage( 10, page( 1, 10 ), page( 11, 20 ) ) );
-        assertEquals( "(two pages) between pages (-> second page)", 1, findPage( 11, page( 1, 10 ), page( 21, 30 ) ) );
-        assertEquals( "(two pages) between pages (-> second page)", 1, findPage( 11, page( 1, 10 ), page( 12, 30 ) ) );
-        assertEquals( "(two pages) after pages", 2, findPage( 31, page( 1, 10 ), page( 21, 30 ) ) );
+        assertEquals( 1, findPage( 11, page( 1, 10 ), page( 11, 20 ) ), "(two pages) at beginning of second page" );
+        assertEquals( 0, findPage( 10, page( 1, 10 ), page( 11, 20 ) ), "(two pages) at end of first page" );
+        assertEquals( 1, findPage( 11, page( 1, 10 ), page( 21, 30 ) ), "(two pages) between pages (-> second page)" );
+        assertEquals( 1, findPage( 11, page( 1, 10 ), page( 12, 30 ) ), "(two pages) between pages (-> second page)" );
+        assertEquals( 2, findPage( 31, page( 1, 10 ), page( 21, 30 ) ), "(two pages) after pages" );
 
-        assertEquals( "(three pages) after pages", 3, findPage( 100, page( 1, 10 ), page( 21, 30 ), page( 41, 50 ) ) );
+        assertEquals( 3, findPage( 100, page( 1, 10 ), page( 21, 30 ), page( 41, 50 ) ), "(three pages) after pages" );
 
-        assertEquals( "overlapping page boundary", 0, findPage( 17, page( 2, 17 ), page( 17, 32 ), page( 32, 50 ) ) );
-        assertEquals( "multiple pages with same key", 1,
+        assertEquals( 0, findPage( 17, page( 2, 17 ), page( 17, 32 ), page( 32, 50 ) ), "overlapping page boundary" );
+        assertEquals( 1,
                       findPage( 3, page( 1, 2 ), page( 2, 3 ),
                                 page( 3, 3 ), page( 3, 3 ), page( 3, 3 ), page( 3, 3 ), page( 3, 3 ), page( 3, 3 ),
-                                page( 3, 4 ), page( 5, 6 ) ) );
+                                page( 3, 4 ), page( 5, 6 ) ), "multiple pages with same key" );
     }
 
     /** key size = 1 byte */
@@ -95,17 +96,17 @@ public class KeyValueDatabaseStoreTest
     }
 
     @Test
-    public void shouldComputeMaxPage()
+    void shouldComputeMaxPage()
     {
-        assertEquals( "less than one page", 0, maxPage( 1024, 4, 100 ) );
-        assertEquals( "exactly one page", 0, maxPage( 1024, 4, 256 ) );
-        assertEquals( "just over one page", 1, maxPage( 1024, 4, 257 ) );
-        assertEquals( "exactly two pages", 1, maxPage( 1024, 4, 512 ) );
-        assertEquals( "over two pages", 2, maxPage( 1024, 4, 700 ) );
+        assertEquals( 0, maxPage( 1024, 4, 100 ), "less than one page" );
+        assertEquals( 0, maxPage( 1024, 4, 256 ), "exactly one page" );
+        assertEquals( 1, maxPage( 1024, 4, 257 ), "just over one page" );
+        assertEquals( 1, maxPage( 1024, 4, 512 ), "exactly two pages" );
+        assertEquals( 2, maxPage( 1024, 4, 700 ), "over two pages" );
     }
 
     @Test
-    public void shouldFindRecordInPage() throws Exception
+    void shouldFindRecordInPage() throws Exception
     {
         // given
         byte[] key = new byte[1];
@@ -128,7 +129,7 @@ public class KeyValueDatabaseStoreTest
     }
 
     @Test
-    public void shouldFindRecordInPageWithDuplicates() throws Exception
+    void shouldFindRecordInPageWithDuplicates() throws Exception
     {
         // given
         final byte[] keys = new byte[]{1, 2, 2, 3, 4};
@@ -157,8 +158,8 @@ public class KeyValueDatabaseStoreTest
         assertEquals( 4, value[0] & 0xFF );
     }
 
-    @Test( expected = UnderlyingStorageException.class )
-    public void shouldThrowOnOutOfBoundsPageAccess() throws Exception
+    @Test
+    void shouldThrowOnOutOfBoundsPageAccess() throws Exception
     {
         // given
         AtomicBoolean goOutOfBounds = new AtomicBoolean();
@@ -181,11 +182,12 @@ public class KeyValueDatabaseStoreTest
 
         page.findOffset( 0 );
         goOutOfBounds.set( true );
-        page.findOffset( 0 );
+
+        assertThrows( UnderlyingStorageException.class, () -> page.findOffset( 0 ) );
     }
 
     @Test
-    public void shouldFindFirstRecordGreaterThanIfNoExactMatch() throws Exception
+    void shouldFindFirstRecordGreaterThanIfNoExactMatch() throws Exception
     {
         // given
         byte[] key = new byte[1];

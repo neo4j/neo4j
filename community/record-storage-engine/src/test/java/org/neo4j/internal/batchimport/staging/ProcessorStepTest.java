@@ -19,8 +19,9 @@
  */
 package org.neo4j.internal.batchimport.staging;
 
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Future;
@@ -30,42 +31,54 @@ import org.neo4j.internal.batchimport.Configuration;
 import org.neo4j.test.OtherThreadExecutor.WorkerCommand;
 import org.neo4j.test.rule.OtherThreadRule;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
-public class ProcessorStepTest
+class ProcessorStepTest
 {
-    @Rule
-    public final OtherThreadRule<Void> t2 = new OtherThreadRule<>();
+    private OtherThreadRule<Void> t2 = new OtherThreadRule<>();
 
-    @Test
-    public void shouldUpholdProcessOrderingGuarantee() throws Exception
+    @BeforeEach
+    void setUp()
     {
-        // GIVEN
-        StageControl control = mock( StageControl.class );
-        MyProcessorStep step = new MyProcessorStep( control, 0 );
-        step.start( Step.ORDER_SEND_DOWNSTREAM );
-        step.processors( 4 ); // now at 5
+        t2.init("processor-step");
+    }
 
-        // WHEN
-        int batches = 10;
-        for ( int i = 0; i < batches; i++ )
-        {
-            step.receive( i, i );
-        }
-        step.endOfUpstream();
-        step.awaitCompleted();
-
-        // THEN
-        assertEquals( batches, step.nextExpected.get() );
-        step.close();
+    @AfterEach
+    void tearDown()
+    {
+        t2.close();
     }
 
     @Test
-    public void shouldHaveTaskQueueSizeEqualToMaxNumberOfProcessors() throws Exception
+    void shouldUpholdProcessOrderingGuarantee() throws Exception
+    {
+        // GIVEN
+        StageControl control = mock( StageControl.class );
+        try ( MyProcessorStep step = new MyProcessorStep( control, 0 ) )
+        {
+            step.start( Step.ORDER_SEND_DOWNSTREAM );
+            step.processors( 4 ); // now at 5
+
+            // WHEN
+            int batches = 10;
+            for ( int i = 0; i < batches; i++ )
+            {
+                step.receive( i, i );
+            }
+            step.endOfUpstream();
+            step.awaitCompleted();
+
+            // THEN
+            assertEquals( batches, step.nextExpected.get() );
+        }
+    }
+
+    @Test
+    void shouldHaveTaskQueueSizeEqualToMaxNumberOfProcessors() throws Exception
     {
         // GIVEN
         StageControl control = mock( StageControl.class );
@@ -80,44 +93,48 @@ public class ProcessorStepTest
                 return maxProcessors;
             }
         };
-        final ProcessorStep<Void> step = new BlockingProcessorStep( control, configuration, processors, latch );
-        step.start( Step.ORDER_SEND_DOWNSTREAM );
-        step.processors( 1 ); // now at 2
-        // adding up to max processors should be fine
-        for ( int i = 0; i < processors + maxProcessors /* +1 since we allow queueing one more*/; i++ )
+        Future<Void> receiveFuture;
+        try ( ProcessorStep<Void> step = new BlockingProcessorStep( control, configuration, processors, latch ) )
         {
-            step.receive( i, null );
+            step.start( Step.ORDER_SEND_DOWNSTREAM );
+            step.processors( 1 ); // now at 2
+            // adding up to max processors should be fine
+            for ( int i = 0; i < processors + maxProcessors /* +1 since we allow queueing one more*/; i++ )
+            {
+                step.receive( i, null );
+            }
+
+            // WHEN
+            receiveFuture = t2.execute( receive( processors, step ) );
+            t2.get().waitUntilThreadState( Thread.State.TIMED_WAITING );
+            latch.countDown();
+
+            // THEN
+            receiveFuture.get();
         }
-
-        // WHEN
-        Future<Void> receiveFuture = t2.execute( receive( processors, step ) );
-        t2.get().waitUntilThreadState( Thread.State.TIMED_WAITING );
-        latch.countDown();
-
-        // THEN
-        receiveFuture.get();
     }
 
     @Test
-    public void shouldRecycleDoneBatches() throws Exception
+    void shouldRecycleDoneBatches() throws Exception
     {
         // GIVEN
         StageControl control = mock( StageControl.class );
-        MyProcessorStep step = new MyProcessorStep( control, 0 );
-        step.start( Step.ORDER_SEND_DOWNSTREAM );
-
-        // WHEN
-        int batches = 10;
-        for ( int i = 0; i < batches; i++ )
+        try ( MyProcessorStep step = new MyProcessorStep( control, 0 ) )
         {
-            step.receive( i, i );
-        }
-        step.endOfUpstream();
-        step.awaitCompleted();
+            step.start( Step.ORDER_SEND_DOWNSTREAM );
 
-        // THEN
-        verify( control, times( batches ) ).recycle( any() );
-        step.close();
+            // WHEN
+            int batches = 10;
+            for ( int i = 0; i < batches; i++ )
+            {
+                step.receive( i, i );
+            }
+            step.endOfUpstream();
+            step.awaitCompleted();
+
+            // THEN
+            verify( control, times( batches ) ).recycle( any() );
+        }
     }
 
     private static class BlockingProcessorStep extends ProcessorStep<Void>
@@ -154,7 +171,7 @@ public class ProcessorStepTest
         }
     }
 
-    private WorkerCommand<Void,Void> receive( final int processors, final ProcessorStep<Void> step )
+    private static WorkerCommand<Void, Void> receive( final int processors, final ProcessorStep<Void> step )
     {
         return state ->
         {

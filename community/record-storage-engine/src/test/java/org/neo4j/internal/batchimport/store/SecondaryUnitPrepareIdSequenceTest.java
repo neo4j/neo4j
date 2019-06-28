@@ -19,19 +19,19 @@
  */
 package org.neo4j.internal.batchimport.store;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import org.neo4j.internal.id.IdSequence;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 
-public class SecondaryUnitPrepareIdSequenceTest
+class SecondaryUnitPrepareIdSequenceTest
 {
     @Test
-    public void shouldReturnIdImmediatelyAfterRecordId()
+    void shouldReturnIdImmediatelyAfterRecordId()
     {
         // given
         PrepareIdSequence idSequence = new SecondaryUnitPrepareIdSequence();
@@ -48,7 +48,7 @@ public class SecondaryUnitPrepareIdSequenceTest
     }
 
     @Test
-    public void shouldReturnIdImmediatelyAfterRecordIdOnlyOnce()
+    void shouldReturnIdImmediatelyAfterRecordIdOnlyOnce()
     {
         // given
         PrepareIdSequence idSequence = new SecondaryUnitPrepareIdSequence();

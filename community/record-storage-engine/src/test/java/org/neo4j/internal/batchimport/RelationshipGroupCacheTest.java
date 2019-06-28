@@ -19,25 +19,28 @@
  */
 package org.neo4j.internal.batchimport;
 
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import org.neo4j.internal.batchimport.cache.NumberArrayFactory;
 import org.neo4j.io.ByteUnit;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
+import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.RandomExtension;
 import org.neo4j.test.rule.RandomRule;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
-public class RelationshipGroupCacheTest
+@ExtendWith( RandomExtension.class )
+class RelationshipGroupCacheTest
 {
-    @Rule
-    public final RandomRule random = new RandomRule();
+    @Inject
+    private RandomRule random;
 
     @Test
-    public void shouldPutGroupsOnlyWithinPreparedRange()
+    void shouldPutGroupsOnlyWithinPreparedRange()
     {
         // GIVEN
         int nodeCount = 1000;
@@ -85,7 +88,7 @@ public class RelationshipGroupCacheTest
     }
 
     @Test
-    public void shouldNotFindSpaceToPutMoreGroupsThanSpecifiedForANode()
+    void shouldNotFindSpaceToPutMoreGroupsThanSpecifiedForANode()
     {
         // GIVEN
         int nodeCount = 10;
@@ -109,7 +112,7 @@ public class RelationshipGroupCacheTest
     }
 
     @Test
-    public void shouldSortOutOfOrderTypes()
+    void shouldSortOutOfOrderTypes()
     {
         // GIVEN
         int nodeCount = 100;
@@ -136,7 +139,7 @@ public class RelationshipGroupCacheTest
                 {
                     thereAreMoreGroups = true;
                     if ( cache.put( new RelationshipGroupRecord( nodeId )
-                            .initialize( true, typeId, -1, -1, -1, nodeId, -1 ) ) )
+                        .initialize( true, typeId, -1, -1, -1, nodeId, -1 ) ) )
                     {
                         cachedCount++;
                         counts[nodeId]--;
@@ -165,7 +168,7 @@ public class RelationshipGroupCacheTest
     }
 
     @Test
-    public void shouldHandleGroupCountBeyondSignedShortRange()
+    void shouldHandleGroupCountBeyondSignedShortRange()
     {
         // GIVEN
         long nodeId = 0;
@@ -200,7 +203,7 @@ public class RelationshipGroupCacheTest
         int[] types = new int[count];
         for ( int i = 0; i < count; i++ )
         {
-            types[i] = i + Short.MAX_VALUE ;
+            types[i] = i + Short.MAX_VALUE;
         }
 
         for ( int i = 0; i < 10; i++ )
@@ -210,14 +213,14 @@ public class RelationshipGroupCacheTest
         return types;
     }
 
-    private void swap( int[] types, int a, int b )
+    private static void swap( int[] types, int a, int b )
     {
         int temp = types[a];
         types[a] = types[b];
         types[b] = temp;
     }
 
-    private void setCount( RelationshipGroupCache cache, int nodeId, int count )
+    private static void setCount( RelationshipGroupCache cache, int nodeId, int count )
     {
         for ( int i = 0; i < count; i++ )
         {

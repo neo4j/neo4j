@@ -19,7 +19,7 @@
  */
 package org.neo4j.kernel.impl.store.kvstore;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -27,13 +27,13 @@ import java.util.Arrays;
 import java.util.List;
 
 import static java.util.Arrays.asList;
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.kernel.impl.store.kvstore.KeyValueMergerTest.Pair.pair;
 
-public class KeyValueMergerTest
+class KeyValueMergerTest
 {
     @Test
-    public void shouldMergeEmptyProviders() throws Exception
+    void shouldMergeEmptyProviders() throws Exception
     {
         // given
         KeyValueMerger merger = new KeyValueMerger( provider(), provider(), 4, 4 );
@@ -46,7 +46,7 @@ public class KeyValueMergerTest
     }
 
     @Test
-    public void shouldProvideUpdatesWhenNoDataProvided() throws Exception
+    void shouldProvideUpdatesWhenNoDataProvided() throws Exception
     {
         // given
         KeyValueMerger merger = new KeyValueMerger( provider(), provider( pair( 14, 1 ),
@@ -63,7 +63,7 @@ public class KeyValueMergerTest
     }
 
     @Test
-    public void shouldProvideUpdatesWhenNoChangesProvided() throws Exception
+    void shouldProvideUpdatesWhenNoChangesProvided() throws Exception
     {
         // given
         KeyValueMerger merger = new KeyValueMerger( provider( pair( 14, 1 ),
@@ -80,7 +80,7 @@ public class KeyValueMergerTest
     }
 
     @Test
-    public void shouldMergeDataStreams() throws Exception
+    void shouldMergeDataStreams() throws Exception
     {
         // given
         KeyValueMerger merger = new KeyValueMerger( provider( pair( 1, 1 ), pair( 3, 1 ), pair( 5, 1 ) ),
@@ -99,7 +99,7 @@ public class KeyValueMergerTest
     }
 
     @Test
-    public void shouldReplaceValuesOnEqualKey() throws Exception
+    void shouldReplaceValuesOnEqualKey() throws Exception
     {
         // given
         KeyValueMerger merger = new KeyValueMerger( provider( pair( 1, 1 ), pair( 3, 1 ), pair( 5, 1 ) ),

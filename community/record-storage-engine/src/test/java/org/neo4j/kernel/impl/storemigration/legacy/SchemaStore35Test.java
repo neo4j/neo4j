@@ -19,12 +19,9 @@
  */
 package org.neo4j.kernel.impl.storemigration.legacy;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.ClassRule;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.RuleChain;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import java.util.Arrays;
 import java.util.Collection;
@@ -39,6 +36,7 @@ import org.neo4j.internal.id.IdType;
 import org.neo4j.internal.schema.IndexConfig;
 import org.neo4j.internal.schema.SchemaRule;
 import org.neo4j.internal.schema.constraints.ConstraintDescriptorFactory;
+import org.neo4j.io.fs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.impl.store.format.standard.StandardV3_4;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
@@ -46,50 +44,50 @@ import org.neo4j.logging.NullLogProvider;
 import org.neo4j.storageengine.api.ConstraintRule;
 import org.neo4j.storageengine.api.DefaultStorageIndexReference;
 import org.neo4j.storageengine.api.StorageIndexReference;
-import org.neo4j.test.rule.PageCacheRule;
+import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.pagecache.EphemeralPageCacheExtension;
 import org.neo4j.test.rule.TestDirectory;
-import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 
 import static java.nio.ByteBuffer.wrap;
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.internal.helpers.collection.Iterables.asCollection;
 import static org.neo4j.internal.schema.SchemaDescriptor.forLabel;
 import static org.neo4j.internal.schema.SchemaDescriptor.fulltext;
 
-public class SchemaStore35Test
+@EphemeralPageCacheExtension
+class SchemaStore35Test
 {
     private static final String PROVIDER_KEY = "quantum-dex";
     private static final String PROVIDER_VERSION = "25.0";
 
-    @ClassRule
-    public static final PageCacheRule pageCacheRule = new PageCacheRule();
-    private final EphemeralFileSystemRule fs = new EphemeralFileSystemRule();
-    private final TestDirectory testDirectory = TestDirectory.testDirectory( fs );
-    @Rule
-    public final RuleChain ruleChain = RuleChain.outerRule( fs ).around( testDirectory );
+    @Inject
+    private PageCache pageCache;
+    @Inject
+    private EphemeralFileSystemAbstraction fs;
+    @Inject
+    private TestDirectory testDirectory;
 
     private SchemaStore35 store;
 
-    @Before
-    public void before()
+    @BeforeEach
+    void before()
     {
         Config config = Config.defaults();
-        DefaultIdGeneratorFactory idGeneratorFactory = new DefaultIdGeneratorFactory( fs.get() );
-        PageCache pageCache = pageCacheRule.getPageCache( fs.get() );
+        DefaultIdGeneratorFactory idGeneratorFactory = new DefaultIdGeneratorFactory( fs );
         NullLogProvider logProvider = NullLogProvider.getInstance();
         store = new SchemaStore35( testDirectory.createFile( "schema35" ), testDirectory.createFile( "schema35.db.id" ), config, IdType.SCHEMA,
                 idGeneratorFactory, pageCache, logProvider, StandardV3_4.RECORD_FORMATS );
         store.checkAndLoadStorage( true );
     }
 
-    @After
-    public void after()
+    @AfterEach
+    void after()
     {
         store.close();
     }
 
     @Test
-    public void storeAndLoadSchemaRule() throws Exception
+    void storeAndLoadSchemaRule() throws Exception
     {
         // GIVEN
         StorageIndexReference indexRule =
@@ -108,7 +106,7 @@ public class SchemaStore35Test
     }
 
     @Test
-    public void storeAndLoadCompositeSchemaRule() throws Exception
+    void storeAndLoadCompositeSchemaRule() throws Exception
     {
         // GIVEN
         int[] propertyIds = {4, 5, 6, 7};
@@ -128,7 +126,7 @@ public class SchemaStore35Test
     }
 
     @Test
-    public void storeAndLoadMultiTokenSchemaRule() throws Exception
+    void storeAndLoadMultiTokenSchemaRule() throws Exception
     {
         // GIVEN
         int[] propertyIds = {4, 5, 6, 7};
@@ -151,7 +149,7 @@ public class SchemaStore35Test
     }
 
     @Test
-    public void storeAndLoad_Big_CompositeSchemaRule() throws Exception
+    void storeAndLoad_Big_CompositeSchemaRule() throws Exception
     {
         // GIVEN
         StorageIndexReference indexRule =
@@ -171,7 +169,7 @@ public class SchemaStore35Test
     }
 
     @Test
-    public void storeAndLoad_Big_CompositeMultiTokenSchemaRule() throws Exception
+    void storeAndLoad_Big_CompositeMultiTokenSchemaRule() throws Exception
     {
         // GIVEN
         StorageIndexReference indexRule = new DefaultStorageIndexReference(
@@ -191,7 +189,7 @@ public class SchemaStore35Test
     }
 
     @Test
-    public void storeAndLoadAllRules()
+    void storeAndLoadAllRules()
     {
         // GIVEN
         long indexId = store.nextId();
@@ -227,22 +225,22 @@ public class SchemaStore35Test
         return Iterables.first( records ).getId();
     }
 
-    private StorageIndexReference indexRule( long ruleId, int labelId, int... propertyIds )
+    private static StorageIndexReference indexRule( long ruleId, int labelId, int... propertyIds )
     {
         return new DefaultStorageIndexReference( forLabel( labelId, propertyIds ), PROVIDER_KEY, PROVIDER_VERSION, ruleId, Optional.empty(), false, null );
     }
 
-    private StorageIndexReference uniqueIndexRule( long ruleId, long owningConstraint, int labelId, int... propertyIds )
+    private static StorageIndexReference uniqueIndexRule( long ruleId, long owningConstraint, int labelId, int... propertyIds )
     {
         return new DefaultStorageIndexReference( forLabel( labelId, propertyIds ), PROVIDER_KEY, PROVIDER_VERSION, ruleId, Optional.empty(), true, null );
     }
 
-    private ConstraintRule constraintUniqueRule( long ruleId, long ownedIndexId, int labelId, int... propertyIds )
+    private static ConstraintRule constraintUniqueRule( long ruleId, long ownedIndexId, int labelId, int... propertyIds )
     {
         return ConstraintRule.constraintRule( ruleId, ConstraintDescriptorFactory.uniqueForLabel( labelId, propertyIds ), ownedIndexId );
     }
 
-    private ConstraintRule constraintExistsRule( long ruleId, int labelId, int... propertyIds )
+    private static ConstraintRule constraintExistsRule( long ruleId, int labelId, int... propertyIds )
     {
         return ConstraintRule.constraintRule( ruleId, ConstraintDescriptorFactory.existsForLabel( labelId, propertyIds ) );
     }

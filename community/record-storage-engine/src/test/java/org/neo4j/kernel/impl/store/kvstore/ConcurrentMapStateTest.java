@@ -19,8 +19,8 @@
  */
 package org.neo4j.kernel.impl.store.kvstore;
 
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import java.io.File;
 import java.io.IOException;
@@ -32,21 +32,21 @@ import org.neo4j.io.pagecache.tracing.cursor.context.VersionContextSupplier;
 import org.neo4j.kernel.impl.store.counts.TxVersionContextSupplier;
 import org.neo4j.util.concurrent.Runnables;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-public class ConcurrentMapStateTest
+class ConcurrentMapStateTest
 {
     private final ReadableState<String> store = mock( ReadableState.class );
     private final File file = mock( File.class );
     private final Lock lock = mock( Lock.class );
 
-    @Before
-    public void setUp() throws Exception
+    @BeforeEach
+    void setUp()
     {
         KeyFormat keyFormat = mock( KeyFormat.class );
         when( keyFormat.valueSize() ).thenReturn( Long.BYTES );
@@ -54,7 +54,7 @@ public class ConcurrentMapStateTest
     }
 
     @Test
-    public void shouldCreateAnUpdaterForTheNextUnseenVersionUpdate()
+    void shouldCreateAnUpdaterForTheNextUnseenVersionUpdate()
     {
         // given
         long initialVersion = 42;
@@ -72,7 +72,7 @@ public class ConcurrentMapStateTest
     }
 
     @Test
-    public void shouldCreateAnUpdaterForAnUnseenVersionUpdateWithAGap()
+    void shouldCreateAnUpdaterForAnUnseenVersionUpdateWithAGap()
     {
         // given
         long initialVersion = 42;
@@ -91,7 +91,7 @@ public class ConcurrentMapStateTest
     }
 
     @Test
-    public void shouldCreateAnUpdaterForMultipleVersionUpdatesInOrder()
+    void shouldCreateAnUpdaterForMultipleVersionUpdatesInOrder()
     {
         // given
         long initialVersion = 42;
@@ -120,7 +120,7 @@ public class ConcurrentMapStateTest
     }
 
     @Test
-    public void shouldCreateAnUpdaterForMultipleVersionUpdatesNotInOrder()
+    void shouldCreateAnUpdaterForMultipleVersionUpdatesNotInOrder()
     {
         // given
         long initialVersion = 42;
@@ -149,7 +149,7 @@ public class ConcurrentMapStateTest
     }
 
     @Test
-    public void shouldUseEmptyUpdaterOnVersionLowerOrEqualToTheInitialVersion()
+    void shouldUseEmptyUpdaterOnVersionLowerOrEqualToTheInitialVersion()
     {
         // given
         long initialVersion = 42;
@@ -160,12 +160,12 @@ public class ConcurrentMapStateTest
         EntryUpdater<?> updater = state.updater( initialVersion, lock );
 
         // expected
-        assertEquals( "Empty updater should be used for version less or equal to initial",
-                EntryUpdater.noUpdates(), updater );
+        assertEquals(
+            EntryUpdater.noUpdates(), updater, "Empty updater should be used for version less or equal to initial" );
     }
 
     @Test
-    public void markDirtyVersionLookupOnKeyUpdate() throws IOException
+    void markDirtyVersionLookupOnKeyUpdate() throws IOException
     {
         long updaterVersionTxId = 25;
         long lastClosedTxId = 20;
@@ -186,7 +186,7 @@ public class ConcurrentMapStateTest
     }
 
     @Test
-    public void markDirtyVersionLookupOnKeyReset() throws IOException
+    void markDirtyVersionLookupOnKeyReset() throws IOException
     {
         long updaterVersionTxId = 25;
         long lastClosedTxId = 20;
@@ -204,7 +204,7 @@ public class ConcurrentMapStateTest
     }
 
     @Test
-    public void doNotMarkVersionAsDirtyOnAnotherKeyUpdate() throws IOException
+    void doNotMarkVersionAsDirtyOnAnotherKeyUpdate() throws IOException
     {
         long updaterVersionTxId = 25;
         long lastClosedTxId = 20;

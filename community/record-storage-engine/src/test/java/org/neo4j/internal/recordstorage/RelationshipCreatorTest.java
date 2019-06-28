@@ -19,13 +19,13 @@
  */
 package org.neo4j.internal.recordstorage;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.lock.ResourceLocker;
 
-import static org.junit.Assert.assertThat;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.neo4j.internal.recordstorage.RecordBuilders.filterType;
 import static org.neo4j.internal.recordstorage.RecordBuilders.firstIn;
 import static org.neo4j.internal.recordstorage.RecordBuilders.firstLoop;
@@ -48,14 +48,14 @@ import static org.neo4j.internal.recordstorage.RecordBuilders.tPrev;
 import static org.neo4j.internal.recordstorage.RecordBuilders.to;
 import static org.neo4j.internal.recordstorage.RecordMatchers.containsChanges;
 
-public class RelationshipCreatorTest
+class RelationshipCreatorTest
 {
     private AbstractBaseRecord[] givenState;
     private RecordChangeSet changeset;
     private int denseNodeThreshold = 10;
 
     @Test
-    public void newRelWithNoPriorRels()
+    void newRelWithNoPriorRels()
     {
         givenState(
                 node( 0 ),
@@ -72,7 +72,7 @@ public class RelationshipCreatorTest
     }
 
     @Test
-    public void selfRelWithNoPriorRels()
+    void selfRelWithNoPriorRels()
     {
         givenState(
                 node( 0 )
@@ -87,7 +87,7 @@ public class RelationshipCreatorTest
     }
 
     @Test
-    public void sourceHas1PriorRel()
+    void sourceHas1PriorRel()
     {
         givenState(
                 node( 0, nextRel( 0 ) ),
@@ -107,7 +107,7 @@ public class RelationshipCreatorTest
     }
 
     @Test
-    public void targetHas1PriorRel()
+    void targetHas1PriorRel()
     {
         givenState(
                 node( 0, nextRel( 0 ) ),
@@ -127,7 +127,7 @@ public class RelationshipCreatorTest
     }
 
     @Test
-    public void sourceAndTargetShare1PriorRel()
+    void sourceAndTargetShare1PriorRel()
     {
         givenState(
                 node( 0, nextRel( 0 ) ),
@@ -147,7 +147,7 @@ public class RelationshipCreatorTest
     }
 
     @Test
-    public void selfRelWith1PriorRel()
+    void selfRelWith1PriorRel()
     {
         givenState(
                 node( 0, nextRel( 0 ) ),
@@ -165,7 +165,7 @@ public class RelationshipCreatorTest
     }
 
     @Test
-    public void selfRelUpgradesToDense()
+    void selfRelUpgradesToDense()
     {
         givenState(
                 node( 0, nextRel( 0 ) ),
@@ -184,7 +184,7 @@ public class RelationshipCreatorTest
     }
 
     @Test
-    public void sourceNodeUpdatesToDense()
+    void sourceNodeUpdatesToDense()
     {
         givenState(
                 node( 0, nextRel( 0 ) ),
@@ -205,7 +205,7 @@ public class RelationshipCreatorTest
     }
 
     @Test
-    public void targetNodeUpdatesToDense()
+    void targetNodeUpdatesToDense()
     {
         givenState(
                 node( 0, nextRel( 0 ) ),
@@ -238,7 +238,7 @@ public class RelationshipCreatorTest
         logic.relationshipCreate( nextRelId( givenState ), 0, fromNode, toNode, changeset, ResourceLocker.IGNORE );
     }
 
-    private long nextRelId( AbstractBaseRecord[] existingRecords )
+    private static long nextRelId( AbstractBaseRecord[] existingRecords )
     {
         return filterType( existingRecords, RelationshipRecord.class ).map(
                 AbstractBaseRecord::getId ).max( Long::compareTo ).orElse( -1L ) + 1;

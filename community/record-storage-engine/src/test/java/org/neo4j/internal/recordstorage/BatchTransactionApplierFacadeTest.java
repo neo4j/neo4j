@@ -19,20 +19,20 @@
  */
 package org.neo4j.internal.recordstorage;
 
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.mockito.InOrder;
 
 import org.neo4j.lock.LockGroup;
 import org.neo4j.storageengine.api.CommandsToApply;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-public class BatchTransactionApplierFacadeTest
+class BatchTransactionApplierFacadeTest
 {
     private BatchTransactionApplierFacade facade;
     private BatchTransactionApplier applier1;
@@ -42,8 +42,8 @@ public class BatchTransactionApplierFacadeTest
     private TransactionApplier txApplier2;
     private TransactionApplier txApplier3;
 
-    @Before
-    public void setUp() throws Exception
+    @BeforeEach
+    void setUp() throws Exception
     {
         txApplier1 = mock( TransactionApplier.class );
         applier1 = mock( BatchTransactionApplier.class );
@@ -64,7 +64,7 @@ public class BatchTransactionApplierFacadeTest
     }
 
     @Test
-    public void testStartTxCorrectOrder() throws Exception
+    void testStartTxCorrectOrder() throws Exception
     {
         // GIVEN
         CommandsToApply tx = mock( CommandsToApply.class );
@@ -86,7 +86,7 @@ public class BatchTransactionApplierFacadeTest
     }
 
     @Test
-    public void testStartTxCorrectOrderWithLockGroup() throws Exception
+    void testStartTxCorrectOrderWithLockGroup() throws Exception
     {
         // GIVEN
         CommandsToApply tx = mock( CommandsToApply.class );
@@ -109,7 +109,7 @@ public class BatchTransactionApplierFacadeTest
     }
 
     @Test
-    public void closeShouldBeDoneInReverseOrder() throws Exception
+    void closeShouldBeDoneInReverseOrder() throws Exception
     {
         // No idea why it was done like this before refactoring
 

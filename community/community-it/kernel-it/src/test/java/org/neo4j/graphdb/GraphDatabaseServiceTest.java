@@ -19,6 +19,8 @@
  */
 package org.neo4j.graphdb;
 
+import org.junit.After;
+import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
@@ -58,12 +60,26 @@ public class GraphDatabaseServiceTest
 
     private final ExpectedException exception = ExpectedException.none();
     private final TestDirectory testDirectory = TestDirectory.testDirectory();
-    private final OtherThreadRule<Void> t2 = new OtherThreadRule<>( "T2-" + getClass().getName() );
-    private final OtherThreadRule<Void> t3 = new OtherThreadRule<>( "T3-" + getClass().getName() );
+    private final OtherThreadRule<Void> t2 = new OtherThreadRule<>();
+    private final OtherThreadRule<Void> t3 = new OtherThreadRule<>();
 
     @Rule
-    public RuleChain chain = RuleChain.outerRule( testDirectory ).around( exception ).around( t2 ).around( t3 );
+    public RuleChain chain = RuleChain.outerRule( testDirectory ).around( exception );
     private DatabaseManagementService managementService;
+
+    @Before
+    public void before() throws Exception
+    {
+        t2.init( "T2-" + getClass().getName() );
+        t3.init( "T3-" + getClass().getName() );
+    }
+
+    @After
+    public void after()
+    {
+        t2.close();
+        t3.close();
+    }
 
     @Test
     public void givenShutdownDatabaseWhenBeginTxThenExceptionIsThrown()

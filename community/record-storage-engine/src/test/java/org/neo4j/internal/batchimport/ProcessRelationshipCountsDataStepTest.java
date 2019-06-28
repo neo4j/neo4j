@@ -19,7 +19,7 @@
  */
 package org.neo4j.internal.batchimport;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import org.neo4j.common.ProgressReporter;
 import org.neo4j.counts.CountsAccessor;
@@ -29,7 +29,7 @@ import org.neo4j.internal.batchimport.cache.NumberArrayFactory;
 import org.neo4j.internal.batchimport.staging.SimpleStageControl;
 import org.neo4j.internal.batchimport.staging.StageControl;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
@@ -37,10 +37,10 @@ import static org.mockito.Mockito.when;
 import static org.neo4j.io.ByteUnit.mebiBytes;
 import static org.neo4j.io.ByteUnit.tebiBytes;
 
-public class ProcessRelationshipCountsDataStepTest
+class ProcessRelationshipCountsDataStepTest
 {
     @Test
-    public void shouldLetProcessorsBeZeroIfEnoughMemory()
+    void shouldLetProcessorsBeZeroIfEnoughMemory()
     {
         // given
         ProcessRelationshipCountsDataStep step = instantiateStep( 10, 10, 10_000, 4, mebiBytes( 10 ) );
@@ -50,7 +50,7 @@ public class ProcessRelationshipCountsDataStepTest
     }
 
     @Test
-    public void shouldNotOverflowWhenTooMuchMemoryAvailable()
+    void shouldNotOverflowWhenTooMuchMemoryAvailable()
     {
         // given
         ProcessRelationshipCountsDataStep step = instantiateStep( 1, 1, 10_000, 64, tebiBytes( 10 ) );
@@ -60,7 +60,7 @@ public class ProcessRelationshipCountsDataStepTest
     }
 
     @Test
-    public void shouldLimitProcessorsIfScarceMemory()
+    void shouldLimitProcessorsIfScarceMemory()
     {
         // given labels/types amounting to ~360k, 2MiB max mem and 1MiB in use by node-label cache
         ProcessRelationshipCountsDataStep step = instantiateStep( 100, 220, mebiBytes( 1 ), 4, mebiBytes( 2 ) );
@@ -70,7 +70,7 @@ public class ProcessRelationshipCountsDataStepTest
     }
 
     @Test
-    public void shouldAtLeastHaveOneProcessorEvenIfLowMemory()
+    void shouldAtLeastHaveOneProcessorEvenIfLowMemory()
     {
         // given labels/types amounting to ~1.6MiB, 2MiB max mem and 1MiB in use by node-label cache
         ProcessRelationshipCountsDataStep step = instantiateStep( 1_000, 1_000, mebiBytes( 1 ), 4, mebiBytes( 2 ) );

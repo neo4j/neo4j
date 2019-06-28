@@ -19,9 +19,7 @@
  */
 package org.neo4j.kernel.impl.store.format;
 
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
+import org.junit.jupiter.api.Test;
 
 import org.neo4j.configuration.Config;
 import org.neo4j.kernel.impl.store.format.standard.NoRecordFormat;
@@ -40,7 +38,8 @@ import org.neo4j.kernel.impl.store.record.SchemaRecord;
 import org.neo4j.storageengine.api.format.Capability;
 import org.neo4j.storageengine.api.format.CapabilityType;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_BLOCK_SIZE;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_LABEL_BLOCK_SIZE;
 import static org.neo4j.configuration.GraphDatabaseSettings.MINIMAL_BLOCK_SIZE;
@@ -49,22 +48,19 @@ import static org.neo4j.configuration.GraphDatabaseSettings.label_block_size;
 import static org.neo4j.configuration.GraphDatabaseSettings.string_block_size;
 import static org.neo4j.kernel.impl.store.format.RecordFormatPropertyConfigurator.configureRecordFormat;
 
-public class RecordFormatPropertyConfiguratorTest
+class RecordFormatPropertyConfiguratorTest
 {
-    @Rule
-    public ExpectedException expectedException = ExpectedException.none();
-
     @Test
-    public void keepUserDefinedFormatConfig()
+    void keepUserDefinedFormatConfig()
     {
         Config config = Config.defaults( string_block_size, "36" );
         RecordFormats recordFormats = Standard.LATEST_RECORD_FORMATS;
         configureRecordFormat( recordFormats, config );
-        assertEquals( "Should keep used specified value", 36, config.get( string_block_size ).intValue() );
+        assertEquals( 36, config.get( string_block_size ).intValue(), "Should keep used specified value" );
     }
 
     @Test
-    public void overrideDefaultValuesForCurrentFormat()
+    void overrideDefaultValuesForCurrentFormat()
     {
         Config config = Config.defaults();
         int testHeaderSize = 17;
@@ -78,16 +74,14 @@ public class RecordFormatPropertyConfiguratorTest
     }
 
     @Test
-    public void checkForMinimumBlockSize()
+    void checkForMinimumBlockSize()
     {
         Config config = Config.defaults();
         int testHeaderSize = 60;
         ResizableRecordFormats recordFormats = new ResizableRecordFormats( testHeaderSize );
 
-        expectedException.expect( IllegalArgumentException.class );
-        expectedException.expectMessage( "Block size should be bigger then " + MINIMAL_BLOCK_SIZE );
-
-        configureRecordFormat( recordFormats, config );
+        var e = assertThrows( IllegalArgumentException.class, () -> configureRecordFormat( recordFormats, config ) );
+        assertEquals( e.getMessage(), "Block size should be bigger then " + MINIMAL_BLOCK_SIZE );
     }
 
     private class ResizableRecordFormats implements RecordFormats

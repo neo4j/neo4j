@@ -19,74 +19,50 @@
  */
 package org.neo4j.kernel.impl.storemigration;
 
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.experimental.runners.Enclosed;
-import org.junit.rules.RuleChain;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Nested;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
 import java.util.Optional;
+import java.util.stream.Stream;
 
 import org.neo4j.configuration.Config;
-import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.impl.store.MetaDataStore;
-import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.kernel.impl.store.format.StoreVersion;
 import org.neo4j.kernel.impl.store.format.standard.Standard;
 import org.neo4j.kernel.impl.store.format.standard.StandardV3_4;
 import org.neo4j.storageengine.api.StoreVersionCheck;
-import org.neo4j.test.rule.PageCacheRule;
+import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.pagecache.PageCacheExtension;
 import org.neo4j.test.rule.TestDirectory;
-import org.neo4j.test.rule.fs.DefaultFileSystemRule;
 
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertSame;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.kernel.impl.store.MetaDataStore.Position.STORE_VERSION;
 import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.changeVersionNumber;
 
-@RunWith( Enclosed.class )
-public class RecordStoreVersionTest
+@PageCacheExtension
+class RecordStoreVersionTest
 {
-    @RunWith( Parameterized.class )
-    public static class SupportedVersions
+    @Inject
+    private TestDirectory testDirectory;
+    @Inject
+    private PageCache pageCache;
+
+    @Nested
+    class SupportedVersions
     {
-
-        private final TestDirectory testDirectory = TestDirectory.testDirectory();
-        private final PageCacheRule pageCacheRule = new PageCacheRule();
-        private final DefaultFileSystemRule fileSystemRule = new DefaultFileSystemRule();
-
-        @Rule
-        public RuleChain ruleChain = RuleChain.outerRule( testDirectory )
-                                              .around( fileSystemRule ).around( pageCacheRule );
-
-        private DatabaseLayout databaseLayout;
-        private FileSystemAbstraction fileSystem;
-
-        @Parameterized.Parameter( 0 )
-        public String version;
-
-        @Parameterized.Parameters( name = "{0}" )
-        public static Collection<String> versions()
+        @BeforeEach
+        void setup() throws IOException
         {
-            return Collections.singletonList( StandardV3_4.STORE_VERSION );
-        }
-
-        @Before
-        public void setup() throws IOException
-        {
-            fileSystem = fileSystemRule.get();
-            databaseLayout = testDirectory.databaseLayout();
-            MigrationTestUtils.findFormatStoreDirectoryForVersion( version, databaseLayout.databaseDirectory() );
+            MigrationTestUtils.findFormatStoreDirectoryForVersion( StandardV3_4.STORE_VERSION, testDirectory.databaseLayout().databaseDirectory() );
         }
 
         boolean storeFilesUpgradable( RecordStoreVersionCheck check )
@@ -95,7 +71,7 @@ public class RecordStoreVersionTest
         }
 
         @Test
-        public void shouldAcceptTheStoresInTheSampleDatabaseAsBeingEligibleForUpgrade()
+        void shouldAcceptTheStoresInTheSampleDatabaseAsBeingEligibleForUpgrade()
         {
             // given
             final RecordStoreVersionCheck check = getVersionCheck();
@@ -108,7 +84,7 @@ public class RecordStoreVersionTest
         }
 
         @Test
-        public void shouldDetectOldVersionAsDifferentFromCurrent()
+        void shouldDetectOldVersionAsDifferentFromCurrent()
         {
             // given
             final RecordStoreVersionCheck check = getVersionCheck();
@@ -123,81 +99,59 @@ public class RecordStoreVersionTest
 
         private RecordStoreVersionCheck getVersionCheck()
         {
-            return new RecordStoreVersionCheck( pageCacheRule.getPageCache( fileSystem ), databaseLayout, getRecordFormat(), Config.defaults() );
+            return new RecordStoreVersionCheck( pageCache, testDirectory.databaseLayout(), Standard.LATEST_RECORD_FORMATS, Config.defaults() );
         }
     }
 
-    @RunWith( Parameterized.class )
-    public static class UnsupportedVersions
+    private static Stream<Arguments> unsupportedVersions()
     {
-        private final TestDirectory testDirectory = TestDirectory.testDirectory();
-        private final PageCacheRule pageCacheRule = new PageCacheRule();
-        private final DefaultFileSystemRule fileSystemRule = new DefaultFileSystemRule();
+        return Stream.of( Arguments.of( "v0.A.4" ), Arguments.of( StoreVersion.HIGH_LIMIT_V3_4_0.versionString() ) );
+    }
 
-        @Rule
-        public RuleChain ruleChain = RuleChain.outerRule( testDirectory )
-                .around( fileSystemRule ).around( pageCacheRule );
-
-        private DatabaseLayout databaseLayout;
-        private FileSystemAbstraction fileSystem;
-
-        @Parameterized.Parameter( 0 )
-        public String version;
-
-        @Parameterized.Parameters( name = "{0}" )
-        public static Collection<String> versions()
+    private void setupUnsupported( String version ) throws IOException
         {
-            return Arrays.asList( "v0.A.4", StoreVersion.HIGH_LIMIT_V3_4_0.versionString() );
-        }
-
-        @Before
-        public void setup() throws IOException
-        {
-            fileSystem = fileSystemRule.get();
-            databaseLayout = testDirectory.databaseLayout();
             // doesn't matter which version we pick we are changing it to the wrong one...
-            MigrationTestUtils.findFormatStoreDirectoryForVersion( StandardV3_4.STORE_VERSION, databaseLayout.databaseDirectory() );
-            changeVersionNumber( fileSystem, databaseLayout.metadataStore(), version );
-            File metadataStore = databaseLayout.metadataStore();
-            PageCache pageCache = pageCacheRule.getPageCache( fileSystem );
+            MigrationTestUtils.findFormatStoreDirectoryForVersion( StandardV3_4.STORE_VERSION, testDirectory.databaseLayout().databaseDirectory() );
+            changeVersionNumber( testDirectory.getFileSystem(), testDirectory.databaseLayout().metadataStore(), version );
+            File metadataStore = testDirectory.databaseLayout().metadataStore();
             MetaDataStore.setRecord( pageCache, metadataStore, STORE_VERSION, MetaDataStore.versionStringToLong( version ) );
         }
 
-        @Test
-        public void shouldDetectOldVersionAsDifferentFromCurrent()
+    @ParameterizedTest
+    @MethodSource( "unsupportedVersions" )
+    void shouldDetectOldVersionAsDifferentFromCurrent( String version ) throws Exception
         {
+            setupUnsupported( version );
             // given
             final RecordStoreVersionCheck check = getVersionCheck();
 
             // when
-            Optional<String> version = check.storeVersion();
-            assertTrue( version.isPresent() );
-            boolean currentVersion = version.get().equals( check.configuredVersion() );
+            Optional<String> storeVersion = check.storeVersion();
+            assertTrue( storeVersion.isPresent() );
+            boolean currentVersion = storeVersion.get().equals( check.configuredVersion() );
 
             // then
             assertFalse( currentVersion );
         }
 
-        @Test
-        public void shouldCommunicateWhatCausesInabilityToUpgrade()
-        {
-            // given
-            final RecordStoreVersionCheck check = getVersionCheck();
+    @ParameterizedTest
+    @MethodSource( "unsupportedVersions" )
+    void shouldCommunicateWhatCausesInabilityToUpgrade( String version ) throws Exception
+    {
+        setupUnsupported( version );
 
-            // when
-            StoreVersionCheck.Result result = check.checkUpgrade( check.configuredVersion() );
-            assertFalse( result.outcome.isSuccessful() );
-            assertSame( StoreVersionCheck.Outcome.unexpectedStoreVersion, result.outcome );
-        }
+        // given
+        final RecordStoreVersionCheck check = getVersionCheck();
 
-        private RecordStoreVersionCheck getVersionCheck()
-        {
-            return new RecordStoreVersionCheck( pageCacheRule.getPageCache( fileSystem ), databaseLayout, getRecordFormat(), Config.defaults() );
-        }
+        // when
+        StoreVersionCheck.Result result = check.checkUpgrade( check.configuredVersion() );
+        assertFalse( result.outcome.isSuccessful() );
+        assertSame( StoreVersionCheck.Outcome.unexpectedStoreVersion, result.outcome );
     }
 
-    private static RecordFormats getRecordFormat()
+    private RecordStoreVersionCheck getVersionCheck()
     {
-        return Standard.LATEST_RECORD_FORMATS;
+        return new RecordStoreVersionCheck( pageCache, testDirectory.databaseLayout(), Standard.LATEST_RECORD_FORMATS, Config.defaults() );
     }
 }
+

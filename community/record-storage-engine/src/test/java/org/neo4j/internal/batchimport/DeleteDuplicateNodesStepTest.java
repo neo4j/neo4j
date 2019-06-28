@@ -20,62 +20,74 @@
 package org.neo4j.internal.batchimport;
 
 import org.apache.commons.lang3.ArrayUtils;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.RuleChain;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.RepeatedTest;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
 import org.neo4j.collection.PrimitiveLongCollections;
+import org.neo4j.configuration.Config;
 import org.neo4j.internal.batchimport.staging.SimpleStageControl;
+import org.neo4j.internal.id.DefaultIdGeneratorFactory;
+import org.neo4j.io.fs.EphemeralFileSystemAbstraction;
+import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.impl.store.AbstractDynamicStore;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.NodeLabelsField;
 import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.PropertyStore;
 import org.neo4j.kernel.impl.store.PropertyType;
+import org.neo4j.kernel.impl.store.StoreFactory;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.PropertyBlock;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
-import org.neo4j.test.rule.NeoStoresRule;
+import org.neo4j.logging.NullLogProvider;
+import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.RandomExtension;
+import org.neo4j.test.extension.pagecache.EphemeralPageCacheExtension;
 import org.neo4j.test.rule.RandomRule;
-import org.neo4j.test.rule.RepeatRule;
-import org.neo4j.test.rule.RepeatRule.Repeat;
-import org.neo4j.values.storable.RandomValues;
+import org.neo4j.test.rule.TestDirectory;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
-public class DeleteDuplicateNodesStepTest
+@EphemeralPageCacheExtension
+@ExtendWith( RandomExtension.class )
+class DeleteDuplicateNodesStepTest
 {
-    private final RandomRule random = new RandomRule().withConfiguration( new RandomValues.Default()
+    @Inject
+    private RandomRule random;
+    @Inject
+    private PageCache pageCache;
+    @Inject
+    private TestDirectory testDirectory;
+    @Inject
+    private EphemeralFileSystemAbstraction fs;
+
+    private NeoStores neoStores;
+
+    @BeforeEach
+    void before()
     {
-        @Override
-        public int stringMaxLength()
-        {
-            return 200;
-        }
+        var storeFactory = new StoreFactory( testDirectory.databaseLayout(), Config.defaults(), new DefaultIdGeneratorFactory( fs ),
+            pageCache, fs, NullLogProvider.getInstance() );
+        neoStores = storeFactory.openAllNeoStores( true );
+    }
 
-        @Override
-        public int arrayMaxLength()
-        {
-            return 200;
-        }
-    } );
-    private final NeoStoresRule neoStoresRule = new NeoStoresRule( getClass() );
-    private final RepeatRule repeater = new RepeatRule();
+    @AfterEach
+    void after()
+    {
+        neoStores.close();
+    }
 
-    @Rule
-    public final RuleChain rules = RuleChain.outerRule( repeater ).around( random ).around( neoStoresRule );
-
-    @Repeat( times = 10 )
-    @Test
-    public void shouldDeleteEverythingAboutTheDuplicatedNodes() throws Exception
+    @RepeatedTest( 10 )
+    void shouldDeleteEverythingAboutTheDuplicatedNodes() throws Exception
     {
         // given
-        NeoStores neoStores = neoStoresRule.builder().build();
         Ids[] ids = new Ids[9];
         DataImporter.Monitor monitor = new DataImporter.Monitor();
         ids[0] = createNode( monitor, neoStores, 10, 10 ); // node with many properties and many labels

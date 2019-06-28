@@ -19,8 +19,8 @@
  */
 package org.neo4j.internal.batchimport.staging;
 
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Timeout;
 
 import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
@@ -32,18 +32,19 @@ import org.neo4j.internal.batchimport.Configuration;
 import org.neo4j.internal.batchimport.stats.Keys;
 import org.neo4j.internal.batchimport.stats.StepStats;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertSame;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.Mockito.mock;
 import static org.neo4j.internal.helpers.collection.Iterables.asList;
+import static org.neo4j.io.IOUtils.closeAllSilently;
 
-public class ForkedProcessorStepTest
+class ForkedProcessorStepTest
 {
     @Test
-    public void shouldProcessAllSingleThreaded() throws Exception
+    void shouldProcessAllSingleThreaded() throws Exception
     {
         // GIVEN
         StageControl control = mock( StageControl.class );
@@ -63,14 +64,16 @@ public class ForkedProcessorStepTest
         }
         step.endOfUpstream();
         step.awaitCompleted();
+        downstream.close();
         step.close();
 
         // THEN
         assertEquals( batches, downstream.received.get() );
     }
 
-    @Test( timeout = 10_000 )
-    public void shouldProcessAllBatchesOnSingleCoreSystems() throws Exception
+    @Test
+    @Timeout( 10 )
+    void shouldProcessAllBatchesOnSingleCoreSystems() throws Exception
     {
         // GIVEN
         StageControl control = mock( StageControl.class );
@@ -96,7 +99,7 @@ public class ForkedProcessorStepTest
     }
 
     @Test
-    public void mustNotDetachProcessorsFromBatchChains() throws Exception
+    void mustNotDetachProcessorsFromBatchChains() throws Exception
     {
         // GIVEN
         StageControl control = mock( StageControl.class );
@@ -124,7 +127,7 @@ public class ForkedProcessorStepTest
     }
 
     @Test
-    public void shouldProcessAllMultiThreadedAndWithChangingProcessorCount() throws Exception
+    void shouldProcessAllMultiThreadedAndWithChangingProcessorCount() throws Exception
     {
         // GIVEN
         StageControl control = mock( StageControl.class );
@@ -179,7 +182,7 @@ public class ForkedProcessorStepTest
     }
 
     @Test
-    public void shouldKeepForkedOrderIntactWhenChangingProcessorCount() throws Exception
+    void shouldKeepForkedOrderIntactWhenChangingProcessorCount() throws Exception
     {
         int length = 100;
         AtomicIntegerArray reference = new AtomicIntegerArray( length );
@@ -200,7 +203,7 @@ public class ForkedProcessorStepTest
                     if ( batch[i] % processors == id )
                     {
                         boolean compareAndSet = reference.compareAndSet( batch[i], ticket, ticket + 1 );
-                        assertTrue( "I am " + id + ". Was expecting " + ticket + " for " + batch[i] + " but was " + reference.get( batch[i] ), compareAndSet );
+                        assertTrue( compareAndSet, "I am " + id + ". Was expecting " + ticket + " for " + batch[i] + " but was " + reference.get( batch[i] ) );
                     }
                 }
             }
@@ -233,17 +236,18 @@ public class ForkedProcessorStepTest
         step.endOfUpstream();
         step.awaitCompleted();
         step.close();
+        downstream.close();
     }
 
     @Test
-    public void shouldPanicOnFailure() throws Exception
+    void shouldPanicOnFailure() throws Exception
     {
         // GIVEN
         SimpleStageControl control = new SimpleStageControl();
         int availableProcessors = Runtime.getRuntime().availableProcessors();
         Exception testPanic = new RuntimeException();
-        ForkedProcessorStep<Void> step = new ForkedProcessorStep<Void>( control, "Processor",
-                config( availableProcessors ) )
+        ForkedProcessorStep<Void> step = new ForkedProcessorStep<>( control, "Processor",
+            config( availableProcessors ) )
         {
             @Override
             protected void forkedProcess( int id, int processors, Void batch ) throws Throwable
@@ -269,14 +273,16 @@ public class ForkedProcessorStepTest
         }
     }
 
-    @Test( timeout = 60_000 )
-    public void shouldBeAbleToProgressUnderStressfulProcessorChangesWhenOrdered() throws Exception
+    @Test
+    @Timeout( 60 )
+    void shouldBeAbleToProgressUnderStressfulProcessorChangesWhenOrdered() throws Exception
     {
         shouldBeAbleToProgressUnderStressfulProcessorChanges( Step.ORDER_SEND_DOWNSTREAM );
     }
 
-    @Test( timeout = 60_000 )
-    public void shouldBeAbleToProgressUnderStressfulProcessorChangesWhenUnordered() throws Exception
+    @Test
+    @Timeout( 60 )
+    void shouldBeAbleToProgressUnderStressfulProcessorChangesWhenUnordered() throws Exception
     {
         shouldBeAbleToProgressUnderStressfulProcessorChanges( 0 );
     }
@@ -309,7 +315,9 @@ public class ForkedProcessorStepTest
         execution.assertHealthy();
 
         // then
-        Assert.assertEquals( batches, steps.get( steps.size() - 1 ).stats().stat( Keys.done_batches ).asLong() );
+        assertEquals( batches, steps.get( steps.size() - 1 ).stats().stat( Keys.done_batches ).asLong() );
+
+        closeAllSilently( steps );
     }
 
     private static class StressStage extends Stage
@@ -355,7 +363,7 @@ public class ForkedProcessorStepTest
 
     private static class BatchProcessor extends ForkedProcessorStep<Batch>
     {
-        protected BatchProcessor( StageControl control, int processors )
+        BatchProcessor( StageControl control, int processors )
         {
             super( control, "PROCESSOR", config( processors ) );
         }

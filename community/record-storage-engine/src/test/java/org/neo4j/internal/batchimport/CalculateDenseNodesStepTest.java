@@ -19,7 +19,7 @@
  */
 package org.neo4j.internal.batchimport;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import org.neo4j.internal.batchimport.cache.NodeRelationshipCache;
 import org.neo4j.internal.batchimport.staging.StageControl;
@@ -32,10 +32,10 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.neo4j.kernel.impl.store.record.Record.NULL_REFERENCE;
 
-public class CalculateDenseNodesStepTest
+class CalculateDenseNodesStepTest
 {
     @Test
-    public void shouldNotProcessLoopsTwice() throws Exception
+    void shouldNotProcessLoopsTwice() throws Exception
     {
         // GIVEN
         NodeRelationshipCache cache = mock( NodeRelationshipCache.class );

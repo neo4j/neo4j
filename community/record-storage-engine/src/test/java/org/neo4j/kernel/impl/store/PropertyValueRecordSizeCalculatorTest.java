@@ -19,26 +19,29 @@
  */
 package org.neo4j.kernel.impl.store;
 
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import org.neo4j.kernel.impl.store.format.standard.PropertyRecordFormat;
+import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.RandomExtension;
 import org.neo4j.test.rule.RandomRule;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
-public class PropertyValueRecordSizeCalculatorTest
+@ExtendWith( RandomExtension.class )
+class PropertyValueRecordSizeCalculatorTest
 {
     private static final int PROPERTY_RECORD_SIZE = PropertyRecordFormat.RECORD_SIZE;
     private static final int DYNAMIC_RECORD_SIZE = 120;
 
-    @Rule
-    public final RandomRule random = new RandomRule();
+    @Inject
+    private RandomRule random;
 
     @Test
-    public void shouldIncludePropertyRecordSize()
+    void shouldIncludePropertyRecordSize()
     {
         // given
         PropertyValueRecordSizeCalculator calculator = newCalculator();
@@ -51,7 +54,7 @@ public class PropertyValueRecordSizeCalculatorTest
     }
 
     @Test
-    public void shouldIncludeDynamicRecordSizes()
+    void shouldIncludeDynamicRecordSizes()
     {
         // given
         PropertyValueRecordSizeCalculator calculator = newCalculator();
@@ -64,7 +67,7 @@ public class PropertyValueRecordSizeCalculatorTest
     }
 
     @Test
-    public void shouldSpanMultiplePropertyRecords()
+    void shouldSpanMultiplePropertyRecords()
     {
         // given
         PropertyValueRecordSizeCalculator calculator = newCalculator();
@@ -90,7 +93,7 @@ public class PropertyValueRecordSizeCalculatorTest
         return random.nextAlphaNumericString( length, length );
     }
 
-    private PropertyValueRecordSizeCalculator newCalculator()
+    private static PropertyValueRecordSizeCalculator newCalculator()
     {
         return new PropertyValueRecordSizeCalculator( PROPERTY_RECORD_SIZE,
                 DYNAMIC_RECORD_SIZE, DYNAMIC_RECORD_SIZE - 10,

@@ -19,7 +19,7 @@
  */
 package org.neo4j.kernel.impl.store;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.Collection;
 
@@ -29,10 +29,10 @@ import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 
 import static java.util.Arrays.asList;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.core.IsEqual.equalTo;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.neo4j.internal.helpers.collection.Iterables.asList;
@@ -40,10 +40,10 @@ import static org.neo4j.kernel.impl.store.DynamicNodeLabels.allocateRecordsForDy
 import static org.neo4j.kernel.impl.store.DynamicNodeLabels.dynamicPointer;
 import static org.neo4j.kernel.impl.store.record.DynamicRecord.dynamicRecord;
 
-public class NodeRecordTest
+class NodeRecordTest
 {
     @Test
-    public void cloneShouldProduceExactCopy() throws CloneNotSupportedException
+    void cloneShouldProduceExactCopy() throws CloneNotSupportedException
     {
         // Given
         long relId = 1337L;
@@ -67,7 +67,7 @@ public class NodeRecordTest
     }
 
     @Test
-    public void shouldListLabelRecordsInUse()
+    void shouldListLabelRecordsInUse()
     {
         // Given
         NodeRecord node = new NodeRecord( 1, false, -1, -1 );
@@ -88,7 +88,7 @@ public class NodeRecordTest
     }
 
     @Test
-    public void shouldToStringBothUsedAndUnusedDynamicLabelRecords()
+    void shouldToStringBothUsedAndUnusedDynamicLabelRecords()
     {
         // GIVEN
         IdSequence ids = mock( IdSequence.class );
@@ -114,14 +114,14 @@ public class NodeRecordTest
         assertThat( toString, containsString( unused.toString() ) );
     }
 
-    private DynamicRecord newDeletedDynamicRecord( long id )
+    private static DynamicRecord newDeletedDynamicRecord( long id )
     {
         DynamicRecord record = new DynamicRecord( id );
         record.setInUse( false );
         return record;
     }
 
-    private NodeRecord newUsedNodeRecord( long id )
+    private static NodeRecord newUsedNodeRecord( long id )
     {
         NodeRecord node = new NodeRecord( id );
         node.setInUse( true );

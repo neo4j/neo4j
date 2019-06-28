@@ -19,23 +19,23 @@
  */
 package org.neo4j.internal.batchimport.staging;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.Arrays;
 
 import org.neo4j.internal.batchimport.Configuration;
 import org.neo4j.internal.batchimport.stats.Keys;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
 import static org.neo4j.internal.batchimport.staging.ControlledStep.stepWithStats;
 
-public class DynamicProcessorAssignerTest
+class DynamicProcessorAssignerTest
 {
     @Test
-    public void shouldAssignAdditionalCPUToBottleNeckStep()
+    void shouldAssignAdditionalCPUToBottleNeckStep()
     {
         // GIVEN
         Configuration config = config( 10, 5 );
@@ -56,7 +56,7 @@ public class DynamicProcessorAssignerTest
     }
 
     @Test
-    public void shouldRemoveCPUsFromWayTooFastStep()
+    void shouldRemoveCPUsFromWayTooFastStep()
     {
         // GIVEN
         Configuration config = config( 10, 3 );
@@ -80,7 +80,7 @@ public class DynamicProcessorAssignerTest
     }
 
     @Test
-    public void shouldRemoveCPUsButNotSoThatTheFastStepBecomesBottleneck()
+    void shouldRemoveCPUsButNotSoThatTheFastStepBecomesBottleneck()
     {
         // GIVEN
         Configuration config = config( 10, 3 );
@@ -102,7 +102,7 @@ public class DynamicProcessorAssignerTest
     }
 
     @Test
-    public void shouldHandleZeroAverage()
+    void shouldHandleZeroAverage()
     {
         // GIVEN
         Configuration config = config( 10, 5 );
@@ -123,7 +123,7 @@ public class DynamicProcessorAssignerTest
     }
 
     @Test
-    public void shouldRemoveCPUsFromTooFastStepEvenIfThereIsAWayFaster()
+    void shouldRemoveCPUsFromTooFastStepEvenIfThereIsAWayFaster()
     {
         // The point is that not only the fastest step is subject to have processors removed,
         // it's the relationship between all pairs of steps. This is important since the DPA has got
@@ -148,7 +148,7 @@ public class DynamicProcessorAssignerTest
     }
 
     @Test
-    public void shouldRemoveCPUsFromTooFastStepEvenIfNotAllPermitsAreUsed()
+    void shouldRemoveCPUsFromTooFastStepEvenIfNotAllPermitsAreUsed()
     {
         // GIVEN
         Configuration config = config( 10, 20 );

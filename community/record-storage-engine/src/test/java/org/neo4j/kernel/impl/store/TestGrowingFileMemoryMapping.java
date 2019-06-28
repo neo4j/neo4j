@@ -20,54 +20,45 @@
 package org.neo4j.kernel.impl.store;
 
 import org.apache.commons.lang3.SystemUtils;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.RuleChain;
+import org.junit.jupiter.api.Assumptions;
+import org.junit.jupiter.api.Test;
 
 import org.neo4j.configuration.Config;
 import org.neo4j.internal.id.DefaultIdGeneratorFactory;
 import org.neo4j.io.ByteUnit;
-import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.kernel.impl.store.format.standard.NodeRecordFormat;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.logging.NullLogProvider;
-import org.neo4j.test.rule.PageCacheRule;
+import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.pagecache.PageCacheExtension;
 import org.neo4j.test.rule.TestDirectory;
-import org.neo4j.test.rule.fs.DefaultFileSystemRule;
 
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assume.assumeTrue;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.NORMAL;
-import static org.neo4j.test.rule.PageCacheConfig.config;
 
-public class TestGrowingFileMemoryMapping
+@PageCacheExtension
+class TestGrowingFileMemoryMapping
 {
-    private final PageCacheRule pageCacheRule = new PageCacheRule();
-    private final TestDirectory testDirectory = TestDirectory.testDirectory();
-    private final DefaultFileSystemRule fileSystemRule = new DefaultFileSystemRule();
-
-    @Rule
-    public RuleChain ruleChain = RuleChain.outerRule( testDirectory ).around( fileSystemRule ).around( pageCacheRule );
+    @Inject
+    private PageCache pageCache;
+    @Inject
+    private TestDirectory testDirectory;
 
     @Test
-    public void shouldGrowAFileWhileContinuingToMemoryMapNewRegions()
+    void shouldGrowAFileWhileContinuingToMemoryMapNewRegions()
     {
         // don't run on windows because memory mapping doesn't work properly there
-        assumeTrue( !SystemUtils.IS_OS_WINDOWS );
+        Assumptions.assumeTrue( !SystemUtils.IS_OS_WINDOWS );
 
         // given
         final int NUMBER_OF_RECORDS = 1000000;
 
         Config config = Config.defaults();
-        FileSystemAbstraction fileSystemAbstraction = fileSystemRule.get();
-        DefaultIdGeneratorFactory idGeneratorFactory = new DefaultIdGeneratorFactory( fileSystemAbstraction );
-        PageCache pageCache = pageCacheRule.getPageCache( fileSystemAbstraction,
-                config().withMemory( mmapSize( NUMBER_OF_RECORDS, NodeRecordFormat.RECORD_SIZE ) ) );
+        DefaultIdGeneratorFactory idGeneratorFactory = new DefaultIdGeneratorFactory( testDirectory.getFileSystem() );
         StoreFactory storeFactory = new StoreFactory( testDirectory.databaseLayout(), config, idGeneratorFactory, pageCache,
-                fileSystemAbstraction, NullLogProvider.getInstance() );
+                testDirectory.getFileSystem(), NullLogProvider.getInstance() );
 
         NeoStores neoStores = storeFactory.openAllNeoStores( true );
         NodeStore nodeStore = neoStores.getNodeStore();
@@ -90,7 +81,7 @@ public class TestGrowingFileMemoryMapping
         {
             record.setId( startingId + i );
             nodeStore.getRecord( i, record, NORMAL );
-            assertTrue( "record[" + i + "] should be in use", record.inUse() );
+            assertTrue( record.inUse(), "record[" + i + "] should be in use" );
             assertThat( "record[" + i + "] should have nextRelId of " + i,
                     record.getNextRel(), is( (long) i ) );
         }

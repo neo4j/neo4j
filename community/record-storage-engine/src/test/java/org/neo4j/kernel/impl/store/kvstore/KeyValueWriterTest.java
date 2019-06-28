@@ -19,19 +19,21 @@
  */
 package org.neo4j.kernel.impl.store.kvstore;
 
-import org.junit.After;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.startsWith;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public class KeyValueWriterTest
+class KeyValueWriterTest
 {
     private static final int ENTRIES_PER_PAGE = 4 * 1024 / 16;
     @SuppressWarnings( "unchecked" )
@@ -41,23 +43,23 @@ public class KeyValueWriterTest
     private final BigEndianByteArrayBuffer key = new BigEndianByteArrayBuffer( new byte[8] );
     private final BigEndianByteArrayBuffer value = new BigEndianByteArrayBuffer( new byte[8] );
 
-    @After
-    public void closeWriter() throws IOException
+    @AfterEach
+    void closeWriter() throws IOException
     {
         writer.close();
     }
 
     @Test
-    public void shouldAcceptNoHeadersAndNoData() throws Exception
+    void shouldAcceptNoHeadersAndNoData() throws Exception
     {
         // given
         value.putByte( 0, (byte) 0x7F );
         value.putByte( 7, (byte) 0x7F );
 
         // when
-        assertTrue( "format specifier", writer.writeHeader( key, value ) );
-        assertTrue( "end-of-header marker", writer.writeHeader( key, value ) );
-        assertTrue( "end marker + number of data items", writer.writeHeader( key, value ) );
+        assertTrue( writer.writeHeader( key, value ), "format specifier" );
+        assertTrue( writer.writeHeader( key, value ), "end-of-header marker" );
+        assertTrue( writer.writeHeader( key, value ), "end marker + number of data items" );
 
         // then
 
@@ -71,13 +73,13 @@ public class KeyValueWriterTest
     }
 
     @Test
-    public void shouldRequireNonZeroFormatSpecifier() throws Exception
+    void shouldRequireNonZeroFormatSpecifier() throws Exception
     {
-        assertFalse( "format-specifier", writer.writeHeader( key, value ) );
+        assertFalse( writer.writeHeader( key, value ), "format-specifier" );
     }
 
     @Test
-    public void shouldRejectInvalidHeaderKeyWhenAssertionsAreEnabled() throws Exception
+    void shouldRejectInvalidHeaderKeyWhenAssertionsAreEnabled() throws Exception
     {
         // given
         key.putByte( 3, (byte) 1 );
@@ -100,7 +102,7 @@ public class KeyValueWriterTest
     }
 
     @Test
-    public void shouldRejectInvalidDataKey() throws Exception
+    void shouldRejectInvalidDataKey() throws Exception
     {
         // given
         value.putByte( 0, (byte) 0x7F );
@@ -108,64 +110,34 @@ public class KeyValueWriterTest
         writer.writeHeader( key, value );
         writer.writeHeader( key, value );
 
-        // when
-        try
-        {
-            writer.writeData( key, value );
-
-            fail( "expected exception" );
-        }
-        // then
-        catch ( IllegalArgumentException e )
-        {
-            assertEquals( "All-zero keys are not allowed.", e.getMessage() );
-        }
+        var e = assertThrows( IllegalArgumentException.class, () -> writer.writeData( key, value ) );
+        assertEquals( "All-zero keys are not allowed.", e.getMessage() );
     }
 
     @Test
-    public void shouldRejectDataBeforeHeaders() throws Exception
+    void shouldRejectDataBeforeHeaders()
     {
         // given
         key.putByte( 2, (byte) 0x77 );
 
-        // when
-        try
-        {
-            writer.writeData( key, value );
-
-            fail( "expected exception" );
-        }
-        // then
-        catch ( IllegalStateException e )
-        {
-            assertEquals( "Cannot write data when expecting format specifier.", e.getMessage() );
-        }
+        var e = assertThrows( IllegalStateException.class, () -> writer.writeData( key, value ) );
+        assertEquals( "Cannot write data when expecting format specifier.", e.getMessage() );
     }
 
     @Test
-    public void shouldRejectDataAfterInsufficientHeaders() throws Exception
+    void shouldRejectDataAfterInsufficientHeaders() throws Exception
     {
         // given
         value.fill( (byte) 0xFF );
         assertTrue( writer.writeHeader( key, value ) );
         key.putByte( 2, (byte) 0x77 );
 
-        // when
-        try
-        {
-            writer.writeData( key, value );
-
-            fail( "expected exception" );
-        }
-        // then
-        catch ( IllegalStateException e )
-        {
-            assertEquals( "Cannot write data when expecting header.", e.getMessage() );
-        }
+        var e = assertThrows( IllegalStateException.class, () -> writer.writeData( key, value ) );
+        assertEquals( "Cannot write data when expecting header.", e.getMessage() );
     }
 
     @Test
-    public void shouldNotOpenStoreFileIfWritingHasNotCompleted() throws Exception
+    void shouldNotOpenStoreFileIfWritingHasNotCompleted() throws Exception
     {
         for ( int i = 0; i <= 10; i++ )
         {
@@ -217,18 +189,8 @@ public class KeyValueWriterTest
                 }
             }
 
-            // when
-            try
-            {
-                writer.openStoreFile();
-
-                fail( "expected exception" );
-            }
-            // then
-            catch ( IllegalStateException e )
-            {
-                assertTrue( e.getMessage().startsWith( "Cannot open store file when " ) );
-            }
+            var e = assertThrows( IllegalStateException.class, () -> writer.openStoreFile() );
+            assertThat( e.getMessage(), startsWith( "Cannot open store file when " ) );
         }
     }
 
@@ -262,9 +224,9 @@ public class KeyValueWriterTest
             io();
         }
 
-        public void assertData( byte... expected )
+        void assertData( byte... expected )
         {
-            assertArrayEquals( expected, this.data.toByteArray() );
+            Assertions.assertArrayEquals( expected, this.data.toByteArray() );
         }
 
         private void io() throws IOException

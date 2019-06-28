@@ -19,7 +19,7 @@
  */
 package org.neo4j.internal.recordstorage;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.Collections;
 import java.util.Set;
@@ -45,10 +45,10 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.emptyIterableOf;
 import static org.hamcrest.Matchers.equalTo;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.common.EntityType.NODE;
 import static org.neo4j.common.EntityType.RELATIONSHIP;
 import static org.neo4j.internal.helpers.collection.Iterators.asSet;
@@ -57,7 +57,7 @@ import static org.neo4j.internal.schema.SchemaDescriptor.fulltext;
 import static org.neo4j.internal.schema.constraints.ConstraintDescriptorFactory.uniqueForLabel;
 import static org.neo4j.storageengine.api.ConstraintRule.constraintRule;
 
-public class SchemaCacheTest
+class SchemaCacheTest
 {
     private final SchemaRule hans = newIndexRule( 1, 0, 5 );
     private final SchemaRule witch = nodePropertyExistenceConstraintRule( 2, 3, 6 );
@@ -75,7 +75,7 @@ public class SchemaCacheTest
             fulltext( RELATIONSHIP, IndexConfig.empty(), new int[]{3, 5}, new int[]{8} ), false, 14, null );
 
     @Test
-    public void should_construct_schema_cache()
+    void should_construct_schema_cache()
     {
         // GIVEN
         SchemaCache cache = newSchemaCache( hans, witch, gretel, robot );
@@ -86,7 +86,7 @@ public class SchemaCacheTest
     }
 
     @Test
-    public void addRemoveIndexes()
+    void addRemoveIndexes()
     {
         SchemaCache cache = newSchemaCache( hans, witch, gretel, robot );
 
@@ -103,7 +103,7 @@ public class SchemaCacheTest
     }
 
     @Test
-    public void addSchemaRules()
+    void addSchemaRules()
     {
         // GIVEN
         SchemaCache cache = newSchemaCache();
@@ -120,7 +120,7 @@ public class SchemaCacheTest
     }
 
     @Test
-    public void should_list_constraints()
+    void should_list_constraints()
     {
         // GIVEN
         SchemaCache cache = newSchemaCache();
@@ -159,7 +159,7 @@ public class SchemaCacheTest
     }
 
     @Test
-    public void should_remove_constraints()
+    void should_remove_constraints()
     {
         // GIVEN
         SchemaCache cache = newSchemaCache();
@@ -187,7 +187,7 @@ public class SchemaCacheTest
     }
 
     @Test
-    public void adding_constraints_should_be_idempotent()
+    void adding_constraints_should_be_idempotent()
     {
         // given
         SchemaCache cache = newSchemaCache();
@@ -204,7 +204,7 @@ public class SchemaCacheTest
     }
 
     @Test
-    public void shouldResolveIndexDescriptor()
+    void shouldResolveIndexDescriptor()
     {
         // Given
         SchemaCache cache = newSchemaCache();
@@ -241,19 +241,11 @@ public class SchemaCacheTest
         Set<StorageIndexReference> expected = asSet( newIndexRule( 1L, 1, 2 ) );
         assertEquals( expected, indexes );
 
-        try
-        {
-            snapshot.addSchemaRule( newIndexRule( 3L, 1, 2 ) );
-            fail( "SchemaCache snapshots should not permit mutation." );
-        }
-        catch ( IllegalStateException ignore )
-        {
-            // Good.
-        }
+        assertThrows( IllegalStateException.class, () -> snapshot.addSchemaRule( newIndexRule( 3L, 1, 2 ) ) );
     }
 
     @Test
-    public void shouldReturnNullWhenNoIndexExists()
+    void shouldReturnNullWhenNoIndexExists()
     {
         // Given
         SchemaCache schemaCache = newSchemaCache();
@@ -266,7 +258,7 @@ public class SchemaCacheTest
     }
 
     @Test
-    public void shouldListConstraintsForLabel()
+    void shouldListConstraintsForLabel()
     {
         // Given
         ConstraintRule rule1 = uniquenessConstraintRule( 0, 1, 1, 0 );
@@ -287,7 +279,7 @@ public class SchemaCacheTest
     }
 
     @Test
-    public void shouldListConstraintsForSchema()
+    void shouldListConstraintsForSchema()
     {
         // Given
         ConstraintRule rule1 = uniquenessConstraintRule( 0, 1, 1, 0 );
@@ -307,7 +299,7 @@ public class SchemaCacheTest
     }
 
     @Test
-    public void shouldListConstraintsForRelationshipType()
+    void shouldListConstraintsForRelationshipType()
     {
         // Given
         ConstraintRule rule1 = relPropertyExistenceConstraintRule( 0, 1, 1 );
@@ -328,7 +320,7 @@ public class SchemaCacheTest
     }
 
     @Test
-    public void concurrentSchemaRuleAdd() throws Throwable
+    void concurrentSchemaRuleAdd() throws Throwable
     {
         SchemaCache cache = newSchemaCache();
         Race race = new Race();
@@ -348,7 +340,7 @@ public class SchemaCacheTest
     }
 
     @Test
-    public void concurrentSchemaRuleRemove() throws Throwable
+    void concurrentSchemaRuleRemove() throws Throwable
     {
         SchemaCache cache = newSchemaCache();
         int indexNumber = 20;
@@ -373,7 +365,7 @@ public class SchemaCacheTest
     }
 
     @Test
-    public void shouldGetRelatedIndexForLabel()
+    void shouldGetRelatedIndexForLabel()
     {
         SchemaCache cache = newSchemaCacheWithRulesForRelatedToCalls();
         assertThat( cache.getIndexesRelatedTo( entityTokens( 3 ), noEntityToken, properties(), false, NODE ),
@@ -381,7 +373,7 @@ public class SchemaCacheTest
     }
 
     @Test
-    public void shouldGetRelatedIndexForProperty()
+    void shouldGetRelatedIndexForProperty()
     {
         SchemaCache cache = newSchemaCacheWithRulesForRelatedToCalls();
         assertThat(
@@ -390,7 +382,7 @@ public class SchemaCacheTest
     }
 
     @Test
-    public void shouldGetRelatedIndexesForLabel()
+    void shouldGetRelatedIndexesForLabel()
     {
         SchemaCache cache = newSchemaCacheWithRulesForRelatedToCalls();
         assertThat( cache.getIndexesRelatedTo( entityTokens( 5 ), entityTokens( 3, 4 ), properties(), false, NODE ),
@@ -398,7 +390,7 @@ public class SchemaCacheTest
     }
 
     @Test
-    public void shouldGetRelatedIndexes()
+    void shouldGetRelatedIndexes()
     {
         SchemaCache cache = newSchemaCacheWithRulesForRelatedToCalls();
         assertThat(
@@ -407,7 +399,7 @@ public class SchemaCacheTest
     }
 
     @Test
-    public void shouldGetRelatedIndexOnce()
+    void shouldGetRelatedIndexOnce()
     {
         SchemaCache cache = newSchemaCacheWithRulesForRelatedToCalls();
         assertThat(
@@ -420,7 +412,7 @@ public class SchemaCacheTest
     }
 
     @Test
-    public void shouldHandleUnrelated()
+    void shouldHandleUnrelated()
     {
         SchemaCache cache = newSchemaCacheWithRulesForRelatedToCalls();
         assertThat( cache.getIndexesRelatedTo( noEntityToken, noEntityToken, properties(), false, NODE ),
@@ -436,7 +428,7 @@ public class SchemaCacheTest
     }
 
     @Test
-    public void shouldGetMultiLabelForAnyOfTheLabels()
+    void shouldGetMultiLabelForAnyOfTheLabels()
     {
         SchemaCache cache = newSchemaCacheWithRulesForRelatedToCalls();
         assertThat( cache.getIndexesRelatedTo( entityTokens( 3 ), noEntityToken, properties(), false, NODE ),
@@ -447,7 +439,7 @@ public class SchemaCacheTest
     }
 
     @Test
-    public void shouldOnlyGetRelIndexesForRelUpdates()
+    void shouldOnlyGetRelIndexesForRelUpdates()
     {
         SchemaCache cache = newSchemaCacheWithRulesForRelatedToCalls();
         assertThat( cache.getIndexesRelatedTo( entityTokens( 3 ), noEntityToken, properties(), false, RELATIONSHIP ),
@@ -458,7 +450,7 @@ public class SchemaCacheTest
     }
 
     @Test
-    public void removalsShouldOnlyRemoveCorrectProxy()
+    void removalsShouldOnlyRemoveCorrectProxy()
     {
         SchemaCache cache = newSchemaCacheWithRulesForRelatedToCalls();
         cache.removeSchemaRule( node35_8.getId() );
@@ -476,7 +468,7 @@ public class SchemaCacheTest
     }
 
     @Test
-    public void shouldGetRelatedNodeConstraints()
+    void shouldGetRelatedNodeConstraints()
     {
         // given
         SchemaCache cache = new SchemaCache( new ConstraintSemantics() );
@@ -506,7 +498,7 @@ public class SchemaCacheTest
     }
 
     @Test
-    public void shouldRemoveNodeConstraints()
+    void shouldRemoveNodeConstraints()
     {
         // given
         SchemaCache cache = new SchemaCache( new ConstraintSemantics() );
@@ -541,22 +533,22 @@ public class SchemaCacheTest
         return propertyIds;
     }
 
-    private StorageIndexReference newIndexRule( long id, int label, int... propertyKeys )
+    private static StorageIndexReference newIndexRule( long id, int label, int... propertyKeys )
     {
-        return new DefaultStorageIndexReference( SchemaDescriptor.forLabel( label, propertyKeys ), false, id, null );
+        return new DefaultStorageIndexReference( forLabel( label, propertyKeys ), false, id, null );
     }
 
-    private ConstraintRule nodePropertyExistenceConstraintRule( long ruleId, int labelId, int propertyId )
+    private static ConstraintRule nodePropertyExistenceConstraintRule( long ruleId, int labelId, int propertyId )
     {
         return constraintRule( ruleId, ConstraintDescriptorFactory.existsForLabel( labelId, propertyId ) );
     }
 
-    private ConstraintRule relPropertyExistenceConstraintRule( long ruleId, int relTypeId, int propertyId )
+    private static ConstraintRule relPropertyExistenceConstraintRule( long ruleId, int relTypeId, int propertyId )
     {
         return constraintRule( ruleId, ConstraintDescriptorFactory.existsForRelType( relTypeId, propertyId ) );
     }
 
-    private ConstraintRule uniquenessConstraintRule( long ruleId, int labelId, int propertyId, long indexId )
+    private static ConstraintRule uniquenessConstraintRule( long ruleId, int labelId, int propertyId, long indexId )
     {
         return constraintRule( ruleId, uniqueForLabel( labelId, propertyId ), indexId );
     }

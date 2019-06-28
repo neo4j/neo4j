@@ -19,16 +19,16 @@
  */
 package org.neo4j.internal.recordstorage;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.IsEqual.equalTo;
-import static org.junit.Assert.assertThat;
 import static org.neo4j.internal.recordstorage.Command.Mode.fromRecordState;
 
-public class TestCommandMode
+class TestCommandMode
 {
     @Test
-    public void shouldInferCorrectModes()
+    void shouldInferCorrectModes()
     {
         assertThat( fromRecordState( true, true ), equalTo( Command.Mode.CREATE ) );
         assertThat( fromRecordState( false, true ), equalTo( Command.Mode.UPDATE ) );

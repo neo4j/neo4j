@@ -19,7 +19,7 @@
  */
 package org.neo4j.internal.batchimport.staging;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -29,14 +29,14 @@ import org.neo4j.internal.batchimport.Configuration;
 import org.neo4j.internal.batchimport.stats.Keys;
 import org.neo4j.internal.helpers.collection.Pair;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.neo4j.internal.batchimport.staging.ControlledStep.stepWithAverageOf;
 
-public class StageExecutionTest
+class StageExecutionTest
 {
     @Test
-    public void shouldOrderStepsAscending()
+    void shouldOrderStepsAscending()
     {
         // GIVEN
         Collection<Step<?>> steps = new ArrayList<>();
@@ -59,7 +59,7 @@ public class StageExecutionTest
     }
 
     @Test
-    public void shouldOrderStepsDescending()
+    void shouldOrderStepsDescending()
     {
         // GIVEN
         Collection<Step<?>> steps = new ArrayList<>();

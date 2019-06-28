@@ -19,11 +19,7 @@
  */
 package org.neo4j.kernel.impl.store;
 
-import org.junit.Before;
-import org.junit.ClassRule;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.RuleChain;
+import org.junit.jupiter.api.Test;
 
 import java.io.File;
 import java.nio.charset.StandardCharsets;
@@ -34,39 +30,32 @@ import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.internal.id.DefaultIdGeneratorFactory;
 import org.neo4j.io.fs.EphemeralFileSystemAbstraction;
+import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.impl.store.format.RecordFormatSelector;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.logging.NullLogProvider;
-import org.neo4j.test.rule.PageCacheRule;
+import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.pagecache.EphemeralPageCacheExtension;
 import org.neo4j.test.rule.TestDirectory;
-import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertThat;
 import static org.mockito.Mockito.mock;
 
-public class TestIdGeneratorRebuilding
+@EphemeralPageCacheExtension
+class TestIdGeneratorRebuilding
 {
-    @ClassRule
-    public static final PageCacheRule pageCacheRule = new PageCacheRule();
-    private EphemeralFileSystemRule fsRule = new EphemeralFileSystemRule();
-    private TestDirectory testDirectory = TestDirectory.testDirectory(fsRule.get());
-
-    @Rule
-    public RuleChain ruleChain = RuleChain.outerRule( fsRule ).around( testDirectory );
-
+    @Inject
+    private PageCache pageCache;
+    @Inject
     private EphemeralFileSystemAbstraction fs;
-
-    @Before
-    public void doBefore()
-    {
-        fs = fsRule.get();
-    }
+    @Inject
+    private TestDirectory testDirectory;
 
     @Test
-    public void verifyFixedSizeStoresCanRebuildIdGeneratorSlowly()
+    void verifyFixedSizeStoresCanRebuildIdGeneratorSlowly()
     {
         // Given we have a store ...
         Config config = Config.defaults( GraphDatabaseSettings.rebuild_idgenerators_fast, "false" );
@@ -75,7 +64,7 @@ public class TestIdGeneratorRebuilding
 
         DynamicArrayStore labelStore = mock( DynamicArrayStore.class );
         NodeStore store = new NodeStore( storeFile, idFile, config, new DefaultIdGeneratorFactory( fs ),
-                pageCacheRule.getPageCache( fs ), NullLogProvider.getInstance(), labelStore,
+                pageCache, NullLogProvider.getInstance(), labelStore,
                 RecordFormatSelector.defaultFormat() );
         store.initialise( true );
         store.makeStoreOk();
@@ -118,13 +107,13 @@ public class TestIdGeneratorRebuilding
     }
 
     @Test
-    public void verifyDynamicSizedStoresCanRebuildIdGeneratorSlowly()
+    void verifyDynamicSizedStoresCanRebuildIdGeneratorSlowly()
     {
         // Given we have a store ...
         Config config = Config.defaults( GraphDatabaseSettings.rebuild_idgenerators_fast, "false" );
 
         StoreFactory storeFactory = new StoreFactory( testDirectory.databaseLayout(), config,
-                new DefaultIdGeneratorFactory( fs ), pageCacheRule.getPageCache( fs ), fs, NullLogProvider
+                new DefaultIdGeneratorFactory( fs ), pageCache, fs, NullLogProvider
                 .getInstance() );
         NeoStores neoStores = storeFactory.openAllNeoStores( true );
         DynamicStringStore store = neoStores.getPropertyStore().getStringStore();
@@ -171,7 +160,7 @@ public class TestIdGeneratorRebuilding
     }
 
     @Test
-    public void rebuildingIdGeneratorMustNotMissOutOnFreeRecordsAtEndOfFilePage()
+    void rebuildingIdGeneratorMustNotMissOutOnFreeRecordsAtEndOfFilePage()
     {
         // Given we have a store ...
         Config config = Config.defaults( GraphDatabaseSettings.rebuild_idgenerators_fast, "false" );
@@ -180,7 +169,7 @@ public class TestIdGeneratorRebuilding
 
         DynamicArrayStore labelStore = mock( DynamicArrayStore.class );
         NodeStore store = new NodeStore( storeFile, idFile, config, new DefaultIdGeneratorFactory( fs ),
-                pageCacheRule.getPageCache( fs ), NullLogProvider.getInstance(), labelStore,
+                pageCache, NullLogProvider.getInstance(), labelStore,
                 RecordFormatSelector.defaultFormat() );
         store.initialise( true );
         store.makeStoreOk();

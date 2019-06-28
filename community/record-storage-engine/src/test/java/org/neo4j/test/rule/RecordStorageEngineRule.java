@@ -72,7 +72,7 @@ public class RecordStorageEngineRule extends ExternalResource
     private final LifeSupport life = new LifeSupport();
 
     @Override
-    protected void before() throws Throwable
+    public void before() throws Throwable
     {
         super.before();
         life.start();
@@ -100,7 +100,7 @@ public class RecordStorageEngineRule extends ExternalResource
     }
 
     @Override
-    protected void after( boolean successful ) throws Throwable
+    public void after( boolean successful ) throws Throwable
     {
         life.shutdown();
         super.after( successful );

@@ -19,34 +19,34 @@
  */
 package org.neo4j.kernel.impl.store;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.Optional;
 
 import org.neo4j.io.layout.DatabaseFile;
 
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
-public class StoreTypeTest
+class StoreTypeTest
 {
     @Test
-    public void storeTypeOfValidStoreFile()
+    void storeTypeOfValidStoreFile()
     {
         StoreType matchedType = StoreType.typeOf( DatabaseFile.NODE_STORE ).orElseThrow( () -> new IllegalStateException( "Store type not found" ) );
         assertEquals( StoreType.NODE, matchedType );
     }
 
     @Test
-    public void storeTypeOfMetaDataStoreFile()
+    void storeTypeOfMetaDataStoreFile()
     {
         StoreType matchedType = StoreType.typeOf( DatabaseFile.METADATA_STORE ).orElseThrow( () -> new IllegalStateException( "Store type not found" ) );
         assertEquals( StoreType.META_DATA, matchedType );
     }
 
     @Test
-    public void storeTypeofSomeInvalidFile()
+    void storeTypeofSomeInvalidFile()
     {
         assertThat( StoreType.typeOf( DatabaseFile.LABEL_SCAN_STORE ), is( Optional.empty() ) );
     }

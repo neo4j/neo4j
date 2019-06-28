@@ -19,23 +19,26 @@
  */
 package org.neo4j.internal.batchimport;
 
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.util.Iterator;
 
 import org.neo4j.test.Race;
+import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.RandomExtension;
 import org.neo4j.test.rule.RandomRule;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
-public class DataStatisticsTest
+@ExtendWith( RandomExtension.class )
+class DataStatisticsTest
 {
-    @Rule
-    public final RandomRule random = new RandomRule();
+    @Inject
+    private RandomRule random;
 
     @Test
-    public void shouldSumCounts() throws Throwable
+    void shouldSumCounts() throws Throwable
     {
         // given
         DataStatistics stats = new DataStatistics( 1, 2, new DataStatistics.RelationshipTypeCount[0] );
@@ -74,7 +77,7 @@ public class DataStatisticsTest
     }
 
     @Test
-    public void shouldGrowArrayProperly()
+    void shouldGrowArrayProperly()
     {
         // given
         DataStatistics stats = new DataStatistics( 1, 1, new DataStatistics.RelationshipTypeCount[0] );

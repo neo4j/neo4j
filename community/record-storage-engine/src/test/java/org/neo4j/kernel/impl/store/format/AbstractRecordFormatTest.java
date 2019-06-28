@@ -19,11 +19,11 @@
  */
 package org.neo4j.kernel.impl.store.format;
 
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.RuleChain;
-import org.junit.rules.TestName;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestInfo;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.io.File;
 import java.io.IOException;
@@ -31,6 +31,7 @@ import java.util.function.Supplier;
 
 import org.neo4j.internal.helpers.Exceptions;
 import org.neo4j.internal.id.BatchingIdSequence;
+import org.neo4j.io.fs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PagedFile;
@@ -38,19 +39,20 @@ import org.neo4j.kernel.impl.store.IntStoreHeader;
 import org.neo4j.kernel.impl.store.format.RecordGenerators.Generator;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.kernel.impl.store.record.Record;
-import org.neo4j.test.rule.PageCacheRule;
+import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.RandomExtension;
+import org.neo4j.test.extension.SuppressOutputExtension;
+import org.neo4j.test.extension.pagecache.EphemeralPageCacheExtension;
 import org.neo4j.test.rule.RandomRule;
-import org.neo4j.test.rule.SuppressOutput;
-import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 
 import static java.lang.System.currentTimeMillis;
 import static java.nio.file.StandardOpenOption.CREATE;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
 import static org.neo4j.io.ByteUnit.kibiBytes;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.NORMAL;
 
+@SuppressWarnings( "AbstractClassWithoutAbstractMethods" )
+@EphemeralPageCacheExtension
+@ExtendWith( {RandomExtension.class, SuppressOutputExtension.class} )
 public abstract class AbstractRecordFormatTest
 {
     private static final int PAGE_SIZE = (int) kibiBytes( 1 );
@@ -61,16 +63,11 @@ public abstract class AbstractRecordFormatTest
     private static final int DATA_SIZE = 100;
     protected static final long NULL = Record.NULL_REFERENCE.intValue();
 
-    private final RandomRule random = new RandomRule();
-    private final EphemeralFileSystemRule fsRule = new EphemeralFileSystemRule();
-    private final PageCacheRule pageCacheRule = new PageCacheRule();
-    @Rule
-    public final SuppressOutput suppressOutput = SuppressOutput.suppressAll();
-    @Rule
-    public final TestName name = new TestName();
-
-    @Rule
-    public final RuleChain ruleChain = RuleChain.outerRule( pageCacheRule ).around( fsRule ).around( random );
+    @Inject
+    private RandomRule random;
+    @Inject
+    private EphemeralFileSystemAbstraction fs;
+    @Inject
     private PageCache pageCache;
 
     public RecordKeys keys = FullyCoveringRecordKeys.INSTANCE;
@@ -79,6 +76,7 @@ public abstract class AbstractRecordFormatTest
     private final int entityBits;
     private final int propertyBits;
     private RecordGenerators generators;
+    private String testName;
 
     protected AbstractRecordFormatTest( RecordFormats formats, int entityBits, int propertyBits )
     {
@@ -87,15 +85,10 @@ public abstract class AbstractRecordFormatTest
         this.propertyBits = propertyBits;
     }
 
-    @Before
-    public void setupPageCache()
+    @BeforeEach
+    public void before( TestInfo testInfo )
     {
-        pageCache = pageCacheRule.getPageCache( fsRule.get() );
-    }
-
-    @Before
-    public void before()
-    {
+        testName = testInfo.getDisplayName();
         generators = new LimitedRecordGenerators( random.randomValues(), entityBits, propertyBits, 40, 16, -1 );
     }
 
@@ -127,7 +120,7 @@ public abstract class AbstractRecordFormatTest
     public void relationshipTypeToken() throws Exception
     {
         verifyWriteAndRead( formats::relationshipTypeToken, generators::relationshipTypeToken,
-                keys::relationshipTypeToken, false );
+            keys::relationshipTypeToken, false );
     }
 
     @Test
@@ -149,13 +142,13 @@ public abstract class AbstractRecordFormatTest
     }
 
     private <R extends AbstractBaseRecord> void verifyWriteAndRead(
-            Supplier<RecordFormat<R>> formatSupplier,
-            Supplier<Generator<R>> generatorSupplier,
-            Supplier<RecordKey<R>> keySupplier,
-            boolean assertPostReadOffset ) throws IOException
+        Supplier<RecordFormat<R>> formatSupplier,
+        Supplier<Generator<R>> generatorSupplier,
+        Supplier<RecordKey<R>> keySupplier,
+        boolean assertPostReadOffset ) throws IOException
     {
         // GIVEN
-        try ( PagedFile storeFile = pageCache.map( new File( "store-" + name.getMethodName() ), PAGE_SIZE, CREATE ) )
+        try ( PagedFile storeFile = pageCache.map( new File( "store-" + testName ), PAGE_SIZE, CREATE ) )
         {
             RecordFormat<R> format = formatSupplier.get();
             RecordKey<R> key = keySupplier.get();
@@ -188,8 +181,8 @@ public abstract class AbstractRecordFormatTest
         }
     }
 
-    private <R extends AbstractBaseRecord> void readAndVerifyRecord( R written, R read, RecordFormat<R> format,
-            RecordKey<R> key, PagedFile storeFile, int recordSize, boolean assertPostReadOffset ) throws IOException
+    private static <R extends AbstractBaseRecord> void readAndVerifyRecord( R written, R read, RecordFormat<R> format,
+        RecordKey<R> key, PagedFile storeFile, int recordSize, boolean assertPostReadOffset ) throws IOException
     {
         try ( PageCursor cursor = storeFile.io( 0, PagedFile.PF_SHARED_READ_LOCK ) )
         {
@@ -210,28 +203,28 @@ public abstract class AbstractRecordFormatTest
             assertWithinBounds( written, cursor, "reading" );
             if ( assertPostReadOffset )
             {
-                assertEquals( "Cursor is positioned on first byte of next record after a read",
-                              offset + recordSize, cursor.getOffset() );
+                Assertions.assertEquals(
+                    offset + recordSize, cursor.getOffset(), "Cursor is positioned on first byte of next record after a read" );
             }
             cursor.checkAndClearCursorException();
 
             // THEN
             if ( written.inUse() )
             {
-                assertEquals( written.inUse(), read.inUse() );
-                assertEquals( written.getId(), read.getId() );
-                assertEquals( written.getSecondaryUnitId(), read.getSecondaryUnitId() );
+                Assertions.assertEquals( written.inUse(), read.inUse() );
+                Assertions.assertEquals( written.getId(), read.getId() );
+                Assertions.assertEquals( written.getSecondaryUnitId(), read.getSecondaryUnitId() );
                 key.assertRecordsEquals( written, read );
             }
             else
             {
-                assertEquals( written.inUse(), read.inUse() );
+                Assertions.assertEquals( written.inUse(), read.inUse() );
             }
         }
     }
 
-    private <R extends AbstractBaseRecord> void writeRecord( R record, RecordFormat<R> format, PagedFile storeFile,
-            int recordSize, BatchingIdSequence idSequence ) throws IOException
+    private static <R extends AbstractBaseRecord> void writeRecord( R record, RecordFormat<R> format, PagedFile storeFile,
+        int recordSize, BatchingIdSequence idSequence ) throws IOException
     {
         try ( PageCursor cursor = storeFile.io( 0, PagedFile.PF_SHARED_WRITE_LOCK ) )
         {
@@ -248,20 +241,20 @@ public abstract class AbstractRecordFormatTest
         }
     }
 
-    private <R extends AbstractBaseRecord> void assertWithinBounds( R record, PageCursor cursor, String operation )
+    private static <R extends AbstractBaseRecord> void assertWithinBounds( R record, PageCursor cursor, String operation )
     {
         if ( cursor.checkAndClearBoundsFlag() )
         {
-            fail( "Out-of-bounds when " + operation + " record " + record );
+            Assertions.fail( "Out-of-bounds when " + operation + " record " + record );
         }
     }
 
-    private void assertedNext( PageCursor cursor ) throws IOException
+    private static void assertedNext( PageCursor cursor ) throws IOException
     {
-        assertTrue( cursor.next() );
+        Assertions.assertTrue( cursor.next() );
     }
 
-    private long idSureToBeOnTheNextPage( int pageSize, int recordSize )
+    private static long idSureToBeOnTheNextPage( int pageSize, int recordSize )
     {
         return (pageSize + 100) / recordSize;
     }

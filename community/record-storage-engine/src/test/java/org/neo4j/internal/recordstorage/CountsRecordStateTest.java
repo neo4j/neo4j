@@ -19,7 +19,7 @@
  */
 package org.neo4j.internal.recordstorage;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.List;
 import java.util.Set;
@@ -27,14 +27,14 @@ import java.util.Set;
 import org.neo4j.internal.helpers.collection.Iterables;
 import org.neo4j.storageengine.api.CountsDelta;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.internal.helpers.collection.Iterators.asSet;
 
-public class CountsRecordStateTest
+class CountsRecordStateTest
 {
     @Test
-    public void shouldReportDifferencesBetweenDifferentStates()
+    void shouldReportDifferencesBetweenDifferentStates()
     {
         // given
         CountsRecordState oracle = new CountsRecordState();
@@ -59,7 +59,7 @@ public class CountsRecordStateTest
     }
 
     @Test
-    public void shouldNotReportAnythingForEqualStates()
+    void shouldNotReportAnythingForEqualStates()
     {
         // given
         CountsRecordState oracle = new CountsRecordState();
@@ -75,6 +75,6 @@ public class CountsRecordStateTest
         List<CountsRecordState.Difference> differences = oracle.verify( victim );
 
         // then
-        assertTrue( differences.toString(), differences.isEmpty() );
+        assertTrue( differences.isEmpty(), differences.toString() );
     }
 }

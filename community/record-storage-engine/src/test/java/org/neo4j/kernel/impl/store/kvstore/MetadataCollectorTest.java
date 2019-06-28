@@ -19,17 +19,17 @@
  */
 package org.neo4j.kernel.impl.store.kvstore;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
-import static org.junit.Assert.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 
-public class MetadataCollectorTest
+class MetadataCollectorTest
 {
     private final BigEndianByteArrayBuffer key = new BigEndianByteArrayBuffer( new byte[4] );
     private final BigEndianByteArrayBuffer value = new BigEndianByteArrayBuffer( new byte[4] );
 
     @Test
-    public void shouldComputePageCatalogue()
+    void shouldComputePageCatalogue()
     {
         // given
         StubCollector collector = new StubCollector( 4 );
@@ -58,7 +58,7 @@ public class MetadataCollectorTest
     }
 
     @Test
-    public void shouldComputePageCatalogueOverThreePages()
+    void shouldComputePageCatalogueOverThreePages()
     {
         // given
         StubCollector collector = new StubCollector( 4 );
@@ -94,7 +94,7 @@ public class MetadataCollectorTest
     }
 
     @Test
-    public void shouldComputePageCatalogueWhenHeaderCoversEntireFirstPage()
+    void shouldComputePageCatalogueWhenHeaderCoversEntireFirstPage()
     {
         // given
         StubCollector collector = new StubCollector( 4, "a", "b", "c" );
@@ -117,7 +117,7 @@ public class MetadataCollectorTest
     }
 
     @Test
-    public void shouldComputePageCatalogueWhenHeaderExceedsFirstPage()
+    void shouldComputePageCatalogueWhenHeaderExceedsFirstPage()
     {
         // given
         StubCollector collector = new StubCollector( 4, "a", "b", "c", "d" );
@@ -141,7 +141,7 @@ public class MetadataCollectorTest
     }
 
     @Test
-    public void shouldComputeCatalogueWhenSingleDataEntryInPage()
+    void shouldComputeCatalogueWhenSingleDataEntryInPage()
     {
         // given
         StubCollector collector = new StubCollector( 4, "a", "b" );

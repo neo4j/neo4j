@@ -19,7 +19,7 @@
  */
 package org.neo4j.internal.recordstorage;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
 import java.util.Iterator;
@@ -29,23 +29,23 @@ import org.neo4j.internal.id.IdRange;
 import org.neo4j.internal.id.IdSequence;
 
 import static java.util.Arrays.asList;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.neo4j.collection.PrimitiveLongCollections.EMPTY_LONG_ARRAY;
 
-public class RenewableBatchIdSequenceTest
+class RenewableBatchIdSequenceTest
 {
-    public static final int BATCH_SIZE = 5;
+    private static final int BATCH_SIZE = 5;
 
     private final IdSource idSource = new IdSource();
     private final List<Long> excessIds = new ArrayList<>();
     private final RenewableBatchIdSequence ids = new RenewableBatchIdSequence( idSource, BATCH_SIZE, excessIds::add );
 
     @Test
-    public void shouldRequestIdBatchFromSourceOnFirstCall()
+    void shouldRequestIdBatchFromSourceOnFirstCall()
     {
         // given
         assertEquals( 0, idSource.calls );
@@ -61,7 +61,7 @@ public class RenewableBatchIdSequenceTest
     }
 
     @Test
-    public void shouldRequestIdBatchFromSourceOnDepletingCurrent()
+    void shouldRequestIdBatchFromSourceOnDepletingCurrent()
     {
         // given
         assertEquals( 0, idSource.calls );
@@ -80,7 +80,7 @@ public class RenewableBatchIdSequenceTest
     }
 
     @Test
-    public void shouldGiveBackExcessIdsOnClose()
+    void shouldGiveBackExcessIdsOnClose()
     {
         // given
         for ( int i = 0; i < BATCH_SIZE / 2; i++ )
@@ -100,7 +100,7 @@ public class RenewableBatchIdSequenceTest
     }
 
     @Test
-    public void shouldHandleCloseWithNoCurrentBatch()
+    void shouldHandleCloseWithNoCurrentBatch()
     {
         // when
         ids.close();
@@ -110,7 +110,7 @@ public class RenewableBatchIdSequenceTest
     }
 
     @Test
-    public void shouldOnlyCloseOnce()
+    void shouldOnlyCloseOnce()
     {
         // given
         for ( int i = 0; i < BATCH_SIZE / 2; i++ )
@@ -135,7 +135,7 @@ public class RenewableBatchIdSequenceTest
     }
 
     @Test
-    public void shouldContinueThroughEmptyIdBatch()
+    void shouldContinueThroughEmptyIdBatch()
     {
         // given
         IdSequence idSource = mock( IdSequence.class );

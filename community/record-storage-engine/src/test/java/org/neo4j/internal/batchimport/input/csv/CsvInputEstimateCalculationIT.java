@@ -20,8 +20,8 @@
 package org.neo4j.internal.batchimport.input.csv;
 
 import org.apache.commons.lang3.mutable.MutableLong;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.io.BufferedWriter;
 import java.io.File;
@@ -69,6 +69,9 @@ import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.logging.internal.NullLogService;
 import org.neo4j.scheduler.JobScheduler;
+import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.RandomExtension;
+import org.neo4j.test.extension.TestDirectoryExtension;
 import org.neo4j.test.rule.RandomRule;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.scheduler.ThreadPoolJobScheduler;
@@ -77,9 +80,9 @@ import static java.lang.Integer.parseInt;
 import static java.lang.Math.abs;
 import static java.lang.Math.toIntExact;
 import static java.util.Arrays.asList;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.greaterThan;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.csv.reader.CharSeekers.charSeeker;
 import static org.neo4j.csv.reader.Configuration.COMMAS;
 import static org.neo4j.csv.reader.Readables.wrap;
@@ -93,19 +96,20 @@ import static org.neo4j.kernel.impl.store.NoStoreHeader.NO_STORE_HEADER;
 import static org.neo4j.kernel.impl.store.format.standard.Standard.LATEST_RECORD_FORMATS;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.CHECK;
 
-public class CsvInputEstimateCalculationIT
+@ExtendWith( {RandomExtension.class, TestDirectoryExtension.class} )
+class CsvInputEstimateCalculationIT
 {
     private static final long NODE_COUNT = 600_000;
     private static final long RELATIONSHIP_COUNT = 600_000;
 
-    @Rule
-    public final RandomRule random = new RandomRule();
+    @Inject
+    private RandomRule random;
 
-    @Rule
-    public final TestDirectory directory = TestDirectory.testDirectory();
+    @Inject
+    private TestDirectory directory;
 
     @Test
-    public void shouldCalculateCorrectEstimates() throws Exception
+    void shouldCalculateCorrectEstimates() throws Exception
     {
         // given a couple of input files of various layouts
         Input input = generateData();
@@ -143,7 +147,7 @@ public class CsvInputEstimateCalculationIT
     }
 
     @Test
-    public void shouldCalculateCorrectEstimatesOnEmptyData() throws Exception
+    void shouldCalculateCorrectEstimatesOnEmptyData() throws Exception
     {
         // given
         Groups groups = new Groups();

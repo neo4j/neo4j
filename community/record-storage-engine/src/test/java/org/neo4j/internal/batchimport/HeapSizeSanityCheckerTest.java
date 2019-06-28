@@ -19,7 +19,7 @@
  */
 package org.neo4j.internal.batchimport;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.function.LongSupplier;
 
@@ -34,7 +34,7 @@ import static org.mockito.Mockito.when;
 import static org.neo4j.io.ByteUnit.gibiBytes;
 import static org.neo4j.kernel.impl.store.format.standard.Standard.LATEST_RECORD_FORMATS;
 
-public class HeapSizeSanityCheckerTest
+class HeapSizeSanityCheckerTest
 {
     private final LongSupplier freeMemorySupplier = mock( LongSupplier.class );
     private final LongSupplier actualHeapSizeSupplier = mock( LongSupplier.class );
@@ -48,7 +48,7 @@ public class HeapSizeSanityCheckerTest
     private final MemoryStatsVisitor.Visitable memoryUser2 = visitor -> visitor.offHeapUsage( memoryUser2Supplier.getAsLong() );
 
     @Test
-    public void shouldReportInsufficientAvailableMemory()
+    void shouldReportInsufficientAvailableMemory()
     {
         // given
         when( freeMemorySupplier.getAsLong() ).thenReturn( gibiBytes( 2 ) );
@@ -67,7 +67,7 @@ public class HeapSizeSanityCheckerTest
     }
 
     @Test
-    public void shouldReportInsufficientHeapSize()
+    void shouldReportInsufficientHeapSize()
     {
         // given
         when( freeMemorySupplier.getAsLong() ).thenReturn( gibiBytes( 20 ) );
@@ -86,7 +86,7 @@ public class HeapSizeSanityCheckerTest
     }
 
     @Test
-    public void shouldReportAbundantHeapSize()
+    void shouldReportAbundantHeapSize()
     {
         // given
         when( freeMemorySupplier.getAsLong() ).thenReturn( gibiBytes( 2 ) );
@@ -105,7 +105,7 @@ public class HeapSizeSanityCheckerTest
     }
 
     @Test
-    public void shouldReportNothingOnGoodSetup()
+    void shouldReportNothingOnGoodSetup()
     {
         // given
         when( freeMemorySupplier.getAsLong() ).thenReturn( gibiBytes( 10 ) );

@@ -19,19 +19,19 @@
  */
 package org.neo4j.kernel.impl.store.format;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.StubPageCursor;
 import org.neo4j.kernel.impl.store.format.standard.DynamicRecordFormat;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
-public class BaseRecordFormatTest
+class BaseRecordFormatTest
 {
     @Test
-    public void shouldRecognizeDesignatedInUseBit()
+    void shouldRecognizeDesignatedInUseBit()
     {
         // GIVEN
         RecordFormat<DynamicRecord> format = new DynamicRecordFormat();

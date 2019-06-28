@@ -19,16 +19,16 @@
  */
 package org.neo4j.internal.batchimport.staging;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.greaterThan;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
-public class MovingAverageTest
+class MovingAverageTest
 {
     @Test
-    public void shouldHaveAverageMovingWithChanges()
+    void shouldHaveAverageMovingWithChanges()
     {
         // GIVEN
         MovingAverage average = new MovingAverage( 5 );

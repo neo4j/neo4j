@@ -20,17 +20,17 @@
 package org.neo4j.internal.batchimport;
 
 import org.eclipse.collections.api.iterator.LongIterator;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 
-public class RecordIdIteratorTest
+class RecordIdIteratorTest
 {
     @Test
-    public void shouldGoPageWiseBackwards()
+    void shouldGoPageWiseBackwards()
     {
         // GIVEN
         RecordIdIterator ids = RecordIdIterator.backwards( 0, 33, Configuration.withBatchSize( Configuration.DEFAULT, 10 ) );
@@ -44,7 +44,7 @@ public class RecordIdIteratorTest
     }
 
     @Test
-    public void shouldGoPageWiseBackwardsOnCleanBreak()
+    void shouldGoPageWiseBackwardsOnCleanBreak()
     {
         // GIVEN
         RecordIdIterator ids = RecordIdIterator.backwards( 0, 20, Configuration.withBatchSize( Configuration.DEFAULT, 10 ) );
@@ -56,7 +56,7 @@ public class RecordIdIteratorTest
     }
 
     @Test
-    public void shouldGoPageWiseBackwardsOnSingleBatch()
+    void shouldGoPageWiseBackwardsOnSingleBatch()
     {
         // GIVEN
         RecordIdIterator ids = RecordIdIterator.backwards( 0, 8, Configuration.withBatchSize( Configuration.DEFAULT, 10 ) );
@@ -66,7 +66,7 @@ public class RecordIdIteratorTest
     }
 
     @Test
-    public void shouldGoBackwardsToNonZero()
+    void shouldGoBackwardsToNonZero()
     {
         // GIVEN
         RecordIdIterator ids = RecordIdIterator.backwards( 12, 34, Configuration.withBatchSize( Configuration.DEFAULT, 10 ) );
@@ -79,7 +79,7 @@ public class RecordIdIteratorTest
     }
 
     @Test
-    public void shouldGoForwardsWhenStartingFromNonZero()
+    void shouldGoForwardsWhenStartingFromNonZero()
     {
         // GIVEN
         RecordIdIterator ids = RecordIdIterator.forwards( 1, 12, Configuration.withBatchSize( Configuration.DEFAULT, 10 ) );
@@ -91,7 +91,7 @@ public class RecordIdIteratorTest
     }
 
     @Test
-    public void shouldGoForwardsWhenStartingFromNonZero2()
+    void shouldGoForwardsWhenStartingFromNonZero2()
     {
         // GIVEN
         RecordIdIterator ids = RecordIdIterator.forwards( 34, 66, Configuration.withBatchSize( Configuration.DEFAULT, 10 ) );

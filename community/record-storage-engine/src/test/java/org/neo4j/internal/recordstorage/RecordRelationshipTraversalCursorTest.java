@@ -19,19 +19,17 @@
  */
 package org.neo4j.internal.recordstorage;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
-import java.util.Arrays;
+import java.util.stream.Stream;
 
 import org.neo4j.configuration.Config;
 import org.neo4j.internal.id.DefaultIdGeneratorFactory;
 import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.RecordStore;
@@ -43,71 +41,66 @@ import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.storageengine.api.RelationshipDirection;
-import org.neo4j.test.rule.PageCacheAndDependenciesRule;
-import org.neo4j.test.rule.fs.DefaultFileSystemRule;
+import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.pagecache.PageCacheExtension;
+import org.neo4j.test.rule.TestDirectory;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
-import static org.neo4j.configuration.GraphDatabaseSettings.pagecache_memory;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.kernel.impl.store.record.Record.NO_NEXT_RELATIONSHIP;
 import static org.neo4j.storageengine.api.RelationshipDirection.INCOMING;
 import static org.neo4j.storageengine.api.RelationshipDirection.LOOP;
 import static org.neo4j.storageengine.api.RelationshipDirection.OUTGOING;
 
-@RunWith( Parameterized.class )
-public class RecordRelationshipTraversalCursorTest
+@PageCacheExtension
+class RecordRelationshipTraversalCursorTest
 {
     private static final long FIRST_OWNING_NODE = 1;
     private static final long SECOND_OWNING_NODE = 2;
     private static final int TYPE = 0;
 
-    @Rule
-    public final PageCacheAndDependenciesRule storage = new PageCacheAndDependenciesRule().with( new DefaultFileSystemRule() );
+    @Inject
+    private PageCache pageCache;
+    @Inject
+    private FileSystemAbstraction fs;
+    @Inject
+    private TestDirectory testDirectory;
 
     private NeoStores neoStores;
 
-    @Parameterized.Parameter
-    public RelationshipDirection direction;
-    @Parameterized.Parameter( value = 1 )
-    public boolean dense;
-
-    @Parameterized.Parameters
-    public static Iterable<Object[]> parameters()
+    private static Stream<Arguments> parameters()
     {
-        return Arrays.asList( new Object[][]{
-                {LOOP, false},
-                {LOOP, true},
-                {OUTGOING, false},
-                {OUTGOING, true},
-                {INCOMING, false},
-                {INCOMING, true}
-        } );
+        return Stream.of(
+            Arguments.of( LOOP, false ),
+            Arguments.of( LOOP, true ),
+            Arguments.of( OUTGOING, false ),
+            Arguments.of( OUTGOING, true ),
+            Arguments.of( INCOMING, false ),
+            Arguments.of( INCOMING, true )
+        );
     }
 
-    @Before
-    public void setupStores()
+    @BeforeEach
+    void setupStores()
     {
-        DatabaseLayout storeLayout = storage.directory().databaseLayout();
-        Config config = Config.defaults( pagecache_memory, "8m" );
-        PageCache pageCache = storage.pageCache();
-        FileSystemAbstraction fs = storage.fileSystem();
         DefaultIdGeneratorFactory idGeneratorFactory = new DefaultIdGeneratorFactory( fs );
-        NullLogProvider logProvider = NullLogProvider.getInstance();
-        StoreFactory storeFactory = new StoreFactory( storeLayout, config, idGeneratorFactory, pageCache, fs, logProvider );
+        StoreFactory storeFactory = new StoreFactory( testDirectory.databaseLayout(), Config.defaults(), idGeneratorFactory, pageCache, fs,
+            NullLogProvider.getInstance() );
         neoStores = storeFactory.openAllNeoStores( true );
     }
 
-    @After
-    public void shutDownStores()
+    @AfterEach
+    void shutDownStores()
     {
         neoStores.close();
     }
 
-    @Test
-    public void retrieveNodeRelationships()
+    @ParameterizedTest
+    @MethodSource( "parameters" )
+    void retrieveNodeRelationships( RelationshipDirection direction, boolean dense )
     {
-        createNodeRelationships();
+        createNodeRelationships( dense, direction );
 
         try ( RecordRelationshipTraversalCursor cursor = getNodeRelationshipCursor() )
         {
@@ -122,26 +115,28 @@ public class RecordRelationshipTraversalCursorTest
         }
     }
 
-    @Test
-    public void retrieveUsedRelationshipChain()
+    @ParameterizedTest
+    @MethodSource( "parameters" )
+    void retrieveUsedRelationshipChain( RelationshipDirection direction, boolean dense )
     {
-        createRelationshipChain( 4 );
+        createRelationshipChain( 4, dense, direction );
         long expectedNodeId = 1;
         try ( RecordRelationshipTraversalCursor cursor = getNodeRelationshipCursor() )
         {
             cursor.init( FIRST_OWNING_NODE, 1, dense );
             while ( cursor.next() )
             {
-                assertEquals( "Should load next relationship in a sequence", expectedNodeId++, cursor.entityReference() );
+                assertEquals( expectedNodeId++, cursor.entityReference(), "Should load next relationship in a sequence" );
             }
         }
     }
 
-    @Test
-    public void retrieveRelationshipChainWithUnusedLink()
+    @ParameterizedTest
+    @MethodSource( "parameters" )
+    void retrieveRelationshipChainWithUnusedLink( RelationshipDirection direction, boolean dense )
     {
         neoStores.getRelationshipStore().setHighId( 10 );
-        createRelationshipChain( 4 );
+        createRelationshipChain( 4, dense, direction );
         unUseRecord( 3 );
         int[] expectedRelationshipIds = new int[]{1, 2, 4};
         int relationshipIndex = 0;
@@ -150,14 +145,15 @@ public class RecordRelationshipTraversalCursorTest
             cursor.init( FIRST_OWNING_NODE, 1, dense );
             while ( cursor.next() )
             {
-                assertEquals( "Should load next relationship in a sequence",
-                        expectedRelationshipIds[relationshipIndex++], cursor.entityReference() );
+                assertEquals(
+                    expectedRelationshipIds[relationshipIndex++], cursor.entityReference(), "Should load next relationship in a sequence" );
             }
         }
     }
 
-    @Test
-    public void shouldHandleDenseNodeWithNoRelationships()
+    @ParameterizedTest
+    @MethodSource( "parameters" )
+    void shouldHandleDenseNodeWithNoRelationships( RelationshipDirection direction, boolean dense )
     {
         // This can actually happen, since we upgrade sparse node --> dense node when creating relationships,
         // but we don't downgrade dense --> sparse when we delete relationships. So if we have a dense node
@@ -173,20 +169,20 @@ public class RecordRelationshipTraversalCursorTest
         }
     }
 
-    private void createNodeRelationships()
+    private void createNodeRelationships( boolean dense, RelationshipDirection direction )
     {
         RelationshipStore relationshipStore = neoStores.getRelationshipStore();
         if ( dense )
         {
             RecordStore<RelationshipGroupRecord> relationshipGroupStore = neoStores.getRelationshipGroupStore();
-            relationshipGroupStore.updateRecord( createRelationshipGroup( 1, 1 ) );
-            relationshipGroupStore.updateRecord( createRelationshipGroup( 2, 2 ) );
-            relationshipGroupStore.updateRecord( createRelationshipGroup( 3, 3 ) );
+            relationshipGroupStore.updateRecord( createRelationshipGroup( 1, 1, direction ) );
+            relationshipGroupStore.updateRecord( createRelationshipGroup( 2, 2, direction ) );
+            relationshipGroupStore.updateRecord( createRelationshipGroup( 3, 3, direction ) );
         }
 
-        relationshipStore.updateRecord( createRelationship( 1, NO_NEXT_RELATIONSHIP.intValue() ) );
-        relationshipStore.updateRecord( createRelationship( 2, NO_NEXT_RELATIONSHIP.intValue() ) );
-        relationshipStore.updateRecord( createRelationship( 3, NO_NEXT_RELATIONSHIP.intValue() ) );
+        relationshipStore.updateRecord( createRelationship( 1, NO_NEXT_RELATIONSHIP.intValue(), direction ) );
+        relationshipStore.updateRecord( createRelationship( 2, NO_NEXT_RELATIONSHIP.intValue(), direction ) );
+        relationshipStore.updateRecord( createRelationship( 3, NO_NEXT_RELATIONSHIP.intValue(), direction ) );
     }
 
     private void unUseRecord( long recordId )
@@ -198,59 +194,59 @@ public class RecordRelationshipTraversalCursorTest
         relationshipStore.updateRecord( relationshipRecord );
     }
 
-    private RelationshipGroupRecord createRelationshipGroup( long id, long relationshipId )
+    private RelationshipGroupRecord createRelationshipGroup( long id, long relationshipId, RelationshipDirection direction )
     {
-        return new RelationshipGroupRecord( id, TYPE, getFirstOut( relationshipId ),
-                getFirstIn( relationshipId ), getFirstLoop( relationshipId ), FIRST_OWNING_NODE, true );
+        return new RelationshipGroupRecord( id, TYPE, getFirstOut( relationshipId, direction ),
+                getFirstIn( relationshipId, direction ), getFirstLoop( relationshipId, direction ), FIRST_OWNING_NODE, true );
     }
 
-    private long getFirstLoop( long firstLoop )
+    private long getFirstLoop( long firstLoop, RelationshipDirection direction )
     {
         return direction == LOOP ? firstLoop : Record.NO_NEXT_RELATIONSHIP.intValue();
     }
 
-    private long getFirstIn( long firstIn )
+    private long getFirstIn( long firstIn, RelationshipDirection direction )
     {
         return direction == INCOMING ? firstIn : Record.NO_NEXT_RELATIONSHIP.intValue();
     }
 
-    private long getFirstOut( long firstOut )
+    private long getFirstOut( long firstOut, RelationshipDirection direction )
     {
         return direction == OUTGOING ? firstOut : Record.NO_NEXT_RELATIONSHIP.intValue();
     }
 
-    private void createRelationshipChain( int recordsInChain )
+    private void createRelationshipChain( int recordsInChain, boolean dense, RelationshipDirection direction )
     {
         RelationshipStore relationshipStore = neoStores.getRelationshipStore();
         for ( int i = 1; i < recordsInChain; i++ )
         {
-            relationshipStore.updateRecord( createRelationship( i, i + 1 ) );
+            relationshipStore.updateRecord( createRelationship( i, i + 1, direction ) );
         }
-        relationshipStore.updateRecord( createRelationship( recordsInChain, NO_NEXT_RELATIONSHIP.intValue() ) );
+        relationshipStore.updateRecord( createRelationship( recordsInChain, NO_NEXT_RELATIONSHIP.intValue(), direction ) );
         if ( dense )
         {
             RecordStore<RelationshipGroupRecord> relationshipGroupStore = neoStores.getRelationshipGroupStore();
             for ( int i = 1; i < recordsInChain; i++ )
             {
-                relationshipGroupStore.updateRecord( createRelationshipGroup( i, i ) );
+                relationshipGroupStore.updateRecord( createRelationshipGroup( i, i, direction ) );
             }
             relationshipGroupStore
-                    .updateRecord( createRelationshipGroup( recordsInChain, NO_NEXT_RELATIONSHIP.intValue() ) );
+                    .updateRecord( createRelationshipGroup( recordsInChain, NO_NEXT_RELATIONSHIP.intValue(), direction ) );
         }
     }
 
-    private RelationshipRecord createRelationship( long id, long nextRelationship )
+    private RelationshipRecord createRelationship( long id, long nextRelationship, RelationshipDirection direction )
     {
-        return new RelationshipRecord( id, true, getFirstNode(), getSecondNode(), TYPE, NO_NEXT_RELATIONSHIP.intValue(),
+        return new RelationshipRecord( id, true, getFirstNode( direction ), getSecondNode( direction ), TYPE, NO_NEXT_RELATIONSHIP.intValue(),
                 nextRelationship, NO_NEXT_RELATIONSHIP.intValue(), nextRelationship, false, false );
     }
 
-    private long getSecondNode()
+    private long getSecondNode( RelationshipDirection direction )
     {
-        return getFirstNode() == FIRST_OWNING_NODE ? SECOND_OWNING_NODE : FIRST_OWNING_NODE;
+        return getFirstNode( direction ) == FIRST_OWNING_NODE ? SECOND_OWNING_NODE : FIRST_OWNING_NODE;
     }
 
-    private long getFirstNode()
+    private long getFirstNode( RelationshipDirection direction )
     {
         return direction == OUTGOING ? FIRST_OWNING_NODE : SECOND_OWNING_NODE;
     }

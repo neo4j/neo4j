@@ -19,7 +19,7 @@
  */
 package org.neo4j.internal.batchimport;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
 import java.util.Iterator;
@@ -33,25 +33,25 @@ import org.neo4j.internal.batchimport.staging.Stage;
 import org.neo4j.internal.batchimport.staging.StageControl;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.kernel.impl.store.record.Record.NULL_REFERENCE;
 
-public class ReadGroupsFromCacheStepTest
+class ReadGroupsFromCacheStepTest
 {
     @Test
-    public void shouldProduceCompleteBatchesPerOwner()
+    void shouldProduceCompleteBatchesPerOwner()
     {
         // GIVEN
         Configuration config = Configuration.withBatchSize( Configuration.DEFAULT, 10 );
         Iterator<RelationshipGroupRecord> groups = groups(
-                new Group( 1, 3 ),
-                new Group( 2, 3 ),
-                new Group( 3, 4 ),  // ^^^ perfect batch size
-                new Group( 4, 2 ),
-                new Group( 5, 10 ), // ^^^ slightly bigger than batch size
-                new Group( 6, 35 ), // ^^^ much bigger than batch size
-                new Group( 7, 2 ) ).iterator();
+            new Group( 1, 3 ),
+            new Group( 2, 3 ),
+            new Group( 3, 4 ),  // ^^^ perfect batch size
+            new Group( 4, 2 ),
+            new Group( 5, 10 ), // ^^^ slightly bigger than batch size
+            new Group( 6, 35 ), // ^^^ much bigger than batch size
+            new Group( 7, 2 ) ).iterator();
         final AtomicInteger processCounter = new AtomicInteger();
         Stage stage = new Stage( getClass().getSimpleName(), null, config, 0 )
         {
@@ -68,7 +68,7 @@ public class ReadGroupsFromCacheStepTest
         assertEquals( 4, processCounter.get() );
     }
 
-    protected static List<RelationshipGroupRecord> groups( Group... groups )
+    static List<RelationshipGroupRecord> groups( Group... groups )
     {
         List<RelationshipGroupRecord> records = new ArrayList<>();
         for ( Group group : groups )
@@ -84,12 +84,12 @@ public class ReadGroupsFromCacheStepTest
         return records;
     }
 
-    protected static class Group
+    static class Group
     {
         final long owningNode;
         final int count;
 
-        public Group( long owningNode, int count )
+        Group( long owningNode, int count )
         {
             this.owningNode = owningNode;
             this.count = count;

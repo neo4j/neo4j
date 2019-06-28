@@ -19,7 +19,7 @@
  */
 package org.neo4j.internal.recordstorage;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.Optional;
 
@@ -40,7 +40,7 @@ import org.neo4j.storageengine.api.StorageEngine;
 import org.neo4j.storageengine.api.StorageIndexReference;
 import org.neo4j.util.concurrent.WorkSync;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
@@ -50,10 +50,10 @@ import static org.neo4j.internal.schema.SchemaDescriptor.forLabel;
 import static org.neo4j.kernel.impl.store.record.Record.NO_NEXT_PROPERTY;
 import static org.neo4j.kernel.impl.store.record.Record.NO_NEXT_RELATIONSHIP;
 
-public class IndexBatchTransactionApplierTest
+class IndexBatchTransactionApplierTest
 {
     @Test
-    public void shouldProvideLabelScanStoreUpdatesSortedByNodeId() throws Exception
+    void shouldProvideLabelScanStoreUpdatesSortedByNodeId() throws Exception
     {
         // GIVEN
         IndexUpdateListener indexUpdateListener = mock( IndexUpdateListener.class );
@@ -79,7 +79,7 @@ public class IndexBatchTransactionApplierTest
     }
 
     @Test
-    public void shouldRegisterIndexesToActivateIntoTheActivator() throws Exception
+    void shouldRegisterIndexesToActivateIntoTheActivator() throws Exception
     {
         // given
         IndexUpdateListener indexUpdateListener = mock( IndexUpdateListener.class );

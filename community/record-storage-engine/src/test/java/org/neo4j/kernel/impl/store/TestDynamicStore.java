@@ -19,11 +19,11 @@
  */
 package org.neo4j.kernel.impl.store;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.RuleChain;
+import org.hamcrest.MatcherAssert;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -36,42 +36,42 @@ import java.util.Set;
 import org.neo4j.configuration.Config;
 import org.neo4j.internal.helpers.collection.Iterables;
 import org.neo4j.internal.id.DefaultIdGeneratorFactory;
+import org.neo4j.io.fs.EphemeralFileSystemAbstraction;
+import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.logging.NullLogProvider;
-import org.neo4j.test.rule.PageCacheRule;
+import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.pagecache.EphemeralPageCacheExtension;
 import org.neo4j.test.rule.TestDirectory;
-import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 
 import static org.hamcrest.Matchers.containsString;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.NORMAL;
 
-public class TestDynamicStore
+@EphemeralPageCacheExtension
+class TestDynamicStore
 {
-
-    private final EphemeralFileSystemRule fs = new EphemeralFileSystemRule();
-    private final PageCacheRule pageCacheRule = new PageCacheRule();
-    private final TestDirectory testDirectory = TestDirectory.testDirectory( fs );
-
-    @Rule
-    public final RuleChain chain = RuleChain.outerRule( fs ).around( testDirectory ).around( pageCacheRule );
+    @Inject
+    private EphemeralFileSystemAbstraction fs;
+    @Inject
+    private PageCache pageCache;
+    @Inject
+    private TestDirectory testDirectory;
 
     private StoreFactory storeFactory;
     private NeoStores neoStores;
     private Config config;
 
-    @Before
-    public void setUp()
+    @BeforeEach
+    void setUp()
     {
-        config = config();
-        storeFactory = new StoreFactory( testDirectory.databaseLayout(), config, new DefaultIdGeneratorFactory( fs.get() ),
-                pageCacheRule.getPageCache( fs.get() ), fs.get(), NullLogProvider.getInstance() );
+        config = Config.defaults();
+        storeFactory = new StoreFactory( testDirectory.databaseLayout(), config, new DefaultIdGeneratorFactory( fs ),
+                pageCache, fs, NullLogProvider.getInstance() );
     }
 
-    @After
-    public void tearDown()
+    @AfterEach
+    void tearDown()
     {
         if ( neoStores != null )
         {
@@ -85,13 +85,8 @@ public class TestDynamicStore
         return neoStores.getPropertyStore().getArrayStore();
     }
 
-    private Config config()
-    {
-        return Config.defaults();
-    }
-
     @Test
-    public void testClose()
+    void testClose()
     {
         DynamicArrayStore store = createDynamicArrayStore();
         Collection<DynamicRecord> records = new ArrayList<>();
@@ -103,26 +98,13 @@ public class TestDynamicStore
         }
         neoStores.close();
         neoStores = null;
-        try
-        {
-            store.getArrayFor( store.getRecords( blockId, NORMAL, false ) );
-            fail( "Closed store should throw exception" );
-        }
-        catch ( RuntimeException e )
-        { // good
-        }
-        try
-        {
-            store.getRecords( 0, NORMAL, false );
-            fail( "Closed store should throw exception" );
-        }
-        catch ( RuntimeException e )
-        { // good
-        }
+
+        assertThrows( RuntimeException.class, () -> store.getArrayFor( store.getRecords( blockId, NORMAL, false ) ) );
+        assertThrows( RuntimeException.class, () -> store.getRecords( 0, NORMAL, false ) );
     }
 
     @Test
-    public void testStoreGetCharsFromString()
+    void testStoreGetCharsFromString()
     {
         final String STR = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
         DynamicArrayStore store = createDynamicArrayStore();
@@ -138,7 +120,7 @@ public class TestDynamicStore
     }
 
     @Test
-    public void testRandomTest()
+    void testRandomTest()
     {
         Random random = new Random( System.currentTimeMillis() );
         DynamicArrayStore store = createDynamicArrayStore();
@@ -202,12 +184,12 @@ public class TestDynamicStore
         return new byte[r.nextInt( 1024 )];
     }
 
-    private void validateData( byte[] data1, byte[] data2 )
+    private static void validateData( byte[] data1, byte[] data2 )
     {
-        assertEquals( data1.length, data2.length );
+        Assertions.assertEquals( data1.length, data2.length );
         for ( int i = 0; i < data1.length; i++ )
         {
-            assertEquals( data1[i], data2[i] );
+            Assertions.assertEquals( data1[i], data2[i] );
         }
     }
 
@@ -223,14 +205,14 @@ public class TestDynamicStore
     }
 
     @Test
-    public void testAddDeleteSequenceEmptyNumberArray()
+    void testAddDeleteSequenceEmptyNumberArray()
     {
         DynamicArrayStore store = createDynamicArrayStore();
         byte[] emptyToWrite = createBytes( 0 );
         long blockId = create( store, emptyToWrite );
         store.getRecords( blockId, NORMAL, false );
         byte[] bytes = (byte[]) store.getArrayFor( store.getRecords( blockId, NORMAL, false ) );
-        assertEquals( 0, bytes.length );
+        Assertions.assertEquals( 0, bytes.length );
 
         Collection<DynamicRecord> records = store.getRecords( blockId, NORMAL, false );
         for ( DynamicRecord record : records )
@@ -241,13 +223,13 @@ public class TestDynamicStore
     }
 
     @Test
-    public void testAddDeleteSequenceEmptyStringArray()
+    void testAddDeleteSequenceEmptyStringArray()
     {
         DynamicArrayStore store = createDynamicArrayStore();
         long blockId = create( store, new String[0] );
         store.getRecords( blockId, NORMAL, false );
         String[] readBack = (String[]) store.getArrayFor( store.getRecords( blockId, NORMAL, false ) );
-        assertEquals( 0, readBack.length );
+        Assertions.assertEquals( 0, readBack.length );
 
         Collection<DynamicRecord> records = store.getRecords( blockId, NORMAL, false );
         for ( DynamicRecord record : records )
@@ -258,7 +240,7 @@ public class TestDynamicStore
     }
 
     @Test
-    public void mustThrowOnRecordChainCycle()
+    void mustThrowOnRecordChainCycle()
     {
         DynamicArrayStore store = createDynamicArrayStore();
         ArrayList<DynamicRecord> records = new ArrayList<>();
@@ -273,13 +255,13 @@ public class TestDynamicStore
         try
         {
             store.getRecords( firstId, NORMAL, true );
-            fail( "Expected to detect a cycle and throw an exception." );
+            Assertions.fail( "Expected to detect a cycle and throw an exception." );
         }
         catch ( RecordChainCycleDetectedException e )
         {
             String message = e.getMessage();
-            assertThat( message, containsString( "" + firstId ) );
-            assertThat( message, containsString( "" + secondLastRecord.getId() ) );
+            MatcherAssert.assertThat( message, containsString( "" + firstId ) );
+            MatcherAssert.assertThat( message, containsString( "" + secondLastRecord.getId() ) );
         }
     }
 }

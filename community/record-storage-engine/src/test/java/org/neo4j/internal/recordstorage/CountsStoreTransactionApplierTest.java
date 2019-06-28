@@ -19,7 +19,7 @@
  */
 package org.neo4j.internal.recordstorage;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.Optional;
 
@@ -33,10 +33,10 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.neo4j.token.api.TokenConstants.ANY_LABEL;
 
-public class CountsStoreTransactionApplierTest
+class CountsStoreTransactionApplierTest
 {
     @Test
-    public void shouldNotifyCacheAccessOnHowManyUpdatesOnCountsWeHadSoFar() throws Exception
+    void shouldNotifyCacheAccessOnHowManyUpdatesOnCountsWeHadSoFar() throws Exception
     {
         // GIVEN
         final CountsTracker tracker = mock( CountsTracker.class );

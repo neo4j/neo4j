@@ -19,38 +19,26 @@
  */
 package org.neo4j.internal.batchimport.staging;
 
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
-import org.junit.runners.Parameterized.Parameter;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
-import java.util.Arrays;
 import java.util.Collections;
 
 import org.neo4j.internal.batchimport.Configuration;
 import org.neo4j.internal.batchimport.stats.Keys;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
-@RunWith( Parameterized.class )
-public class CoarseBoundedProgressExecutionMonitorTest
+class CoarseBoundedProgressExecutionMonitorTest
 {
-    @Parameterized.Parameters( name = "{0}" )
-    public static Iterable<Integer> parameters()
-    {
-        return Arrays.asList(1, 10, 123);
-    }
-
-    @Parameter
-    public int batchSize;
-
-    @Test
-    public void shouldReportProgressOnSingleExecution()
+    @ParameterizedTest
+    @ValueSource( ints = {1, 10, 123} )
+    void shouldReportProgressOnSingleExecution( int batchSize )
     {
         // GIVEN
-        Configuration config = config();
-        ProgressExecutionMonitor progressExecutionMonitor = new ProgressExecutionMonitor( batchSize, config() );
+        Configuration config = config( batchSize );
+        ProgressExecutionMonitor progressExecutionMonitor = new ProgressExecutionMonitor( batchSize, config( batchSize ) );
 
         // WHEN
         long total = monitorSingleStageExecution( progressExecutionMonitor, config );
@@ -59,10 +47,11 @@ public class CoarseBoundedProgressExecutionMonitorTest
         assertEquals( total, progressExecutionMonitor.getProgress() );
     }
 
-    @Test
-    public void progressOnMultipleExecutions()
+    @ParameterizedTest
+    @ValueSource( ints = {1, 10, 123} )
+    void progressOnMultipleExecutions( int batchSize )
     {
-        Configuration config = config();
+        Configuration config = config( batchSize );
         ProgressExecutionMonitor progressExecutionMonitor = new ProgressExecutionMonitor( batchSize, config );
 
         long total = progressExecutionMonitor.total();
@@ -74,7 +63,7 @@ public class CoarseBoundedProgressExecutionMonitorTest
         }
         progressExecutionMonitor.done( true, 0, "Completed" );
 
-        assertEquals( "Each item should be completed", total, progressExecutionMonitor.getProgress());
+        assertEquals( total, progressExecutionMonitor.getProgress(), "Each item should be completed" );
     }
 
     private long monitorSingleStageExecution( ProgressExecutionMonitor progressExecutionMonitor, Configuration config )
@@ -98,7 +87,7 @@ public class CoarseBoundedProgressExecutionMonitorTest
         return execution;
     }
 
-    private Configuration config()
+    private Configuration config( int batchSize )
     {
         return new Configuration.Overridden( Configuration.DEFAULT )
         {
@@ -125,7 +114,7 @@ public class CoarseBoundedProgressExecutionMonitorTest
             this.progress += progress;
         }
 
-        public long getProgress()
+        long getProgress()
         {
             return progress;
         }

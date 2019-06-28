@@ -19,8 +19,7 @@
  */
 package org.neo4j.kernel.impl.store.kvstore;
 
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.io.File;
 import java.io.IOException;
@@ -33,30 +32,32 @@ import java.util.List;
 import java.util.Map;
 
 import org.neo4j.internal.helpers.collection.Pair;
+import org.neo4j.io.fs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.test.rule.PageCacheRule;
+import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.pagecache.EphemeralPageCacheExtension;
 import org.neo4j.test.rule.TestDirectory;
-import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 import static org.neo4j.kernel.impl.store.kvstore.KeyValueDatabaseStoreFormatTest.Data.data;
 import static org.neo4j.kernel.impl.store.kvstore.KeyValueDatabaseStoreFormatTest.DataEntry.entry;
 
-public class KeyValueDatabaseStoreFormatTest
+@EphemeralPageCacheExtension
+class KeyValueDatabaseStoreFormatTest
 {
-    @Rule
-    public final EphemeralFileSystemRule fs = new EphemeralFileSystemRule();
-    @Rule
-    public final PageCacheRule pages = new PageCacheRule();
-    @Rule
-    public final TestDirectory directory = TestDirectory.testDirectory( fs );
+    @Inject
+    private EphemeralFileSystemAbstraction fs;
+    @Inject
+    private PageCache pageCache;
+    @Inject
+    private TestDirectory directory;
 
     @Test
-    public void shouldCreateAndOpenEmptyStoreWithEmptyHeader() throws Exception
+    void shouldCreateAndOpenEmptyStoreWithEmptyHeader() throws Exception
     {
         // given
         Format format = new Format();
@@ -73,7 +74,7 @@ public class KeyValueDatabaseStoreFormatTest
     }
 
     @Test
-    public void shouldCreateAndOpenEmptyStoreWithHeader() throws Exception
+    void shouldCreateAndOpenEmptyStoreWithHeader() throws Exception
     {
         // given
         Format format = new Format( "foo", "bar" );
@@ -93,7 +94,7 @@ public class KeyValueDatabaseStoreFormatTest
     }
 
     @Test
-    public void shouldCreateAndOpenStoreWithNoDataAndEmptyHeader() throws Exception
+    void shouldCreateAndOpenStoreWithNoDataAndEmptyHeader() throws Exception
     {
         // given
         Format format = new Format();
@@ -108,7 +109,7 @@ public class KeyValueDatabaseStoreFormatTest
     }
 
     @Test
-    public void shouldCreateAndOpenStoreWithNoDataWithHeader() throws Exception
+    void shouldCreateAndOpenStoreWithNoDataWithHeader() throws Exception
     {
         // given
         Format format = new Format( "abc", "xyz" );
@@ -126,7 +127,7 @@ public class KeyValueDatabaseStoreFormatTest
     }
 
     @Test
-    public void shouldCreateAndOpenStoreWithDataAndEmptyHeader() throws Exception
+    void shouldCreateAndOpenStoreWithDataAndEmptyHeader() throws Exception
     {
         // given
         Format format = new Format();
@@ -141,13 +142,13 @@ public class KeyValueDatabaseStoreFormatTest
         {
             assertTrue( file.headers().fields().isEmpty() );
             file.scan( expectData( data ) );
-            assertEquals( "number of entries", 3, data.index );
+            assertEquals( 3, data.index, "number of entries" );
             assertEntries( 3, file );
         }
     }
 
     @Test
-    public void shouldCreateAndOpenStoreWithDataAndHeader() throws Exception
+    void shouldCreateAndOpenStoreWithDataAndHeader() throws Exception
     {
         // given
         Format format = new Format( "abc", "xyz" );
@@ -165,13 +166,13 @@ public class KeyValueDatabaseStoreFormatTest
         {
             assertDeepEquals( headers, file.headers() );
             file.scan( expectData( data ) );
-            assertEquals( "number of entries", 3, data.index );
+            assertEquals( 3, data.index, "number of entries" );
             assertEntries( 3, file );
         }
     }
 
     @Test
-    public void shouldFindEntriesInFile() throws Exception
+    void shouldFindEntriesInFile() throws Exception
     {
         // given
         Format format = new Format( "one", "two" );
@@ -222,7 +223,7 @@ public class KeyValueDatabaseStoreFormatTest
     }
 
     @Test
-    public void shouldNotFindAnythingWhenSearchKeyIsAfterTheLastKey() throws Exception
+    void shouldNotFindAnythingWhenSearchKeyIsAfterTheLastKey() throws Exception
     {
         // given
         Format format = new Format();
@@ -248,7 +249,7 @@ public class KeyValueDatabaseStoreFormatTest
     }
 
     @Test
-    public void shouldTruncateTheFile() throws Exception
+    void shouldTruncateTheFile() throws Exception
     {
         // given a well written file
         {
@@ -300,12 +301,12 @@ public class KeyValueDatabaseStoreFormatTest
             {
                 // then only headers are present in the file and not the old content
                 assertEquals( "boom!", io.getMessage() );
-                assertFormatSpecifierAndHeadersOnly( headers, fs.get(), getStoreFile() );
+                assertFormatSpecifierAndHeadersOnly( headers, fs, getStoreFile() );
             }
         }
     }
 
-    private void assertFormatSpecifierAndHeadersOnly( Map<String,byte[]> headers, FileSystemAbstraction fs, File file )
+    private static void assertFormatSpecifierAndHeadersOnly( Map<String, byte[]> headers, FileSystemAbstraction fs, File file )
             throws IOException
     {
         assertTrue( fs.fileExists( file ) );
@@ -344,8 +345,8 @@ public class KeyValueDatabaseStoreFormatTest
             throws IOException
     {
         Pair<Boolean,List<Bytes>> result = find( file, min, max );
-        assertEquals( "exact match", exact, result.first() );
-        assertEquals( String.format( "find(min=%d, max=%d)", min, max ), Arrays.asList( expected ), result.other() );
+        assertEquals( exact, result.first(), "exact match" );
+        assertEquals( Arrays.asList( expected ), result.other(), String.format( "find(min=%d, max=%d)", min, max ) );
     }
 
     private static Pair<Boolean,List<Bytes>> find( KeyValueStoreFile file, final int min, final int max )
@@ -416,17 +417,17 @@ public class KeyValueDatabaseStoreFormatTest
         return result;
     }
 
-    private void assertDeepEquals( Map<String,byte[]> expected, Headers actual )
+    private static void assertDeepEquals( Map<String, byte[]> expected, Headers actual )
     {
         try
         {
             int size = 0;
             for ( HeaderField<?> field : actual.fields() )
             {
-                assertArrayEquals( field.toString(), expected.get( field.toString() ), (byte[]) actual.get( field ) );
+                assertArrayEquals( expected.get( field.toString() ), (byte[]) actual.get( field ), field.toString() );
                 size++;
             }
-            assertEquals( "number of headers", expected.size(), size );
+            assertEquals( expected.size(), size, "number of headers" );
         }
         catch ( AssertionError e )
         {
@@ -435,11 +436,11 @@ public class KeyValueDatabaseStoreFormatTest
         }
     }
 
-    static void assertEntries( final int expected, KeyValueStoreFile file ) throws IOException
+    private static void assertEntries( final int expected, KeyValueStoreFile file ) throws IOException
     {
         class Visitor implements KeyValueVisitor
         {
-            int visited;
+            private int visited;
 
             @Override
             public boolean visit( ReadableBuffer key, ReadableBuffer value )
@@ -451,9 +452,9 @@ public class KeyValueDatabaseStoreFormatTest
                 return true;
             }
 
-            void done()
+            private void done()
             {
-                assertEquals( "number of entries", expected, visited );
+                assertEquals( expected, visited, "number of entries" );
             }
         }
         Visitor visitor = new Visitor();
@@ -461,7 +462,7 @@ public class KeyValueDatabaseStoreFormatTest
         visitor.done();
     }
 
-    static KeyValueVisitor expectData( final Data expected )
+    private static KeyValueVisitor expectData( final Data expected )
     {
         expected.index = 0; // reset the visitor
         return ( key, value ) ->
@@ -478,7 +479,7 @@ public class KeyValueDatabaseStoreFormatTest
         };
     }
 
-    static void assertEqualContent( byte[] expected, ReadableBuffer actual )
+    private static void assertEqualContent( byte[] expected, ReadableBuffer actual )
     {
         for ( int i = 0; i < expected.length; i++ )
         {
@@ -509,13 +510,12 @@ public class KeyValueDatabaseStoreFormatTest
 
         void createEmpty( Map<String,byte[]> headers ) throws IOException
         {
-            createEmptyStore( fs.get(), getStoreFile(), 16, 16, headers( headers ) );
+            createEmptyStore( fs, getStoreFile(), 16, 16, headers( headers ) );
         }
 
         KeyValueStoreFile create( Map<String,byte[]> headers, DataProvider data ) throws IOException
         {
-            PageCache pageCache = pages.getPageCache( fs.get() );
-            return createStore( fs.get(), pageCache, getStoreFile(), 16, 16, headers( headers ), data );
+            return createStore( fs, pageCache, getStoreFile(), 16, 16, headers( headers ), data );
         }
 
         private Headers headers( Map<String,byte[]> headers )
@@ -530,7 +530,7 @@ public class KeyValueDatabaseStoreFormatTest
 
         KeyValueStoreFile open() throws IOException
         {
-            return openStore( fs.get(), pages.getPageCache( fs.get() ), getStoreFile() );
+            return openStore( fs, pageCache, getStoreFile() );
         }
 
         @Override
@@ -582,7 +582,7 @@ public class KeyValueDatabaseStoreFormatTest
         }
     }
 
-    static void write( byte[] source, WritableBuffer target )
+    private static void write( byte[] source, WritableBuffer target )
     {
         for ( int i = 0; i < source.length; i++ )
         {
@@ -590,7 +590,7 @@ public class KeyValueDatabaseStoreFormatTest
         }
     }
 
-    static DataProvider noData()
+    private static DataProvider noData()
     {
         return new DataProvider()
         {
@@ -624,7 +624,7 @@ public class KeyValueDatabaseStoreFormatTest
         }
     }
 
-    static Map<String,byte[]> noHeaders()
+    private static Map<String,byte[]> noHeaders()
     {
         return Collections.emptyMap();
     }

@@ -19,17 +19,16 @@
  */
 package org.neo4j.internal.recordstorage;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.RuleChain;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import org.neo4j.configuration.Config;
 import org.neo4j.internal.id.DefaultIdGeneratorFactory;
 import org.neo4j.internal.recordstorage.Command.NodeCommand;
 import org.neo4j.internal.recordstorage.Command.RelationshipCommand;
-import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.fs.EphemeralFileSystemAbstraction;
+import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.StoreFactory;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
@@ -38,43 +37,44 @@ import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.lock.LockService;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.storageengine.api.CommandsToApply;
-import org.neo4j.test.rule.PageCacheRule;
+import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.pagecache.EphemeralPageCacheExtension;
 import org.neo4j.test.rule.TestDirectory;
-import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-public class ApplyRecoveredTransactionsTest
+@EphemeralPageCacheExtension
+class ApplyRecoveredTransactionsTest
 {
-    private final EphemeralFileSystemRule fs = new EphemeralFileSystemRule();
-    private final PageCacheRule pageCacheRule = new PageCacheRule();
-    private final TestDirectory testDirectory = TestDirectory.testDirectory( fs );
-    @Rule
-    public final RuleChain ruleChain = RuleChain.outerRule( fs ).around( testDirectory ).around( pageCacheRule );
+    @Inject
+    private PageCache pageCache;
+    @Inject
+    private TestDirectory testDirectory;
+    @Inject
+    private EphemeralFileSystemAbstraction fs;
 
     private NeoStores neoStores;
 
-    @Before
-    public void before()
+    @BeforeEach
+    void before()
     {
-        FileSystemAbstraction fs = this.fs.get();
         StoreFactory storeFactory = new StoreFactory( testDirectory.databaseLayout(), Config.defaults(), new DefaultIdGeneratorFactory( fs ),
-                pageCacheRule.getPageCache( fs ), fs, NullLogProvider.getInstance() );
+                pageCache, fs, NullLogProvider.getInstance() );
         neoStores = storeFactory.openAllNeoStores( true );
     }
 
-    @After
-    public void after()
+    @AfterEach
+    void after()
     {
         neoStores.close();
     }
 
     @Test
-    public void shouldSetCorrectHighIdWhenApplyingExternalTransactions() throws Exception
+    void shouldSetCorrectHighIdWhenApplyingExternalTransactions() throws Exception
     {
         // WHEN recovering a transaction that creates some data
         long nodeId = neoStores.getNodeStore().nextId();

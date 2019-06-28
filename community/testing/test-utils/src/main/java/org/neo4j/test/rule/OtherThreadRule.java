@@ -147,7 +147,7 @@ public class OtherThreadRule<STATE> implements TestRule
                 String threadName = name != null
                         ? name + "-" + description.getDisplayName()
                         : description.getDisplayName();
-                executor = new OtherThreadExecutor<>( threadName, timeout, unit, initialState() );
+                init( threadName );
                 try
                 {
                     base.evaluate();
@@ -165,5 +165,15 @@ public class OtherThreadRule<STATE> implements TestRule
                 }
             }
         };
+    }
+
+    public void init( String threadName )
+    {
+        executor = new OtherThreadExecutor<>( threadName, timeout, unit, initialState() );
+    }
+
+    public void close()
+    {
+        executor.close();
     }
 }
