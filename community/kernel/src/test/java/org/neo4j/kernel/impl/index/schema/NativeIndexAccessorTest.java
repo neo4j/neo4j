@@ -19,12 +19,7 @@
  */
 package org.neo4j.kernel.impl.index.schema;
 
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
-
 import java.io.IOException;
-import java.util.Arrays;
-import java.util.Collection;
 
 import org.neo4j.configuration.Config;
 import org.neo4j.gis.spatial.index.curves.StandardConfiguration;
@@ -39,44 +34,18 @@ import org.neo4j.values.storable.ValueType;
 import static org.neo4j.kernel.api.schema.index.TestIndexDescriptorFactory.forLabel;
 import static org.neo4j.kernel.impl.index.schema.ValueCreatorUtil.FRACTION_DUPLICATE_NON_UNIQUE;
 
-@RunWith( Parameterized.class )
-public class NativeIndexAccessorTest<KEY extends NativeIndexKey<KEY>, VALUE extends NativeIndexValue> extends NativeIndexAccessorTests<KEY,VALUE>
-{
-    @Parameterized.Parameters( name = "{index}: {0}" )
-    public static Collection<Object[]> data()
-    {
-        return Arrays.asList( new Object[][]{
-                {"Generic",
-                        genericAccessorFactory(),
-                        ValueType.values(),
-                        (IndexLayoutFactory) () -> new GenericLayout( 1, spaceFillingCurveSettings ),
-                        GenericNativeIndexProvider.CAPABILITY
-                },
-                //{ Spatial has it's own subclass because it need to override some of the test methods }
-        } );
-    }
 
+class NativeIndexAccessorTest<KEY extends NativeIndexKey<KEY>, VALUE extends NativeIndexValue> extends NativeIndexAccessorTests<KEY,VALUE>
+{
     private static final IndexSpecificSpaceFillingCurveSettings spaceFillingCurveSettings =
             IndexSpecificSpaceFillingCurveSettings.fromConfig( Config.defaults() );
     private static final StandardConfiguration configuration = new StandardConfiguration();
 
-    private final AccessorFactory<KEY,VALUE> accessorFactory;
-    private final ValueType[] supportedTypes;
-    private final IndexLayoutFactory<KEY,VALUE> indexLayoutFactory;
-    private final IndexCapability indexCapability;
+    private final AccessorFactory<KEY,VALUE> accessorFactory = (AccessorFactory<KEY, VALUE>) genericAccessorFactory();
+    private final ValueType[] supportedTypes = ValueType.values();
+    private final IndexLayoutFactory<KEY,VALUE> indexLayoutFactory = (IndexLayoutFactory) () -> new GenericLayout( 1, spaceFillingCurveSettings );
+    private final IndexCapability indexCapability = GenericNativeIndexProvider.CAPABILITY;
 
-    @SuppressWarnings( "unused" )
-    public NativeIndexAccessorTest( String name,
-            AccessorFactory<KEY,VALUE> accessorFactory,
-            ValueType[] supportedTypes,
-            IndexLayoutFactory<KEY,VALUE> indexLayoutFactory,
-            IndexCapability indexCapability )
-    {
-        this.accessorFactory = accessorFactory;
-        this.supportedTypes = supportedTypes;
-        this.indexLayoutFactory = indexLayoutFactory;
-        this.indexCapability = indexCapability;
-    }
 
     @Override
     NativeIndexAccessor<KEY,VALUE> makeAccessor() throws IOException

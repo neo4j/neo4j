@@ -19,43 +19,117 @@
  */
 package org.neo4j.kernel.impl.index.schema;
 
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
-import java.util.Collection;
 
+import org.neo4j.internal.helpers.Exceptions;
+import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
+import org.neo4j.kernel.api.index.IndexSample;
+import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.schema.index.TestIndexDescriptorFactory;
+import org.neo4j.storageengine.api.IndexEntryUpdate;
+import org.neo4j.values.storable.ValueType;
 
-@RunWith( Parameterized.class )
-public class NativeUniqueIndexPopulatorTest<KEY extends NativeIndexKey<KEY>, VALUE extends NativeIndexValue> extends NativeIndexPopulatorTests.Unique<KEY,VALUE>
+import static java.util.Arrays.asList;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.neo4j.kernel.impl.api.index.PhaseTracker.nullInstance;
+
+abstract class NativeUniqueIndexPopulatorTest<KEY extends NativeIndexKey<KEY>, VALUE extends NativeIndexValue> extends NativeIndexPopulatorTests<KEY,VALUE>
 {
-    @Parameterized.Parameters( name = "{index} {0}" )
-    public static Collection<Object[]> data()
-    {
-        return NativeIndexPopulatorTestCases.allCases();
-    }
-
-    @Parameterized.Parameter()
-    public NativeIndexPopulatorTestCases.TestCase<KEY,VALUE> testCase;
-
     private static final StoreIndexDescriptor uniqueDescriptor = TestIndexDescriptorFactory.uniqueForLabel( 42, 666 ).withId( 0 );
+
+    private final NativeIndexPopulatorTestCases.PopulatorFactory<KEY, VALUE> populatorFactory;
+    private final ValueType[] typesOfGroup;
+    private final IndexLayoutFactory<KEY, VALUE> indexLayoutFactory;
+
+    NativeUniqueIndexPopulatorTest( NativeIndexPopulatorTestCases.PopulatorFactory<KEY, VALUE> populatorFactory, ValueType[] typesOfGroup,
+        IndexLayoutFactory<KEY, VALUE> indexLayoutFactory )
+    {
+        this.populatorFactory = populatorFactory;
+        this.typesOfGroup = typesOfGroup;
+        this.indexLayoutFactory = indexLayoutFactory;
+    }
 
     @Override
     NativeIndexPopulator<KEY,VALUE> createPopulator() throws IOException
     {
-        return testCase.populatorFactory.create( pageCache, fs, indexFiles, layout, monitor, indexDescriptor );
+        return populatorFactory.create( pageCache, fs, indexFiles, layout, monitor, indexDescriptor );
     }
 
     @Override
     ValueCreatorUtil<KEY,VALUE> createValueCreatorUtil()
     {
-        return new ValueCreatorUtil<>( uniqueDescriptor, testCase.typesOfGroup, ValueCreatorUtil.FRACTION_DUPLICATE_UNIQUE );
+        return new ValueCreatorUtil<>( uniqueDescriptor, typesOfGroup, ValueCreatorUtil.FRACTION_DUPLICATE_UNIQUE );
     }
 
     @Override
     IndexLayout<KEY,VALUE> createLayout()
     {
-        return testCase.indexLayoutFactory.create();
+        return indexLayoutFactory.create();
+    }
+
+    @Test
+    void addShouldThrowOnDuplicateValues()
+    {
+        // given
+        populator.create();
+        IndexEntryUpdate<IndexDescriptor>[] updates = valueCreatorUtil.someUpdatesWithDuplicateValues( random );
+
+        assertThrows( IndexEntryConflictException.class, () ->
+        {
+            populator.add( asList( updates ) );
+            populator.scanCompleted( nullInstance );
+        } );
+
+        populator.close( true );
+    }
+
+    @Test
+    void updaterShouldThrowOnDuplicateValues() throws Exception
+    {
+        // given
+        populator.create();
+        IndexEntryUpdate<IndexDescriptor>[] updates = valueCreatorUtil.someUpdatesWithDuplicateValues( random );
+        IndexUpdater updater = populator.newPopulatingUpdater( null_property_accessor );
+
+        // when
+        for ( IndexEntryUpdate<IndexDescriptor> update : updates )
+        {
+            updater.process( update );
+        }
+        var e = assertThrows( Exception.class, () ->
+        {
+            updater.close();
+            populator.scanCompleted( nullInstance );
+        } );
+        assertTrue( Exceptions.contains( e, IndexEntryConflictException.class ), e.getMessage() );
+
+        populator.close( true );
+    }
+
+    @Test
+    void shouldSampleUpdates() throws Exception
+    {
+        // GIVEN
+        populator.create();
+        IndexEntryUpdate<IndexDescriptor>[] updates = valueCreatorUtil.someUpdates( random );
+
+        // WHEN
+        populator.add( asList( updates ) );
+        for ( IndexEntryUpdate<IndexDescriptor> update : updates )
+        {
+            populator.includeSample( update );
+        }
+        populator.scanCompleted( nullInstance );
+        IndexSample sample = populator.sampleResult();
+
+        // THEN
+        assertEquals( updates.length, sample.sampleSize() );
+        assertEquals( updates.length, sample.uniqueValues() );
+        assertEquals( updates.length, sample.indexSize() );
+        populator.close( true );
     }
 }

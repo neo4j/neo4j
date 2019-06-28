@@ -20,8 +20,6 @@
 package org.neo4j.kernel.impl.index.schema;
 
 import java.io.IOException;
-import java.util.Arrays;
-import java.util.Collection;
 
 import org.neo4j.configuration.Config;
 import org.neo4j.gis.spatial.index.curves.StandardConfiguration;
@@ -29,60 +27,22 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.impl.index.schema.config.IndexSpecificSpaceFillingCurveSettings;
-import org.neo4j.values.storable.ValueType;
 
 import static org.neo4j.kernel.impl.index.schema.ByteBufferFactory.heapBufferFactory;
 
 class NativeIndexPopulatorTestCases
 {
-    static class TestCase<KEY extends NativeIndexKey<KEY>, VALUE extends NativeIndexValue>
-    {
-        final String name;
-        final PopulatorFactory<KEY,VALUE> populatorFactory;
-        final ValueType[] typesOfGroup;
-        final IndexLayoutFactory<KEY,VALUE> indexLayoutFactory;
-
-        TestCase( String name, PopulatorFactory<KEY,VALUE> populatorFactory, ValueType[] typesOfGroup, IndexLayoutFactory<KEY,VALUE> indexLayoutFactory )
-        {
-            this.name = name;
-            this.populatorFactory = populatorFactory;
-            this.typesOfGroup = typesOfGroup;
-            this.indexLayoutFactory = indexLayoutFactory;
-        }
-
-        @Override
-        public String toString()
-        {
-            return name;
-        }
-    }
-
-    static Collection<Object[]> allCases()
-    {
-        return Arrays.asList( new Object[][]{
-                {new TestCase<>( "Generic",
-                        genericPopulatorFactory(),
-                        ValueType.values(),
-                        () -> new GenericLayout( 1, spaceFillingCurveSettings ) )},
-                {new TestCase<>( "Generic-BlockBased",
-                        genericBlockBasedPopulatorFactory(),
-                        ValueType.values(),
-                        () -> new GenericLayout( 1, spaceFillingCurveSettings ) )}
-        } );
-        // { Spatial has it's own subclass because it need to override some of the test methods }
-    }
-
-    private static final IndexSpecificSpaceFillingCurveSettings spaceFillingCurveSettings =
+    static final IndexSpecificSpaceFillingCurveSettings spaceFillingCurveSettings =
             IndexSpecificSpaceFillingCurveSettings.fromConfig( Config.defaults() );
-    private static final StandardConfiguration configuration = new StandardConfiguration();
+    static final StandardConfiguration configuration = new StandardConfiguration();
 
-    private static PopulatorFactory<GenericKey,NativeIndexValue> genericPopulatorFactory()
+    static PopulatorFactory<GenericKey,NativeIndexValue> genericPopulatorFactory()
     {
         return ( pageCache, fs, storeFile, layout, monitor, descriptor ) ->
                 new GenericNativeIndexPopulator( pageCache, fs, storeFile, layout, monitor, descriptor, spaceFillingCurveSettings, configuration, false );
     }
 
-    private static PopulatorFactory<GenericKey,NativeIndexValue> genericBlockBasedPopulatorFactory()
+    static PopulatorFactory<GenericKey,NativeIndexValue> genericBlockBasedPopulatorFactory()
     {
         return ( pageCache, fs, storeFile, layout, monitor, descriptor ) ->
                 new GenericBlockBasedIndexPopulator( pageCache, fs, storeFile, layout, monitor, descriptor, spaceFillingCurveSettings, configuration, false,

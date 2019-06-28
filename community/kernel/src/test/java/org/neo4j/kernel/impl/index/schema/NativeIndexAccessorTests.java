@@ -20,12 +20,11 @@
 package org.neo4j.kernel.impl.index.schema;
 
 import org.eclipse.collections.api.iterator.LongIterator;
-import org.hamcrest.CoreMatchers;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
+import org.hamcrest.MatcherAssert;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import java.io.File;
 import java.io.IOException;
@@ -55,7 +54,6 @@ import org.neo4j.kernel.api.index.IndexReader;
 import org.neo4j.kernel.api.index.IndexSample;
 import org.neo4j.kernel.api.index.IndexSampler;
 import org.neo4j.kernel.api.index.IndexUpdater;
-import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
 import org.neo4j.storageengine.api.IndexEntryUpdate;
 import org.neo4j.storageengine.api.schema.SimpleNodeValueClient;
 import org.neo4j.values.storable.CoordinateReferenceSystem;
@@ -67,11 +65,10 @@ import org.neo4j.values.storable.ValueType;
 import org.neo4j.values.storable.Values;
 
 import static java.lang.String.format;
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
+import static org.hamcrest.CoreMatchers.allOf;
+import static org.hamcrest.CoreMatchers.containsString;
+import static org.hamcrest.CoreMatchers.is;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.neo4j.collection.PrimitiveLongCollections.EMPTY_LONG_ARRAY;
 import static org.neo4j.function.Predicates.alwaysTrue;
 import static org.neo4j.function.Predicates.in;
@@ -84,24 +81,13 @@ import static org.neo4j.storageengine.api.IndexEntryUpdate.change;
 import static org.neo4j.storageengine.api.IndexEntryUpdate.remove;
 import static org.neo4j.values.storable.Values.of;
 
-/**
- * Tests for
- * <ul>
- * <li>{@link NumberIndexAccessor}</li>
- * <li>{@link NativeIndexUpdater}</li>
- * <li>{@link NumberIndexReader}</li>
- * </ul>
- */
-public abstract class NativeIndexAccessorTests<KEY extends NativeIndexKey<KEY>, VALUE extends NativeIndexValue>
+abstract class NativeIndexAccessorTests<KEY extends NativeIndexKey<KEY>, VALUE extends NativeIndexValue>
         extends NativeIndexTestUtil<KEY,VALUE>
 {
     private NativeIndexAccessor<KEY,VALUE> accessor;
 
-    @Rule
-    public ExpectedException expected = ExpectedException.none();
-
-    @Before
-    public void setupAccessor() throws IOException
+    @BeforeEach
+    void setupAccessor() throws IOException
     {
         accessor = makeAccessor();
     }
@@ -110,8 +96,8 @@ public abstract class NativeIndexAccessorTests<KEY extends NativeIndexKey<KEY>, 
 
     abstract IndexCapability indexCapability();
 
-    @After
-    public void closeAccessor()
+    @AfterEach
+    void closeAccessor()
     {
         accessor.close();
     }
@@ -119,7 +105,7 @@ public abstract class NativeIndexAccessorTests<KEY extends NativeIndexKey<KEY>, 
     // UPDATER
 
     @Test
-    public void shouldHandleCloseWithoutCallsToProcess() throws Exception
+    void shouldHandleCloseWithoutCallsToProcess() throws Exception
     {
         // given
         IndexUpdater updater = accessor.newUpdater( ONLINE );
@@ -132,21 +118,17 @@ public abstract class NativeIndexAccessorTests<KEY extends NativeIndexKey<KEY>, 
     }
 
     @Test
-    public void processMustThrowAfterClose() throws Exception
+    void processMustThrowAfterClose() throws Exception
     {
         // given
         IndexUpdater updater = accessor.newUpdater( ONLINE );
         updater.close();
 
-        // then
-        expected.expect( IllegalStateException.class );
-
-        // when
-        updater.process( simpleUpdate() );
+        assertThrows( IllegalStateException.class, () -> updater.process( simpleUpdate() ) );
     }
 
     @Test
-    public void shouldIndexAdd() throws Exception
+    void shouldIndexAdd() throws Exception
     {
         // given
         IndexEntryUpdate<IndexDescriptor>[] updates = someUpdatesSingleType();
@@ -162,7 +144,7 @@ public abstract class NativeIndexAccessorTests<KEY extends NativeIndexKey<KEY>, 
     }
 
     @Test
-    public void shouldIndexChange() throws Exception
+    void shouldIndexChange() throws Exception
     {
         // given
         IndexEntryUpdate<IndexDescriptor>[] updates = someUpdatesSingleType();
@@ -185,7 +167,7 @@ public abstract class NativeIndexAccessorTests<KEY extends NativeIndexKey<KEY>, 
     }
 
     @Test
-    public void shouldIndexRemove() throws Exception
+    void shouldIndexRemove() throws Exception
     {
         // given
         IndexEntryUpdate<IndexDescriptor>[] updates = someUpdatesSingleType();
@@ -206,7 +188,7 @@ public abstract class NativeIndexAccessorTests<KEY extends NativeIndexKey<KEY>, 
     }
 
     @Test
-    public void shouldHandleRandomUpdates() throws Exception
+    void shouldHandleRandomUpdates() throws Exception
     {
         // given
         Set<IndexEntryUpdate<IndexDescriptor>> expectedData = new HashSet<>();
@@ -234,7 +216,7 @@ public abstract class NativeIndexAccessorTests<KEY extends NativeIndexKey<KEY>, 
     // === READER ===
 
     @Test
-    public void shouldReturnZeroCountForEmptyIndex()
+    void shouldReturnZeroCountForEmptyIndex()
     {
         // given
         try ( IndexReader reader = accessor.newReader() )
@@ -244,12 +226,12 @@ public abstract class NativeIndexAccessorTests<KEY extends NativeIndexKey<KEY>, 
             long count = reader.countIndexedNodes( 123, valueCreatorUtil.indexDescriptor.properties(), update.values()[0] );
 
             // then
-            assertEquals( 0, count );
+            Assertions.assertEquals( 0, count );
         }
     }
 
     @Test
-    public void shouldReturnCountOneForExistingData() throws Exception
+    void shouldReturnCountOneForExistingData() throws Exception
     {
         // given
         IndexEntryUpdate<IndexDescriptor>[] updates = someUpdatesSingleType();
@@ -263,7 +245,7 @@ public abstract class NativeIndexAccessorTests<KEY extends NativeIndexKey<KEY>, 
                 long count = reader.countIndexedNodes( update.getEntityId(), valueCreatorUtil.indexDescriptor.properties(), update.values() );
 
                 // then
-                assertEquals( 1, count );
+                Assertions.assertEquals( 1, count );
             }
 
             // and when
@@ -271,12 +253,12 @@ public abstract class NativeIndexAccessorTests<KEY extends NativeIndexKey<KEY>, 
             long count = reader.countIndexedNodes( 123, valueCreatorUtil.indexDescriptor.properties(), generator.next().values()[0] );
 
             // then
-            assertEquals( 0, count );
+            Assertions.assertEquals( 0, count );
         }
     }
 
     @Test
-    public void shouldReturnCountZeroForMismatchingData() throws Exception
+    void shouldReturnCountZeroForMismatchingData() throws Exception
     {
         // given
         IndexEntryUpdate<IndexDescriptor>[] updates = someUpdatesSingleTypeNoDuplicates();
@@ -293,14 +275,14 @@ public abstract class NativeIndexAccessorTests<KEY extends NativeIndexKey<KEY>, 
             long countWithNonExistentValue = reader.countIndexedNodes( update.getEntityId(), propKeys, generateUniqueValue( updates ) );
 
             // then
-            assertEquals( 0, countWithMismatchingData );
-            assertEquals( 0, countWithNonExistentEntityId );
-            assertEquals( 0, countWithNonExistentValue );
+            Assertions.assertEquals( 0, countWithMismatchingData );
+            Assertions.assertEquals( 0, countWithNonExistentEntityId );
+            Assertions.assertEquals( 0, countWithNonExistentValue );
         }
     }
 
     @Test
-    public void shouldReturnAllEntriesForExistsPredicate() throws Exception
+    void shouldReturnAllEntriesForExistsPredicate() throws Exception
     {
         // given
         IndexEntryUpdate<IndexDescriptor>[] updates = someUpdatesSingleType();
@@ -316,7 +298,7 @@ public abstract class NativeIndexAccessorTests<KEY extends NativeIndexKey<KEY>, 
     }
 
     @Test
-    public void shouldReturnNoEntriesForExistsPredicateForEmptyIndex() throws Exception
+    void shouldReturnNoEntriesForExistsPredicateForEmptyIndex() throws Exception
     {
         // when
         IndexReader reader = accessor.newReader();
@@ -325,12 +307,12 @@ public abstract class NativeIndexAccessorTests<KEY extends NativeIndexKey<KEY>, 
         {
             // then
             actual = PrimitiveLongCollections.asArray( result );
-            assertEquals( 0, actual.length );
+            Assertions.assertEquals( 0, actual.length );
         }
     }
 
     @Test
-    public void shouldReturnMatchingEntriesForExactPredicate() throws Exception
+    void shouldReturnMatchingEntriesForExactPredicate() throws Exception
     {
         // given
         IndexEntryUpdate<IndexDescriptor>[] updates = someUpdatesSingleType();
@@ -349,7 +331,7 @@ public abstract class NativeIndexAccessorTests<KEY extends NativeIndexKey<KEY>, 
     }
 
     @Test
-    public void shouldReturnNoEntriesForMismatchingExactPredicate() throws Exception
+    void shouldReturnNoEntriesForMismatchingExactPredicate() throws Exception
     {
         // given
         IndexEntryUpdate<IndexDescriptor>[] updates = someUpdatesSingleType();
@@ -365,7 +347,7 @@ public abstract class NativeIndexAccessorTests<KEY extends NativeIndexKey<KEY>, 
     }
 
     @Test
-    public void shouldReturnMatchingEntriesForRangePredicateWithInclusiveStartAndExclusiveEnd() throws Exception
+    void shouldReturnMatchingEntriesForRangePredicateWithInclusiveStartAndExclusiveEnd() throws Exception
     {
         // given
         IndexEntryUpdate<IndexDescriptor>[] updates = someUpdatesSingleTypeNoDuplicates( supportedTypesExcludingNonOrderable() );
@@ -382,7 +364,7 @@ public abstract class NativeIndexAccessorTests<KEY extends NativeIndexKey<KEY>, 
     }
 
     @Test
-    public void shouldReturnMatchingEntriesForRangePredicateWithInclusiveStartAndInclusiveEnd() throws Exception
+    void shouldReturnMatchingEntriesForRangePredicateWithInclusiveStartAndInclusiveEnd() throws Exception
     {
         // given
         IndexEntryUpdate<IndexDescriptor>[] updates = someUpdatesSingleTypeNoDuplicates( supportedTypesExcludingNonOrderable() );
@@ -405,7 +387,7 @@ public abstract class NativeIndexAccessorTests<KEY extends NativeIndexKey<KEY>, 
     }
 
     @Test
-    public void shouldReturnMatchingEntriesForRangePredicateWithExclusiveStartAndExclusiveEnd() throws Exception
+    void shouldReturnMatchingEntriesForRangePredicateWithExclusiveStartAndExclusiveEnd() throws Exception
     {
         // given
         IndexEntryUpdate<IndexDescriptor>[] updates = someUpdatesSingleTypeNoDuplicates( supportedTypesExcludingNonOrderable() );
@@ -422,7 +404,7 @@ public abstract class NativeIndexAccessorTests<KEY extends NativeIndexKey<KEY>, 
     }
 
     @Test
-    public void shouldReturnMatchingEntriesForRangePredicateWithExclusiveStartAndInclusiveEnd() throws Exception
+    void shouldReturnMatchingEntriesForRangePredicateWithExclusiveStartAndInclusiveEnd() throws Exception
     {
         // given
         IndexEntryUpdate<IndexDescriptor>[] updates = someUpdatesSingleTypeNoDuplicates( supportedTypesExcludingNonOrderable() );
@@ -439,7 +421,7 @@ public abstract class NativeIndexAccessorTests<KEY extends NativeIndexKey<KEY>, 
     }
 
     @Test
-    public void shouldReturnNoEntriesForRangePredicateOutsideAnyMatch() throws Exception
+    void shouldReturnNoEntriesForRangePredicateOutsideAnyMatch() throws Exception
     {
         // given
         IndexEntryUpdate<IndexDescriptor>[] updates = someUpdatesSingleTypeNoDuplicates( supportedTypesExcludingNonOrderable() );
@@ -455,8 +437,9 @@ public abstract class NativeIndexAccessorTests<KEY extends NativeIndexKey<KEY>, 
         }
     }
 
-    @Test( timeout = 10_000L )
-    public void mustHandleNestedQueries() throws Exception
+    @Test
+//( timeout = 10_000L )
+    void mustHandleNestedQueries() throws Exception
     {
         // given
         IndexEntryUpdate<IndexDescriptor>[] updates = someUpdatesSingleTypeNoDuplicates( supportedTypesExcludingNonOrderable() );
@@ -474,8 +457,8 @@ public abstract class NativeIndexAccessorTests<KEY extends NativeIndexKey<KEY>, 
         IndexQuery outerQuery = valueCreatorUtil.rangeQuery( valueOf( updates[2] ), true, valueOf( updates[3] ), true );
         IndexQuery innerQuery = valueCreatorUtil.rangeQuery( valueOf( updates[0] ), true, valueOf( updates[1] ), true );
 
-        long[] expectedOuter = new long[]{entityIdOf( updates[2] ), entityIdOf( updates[3] )};
-        long[] expectedInner = new long[]{entityIdOf( updates[0] ), entityIdOf( updates[1] )};
+        long[] expectedOuter = {entityIdOf( updates[2] ), entityIdOf( updates[3] )};
+        long[] expectedInner = {entityIdOf( updates[0] ), entityIdOf( updates[1] )};
 
         Collection<Long> outerResult;
         try ( NodeValueIterator outerIter = query( reader, outerQuery ) )
@@ -494,7 +477,7 @@ public abstract class NativeIndexAccessorTests<KEY extends NativeIndexKey<KEY>, 
     }
 
     @Test
-    public void mustHandleMultipleNestedQueries() throws Exception
+    void mustHandleMultipleNestedQueries() throws Exception
     {
         // given
         IndexEntryUpdate<IndexDescriptor>[] updates = someUpdatesSingleTypeNoDuplicates( supportedTypesExcludingNonOrderable() );
@@ -514,9 +497,9 @@ public abstract class NativeIndexAccessorTests<KEY extends NativeIndexKey<KEY>, 
         IndexQuery query2 = valueCreatorUtil.rangeQuery( valueOf( updates[2] ), true, valueOf( updates[3] ), true );
         IndexQuery query3 = valueCreatorUtil.rangeQuery( valueOf( updates[0] ), true, valueOf( updates[1] ), true );
 
-        long[] expected1 = new long[]{entityIdOf( updates[4] ), entityIdOf( updates[5] )};
-        long[] expected2 = new long[]{entityIdOf( updates[2] ), entityIdOf( updates[3] )};
-        long[] expected3 = new long[]{entityIdOf( updates[0] ), entityIdOf( updates[1] )};
+        long[] expected1 = {entityIdOf( updates[4] ), entityIdOf( updates[5] )};
+        long[] expected2 = {entityIdOf( updates[2] ), entityIdOf( updates[3] )};
+        long[] expected3 = {entityIdOf( updates[0] ), entityIdOf( updates[1] )};
 
         Collection<Long> result1 = new ArrayList<>();
         try ( NodeValueIterator iter1 = query( reader, query1 ) )
@@ -549,13 +532,13 @@ public abstract class NativeIndexAccessorTests<KEY extends NativeIndexKey<KEY>, 
         assertEntityIdHits( expected1, result1 );
     }
 
-    private long entityIdOf( IndexEntryUpdate<IndexDescriptor> update )
+    private static long entityIdOf( IndexEntryUpdate<IndexDescriptor> update )
     {
         return update.getEntityId();
     }
 
     @Test
-    public void shouldHandleMultipleConsecutiveUpdaters() throws Exception
+    void shouldHandleMultipleConsecutiveUpdaters() throws Exception
     {
         // given
         IndexEntryUpdate<IndexDescriptor>[] updates = someUpdatesSingleType();
@@ -575,21 +558,17 @@ public abstract class NativeIndexAccessorTests<KEY extends NativeIndexKey<KEY>, 
     }
 
     @Test
-    public void requestForSecondUpdaterMustThrow() throws Exception
+    void requestForSecondUpdaterMustThrow() throws Exception
     {
         // given
         try ( IndexUpdater ignored = accessor.newUpdater( ONLINE ) )
         {
-            // then
-            expected.expect( IllegalStateException.class );
-
-            // when
-            accessor.newUpdater( ONLINE );
+            assertThrows( IllegalStateException.class, () -> accessor.newUpdater( ONLINE ) );
         }
     }
 
     @Test
-    public void dropShouldDeleteAndCloseIndex()
+    void dropShouldDeleteAndCloseIndex()
     {
         // given
         assertFilePresent();
@@ -602,7 +581,7 @@ public abstract class NativeIndexAccessorTests<KEY extends NativeIndexKey<KEY>, 
     }
 
     @Test
-    public void forceShouldCheckpointTree() throws Exception
+    void forceShouldCheckpointTree() throws Exception
     {
         // given
         IndexEntryUpdate<IndexDescriptor>[] data = someUpdatesSingleType();
@@ -618,7 +597,7 @@ public abstract class NativeIndexAccessorTests<KEY extends NativeIndexKey<KEY>, 
 
     @SuppressWarnings( "unchecked" )
     @Test
-    public void closeShouldCloseTreeWithoutCheckpoint() throws Exception
+    void closeShouldCloseTreeWithoutCheckpoint() throws Exception
     {
         // given
         IndexEntryUpdate<IndexDescriptor>[] data = someUpdatesSingleType();
@@ -632,19 +611,19 @@ public abstract class NativeIndexAccessorTests<KEY extends NativeIndexKey<KEY>, 
     }
 
     @Test
-    public void snapshotFilesShouldReturnIndexFile()
+    void snapshotFilesShouldReturnIndexFile()
     {
         // when
         ResourceIterator<File> files = accessor.snapshotFiles();
 
         // then
-        assertTrue( files.hasNext() );
-        assertEquals( indexFiles.getStoreFile(), files.next() );
-        assertFalse( files.hasNext() );
+        Assertions.assertTrue( files.hasNext() );
+        Assertions.assertEquals( indexFiles.getStoreFile(), files.next() );
+        Assertions.assertFalse( files.hasNext() );
     }
 
     @Test
-    public void shouldSampleIndex() throws Exception
+    void shouldSampleIndex() throws Exception
     {
         // given
         IndexEntryUpdate<IndexDescriptor>[] updates = someUpdatesSingleType();
@@ -656,66 +635,50 @@ public abstract class NativeIndexAccessorTests<KEY extends NativeIndexKey<KEY>, 
             IndexSample sample = sampler.sampleIndex();
 
             // then
-            assertEquals( updates.length, sample.indexSize() );
-            assertEquals( updates.length, sample.sampleSize() );
-            assertEquals( countUniqueValues( updates ), sample.uniqueValues() );
+            Assertions.assertEquals( updates.length, sample.indexSize() );
+            Assertions.assertEquals( updates.length, sample.sampleSize() );
+            Assertions.assertEquals( countUniqueValues( updates ), sample.uniqueValues() );
         }
     }
 
     @Test
-    public void readingAfterDropShouldThrow()
+    void readingAfterDropShouldThrow()
     {
         // given
         accessor.drop();
 
-        // then
-        expected.expect( IllegalStateException.class );
-
-        // when
-        accessor.newReader();
+        assertThrows( IllegalStateException.class, () -> accessor.newReader() );
     }
 
     @Test
-    public void writingAfterDropShouldThrow()
+    void writingAfterDropShouldThrow()
     {
         // given
         accessor.drop();
 
-        // then
-        expected.expect( IllegalStateException.class );
-
-        // when
-        accessor.newUpdater( IndexUpdateMode.ONLINE );
+        assertThrows( IllegalStateException.class, () -> accessor.newUpdater( ONLINE ) );
     }
 
     @Test
-    public void readingAfterCloseShouldThrow()
+    void readingAfterCloseShouldThrow()
     {
         // given
         accessor.close();
 
-        // then
-        expected.expect( IllegalStateException.class );
-
-        // when
-        accessor.newReader();
+        assertThrows( IllegalStateException.class, () -> accessor.newReader() );
     }
 
     @Test
-    public void writingAfterCloseShouldThrow()
+    void writingAfterCloseShouldThrow()
     {
         // given
         accessor.close();
 
-        // then
-        expected.expect( IllegalStateException.class );
-
-        // when
-        accessor.newUpdater( IndexUpdateMode.ONLINE );
+        assertThrows( IllegalStateException.class, () -> accessor.newUpdater( ONLINE ) );
     }
 
     @Test
-    public void shouldSeeAllEntriesInAllEntriesReader() throws Exception
+    void shouldSeeAllEntriesInAllEntriesReader() throws Exception
     {
         // given
         IndexEntryUpdate<IndexDescriptor>[] updates = someUpdatesSingleType();
@@ -728,22 +691,22 @@ public abstract class NativeIndexAccessorTests<KEY extends NativeIndexKey<KEY>, 
         Set<Long> expectedIds = Stream.of( updates )
                 .map( IndexEntryUpdate::getEntityId )
                 .collect( Collectors.toCollection( HashSet::new ) );
-        assertEquals( expectedIds, ids );
+        Assertions.assertEquals( expectedIds, ids );
     }
 
     @Test
-    public void shouldSeeNoEntriesInAllEntriesReaderOnEmptyIndex()
+    void shouldSeeNoEntriesInAllEntriesReaderOnEmptyIndex()
     {
         // when
         Set<Long> ids = asUniqueSet( accessor.newAllEntriesReader() );
 
         // then
         Set<Long> expectedIds = Collections.emptySet();
-        assertEquals( expectedIds, ids );
+        Assertions.assertEquals( expectedIds, ids );
     }
 
     @Test
-    public void shouldNotSeeFilteredEntries() throws Exception
+    void shouldNotSeeFilteredEntries() throws Exception
     {
         // given
         IndexEntryUpdate<IndexDescriptor>[] updates = someUpdatesSingleTypeNoDuplicates( supportedTypesExcludingNonOrderable() );
@@ -760,16 +723,16 @@ public abstract class NativeIndexAccessorTests<KEY extends NativeIndexKey<KEY>, 
             reader.query( NULL_CONTEXT, filterClient, IndexOrder.NONE, false, rangeQuery );
 
             // then
-            assertTrue( iter.hasNext() );
-            assertEquals( entityIdOf( updates[1] ), iter.next() );
-            assertFalse( iter.hasNext() );
+            Assertions.assertTrue( iter.hasNext() );
+            Assertions.assertEquals( entityIdOf( updates[1] ), iter.next() );
+            Assertions.assertFalse( iter.hasNext() );
         }
     }
 
     // <READER ordering>
 
     @Test
-    public void respectIndexOrder() throws Exception
+    void respectIndexOrder() throws Exception
     {
         // given
         int nUpdates = 10000;
@@ -815,15 +778,15 @@ public abstract class NativeIndexAccessorTests<KEY extends NativeIndexKey<KEY>, 
                 int i = 0;
                 while ( client.next() )
                 {
-                    assertEquals( "values in order", expectedValues[i++], client.values[0] );
+                    Assertions.assertEquals( expectedValues[i++], client.values[0], "values in order" );
                 }
-                assertEquals( "found all values", i, expectedValues.length );
+                Assertions.assertEquals( i, expectedValues.length, "found all values" );
             }
         }
     }
 
     @Test
-    public void throwForUnsupportedIndexOrder() throws Exception
+    void throwForUnsupportedIndexOrder()
     {
         // given
         // Unsupported index order for query
@@ -832,20 +795,17 @@ public abstract class NativeIndexAccessorTests<KEY extends NativeIndexKey<KEY>, 
             IndexOrder unsupportedOrder = IndexOrder.DESCENDING;
             IndexQuery.ExactPredicate unsupportedQuery = IndexQuery.exact( 0, PointValue.MAX_VALUE ); // <- Any spatial value would do
 
-            // then
-            expected.expect( UnsupportedOperationException.class );
-            expected.expectMessage( CoreMatchers.allOf(
-                    CoreMatchers.containsString( "unsupported order" ),
-                    CoreMatchers.containsString( unsupportedOrder.toString() ),
-                    CoreMatchers.containsString( unsupportedQuery.toString() ) ) );
-
-            // when
-            reader.query( NULL_CONTEXT, new SimpleNodeValueClient(), unsupportedOrder, false, unsupportedQuery );
+            var e = assertThrows( UnsupportedOperationException.class, () ->
+                reader.query( NULL_CONTEXT, new SimpleNodeValueClient(), unsupportedOrder, false, unsupportedQuery ) );
+            MatcherAssert.assertThat( e.getMessage(), allOf(
+                containsString( "unsupported order" ),
+                containsString( unsupportedOrder.toString() ),
+                containsString( unsupportedQuery.toString() ) ) );
         }
     }
 
     @Test
-    public void getValues() throws IndexEntryConflictException, IndexNotApplicableKernelException
+    void getValues() throws IndexEntryConflictException, IndexNotApplicableKernelException
     {
         // given
         int nUpdates = 10000;
@@ -900,9 +860,9 @@ public abstract class NativeIndexAccessorTests<KEY extends NativeIndexKey<KEY>, 
                 while ( client.next() )
                 {
                     Value foundValue = client.values[0];
-                    assertTrue( "found value that was not expected " + foundValue, expectedValues.remove( foundValue ) );
+                    Assertions.assertTrue( expectedValues.remove( foundValue ), "found value that was not expected " + foundValue );
                 }
-                assertThat( "did not find all expected values", expectedValues.size(), CoreMatchers.is( 0 ) );
+            MatcherAssert.assertThat( "did not find all expected values", expectedValues.size(), is( 0 ) );
         }
     }
 
@@ -928,12 +888,12 @@ public abstract class NativeIndexAccessorTests<KEY extends NativeIndexKey<KEY>, 
         };
     }
 
-    private Value valueOf( IndexEntryUpdate<IndexDescriptor> update )
+    private static Value valueOf( IndexEntryUpdate<IndexDescriptor> update )
     {
         return update.values()[0];
     }
 
-    private IndexProgressor.EntityValueClient filterClient( final NodeValueIterator iter, final IndexQuery filter )
+    private static IndexProgressor.EntityValueClient filterClient( final NodeValueIterator iter, final IndexQuery filter )
     {
         return new IndexProgressor.EntityValueClient()
         {
@@ -964,20 +924,20 @@ public abstract class NativeIndexAccessorTests<KEY extends NativeIndexKey<KEY>, 
         };
     }
 
-    private NodeValueIterator query( IndexReader reader, IndexQuery query ) throws IndexNotApplicableKernelException
+    private static NodeValueIterator query( IndexReader reader, IndexQuery query ) throws IndexNotApplicableKernelException
     {
         NodeValueIterator client = new NodeValueIterator();
         reader.query( NULL_CONTEXT, client, IndexOrder.NONE, false, query );
         return client;
     }
 
-    private void assertEntityIdHits( long[] expected, LongIterator result )
+    private static void assertEntityIdHits( long[] expected, LongIterator result )
     {
         long[] actual = PrimitiveLongCollections.asArray( result );
         assertSameContent( expected, actual );
     }
 
-    private void assertEntityIdHits( long[] expected, Collection<Long> result )
+    private static void assertEntityIdHits( long[] expected, Collection<Long> result )
     {
         long[] actual = new long[result.size()];
         int index = 0;
@@ -988,15 +948,15 @@ public abstract class NativeIndexAccessorTests<KEY extends NativeIndexKey<KEY>, 
         assertSameContent( expected, actual );
     }
 
-    private void assertSameContent( long[] expected, long[] actual )
+    private static void assertSameContent( long[] expected, long[] actual )
     {
         Arrays.sort( actual );
         Arrays.sort( expected );
-        assertArrayEquals( format( "Expected arrays to be equal but wasn't.%nexpected:%s%n  actual:%s%n",
-                Arrays.toString( expected ), Arrays.toString( actual ) ), expected, actual );
+        Assertions.assertArrayEquals( expected, actual, format( "Expected arrays to be equal but wasn't.%nexpected:%s%n  actual:%s%n",
+            Arrays.toString( expected ), Arrays.toString( actual ) ) );
     }
 
-    private long[] extractEntityIds( IndexEntryUpdate<?>[] updates, Predicate<Value> valueFilter )
+    private static long[] extractEntityIds( IndexEntryUpdate<?>[] updates, Predicate<Value> valueFilter )
     {
         long[] entityIds = new long[updates.length];
         int cursor = 0;
@@ -1085,7 +1045,7 @@ public abstract class NativeIndexAccessorTests<KEY extends NativeIndexKey<KEY>, 
     }
 
     @SafeVarargs
-    private final void processAll( IndexEntryUpdate<IndexDescriptor>... updates )
+    private void processAll( IndexEntryUpdate<IndexDescriptor>... updates )
             throws IndexEntryConflictException
     {
         try ( IndexUpdater updater = accessor.newUpdater( ONLINE ) )
@@ -1103,7 +1063,7 @@ public abstract class NativeIndexAccessorTests<KEY extends NativeIndexKey<KEY>, 
         closeAccessor();
     }
 
-    private void processAll( IndexUpdater updater, IndexEntryUpdate<IndexDescriptor>[] updates )
+    private static void processAll( IndexUpdater updater, IndexEntryUpdate<IndexDescriptor>[] updates )
             throws IndexEntryConflictException
     {
         for ( IndexEntryUpdate<IndexDescriptor> update : updates )

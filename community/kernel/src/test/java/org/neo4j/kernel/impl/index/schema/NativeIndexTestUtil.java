@@ -20,9 +20,8 @@
 package org.neo4j.kernel.impl.index.schema;
 
 import org.apache.commons.lang3.tuple.Pair;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.rules.RuleChain;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -34,47 +33,50 @@ import org.neo4j.index.internal.gbptree.GBPTree;
 import org.neo4j.index.internal.gbptree.Layout;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.index.internal.gbptree.Seeker;
+import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.api.index.IndexDirectoryStructure;
 import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.storageengine.api.IndexEntryUpdate;
-import org.neo4j.test.rule.PageCacheRule;
+import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.RandomExtension;
+import org.neo4j.test.extension.pagecache.PageCacheExtension;
 import org.neo4j.test.rule.RandomRule;
 import org.neo4j.test.rule.TestDirectory;
-import org.neo4j.test.rule.fs.DefaultFileSystemRule;
 import org.neo4j.values.storable.ValueGroup;
 
 import static java.lang.String.format;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
-import static org.junit.rules.RuleChain.outerRule;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.index.internal.gbptree.GBPTree.NO_HEADER_READER;
 import static org.neo4j.index.internal.gbptree.GBPTree.NO_HEADER_WRITER;
 import static org.neo4j.kernel.api.index.IndexDirectoryStructure.directoriesByProvider;
 import static org.neo4j.kernel.impl.index.schema.NativeIndexKey.Inclusion.NEUTRAL;
-import static org.neo4j.test.rule.PageCacheConfig.config;
 
+@PageCacheExtension
+@ExtendWith( RandomExtension.class )
 public abstract class NativeIndexTestUtil<KEY extends NativeIndexKey<KEY>,VALUE extends NativeIndexValue>
 {
     static final long NON_EXISTENT_ENTITY_ID = 1_000_000_000;
 
-    final DefaultFileSystemRule fs = new DefaultFileSystemRule();
-    private final TestDirectory directory = TestDirectory.testDirectory( getClass(), fs.get() );
-    private final PageCacheRule pageCacheRule = new PageCacheRule( config().withAccessChecks( true ) );
-    protected final RandomRule random = new RandomRule();
-    @Rule
-    public final RuleChain rules = outerRule( random ).around( fs ).around( directory ).around( pageCacheRule );
+    @Inject
+    protected DefaultFileSystemAbstraction fs;
+    @Inject
+    private TestDirectory directory;
+    @Inject
+    protected PageCache pageCache;
+    @Inject
+    protected RandomRule random;
 
     StoreIndexDescriptor indexDescriptor;
     ValueCreatorUtil<KEY,VALUE> valueCreatorUtil;
     IndexLayout<KEY,VALUE> layout;
     IndexDirectoryStructure indexDirectoryStructure;
     IndexFiles indexFiles;
-    PageCache pageCache;
     IndexProvider.Monitor monitor = IndexProvider.Monitor.EMPTY;
 
-    @Before
+    @BeforeEach
     public void setup() throws IOException
     {
         valueCreatorUtil = createValueCreatorUtil();
@@ -83,7 +85,6 @@ public abstract class NativeIndexTestUtil<KEY extends NativeIndexKey<KEY>,VALUE 
         indexDirectoryStructure = directoriesByProvider( directory.directory( "root" ) ).forProvider( indexDescriptor.providerDescriptor() );
         this.indexFiles = new IndexFiles.Directory( fs, indexDirectoryStructure, indexDescriptor.getId() );
         fs.mkdirs( indexFiles.getStoreFile().getParentFile() );
-        pageCache = pageCacheRule.getPageCache( fs );
     }
 
     abstract ValueCreatorUtil<KEY,VALUE> createValueCreatorUtil();
@@ -146,15 +147,16 @@ public abstract class NativeIndexTestUtil<KEY extends NativeIndexKey<KEY>,VALUE 
     {
         Arrays.sort( expectedHits, comparator );
         Arrays.sort( actualHits, comparator );
-        assertEquals( format( "Array length differ%nExpected:%d, Actual:%d",
-                expectedHits.length, actualHits.length ),
-                expectedHits.length, actualHits.length );
+        assertEquals(
+            expectedHits.length, actualHits.length, format( "Array length differ%nExpected:%d, Actual:%d",
+                    expectedHits.length, actualHits.length ) );
 
         for ( int i = 0; i < expectedHits.length; i++ )
         {
             Pair<KEY,VALUE> expected = expectedHits[i];
             Pair<KEY,VALUE> actual = actualHits[i];
-            assertEquals( "Hits differ on item number " + i + ". Expected " + expected + " but was " + actual, 0, comparator.compare( expected, actual ) );
+            assertEquals( 0, comparator.compare( expected, actual ),
+                "Hits differ on item number " + i + ". Expected " + expected + " but was " + actual );
         }
     }
 

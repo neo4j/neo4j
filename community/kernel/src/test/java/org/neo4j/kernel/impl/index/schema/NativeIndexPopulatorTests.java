@@ -20,13 +20,12 @@
 package org.neo4j.kernel.impl.index.schema;
 
 import org.apache.commons.lang3.RandomStringUtils;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Iterator;
@@ -41,20 +40,19 @@ import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
-import org.neo4j.kernel.api.index.IndexSample;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.storageengine.api.IndexEntryUpdate;
 import org.neo4j.storageengine.api.NodePropertyAccessor;
-import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 
 import static java.util.Arrays.asList;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotEquals;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 import static org.neo4j.index.internal.gbptree.GBPTree.NO_HEADER_READER;
 import static org.neo4j.index.internal.gbptree.GBPTree.NO_HEADER_WRITER;
 import static org.neo4j.internal.kernel.api.InternalIndexState.FAILED;
@@ -64,9 +62,8 @@ import static org.neo4j.kernel.impl.api.index.PhaseTracker.nullInstance;
 import static org.neo4j.kernel.impl.index.schema.NativeIndexPopulator.BYTE_FAILED;
 import static org.neo4j.kernel.impl.index.schema.NativeIndexPopulator.BYTE_ONLINE;
 import static org.neo4j.kernel.impl.index.schema.NativeIndexPopulator.BYTE_POPULATING;
-import static org.neo4j.kernel.impl.index.schema.ValueCreatorUtil.countUniqueValues;
 
-public abstract class NativeIndexPopulatorTests<KEY extends NativeIndexKey<KEY>,VALUE extends NativeIndexValue>
+abstract class NativeIndexPopulatorTests<KEY extends NativeIndexKey<KEY>,VALUE extends NativeIndexValue>
         extends NativeIndexTestUtil<KEY,VALUE>
 {
     private static final int LARGE_AMOUNT_OF_UPDATES = 1_000;
@@ -77,8 +74,8 @@ public abstract class NativeIndexPopulatorTests<KEY extends NativeIndexKey<KEY>,
 
     NativeIndexPopulator<KEY,VALUE> populator;
 
-    @Before
-    public void setupPopulator() throws IOException
+    @BeforeEach
+    void setupPopulator() throws IOException
     {
         populator = createPopulator();
     }
@@ -86,7 +83,7 @@ public abstract class NativeIndexPopulatorTests<KEY extends NativeIndexKey<KEY>,
     abstract NativeIndexPopulator<KEY,VALUE> createPopulator() throws IOException;
 
     @Test
-    public void createShouldCreateFile()
+    void createShouldCreateFile()
     {
         // given
         assertFileNotPresent();
@@ -100,7 +97,7 @@ public abstract class NativeIndexPopulatorTests<KEY extends NativeIndexKey<KEY>,
     }
 
     @Test
-    public void createShouldClearExistingFile() throws Exception
+    void createShouldClearExistingFile() throws Exception
     {
         // given
         byte[] someBytes = fileWithContent();
@@ -113,14 +110,14 @@ public abstract class NativeIndexPopulatorTests<KEY extends NativeIndexKey<KEY>,
         {
             byte[] firstBytes = new byte[someBytes.length];
             r.readAll( ByteBuffer.wrap( firstBytes ) );
-            assertNotEquals( "Expected previous file content to have been cleared but was still there",
-                    someBytes, firstBytes );
+            assertNotEquals(
+                someBytes, firstBytes, "Expected previous file content to have been cleared but was still there" );
         }
         populator.close( true );
     }
 
     @Test
-    public void dropShouldDeleteExistingFile()
+    void dropShouldDeleteExistingFile()
     {
         // given
         populator.create();
@@ -133,7 +130,7 @@ public abstract class NativeIndexPopulatorTests<KEY extends NativeIndexKey<KEY>,
     }
 
     @Test
-    public void dropShouldDeleteExistingDirectory()
+    void dropShouldDeleteExistingDirectory()
     {
         // given
         populator.create();
@@ -143,11 +140,11 @@ public abstract class NativeIndexPopulatorTests<KEY extends NativeIndexKey<KEY>,
         populator.drop();
 
         // then
-        assertFalse( "expected drop to delete index base", fs.fileExists( indexFiles.getBase() ) );
+        assertFalse( fs.fileExists( indexFiles.getBase() ), "expected drop to delete index base" );
     }
 
     @Test
-    public void dropShouldSucceedOnNonExistentFile()
+    void dropShouldSucceedOnNonExistentFile()
     {
         // given
         assertFileNotPresent();
@@ -160,7 +157,7 @@ public abstract class NativeIndexPopulatorTests<KEY extends NativeIndexKey<KEY>,
     }
 
     @Test
-    public void addShouldHandleEmptyCollection() throws Exception
+    void addShouldHandleEmptyCollection() throws Exception
     {
         // given
         populator.create();
@@ -175,15 +172,14 @@ public abstract class NativeIndexPopulatorTests<KEY extends NativeIndexKey<KEY>,
     }
 
     @Test
-    public void addShouldApplyAllUpdatesOnce() throws Exception
+    void addShouldApplyAllUpdatesOnce() throws Exception
     {
         // given
         populator.create();
-        @SuppressWarnings( "unchecked" )
         IndexEntryUpdate<IndexDescriptor>[] updates = valueCreatorUtil.someUpdates( random );
 
         // when
-        populator.add( Arrays.asList( updates ) );
+        populator.add( asList( updates ) );
         populator.scanCompleted( nullInstance );
 
         // then
@@ -192,7 +188,7 @@ public abstract class NativeIndexPopulatorTests<KEY extends NativeIndexKey<KEY>,
     }
 
     @Test
-    public void updaterShouldApplyUpdates() throws Exception
+    void updaterShouldApplyUpdates() throws Exception
     {
         // given
         populator.create();
@@ -213,7 +209,7 @@ public abstract class NativeIndexPopulatorTests<KEY extends NativeIndexKey<KEY>,
     }
 
     @Test
-    public void updaterMustThrowIfProcessAfterClose() throws Exception
+    void updaterMustThrowIfProcessAfterClose() throws Exception
     {
         // given
         populator.create();
@@ -222,25 +218,15 @@ public abstract class NativeIndexPopulatorTests<KEY extends NativeIndexKey<KEY>,
         // when
         updater.close();
 
-        // then
-        try
-        {
-            updater.process( valueCreatorUtil.add( 1, Values.of( Long.MAX_VALUE ) ) );
-            fail( "Expected process to throw on closed updater" );
-        }
-        catch ( IllegalStateException e )
-        {
-            // good
-        }
+        assertThrows( IllegalStateException.class, () -> updater.process( valueCreatorUtil.add( 1, Values.of( Long.MAX_VALUE ) ) ) );
         populator.close( true );
     }
 
     @Test
-    public void shouldApplyInterleavedUpdatesFromAddAndUpdater() throws Exception
+    void shouldApplyInterleavedUpdatesFromAddAndUpdater() throws Exception
     {
         // given
         populator.create();
-        @SuppressWarnings( "unchecked" )
         IndexEntryUpdate<IndexDescriptor>[] updates = valueCreatorUtil.someUpdates( random );
 
         // when
@@ -253,7 +239,7 @@ public abstract class NativeIndexPopulatorTests<KEY extends NativeIndexKey<KEY>,
     }
 
     @Test
-    public void successfulCloseMustCloseGBPTree() throws Exception
+    void successfulCloseMustCloseGBPTree() throws Exception
     {
         // given
         populator.create();
@@ -276,7 +262,7 @@ public abstract class NativeIndexPopulatorTests<KEY extends NativeIndexKey<KEY>,
     }
 
     @Test
-    public void successfulCloseMustMarkIndexAsOnline() throws Exception
+    void successfulCloseMustMarkIndexAsOnline() throws Exception
     {
         // given
         populator.create();
@@ -289,7 +275,7 @@ public abstract class NativeIndexPopulatorTests<KEY extends NativeIndexKey<KEY>,
     }
 
     @Test
-    public void unsuccessfulCloseMustSucceedWithoutMarkAsFailed()
+    void unsuccessfulCloseMustSucceedWithoutMarkAsFailed()
     {
         // given
         populator.create();
@@ -299,7 +285,7 @@ public abstract class NativeIndexPopulatorTests<KEY extends NativeIndexKey<KEY>,
     }
 
     @Test
-    public void unsuccessfulCloseMustCloseGBPTree() throws Exception
+    void unsuccessfulCloseMustCloseGBPTree() throws Exception
     {
         // given
         populator.create();
@@ -322,7 +308,7 @@ public abstract class NativeIndexPopulatorTests<KEY extends NativeIndexKey<KEY>,
     }
 
     @Test
-    public void unsuccessfulCloseMustNotMarkIndexAsOnline() throws Exception
+    void unsuccessfulCloseMustNotMarkIndexAsOnline() throws Exception
     {
         // given
         populator.create();
@@ -335,7 +321,7 @@ public abstract class NativeIndexPopulatorTests<KEY extends NativeIndexKey<KEY>,
     }
 
     @Test
-    public void closeMustWriteFailureMessageAfterMarkedAsFailed() throws Exception
+    void closeMustWriteFailureMessageAfterMarkedAsFailed() throws Exception
     {
         // given
         populator.create();
@@ -350,7 +336,7 @@ public abstract class NativeIndexPopulatorTests<KEY extends NativeIndexKey<KEY>,
     }
 
     @Test
-    public void closeMustWriteFailureMessageAfterMarkedAsFailedWithLongMessage() throws Exception
+    void closeMustWriteFailureMessageAfterMarkedAsFailedWithLongMessage() throws Exception
     {
         // given
         populator.create();
@@ -365,7 +351,7 @@ public abstract class NativeIndexPopulatorTests<KEY extends NativeIndexKey<KEY>,
     }
 
     @Test
-    public void successfulCloseMustThrowIfMarkedAsFailed()
+    void successfulCloseMustThrowIfMarkedAsFailed()
     {
         // given
         populator.create();
@@ -374,21 +360,13 @@ public abstract class NativeIndexPopulatorTests<KEY extends NativeIndexKey<KEY>,
         populator.markAsFailed( "" );
 
         // then
-        try
-        {
-            populator.close( true );
-            fail( "Expected successful close to fail after markedAsFailed" );
-        }
-        catch ( RuntimeException e )
-        {
-            // then good
-            assertTrue( "Expected cause to contain " + IllegalStateException.class, Exceptions.contains( e, IllegalStateException.class ) );
-        }
+        var e = assertThrows( RuntimeException.class, () -> populator.close( true ) );
+        assertTrue( Exceptions.contains( e, IllegalStateException.class ), "Expected cause to contain " + IllegalStateException.class );
         populator.close( false );
     }
 
     @Test
-    public void shouldApplyLargeAmountOfInterleavedRandomUpdates() throws Exception
+    void shouldApplyLargeAmountOfInterleavedRandomUpdates() throws Exception
     {
         // given
         populator.create();
@@ -407,7 +385,7 @@ public abstract class NativeIndexPopulatorTests<KEY extends NativeIndexKey<KEY>,
     }
 
     @Test
-    public void dropMustSucceedAfterSuccessfulClose()
+    void dropMustSucceedAfterSuccessfulClose()
     {
         // given
         populator.create();
@@ -421,7 +399,7 @@ public abstract class NativeIndexPopulatorTests<KEY extends NativeIndexKey<KEY>,
     }
 
     @Test
-    public void dropMustSucceedAfterUnsuccessfulClose()
+    void dropMustSucceedAfterUnsuccessfulClose()
     {
         // given
         populator.create();
@@ -435,26 +413,18 @@ public abstract class NativeIndexPopulatorTests<KEY extends NativeIndexKey<KEY>,
     }
 
     @Test
-    public void successfulCloseMustThrowWithoutPriorSuccessfulCreate()
+    void successfulCloseMustThrowWithoutPriorSuccessfulCreate()
     {
         // given
         assertFileNotPresent();
 
         // when
-        try
-        {
-            populator.close( true );
-            fail( "Should have failed" );
-        }
-        catch ( RuntimeException e )
-        {
-            // then good
-            assertTrue( "Expected cause to contain " + IllegalStateException.class, Exceptions.contains( e, IllegalStateException.class ) );
-        }
+        var e = assertThrows( RuntimeException.class, () -> populator.close( true ) );
+        assertTrue( Exceptions.contains( e, IllegalStateException.class ), "Expected cause to contain " + IllegalStateException.class );
     }
 
     @Test
-    public void unsuccessfulCloseMustSucceedWithoutSuccessfulPriorCreate() throws Exception
+    void unsuccessfulCloseMustSucceedWithoutSuccessfulPriorCreate() throws Exception
     {
         // given
         assertFileNotPresent();
@@ -469,7 +439,7 @@ public abstract class NativeIndexPopulatorTests<KEY extends NativeIndexKey<KEY>,
     }
 
     @Test
-    public void successfulCloseMustThrowAfterDrop()
+    void successfulCloseMustThrowAfterDrop()
     {
         // given
         populator.create();
@@ -478,20 +448,12 @@ public abstract class NativeIndexPopulatorTests<KEY extends NativeIndexKey<KEY>,
         populator.drop();
 
         // then
-        try
-        {
-            populator.close( true );
-            fail( "Should have failed" );
-        }
-        catch ( RuntimeException e )
-        {
-            // then good
-            assertTrue( "Expected cause to contain " + IllegalStateException.class, Exceptions.contains( e, IllegalStateException.class ) );
-        }
+        var e = assertThrows( RuntimeException.class, () -> populator.close( true ) );
+        assertTrue( Exceptions.contains( e, IllegalStateException.class ), "Expected cause to contain " + IllegalStateException.class );
     }
 
     @Test
-    public void unsuccessfulCloseMustThrowAfterDrop()
+    void unsuccessfulCloseMustThrowAfterDrop()
     {
         // given
         populator.create();
@@ -500,189 +462,8 @@ public abstract class NativeIndexPopulatorTests<KEY extends NativeIndexKey<KEY>,
         populator.drop();
 
         // then
-        try
-        {
-            populator.close( false );
-            fail( "Should have failed" );
-        }
-        catch ( RuntimeException e )
-        {
-            // then good
-            assertTrue( "Expected cause to contain " + IllegalStateException.class, Exceptions.contains( e, IllegalStateException.class ) );
-        }
-    }
-
-    public abstract static class Unique<K extends NativeIndexKey<K>, V extends NativeIndexValue> extends NativeIndexPopulatorTests<K,V>
-    {
-        @Test
-        public void addShouldThrowOnDuplicateValues()
-        {
-            // given
-            populator.create();
-            IndexEntryUpdate<IndexDescriptor>[] updates = valueCreatorUtil.someUpdatesWithDuplicateValues( random );
-
-            // when
-            try
-            {
-                populator.add( Arrays.asList( updates ) );
-                populator.scanCompleted( nullInstance );
-                fail( "Updates should have conflicted" );
-            }
-            catch ( IndexEntryConflictException e )
-            {
-                // then good
-            }
-            finally
-            {
-                populator.close( true );
-            }
-        }
-
-        @Test
-        public void updaterShouldThrowOnDuplicateValues() throws Exception
-        {
-            // given
-            populator.create();
-            IndexEntryUpdate<IndexDescriptor>[] updates = valueCreatorUtil.someUpdatesWithDuplicateValues( random );
-            IndexUpdater updater = populator.newPopulatingUpdater( null_property_accessor );
-
-            // when
-            for ( IndexEntryUpdate<IndexDescriptor> update : updates )
-            {
-                updater.process( update );
-            }
-            try
-            {
-                updater.close();
-                populator.scanCompleted( nullInstance );
-                fail( "Updates should have conflicted" );
-            }
-            catch ( Exception e )
-            {
-                // then
-                assertTrue( e.getMessage(), Exceptions.contains( e, IndexEntryConflictException.class ) );
-            }
-            finally
-            {
-                populator.close( true );
-            }
-        }
-
-        @Test
-        public void shouldSampleUpdates() throws Exception
-        {
-            // GIVEN
-            populator.create();
-            IndexEntryUpdate<IndexDescriptor>[] updates = valueCreatorUtil.someUpdates( random );
-
-            // WHEN
-            populator.add( asList( updates ) );
-            for ( IndexEntryUpdate<IndexDescriptor> update : updates )
-            {
-                populator.includeSample( update );
-            }
-            populator.scanCompleted( nullInstance );
-            IndexSample sample = populator.sampleResult();
-
-            // THEN
-            assertEquals( updates.length, sample.sampleSize() );
-            assertEquals( updates.length, sample.uniqueValues() );
-            assertEquals( updates.length, sample.indexSize() );
-            populator.close( true );
-        }
-    }
-
-    public abstract static class NonUnique<K extends NativeIndexKey<K>, V extends NativeIndexValue> extends NativeIndexPopulatorTests<K,V>
-    {
-        @Test
-        public void addShouldApplyDuplicateValues() throws Exception
-        {
-            // given
-            populator.create();
-            IndexEntryUpdate<IndexDescriptor>[] updates = valueCreatorUtil.someUpdatesWithDuplicateValues( random );
-
-            // when
-            populator.add( Arrays.asList( updates ) );
-
-            // then
-            populator.scanCompleted( nullInstance );
-            populator.close( true );
-            verifyUpdates( updates );
-        }
-
-        @Test
-        public void updaterShouldApplyDuplicateValues() throws Exception
-        {
-            // given
-            populator.create();
-            IndexEntryUpdate<IndexDescriptor>[] updates = valueCreatorUtil.someUpdatesWithDuplicateValues( random );
-            try ( IndexUpdater updater = populator.newPopulatingUpdater( null_property_accessor ) )
-            {
-                // when
-                for ( IndexEntryUpdate<IndexDescriptor> update : updates )
-                {
-                    updater.process( update );
-                }
-            }
-
-            // then
-            populator.scanCompleted( nullInstance );
-            populator.close( true );
-            verifyUpdates( updates );
-        }
-
-        @Test
-        public void shouldSampleUpdatesIfConfiguredForOnlineSampling() throws Exception
-        {
-            // GIVEN
-            try
-            {
-                populator.create();
-                IndexEntryUpdate<IndexDescriptor>[] scanUpdates = valueCreatorUtil.someUpdates( random );
-                populator.add( Arrays.asList( scanUpdates ) );
-                Iterator<IndexEntryUpdate<IndexDescriptor>> generator = valueCreatorUtil.randomUpdateGenerator( random );
-                Value[] updates = new Value[5];
-                updates[0] = generator.next().values()[0];
-                updates[1] = generator.next().values()[0];
-                updates[2] = updates[1];
-                updates[3] = generator.next().values()[0];
-                updates[4] = updates[3];
-                try ( IndexUpdater updater = populator.newPopulatingUpdater( null_property_accessor ) )
-                {
-                    long nodeId = 1000;
-                    for ( Value value : updates )
-                    {
-                        IndexEntryUpdate<IndexDescriptor> update = valueCreatorUtil.add( nodeId++, value );
-                        updater.process( update );
-                    }
-                }
-
-                // WHEN
-                populator.scanCompleted( nullInstance );
-                IndexSample sample = populator.sampleResult();
-
-                // THEN
-                Value[] allValues = Arrays.copyOf( updates, updates.length + scanUpdates.length );
-                System.arraycopy( asValues( scanUpdates ), 0, allValues, updates.length, scanUpdates.length );
-                assertEquals( updates.length + scanUpdates.length, sample.sampleSize() );
-                assertEquals( countUniqueValues( allValues ), sample.uniqueValues() );
-                assertEquals( updates.length + scanUpdates.length, sample.indexSize() );
-            }
-            finally
-            {
-                populator.close( true );
-            }
-        }
-
-        private Value[] asValues( IndexEntryUpdate<IndexDescriptor>[] updates )
-        {
-            Value[] values = new Value[updates.length];
-            for ( int i = 0; i < updates.length; i++ )
-            {
-                values[i] = updates[i].values()[0];
-            }
-            return values;
-        }
+        var e = assertThrows( RuntimeException.class, () -> populator.close( false ) );
+        assertTrue( Exceptions.contains( e, IllegalStateException.class ), "Expected cause to contain " + IllegalStateException.class );
     }
 
     private int interleaveLargeAmountOfUpdates( Random updaterRandom,
@@ -718,11 +499,11 @@ public abstract class NativeIndexPopulatorTests<KEY extends NativeIndexKey<KEY>,
             switch ( expectedState )
             {
             case ONLINE:
-                assertEquals( "Index was not marked as online when expected not to be.", BYTE_ONLINE, headerReader.state );
-                assertNull( "Expected failure message to be null when marked as online.", headerReader.failureMessage );
+                assertEquals( BYTE_ONLINE, headerReader.state, "Index was not marked as online when expected not to be." );
+                assertNull( headerReader.failureMessage, "Expected failure message to be null when marked as online." );
                 break;
             case FAILED:
-                assertEquals( "Index was marked as online when expected not to be.", BYTE_FAILED, headerReader.state );
+                assertEquals( BYTE_FAILED, headerReader.state, "Index was marked as online when expected not to be." );
                 if ( messageTruncated )
                 {
                     assertTrue( headerReader.failureMessage.length() < failureMessage.length() );
@@ -734,8 +515,8 @@ public abstract class NativeIndexPopulatorTests<KEY extends NativeIndexKey<KEY>,
                 }
                 break;
             case POPULATING:
-                assertEquals( "Index was not left as populating when expected to be.", BYTE_POPULATING, headerReader.state );
-                assertNull( "Expected failure message to be null when marked as populating.", headerReader.failureMessage );
+                assertEquals( BYTE_POPULATING, headerReader.state, "Index was not left as populating when expected to be." );
+                assertNull( headerReader.failureMessage, "Expected failure message to be null when marked as populating." );
                 break;
             default:
                 throw new UnsupportedOperationException( "Unexpected index state " + expectedState );
@@ -743,7 +524,7 @@ public abstract class NativeIndexPopulatorTests<KEY extends NativeIndexKey<KEY>,
         }
     }
 
-    private String longString( int length )
+    private static String longString( int length )
     {
         return RandomStringUtils.random( length, true, true );
     }

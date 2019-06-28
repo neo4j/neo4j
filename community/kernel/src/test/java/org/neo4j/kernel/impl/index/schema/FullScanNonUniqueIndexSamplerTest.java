@@ -19,7 +19,7 @@
  */
 package org.neo4j.kernel.impl.index.schema;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 
@@ -34,7 +34,7 @@ import org.neo4j.values.storable.RandomValues;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.ValueType;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.kernel.api.schema.index.TestIndexDescriptorFactory.forLabel;
 import static org.neo4j.kernel.impl.index.schema.NativeIndexKey.Inclusion.NEUTRAL;
 import static org.neo4j.kernel.impl.index.schema.ValueCreatorUtil.FRACTION_DUPLICATE_NON_UNIQUE;
@@ -47,7 +47,7 @@ public class FullScanNonUniqueIndexSamplerTest extends NativeIndexTestUtil<Gener
     private static final IndexSpecificSpaceFillingCurveSettings specificSettings = IndexSpecificSpaceFillingCurveSettings.fromConfig( Config.defaults() );
 
     @Test
-    public void shouldIncludeAllValuesInTree() throws Exception
+    void shouldIncludeAllValuesInTree() throws Exception
     {
         // GIVEN
         Value[] values = generateNumberValues();
