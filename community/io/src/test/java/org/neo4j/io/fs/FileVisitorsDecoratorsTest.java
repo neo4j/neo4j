@@ -19,10 +19,9 @@
  */
 package org.neo4j.io.fs;
 
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import java.io.IOException;
 import java.nio.file.FileVisitResult;
@@ -30,205 +29,186 @@ import java.nio.file.FileVisitor;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.attribute.BasicFileAttributes;
-import java.util.List;
 import java.util.function.Function;
+import java.util.stream.Stream;
 
-import org.neo4j.function.Predicates;
-
-import static java.util.Arrays.asList;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.neo4j.function.Predicates.alwaysTrue;
 import static org.neo4j.function.ThrowingConsumer.noop;
 
-@RunWith( Parameterized.class )
-public class FileVisitorsDecoratorsTest
+class FileVisitorsDecoratorsTest
 {
-    @Parameterized.Parameter( 0 )
-    public String name;
+    @SuppressWarnings( "unchecked" )
+    private final FileVisitor<Path> wrapped = mock( FileVisitor.class );
 
-    @Parameterized.Parameter( 1 )
-    public Function<FileVisitor<Path>, FileVisitor<Path>> decoratorConstructor;
-
-    @Parameterized.Parameter( 2 )
-    public boolean throwsExceptions;
-
-    @Parameterized.Parameters( name = "{0}" )
-    public static List<Object[]> formats()
+    static Stream<Arguments> parameters()
     {
-        return asList(
-                new Object[]{"decorator",
-                        (Function<FileVisitor<Path>, FileVisitor<Path>>) FileVisitors.Decorator::new,
-                        false
-                },
-                new Object[]{"onFile",
-                        (Function<FileVisitor<Path>, FileVisitor<Path>>) wrapped
-                                -> FileVisitors.onFile( noop(), wrapped ),
-                        false
-                },
-                new Object[]{"onDirectory",
-                        (Function<FileVisitor<Path>, FileVisitor<Path>>) wrapped
-                                -> FileVisitors.onDirectory( noop(), wrapped ),
-                        false
-                },
-                new Object[]{"throwExceptions",
-                        (Function<FileVisitor<Path>, FileVisitor<Path>>) FileVisitors::throwExceptions,
-                        true
-                },
-                new Object[]{"onlyMatching", (Function<FileVisitor<Path>, FileVisitor<Path>>)
-                        wrapped -> FileVisitors.onlyMatching( Predicates.alwaysTrue(), wrapped ),
-                        false
-                }
+        return Stream.of(
+            Arguments.of(
+                "decorator",
+                (DecoratorCtor) FileVisitors.Decorator::new,
+                false
+            ),
+            Arguments.of(
+                "onFile",
+                (DecoratorCtor) wrapped -> FileVisitors.onFile( noop(), wrapped ),
+                false
+            ),
+            Arguments.of(
+                "onDirectory",
+                (DecoratorCtor) wrapped -> FileVisitors.onDirectory( noop(), wrapped ),
+                false
+            ),
+            Arguments.of(
+                "throwExceptions",
+                (DecoratorCtor) FileVisitors::throwExceptions,
+                true
+            ),
+            Arguments.of(
+                "onlyMatching",
+                (DecoratorCtor) wrapped -> FileVisitors.onlyMatching( alwaysTrue(), wrapped ),
+                false
+            )
         );
     }
 
-    @SuppressWarnings( "unchecked" )
-    public FileVisitor<Path> wrapped = mock( FileVisitor.class );
-    public FileVisitor<Path> decorator;
-
-    @Before
-    public void setup()
+    @ParameterizedTest( name = "{0}" )
+    @MethodSource( "parameters" )
+    void shouldDelegatePreVisitDirectory( String name, DecoratorCtor decoratorConstructor, boolean throwsExceptions ) throws IOException
     {
-        decorator = decoratorConstructor.apply( wrapped );
-    }
-
-    @Test
-    public void shouldDelegatePreVisitDirectory() throws IOException
-    {
-        Path dir = Paths.get( "some-dir" );
-        BasicFileAttributes attrs = mock( BasicFileAttributes.class );
+        var decorator = decoratorConstructor.apply( wrapped );
+        var dir = Paths.get( "some-dir" );
+        var attrs = mock( BasicFileAttributes.class );
         decorator.preVisitDirectory( dir, attrs );
         verify( wrapped ).preVisitDirectory( dir, attrs );
     }
 
-    @Test
-    public void shouldPropagateReturnValueFromPreVisitDirectory() throws IOException
+    @ParameterizedTest( name = "{0}" )
+    @MethodSource( "parameters" )
+    void shouldPropagateReturnValueFromPreVisitDirectory( String name, DecoratorCtor decoratorConstructor, boolean throwsExceptions ) throws IOException
     {
-        for ( FileVisitResult result : FileVisitResult.values() )
+        var decorator = decoratorConstructor.apply( wrapped );
+        for ( var result : FileVisitResult.values() )
         {
             when( wrapped.preVisitDirectory( any(), any() ) ).thenReturn( result );
             assertThat( decorator.preVisitDirectory( null, null ), is( result ) );
         }
     }
 
-    @Test
-    public void shouldPropagateExceptionsFromPreVisitDirectory() throws IOException
+    @ParameterizedTest( name = "{0}" )
+    @MethodSource( "parameters" )
+    void shouldPropagateExceptionsFromPreVisitDirectory( String name, DecoratorCtor decoratorConstructor, boolean throwsExceptions ) throws IOException
     {
-        when( wrapped.preVisitDirectory( any(), any() ) ).thenThrow( new IOException() );
-
-        try
-        {
-            decorator.preVisitDirectory( null, null );
-            fail( "expected exception" );
-        }
-        catch ( IOException ignored )
-        {
-        }
+        var decorator = decoratorConstructor.apply( wrapped );
+        when( wrapped.preVisitDirectory( any(), any() ) ).thenThrow( new IOException( "test" ) );
+        assertThrows( IOException.class, () -> decorator.preVisitDirectory( null, null ) );
     }
 
-    @Test
-    public void shouldDelegatePostVisitDirectory() throws IOException
+    @ParameterizedTest( name = "{0}" )
+    @MethodSource( "parameters" )
+    void shouldDelegatePostVisitDirectory( String name, DecoratorCtor decoratorConstructor, boolean throwsExceptions ) throws IOException
     {
-        Path dir = Paths.get( "some-dir" );
-        IOException e = throwsExceptions ? null : new IOException();
+        var decorator = decoratorConstructor.apply( wrapped );
+        var dir = Paths.get( "some-dir" );
+        var e = throwsExceptions ? null : new IOException( "test" );
         decorator.postVisitDirectory( dir, e );
         verify( wrapped ).postVisitDirectory( dir, e );
     }
 
-    @Test
-    public void shouldPropagateReturnValueFromPostVisitDirectory() throws IOException
+    @ParameterizedTest( name = "{0}" )
+    @MethodSource( "parameters" )
+    void shouldPropagateReturnValueFromPostVisitDirectory( String name, DecoratorCtor decoratorConstructor, boolean throwsExceptions ) throws IOException
     {
-        for ( FileVisitResult result : FileVisitResult.values() )
+        var decorator = decoratorConstructor.apply( wrapped );
+        for ( var result : FileVisitResult.values() )
         {
             when( wrapped.postVisitDirectory( any(), any() ) ).thenReturn( result );
             assertThat( decorator.postVisitDirectory( null, null ), is( result ) );
         }
     }
 
-    @Test
-    public void shouldPropagateExceptionsFromPostVisitDirectory() throws IOException
+    @ParameterizedTest( name = "{0}" )
+    @MethodSource( "parameters" )
+    void shouldPropagateExceptionsFromPostVisitDirectory( String name, DecoratorCtor decoratorConstructor, boolean throwsExceptions ) throws IOException
     {
-        when( wrapped.postVisitDirectory( any(), any() ) ).thenThrow( new IOException() );
-
-        try
-        {
-            decorator.postVisitDirectory( null, null );
-            fail( "expected exception" );
-        }
-        catch ( IOException ignored )
-        {
-        }
+        var decorator = decoratorConstructor.apply( wrapped );
+        when( wrapped.postVisitDirectory( any(), any() ) ).thenThrow( new IOException( "test" ) );
+        assertThrows( IOException.class, () -> decorator.postVisitDirectory( null, null ) );
     }
 
-    @Test
-    public void shouldDelegateVisitFile() throws IOException
+    @ParameterizedTest( name = "{0}" )
+    @MethodSource( "parameters" )
+    void shouldDelegateVisitFile( String name, DecoratorCtor decoratorConstructor, boolean throwsExceptions ) throws IOException
     {
-        Path dir = Paths.get( "some-dir" );
-        BasicFileAttributes attrs = mock( BasicFileAttributes.class );
+        var decorator = decoratorConstructor.apply( wrapped );
+        var dir = Paths.get( "some-dir" );
+        var attrs = mock( BasicFileAttributes.class );
         decorator.visitFile( dir, attrs );
         verify( wrapped ).visitFile( dir, attrs );
     }
 
-    @Test
-    public void shouldPropagateReturnValueFromVisitFile() throws IOException
+    @ParameterizedTest( name = "{0}" )
+    @MethodSource( "parameters" )
+    void shouldPropagateReturnValueFromVisitFile( String name, DecoratorCtor decoratorConstructor, boolean throwsExceptions ) throws IOException
     {
-        for ( FileVisitResult result : FileVisitResult.values() )
+        var decorator = decoratorConstructor.apply( wrapped );
+        for ( var result : FileVisitResult.values() )
         {
             when( wrapped.visitFile( any(), any() ) ).thenReturn( result );
             assertThat( decorator.visitFile( null, null ), is( result ) );
         }
     }
 
-    @Test
-    public void shouldPropagateExceptionsFromVisitFile() throws IOException
+    @ParameterizedTest( name = "{0}" )
+    @MethodSource( "parameters" )
+    void shouldPropagateExceptionsFromVisitFile( String name, DecoratorCtor decoratorConstructor, boolean throwsExceptions ) throws IOException
     {
-        when( wrapped.visitFile( any(), any() ) ).thenThrow( new IOException() );
-
-        try
-        {
-            decorator.visitFile( null, null );
-            fail( "expected exception" );
-        }
-        catch ( IOException ignored )
-        {
-        }
+        var decorator = decoratorConstructor.apply( wrapped );
+        when( wrapped.visitFile( any(), any() ) ).thenThrow( new IOException( "test" ) );
+        assertThrows( IOException.class, () -> decorator.visitFile( null, null ) );
     }
 
-    @Test
-    public void shouldDelegateVisitFileFailed() throws IOException
+    @ParameterizedTest( name = "{0}" )
+    @MethodSource( "parameters" )
+    void shouldDelegateVisitFileFailed( String name, DecoratorCtor decoratorConstructor, boolean throwsExceptions ) throws IOException
     {
-        Path dir = Paths.get( "some-dir" );
-        IOException e = throwsExceptions ? null : new IOException();
+        var decorator = decoratorConstructor.apply( wrapped );
+        var dir = Paths.get( "some-dir" );
+        var e = throwsExceptions ? null : new IOException( "test" );
         decorator.visitFileFailed( dir, e );
         verify( wrapped ).visitFileFailed( dir, e );
     }
 
-    @Test
-    public void shouldPropagateReturnValueFromVisitFileFailed() throws IOException
+    @ParameterizedTest( name = "{0}" )
+    @MethodSource( "parameters" )
+    void shouldPropagateReturnValueFromVisitFileFailed( String name, DecoratorCtor decoratorConstructor, boolean throwsExceptions ) throws IOException
     {
-        for ( FileVisitResult result : FileVisitResult.values() )
+        var decorator = decoratorConstructor.apply( wrapped );
+        for ( var result : FileVisitResult.values() )
         {
             when( wrapped.visitFileFailed( any(), any() ) ).thenReturn( result );
             assertThat( decorator.visitFileFailed( null, null ), is( result ) );
         }
     }
 
-    @Test
-    public void shouldPropagateExceptionsFromVisitFileFailed() throws IOException
+    @ParameterizedTest( name = "{0}" )
+    @MethodSource( "parameters" )
+    void shouldPropagateExceptionsFromVisitFileFailed( String name, DecoratorCtor decoratorConstructor, boolean throwsExceptions ) throws IOException
     {
-        when( wrapped.visitFileFailed( any(), any() ) ).thenThrow( new IOException() );
+        var decorator = decoratorConstructor.apply( wrapped );
+        when( wrapped.visitFileFailed( any(), any() ) ).thenThrow( new IOException( "test" ) );
 
-        try
-        {
-            decorator.visitFileFailed( null, null );
-            fail( "expected exception" );
-        }
-        catch ( IOException ignored )
-        {
-        }
+        assertThrows( IOException.class, () -> decorator.visitFileFailed( null, null ) );
+    }
+
+    interface DecoratorCtor extends Function<FileVisitor<Path>, FileVisitor<Path>>
+    {
+        // alias
     }
 }

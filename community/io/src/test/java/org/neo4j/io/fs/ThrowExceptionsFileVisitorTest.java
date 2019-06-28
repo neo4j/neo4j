@@ -19,53 +19,33 @@
  */
 package org.neo4j.io.fs;
 
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.mockito.Mock;
-import org.mockito.junit.MockitoJUnitRunner;
+import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 import java.nio.file.FileVisitor;
-import java.nio.file.Path;
 
-import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.Mockito.mock;
 import static org.neo4j.io.fs.FileVisitors.throwExceptions;
 
-@RunWith( MockitoJUnitRunner.class )
-public class ThrowExceptionsFileVisitorTest
+@SuppressWarnings( "unchecked" )
+class ThrowExceptionsFileVisitorTest
 {
-    @Mock
-    public FileVisitor<Path> wrapped;
 
     @Test
-    public void shouldThrowExceptionFromVisitFileFailed()
+    void shouldThrowExceptionFromVisitFileFailed()
     {
-        IOException exception = new IOException();
-        try
-        {
-            throwExceptions( wrapped ).visitFileFailed( null, exception );
-            fail( "Expected exception" );
-        }
-        catch ( Exception e )
-        {
-            assertThat( e, is( exception ) );
-        }
+        var exception = new IOException( "test" );
+        var actual = assertThrows( Exception.class, () -> throwExceptions( mock( FileVisitor.class ) ).visitFileFailed( null, exception ) );
+        assertEquals( exception, actual );
     }
 
     @Test
-    public void shouldThrowExceptionFromPostVisitDirectory()
+    void shouldThrowExceptionFromPostVisitDirectory()
     {
-        IOException exception = new IOException();
-        try
-        {
-            throwExceptions( wrapped ).postVisitDirectory( null, exception );
-            fail( "Expected exception" );
-        }
-        catch ( Exception e )
-        {
-            assertThat( e, is( exception ) );
-        }
+        var exception = new IOException( "test" );
+        var actual = assertThrows( Exception.class, () -> throwExceptions( mock( FileVisitor.class ) ).postVisitDirectory( null, exception ) );
+        assertEquals( exception, actual );
     }
 }
