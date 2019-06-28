@@ -19,7 +19,6 @@
  */
 package org.neo4j.kernel.impl.store;
 
-import org.junit.Ignore;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
@@ -90,17 +89,17 @@ class CommonAbstractStoreBehaviourTest
         nextPageId.clear();
     }
 
-    private static void assertThrowsUnderlyingStorageException( ThrowingAction<Exception> action ) throws Exception
+    private static void assertThrowsUnderlyingStorageException( ThrowingAction<Exception> action )
     {
         assertThrows( UnderlyingStorageException.class, action::apply );
     }
 
-    private static void assertThrowsInvalidRecordException( ThrowingAction<Exception> action ) throws Exception
+    private static void assertThrowsInvalidRecordException( ThrowingAction<Exception> action )
     {
         assertThrows( InvalidRecordException.class, action::apply );
     }
 
-    private void verifyExceptionOnOutOfBoundsAccess( ThrowingAction<Exception> access ) throws Exception
+    private void verifyExceptionOnOutOfBoundsAccess( ThrowingAction<Exception> access )
     {
         prepareStoreForOutOfBoundsAccess();
         assertThrowsUnderlyingStorageException( access );
@@ -112,7 +111,7 @@ class CommonAbstractStoreBehaviourTest
         nextPageOffset.add( PAGE_SIZE - 2 );
     }
 
-    private void verifyExceptionOnCursorError( ThrowingAction<Exception> access ) throws Exception
+    private void verifyExceptionOnCursorError( ThrowingAction<Exception> access )
     {
         prepareStoreForCursorError();
         assertThrowsInvalidRecordException( access );
@@ -131,7 +130,7 @@ class CommonAbstractStoreBehaviourTest
     }
 
     @Test
-    void writingOfHeaderRecordDuringInitialiseNewStoreFileMustThrowOnPageOverflow() throws Exception
+    void writingOfHeaderRecordDuringInitialiseNewStoreFileMustThrowOnPageOverflow()
     {
         // 16-byte header will overflow an 8-byte page size
         MyStore store = new MyStore( config, pageCache, PAGE_SIZE + 1 );
@@ -139,7 +138,7 @@ class CommonAbstractStoreBehaviourTest
     }
 
     @Test
-    void extractHeaderRecordDuringLoadStorageMustThrowOnPageOverflow() throws Exception
+    void extractHeaderRecordDuringLoadStorageMustThrowOnPageOverflow()
     {
         MyStore first = new MyStore( config, pageCache, 8 );
         first.initialise( true );
@@ -157,19 +156,19 @@ class CommonAbstractStoreBehaviourTest
     }
 
     @Test
-    void isInUseMustThrowOnPageOverflow() throws Exception
+    void isInUseMustThrowOnPageOverflow()
     {
         verifyExceptionOnOutOfBoundsAccess( () -> store.isInUse( 5 ) );
     }
 
     @Test
-    void isInUseMustThrowOnCursorError() throws Exception
+    void isInUseMustThrowOnCursorError()
     {
         verifyExceptionOnCursorError( () -> store.isInUse( 5 ) );
     }
 
     @Test
-    void getRecordMustThrowOnPageOverflow() throws Exception
+    void getRecordMustThrowOnPageOverflow()
     {
         verifyExceptionOnOutOfBoundsAccess( () -> store.getRecord( 5, new IntRecord( 5 ), NORMAL ) );
     }
@@ -189,13 +188,13 @@ class CommonAbstractStoreBehaviourTest
     }
 
     @Test
-    void updateRecordMustThrowOnPageOverflow() throws Exception
+    void updateRecordMustThrowOnPageOverflow()
     {
         verifyExceptionOnOutOfBoundsAccess( () -> store.updateRecord( new IntRecord( 5 ) ) );
     }
 
     @Test
-    void getRecordMustThrowOnCursorError() throws Exception
+    void getRecordMustThrowOnCursorError()
     {
         verifyExceptionOnCursorError( () -> store.getRecord( 5, new IntRecord( 5 ), NORMAL ) );
     }
@@ -214,9 +213,8 @@ class CommonAbstractStoreBehaviourTest
         store.getRecord( 5, new IntRecord( 5 ), FORCE );
     }
 
-    @Ignore
     @Test
-    void scanForHighIdMustThrowOnPageOverflow() throws Exception
+    void scanForHighIdMustThrowOnPageOverflow()
     {
         createStore();
         store.setStoreNotOk( new RuntimeException() );
