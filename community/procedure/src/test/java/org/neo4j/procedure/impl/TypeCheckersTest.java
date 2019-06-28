@@ -19,21 +19,19 @@
  */
 package org.neo4j.procedure.impl;
 
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import java.lang.reflect.Method;
 import java.lang.reflect.Type;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Stream;
 
 import org.neo4j.internal.kernel.api.procs.Neo4jTypes;
 
-import static java.util.Arrays.asList;
-import static java.util.Collections.emptyList;
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.internal.kernel.api.procs.Neo4jTypes.NTAny;
 import static org.neo4j.internal.kernel.api.procs.Neo4jTypes.NTBoolean;
 import static org.neo4j.internal.kernel.api.procs.Neo4jTypes.NTFloat;
@@ -43,110 +41,36 @@ import static org.neo4j.internal.kernel.api.procs.Neo4jTypes.NTMap;
 import static org.neo4j.internal.kernel.api.procs.Neo4jTypes.NTNumber;
 import static org.neo4j.internal.kernel.api.procs.Neo4jTypes.NTString;
 
-@RunWith( Parameterized.class )
-public class TypeCheckersTest
+class TypeCheckersTest
 {
-    @Parameterized.Parameter( 0 )
-    public Type javaClass;
-    @Parameterized.Parameter( 1 )
-    public Neo4jTypes.AnyType neoType;
-    @Parameterized.Parameter( 2 )
-    public Object javaValue;
-    @Parameterized.Parameter( 3 )
-    public Object expectedNeoValue;
-
-    @Parameterized.Parameters( name = "{0} to {1}" )
-    public static List<Object[]> conversions()
+    private static Stream<Arguments> parameters()
     {
-        return asList(
-                new Object[]{Object.class, NTAny, "", ""},
-                new Object[]{Object.class, NTAny, null, null},
-                new Object[]{Object.class, NTAny, 1, 1},
-                new Object[]{Object.class, NTAny, true, true},
-                new Object[]{Object.class, NTAny, asList( 1, 2, 3 ), asList( 1, 2, 3 )},
-                new Object[]{Object.class, NTAny, new HashMap<>(), new HashMap<>()},
-
-                new Object[]{String.class, NTString, "", ""},
-                new Object[]{String.class, NTString, "not empty", "not empty"},
-                new Object[]{String.class, NTString, null, null},
-
-                new Object[]{Map.class, NTMap, new HashMap<>(), new HashMap<>()},
-                new Object[]{Map.class, NTMap, getKMap(), getKMap()},
-                new Object[]{Map.class, NTMap, null, null},
-
-                new Object[]{List.class, NTList( NTAny ), emptyList(), emptyList()},
-                new Object[]{List.class, NTList( NTAny ), asList( 1, 2, 3, 4 ), asList( 1, 2, 3, 4 )},
-                new Object[]{List.class, NTList( NTAny ), asList( asList( 1, 2 ), asList( "three", "four" ) ),
-                        asList( asList( 1, 2 ), asList( "three", "four" ) )},
-                new Object[]{List.class, NTList( NTAny ), null, null},
-
-                new Object[]{listOfListOfMap, NTList( NTList( NTMap ) ), asList(), asList()},
-
-                new Object[]{boolean.class, NTBoolean, false, false},
-                new Object[]{boolean.class, NTBoolean, true, true},
-                new Object[]{boolean.class, NTBoolean, null, null},
-                new Object[]{Boolean.class, NTBoolean, false, false},
-                new Object[]{Boolean.class, NTBoolean, true, true},
-                new Object[]{Boolean.class, NTBoolean, null, null},
-
-                new Object[]{Number.class, NTNumber, 1L, 1L},
-                new Object[]{Number.class, NTNumber, 0L, 0L},
-                new Object[]{Number.class, NTNumber, null, null},
-                new Object[]{Number.class, NTNumber, Long.MIN_VALUE, Long.MIN_VALUE},
-                new Object[]{Number.class, NTNumber, Long.MAX_VALUE, Long.MAX_VALUE},
-                new Object[]{Number.class, NTNumber, 1D, 1D},
-                new Object[]{Number.class, NTNumber, 0D, 0D},
-                new Object[]{Number.class, NTNumber, 1.234D, 1.234D},
-                new Object[]{Number.class, NTNumber, null, null},
-                new Object[]{Number.class, NTNumber, Double.MIN_VALUE, Double.MIN_VALUE},
-                new Object[]{Number.class, NTNumber, Double.MAX_VALUE, Double.MAX_VALUE},
-
-                new Object[]{long.class, NTInteger, 1L, 1L},
-                new Object[]{long.class, NTInteger, 0L, 0L},
-                new Object[]{long.class, NTInteger, null, null},
-                new Object[]{long.class, NTInteger, Long.MIN_VALUE, Long.MIN_VALUE},
-                new Object[]{long.class, NTInteger, Long.MAX_VALUE, Long.MAX_VALUE},
-                new Object[]{Long.class, NTInteger, 1L, 1L},
-                new Object[]{Long.class, NTInteger, 0L, 0L},
-                new Object[]{Long.class, NTInteger, null, null},
-                new Object[]{Long.class, NTInteger, Long.MIN_VALUE, Long.MIN_VALUE},
-                new Object[]{Long.class, NTInteger, Long.MAX_VALUE, Long.MAX_VALUE},
-
-                new Object[]{double.class, NTFloat, 1D, 1D},
-                new Object[]{double.class, NTFloat, 0D, 0D},
-                new Object[]{double.class, NTFloat, 1.234D, 1.234D},
-                new Object[]{double.class, NTFloat, null, null},
-                new Object[]{double.class, NTFloat, Double.MIN_VALUE, Double.MIN_VALUE},
-                new Object[]{double.class, NTFloat, Double.MAX_VALUE, Double.MAX_VALUE},
-                new Object[]{Double.class, NTFloat, 1D, 1D},
-                new Object[]{Double.class, NTFloat, 0D, 0D},
-                new Object[]{Double.class, NTFloat, 1.234D, 1.234D},
-                new Object[]{Double.class, NTFloat, null, null},
-                new Object[]{Double.class, NTFloat, Double.MIN_VALUE, Double.MIN_VALUE},
-                new Object[]{Double.class, NTFloat, Double.MAX_VALUE, Double.MAX_VALUE}
+        return Stream.of(
+            Arguments.of( Object.class, NTAny ),
+            Arguments.of( String.class, NTString ),
+            Arguments.of( Map.class, NTMap ),
+            Arguments.of( List.class, NTList( NTAny ) ),
+            Arguments.of( listOfListOfMap, NTList( NTList( NTMap ) ) ),
+            Arguments.of( boolean.class, NTBoolean ),
+            Arguments.of( Number.class, NTNumber ),
+            Arguments.of( long.class, NTInteger ),
+            Arguments.of( Long.class, NTInteger ),
+            Arguments.of( double.class, NTFloat ),
+            Arguments.of( Double.class, NTFloat )
         );
     }
 
-    @Test
-    public void shouldDetectCorrectType() throws Throwable
+    @ParameterizedTest( name = "{0} to {1}" )
+    @MethodSource( "parameters" )
+    void shouldDetectCorrectTypeAndMap( Type javaClass, Neo4jTypes.AnyType expected ) throws Throwable
     {
-        // When
-        Neo4jTypes.AnyType type = new TypeCheckers().checkerFor( javaClass ).type();
-
-        // Then
-        assertEquals( neoType, type );
-    }
-
-    private static HashMap<String,Object> getKMap()
-    {
-        return new HashMap<String,Object>()
-        {{
-            put( "k", 1 );
-        }};
+        var actual = new TypeCheckers().checkerFor( javaClass ).type();
+        assertEquals( expected, actual );
     }
 
     static Type listOfListOfMap = typeOf( "listOfListOfMap" );
 
+    @SuppressWarnings( "unused" )
     interface ClassToGetGenericTypeSignatures
     {
         void listOfListOfMap( List<List<Map<String,Object>>> arg );
