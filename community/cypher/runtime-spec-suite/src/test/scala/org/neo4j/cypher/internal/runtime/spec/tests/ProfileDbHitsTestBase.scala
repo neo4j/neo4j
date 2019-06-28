@@ -338,4 +338,23 @@ abstract class ProfileDbHitsTestBase[CONTEXT <: RuntimeContext](
                                                      (be (sizeHint * costOfProperty * (2+2)) or // late x.list in morsel
                                                       be (sizeHint * costOfProperty * (1+4))))  // late x.prop in morsel
   }
+
+  test("should profile dbHits of aggregation") {
+    // given
+    nodePropertyGraph(sizeHint, { case i => Map("prop" -> i)})
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("avg")
+      .aggregation(Seq.empty, Seq("avg(x.prop) AS avg"))
+      .allNodeScan("x")
+      .build()
+
+    val runtimeResult = profile(logicalQuery, runtime)
+    consume(runtimeResult)
+
+    // then
+    val queryProfile = runtimeResult.runtimeResult.queryProfile()
+    queryProfile.operatorProfile(1).dbHits() shouldBe sizeHint * costOfProperty // late x.prop in morsel
+  }
 }
