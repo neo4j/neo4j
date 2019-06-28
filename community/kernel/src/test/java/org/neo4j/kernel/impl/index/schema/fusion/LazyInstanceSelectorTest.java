@@ -19,13 +19,13 @@
  */
 package org.neo4j.kernel.impl.index.schema.fusion;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.function.Consumer;
 import java.util.function.Function;
 
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
@@ -36,10 +36,10 @@ import static org.neo4j.kernel.impl.index.schema.fusion.IndexSlot.GENERIC;
 import static org.neo4j.kernel.impl.index.schema.fusion.IndexSlot.LUCENE;
 import static org.neo4j.kernel.impl.index.schema.fusion.IndexSlot.values;
 
-public class LazyInstanceSelectorTest
+class LazyInstanceSelectorTest
 {
     @Test
-    public void shouldInstantiateLazilyOnFirstSelect()
+    void shouldInstantiateLazilyOnFirstSelect()
     {
         // given
         Function<IndexSlot,String> factory = slotToStringFunction();
@@ -72,7 +72,7 @@ public class LazyInstanceSelectorTest
     }
 
     @Test
-    public void shouldPerformActionOnAll()
+    void shouldPerformActionOnAll()
     {
         // given
         Function<IndexSlot,String> factory = slotToStringFunction();
@@ -92,7 +92,7 @@ public class LazyInstanceSelectorTest
     }
 
     @Test
-    public void shouldCloseAllInstantiated()
+    void shouldCloseAllInstantiated()
     {
         // given
         Function<IndexSlot,String> factory = slotToStringFunction();
@@ -111,7 +111,7 @@ public class LazyInstanceSelectorTest
     }
 
     @Test
-    public void shouldPreventInstantiationAfterClose()
+    void shouldPreventInstantiationAfterClose()
     {
         // given
         Function<IndexSlot,String> factory = slotToStringFunction();
@@ -133,7 +133,7 @@ public class LazyInstanceSelectorTest
         }
     }
 
-    private Function<IndexSlot,String> slotToStringFunction()
+    private static Function<IndexSlot,String> slotToStringFunction()
     {
         Function<IndexSlot,String> factory = mock( Function.class );
         when( factory.apply( any( IndexSlot.class ) ) ).then( invocationOnMock -> String.valueOf( (IndexSlot) invocationOnMock.getArgument( 0 ) ) );

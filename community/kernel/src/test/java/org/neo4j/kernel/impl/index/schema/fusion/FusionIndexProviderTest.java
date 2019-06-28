@@ -19,11 +19,9 @@
  */
 package org.neo4j.kernel.impl.index.schema.fusion;
 
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -40,14 +38,16 @@ import org.neo4j.kernel.impl.index.schema.GenericNativeIndexProvider;
 import org.neo4j.kernel.impl.index.schema.IndexDescriptor;
 import org.neo4j.kernel.impl.index.schema.IndexDescriptorFactory;
 import org.neo4j.kernel.impl.index.schema.StoreIndexDescriptor;
+import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.RandomExtension;
 import org.neo4j.test.rule.RandomRule;
 import org.neo4j.values.storable.Value;
 
 import static org.hamcrest.CoreMatchers.containsString;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertSame;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.fail;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.AdditionalAnswers.returnsFirstArg;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
@@ -60,44 +60,36 @@ import static org.neo4j.kernel.api.index.IndexDirectoryStructure.NONE;
 import static org.neo4j.kernel.impl.api.index.TestIndexProviderDescriptor.PROVIDER_DESCRIPTOR;
 import static org.neo4j.kernel.impl.index.schema.fusion.FusionIndexBase.CATEGORY_OF;
 import static org.neo4j.kernel.impl.index.schema.fusion.FusionIndexTestHelp.fill;
-import static org.neo4j.kernel.impl.index.schema.fusion.FusionVersion.v30;
 import static org.neo4j.kernel.impl.index.schema.fusion.IndexSlot.GENERIC;
 import static org.neo4j.kernel.impl.index.schema.fusion.IndexSlot.LUCENE;
 
-@RunWith( Parameterized.class )
-public class FusionIndexProviderTest
+@ExtendWith( RandomExtension.class )
+abstract class FusionIndexProviderTest
 {
     private static final IndexProviderDescriptor DESCRIPTOR = new IndexProviderDescriptor( "test-fusion", "1" );
-    public static final StoreIndexDescriptor AN_INDEX =
+    private static final StoreIndexDescriptor AN_INDEX =
             IndexDescriptorFactory.forSchema( forLabel( 0, 0 ), PROVIDER_DESCRIPTOR ).withId( 0 );
 
+    private final FusionVersion fusionVersion;
     private EnumMap<IndexSlot,IndexProvider> providers;
     private IndexProvider[] aliveProviders;
     private IndexProvider fusionIndexProvider;
     private SlotSelector slotSelector;
     private InstanceSelector<IndexProvider> instanceSelector;
+    @Inject
+    private RandomRule random;
 
-    @Parameterized.Parameters( name = "{0}" )
-    public static FusionVersion[] versions()
+    FusionIndexProviderTest( FusionVersion fusionVersion )
     {
-        return new FusionVersion[]
-                {
-                        v30
-                };
+        this.fusionVersion = fusionVersion;
     }
 
-    @Parameterized.Parameter
-    public static FusionVersion fusionVersion;
-
-    @Before
-    public void setup()
+    @BeforeEach
+    void setup()
     {
         slotSelector = fusionVersion.slotSelector();
         setupMocks();
     }
-
-    @Rule
-    public RandomRule random = new RandomRule();
 
     private void setupMocks()
     {
@@ -138,7 +130,7 @@ public class FusionIndexProviderTest
     }
 
     @Test
-    public void mustSelectCorrectTargetForAllGivenValueCombinations()
+    void mustSelectCorrectTargetForAllGivenValueCombinations()
     {
         // given
         EnumMap<IndexSlot,Value[]> values = FusionIndexTestHelp.valuesByGroup();
@@ -172,7 +164,7 @@ public class FusionIndexProviderTest
     }
 
     @Test
-    public void mustCombineSamples()
+    void mustCombineSamples()
     {
         // given
         int sumIndexSize = 0;
@@ -200,7 +192,7 @@ public class FusionIndexProviderTest
     }
 
     @Test
-    public void getPopulationFailureMustThrowIfNoFailure()
+    void getPopulationFailureMustThrowIfNoFailure()
     {
         // when
         // ... no failure
@@ -210,19 +202,11 @@ public class FusionIndexProviderTest
             when( provider.getPopulationFailure( any( StoreIndexDescriptor.class ) ) ).thenThrow( failure );
         }
 
-        // then
-        try
-        {
-            fusionIndexProvider.getPopulationFailure( AN_INDEX );
-            fail( "Should have failed" );
-        }
-        catch ( IllegalStateException e )
-        {   // good
-        }
+        assertThrows( IllegalStateException.class, () -> fusionIndexProvider.getPopulationFailure( AN_INDEX ) );
     }
 
     @Test
-    public void getPopulationFailureMustReportFailureWhenAnyFailed()
+    void getPopulationFailureMustReportFailureWhenAnyFailed()
     {
         for ( IndexProvider failingProvider : aliveProviders )
         {
@@ -247,7 +231,7 @@ public class FusionIndexProviderTest
     }
 
     @Test
-    public void getPopulationFailureMustReportFailureWhenMultipleFail()
+    void getPopulationFailureMustReportFailureWhenMultipleFail()
     {
         // when
         List<String> failureMessages = new ArrayList<>();
@@ -267,7 +251,7 @@ public class FusionIndexProviderTest
     }
 
     @Test
-    public void shouldReportFailedIfAnyIsFailed()
+    void shouldReportFailedIfAnyIsFailed()
     {
         // given
         IndexProvider provider = fusionIndexProvider;
@@ -290,7 +274,7 @@ public class FusionIndexProviderTest
     }
 
     @Test
-    public void shouldReportPopulatingIfAnyIsPopulating()
+    void shouldReportPopulatingIfAnyIsPopulating()
     {
         // given
         for ( InternalIndexState state : array( InternalIndexState.ONLINE, InternalIndexState.POPULATING ) )
@@ -311,7 +295,7 @@ public class FusionIndexProviderTest
     }
 
     @Test
-    public void shouldBlessWithAllProviders() throws MisconfiguredIndexException
+    void shouldBlessWithAllProviders() throws MisconfiguredIndexException
     {
         // given
         IndexDescriptor indexDescriptor = AN_INDEX;
@@ -330,7 +314,7 @@ public class FusionIndexProviderTest
         }
     }
 
-    private void setInitialState( IndexProvider mockedProvider, InternalIndexState state )
+    private static void setInitialState( IndexProvider mockedProvider, InternalIndexState state )
     {
         when( mockedProvider.getInitialState( any( StoreIndexDescriptor.class ) ) ).thenReturn( state );
     }

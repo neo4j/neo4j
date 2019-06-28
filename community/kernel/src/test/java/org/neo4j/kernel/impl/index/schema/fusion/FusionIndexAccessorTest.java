@@ -19,11 +19,9 @@
  */
 package org.neo4j.kernel.impl.index.schema.fusion;
 
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentMatchers;
 
 import java.io.File;
@@ -47,15 +45,17 @@ import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
 import org.neo4j.kernel.impl.index.schema.IndexDescriptorFactory;
 import org.neo4j.kernel.impl.index.schema.StoreIndexDescriptor;
+import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.RandomExtension;
 import org.neo4j.test.rule.RandomRule;
 import org.neo4j.values.storable.Value;
 
 import static org.hamcrest.CoreMatchers.hasItem;
 import static org.hamcrest.CoreMatchers.is;
-import static org.junit.Assert.assertSame;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doThrow;
@@ -71,16 +71,15 @@ import static org.neo4j.kernel.impl.index.schema.fusion.FusionIndexTestHelp.fill
 import static org.neo4j.kernel.impl.index.schema.fusion.FusionIndexTestHelp.verifyFusionCloseThrowIfAllThrow;
 import static org.neo4j.kernel.impl.index.schema.fusion.FusionIndexTestHelp.verifyFusionCloseThrowOnSingleCloseThrow;
 import static org.neo4j.kernel.impl.index.schema.fusion.FusionIndexTestHelp.verifyOtherIsClosedOnSingleThrow;
-import static org.neo4j.kernel.impl.index.schema.fusion.FusionVersion.v30;
 import static org.neo4j.kernel.impl.index.schema.fusion.IndexSlot.GENERIC;
 import static org.neo4j.kernel.impl.index.schema.fusion.IndexSlot.LUCENE;
 import static org.neo4j.values.storable.Values.stringValue;
 
-@RunWith( Parameterized.class )
-public class FusionIndexAccessorTest
+@ExtendWith( RandomExtension.class )
+abstract class FusionIndexAccessorTest
 {
+    private static final long indexId = 0;
     private FusionIndexAccessor fusionIndexAccessor;
-    private final long indexId = 0;
     private EnumMap<IndexSlot,IndexAccessor> accessors;
     private IndexAccessor[] aliveAccessors;
     private StoreIndexDescriptor indexDescriptor =
@@ -88,23 +87,17 @@ public class FusionIndexAccessorTest
     private FileSystemAbstraction fs;
     private IndexDirectoryStructure directoryStructure;
 
-    @Rule
-    public RandomRule random = new RandomRule();
+    @Inject
+    private RandomRule random;
+    private final FusionVersion fusionVersion;
 
-    @Parameterized.Parameters( name = "{0}" )
-    public static FusionVersion[] versions()
+    FusionIndexAccessorTest( FusionVersion fusionVersion )
     {
-        return new FusionVersion[]
-                {
-                        v30
-                };
+        this.fusionVersion = fusionVersion;
     }
 
-    @Parameterized.Parameter
-    public static FusionVersion fusionVersion;
-
-    @Before
-    public void setup()
+    @BeforeEach
+    void setup()
     {
         initiateMocks();
     }
@@ -149,7 +142,7 @@ public class FusionIndexAccessorTest
     /* drop */
 
     @Test
-    public void dropMustDropAll() throws IOException
+    void dropMustDropAll() throws IOException
     {
         // when
         // ... all drop successful
@@ -164,7 +157,7 @@ public class FusionIndexAccessorTest
     }
 
     @Test
-    public void dropMustThrowIfDropAnyFail()
+    void dropMustThrowIfDropAnyFail()
     {
         for ( IndexAccessor accessor : aliveAccessors )
         {
@@ -174,7 +167,7 @@ public class FusionIndexAccessorTest
     }
 
     @Test
-    public void fusionIndexIsDirtyWhenAnyIsDirty()
+    void fusionIndexIsDirtyWhenAnyIsDirty()
     {
         for ( IndexAccessor dirtyAccessor : aliveAccessors )
         {
@@ -193,20 +186,14 @@ public class FusionIndexAccessorTest
     {
         UncheckedIOException expectedFailure = new UncheckedIOException( new IOException( "fail" ) );
         doThrow( expectedFailure ).when( failingAccessor ).drop();
-        try
-        {
-            fusionIndexAccessor.drop();
-            fail( "Should have failed" );
-        }
-        catch ( UncheckedIOException e )
-        {
-            assertSame( expectedFailure, e );
-        }
+
+        var e = assertThrows( UncheckedIOException.class, fusionIndexAccessor::drop );
+        assertSame( expectedFailure, e );
         doAnswer( invocation -> null ).when( failingAccessor ).drop();
     }
 
     @Test
-    public void dropMustThrowIfAllFail()
+    void dropMustThrowIfAllFail()
     {
         // given
         List<UncheckedIOException> exceptions = new ArrayList<>();
@@ -217,23 +204,14 @@ public class FusionIndexAccessorTest
             doThrow( exception ).when( indexAccessor ).drop();
         }
 
-        try
-        {
-            // when
-            fusionIndexAccessor.drop();
-            fail( "Should have failed" );
-        }
-        catch ( UncheckedIOException e )
-        {
-            // then
-            assertThat( exceptions, hasItem( e ) );
-        }
+        var e = assertThrows( UncheckedIOException.class, () -> fusionIndexAccessor.drop() );
+        assertThat( exceptions, hasItem( e ) );
     }
 
     /* close */
 
     @Test
-    public void closeMustCloseAll()
+    void closeMustCloseAll()
     {
         // when
         // ... all close successful
@@ -247,7 +225,7 @@ public class FusionIndexAccessorTest
     }
 
     @Test
-    public void closeMustThrowIfOneThrow() throws Exception
+    void closeMustThrowIfOneThrow() throws Exception
     {
         //noinspection ForLoopReplaceableByForEach - aliveAccessors is updated in initiateMocks()
         for ( int i = 0; i < aliveAccessors.length; i++ )
@@ -259,7 +237,7 @@ public class FusionIndexAccessorTest
     }
 
     @Test
-    public void closeMustCloseOthersIfOneThrow() throws Exception
+    void closeMustCloseOthersIfOneThrow() throws Exception
     {
         //noinspection ForLoopReplaceableByForEach - aliveAccessors is updated in initiateMocks()
         for ( int i = 0; i < aliveAccessors.length; i++ )
@@ -271,7 +249,7 @@ public class FusionIndexAccessorTest
     }
 
     @Test
-    public void closeMustThrowIfAllFail() throws Exception
+    void closeMustThrowIfAllFail() throws Exception
     {
         verifyFusionCloseThrowIfAllThrow( fusionIndexAccessor, aliveAccessors );
     }
@@ -279,7 +257,7 @@ public class FusionIndexAccessorTest
     // newAllEntriesReader
 
     @Test
-    public void allEntriesReaderMustCombineResultFromAll()
+    void allEntriesReaderMustCombineResultFromAll()
     {
         // given
         List<Long>[] ids = new List[aliveAccessors.length];
@@ -301,7 +279,7 @@ public class FusionIndexAccessorTest
     }
 
     @Test
-    public void allEntriesReaderMustCombineResultFromAllEmpty()
+    void allEntriesReaderMustCombineResultFromAllEmpty()
     {
         // given
         List<Long>[] ids = new List[aliveAccessors.length];
@@ -319,7 +297,7 @@ public class FusionIndexAccessorTest
     }
 
     @Test
-    public void allEntriesReaderMustCombineResultFromAllAccessors()
+    void allEntriesReaderMustCombineResultFromAllAccessors()
     {
         // given
         List<Long>[] parts = new List[aliveAccessors.length];
@@ -344,7 +322,7 @@ public class FusionIndexAccessorTest
     }
 
     @Test
-    public void allEntriesReaderMustCloseAll() throws Exception
+    void allEntriesReaderMustCloseAll() throws Exception
     {
         // given
         BoundedIterable<Long>[] allEntriesReaders = Arrays.stream( aliveAccessors )
@@ -362,7 +340,7 @@ public class FusionIndexAccessorTest
     }
 
     @Test
-    public void allEntriesReaderMustCloseOthersIfOneThrow() throws Exception
+    void allEntriesReaderMustCloseOthersIfOneThrow() throws Exception
     {
         for ( int i = 0; i < aliveAccessors.length; i++ )
         {
@@ -381,7 +359,7 @@ public class FusionIndexAccessorTest
     }
 
     @Test
-    public void allEntriesReaderMustThrowIfOneThrow() throws Exception
+    void allEntriesReaderMustThrowIfOneThrow() throws Exception
     {
         for ( IndexAccessor failingAccessor : aliveAccessors )
         {
@@ -402,7 +380,7 @@ public class FusionIndexAccessorTest
     }
 
     @Test
-    public void allEntriesReaderMustReportUnknownMaxCountIfAnyReportUnknownMaxCount()
+    void allEntriesReaderMustReportUnknownMaxCountIfAnyReportUnknownMaxCount()
     {
         for ( int i = 0; i < aliveAccessors.length; i++ )
         {
@@ -426,7 +404,7 @@ public class FusionIndexAccessorTest
     }
 
     @Test
-    public void allEntriesReaderMustReportFusionMaxCountOfAll()
+    void allEntriesReaderMustReportFusionMaxCountOfAll()
     {
         long lastId = 0;
         for ( IndexAccessor accessor : aliveAccessors )
@@ -440,7 +418,7 @@ public class FusionIndexAccessorTest
     }
 
     @Test
-    public void shouldFailValueValidationIfAnyPartFail()
+    void shouldFailValueValidationIfAnyPartFail()
     {
         // given
         IllegalArgumentException failure = new IllegalArgumentException( "failing" );
@@ -472,7 +450,7 @@ public class FusionIndexAccessorTest
     }
 
     @Test
-    public void shouldSucceedValueValidationIfAllSucceed()
+    void shouldSucceedValueValidationIfAllSucceed()
     {
         // when
         fusionIndexAccessor.validateBeforeCommit( new Value[] {stringValue( "test value" )} );
@@ -481,7 +459,7 @@ public class FusionIndexAccessorTest
     }
 
     @Test
-    public void shouldInstantiateReadersLazily()
+    void shouldInstantiateReadersLazily()
     {
         // when getting a new reader, no part-reader should be instantiated
         IndexReader fusionReader = fusionIndexAccessor.newReader();
@@ -493,7 +471,7 @@ public class FusionIndexAccessorTest
     }
 
     @Test
-    public void shouldInstantiateUpdatersLazily()
+    void shouldInstantiateUpdatersLazily()
     {
         // when getting a new reader, no part-reader should be instantiated
         IndexUpdater updater = fusionIndexAccessor.newUpdater( IndexUpdateMode.ONLINE );
@@ -508,7 +486,7 @@ public class FusionIndexAccessorTest
     {
         for ( long expectedEntry : expectedEntries )
         {
-            assertTrue( "Expected to contain " + expectedEntry + ", but was " + result, result.contains( expectedEntry ) );
+            assertTrue( result.contains( expectedEntry ), "Expected to contain " + expectedEntry + ", but was " + result );
         }
     }
 

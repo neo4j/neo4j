@@ -20,10 +20,8 @@
 package org.neo4j.kernel.impl.index.schema.fusion;
 
 import org.eclipse.collections.api.set.primitive.LongSet;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import java.util.EnumMap;
 import java.util.function.Function;
@@ -41,7 +39,7 @@ import org.neo4j.kernel.impl.index.schema.NodeIdsIndexReaderQueryAnswer;
 import org.neo4j.kernel.impl.index.schema.NodeValueIterator;
 import org.neo4j.values.storable.Value;
 
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.eq;
@@ -55,34 +53,27 @@ import static org.neo4j.internal.schema.SchemaDescriptor.forLabel;
 import static org.neo4j.kernel.impl.index.schema.IndexDescriptorFactory.forSchema;
 import static org.neo4j.kernel.impl.index.schema.NodeIdsIndexReaderQueryAnswer.getIndexQueryArgument;
 import static org.neo4j.kernel.impl.index.schema.fusion.FusionIndexTestHelp.fill;
-import static org.neo4j.kernel.impl.index.schema.fusion.FusionVersion.v30;
 import static org.neo4j.kernel.impl.index.schema.fusion.IndexSlot.GENERIC;
 import static org.neo4j.kernel.impl.index.schema.fusion.IndexSlot.LUCENE;
 
-@RunWith( Parameterized.class )
-public class FusionIndexReaderTest
+abstract class FusionIndexReaderTest
 {
-    private IndexReader[] aliveReaders;
-    private EnumMap<IndexSlot,IndexReader> readers;
-    private FusionIndexReader fusionIndexReader;
     private static final int PROP_KEY = 1;
     private static final int LABEL_KEY = 11;
     private static final IndexDescriptor DESCRIPTOR = forSchema( forLabel( LABEL_KEY, PROP_KEY ) );
 
-    @Parameterized.Parameters( name = "{0}" )
-    public static FusionVersion[] versions()
+    private final FusionVersion fusionVersion;
+    private IndexReader[] aliveReaders;
+    private EnumMap<IndexSlot,IndexReader> readers;
+    private FusionIndexReader fusionIndexReader;
+
+    FusionIndexReaderTest( FusionVersion fusionVersion )
     {
-        return new FusionVersion[]
-                {
-                        v30
-                };
+        this.fusionVersion = fusionVersion;
     }
 
-    @Parameterized.Parameter
-    public static FusionVersion fusionVersion;
-
-    @Before
-    public void setup() throws IndexNotApplicableKernelException
+    @BeforeEach
+    void setup() throws IndexNotApplicableKernelException
     {
         initiateMocks();
     }
@@ -125,7 +116,7 @@ public class FusionIndexReaderTest
     /* close */
 
     @Test
-    public void closeMustCloseBothNativeAndLucene()
+    void closeMustCloseBothNativeAndLucene()
     {
         // when
         fusionIndexReader.close();
@@ -140,7 +131,7 @@ public class FusionIndexReaderTest
     // close iterator
 
     @Test
-    public void closeIteratorMustCloseAll() throws Exception
+    void closeIteratorMustCloseAll() throws Exception
     {
         // given
         IndexProgressor[] progressors = new IndexProgressor[aliveReaders.length];
@@ -174,7 +165,7 @@ public class FusionIndexReaderTest
     /* countIndexedNodes */
 
     @Test
-    public void countIndexedNodesMustSelectCorrectReader()
+    void countIndexedNodesMustSelectCorrectReader()
     {
         // given
         EnumMap<IndexSlot,Value[]> values = FusionIndexTestHelp.valuesByGroup();
@@ -214,14 +205,14 @@ public class FusionIndexReaderTest
     /* query */
 
     @Test
-    public void mustSelectLuceneForCompositePredicate() throws Exception
+    void mustSelectLuceneForCompositePredicate() throws Exception
     {
         // then
         verifyQueryWithCorrectReader( readers.get( GENERIC ), IndexQuery.exists( 0 ), IndexQuery.exists( 1 ) );
     }
 
     @Test
-    public void mustSelectLuceneForExactPredicateWithStringValue() throws Exception
+    void mustSelectLuceneForExactPredicateWithStringValue() throws Exception
     {
         // given
         for ( Object value : FusionIndexTestHelp.valuesSupportedByLucene() )
@@ -234,7 +225,7 @@ public class FusionIndexReaderTest
     }
 
     @Test
-    public void mustSelectGenericForExactPredicateWithOtherValue() throws Exception
+    void mustSelectGenericForExactPredicateWithOtherValue() throws Exception
     {
         // given
         for ( Object value : FusionIndexTestHelp.valuesNotSupportedBySpecificIndex() )
@@ -247,7 +238,7 @@ public class FusionIndexReaderTest
     }
 
     @Test
-    public void mustSelectLuceneForRangeStringPredicate() throws Exception
+    void mustSelectLuceneForRangeStringPredicate() throws Exception
     {
         // given
         RangePredicate<?> numberRange = IndexQuery.range( PROP_KEY, "a", true, "b", false );
@@ -257,7 +248,7 @@ public class FusionIndexReaderTest
     }
 
     @Test
-    public void mustCombineResultFromExistsPredicate() throws Exception
+    void mustCombineResultFromExistsPredicate() throws Exception
     {
         // given
         IndexQuery.ExistsPredicate exists = IndexQuery.exists( PROP_KEY );
@@ -278,13 +269,13 @@ public class FusionIndexReaderTest
             resultSet = PrimitiveLongCollections.asSet( result );
             for ( long i = 0L; i < lastId; i++ )
             {
-                assertTrue( "Expected to contain " + i + ", but was " + resultSet, resultSet.contains( i ) );
+                assertTrue( resultSet.contains( i ), "Expected to contain " + i + ", but was " + resultSet );
             }
         }
     }
 
     @Test
-    public void shouldInstantiatePartLazilyForSpecificValueGroupQuery() throws IndexNotApplicableKernelException
+    void shouldInstantiatePartLazilyForSpecificValueGroupQuery() throws IndexNotApplicableKernelException
     {
         // given
         EnumMap<IndexSlot,Value[]> values = FusionIndexTestHelp.valuesByGroup();
