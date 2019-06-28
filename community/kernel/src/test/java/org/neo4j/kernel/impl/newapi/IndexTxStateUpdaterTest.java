@@ -31,13 +31,13 @@ import java.util.Set;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
 import org.neo4j.internal.kernel.api.helpers.StubNodeCursor;
 import org.neo4j.internal.kernel.api.helpers.StubPropertyCursor;
+import org.neo4j.internal.schema.IndexDescriptor2;
 import org.neo4j.internal.schema.PropertySchemaType;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.kernel.api.schema.index.TestIndexDescriptorFactory;
 import org.neo4j.kernel.api.txstate.TransactionState;
 import org.neo4j.kernel.impl.api.index.IndexProxy;
 import org.neo4j.kernel.impl.api.index.IndexingService;
-import org.neo4j.kernel.impl.index.schema.IndexDescriptor;
 import org.neo4j.storageengine.api.StorageReader;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.ValueTuple;
@@ -74,13 +74,13 @@ class IndexTxStateUpdaterTest
     private TransactionState txState;
     private IndexTxStateUpdater indexTxUpdater;
 
-    private IndexDescriptor indexOn1_1 = TestIndexDescriptorFactory.forLabel( labelId1, propId1 );
-    private IndexDescriptor indexOn2_new = TestIndexDescriptorFactory.forLabel( labelId2, newPropId );
-    private IndexDescriptor uniqueOn1_2 = TestIndexDescriptorFactory.uniqueForLabel( labelId1, propId2 );
-    private IndexDescriptor indexOn1_1_new = TestIndexDescriptorFactory.forLabel( labelId1, propId1, newPropId );
-    private IndexDescriptor uniqueOn2_2_3 = TestIndexDescriptorFactory
+    private IndexDescriptor2 indexOn1_1 = TestIndexDescriptorFactory.forLabel( labelId1, propId1 );
+    private IndexDescriptor2 indexOn2_new = TestIndexDescriptorFactory.forLabel( labelId2, newPropId );
+    private IndexDescriptor2 uniqueOn1_2 = TestIndexDescriptorFactory.uniqueForLabel( labelId1, propId2 );
+    private IndexDescriptor2 indexOn1_1_new = TestIndexDescriptorFactory.forLabel( labelId1, propId1, newPropId );
+    private IndexDescriptor2 uniqueOn2_2_3 = TestIndexDescriptorFactory
             .uniqueForLabel( labelId2, propId2, propId3 );
-    private List<IndexDescriptor> indexes =
+    private List<IndexDescriptor2> indexes =
             Arrays.asList( indexOn1_1, indexOn2_new, uniqueOn1_2, indexOn1_1_new, uniqueOn2_2_3 );
     private StubNodeCursor node;
     private StubPropertyCursor propertyCursor;
@@ -103,7 +103,7 @@ class IndexTxStateUpdaterTest
             long[] labels = invocationOnMock.getArgument( 0 );
             int propertyKeyId = invocationOnMock.getArgument( 1 );
             Set<SchemaDescriptor> descriptors = new HashSet<>();
-            for ( IndexDescriptor index : indexes )
+            for ( IndexDescriptor2 index : indexes )
             {
                 SchemaDescriptor schema = index.schema();
                 if ( schema.isAffected( labels ) && contains( schema.getPropertyIds(), propertyKeyId ) )
@@ -121,7 +121,7 @@ class IndexTxStateUpdaterTest
             long[] labels = invocationOnMock.getArgument( 0 );
             int[] propertyKeyIds = invocationOnMock.getArgument( 1 );
             Set<SchemaDescriptor> descriptors = new HashSet<>();
-            for ( IndexDescriptor index : indexes )
+            for ( IndexDescriptor2 index : indexes )
             {
                 if ( index.schema().isAffected( labels ) )
                 {

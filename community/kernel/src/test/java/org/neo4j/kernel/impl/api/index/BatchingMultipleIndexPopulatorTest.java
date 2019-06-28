@@ -31,13 +31,13 @@ import java.util.concurrent.TimeUnit;
 import org.neo4j.internal.helpers.collection.Iterables;
 import org.neo4j.internal.helpers.collection.Visitor;
 import org.neo4j.internal.kernel.api.PopulationProgress;
+import org.neo4j.internal.schema.IndexDescriptor2;
 import org.neo4j.internal.schema.SchemaState;
 import org.neo4j.kernel.api.exceptions.index.IndexPopulationFailedKernelException;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.schema.index.TestIndexDescriptorFactory;
 import org.neo4j.kernel.impl.api.index.stats.IndexStatisticsStore;
-import org.neo4j.kernel.impl.index.schema.IndexDescriptor;
 import org.neo4j.kernel.impl.transaction.state.storeview.NeoStoreIndexStoreView;
 import org.neo4j.lock.LockService;
 import org.neo4j.logging.NullLogProvider;
@@ -71,8 +71,8 @@ public class BatchingMultipleIndexPopulatorTest
 {
     public static final int propertyId = 1;
     public static final int labelId = 1;
-    private final IndexDescriptor index1 = TestIndexDescriptorFactory.forLabel( 1, 1);
-    private final IndexDescriptor index42 = TestIndexDescriptorFactory.forLabel( 42, 42);
+    private final IndexDescriptor2 index1 = TestIndexDescriptorFactory.forLabel( 1, 1 );
+    private final IndexDescriptor2 index42 = TestIndexDescriptorFactory.forLabel( 42, 42 );
 
     @AfterEach
     void tearDown()
@@ -256,7 +256,7 @@ public class BatchingMultipleIndexPopulatorTest
                     NullLogProvider.getInstance(), mock( SchemaState.class ), mock( IndexStatisticsStore.class ) );
 
             populator = addPopulator( batchingPopulator, index1 );
-            List<IndexEntryUpdate<IndexDescriptor>> expected = forUpdates( index1, update1, update2 );
+            List<IndexEntryUpdate<IndexDescriptor2>> expected = forUpdates( index1, update1, update2 );
             doThrow( batchFlushError ).when( populator ).add( expected );
 
             batchingPopulator.indexAllEntities().run();
@@ -321,7 +321,7 @@ public class BatchingMultipleIndexPopulatorTest
         verify( executor, atLeast( 5 ) ).execute( any( Runnable.class ) );
     }
 
-    private List<IndexEntryUpdate<IndexDescriptor>> forUpdates( IndexDescriptor index, EntityUpdates... updates )
+    private List<IndexEntryUpdate<IndexDescriptor2>> forUpdates( IndexDescriptor2 index, EntityUpdates... updates )
     {
         return Iterables.asList(
                 Iterables.concat(
@@ -339,7 +339,7 @@ public class BatchingMultipleIndexPopulatorTest
                 .build();
     }
 
-    private static IndexPopulator addPopulator( BatchingMultipleIndexPopulator batchingPopulator, IndexDescriptor descriptor )
+    private static IndexPopulator addPopulator( BatchingMultipleIndexPopulator batchingPopulator, IndexDescriptor2 descriptor )
     {
         IndexPopulator populator = mock( IndexPopulator.class );
 
@@ -349,14 +349,13 @@ public class BatchingMultipleIndexPopulatorTest
         flipper.setFlipTarget( indexProxyFactory );
 
         batchingPopulator.addPopulator( populator,
-                                        descriptor.withId( 1 ).withoutCapabilities(),
+                                        descriptor,
                                         flipper,
                                         failedIndexProxyFactory, "testIndex" );
 
         return populator;
     }
 
-    @SuppressWarnings( "unchecked" )
     private static IndexStoreView newStoreView( EntityUpdates... updates )
     {
         IndexStoreView storeView = mock( IndexStoreView.class );

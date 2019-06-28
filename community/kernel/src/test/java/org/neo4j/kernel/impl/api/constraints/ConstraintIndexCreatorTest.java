@@ -27,7 +27,6 @@ import java.util.List;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.internal.kernel.api.CursorFactory;
-import org.neo4j.internal.kernel.api.IndexReference;
 import org.neo4j.internal.kernel.api.Kernel;
 import org.neo4j.internal.kernel.api.SchemaRead;
 import org.neo4j.internal.kernel.api.SchemaWrite;
@@ -39,6 +38,8 @@ import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
 import org.neo4j.internal.kernel.api.exceptions.schema.SchemaKernelException;
 import org.neo4j.internal.kernel.api.security.LoginContext;
+import org.neo4j.internal.schema.IndexDescriptor2;
+import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.IndexProviderDescriptor;
 import org.neo4j.internal.schema.LabelSchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptor;
@@ -54,7 +55,6 @@ import org.neo4j.kernel.impl.api.TransactionHeaderInformation;
 import org.neo4j.kernel.impl.api.index.IndexProxy;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.state.ConstraintIndexCreator;
-import org.neo4j.kernel.impl.index.schema.IndexDescriptor;
 import org.neo4j.kernel.impl.index.schema.IndexDescriptorFactory;
 import org.neo4j.kernel.impl.locking.SimpleStatementLocks;
 import org.neo4j.kernel.impl.transaction.TransactionHeaderInformationFactory;
@@ -77,6 +77,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.verifyZeroInteractions;
 import static org.mockito.Mockito.when;
+import static org.neo4j.internal.schema.SchemaDescriptor.forLabel;
 
 class ConstraintIndexCreatorTest
 {
@@ -84,9 +85,9 @@ class ConstraintIndexCreatorTest
     private static final int LABEL_ID = 123;
     private static final long INDEX_ID = 0L;
 
-    private final LabelSchemaDescriptor descriptor = SchemaDescriptor.forLabel( LABEL_ID, PROPERTY_KEY_ID );
-    private final IndexDescriptor index = TestIndexDescriptorFactory.uniqueForLabel( LABEL_ID, PROPERTY_KEY_ID );
-    private final IndexReference indexReference = TestIndexDescriptorFactory.uniqueForLabel( LABEL_ID, PROPERTY_KEY_ID );
+    private final LabelSchemaDescriptor descriptor = forLabel( LABEL_ID, PROPERTY_KEY_ID );
+    private final IndexDescriptor2 index = IndexPrototype.uniqueForSchema( forLabel( LABEL_ID, PROPERTY_KEY_ID ) ).materialise( INDEX_ID );
+    private final IndexDescriptor2 indexReference = TestIndexDescriptorFactory.uniqueForLabel( LABEL_ID, PROPERTY_KEY_ID );
     private final SchemaRead schemaRead = schemaRead();
     private final SchemaWrite schemaWrite = mock( SchemaWrite.class );
     private final TokenRead tokenRead = mock( TokenRead.class );
@@ -101,14 +102,14 @@ class ConstraintIndexCreatorTest
         IndexingService indexingService = mock( IndexingService.class );
         when( indexingService.getIndexProxy( INDEX_ID ) ).thenReturn( indexProxy );
         when( indexingService.getIndexProxy( descriptor ) ).thenReturn( indexProxy );
-        when( indexProxy.getDescriptor() ).thenReturn( index.withId( INDEX_ID ).withoutCapabilities() );
+        when( indexProxy.getDescriptor() ).thenReturn( index );
         ConstraintIndexCreator creator = new ConstraintIndexCreator( () -> kernel, indexingService, logProvider );
 
         // when
-        long indexId = creator.createUniquenessConstraintIndex( createTransaction(), descriptor, getDefaultProvider() );
+        IndexDescriptor2 constraintIndex = creator.createUniquenessConstraintIndex( createTransaction(), descriptor, getDefaultProvider() );
 
         // then
-        assertEquals( INDEX_ID, indexId );
+        assertEquals( INDEX_ID, constraintIndex.getId() );
         verify( schemaRead ).indexGetCommittedId( indexReference );
         verify( schemaRead ).index( descriptor );
         verifyNoMoreInteractions( schemaRead );
@@ -126,14 +127,13 @@ class ConstraintIndexCreatorTest
         IndexProxy indexProxy = mock( IndexProxy.class );
         when( indexingService.getIndexProxy( INDEX_ID ) ).thenReturn( indexProxy );
         when( indexingService.getIndexProxy( descriptor ) ).thenReturn( indexProxy );
-        when( indexProxy.getDescriptor() ).thenReturn( index.withId( INDEX_ID ).withoutCapabilities() );
+        when( indexProxy.getDescriptor() ).thenReturn( index );
 
         IndexEntryConflictException cause = new IndexEntryConflictException( 2, 1, Values.of( "a" ) );
         doThrow( new IndexPopulationFailedKernelException( "some index", cause ) )
                 .when( indexProxy ).awaitStoreScanCompleted( anyLong(), any() );
         when( schemaRead.index( any( SchemaDescriptor.class ) ) )
-                .thenReturn(
-                        IndexReference.NO_INDEX )   // first claim it doesn't exist, because it doesn't... so
+                .thenReturn( IndexDescriptor2.NO_INDEX )   // first claim it doesn't exist, because it doesn't... so
                 // that it gets created
                 .thenReturn( indexReference ); // then after it failed claim it does exist
         ConstraintIndexCreator creator = new ConstraintIndexCreator( () -> kernel, indexingService, logProvider );
@@ -186,7 +186,7 @@ class ConstraintIndexCreatorTest
         when( indexingService.getIndexProxy( anyLong() ) ).thenReturn( indexProxy );
         when( indexingService.getIndexProxy( descriptor ) ).thenReturn( indexProxy );
 
-        when( schemaRead.index( LABEL_ID, PROPERTY_KEY_ID ) ).thenReturn( IndexReference.NO_INDEX );
+        when( schemaRead.index( LABEL_ID, PROPERTY_KEY_ID ) ).thenReturn( IndexDescriptor2.NO_INDEX );
 
         ConstraintIndexCreator creator = new ConstraintIndexCreator( () -> kernel, indexingService, logProvider );
 
@@ -221,12 +221,11 @@ class ConstraintIndexCreatorTest
 
         // when
         KernelTransactionImplementation transaction = createTransaction();
-        long indexId = creator.createUniquenessConstraintIndex( transaction, descriptor, getDefaultProvider() );
+        IndexDescriptor2 constraintIndex = creator.createUniquenessConstraintIndex( transaction, descriptor, getDefaultProvider() );
 
         // then
-        assertEquals( orphanedConstraintIndexId, indexId );
-        assertEquals( 0,
-                kernel.transactions.size(), "There should have been no need to acquire a statement to create the constraint index" );
+        assertEquals( orphanedConstraintIndexId, constraintIndex.getId() );
+        assertEquals( 0, kernel.transactions.size(), "There should have been no need to acquire a statement to create the constraint index" );
         verify( schemaRead ).indexGetCommittedId( indexReference );
         verify( schemaRead ).index( descriptor );
         verify( schemaRead ).indexGetOwningUniquenessConstraintId( indexReference );
@@ -305,7 +304,7 @@ class ConstraintIndexCreatorTest
         IndexingService indexingService = mock( IndexingService.class );
         when( indexingService.getIndexProxy( INDEX_ID ) ).thenReturn( indexProxy );
         when( indexingService.getIndexProxy( descriptor ) ).thenReturn( indexProxy );
-        when( indexProxy.getDescriptor() ).thenReturn( index.withId( INDEX_ID ).withoutCapabilities() );
+        when( indexProxy.getDescriptor() ).thenReturn( index );
         ConstraintIndexCreator creator = new ConstraintIndexCreator( () -> kernel, indexingService, logProvider );
         KernelTransactionImplementation transaction = createTransaction();
 
@@ -333,7 +332,7 @@ class ConstraintIndexCreatorTest
         }
 
         @Override
-        public Transaction beginTransaction( Transaction.Type type, LoginContext loginContext ) throws TransactionFailureException
+        public Transaction beginTransaction( Transaction.Type type, LoginContext loginContext )
         {
             return remember( createTransaction() );
         }
@@ -348,7 +347,7 @@ class ConstraintIndexCreatorTest
     private SchemaRead schemaRead()
     {
         SchemaRead schemaRead = mock( SchemaRead.class );
-        when( schemaRead.index( descriptor ) ).thenReturn( IndexReference.NO_INDEX );
+        when( schemaRead.index( descriptor ) ).thenReturn( IndexDescriptor2.NO_INDEX );
         try
         {
             when( schemaRead.indexGetCommittedId( indexReference ) ).thenReturn( INDEX_ID );

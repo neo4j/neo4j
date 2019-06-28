@@ -30,6 +30,8 @@ import java.util.function.IntPredicate;
 import org.neo4j.common.EntityType;
 import org.neo4j.internal.helpers.collection.Visitor;
 import org.neo4j.internal.kernel.api.InternalIndexState;
+import org.neo4j.internal.schema.IndexDescriptor2;
+import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.LabelSchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.internal.schema.SchemaState;
@@ -38,10 +40,8 @@ import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.IndexSample;
 import org.neo4j.kernel.api.index.IndexUpdater;
-import org.neo4j.kernel.api.schema.index.TestIndexDescriptorFactory;
 import org.neo4j.kernel.impl.api.index.MultipleIndexPopulator.IndexPopulation;
 import org.neo4j.kernel.impl.api.index.stats.IndexStatisticsStore;
-import org.neo4j.kernel.impl.index.schema.StoreIndexDescriptor;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.storageengine.api.IndexEntryUpdate;
 import org.neo4j.storageengine.api.NodePropertyAccessor;
@@ -525,15 +525,14 @@ class MultipleIndexPopulatorTest
     private IndexPopulation addPopulator( MultipleIndexPopulator multipleIndexPopulator, IndexPopulator indexPopulator,
         int id, FlippableIndexProxy flippableIndexProxy, FailedIndexProxyFactory failedIndexProxyFactory )
     {
-        return addPopulator( multipleIndexPopulator, TestIndexDescriptorFactory.forLabel( id, id ).withId( id ),
+        return addPopulator( multipleIndexPopulator, IndexPrototype.forSchema( SchemaDescriptor.forLabel( id, id ) ).materialise( id ),
             indexPopulator, flippableIndexProxy, failedIndexProxyFactory );
     }
 
-    private IndexPopulation addPopulator( MultipleIndexPopulator multipleIndexPopulator, StoreIndexDescriptor descriptor, IndexPopulator indexPopulator,
+    private IndexPopulation addPopulator( MultipleIndexPopulator multipleIndexPopulator, IndexDescriptor2 descriptor, IndexPopulator indexPopulator,
         FlippableIndexProxy flippableIndexProxy, FailedIndexProxyFactory failedIndexProxyFactory )
     {
-        return multipleIndexPopulator.addPopulator( indexPopulator, descriptor.withoutCapabilities(),
-            flippableIndexProxy, failedIndexProxyFactory, "userIndexDescription" );
+        return multipleIndexPopulator.addPopulator( indexPopulator, descriptor, flippableIndexProxy, failedIndexProxyFactory, "userIndexDescription" );
     }
 
     private IndexPopulation addPopulator( IndexPopulator indexPopulator, int id ) throws FlipFailedKernelException

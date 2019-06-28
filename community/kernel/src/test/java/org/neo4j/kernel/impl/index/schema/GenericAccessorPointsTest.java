@@ -31,10 +31,11 @@ import org.neo4j.configuration.Config;
 import org.neo4j.gis.spatial.index.curves.SpaceFillingCurve;
 import org.neo4j.gis.spatial.index.curves.StandardConfiguration;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
-import org.neo4j.internal.schema.IndexOrder;
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.internal.kernel.api.QueryContext;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotApplicableKernelException;
+import org.neo4j.internal.schema.IndexDescriptor2;
+import org.neo4j.internal.schema.IndexOrder;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
@@ -80,7 +81,7 @@ class GenericAccessorPointsTest
     private RandomRule random;
 
     private NativeIndexAccessor accessor;
-    private StoreIndexDescriptor descriptor;
+    private IndexDescriptor2 descriptor;
 
     @BeforeEach
     void setup()
@@ -88,7 +89,7 @@ class GenericAccessorPointsTest
         IndexFiles indexFiles = new IndexFiles.SingleFile( fs, directory.file( "index" ) );
         GenericLayout layout = new GenericLayout( 1, indexSettings );
         RecoveryCleanupWorkCollector collector = RecoveryCleanupWorkCollector.ignore();
-        descriptor = TestIndexDescriptorFactory.forLabel( 1, 1 ).withId( 1 );
+        descriptor = TestIndexDescriptorFactory.forLabel( 1, 1 );
         accessor =
             new GenericNativeIndexAccessor( pageCache, fs, indexFiles, layout, collector, EMPTY, descriptor, indexSettings, new StandardConfiguration() );
     }

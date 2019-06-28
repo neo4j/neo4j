@@ -31,8 +31,8 @@ import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
+import static org.neo4j.internal.schema.IndexPrototype.forSchema;
 import static org.neo4j.internal.schema.SchemaDescriptor.forLabel;
-import static org.neo4j.kernel.impl.index.schema.IndexDescriptorFactory.forSchema;
 import static org.neo4j.logging.AssertableLogProvider.inLog;
 
 class FailedIndexProxyTest
@@ -47,7 +47,7 @@ class FailedIndexProxyTest
         // given
         String userDescription = "description";
         FailedIndexProxy index =
-                new FailedIndexProxy( forSchema( forLabel( 1, 2 ), IndexProviderDescriptor.UNDECIDED ).withId( 1 ).withoutCapabilities(),
+                new FailedIndexProxy( forSchema( forLabel( 1, 2 ), IndexProviderDescriptor.UNDECIDED ).materialise( 1 ),
                                       userDescription, indexPopulator, indexPopulationFailure, indexStatisticsStore, NullLogProvider.getInstance() );
 
         // when
@@ -66,7 +66,7 @@ class FailedIndexProxyTest
         AssertableLogProvider logProvider = new AssertableLogProvider();
 
         // when
-        new FailedIndexProxy( forSchema( forLabel( 0, 0 ), IndexProviderDescriptor.UNDECIDED ).withId( 1 ).withoutCapabilities(),
+        new FailedIndexProxy( forSchema( forLabel( 0, 0 ), IndexProviderDescriptor.UNDECIDED ).materialise( 1 ),
                               "foo", mock( IndexPopulator.class ), IndexPopulationFailure.failure( "it broke" ),
                               indexStatisticsStore, logProvider ).drop();
 

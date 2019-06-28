@@ -23,14 +23,16 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import org.neo4j.kernel.impl.api.index.MultipleIndexPopulator.IndexPopulation;
-import org.neo4j.kernel.impl.index.schema.CapableIndexDescriptor;
+import org.neo4j.internal.schema.IndexDescriptor2;
+import org.neo4j.internal.schema.IndexPrototype;
+import org.neo4j.internal.schema.SchemaDescriptor;
 
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
 class PopulatingIndexProxyTest
 {
-    private final CapableIndexDescriptor capableIndexDescriptor = mock( CapableIndexDescriptor.class );
+    private final IndexDescriptor2 index = IndexPrototype.forSchema( SchemaDescriptor.forLabel( 1, 2 ) ).materialise( 13 );
     private final IndexPopulationJob indexPopulationJob = mock( IndexPopulationJob.class );
     private final IndexPopulation indexPopulation = mock( IndexPopulation.class );
     private PopulatingIndexProxy populatingIndexProxy;
@@ -38,7 +40,7 @@ class PopulatingIndexProxyTest
     @BeforeEach
     void setUp()
     {
-        populatingIndexProxy = new PopulatingIndexProxy( capableIndexDescriptor, indexPopulationJob, indexPopulation );
+        populatingIndexProxy = new PopulatingIndexProxy( index, indexPopulationJob, indexPopulation );
     }
 
     @Test

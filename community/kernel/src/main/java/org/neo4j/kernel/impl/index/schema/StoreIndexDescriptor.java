@@ -26,7 +26,6 @@ import org.neo4j.common.TokenNameLookup;
 import org.neo4j.internal.schema.IndexCapability;
 import org.neo4j.internal.schema.IndexDescriptor2;
 import org.neo4j.internal.schema.IndexProviderDescriptor;
-import org.neo4j.internal.schema.IndexRef;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.internal.schema.SchemaRule;
 
@@ -38,7 +37,7 @@ import static org.neo4j.common.TokenNameLookup.idTokenNameLookup;
  * Adds an index id, a name, and optionally an owning constraint id to the general IndexDescriptor.
  */
 @Deprecated
-public class StoreIndexDescriptor extends IndexDescriptor implements IndexRef<StoreIndexDescriptor>
+public class StoreIndexDescriptor extends IndexDescriptor
 {
     private final long id;
     private final Long owningConstraintId;

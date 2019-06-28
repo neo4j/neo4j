@@ -25,12 +25,12 @@ import org.junit.jupiter.api.Test;
 import java.util.concurrent.locks.LockSupport;
 
 import org.neo4j.exceptions.KernelException;
-import org.neo4j.internal.kernel.api.IndexReference;
 import org.neo4j.internal.kernel.api.Kernel;
 import org.neo4j.internal.kernel.api.Transaction;
 import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
 import org.neo4j.internal.schema.ConstraintDescriptor;
+import org.neo4j.internal.schema.IndexDescriptor2;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.kernel.impl.api.index.SchemaIndexTestHelper;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
@@ -90,7 +90,7 @@ class KernelSchemaStateFlushingTest
     @Test
     void shouldInvalidateSchemaStateOnDropIndex() throws Exception
     {
-        IndexReference ref = createIndex();
+        IndexDescriptor2 ref = createIndex();
 
         awaitIndexOnline( ref, "test" );
 
@@ -158,18 +158,18 @@ class KernelSchemaStateFlushingTest
         }
     }
 
-    private IndexReference createIndex() throws KernelException
+    private IndexDescriptor2 createIndex() throws KernelException
     {
         try ( Transaction transaction = beginTransaction() )
         {
-            IndexReference reference = transaction.schemaWrite().indexCreate(
+            IndexDescriptor2 reference = transaction.schemaWrite().indexCreate(
                     SchemaDescriptor.forLabel( 1, 1 ) );
             transaction.success();
             return reference;
         }
     }
 
-    private void dropIndex( IndexReference reference ) throws KernelException
+    private void dropIndex( IndexDescriptor2 reference ) throws KernelException
     {
         try ( Transaction transaction = beginTransaction() )
         {
@@ -178,7 +178,7 @@ class KernelSchemaStateFlushingTest
         }
     }
 
-    private void awaitIndexOnline( IndexReference descriptor, String keyForProbing )
+    private void awaitIndexOnline( IndexDescriptor2 descriptor, String keyForProbing )
             throws IndexNotFoundKernelException, TransactionFailureException
     {
         try ( Transaction transaction = beginTransaction() )

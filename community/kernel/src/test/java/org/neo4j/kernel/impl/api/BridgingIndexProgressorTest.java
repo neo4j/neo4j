@@ -21,11 +21,11 @@ package org.neo4j.kernel.impl.api;
 
 import org.junit.jupiter.api.Test;
 
+import org.neo4j.internal.schema.IndexDescriptor2;
 import org.neo4j.internal.schema.IndexOrder;
 import org.neo4j.kernel.api.index.IndexProgressor;
 import org.neo4j.kernel.api.schema.index.TestIndexDescriptorFactory;
 import org.neo4j.kernel.impl.api.schema.BridgingIndexProgressor;
-import org.neo4j.kernel.impl.index.schema.IndexDescriptor;
 
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -35,7 +35,7 @@ class BridgingIndexProgressorTest
     @Test
     void closeMustCloseAll()
     {
-        IndexDescriptor index = TestIndexDescriptorFactory.forLabel( 1, 2, 3 );
+        IndexDescriptor2 index = TestIndexDescriptorFactory.forLabel( 1, 2, 3 );
         BridgingIndexProgressor progressor = new BridgingIndexProgressor( null, index.schema().getPropertyIds() );
 
         IndexProgressor[] parts = {mock(IndexProgressor.class), mock(IndexProgressor.class)};

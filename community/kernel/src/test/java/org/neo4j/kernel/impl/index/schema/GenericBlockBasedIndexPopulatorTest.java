@@ -28,8 +28,9 @@ import java.util.Collection;
 import org.neo4j.configuration.Config;
 import org.neo4j.gis.spatial.index.curves.SpaceFillingCurveConfiguration;
 import org.neo4j.index.internal.gbptree.TreeNodeDynamicSize;
-import org.neo4j.internal.schema.IndexOrder;
 import org.neo4j.internal.kernel.api.IndexQuery;
+import org.neo4j.internal.schema.IndexDescriptor2;
+import org.neo4j.internal.schema.IndexOrder;
 import org.neo4j.internal.schema.IndexProviderDescriptor;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
@@ -54,22 +55,22 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 import static org.neo4j.internal.kernel.api.QueryContext.NULL_CONTEXT;
+import static org.neo4j.internal.schema.IndexPrototype.forSchema;
+import static org.neo4j.internal.schema.IndexPrototype.uniqueForSchema;
 import static org.neo4j.internal.schema.SchemaDescriptor.forLabel;
 import static org.neo4j.io.ByteUnit.kibiBytes;
 import static org.neo4j.kernel.api.index.IndexDirectoryStructure.directoriesByProvider;
 import static org.neo4j.kernel.api.index.IndexProvider.Monitor.EMPTY;
 import static org.neo4j.kernel.impl.api.index.PhaseTracker.nullInstance;
 import static org.neo4j.kernel.impl.index.schema.ByteBufferFactory.heapBufferFactory;
-import static org.neo4j.kernel.impl.index.schema.IndexDescriptorFactory.forSchema;
-import static org.neo4j.kernel.impl.index.schema.IndexDescriptorFactory.uniqueForSchema;
 import static org.neo4j.storageengine.api.IndexEntryUpdate.add;
 import static org.neo4j.values.storable.Values.stringValue;
 
 @PageCacheExtension
 class GenericBlockBasedIndexPopulatorTest
 {
-    private static final StoreIndexDescriptor INDEX_DESCRIPTOR = forSchema( forLabel( 1, 1 ) ).withId( 1 );
-    private static final StoreIndexDescriptor UNIQUE_INDEX_DESCRIPTOR = uniqueForSchema( forLabel( 1, 1 ) ).withId( 1 );
+    private static final IndexDescriptor2 INDEX_DESCRIPTOR = forSchema( forLabel( 1, 1 ) ).materialise( 1 );
+    private static final IndexDescriptor2 UNIQUE_INDEX_DESCRIPTOR = uniqueForSchema( forLabel( 1, 1 ) ).materialise( 1 );
 
     @Inject
     private FileSystemAbstraction fs;
@@ -235,7 +236,7 @@ class GenericBlockBasedIndexPopulatorTest
 
         String largestString = RandomStringUtils.randomAlphabetic( keySizeLimit - stringKeyOverhead );
         TextValue largestStringValue = stringValue( largestString );
-        IndexEntryUpdate<StoreIndexDescriptor> update = add( 1, INDEX_DESCRIPTOR, largestStringValue );
+        IndexEntryUpdate<IndexDescriptor2> update = add( 1, INDEX_DESCRIPTOR, largestStringValue );
 
         BlockBasedIndexPopulator<GenericKey, NativeIndexValue> populator = instantiatePopulator( INDEX_DESCRIPTOR );
         try
@@ -266,7 +267,7 @@ class GenericBlockBasedIndexPopulatorTest
 
         String largestString = RandomStringUtils.randomAlphabetic( keySizeLimit - stringKeyOverhead + 1 );
         TextValue largestStringValue = stringValue( largestString );
-        IndexEntryUpdate<StoreIndexDescriptor> update = add( 1, INDEX_DESCRIPTOR, largestStringValue );
+        IndexEntryUpdate<IndexDescriptor2> update = add( 1, INDEX_DESCRIPTOR, largestStringValue );
 
         BlockBasedIndexPopulator<GenericKey, NativeIndexValue> populator = instantiatePopulator( INDEX_DESCRIPTOR );
         try
@@ -292,7 +293,7 @@ class GenericBlockBasedIndexPopulatorTest
         try ( NativeIndexReader<GenericKey, NativeIndexValue> reader = populator.newReader() )
         {
             SimpleNodeValueClient valueClient = new SimpleNodeValueClient();
-            IndexQuery.ExactPredicate exact = IndexQuery.exact( INDEX_DESCRIPTOR.properties()[0], entry );
+            IndexQuery.ExactPredicate exact = IndexQuery.exact( INDEX_DESCRIPTOR.schema().getPropertyId(), entry );
             reader.query( NULL_CONTEXT, valueClient, IndexOrder.NONE, false, exact );
             assertTrue( valueClient.next() );
             long id = valueClient.reference;
@@ -315,7 +316,7 @@ class GenericBlockBasedIndexPopulatorTest
         try ( NativeIndexReader<GenericKey, NativeIndexValue> reader = populator.newReader() )
         {
             SimpleNodeValueClient cursor = new SimpleNodeValueClient();
-            reader.query( NULL_CONTEXT, cursor, IndexOrder.NONE, true, IndexQuery.exact( INDEX_DESCRIPTOR.properties()[0], value ) );
+            reader.query( NULL_CONTEXT, cursor, IndexOrder.NONE, true, IndexQuery.exact( INDEX_DESCRIPTOR.schema().getPropertyId(), value ) );
             assertTrue( cursor.next() );
             assertEquals( id, cursor.reference );
             assertEquals( value, cursor.values[0] );
@@ -323,7 +324,7 @@ class GenericBlockBasedIndexPopulatorTest
         }
     }
 
-    private GenericBlockBasedIndexPopulator instantiatePopulator( StoreIndexDescriptor indexDescriptor )
+    private GenericBlockBasedIndexPopulator instantiatePopulator( IndexDescriptor2 indexDescriptor )
     {
         Config config = Config.defaults();
         IndexSpecificSpaceFillingCurveSettings spatialSettings = IndexSpecificSpaceFillingCurveSettings.fromConfig( config );

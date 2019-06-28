@@ -21,11 +21,11 @@ package org.neo4j.kernel.impl.api.index;
 
 import org.junit.jupiter.api.Test;
 
+import org.neo4j.internal.schema.IndexDescriptor2;
+import org.neo4j.internal.schema.IndexPrototype;
+import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.kernel.api.index.IndexAccessor;
-import org.neo4j.kernel.api.schema.index.TestIndexDescriptorFactory;
 import org.neo4j.kernel.impl.api.index.stats.IndexStatisticsStore;
-import org.neo4j.kernel.impl.index.schema.CapableIndexDescriptor;
-import org.neo4j.kernel.impl.index.schema.IndexDescriptor;
 
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -34,7 +34,7 @@ import static org.mockito.Mockito.verifyNoMoreInteractions;
 class OnlineIndexProxyTest
 {
     private final long indexId = 1;
-    private final IndexDescriptor descriptor = TestIndexDescriptorFactory.forLabel( 1, 2 );
+    private final IndexDescriptor2 descriptor = IndexPrototype.forSchema( SchemaDescriptor.forLabel( 1, 2 ) ).materialise( indexId );
     private final IndexAccessor accessor = mock( IndexAccessor.class );
     private final IndexStoreView storeView = mock( IndexStoreView.class );
     private final IndexStatisticsStore indexStatisticsStore = mock( IndexStatisticsStore.class );
@@ -43,8 +43,7 @@ class OnlineIndexProxyTest
     void shouldRemoveIndexCountsWhenTheIndexItselfIsDropped()
     {
         // given
-        CapableIndexDescriptor capableIndexDescriptor = descriptor.withId( indexId ).withoutCapabilities();
-        OnlineIndexProxy index = new OnlineIndexProxy( capableIndexDescriptor, accessor, indexStatisticsStore, false );
+        OnlineIndexProxy index = new OnlineIndexProxy( descriptor, accessor, indexStatisticsStore, false );
 
         // when
         index.drop();

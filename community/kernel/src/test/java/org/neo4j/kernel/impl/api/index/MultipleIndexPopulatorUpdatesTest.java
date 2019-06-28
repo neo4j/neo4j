@@ -28,6 +28,8 @@ import java.util.function.Supplier;
 
 import org.neo4j.common.EntityType;
 import org.neo4j.internal.helpers.collection.Visitor;
+import org.neo4j.internal.schema.IndexDescriptor2;
+import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.LabelSchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.internal.schema.SchemaState;
@@ -35,10 +37,7 @@ import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.exceptions.index.IndexPopulationFailedKernelException;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.IndexUpdater;
-import org.neo4j.kernel.api.schema.index.TestIndexDescriptorFactory;
 import org.neo4j.kernel.impl.api.index.stats.IndexStatisticsStore;
-import org.neo4j.kernel.impl.index.schema.IndexDescriptor;
-import org.neo4j.kernel.impl.index.schema.StoreIndexDescriptor;
 import org.neo4j.kernel.impl.transaction.state.storeview.NeoStoreIndexStoreView;
 import org.neo4j.kernel.impl.transaction.state.storeview.StoreViewNodeStoreScan;
 import org.neo4j.kernel.impl.util.Listener;
@@ -78,7 +77,7 @@ class MultipleIndexPopulatorUpdatesTest
         IndexPopulator populator = createIndexPopulator();
         IndexUpdater indexUpdater = mock( IndexUpdater.class );
 
-        addPopulator( indexPopulator, populator, 1, TestIndexDescriptorFactory.forLabel( 1, 1 ) );
+        addPopulator( indexPopulator, populator, 1, IndexPrototype.forSchema( SchemaDescriptor.forLabel( 1, 1 ) ) );
 
         indexPopulator.create();
         StoreScan<IndexPopulationFailedKernelException> storeScan = indexPopulator.indexAllEntities();
@@ -93,17 +92,16 @@ class MultipleIndexPopulatorUpdatesTest
     }
 
     private static void addPopulator( MultipleIndexPopulator multipleIndexPopulator,
-        IndexPopulator indexPopulator, long indexId, IndexDescriptor descriptor )
+        IndexPopulator indexPopulator, long indexId, IndexPrototype prototype )
     {
-        addPopulator( multipleIndexPopulator, descriptor.withId( indexId ), indexPopulator, mock( FlippableIndexProxy.class ),
+        addPopulator( multipleIndexPopulator, prototype.materialise( indexId ), indexPopulator, mock( FlippableIndexProxy.class ),
                 mock( FailedIndexProxyFactory.class ) );
     }
 
-    private static void addPopulator( MultipleIndexPopulator multipleIndexPopulator, StoreIndexDescriptor descriptor,
+    private static void addPopulator( MultipleIndexPopulator multipleIndexPopulator, IndexDescriptor2 descriptor,
         IndexPopulator indexPopulator, FlippableIndexProxy flippableIndexProxy, FailedIndexProxyFactory failedIndexProxyFactory )
     {
-        multipleIndexPopulator.addPopulator( indexPopulator, descriptor.withoutCapabilities(), flippableIndexProxy, failedIndexProxyFactory,
-                "userIndexDescription" );
+        multipleIndexPopulator.addPopulator( indexPopulator, descriptor, flippableIndexProxy, failedIndexProxyFactory, "userIndexDescription" );
     }
 
     private static class NodeUpdateProcessListener implements Listener<StorageNodeCursor>

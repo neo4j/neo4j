@@ -35,7 +35,8 @@ import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.ValueType;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.neo4j.kernel.api.schema.index.TestIndexDescriptorFactory.forLabel;
+import static org.neo4j.internal.schema.IndexPrototype.forSchema;
+import static org.neo4j.internal.schema.SchemaDescriptor.forLabel;
 import static org.neo4j.kernel.impl.index.schema.NativeIndexKey.Inclusion.NEUTRAL;
 import static org.neo4j.kernel.impl.index.schema.ValueCreatorUtil.FRACTION_DUPLICATE_NON_UNIQUE;
 import static org.neo4j.kernel.impl.index.schema.ValueCreatorUtil.countUniqueValues;
@@ -105,7 +106,7 @@ public class FullScanNonUniqueIndexSamplerTest extends NativeIndexTestUtil<Gener
     @Override
     protected ValueCreatorUtil<GenericKey,NativeIndexValue> createValueCreatorUtil()
     {
-        return new ValueCreatorUtil<>( forLabel( 42, 666 ).withId( 0 ), typesOfGroup( NUMBER ), FRACTION_DUPLICATE_NON_UNIQUE );
+        return new ValueCreatorUtil<>( forSchema( forLabel( 42, 666 ) ).materialise( 0 ), typesOfGroup( NUMBER ), FRACTION_DUPLICATE_NON_UNIQUE );
     }
 
     @Override

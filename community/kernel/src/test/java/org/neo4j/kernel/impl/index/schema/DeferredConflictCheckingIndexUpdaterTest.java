@@ -25,6 +25,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.neo4j.internal.kernel.api.IndexQuery;
+import org.neo4j.internal.schema.IndexDescriptor2;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexReader;
 import org.neo4j.kernel.api.index.IndexUpdater;
@@ -52,7 +53,7 @@ class DeferredConflictCheckingIndexUpdaterTest
 {
     private static final int labelId = 1;
     private final int[] propertyKeyIds = {2, 3};
-    private final IndexDescriptor descriptor = TestIndexDescriptorFactory.forLabel( labelId, propertyKeyIds );
+    private final IndexDescriptor2 descriptor = TestIndexDescriptorFactory.forLabel( labelId, propertyKeyIds );
 
     @Test
     void shouldQueryAboutAddedAndChangedValueTuples() throws Exception
@@ -62,7 +63,7 @@ class DeferredConflictCheckingIndexUpdaterTest
         IndexReader reader = mock( IndexReader.class );
         doAnswer( new NodeIdsIndexReaderQueryAnswer( descriptor, 0 ) ).when( reader ).query( any(), any(), any(), anyBoolean(), any() );
         long nodeId = 0;
-        List<IndexEntryUpdate<IndexDescriptor>> updates = new ArrayList<>();
+        List<IndexEntryUpdate<IndexDescriptor2>> updates = new ArrayList<>();
         updates.add( add( nodeId++, descriptor, tuple( 10, 11 ) ) );
         updates.add( change( nodeId++, descriptor, tuple( "abc", "def" ), tuple( "ghi", "klm" ) ) );
         updates.add( remove( nodeId++, descriptor, tuple( 1001L, 1002L ) ) );
@@ -71,7 +72,7 @@ class DeferredConflictCheckingIndexUpdaterTest
         try ( DeferredConflictCheckingIndexUpdater updater = new DeferredConflictCheckingIndexUpdater( actual, () -> reader, descriptor ) )
         {
             // when
-            for ( IndexEntryUpdate<IndexDescriptor> update : updates )
+            for ( IndexEntryUpdate<IndexDescriptor2> update : updates )
             {
                 updater.process( update );
                 verify( actual ).process( update );
@@ -79,7 +80,7 @@ class DeferredConflictCheckingIndexUpdaterTest
         }
 
         // then
-        for ( IndexEntryUpdate<IndexDescriptor> update : updates )
+        for ( IndexEntryUpdate<IndexDescriptor2> update : updates )
         {
             if ( update.updateMode() == UpdateMode.ADDED || update.updateMode() == UpdateMode.CHANGED )
             {

@@ -30,14 +30,13 @@ import java.util.List;
 
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.kernel.api.exceptions.schema.MisconfiguredIndexException;
+import org.neo4j.internal.schema.IndexDescriptor2;
+import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.IndexProviderDescriptor;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.index.IndexSample;
 import org.neo4j.kernel.impl.index.schema.GenericNativeIndexProvider;
-import org.neo4j.kernel.impl.index.schema.IndexDescriptor;
-import org.neo4j.kernel.impl.index.schema.IndexDescriptorFactory;
-import org.neo4j.kernel.impl.index.schema.StoreIndexDescriptor;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.RandomExtension;
 import org.neo4j.test.rule.RandomRule;
@@ -67,8 +66,8 @@ import static org.neo4j.kernel.impl.index.schema.fusion.IndexSlot.LUCENE;
 abstract class FusionIndexProviderTest
 {
     private static final IndexProviderDescriptor DESCRIPTOR = new IndexProviderDescriptor( "test-fusion", "1" );
-    private static final StoreIndexDescriptor AN_INDEX =
-            IndexDescriptorFactory.forSchema( forLabel( 0, 0 ), PROVIDER_DESCRIPTOR ).withId( 0 );
+    private static final IndexDescriptor2 AN_INDEX =
+            IndexPrototype.forSchema( forLabel( 0, 0 ), PROVIDER_DESCRIPTOR ).materialise( 0 );
 
     private final FusionVersion fusionVersion;
     private EnumMap<IndexSlot,IndexProvider> providers;
@@ -199,7 +198,7 @@ abstract class FusionIndexProviderTest
         IllegalStateException failure = new IllegalStateException( "not failed" );
         for ( IndexProvider provider : aliveProviders )
         {
-            when( provider.getPopulationFailure( any( StoreIndexDescriptor.class ) ) ).thenThrow( failure );
+            when( provider.getPopulationFailure( any( IndexDescriptor2.class ) ) ).thenThrow( failure );
         }
 
         assertThrows( IllegalStateException.class, () -> fusionIndexProvider.getPopulationFailure( AN_INDEX ) );
@@ -217,11 +216,11 @@ abstract class FusionIndexProviderTest
             {
                 if ( provider == failingProvider )
                 {
-                    when( provider.getPopulationFailure( any( StoreIndexDescriptor.class ) ) ).thenReturn( failure );
+                    when( provider.getPopulationFailure( any( IndexDescriptor2.class ) ) ).thenReturn( failure );
                 }
                 else
                 {
-                    when( provider.getPopulationFailure( any( StoreIndexDescriptor.class ) ) ).thenThrow( exception );
+                    when( provider.getPopulationFailure( any( IndexDescriptor2.class ) ) ).thenThrow( exception );
                 }
             }
 
@@ -239,7 +238,7 @@ abstract class FusionIndexProviderTest
         {
             String failureMessage = "FAILURE[" + aliveProvider + "]";
             failureMessages.add( failureMessage );
-            when( aliveProvider.getPopulationFailure( any( StoreIndexDescriptor.class ) ) ).thenReturn( failureMessage );
+            when( aliveProvider.getPopulationFailure( any( IndexDescriptor2.class ) ) ).thenReturn( failureMessage );
         }
 
         // then
@@ -297,26 +296,23 @@ abstract class FusionIndexProviderTest
     @Test
     void shouldBlessWithAllProviders() throws MisconfiguredIndexException
     {
-        // given
-        IndexDescriptor indexDescriptor = AN_INDEX;
-
         // when
         for ( IndexProvider aliveProvider : aliveProviders )
         {
-            when( aliveProvider.bless( any( IndexDescriptor.class ) ) ).then( returnsFirstArg() );
+            when( aliveProvider.bless( any( IndexDescriptor2.class ) ) ).then( returnsFirstArg() );
         }
-        indexDescriptor = fusionIndexProvider.bless( indexDescriptor );
+        fusionIndexProvider.bless( AN_INDEX );
 
         // then
         for ( IndexProvider aliveProvider : aliveProviders )
         {
-            verify( aliveProvider, times( 1 ) ).bless( any( IndexDescriptor.class ) );
+            verify( aliveProvider, times( 1 ) ).bless( any( IndexDescriptor2.class ) );
         }
     }
 
     private static void setInitialState( IndexProvider mockedProvider, InternalIndexState state )
     {
-        when( mockedProvider.getInitialState( any( StoreIndexDescriptor.class ) ) ).thenReturn( state );
+        when( mockedProvider.getInitialState( any( IndexDescriptor2.class ) ) ).thenReturn( state );
     }
 
     private IndexProvider orLucene( IndexProvider provider )

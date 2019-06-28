@@ -37,6 +37,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.TreeMap;
 
+import org.neo4j.internal.schema.IndexDescriptor2;
 import org.neo4j.internal.schema.IndexOrder;
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.internal.schema.SchemaDescriptor;
@@ -79,7 +80,7 @@ import static org.neo4j.values.storable.Values.stringValue;
 
 class TxStateIndexChangesTest
 {
-    private final IndexDescriptor index = TestIndexDescriptorFactory.forLabel( 1, 1 );
+    private final IndexDescriptor2 index = TestIndexDescriptorFactory.forLabel( 1, 1 );
 
     @Test
     void shouldComputeIndexUpdatesForScanOnAnEmptyTxState()
@@ -546,8 +547,8 @@ class TxStateIndexChangesTest
     @Nested
     class CompositeIndex
     {
-        private final IndexDescriptor compositeIndex = TestIndexDescriptorFactory.forLabel( 1, 1, 2 );
-        private final IndexDescriptor compositeIndex3properties = TestIndexDescriptorFactory.forLabel( 1, 1, 2, 3 );
+        private final IndexDescriptor2 compositeIndex = TestIndexDescriptorFactory.forLabel( 1, 1, 2 );
+        private final IndexDescriptor2 compositeIndex3properties = TestIndexDescriptorFactory.forLabel( 1, 1, 2, 3 );
 
         @Test
         void shouldSeekOnAnEmptyTxState()

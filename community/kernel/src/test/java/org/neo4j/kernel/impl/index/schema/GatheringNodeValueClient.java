@@ -19,9 +19,9 @@
  */
 package org.neo4j.kernel.impl.index.schema;
 
-import org.neo4j.internal.schema.IndexOrder;
 import org.neo4j.internal.kernel.api.IndexQuery;
-import org.neo4j.internal.schema.IndexDescriptor;
+import org.neo4j.internal.schema.IndexDescriptor2;
+import org.neo4j.internal.schema.IndexOrder;
 import org.neo4j.kernel.api.index.IndexProgressor;
 import org.neo4j.values.storable.Value;
 
@@ -32,14 +32,14 @@ public class GatheringNodeValueClient implements IndexProgressor.EntityValueClie
 {
     public long reference;
     public Value[] values;
-    public IndexDescriptor descriptor;
+    public IndexDescriptor2 descriptor;
     public IndexProgressor progressor;
     public IndexQuery[] query;
     public IndexOrder order;
     public boolean needsValues;
 
     @Override
-    public void initialize( IndexDescriptor descriptor, IndexProgressor progressor, IndexQuery[] query, IndexOrder order, boolean needsValues,
+    public void initialize( IndexDescriptor2 descriptor, IndexProgressor progressor, IndexQuery[] query, IndexOrder order, boolean needsValues,
             boolean indexIncludesTransactionState )
     {
         this.descriptor = descriptor;

@@ -597,7 +597,8 @@ class OperationsTest
     {
         // given
         String defaultProvider = Config.defaults().get( default_schema_provider );
-        when( constraintIndexCreator.createUniquenessConstraintIndex( transaction, descriptor, defaultProvider ) ).thenReturn( 42L );
+        IndexDescriptor2 constraintIndex = IndexPrototype.forSchema( descriptor ).materialise( 42 );
+        when( constraintIndexCreator.createUniquenessConstraintIndex( transaction, descriptor, defaultProvider ) ).thenReturn( constraintIndex );
         when( storageReader.constraintsGetForSchema(  descriptor.schema() ) ).thenReturn( Collections.emptyIterator() );
 
         // when
@@ -605,7 +606,7 @@ class OperationsTest
 
         // then
         order.verify( locks ).acquireExclusive( LockTracer.NONE, ResourceTypes.LABEL, descriptor.getLabelId() );
-        order.verify( txState ).constraintDoAdd( ConstraintDescriptorFactory.uniqueForSchema( descriptor ), 42L );
+        order.verify( txState ).constraintDoAdd( ConstraintDescriptorFactory.uniqueForSchema( descriptor ), constraintIndex );
     }
 
     @Test

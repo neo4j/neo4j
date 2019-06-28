@@ -36,10 +36,11 @@ import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.function.Function;
 
-import org.neo4j.internal.schema.IndexOrder;
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.internal.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.internal.kernel.api.exceptions.schema.MisconfiguredIndexException;
+import org.neo4j.internal.schema.IndexDescriptor2;
+import org.neo4j.internal.schema.IndexOrder;
 import org.neo4j.internal.schema.IndexProviderDescriptor;
 import org.neo4j.internal.unsafe.UnsafeUtil;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -74,12 +75,12 @@ import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.neo4j.internal.kernel.api.QueryContext.NULL_CONTEXT;
+import static org.neo4j.internal.schema.IndexPrototype.forSchema;
 import static org.neo4j.internal.schema.SchemaDescriptor.forLabel;
 import static org.neo4j.io.ByteUnit.kibiBytes;
 import static org.neo4j.kernel.api.index.IndexDirectoryStructure.directoriesByProvider;
 import static org.neo4j.kernel.api.index.IndexDirectoryStructure.directoriesBySubProvider;
 import static org.neo4j.kernel.impl.index.schema.ByteBufferFactory.heapBufferFactory;
-import static org.neo4j.kernel.impl.index.schema.IndexDescriptorFactory.forSchema;
 import static org.neo4j.storageengine.api.IndexEntryUpdate.add;
 import static org.neo4j.storageengine.api.IndexEntryUpdate.change;
 import static org.neo4j.storageengine.api.IndexEntryUpdate.remove;
@@ -108,8 +109,8 @@ abstract class IndexPopulationStressTest
     private final Function<RandomValues, Value> valueGenerator;
     private final Function<IndexPopulationStressTest, IndexProvider> providerCreator;
 
-    private StoreIndexDescriptor descriptor;
-    private StoreIndexDescriptor descriptor2;
+    private IndexDescriptor2 descriptor;
+    private IndexDescriptor2 descriptor2;
     private final IndexSamplingConfig samplingConfig = new IndexSamplingConfig( 1000, 0.2, true );
     private final NodePropertyAccessor nodePropertyAccessor = mock( NodePropertyAccessor.class );
     private IndexPopulator populator;
@@ -136,8 +137,8 @@ abstract class IndexPopulationStressTest
     void setup() throws IOException, EntityNotFoundException, MisconfiguredIndexException
     {
         indexProvider = providerCreator.apply( this );
-        descriptor = indexProvider.bless( forSchema( forLabel( 0, 0 ), PROVIDER ) ).withId( 0 );
-        descriptor2 = indexProvider.bless( forSchema( forLabel( 1, 0 ), PROVIDER ) ).withId( 1 );
+        descriptor = indexProvider.bless( forSchema( forLabel( 0, 0 ), PROVIDER ) ).materialise( 0 );
+        descriptor2 = indexProvider.bless( forSchema( forLabel( 1, 0 ), PROVIDER ) ).materialise( 1 );
         fs.mkdirs( indexProvider.directoryStructure().rootDirectory() );
         populator = indexProvider.getPopulator( descriptor, samplingConfig, heapBufferFactory( (int) kibiBytes( 40 ) ) );
         when( nodePropertyAccessor.getNodePropertyValue( anyLong(), anyInt() ) ).thenThrow( UnsupportedOperationException.class );

@@ -48,6 +48,8 @@ import org.neo4j.internal.helpers.collection.Iterators;
 import org.neo4j.internal.helpers.collection.Pair;
 import org.neo4j.internal.schema.ConstraintDescriptor;
 import org.neo4j.internal.schema.IndexDescriptor2;
+import org.neo4j.internal.schema.IndexPrototype;
+import org.neo4j.internal.schema.LabelSchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.internal.schema.constraints.ConstraintDescriptorFactory;
 import org.neo4j.internal.schema.constraints.IndexBackedConstraintDescriptor;
@@ -85,6 +87,7 @@ import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.internal.verification.VerificationModeFactory.times;
 import static org.neo4j.internal.helpers.collection.Iterators.asSet;
 import static org.neo4j.internal.helpers.collection.Pair.of;
+import static org.neo4j.internal.schema.SchemaDescriptor.forLabel;
 import static org.neo4j.values.storable.Values.stringValue;
 
 @ExtendWith( RandomExtension.class )
@@ -335,8 +338,9 @@ abstract class TxStateTest
     void shouldAddUniquenessConstraint()
     {
         // when
-        UniquenessConstraintDescriptor constraint = ConstraintDescriptorFactory.uniqueForLabel( 1, 17 );
-        state.constraintDoAdd( constraint, 7 );
+        LabelSchemaDescriptor schema = forLabel( 1, 17 );
+        UniquenessConstraintDescriptor constraint = ConstraintDescriptorFactory.uniqueForSchema( schema );
+        state.constraintDoAdd( constraint, IndexPrototype.uniqueForSchema( schema ).materialise( 7 ) );
 
         // then
         DiffSets<ConstraintDescriptor> diff = state.constraintsChangesForLabel( 1 );
@@ -349,12 +353,13 @@ abstract class TxStateTest
     void addingUniquenessConstraintShouldBeIdempotent()
     {
         // given
-        UniquenessConstraintDescriptor constraint1 = ConstraintDescriptorFactory.uniqueForLabel( 1, 17 );
-        state.constraintDoAdd( constraint1, 7 );
+        LabelSchemaDescriptor schema = forLabel( 1, 17 );
+        UniquenessConstraintDescriptor constraint1 = ConstraintDescriptorFactory.uniqueForSchema( schema );
+        state.constraintDoAdd( constraint1, IndexPrototype.uniqueForSchema( schema ).materialise( 7 ) );
 
         // when
-        UniquenessConstraintDescriptor constraint2 = ConstraintDescriptorFactory.uniqueForLabel( 1, 17 );
-        state.constraintDoAdd( constraint2, 19 );
+        UniquenessConstraintDescriptor constraint2 = ConstraintDescriptorFactory.uniqueForSchema( schema );
+        state.constraintDoAdd( constraint2, IndexPrototype.uniqueForSchema( schema ).materialise( 19 ) );
 
         // then
         assertEquals( constraint1, constraint2 );
@@ -365,10 +370,12 @@ abstract class TxStateTest
     void shouldDifferentiateBetweenUniquenessConstraintsForDifferentLabels()
     {
         // when
-        UniquenessConstraintDescriptor constraint1 = ConstraintDescriptorFactory.uniqueForLabel( 1, 17 );
-        state.constraintDoAdd( constraint1, 7 );
-        UniquenessConstraintDescriptor constraint2 = ConstraintDescriptorFactory.uniqueForLabel( 2, 17 );
-        state.constraintDoAdd( constraint2, 19 );
+        LabelSchemaDescriptor schema1 = forLabel( 1, 17 );
+        UniquenessConstraintDescriptor constraint1 = ConstraintDescriptorFactory.uniqueForSchema( schema1 );
+        state.constraintDoAdd( constraint1, IndexPrototype.uniqueForSchema( schema1 ).materialise( 7 ) );
+        LabelSchemaDescriptor schema2 = forLabel( 2, 17 );
+        UniquenessConstraintDescriptor constraint2 = ConstraintDescriptorFactory.uniqueForSchema( schema2 );
+        state.constraintDoAdd( constraint2, IndexPrototype.uniqueForSchema( schema2 ).materialise( 19 ) );
 
         // then
         assertEquals( singleton( constraint1 ), state.constraintsChangesForLabel( 1 ).getAdded() );
@@ -909,7 +916,7 @@ abstract class TxStateTest
         assertFalse( state.hasDataChanges() );
 
         IndexBackedConstraintDescriptor constraint2 = ConstraintDescriptorFactory.nodeKeyForLabel( 0, 0 );
-        state.constraintDoAdd( constraint2, 0 );
+        state.constraintDoAdd( constraint2, IndexPrototype.uniqueForSchema( forLabel( 0, 0 ) ).materialise( 0 ) );
         assertThat( state.getDataRevision(), is( 0L ) );
         assertFalse( state.hasDataChanges() );
 

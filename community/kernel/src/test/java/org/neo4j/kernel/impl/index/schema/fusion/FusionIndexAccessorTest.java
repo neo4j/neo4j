@@ -36,6 +36,8 @@ import java.util.Set;
 
 import org.neo4j.internal.helpers.collection.BoundedIterable;
 import org.neo4j.internal.helpers.collection.Iterables;
+import org.neo4j.internal.schema.IndexDescriptor2;
+import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.api.index.IndexAccessor;
@@ -43,8 +45,6 @@ import org.neo4j.kernel.api.index.IndexDirectoryStructure;
 import org.neo4j.kernel.api.index.IndexReader;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
-import org.neo4j.kernel.impl.index.schema.IndexDescriptorFactory;
-import org.neo4j.kernel.impl.index.schema.StoreIndexDescriptor;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.RandomExtension;
 import org.neo4j.test.rule.RandomRule;
@@ -82,8 +82,8 @@ abstract class FusionIndexAccessorTest
     private FusionIndexAccessor fusionIndexAccessor;
     private EnumMap<IndexSlot,IndexAccessor> accessors;
     private IndexAccessor[] aliveAccessors;
-    private StoreIndexDescriptor indexDescriptor =
-            IndexDescriptorFactory.forSchema( SchemaDescriptor.forLabel( 1, 42 ) ).withId( indexId );
+    private IndexDescriptor2 indexDescriptor =
+            IndexPrototype.forSchema( SchemaDescriptor.forLabel( 1, 42 ) ).materialise( indexId );
     private FileSystemAbstraction fs;
     private IndexDirectoryStructure directoryStructure;
 

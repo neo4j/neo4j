@@ -29,6 +29,8 @@ import java.io.IOException;
 import org.neo4j.configuration.Config;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.internal.kernel.api.InternalIndexState;
+import org.neo4j.internal.schema.IndexDescriptor2;
+import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
@@ -112,7 +114,7 @@ abstract class NativeIndexProviderTests
         provider = newProvider();
 
         // when
-        StoreIndexDescriptor descriptor = descriptorUnique();
+        IndexDescriptor2 descriptor = descriptorUnique();
         try ( IndexAccessor accessor = provider.getOnlineAccessor( descriptor, samplingConfig() );
             IndexUpdater indexUpdater = accessor.newUpdater( IndexUpdateMode.ONLINE ) )
         {
@@ -325,19 +327,19 @@ abstract class NativeIndexProviderTests
         return new IndexSamplingConfig( Config.defaults() );
     }
 
-    private static StoreIndexDescriptor descriptor()
+    private static IndexDescriptor2 descriptor()
     {
-        return IndexDescriptorFactory.forSchema( forLabel( labelId, propId ), PROVIDER_DESCRIPTOR ).withId( indexId );
+        return IndexPrototype.forSchema( forLabel( labelId, propId ), PROVIDER_DESCRIPTOR ).materialise( indexId );
     }
 
-    private static StoreIndexDescriptor descriptor( long indexId )
+    private static IndexDescriptor2 descriptor( long indexId )
     {
-        return IndexDescriptorFactory.forSchema( forLabel( labelId, propId ), PROVIDER_DESCRIPTOR ).withId( indexId );
+        return IndexPrototype.forSchema( forLabel( labelId, propId ), PROVIDER_DESCRIPTOR ).materialise( indexId );
     }
 
-    private static StoreIndexDescriptor descriptorUnique()
+    private static IndexDescriptor2 descriptorUnique()
     {
-        return IndexDescriptorFactory.uniqueForSchema( forLabel( labelId, propId ), PROVIDER_DESCRIPTOR ).withId( indexId );
+        return IndexPrototype.uniqueForSchema( forLabel( labelId, propId ), PROVIDER_DESCRIPTOR ).materialise( indexId );
     }
 
     @FunctionalInterface

@@ -22,8 +22,8 @@ package org.neo4j.kernel.impl.api.index;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import org.neo4j.internal.schema.IndexDescriptor2;
 import org.neo4j.kernel.api.index.IndexUpdater;
-import org.neo4j.kernel.impl.index.schema.CapableIndexDescriptor;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
@@ -34,23 +34,23 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.neo4j.internal.schema.IndexPrototype.forSchema;
 import static org.neo4j.internal.schema.SchemaDescriptor.forLabel;
 import static org.neo4j.kernel.impl.api.index.TestIndexProviderDescriptor.PROVIDER_DESCRIPTOR;
-import static org.neo4j.kernel.impl.index.schema.IndexDescriptorFactory.forSchema;
 
 class IndexUpdaterMapTest
 {
     private IndexMap indexMap;
 
     private IndexProxy indexProxy1;
-    private CapableIndexDescriptor schemaIndexDescriptor1;
+    private IndexDescriptor2 schemaIndexDescriptor1;
     private IndexUpdater indexUpdater1;
 
     private IndexProxy indexProxy2;
-    private CapableIndexDescriptor schemaIndexDescriptor2;
+    private IndexDescriptor2 schemaIndexDescriptor2;
 
     private IndexProxy indexProxy3;
-    private CapableIndexDescriptor schemaIndexDescriptor3;
+    private IndexDescriptor2 schemaIndexDescriptor3;
 
     private IndexUpdaterMap updaterMap;
 
@@ -60,19 +60,19 @@ class IndexUpdaterMapTest
         indexMap = new IndexMap();
 
         indexProxy1 = mock( IndexProxy.class );
-        schemaIndexDescriptor1 = forSchema( forLabel( 2, 3 ), PROVIDER_DESCRIPTOR ).withId( 0 ).withoutCapabilities();
+        schemaIndexDescriptor1 = forSchema( forLabel( 2, 3 ), PROVIDER_DESCRIPTOR ).materialise( 0 );
         indexUpdater1 = mock( IndexUpdater.class );
         when( indexProxy1.getDescriptor() ).thenReturn( schemaIndexDescriptor1 );
         when( indexProxy1.newUpdater( any( IndexUpdateMode.class ) ) ).thenReturn( indexUpdater1 );
 
         indexProxy2 = mock( IndexProxy.class );
-        schemaIndexDescriptor2 = forSchema( forLabel( 5, 6 ), PROVIDER_DESCRIPTOR ).withId( 1 ).withoutCapabilities();
+        schemaIndexDescriptor2 = forSchema( forLabel( 5, 6 ), PROVIDER_DESCRIPTOR ).materialise( 1 );
         IndexUpdater indexUpdater2 = mock( IndexUpdater.class );
         when( indexProxy2.getDescriptor() ).thenReturn( schemaIndexDescriptor2 );
         when( indexProxy2.newUpdater( any( IndexUpdateMode.class ) ) ).thenReturn( indexUpdater2 );
 
         indexProxy3 = mock( IndexProxy.class );
-        schemaIndexDescriptor3 = forSchema( forLabel( 5, 7, 8 ), PROVIDER_DESCRIPTOR ).withId( 2 ).withoutCapabilities();
+        schemaIndexDescriptor3 = forSchema( forLabel( 5, 7, 8 ), PROVIDER_DESCRIPTOR ).materialise( 2 );
         IndexUpdater indexUpdater3 = mock( IndexUpdater.class );
         when( indexProxy3.getDescriptor() ).thenReturn( schemaIndexDescriptor3 );
         when( indexProxy3.newUpdater( any( IndexUpdateMode.class ) ) ).thenReturn( indexUpdater3 );

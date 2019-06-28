@@ -23,14 +23,14 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import org.neo4j.internal.schema.IndexConfig;
+import org.neo4j.internal.schema.IndexDescriptor2;
 import org.neo4j.internal.schema.LabelSchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptor;
-import org.neo4j.kernel.impl.index.schema.CapableIndexDescriptor;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.common.EntityType.NODE;
 import static org.neo4j.common.EntityType.RELATIONSHIP;
-import static org.neo4j.kernel.impl.index.schema.IndexDescriptorFactory.forSchema;
+import static org.neo4j.internal.schema.IndexPrototype.forSchema;
 
 class IndexMapTest
 {
@@ -47,11 +47,11 @@ class IndexMapTest
     void setup()
     {
         indexMap = new IndexMap();
-        indexMap.putIndexProxy( new TestIndexProxy( forSchema( schema3_4 ).withId( 1 ).withoutCapabilities() ) );
-        indexMap.putIndexProxy( new TestIndexProxy( forSchema( schema5_6_7 ).withId( 2 ).withoutCapabilities() ) );
-        indexMap.putIndexProxy( new TestIndexProxy( forSchema( schema5_8 ).withId( 3 ).withoutCapabilities() ) );
-        indexMap.putIndexProxy( new TestIndexProxy( forSchema( node35_8 ).withId( 4 ).withoutCapabilities() ) );
-        indexMap.putIndexProxy( new TestIndexProxy( forSchema( rel35_8 ).withId( 5 ).withoutCapabilities() ) );
+        indexMap.putIndexProxy( new TestIndexProxy( forSchema( schema3_4 ).materialise( 1 ) ) );
+        indexMap.putIndexProxy( new TestIndexProxy( forSchema( schema5_6_7 ).materialise( 2 ) ) );
+        indexMap.putIndexProxy( new TestIndexProxy( forSchema( schema5_8 ).materialise( 3 ) ) );
+        indexMap.putIndexProxy( new TestIndexProxy( forSchema( node35_8 ).materialise( 4 ) ) );
+        indexMap.putIndexProxy( new TestIndexProxy( forSchema( rel35_8 ).materialise( 5 ) ) );
     }
 
     @Test
@@ -72,15 +72,15 @@ class IndexMapTest
 
     private class TestIndexProxy extends IndexProxyAdapter
     {
-        private final CapableIndexDescriptor descriptor;
+        private final IndexDescriptor2 descriptor;
 
-        private TestIndexProxy( CapableIndexDescriptor descriptor )
+        private TestIndexProxy( IndexDescriptor2 descriptor )
         {
             this.descriptor = descriptor;
         }
 
         @Override
-        public CapableIndexDescriptor getDescriptor()
+        public IndexDescriptor2 getDescriptor()
         {
             return descriptor;
         }
