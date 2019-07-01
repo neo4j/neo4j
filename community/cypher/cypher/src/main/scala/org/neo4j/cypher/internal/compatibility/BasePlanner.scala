@@ -42,11 +42,9 @@ abstract class BasePlanner[STATEMENT <: AnyRef, PARSED_STATE <: AnyRef](
                                                 config: CypherPlannerConfiguration,
                                                 clock: Clock,
                                                 kernelMonitors: KernelMonitors,
-                                                log: Log,
                                                 txIdProvider: () => Long
                                                ) extends CachingPlanner[PARSED_STATE] {
 
-  protected val logger: InfoLogger = new StringInfoLogger(log)
   protected val monitors: Monitors = WrappedMonitorsv3_5(kernelMonitors)
 
   protected val cacheTracer: CacheTracer[Pair[STATEMENT, ParameterTypeMap]] = monitors.newMonitor[CacheTracer[Pair[STATEMENT, ParameterTypeMap]]]("cypher3.5")
@@ -64,10 +62,10 @@ abstract class BasePlanner[STATEMENT <: AnyRef, PARSED_STATE <: AnyRef](
     Math.max(super.clearCaches(), planCache.clear())
   }
 
-  protected def logStalePlanRemovalMonitor(log: InfoLogger): CacheTracer[STATEMENT] =
+  protected def logStalePlanRemovalMonitor(log: Log): CacheTracer[STATEMENT] =
     new CacheTracer[STATEMENT] {
       override def queryCacheStale(key: STATEMENT, secondsSinceReplan: Int, metaData: String) {
-        log.info(s"Discarded stale query from the query cache after $secondsSinceReplan seconds: $metaData")
+        log.debug(s"Discarded stale plan from the plan cache after $secondsSinceReplan seconds: $metaData")
       }
 
       override def queryCacheHit(queryKey: STATEMENT, metaData: String): Unit = {}
@@ -104,13 +102,3 @@ trait CypherCacheHitMonitor[T] {
 
 trait CypherCacheMonitor[T] extends CypherCacheHitMonitor[T] with CypherCacheFlushingMonitor
 trait AstCacheMonitor[STATEMENT <: AnyRef] extends CypherCacheMonitor[STATEMENT]
-
-trait InfoLogger {
-  def info(message: String)
-}
-
-class StringInfoLogger(log: Log) extends InfoLogger {
-  def info(message: String) {
-    log.info(message)
-  }
-}
