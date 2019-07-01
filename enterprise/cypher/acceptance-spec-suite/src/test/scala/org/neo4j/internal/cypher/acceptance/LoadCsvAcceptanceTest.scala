@@ -26,6 +26,7 @@ import java.io.{File, PrintWriter}
 import java.net.{URL, URLConnection, URLStreamHandler, URLStreamHandlerFactory}
 import java.nio.file.Files
 import java.util.Collections.emptyMap
+import java.util.concurrent.TimeUnit
 
 import org.neo4j.cypher._
 import org.neo4j.cypher.internal.frontend.v3_4.helpers.StringHelper.RichString
@@ -110,6 +111,10 @@ class LoadCsvAcceptanceTest
 
     innerExecuteDeprecated("CREATE INDEX ON :Permission(platformId)")
     innerExecuteDeprecated("CREATE INDEX ON :Login(loginId)")
+
+    graph.inTx {
+      graph.schema().awaitIndexesOnline(10, TimeUnit.MINUTES)
+    }
 
     val query =
       s"""
