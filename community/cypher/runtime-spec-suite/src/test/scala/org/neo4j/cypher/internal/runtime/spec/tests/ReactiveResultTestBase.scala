@@ -29,6 +29,7 @@ import org.neo4j.cypher.result.RuntimeResult
 import org.neo4j.kernel.impl.query.QuerySubscriber
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.Values.{intValue, longValue, stringValue}
+import org.neo4j.values.virtual.VirtualValues
 
 abstract class ReactiveResultTestBase[CONTEXT <: RuntimeContext](edition: Edition[CONTEXT],
                                                                  runtime: CypherRuntime[CONTEXT])
@@ -157,6 +158,33 @@ abstract class ReactiveResultTestBase[CONTEXT <: RuntimeContext](edition: Editio
 
     //Then
     result.await() shouldBe false
+    subscriber.numberOfSeenResults shouldBe 1
+    subscriber.isCompleted shouldBe false
+  }
+
+  test("should handle cancel stream and close cursors") {
+    //Given
+    val nodes = nodeGraph(3)
+
+    val subscriber = new TestSubscriber
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x")
+      .allNodeScan("x")
+      .build()
+
+    val result = execute(logicalQuery, runtime, subscriber)
+
+    //When
+    result.request(1)
+    result.await() shouldBe true
+    subscriber.lastSeen should equal(Array(VirtualValues.node(nodes.head.getId)))
+    subscriber.isCompleted shouldBe false
+    result.cancel()
+    result.request(1)
+
+    //Then
+    result.await() shouldBe false
+    subscriber.numberOfSeenResults shouldBe 1
     subscriber.isCompleted shouldBe false
   }
 
