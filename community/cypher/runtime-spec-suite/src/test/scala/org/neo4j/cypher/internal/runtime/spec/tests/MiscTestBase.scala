@@ -169,7 +169,7 @@ abstract class MiscTestBase[CONTEXT <: RuntimeContext](edition: Edition[CONTEXT]
     runtimeResult should beColumns("x").withRows(rowCount(100))
   }
 
-  // TODO  Sort-Apply-Sort-Bug: re-enable
+  // TODO  Reduce-Apply-Reduce-Bug: re-enable
   ignore("should sort on top of apply with all node scan and sort on rhs of apply") {
     // given
     val nodes = nodeGraph(10)
