@@ -571,7 +571,7 @@ public class EphemeralFileSystemAbstraction implements FileSystemAbstraction
         copyRecursivelyFromOtherFs( fromDirectory, this, toDirectory, newCopyBuffer() );
     }
 
-    public EphemeralFileSystemAbstraction snapshot()
+    public synchronized EphemeralFileSystemAbstraction snapshot()
     {
         Map<File,EphemeralFileData> copiedFiles = new HashMap<>();
         for ( Map.Entry<File,EphemeralFileData> file : files.entrySet() )

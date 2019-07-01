@@ -25,6 +25,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.io.IOException;
+import java.time.Duration;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
@@ -76,7 +77,6 @@ import org.neo4j.test.extension.TestDirectoryExtension;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.values.storable.Values;
 
-import static java.time.Duration.ofSeconds;
 import static java.util.Collections.singletonList;
 import static java.util.concurrent.Executors.newSingleThreadExecutor;
 import static java.util.concurrent.TimeUnit.SECONDS;
@@ -103,6 +103,7 @@ import static org.neo4j.test.mockito.matcher.Neo4jMatchers.inTx;
 @ExtendWith( {EphemeralFileSystemExtension.class, TestDirectoryExtension.class} )
 class IndexRecoveryIT
 {
+    private static final Duration TIMEOUT = Duration.ofMinutes( 1 );
     @Inject
     private volatile EphemeralFileSystemAbstraction fs;
     @Inject
@@ -138,7 +139,7 @@ class IndexRecoveryIT
     @Test
     void shouldBeAbleToRecoverInTheMiddleOfPopulatingAnIndexWhereLogHasRotated()
     {
-        assertTimeoutPreemptively( ofSeconds( 5 ), () ->
+        assertTimeoutPreemptively( TIMEOUT, () ->
         {
             // Given
             startDb();
@@ -183,7 +184,7 @@ class IndexRecoveryIT
     @Test
     void shouldBeAbleToRecoverInTheMiddleOfPopulatingAnIndex()
     {
-        assertTimeoutPreemptively( ofSeconds( 5 ), () ->
+        assertTimeoutPreemptively( TIMEOUT, () ->
         {
             // Given
             Semaphore populationSemaphore = new Semaphore( 1 );
