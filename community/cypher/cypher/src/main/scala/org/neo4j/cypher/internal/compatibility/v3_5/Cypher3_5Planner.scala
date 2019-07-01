@@ -54,9 +54,9 @@ case class Cypher3_5Planner(config: CypherPlannerConfiguration,
                             plannerOption: CypherPlannerOption,
                             updateStrategy: CypherUpdateStrategy,
                             txIdProvider: () => Long)
-  extends BasePlanner[Statement, BaseState](config, clock, kernelMonitors, log, plannerOption, updateStrategy, txIdProvider) with CypherPlanner {
+  extends BasePlanner[Statement, BaseState](config, clock, kernelMonitors, plannerOption, updateStrategy, txIdProvider) with CypherPlanner {
 
-  monitors.addMonitorListener(logStalePlanRemovalMonitor(logger), "cypher4.0")//cypher3.5?
+  monitors.addMonitorListener(logStalePlanRemovalMonitor(log), "cypher4.0")//cypher3.5?
 
   override def parseAndPlan(preParsedQuery: PreParsedQuery,
                             tracer: CompilationPhaseTracer,

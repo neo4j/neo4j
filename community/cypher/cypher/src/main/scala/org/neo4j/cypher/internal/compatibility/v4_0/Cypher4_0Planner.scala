@@ -62,9 +62,9 @@ case class Cypher4_0Planner(config: CypherPlannerConfiguration,
                             plannerOption: CypherPlannerOption,
                             updateStrategy: CypherUpdateStrategy,
                             txIdProvider: () => Long)
-  extends BasePlanner[Statement, BaseState](config, clock, kernelMonitors, log, plannerOption, updateStrategy, txIdProvider) with CypherPlanner {
+  extends BasePlanner[Statement, BaseState](config, clock, kernelMonitors, plannerOption, updateStrategy, txIdProvider) with CypherPlanner {
 
-  monitors.addMonitorListener(logStalePlanRemovalMonitor(logger), "cypher4.0")
+  monitors.addMonitorListener(logStalePlanRemovalMonitor(log), "cypher4.0")
 
   override def parseAndPlan(preParsedQuery: PreParsedQuery,
                             tracer: CompilationPhaseTracer,
