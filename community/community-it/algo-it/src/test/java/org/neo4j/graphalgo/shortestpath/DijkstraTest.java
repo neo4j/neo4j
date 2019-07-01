@@ -21,30 +21,28 @@ package org.neo4j.graphalgo.shortestpath;
 
 import common.Neo4jAlgoTestCase;
 import common.SimpleGraphBuilder;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import org.neo4j.graphalgo.CommonEvaluators;
 import org.neo4j.graphalgo.impl.shortestpath.Dijkstra;
 import org.neo4j.graphdb.Direction;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
-public class DijkstraTest extends Neo4jAlgoTestCase
+class DijkstraTest extends Neo4jAlgoTestCase
 {
-    protected Dijkstra<Double> getDijkstra( SimpleGraphBuilder graph,
-        Double startCost, String startNode, String endNode )
+    private static Dijkstra<Double> getDijkstra( SimpleGraphBuilder graph, Double startCost, String startNode, String endNode )
     {
         return new Dijkstra<>( startCost, graph.getNode( startNode ), graph.getNode( endNode ), CommonEvaluators.doubleCostEvaluator( "cost" ),
-                new org.neo4j.graphalgo.impl.util.DoubleAdder(), Double::compareTo,
-                Direction.BOTH, MyRelTypes.R1 );
+                new org.neo4j.graphalgo.impl.util.DoubleAdder(), Double::compareTo, Direction.BOTH, MyRelTypes.R1 );
     }
 
     /**
      * Test case for just a single node (path length zero)
      */
     @Test
-    public void testDijkstraMinimal()
+    void testDijkstraMinimal()
     {
         graph.makeNode( "lonely" );
         Dijkstra<Double> dijkstra = getDijkstra( graph, 0.0, "lonely", "lonely" );
@@ -60,7 +58,7 @@ public class DijkstraTest extends Neo4jAlgoTestCase
      * Test case for a path of length zero, with some surrounding nodes
      */
     @Test
-    public void testDijkstraMinimal2()
+    void testDijkstraMinimal2()
     {
         graph.makeEdge( "a", "b", "cost", (double) 1 );
         graph.makeEdge( "a", "c", "cost", (float) 1 );
@@ -82,7 +80,7 @@ public class DijkstraTest extends Neo4jAlgoTestCase
     }
 
     @Test
-    public void testDijkstraChain()
+    void testDijkstraChain()
     {
         graph.makeEdge( "a", "b", "cost", (double) 1 );
         graph.makeEdge( "b", "c", "cost", (float) 2 );
@@ -106,7 +104,7 @@ public class DijkstraTest extends Neo4jAlgoTestCase
      * /--2--A--7--B--2--\ S E \----7---C---7----/
      */
     @Test
-    public void testDijkstraTraverserMeeting()
+    void testDijkstraTraverserMeeting()
     {
         graph.makeEdge( "s", "c", "cost", (double) 7 );
         graph.makeEdge( "c", "e", "cost", (float) 7 );

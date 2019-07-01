@@ -20,7 +20,7 @@
 package org.neo4j.graphalgo.shortestpath;
 
 import common.Neo4jAlgoTestCase;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.HashMap;
 import java.util.List;
@@ -32,33 +32,33 @@ import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 
-public class DijkstraIteratorTest extends Neo4jAlgoTestCase
+class DijkstraIteratorTest extends Neo4jAlgoTestCase
 {
     @Test
-    public void testRun()
+    void testRun()
     {
         new TestDijkstra().runTest();
     }
 
     protected class TestDijkstra extends Dijkstra<Double>
     {
-        public TestDijkstra()
+        TestDijkstra()
         {
             super( 0.0, null, null, CommonEvaluators.doubleCostEvaluator( "cost" ),
                 new DoubleAdder(), Double::compareTo, Direction.BOTH,
                 MyRelTypes.R1 );
         }
 
-        protected class TestIterator extends Dijkstra<Double>.DijkstraIterator
+        class TestIterator extends Dijkstra<Double>.DijkstraIterator
         {
-            public TestIterator( Node startNode,
-                HashMap<Node,List<Relationship>> predecessors,
-                HashMap<Node,Double> mySeen, HashMap<Node,Double> otherSeen,
-                HashMap<Node,Double> myDistances,
-                HashMap<Node,Double> otherDistances, boolean backwards )
+            TestIterator( Node startNode,
+                HashMap<Node, List<Relationship>> predecessors,
+                HashMap<Node, Double> mySeen, HashMap<Node, Double> otherSeen,
+                HashMap<Node, Double> myDistances,
+                HashMap<Node, Double> otherDistances, boolean backwards )
             {
                 super( startNode, predecessors, mySeen, otherSeen, myDistances,
                     otherDistances, backwards );

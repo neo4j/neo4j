@@ -20,7 +20,7 @@
 package org.neo4j.graphalgo.shortestpath;
 
 import common.Neo4jAlgoTestCase;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.List;
 
@@ -29,15 +29,15 @@ import org.neo4j.graphalgo.impl.shortestpath.FloydWarshall;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.Node;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
-public class FloydWarshallTest extends Neo4jAlgoTestCase
+class FloydWarshallTest extends Neo4jAlgoTestCase
 {
     /**
      * Test case for paths of length 0 and 1, and an impossible path
      */
     @Test
-    public void testMinimal()
+    void testMinimal()
     {
         graph.makeEdge( "a", "b", "cost", (double) 1 );
         graph.makeEdge( "a", "c", "cost", (float) 1 );
@@ -59,7 +59,7 @@ public class FloydWarshallTest extends Neo4jAlgoTestCase
      * Test case for extracting paths
      */
     @Test
-    public void testPath()
+    void testPath()
     {
         graph.makeEdge( "a", "b", "cost", (double) 1 );
         graph.makeEdge( "b", "c", "cost", (float) 1 );
@@ -81,7 +81,7 @@ public class FloydWarshallTest extends Neo4jAlgoTestCase
     }
 
     @Test
-    public void testDirection()
+    void testDirection()
     {
         graph.makeEdge( "a", "b" );
         graph.makeEdge( "b", "c" );

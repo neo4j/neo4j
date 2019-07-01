@@ -20,22 +20,22 @@
 package org.neo4j.graphalgo.path;
 
 import common.Neo4jAlgoTestCase;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import org.neo4j.graphalgo.GraphAlgoFactory;
 import org.neo4j.graphalgo.PathFinder;
 import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.PathExpanders;
 
-public class TestAllSimplePaths extends Neo4jAlgoTestCase
+class TestAllSimplePaths extends Neo4jAlgoTestCase
 {
-    protected PathFinder<Path> instantiatePathFinder( int maxDepth )
+    private static PathFinder<Path> instantiatePathFinder( int maxDepth )
     {
         return GraphAlgoFactory.allSimplePaths( PathExpanders.allTypesAndDirections(), maxDepth );
     }
 
     @Test
-    public void testCircularGraph()
+    void testCircularGraph()
     {
         /* Layout
          *
@@ -56,7 +56,7 @@ public class TestAllSimplePaths extends Neo4jAlgoTestCase
     }
 
     @Test
-    public void testTripleRelationshipGraph()
+    void testTripleRelationshipGraph()
     {
         /* Layout
          *          ___

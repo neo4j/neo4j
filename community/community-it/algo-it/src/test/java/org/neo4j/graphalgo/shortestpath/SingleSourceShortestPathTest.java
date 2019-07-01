@@ -20,7 +20,7 @@
 package org.neo4j.graphalgo.shortestpath;
 
 import common.Neo4jAlgoTestCase;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.List;
 
@@ -31,7 +31,7 @@ import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public abstract class SingleSourceShortestPathTest extends Neo4jAlgoTestCase
 {
@@ -42,7 +42,7 @@ public abstract class SingleSourceShortestPathTest extends Neo4jAlgoTestCase
         Node startNode, Direction direction, RelationshipType... relTypes );
 
     @Test
-    public void testRun()
+    void testRun()
     {
         // make the graph
         graph.makeEdgeChain( "a,b1,c1,d1,e1,f1,g1" );
@@ -103,7 +103,7 @@ public abstract class SingleSourceShortestPathTest extends Neo4jAlgoTestCase
     }
 
     @Test
-    public void testMultipleRelTypes()
+    void testMultipleRelTypes()
     {
         graph.setCurrentRelType( MyRelTypes.R1 );
         graph.makeEdgeChain( "a,b,c,d,e" );

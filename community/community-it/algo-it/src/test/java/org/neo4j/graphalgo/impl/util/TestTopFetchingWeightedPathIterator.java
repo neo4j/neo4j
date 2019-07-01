@@ -20,7 +20,7 @@
 package org.neo4j.graphalgo.impl.util;
 
 import common.Neo4jAlgoTestCase;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -32,27 +32,32 @@ import org.neo4j.graphalgo.CostEvaluator;
 import org.neo4j.graphdb.Path;
 import org.neo4j.kernel.impl.util.NoneStrictMath;
 
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * @author Anton Persson
  */
-public class TestTopFetchingWeightedPathIterator extends Neo4jAlgoTestCase
+class TestTopFetchingWeightedPathIterator extends Neo4jAlgoTestCase
 {
+    private static final double epsilon = NoneStrictMath.EPSILON;
+    private static final String length = "length";
+    private final CostEvaluator evaluator = CommonEvaluators.doubleCostEvaluator( length );
+    private TopFetchingWeightedPathIterator topFetcher;
+
     @Test
-    public void shouldHandleEmptySource()
+    void shouldHandleEmptySource()
     {
         topFetcher = new TopFetchingWeightedPathIterator(
                 Collections.emptyIterator(), evaluator );
 
-        assertFalse( "Expected iterator to be empty", topFetcher.hasNext() );
-        assertNull( "Expected null after report has no next", topFetcher.fetchNextOrNull() );
+        assertFalse( topFetcher.hasNext(), "Expected iterator to be empty" );
+        assertNull( topFetcher.fetchNextOrNull(), "Expected null after report has no next" );
     }
 
     @Test
-    public void shouldHandleSinglePath()
+    void shouldHandleSinglePath()
     {
         Path a = graph.makePathWithRelProperty( length, "a1-1-a2" );
         List<Path> list = new ArrayList<>(  );
@@ -60,14 +65,14 @@ public class TestTopFetchingWeightedPathIterator extends Neo4jAlgoTestCase
 
         topFetcher = new TopFetchingWeightedPathIterator( list.iterator(), evaluator, epsilon );
 
-        assertTrue( "Expected at least one element", topFetcher.hasNext() );
+        assertTrue( topFetcher.hasNext(), "Expected at least one element" );
         assertPathDef( a, topFetcher.next() );
-        assertFalse( "Expected no more elements", topFetcher.hasNext() );
-        assertNull( "Expected null after report has no next", topFetcher.fetchNextOrNull() );
+        assertFalse( topFetcher.hasNext(), "Expected no more elements" );
+        assertNull( topFetcher.fetchNextOrNull(), "Expected null after report has no next" );
     }
 
     @Test
-    public void shouldHandleMultipleShortest()
+    void shouldHandleMultipleShortest()
     {
         Path a = graph.makePathWithRelProperty(  length, "a1-1-a2" );
         Path b = graph.makePathWithRelProperty( length, "b1-0-b2-1-b3-0-b4" );
@@ -86,7 +91,7 @@ public class TestTopFetchingWeightedPathIterator extends Neo4jAlgoTestCase
     }
 
     @Test
-    public void shouldHandleUnsortedSource()
+    void shouldHandleUnsortedSource()
     {
         Path a = graph.makePathWithRelProperty( length, "a1-1-a2-2-a3" );             // 3
         Path b = graph.makePathWithRelProperty( length, "b1-3-b2-3-b3" );             // 6
@@ -106,9 +111,4 @@ public class TestTopFetchingWeightedPathIterator extends Neo4jAlgoTestCase
 
         assertPathsWithPaths( result, c, e );
     }
-
-    private final double epsilon = NoneStrictMath.EPSILON;
-    private final String length = "length";
-    private CostEvaluator evaluator = CommonEvaluators.doubleCostEvaluator( length );
-    private TopFetchingWeightedPathIterator topFetcher;
 }

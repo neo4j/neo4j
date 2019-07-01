@@ -20,18 +20,18 @@
 package org.neo4j.graphalgo.shortestpath;
 
 import common.Neo4jAlgoTestCase;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import org.neo4j.graphalgo.impl.shortestpath.Dijkstra;
 import org.neo4j.graphalgo.impl.util.DoubleAdder;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.RelationshipType;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
-public class DijkstraMultipleRelationshipTypesTest extends Neo4jAlgoTestCase
+class DijkstraMultipleRelationshipTypesTest extends Neo4jAlgoTestCase
 {
-    protected Dijkstra<Double> getDijkstra( String startNode, String endNode, RelationshipType... relTypes )
+    private static Dijkstra<Double> getDijkstra( String startNode, String endNode, RelationshipType... relTypes )
     {
         return new Dijkstra<>( 0.0, graph.getNode( startNode ), graph.getNode( endNode ),
                 ( relationship, direction ) -> 1.0, new DoubleAdder(), Double::compareTo, Direction.BOTH,
@@ -39,7 +39,7 @@ public class DijkstraMultipleRelationshipTypesTest extends Neo4jAlgoTestCase
     }
 
     @Test
-    public void testRun()
+    void testRun()
     {
         graph.setCurrentRelType( MyRelTypes.R1 );
         graph.makeEdgeChain( "a,b,c,d,e" );

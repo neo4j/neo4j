@@ -19,10 +19,10 @@
  */
 package common;
 
-import org.junit.After;
-import org.junit.AfterClass;
-import org.junit.Before;
-import org.junit.BeforeClass;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -41,9 +41,9 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.internal.helpers.collection.Iterators;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 
 /**
@@ -55,7 +55,7 @@ public abstract class Neo4jAlgoTestCase
 {
     protected static GraphDatabaseService graphDb;
     protected static SimpleGraphBuilder graph;
-    protected Transaction tx;
+    private Transaction tx;
     private static DatabaseManagementService managementService;
 
     public enum MyRelTypes implements RelationshipType
@@ -63,7 +63,7 @@ public abstract class Neo4jAlgoTestCase
         R1, R2, R3
     }
 
-    @BeforeClass
+    @BeforeAll
     public static void setUpGraphDb()
     {
         managementService = new TestDatabaseManagementServiceBuilder().impermanent().build();
@@ -71,19 +71,19 @@ public abstract class Neo4jAlgoTestCase
         graph = new SimpleGraphBuilder( graphDb, MyRelTypes.R1 );
     }
 
-    @Before
+    @BeforeEach
     public void setUpTransaction()
     {
         tx = graphDb.beginTx();
     }
 
-    @AfterClass
+    @AfterAll
     public static void tearDownGraphDb()
     {
         managementService.shutdown();
     }
 
-    @After
+    @AfterEach
     public void tearDownTransactionAndGraph()
     {
         graph.clear();
@@ -91,18 +91,18 @@ public abstract class Neo4jAlgoTestCase
         tx.close();
     }
 
-    protected void assertPathDef( Path path, String... names )
+    protected static void assertPathDef( Path path, String... names )
     {
         int i = 0;
         for ( Node node : path.nodes() )
         {
-            assertEquals( "Wrong node " + i + " in " + getPathDef( path ),
-                    names[i++], node.getProperty( SimpleGraphBuilder.KEY_ID ) );
+            assertEquals(
+                names[i++], node.getProperty( SimpleGraphBuilder.KEY_ID ), "Wrong node " + i + " in " + getPathDef( path ) );
         }
         assertEquals( names.length, i );
     }
 
-    protected void assertPath( Path path, String commaSeparatedNodePath )
+    protected static void assertPath( Path path, String commaSeparatedNodePath )
     {
         String[] nodeIds = commaSeparatedNodePath.split( "," );
         Node[] nodes = new Node[nodeIds.length];
@@ -115,18 +115,19 @@ public abstract class Neo4jAlgoTestCase
         assertPath( path, nodes );
     }
 
-    protected void assertPath( Path path, Node... nodes )
+    protected static void assertPath( Path path, Node... nodes )
     {
         int i = 0;
         for ( Node node : path.nodes() )
         {
-            assertEquals( "Wrong node " + i + " in " + getPathDef( path ),
-                    nodes[i++].getProperty( SimpleGraphBuilder.KEY_ID ), node.getProperty( SimpleGraphBuilder.KEY_ID ) );
+            assertEquals(
+                nodes[i++].getProperty( SimpleGraphBuilder.KEY_ID ), node.getProperty( SimpleGraphBuilder.KEY_ID ),
+                "Wrong node " + i + " in " + getPathDef( path ) );
         }
         assertEquals( nodes.length, i );
     }
 
-    protected <E> void assertContains( Iterable<E> actual, E... expected )
+    protected static <E> void assertContains( Iterable<E> actual, E... expected )
     {
         Set<E> expectation = new HashSet<>( Arrays.asList( expected ) );
         for ( E element : actual )
@@ -143,7 +144,7 @@ public abstract class Neo4jAlgoTestCase
         }
     }
 
-    public String getPathDef( Path path )
+    protected static String getPathDef( Path path )
     {
         StringBuilder builder = new StringBuilder();
         for ( Node node : path.nodes() )
@@ -157,7 +158,7 @@ public abstract class Neo4jAlgoTestCase
         return builder.toString();
     }
 
-    public void assertPaths( Iterable<? extends Path> paths, List<String> pathDefs )
+    private static void assertPaths( Iterable<? extends Path> paths, List<String> pathDefs )
     {
         List<String> unexpectedDefs = new ArrayList<>();
         try ( ResourceIterator<? extends Path> iterator = Iterators.asResourceIterator( paths.iterator() ) )
@@ -178,17 +179,17 @@ public abstract class Neo4jAlgoTestCase
                 }
             }
         }
-        assertTrue( "These unexpected paths were found: " + unexpectedDefs +
-                ". In addition these expected paths weren't found:" + pathDefs, unexpectedDefs.isEmpty() );
-        assertTrue( "These were expected, but not found: " + pathDefs.toString(), pathDefs.isEmpty() );
+        assertTrue( unexpectedDefs.isEmpty(), "These unexpected paths were found: " + unexpectedDefs +
+                ". In addition these expected paths weren't found:" + pathDefs );
+        assertTrue( pathDefs.isEmpty(), "These were expected, but not found: " + pathDefs.toString() );
     }
 
-    public void assertPaths( Iterable<? extends Path> paths, String... pathDefinitions )
+    protected static void assertPaths( Iterable<? extends Path> paths, String... pathDefinitions )
     {
         assertPaths( paths, new ArrayList<>( Arrays.asList( pathDefinitions ) ) );
     }
 
-    public void assertPathsWithPaths( Iterable<? extends Path> actualPaths, Path... expectedPaths )
+    protected static void assertPathsWithPaths( Iterable<? extends Path> actualPaths, Path... expectedPaths )
     {
         List<String> pathDefs = new ArrayList<>( );
         for ( Path path : expectedPaths )
@@ -198,22 +199,22 @@ public abstract class Neo4jAlgoTestCase
         assertPaths( actualPaths, pathDefs );
     }
 
-    public void assertPathDef( Path expected, Path actual )
+    protected static void assertPathDef( Path expected, Path actual )
     {
         int expectedLength = expected.length();
         int actualLength = actual.length();
-        assertEquals( "Actual path length " + actualLength + " differ from expected path length " + expectedLength,
-                expectedLength, actualLength );
+        assertEquals(
+            expectedLength, actualLength, "Actual path length " + actualLength + " differ from expected path length " + expectedLength );
         Iterator<Node> expectedNodes = expected.nodes().iterator();
         Iterator<Node> actualNodes = actual.nodes().iterator();
         int position = 0;
         while ( expectedNodes.hasNext() && actualNodes.hasNext() )
         {
-            assertEquals( "Path differ on position " + position +
-                          ". Expected " + getPathDef( expected ) +
-                          ", actual " + getPathDef( actual ),
-                    expectedNodes.next().getProperty( SimpleGraphBuilder.KEY_ID ),
-                    actualNodes.next().getProperty( SimpleGraphBuilder.KEY_ID ) );
+            assertEquals(
+                expectedNodes.next().getProperty( SimpleGraphBuilder.KEY_ID ),
+                    actualNodes.next().getProperty( SimpleGraphBuilder.KEY_ID ), "Path differ on position " + position +
+                                  ". Expected " + getPathDef( expected ) +
+                                  ", actual " + getPathDef( actual ) );
             position++;
         }
     }

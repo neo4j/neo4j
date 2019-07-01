@@ -20,7 +20,7 @@
 package org.neo4j.graphalgo.path;
 
 import common.Neo4jAlgoTestCase;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.HashSet;
 import java.util.Set;
@@ -34,15 +34,15 @@ import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.PathExpander;
 import org.neo4j.graphdb.PathExpanders;
 
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.in;
 import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public class TestExactDepthPathFinder extends Neo4jAlgoTestCase
+class TestExactDepthPathFinder extends Neo4jAlgoTestCase
 {
-    public void createGraph()
+    private static void createGraph()
     {
         graph.makeEdgeChain( "SOURCE,SUPER,c,d" );
         graph.makeEdgeChain( "SUPER,e,f" );
@@ -62,13 +62,13 @@ public class TestExactDepthPathFinder extends Neo4jAlgoTestCase
         graph.makeEdgeChain( "SOURCE,z,9,0,TARGET" );
     }
 
-    private PathFinder<Path> newFinder()
+    private static PathFinder<Path> newFinder()
     {
         return new ExactDepthPathFinder( PathExpanders.allTypesAndDirections(), 4, 4, true );
     }
 
     @Test
-    public void testSingle()
+    void testSingle()
     {
         final Set<String> possiblePaths = new HashSet<>();
         possiblePaths.add( "SOURCE,z,9,0,TARGET" );
@@ -82,7 +82,7 @@ public class TestExactDepthPathFinder extends Neo4jAlgoTestCase
     }
 
     @Test
-    public void testAll()
+    void testAll()
     {
         createGraph();
         assertPaths( newFinder().findAllPaths( graph.getNode( "SOURCE" ), graph.getNode( "TARGET" ) ),
@@ -90,7 +90,7 @@ public class TestExactDepthPathFinder extends Neo4jAlgoTestCase
     }
 
     @Test
-    public void shouldHandleDirectionalGraph()
+    void shouldHandleDirectionalGraph()
     {
         // ALL DIRECTED from (a) towards (g)
         //     (b) ----------------- (c)      length 3
@@ -112,7 +112,7 @@ public class TestExactDepthPathFinder extends Neo4jAlgoTestCase
     }
 
     @Test
-    public void shouldHandleNondirectedGraph()
+    void shouldHandleNondirectedGraph()
     {
         //     (b) ----------------- (c)      length 3
         //   /                          \
@@ -136,7 +136,7 @@ public class TestExactDepthPathFinder extends Neo4jAlgoTestCase
     }
 
     @Test
-    public void shouldHandleSimpleChainEvenDepth()
+    void shouldHandleSimpleChainEvenDepth()
     {
         // (a) - (b) - (c)
         graph.makeEdgeChain( "a,b,c" );
@@ -151,7 +151,7 @@ public class TestExactDepthPathFinder extends Neo4jAlgoTestCase
     }
 
     @Test
-    public void shouldHandleSimpleChainOddDepth()
+    void shouldHandleSimpleChainOddDepth()
     {
         // (a) - (b) - (c) - (d)
         graph.makeEdgeChain( "a,b,c,d" );
@@ -166,7 +166,7 @@ public class TestExactDepthPathFinder extends Neo4jAlgoTestCase
     }
 
     @Test
-    public void shouldHandleNeighbouringNodes()
+    void shouldHandleNeighbouringNodes()
     {
         // (a) - (b)
         graph.makeEdgeChain( "a,b" );
@@ -184,7 +184,7 @@ public class TestExactDepthPathFinder extends Neo4jAlgoTestCase
     }
 
     @Test
-    public void shouldHandleNeighbouringNodesWhenNotAlone()
+    void shouldHandleNeighbouringNodesWhenNotAlone()
     {
         // (a) - (b)
         //  |
@@ -205,7 +205,7 @@ public class TestExactDepthPathFinder extends Neo4jAlgoTestCase
     }
 
     @Test
-    public void shouldHandleNeighbouringNodesMultiplePaths()
+    void shouldHandleNeighbouringNodesMultiplePaths()
     {
         // (a) = (b)
         //  |
@@ -227,7 +227,7 @@ public class TestExactDepthPathFinder extends Neo4jAlgoTestCase
     }
 
     @Test
-    public void testExactDepthFinder()
+    void testExactDepthFinder()
     {
         // Layout (a to k):
         //
@@ -253,7 +253,7 @@ public class TestExactDepthPathFinder extends Neo4jAlgoTestCase
     }
 
     @Test
-    public void testExactDepthPathsReturnsNoLoops()
+    void testExactDepthPathsReturnsNoLoops()
     {
         // Layout:
         //
@@ -276,7 +276,7 @@ public class TestExactDepthPathFinder extends Neo4jAlgoTestCase
     }
 
     @Test
-    public void testExactDepthPathsLoopsAllowed()
+    void testExactDepthPathsLoopsAllowed()
     {
         // Layout:
         //

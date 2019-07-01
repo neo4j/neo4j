@@ -20,7 +20,7 @@
 package org.neo4j.graphalgo;
 
 import common.Neo4jAlgoTestCase;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.HashMap;
 import java.util.LinkedList;
@@ -32,12 +32,12 @@ import org.neo4j.graphalgo.impl.shortestpath.Util.PathCounter;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
-public class UtilTest extends Neo4jAlgoTestCase
+class UtilTest extends Neo4jAlgoTestCase
 {
     @Test
-    public void testPathCounter()
+    void testPathCounter()
     {
         // Nodes
         Node a = graphDb.createNode();

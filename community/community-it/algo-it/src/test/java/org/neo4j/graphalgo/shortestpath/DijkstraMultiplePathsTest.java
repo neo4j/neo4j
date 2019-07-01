@@ -21,7 +21,7 @@ package org.neo4j.graphalgo.shortestpath;
 
 import common.Neo4jAlgoTestCase;
 import common.SimpleGraphBuilder;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.List;
 
@@ -33,13 +33,12 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public class DijkstraMultiplePathsTest extends Neo4jAlgoTestCase
+class DijkstraMultiplePathsTest extends Neo4jAlgoTestCase
 {
-    protected Dijkstra<Double> getDijkstra( SimpleGraphBuilder graph,
-        Double startCost, String startNode, String endNode )
+    private static Dijkstra<Double> getDijkstra( SimpleGraphBuilder graph, Double startCost, String startNode, String endNode )
     {
         return new Dijkstra<>( startCost, graph.getNode( startNode ), graph.getNode( endNode ), CommonEvaluators.doubleCostEvaluator( "cost" ),
                 new org.neo4j.graphalgo.impl.util.DoubleAdder(), Double::compareTo,
@@ -51,7 +50,7 @@ public class DijkstraMultiplePathsTest extends Neo4jAlgoTestCase
      * nodes.
      */
     @Test
-    public void testTriangle()
+    void testTriangle()
     {
         graph.makeEdge( "a", "b", "cost", (double) 0 );
         graph.makeEdge( "b", "c", "cost", (double) 0 );
@@ -66,7 +65,7 @@ public class DijkstraMultiplePathsTest extends Neo4jAlgoTestCase
                 int nrPaths = dijkstra.getPathsAsNodes().size();
                 if ( !node1.equals( node2 ) )
                 {
-                    assertEquals( "Number of paths (" + node1 + "->" + node2 + "): " + nrPaths, 2, nrPaths );
+                    assertEquals( 2, nrPaths, "Number of paths (" + node1 + "->" + node2 + "): " + nrPaths );
                 }
                 assertEquals( 0.0, dijkstra.getCost(), 0.0 );
             }
@@ -77,7 +76,7 @@ public class DijkstraMultiplePathsTest extends Neo4jAlgoTestCase
      * From each direction 2 ways are possible so 4 ways should be the total.
      */
     @Test
-    public void test1()
+    void test1()
     {
         graph.makeEdge( "a", "b", "cost", (double) 1 );
         graph.makeEdge( "b", "d", "cost", (float) 1 );
@@ -100,7 +99,7 @@ public class DijkstraMultiplePathsTest extends Neo4jAlgoTestCase
      * several places.
      */
     @Test
-    public void test2()
+    void test2()
     {
         graph.makeEdge( "a", "b", "cost", (double) 1 );
         graph.makeEdge( "a", "f", "cost", (float) 1 );
@@ -122,7 +121,7 @@ public class DijkstraMultiplePathsTest extends Neo4jAlgoTestCase
      * other side. The other side is kept busy with a chain of cost zero.
      */
     @Test
-    public void test3()
+    void test3()
     {
         // "zero" side
         graph.makeEdge( "a", "b", "cost", (double) 0 );
@@ -153,7 +152,7 @@ public class DijkstraMultiplePathsTest extends Neo4jAlgoTestCase
      * another variant of the test above, but the discovering is a bit mixed.
      */
     @Test
-    public void test4()
+    void test4()
     {
         // "zero" side
         graph.makeEdge( "a", "b", "cost", (double) 0 );
@@ -183,7 +182,7 @@ public class DijkstraMultiplePathsTest extends Neo4jAlgoTestCase
      * "Diamond" shape, with some weights to resemble the test case above.
      */
     @Test
-    public void test5()
+    void test5()
     {
         graph.makeEdge( "a", "b", "cost", (double) 0 );
         graph.makeEdge( "z", "y", "cost", (float) 0 );
@@ -197,7 +196,7 @@ public class DijkstraMultiplePathsTest extends Neo4jAlgoTestCase
     }
 
     @Test
-    public void test6()
+    void test6()
     {
         graph.makeEdgeChain( "a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,z", "cost",
             (double) 1 );
@@ -211,7 +210,7 @@ public class DijkstraMultiplePathsTest extends Neo4jAlgoTestCase
     }
 
     @Test
-    public void test7()
+    void test7()
     {
         Relationship edgeAB = graph.makeEdge( "a", "b" );
         Relationship edgeBC = graph.makeEdge( "b", "c" );
@@ -292,7 +291,7 @@ public class DijkstraMultiplePathsTest extends Neo4jAlgoTestCase
     }
 
     @Test
-    public void test8()
+    void test8()
     {
         Relationship edgeAB = graph.makeEdge( "a", "b" );
         Relationship edgeBC = graph.makeEdge( "b", "c" );

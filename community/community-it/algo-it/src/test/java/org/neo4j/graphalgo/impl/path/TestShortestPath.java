@@ -21,10 +21,10 @@ package org.neo4j.graphalgo.impl.path;
 
 import common.Neo4jAlgoTestCase;
 import org.apache.commons.lang3.mutable.MutableInt;
-import org.junit.Test;
+import org.hamcrest.MatcherAssert;
+import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -32,9 +32,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.function.Predicate;
 
-import org.neo4j.graphalgo.GraphAlgoFactory;
 import org.neo4j.graphalgo.PathFinder;
-import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Path;
@@ -51,10 +49,9 @@ import org.neo4j.internal.helpers.collection.Iterables;
 import static common.Neo4jAlgoTestCase.MyRelTypes.R1;
 import static java.util.Arrays.asList;
 import static org.hamcrest.CoreMatchers.is;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.graphalgo.GraphAlgoFactory.shortestPath;
 import static org.neo4j.graphdb.Direction.BOTH;
 import static org.neo4j.graphdb.Direction.INCOMING;
@@ -62,12 +59,12 @@ import static org.neo4j.graphdb.Direction.OUTGOING;
 import static org.neo4j.graphdb.PathExpanders.allTypesAndDirections;
 import static org.neo4j.internal.helpers.collection.Iterables.count;
 
-public class TestShortestPath extends Neo4jAlgoTestCase
+class TestShortestPath extends Neo4jAlgoTestCase
 {
     // Attempt at recreating this issue without cypher
     // https://github.com/neo4j/neo4j/issues/4160
     @Test
-    public void shouldAbortAsSoonAsPossible()
+    void shouldAbortAsSoonAsPossible()
     {
         final Label A = Label.label( "A" );
         final Label B = Label.label( "B" );
@@ -88,7 +85,7 @@ public class TestShortestPath extends Neo4jAlgoTestCase
             }
         }
         final CountingPathExpander countingPathExpander =
-                new CountingPathExpander( PathExpanders.forTypeAndDirection( relType, Direction.OUTGOING ) );
+                new CountingPathExpander( PathExpanders.forTypeAndDirection( relType, OUTGOING ) );
         final ShortestPath shortestPath = new ShortestPath( Integer.MAX_VALUE, countingPathExpander, Integer.MAX_VALUE );
         try ( ResourceIterator<Node> allF = graphDb.findNodes( F ) )
         {
@@ -98,13 +95,12 @@ public class TestShortestPath extends Neo4jAlgoTestCase
                 shortestPath.findAllPaths( a, f );
             }
         }
-        assertEquals(
-                "There are 625 different end nodes. The algorithm should start one traversal for each such node. " +
-                        "That is 625*2 visited nodes if traversal is interrupted correctly.", 1250,
-                countingPathExpander.nodesVisited.intValue() );
+        assertEquals( 1250, countingPathExpander.nodesVisited.intValue(),
+            "There are 625 different end nodes. The algorithm should start one traversal for each such node. " +
+                "That is 625*2 visited nodes if traversal is interrupted correctly." );
     }
 
-    private Node getNodeByLabel( Label label )
+    private static Node getNodeByLabel( Label label )
     {
         try ( ResourceIterator<Node> iterator = graphDb.findNodes( label ) )
         {
@@ -112,8 +108,8 @@ public class TestShortestPath extends Neo4jAlgoTestCase
         }
     }
 
-    private void recursiveSnowFlake( Node parent, int level, final int desiredLevel, final int branchingFactor,
-            final Label[] labels, final RelationshipType relType )
+    private static void recursiveSnowFlake( Node parent, int level, final int desiredLevel, final int branchingFactor,
+        final Label[] labels, final RelationshipType relType )
     {
         if ( level != 0 )
         {
@@ -138,7 +134,7 @@ public class TestShortestPath extends Neo4jAlgoTestCase
     }
 
     @Test
-    public void testSimplestGraph()
+    void testSimplestGraph()
     {
         // Layout:
         //    __
@@ -156,7 +152,7 @@ public class TestShortestPath extends Neo4jAlgoTestCase
     }
 
     @Test
-    public void testAnotherSimpleGraph()
+    void testAnotherSimpleGraph()
     {
         // Layout:
         //   (m)
@@ -180,7 +176,7 @@ public class TestShortestPath extends Neo4jAlgoTestCase
     }
 
     @Test
-    public void testCrossedCircle()
+    void testCrossedCircle()
     {
         // Layout:
         //    (s)
@@ -205,7 +201,7 @@ public class TestShortestPath extends Neo4jAlgoTestCase
     }
 
     @Test
-    public void testDirectedFinder()
+    void testDirectedFinder()
     {
         // Layout:
         //
@@ -221,7 +217,7 @@ public class TestShortestPath extends Neo4jAlgoTestCase
     }
 
     @Test
-    public void makeSureShortestPathsReturnsNoLoops()
+    void makeSureShortestPathsReturnsNoLoops()
     {
         // Layout:
         //
@@ -240,7 +236,7 @@ public class TestShortestPath extends Neo4jAlgoTestCase
     }
 
     @Test
-    public void withFilters()
+    void withFilters()
     {
         // Layout:
         //
@@ -260,11 +256,11 @@ public class TestShortestPath extends Neo4jAlgoTestCase
             return !skip;
         };
         testShortestPathFinder( finder -> assertPaths( finder.findAllPaths( a, d ), "a,g,h,d" ),
-                ((StandardExpander) PathExpanders.allTypesAndDirections()).addNodeFilter( filter ), 10 );
+                ((StandardExpander) allTypesAndDirections()).addNodeFilter( filter ), 10 );
     }
 
     @Test
-    public void filtersTouchesAllIntermediateNodes()
+    void filtersTouchesAllIntermediateNodes()
     {
         // Layout:
         //
@@ -282,18 +278,18 @@ public class TestShortestPath extends Neo4jAlgoTestCase
         final PathExpander expander =
                 PathExpanderBuilder.empty().add( R1, OUTGOING ).addNodeFilter( filter ).build();
         //final PathExpander expander = ((StandardExpander) PathExpanders.forTypeAndDirection(R1, OUTGOING)).addNodeFilter( filter );
-        Path path = Iterables.single( GraphAlgoFactory.shortestPath( expander, 10 ).findAllPaths( a, d ) );
+        Path path = Iterables.single( shortestPath( expander, 10 ).findAllPaths( a, d ) );
         assertEquals( 3, path.length() );
 
         List<Node> nodes = Iterables.asList( path.nodes() );
         List<Node> intermediateNodes = nodes.subList( 1, nodes.size() - 1 );
-        assertTrue( "touchedByFilter: " + touchedByFilter, touchedByFilter.containsAll( intermediateNodes ) );
-        assertTrue( "startNode was not filtered", !touchedByFilter.contains( a ) );
-        assertTrue( "endNode was not filtered", !touchedByFilter.contains( d ) );
+        assertTrue( touchedByFilter.containsAll( intermediateNodes ), "touchedByFilter: " + touchedByFilter );
+        assertFalse( touchedByFilter.contains( a ) );
+        assertFalse( touchedByFilter.contains( d ) );
     }
 
     @Test
-    public void testFinderShouldNotFindAnythingBeyondLimit()
+    void testFinderShouldNotFindAnythingBeyondLimit()
     {
         // Layout:
         //
@@ -302,21 +298,21 @@ public class TestShortestPath extends Neo4jAlgoTestCase
         graph.makeEdgeChain( "a,b,c,d,e" );
         testShortestPathFinder(
                 finder -> assertPaths( finder.findAllPaths( graph.getNode( "a" ), graph.getNode( "b" ) ) ),
-                PathExpanders.allTypesAndDirections(), 0 );
+                allTypesAndDirections(), 0 );
         testShortestPathFinder( finder ->
         {
             assertPaths( finder.findAllPaths( graph.getNode( "a" ), graph.getNode( "c" ) ) );
             assertPaths( finder.findAllPaths( graph.getNode( "a" ), graph.getNode( "d" ) ) );
-        }, PathExpanders.allTypesAndDirections(), 1 );
+        }, allTypesAndDirections(), 1 );
         testShortestPathFinder( finder ->
         {
             assertPaths( finder.findAllPaths( graph.getNode( "a" ), graph.getNode( "d" ) ) );
             assertPaths( finder.findAllPaths( graph.getNode( "a" ), graph.getNode( "e" ) ) );
-        }, PathExpanders.allTypesAndDirections(), 2 );
+        }, allTypesAndDirections(), 2 );
     }
 
     @Test
-    public void makeSureDescentStopsWhenPathIsFound()
+    void makeSureDescentStopsWhenPathIsFound()
     {
         /*
          * (a)==>(b)==>(c)==>(d)==>(e)
@@ -330,7 +326,7 @@ public class TestShortestPath extends Neo4jAlgoTestCase
         final Node a = graph.getNode( "a" );
         final Node b = graph.getNode( "b" );
         final Node c = graph.getNode( "c" );
-        final Set<Node> allowedNodes = new HashSet<>( Arrays.asList( a, b, c ) );
+        final Set<Node> allowedNodes = new HashSet<>( asList( a, b, c ) );
         final PathFinder<Path> finder = new ShortestPath( 100, PathExpanders.forDirection( OUTGOING ) )
         {
             @Override
@@ -349,11 +345,11 @@ public class TestShortestPath extends Neo4jAlgoTestCase
             Path aToBToC = paths.next();
             assertPath( aToBToC, a, b, c );
         }
-        assertFalse( "should only have contained four paths", paths.hasNext() );
+        assertFalse( paths.hasNext(), "should only have contained four paths" );
     }
 
     @Test
-    public void makeSureRelationshipNotConnectedIssueNotThere()
+    void makeSureRelationshipNotConnectedIssueNotThere()
     {
         /*
          *                                  (g)
@@ -375,7 +371,7 @@ public class TestShortestPath extends Neo4jAlgoTestCase
     }
 
     @Test
-    public void makeSureShortestPathCanBeFetchedEvenIfANodeHasLoops()
+    void makeSureShortestPathCanBeFetchedEvenIfANodeHasLoops()
     {
         // Layout:
         //
@@ -398,7 +394,7 @@ public class TestShortestPath extends Neo4jAlgoTestCase
     }
 
     @Test
-    public void makeSureAMaxResultCountIsObeyed()
+    void makeSureAMaxResultCountIsObeyed()
     {
         // Layout:
         //
@@ -417,18 +413,18 @@ public class TestShortestPath extends Neo4jAlgoTestCase
         final Node a = graph.getNode( "a" );
         final Node e = graph.getNode( "e" );
         final PathExpander expander = PathExpanders.forTypeAndDirection( R1, OUTGOING );
-        testShortestPathFinder( finder -> assertEquals( 4, Iterables.count( finder.findAllPaths( a, e ) ) ), expander,
+        testShortestPathFinder( finder -> assertEquals( 4, count( finder.findAllPaths( a, e ) ) ), expander,
                 10, 10 );
         for ( int i = 4; i >= 1; i-- )
         {
             final int count = i;
-            testShortestPathFinder( finder -> assertEquals( count, Iterables.count( finder.findAllPaths( a, e ) ) ),
+            testShortestPathFinder( finder -> assertEquals( count, count( finder.findAllPaths( a, e ) ) ),
                     expander, 10, count );
         }
     }
 
     @Test
-    public void unfortunateRelationshipOrderingInTriangle()
+    void unfortunateRelationshipOrderingInTriangle()
     {
         /*
          *            (b)
@@ -450,7 +446,7 @@ public class TestShortestPath extends Neo4jAlgoTestCase
     }
 
     @Test
-    public void shouldFindShortestPathWhenOneSideFindsLongerPathFirst()
+    void shouldFindShortestPathWhenOneSideFindsLongerPathFirst()
     {
         /*
         The order in which nodes are created matters when reproducing the original problem
@@ -466,12 +462,12 @@ public class TestShortestPath extends Neo4jAlgoTestCase
         graph.makeEdge( "a", "end" );
         final Node start = graph.getNode( "start" );
         final Node end = graph.getNode( "end" );
-        assertThat( new ShortestPath( 2, allTypesAndDirections(), 42 ).findSinglePath( start, end ).length(), is( 2 ) );
-        assertThat( new ShortestPath( 3, allTypesAndDirections(), 42 ).findSinglePath( start, end ).length(), is( 2 ) );
+        MatcherAssert.assertThat( new ShortestPath( 2, allTypesAndDirections(), 42 ).findSinglePath( start, end ).length(), is( 2 ) );
+        MatcherAssert.assertThat( new ShortestPath( 3, allTypesAndDirections(), 42 ).findSinglePath( start, end ).length(), is( 2 ) );
     }
 
     @Test
-    public void shouldMakeSureResultLimitIsRespectedForMultiPathHits()
+    void shouldMakeSureResultLimitIsRespectedForMultiPathHits()
     {
         /*       _____
          *      /     \
@@ -528,11 +524,11 @@ public class TestShortestPath extends Neo4jAlgoTestCase
         {
             if ( path.startNode().equals( path.endNode() ) )
             {
-                assertEquals( "Path length must be zero", 0, path.length() );
+                assertEquals( 0, path.length(), "Path length must be zero" );
             }
             else
             {
-                assertTrue( "Path length must be positive", path.length() > 0 );
+                assertTrue( path.length() > 0, "Path length must be positive" );
             }
             return expander.expand( path, state );
         }

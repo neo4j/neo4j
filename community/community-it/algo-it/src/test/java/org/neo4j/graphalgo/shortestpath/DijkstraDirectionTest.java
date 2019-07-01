@@ -20,7 +20,7 @@
 package org.neo4j.graphalgo.shortestpath;
 
 import common.Neo4jAlgoTestCase;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.HashMap;
 
@@ -29,7 +29,7 @@ import org.neo4j.graphalgo.impl.shortestpath.Dijkstra;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.Relationship;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 /**
  * This set of tests is mainly made to test the "backwards" argument to the
@@ -37,10 +37,10 @@ import static org.junit.Assert.assertEquals;
  * @author Patrik Larsson
  * @see CostEvaluator
  */
-public class DijkstraDirectionTest extends Neo4jAlgoTestCase
+class DijkstraDirectionTest extends Neo4jAlgoTestCase
 {
     @Test
-    public void testDijkstraDirection1()
+    void testDijkstraDirection1()
     {
         graph.makeEdge( "s", "e" );
         Dijkstra<Double> dijkstra =
@@ -60,7 +60,7 @@ public class DijkstraDirectionTest extends Neo4jAlgoTestCase
     }
 
     @Test
-    public void testDijkstraDirection2()
+    void testDijkstraDirection2()
     {
         graph.makeEdge( "a", "b" );
         graph.makeEdge( "b", "c" );
@@ -109,7 +109,7 @@ public class DijkstraDirectionTest extends Neo4jAlgoTestCase
     }
 
     @Test
-    public void testDijkstraDirection3()
+    void testDijkstraDirection3()
     {
         Relationship r1 = graph.makeEdge( "start", "b" );
         Relationship r2 = graph.makeEdge( "c", "b" );

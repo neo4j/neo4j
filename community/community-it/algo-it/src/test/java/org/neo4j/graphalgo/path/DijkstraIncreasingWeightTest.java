@@ -20,7 +20,8 @@
 package org.neo4j.graphalgo.path;
 
 import common.Neo4jAlgoTestCase;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Timeout;
 
 import java.util.HashMap;
 import java.util.Iterator;
@@ -44,15 +45,14 @@ import org.neo4j.graphdb.traversal.InitialBranchState;
 import org.neo4j.internal.helpers.collection.Iterables;
 import org.neo4j.kernel.impl.util.NoneStrictMath;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
-
-public class DijkstraIncreasingWeightTest extends Neo4jAlgoTestCase
+class DijkstraIncreasingWeightTest extends Neo4jAlgoTestCase
 {
     @Test
-    public void canFetchLongerPaths()
+    void canFetchLongerPaths()
     {
         /*
          *    1-(b)-1
@@ -80,14 +80,14 @@ public class DijkstraIncreasingWeightTest extends Neo4jAlgoTestCase
 
         Iterator<WeightedPath> paths = algo.findAllPaths( s, t ).iterator();
 
-        assertTrue( "Expected at least one path.", paths.hasNext() );
+        assertTrue( paths.hasNext(), "Expected at least one path." );
         assertPath( paths.next(), s, a, c, d, t );
-        assertTrue( "Expected two paths", paths.hasNext() );
+        assertTrue( paths.hasNext(), "Expected two paths" );
         assertPath( paths.next(), s, b, a, c, d, t );
     }
 
     @Test
-    public void shouldReturnPathsInIncreasingOrderOfCost()
+    void shouldReturnPathsInIncreasingOrderOfCost()
     {
         /*
          *
@@ -125,21 +125,22 @@ public class DijkstraIncreasingWeightTest extends Neo4jAlgoTestCase
 
         for ( int i = 1; i <= 3; i++ )
         {
-            assertTrue( "Expected at least " + i + " path(s)", paths.hasNext() );
-            assertTrue( "Expected 3 paths of cost 2", NoneStrictMath.equals( paths.next().weight(), 2 ) );
+            assertTrue( paths.hasNext(), "Expected at least " + i + " path(s)" );
+            assertTrue( NoneStrictMath.equals( paths.next().weight(), 2 ), "Expected 3 paths of cost 2" );
         }
         for ( int i = 1; i <= 3; i++ )
         {
-            assertTrue( "Expected at least " + i + " path(s)", paths.hasNext() );
-            assertTrue( "Expected 3 paths of cost 3", NoneStrictMath.equals( paths.next().weight(), 3 ) );
+            assertTrue( paths.hasNext(), "Expected at least " + i + " path(s)" );
+            assertTrue( NoneStrictMath.equals( paths.next().weight(), 3 ), "Expected 3 paths of cost 3" );
         }
-        assertTrue( "Expected at least 7 paths", paths.hasNext() );
-        assertTrue( "Expected 1 path of cost 4", NoneStrictMath.equals( paths.next().weight(), 4 ) );
-        assertFalse( "Expected exactly 7 paths", paths.hasNext() );
+        assertTrue( paths.hasNext(), "Expected at least 7 paths" );
+        assertTrue( NoneStrictMath.equals( paths.next().weight(), 4 ), "Expected 1 path of cost 4" );
+        assertFalse( paths.hasNext(), "Expected exactly 7 paths" );
     }
 
-    @Test( timeout = 5000 )
-    public void testForLoops()
+    @Test
+    @Timeout( 5 )
+    void testForLoops()
     {
         /*
          *
@@ -152,7 +153,6 @@ public class DijkstraIncreasingWeightTest extends Neo4jAlgoTestCase
          *                                     - 0 - (c2) - 0 -
          *
          */
-
         try ( Transaction tx = graphDb.beginTx() )
         {
             Node s = graph.makeNode( "s" );
@@ -177,22 +177,22 @@ public class DijkstraIncreasingWeightTest extends Neo4jAlgoTestCase
 
             PathExpander expander = PathExpanders.allTypesAndDirections();
             Dijkstra algo = new Dijkstra( expander, CommonEvaluators.doubleCostEvaluator( "length" ),
-                                                    PathInterestFactory.all( NoneStrictMath.EPSILON ) );
+                PathInterestFactory.all( NoneStrictMath.EPSILON ) );
 
             Iterator<WeightedPath> paths = algo.findAllPaths( s, t ).iterator();
 
-            assertTrue( "Expected at least one path", paths.hasNext() );
-            assertEquals( "Expected first path of length 6", 6, paths.next().length() );
-            assertTrue( "Expected at least two paths", paths.hasNext() );
-            assertEquals( "Expected second path of length 6", 6, paths.next().length() );
-            assertFalse( "Expected exactly two paths", paths.hasNext() );
+            assertTrue( paths.hasNext(), "Expected at least one path" );
+            assertEquals( 6, paths.next().length(), "Expected first path of length 6" );
+            assertTrue( paths.hasNext(), "Expected at least two paths" );
+            assertEquals( 6, paths.next().length(), "Expected second path of length 6" );
+            assertFalse( paths.hasNext(), "Expected exactly two paths" );
 
             tx.success();
         }
     }
 
     @Test
-    public void testKShortestPaths()
+    void testKShortestPaths()
     {
         /*
          *      ----- (e) - 3 - (f) ---
@@ -242,14 +242,14 @@ public class DijkstraIncreasingWeightTest extends Neo4jAlgoTestCase
             {
                 expectedWeight = 3.0;
             }
-            assertTrue( "Expected path number " + count + " to have weight of " + expectedWeight,
-                    NoneStrictMath.equals( path.weight(), expectedWeight ) );
+            assertTrue( NoneStrictMath.equals( path.weight(), expectedWeight ),
+                "Expected path number " + count + " to have weight of " + expectedWeight );
         }
-        assertEquals( "Expected exactly 6 returned paths", 6, count );
+        assertEquals( 6, count, "Expected exactly 6 returned paths" );
     }
 
     @Test
-    public void withState()
+    void withState()
     {
         /* Graph
          *
@@ -263,7 +263,7 @@ public class DijkstraIncreasingWeightTest extends Neo4jAlgoTestCase
 
         InitialBranchState<Integer> state = new InitialBranchState.State<>( 0, 0 );
         final Map<Node, Integer> encounteredState = new HashMap<>();
-        PathExpander<Integer> expander = new PathExpander<Integer>()
+        PathExpander<Integer> expander = new PathExpander<>()
         {
             @Override
             public Iterable<Relationship> expand( Path path, BranchState<Integer> state )
@@ -293,7 +293,7 @@ public class DijkstraIncreasingWeightTest extends Neo4jAlgoTestCase
         assertEquals( 8, encounteredState.get( graph.getNode( "d" ) ).intValue() );
     }
 
-    private void setWeight( String start, String end, double weight )
+    private static void setWeight( String start, String end, double weight )
     {
         Node startNode = graph.getNode( start );
         Node endNode = graph.getNode( end );
