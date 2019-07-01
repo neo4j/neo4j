@@ -19,21 +19,23 @@
  */
 package org.neo4j.kernel.api.impl.fulltext;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 
 import org.neo4j.kernel.api.impl.index.collector.ValuesIterator;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static java.lang.Double.isInfinite;
+import static java.lang.Double.isNaN;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public class ScoreEntityIteratorTest
+class ScoreEntityIteratorTest
 {
     @Test
-    public void mergeShouldReturnOrderedResults()
+    void mergeShouldReturnOrderedResults()
     {
         StubValuesIterator one = new StubValuesIterator().add( 3, 10 ).add( 10, 3 ).add( 12, 1 );
         StubValuesIterator two = new StubValuesIterator().add( 1, 12 ).add( 5, 8 ).add( 7, 6 ).add( 8, 5 ).add( 11, 2 );
@@ -52,7 +54,7 @@ public class ScoreEntityIteratorTest
     }
 
     @Test
-    public void mergeShouldCorrectlyOrderSpecialValues()
+    void mergeShouldCorrectlyOrderSpecialValues()
     {
         // According to CIP2016-06-14, NaN comes between positive infinity and the largest float/double value.
         StubValuesIterator one = new StubValuesIterator().add( 2, Float.POSITIVE_INFINITY ).add( 4, 1.0f ).add( 6, Float.MIN_VALUE ).add( 8, -1.0f );
@@ -63,9 +65,9 @@ public class ScoreEntityIteratorTest
 
         assertTrue( concat.hasNext() );
         assertEquals( 1, concat.next() );
-        assertTrue( Double.isNaN( concat.currentScore() ) );
+        assertTrue( isNaN( concat.currentScore() ) );
         assertEquals( 2, concat.next() );
-        assertTrue( Double.isInfinite( concat.currentScore() ) );
+        assertTrue( isInfinite( concat.currentScore() ) );
         assertTrue( concat.currentScore() > 0.0f );
         assertEquals( 3, concat.next() );
         assertEquals( 4, concat.next() );
@@ -78,7 +80,7 @@ public class ScoreEntityIteratorTest
     }
 
     @Test
-    public void mergeShouldHandleEmptyIterators()
+    void mergeShouldHandleEmptyIterators()
     {
         StubValuesIterator one = new StubValuesIterator();
         StubValuesIterator two = new StubValuesIterator().add( 1, 5 ).add( 2, 4 ).add( 3, 3 ).add( 4, 2 ).add( 5, 1 );
@@ -97,7 +99,7 @@ public class ScoreEntityIteratorTest
     }
 
     @Test
-    public void mergeShouldHandleAllEmptyIterators()
+    void mergeShouldHandleAllEmptyIterators()
     {
         StubValuesIterator one = new StubValuesIterator();
         StubValuesIterator two = new StubValuesIterator();
