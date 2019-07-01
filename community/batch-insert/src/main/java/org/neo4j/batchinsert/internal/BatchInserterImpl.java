@@ -257,91 +257,107 @@ public class BatchInserterImpl implements BatchInserter
         life = new LifeSupport();
         this.databaseLayout = databaseLayout;
         this.jobScheduler = JobSchedulerFactory.createInitialisedScheduler();
-        life.add( jobScheduler );
+        try
+        {
 
-        storeLocker = tryLockStore( fileSystem, this.databaseLayout.getStoreLayout() );
-        ConfiguringPageCacheFactory pageCacheFactory = new ConfiguringPageCacheFactory(
+            life.add( jobScheduler );
+
+            storeLocker = tryLockStore( fileSystem, this.databaseLayout.getStoreLayout() );
+            ConfiguringPageCacheFactory pageCacheFactory = new ConfiguringPageCacheFactory(
                 fileSystem, config, PageCacheTracer.NULL, PageCursorTracerSupplier.NULL, NullLog.getInstance(),
                 EmptyVersionContextSupplier.EMPTY, jobScheduler );
-        PageCache pageCache = pageCacheFactory.getOrCreatePageCache();
-        life.add( new PageCacheLifecycle( pageCache ) );
+            PageCache pageCache = pageCacheFactory.getOrCreatePageCache();
+            life.add( new PageCacheLifecycle( pageCache ) );
 
-        config.augment( logs_directory, databaseLayout.databaseDirectory().getAbsolutePath() );
-        File internalLog = config.get( store_internal_log_path );
+            config.augment( logs_directory, databaseLayout.databaseDirectory().getAbsolutePath() );
+            File internalLog = config.get( store_internal_log_path );
 
-        logService = life.add( StoreLogService.withInternalLog( internalLog).build( fileSystem ) );
-        msgLog = logService.getInternalLog( getClass() );
+            logService = life.add( StoreLogService.withInternalLog( internalLog ).build( fileSystem ) );
+            msgLog = logService.getInternalLog( getClass() );
 
-        boolean dump = config.get( GraphDatabaseSettings.dump_configuration );
-        this.idGeneratorFactory = new DefaultIdGeneratorFactory( fileSystem );
+            boolean dump = config.get( GraphDatabaseSettings.dump_configuration );
+            this.idGeneratorFactory = new DefaultIdGeneratorFactory( fileSystem );
 
-        LogProvider internalLogProvider = logService.getInternalLogProvider();
-        RecordFormats recordFormats = RecordFormatSelector.selectForStoreOrConfig( config, this.databaseLayout, fileSystem,
+            LogProvider internalLogProvider = logService.getInternalLogProvider();
+            RecordFormats recordFormats = RecordFormatSelector.selectForStoreOrConfig( config, this.databaseLayout, fileSystem,
                 pageCache, internalLogProvider );
-        StoreFactory sf = new StoreFactory( this.databaseLayout, config, idGeneratorFactory, pageCache, fileSystem,
+            StoreFactory sf = new StoreFactory( this.databaseLayout, config, idGeneratorFactory, pageCache, fileSystem,
                 recordFormats, internalLogProvider );
 
-        maxNodeId = recordFormats.node().getMaxId();
+            maxNodeId = recordFormats.node().getMaxId();
 
-        if ( dump )
-        {
-            dumpConfiguration( params, System.out );
-        }
-        msgLog.info( Thread.currentThread() + " Starting BatchInserter(" + this + ")" );
-        life.start();
-        neoStores = sf.openAllNeoStores( true );
-        neoStores.verifyStoreOk();
-        this.pageCache = pageCache;
+            if ( dump )
+            {
+                dumpConfiguration( params, System.out );
+            }
+            msgLog.info( Thread.currentThread() + " Starting BatchInserter(" + this + ")" );
+            life.start();
+            neoStores = sf.openAllNeoStores( true );
+            neoStores.verifyStoreOk();
+            this.pageCache = pageCache;
 
-        nodeStore = neoStores.getNodeStore();
-        relationshipStore = neoStores.getRelationshipStore();
-        relationshipTypeTokenStore = neoStores.getRelationshipTypeTokenStore();
-        propertyKeyTokenStore = neoStores.getPropertyKeyTokenStore();
-        propertyStore = neoStores.getPropertyStore();
-        RecordStore<RelationshipGroupRecord> relationshipGroupStore = neoStores.getRelationshipGroupStore();
-        schemaStore = neoStores.getSchemaStore();
-        labelTokenStore = neoStores.getLabelTokenStore();
-        counts = new CountsTracker( logService.getInternalLogProvider(), fileSystem, pageCache, config, this.databaseLayout,
+            nodeStore = neoStores.getNodeStore();
+            relationshipStore = neoStores.getRelationshipStore();
+            relationshipTypeTokenStore = neoStores.getRelationshipTypeTokenStore();
+            propertyKeyTokenStore = neoStores.getPropertyKeyTokenStore();
+            propertyStore = neoStores.getPropertyStore();
+            RecordStore<RelationshipGroupRecord> relationshipGroupStore = neoStores.getRelationshipGroupStore();
+            schemaStore = neoStores.getSchemaStore();
+            labelTokenStore = neoStores.getLabelTokenStore();
+            counts = new CountsTracker( logService.getInternalLogProvider(), fileSystem, pageCache, config, this.databaseLayout,
                 EmptyVersionContextSupplier.EMPTY );
-        counts.setInitializer( DataInitializer.empty() );
-        life.add( counts );
+            counts.setInitializer( DataInitializer.empty() );
+            life.add( counts );
 
-        monitors = new Monitors();
+            monitors = new Monitors();
 
-        storeIndexStoreView = new NeoStoreIndexStoreView( NO_LOCK_SERVICE, () -> new RecordStorageReader( neoStores ) );
-        Dependencies deps = new Dependencies();
-        Monitors monitors = new Monitors();
-        deps.satisfyDependencies( fileSystem, config, logService, storeIndexStoreView, pageCache, monitors, RecoveryCleanupWorkCollector.immediate() );
+            storeIndexStoreView = new NeoStoreIndexStoreView( NO_LOCK_SERVICE, () -> new RecordStorageReader( neoStores ) );
+            Dependencies deps = new Dependencies();
+            Monitors monitors = new Monitors();
+            deps.satisfyDependencies( fileSystem, config, logService, storeIndexStoreView, pageCache, monitors, RecoveryCleanupWorkCollector.immediate() );
 
-        DatabaseExtensions databaseExtensions = life.add( new DatabaseExtensions(
+            DatabaseExtensions databaseExtensions = life.add( new DatabaseExtensions(
                 new DatabaseExtensionContext( this.databaseLayout, DatabaseInfo.TOOL, deps ),
                 extensions, deps, ExtensionFailureStrategies.ignore() ) );
 
-        indexProviderMap = life.add( new DefaultIndexProviderMap( databaseExtensions, config ) );
+            indexProviderMap = life.add( new DefaultIndexProviderMap( databaseExtensions, config ) );
 
-        TokenHolder propertyKeyTokenHolder = new DelegatingTokenHolder( this::createNewPropertyKeyId, TokenHolder.TYPE_PROPERTY_KEY );
-        TokenHolder relationshipTypeTokenHolder = new DelegatingTokenHolder( this::createNewRelationshipType, TokenHolder.TYPE_RELATIONSHIP_TYPE );
-        TokenHolder labelTokenHolder = new DelegatingTokenHolder( this::createNewLabelId, TokenHolder.TYPE_LABEL );
-        tokenHolders = new TokenHolders( propertyKeyTokenHolder, labelTokenHolder, relationshipTypeTokenHolder );
-        tokenHolders.setInitialTokens( StoreTokens.allTokens( neoStores ) );
+            TokenHolder propertyKeyTokenHolder = new DelegatingTokenHolder( this::createNewPropertyKeyId, TokenHolder.TYPE_PROPERTY_KEY );
+            TokenHolder relationshipTypeTokenHolder = new DelegatingTokenHolder( this::createNewRelationshipType, TokenHolder.TYPE_RELATIONSHIP_TYPE );
+            TokenHolder labelTokenHolder = new DelegatingTokenHolder( this::createNewLabelId, TokenHolder.TYPE_LABEL );
+            tokenHolders = new TokenHolders( propertyKeyTokenHolder, labelTokenHolder, relationshipTypeTokenHolder );
+            tokenHolders.setInitialTokens( StoreTokens.allTokens( neoStores ) );
 
-        schemaRuleAccess = SchemaRuleAccess.getSchemaRuleAccess( schemaStore, tokenHolders );
-        schemaCache = new SchemaCache( getConstraintSemantics() );
-        schemaCache.load( schemaRuleAccess.getAll() );
+            schemaRuleAccess = SchemaRuleAccess.getSchemaRuleAccess( schemaStore, tokenHolders );
+            schemaCache = new SchemaCache( getConstraintSemantics() );
+            schemaCache.load( schemaRuleAccess.getAll() );
 
-        actions = new BatchSchemaActions();
+            actions = new BatchSchemaActions();
 
-        // Record access
-        recordAccess = new DirectRecordAccessSet( neoStores );
-        relationshipCreator = new RelationshipCreator(
+            // Record access
+            recordAccess = new DirectRecordAccessSet( neoStores );
+            relationshipCreator = new RelationshipCreator(
                 new RelationshipGroupGetter( relationshipGroupStore ), relationshipGroupStore.getStoreHeaderInt() );
-        propertyTraverser = new PropertyTraverser();
-        propertyCreator = new PropertyCreator( propertyStore, propertyTraverser );
-        propertyDeletor = new PropertyDeleter( propertyTraverser );
+            propertyTraverser = new PropertyTraverser();
+            propertyCreator = new PropertyCreator( propertyStore, propertyTraverser );
+            propertyDeletor = new PropertyDeleter( propertyTraverser );
 
-        flushStrategy = new BatchedFlushStrategy( recordAccess, config.get( GraphDatabaseSettings
+            flushStrategy = new BatchedFlushStrategy( recordAccess, config.get( GraphDatabaseSettings
                 .batch_inserter_batch_size ) );
-        storageReader = new RecordStorageReader( neoStores );
+            storageReader = new RecordStorageReader( neoStores );
+        }
+        catch ( Exception e )
+        {
+            try
+            {
+                jobScheduler.shutdown();
+            }
+            catch ( Exception ex )
+            {
+                e.addSuppressed( ex );
+            }
+            throw e;
+        }
     }
 
     private static StoreLocker tryLockStore( FileSystemAbstraction fileSystem, StoreLayout storeLayout )
