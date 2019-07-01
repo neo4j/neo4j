@@ -19,17 +19,14 @@
  */
 package org.neo4j.batchinsert.internal;
 
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
-import org.junit.rules.RuleChain;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.io.IOException;
 
 import org.neo4j.batchinsert.BatchInserter;
 import org.neo4j.batchinsert.BatchInserters;
 import org.neo4j.configuration.GraphDatabaseSettings;
-import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.layout.StoreLayout;
@@ -39,32 +36,34 @@ import org.neo4j.kernel.StoreLockException;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.internal.locker.StoreLocker;
 import org.neo4j.test.ReflectionUtil;
+import org.neo4j.test.extension.DefaultFileSystemExtension;
+import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.TestDirectoryExtension;
 import org.neo4j.test.rule.TestDirectory;
-import org.neo4j.test.rule.fs.DefaultFileSystemRule;
 
 import static org.hamcrest.CoreMatchers.equalTo;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.allOf;
 import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.lessThan;
-import static org.junit.Assert.assertThat;
+import static org.hamcrest.Matchers.startsWith;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.neo4j.internal.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.io.ByteUnit.kibiBytes;
 
-public class BatchInserterImplTest
+@ExtendWith( {DefaultFileSystemExtension.class, TestDirectoryExtension.class} )
+class BatchInserterImplTest
 {
-    private final TestDirectory testDirectory = TestDirectory.testDirectory();
-    private final ExpectedException expected = ExpectedException.none();
-    private final DefaultFileSystemRule fileSystemRule = new DefaultFileSystemRule();
-
-    @Rule
-    public final RuleChain ruleChain = RuleChain.outerRule( testDirectory )
-                                                .around( expected ).around( fileSystemRule );
+    @Inject
+    private TestDirectory testDirectory;
+    @Inject
+    private FileSystemAbstraction fileSystem;
 
     @Test
-    public void testHonorsPassedInParams() throws Exception
+    void testHonorsPassedInParams() throws Exception
     {
-        BatchInserter inserter = BatchInserters.inserter( testDirectory.databaseLayout(), fileSystemRule.get(),
+        BatchInserter inserter = BatchInserters.inserter( testDirectory.databaseLayout(), fileSystem,
                 stringMap( GraphDatabaseSettings.pagecache_memory.name(), "280K" ) );
         NeoStores neoStores = ReflectionUtil.getPrivateField( inserter, "neoStores", NeoStores.class );
         PageCache pageCache = ReflectionUtil.getPrivateField( neoStores, "pageCache", PageCache.class );
@@ -75,13 +74,13 @@ public class BatchInserterImplTest
     }
 
     @Test
-    public void testCreatesStoreLockFile() throws Exception
+    void testCreatesStoreLockFile() throws Exception
     {
         // Given
         DatabaseLayout databaseLayout = testDirectory.databaseLayout();
 
         // When
-        BatchInserter inserter = BatchInserters.inserter( databaseLayout, fileSystemRule.get() );
+        BatchInserter inserter = BatchInserters.inserter( databaseLayout, fileSystem );
 
         // Then
         assertThat( databaseLayout.getStoreLayout().storeLockFile().exists(), equalTo( true ) );
@@ -89,20 +88,17 @@ public class BatchInserterImplTest
     }
 
     @Test
-    public void testFailsOnExistingStoreLockFile() throws IOException
+    void testFailsOnExistingStoreLockFile() throws IOException
     {
         // Given
         StoreLayout storeLayout = testDirectory.storeLayout();
-        try ( FileSystemAbstraction fileSystemAbstraction = new DefaultFileSystemAbstraction();
-              StoreLocker lock = new StoreLocker( fileSystemAbstraction, storeLayout ) )
+        try ( StoreLocker lock = new StoreLocker( fileSystem, storeLayout ) )
         {
             lock.checkLock();
 
-            // Then
-            expected.expect( StoreLockException.class );
-            expected.expectMessage( "Unable to obtain lock on store lock file" );
-            // When
-            BatchInserters.inserter( storeLayout.databaseLayout( "any" ), fileSystemAbstraction );
+            var e = assertThrows( StoreLockException.class,
+                () -> BatchInserters.inserter( storeLayout.databaseLayout( "any" ), fileSystem ) );
+            assertThat( e.getMessage(), startsWith( "Unable to obtain lock on store lock file" ) );
         }
     }
 }

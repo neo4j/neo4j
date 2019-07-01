@@ -19,8 +19,8 @@
  */
 package org.neo4j.batchinsert;
 
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.io.IOException;
 import java.util.Map;
@@ -32,25 +32,28 @@ import org.neo4j.internal.helpers.collection.MapUtil;
 import org.neo4j.io.fs.EphemeralFileSystemAbstraction;
 import org.neo4j.kernel.extension.ExtensionFactory;
 import org.neo4j.kernel.impl.index.schema.GenericNativeIndexProviderFactory;
+import org.neo4j.test.extension.EphemeralFileSystemExtension;
+import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.TestDirectoryExtension;
 import org.neo4j.test.rule.TestDirectory;
-import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.neo4j.batchinsert.BatchInserters.inserter;
 import static org.neo4j.configuration.GraphDatabaseSettings.default_schema_provider;
 
-public class BatchInsertersTest
+@ExtendWith( {EphemeralFileSystemExtension.class, TestDirectoryExtension.class} )
+class BatchInsertersTest
 {
-    @Rule
-    public final TestDirectory testDirectory = TestDirectory.testDirectory();
-    @Rule
-    public final EphemeralFileSystemRule fileSystemRule = new EphemeralFileSystemRule();
+    @Inject
+    private TestDirectory testDirectory;
+    @Inject
+    private EphemeralFileSystemAbstraction fs;
 
     @Test
-    public void automaticallyCloseCreatedFileSystemOnShutdown() throws Exception
+    void automaticallyCloseCreatedFileSystemOnShutdown() throws Exception
     {
         verifyInserterFileSystemClose( inserter( testDirectory.databaseLayout() ) );
         verifyInserterFileSystemClose( inserter( testDirectory.databaseLayout(), getConfig() ) );
@@ -58,9 +61,8 @@ public class BatchInsertersTest
     }
 
     @Test
-    public void providedFileSystemNotClosedAfterShutdown() throws IOException
+    void providedFileSystemNotClosedAfterShutdown() throws IOException
     {
-        EphemeralFileSystemAbstraction fs = fileSystemRule.get();
         verifyProvidedFileSystemOpenAfterShutdown( inserter( testDirectory.databaseLayout(), fs ), fs );
         verifyProvidedFileSystemOpenAfterShutdown( inserter( testDirectory.databaseLayout(), fs, getConfig() ), fs );
         verifyProvidedFileSystemOpenAfterShutdown( inserter( testDirectory.databaseLayout(), fs, getConfig(), getExtensions() ), fs );

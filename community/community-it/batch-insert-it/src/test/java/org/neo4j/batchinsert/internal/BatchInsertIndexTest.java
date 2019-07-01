@@ -19,11 +19,9 @@
  */
 package org.neo4j.batchinsert.internal;
 
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.RuleChain;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 
 import java.util.Iterator;
 import java.util.concurrent.TimeUnit;
@@ -32,7 +30,7 @@ import org.neo4j.batchinsert.BatchInserter;
 import org.neo4j.batchinsert.BatchInserters;
 import org.neo4j.common.DependencyResolver;
 import org.neo4j.configuration.Config;
-import org.neo4j.configuration.GraphDatabaseSettings;
+import org.neo4j.configuration.GraphDatabaseSettings.SchemaIndex;
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
@@ -45,51 +43,41 @@ import org.neo4j.internal.helpers.collection.Pair;
 import org.neo4j.internal.kernel.api.IndexReference;
 import org.neo4j.internal.kernel.api.SchemaRead;
 import org.neo4j.internal.kernel.api.TokenRead;
+import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.index.schema.config.SpatialIndexValueTestUtil;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.TestLabels;
-import org.neo4j.test.rule.PageCacheRule;
+import org.neo4j.test.extension.DefaultFileSystemExtension;
+import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.TestDirectoryExtension;
 import org.neo4j.test.rule.TestDirectory;
-import org.neo4j.test.rule.fs.DefaultFileSystemRule;
 import org.neo4j.values.storable.CoordinateReferenceSystem;
 import org.neo4j.values.storable.PointValue;
 import org.neo4j.values.storable.Values;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.configuration.GraphDatabaseSettings.default_schema_provider;
 import static org.neo4j.internal.helpers.collection.MapUtil.stringMap;
 
-@RunWith( Parameterized.class )
-public class BatchInsertIndexTest
+@ExtendWith( {DefaultFileSystemExtension.class, TestDirectoryExtension.class} )
+class BatchInsertIndexTest
 {
-    private final GraphDatabaseSettings.SchemaIndex schemaIndex;
-    private DefaultFileSystemRule fileSystemRule = new DefaultFileSystemRule();
-    private TestDirectory testDirectory = TestDirectory.testDirectory();
-    private PageCacheRule pageCacheRule = new PageCacheRule();
+    @Inject
+    private FileSystemAbstraction  fs;
+    @Inject
+    private TestDirectory testDirectory;
 
-    @Rule
-    public RuleChain ruleChain = RuleChain.outerRule( testDirectory ).around( fileSystemRule ).around( pageCacheRule );
     private DatabaseManagementService managementService;
 
-    @Parameterized.Parameters( name = "{0}" )
-    public static GraphDatabaseSettings.SchemaIndex[] data()
-    {
-        return GraphDatabaseSettings.SchemaIndex.values();
-    }
-
-    public BatchInsertIndexTest( GraphDatabaseSettings.SchemaIndex schemaIndex )
-    {
-        this.schemaIndex = schemaIndex;
-    }
-
-    @Test
-    public void batchInserterShouldUseConfiguredIndexProvider() throws Exception
+    @ParameterizedTest
+    @EnumSource( SchemaIndex.class )
+    void batchInserterShouldUseConfiguredIndexProvider( SchemaIndex schemaIndex ) throws Exception
     {
         Config config = Config.defaults( stringMap( default_schema_provider.name(), schemaIndex.providerName() ) );
         BatchInserter inserter = newBatchInserter( config );
@@ -107,8 +95,8 @@ public class BatchInsertIndexTest
             int labelId = tokenRead.nodeLabel( TestLabels.LABEL_ONE.name() );
             int propertyId = tokenRead.propertyKey( "key" );
             IndexReference index = schemaRead.index( labelId, propertyId );
-            assertTrue( unexpectedIndexProviderMessage( index ), schemaIndex.providerName().contains( index.providerKey() ) );
-            assertTrue( unexpectedIndexProviderMessage( index ), schemaIndex.providerName().contains( index.providerVersion() ) );
+            assertTrue( schemaIndex.providerName().contains( index.providerKey() ), unexpectedIndexProviderMessage( index ) );
+            assertTrue( schemaIndex.providerName().contains( index.providerVersion() ), unexpectedIndexProviderMessage( index ) );
             tx.success();
         }
         finally
@@ -117,8 +105,9 @@ public class BatchInsertIndexTest
         }
     }
 
-    @Test
-    public void shouldPopulateIndexWithUniquePointsThatCollideOnSpaceFillingCurve() throws Exception
+    @ParameterizedTest
+    @EnumSource( SchemaIndex.class )
+    void shouldPopulateIndexWithUniquePointsThatCollideOnSpaceFillingCurve( SchemaIndex schemaIndex ) throws Exception
     {
         Config config = Config.defaults( stringMap( default_schema_provider.name(), schemaIndex.providerName() ) );
         BatchInserter inserter = newBatchInserter( config );
@@ -145,8 +134,9 @@ public class BatchInsertIndexTest
         }
     }
 
-    @Test
-    public void shouldThrowWhenPopulatingWithNonUniquePoints() throws Exception
+    @ParameterizedTest
+    @EnumSource( SchemaIndex.class )
+    void shouldThrowWhenPopulatingWithNonUniquePoints( SchemaIndex schemaIndex ) throws Exception
     {
         Config config = Config.defaults( stringMap( default_schema_provider.name(), schemaIndex.providerName() ) );
         BatchInserter inserter = newBatchInserter( config );
@@ -173,7 +163,7 @@ public class BatchInsertIndexTest
         }
     }
 
-    private void assertSingleCorrectHit( GraphDatabaseService db, PointValue point )
+    private static void assertSingleCorrectHit( GraphDatabaseService db, PointValue point )
     {
         ResourceIterator<Node> nodes = db.findNodes( TestLabels.LABEL_ONE, "prop", point );
         assertTrue( nodes.hasNext() );
@@ -185,13 +175,13 @@ public class BatchInsertIndexTest
 
     private BatchInserter newBatchInserter( Config config ) throws Exception
     {
-        return BatchInserters.inserter( testDirectory.databaseLayout(), fileSystemRule.get(), config.getRaw() );
+        return BatchInserters.inserter( testDirectory.databaseLayout(), fs, config.getRaw() );
     }
 
     private GraphDatabaseService graphDatabaseService( Config config )
     {
         TestDatabaseManagementServiceBuilder factory = new TestDatabaseManagementServiceBuilder( testDirectory.storeDir() );
-        factory.setFileSystem( fileSystemRule.get() );
+        factory.setFileSystem( fs );
 
         // Shouldn't be necessary to set dense node threshold since it's a stick config
         managementService = factory.setConfigRaw( config.getRaw() ).build();
@@ -199,7 +189,7 @@ public class BatchInsertIndexTest
         return managementService.database( DEFAULT_DATABASE_NAME );
     }
 
-    private void awaitIndexesOnline( GraphDatabaseService db )
+    private static void awaitIndexesOnline( GraphDatabaseService db )
     {
         try ( Transaction tx = db.beginTx() )
         {

@@ -19,21 +19,16 @@
  */
 package org.neo4j.batchinsert.internal;
 
-import org.junit.After;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.ClassRule;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import java.io.File;
 import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -41,6 +36,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import org.neo4j.batchinsert.BatchInserter;
 import org.neo4j.batchinsert.BatchInserters;
@@ -60,7 +56,6 @@ import org.neo4j.graphdb.schema.ConstraintType;
 import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.internal.helpers.collection.Iterables;
-import org.neo4j.internal.helpers.collection.MapUtil;
 import org.neo4j.internal.helpers.collection.Pair;
 import org.neo4j.internal.index.label.FullStoreChangeStream;
 import org.neo4j.internal.index.label.LabelScanReader;
@@ -70,8 +65,9 @@ import org.neo4j.internal.recordstorage.RecordStorageEngine;
 import org.neo4j.internal.recordstorage.SchemaRuleAccess;
 import org.neo4j.internal.schema.IndexProviderDescriptor;
 import org.neo4j.internal.schema.SchemaRule;
-import org.neo4j.io.fs.DefaultFileSystemAbstraction;
+import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
+import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.IndexProvider;
@@ -97,9 +93,9 @@ import org.neo4j.storageengine.api.ConstraintRule;
 import org.neo4j.storageengine.api.NodePropertyAccessor;
 import org.neo4j.storageengine.api.StorageIndexReference;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
-import org.neo4j.test.rule.PageCacheRule;
+import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.pagecache.PageCacheExtension;
 import org.neo4j.test.rule.TestDirectory;
-import org.neo4j.test.rule.fs.DefaultFileSystemRule;
 import org.neo4j.token.TokenHolders;
 import org.neo4j.values.storable.Values;
 
@@ -108,15 +104,17 @@ import static java.lang.String.format;
 import static java.util.Collections.singletonList;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.equalTo;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.arrayContaining;
 import static org.hamcrest.Matchers.emptyArray;
 import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
+import static org.junit.jupiter.params.provider.Arguments.arguments;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -138,42 +136,17 @@ import static org.neo4j.test.mockito.matcher.CollectionMatcher.matchesCollection
 import static org.neo4j.test.mockito.matcher.Neo4jMatchers.hasProperty;
 import static org.neo4j.test.mockito.matcher.Neo4jMatchers.inTx;
 
-@RunWith( Parameterized.class )
-public class BatchInsertTest
+@PageCacheExtension
+class BatchInsertTest
 {
     private static final IndexProviderDescriptor DESCRIPTOR = TestIndexProviderDescriptor.PROVIDER_DESCRIPTOR;
     private static final String KEY = DESCRIPTOR.getKey();
     private static final String INTERNAL_LOG_FILE = "debug.log";
-    private final int denseNodeThreshold;
     // This is the assumed internal index descriptor based on knowledge of what ids get assigned
     private static final IndexDescriptor internalIndex = TestIndexDescriptorFactory.forLabel( 0, 0 );
     private static final IndexDescriptor internalUniqueIndex = TestIndexDescriptorFactory.uniqueForLabel( 0, 0 );
-    private DatabaseManagementService managementService;
-
-    @Parameterized.Parameters( name = "{index} denseNodeThreshold={0}" )
-    public static Collection<Integer> data()
-    {
-        return Arrays.asList( 5, parseInt( GraphDatabaseSettings.dense_node_threshold.getDefaultValue() ) );
-    }
-
-    public BatchInsertTest( int denseNodeThreshold )
-    {
-        this.denseNodeThreshold = denseNodeThreshold;
-    }
-
-    private static Map<String,Object> properties = new HashMap<>();
-
-    private enum RelTypes implements RelationshipType
-    {
-        BATCH_TEST,
-        REL_TYPE1,
-        REL_TYPE2,
-        REL_TYPE3,
-        REL_TYPE4,
-        REL_TYPE5
-    }
-
-    private static RelationshipType[] relTypeArray = {
+    private static final Map<String, Object> properties = new HashMap<>();
+    private static final RelationshipType[] relTypeArray = {
         RelTypes.REL_TYPE1, RelTypes.REL_TYPE2, RelTypes.REL_TYPE3,
         RelTypes.REL_TYPE4, RelTypes.REL_TYPE5 };
 
@@ -188,56 +161,50 @@ public class BatchInsertTest
         properties.put( "key6", (byte) 6 );
         properties.put( "key7", true );
         properties.put( "key8", (char) 8 );
-        properties.put( "key10", new String[] {
+        properties.put( "key10", new String[]{
             "SDSDASSDLKSDSAKLSLDAKSLKDLSDAKLDSLA", "dsasda", "dssadsad"
         } );
-        properties.put( "key11", new int[] {1,2,3,4,5,6,7,8,9 } );
-        properties.put( "key12", new short[] {1,2,3,4,5,6,7,8,9} );
-        properties.put( "key13", new long[] {1,2,3,4,5,6,7,8,9 } );
-        properties.put( "key14", new float[] {1,2,3,4,5,6,7,8,9} );
-        properties.put( "key15", new double[] {1,2,3,4,5,6,7,8,9} );
-        properties.put( "key16", new byte[] {1,2,3,4,5,6,7,8,9} );
-        properties.put( "key17", new boolean[] {true,false,true,false} );
-        properties.put( "key18", new char[] {1,2,3,4,5,6,7,8,9} );
+        properties.put( "key11", new int[]{1, 2, 3, 4, 5, 6, 7, 8, 9} );
+        properties.put( "key12", new short[]{1, 2, 3, 4, 5, 6, 7, 8, 9} );
+        properties.put( "key13", new long[]{1, 2, 3, 4, 5, 6, 7, 8, 9} );
+        properties.put( "key14", new float[]{1, 2, 3, 4, 5, 6, 7, 8, 9} );
+        properties.put( "key15", new double[]{1, 2, 3, 4, 5, 6, 7, 8, 9} );
+        properties.put( "key16", new byte[]{1, 2, 3, 4, 5, 6, 7, 8, 9} );
+        properties.put( "key17", new boolean[]{true, false, true, false} );
+        properties.put( "key18", new char[]{1, 2, 3, 4, 5, 6, 7, 8, 9} );
     }
+    @Inject
+    private TestDirectory testDirectory;
+    @Inject
+    private FileSystemAbstraction fs;
+    @Inject
+    private PageCache pageCache;
 
-    @ClassRule
-    public static TestDirectory globalTestDirectory = TestDirectory.testDirectory();
-    @ClassRule
-    public static DefaultFileSystemRule fileSystemRule = new DefaultFileSystemRule();
-    @Rule
-    public TestDirectory localTestDirectory = TestDirectory.testDirectory();
-    @Rule
-    public final PageCacheRule pageCacheRule = new PageCacheRule();
+    private DatabaseManagementService managementService;
 
-    private static BatchInserter globalInserter;
-
-    @BeforeClass
-    public static void startGlobalInserter() throws IOException
+    private static Stream<Arguments> params()
     {
-        // Global inserter can be used in tests which simply want to verify "local" behaviour,
-        // e.g. create a node with some properties and read them back.
-        globalInserter = BatchInserters.inserter(
-                globalTestDirectory.databaseLayout( "global" ), fileSystemRule.get(), stringMap() );
+        return Stream.of(
+            arguments( 5 ),
+            arguments( parseInt( GraphDatabaseSettings.dense_node_threshold.getDefaultValue() ) )
+        );
     }
-
-    @After
-    public void flushGlobalInserter()
+    private enum RelTypes implements RelationshipType
     {
-        forceFlush( globalInserter );
+        BATCH_TEST,
+        REL_TYPE1,
+        REL_TYPE2,
+        REL_TYPE3,
+        REL_TYPE4,
+        REL_TYPE5
     }
 
-    @AfterClass
-    public static void shutDownGlobalInserter()
-    {
-        globalInserter.shutdown();
-    }
-
-    @Test
-    public void shouldUpdateStringArrayPropertiesOnNodesUsingBatchInserter1()
+    @ParameterizedTest
+    @MethodSource( "params" )
+    void shouldUpdateStringArrayPropertiesOnNodesUsingBatchInserter1( int denseNodeThreshold ) throws Exception
     {
         // Given
-        BatchInserter inserter = globalInserter;
+        var inserter = newBatchInserter( denseNodeThreshold );
 
         String[] array1 = { "1" };
         String[] array2 = { "a" };
@@ -256,57 +223,62 @@ public class BatchInsertTest
 
         // Then
         assertThat( inserter.getNodeProperties( id1 ).get( "array" ), equalTo( array1 ) );
+        inserter.shutdown();
     }
 
-    @Test
-    public void testSimple()
+    @ParameterizedTest
+    @MethodSource( "params" )
+    void testSimple( int denseNodeThreshold ) throws Exception
     {
-        BatchInserter graphDb = globalInserter;
-        long node1 = graphDb.createNode( null );
-        long node2 = graphDb.createNode( null );
-        long rel1 = graphDb.createRelationship( node1, node2, RelTypes.BATCH_TEST,
+        var inserter = newBatchInserter( denseNodeThreshold );
+        long node1 = inserter.createNode( null );
+        long node2 = inserter.createNode( null );
+        long rel1 = inserter.createRelationship( node1, node2, RelTypes.BATCH_TEST,
                 null );
-        BatchRelationship rel = graphDb.getRelationshipById( rel1 );
+        BatchRelationship rel = inserter.getRelationshipById( rel1 );
         assertEquals( rel.getStartNode(), node1 );
         assertEquals( rel.getEndNode(), node2 );
         assertEquals( RelTypes.BATCH_TEST.name(), rel.getType().name() );
+        inserter.shutdown();
     }
 
-    @Test
-    public void testSetAndAddNodeProperties()
+    @ParameterizedTest
+    @MethodSource( "params" )
+    void testSetAndAddNodeProperties( int denseNodeThreshold ) throws Exception
     {
-        BatchInserter inserter = globalInserter;
-
-        long tehNode = inserter.createNode( MapUtil.map( "one", "one" ,"two","two","three","three") );
+        var inserter = newBatchInserter( denseNodeThreshold );
+        long tehNode = inserter.createNode( map( "one", "one", "two", "two", "three", "three" ) );
         inserter.setNodeProperty( tehNode, "four", "four" );
         inserter.setNodeProperty( tehNode, "five", "five" );
         Map<String, Object> props = getNodeProperties( inserter, tehNode );
         assertEquals( 5, props.size() );
         assertEquals( "one", props.get( "one" ) );
         assertEquals( "five", props.get( "five" ) );
+        inserter.shutdown();
     }
 
-    @Test
-    public void setSingleProperty() throws Exception
+    @ParameterizedTest
+    @MethodSource( "params" )
+    void setSingleProperty( int denseNodeThreshold ) throws Exception
     {
-        BatchInserter inserter = newBatchInserter();
+        BatchInserter inserter = newBatchInserter( denseNodeThreshold );
         long node = inserter.createNode( null );
 
         String value = "Something";
         String key = "name";
         inserter.setNodeProperty( node, key, value );
 
-        GraphDatabaseService db = switchToEmbeddedGraphDatabaseService( inserter );
+        GraphDatabaseService db = switchToEmbeddedGraphDatabaseService( inserter, denseNodeThreshold );
         assertThat( getNodeInTx( node, db ), inTx( db, hasProperty( key ).withValue( value ) ) );
         managementService.shutdown();
     }
 
-    @Test
-    public void testSetAndKeepNodeProperty() throws Exception
+    @ParameterizedTest
+    @MethodSource( "params" )
+    void testSetAndKeepNodeProperty( int denseNodeThreshold ) throws Exception
     {
-        BatchInserter inserter = newBatchInserter();
-
-        long tehNode = inserter.createNode( MapUtil.map( "foo", "bar" ) );
+        var inserter = newBatchInserter( denseNodeThreshold );
+        long tehNode = inserter.createNode( map( "foo", "bar" ) );
         inserter.setNodeProperty( tehNode, "foo2", "bar2" );
         Map<String, Object> props = getNodeProperties( inserter, tehNode );
         assertEquals( 2, props.size() );
@@ -315,7 +287,7 @@ public class BatchInsertTest
 
         inserter.shutdown();
 
-        inserter = newBatchInserter();
+        inserter = newBatchInserter( denseNodeThreshold );
 
         props = getNodeProperties( inserter, tehNode );
         assertEquals( 2, props.size() );
@@ -331,7 +303,7 @@ public class BatchInsertTest
         assertEquals( "bar2", props.get( "foo2" ) );
 
         inserter.shutdown();
-        inserter = newBatchInserter();
+        inserter = newBatchInserter( denseNodeThreshold );
 
         props = getNodeProperties( inserter, tehNode );
         assertEquals( "bar3", props.get( "foo" ) );
@@ -342,16 +314,16 @@ public class BatchInsertTest
         inserter.shutdown();
     }
 
-    @Test
-    public void testSetAndKeepRelationshipProperty() throws Exception
+    @ParameterizedTest
+    @MethodSource( "params" )
+    void testSetAndKeepRelationshipProperty( int denseNodeThreshold ) throws Exception
     {
-        BatchInserter inserter = newBatchInserter();
-
+        var inserter = newBatchInserter( denseNodeThreshold );
         long from = inserter.createNode( Collections.emptyMap() );
         long to = inserter.createNode( Collections.emptyMap() );
         long theRel = inserter.createRelationship( from, to,
                 RelationshipType.withName( "TestingPropsHere" ),
-                MapUtil.map( "foo", "bar" ) );
+            map( "foo", "bar" ) );
         inserter.setRelationshipProperty( theRel, "foo2", "bar2" );
         Map<String, Object> props = getRelationshipProperties( inserter, theRel );
         assertEquals( 2, props.size() );
@@ -360,7 +332,7 @@ public class BatchInsertTest
 
         inserter.shutdown();
 
-        inserter = newBatchInserter();
+        inserter = newBatchInserter( denseNodeThreshold );
 
         props = getRelationshipProperties( inserter, theRel );
         assertEquals( 2, props.size() );
@@ -376,7 +348,7 @@ public class BatchInsertTest
         assertEquals( "bar2", props.get( "foo2" ) );
 
         inserter.shutdown();
-        inserter = newBatchInserter();
+        inserter = newBatchInserter( denseNodeThreshold );
 
         props = getRelationshipProperties( inserter, theRel );
         assertEquals( "bar3", props.get( "foo" ) );
@@ -387,11 +359,11 @@ public class BatchInsertTest
         inserter.shutdown();
     }
 
-    @Test
-    public void testNodeHasProperty()
+    @ParameterizedTest
+    @MethodSource( "params" )
+    void testNodeHasProperty( int denseNodeThreshold ) throws Exception
     {
-        BatchInserter inserter = globalInserter;
-
+        var inserter = newBatchInserter( denseNodeThreshold );
         long theNode = inserter.createNode( properties );
         long anotherNode = inserter.createNode( Collections.emptyMap() );
         long relationship = inserter.createRelationship( theNode, anotherNode,
@@ -403,13 +375,14 @@ public class BatchInsertTest
             assertTrue( inserter.relationshipHasProperty( relationship, key ) );
             assertFalse( inserter.relationshipHasProperty( relationship, key + "-" ) );
         }
+        inserter.shutdown();
     }
 
-    @Test
-    public void testRemoveProperties() throws Exception
+    @ParameterizedTest
+    @MethodSource( "params" )
+    void testRemoveProperties( int denseNodeThreshold ) throws Exception
     {
-        BatchInserter inserter = newBatchInserter();
-
+        var inserter = newBatchInserter( denseNodeThreshold );
         long theNode = inserter.createNode( properties );
         long anotherNode = inserter.createNode( Collections.emptyMap() );
         long relationship = inserter.createRelationship( theNode, anotherNode,
@@ -438,7 +411,7 @@ public class BatchInsertTest
             }
         }
         inserter.shutdown();
-        inserter = newBatchInserter();
+        inserter = newBatchInserter( denseNodeThreshold );
 
         for ( String key : properties.keySet() )
         {
@@ -462,73 +435,80 @@ public class BatchInsertTest
         inserter.shutdown();
     }
 
-    @Test
-    public void shouldBeAbleToRemoveDynamicProperty()
+    @ParameterizedTest
+    @MethodSource( "params" )
+    void shouldBeAbleToRemoveDynamicProperty( int denseNodeThreshold ) throws Exception
     {
         // Only triggered if assertions are enabled
 
         // GIVEN
-        BatchInserter batchInserter = globalInserter;
+        var inserter = newBatchInserter( denseNodeThreshold );
         String key = "tags";
-        long nodeId = batchInserter.createNode( MapUtil.map( key, new String[] { "one", "two", "three" } ) );
+        long nodeId = inserter.createNode( map( key, new String[]{"one", "two", "three"} ) );
 
         // WHEN
-        batchInserter.removeNodeProperty( nodeId, key );
+        inserter.removeNodeProperty( nodeId, key );
 
         // THEN
-        assertFalse( batchInserter.getNodeProperties( nodeId ).containsKey( key ) );
+        assertFalse( inserter.getNodeProperties( nodeId ).containsKey( key ) );
+        inserter.shutdown();
     }
 
-    @Test
-    public void shouldBeAbleToOverwriteDynamicProperty()
+    @ParameterizedTest
+    @MethodSource( "params" )
+    void shouldBeAbleToOverwriteDynamicProperty( int denseNodeThreshold ) throws Exception
     {
         // Only triggered if assertions are enabled
 
         // GIVEN
-        BatchInserter batchInserter = globalInserter;
+        var inserter = newBatchInserter( denseNodeThreshold );
         String key = "tags";
-        long nodeId = batchInserter.createNode( MapUtil.map( key, new String[] { "one", "two", "three" } ) );
+        long nodeId = inserter.createNode( map( key, new String[]{"one", "two", "three"} ) );
 
         // WHEN
-        String[] secondValue = new String[] { "four", "five", "six" };
-        batchInserter.setNodeProperty( nodeId, key, secondValue );
+        String[] secondValue = {"four", "five", "six"};
+        inserter.setNodeProperty( nodeId, key, secondValue );
 
         // THEN
-        assertArrayEquals( secondValue, (String[]) getNodeProperties( batchInserter, nodeId ).get( key ) );
+        assertArrayEquals( secondValue, (String[]) getNodeProperties( inserter, nodeId ).get( key ) );
+        inserter.shutdown();
     }
 
-    @Test
-    public void testMore()
+    @ParameterizedTest
+    @MethodSource( "params" )
+    void testMore( int denseNodeThreshold ) throws Exception
     {
-        BatchInserter graphDb = globalInserter;
-        long startNode = graphDb.createNode( properties );
+        var inserter = newBatchInserter( denseNodeThreshold );
+        long startNode = inserter.createNode( properties );
         long[] endNodes = new long[25];
         Set<Long> rels = new HashSet<>();
         for ( int i = 0; i < 25; i++ )
         {
-            endNodes[i] = graphDb.createNode( properties );
-            rels.add( graphDb.createRelationship( startNode, endNodes[i],
+            endNodes[i] = inserter.createNode( properties );
+            rels.add( inserter.createRelationship( startNode, endNodes[i],
                 relTypeArray[i % 5], properties ) );
         }
-        for ( BatchRelationship rel : graphDb.getRelationships( startNode ) )
+        for ( BatchRelationship rel : inserter.getRelationships( startNode ) )
         {
             assertTrue( rels.contains( rel.getId() ) );
             assertEquals( rel.getStartNode(), startNode );
         }
-        graphDb.setNodeProperties( startNode, properties );
+        inserter.setNodeProperties( startNode, properties );
+        inserter.shutdown();
     }
 
-    @Test
-    public void makeSureLoopsCanBeCreated() throws Exception
+    @ParameterizedTest
+    @MethodSource( "params" )
+    void makeSureLoopsCanBeCreated( int denseNodeThreshold ) throws Exception
     {
-        BatchInserter graphDb = newBatchInserter();
-        long startNode = graphDb.createNode( properties );
-        long otherNode = graphDb.createNode( properties );
-        long selfRelationship = graphDb.createRelationship( startNode, startNode,
+        var inserter = newBatchInserter( denseNodeThreshold );
+        long startNode = inserter.createNode( properties );
+        long otherNode = inserter.createNode( properties );
+        long selfRelationship = inserter.createRelationship( startNode, startNode,
                 relTypeArray[0], properties );
-        long relationship = graphDb.createRelationship( startNode, otherNode,
+        long relationship = inserter.createRelationship( startNode, otherNode,
                 relTypeArray[0], properties );
-        for ( BatchRelationship rel : graphDb.getRelationships( startNode ) )
+        for ( BatchRelationship rel : inserter.getRelationships( startNode ) )
         {
             if ( rel.getId() == selfRelationship )
             {
@@ -546,7 +526,7 @@ public class BatchInsertTest
             }
         }
 
-        GraphDatabaseService db = switchToEmbeddedGraphDatabaseService( graphDb );
+        GraphDatabaseService db = switchToEmbeddedGraphDatabaseService( inserter, denseNodeThreshold );
 
         try ( Transaction ignored = db.beginTx() )
         {
@@ -566,14 +546,15 @@ public class BatchInsertTest
         }
     }
 
-    @Test
-    public void createBatchNodeAndRelationshipsDeleteAllInEmbedded() throws Exception
+    @ParameterizedTest
+    @MethodSource( "params" )
+    void createBatchNodeAndRelationshipsDeleteAllInEmbedded( int denseNodeThreshold ) throws Exception
     {
         /*
          *    ()--[REL_TYPE1]-->(node)--[BATCH_TEST]->()
          */
 
-        BatchInserter inserter = newBatchInserter();
+        var inserter = newBatchInserter( denseNodeThreshold );
         long nodeId = inserter.createNode( null );
         inserter.createRelationship( nodeId, inserter.createNode( null ),
                 RelTypes.BATCH_TEST, null );
@@ -581,7 +562,7 @@ public class BatchInsertTest
                 RelTypes.REL_TYPE1, null );
 
         // Delete node and all its relationships
-        GraphDatabaseService db = switchToEmbeddedGraphDatabaseService( inserter );
+        GraphDatabaseService db = switchToEmbeddedGraphDatabaseService( inserter, denseNodeThreshold );
 
         try ( Transaction tx = db.beginTx() )
         {
@@ -598,18 +579,19 @@ public class BatchInsertTest
     }
 
     @Test
-    public void messagesLogGetsClosed() throws Exception
+    void messagesLogGetsClosed() throws IOException
     {
-        DatabaseLayout databaseLayout = localTestDirectory.databaseLayout();
-        BatchInserter inserter = BatchInserters.inserter( databaseLayout, fileSystemRule.get(), stringMap() );
+        DatabaseLayout databaseLayout = testDirectory.databaseLayout();
+        BatchInserter inserter = BatchInserters.inserter( databaseLayout, fs, stringMap() );
         inserter.shutdown();
         assertTrue( new File( databaseLayout.databaseDirectory(), INTERNAL_LOG_FILE ).delete() );
     }
 
-    @Test
-    public void createEntitiesWithEmptyPropertiesMap()
+    @ParameterizedTest
+    @MethodSource( "params" )
+    void createEntitiesWithEmptyPropertiesMap( int denseNodeThreshold ) throws Exception
     {
-        BatchInserter inserter = globalInserter;
+        var inserter = newBatchInserter( denseNodeThreshold );
 
         // Assert for node
         long nodeId = inserter.createNode( map() );
@@ -620,22 +602,26 @@ public class BatchInsertTest
         long anotherNodeId = inserter.createNode( null );
         long relId = inserter.createRelationship( nodeId, anotherNodeId, RelTypes.BATCH_TEST, map() );
         inserter.getRelationshipProperties( relId );
+        inserter.shutdown();
     }
 
-    @Test
-    public void createEntitiesWithDynamicPropertiesMap()
+    @ParameterizedTest
+    @MethodSource( "params" )
+    void createEntitiesWithDynamicPropertiesMap( int denseNodeThreshold ) throws Exception
     {
-        BatchInserter inserter = globalInserter;
+        var inserter = newBatchInserter( denseNodeThreshold );
 
         setAndGet( inserter, "http://www.w3.org/1999/02/22-rdf-syntax-ns#type" );
         setAndGet( inserter, intArray() );
+        inserter.shutdown();
     }
 
-    @Test
-    public void shouldAddInitialLabelsToCreatedNode()
+    @ParameterizedTest
+    @MethodSource( "params" )
+    void shouldAddInitialLabelsToCreatedNode( int denseNodeThreshold ) throws Exception
     {
         // GIVEN
-        BatchInserter inserter = globalInserter;
+        var inserter = newBatchInserter( denseNodeThreshold );
 
         // WHEN
         long node = inserter.createNode( map(), Labels.FIRST, Labels.SECOND );
@@ -644,13 +630,15 @@ public class BatchInsertTest
         assertTrue( inserter.nodeHasLabel( node, Labels.FIRST ) );
         assertTrue( inserter.nodeHasLabel( node, Labels.SECOND ) );
         assertFalse( inserter.nodeHasLabel( node, Labels.THIRD ) );
+        inserter.shutdown();
     }
 
-    @Test
-    public void shouldGetNodeLabels()
+    @ParameterizedTest
+    @MethodSource( "params" )
+    void shouldGetNodeLabels( int denseNodeThreshold ) throws Exception
     {
         // GIVEN
-        BatchInserter inserter = globalInserter;
+        var inserter = newBatchInserter( denseNodeThreshold );
         long node = inserter.createNode( map(), Labels.FIRST, Labels.THIRD );
 
         // WHEN
@@ -658,13 +646,15 @@ public class BatchInsertTest
 
         // THEN
         assertEquals( asSet( Labels.FIRST.name(), Labels.THIRD.name() ), Iterables.asSet( labelNames ) );
+        inserter.shutdown();
     }
 
-    @Test
-    public void shouldAddManyInitialLabelsAsDynamicRecords()
+    @ParameterizedTest
+    @MethodSource( "params" )
+    void shouldAddManyInitialLabelsAsDynamicRecords( int denseNodeThreshold ) throws Exception
     {
         // GIVEN
-        BatchInserter inserter = globalInserter;
+        var inserter = newBatchInserter( denseNodeThreshold );
         Pair<Label[], Set<String>> labels = manyLabels( 200 );
         long node = inserter.createNode( map(), labels.first() );
         forceFlush( inserter );
@@ -674,13 +664,15 @@ public class BatchInsertTest
 
         // THEN
         assertEquals( labels.other(), Iterables.asSet( labelNames ) );
+        inserter.shutdown();
     }
 
-    @Test
-    public void shouldReplaceExistingInlinedLabelsWithDynamic()
+    @ParameterizedTest
+    @MethodSource( "params" )
+    void shouldReplaceExistingInlinedLabelsWithDynamic( int denseNodeThreshold ) throws Exception
     {
         // GIVEN
-        BatchInserter inserter = globalInserter;
+        var inserter = newBatchInserter( denseNodeThreshold );
         long node = inserter.createNode( map(), Labels.FIRST );
 
         // WHEN
@@ -690,13 +682,15 @@ public class BatchInsertTest
         // THEN
         Iterable<String> labelNames = asNames( inserter.getNodeLabels( node ) );
         assertEquals( labels.other(), Iterables.asSet( labelNames ) );
+        inserter.shutdown();
     }
 
-    @Test
-    public void shouldReplaceExistingDynamicLabelsWithInlined()
+    @ParameterizedTest
+    @MethodSource( "params" )
+    void shouldReplaceExistingDynamicLabelsWithInlined( int denseNodeThreshold ) throws Exception
     {
         // GIVEN
-        BatchInserter inserter = globalInserter;
+        var inserter = newBatchInserter( denseNodeThreshold );
         long node = inserter.createNode( map(), manyLabels( 150 ).first() );
 
         // WHEN
@@ -705,13 +699,15 @@ public class BatchInsertTest
         // THEN
         Iterable<String> labelNames = asNames( inserter.getNodeLabels( node ) );
         assertEquals( asSet( Labels.FIRST.name() ), Iterables.asSet( labelNames ) );
+        inserter.shutdown();
     }
 
-    @Test
-    public void shouldCreateDeferredSchemaIndexesInEmptyDatabase() throws Exception
+    @ParameterizedTest
+    @MethodSource( "params" )
+    void shouldCreateDeferredSchemaIndexesInEmptyDatabase( int denseNodeThreshold ) throws Exception
     {
         // GIVEN
-        BatchInserter inserter = newBatchInserter();
+        BatchInserter inserter = newBatchInserter( denseNodeThreshold );
 
         // WHEN
         IndexDefinition definition = inserter.createDeferredSchemaIndex( label( "Hacker" ) ).on( "handle" ).create();
@@ -722,11 +718,12 @@ public class BatchInsertTest
         inserter.shutdown();
     }
 
-    @Test
-    public void shouldCreateDeferredUniquenessConstraintInEmptyDatabase() throws Exception
+    @ParameterizedTest
+    @MethodSource( "params" )
+    void shouldCreateDeferredUniquenessConstraintInEmptyDatabase( int denseNodeThreshold ) throws Exception
     {
         // GIVEN
-        BatchInserter inserter = newBatchInserter();
+        BatchInserter inserter = newBatchInserter( denseNodeThreshold );
 
         // WHEN
         ConstraintDefinition definition =
@@ -739,17 +736,18 @@ public class BatchInsertTest
         inserter.shutdown();
     }
 
-    @Test
-    public void shouldCreateConsistentUniquenessConstraint() throws Exception
+    @ParameterizedTest
+    @MethodSource( "params" )
+    void shouldCreateConsistentUniquenessConstraint( int denseNodeThreshold ) throws Exception
     {
         // given
-        BatchInserter inserter = newBatchInserter();
+        BatchInserter inserter = newBatchInserter( denseNodeThreshold );
 
         // when
         inserter.createDeferredConstraint( label( "Hacker" ) ).assertPropertyIsUnique( "handle" ).create();
 
         // then
-        GraphDatabaseAPI graphdb = (GraphDatabaseAPI) switchToEmbeddedGraphDatabaseService( inserter );
+        GraphDatabaseAPI graphdb = (GraphDatabaseAPI) switchToEmbeddedGraphDatabaseService( inserter, denseNodeThreshold );
         try
         {
             NeoStores neoStores = graphdb.getDependencyResolver()
@@ -767,7 +765,7 @@ public class BatchInsertTest
                     inUse.add( i );
                 }
             }
-            assertEquals( "records in use", 2, inUse.size() );
+            assertEquals( 2, inUse.size(), "records in use" );
             SchemaRule rule0 = schemaRuleAccess.loadSingleSchemaRule( inUse.get( 0 ) );
             SchemaRule rule1 = schemaRuleAccess.loadSingleSchemaRule( inUse.get( 1 ) );
             StorageIndexReference indexRule;
@@ -782,10 +780,10 @@ public class BatchInsertTest
                 constraintRule = (ConstraintRule) rule0;
                 indexRule = (StorageIndexReference) rule1;
             }
-            assertEquals( "index should reference constraint",
-                          constraintRule.getId(), indexRule.owningConstraintReference() );
-            assertEquals( "constraint should reference index",
-                          indexRule.getId(), constraintRule.ownedIndexReference() );
+            assertEquals(
+                constraintRule.getId(), indexRule.owningConstraintReference(), "index should reference constraint" );
+            assertEquals(
+                indexRule.getId(), constraintRule.ownedIndexReference(), "constraint should reference index" );
         }
         finally
         {
@@ -793,92 +791,72 @@ public class BatchInsertTest
         }
     }
 
-    @Test
-    public void shouldNotAllowCreationOfDuplicateIndex()
+    @ParameterizedTest
+    @MethodSource( "params" )
+    void shouldNotAllowCreationOfDuplicateIndex( int denseNodeThreshold ) throws Exception
     {
         // GIVEN
-        BatchInserter inserter = globalInserter;
-        String labelName = "Hacker1-" + denseNodeThreshold;
+        var inserter = newBatchInserter( denseNodeThreshold );
+        String labelName = "Hacker1";
 
         // WHEN
         inserter.createDeferredSchemaIndex( label( labelName ) ).on( "handle" ).create();
 
-        try
-        {
-            inserter.createDeferredSchemaIndex( label( labelName ) ).on( "handle" ).create();
-            fail( "Should have thrown exception." );
-        }
-        catch ( ConstraintViolationException e )
-        {
-            // THEN Good
-        }
+        assertThrows( ConstraintViolationException.class, () -> inserter.createDeferredSchemaIndex( label( labelName ) ).on( "handle" ).create() );
+        inserter.shutdown();
     }
 
-    @Test
-    public void shouldNotAllowCreationOfDuplicateConstraint()
+    @ParameterizedTest
+    @MethodSource( "params" )
+    void shouldNotAllowCreationOfDuplicateConstraint( int denseNodeThreshold ) throws Exception
     {
         // GIVEN
-        BatchInserter inserter = globalInserter;
-        String labelName = "Hacker2-" + denseNodeThreshold;
+        var inserter = newBatchInserter( denseNodeThreshold );
+        String labelName = "Hacker2";
 
         // WHEN
         inserter.createDeferredConstraint( label( labelName ) ).assertPropertyIsUnique( "handle" ).create();
 
-        try
-        {
-            inserter.createDeferredConstraint( label( labelName ) ).assertPropertyIsUnique( "handle" ).create();
-            fail( "Should have thrown exception." );
-        }
-        catch ( ConstraintViolationException e )
-        {
-            // THEN Good
-        }
+        assertThrows( ConstraintViolationException.class,
+            () -> inserter.createDeferredConstraint( label( labelName ) ).assertPropertyIsUnique( "handle" ).create() );
+        inserter.shutdown();
     }
 
-    @Test
-    public void shouldNotAllowCreationOfDeferredSchemaConstraintAfterIndexOnSameKeys()
+    @ParameterizedTest
+    @MethodSource( "params" )
+    void shouldNotAllowCreationOfDeferredSchemaConstraintAfterIndexOnSameKeys( int denseNodeThreshold ) throws Exception
     {
         // GIVEN
-        BatchInserter inserter = globalInserter;
-        String labelName = "Hacker3-" + denseNodeThreshold;
+        String labelName = "Hacker3";
+        var inserter = newBatchInserter( denseNodeThreshold );
 
         // WHEN
         inserter.createDeferredSchemaIndex( label( labelName ) ).on( "handle" ).create();
 
-        try
-        {
-            inserter.createDeferredConstraint( label( labelName ) ).assertPropertyIsUnique( "handle" ).create();
-            fail( "Should have thrown exception." );
-        }
-        catch ( ConstraintViolationException e )
-        {
-            // THEN Good
-        }
+        assertThrows( ConstraintViolationException.class,
+            () -> inserter.createDeferredConstraint( label( labelName ) ).assertPropertyIsUnique( "handle" ).create() );
+        inserter.shutdown();
     }
 
-    @Test
-    public void shouldNotAllowCreationOfDeferredSchemaIndexAfterConstraintOnSameKeys()
+    @ParameterizedTest
+    @MethodSource( "params" )
+    void shouldNotAllowCreationOfDeferredSchemaIndexAfterConstraintOnSameKeys( int denseNodeThreshold ) throws Exception
     {
         // GIVEN
-        BatchInserter inserter = globalInserter;
-        String labelName = "Hacker4-" + denseNodeThreshold;
+        String labelName = "Hacker4";
+        var inserter = newBatchInserter( denseNodeThreshold );
 
         // WHEN
         inserter.createDeferredConstraint( label( labelName ) ).assertPropertyIsUnique( "handle" ).create();
 
-        try
-        {
-            inserter.createDeferredSchemaIndex( label( labelName ) ).on( "handle" ).create();
-            fail( "Should have thrown exception." );
-        }
-        catch ( ConstraintViolationException e )
-        {
-            // THEN Good
-        }
+        assertThrows( ConstraintViolationException.class,
+            () -> inserter.createDeferredSchemaIndex( label( labelName ) ).on( "handle" ).create() );
+        inserter.shutdown();
     }
 
-    @Test
-    public void shouldRunIndexPopulationJobAtShutdown() throws Throwable
+    @ParameterizedTest
+    @MethodSource( "params" )
+    void shouldRunIndexPopulationJobAtShutdown( int denseNodeThreshold ) throws Throwable
     {
         // GIVEN
         IndexPopulator populator = mock( IndexPopulator.class );
@@ -892,7 +870,7 @@ public class BatchInsertTest
         when( provider.bless( any( IndexDescriptor.class ) ) ).thenCallRealMethod();
 
         BatchInserter inserter = newBatchInserterWithIndexProvider(
-                singleInstanceIndexProviderFactory( KEY, provider ), provider.getProviderDescriptor() );
+                singleInstanceIndexProviderFactory( KEY, provider ), provider.getProviderDescriptor(), denseNodeThreshold );
 
         inserter.createDeferredSchemaIndex( label( "Hacker" ) ).on( "handle" ).create();
 
@@ -913,8 +891,9 @@ public class BatchInsertTest
         verify( provider ).shutdown();
     }
 
-    @Test
-    public void shouldRunConstraintPopulationJobAtShutdown() throws Throwable
+    @ParameterizedTest
+    @MethodSource( "params" )
+    void shouldRunConstraintPopulationJobAtShutdown( int denseNodeThreshold ) throws Throwable
     {
         // GIVEN
         IndexPopulator populator = mock( IndexPopulator.class );
@@ -928,7 +907,7 @@ public class BatchInsertTest
         when( provider.bless( any( IndexDescriptor.class ) ) ).thenCallRealMethod();
 
         BatchInserter inserter = newBatchInserterWithIndexProvider(
-                singleInstanceIndexProviderFactory( KEY, provider ), provider.getProviderDescriptor() );
+                singleInstanceIndexProviderFactory( KEY, provider ), provider.getProviderDescriptor(), denseNodeThreshold );
 
         inserter.createDeferredConstraint( label( "Hacker" ) ).assertPropertyIsUnique( "handle" ).create();
 
@@ -949,11 +928,12 @@ public class BatchInsertTest
         verify( provider ).shutdown();
     }
 
-    @Test
-    public void shouldRepopulatePreexistingIndexed() throws Throwable
+    @ParameterizedTest
+    @MethodSource( "params" )
+    void shouldRepopulatePreexistingIndexed( int denseNodeThreshold ) throws Throwable
     {
         // GIVEN
-        long jakewins = dbWithIndexAndSingleIndexedNode();
+        long jakewins = dbWithIndexAndSingleIndexedNode( denseNodeThreshold );
 
         IndexPopulator populator = mock( IndexPopulator.class );
         IndexProvider provider = mock( IndexProvider.class );
@@ -965,7 +945,7 @@ public class BatchInsertTest
         when( provider.getOnlineAccessor( any( StoreIndexDescriptor.class ), any( IndexSamplingConfig.class ) ) ).thenReturn( accessor );
 
         BatchInserter inserter = newBatchInserterWithIndexProvider(
-                singleInstanceIndexProviderFactory( KEY, provider ), provider.getProviderDescriptor() );
+                singleInstanceIndexProviderFactory( KEY, provider ), provider.getProviderDescriptor(), denseNodeThreshold );
 
         long boggle = inserter.createNode( map( "handle", "b0ggl3" ), label( "Hacker" ) );
 
@@ -986,12 +966,13 @@ public class BatchInsertTest
         verify( provider ).shutdown();
     }
 
-    @Test
-    public void shouldPopulateLabelScanStoreOnShutdown() throws Exception
+    @ParameterizedTest
+    @MethodSource( "params" )
+    void shouldPopulateLabelScanStoreOnShutdown( int denseNodeThreshold ) throws Exception
     {
         // GIVEN
         // -- a database and a mocked label scan store
-        BatchInserter inserter = newBatchInserter();
+        BatchInserter inserter = newBatchInserter( denseNodeThreshold );
 
         // -- and some data that we insert
         long node1 = inserter.createNode( null, Labels.FIRST );
@@ -1016,28 +997,30 @@ public class BatchInsertTest
         labelScanStore.shutdown();
     }
 
-    @Test
-    public void propertiesCanBeReSetUsingBatchInserter()
+    @ParameterizedTest
+    @MethodSource( "params" )
+    void propertiesCanBeReSetUsingBatchInserter( int denseNodeThreshold ) throws Exception
     {
         // GIVEN
-        BatchInserter batchInserter = globalInserter;
+        var inserter = newBatchInserter( denseNodeThreshold );
         Map<String, Object> props = new HashMap<>();
         props.put( "name", "One" );
         props.put( "count", 1 );
         props.put( "tags", new String[] { "one", "two" } );
         props.put( "something", "something" );
-        long nodeId = batchInserter.createNode( props );
-        batchInserter.setNodeProperty( nodeId, "name", "NewOne" );
-        batchInserter.removeNodeProperty( nodeId, "count" );
-        batchInserter.removeNodeProperty( nodeId, "something" );
+        long nodeId = inserter.createNode( props );
+        inserter.setNodeProperty( nodeId, "name", "NewOne" );
+        inserter.removeNodeProperty( nodeId, "count" );
+        inserter.removeNodeProperty( nodeId, "something" );
 
         // WHEN setting new properties
-        batchInserter.setNodeProperty( nodeId, "name", "YetAnotherOne" );
-        batchInserter.setNodeProperty( nodeId, "additional", "something" );
+        inserter.setNodeProperty( nodeId, "name", "YetAnotherOne" );
+        inserter.setNodeProperty( nodeId, "additional", "something" );
 
         // THEN there should be no problems doing so
-        assertEquals( "YetAnotherOne", batchInserter.getNodeProperties( nodeId ).get( "name" ) );
-        assertEquals("something", batchInserter.getNodeProperties( nodeId ).get( "additional" ) );
+        assertEquals( "YetAnotherOne", inserter.getNodeProperties( nodeId ).get( "name" ) );
+        assertEquals("something", inserter.getNodeProperties( nodeId ).get( "additional" ) );
+        inserter.shutdown();
     }
 
     /**
@@ -1047,11 +1030,13 @@ public class BatchInsertTest
      * During first update email property will be migrated to dynamic property and last property record will become
      * empty. That record should be deleted form property chain or otherwise on next node load user will get an
      * property record not in use exception.
+     * @param denseNodeThreshold
      */
-    @Test
-    public void testCleanupEmptyPropertyRecords() throws Exception
+    @ParameterizedTest
+    @MethodSource( "params" )
+    void testCleanupEmptyPropertyRecords( int denseNodeThreshold ) throws Exception
     {
-        BatchInserter inserter = globalInserter;
+        var inserter = newBatchInserter( denseNodeThreshold );
 
         Map<String, Object> properties = new HashMap<>();
         properties.put("id", 1099511659993L);
@@ -1083,46 +1068,52 @@ public class BatchInsertTest
 
         assertThat( (String[]) getNodeProperties( inserter, personNodeId ).get( "email" ),
                 arrayContaining( "Edward1099511659993@gmail.com", "backup@gmail.com" ) );
+        inserter.shutdown();
     }
 
-    @Test
-    public void propertiesCanBeReSetUsingBatchInserter2()
+    @ParameterizedTest
+    @MethodSource( "params" )
+    void propertiesCanBeReSetUsingBatchInserter2( int denseNodeThreshold ) throws Exception
     {
         // GIVEN
-        BatchInserter batchInserter = globalInserter;
-        long id = batchInserter.createNode( new HashMap<>() );
+        var inserter = newBatchInserter( denseNodeThreshold );
+        long id = inserter.createNode( new HashMap<>() );
 
         // WHEN
-        batchInserter.setNodeProperty( id, "test", "looooooooooong test" );
-        batchInserter.setNodeProperty( id, "test", "small test" );
+        inserter.setNodeProperty( id, "test", "looooooooooong test" );
+        inserter.setNodeProperty( id, "test", "small test" );
 
         // THEN
-        assertEquals( "small test", batchInserter.getNodeProperties( id ).get( "test" ) );
+        assertEquals( "small test", inserter.getNodeProperties( id ).get( "test" ) );
+        inserter.shutdown();
     }
 
-    @Test
-    public void replaceWithBiggerPropertySpillsOverIntoNewPropertyRecord()
+    @ParameterizedTest
+    @MethodSource( "params" )
+    void replaceWithBiggerPropertySpillsOverIntoNewPropertyRecord( int denseNodeThreshold ) throws Exception
     {
         // GIVEN
-        BatchInserter batchInserter = globalInserter;
+        var inserter = newBatchInserter( denseNodeThreshold );
         Map<String, Object> props = new HashMap<>();
         props.put( "name", "One" );
         props.put( "count", 1 );
         props.put( "tags", new String[] { "one", "two" } );
-        long id = batchInserter.createNode( props );
-        batchInserter.setNodeProperty( id, "name", "NewOne" );
+        long id = inserter.createNode( props );
+        inserter.setNodeProperty( id, "name", "NewOne" );
 
         // WHEN
-        batchInserter.setNodeProperty( id, "count", "something" );
+        inserter.setNodeProperty( id, "count", "something" );
 
         // THEN
-        assertEquals( "something", batchInserter.getNodeProperties( id ).get( "count" ) );
+        assertEquals( "something", inserter.getNodeProperties( id ).get( "count" ) );
+        inserter.shutdown();
     }
 
-    @Test
-    public void mustSplitUpRelationshipChainsWhenCreatingDenseNodes()
+    @ParameterizedTest
+    @MethodSource( "params" )
+    void mustSplitUpRelationshipChainsWhenCreatingDenseNodes( int denseNodeThreshold ) throws Exception
     {
-        BatchInserter inserter = globalInserter;
+        var inserter = newBatchInserter( denseNodeThreshold );
 
         long node1 = inserter.createNode( null );
         long node2 = inserter.createNode( null );
@@ -1138,14 +1129,16 @@ public class BatchInsertTest
         NeoStores neoStores = getFlushedNeoStores( inserter );
         NodeStore nodeStore = neoStores.getNodeStore();
         NodeRecord record = nodeStore.getRecord( node1, nodeStore.newRecord(), NORMAL );
-        assertTrue( "Node " + record + " should have been dense", record.isDense() );
+        assertTrue( record.isDense(), "Node " + record + " should have been dense" );
+        inserter.shutdown();
     }
 
-    @Test
-    public void shouldGetRelationships()
+    @ParameterizedTest
+    @MethodSource( "params" )
+    void shouldGetRelationships( int denseNodeThreshold ) throws Exception
     {
         // GIVEN
-        BatchInserter inserter = globalInserter;
+        var inserter = newBatchInserter( denseNodeThreshold );
         long node = inserter.createNode( null );
         createRelationships( inserter, node, RelTypes.REL_TYPE1, 3 );
         createRelationships( inserter, node, RelTypes.REL_TYPE2, 4 );
@@ -1155,14 +1148,15 @@ public class BatchInsertTest
 
         // THEN
         assertEquals( 21, gottenRelationships.size() );
+        inserter.shutdown();
     }
 
-    @Test
-    public void shouldNotCreateSameLabelTwiceOnSameNode()
+    @ParameterizedTest
+    @MethodSource( "params" )
+    void shouldNotCreateSameLabelTwiceOnSameNode( int denseNodeThreshold ) throws Exception
     {
         // GIVEN
-        BatchInserter inserter = globalInserter;
-
+        var inserter = newBatchInserter( denseNodeThreshold );
         // WHEN
         long nodeId = inserter.createNode( map( "itemId", 1000L ), label( "Item" ),
                 label( "Item" ) );
@@ -1173,13 +1167,15 @@ public class BatchInsertTest
         NodeLabels labels = NodeLabelsField.parseLabelsField( node );
         long[] labelIds = labels.get( nodeStore );
         assertEquals( 1, labelIds.length );
+        inserter.shutdown();
     }
 
-    @Test
-    public void shouldSortLabelIdsWhenGetOrCreate()
+    @ParameterizedTest
+    @MethodSource( "params" )
+    void shouldSortLabelIdsWhenGetOrCreate( int denseNodeThreshold ) throws Exception
     {
         // GIVEN
-        BatchInserter inserter = globalInserter;
+        var inserter = newBatchInserter( denseNodeThreshold );
 
         // WHEN
         long nodeId = inserter.createNode( map( "Item", 123456789123L ), label( "AA" ),
@@ -1189,30 +1185,31 @@ public class BatchInsertTest
 
         // THEN
         NodeStore nodeStore = getFlushedNeoStores( inserter ).getNodeStore();
-        NodeRecord node = nodeStore.getRecord( nodeId, nodeStore.newRecord(), RecordLoad.NORMAL );
+        NodeRecord node = nodeStore.getRecord( nodeId, nodeStore.newRecord(), NORMAL );
         NodeLabels labels = NodeLabelsField.parseLabelsField( node );
 
         long[] labelIds = labels.get( nodeStore );
         long[] sortedLabelIds = labelIds.clone();
         Arrays.sort( sortedLabelIds );
         assertArrayEquals( sortedLabelIds, labelIds );
+        inserter.shutdown();
     }
 
-    @Test
-    public void shouldCreateUniquenessConstraint() throws Exception
+    @ParameterizedTest
+    @MethodSource( "params" )
+    void shouldCreateUniquenessConstraint( int denseNodeThreshold ) throws Exception
     {
         // Given
         Label label = label( "Person" );
         String propertyKey = "name";
         String duplicatedValue = "Tom";
-
-        BatchInserter inserter = newBatchInserter();
+        var inserter = newBatchInserter( denseNodeThreshold );
 
         // When
         inserter.createDeferredConstraint( label ).assertPropertyIsUnique( propertyKey ).create();
 
         // Then
-        GraphDatabaseService db = switchToEmbeddedGraphDatabaseService( inserter );
+        GraphDatabaseService db = switchToEmbeddedGraphDatabaseService( inserter, denseNodeThreshold );
         try
         {
             try ( Transaction tx = db.beginTx() )
@@ -1246,86 +1243,70 @@ public class BatchInsertTest
         }
     }
 
-    @Test
-    public void shouldNotAllowCreationOfUniquenessConstraintAndIndexOnSameLabelAndProperty()
+    @ParameterizedTest
+    @MethodSource( "params" )
+    void shouldNotAllowCreationOfUniquenessConstraintAndIndexOnSameLabelAndProperty( int denseNodeThreshold ) throws Exception
     {
         // Given
-        Label label = label( "Person1-" + denseNodeThreshold );
+        Label label = label( "Person1" );
         String property = "name";
-
-        BatchInserter inserter = globalInserter;
+        var inserter = newBatchInserter( denseNodeThreshold );
 
         // When
         inserter.createDeferredConstraint( label ).assertPropertyIsUnique( property ).create();
-        try
-        {
-            inserter.createDeferredSchemaIndex( label ).on( property ).create();
-            fail( "Exception expected" );
-        }
-        catch ( ConstraintViolationException e )
-        {
-            // Then
-            assertEquals( "Index for given {label;property} already exists", e.getMessage() );
-        }
+        var e = assertThrows( ConstraintViolationException.class,
+            () -> inserter.createDeferredSchemaIndex( label ).on( property ).create() );
+        // Then
+        assertEquals( "Index for given {label;property} already exists", e.getMessage() );
+        inserter.shutdown();
     }
 
-    @Test
-    public void shouldNotAllowDuplicatedUniquenessConstraints()
+    @ParameterizedTest
+    @MethodSource( "params" )
+    void shouldNotAllowDuplicatedUniquenessConstraints( int denseNodeThreshold ) throws Exception
     {
         // Given
-        Label label = label( "Person2-" + denseNodeThreshold );
+        Label label = label( "Person2" );
         String property = "name";
-
-        BatchInserter inserter = globalInserter;
+        var inserter = newBatchInserter( denseNodeThreshold );
 
         // When
         inserter.createDeferredConstraint( label ).assertPropertyIsUnique( property ).create();
-        try
-        {
-            inserter.createDeferredConstraint( label ).assertPropertyIsUnique( property ).create();
-            fail( "Exception expected" );
-        }
-        catch ( ConstraintViolationException e )
-        {
-            // Then
-            assertEquals(
-                    "It is not allowed to create node keys, uniqueness constraints or indexes on the same {label;property}",
-                    e.getMessage() );
-        }
+        var e = assertThrows( ConstraintViolationException.class,
+            () -> inserter.createDeferredConstraint( label ).assertPropertyIsUnique( property ).create() );
+        assertEquals( "It is not allowed to create node keys, uniqueness constraints or indexes on the same {label;property}",
+                e.getMessage() );
+        inserter.shutdown();
     }
 
-    @Test
-    public void shouldNotAllowDuplicatedIndexes()
+    @ParameterizedTest
+    @MethodSource( "params" )
+    void shouldNotAllowDuplicatedIndexes( int denseNodeThreshold ) throws Exception
     {
         // Given
-        Label label = label( "Person3-" + denseNodeThreshold );
+        Label label = label( "Person3" );
         String property = "name";
-
-        BatchInserter inserter = globalInserter;
+        var inserter = newBatchInserter( denseNodeThreshold );
 
         // When
         inserter.createDeferredSchemaIndex( label ).on( property ).create();
-        try
-        {
-            inserter.createDeferredSchemaIndex( label ).on( property ).create();
-            fail( "Exception expected" );
-        }
-        catch ( ConstraintViolationException e )
-        {
-            // Then
-            assertEquals( "Index for given {label;property} already exists", e.getMessage() );
-        }
+        var e = assertThrows( ConstraintViolationException.class,
+            () -> inserter.createDeferredSchemaIndex( label ).on( property ).create() );
+        // Then
+        assertEquals( "Index for given {label;property} already exists", e.getMessage() );
+        inserter.shutdown();
     }
 
-    @Test
-    public void uniquenessConstraintShouldBeCheckedOnBatchInserterShutdownAndFailIfViolated() throws Exception
+    @ParameterizedTest
+    @MethodSource( "params" )
+    void uniquenessConstraintShouldBeCheckedOnBatchInserterShutdownAndFailIfViolated( int denseNodeThreshold ) throws Exception
     {
         // Given
         Label label = label( "Foo" );
         String property = "Bar";
         String value = "Baz";
 
-        BatchInserter inserter = newBatchInserter();
+        BatchInserter inserter = newBatchInserter( denseNodeThreshold );
 
         // When
         inserter.createDeferredConstraint( label ).assertPropertyIsUnique( property ).create();
@@ -1334,7 +1315,7 @@ public class BatchInsertTest
         inserter.createNode( Collections.singletonMap( property, value ), label );
 
         // Then
-        GraphDatabaseService db = switchToEmbeddedGraphDatabaseService( inserter );
+        GraphDatabaseService db = switchToEmbeddedGraphDatabaseService( inserter, denseNodeThreshold );
         try ( Transaction tx = db.beginTx() )
         {
             IndexDefinition index = db.schema().getIndexes( label ).iterator().next();
@@ -1349,11 +1330,12 @@ public class BatchInsertTest
         }
     }
 
-    @Test
-    public void shouldChangePropertiesInCurrentBatch()
+    @ParameterizedTest
+    @MethodSource( "params" )
+    void shouldChangePropertiesInCurrentBatch( int denseNodeThreshold ) throws Exception
     {
         // GIVEN
-        BatchInserter inserter = globalInserter;
+        var inserter = newBatchInserter( denseNodeThreshold );
         Map<String,Object> properties = map( "key1", "value1" );
         long node = inserter.createNode( properties );
 
@@ -1363,26 +1345,30 @@ public class BatchInsertTest
 
         // THEN
         assertEquals( properties, getNodeProperties( inserter, node ) );
+        inserter.shutdown();
     }
 
-    @Test
-    public void shouldIgnoreRemovingNonExistentNodeProperty()
+    @ParameterizedTest
+    @MethodSource( "params" )
+    void shouldIgnoreRemovingNonExistentNodeProperty( int denseNodeThreshold ) throws Exception
     {
         // given
-        BatchInserter inserter = globalInserter;
+        var inserter = newBatchInserter( denseNodeThreshold );
         long id = inserter.createNode( Collections.emptyMap() );
 
         // when
         inserter.removeNodeProperty( id, "non-existent" );
 
         // then no exception should be thrown, this mimics GraphDatabaseService behaviour
+        inserter.shutdown();
     }
 
-    @Test
-    public void shouldIgnoreRemovingNonExistentRelationshipProperty()
+    @ParameterizedTest
+    @MethodSource( "params" )
+    void shouldIgnoreRemovingNonExistentRelationshipProperty( int denseNodeThreshold ) throws Exception
     {
         // given
-        BatchInserter inserter = globalInserter;
+        var inserter = newBatchInserter( denseNodeThreshold );
         Map<String,Object> noProperties = Collections.emptyMap();
         long nodeId1 = inserter.createNode( noProperties );
         long nodeId2 = inserter.createNode( noProperties );
@@ -1392,44 +1378,45 @@ public class BatchInsertTest
         inserter.removeRelationshipProperty( id, "non-existent" );
 
         // then no exception should be thrown, this mimics GraphDatabaseService behaviour
+        inserter.shutdown();
     }
 
-    private Map<String, String> configuration()
+    private static Map<String, String> configuration( int denseNodeThreshold )
     {
         return stringMap( GraphDatabaseSettings.dense_node_threshold.name(), String.valueOf( denseNodeThreshold ) );
     }
 
-    private BatchInserter newBatchInserter() throws Exception
+    private BatchInserter newBatchInserter( int denseNodeThreshold ) throws Exception
     {
-        return BatchInserters.inserter( localTestDirectory.databaseLayout(), fileSystemRule.get(), configuration() );
+        return BatchInserters.inserter( testDirectory.databaseLayout(), fs, configuration( denseNodeThreshold ) );
     }
 
-    private BatchInserter newBatchInserterWithIndexProvider( ExtensionFactory<?> provider, IndexProviderDescriptor providerDescriptor ) throws Exception
+    private BatchInserter newBatchInserterWithIndexProvider( ExtensionFactory<?> provider, IndexProviderDescriptor providerDescriptor, int denseNodeThreshold )
+        throws Exception
     {
-        Map<String,String> configuration = configuration();
+        Map<String,String> configuration = configuration( denseNodeThreshold );
         configuration.put( GraphDatabaseSettings.default_schema_provider.name(), providerDescriptor.name() );
-        return BatchInserters.inserter( localTestDirectory.databaseLayout(), fileSystemRule.get(), configuration, singletonList( provider ) );
+        return BatchInserters.inserter( testDirectory.databaseLayout(), fs, configuration, singletonList( provider ) );
     }
 
-    private GraphDatabaseService switchToEmbeddedGraphDatabaseService( BatchInserter inserter )
+    private GraphDatabaseService switchToEmbeddedGraphDatabaseService( BatchInserter inserter, int denseNodeThreshold )
     {
         inserter.shutdown();
-        TestDatabaseManagementServiceBuilder factory = new TestDatabaseManagementServiceBuilder( localTestDirectory.storeDir() );
-        factory.setFileSystem( fileSystemRule.get() );
+        TestDatabaseManagementServiceBuilder factory = new TestDatabaseManagementServiceBuilder( testDirectory.storeDir() );
+        factory.setFileSystem( fs );
         managementService = factory.impermanent()
-                // Shouldn't be necessary to set dense node threshold since it's a stick config
-                .setConfigRaw( configuration() ).build();
+            // Shouldn't be necessary to set dense node threshold since it's a stick config
+            .setConfigRaw( configuration( denseNodeThreshold ) ).build();
         return managementService.database( DEFAULT_DATABASE_NAME );
     }
 
     private LabelScanStore getLabelScanStore()
     {
-        DefaultFileSystemAbstraction fs = fileSystemRule.get();
-        return new NativeLabelScanStore( pageCacheRule.getPageCache( fs ), localTestDirectory.databaseLayout(), fs,
+        return new NativeLabelScanStore( pageCache, testDirectory.databaseLayout(), fs,
                 FullStoreChangeStream.EMPTY, true, new Monitors(), RecoveryCleanupWorkCollector.immediate() );
     }
 
-    private void assertLabelScanStoreContains( LabelScanStore labelScanStore, int labelId, long... nodes )
+    private static void assertLabelScanStoreContains( LabelScanStore labelScanStore, int labelId, long... nodes )
     {
         LabelScanReader labelScanReader = labelScanStore.newReader();
         List<Long> actualNodeIds = extractPrimitiveLongIteratorAsList( labelScanReader.nodesWithLabel( labelId ) );
@@ -1437,9 +1424,9 @@ public class BatchInsertTest
         assertEquals( expectedNodeIds, actualNodeIds );
     }
 
-    private List<Long> extractPrimitiveLongIteratorAsList( PrimitiveLongResourceIterator longIterator )
+    private static List<Long> extractPrimitiveLongIteratorAsList( PrimitiveLongResourceIterator longIterator )
     {
-        try
+        try ( longIterator )
         {
             List<Long> actualNodeIds = new ArrayList<>();
             while ( longIterator.hasNext() )
@@ -1448,13 +1435,9 @@ public class BatchInsertTest
             }
             return actualNodeIds;
         }
-        finally
-        {
-            longIterator.close();
-        }
     }
 
-    private void createRelationships( BatchInserter inserter, long node, RelationshipType relType, int out )
+    private static void createRelationships( BatchInserter inserter, long node, RelationshipType relType, int out )
     {
         for ( int i = 0; i < out; i++ )
         {
@@ -1470,7 +1453,7 @@ public class BatchInsertTest
         }
     }
 
-    private long dbWithIndexAndSingleIndexedNode() throws Exception
+    private long dbWithIndexAndSingleIndexedNode( int denseNodeThreshold ) throws Exception
     {
         IndexPopulator populator = mock( IndexPopulator.class );
         IndexProvider provider = mock( IndexProvider.class );
@@ -1481,7 +1464,7 @@ public class BatchInsertTest
         when( provider.bless( any( IndexDescriptor.class ) ) ).thenCallRealMethod();
 
         BatchInserter inserter = newBatchInserterWithIndexProvider(
-                singleInstanceIndexProviderFactory( KEY, provider ), provider.getProviderDescriptor() );
+                singleInstanceIndexProviderFactory( KEY, provider ), provider.getProviderDescriptor(), denseNodeThreshold );
 
         inserter.createDeferredSchemaIndex( label("Hacker") ).on( "handle" ).create();
         long nodeId = inserter.createNode( map( "handle", "Jakewins" ), label( "Hacker" ) );
@@ -1489,7 +1472,7 @@ public class BatchInsertTest
         return nodeId;
     }
 
-    private void setAndGet( BatchInserter inserter, Object value )
+    private static void setAndGet( BatchInserter inserter, Object value )
     {
         long nodeId = inserter.createNode( map( "key", value ) );
         Object readValue = inserter.getNodeProperties( nodeId ).get( "key" );
@@ -1503,18 +1486,18 @@ public class BatchInsertTest
         }
     }
 
-    private int[] intArray()
+    private static int[] intArray()
     {
         int length = 20;
         int[] array = new int[length];
-        for ( int i = 0, startValue = (int)Math.pow( 2, 30 ); i < length; i++ )
+        for ( int i = 0, startValue = 1 << 30; i < length; i++ )
         {
             array[i] = startValue + i;
         }
         return array;
     }
 
-    private Node getNodeInTx( long nodeId, GraphDatabaseService db )
+    private static Node getNodeInTx( long nodeId, GraphDatabaseService db )
     {
         try ( Transaction ignored = db.beginTx() )
         {
@@ -1522,12 +1505,12 @@ public class BatchInsertTest
         }
     }
 
-    private void forceFlush( BatchInserter inserter )
+    private static void forceFlush( BatchInserter inserter )
     {
         ((BatchInserterImpl)inserter).forceFlushChanges();
     }
 
-    private NeoStores getFlushedNeoStores( BatchInserter inserter )
+    private static NeoStores getFlushedNeoStores( BatchInserter inserter )
     {
         forceFlush( inserter );
         return ((BatchInserterImpl) inserter).getNeoStores();
@@ -1540,12 +1523,12 @@ public class BatchInsertTest
         THIRD
     }
 
-    private Iterable<String> asNames( Iterable<Label> nodeLabels )
+    private static Iterable<String> asNames( Iterable<Label> nodeLabels )
     {
         return map( Label::name, nodeLabels );
     }
 
-    private Pair<Label[],Set<String>> manyLabels( int count )
+    private static Pair<Label[], Set<String>> manyLabels( int count )
     {
         Label[] labels = new Label[count];
         Set<String> expectedLabelNames = new HashSet<>();
@@ -1558,12 +1541,12 @@ public class BatchInsertTest
         return Pair.of( labels, expectedLabelNames );
     }
 
-    private Map<String,Object> getNodeProperties( BatchInserter inserter, long nodeId )
+    private static Map<String, Object> getNodeProperties( BatchInserter inserter, long nodeId )
     {
         return inserter.getNodeProperties( nodeId );
     }
 
-    private Map<String,Object> getRelationshipProperties( BatchInserter inserter, long relId )
+    private static Map<String, Object> getRelationshipProperties( BatchInserter inserter, long relId )
     {
         return inserter.getRelationshipProperties( relId );
     }
