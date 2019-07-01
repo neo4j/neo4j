@@ -39,7 +39,6 @@ Apache Software License, Version 2.0
   nscala-time
   openCypher TCK API
   openCypher TCK Features and Graphs
-  org.apiguardian:apiguardian-api
   parboiled-core
   parboiled-scala
   salat-core
