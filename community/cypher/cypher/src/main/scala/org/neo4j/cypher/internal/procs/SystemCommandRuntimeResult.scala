@@ -25,12 +25,13 @@ import org.neo4j.cypher.internal.result.InternalExecutionResult
 import org.neo4j.cypher.internal.runtime.{QueryContext, QueryStatistics}
 import org.neo4j.cypher.result.RuntimeResult.ConsumptionState
 import org.neo4j.cypher.result.{OperatorProfile, QueryProfile, RuntimeResult}
-import org.neo4j.kernel.impl.query.QuerySubscriber
 
 /**
   * Results, as produced by a system command.
   */
-case class SystemCommandRuntimeResult(ctx: QueryContext, subscriber: QuerySubscriber, execution: SystemCommandExecutionResult) extends RuntimeResult {
+case class SystemCommandRuntimeResult(ctx: QueryContext,
+                                      execution: SystemCommandExecutionResult,
+                                      subscriber: SystemCommandQuerySubscriber) extends RuntimeResult {
 
   override val fieldNames: Array[String] = execution.fieldNames()
   private var state = ConsumptionState.NOT_STARTED
@@ -46,6 +47,8 @@ case class SystemCommandRuntimeResult(ctx: QueryContext, subscriber: QuerySubscr
   override def request(numberOfRecords: Long): Unit = {
     state = ConsumptionState.HAS_MORE
     execution.inner.request(numberOfRecords)
+    // The lower level (execution) is capturing exceptions using the subscriber, but this level is expecting to do the same higher up, so re-throw to trigger that code path
+    subscriber.assertNotFailed()
   }
 
   override def cancel(): Unit = execution.inner.cancel()

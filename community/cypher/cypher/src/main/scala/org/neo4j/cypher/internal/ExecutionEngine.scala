@@ -88,11 +88,13 @@ class ExecutionEngine(val queryService: GraphDatabaseQueryService,
   // ACTUAL FUNCTIONALITY
 
   /**
-    * Executes query returns a `QueryExecution` that can be used to control demand to the provided `QuerySubscriber`
+    * Executes query returns a `QueryExecution` that can be used to control demand to the provided `QuerySubscriber`.
+    * This method assumes this is the only query running within the transaction, and therefor will register transaction closing
+    * with the TaskCloser
     *
     * @param query the query to execute
     * @param params the parameters of the query
-    * @param context the context in which to run the query
+    * @param context the transactional context in which to run the query
     * @param profile if `true` run with profiling enabled
     * @param prePopulate if `true` pre populate all results
     * @param subscriber the subscriber where results will be streamed
@@ -104,6 +106,30 @@ class ExecutionEngine(val queryService: GraphDatabaseQueryService,
               profile: Boolean,
               prePopulate: Boolean,
               subscriber: QuerySubscriber): QueryExecution = {
+    executeSubQuery(query, params, context, shouldCloseTransaction = true, profile, prePopulate, subscriber)
+  }
+
+  /**
+    * Executes query returns a `QueryExecution` that can be used to control demand to the provided `QuerySubscriber`.
+    * This method assumes the query is running as one of many queries within a single transaction and therefor needs
+    * to be told using the shouldCloseTransaction field if the TaskCloser needs to have a transaction close registered.
+    *
+    * @param query the query to execute
+    * @param params the parameters of the query
+    * @param context the transactional context in which to run the query
+    * @param shouldCloseTransaction provide `true` if this is the outer-most query and should close the transaction when finished or error
+    * @param profile if `true` run with profiling enabled
+    * @param prePopulate if `true` pre populate all results
+    * @param subscriber the subscriber where results will be streamed
+    * @return a `QueryExecution` that controls the demand to the subscriber
+    */
+  def executeSubQuery(query: String,
+                      params: MapValue,
+                      context: TransactionalContext,
+                      shouldCloseTransaction: Boolean,
+                      profile: Boolean,
+                      prePopulate: Boolean,
+                      subscriber: QuerySubscriber): QueryExecution = {
     val queryTracer = tracer.compileQuery(query)
 
     try {
@@ -114,7 +140,7 @@ class ExecutionEngine(val queryService: GraphDatabaseQueryService,
       }
       val combinedParams = params.updatedWith(executableQuery.extractedParams)
       context.executingQuery().compilationCompleted(executableQuery.compilerInfo, supplier(executableQuery.planDescription()))
-      executableQuery.execute(context, preParsedQuery, combinedParams, prePopulate, subscriber)
+      executableQuery.execute(context, shouldCloseTransaction, preParsedQuery, combinedParams, prePopulate, subscriber)
     } catch {
       case t: Throwable =>
         context.close(false)

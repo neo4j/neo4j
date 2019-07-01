@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.procs
 
 import org.neo4j.cypher.internal.compatibility.v4_0.ExceptionTranslatingQueryContext
 import org.neo4j.cypher.internal.plandescription.Argument
+import org.neo4j.cypher.internal.result.InternalExecutionResult
 import org.neo4j.cypher.internal.runtime.interpreted.TransactionBoundQueryContext
 import org.neo4j.cypher.internal.runtime.{InputDataStream, QueryContext}
 import org.neo4j.cypher.internal.v4_0.util.InternalNotification
@@ -35,8 +36,12 @@ import org.neo4j.values.virtual.MapValue
 /**
   * Execution plan for performing system commands, i.e. starting, stopping or dropping databases.
   */
-case class UpdatingSystemCommandExecutionPlan(name: String, normalExecutionEngine: ExecutionEngine, query: String, systemParams: MapValue,
-                                              queryHandler: QueryHandler, source: Option[ExecutionPlan] = None)
+case class UpdatingSystemCommandExecutionPlan(name: String,
+                                              normalExecutionEngine: ExecutionEngine,
+                                              query: String,
+                                              systemParams: MapValue,
+                                              queryHandler: QueryHandler,
+                                              source: Option[ExecutionPlan] = None)
   extends ExecutionPlan {
 
   override def run(ctx: QueryContext,
@@ -46,18 +51,21 @@ case class UpdatingSystemCommandExecutionPlan(name: String, normalExecutionEngin
                    ignore: InputDataStream,
                    subscriber: QuerySubscriber): RuntimeResult = {
 
-    val sourceResult = source.map(_.run(ctx,doProfile,params,prePopulateResults,ignore,subscriber))
+    // Only the outermost query should be tied into the reactive results stream. The source queries should use an empty subscriber
+    val sourceResult = source.map(_.run(ctx, doProfile, params, prePopulateResults, ignore, QuerySubscriber.DO_NOTHING_SUBSCRIBER))
     sourceResult match {
       case Some(FailedRuntimeResult) => FailedRuntimeResult
       case _ =>
+        // Only the outermost query should be tied into the reactive results stream. The source queries should be exhausted eagerly
+        sourceResult.foreach(_.consumeAll())
+
         val tc: TransactionalContext = ctx.asInstanceOf[ExceptionTranslatingQueryContext].inner.asInstanceOf[TransactionBoundQueryContext].transactionalContext.tc
         if (!tc.securityContext().isAdmin) throw new AuthorizationViolationException(PERMISSION_DENIED)
         val systemSubscriber = new SystemCommandQuerySubscriber(subscriber, queryHandler)
-        val execution = normalExecutionEngine.execute(query, systemParams, tc, doProfile, prePopulateResults, systemSubscriber)
-        execution.consumeAll()
+        val execution = normalExecutionEngine.executeSubQuery(query, systemParams, tc, shouldCloseTransaction = false, doProfile, prePopulateResults, systemSubscriber).asInstanceOf[InternalExecutionResult]
+        systemSubscriber.assertNotFailed()
 
-        if (systemSubscriber.hasFailed) FailedRuntimeResult
-        else sourceResult.getOrElse(SchemaWriteRuntimeResult(ctx, subscriber))
+        SystemCommandRuntimeResult(ctx, new UpdatingSystemCommandExecutionResult(execution), systemSubscriber)
     }
   }
 
@@ -66,6 +74,11 @@ case class UpdatingSystemCommandExecutionPlan(name: String, normalExecutionEngin
   override def metadata: Seq[Argument] = Nil
 
   override def notifications: Set[InternalNotification] = Set.empty
+}
+
+// The main point of this class is to support the reactive results version of SystemCommandExecutionResult, but return no results in the outer system command
+class UpdatingSystemCommandExecutionResult(inner: InternalExecutionResult) extends SystemCommandExecutionResult(inner) {
+  override def fieldNames(): Array[String] = Array.empty
 }
 
 class QueryHandler {

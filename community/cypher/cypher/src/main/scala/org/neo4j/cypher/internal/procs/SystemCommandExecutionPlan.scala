@@ -51,11 +51,12 @@ case class SystemCommandExecutionPlan(name: String, normalExecutionEngine: Execu
                    subscriber: QuerySubscriber): RuntimeResult = {
 
     val tc = ctx.asInstanceOf[ExceptionTranslatingQueryContext].inner.asInstanceOf[TransactionBoundQueryContext].transactionalContext.tc
-    if (!name.equals("ShowDefaultDatabase") && !name.startsWith("ShowDatabase") && !tc.securityContext().isAdmin)
-      throw new AuthorizationViolationException(PERMISSION_DENIED)
-    val execution: QueryExecution = normalExecutionEngine.execute(query, systemParams, tc, doProfile, prePopulateResults,
-                                                                  new SystemCommandQuerySubscriber(subscriber, QueryHandler.handleError(onError)))
-    SystemCommandRuntimeResult(ctx, subscriber, resultMapper(ctx, execution))
+    if (!name.equals("ShowDefaultDatabase") && !name.startsWith("ShowDatabase") && !tc.securityContext().isAdmin) throw new AuthorizationViolationException(PERMISSION_DENIED)
+    val systemSubscriber = new SystemCommandQuerySubscriber(subscriber, QueryHandler.handleError(onError))
+    val execution = normalExecutionEngine.executeSubQuery(query, systemParams, tc, shouldCloseTransaction = false, doProfile, prePopulateResults, systemSubscriber)
+    systemSubscriber.assertNotFailed()
+
+    SystemCommandRuntimeResult(ctx, resultMapper(ctx, execution), systemSubscriber)
   }
 
   override def runtimeName: RuntimeName = SystemCommandRuntimeName
@@ -70,7 +71,7 @@ case class SystemCommandExecutionPlan(name: String, normalExecutionEngine: Execu
   */
 class SystemCommandQuerySubscriber(inner: QuerySubscriber, queryHandler: QueryHandler) extends QuerySubscriber {
   @volatile private var empty = true
-  @volatile private var failed = false
+  @volatile private var failed: Option[Throwable] = None
 
   override def onResult(numberOfFields: Int): Unit = inner.onResult(numberOfFields)
 
@@ -78,7 +79,7 @@ class SystemCommandQuerySubscriber(inner: QuerySubscriber, queryHandler: QueryHa
     if (empty) {
       queryHandler.onNoResults().foreach(error => {
         inner.onError(error)
-        failed = true
+        failed = Some(error)
       })
     }
     inner.onResultCompleted(statistics)
@@ -93,18 +94,20 @@ class SystemCommandQuerySubscriber(inner: QuerySubscriber, queryHandler: QueryHa
 
   override def onField(offset: Int, value: AnyValue): Unit = {
     queryHandler.onResult(offset, value).foreach(error => {
-      inner.onError(exceptionHandler.mapToCypher(error))
-      failed = true
+      val cypherError = exceptionHandler.mapToCypher(error)
+      inner.onError(cypherError)
+      failed = Some(cypherError)
     })
     inner.onField(offset, value)
   }
 
   override def onError(throwable: Throwable): Unit = {
-    inner.onError(exceptionHandler.mapToCypher(queryHandler.onError(throwable)))
-    failed = true
+    val cypherError = exceptionHandler.mapToCypher(queryHandler.onError(throwable))
+    inner.onError(cypherError)
+    failed = Some(cypherError)
   }
 
-  def hasFailed: Boolean = failed
+  def assertNotFailed(): Unit = if (failed.isDefined) throw failed.get
 
   override def equals(obj: Any): Boolean = inner.equals(obj)
 }

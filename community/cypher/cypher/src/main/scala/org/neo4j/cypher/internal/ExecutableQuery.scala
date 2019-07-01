@@ -32,14 +32,16 @@ trait ExecutableQuery extends CacheabilityInfo {
   /**
     * Execute this executable query.
     *
-    * @param transactionalContext the transaction in which to execute
-    * @param preParsedQuery       the preparsed query to execute
-    * @param params               the parameters
-    * @param prePopulateResults   if false, nodes and relationships might be returned as references in the results
-    * @param subscriber           The subscriber where results should be streamed to.
+    * @param transactionalContext   the transaction in which to execute
+    * @param shouldCloseTransaction provide `true` if this is the outer-most query and should close the transaction when finished or error
+    * @param preParsedQuery         the preparsed query to execute
+    * @param params                 the parameters
+    * @param prePopulateResults     if false, nodes and relationships might be returned as references in the results
+    * @param subscriber             The subscriber where results should be streamed to.
     * @return the QueryExecution that controls the demand to the subscriber
     */
   def execute(transactionalContext: TransactionalContext,
+              shouldCloseTransaction: Boolean,
               preParsedQuery: PreParsedQuery,
               params: MapValue,
               prePopulateResults: Boolean,

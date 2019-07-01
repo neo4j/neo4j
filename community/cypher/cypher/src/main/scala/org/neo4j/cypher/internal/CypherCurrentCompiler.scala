@@ -40,7 +40,7 @@ import org.neo4j.graphdb.Notification
 import org.neo4j.kernel.api.query.{CompilerInfo, SchemaIndexUsage}
 import org.neo4j.kernel.impl.query.{QueryExecution, QueryExecutionMonitor, QuerySubscriber, TransactionalContext}
 import org.neo4j.monitoring.Monitors
-import org.neo4j.values.storable.{TextValue, Values}
+import org.neo4j.values.storable.TextValue
 import org.neo4j.values.virtual.MapValue
 
 import scala.collection.JavaConverters._
@@ -215,19 +215,18 @@ case class CypherCurrentCompiler[CONTEXT <: RuntimeContext](planner: CypherPlann
     }
 
     override def execute(transactionalContext: TransactionalContext,
+                         shouldCloseTransaction: Boolean,
                          preParsedQuery: PreParsedQuery,
                          params: MapValue, prePopulateResults: Boolean,
                          subscriber: QuerySubscriber): QueryExecution = {
 
-
       val taskCloser = new TaskCloser
       val queryContext = getQueryContext(transactionalContext, preParsedQuery.debugOptions)
-      taskCloser.addTask(queryContext.transactionalContext.close)
+      if (shouldCloseTransaction) taskCloser.addTask(queryContext.transactionalContext.close)
       taskCloser.addTask(queryContext.resources.close)
       runSafely {
-        innerExecute(transactionalContext, preParsedQuery, taskCloser, queryContext, params, prePopulateResults,
-                     subscriber)
-      }( e => {
+        innerExecute(transactionalContext, preParsedQuery, taskCloser, queryContext, params, prePopulateResults, subscriber)
+      }(e => {
         subscriber.onError(e)
         taskCloser.close(false)
         new FailedExecutionResult(columnNames(logicalPlan), queryType, subscriber)
