@@ -275,6 +275,18 @@ class PrettifierIT extends CypherFunSuite {
       "drop user `ab%$c`" ->
         "DROP USER `ab%$c`",
 
+      "alter current user set password from 'foo' to 'bar'" ->
+        "ALTER CURRENT USER SET PASSWORD FROM '******' TO '******'",
+
+      "alter current user set password from $currentPassword to 'bar'" ->
+        "ALTER CURRENT USER SET PASSWORD FROM $currentPassword TO '******'",
+
+      "alter current user set password from 'foo' to $newPassword" ->
+        "ALTER CURRENT USER SET PASSWORD FROM '******' TO $newPassword",
+
+      "alter current user set password from $currentPassword to $newPassword" ->
+        "ALTER CURRENT USER SET PASSWORD FROM $currentPassword TO $newPassword",
+
       "create role abc" ->
         "CREATE ROLE abc",
 
