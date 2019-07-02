@@ -30,6 +30,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.TreeMap;
+import java.util.concurrent.TimeUnit;
 
 import org.neo4j.collection.Dependencies;
 import org.neo4j.configuration.Config;
@@ -65,6 +66,7 @@ public class DbRepresentation
         {
             try ( Transaction ignore = db.beginTx() )
             {
+                db.schema().awaitIndexesOnline( 1, TimeUnit.MINUTES );
                 DbRepresentation result = new DbRepresentation();
                 for ( Node node : db.getAllNodes() )
                 {
