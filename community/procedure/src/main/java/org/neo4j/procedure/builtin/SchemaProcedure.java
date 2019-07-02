@@ -39,11 +39,11 @@ import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.internal.kernel.api.IndexReference;
 import org.neo4j.internal.kernel.api.Read;
 import org.neo4j.internal.kernel.api.SchemaRead;
 import org.neo4j.internal.kernel.api.TokenRead;
 import org.neo4j.internal.schema.ConstraintDescriptor;
+import org.neo4j.internal.schema.IndexDescriptor2;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.SilentTokenNameLookup;
 import org.neo4j.kernel.api.Statement;
@@ -84,15 +84,15 @@ public class SchemaProcedure
                         int labelId = tokenRead.nodeLabel( label.name() );
                         Map<String,Object> properties = new HashMap<>();
 
-                        Iterator<IndexReference> indexReferences = schemaRead.indexesGetForLabel( labelId );
+                        Iterator<IndexDescriptor2> indexReferences = schemaRead.indexesGetForLabel( labelId );
                         ArrayList<String> indexes = new ArrayList<>();
                         while ( indexReferences.hasNext() )
                         {
-                            IndexReference index = indexReferences.next();
+                            IndexDescriptor2 index = indexReferences.next();
                             if ( !index.isUnique() )
                             {
                                 String[] propertyNames = PropertyNameUtils.getPropertyKeys(
-                                        tokenNameLookup, index.properties() );
+                                        tokenNameLookup, index.schema().getPropertyIds() );
                                 indexes.add( String.join( ",", propertyNames ) );
                             }
                         }

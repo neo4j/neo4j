@@ -35,15 +35,15 @@ import org.neo4j.exceptions.KernelException;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.internal.schema.IndexOrder;
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.internal.kernel.api.IndexReadSession;
-import org.neo4j.internal.kernel.api.IndexReference;
-import org.neo4j.internal.schema.IndexValueCapability;
 import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.NodeValueIndexCursor;
 import org.neo4j.internal.kernel.api.PropertyCursor;
 import org.neo4j.internal.kernel.api.Write;
+import org.neo4j.internal.schema.IndexDescriptor2;
+import org.neo4j.internal.schema.IndexOrder;
+import org.neo4j.internal.schema.IndexValueCapability;
 import org.neo4j.values.storable.CoordinateReferenceSystem;
 import org.neo4j.values.storable.DateValue;
 import org.neo4j.values.storable.PointValue;
@@ -362,7 +362,7 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
         int label = token.nodeLabel( "Node" );
         int prop = token.propertyKey( "prop" );
         IndexReadSession index = read.indexReadSession( schemaRead.index( label, prop ) );
-        IndexValueCapability stringCapability = index.reference().valueCapability( ValueCategory.TEXT );
+        IndexValueCapability stringCapability = index.reference().getCapability().valueCapability( ValueCategory.TEXT );
         try ( NodeValueIndexCursor node = cursors.allocateNodeValueIndexCursor() )
         {
             MutableLongSet uniqueIds = new LongHashSet();
@@ -385,7 +385,7 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
         int label = token.nodeLabel( "Node" );
         int prop = token.propertyKey( "prop" );
         IndexReadSession index = read.indexReadSession( schemaRead.index( label, prop ) );
-        IndexValueCapability stringCapability = index.reference().valueCapability( ValueCategory.TEXT );
+        IndexValueCapability stringCapability = index.reference().getCapability().valueCapability( ValueCategory.TEXT );
         try ( NodeValueIndexCursor node = cursors.allocateNodeValueIndexCursor() )
         {
             MutableLongSet uniqueIds = new LongHashSet();
@@ -407,7 +407,7 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
         int label = token.nodeLabel( "Node" );
         int prop = token.propertyKey( "prop" );
         IndexReadSession index = read.indexReadSession( schemaRead.index( label, prop ) );
-        IndexValueCapability stringCapability = index.reference().valueCapability( ValueCategory.TEXT );
+        IndexValueCapability stringCapability = index.reference().getCapability().valueCapability( ValueCategory.TEXT );
         try ( NodeValueIndexCursor node = cursors.allocateNodeValueIndexCursor() )
         {
             MutableLongSet uniqueIds = new LongHashSet();
@@ -429,7 +429,7 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
         int label = token.nodeLabel( "Node" );
         int prop = token.propertyKey( "prop" );
         IndexReadSession index = read.indexReadSession( schemaRead.index( label, prop ) );
-        IndexValueCapability stringCapability = index.reference().valueCapability( ValueCategory.TEXT );
+        IndexValueCapability stringCapability = index.reference().getCapability().valueCapability( ValueCategory.TEXT );
         try ( NodeValueIndexCursor node = cursors.allocateNodeValueIndexCursor() )
         {
             MutableLongSet uniqueIds = new LongHashSet();
@@ -476,7 +476,7 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
         int label = token.nodeLabel( "Node" );
         int prop = token.propertyKey( "prop" );
         IndexReadSession index = read.indexReadSession( schemaRead.index( label, prop ) );
-        IndexValueCapability numberCapability = index.reference().valueCapability( ValueCategory.NUMBER );
+        IndexValueCapability numberCapability = index.reference().getCapability().valueCapability( ValueCategory.NUMBER );
         try ( NodeValueIndexCursor node = cursors.allocateNodeValueIndexCursor() )
         {
             MutableLongSet uniqueIds = new LongHashSet();
@@ -515,7 +515,7 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
         int label = token.nodeLabel( "Node" );
         int prop = token.propertyKey( "prop" );
         IndexReadSession index = read.indexReadSession( schemaRead.index( label, prop ) );
-        IndexValueCapability temporalCapability = index.reference().valueCapability( ValueCategory.TEMPORAL );
+        IndexValueCapability temporalCapability = index.reference().getCapability().valueCapability( ValueCategory.TEMPORAL );
         try ( NodeValueIndexCursor node = cursors.allocateNodeValueIndexCursor() )
         {
             MutableLongSet uniqueIds = new LongHashSet();
@@ -558,7 +558,7 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
         int label = token.nodeLabel( "Node" );
         int prop = token.propertyKey( "prop" );
         IndexReadSession index = read.indexReadSession( schemaRead.index( label, prop ) );
-        IndexValueCapability spatialCapability = index.reference().valueCapability( ValueCategory.GEOMETRY );
+        IndexValueCapability spatialCapability = index.reference().getCapability().valueCapability( ValueCategory.GEOMETRY );
         try ( NodeValueIndexCursor node = cursors.allocateNodeValueIndexCursor() )
         {
             MutableLongSet uniqueIds = new LongHashSet();
@@ -597,7 +597,7 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
         int label = token.nodeLabel( "Node" );
         int prop = token.propertyKey( "prop" );
         IndexReadSession index = read.indexReadSession( schemaRead.index( label, prop ) );
-        IndexValueCapability capability = index.reference().valueCapability( ValueGroup.BOOLEAN.category() );
+        IndexValueCapability capability = index.reference().getCapability().valueCapability( ValueGroup.BOOLEAN.category() );
         try ( NodeValueIndexCursor node = cursors.allocateNodeValueIndexCursor() )
         {
             MutableLongSet uniqueIds = new LongHashSet();
@@ -624,7 +624,7 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
         int label = token.nodeLabel( "Node" );
         int prop = token.propertyKey( "prop" );
         IndexReadSession index = read.indexReadSession( schemaRead.index( label, prop ) );
-        IndexValueCapability capability = index.reference().valueCapability( ValueGroup.TEXT_ARRAY.category() );
+        IndexValueCapability capability = index.reference().getCapability().valueCapability( ValueGroup.TEXT_ARRAY.category() );
         try ( NodeValueIndexCursor node = cursors.allocateNodeValueIndexCursor() )
         {
             MutableLongSet uniqueIds = new LongHashSet();
@@ -650,7 +650,7 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
         int label = token.nodeLabel( "Node" );
         int prop = token.propertyKey( "prop" );
         IndexReadSession index = read.indexReadSession( schemaRead.index( label, prop ) );
-        IndexValueCapability wildcardCapability = index.reference().valueCapability( ValueCategory.UNKNOWN );
+        IndexValueCapability wildcardCapability = index.reference().getCapability().valueCapability( ValueCategory.UNKNOWN );
         try ( NodeValueIndexCursor node = cursors.allocateNodeValueIndexCursor() )
         {
             MutableLongSet uniqueIds = new LongHashSet();
@@ -672,7 +672,7 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
         int label = token.nodeLabel( "Node" );
         int prop = token.propertyKey( "prop" );
         IndexReadSession index = read.indexReadSession( schemaRead.index( label, prop ) );
-        IndexOrder[] orderCapabilities = index.reference().orderCapability( ValueCategory.NUMBER );
+        IndexOrder[] orderCapabilities = index.reference().getCapability().orderCapability( ValueCategory.NUMBER );
         try ( NodeValueIndexCursor node = cursors.allocateNodeValueIndexCursor() )
         {
             for ( IndexOrder orderCapability : orderCapabilities )
@@ -694,7 +694,7 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
         int label = token.nodeLabel( "Node" );
         int prop = token.propertyKey( "prop" );
         IndexReadSession index = read.indexReadSession( schemaRead.index( label, prop ) );
-        IndexOrder[] orderCapabilities = index.reference().orderCapability( ValueCategory.TEXT );
+        IndexOrder[] orderCapabilities = index.reference().getCapability().orderCapability( ValueCategory.TEXT );
         try ( NodeValueIndexCursor node = cursors.allocateNodeValueIndexCursor() )
         {
             for ( IndexOrder orderCapability : orderCapabilities )
@@ -716,7 +716,7 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
         int label = token.nodeLabel( "Node" );
         int prop = token.propertyKey( "prop" );
         IndexReadSession index = read.indexReadSession( schemaRead.index( label, prop ) );
-        IndexOrder[] orderCapabilities = index.reference().orderCapability( ValueCategory.TEMPORAL );
+        IndexOrder[] orderCapabilities = index.reference().getCapability().orderCapability( ValueCategory.TEMPORAL );
         try ( NodeValueIndexCursor node = cursors.allocateNodeValueIndexCursor() )
         {
             for ( IndexOrder orderCapability : orderCapabilities )
@@ -739,7 +739,7 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
         int label = token.nodeLabel( "Node" );
         int prop = token.propertyKey( "prop" );
         IndexReadSession index = read.indexReadSession( schemaRead.index( label, prop ) );
-        IndexOrder[] orderCapabilities = index.reference().orderCapability( ValueCategory.GEOMETRY );
+        IndexOrder[] orderCapabilities = index.reference().getCapability().orderCapability( ValueCategory.GEOMETRY );
         try ( NodeValueIndexCursor node = cursors.allocateNodeValueIndexCursor() )
         {
             for ( IndexOrder orderCapability : orderCapabilities )
@@ -761,7 +761,7 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
         int label = token.nodeLabel( "Node" );
         int prop = token.propertyKey( "prop" );
         IndexReadSession index = read.indexReadSession( schemaRead.index( label, prop ) );
-        IndexOrder[] orderCapabilities = index.reference().orderCapability( ValueCategory.TEXT_ARRAY );
+        IndexOrder[] orderCapabilities = index.reference().getCapability().orderCapability( ValueCategory.TEXT_ARRAY );
         try ( NodeValueIndexCursor node = cursors.allocateNodeValueIndexCursor() )
         {
             for ( IndexOrder orderCapability : orderCapabilities )
@@ -785,7 +785,7 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
         int label = token.nodeLabel( "Node" );
         int prop = token.propertyKey( "prop" );
         IndexReadSession index = read.indexReadSession( schemaRead.index( label, prop ) );
-        IndexOrder[] orderCapabilities = index.reference().orderCapability( ValueCategory.UNKNOWN );
+        IndexOrder[] orderCapabilities = index.reference().getCapability().orderCapability( ValueCategory.UNKNOWN );
         try ( NodeValueIndexCursor node = cursors.allocateNodeValueIndexCursor() )
         {
             for ( IndexOrder orderCapability : orderCapabilities )
@@ -808,7 +808,7 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
         int label = token.nodeLabel( "What" );
         int prop = token.propertyKey( "ever" );
         IndexReadSession index = read.indexReadSession( schemaRead.index( label, prop ) );
-        assertEquals( IndexValueCapability.YES, index.reference().valueCapability( ValueCategory.GEOMETRY ) );
+        assertEquals( IndexValueCapability.YES, index.reference().getCapability().valueCapability( ValueCategory.GEOMETRY ) );
 
         try ( NodeValueIndexCursor node = cursors.allocateNodeValueIndexCursor() )
         {
@@ -818,7 +818,7 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
             read.nodeIndexSeek( index, node, IndexOrder.NONE, true, IndexQuery.range( prop, Cartesian ) );
 
             // then
-            assertFoundNodesAndValue( node, uniqueIds, index.reference().valueCapability( ValueCategory.GEOMETRY ), true, whateverPoint );
+            assertFoundNodesAndValue( node, uniqueIds, index.reference().getCapability().valueCapability( ValueCategory.GEOMETRY ), true, whateverPoint );
         }
     }
 
@@ -831,7 +831,7 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
         int label = token.nodeLabel( "What" );
         int prop = token.propertyKey( "ever" );
         IndexReadSession index = read.indexReadSession( schemaRead.index( label, prop ) );
-        IndexValueCapability valueCapability = index.reference().valueCapability( ValueCategory.UNKNOWN );
+        IndexValueCapability valueCapability = index.reference().getCapability().valueCapability( ValueCategory.UNKNOWN );
         assertEquals( IndexValueCapability.YES, valueCapability );
 
         try ( NodeValueIndexCursor node = cursors.allocateNodeValueIndexCursor() )
@@ -971,9 +971,9 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
         int badLabel = token.nodeLabel( "BAD_LABEL" );
         int badProp = token.propertyKey( "badProp" );
 
-        assertEquals( IndexReference.NO_INDEX, schemaRead.index( badLabel, prop ), "bad label" );
-        assertEquals( IndexReference.NO_INDEX, schemaRead.index( label, badProp ), "bad prop" );
-        assertEquals( IndexReference.NO_INDEX, schemaRead.index( badLabel, badProp ), "just bad" );
+        assertEquals( IndexDescriptor2.NO_INDEX, schemaRead.index( badLabel, prop ), "bad label" );
+        assertEquals( IndexDescriptor2.NO_INDEX, schemaRead.index( label, badProp ), "bad prop" );
+        assertEquals( IndexDescriptor2.NO_INDEX, schemaRead.index( badLabel, badProp ), "just bad" );
     }
 
     @Test
@@ -984,9 +984,9 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
         int badLabel = Integer.MAX_VALUE;
         int badProp = Integer.MAX_VALUE;
 
-        assertEquals( IndexReference.NO_INDEX, schemaRead.index( badLabel, prop ), "bad label" );
-        assertEquals( IndexReference.NO_INDEX, schemaRead.index( label, badProp ), "bad prop" );
-        assertEquals( IndexReference.NO_INDEX, schemaRead.index( badLabel, badProp ), "just bad" );
+        assertEquals( IndexDescriptor2.NO_INDEX, schemaRead.index( badLabel, prop ), "bad label" );
+        assertEquals( IndexDescriptor2.NO_INDEX, schemaRead.index( label, badProp ), "bad prop" );
+        assertEquals( IndexDescriptor2.NO_INDEX, schemaRead.index( badLabel, badProp ), "just bad" );
     }
 
     @Test
@@ -995,10 +995,10 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
         // Given
         int label = token.nodeLabel( "Node" );
         int prop = token.propertyKey( "prop" );
-        IndexReference index = schemaRead.index( label, prop );
+        IndexDescriptor2 index = schemaRead.index( label, prop );
 
-        assertEquals( providerKey(), index.providerKey() );
-        assertEquals( providerVersion(), index.providerVersion() );
+        assertEquals( providerKey(), index.getIndexProvider().getKey() );
+        assertEquals( providerVersion(), index.getIndexProvider().getVersion() );
     }
 
     @Test
@@ -1009,7 +1009,7 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
         int label = token.nodeLabel( "Node" );
         int prop = token.propertyKey( "prop" );
         IndexReadSession index = read.indexReadSession( schemaRead.index( label, prop ) );
-        IndexValueCapability wildcardCapability = index.reference().valueCapability( ValueCategory.UNKNOWN );
+        IndexValueCapability wildcardCapability = index.reference().getCapability().valueCapability( ValueCategory.UNKNOWN );
         try ( org.neo4j.internal.kernel.api.Transaction tx = beginTransaction();
               NodeValueIndexCursor node = cursors.allocateNodeValueIndexCursor() )
         {
@@ -1468,7 +1468,7 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
         // Given
         int label = token.nodeLabel( "Node" );
         int key = token.propertyKey( "prop2" );
-        IndexReference index = schemaRead.index( label, key );
+        IndexDescriptor2 index = schemaRead.index( label, key );
         int expectedCount = 100;
         Map<Value,Set<Long>> expected = new HashMap<>();
         try ( org.neo4j.internal.kernel.api.Transaction tx = beginTransaction() )
@@ -1525,7 +1525,7 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
         // given
         int label = token.nodeLabel( "Node" );
         int key = token.propertyKey( "prop3" );
-        IndexReference index = schemaRead.index( label, key );
+        IndexDescriptor2 index = schemaRead.index( label, key );
 
         // when
         Map<Value,Integer> expected = new HashMap<>();

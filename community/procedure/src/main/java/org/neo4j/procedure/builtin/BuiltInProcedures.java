@@ -41,13 +41,14 @@ import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.internal.helpers.collection.Iterators;
 import org.neo4j.internal.helpers.collection.MapUtil;
-import org.neo4j.internal.kernel.api.IndexReference;
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.kernel.api.PopulationProgress;
 import org.neo4j.internal.kernel.api.SchemaReadCore;
 import org.neo4j.internal.kernel.api.TokenRead;
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
+import org.neo4j.internal.schema.IndexDescriptor2;
+import org.neo4j.internal.schema.IndexProviderDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.SilentTokenNameLookup;
@@ -118,7 +119,7 @@ public class BuiltInProcedures
 
     @Description( "List all indexes in the database." )
     @Procedure( name = "db.indexes", mode = READ )
-    public Stream<IndexResult> listIndexes() throws ProcedureException
+    public Stream<IndexResult> listIndexes()
     {
         try ( Statement ignore = tx.acquireStatement() )
         {
@@ -127,11 +128,11 @@ public class BuiltInProcedures
             IndexingService indexingService = resolver.resolveDependency( IndexingService.class );
 
             SchemaReadCore schemaRead = tx.schemaRead().snapshot();
-            List<IndexReference> indexes = asList( schemaRead.indexesGetAll() );
+            List<IndexDescriptor2> indexes = asList( schemaRead.indexesGetAll() );
             indexes.sort( Comparator.comparing( a -> a.userDescription( tokens ) ) );
 
             ArrayList<IndexResult> result = new ArrayList<>();
-            for ( IndexReference index : indexes )
+            for ( IndexDescriptor2 index : indexes )
             {
                 IndexType type = IndexType.getIndexTypeOf( index );
 
@@ -144,7 +145,7 @@ public class BuiltInProcedures
                 Map<String,String> providerDescriptorMap = indexProviderDescriptorMap( schemaRead.index( schema ) );
                 result.add( new IndexResult( indexId,
                         description,
-                        index.name(),
+                        index.getName(),
                         tokenNames,
                         propertyNames,
                         status.state,
@@ -157,7 +158,7 @@ public class BuiltInProcedures
         }
     }
 
-    private static IndexStatus getIndexStatus( SchemaReadCore schemaRead, IndexReference index )
+    private static IndexStatus getIndexStatus( SchemaReadCore schemaRead, IndexDescriptor2 index )
     {
         IndexStatus status = new IndexStatus();
         try
@@ -321,16 +322,15 @@ public class BuiltInProcedures
         }
     }
 
-    private static Map<String,String> indexProviderDescriptorMap( IndexReference indexReference )
+    private static Map<String,String> indexProviderDescriptorMap( IndexDescriptor2 index )
     {
-        return MapUtil.stringMap(
-                "key", indexReference.providerKey(),
-                "version", indexReference.providerVersion() );
+        IndexProviderDescriptor provider = index.getIndexProvider();
+        return MapUtil.stringMap( "key", provider.getKey(), "version", provider.getVersion() );
     }
 
-    private static List<String> propertyNames( TokenNameLookup tokens, IndexReference index )
+    private static List<String> propertyNames( TokenNameLookup tokens, IndexDescriptor2 index )
     {
-        int[] propertyIds = index.properties();
+        int[] propertyIds = index.schema().getPropertyIds();
         List<String> propertyNames = new ArrayList<>( propertyIds.length );
         for ( int propertyId : propertyIds )
         {
@@ -341,7 +341,7 @@ public class BuiltInProcedures
 
     private static <T> Stream<T> toStream( PrimitiveLongResourceIterator iterator, LongFunction<T> mapper )
     {
-        Iterator<T> it = new Iterator<T>()
+        Iterator<T> it = new Iterator<>()
         {
             @Override
             public boolean hasNext()
@@ -530,7 +530,7 @@ public class BuiltInProcedures
             this.typeName = typeName;
         }
 
-        private static IndexType getIndexTypeOf( IndexReference index )
+        private static IndexType getIndexTypeOf( IndexDescriptor2 index )
         {
             if ( index.getIndexType() == org.neo4j.internal.schema.IndexType.FULLTEXT )
             {

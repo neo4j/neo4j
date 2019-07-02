@@ -29,10 +29,9 @@ import org.neo4j.cypher.internal.v4_0.frontend.phases.InternalNotificationLogger
 import org.neo4j.cypher.internal.v4_0.util.symbols._
 import org.neo4j.cypher.internal.v4_0.util.{LabelId, PropertyKeyId, symbols => types}
 import org.neo4j.exceptions.KernelException
-import org.neo4j.internal.kernel.api
-import org.neo4j.internal.kernel.api.{IndexReference, InternalIndexState, procs, _}
+import org.neo4j.internal.kernel.api.{InternalIndexState, procs, _}
 import org.neo4j.internal.schema
-import org.neo4j.internal.schema.{ConstraintDescriptor, IndexKind, IndexLimitation, IndexOrder, IndexValueCapability, SchemaDescriptor}
+import org.neo4j.internal.schema.{ConstraintDescriptor, IndexDescriptor2, IndexKind, IndexLimitation, IndexOrder, IndexValueCapability, SchemaDescriptor}
 import org.neo4j.values.storable.ValueCategory
 
 import scala.collection.JavaConverters._
@@ -84,15 +83,15 @@ class TransactionBoundPlanContext(tc: TransactionalContextWrapper, logger: Inter
       case _: KernelException => None
     }
 
-  private def getOnlineIndex(reference: IndexReference): Option[IndexDescriptor] =
+  private def getOnlineIndex(reference: IndexDescriptor2): Option[IndexDescriptor] =
     tc.schemaRead.indexGetState(reference) match {
       case InternalIndexState.ONLINE =>
         val label = LabelId(reference.schema().getEntityTokenIds()(0))
-        val properties = reference.properties().map(PropertyKeyId)
+        val properties = reference.schema.getPropertyIds.map(PropertyKeyId)
         val isUnique = reference.isUnique
-        val limitations = reference.limitations().map(kernelToCypher).toSet
+        val limitations = reference.getCapability.limitations().map(kernelToCypher).toSet
         val orderCapability: OrderCapability = tps => {
-           reference.orderCapability(tps.map(typeToValueCategory): _*) match {
+           reference.getCapability.orderCapability(tps.map(typeToValueCategory): _*) match {
             case Array() => IndexOrderCapability.NONE
             case Array(IndexOrder.ASCENDING, IndexOrder.DESCENDING) => IndexOrderCapability.BOTH
             case Array(IndexOrder.DESCENDING, schema.IndexOrder.ASCENDING) => IndexOrderCapability.BOTH
@@ -102,14 +101,14 @@ class TransactionBoundPlanContext(tc: TransactionalContextWrapper, logger: Inter
           }
         }
         val valueCapability: ValueCapability = tps => {
-          reference.valueCapability(tps.map(typeToValueCategory): _*) match {
+          reference.getCapability.valueCapability(tps.map(typeToValueCategory): _*) match {
               // As soon as the kernel provides an array of IndexValueCapability, this mapping can change
             case IndexValueCapability.YES => tps.map(_ => CanGetValue)
             case IndexValueCapability.PARTIAL => tps.map(_ => DoNotGetValue)
             case IndexValueCapability.NO => tps.map(_ => DoNotGetValue)
           }
         }
-        if (reference.getIndexType.getKind != IndexKind.GENERAL || reference.limitations().contains(IndexLimitation.EVENTUALLY_CONSISTENT)) {
+        if (reference.getIndexType.getKind != IndexKind.GENERAL || reference.getCapability.limitations().contains(IndexLimitation.EVENTUALLY_CONSISTENT)) {
           // Ignore IndexKind.SPECIAL indexes, because we don't know how to correctly plan for and query them. Not yet, anyway.
           // Also, ignore eventually consistent indexes. Those are for explicit querying via procedures.
           None

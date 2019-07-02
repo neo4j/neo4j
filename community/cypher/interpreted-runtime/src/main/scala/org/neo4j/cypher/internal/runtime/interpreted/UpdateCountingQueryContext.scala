@@ -23,10 +23,11 @@ import java.util.concurrent.atomic.AtomicInteger
 
 import org.neo4j.cypher.internal.planner.spi.IdempotentResult
 import org.neo4j.cypher.internal.runtime.{Operations, QueryContext, QueryStatistics, _}
-import org.neo4j.internal.kernel.api.{IndexReference, NodeCursor, RelationshipScanCursor}
+import org.neo4j.internal.kernel.api.{NodeCursor, RelationshipScanCursor}
 import org.neo4j.values.storable.Value
 import org.neo4j.values.virtual.{NodeValue, RelationshipValue}
 import org.neo4j.cypher.internal.v4_0.expressions.SemanticDirection
+import org.neo4j.internal.schema.IndexDescriptor2
 
 class UpdateCountingQueryContext(inner: QueryContext) extends DelegatingQueryContext(inner) {
 
@@ -100,7 +101,7 @@ class UpdateCountingQueryContext(inner: QueryContext) extends DelegatingQueryCon
     removed
   }
 
-  override def addIndexRule(labelId: Int, propertyKeyIds: Seq[Int]): IdempotentResult[IndexReference] = {
+  override def addIndexRule(labelId: Int, propertyKeyIds: Seq[Int]): IdempotentResult[IndexDescriptor2] = {
     val result = inner.addIndexRule(labelId, propertyKeyIds)
     result.ifCreated { indexesAdded.increase() }
     result

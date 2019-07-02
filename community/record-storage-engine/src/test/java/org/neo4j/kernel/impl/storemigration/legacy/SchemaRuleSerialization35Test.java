@@ -24,15 +24,12 @@ import org.junit.jupiter.api.Test;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.Base64;
-import java.util.Optional;
 import java.util.stream.IntStream;
 
 import org.neo4j.common.EntityType;
 import org.neo4j.internal.kernel.api.exceptions.schema.MalformedSchemaRuleException;
 import org.neo4j.internal.schema.ConstraintDescriptor;
-import org.neo4j.internal.schema.DefaultIndexDescriptor;
 import org.neo4j.internal.schema.IndexConfig;
-import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexDescriptor2;
 import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.IndexProviderDescriptor;
@@ -64,49 +61,52 @@ class SchemaRuleSerialization35Test
 
     private static final String PROVIDER_KEY = "index-provider";
     private static final String PROVIDER_VERSION = "1.0";
+    protected static final IndexProviderDescriptor PROVIDER = new IndexProviderDescriptor( PROVIDER_KEY, PROVIDER_VERSION );
 
-    private static IndexDescriptor indexDescriptor( boolean isUnique, String name, int labelId, int... propertyIds )
+    private static IndexPrototype indexPrototype( boolean isUnique, String name, int labelId, int... propertyIds )
     {
-        return new DefaultIndexDescriptor( SchemaDescriptor.forLabel( labelId, propertyIds ), PROVIDER_KEY, PROVIDER_VERSION,
-                Optional.ofNullable( name ), isUnique );
+        SchemaDescriptor schema = SchemaDescriptor.forLabel( labelId, propertyIds );
+        return indexPrototype( isUnique, name, schema );
     }
 
-    public static IndexDescriptor forLabel( int labelId, int... propertyIds )
+    private static IndexPrototype indexPrototype( boolean isUnique, String name, SchemaDescriptor schema )
     {
-        return indexDescriptor( false, null, labelId, propertyIds );
-    }
-
-    private static IndexDescriptor namedForLabel( String name, int labelId, int... propertyIds )
-    {
-        return indexDescriptor( false, name, labelId, propertyIds );
-    }
-
-    public static IndexDescriptor uniqueForLabel( int labelId, int... propertyIds )
-    {
-        return indexDescriptor( true, null, labelId, propertyIds );
-    }
-
-    private static IndexDescriptor namedUniqueForLabel( String name, int labelId, int... propertyIds )
-    {
-        return indexDescriptor( true, name, labelId, propertyIds );
-    }
-
-    private static IndexDescriptor2 withId( IndexDescriptor indexDescriptor, long id )
-    {
-        SchemaDescriptor schema = indexDescriptor.schema();
-        IndexPrototype prototype = indexDescriptor.isUnique() ? IndexPrototype.uniqueForSchema( schema ) : IndexPrototype.forSchema( schema );
-        if ( indexDescriptor.hasUserSuppliedName() )
+        IndexPrototype prototype = isUnique ? IndexPrototype.uniqueForSchema( schema, PROVIDER ) : IndexPrototype.forSchema( schema, PROVIDER );
+        if ( name != null )
         {
-            prototype = prototype.withName( indexDescriptor.getName() );
+            prototype = prototype.withName( name );
         }
-        IndexProviderDescriptor provider = new IndexProviderDescriptor( indexDescriptor.providerKey(), indexDescriptor.providerVersion() );
-        prototype = prototype.withIndexProvider( provider );
+        return prototype;
+    }
+
+    private static IndexPrototype forLabel( int labelId, int... propertyIds )
+    {
+        return indexPrototype( false, null, labelId, propertyIds );
+    }
+
+    public static IndexPrototype namedForLabel( String name, int labelId, int... propertyIds )
+    {
+        return indexPrototype( false, name, labelId, propertyIds );
+    }
+
+    private static IndexPrototype uniqueForLabel( int labelId, int... propertyIds )
+    {
+        return indexPrototype( true, null, labelId, propertyIds );
+    }
+
+    private static IndexPrototype namedUniqueForLabel( String name, int labelId, int... propertyIds )
+    {
+        return indexPrototype( true, name, labelId, propertyIds );
+    }
+
+    static IndexDescriptor2 withId( IndexPrototype prototype, long id )
+    {
         return prototype.materialise( id );
     }
 
-    private static IndexDescriptor2 withIds( IndexDescriptor indexDescriptor, long id, long owningConstraintId )
+    private static IndexDescriptor2 withIds( IndexPrototype prototype, long id, long owningConstraintId )
     {
-        return withId( indexDescriptor, id ).withOwningConstraintId( owningConstraintId );
+        return withId( prototype, id ).withOwningConstraintId( owningConstraintId );
     }
 
     private final IndexDescriptor2 indexRegular = withId( forLabel( LABEL_ID, PROPERTY_ID_1 ), RULE_ID );
@@ -115,19 +115,19 @@ class SchemaRuleSerialization35Test
 
     private final IndexDescriptor2 indexCompositeRegular = withId( forLabel( LABEL_ID, PROPERTY_ID_1, PROPERTY_ID_2 ), RULE_ID );
 
-    private final IndexDescriptor2 indexMultiTokenRegular =
-            withId( new DefaultIndexDescriptor(
-                    fulltext( EntityType.NODE, IndexConfig.empty(), new int[]{LABEL_ID, LABEL_ID_2}, new int[]{PROPERTY_ID_1, PROPERTY_ID_2} ), PROVIDER_KEY,
-                    PROVIDER_VERSION, Optional.empty(), false ), RULE_ID );
+    private final IndexDescriptor2 indexMultiTokenRegular = withId(
+            indexPrototype( false, null,
+                    fulltext( EntityType.NODE, IndexConfig.empty(), new int[]{LABEL_ID, LABEL_ID_2}, new int[]{PROPERTY_ID_1, PROPERTY_ID_2} ) ),
+            RULE_ID );
 
     private final IndexDescriptor2 indexCompositeUnique = withIds( uniqueForLabel( LABEL_ID, PROPERTY_ID_1, PROPERTY_ID_2 ), RULE_ID_2, RULE_ID );
 
     private final IndexDescriptor2 indexBigComposite = withId( forLabel( LABEL_ID, IntStream.range(1, 200).toArray() ), RULE_ID );
 
-    private final IndexDescriptor2 indexBigMultiToken =
-            withId( new DefaultIndexDescriptor(
-                    fulltext( EntityType.RELATIONSHIP, IndexConfig.empty(), IntStream.range( 1, 200 ).toArray(), IntStream.range( 1, 200 ).toArray() ),
-                    PROVIDER_KEY, PROVIDER_VERSION, Optional.empty(), false ), RULE_ID );
+    private final IndexDescriptor2 indexBigMultiToken = withId(
+            indexPrototype( false, null,
+                    fulltext( EntityType.RELATIONSHIP, IndexConfig.empty(), IntStream.range( 1, 200 ).toArray(), IntStream.range( 1, 200 ).toArray() ) ),
+            RULE_ID );
 
     private final ConstraintRule constraintExistsLabel = ConstraintRule.constraintRule( RULE_ID,
             ConstraintDescriptorFactory.existsForLabel( LABEL_ID, PROPERTY_ID_1 ) );
@@ -504,7 +504,7 @@ class SchemaRuleSerialization35Test
     {
         // GIVEN
         long ruleId = 24;
-        IndexDescriptor index = forLabel( 512, 4 );
+        IndexPrototype index = forLabel( 512, 4 );
         String providerVersion = "25.0";
         byte[] bytes = decodeBase64( serialized );
 
@@ -526,7 +526,7 @@ class SchemaRuleSerialization35Test
         // GIVEN
         long ruleId = 33;
         long constraintId = 11;
-        IndexDescriptor index = uniqueForLabel( 61, 988 );
+        IndexPrototype index = uniqueForLabel( 61, 988 );
         String providerVersion = "25.0";
         byte[] bytes = decodeBase64( serialized );
 

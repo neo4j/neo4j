@@ -30,10 +30,8 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.internal.kernel.api.IndexOrder;
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.internal.kernel.api.IndexReadSession;
-import org.neo4j.internal.kernel.api.IndexReference;
 import org.neo4j.internal.kernel.api.KernelReadTracer;
 import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.NodeLabelIndexCursor;
@@ -42,6 +40,8 @@ import org.neo4j.internal.kernel.api.PropertyCursor;
 import org.neo4j.internal.kernel.api.RelationshipGroupCursor;
 import org.neo4j.internal.kernel.api.RelationshipScanCursor;
 import org.neo4j.internal.kernel.api.RelationshipTraversalCursor;
+import org.neo4j.internal.schema.IndexDescriptor2;
+import org.neo4j.internal.schema.IndexOrder;
 import org.neo4j.kernel.impl.newapi.TestKernelReadTracer.TraceEvent;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -224,7 +224,7 @@ public abstract class KernelReadTracerTestBase<G extends KernelAPIReadTestSuppor
         try ( NodeValueIndexCursor cursor = cursors.allocateNodeValueIndexCursor() )
         {
             int p1 = token.propertyKey( "p1" );
-            IndexReference index = tx.schemaRead().index( token.nodeLabel( "Foo" ), p1 );
+            IndexDescriptor2 index = tx.schemaRead().index( token.nodeLabel( "Foo" ), p1 );
             IndexReadSession session = read.indexReadSession( index );
 
             assertIndexSeekTracing( tracer, cursor, session, IndexOrder.NONE, p1 );

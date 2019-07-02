@@ -44,8 +44,8 @@ import org.neo4j.internal.kernel.api
 import org.neo4j.internal.kernel.api.IndexQuery.ExactPredicate
 import org.neo4j.internal.kernel.api.helpers.RelationshipSelections.{allCursor, incomingCursor, outgoingCursor}
 import org.neo4j.internal.kernel.api.helpers._
-import org.neo4j.internal.kernel.api.{IndexQuery, IndexReadSession, IndexReference, InternalIndexState, KernelReadTracer, NodeCursor, NodeValueIndexCursor, PropertyCursor, Read, RelationshipScanCursor, TokenRead}
-import org.neo4j.internal.schema.{SchemaDescriptor, IndexOrder => KernelIndexOrder}
+import org.neo4j.internal.kernel.api.{IndexQuery, IndexReadSession, InternalIndexState, KernelReadTracer, NodeCursor, NodeValueIndexCursor, PropertyCursor, Read, RelationshipScanCursor, TokenRead}
+import org.neo4j.internal.schema.{IndexDescriptor2, SchemaDescriptor, IndexOrder => KernelIndexOrder}
 import org.neo4j.internal.schema.constraints.ConstraintDescriptorFactory
 import org.neo4j.kernel.GraphDatabaseQueryService
 import org.neo4j.kernel.api.exceptions.schema.{AlreadyConstrainedException, AlreadyIndexedException}
@@ -241,7 +241,7 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
   }
 
   override def indexReference(label: Int,
-                              properties: Int*): IndexReference =
+                              properties: Int*): IndexDescriptor2 =
     transactionalContext.kernelTransaction.schemaRead().index(label, properties: _*)
 
   private def seek[RESULT <: AnyRef](index: IndexReadSession,
@@ -277,24 +277,23 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
                                                      needsValues: Boolean,
                                                      indexOrder: IndexOrder,
                                                      value: TextValue): NodeValueIndexCursor =
-    seek(index, needsValues, indexOrder, IndexQuery.stringContains(index.reference().properties()(0), value))
+    seek(index, needsValues, indexOrder, IndexQuery.stringContains(index.reference().schema().getPropertyIds()(0), value))
 
   override def indexSeekByEndsWith[RESULT <: AnyRef](index: IndexReadSession,
                                                      needsValues: Boolean,
                                                      indexOrder: IndexOrder,
                                                      value: TextValue): NodeValueIndexCursor =
-    seek(index, needsValues, indexOrder, IndexQuery.stringSuffix(index.reference().properties()(0), value))
+    seek(index, needsValues, indexOrder, IndexQuery.stringSuffix(index.reference().schema().getPropertyIds()(0), value))
 
-  override def lockingUniqueIndexSeek[RESULT](indexReference: IndexReference,
+  override def lockingUniqueIndexSeek[RESULT](index: IndexDescriptor2,
                                               queries: Seq[IndexQuery.ExactPredicate]): NodeValueIndexCursor = {
 
     val cursor = transactionalContext.cursors.allocateNodeValueIndexCursor()
     try {
-      indexSearchMonitor.lockingUniqueIndexSeek(indexReference, queries)
+      indexSearchMonitor.lockingUniqueIndexSeek(index, queries)
       if (queries.exists(q => q.value() eq Values.NO_VALUE))
         NodeValueHit.EMPTY
       else {
-        val index = transactionalContext.kernelTransaction.schemaRead().indexReferenceUnchecked(indexReference.schema())
         val resultNodeId = reads().lockingNodeUniqueIndexSeek(index, cursor, queries: _*)
         if (StatementConstants.NO_SUCH_NODE == resultNodeId) {
           NodeValueHit.EMPTY
@@ -714,7 +713,7 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
       }
   }
 
-  override def addIndexRule(labelId: Int, propertyKeyIds: Seq[Int]): IdempotentResult[IndexReference] = {
+  override def addIndexRule(labelId: Int, propertyKeyIds: Seq[Int]): IdempotentResult[IndexDescriptor2] = {
     val ktx = transactionalContext.kernelTransaction
     try {
       IdempotentResult(ktx.schemaWrite().indexCreate(SchemaDescriptor.forLabel(labelId, propertyKeyIds:_*)))
@@ -731,7 +730,7 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
 
   override def dropIndexRule(labelId: Int, propertyKeyIds: Seq[Int]): Unit = {
     val ktx = transactionalContext.kernelTransaction
-    ktx.schemaWrite().indexDrop(ktx.schemaRead().indexReferenceUnchecked(labelId, propertyKeyIds:_*))
+    ktx.schemaWrite().indexDrop(ktx.schemaRead().index(labelId, propertyKeyIds:_*))
   }
 
   override def createNodeKeyConstraint(labelId: Int, propertyKeyIds: Seq[Int]): Boolean = try {
@@ -1074,9 +1073,9 @@ object TransactionBoundQueryContext {
 
   trait IndexSearchMonitor {
 
-    def indexSeek(index: IndexReference, values: Seq[Any]): Unit
+    def indexSeek(index: IndexDescriptor2, values: Seq[Any]): Unit
 
-    def lockingUniqueIndexSeek(index: IndexReference, values: Seq[Any]): Unit
+    def lockingUniqueIndexSeek(index: IndexDescriptor2, values: Seq[Any]): Unit
   }
 
 }

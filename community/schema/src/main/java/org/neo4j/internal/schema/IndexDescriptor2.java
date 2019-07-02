@@ -47,7 +47,7 @@ public final class IndexDescriptor2 implements IndexRef<IndexDescriptor2>, Schem
 
     IndexDescriptor2( long id, IndexPrototype prototype )
     {
-        // TODO we should throw an exception instead of generating a name for unnamed index prototypes.
+        // TODO we should throw an exception instead of generating a name for unnamed index prototypes. Or generate a name based on the schema tokens.
         this( id, prototype.getName().orElseGet( () -> "index_" + id ), prototype.schema(), prototype.isUnique(), prototype.getIndexProvider(), null,
                 IndexCapability.NO_CAPABILITY );
     }

@@ -31,7 +31,6 @@ import org.neo4j.internal.helpers.collection.Iterators;
 import org.neo4j.internal.index.label.LabelScanReader;
 import org.neo4j.internal.index.label.LabelScanStore;
 import org.neo4j.internal.kernel.api.IndexReadSession;
-import org.neo4j.internal.kernel.api.IndexReference;
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.kernel.api.PopulationProgress;
 import org.neo4j.internal.kernel.api.SchemaReadCore;
@@ -47,10 +46,7 @@ import org.neo4j.internal.kernel.api.procs.UserFunctionHandle;
 import org.neo4j.internal.kernel.api.security.AccessMode;
 import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.internal.schema.ConstraintDescriptor;
-import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexDescriptor2;
-import org.neo4j.internal.schema.IndexPrototype;
-import org.neo4j.internal.schema.IndexProviderDescriptor;
 import org.neo4j.internal.schema.LabelSchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.internal.schema.SchemaState;
@@ -372,10 +368,9 @@ public class AllStoreHolder extends Read
     }
 
     /**
-     * Mapping between {@link IndexDescriptor} --> {@link IndexReference}. {@link IndexDescriptor} can come from {@link StorageReader}
-     * in the form of an StorageIndexReference, or as just an index added in this transaction.
+     * Validate that the index descriptor matches an existing index, and take its schema locks.
      * @param index committed, transaction-added or even null.
-     * @return an {@link IndexReference} for the given {@link IndexDescriptor}.
+     * @return The validated index descriptor, which is not necessarily the same as the one given as an argument.
      */
     public IndexDescriptor2 indexReference( IndexDescriptor2 index )
     {
@@ -385,7 +380,7 @@ public class AllStoreHolder extends Read
     /**
      * Maps all index descriptors according to {@link #indexReference(IndexDescriptor2)}.
      */
-    public Iterator<IndexDescriptor2> indexReference( Iterator<? extends IndexDescriptor2> indexes )
+    public Iterator<IndexDescriptor2> indexReferences( Iterator<? extends IndexDescriptor2> indexes )
     {
         return Iterators.map( index -> mapToIndexReference( index, true ), indexes );
     }
@@ -401,7 +396,7 @@ public class AllStoreHolder extends Read
     /**
      * Maps all index descriptors according to {@link #indexReferenceNoLocking(IndexDescriptor2)}.
      */
-    public Iterator<IndexDescriptor2> indexReferenceNoLocking( Iterator<? extends IndexDescriptor2> indexes )
+    public Iterator<IndexDescriptor2> indexReferencesNoLocking( Iterator<? extends IndexDescriptor2> indexes )
     {
         return Iterators.map( index -> mapToIndexReference( index, false ), indexes );
     }
@@ -429,10 +424,10 @@ public class AllStoreHolder extends Read
     }
 
     /**
-     * And then there's this method for mapping from {@link IndexReference} --> {@link IndexDescriptor}, for those places where
-     * we need to go back to storage land when we have an {@link IndexReference}.
-     * @param index an index reference to get {@link IndexDescriptor} for.
-     * @return the {@link IndexDescriptor} for the {@link IndexReference}.
+     * And then there's this method for mapping from IndexReference --> IndexDescriptor, for those places where
+     * we need to go back to storage land when we have an IndexReference.
+     * @param index an index reference to get IndexDescriptor for.
+     * @return the IndexDescriptor for the IndexReference.
      */
     public IndexDescriptor2 storageIndexDescriptor( IndexDescriptor2 index )
     {
@@ -476,18 +471,6 @@ public class AllStoreHolder extends Read
     }
 
     @Override
-    public IndexPrototype indexReferenceUnchecked( int label, int... properties )
-    {
-        return indexReferenceUnchecked( SchemaDescriptor.forLabel( label, properties ) );
-    }
-
-    @Override
-    public IndexPrototype indexReferenceUnchecked( SchemaDescriptor schema )
-    {
-        return IndexPrototype.forSchema( schema, IndexProviderDescriptor.UNDECIDED );
-    }
-
-    @Override
     public Iterator<IndexDescriptor2> indexesGetForLabel( int labelId )
     {
         acquireSharedLock( ResourceTypes.LABEL, labelId );
@@ -510,7 +493,7 @@ public class AllStoreHolder extends Read
     {
         acquireSharedLock( ResourceTypes.RELATIONSHIP_TYPE, relationshipType );
         ktx.assertOpen();
-        return indexReference( indexesGetForRelationshipType( storageReader, relationshipType ) );
+        return indexReferences( indexesGetForRelationshipType( storageReader, relationshipType ) );
     }
 
     Iterator<? extends IndexDescriptor2> indexesGetForRelationshipType( StorageSchemaReader reader, int relationshipType )
@@ -1062,14 +1045,6 @@ public class AllStoreHolder extends Read
                 .withKernelTransaction( ktx )
                 .withSecurityContext( securityContext )
                 .context();
-    }
-
-    static void assertValidIndex( IndexReference index ) throws IndexNotFoundKernelException
-    {
-        if ( index == IndexReference.NO_INDEX )
-        {
-            throw new IndexNotFoundKernelException( "No index was found" );
-        }
     }
 
     static void assertValidIndex( IndexDescriptor2 index ) throws IndexNotFoundKernelException

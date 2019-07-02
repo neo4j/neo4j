@@ -53,6 +53,7 @@ import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.internal.schema.IndexDescriptor2;
 import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.IndexProviderDescriptor;
+import org.neo4j.internal.schema.LabelSchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.internal.schema.constraints.AbstractConstraintDescriptor;
 import org.neo4j.internal.schema.constraints.ConstraintDescriptorFactory;
@@ -339,7 +340,8 @@ class BuiltInProceduresTest
         int labelId = token( label, labels );
         int propId = token( propKey, propKeys );
 
-        IndexDescriptor2 index = IndexPrototype.uniqueForSchema( forLabel( labelId, propId ), EMPTY.getProviderDescriptor() ).materialise( uniqueIndexes.size() );
+        LabelSchemaDescriptor schema = forLabel( labelId, propId );
+        IndexDescriptor2 index = IndexPrototype.uniqueForSchema( schema, EMPTY.getProviderDescriptor() ).materialise( uniqueIndexes.size() );
         uniqueIndexes.add( index );
         constraints.add( ConstraintDescriptorFactory.uniqueForLabel( labelId, propId ) );
     }

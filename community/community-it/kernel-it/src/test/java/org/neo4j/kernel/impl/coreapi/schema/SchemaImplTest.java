@@ -33,7 +33,6 @@ import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.graphdb.schema.IndexPopulationProgress;
 import org.neo4j.graphdb.schema.Schema;
 import org.neo4j.internal.helpers.collection.Iterables;
-import org.neo4j.internal.kernel.api.IndexReference;
 import org.neo4j.io.fs.EphemeralFileSystemAbstraction;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.EphemeralFileSystemExtension;
@@ -43,6 +42,7 @@ import org.neo4j.test.rule.TestDirectory;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.startsWith;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertSame;
@@ -130,12 +130,12 @@ class SchemaImplTest
     }
 
     @Test
-    void createdIndexDefinitionsMustBeUnnamed()
+    void createdIndexDefinitionsMustBeNamed()
     {
         try ( Transaction tx = db.beginTx() )
         {
             IndexDefinition index = db.schema().indexFor( USER_LABEL ).on( "name" ).create();
-            assertThat( index.getName(), is( IndexReference.UNNAMED_INDEX ) );
+            assertThat( index.getName(), startsWith( "index_" ) );
             tx.success();
         }
     }

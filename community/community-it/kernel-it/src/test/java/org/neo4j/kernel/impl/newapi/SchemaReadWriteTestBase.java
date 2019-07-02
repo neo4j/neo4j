@@ -25,7 +25,6 @@ import org.junit.jupiter.api.Test;
 import java.util.Iterator;
 
 import org.neo4j.internal.helpers.collection.Iterators;
-import org.neo4j.internal.kernel.api.IndexReference;
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.kernel.api.SchemaRead;
 import org.neo4j.internal.kernel.api.SchemaReadCore;
@@ -35,6 +34,7 @@ import org.neo4j.internal.kernel.api.Transaction;
 import org.neo4j.internal.kernel.api.Write;
 import org.neo4j.internal.kernel.api.exceptions.schema.SchemaKernelException;
 import org.neo4j.internal.schema.ConstraintDescriptor;
+import org.neo4j.internal.schema.IndexDescriptor2;
 import org.neo4j.internal.schema.LabelSchemaDescriptor;
 import org.neo4j.internal.schema.RelationTypeSchemaDescriptor;
 import org.neo4j.values.storable.Values;
@@ -48,7 +48,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.internal.helpers.collection.Iterators.asList;
-import static org.neo4j.internal.kernel.api.IndexReference.NO_INDEX;
+import static org.neo4j.internal.schema.IndexDescriptor2.NO_INDEX;
 
 @SuppressWarnings( "Duplicates" )
 public abstract class SchemaReadWriteTestBase<G extends KernelAPIWriteTestSupport> extends KernelAPIWriteTestBase<G>
@@ -67,7 +67,7 @@ public abstract class SchemaReadWriteTestBase<G extends KernelAPIWriteTestSuppor
             {
                 schemaWrite.constraintDrop( constraints.next() );
             }
-            Iterator<IndexReference> indexes = schemaRead.indexesGetAll();
+            Iterator<IndexDescriptor2> indexes = schemaRead.indexesGetAll();
             while ( indexes.hasNext() )
             {
                 schemaWrite.indexDrop( indexes.next() );
@@ -90,14 +90,14 @@ public abstract class SchemaReadWriteTestBase<G extends KernelAPIWriteTestSuppor
         try ( Transaction transaction = beginTransaction() )
         {
             SchemaRead schemaRead = transaction.schemaRead();
-            assertThat( schemaRead.index( label, prop1 ), equalTo( IndexReference.NO_INDEX ) );
+            assertThat( schemaRead.index( label, prop1 ), equalTo( NO_INDEX ) );
         }
     }
 
     @Test
     void shouldCreateIndex() throws Exception
     {
-        IndexReference index;
+        IndexDescriptor2 index;
         try ( Transaction transaction = beginTransaction() )
         {
             index = transaction.schemaWrite().indexCreate( labelDescriptor( label, prop1 ) );
@@ -114,7 +114,7 @@ public abstract class SchemaReadWriteTestBase<G extends KernelAPIWriteTestSuppor
     @Test
     void createdIndexShouldPopulateInTx() throws Exception
     {
-        IndexReference index;
+        IndexDescriptor2 index;
         try ( Transaction tx = beginTransaction() )
         {
             SchemaReadCore before = tx.schemaRead().snapshot();
@@ -129,7 +129,7 @@ public abstract class SchemaReadWriteTestBase<G extends KernelAPIWriteTestSuppor
     @Test
     void shouldDropIndex() throws Exception
     {
-        IndexReference index;
+        IndexDescriptor2 index;
         try ( Transaction transaction = beginTransaction() )
         {
             index = transaction.schemaWrite().indexCreate( labelDescriptor( label, prop1 ) );
@@ -154,7 +154,7 @@ public abstract class SchemaReadWriteTestBase<G extends KernelAPIWriteTestSuppor
     {
         try ( Transaction transaction = beginTransaction() )
         {
-            assertThrows( SchemaKernelException.class, () -> transaction.schemaWrite().indexDrop( IndexReference.NO_INDEX ) );
+            assertThrows( SchemaKernelException.class, () -> transaction.schemaWrite().indexDrop( NO_INDEX ) );
             transaction.success();
         }
     }
@@ -162,7 +162,7 @@ public abstract class SchemaReadWriteTestBase<G extends KernelAPIWriteTestSuppor
     @Test
     void shouldFailToDropNonExistentIndex() throws Exception
     {
-        IndexReference index;
+        IndexDescriptor2 index;
         try ( Transaction transaction = beginTransaction() )
         {
             index = transaction.schemaWrite().indexCreate( labelDescriptor( label, prop1 ) );
@@ -215,8 +215,8 @@ public abstract class SchemaReadWriteTestBase<G extends KernelAPIWriteTestSuppor
         {
             transaction.schemaWrite().indexCreate( labelDescriptor( label, prop2 ) );
             SchemaRead schemaRead = transaction.schemaRead();
-            IndexReference index = schemaRead.index( label, prop2 );
-            assertThat( index.properties(), equalTo( new int[]{prop2} ) );
+            IndexDescriptor2 index = schemaRead.index( label, prop2 );
+            assertThat( index.schema().getPropertyIds(), equalTo( new int[]{prop2} ) );
             assertThat( 2, equalTo( Iterators.asList( schemaRead.indexesGetAll() ).size() ) );
         }
     }
@@ -236,12 +236,12 @@ public abstract class SchemaReadWriteTestBase<G extends KernelAPIWriteTestSuppor
             transaction.schemaWrite().indexCreate( labelDescriptor( label, prop2 ) );
             SchemaReadCore schemaReadAfter = transaction.schemaRead().snapshot();
 
-            IndexReference index = schemaReadBefore.index( labelDescriptor( label, prop2 ) );
-            assertThat( index.properties(), equalTo( new int[]{prop2} ) );
+            IndexDescriptor2 index = schemaReadBefore.index( labelDescriptor( label, prop2 ) );
+            assertThat( index.schema().getPropertyIds(), equalTo( new int[]{prop2} ) );
             assertThat( 2, equalTo( Iterators.asList( schemaReadBefore.indexesGetAll() ).size() ) );
 
             index = schemaReadAfter.index( labelDescriptor( label, prop2 ) );
-            assertThat( index.properties(), equalTo( new int[]{prop2} ) );
+            assertThat( index.schema().getPropertyIds(), equalTo( new int[]{prop2} ) );
             assertThat( 2, equalTo( Iterators.asList( schemaReadAfter.indexesGetAll() ).size() ) );
         }
     }
@@ -249,7 +249,7 @@ public abstract class SchemaReadWriteTestBase<G extends KernelAPIWriteTestSuppor
     @Test
     void shouldNotSeeDroppedIndexFromTransaction() throws Exception
     {
-        IndexReference index;
+        IndexDescriptor2 index;
         try ( Transaction transaction = beginTransaction() )
         {
             index = transaction.schemaWrite().indexCreate( labelDescriptor( label, prop1 ) );
@@ -267,7 +267,7 @@ public abstract class SchemaReadWriteTestBase<G extends KernelAPIWriteTestSuppor
     @Test
     void shouldNotSeeDroppedIndexFromTransactionInSnapshot() throws Exception
     {
-        IndexReference index;
+        IndexDescriptor2 index;
         try ( Transaction transaction = beginTransaction() )
         {
             index = transaction.schemaWrite().indexCreate( labelDescriptor( label, prop1 ) );
@@ -288,10 +288,10 @@ public abstract class SchemaReadWriteTestBase<G extends KernelAPIWriteTestSuppor
     @Test
     void shouldListAllIndexes() throws Exception
     {
-        IndexReference toRetain;
-        IndexReference toRetain2;
-        IndexReference toDrop;
-        IndexReference created;
+        IndexDescriptor2 toRetain;
+        IndexDescriptor2 toRetain2;
+        IndexDescriptor2 toDrop;
+        IndexDescriptor2 created;
 
         try ( Transaction tx = beginTransaction() )
         {
@@ -306,7 +306,7 @@ public abstract class SchemaReadWriteTestBase<G extends KernelAPIWriteTestSuppor
             created = tx.schemaWrite().indexCreate( labelDescriptor( label2, prop2 ) );
             tx.schemaWrite().indexDrop( toDrop );
 
-            Iterable<IndexReference> allIndexes = () -> tx.schemaRead().indexesGetAll();
+            Iterable<IndexDescriptor2> allIndexes = () -> tx.schemaRead().indexesGetAll();
             assertThat( allIndexes, containsInAnyOrder( toRetain, toRetain2, created ) );
 
             tx.success();
@@ -316,10 +316,10 @@ public abstract class SchemaReadWriteTestBase<G extends KernelAPIWriteTestSuppor
     @Test
     void shouldListAllIndexesInSnapshot() throws Exception
     {
-        IndexReference toRetain;
-        IndexReference toRetain2;
-        IndexReference toDrop;
-        IndexReference created;
+        IndexDescriptor2 toRetain;
+        IndexDescriptor2 toRetain2;
+        IndexDescriptor2 toDrop;
+        IndexDescriptor2 created;
 
         try ( Transaction tx = beginTransaction() )
         {
@@ -335,7 +335,7 @@ public abstract class SchemaReadWriteTestBase<G extends KernelAPIWriteTestSuppor
             created = tx.schemaWrite().indexCreate( labelDescriptor( label2, prop2 ) );
             tx.schemaWrite().indexDrop( toDrop );
 
-            Iterable<IndexReference> allIndexes = () -> tx.schemaRead().snapshot().indexesGetAll();
+            Iterable<IndexDescriptor2> allIndexes = () -> tx.schemaRead().snapshot().indexesGetAll();
             assertThat( allIndexes, containsInAnyOrder( toRetain, toRetain2, created ) );
             assertThat( before::indexesGetAll, containsInAnyOrder( toRetain, toRetain2, created ) );
 
@@ -348,9 +348,9 @@ public abstract class SchemaReadWriteTestBase<G extends KernelAPIWriteTestSuppor
     {
         int wrongLabel;
 
-        IndexReference inStore;
-        IndexReference droppedInTx;
-        IndexReference createdInTx;
+        IndexDescriptor2 inStore;
+        IndexDescriptor2 droppedInTx;
+        IndexDescriptor2 createdInTx;
 
         try ( Transaction tx = beginTransaction() )
         {
@@ -369,7 +369,7 @@ public abstract class SchemaReadWriteTestBase<G extends KernelAPIWriteTestSuppor
             tx.schemaWrite().indexCreate( labelDescriptor( wrongLabel, prop2 ) );
             tx.schemaWrite().indexDrop( droppedInTx );
 
-            Iterable<IndexReference> indexes = () -> tx.schemaRead().indexesGetForLabel( label );
+            Iterable<IndexDescriptor2> indexes = () -> tx.schemaRead().indexesGetForLabel( label );
             assertThat( indexes, containsInAnyOrder( inStore, createdInTx ) );
 
             tx.success();
@@ -381,9 +381,9 @@ public abstract class SchemaReadWriteTestBase<G extends KernelAPIWriteTestSuppor
     {
         int wrongLabel;
 
-        IndexReference inStore;
-        IndexReference droppedInTx;
-        IndexReference createdInTx;
+        IndexDescriptor2 inStore;
+        IndexDescriptor2 droppedInTx;
+        IndexDescriptor2 createdInTx;
 
         try ( Transaction tx = beginTransaction() )
         {
@@ -403,7 +403,7 @@ public abstract class SchemaReadWriteTestBase<G extends KernelAPIWriteTestSuppor
             tx.schemaWrite().indexCreate( labelDescriptor( wrongLabel, prop2 ) );
             tx.schemaWrite().indexDrop( droppedInTx );
 
-            Iterable<IndexReference> indexes = () -> tx.schemaRead().snapshot().indexesGetForLabel( label );
+            Iterable<IndexDescriptor2> indexes = () -> tx.schemaRead().snapshot().indexesGetForLabel( label );
             assertThat( indexes, containsInAnyOrder( inStore, createdInTx ) );
             assertThat( () -> before.indexesGetForLabel( label ), containsInAnyOrder( inStore, createdInTx ) );
 
@@ -506,7 +506,7 @@ public abstract class SchemaReadWriteTestBase<G extends KernelAPIWriteTestSuppor
         //When
         try ( Transaction transaction = beginTransaction() )
         {
-            IndexReference index = transaction.schemaRead().index( label, prop1 );
+            IndexDescriptor2 index = transaction.schemaRead().index( label, prop1 );
             assertThrows( SchemaKernelException.class, () ->
                     transaction.schemaWrite().indexDrop( index ) );
             transaction.success();

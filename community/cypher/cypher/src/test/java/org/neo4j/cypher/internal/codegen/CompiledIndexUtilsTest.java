@@ -23,9 +23,11 @@ import org.junit.jupiter.api.Test;
 
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.internal.kernel.api.CursorFactory;
-import org.neo4j.internal.kernel.api.IndexReference;
 import org.neo4j.internal.kernel.api.NodeValueIndexCursor;
 import org.neo4j.internal.kernel.api.Read;
+import org.neo4j.internal.schema.IndexDescriptor2;
+import org.neo4j.internal.schema.IndexPrototype;
+import org.neo4j.internal.schema.SchemaDescriptor;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.mockito.ArgumentMatchers.any;
@@ -33,7 +35,6 @@ import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
 
 class CompiledIndexUtilsTest
 {
@@ -43,8 +44,7 @@ class CompiledIndexUtilsTest
     {
         // GIVEN
         Read read = mock( Read.class );
-        IndexReference index = mock( IndexReference.class );
-        when( index.properties() ).thenReturn( new int[]{42} );
+        IndexDescriptor2 index = IndexPrototype.forSchema( SchemaDescriptor.forLabel( 1, 42 ) ).materialise( 13 );
 
         // WHEN
         CompiledIndexUtils.indexSeek( read, mock( CursorFactory.class ), index, "hello" );
@@ -58,8 +58,7 @@ class CompiledIndexUtilsTest
     {
         // GIVEN
         Read read = mock( Read.class );
-        IndexReference index = mock( IndexReference.class );
-        when( index.properties() ).thenReturn( new int[]{42} );
+        IndexDescriptor2 index = IndexPrototype.forSchema( SchemaDescriptor.forLabel( 1, 42 ) ).materialise( 13 );
 
         // WHEN
         NodeValueIndexCursor cursor = CompiledIndexUtils.indexSeek( mock( Read.class ), mock( CursorFactory.class ), index, null );

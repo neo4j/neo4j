@@ -32,13 +32,13 @@ import java.util.concurrent.TimeUnit;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.TransactionTerminatedException;
 import org.neo4j.internal.helpers.collection.Pair;
-import org.neo4j.internal.schema.IndexOrder;
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.internal.kernel.api.IndexReadSession;
-import org.neo4j.internal.kernel.api.IndexReference;
 import org.neo4j.internal.kernel.api.NodeValueIndexCursor;
 import org.neo4j.internal.kernel.api.Transaction;
 import org.neo4j.internal.kernel.api.Write;
+import org.neo4j.internal.schema.IndexDescriptor2;
+import org.neo4j.internal.schema.IndexOrder;
 import org.neo4j.values.storable.TextValue;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
@@ -75,7 +75,7 @@ public abstract class NodeIndexTransactionStateTestBase<G extends KernelAPIWrite
             int prop = tx.tokenRead().propertyKey( "prop" );
             expected.add( nodeWithProp( tx, "2suff" ) );
             nodeWithPropId( tx, "skruff" );
-            IndexReference index = tx.schemaRead().index( label, prop );
+            IndexDescriptor2 index = tx.schemaRead().index( label, prop );
             assertNodeAndValueForSeek( expected, tx, index, needsValues, "pasuff", IndexQuery.stringSuffix( prop, stringValue( "suff" ) ) );
         }
     }
@@ -108,7 +108,7 @@ public abstract class NodeIndexTransactionStateTestBase<G extends KernelAPIWrite
             tx.dataWrite().nodeDelete( nodeToDelete );
             tx.dataWrite().nodeRemoveProperty( nodeToChange, prop );
 
-            IndexReference index = tx.schemaRead().index( label, prop );
+            IndexDescriptor2 index = tx.schemaRead().index( label, prop );
 
             // For now, scans cannot request values, since Spatial cannot provide them
             // If we have to possibility to accept values IFF they exist (which corresponds
@@ -138,7 +138,7 @@ public abstract class NodeIndexTransactionStateTestBase<G extends KernelAPIWrite
             int prop = tx.tokenRead().propertyKey( "prop" );
             expected.add( nodeWithProp( tx, "banana" ) );
             nodeWithProp( tx, "dragonfruit" );
-            IndexReference index = tx.schemaRead().index( label, prop );
+            IndexDescriptor2 index = tx.schemaRead().index( label, prop );
             // Equality seek does never provide values
             assertNodeAndValueForSeek( expected, tx, index, false, "banana", IndexQuery.exact( prop, "banana" ) );
         }
@@ -166,7 +166,7 @@ public abstract class NodeIndexTransactionStateTestBase<G extends KernelAPIWrite
             int prop = tx.tokenRead().propertyKey( "prop" );
             expected.add( nodeWithProp( tx, "suff2" ) );
             nodeWithPropId( tx, "skruff" );
-            IndexReference index = tx.schemaRead().index( label, prop );
+            IndexDescriptor2 index = tx.schemaRead().index( label, prop );
 
             assertNodeAndValueForSeek( expected, tx, index,  needsValues, "suffpa", IndexQuery.stringPrefix( prop, stringValue( "suff" ) ) );
         }
@@ -194,7 +194,7 @@ public abstract class NodeIndexTransactionStateTestBase<G extends KernelAPIWrite
             int prop = tx.tokenRead().propertyKey( "prop" );
             expected.add( nodeWithProp( tx, "cherry" ) );
             nodeWithProp( tx, "dragonfruit" );
-            IndexReference index = tx.schemaRead().index( label, prop );
+            IndexDescriptor2 index = tx.schemaRead().index( label, prop );
             assertNodeAndValueForSeek( expected, tx, index, needsValues, "berry", IndexQuery.range( prop, "b", true, "d", false ) );
         }
     }
@@ -222,7 +222,7 @@ public abstract class NodeIndexTransactionStateTestBase<G extends KernelAPIWrite
             int prop = tx.tokenRead().propertyKey( "prop" );
             expected.add( nodeWithProp( tx, "cherry" ) );
             nodeWithProp( tx, "dragonfruit" );
-            IndexReference index = tx.schemaRead().index( label, prop );
+            IndexDescriptor2 index = tx.schemaRead().index( label, prop );
             TextValue newProperty = stringValue( "blueberry" );
             tx.dataWrite().nodeSetProperty( nodeToChange, prop, newProperty );
             expected.add(Pair.of(nodeToChange, newProperty ));
@@ -254,7 +254,7 @@ public abstract class NodeIndexTransactionStateTestBase<G extends KernelAPIWrite
             int prop = tx.tokenRead().propertyKey( "prop" );
             expected.add( nodeWithProp( tx, "cherry" ) );
             nodeWithProp( tx, "dragonfruit" );
-            IndexReference index = tx.schemaRead().index( label, prop );
+            IndexDescriptor2 index = tx.schemaRead().index( label, prop );
             TextValue newProperty = stringValue( "kiwi" );
             tx.dataWrite().nodeSetProperty( nodeToChange, prop, newProperty );
 
@@ -285,7 +285,7 @@ public abstract class NodeIndexTransactionStateTestBase<G extends KernelAPIWrite
             int prop = tx.tokenRead().propertyKey( "prop" );
             expected.add( nodeWithProp( tx, "cherry" ) );
             nodeWithProp( tx, "dragonfruit" );
-            IndexReference index = tx.schemaRead().index( label, prop );
+            IndexDescriptor2 index = tx.schemaRead().index( label, prop );
             tx.dataWrite().nodeDelete( nodeToChange );
 
             assertNodeAndValueForSeek( expected, tx, index, needsValues, "berry", IndexQuery.range( prop, "b", true, "d", false ) );
@@ -314,7 +314,7 @@ public abstract class NodeIndexTransactionStateTestBase<G extends KernelAPIWrite
             int prop = tx.tokenRead().propertyKey( "prop" );
             expected.add( nodeWithProp( tx, "homeopatic" ) );
             nodeWithPropId( tx, "telephonecompany" );
-            IndexReference index = tx.schemaRead().index( label, prop );
+            IndexDescriptor2 index = tx.schemaRead().index( label, prop );
 
             assertNodeAndValueForSeek( expected, tx, index, needsValues, "immense", IndexQuery.stringContains( prop, stringValue( "me" ) ) );
         }
@@ -377,7 +377,7 @@ public abstract class NodeIndexTransactionStateTestBase<G extends KernelAPIWrite
      * will create a node with that value, after initializing the cursor and assert that the new node is not found.
      * @param queries the index queries
      */
-    private void assertNodeAndValueForSeek( Set<Pair<Long,Value>> expected, Transaction tx, IndexReference index, boolean needsValues,
+    private void assertNodeAndValueForSeek( Set<Pair<Long,Value>> expected, Transaction tx, IndexDescriptor2 index, boolean needsValues,
             Object anotherValueFoundByQuery, IndexQuery... queries ) throws Exception
     {
         try ( NodeValueIndexCursor nodes = tx.cursors().allocateNodeValueIndexCursor() )
@@ -400,7 +400,7 @@ public abstract class NodeIndexTransactionStateTestBase<G extends KernelAPIWrite
      * @param anotherValueFoundByQuery a values that would be found by, if a node with that value existed. This method
      * will create a node with that value, after initializing the cursor and assert that the new node is not found.
      */
-    private void assertNodeAndValueForScan( Set<Pair<Long,Value>> expected, Transaction tx, IndexReference index, boolean needsValues,
+    private void assertNodeAndValueForScan( Set<Pair<Long,Value>> expected, Transaction tx, IndexDescriptor2 index, boolean needsValues,
             Object anotherValueFoundByQuery ) throws Exception
     {
         IndexReadSession indexSession = tx.dataRead().indexReadSession( index );

@@ -55,21 +55,21 @@ class SchemaReadCoreSnapshot implements SchemaReadCore
     public Iterator<IndexDescriptor2> indexesGetForLabel( int labelId )
     {
         ktx.assertOpen();
-        return stores.indexReferenceNoLocking( stores.indexesGetForLabel( snapshot, labelId ) );
+        return stores.indexReferencesNoLocking( stores.indexesGetForLabel( snapshot, labelId ) );
     }
 
     @Override
     public Iterator<IndexDescriptor2> indexesGetForRelationshipType( int relationshipType )
     {
         ktx.assertOpen();
-        return stores.indexReferenceNoLocking( stores.indexesGetForRelationshipType( snapshot, relationshipType ) );
+        return stores.indexReferencesNoLocking( stores.indexesGetForRelationshipType( snapshot, relationshipType ) );
     }
 
     @Override
     public Iterator<IndexDescriptor2> indexesGetAll()
     {
         ktx.assertOpen();
-        return stores.indexReferenceNoLocking( stores.indexesGetAll( snapshot ) );
+        return stores.indexReferencesNoLocking( stores.indexesGetAll( snapshot ) );
     }
 
     @Override

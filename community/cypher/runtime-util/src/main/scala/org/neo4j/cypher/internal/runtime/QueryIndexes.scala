@@ -21,7 +21,8 @@ package org.neo4j.cypher.internal.runtime
 
 import org.neo4j.cypher.internal.logical.plans.IndexedProperty
 import org.neo4j.cypher.internal.v4_0.expressions.LabelToken
-import org.neo4j.internal.kernel.api.{IndexReference, SchemaRead}
+import org.neo4j.internal.kernel.api.SchemaRead
+import org.neo4j.internal.schema.IndexDescriptor2
 
 import scala.collection.mutable.ArrayBuffer
 
@@ -51,7 +52,7 @@ class QueryIndexes(schemaRead: SchemaRead) {
     }
   }
 
-  def indexes: Array[IndexReference] = buffer.map(index => schemaRead.indexReferenceUnchecked(index.label, index.properties:_*)).toArray
+  def indexes: Array[IndexDescriptor2] = buffer.map(index => schemaRead.index(index.label, index.properties:_*)).toArray
 
   def hasLabelScan: Boolean = labelScan
 

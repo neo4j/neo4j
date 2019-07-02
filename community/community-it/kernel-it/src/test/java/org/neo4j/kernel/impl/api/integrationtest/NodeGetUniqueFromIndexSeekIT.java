@@ -23,13 +23,13 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import org.neo4j.exceptions.KernelException;
-import org.neo4j.internal.kernel.api.IndexReference;
 import org.neo4j.internal.kernel.api.NodeValueIndexCursor;
 import org.neo4j.internal.kernel.api.Read;
 import org.neo4j.internal.kernel.api.TokenWrite;
 import org.neo4j.internal.kernel.api.Transaction;
 import org.neo4j.internal.kernel.api.Write;
 import org.neo4j.internal.kernel.api.security.LoginContext;
+import org.neo4j.internal.schema.IndexDescriptor2;
 import org.neo4j.internal.schema.LabelSchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.kernel.api.StatementConstants;
@@ -78,14 +78,14 @@ class NodeGetUniqueFromIndexSeekIT extends KernelIntegrationTest
     void shouldFindMatchingNode() throws Exception
     {
         // given
-        IndexReference index = createUniquenessConstraint( labelId, propertyId1 );
+        IndexDescriptor2 index = createUniquenessConstraint( labelId, propertyId1 );
         Value value = Values.of( "value" );
         long nodeId = createNodeWithValue( value );
 
         // when looking for it
         Transaction transaction = newTransaction();
         Read read = transaction.dataRead();
-        int propertyId = index.properties()[0];
+        int propertyId = index.schema().getPropertyIds()[0];
         try ( NodeValueIndexCursor cursor = transaction.cursors().allocateNodeValueIndexCursor()  )
         {
             long foundId = read.lockingNodeUniqueIndexSeek( index, cursor, exact( propertyId, value ) );
@@ -100,7 +100,7 @@ class NodeGetUniqueFromIndexSeekIT extends KernelIntegrationTest
     void shouldNotFindNonMatchingNode() throws Exception
     {
         // given
-        IndexReference index = createUniquenessConstraint( labelId, propertyId1 );
+        IndexDescriptor2 index = createUniquenessConstraint( labelId, propertyId1 );
         Value value = Values.of( "value" );
         createNodeWithValue( Values.of( "other_" + value ) );
 
@@ -120,7 +120,7 @@ class NodeGetUniqueFromIndexSeekIT extends KernelIntegrationTest
     void shouldCompositeFindMatchingNode() throws Exception
     {
         // given
-        IndexReference index = createUniquenessConstraint( labelId, propertyId1, propertyId2 );
+        IndexDescriptor2 index = createUniquenessConstraint( labelId, propertyId1, propertyId2 );
         Value value1 = Values.of( "value1" );
         Value value2 = Values.of( "value2" );
         long nodeId = createNodeWithValues( value1, value2 );
@@ -142,7 +142,7 @@ class NodeGetUniqueFromIndexSeekIT extends KernelIntegrationTest
     void shouldNotCompositeFindNonMatchingNode() throws Exception
     {
         // given
-        IndexReference index = createUniquenessConstraint( labelId, propertyId1, propertyId2 );
+        IndexDescriptor2 index = createUniquenessConstraint( labelId, propertyId1, propertyId2 );
         Value value1 = Values.of( "value1" );
         Value value2 = Values.of( "value2" );
         createNodeWithValues( Values.of( "other_" + value1 ), Values.of( "other_" + value2 ) );
@@ -181,8 +181,8 @@ class NodeGetUniqueFromIndexSeekIT extends KernelIntegrationTest
         // assert that we complete before timeout
         final DoubleLatch latch = new DoubleLatch();
 
-        final IndexReference index = createUniquenessConstraint( labelId, propertyId1 );
-        final Value value = Values.of( "value" );
+        IndexDescriptor2 index = createUniquenessConstraint( labelId, propertyId1 );
+        Value value = Values.of( "value" );
 
         Write write = dataWriteInNewTransaction();
         long nodeId = write.nodeCreate();
@@ -248,12 +248,12 @@ class NodeGetUniqueFromIndexSeekIT extends KernelIntegrationTest
         return nodeId;
     }
 
-    private IndexReference createUniquenessConstraint( int labelId, int... propertyIds ) throws Exception
+    private IndexDescriptor2 createUniquenessConstraint( int labelId, int... propertyIds ) throws Exception
     {
         Transaction transaction = newTransaction( LoginContext.AUTH_DISABLED );
         LabelSchemaDescriptor descriptor = SchemaDescriptor.forLabel( labelId, propertyIds );
         transaction.schemaWrite().uniquePropertyConstraintCreate( descriptor );
-        IndexReference result = transaction.schemaRead().index( descriptor.getLabelId(), descriptor.getPropertyIds() );
+        IndexDescriptor2 result = transaction.schemaRead().index( descriptor.getLabelId(), descriptor.getPropertyIds() );
         commit();
         return result;
     }

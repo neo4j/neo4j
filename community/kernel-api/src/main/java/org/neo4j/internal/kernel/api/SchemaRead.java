@@ -27,7 +27,6 @@ import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelExcept
 import org.neo4j.internal.kernel.api.exceptions.schema.SchemaKernelException;
 import org.neo4j.internal.schema.ConstraintDescriptor;
 import org.neo4j.internal.schema.IndexDescriptor2;
-import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.register.Register;
 import org.neo4j.values.storable.Value;
@@ -45,25 +44,6 @@ public interface SchemaRead extends SchemaReadCore
      * @return the IndexDescriptor2, or {@link IndexDescriptor2#NO_INDEX} if such an index does not exist.
      */
     IndexDescriptor2 index( int label, int... properties );
-
-    /**
-     * Acquire an index reference of the given {@code label} and {@code properties}. This method does not assert
-     * that the created reference points to a valid online index.
-     *
-     * @param label the index label
-     * @param properties the index properties
-     * @return a IndexDescriptor2 for the given label and properties
-     */
-    IndexPrototype indexReferenceUnchecked( int label, int... properties );
-
-    /**
-     * Acquire an index reference of the given {@link SchemaDescriptor}. This method does not assert
-     * that the created reference points to a valid online index.
-     *
-     * @param schema {@link SchemaDescriptor} for the index.
-     * @return a IndexDescriptor2 for the given schema.
-     */
-    IndexPrototype indexReferenceUnchecked( SchemaDescriptor schema );
 
     /**
      * Returns the index with the given name

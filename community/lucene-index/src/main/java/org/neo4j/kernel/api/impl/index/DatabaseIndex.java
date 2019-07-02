@@ -25,7 +25,7 @@ import java.io.IOException;
 import java.util.List;
 
 import org.neo4j.graphdb.ResourceIterator;
-import org.neo4j.internal.schema.IndexDescriptor;
+import org.neo4j.internal.schema.IndexDescriptor2;
 import org.neo4j.kernel.api.impl.index.backup.WritableIndexSnapshotFileIterator;
 import org.neo4j.kernel.api.impl.index.partition.AbstractIndexPartition;
 import org.neo4j.kernel.api.impl.schema.writer.LuceneIndexWriter;
@@ -129,7 +129,7 @@ public interface DatabaseIndex<READER extends IndexReader> extends Closeable
 
     READER getIndexReader() throws IOException;
 
-    IndexDescriptor getDescriptor();
+    IndexDescriptor2 getDescriptor();
 
     /**
      * Check if this index is marked as online.

@@ -24,9 +24,9 @@ import org.junit.Test;
 import java.util.Optional;
 
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.internal.kernel.api.IndexReference;
 import org.neo4j.internal.kernel.api.SchemaRead;
 import org.neo4j.internal.kernel.api.SchemaWrite;
+import org.neo4j.internal.schema.IndexDescriptor2;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
@@ -44,7 +44,7 @@ public class FulltextAnalyzerTest extends LuceneFulltextTestSupport
         applySetting( FulltextConfig.fulltext_default_analyzer, ENGLISH );
 
         SchemaDescriptor descriptor = fulltextAdapter.schemaFor( NODE, new String[]{LABEL.name()}, indexConfig, PROP );
-        IndexReference nodes;
+        IndexDescriptor2 nodes;
         try ( KernelTransactionImplementation transaction = getKernelTransaction() )
         {
             SchemaWrite schemaWrite = transaction.schemaWrite();
@@ -79,7 +79,7 @@ public class FulltextAnalyzerTest extends LuceneFulltextTestSupport
     {
         applySetting( FulltextConfig.fulltext_default_analyzer, SWEDISH );
         SchemaDescriptor descriptor = fulltextAdapter.schemaFor( NODE, new String[]{LABEL.name()}, indexConfig, PROP );
-        IndexReference nodes;
+        IndexDescriptor2 nodes;
         try ( KernelTransactionImplementation transaction = getKernelTransaction() )
         {
             SchemaWrite schemaWrite = transaction.schemaWrite();
@@ -115,7 +115,7 @@ public class FulltextAnalyzerTest extends LuceneFulltextTestSupport
         long secondID;
         applySetting( FulltextConfig.fulltext_default_analyzer, ENGLISH );
         SchemaDescriptor descriptor = fulltextAdapter.schemaFor( NODE, new String[]{LABEL.name()}, indexConfig, PROP );
-        IndexReference nodes;
+        IndexDescriptor2 nodes;
         try ( KernelTransactionImplementation transaction = getKernelTransaction() )
         {
             SchemaWrite schemaWrite = transaction.schemaWrite();

@@ -31,6 +31,7 @@ import org.neo4j.cypher.internal.v4_0.util.EntityNotFoundException
 import org.neo4j.graphdb.{Path, PropertyContainer}
 import org.neo4j.internal.kernel.api._
 import org.neo4j.internal.kernel.api.helpers.RelationshipSelectionCursor
+import org.neo4j.internal.schema.IndexDescriptor2
 import org.neo4j.kernel.api.dbms.DbmsOperations
 import org.neo4j.kernel.impl.core.EmbeddedProxySPI
 import org.neo4j.kernel.impl.factory.DatabaseInfo
@@ -92,11 +93,11 @@ trait QueryContext extends TokenContext with DbAccess {
 
   def getOrCreatePropertyKeyIds(propertyKeys: Array[String]): Array[Int]
 
-  def addIndexRule(labelId: Int, propertyKeyIds: Seq[Int]): IdempotentResult[IndexReference]
+  def addIndexRule(labelId: Int, propertyKeyIds: Seq[Int]): IdempotentResult[IndexDescriptor2]
 
   def dropIndexRule(labelId: Int, propertyKeyIds: Seq[Int]): Unit
 
-  def indexReference(label: Int, properties: Int*): IndexReference
+  def indexReference(label: Int, properties: Int*): IndexDescriptor2
 
   def indexSeek[RESULT <: AnyRef](index: IndexReadSession,
                                   needsValues: Boolean,
@@ -117,7 +118,7 @@ trait QueryContext extends TokenContext with DbAccess {
                                   needsValues: Boolean,
                                   indexOrder: IndexOrder): NodeValueIndexCursor
 
-  def lockingUniqueIndexSeek[RESULT](index: IndexReference, queries: Seq[IndexQuery.ExactPredicate]): NodeValueIndexCursor
+  def lockingUniqueIndexSeek[RESULT](index: IndexDescriptor2, queries: Seq[IndexQuery.ExactPredicate]): NodeValueIndexCursor
 
   def getNodesByLabel(id: Int): Iterator[NodeValue]
 
@@ -263,7 +264,7 @@ trait Operations[T, CURSOR] {
   def removeProperty(obj: Long, propertyKeyId: Int)
 
   /**
-    * @param throwOnDeleted if this is `true` an Exception will be thrown whten the entity with id `obj` has been deleted in this transaction.
+    * @param throwOnDeleted if this is `true` an Exception will be thrown when the entity with id `obj` has been deleted in this transaction.
     *                       If this is `false`, it will return `Values.NO_VALUE` in that case.
     */
   def getProperty(obj: Long, propertyKeyId: Int, cursor: CURSOR, propertyCursor: PropertyCursor, throwOnDeleted: Boolean): Value

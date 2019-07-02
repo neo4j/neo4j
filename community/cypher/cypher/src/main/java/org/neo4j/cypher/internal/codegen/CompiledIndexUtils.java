@@ -21,12 +21,12 @@ package org.neo4j.cypher.internal.codegen;
 
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.internal.kernel.api.CursorFactory;
-import org.neo4j.internal.schema.IndexOrder;
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.internal.kernel.api.IndexReadSession;
-import org.neo4j.internal.kernel.api.IndexReference;
 import org.neo4j.internal.kernel.api.NodeValueIndexCursor;
 import org.neo4j.internal.kernel.api.Read;
+import org.neo4j.internal.schema.IndexDescriptor2;
+import org.neo4j.internal.schema.IndexOrder;
 import org.neo4j.values.storable.Values;
 
 import static org.neo4j.cypher.internal.codegen.CompiledConversionUtils.makeValueNeoSafe;
@@ -54,10 +54,10 @@ public final class CompiledIndexUtils
      * @param value The value to seek for
      * @return A cursor positioned at the data found in index.
      */
-    public static NodeValueIndexCursor indexSeek( Read read, CursorFactory cursors, IndexReference index, Object value )
+    public static NodeValueIndexCursor indexSeek( Read read, CursorFactory cursors, IndexDescriptor2 index, Object value )
             throws KernelException
     {
-        assert index.properties().length == 1;
+        assert index.schema().getPropertyIds().length == 1;
         if ( value == Values.NO_VALUE || value == null )
         {
             return NodeValueIndexCursor.EMPTY;
@@ -65,7 +65,7 @@ public final class CompiledIndexUtils
         else
         {
             NodeValueIndexCursor cursor = cursors.allocateNodeValueIndexCursor();
-            IndexQuery.ExactPredicate query = exact( index.properties()[0], makeValueNeoSafe( value ) );
+            IndexQuery.ExactPredicate query = exact( index.schema().getPropertyIds()[0], makeValueNeoSafe( value ) );
             IndexReadSession indexSession = read.indexReadSession( index );
             read.nodeIndexSeek( indexSession, cursor, IndexOrder.NONE, false, query );
             return cursor;

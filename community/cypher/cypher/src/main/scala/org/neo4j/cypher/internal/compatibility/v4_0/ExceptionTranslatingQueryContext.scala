@@ -30,6 +30,7 @@ import org.neo4j.cypher.internal.v4_0.expressions.SemanticDirection
 import org.neo4j.graphdb.{Path, PropertyContainer}
 import org.neo4j.internal.kernel.api.helpers.RelationshipSelectionCursor
 import org.neo4j.internal.kernel.api.{QueryContext => _, _}
+import org.neo4j.internal.schema.IndexDescriptor2
 import org.neo4j.kernel.impl.core.EmbeddedProxySPI
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.{TextValue, Value}
@@ -94,13 +95,13 @@ class ExceptionTranslatingQueryContext(val inner: QueryContext) extends QueryCon
   override def getOrCreatePropertyKeyIds(propertyKeys: Array[String]): Array[Int] =
     translateException(inner.getOrCreatePropertyKeyIds(propertyKeys))
 
-  override def addIndexRule(labelId: Int, propertyKeyIds: Seq[Int]): IdempotentResult[IndexReference] =
+  override def addIndexRule(labelId: Int, propertyKeyIds: Seq[Int]): IdempotentResult[IndexDescriptor2] =
     translateException(inner.addIndexRule(labelId, propertyKeyIds))
 
   override def dropIndexRule(labelId: Int, propertyKeyIds: Seq[Int]): Unit =
     translateException(inner.dropIndexRule(labelId, propertyKeyIds))
 
-  override def indexReference(label: Int, properties: Int*): IndexReference =
+  override def indexReference(label: Int, properties: Int*): IndexDescriptor2 =
     translateException(inner.indexReference(label, properties:_*))
 
   override def indexSeek[RESULT <: AnyRef](index: IndexReadSession,
@@ -195,7 +196,7 @@ class ExceptionTranslatingQueryContext(val inner: QueryContext) extends QueryCon
   override def getRelTypeName(id: Int): String =
     translateException(inner.getRelTypeName(id))
 
-  override def lockingUniqueIndexSeek[RESULT](index: IndexReference,
+  override def lockingUniqueIndexSeek[RESULT](index: IndexDescriptor2,
                                               values: Seq[IndexQuery.ExactPredicate]): NodeValueIndexCursor =
     translateException(inner.lockingUniqueIndexSeek(index, values))
 

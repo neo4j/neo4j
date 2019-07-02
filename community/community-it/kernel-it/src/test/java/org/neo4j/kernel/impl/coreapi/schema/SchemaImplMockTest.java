@@ -25,11 +25,11 @@ import org.junit.jupiter.api.Test;
 import java.util.concurrent.TimeUnit;
 
 import org.neo4j.internal.helpers.Exceptions;
-import org.neo4j.internal.kernel.api.IndexReference;
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.kernel.api.SchemaRead;
 import org.neo4j.internal.kernel.api.TokenRead;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
+import org.neo4j.internal.schema.IndexDescriptor2;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.Statement;
 
@@ -63,15 +63,15 @@ class SchemaImplMockTest
     private static IndexDefinitionImpl mockIndexDefinition()
     {
         IndexDefinitionImpl indexDefinition = mock( IndexDefinitionImpl.class );
-        when( indexDefinition.getIndexReference() ).thenReturn( IndexReference.NO_INDEX );
+        when( indexDefinition.getIndexReference() ).thenReturn( IndexDescriptor2.NO_INDEX );
         return indexDefinition;
     }
 
     private static KernelTransaction mockKernelTransaction() throws IndexNotFoundKernelException
     {
         SchemaRead schemaRead = mock( SchemaRead.class );
-        when( schemaRead.indexGetState( any( IndexReference.class ) ) ).thenReturn( InternalIndexState.FAILED );
-        when( schemaRead.indexGetFailure( any( IndexReference.class ) ) ).thenReturn( Exceptions.stringify( cause ) );
+        when( schemaRead.indexGetState( any( IndexDescriptor2.class ) ) ).thenReturn( InternalIndexState.FAILED );
+        when( schemaRead.indexGetFailure( any( IndexDescriptor2.class ) ) ).thenReturn( Exceptions.stringify( cause ) );
 
         KernelTransaction kt = mock( KernelTransaction.class );
         when( kt.tokenRead() ).thenReturn( mock( TokenRead.class ) );

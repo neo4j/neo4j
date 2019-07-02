@@ -37,13 +37,13 @@ import org.neo4j.cypher.internal.StringCacheMonitor;
 import org.neo4j.graphdb.Resource;
 import org.neo4j.internal.helpers.collection.MapUtil;
 import org.neo4j.internal.helpers.collection.Pair;
-import org.neo4j.internal.kernel.api.IndexReference;
 import org.neo4j.internal.kernel.api.SchemaWrite;
 import org.neo4j.internal.kernel.api.TokenWrite;
 import org.neo4j.internal.kernel.api.Transaction;
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
 import org.neo4j.internal.kernel.api.procs.ProcedureHandle;
 import org.neo4j.internal.kernel.api.security.LoginContext;
+import org.neo4j.internal.schema.IndexDescriptor2;
 import org.neo4j.internal.schema.LabelSchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.kernel.api.index.IndexProvider;
@@ -328,9 +328,9 @@ class BuiltInProceduresIT extends KernelIntegrationTest
         }
 
         transaction = newTransaction();
-        IndexReference personFooIndex = transaction.schemaRead().index( personFooDescriptor );
-        IndexReference ageFooIndex = transaction.schemaRead().index( ageFooDescriptor );
-        IndexReference personFooBarIndex = transaction.schemaRead().index( personFooBarDescriptor );
+        IndexDescriptor2 personFooIndex = transaction.schemaRead().index( personFooDescriptor );
+        IndexDescriptor2 ageFooIndex = transaction.schemaRead().index( ageFooDescriptor );
+        IndexDescriptor2 personFooBarIndex = transaction.schemaRead().index( personFooBarDescriptor );
 
         // When
         RawIterator<AnyValue[],ProcedureException> stream =
@@ -350,18 +350,18 @@ class BuiltInProceduresIT extends KernelIntegrationTest
                 "key", provider.getProviderDescriptor().getKey(), "version",
                 provider.getProviderDescriptor().getVersion() ) );
         assertThat( result, containsInAnyOrder(
-                new AnyValue[]{stringValue( "INDEX ON :Age(foo)" ), stringValue( ageFooIndex.name() ),
+                new AnyValue[]{stringValue( "INDEX ON :Age(foo)" ), stringValue( ageFooIndex.getName() ),
                         VirtualValues.list( stringValue( "Age" ) ), VirtualValues.list( stringValue( "foo" ) ),
                         stringValue( "ONLINE" ),
                         stringValue( "node_unique_property" ), doubleValue( 100D ), pdm,
                         longValue( indexingService.getIndexId( ageFooDescriptor ) ),
                         EMPTY_STRING},
-                new AnyValue[]{stringValue( "INDEX ON :Person(foo)" ), stringValue( personFooIndex.name() ),
+                new AnyValue[]{stringValue( "INDEX ON :Person(foo)" ), stringValue( personFooIndex.getName() ),
                         VirtualValues.list( stringValue( "Person" ) ),
                         VirtualValues.list( stringValue( "foo" ) ), stringValue( "ONLINE" ),
                         stringValue( "node_label_property" ), doubleValue( 100D ), pdm,
                         longValue( indexingService.getIndexId( personFooDescriptor ) ), EMPTY_STRING},
-                new AnyValue[]{stringValue( "INDEX ON :Person(foo, bar)" ), stringValue( personFooBarIndex.name() ),
+                new AnyValue[]{stringValue( "INDEX ON :Person(foo, bar)" ), stringValue( personFooBarIndex.getName() ),
                         VirtualValues.list( stringValue( "Person" ) ),
                         VirtualValues.list( stringValue( "foo" ), stringValue( "bar" ) ), stringValue( "ONLINE" ),
                         stringValue( "node_label_property" ), doubleValue( 100D ), pdm,
@@ -391,9 +391,9 @@ class BuiltInProceduresIT extends KernelIntegrationTest
         commit();
 
         transaction = newTransaction();
-        IndexReference personFooIndex = transaction.schemaRead().index( personFooDescriptor );
-        IndexReference ageFooIndex = transaction.schemaRead().index( ageFooDescriptor );
-        IndexReference personFooBarIndex = transaction.schemaRead().index( personFooBarDescriptor );
+        IndexDescriptor2 personFooIndex = transaction.schemaRead().index( personFooDescriptor );
+        IndexDescriptor2 ageFooIndex = transaction.schemaRead().index( ageFooDescriptor );
+        IndexDescriptor2 personFooBarIndex = transaction.schemaRead().index( personFooBarDescriptor );
         commit();
 
         //let indexes come online
@@ -442,18 +442,18 @@ class BuiltInProceduresIT extends KernelIntegrationTest
                     "key", provider.getProviderDescriptor().getKey(), "version",
                     provider.getProviderDescriptor().getVersion() ) );
             assertThat( result, containsInAnyOrder(
-                    new AnyValue[]{stringValue( "INDEX ON :Age(foo)" ), stringValue( ageFooIndex.name() ),
+                    new AnyValue[]{stringValue( "INDEX ON :Age(foo)" ), stringValue( ageFooIndex.getName() ),
                             VirtualValues.list( stringValue( "Age" ) ), VirtualValues.list( stringValue( "foo" ) ),
                             stringValue( "ONLINE" ),
                             stringValue( "node_unique_property" ), doubleValue( 100D ), pdm,
                             longValue( indexing.getIndexId( ageFooDescriptor ) ), EMPTY_STRING},
-                    new AnyValue[]{stringValue( "INDEX ON :Person(foo)" ), stringValue( personFooIndex.name() ),
+                    new AnyValue[]{stringValue( "INDEX ON :Person(foo)" ), stringValue( personFooIndex.getName() ),
                             VirtualValues.list( stringValue( "Person" ) ),
                             VirtualValues.list( stringValue( "foo" ) ),
                             stringValue( "ONLINE" ),
                             stringValue( "node_label_property" ), doubleValue( 100D ), pdm,
                             longValue( indexing.getIndexId( personFooDescriptor ) ), EMPTY_STRING},
-                    new AnyValue[]{stringValue( "INDEX ON :Person(foo, bar)" ), stringValue( personFooBarIndex.name() ),
+                    new AnyValue[]{stringValue( "INDEX ON :Person(foo, bar)" ), stringValue( personFooBarIndex.getName() ),
                             VirtualValues.list( stringValue( "Person" ) ),
                             VirtualValues.list( stringValue( "foo" ), stringValue( "bar" ) ),
                             stringValue( "ONLINE" ),

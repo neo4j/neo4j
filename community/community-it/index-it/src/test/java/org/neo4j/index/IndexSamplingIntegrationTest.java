@@ -32,10 +32,10 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.schema.IndexDefinition;
-import org.neo4j.internal.kernel.api.IndexReference;
 import org.neo4j.internal.kernel.api.Kernel;
 import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
+import org.neo4j.internal.schema.IndexDescriptor2;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.register.Register.DoubleLongRegister;
 import org.neo4j.register.Registers;
@@ -195,7 +195,7 @@ class IndexSamplingIntegrationTest
         assertEquals( nodes - deletedNodes, indexSizeRegister.readSecond() );
     }
 
-    private IndexReference indexId( org.neo4j.internal.kernel.api.Transaction tx )
+    private IndexDescriptor2 indexId( org.neo4j.internal.kernel.api.Transaction tx )
     {
         int labelId = tx.tokenRead().nodeLabel( label.name() );
         int propertyKeyId = tx.tokenRead().propertyKey( property );
@@ -210,7 +210,6 @@ class IndexSamplingIntegrationTest
             // Then
             managementService = new TestDatabaseManagementServiceBuilder( testDirectory.storeDir() ).build();
             db = managementService.database( DEFAULT_DATABASE_NAME );
-            @SuppressWarnings( "deprecation" )
             GraphDatabaseAPI api = (GraphDatabaseAPI) db;
             Kernel kernel = api.getDependencyResolver().resolveDependency( Kernel.class );
             try ( org.neo4j.internal.kernel.api.Transaction tx = kernel.beginTransaction( explicit, AUTH_DISABLED ) )
@@ -235,7 +234,6 @@ class IndexSamplingIntegrationTest
             // Then
             managementService = new TestDatabaseManagementServiceBuilder( testDirectory.storeDir() ).build();
             db = managementService.database( DEFAULT_DATABASE_NAME );
-            @SuppressWarnings( "deprecation" )
             GraphDatabaseAPI api = (GraphDatabaseAPI) db;
             Kernel kernel = api.getDependencyResolver().resolveDependency( Kernel.class );
             try ( org.neo4j.internal.kernel.api.Transaction tx = kernel.beginTransaction( explicit, AUTH_DISABLED ) )

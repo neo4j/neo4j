@@ -26,9 +26,9 @@ import org.mockito.stubbing.Answer
 import org.neo4j.cypher.internal.planner.spi.IdempotentResult
 import org.neo4j.cypher.internal.runtime.{QueryContext, QueryStatistics, _}
 import org.neo4j.graphdb.{Node, Relationship}
-import org.neo4j.internal.kernel.api.IndexReference
 import org.neo4j.values.storable.Values
 import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
+import org.neo4j.internal.schema.IndexDescriptor2
 
 class UpdateCountingQueryContextTest extends CypherFunSuite {
 
@@ -67,7 +67,7 @@ class UpdateCountingQueryContextTest extends CypherFunSuite {
   when( inner.createRelationshipPropertyExistenceConstraint(anyInt(), anyInt()) ).thenReturn(true)
 
   when(inner.addIndexRule(anyInt(), any()))
-    .thenReturn(IdempotentResult(mock[IndexReference]))
+    .thenReturn(IdempotentResult(mock[IndexDescriptor2]))
 
   var context: UpdateCountingQueryContext = _
 
