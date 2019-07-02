@@ -374,7 +374,7 @@ public class NativeLabelScanStore implements LabelScanStore
         Header.Reader readRebuilding =
                 headerData -> isRebuilding.setValue( headerData.get() == NEEDS_REBUILDING );
         index = new GBPTree<>( pageCache, storeFile, new LabelScanLayout(), pageSize, monitor, readRebuilding,
-                needsRebuildingWriter, recoveryCleanupWorkCollector );
+                needsRebuildingWriter, recoveryCleanupWorkCollector, false );
         return isRebuilding.getValue();
     }
 
