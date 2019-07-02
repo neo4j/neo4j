@@ -168,42 +168,6 @@ class TransactionToRecordStateVisitor extends TxStateVisitor.Adapter
     @Override
     public void visitRemovedIndex( IndexDescriptor2 index )
     {
-//        StorageIndexReference rule = null;
-//        if ( index instanceof StorageIndexReference )
-//        {
-//            rule = (StorageIndexReference) index;
-//        }
-//        else if ( index.hasUserSuppliedName() )
-//        {
-//            String indexName = index.getName();
-//            rule = schemaStorage.indexGetForName( indexName );
-//        }
-//        else
-//        {
-//            // TODO we'll need to rethink this whole thing once multiple identical schemas are allowed.
-//            StorageIndexReference[] rules = schemaStorage.indexGetForSchema( index, true );
-//            if ( rules.length == 0 )
-//            {
-//                // Loosen the filtering a bit. The reason we do this during drop is this scenario where a uniqueness constraint creation
-//                // crashed or similar, where the UNIQUE index exists, but not its constraint and so the only way to drop it
-//                // (if you don't want to go the route of first creating a constraint and then drop that, where the index would be dropped along with it),
-//                // is to do "DROP INDEX ON :Label(name) which has the type as GENERAL and would miss it.
-//                rules = schemaStorage.indexGetForSchema( index, false );
-//            }
-//            if ( rules.length > 1 )
-//            {
-//                throw new IllegalStateException( "More than one index matched schema '" + index +
-//                        "', don't know which one to remove: " + Arrays.toString( rules ) );
-//            }
-//            if ( rules.length > 0 )
-//            {
-//                rule = rules[0];
-//            }
-//        }
-//        if ( rule != null )
-//        {
-//            schemaStateChanger.dropSchemaRule( recordState, rule );
-//        }
         schemaStateChanger.dropSchemaRule( recordState, index );
     }
 

@@ -144,7 +144,7 @@ public abstract class AbstractIndexProvidedOrderTest extends KernelAPIReadTestBa
         for ( int i = 0; i < N_ITERATIONS; i++ )
         {
             ValueType type = randomValues.among( targetedTypes );
-            IndexOrder[] order = index.reference().orderCapability( type.valueGroup.category() );
+            IndexOrder[] order = index.reference().getCapability().orderCapability( type.valueGroup.category() );
             for ( IndexOrder indexOrder : order )
             {
                 if ( indexOrder == IndexOrder.NONE )

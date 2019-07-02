@@ -90,7 +90,7 @@ public class IndexCreateIT extends KernelIntegrationTest
             commit();
 
             // then
-            assertEquals( provider, indexingService.getIndexProxy( descriptor ).getDescriptor().providerDescriptor().name() );
+            assertEquals( provider, indexingService.getIndexProxy( descriptor ).getDescriptor().getIndexProvider().name() );
         }
     }
 
