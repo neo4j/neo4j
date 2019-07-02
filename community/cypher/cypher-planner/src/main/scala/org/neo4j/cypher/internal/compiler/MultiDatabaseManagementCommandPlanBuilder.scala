@@ -86,25 +86,25 @@ case object MultiDatabaseManagementCommandPlanBuilder extends Phase[PlannerConte
           plans.AlterUser(userName, None, initialParameterPassword, requirePasswordChange, suspended),
           prettifier.asString(c)))
 
-      // SET MY PASSWORD FROM currentPassword TO newPassword
+      // ALTER CURRENT USER SET PASSWORD FROM currentPassword TO newPassword
       case c@SetOwnPassword(Some(newStringPassword), newParameterPassword, Some(currentStringPassword), currentParameterPassword) =>
         Some(plans.LogSystemCommand(
           plans.SetOwnPassword(Some(UTF8.encode(newStringPassword)), newParameterPassword, Some(UTF8.encode(currentStringPassword)), currentParameterPassword),
           prettifier.asString(c)))
 
-      // SET MY PASSWORD FROM currentPassword TO newPassword
+      // ALTER CURRENT USER SET PASSWORD FROM currentPassword TO newPassword
       case c@SetOwnPassword(None, newParameterPassword, Some(currentStringPassword), currentParameterPassword) =>
         Some(plans.LogSystemCommand(
           plans.SetOwnPassword(None, newParameterPassword, Some(UTF8.encode(currentStringPassword)), currentParameterPassword),
           prettifier.asString(c)))
 
-      // SET MY PASSWORD FROM currentPassword TO newPassword
+      // ALTER CURRENT USER SET PASSWORD FROM currentPassword TO newPassword
       case c@SetOwnPassword(Some(newStringPassword), newParameterPassword, None, currentParameterPassword) =>
         Some(plans.LogSystemCommand(
           plans.SetOwnPassword(Some(UTF8.encode(newStringPassword)), newParameterPassword, None, currentParameterPassword),
           prettifier.asString(c)))
 
-      // SET MY PASSWORD FROM currentPassword TO newPassword
+      // ALTER CURRENT USER SET PASSWORD FROM currentPassword TO newPassword
       case c@SetOwnPassword(None, newParameterPassword, None, currentParameterPassword) =>
         Some(plans.LogSystemCommand(
           plans.SetOwnPassword(None, newParameterPassword, None, currentParameterPassword),

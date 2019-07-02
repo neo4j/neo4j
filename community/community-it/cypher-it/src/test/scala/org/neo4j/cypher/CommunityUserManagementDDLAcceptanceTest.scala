@@ -401,7 +401,7 @@ class CommunityUserManagementDDLAcceptanceTest extends CommunityDDLAcceptanceTes
     execute("SHOW USERS").toSet shouldBe Set(user("neo4j"), user("foo", passwordChangeRequired = false))
 
     // WHEN
-    executeOnSystem("foo", "bar", "SET MY PASSWORD FROM 'bar' TO 'baz'")
+    executeOnSystem("foo", "bar", "ALTER CURRENT USER SET PASSWORD FROM 'bar' TO 'baz'")
 
     // THEN
     testUserLogin("foo", "baz", AuthenticationResult.SUCCESS)
@@ -418,7 +418,7 @@ class CommunityUserManagementDDLAcceptanceTest extends CommunityDDLAcceptanceTes
     // WHEN
     the[QueryExecutionException] thrownBy { // the InvalidArgumentsException exception gets wrapped in this code path
       // WHEN
-      executeOnSystem("foo", "bar", "SET MY PASSWORD FROM 'wrongPassword' TO 'baz'")
+      executeOnSystem("foo", "bar", "ALTER CURRENT USER SET PASSWORD FROM 'wrongPassword' TO 'baz'")
       // THEN
     } should have message "Invalid principal or credentials."
 
@@ -435,7 +435,7 @@ class CommunityUserManagementDDLAcceptanceTest extends CommunityDDLAcceptanceTes
 
     the[InvalidArgumentsException] thrownBy {
       // WHEN
-      executeOnSystem("foo", "bar", "SET MY PASSWORD FROM 'bar' TO ''")
+      executeOnSystem("foo", "bar", "ALTER CURRENT USER SET PASSWORD FROM 'bar' TO ''")
       // THEN
     } should have message "A password cannot be empty."
 
@@ -447,7 +447,7 @@ class CommunityUserManagementDDLAcceptanceTest extends CommunityDDLAcceptanceTes
 
     the[QueryExecutionException] thrownBy { // the InvalidArgumentsException exception gets wrapped in this code path
       // WHEN
-      executeOnSystem("foo", "bar", "SET MY PASSWORD FROM 'bar' TO $password", params = parameter)
+      executeOnSystem("foo", "bar", "ALTER CURRENT USER SET PASSWORD FROM 'bar' TO $password", params = parameter)
       // THEN
     } should have message "Old password and new password cannot be the same."
 
@@ -465,7 +465,7 @@ class CommunityUserManagementDDLAcceptanceTest extends CommunityDDLAcceptanceTes
     parameter.put("password", "baz")
 
     // WHEN
-    executeOnSystem("foo", "bar", "SET MY PASSWORD FROM 'bar' TO $password", params = parameter)
+    executeOnSystem("foo", "bar", "ALTER CURRENT USER SET PASSWORD FROM 'bar' TO $password", params = parameter)
 
     // THEN
     testUserLogin("foo", "baz", AuthenticationResult.SUCCESS)
@@ -480,7 +480,7 @@ class CommunityUserManagementDDLAcceptanceTest extends CommunityDDLAcceptanceTes
 
     the[QueryExecutionException] thrownBy { // the ParameterNotFoundException exception gets wrapped in this code path
       // WHEN
-      executeOnSystem("foo", "bar", "SET MY PASSWORD FROM 'bar' TO $password")
+      executeOnSystem("foo", "bar", "ALTER CURRENT USER SET PASSWORD FROM 'bar' TO $password")
       // THEN
     } should have message "Expected parameter(s): password"
 
@@ -498,7 +498,7 @@ class CommunityUserManagementDDLAcceptanceTest extends CommunityDDLAcceptanceTes
     parameter.put("password", "bar")
 
     // WHEN
-    executeOnSystem("foo", "bar", "SET MY PASSWORD FROM $password TO 'baz'", params = parameter)
+    executeOnSystem("foo", "bar", "ALTER CURRENT USER SET PASSWORD FROM $password TO 'baz'", params = parameter)
 
     // THEN
     testUserLogin("foo", "baz", AuthenticationResult.SUCCESS)
@@ -516,7 +516,7 @@ class CommunityUserManagementDDLAcceptanceTest extends CommunityDDLAcceptanceTes
 
     the[QueryExecutionException] thrownBy { // the ParameterWrongTypeException exception gets wrapped in this code path
       // WHEN
-      executeOnSystem("foo", "bar", "SET MY PASSWORD FROM $password TO 'bar'", params = parameter)
+      executeOnSystem("foo", "bar", "ALTER CURRENT USER SET PASSWORD FROM $password TO 'bar'", params = parameter)
       // THEN
     } should have message "Only string values are accepted as password, got: Integer"
 
@@ -535,7 +535,7 @@ class CommunityUserManagementDDLAcceptanceTest extends CommunityDDLAcceptanceTes
     parameter.put("newPassword", "baz")
 
     // WHEN
-    executeOnSystem("foo", "bar", "SET MY PASSWORD FROM $currentPassword TO $newPassword", params = parameter)
+    executeOnSystem("foo", "bar", "ALTER CURRENT USER SET PASSWORD FROM $currentPassword TO $newPassword", params = parameter)
 
     // THEN
     testUserLogin("foo", "baz", AuthenticationResult.SUCCESS)
@@ -553,7 +553,7 @@ class CommunityUserManagementDDLAcceptanceTest extends CommunityDDLAcceptanceTes
 
     the[QueryExecutionException] thrownBy { // the ParameterNotFoundException exception gets wrapped in this code path
       // WHEN
-      executeOnSystem("foo", "bar", "SET MY PASSWORD FROM $currentPassword TO $newPassword", params = parameter)
+      executeOnSystem("foo", "bar", "ALTER CURRENT USER SET PASSWORD FROM $currentPassword TO $newPassword", params = parameter)
       // THEN
     } should have message "Expected parameter(s): newPassword"
 
@@ -572,7 +572,7 @@ class CommunityUserManagementDDLAcceptanceTest extends CommunityDDLAcceptanceTes
 
     the[QueryExecutionException] thrownBy { // the ParameterNotFoundException exception gets wrapped in this code path
       // WHEN
-      executeOnSystem("foo", "bar", "SET MY PASSWORD FROM $currentPassword TO $newPassword", params = parameter)
+      executeOnSystem("foo", "bar", "ALTER CURRENT USER SET PASSWORD FROM $currentPassword TO $newPassword", params = parameter)
       // THEN
     } should have message "Expected parameter(s): currentPassword"
 
@@ -588,7 +588,7 @@ class CommunityUserManagementDDLAcceptanceTest extends CommunityDDLAcceptanceTes
 
     val e = the[QueryExecutionException] thrownBy { // the ParameterNotFoundException exception gets wrapped in this code path
       // WHEN
-      executeOnSystem("foo", "bar", "SET MY PASSWORD FROM $currentPassword TO $newPassword")
+      executeOnSystem("foo", "bar", "ALTER CURRENT USER SET PASSWORD FROM $currentPassword TO $newPassword")
     }
     // THEN
     e.getMessage should (be("Expected parameter(s): newPassword") or be("Expected parameter(s): currentPassword"))
@@ -606,9 +606,10 @@ class CommunityUserManagementDDLAcceptanceTest extends CommunityDDLAcceptanceTes
 
     the[QueryExecutionException] thrownBy { // the DatabaseManagementException gets wrapped twice in this code path
       // WHEN
-      executeOnDefault("foo", "bar", "SET MY PASSWORD FROM 'bar' TO 'baz'")
+      executeOnDefault("foo", "bar", "ALTER CURRENT USER SET PASSWORD FROM 'bar' TO 'baz'")
       // THEN
-    } should have message "This is a DDL command and it should be executed against the system database: SET OWN PASSWORD"
+    } should have message
+      "This is a DDL command and it should be executed against the system database: ALTER CURRENT USER SET PASSWORD"
   }
 
   // helper methods

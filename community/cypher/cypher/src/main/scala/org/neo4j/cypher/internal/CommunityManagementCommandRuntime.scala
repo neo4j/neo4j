@@ -113,7 +113,7 @@ case class CommunityManagementCommandRuntime(normalExecutionEngine: ExecutionEng
           .handleError(e => new InvalidArgumentsException(s"Failed to delete the specified user '$userName'.", e))
       )
 
-    // SET MY PASSWORD FROM 'currentPassword' TO 'newPassword'
+    // ALTER CURRENT USER SET PASSWORD FROM 'currentPassword' TO 'newPassword'
     case SetOwnPassword(Some(newPassword), None, Some(currentPassword), None) => (_, _, securityContext) =>
       val query =
         """MATCH (user:User {name: $name})
@@ -123,13 +123,12 @@ case class CommunityManagementCommandRuntime(normalExecutionEngine: ExecutionEng
           |RETURN oldCredentials""".stripMargin
       val currentUser = securityContext.subject().username()
 
-      UpdatingSystemCommandExecutionPlan("SetOwnPassword", normalExecutionEngine,
+      UpdatingSystemCommandExecutionPlan("AlterCurrentUserSetPassword", normalExecutionEngine,
         query,
         VirtualValues.map(Array("name", "credentials"),
           Array(Values.stringValue(currentUser),
             Values.stringValue(authManager.createCredentialForPassword(validatePassword(newPassword)).serialize()))),
         QueryHandler
-          .handleNoResult(() => Some(new InvalidArgumentsException(s"User '$currentUser' does not exist."))) // TODO should be current user so can this even happen?
           .handleError(e => new InvalidArgumentsException(s"User '$currentUser' failed to change its own password.", e))
           .handleResult((_, value) => {
             val oldCredentials = authManager.deserialize(value.asInstanceOf[TextValue].stringValue())
@@ -142,15 +141,15 @@ case class CommunityManagementCommandRuntime(normalExecutionEngine: ExecutionEng
           })
       )
 
-    // SET MY PASSWORD FROM currentPassword TO $newPassword
+    // ALTER CURRENT USER SET PASSWORD FROM currentPassword TO $newPassword
     case SetOwnPassword(_, Some(_), _, _) =>
       throw new IllegalStateException("Did not resolve parameters correctly.")
 
-    // SET MY PASSWORD FROM $currentPassword TO newPassword
+    // ALTER CURRENT USER SET PASSWORD FROM $currentPassword TO newPassword
     case SetOwnPassword(_, _, _, Some(_)) =>
       throw new IllegalStateException("Did not resolve parameters correctly.")
 
-    // SET MY PASSWORD FROM currentPassword TO newPassword
+    // ALTER CURRENT USER SET PASSWORD FROM currentPassword TO newPassword
     case SetOwnPassword(_, _, _, _) =>
       throw new IllegalStateException("Password not correctly supplied.")
 

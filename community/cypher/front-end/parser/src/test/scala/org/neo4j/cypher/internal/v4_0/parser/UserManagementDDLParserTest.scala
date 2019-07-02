@@ -276,63 +276,71 @@ class UserManagementDDLParserTest extends DDLParserTestBase {
 
   // Changing own password
 
-  test("SET MY PASSWORD FROM 'current' TO 'new'") {
+  test("ALTER CURRENT USER SET PASSWORD FROM 'current' TO 'new'") {
     yields(ast.SetOwnPassword(Some("new"), None, Some("current"), None))
   }
 
-  test("set my password from 'current' to ''") {
+  test("alter current user set password from 'current' to ''") {
     yields(ast.SetOwnPassword(Some(""), None, Some("current"), None))
   }
 
-  test("set my password from '' to 'new'") {
+  test("alter current user set password from '' to 'new'") {
     yields(ast.SetOwnPassword(Some("new"), None, Some(""), None))
   }
 
-  test("SET MY PASSWORD FROM 'current' TO 'passWORD123%!'") {
+  test("ALTER CURRENT USER SET PASSWORD FROM 'current' TO 'passWORD123%!'") {
     yields(ast.SetOwnPassword(Some("passWORD123%!"), None, Some("current"), None))
   }
 
-  test("SET MY PASSWORD FROM 'current' TO $newPassword") {
+  test("ALTER CURRENT USER SET PASSWORD FROM 'current' TO $newPassword") {
     yields(ast.SetOwnPassword(None, Some(Param("newPassword", CTAny)(_)), Some("current"), None))
   }
 
-  test("SET MY PASSWORD FROM $currentPassword TO 'new'") {
+  test("ALTER CURRENT USER SET PASSWORD FROM $currentPassword TO 'new'") {
     yields(ast.SetOwnPassword(Some("new"), None, None, Some(Param("currentPassword", CTAny)(_))))
   }
 
-  test("set my password from $currentPassword to ''") {
+  test("alter current user set password from $currentPassword to ''") {
     yields(ast.SetOwnPassword(Some(""), None, None, Some(Param("currentPassword", CTAny)(_))))
   }
 
-  test("SET MY PASSWORD FROM $currentPassword TO 'passWORD123%!'") {
+  test("ALTER CURRENT USER SET PASSWORD FROM $currentPassword TO 'passWORD123%!'") {
     yields(ast.SetOwnPassword(Some("passWORD123%!"), None, None, Some(Param("currentPassword", CTAny)(_))))
   }
 
-  test("SET MY PASSWORD FROM $currentPassword TO $newPassword") {
+  test("ALTER CURRENT USER SET PASSWORD FROM $currentPassword TO $newPassword") {
     yields(ast.SetOwnPassword(None, Some(Param("newPassword", CTAny)(_)), None, Some(Param("currentPassword", CTAny)(_))))
   }
 
-  test("SET MY PASSWORD FROM 'current' TO null") {
+  test("ALTER CURRENT USER SET PASSWORD FROM 'current' TO null") {
     failsToParse
   }
 
-  test("SET MY PASSWORD FROM $current TO 123") {
+  test("ALTER CURRENT USER SET PASSWORD FROM $current TO 123") {
     failsToParse
   }
 
-  test("SET PASSWORD FROM 'current' TO 'new'") {
+  test("ALTER PASSWORD FROM 'current' TO 'new'") {
     failsToParse
   }
 
-  test("SET MY PASSWORD FROM 'current' TO") {
+  test("ALTER CURRENT PASSWORD FROM 'current' TO 'new'") {
     failsToParse
   }
 
-  test("SET MY PASSWORD FROM TO 'new'") {
+  test("ALTER CURRENT USER PASSWORD FROM 'current' TO 'new'") {
     failsToParse
   }
 
-  test("SET MY PASSWORD TO 'new'") {
+  test("ALTER CURRENT USER SET PASSWORD FROM 'current' TO") {
+    failsToParse
+  }
+
+  test("ALTER CURRENT USER SET PASSWORD FROM TO 'new'") {
+    failsToParse
+  }
+
+  test("ALTER CURRENT USER SET PASSWORD TO 'new'") {
     failsToParse
   }
 }

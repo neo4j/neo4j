@@ -98,7 +98,7 @@ final case class SetOwnPassword(newStringPassword: Option[String],
   assert(currentStringPassword.isDefined || currentParameterPassword.isDefined)
   assert(!(currentStringPassword.isDefined && currentParameterPassword.isDefined))
 
-  override def name = "SET OWN PASSWORD"
+  override def name = "ALTER CURRENT USER SET PASSWORD"
 
   override def semanticCheck: SemanticCheck =
     super.semanticCheck chain

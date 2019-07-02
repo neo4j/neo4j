@@ -109,18 +109,18 @@ trait Statement extends Parser
       ((userName, suspended) => ast.AlterUser(userName, None, None, None, Some(suspended)))
   }
 
-  def SetOwnPassword: Rule1[SetOwnPassword] = rule("CATALOG SET OWN PASSWORD") {
-    // SET MY PASSWORD FROM stringLiteralPassword TO stringLiteralPassword
-    group(keyword("SET MY PASSWORD FROM") ~~ StringLiteral ~~ keyword("TO") ~~ StringLiteral) ~~>>
+  def SetOwnPassword: Rule1[SetOwnPassword] = rule("CATALOG ALTER CURRENT USER SET PASSWORD") {
+    // ALTER CURRENT USER SET PASSWORD FROM stringLiteralPassword TO stringLiteralPassword
+    group(keyword("ALTER CURRENT USER SET PASSWORD FROM") ~~ StringLiteral ~~ keyword("TO") ~~ StringLiteral) ~~>>
       ((currentPassword, newPassword) => ast.SetOwnPassword(Some(newPassword.value), None, Some(currentPassword.value), None)) |
-    // SET MY PASSWORD FROM stringLiteralPassword TO parameterPassword
-    group(keyword("SET MY PASSWORD FROM") ~~ StringLiteral ~~ keyword("TO") ~~ Parameter) ~~>>
+    // ALTER CURRENT USER SET PASSWORD FROM stringLiteralPassword TO parameterPassword
+    group(keyword("ALTER CURRENT USER SET PASSWORD FROM") ~~ StringLiteral ~~ keyword("TO") ~~ Parameter) ~~>>
       ((currentPassword, newPassword) => ast.SetOwnPassword(None, Some(newPassword), Some(currentPassword.value), None)) |
-    // SET MY PASSWORD FROM parameterPassword TO stringLiteralPassword
-    group(keyword("SET MY PASSWORD FROM") ~~ Parameter ~~ keyword("TO") ~~ StringLiteral) ~~>>
+    // ALTER CURRENT USER SET PASSWORD FROM parameterPassword TO stringLiteralPassword
+    group(keyword("ALTER CURRENT USER SET PASSWORD FROM") ~~ Parameter ~~ keyword("TO") ~~ StringLiteral) ~~>>
       ((currentPassword, newPassword) => ast.SetOwnPassword(Some(newPassword.value), None, None, Some(currentPassword))) |
-    // SET MY PASSWORD FROM parameterPassword TO parameterPassword
-    group(keyword("SET MY PASSWORD FROM") ~~ Parameter ~~ keyword("TO") ~~ Parameter) ~~>>
+    // ALTER CURRENT USER SET PASSWORD FROM parameterPassword TO parameterPassword
+    group(keyword("ALTER CURRENT USER SET PASSWORD FROM") ~~ Parameter ~~ keyword("TO") ~~ Parameter) ~~>>
       ((currentPassword, newPassword) => ast.SetOwnPassword(None, Some(newPassword), None, Some(currentPassword)))
   }
 
