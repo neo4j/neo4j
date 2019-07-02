@@ -22,99 +22,6 @@ import org.neo4j.cypher.internal.v4_0.util.InputPosition
 
 class PrivilegeManagementDDLParserTest extends DDLParserTestBase {
 
-  //  Granting/revoking roles to/from users
-
-  type grantOrRevokeRoleFunc = (Seq[String], Seq[String]) => InputPosition => ast.Statement
-
-  def grantRole(r: Seq[String], u: Seq[String]): InputPosition => ast.Statement = GrantRolesToUsers(r, u)
-
-  def revokeRole(r: Seq[String], u: Seq[String]): InputPosition => ast.Statement = RevokeRolesFromUsers(r, u)
-
-  Seq("ROLE", "ROLES").foreach {
-    roleKeyword =>
-
-      Seq(
-        ("GRANT", "TO", grantRole: grantOrRevokeRoleFunc),
-        ("REVOKE", "FROM", revokeRole: grantOrRevokeRoleFunc)
-      ).foreach {
-        case (command: String, preposition: String, func: grantOrRevokeRoleFunc) =>
-
-          test(s"$command $roleKeyword foo $preposition abc") {
-            yields(func(Seq("foo"), Seq("abc")))
-          }
-
-          test(s"CATALOG $command $roleKeyword foo $preposition abc") {
-            yields(func(Seq("foo"), Seq("abc")))
-          }
-
-          test(s"$command $roleKeyword foo, bar $preposition abc") {
-            yields(func(Seq("foo", "bar"), Seq("abc")))
-          }
-
-          test(s"$command $roleKeyword foo $preposition abc, def") {
-            yields(func(Seq("foo"), Seq("abc", "def")))
-          }
-
-          test(s"$command $roleKeyword foo,bla,roo $preposition bar, baz,abc,  def") {
-            yields(func(Seq("foo", "bla", "roo"), Seq("bar", "baz", "abc", "def")))
-          }
-
-          test(s"$command $roleKeyword `fo:o` $preposition bar") {
-            yields(func(Seq("fo:o"), Seq("bar")))
-          }
-
-          test(s"$command $roleKeyword foo $preposition `b:ar`") {
-            yields(func(Seq("foo"), Seq("b:ar")))
-          }
-
-          test(s"$command $roleKeyword `$$f00`,bar $preposition abc,`$$a&c`") {
-            yields(func(Seq("$f00", "bar"), Seq("abc", "$a&c")))
-          }
-
-          // Should fail to parse if not following the pattern $command $roleKeyword role(s) $preposition user(s)
-
-          test(s"$command $roleKeyword") {
-            failsToParse
-          }
-
-          test(s"$command $roleKeyword foo") {
-            failsToParse
-          }
-
-          test(s"$command $roleKeyword foo $preposition") {
-            failsToParse
-          }
-
-          test(s"$command $roleKeyword $preposition abc") {
-            failsToParse
-          }
-
-          // Should fail to parse when invalid user or role name
-
-          test(s"$command $roleKeyword $$f00 $preposition abc") {
-            failsToParse
-          }
-
-          test(s"$command $roleKeyword fo:o $preposition bar") {
-            failsToParse
-          }
-
-          test(s"$command $roleKeyword foo $preposition b:ar") {
-            failsToParse
-          }
-      }
-
-      // Should fail to parse when mixing TO and FROM
-
-      test(s"GRANT $roleKeyword foo FROM abc") {
-        failsToParse
-      }
-
-      test(s"REVOKE $roleKeyword foo TO abc") {
-        failsToParse
-      }
-  }
-
   //  Showing privileges
 
   test("SHOW PRIVILEGES") {
@@ -184,12 +91,6 @@ class PrivilegeManagementDDLParserTest extends DDLParserTestBase {
   test("SHOW ROLE ro%le PRIVILEGES") {
     failsToParse
   }
-
-  type grantOrRevokeFunc = (PrivilegeType, ActionResource, GraphScope, PrivilegeQualifier, Seq[String]) => InputPosition => ast.Statement
-
-  def grant(p: PrivilegeType, a: ActionResource, s: GraphScope, q: PrivilegeQualifier, r: Seq[String]): InputPosition => ast.Statement = GrantPrivilege(p, a, s, q, r)
-
-  def revoke(p: PrivilegeType, a: ActionResource, s: GraphScope, q: PrivilegeQualifier, r: Seq[String]): InputPosition => ast.Statement = RevokePrivilege(p, a, s, q, r)
 
   //  Granting/revoking traverse to/from role
 
@@ -930,4 +831,14 @@ class PrivilegeManagementDDLParserTest extends DDLParserTestBase {
           }
       }
   }
+
+  // Helper methods
+
+  private type grantOrRevokeFunc = (PrivilegeType, ActionResource, GraphScope, PrivilegeQualifier, Seq[String]) => InputPosition => ast.Statement
+
+  private def grant(p: PrivilegeType, a: ActionResource, s: GraphScope, q: PrivilegeQualifier, r: Seq[String]): InputPosition => ast.Statement =
+    ast.GrantPrivilege(p, a, s, q, r)
+
+  private def revoke(p: PrivilegeType, a: ActionResource, s: GraphScope, q: PrivilegeQualifier, r: Seq[String]): InputPosition => ast.Statement =
+    ast.RevokePrivilege(p, a, s, q, r)
 }

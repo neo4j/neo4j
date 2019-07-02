@@ -20,7 +20,6 @@
 package org.neo4j.cypher
 
 import org.neo4j.configuration.GraphDatabaseSettings
-import org.neo4j.kernel.api.exceptions.InvalidArgumentsException
 
 class CommunityRoleManagementDDLAcceptanceTest extends CommunityDDLAcceptanceTestBase {
 
@@ -62,5 +61,21 @@ class CommunityRoleManagementDDLAcceptanceTest extends CommunityDDLAcceptanceTes
 
     // THEN
     assertFailure("DROP ROLE foo", "Unsupported management command: DROP ROLE foo")
+  }
+
+  test("should fail on granting role to user from community") {
+    // GIVEN
+    selectDatabase(GraphDatabaseSettings.SYSTEM_DATABASE_NAME)
+
+    // THEN
+    assertFailure("GRANT ROLE reader TO neo4j", "Unsupported management command: GRANT ROLE reader TO neo4j")
+  }
+
+  test("should fail on revoking non-existing role to user with correct error message") {
+    // GIVEN
+    selectDatabase(GraphDatabaseSettings.SYSTEM_DATABASE_NAME)
+
+    // THEN
+    assertFailure("REVOKE ROLE custom FROM neo4j", "Unsupported management command: REVOKE ROLE custom FROM neo4j")
   }
 }

@@ -17,6 +17,7 @@
 package org.neo4j.cypher.internal.v4_0.parser
 
 import org.neo4j.cypher.internal.v4_0.ast
+import org.neo4j.cypher.internal.v4_0.util.InputPosition
 
 class RoleManagementDDLParserTest extends DDLParserTestBase {
 
@@ -144,5 +145,98 @@ class RoleManagementDDLParserTest extends DDLParserTestBase {
 
   test("DROP ROLE ") {
     failsToParse
+  }
+
+  //  Granting/revoking roles to/from users
+
+  private type grantOrRevokeRoleFunc = (Seq[String], Seq[String]) => InputPosition => ast.Statement
+
+  private def grantRole(r: Seq[String], u: Seq[String]): InputPosition => ast.Statement = ast.GrantRolesToUsers(r, u)
+
+  private def revokeRole(r: Seq[String], u: Seq[String]): InputPosition => ast.Statement = ast.RevokeRolesFromUsers(r, u)
+
+  Seq("ROLE", "ROLES").foreach {
+    roleKeyword =>
+
+      Seq(
+        ("GRANT", "TO", grantRole: grantOrRevokeRoleFunc),
+        ("REVOKE", "FROM", revokeRole: grantOrRevokeRoleFunc)
+      ).foreach {
+        case (command: String, preposition: String, func: grantOrRevokeRoleFunc) =>
+
+          test(s"$command $roleKeyword foo $preposition abc") {
+            yields(func(Seq("foo"), Seq("abc")))
+          }
+
+          test(s"CATALOG $command $roleKeyword foo $preposition abc") {
+            yields(func(Seq("foo"), Seq("abc")))
+          }
+
+          test(s"$command $roleKeyword foo, bar $preposition abc") {
+            yields(func(Seq("foo", "bar"), Seq("abc")))
+          }
+
+          test(s"$command $roleKeyword foo $preposition abc, def") {
+            yields(func(Seq("foo"), Seq("abc", "def")))
+          }
+
+          test(s"$command $roleKeyword foo,bla,roo $preposition bar, baz,abc,  def") {
+            yields(func(Seq("foo", "bla", "roo"), Seq("bar", "baz", "abc", "def")))
+          }
+
+          test(s"$command $roleKeyword `fo:o` $preposition bar") {
+            yields(func(Seq("fo:o"), Seq("bar")))
+          }
+
+          test(s"$command $roleKeyword foo $preposition `b:ar`") {
+            yields(func(Seq("foo"), Seq("b:ar")))
+          }
+
+          test(s"$command $roleKeyword `$$f00`,bar $preposition abc,`$$a&c`") {
+            yields(func(Seq("$f00", "bar"), Seq("abc", "$a&c")))
+          }
+
+          // Should fail to parse if not following the pattern $command $roleKeyword role(s) $preposition user(s)
+
+          test(s"$command $roleKeyword") {
+            failsToParse
+          }
+
+          test(s"$command $roleKeyword foo") {
+            failsToParse
+          }
+
+          test(s"$command $roleKeyword foo $preposition") {
+            failsToParse
+          }
+
+          test(s"$command $roleKeyword $preposition abc") {
+            failsToParse
+          }
+
+          // Should fail to parse when invalid user or role name
+
+          test(s"$command $roleKeyword $$f00 $preposition abc") {
+            failsToParse
+          }
+
+          test(s"$command $roleKeyword fo:o $preposition bar") {
+            failsToParse
+          }
+
+          test(s"$command $roleKeyword foo $preposition b:ar") {
+            failsToParse
+          }
+      }
+
+      // Should fail to parse when mixing TO and FROM
+
+      test(s"GRANT $roleKeyword foo FROM abc") {
+        failsToParse
+      }
+
+      test(s"REVOKE $roleKeyword foo TO abc") {
+        failsToParse
+      }
   }
 }

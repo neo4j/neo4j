@@ -116,22 +116,4 @@ class CommunityPrivilegeDDLAcceptanceTest extends CommunityDDLAcceptanceTestBase
     // THEN
     assertFailure("REVOKE WRITE (*) ON GRAPH * ELEMENTS * (*) FROM custom", "Unsupported management command: REVOKE WRITE (*) ON GRAPH * ELEMENTS * (*) FROM custom")
   }
-
-  // Tests for granting and revoking roles to users
-
-  test("should fail on granting role to user from community") {
-    // GIVEN
-    selectDatabase(SYSTEM_DATABASE_NAME)
-
-    // THEN
-    assertFailure("GRANT ROLE reader TO neo4j", "Unsupported management command: GRANT ROLE reader TO neo4j")
-  }
-
-  test("should fail on revoking non-existing role to user with correct error message") {
-    // GIVEN
-    selectDatabase(SYSTEM_DATABASE_NAME)
-
-    // THEN
-    assertFailure("REVOKE ROLE custom FROM neo4j", "Unsupported management command: REVOKE ROLE custom FROM neo4j")
-  }
 }
