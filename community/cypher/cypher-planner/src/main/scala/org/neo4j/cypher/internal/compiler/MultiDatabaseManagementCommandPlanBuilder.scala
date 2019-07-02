@@ -87,20 +87,28 @@ case object MultiDatabaseManagementCommandPlanBuilder extends Phase[PlannerConte
           prettifier.asString(c)))
 
       // SET MY PASSWORD FROM currentPassword TO newPassword
-      case SetOwnPassword(Some(newStringPassword), newParameterPassword, Some(currentStringPassword), currentParameterPassword) =>
-        Some(plans.SetOwnPassword(Some(UTF8.encode(newStringPassword)), newParameterPassword, Some(UTF8.encode(currentStringPassword)), currentParameterPassword))
+      case c@SetOwnPassword(Some(newStringPassword), newParameterPassword, Some(currentStringPassword), currentParameterPassword) =>
+        Some(plans.LogSystemCommand(
+          plans.SetOwnPassword(Some(UTF8.encode(newStringPassword)), newParameterPassword, Some(UTF8.encode(currentStringPassword)), currentParameterPassword),
+          prettifier.asString(c)))
 
       // SET MY PASSWORD FROM currentPassword TO newPassword
-      case SetOwnPassword(None, newParameterPassword, Some(currentStringPassword), currentParameterPassword) =>
-        Some(plans.SetOwnPassword(None, newParameterPassword, Some(UTF8.encode(currentStringPassword)), currentParameterPassword))
+      case c@SetOwnPassword(None, newParameterPassword, Some(currentStringPassword), currentParameterPassword) =>
+        Some(plans.LogSystemCommand(
+          plans.SetOwnPassword(None, newParameterPassword, Some(UTF8.encode(currentStringPassword)), currentParameterPassword),
+          prettifier.asString(c)))
 
       // SET MY PASSWORD FROM currentPassword TO newPassword
-      case SetOwnPassword(Some(newStringPassword), newParameterPassword, None, currentParameterPassword) =>
-        Some(plans.SetOwnPassword(Some(UTF8.encode(newStringPassword)), newParameterPassword, None, currentParameterPassword))
+      case c@SetOwnPassword(Some(newStringPassword), newParameterPassword, None, currentParameterPassword) =>
+        Some(plans.LogSystemCommand(
+          plans.SetOwnPassword(Some(UTF8.encode(newStringPassword)), newParameterPassword, None, currentParameterPassword),
+          prettifier.asString(c)))
 
       // SET MY PASSWORD FROM currentPassword TO newPassword
-      case SetOwnPassword(None, newParameterPassword, None, currentParameterPassword) =>
-        Some(plans.SetOwnPassword(None, newParameterPassword, None, currentParameterPassword))
+      case c@SetOwnPassword(None, newParameterPassword, None, currentParameterPassword) =>
+        Some(plans.LogSystemCommand(
+          plans.SetOwnPassword(None, newParameterPassword, None, currentParameterPassword),
+          prettifier.asString(c)))
 
       // SHOW [ ALL | POPULATED ] ROLES [ WITH USERS ]
       case ShowRoles(withUsers, showAll) =>
@@ -239,7 +247,7 @@ case object MultiDatabaseManagementCommandPlanBuilder extends Phase[PlannerConte
           normalizedName))
 
       // Global call: CALL foo.bar.baz("arg1", 2) // only if system procedure is allowed!
-      case Query(None, SingleQuery(Seq(resolved@ResolvedCall(signature, args, _, _, _),Return(_,_,_,_,_,_)))) if signature.systemProcedure =>
+      case Query(None, SingleQuery(Seq(resolved@ResolvedCall(signature, _, _, _, _),Return(_,_,_,_,_,_)))) if signature.systemProcedure =>
         val SemanticCheckResult(_, errors) = resolved.semanticCheck(SemanticState.clean)
         errors.foreach { error => throw context.exceptionCreator(error.msg, error.position) }
         Some(plans.SystemProcedureCall(from.queryText, context.params))
