@@ -19,9 +19,7 @@
  */
 package org.neo4j.kernel.builtinprocs;
 
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
+import org.junit.jupiter.api.Test;
 
 import org.neo4j.collection.RawIterator;
 import org.neo4j.internal.kernel.api.Procedures;
@@ -41,19 +39,16 @@ import org.neo4j.values.virtual.VirtualValues;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.core.IsEqual.equalTo;
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.internal.helpers.collection.Iterators.asList;
 import static org.neo4j.internal.kernel.api.procs.ProcedureSignature.procedureName;
 import static org.neo4j.values.storable.Values.stringValue;
 import static org.neo4j.values.virtual.VirtualValues.EMPTY_LIST;
 
-public class SchemaProcedureIT extends KernelIntegrationTest
+class SchemaProcedureIT extends KernelIntegrationTest
 {
-    @Rule
-    public ExpectedException exception = ExpectedException.none();
-
     @Test
-    public void testEmptyGraph() throws Throwable
+    void testEmptyGraph() throws Throwable
     {
         // Given the database is empty
 
@@ -68,7 +63,7 @@ public class SchemaProcedureIT extends KernelIntegrationTest
     }
 
     @Test
-    public void testLabelIndex() throws Throwable
+    void testLabelIndex() throws Throwable
     {
         // Given there is label with index and a constraint
         Transaction transaction = newTransaction( AnonymousContext.writeToken() );
@@ -109,7 +104,7 @@ public class SchemaProcedureIT extends KernelIntegrationTest
     }
 
     @Test
-    public void testRelationShip() throws Throwable
+    void testRelationShip() throws Throwable
     {
         // Given there ar
         Transaction transaction = newTransaction( AnonymousContext.writeToken() );

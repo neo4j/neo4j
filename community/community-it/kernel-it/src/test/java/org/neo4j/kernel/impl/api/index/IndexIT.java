@@ -19,9 +19,10 @@
  */
 package org.neo4j.kernel.impl.api.index;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Timeout;
 
 import java.util.List;
 import java.util.Set;
@@ -58,10 +59,10 @@ import static java.util.Collections.emptySet;
 import static java.util.Collections.singletonList;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsInAnyOrder;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.configuration.GraphDatabaseSettings.default_schema_provider;
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.graphdb.RelationshipType.withName;
@@ -69,7 +70,7 @@ import static org.neo4j.internal.helpers.collection.Iterables.single;
 import static org.neo4j.internal.helpers.collection.Iterators.asSet;
 import static org.neo4j.internal.kernel.api.security.LoginContext.AUTH_DISABLED;
 
-public class IndexIT extends KernelIntegrationTest
+class IndexIT extends KernelIntegrationTest
 {
     private static final String LABEL = "Label";
     private static final String LABEL2 = "Label2";
@@ -88,8 +89,8 @@ public class IndexIT extends KernelIntegrationTest
     private LabelSchemaDescriptor descriptor2;
     private ExecutorService executorService;
 
-    @Before
-    public void createLabelAndProperty() throws Exception
+    @BeforeEach
+    void createLabelAndProperty() throws Exception
     {
         TokenWrite tokenWrites = tokenWriteInNewTransaction();
         labelId = tokenWrites.labelGetOrCreateForName( LABEL );
@@ -104,14 +105,14 @@ public class IndexIT extends KernelIntegrationTest
         executorService = Executors.newCachedThreadPool();
     }
 
-    @After
-    public void tearDown()
+    @AfterEach
+    void tearDown()
     {
         executorService.shutdown();
     }
 
     @Test
-    public void createIndexForAnotherLabelWhileHoldingSharedLockOnOtherLabel() throws KernelException
+    void createIndexForAnotherLabelWhileHoldingSharedLockOnOtherLabel() throws KernelException
     {
         TokenWrite tokenWrite = tokenWriteInNewTransaction();
         int label2 = tokenWrite.labelGetOrCreateForName( "Label2" );
@@ -124,8 +125,9 @@ public class IndexIT extends KernelIntegrationTest
         commit();
     }
 
-    @Test( timeout = 10_000 )
-    public void createIndexesForDifferentLabelsConcurrently() throws Throwable
+    @Test
+    @Timeout( 10 )
+    void createIndexesForDifferentLabelsConcurrently() throws Throwable
     {
         TokenWrite tokenWrite = tokenWriteInNewTransaction();
         int label2 = tokenWrite.labelGetOrCreateForName( "Label2" );
@@ -139,7 +141,7 @@ public class IndexIT extends KernelIntegrationTest
     }
 
     @Test
-    public void addIndexRuleInATransaction() throws Exception
+    void addIndexRuleInATransaction() throws Exception
     {
         // GIVEN
         SchemaWrite schemaWriteOperations = schemaWriteInNewTransaction();
@@ -156,7 +158,7 @@ public class IndexIT extends KernelIntegrationTest
     }
 
     @Test
-    public void committedAndTransactionalIndexRulesShouldBeMerged() throws Exception
+    void committedAndTransactionalIndexRulesShouldBeMerged() throws Exception
     {
         // GIVEN
         SchemaWrite schemaWriteOperations = schemaWriteInNewTransaction();
@@ -174,7 +176,7 @@ public class IndexIT extends KernelIntegrationTest
     }
 
     @Test
-    public void rollBackIndexRuleShouldNotBeCommitted() throws Exception
+    void rollBackIndexRuleShouldNotBeCommitted() throws Exception
     {
         // GIVEN
         SchemaWrite schemaWrite = schemaWriteInNewTransaction();
@@ -191,7 +193,7 @@ public class IndexIT extends KernelIntegrationTest
     }
 
     @Test
-    public void shouldBeAbleToRemoveAConstraintIndexWithoutOwner() throws Exception
+    void shouldBeAbleToRemoveAConstraintIndexWithoutOwner() throws Exception
     {
         // given
         AssertableLogProvider logProvider = new AssertableLogProvider();
@@ -216,7 +218,7 @@ public class IndexIT extends KernelIntegrationTest
     }
 
     @Test
-    public void shouldDisallowDroppingIndexThatDoesNotExist() throws Exception
+    void shouldDisallowDroppingIndexThatDoesNotExist() throws Exception
     {
         // given
         IndexReference index;
@@ -231,25 +233,19 @@ public class IndexIT extends KernelIntegrationTest
             commit();
         }
 
-        // when
-        try
+        var e = assertThrows( SchemaKernelException.class, () ->
         {
+
             SchemaWrite statement = schemaWriteInNewTransaction();
             statement.indexDrop( index );
-            fail( "Expected to fail" );
-            commit();
-        }
-        // then
-        catch ( SchemaKernelException e )
-        {
-            assertEquals( "Unable to drop index on :label[" + labelId + "](property[" + propertyKeyId + "]): " +
-                          "No such INDEX ON :label[" + labelId + "](property[" + propertyKeyId + "]).", e.getMessage() );
-        }
+        } );
+        assertEquals( "Unable to drop index on :label[" + labelId + "](property[" + propertyKeyId + "]): " +
+            "No such INDEX ON :label[" + labelId + "](property[" + propertyKeyId + "]).", e.getMessage() );
         commit();
     }
 
     @Test
-    public void shouldFailToCreateIndexWhereAConstraintAlreadyExists() throws Exception
+    void shouldFailToCreateIndexWhereAConstraintAlreadyExists() throws Exception
     {
         // given
         {
@@ -258,26 +254,19 @@ public class IndexIT extends KernelIntegrationTest
             commit();
         }
 
-        // when
-        try
+        var e = assertThrows( SchemaKernelException.class, () ->
         {
             SchemaWrite statement = schemaWriteInNewTransaction();
             statement.indexCreate( descriptor );
             commit();
-
-            fail( "expected exception" );
-        }
-        // then
-        catch ( SchemaKernelException e )
-        {
-            assertEquals( "There is a uniqueness constraint on :" + LABEL + "(" + PROPERTY_KEY + "), so an index is " +
-                          "already created that matches this.", e.getMessage() );
-        }
+        } );
+        assertEquals( "There is a uniqueness constraint on :" + LABEL + "(" + PROPERTY_KEY + "), so an index is " +
+            "already created that matches this.", e.getMessage() );
         commit();
     }
 
     @Test
-    public void shouldListConstraintIndexesInTheCoreAPI() throws Exception
+    void shouldListConstraintIndexesInTheCoreAPI() throws Exception
     {
         // given
         Transaction transaction = newTransaction( AUTH_DISABLED );
@@ -298,26 +287,16 @@ public class IndexIT extends KernelIntegrationTest
             IndexDefinition index = indexes.iterator().next();
             assertEquals( "Label1", single( index.getLabels() ).name() );
             assertEquals( asSet( "property1" ), Iterables.asSet( index.getPropertyKeys() ) );
-            assertTrue( "index should be a constraint index", index.isConstraintIndex() );
+            assertTrue( index.isConstraintIndex(), "index should be a constraint index" );
 
             // when
-            try
-            {
-                index.drop();
-
-                fail( "expected exception" );
-            }
-            // then
-            catch ( IllegalStateException e )
-            {
-                assertEquals( "Constraint indexes cannot be dropped directly, " +
-                        "instead drop the owning uniqueness constraint.", e.getMessage() );
-            }
+            var e = assertThrows( IllegalStateException.class, () -> index.drop() );
+            assertEquals( "Constraint indexes cannot be dropped directly, instead drop the owning uniqueness constraint.", e.getMessage() );
         }
     }
 
     @Test
-    public void shouldListMultiTokenIndexesInTheCoreAPI() throws Exception
+    void shouldListMultiTokenIndexesInTheCoreAPI() throws Exception
     {
         Transaction transaction = newTransaction( AUTH_DISABLED );
         SchemaDescriptor descriptor = SchemaDescriptor.fulltext(
@@ -332,42 +311,21 @@ public class IndexIT extends KernelIntegrationTest
             // then
             assertEquals( 1, indexes.size() );
             IndexDefinition index = indexes.iterator().next();
-            try
-            {
-                index.getLabel();
-                fail( "index.getLabel() should have thrown. ");
-            }
-            catch ( IllegalStateException ignore )
-            {
-            }
-            try
-            {
-                index.getRelationshipType();
-                fail( "index.getRelationshipType() should have thrown. ");
-            }
-            catch ( IllegalStateException ignore )
-            {
-            }
-            try
-            {
-                index.getRelationshipTypes();
-                fail( "index.getRelationshipTypes() should have thrown. ");
-            }
-            catch ( IllegalStateException ignore )
-            {
-            }
+            assertThrows( IllegalStateException.class, () -> index.getLabel() );
+            assertThrows( IllegalStateException.class, () -> index.getRelationshipType() );
+            assertThrows( IllegalStateException.class, () -> index.getRelationshipTypes() );
             assertThat( index.getLabels(), containsInAnyOrder( label( LABEL ), label( LABEL2 ) ) );
-            assertFalse( "should not be a constraint index", index.isConstraintIndex() );
-            assertTrue( "should be a multi-token index", index.isMultiTokenIndex() );
-            assertFalse( "should not be a composite index", index.isCompositeIndex() );
-            assertTrue( "should be a node index", index.isNodeIndex() );
-            assertFalse( "should not be a relationship index", index.isRelationshipIndex() );
+            assertFalse( index.isConstraintIndex(), "should not be a constraint index" );
+            assertTrue( index.isMultiTokenIndex(), "should be a multi-token index" );
+            assertFalse( index.isCompositeIndex(), "should not be a composite index" );
+            assertTrue( index.isNodeIndex(), "should be a node index" );
+            assertFalse( index.isRelationshipIndex(), "should not be a relationship index" );
             assertEquals( asSet( PROPERTY_KEY ), Iterables.asSet( index.getPropertyKeys() ) );
         }
     }
 
     @Test
-    public void shouldListCompositeIndexesInTheCoreAPI() throws Exception
+    void shouldListCompositeIndexesInTheCoreAPI() throws Exception
     {
         Transaction transaction = newTransaction( AUTH_DISABLED );
         SchemaDescriptor descriptor = SchemaDescriptor.forLabel( labelId, propertyKeyId, propertyKeyId2 );
@@ -383,33 +341,19 @@ public class IndexIT extends KernelIntegrationTest
             IndexDefinition index = indexes.iterator().next();
             assertEquals( LABEL, single( index.getLabels() ).name() );
             assertThat( index.getLabels(), containsInAnyOrder( label( LABEL ) ) );
-            try
-            {
-                index.getRelationshipType();
-                fail( "index.getRelationshipType() should have thrown. ");
-            }
-            catch ( IllegalStateException ignore )
-            {
-            }
-            try
-            {
-                index.getRelationshipTypes();
-                fail( "index.getRelationshipTypes() should have thrown. ");
-            }
-            catch ( IllegalStateException ignore )
-            {
-            }
-            assertFalse( "should not be a constraint index", index.isConstraintIndex() );
-            assertFalse( "should not be a multi-token index", index.isMultiTokenIndex() );
-            assertTrue( "should be a composite index", index.isCompositeIndex() );
-            assertTrue( "should be a node index", index.isNodeIndex() );
-            assertFalse( "should not be a relationship index", index.isRelationshipIndex() );
+            assertThrows( IllegalStateException.class, () -> index.getRelationshipType() );
+            assertThrows( IllegalStateException.class, () -> index.getRelationshipTypes() );
+            assertFalse( index.isConstraintIndex(), "should not be a constraint index" );
+            assertFalse( index.isMultiTokenIndex(), "should not be a multi-token index" );
+            assertTrue( index.isCompositeIndex(), "should be a composite index" );
+            assertTrue( index.isNodeIndex(), "should be a node index" );
+            assertFalse( index.isRelationshipIndex(), "should not be a relationship index" );
             assertEquals( asSet( PROPERTY_KEY, PROPERTY_KEY2 ), Iterables.asSet( index.getPropertyKeys() ) );
         }
     }
 
     @Test
-    public void shouldListRelationshipIndexesInTheCoreAPI() throws Exception
+    void shouldListRelationshipIndexesInTheCoreAPI() throws Exception
     {
         Transaction transaction = newTransaction( AUTH_DISABLED );
         SchemaDescriptor descriptor = SchemaDescriptor.forRelType( relType, propertyKeyId );
@@ -423,35 +367,21 @@ public class IndexIT extends KernelIntegrationTest
             // then
             assertEquals( 1, indexes.size() );
             IndexDefinition index = indexes.iterator().next();
-            try
-            {
-                index.getLabel();
-                fail( "index.getLabel() should have thrown. ");
-            }
-            catch ( IllegalStateException ignore )
-            {
-            }
-            try
-            {
-                index.getLabels();
-                fail( "index.getLabels() should have thrown. ");
-            }
-            catch ( IllegalStateException ignore )
-            {
-            }
+            assertThrows( IllegalStateException.class, () -> index.getLabel() );
+            assertThrows( IllegalStateException.class, () -> index.getLabels() );
             assertEquals( REL_TYPE, index.getRelationshipType().name() );
             assertEquals( singletonList( withName( REL_TYPE ) ), index.getRelationshipTypes() );
-            assertFalse( "should not be a constraint index", index.isConstraintIndex() );
-            assertFalse( "should not be a multi-token index", index.isMultiTokenIndex() );
-            assertFalse( "should not be a composite index", index.isCompositeIndex() );
-            assertFalse( "should not be a node index", index.isNodeIndex() );
-            assertTrue( "should be a relationship index", index.isRelationshipIndex() );
+            assertFalse( index.isConstraintIndex(), "should not be a constraint index" );
+            assertFalse( index.isMultiTokenIndex(), "should not be a multi-token index" );
+            assertFalse( index.isCompositeIndex(), "should not be a composite index" );
+            assertFalse( index.isNodeIndex(), "should not be a node index" );
+            assertTrue( index.isRelationshipIndex(), "should be a relationship index" );
             assertEquals( asSet( PROPERTY_KEY ), Iterables.asSet( index.getPropertyKeys() ) );
         }
     }
 
     @Test
-    public void shouldListCompositeMultiTokenRelationshipIndexesInTheCoreAPI() throws Exception
+    void shouldListCompositeMultiTokenRelationshipIndexesInTheCoreAPI() throws Exception
     {
         Transaction transaction = newTransaction( AUTH_DISABLED );
         SchemaDescriptor descriptor = SchemaDescriptor.fulltext( EntityType.RELATIONSHIP, IndexConfig.empty(), new int[]{relType, relType2},
@@ -466,42 +396,21 @@ public class IndexIT extends KernelIntegrationTest
             // then
             assertEquals( 1, indexes.size() );
             IndexDefinition index = indexes.iterator().next();
-            try
-            {
-                index.getLabel();
-                fail( "index.getLabel() should have thrown. ");
-            }
-            catch ( IllegalStateException ignore )
-            {
-            }
-            try
-            {
-                index.getLabels();
-                fail( "index.getLabels() should have thrown. ");
-            }
-            catch ( IllegalStateException ignore )
-            {
-            }
-            try
-            {
-                index.getRelationshipType();
-                fail( "index.getRelationshipType() should have thrown. ");
-            }
-            catch ( IllegalStateException ignore )
-            {
-            }
+            assertThrows( IllegalStateException.class, () -> index.getLabel() );
+            assertThrows( IllegalStateException.class, () -> index.getLabels() );
+            assertThrows( IllegalStateException.class, () -> index.getRelationshipType() );
             assertThat( index.getRelationshipTypes(), containsInAnyOrder( withName( REL_TYPE ), withName( REL_TYPE2 ) ) );
-            assertFalse( "should not be a constraint index", index.isConstraintIndex() );
-            assertTrue( "should be a multi-token index", index.isMultiTokenIndex() );
-            assertTrue( "should be a composite index", index.isCompositeIndex() );
-            assertFalse( "should not be a node index", index.isNodeIndex() );
-            assertTrue( "should be a relationship index", index.isRelationshipIndex() );
+            assertFalse( index.isConstraintIndex(), "should not be a constraint index" );
+            assertTrue( index.isMultiTokenIndex(), "should be a multi-token index" );
+            assertTrue( index.isCompositeIndex(), "should be a composite index" );
+            assertFalse( index.isNodeIndex(), "should not be a node index" );
+            assertTrue( index.isRelationshipIndex(), "should be a relationship index" );
             assertEquals( asSet( PROPERTY_KEY, PROPERTY_KEY2 ), Iterables.asSet( index.getPropertyKeys() ) );
         }
     }
 
     @Test
-    public void shouldListAll() throws Exception
+    void shouldListAll() throws Exception
     {
         // given
         SchemaWrite schemaWrite = schemaWriteInNewTransaction();
@@ -518,7 +427,7 @@ public class IndexIT extends KernelIntegrationTest
         commit();
     }
 
-    private Runnable createIndex( GraphDatabaseAPI db, Label label, String propertyKey )
+    private static Runnable createIndex( GraphDatabaseAPI db, Label label, String propertyKey )
     {
         return () ->
         {

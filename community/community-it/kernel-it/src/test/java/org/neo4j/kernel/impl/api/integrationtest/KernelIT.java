@@ -19,7 +19,7 @@
  */
 package org.neo4j.kernel.impl.api.integrationtest;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -40,17 +40,16 @@ import org.neo4j.storageengine.api.TransactionIdStore;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.neo4j.internal.kernel.api.security.LoginContext.AUTH_DISABLED;
 import static org.neo4j.internal.schema.SchemaDescriptor.forLabel;
 import static org.neo4j.test.assertion.Assert.assertEventually;
 
-public class KernelIT extends KernelIntegrationTest
+class KernelIT extends KernelIntegrationTest
 {
-
     @Test
-    public void mixingBeansApiWithKernelAPI() throws Exception
+    void mixingBeansApiWithKernelAPI() throws Exception
     {
         // 1: Start your transactions through the Beans API
         Transaction transaction = db.beginTx();
@@ -71,7 +70,7 @@ public class KernelIT extends KernelIntegrationTest
     }
 
     @Test
-    public void schemaStateShouldBeEvictedOnIndexComingOnline() throws Exception
+    void schemaStateShouldBeEvictedOnIndexComingOnline() throws Exception
     {
         // GIVEN
         schemaWriteInNewTransaction();
@@ -94,7 +93,7 @@ public class KernelIT extends KernelIntegrationTest
     }
 
     @Test
-    public void schemaStateShouldBeEvictedOnIndexDropped() throws Exception
+    void schemaStateShouldBeEvictedOnIndexDropped() throws Exception
     {
         // GIVEN
         IndexReference idx = createIndex( newTransaction( AUTH_DISABLED ) );
@@ -116,7 +115,7 @@ public class KernelIT extends KernelIntegrationTest
     }
 
     @Test
-    public void txReturnsCorrectIdWhenCommitted() throws Exception
+    void txReturnsCorrectIdWhenCommitted() throws Exception
     {
         executeDummyTxs( db, 42 );
 
@@ -131,7 +130,7 @@ public class KernelIT extends KernelIntegrationTest
     }
 
     @Test
-    public void txReturnsCorrectIdWhenRolledBack() throws Exception
+    void txReturnsCorrectIdWhenRolledBack() throws Exception
     {
         executeDummyTxs( db, 42 );
 
@@ -144,7 +143,7 @@ public class KernelIT extends KernelIntegrationTest
     }
 
     @Test
-    public void txReturnsCorrectIdWhenMarkedForTermination() throws Exception
+    void txReturnsCorrectIdWhenMarkedForTermination() throws Exception
     {
         executeDummyTxs( db, 42 );
 
@@ -157,7 +156,7 @@ public class KernelIT extends KernelIntegrationTest
     }
 
     @Test
-    public void txReturnsCorrectIdWhenFailedAndMarkedForTermination() throws Exception
+    void txReturnsCorrectIdWhenFailedAndMarkedForTermination() throws Exception
     {
         executeDummyTxs( db, 42 );
 
@@ -171,7 +170,7 @@ public class KernelIT extends KernelIntegrationTest
     }
 
     @Test
-    public void txReturnsCorrectIdWhenReadOnly() throws Exception
+    void txReturnsCorrectIdWhenReadOnly() throws Exception
     {
         executeDummyTxs( db, 42 );
 
@@ -205,7 +204,7 @@ public class KernelIT extends KernelIntegrationTest
         return txIdStore.getLastCommittedTransactionId();
     }
 
-    private IndexReference createIndex( org.neo4j.internal.kernel.api.Transaction transaction )
+    private static IndexReference createIndex( org.neo4j.internal.kernel.api.Transaction transaction )
             throws KernelException
     {
         TokenWrite tokenWrite = transaction.tokenWrite();

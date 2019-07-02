@@ -19,7 +19,7 @@
  */
 package org.neo4j.kernel.impl.api.integrationtest;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.io.File;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -44,10 +44,10 @@ import org.neo4j.values.virtual.VirtualValues;
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.internal.kernel.api.procs.ProcedureSignature.procedureName;
 import static org.neo4j.internal.kernel.api.security.LoginContext.AUTH_DISABLED;
 import static org.neo4j.internal.schema.SchemaDescriptor.forLabel;
@@ -57,12 +57,12 @@ import static org.neo4j.values.storable.Values.doubleValue;
 import static org.neo4j.values.storable.Values.longValue;
 import static org.neo4j.values.storable.Values.stringValue;
 
-public class DbIndexesFailureMessageIT extends KernelIntegrationTest
+class DbIndexesFailureMessageIT extends KernelIntegrationTest
 {
-    private AtomicBoolean failNextIndexPopulation = new AtomicBoolean();
+    private final AtomicBoolean failNextIndexPopulation = new AtomicBoolean();
 
     @Test
-    public void listAllIndexesWithFailedIndex() throws Throwable
+    void listAllIndexesWithFailedIndex() throws Throwable
     {
         // Given
         Transaction transaction = newTransaction( AUTH_DISABLED );
@@ -73,15 +73,9 @@ public class DbIndexesFailureMessageIT extends KernelIntegrationTest
         transaction.schemaWrite().indexCreate( descriptor );
         commit();
 
-        //let indexes come online
         try ( org.neo4j.graphdb.Transaction ignored = db.beginTx() )
         {
-            db.schema().awaitIndexesOnline( 2, MINUTES );
-            fail( "Expected to fail when awaiting for index to come online" );
-        }
-        catch ( IllegalStateException e )
-        {
-            // expected
+            assertThrows( IllegalStateException.class, () -> db.schema().awaitIndexesOnline( 2, MINUTES ) );
         }
 
         // When

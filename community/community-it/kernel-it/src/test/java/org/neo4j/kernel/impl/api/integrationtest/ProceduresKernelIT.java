@@ -19,16 +19,14 @@
  */
 package org.neo4j.kernel.impl.api.integrationtest;
 
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
 
 import java.util.List;
 
 import org.neo4j.collection.RawIterator;
 import org.neo4j.internal.helpers.collection.Iterables;
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
-import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.internal.kernel.api.procs.ProcedureSignature;
 import org.neo4j.internal.kernel.api.procs.QualifiedName;
 import org.neo4j.kernel.api.ResourceTracker;
@@ -41,7 +39,7 @@ import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.core.IsIterableContaining.hasItems;
-import static org.junit.Assert.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.neo4j.internal.helpers.collection.Iterators.asList;
 import static org.neo4j.internal.kernel.api.procs.Neo4jTypes.NTInteger;
 import static org.neo4j.internal.kernel.api.procs.Neo4jTypes.NTString;
@@ -49,11 +47,8 @@ import static org.neo4j.internal.kernel.api.procs.ProcedureSignature.procedureNa
 import static org.neo4j.internal.kernel.api.procs.ProcedureSignature.procedureSignature;
 import static org.neo4j.values.storable.Values.longValue;
 
-public class ProceduresKernelIT extends KernelIntegrationTest
+class ProceduresKernelIT extends KernelIntegrationTest
 {
-    @Rule
-    public ExpectedException exception = ExpectedException.none();
-
     private final ProcedureSignature signature = procedureSignature( "example", "exampleProc" )
             .in( "name", NTString )
             .out( "name", NTString ).build();
@@ -61,7 +56,7 @@ public class ProceduresKernelIT extends KernelIntegrationTest
     private final CallableProcedure procedure = procedure( signature );
 
     @Test
-    public void shouldGetProcedureByName() throws Throwable
+    void shouldGetProcedureByName() throws Throwable
     {
         // Given
         internalKernel().registerProcedure( procedure );
@@ -76,7 +71,7 @@ public class ProceduresKernelIT extends KernelIntegrationTest
     }
 
     @Test
-    public void shouldGetBuiltInProcedureByName() throws Throwable
+    void shouldGetBuiltInProcedureByName() throws Throwable
     {
         // When
         ProcedureSignature found = procs()
@@ -89,7 +84,7 @@ public class ProceduresKernelIT extends KernelIntegrationTest
     }
 
     @Test
-    public void shouldGetAllProcedures() throws Throwable
+    void shouldGetAllProcedures() throws Throwable
     {
         // Given
         internalKernel().registerProcedure( procedure );
@@ -109,20 +104,15 @@ public class ProceduresKernelIT extends KernelIntegrationTest
     }
 
     @Test
-    public void shouldRefuseToRegisterNonVoidProcedureWithoutOutputs()
-            throws ProcedureException, TransactionFailureException
+    void shouldRefuseToRegisterNonVoidProcedureWithoutOutputs() throws ProcedureException
     {
-        // Then
-        exception.expect( ProcedureException.class );
-        exception.expectMessage( "Procedures with zero output fields must be declared as VOID" );
-
-        // When
-        internalKernel().registerProcedure( procedure( procedureSignature( "example", "exampleProc2" ).build() ) );
-        commit();
+        var e = assertThrows( ProcedureException.class,
+            () -> internalKernel().registerProcedure( procedure( procedureSignature( "example", "exampleProc2" ).build() ) ) );
+        assertThat( e.getMessage(), equalTo( "Procedures with zero output fields must be declared as VOID" ) );
     }
 
     @Test
-    public void shouldCallReadOnlyProcedure() throws Throwable
+    void shouldCallReadOnlyProcedure() throws Throwable
     {
         // Given
         internalKernel().registerProcedure( procedure );
@@ -139,7 +129,7 @@ public class ProceduresKernelIT extends KernelIntegrationTest
     }
 
     @Test
-    public void registeredProcedureShouldGetRead() throws Throwable
+    void registeredProcedureShouldGetRead() throws Throwable
     {
         // Given
         internalKernel().registerProcedure( new CallableProcedure.BasicProcedure( signature )
@@ -158,7 +148,7 @@ public class ProceduresKernelIT extends KernelIntegrationTest
                 procs().procedureCallRead( procs().procedureGet( signature.name() ).id(), new AnyValue[]{Values.EMPTY_STRING} );
 
         // Then
-        assertNotNull( asList( stream  ).get( 0 )[0] );
+        Assertions.assertNotNull( asList( stream  ).get( 0 )[0] );
         commit();
     }
 

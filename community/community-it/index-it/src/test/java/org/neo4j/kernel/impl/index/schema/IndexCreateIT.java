@@ -19,7 +19,7 @@
  */
 package org.neo4j.kernel.impl.index.schema;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.Optional;
 
@@ -31,37 +31,36 @@ import org.neo4j.internal.schema.LabelSchemaDescriptor;
 import org.neo4j.kernel.impl.api.index.IndexProviderNotFoundException;
 import org.neo4j.kernel.impl.api.integrationtest.KernelIntegrationTest;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.neo4j.internal.schema.SchemaDescriptor.forLabel;
 
 public class IndexCreateIT extends KernelIntegrationTest
 {
-
     private static final IndexCreator INDEX_CREATOR =
             ( schemaWrite, descriptor, providerName ) -> schemaWrite.indexCreate( descriptor, providerName, Optional.empty() );
     private static final IndexCreator UNIQUE_CONSTRAINT_CREATOR = SchemaWrite::uniquePropertyConstraintCreate;
 
     @Test
-    public void shouldCreateIndexWithSpecificExistingProviderName() throws KernelException
+    void shouldCreateIndexWithSpecificExistingProviderName() throws KernelException
     {
         shouldCreateWithSpecificExistingProviderName( INDEX_CREATOR );
     }
 
     @Test
-    public void shouldCreateUniquePropertyConstraintWithSpecificExistingProviderName() throws KernelException
+    void shouldCreateUniquePropertyConstraintWithSpecificExistingProviderName() throws KernelException
     {
         shouldCreateWithSpecificExistingProviderName( UNIQUE_CONSTRAINT_CREATOR );
     }
 
     @Test
-    public void shouldFailCreateIndexWithNonExistentProviderName() throws KernelException
+    void shouldFailCreateIndexWithNonExistentProviderName() throws KernelException
     {
         shouldFailWithNonExistentProviderName( INDEX_CREATOR );
     }
 
     @Test
-    public void shouldFailCreateUniquePropertyConstraintWithNonExistentProviderName() throws KernelException
+    void shouldFailCreateUniquePropertyConstraintWithNonExistentProviderName() throws KernelException
     {
         shouldFailWithNonExistentProviderName( UNIQUE_CONSTRAINT_CREATOR );
     }
@@ -72,15 +71,8 @@ public class IndexCreateIT extends KernelIntegrationTest
         SchemaWrite schemaWrite = schemaWriteInNewTransaction();
 
         // when
-        try
-        {
-            creator.create( schemaWrite, forLabel( 0, 0 ), "something-completely-different" );
-            fail( "Should have failed" );
-        }
-        catch ( IndexProviderNotFoundException e )
-        {
-            // then good
-        }
+        assertThrows( IndexProviderNotFoundException.class,
+            () -> creator.create( schemaWrite, forLabel( 0, 0 ), "something-completely-different" ) );
     }
 
     protected void shouldCreateWithSpecificExistingProviderName( IndexCreator creator ) throws KernelException

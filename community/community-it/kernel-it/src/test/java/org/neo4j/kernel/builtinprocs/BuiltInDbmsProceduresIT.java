@@ -19,7 +19,7 @@
  */
 package org.neo4j.kernel.builtinprocs;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -36,22 +36,22 @@ import org.neo4j.values.storable.TextValue;
 import org.neo4j.values.storable.Values;
 
 import static org.apache.commons.lang3.ArrayUtils.toArray;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.hasItem;
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.internal.helpers.collection.Iterators.asList;
 import static org.neo4j.internal.kernel.api.procs.ProcedureSignature.procedureName;
 import static org.neo4j.internal.kernel.api.security.SecurityContext.AUTH_DISABLED;
 import static org.neo4j.kernel.api.ResourceManager.EMPTY_RESOURCE_MANAGER;
 import static org.neo4j.values.storable.Values.stringValue;
 
-public class BuiltInDbmsProceduresIT extends KernelIntegrationTest
+class BuiltInDbmsProceduresIT extends KernelIntegrationTest
 {
     @Test
-    public void listConfig() throws Exception
+    void listConfig() throws Exception
     {
         // When
         List<AnyValue[]> config = callListConfig( "" );
@@ -71,7 +71,7 @@ public class BuiltInDbmsProceduresIT extends KernelIntegrationTest
     }
 
     @Test
-    public void listConfigWithASpecificConfigName() throws Exception
+    void listConfigWithASpecificConfigName() throws Exception
     {
         // When
         List<AnyValue[]> config = callListConfig( GraphDatabaseSettings.strict_config_validation.name() );
@@ -86,7 +86,7 @@ public class BuiltInDbmsProceduresIT extends KernelIntegrationTest
     }
 
     @Test
-    public void durationAlwaysListedWithUnit() throws Exception
+    void durationAlwaysListedWithUnit() throws Exception
     {
         // When
         List<AnyValue[]> config = callListConfig( GraphDatabaseSettings.transaction_timeout.name() );
@@ -98,7 +98,7 @@ public class BuiltInDbmsProceduresIT extends KernelIntegrationTest
     }
 
     @Test
-    public void listDynamicSetting() throws KernelException
+    void listDynamicSetting() throws KernelException
     {
         List<AnyValue[]> config = callListConfig( GraphDatabaseSettings.check_point_iops_limit.name() );
 
@@ -107,7 +107,7 @@ public class BuiltInDbmsProceduresIT extends KernelIntegrationTest
     }
 
     @Test
-    public void listNotDynamicSetting() throws KernelException
+    void listNotDynamicSetting() throws KernelException
     {
         List<AnyValue[]> config = callListConfig( GraphDatabaseSettings.data_directory.name() );
 

@@ -19,7 +19,7 @@
  */
 package org.neo4j.kernel.builtinprocs;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.Arrays;
 import java.util.List;
@@ -45,14 +45,13 @@ import static org.neo4j.internal.kernel.api.procs.ProcedureSignature.procedureNa
 import static org.neo4j.values.storable.Values.stringOrNoValue;
 import static org.neo4j.values.storable.Values.stringValue;
 
-public class BuiltInSchemaProceduresIT extends KernelIntegrationTest
+class BuiltInSchemaProceduresIT extends KernelIntegrationTest
 {
-
     private final String[] nodesProcedureName = {"db", "schema", "nodeTypeProperties"};
     private final String[] relsProcedureName = {"db", "schema", "relTypeProperties"};
 
     @Test
-    public void testWeirdLabelName() throws Throwable
+    void testWeirdLabelName() throws Throwable
     {
         // Given
 
@@ -73,7 +72,7 @@ public class BuiltInSchemaProceduresIT extends KernelIntegrationTest
     }
 
     @Test
-    public void testNodePropertiesRegardlessOfCreationOrder1() throws Throwable
+    void testNodePropertiesRegardlessOfCreationOrder1() throws Throwable
     {
         // Given
 
@@ -96,7 +95,7 @@ public class BuiltInSchemaProceduresIT extends KernelIntegrationTest
     }
 
     @Test
-    public void testNodePropertiesRegardlessOfCreationOrder2() throws Throwable
+    void testNodePropertiesRegardlessOfCreationOrder2() throws Throwable
     {
         // Given
 
@@ -120,7 +119,7 @@ public class BuiltInSchemaProceduresIT extends KernelIntegrationTest
     }
 
     @Test
-    public void testNodePropertiesRegardlessOfCreationOrder3() throws Throwable
+    void testNodePropertiesRegardlessOfCreationOrder3() throws Throwable
     {
         // Given
 
@@ -145,7 +144,7 @@ public class BuiltInSchemaProceduresIT extends KernelIntegrationTest
     }
 
     @Test
-    public void testRelsPropertiesRegardlessOfCreationOrder1() throws Throwable
+    void testRelsPropertiesRegardlessOfCreationOrder1() throws Throwable
     {
         // Given
 
@@ -171,7 +170,7 @@ public class BuiltInSchemaProceduresIT extends KernelIntegrationTest
     }
 
     @Test
-    public void testRelsPropertiesRegardlessOfCreationOrder2() throws Throwable
+    void testRelsPropertiesRegardlessOfCreationOrder2() throws Throwable
     {
         // Given
 
@@ -198,7 +197,7 @@ public class BuiltInSchemaProceduresIT extends KernelIntegrationTest
     }
 
     @Test
-    public void testRelsPropertiesRegardlessOfCreationOrder3() throws Throwable
+    void testRelsPropertiesRegardlessOfCreationOrder3() throws Throwable
     {
         // Given
 
@@ -227,7 +226,7 @@ public class BuiltInSchemaProceduresIT extends KernelIntegrationTest
     }
 
     @Test
-    public void testNodesShouldNotDependOnOrderOfCreationWithOverlap() throws Throwable
+    void testNodesShouldNotDependOnOrderOfCreationWithOverlap() throws Throwable
     {
         // Given
 
@@ -250,7 +249,7 @@ public class BuiltInSchemaProceduresIT extends KernelIntegrationTest
     }
 
     @Test
-    public void testNodesShouldNotDependOnOrderOfCreationWithOverlap2() throws Throwable
+    void testNodesShouldNotDependOnOrderOfCreationWithOverlap2() throws Throwable
     {
         // Given
 
@@ -273,7 +272,7 @@ public class BuiltInSchemaProceduresIT extends KernelIntegrationTest
     }
 
     @Test
-    public void testRelsShouldNotDependOnOrderOfCreationWithOverlap() throws Throwable
+    void testRelsShouldNotDependOnOrderOfCreationWithOverlap() throws Throwable
     {
         // Given
 
@@ -298,7 +297,7 @@ public class BuiltInSchemaProceduresIT extends KernelIntegrationTest
     }
 
     @Test
-    public void testRelsShouldNotDependOnOrderOfCreationWithOverlap2() throws Throwable
+    void testRelsShouldNotDependOnOrderOfCreationWithOverlap2() throws Throwable
     {
         // Given
 
@@ -323,7 +322,7 @@ public class BuiltInSchemaProceduresIT extends KernelIntegrationTest
     }
 
     @Test
-    public void testWithAllDifferentNodes() throws Throwable
+    void testWithAllDifferentNodes() throws Throwable
     {
         // Given
 
@@ -353,7 +352,7 @@ public class BuiltInSchemaProceduresIT extends KernelIntegrationTest
     }
 
     @Test
-    public void testWithSimilarNodes() throws Throwable
+    void testWithSimilarNodes() throws Throwable
     {
         // Given
 
@@ -375,7 +374,7 @@ public class BuiltInSchemaProceduresIT extends KernelIntegrationTest
     }
 
     @Test
-    public void testWithSimilarNodesHavingDifferentPropertyValueTypes() throws Throwable
+    void testWithSimilarNodesHavingDifferentPropertyValueTypes() throws Throwable
     {
         // Given
 
@@ -403,7 +402,7 @@ public class BuiltInSchemaProceduresIT extends KernelIntegrationTest
     }
 
     @Test
-    public void testWithSimilarNodesShouldNotDependOnOrderOfCreation() throws Throwable
+    void testWithSimilarNodesShouldNotDependOnOrderOfCreation() throws Throwable
     {
         // Given
 
@@ -431,7 +430,7 @@ public class BuiltInSchemaProceduresIT extends KernelIntegrationTest
     }
 
     @Test
-    public void testWithAllDifferentRelationships() throws Throwable
+    void testWithAllDifferentRelationships() throws Throwable
     {
         // Given
 
@@ -461,7 +460,7 @@ public class BuiltInSchemaProceduresIT extends KernelIntegrationTest
     }
 
     @Test
-    public void testWithSimilarRelationships() throws Throwable
+    void testWithSimilarRelationships() throws Throwable
     {
         // Given
 
@@ -486,7 +485,7 @@ public class BuiltInSchemaProceduresIT extends KernelIntegrationTest
     }
 
     @Test
-    public void testSchemaWithRelationshipWithoutProperties() throws Throwable
+    void testSchemaWithRelationshipWithoutProperties() throws Throwable
     {
         // Given
 
@@ -513,7 +512,7 @@ public class BuiltInSchemaProceduresIT extends KernelIntegrationTest
     }
 
     @Test
-    public void testWithSimilarRelationshipsHavingDifferentPropertyValueTypes() throws Throwable
+    void testWithSimilarRelationshipsHavingDifferentPropertyValueTypes() throws Throwable
     {
         // Given
 
@@ -543,7 +542,7 @@ public class BuiltInSchemaProceduresIT extends KernelIntegrationTest
     }
 
     @Test
-    public void testWithSimilarRelationshipsShouldNotDependOnOrderOfCreation() throws Throwable
+    void testWithSimilarRelationshipsShouldNotDependOnOrderOfCreation() throws Throwable
     {
         // This is basically the same as the test before but the empty rel is created first
         // Given
@@ -574,7 +573,7 @@ public class BuiltInSchemaProceduresIT extends KernelIntegrationTest
     }
 
     @Test
-    public void testWithNullableProperties() throws Throwable
+    void testWithNullableProperties() throws Throwable
     {
         // Given
 
@@ -606,15 +605,15 @@ public class BuiltInSchemaProceduresIT extends KernelIntegrationTest
         //printStream( stream );
     }
 
-    private AnyValue[] nodeEntry( String escapedLabels, List<String> labels, String propertyName, List<String> propertyValueTypes, boolean mandatory )
+    private static AnyValue[] nodeEntry( String escapedLabels, List<String> labels, String propertyName, List<String> propertyValueTypes, boolean mandatory )
     {
         return new AnyValue[]{stringValue( escapedLabels ), ValueUtils.asListValue( labels ),
                 stringOrNoValue( propertyName ), ValueUtils.of( propertyValueTypes ),
                 Values.booleanValue( mandatory )};
     }
 
-    private AnyValue[] relEntry( String labelsOrRelType, String propertyName, List<String> propertyValueTypes,
-            boolean mandatory )
+    private static AnyValue[] relEntry( String labelsOrRelType, String propertyName, List<String> propertyValueTypes,
+        boolean mandatory )
     {
         return new AnyValue[]{stringOrNoValue( labelsOrRelType ), stringOrNoValue( propertyName ),
                 ValueUtils.of( propertyValueTypes ), Values.booleanValue( mandatory )};
@@ -652,7 +651,7 @@ public class BuiltInSchemaProceduresIT extends KernelIntegrationTest
 
     private void createRelationship( long startNode, String type, long endNode, List<String> propKeys, List<Value> propValues ) throws Throwable
     {
-        assert type != null && !type.equals( "" );
+        assert type != null && !type.isEmpty();
         assert propKeys.size() == propValues.size();
 
         Transaction transaction = newTransaction( AnonymousContext.writeToken() );
@@ -674,7 +673,7 @@ public class BuiltInSchemaProceduresIT extends KernelIntegrationTest
       This method can be used to print to result stream to System.out -> Useful for debugging
      */
     @SuppressWarnings( "unused" )
-    private void printStream( RawIterator<AnyValue[],ProcedureException> stream ) throws Throwable
+    private static void printStream( RawIterator<AnyValue[], ProcedureException> stream ) throws Throwable
     {
         for ( AnyValue[] row : asList( stream ) )
         {

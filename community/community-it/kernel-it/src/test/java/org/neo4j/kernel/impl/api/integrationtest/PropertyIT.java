@@ -19,7 +19,7 @@
  */
 package org.neo4j.kernel.impl.api.integrationtest;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.Iterator;
 
@@ -31,15 +31,15 @@ import org.neo4j.token.api.NamedToken;
 import org.neo4j.values.storable.Values;
 
 import static org.hamcrest.CoreMatchers.equalTo;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.IsIterableContaining.hasItems;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.fail;
 import static org.neo4j.internal.helpers.collection.Iterators.asCollection;
 
-public class PropertyIT extends KernelIntegrationTest
+class PropertyIT extends KernelIntegrationTest
 {
     @Test
-    public void shouldListAllPropertyKeys() throws Exception
+    void shouldListAllPropertyKeys() throws Exception
     {
         // given
         dbWithNoCache();
@@ -67,7 +67,7 @@ public class PropertyIT extends KernelIntegrationTest
     }
 
     @Test
-    public void shouldNotAllowModifyingPropertiesOnDeletedRelationship() throws Exception
+    void shouldNotAllowModifyingPropertiesOnDeletedRelationship() throws Exception
     {
         // given
         Transaction transaction = newTransaction( AnonymousContext.writeToken() );
@@ -94,7 +94,7 @@ public class PropertyIT extends KernelIntegrationTest
     }
 
     @Test
-    public void shouldBeAbleToRemoveResetAndTwiceRemovePropertyOnRelationship() throws Exception
+    void shouldBeAbleToRemoveResetAndTwiceRemovePropertyOnRelationship() throws Exception
     {
         // given
         Transaction transaction = newTransaction( AnonymousContext.writeToken() );

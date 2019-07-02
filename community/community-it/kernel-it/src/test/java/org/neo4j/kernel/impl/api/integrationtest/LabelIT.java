@@ -19,7 +19,8 @@
  */
 package org.neo4j.kernel.impl.api.integrationtest;
 
-import org.junit.Test;
+import org.hamcrest.MatcherAssert;
+import org.junit.jupiter.api.Test;
 
 import java.util.Iterator;
 
@@ -28,13 +29,12 @@ import org.neo4j.kernel.api.security.AnonymousContext;
 import org.neo4j.token.api.NamedToken;
 
 import static org.hamcrest.core.IsIterableContaining.hasItems;
-import static org.junit.Assert.assertThat;
 import static org.neo4j.internal.helpers.collection.Iterators.asCollection;
 
-public class LabelIT extends KernelIntegrationTest
+class LabelIT extends KernelIntegrationTest
 {
     @Test
-    public void shouldListAllLabels() throws Exception
+    void shouldListAllLabels() throws Exception
     {
         // given
         Transaction transaction = newTransaction( AnonymousContext.writeToken() );
@@ -45,7 +45,7 @@ public class LabelIT extends KernelIntegrationTest
         Iterator<NamedToken> labelIdsBeforeCommit = transaction.tokenRead().labelsGetAllTokens();
 
         // then
-        assertThat( asCollection( labelIdsBeforeCommit ),
+        MatcherAssert.assertThat( asCollection( labelIdsBeforeCommit ),
                 hasItems( new NamedToken( "label1", label1Id ), new NamedToken( "label2", label2Id ) ) );
 
         // when
@@ -55,7 +55,7 @@ public class LabelIT extends KernelIntegrationTest
         Iterator<NamedToken> labelIdsAfterCommit = transaction.tokenRead().labelsGetAllTokens();
 
         // then
-        assertThat( asCollection( labelIdsAfterCommit ),
+        MatcherAssert.assertThat( asCollection( labelIdsAfterCommit ),
                 hasItems( new NamedToken( "label1", label1Id ), new NamedToken( "label2", label2Id ) ) );
         commit();
     }

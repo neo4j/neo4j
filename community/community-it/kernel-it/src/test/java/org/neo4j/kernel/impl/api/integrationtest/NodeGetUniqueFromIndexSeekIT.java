@@ -19,8 +19,8 @@
  */
 package org.neo4j.kernel.impl.api.integrationtest;
 
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.internal.kernel.api.IndexReference;
@@ -37,18 +37,18 @@ import org.neo4j.test.DoubleLatch;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.internal.kernel.api.IndexQuery.exact;
 
-public class NodeGetUniqueFromIndexSeekIT extends KernelIntegrationTest
+class NodeGetUniqueFromIndexSeekIT extends KernelIntegrationTest
 {
     private int labelId;
     private int propertyId1;
     private int propertyId2;
 
-    @Before
-    public void createKeys() throws Exception
+    @BeforeEach
+    void createKeys() throws Exception
     {
         TokenWrite tokenWrite = tokenWriteInNewTransaction();
         this.labelId = tokenWrite.labelGetOrCreateForName( "Person" );
@@ -75,7 +75,7 @@ public class NodeGetUniqueFromIndexSeekIT extends KernelIntegrationTest
     // must block other transactions that try to call it with the same arguments
 
     @Test
-    public void shouldFindMatchingNode() throws Exception
+    void shouldFindMatchingNode() throws Exception
     {
         // given
         IndexReference index = createUniquenessConstraint( labelId, propertyId1 );
@@ -91,13 +91,13 @@ public class NodeGetUniqueFromIndexSeekIT extends KernelIntegrationTest
             long foundId = read.lockingNodeUniqueIndexSeek( index, cursor, exact( propertyId, value ) );
 
             // then
-            assertEquals( "Created node was not found", nodeId, foundId );
+            assertEquals( nodeId, foundId, "Created node was not found" );
         }
         commit();
     }
 
     @Test
-    public void shouldNotFindNonMatchingNode() throws Exception
+    void shouldNotFindNonMatchingNode() throws Exception
     {
         // given
         IndexReference index = createUniquenessConstraint( labelId, propertyId1 );
@@ -111,13 +111,13 @@ public class NodeGetUniqueFromIndexSeekIT extends KernelIntegrationTest
             long foundId = transaction.dataRead().lockingNodeUniqueIndexSeek( index, cursor, exact( propertyId1, value ) );
 
             // then
-            assertTrue( "Non-matching created node was found", isNoSuchNode( foundId ) );
+            assertTrue( isNoSuchNode( foundId ), "Non-matching created node was found" );
         }
         commit();
     }
 
     @Test
-    public void shouldCompositeFindMatchingNode() throws Exception
+    void shouldCompositeFindMatchingNode() throws Exception
     {
         // given
         IndexReference index = createUniquenessConstraint( labelId, propertyId1, propertyId2 );
@@ -133,13 +133,13 @@ public class NodeGetUniqueFromIndexSeekIT extends KernelIntegrationTest
                                                                               cursor, exact( propertyId1, value1 ), exact( propertyId2, value2 ) );
 
             // then
-            assertEquals( "Created node was not found", nodeId, foundId );
+            assertEquals( nodeId, foundId, "Created node was not found" );
         }
         commit();
     }
 
     @Test
-    public void shouldNotCompositeFindNonMatchingNode() throws Exception
+    void shouldNotCompositeFindNonMatchingNode() throws Exception
     {
         // given
         IndexReference index = createUniquenessConstraint( labelId, propertyId1, propertyId2 );
@@ -156,13 +156,13 @@ public class NodeGetUniqueFromIndexSeekIT extends KernelIntegrationTest
                                                                                exact( propertyId2, value2 ) );
 
             // then
-            assertTrue( "Non-matching created node was found", isNoSuchNode( foundId ) );
+            assertTrue( isNoSuchNode( foundId ), "Non-matching created node was found" );
         }
         commit();
     }
 
-    @Test( timeout = 10_000 )
-    public void shouldBlockUniqueIndexSeekFromCompetingTransaction() throws Exception
+    @Test//( timeout = 10_000 )
+    void shouldBlockUniqueIndexSeekFromCompetingTransaction() throws Exception
     {
         // This is the interleaving that we are trying to verify works correctly:
         // ----------------------------------------------------------------------
@@ -222,7 +222,7 @@ public class NodeGetUniqueFromIndexSeekIT extends KernelIntegrationTest
         latch.waitForAllToFinish();
     }
 
-    private boolean isNoSuchNode( long foundId )
+    private static boolean isNoSuchNode( long foundId )
     {
         return StatementConstants.NO_SUCH_NODE == foundId;
     }

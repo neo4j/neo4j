@@ -19,9 +19,8 @@
  */
 package org.neo4j.server.security.auth;
 
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
+import org.hamcrest.Matchers;
+import org.junit.jupiter.api.Test;
 
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
@@ -31,32 +30,29 @@ import org.neo4j.kernel.impl.api.integrationtest.KernelIntegrationTest;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.values.AnyValue;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.neo4j.internal.kernel.api.procs.ProcedureSignature.procedureName;
 import static org.neo4j.kernel.api.ResourceManager.EMPTY_RESOURCE_MANAGER;
 import static org.neo4j.values.storable.Values.stringValue;
 
-public class AuthProceduresTest extends KernelIntegrationTest
+class AuthProceduresTest extends KernelIntegrationTest
 {
-    @Rule
-    public ExpectedException exception = ExpectedException.none();
-
     @Test
-    public void shouldFailWhenChangePasswordWithStaticAccessModeInDbmsMode() throws Throwable
+    void shouldFailWhenChangePasswordWithStaticAccessModeInDbmsMode() throws Throwable
     {
         // Given
         AnyValue[] inputArray = new AnyValue[1];
         inputArray[0] = stringValue( "newPassword" );
 
-        // Then
-        exception.expect( ProcedureException.class );
-        exception.expectMessage( "Anonymous cannot change password" );
-
         // When
         int procedureId = procs().procedureGet( procedureName( "dbms", "security", "changePassword" ) ).id();
-        dbmsOperations().procedureCallDbms( procedureId,
-                                            inputArray, dependencyResolver,
-                                            AnonymousContext.none().authorize( LoginContext.IdLookup.EMPTY, GraphDatabaseSettings.DEFAULT_DATABASE_NAME ),
-                                            EMPTY_RESOURCE_MANAGER, valueMapper );
+
+        var e = assertThrows( ProcedureException.class, () -> dbmsOperations().procedureCallDbms( procedureId, inputArray, dependencyResolver,
+            AnonymousContext.none().authorize( LoginContext.IdLookup.EMPTY, GraphDatabaseSettings.DEFAULT_DATABASE_NAME ),
+            EMPTY_RESOURCE_MANAGER, valueMapper ) );
+
+        assertThat( e.getMessage(), Matchers.equalTo( "Anonymous cannot change password" ) );
     }
 
     @Override

@@ -22,9 +22,8 @@ package org.neo4j.kernel.impl.api.integrationtest;
 import org.hamcrest.Description;
 import org.hamcrest.Matcher;
 import org.hamcrest.TypeSafeMatcher;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Timeout;
 
 import java.util.HashSet;
 import java.util.Set;
@@ -67,7 +66,7 @@ import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.startsWith;
 import static org.hamcrest.core.IsEqual.equalTo;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.neo4j.internal.helpers.collection.Iterators.asList;
 import static org.neo4j.internal.kernel.api.procs.ProcedureSignature.procedureName;
 import static org.neo4j.internal.kernel.api.security.LoginContext.AUTH_DISABLED;
@@ -78,13 +77,10 @@ import static org.neo4j.values.storable.Values.doubleValue;
 import static org.neo4j.values.storable.Values.longValue;
 import static org.neo4j.values.storable.Values.stringValue;
 
-public class BuiltInProceduresIT extends KernelIntegrationTest
+class BuiltInProceduresIT extends KernelIntegrationTest
 {
-    @Rule
-    public ExpectedException exception = ExpectedException.none();
-
     @Test
-    public void listAllLabels() throws Throwable
+    void listAllLabels() throws Throwable
     {
         // Given
         Transaction transaction = newTransaction( AnonymousContext.writeToken() );
@@ -101,8 +97,9 @@ public class BuiltInProceduresIT extends KernelIntegrationTest
         assertThat( asList( stream ), contains( equalTo( new AnyValue[]{stringValue("MyLabel"), longValue(1L)} ) ) );
     }
 
-    @Test( timeout = 360_000 )
-    public void listAllLabelsMustNotBlockOnConstraintCreatingTransaction() throws Throwable
+    @Test
+    @Timeout( value = 6, unit = MINUTES )
+    void listAllLabelsMustNotBlockOnConstraintCreatingTransaction() throws Throwable
     {
         // Given
         Transaction transaction = newTransaction( AnonymousContext.writeToken() );
@@ -149,7 +146,7 @@ public class BuiltInProceduresIT extends KernelIntegrationTest
     }
 
     @Test
-    public void listPropertyKeys() throws Throwable
+    void listPropertyKeys() throws Throwable
     {
         // Given
         TokenWrite ops = tokenWriteInNewTransaction();
@@ -165,7 +162,7 @@ public class BuiltInProceduresIT extends KernelIntegrationTest
     }
 
     @Test
-    public void listRelationshipTypes() throws Throwable
+    void listRelationshipTypes() throws Throwable
     {
         // Given
         Transaction transaction = newTransaction( AnonymousContext.writeToken() );
@@ -184,7 +181,7 @@ public class BuiltInProceduresIT extends KernelIntegrationTest
     }
 
     @Test
-    public void listProcedures() throws Throwable
+    void listProcedures() throws Throwable
     {
         // When
         ProcedureHandle procedures = procs().procedureGet( procedureName( "dbms", "procedures" ) );
@@ -283,23 +280,15 @@ public class BuiltInProceduresIT extends KernelIntegrationTest
     }
 
     @Test
-    public void failWhenCallingNonExistingProcedures()
+    void failWhenCallingNonExistingProcedures()
     {
-        try
-        {
-            dbmsOperations().procedureCallDbms( -1, new AnyValue[0], dependencyResolver, AnonymousContext.none().authorize(
-                    LoginContext.IdLookup.EMPTY, GraphDatabaseSettings.DEFAULT_DATABASE_NAME ), EMPTY_RESOURCE_MANAGER, valueMapper );
-            fail( "This should never get here" );
-        }
-        catch ( Exception e )
-        {
-            // Then
-            assertThat( e.getClass(), equalTo( ProcedureException.class ) );
-        }
+        assertThrows( ProcedureException.class,
+            () -> dbmsOperations().procedureCallDbms( -1, new AnyValue[0], dependencyResolver, AnonymousContext.none().authorize(
+                LoginContext.IdLookup.EMPTY, GraphDatabaseSettings.DEFAULT_DATABASE_NAME ), EMPTY_RESOURCE_MANAGER, valueMapper ) );
     }
 
     @Test
-    public void listAllComponents() throws Throwable
+    void listAllComponents() throws Throwable
     {
         // Given a running database
 
@@ -315,7 +304,7 @@ public class BuiltInProceduresIT extends KernelIntegrationTest
     }
 
     @Test
-    public void listAllIndexes() throws Throwable
+    void listAllIndexes() throws Throwable
     {
         // Given
         Transaction transaction = newTransaction( AUTH_DISABLED );
@@ -381,8 +370,9 @@ public class BuiltInProceduresIT extends KernelIntegrationTest
         commit();
     }
 
-    @Test( timeout = 360_000 )
-    public void listAllIndexesMustNotBlockOnConstraintCreatingTransaction() throws Throwable
+    @Test
+    @Timeout( value = 6, unit = MINUTES )
+    void listAllIndexesMustNotBlockOnConstraintCreatingTransaction() throws Throwable
     {
         // Given
         Transaction transaction = newTransaction( AUTH_DISABLED );
@@ -420,7 +410,7 @@ public class BuiltInProceduresIT extends KernelIntegrationTest
             SchemaWrite schemaWrite = schemaWriteInNewTransaction();
             try ( Resource ignore = captureTransaction() )
             {
-                schemaWrite.uniquePropertyConstraintCreate( SchemaDescriptor.forLabel( labelId1, propertyKeyId3 ) );
+                schemaWrite.uniquePropertyConstraintCreate( forLabel( labelId1, propertyKeyId3 ) );
                 // We now hold a schema lock on the "MyLabel" label. Let the procedure calling transaction have a go.
                 constraintLatch.countDown();
                 commitLatch.await();
@@ -487,7 +477,7 @@ public class BuiltInProceduresIT extends KernelIntegrationTest
     }
 
     @Test
-    public void prepareForReplanningShouldEmptyQueryCache()
+    void prepareForReplanningShouldEmptyQueryCache()
     {
         // Given, something is cached
         db.execute( "MATCH (n) RETURN n" );
@@ -502,7 +492,7 @@ public class BuiltInProceduresIT extends KernelIntegrationTest
     }
 
     @Test
-    public void prepareForReplanningShouldTriggerIndexesSampling()
+    void prepareForReplanningShouldTriggerIndexesSampling()
     {
         // Given
         ReplanMonitor monitor = replanMonitor();

@@ -19,9 +19,9 @@
  */
 package org.neo4j.kernel.impl.api.integrationtest;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Rule;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.io.File;
 import java.util.Iterator;
@@ -42,7 +42,6 @@ import org.neo4j.internal.kernel.api.Transaction;
 import org.neo4j.internal.kernel.api.Write;
 import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.internal.kernel.api.security.LoginContext;
-import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.dbms.DbmsOperations;
 import org.neo4j.kernel.api.security.AnonymousContext;
 import org.neo4j.kernel.impl.api.KernelImpl;
@@ -52,6 +51,9 @@ import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.util.DefaultValueMapper;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
+import org.neo4j.test.extension.DefaultFileSystemExtension;
+import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.TestDirectoryExtension;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.values.storable.Value;
 
@@ -64,10 +66,11 @@ import static org.neo4j.internal.kernel.api.helpers.RelationshipSelections.outgo
 import static org.neo4j.internal.kernel.api.security.LoginContext.AUTH_DISABLED;
 import static org.neo4j.values.storable.Values.NO_VALUE;
 
+@ExtendWith( {DefaultFileSystemExtension.class, TestDirectoryExtension.class} )
 public abstract class KernelIntegrationTest
 {
-    @Rule
-    public final TestDirectory testDir = TestDirectory.testDirectory();
+    @Inject
+    protected TestDirectory testDir;
 
     protected GraphDatabaseAPI db;
     ThreadToStatementContextBridge statementContextSupplier;
@@ -106,7 +109,7 @@ public abstract class KernelIntegrationTest
 
     protected Procedures procsSchema() throws TransactionFailureException
     {
-        transaction = kernel.beginTransaction( KernelTransaction.Type.implicit, AnonymousContext.full() );
+        transaction = kernel.beginTransaction( implicit, AnonymousContext.full() );
         return transaction.procedures();
     }
 
@@ -126,13 +129,10 @@ public abstract class KernelIntegrationTest
      * Create a temporary section wherein other transactions can be started an committed, and after which the <em>current</em> transaction will be restored as
      * current.
      */
-    protected Resource captureTransaction()
+    Resource captureTransaction()
     {
         Transaction tx = transaction;
-        return () ->
-        {
-            transaction = tx;
-        };
+        return () -> transaction = tx;
     }
 
     protected DbmsOperations dbmsOperations()
@@ -166,19 +166,19 @@ public abstract class KernelIntegrationTest
         }
     }
 
-    @Before
+    @BeforeEach
     public void setup()
     {
         startDb();
     }
 
-    @After
+    @AfterEach
     public void cleanup() throws Exception
     {
         stopDb();
     }
 
-    protected void startDb()
+    private void startDb()
     {
         managementService = createDatabaseService();
         db = (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );
@@ -222,13 +222,13 @@ public abstract class KernelIntegrationTest
         managementService.shutdown();
     }
 
-    public void restartDb() throws TransactionFailureException
+    protected void restartDb() throws TransactionFailureException
     {
         stopDb();
         startDb();
     }
 
-    Value relationshipGetProperty( Transaction transaction, long relationship, int property )
+    static Value relationshipGetProperty( Transaction transaction, long relationship, int property )
     {
         try ( RelationshipScanCursor cursor = transaction.cursors().allocateRelationshipScanCursor();
               PropertyCursor properties = transaction.cursors().allocatePropertyCursor() )
@@ -253,12 +253,12 @@ public abstract class KernelIntegrationTest
         }
     }
 
-    Iterator<Long> nodeGetRelationships( Transaction transaction, long node, Direction direction )
+    static Iterator<Long> nodeGetRelationships( Transaction transaction, long node, Direction direction )
     {
         return nodeGetRelationships( transaction, node, direction, null );
     }
 
-    Iterator<Long> nodeGetRelationships( Transaction transaction, long node, Direction direction, int[] types )
+    static Iterator<Long> nodeGetRelationships( Transaction transaction, long node, Direction direction, int[] types )
     {
         try ( NodeCursor cursor = transaction.cursors().allocateNodeCursor() )
         {
@@ -285,7 +285,7 @@ public abstract class KernelIntegrationTest
         }
     }
 
-    protected int countNodes( Transaction transaction )
+    protected static int countNodes( Transaction transaction )
     {
         int result = 0;
         try ( NodeCursor cursor = transaction.cursors().allocateNodeCursor() )
