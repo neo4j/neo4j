@@ -27,6 +27,7 @@ import java.util.Map;
 import org.neo4j.configuration.Config;
 import org.neo4j.internal.kernel.api.exceptions.schema.MisconfiguredIndexException;
 import org.neo4j.internal.schema.IndexConfig;
+import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.IndexProviderDescriptor;
 import org.neo4j.internal.schema.LabelSchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptor;
@@ -55,10 +56,10 @@ class GenericNativeIndexProviderTest
         // Given
         GenericNativeIndexProvider provider = new GenericNativeIndexProvider( IndexDirectoryStructure.NONE, null, null, null, null, false, Config.defaults() );
         LabelSchemaDescriptor sinfulSchema = SchemaDescriptor.forLabel( 1, 1 );
-        IndexDescriptor sinfulDescriptor = IndexDescriptorFactory.forSchema( sinfulSchema, IndexProviderDescriptor.UNDECIDED );
+        IndexPrototype sinfulDescriptor = IndexPrototype.forSchema( sinfulSchema, IndexProviderDescriptor.UNDECIDED );
 
         // When
-        IndexDescriptor blessesDescriptor = provider.bless( sinfulDescriptor );
+        IndexPrototype blessesDescriptor = provider.bless( sinfulDescriptor );
         SchemaDescriptor blessedSchema = blessesDescriptor.schema();
 
         // Then
@@ -97,11 +98,11 @@ class GenericNativeIndexProviderTest
         existingSettings.put( key( existingCrs.getName(), MAX ), max );
         IndexConfig existingIndexConfig = IndexConfig.with( existingSettings );
         LabelSchemaDescriptor sinfulSchema = SchemaDescriptor.forLabel( 1, 1 ).withIndexConfig( existingIndexConfig );
-        IndexDescriptor sinfulDescriptor = IndexDescriptorFactory.forSchema( sinfulSchema, IndexProviderDescriptor.UNDECIDED );
+        IndexPrototype sinfulPrototype = IndexPrototype.forSchema( sinfulSchema, IndexProviderDescriptor.UNDECIDED );
 
         // When
-        IndexDescriptor blessesDescriptor = provider.bless( sinfulDescriptor );
-        SchemaDescriptor blessedSchema = blessesDescriptor.schema();
+        IndexPrototype blessesPrototype = provider.bless( sinfulPrototype );
+        SchemaDescriptor blessedSchema = blessesPrototype.schema();
 
         // Then
         IndexConfig blessedIndexConfig = blessedSchema.getIndexConfig();

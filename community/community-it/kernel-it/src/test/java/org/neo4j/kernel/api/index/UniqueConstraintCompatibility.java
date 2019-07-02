@@ -45,8 +45,9 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.internal.schema.IndexPrototype;
+import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.kernel.api.KernelTransaction;
-import org.neo4j.kernel.api.schema.index.TestIndexDescriptorFactory;
 import org.neo4j.kernel.extension.ExtensionFactory;
 import org.neo4j.kernel.extension.ExtensionType;
 import org.neo4j.kernel.extension.context.ExtensionContext;
@@ -77,7 +78,7 @@ public class UniqueConstraintCompatibility extends IndexProviderCompatibilityTes
 
     public UniqueConstraintCompatibility( IndexProviderCompatibilityTestSuite testSuite )
     {
-        super( testSuite, TestIndexDescriptorFactory.uniqueForLabel( 1, 2 ) );
+        super( testSuite, IndexPrototype.uniqueForSchema( SchemaDescriptor.forLabel( 1, 2 ) ) );
     }
 
     /*

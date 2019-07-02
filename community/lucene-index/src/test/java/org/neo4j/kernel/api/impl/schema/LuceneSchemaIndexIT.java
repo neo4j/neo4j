@@ -38,6 +38,7 @@ import org.neo4j.configuration.Config;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.internal.helpers.collection.Iterables;
 import org.neo4j.internal.helpers.collection.Iterators;
+import org.neo4j.internal.schema.IndexDescriptor2;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
@@ -45,7 +46,6 @@ import org.neo4j.kernel.api.impl.index.LuceneAllDocumentsReader;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.schema.index.TestIndexDescriptorFactory;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
-import org.neo4j.kernel.impl.index.schema.IndexDescriptor;
 import org.neo4j.storageengine.api.IndexEntryUpdate;
 import org.neo4j.test.extension.DefaultFileSystemExtension;
 import org.neo4j.test.extension.Inject;
@@ -70,7 +70,7 @@ class LuceneSchemaIndexIT
     @Inject
     private DefaultFileSystemAbstraction fileSystem;
 
-    private final IndexDescriptor descriptor = TestIndexDescriptorFactory.forLabel( 0, 0 );
+    private final IndexDescriptor2 descriptor = TestIndexDescriptorFactory.forLabel( 0, 0 );
     private final Config config = Config.defaults();
 
     @BeforeEach

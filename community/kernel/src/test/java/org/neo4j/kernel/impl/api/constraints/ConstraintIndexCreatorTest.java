@@ -55,7 +55,6 @@ import org.neo4j.kernel.impl.api.TransactionHeaderInformation;
 import org.neo4j.kernel.impl.api.index.IndexProxy;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.state.ConstraintIndexCreator;
-import org.neo4j.kernel.impl.index.schema.IndexDescriptorFactory;
 import org.neo4j.kernel.impl.locking.SimpleStatementLocks;
 import org.neo4j.kernel.impl.transaction.TransactionHeaderInformationFactory;
 import org.neo4j.lock.ResourceTypes;
@@ -379,7 +378,7 @@ class ConstraintIndexCreatorTest
             TransactionState transactionState = mock( TransactionState.class );
             when( transaction.txState() ).thenReturn( transactionState );
             when( transaction.indexUniqueCreate( any( SchemaDescriptor.class ), any( String.class ) ) ).thenAnswer(
-                    i -> IndexDescriptorFactory.uniqueForSchema( i.getArgument( 0 ) ) );
+                    i -> IndexPrototype.uniqueForSchema( i.getArgument( 0 ) ).materialise( 42 ) );
             when( transaction.newStorageReader() ).thenReturn( mock( StorageReader.class ) );
         }
         catch ( InvalidTransactionTypeKernelException e )

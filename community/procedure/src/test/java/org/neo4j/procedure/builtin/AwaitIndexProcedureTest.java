@@ -27,12 +27,12 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.neo4j.internal.helpers.Exceptions;
-import org.neo4j.internal.kernel.api.IndexReference;
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.kernel.api.SchemaRead;
 import org.neo4j.internal.kernel.api.TokenRead;
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
+import org.neo4j.internal.schema.IndexDescriptor2;
 import org.neo4j.internal.schema.LabelSchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.kernel.api.KernelTransaction;
@@ -53,7 +53,7 @@ import static org.mockito.Mockito.when;
 import static org.neo4j.internal.kernel.api.InternalIndexState.FAILED;
 import static org.neo4j.internal.kernel.api.InternalIndexState.ONLINE;
 import static org.neo4j.internal.kernel.api.InternalIndexState.POPULATING;
-import static org.neo4j.kernel.impl.index.schema.IndexDescriptorFactory.forSchema;
+import static org.neo4j.internal.schema.IndexPrototype.forSchema;
 import static org.neo4j.test.assertion.Assert.assertEventually;
 
 class AwaitIndexProcedureTest
@@ -66,7 +66,7 @@ class AwaitIndexProcedureTest
     private IndexProcedures procedure;
     private LabelSchemaDescriptor descriptor;
     private LabelSchemaDescriptor anyDescriptor;
-    private IndexReference anyIndex ;
+    private IndexDescriptor2 anyIndex ;
 
     @BeforeEach
     void setup()
@@ -77,7 +77,7 @@ class AwaitIndexProcedureTest
         procedure = new IndexProcedures( transaction, null );
         descriptor = SchemaDescriptor.forLabel( 123, 456 );
         anyDescriptor = SchemaDescriptor.forLabel( 0, 0 );
-        anyIndex = forSchema( anyDescriptor );
+        anyIndex = forSchema( anyDescriptor ).materialise( 13 );
         when( transaction.tokenRead() ).thenReturn( tokenRead );
         when( transaction.schemaRead() ).thenReturn( schemaRead );
     }
@@ -108,7 +108,7 @@ class AwaitIndexProcedureTest
         when( tokenRead.nodeLabel( anyString() ) ).thenReturn( descriptor.getLabelId() );
         when( tokenRead.propertyKey( anyString() ) ).thenReturn( descriptor.getPropertyId() );
         when( schemaRead.index( anyInt(), any() ) ).thenReturn( anyIndex );
-        when( schemaRead.indexGetState( any( IndexReference.class ) ) ).thenReturn( ONLINE );
+        when( schemaRead.indexGetState( any( IndexDescriptor2.class ) ) ).thenReturn( ONLINE );
 
         procedure.awaitIndexByPattern( ":Person(name)", TIMEOUT, TIME_UNIT );
 
@@ -121,7 +121,7 @@ class AwaitIndexProcedureTest
         when( tokenRead.nodeLabel( anyString() ) ).thenReturn( descriptor.getLabelId() );
         when( tokenRead.propertyKey( anyString() ) ).thenReturn( descriptor.getPropertyId() );
         when( schemaRead.indexGetForName( "my index" ) ).thenReturn( anyIndex );
-        when( schemaRead.indexGetState( any( IndexReference.class ) ) ).thenReturn( ONLINE );
+        when( schemaRead.indexGetState( any( IndexDescriptor2.class ) ) ).thenReturn( ONLINE );
 
         procedure.awaitIndexByName( "`my index`", TIMEOUT, TIME_UNIT );
 
@@ -134,8 +134,8 @@ class AwaitIndexProcedureTest
         when( tokenRead.nodeLabel( anyString() ) ).thenReturn( 0 );
         when( tokenRead.propertyKey( anyString() ) ).thenReturn( 0 );
         when( schemaRead.index( anyInt(), any() ) ).thenReturn( anyIndex );
-        when( schemaRead.indexGetState( any( IndexReference.class ) ) ).thenReturn( FAILED );
-        when( schemaRead.indexGetFailure( any( IndexReference.class ) ) ).thenReturn( Exceptions.stringify( new Exception( "Kilroy was here" ) ) );
+        when( schemaRead.indexGetState( any( IndexDescriptor2.class ) ) ).thenReturn( FAILED );
+        when( schemaRead.indexGetFailure( any( IndexDescriptor2.class ) ) ).thenReturn( Exceptions.stringify( new Exception( "Kilroy was here" ) ) );
 
         ProcedureException exception = assertThrows( ProcedureException.class, () -> procedure.awaitIndexByPattern( ":Person(name)", TIMEOUT, TIME_UNIT ) );
         assertThat( exception.status(), is( Status.Schema.IndexCreationFailed ) );
@@ -148,7 +148,7 @@ class AwaitIndexProcedureTest
     {
         when( tokenRead.propertyKey( anyString() ) ).thenReturn( 0 );
         when( tokenRead.nodeLabel( anyString() ) ).thenReturn( 0 );
-        when( schemaRead.index( anyInt(), any() ) ).thenReturn( IndexReference.NO_INDEX );
+        when( schemaRead.index( anyInt(), any() ) ).thenReturn( IndexDescriptor2.NO_INDEX );
 
         ProcedureException exception =
                 assertThrows( ProcedureException.class, () -> procedure.awaitIndexByPattern( ":Person(name)", TIMEOUT, TIME_UNIT ) );
@@ -166,7 +166,7 @@ class AwaitIndexProcedureTest
     {
         when( tokenRead.propertyKey( anyString() ) ).thenReturn( 0 );
         when( tokenRead.nodeLabel( anyString() ) ).thenReturn( 0 );
-        when( schemaRead.indexGetForName( "some index" ) ).thenReturn( IndexReference.NO_INDEX );
+        when( schemaRead.indexGetForName( "some index" ) ).thenReturn( IndexDescriptor2.NO_INDEX );
 
         ProcedureException exception = assertThrows( ProcedureException.class, () -> procedure.awaitIndexByName( "`some index`", TIMEOUT, TIME_UNIT ) );
         assertThat( exception.status(), is( Status.Schema.IndexNotFound ) );
@@ -180,7 +180,7 @@ class AwaitIndexProcedureTest
         when( schemaRead.index( anyInt(), any() ) ).thenReturn( anyIndex );
 
         AtomicReference<InternalIndexState> state = new AtomicReference<>( POPULATING );
-        when( schemaRead.indexGetState( any( IndexReference.class ) ) ).then( invocationOnMock -> state.get() );
+        when( schemaRead.indexGetState( any( IndexDescriptor2.class ) ) ).then( invocationOnMock -> state.get() );
 
         AtomicBoolean done = new AtomicBoolean( false );
         new Thread( () ->
@@ -209,7 +209,7 @@ class AwaitIndexProcedureTest
         when( tokenRead.nodeLabel( anyString() ) ).thenReturn( 0 );
         when( tokenRead.propertyKey( anyString() ) ).thenReturn( 0 );
         when( schemaRead.index( anyInt(), anyInt() ) ).thenReturn( anyIndex );
-        when( schemaRead.indexGetState( any( IndexReference.class ) ) ).thenReturn( POPULATING );
+        when( schemaRead.indexGetState( any( IndexDescriptor2.class ) ) ).thenReturn( POPULATING );
 
         AtomicReference<ProcedureException> exception = new AtomicReference<>();
         new Thread( () ->

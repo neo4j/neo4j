@@ -32,16 +32,16 @@ import java.util.stream.Stream;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.internal.schema.IndexOrder;
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.internal.kernel.api.IndexReadSession;
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.kernel.api.NodeValueIndexCursor;
 import org.neo4j.internal.kernel.api.Write;
+import org.neo4j.internal.schema.IndexDescriptor2;
+import org.neo4j.internal.schema.IndexOrder;
 import org.neo4j.internal.schema.constraints.ConstraintDescriptorFactory;
 import org.neo4j.kernel.api.schema.index.TestIndexDescriptorFactory;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
-import org.neo4j.kernel.impl.index.schema.IndexDescriptor;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.extension.ImpermanentDbmsExtension;
 import org.neo4j.test.extension.Inject;
@@ -63,9 +63,9 @@ class CompositeIndexingIT
 
     @Inject
     private GraphDatabaseAPI graphDatabaseAPI;
-    private IndexDescriptor index;
+    private IndexDescriptor2 index;
 
-    void setup( IndexDescriptor index ) throws Exception
+    void setup( IndexDescriptor2 index ) throws Exception
     {
         this.index = index;
         try ( Transaction tx = graphDatabaseAPI.beginTx() )
@@ -136,7 +136,7 @@ class CompositeIndexingIT
 
     @ParameterizedTest
     @MethodSource( "params" )
-    void shouldSeeNodeAddedByPropertyToIndexInTranslation( IndexDescriptor index ) throws Exception
+    void shouldSeeNodeAddedByPropertyToIndexInTranslation( IndexDescriptor2 index ) throws Exception
     {
         setup( index );
         try ( Transaction ignore = graphDatabaseAPI.beginTx() )
@@ -160,7 +160,7 @@ class CompositeIndexingIT
 
     @ParameterizedTest
     @MethodSource( "params" )
-    void shouldSeeNodeAddedToByLabelIndexInTransaction( IndexDescriptor index ) throws Exception
+    void shouldSeeNodeAddedToByLabelIndexInTransaction( IndexDescriptor2 index ) throws Exception
     {
         setup( index );
         try ( Transaction ignore = graphDatabaseAPI.beginTx() )
@@ -184,7 +184,7 @@ class CompositeIndexingIT
 
     @ParameterizedTest
     @MethodSource( "params" )
-    void shouldNotSeeNodeThatWasDeletedInTransaction( IndexDescriptor index ) throws Exception
+    void shouldNotSeeNodeThatWasDeletedInTransaction( IndexDescriptor2 index ) throws Exception
     {
         setup( index );
         long nodeID = createNode();
@@ -201,7 +201,7 @@ class CompositeIndexingIT
 
     @ParameterizedTest
     @MethodSource( "params" )
-    void shouldNotSeeNodeThatHasItsLabelRemovedInTransaction( IndexDescriptor index ) throws Exception
+    void shouldNotSeeNodeThatHasItsLabelRemovedInTransaction( IndexDescriptor2 index ) throws Exception
     {
         setup( index );
         long nodeID = createNode();
@@ -218,7 +218,7 @@ class CompositeIndexingIT
 
     @ParameterizedTest
     @MethodSource( "params" )
-    void shouldNotSeeNodeThatHasAPropertyRemovedInTransaction( IndexDescriptor index ) throws Exception
+    void shouldNotSeeNodeThatHasAPropertyRemovedInTransaction( IndexDescriptor2 index ) throws Exception
     {
         setup( index );
         long nodeID = createNode();
@@ -235,7 +235,7 @@ class CompositeIndexingIT
 
     @ParameterizedTest
     @MethodSource( "params" )
-    void shouldSeeAllNodesAddedInTransaction( IndexDescriptor index ) throws Exception
+    void shouldSeeAllNodesAddedInTransaction( IndexDescriptor2 index ) throws Exception
     {
         setup( index );
         if ( !index.isUnique() ) // this test does not make any sense for UNIQUE indexes
@@ -261,7 +261,7 @@ class CompositeIndexingIT
 
     @ParameterizedTest
     @MethodSource( "params" )
-    void shouldSeeAllNodesAddedBeforeTransaction( IndexDescriptor index ) throws Exception
+    void shouldSeeAllNodesAddedBeforeTransaction( IndexDescriptor2 index ) throws Exception
     {
         setup( index );
         if ( !index.isUnique() ) // this test does not make any sense for UNIQUE indexes
@@ -287,7 +287,7 @@ class CompositeIndexingIT
 
     @ParameterizedTest
     @MethodSource( "params" )
-    void shouldNotSeeNodesLackingOneProperty( IndexDescriptor index ) throws Exception
+    void shouldNotSeeNodesLackingOneProperty( IndexDescriptor2 index ) throws Exception
     {
         setup( index );
         long nodeID1 = createNode();

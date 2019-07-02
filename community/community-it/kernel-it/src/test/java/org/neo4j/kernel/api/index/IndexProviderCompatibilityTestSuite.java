@@ -39,11 +39,11 @@ import java.util.List;
 
 import org.neo4j.function.ThrowingConsumer;
 import org.neo4j.internal.kernel.api.exceptions.schema.MisconfiguredIndexException;
+import org.neo4j.internal.schema.IndexDescriptor2;
+import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.impl.api.index.PhaseTracker;
-import org.neo4j.kernel.impl.index.schema.IndexDescriptor;
-import org.neo4j.kernel.impl.index.schema.StoreIndexDescriptor;
 import org.neo4j.storageengine.api.IndexEntryUpdate;
 import org.neo4j.test.rule.PageCacheAndDependenciesRule;
 import org.neo4j.test.rule.RandomRule;
@@ -141,8 +141,8 @@ public abstract class IndexProviderCompatibilityTestSuite
         File graphDbDir;
         protected FileSystemAbstraction fs;
         protected IndexProvider indexProvider;
-        private final IndexDescriptor unblessedIndexDescriptor;
-        protected StoreIndexDescriptor descriptor;
+        private final IndexPrototype unblessedIndexPrototype;
+        protected IndexDescriptor2 descriptor;
         final IndexProviderCompatibilityTestSuite testSuite;
         final List<NodeAndValue> valueSet1;
         final List<NodeAndValue> valueSet2;
@@ -154,13 +154,13 @@ public abstract class IndexProviderCompatibilityTestSuite
             graphDbDir = pageCacheAndDependenciesRule.directory().storeDir();
             PageCache pageCache = pageCacheAndDependenciesRule.pageCache();
             indexProvider = testSuite.createIndexProvider( pageCache, fs, graphDbDir );
-            this.descriptor = indexProvider.bless( unblessedIndexDescriptor ).withId( 17 );
+            this.descriptor = indexProvider.bless( unblessedIndexPrototype ).materialise( 17 );
         }
 
-        Compatibility( IndexProviderCompatibilityTestSuite testSuite, IndexDescriptor descriptor )
+        Compatibility( IndexProviderCompatibilityTestSuite testSuite, IndexPrototype prototype )
         {
             this.testSuite = testSuite;
-            this.unblessedIndexDescriptor = descriptor;
+            this.unblessedIndexPrototype = prototype;
             this.valueSet1 = allValues(
                     testSuite.supportsSpatial(),
                     Arrays.asList(

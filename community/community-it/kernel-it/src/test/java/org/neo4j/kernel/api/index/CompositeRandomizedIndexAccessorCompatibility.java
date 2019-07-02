@@ -31,11 +31,10 @@ import java.util.List;
 import java.util.Set;
 import java.util.TreeSet;
 
-import org.neo4j.internal.schema.IndexOrder;
 import org.neo4j.internal.kernel.api.IndexQuery;
+import org.neo4j.internal.schema.IndexOrder;
+import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.SchemaDescriptor;
-import org.neo4j.kernel.api.schema.index.TestIndexDescriptorFactory;
-import org.neo4j.kernel.impl.index.schema.IndexDescriptor;
 import org.neo4j.storageengine.api.IndexEntryUpdate;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.ValueCategory;
@@ -48,6 +47,7 @@ import static org.hamcrest.Matchers.equalTo;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.neo4j.internal.helpers.collection.Iterables.single;
+import static org.neo4j.internal.schema.SchemaDescriptor.forLabel;
 import static org.neo4j.kernel.api.index.IndexQueryHelper.add;
 import static org.neo4j.kernel.api.index.IndexQueryHelper.exact;
 
@@ -58,9 +58,9 @@ import static org.neo4j.kernel.api.index.IndexQueryHelper.exact;
         " errors or warnings in some IDEs about test classes needing a public zero-arg constructor." )
 public class CompositeRandomizedIndexAccessorCompatibility extends IndexAccessorCompatibility
 {
-    CompositeRandomizedIndexAccessorCompatibility( IndexProviderCompatibilityTestSuite testSuite, IndexDescriptor descriptor )
+    CompositeRandomizedIndexAccessorCompatibility( IndexProviderCompatibilityTestSuite testSuite, IndexPrototype prototype )
     {
-        super( testSuite, descriptor );
+        super( testSuite, prototype );
     }
 
     @Ignore( "Not a test. This is a compatibility suite" )
@@ -69,7 +69,7 @@ public class CompositeRandomizedIndexAccessorCompatibility extends IndexAccessor
         public Exact( IndexProviderCompatibilityTestSuite testSuite )
         {
             // composite index of 4 properties
-            super( testSuite, TestIndexDescriptorFactory.forLabel( 1000, 100, 101, 102, 103 ) );
+            super( testSuite, IndexPrototype.forSchema( forLabel( 1000, 100, 101, 102, 103 ) ) );
         }
 
         @Test
@@ -116,7 +116,7 @@ public class CompositeRandomizedIndexAccessorCompatibility extends IndexAccessor
         public Range( IndexProviderCompatibilityTestSuite testSuite )
         {
             // composite index of 2 properties
-            super( testSuite, TestIndexDescriptorFactory.forLabel( 1000, 100, 101 ) );
+            super( testSuite, IndexPrototype.forSchema( forLabel( 1000, 100, 101 ) ) );
         }
 
         /**

@@ -58,7 +58,6 @@ import org.neo4j.internal.id.IdGeneratorFactory;
 import org.neo4j.internal.id.IdType;
 import org.neo4j.internal.id.IdValidator;
 import org.neo4j.internal.index.label.NativeLabelScanStore;
-import org.neo4j.internal.kernel.api.IndexReference;
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
 import org.neo4j.internal.kernel.api.exceptions.schema.MisconfiguredIndexException;
@@ -76,6 +75,7 @@ import org.neo4j.internal.recordstorage.SchemaRuleAccess;
 import org.neo4j.internal.recordstorage.StoreTokens;
 import org.neo4j.internal.schema.ConstraintDescriptor;
 import org.neo4j.internal.schema.IndexDescriptor2;
+import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.IndexProviderDescriptor;
 import org.neo4j.internal.schema.LabelSchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptor;
@@ -114,9 +114,6 @@ import org.neo4j.kernel.impl.coreapi.schema.NodePropertyExistenceConstraintDefin
 import org.neo4j.kernel.impl.coreapi.schema.RelationshipPropertyExistenceConstraintDefinition;
 import org.neo4j.kernel.impl.coreapi.schema.UniquenessConstraintDefinition;
 import org.neo4j.kernel.impl.factory.DatabaseInfo;
-import org.neo4j.kernel.impl.index.schema.IndexDescriptor;
-import org.neo4j.kernel.impl.index.schema.IndexDescriptorFactory;
-import org.neo4j.kernel.impl.index.schema.StoreIndexDescriptor;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.locking.NoOpClient;
 import org.neo4j.kernel.impl.pagecache.ConfiguringPageCacheFactory;
@@ -162,7 +159,6 @@ import org.neo4j.logging.internal.StoreLogService;
 import org.neo4j.monitoring.Monitors;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.storageengine.api.ConstraintRule;
-import org.neo4j.storageengine.api.StorageIndexReference;
 import org.neo4j.token.DelegatingTokenHolder;
 import org.neo4j.token.TokenHolders;
 import org.neo4j.token.api.TokenHolder;
@@ -505,15 +501,21 @@ public class BatchInserterImpl implements BatchInserter
         }
     }
 
-    private IndexReference createIndex( LabelSchemaDescriptor schema, Optional<String> indexName )
+    private IndexDescriptor2 createIndex( LabelSchemaDescriptor schema, Optional<String> indexName )
     {
         IndexProvider provider = indexProviderMap.getDefaultProvider();
         IndexProviderDescriptor providerDescriptor = provider.getProviderDescriptor();
-        IndexDescriptor index = IndexDescriptorFactory.forSchema( schema, indexName, providerDescriptor );
-        StoreIndexDescriptor schemaRule;
+        IndexPrototype prototype = IndexPrototype.forSchema( schema, providerDescriptor );
+        if ( indexName.isPresent() )
+        {
+            prototype = prototype.withName( indexName.get() );
+        }
+
+        IndexDescriptor2 index;
         try
         {
-            schemaRule = provider.bless( index ).withId( schemaStore.nextId() );
+            index = prototype.materialise( schemaStore.nextId() );
+            index = provider.bless( index );
         }
         catch ( MisconfiguredIndexException e )
         {
@@ -523,11 +525,11 @@ public class BatchInserterImpl implements BatchInserter
 
         try
         {
-            schemaRuleAccess.writeSchemaRule( schemaRule );
-            schemaCache.addSchemaRule( schemaRule );
+            schemaRuleAccess.writeSchemaRule( index );
+            schemaCache.addSchemaRule( index );
             labelsTouched = true;
             flushStrategy.forceFlush();
-            return schemaRule;
+            return index;
         }
         catch ( KernelException e )
         {
@@ -624,11 +626,10 @@ public class BatchInserterImpl implements BatchInserter
 
         IndexProvider provider = indexProviderMap.getDefaultProvider();
         IndexProviderDescriptor providerDescriptor = provider.getProviderDescriptor();
-        IndexDescriptor index = IndexDescriptorFactory.uniqueForSchema( schema, providerDescriptor );
-        StoreIndexDescriptor storeIndexDescriptor;
+        IndexDescriptor2 index = IndexPrototype.uniqueForSchema( schema, providerDescriptor ).materialise( indexId );
         try
         {
-            storeIndexDescriptor = provider.bless( index ).withIds( indexId, constraintRuleId );
+            index = provider.bless( index ).withOwningConstraintId( constraintRuleId );
         }
         catch ( MisconfiguredIndexException e )
         {
@@ -642,8 +643,8 @@ public class BatchInserterImpl implements BatchInserter
         {
             schemaRuleAccess.writeSchemaRule( constraintRule );
             schemaCache.addSchemaRule( constraintRule );
-            schemaRuleAccess.writeSchemaRule( storeIndexDescriptor );
-            schemaCache.addSchemaRule( storeIndexDescriptor );
+            schemaRuleAccess.writeSchemaRule( index );
+            schemaCache.addSchemaRule( index );
             labelsTouched = true;
             flushStrategy.forceFlush();
         }
@@ -1179,8 +1180,8 @@ public class BatchInserterImpl implements BatchInserter
 
             validateIndexCanBeCreated( schema );
 
-            IndexReference indexReference = createIndex( schema, indexName );
-            return new IndexDefinitionImpl( this, indexReference, new Label[]{label}, propertyKeys, false );
+            IndexDescriptor2 index = createIndex( schema, indexName );
+            return new IndexDefinitionImpl( this, index, new Label[]{label}, propertyKeys, false );
         }
 
         @Override

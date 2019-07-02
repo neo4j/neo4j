@@ -31,7 +31,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.RelationshipType;
-import org.neo4j.internal.schema.SchemaDescriptor;
+import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.constraints.ConstraintDescriptorFactory;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
@@ -41,7 +41,6 @@ import org.neo4j.kernel.database.TestDatabaseIdRepository;
 import org.neo4j.kernel.impl.api.ClockContext;
 import org.neo4j.kernel.impl.api.KernelStatement;
 import org.neo4j.kernel.impl.api.state.TxState;
-import org.neo4j.kernel.impl.index.schema.IndexDescriptorFactory;
 import org.neo4j.lock.LockTracer;
 import org.neo4j.lock.ResourceLocker;
 import org.neo4j.resources.CpuClock;
@@ -62,6 +61,7 @@ import org.neo4j.values.storable.Values;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.graphdb.Label.label;
+import static org.neo4j.internal.schema.SchemaDescriptor.forLabel;
 
 /**
  * Base class for disk layer tests, which test read-access to committed data.
@@ -190,16 +190,18 @@ public abstract class RecordStorageReaderTestBase
     private void createUniqueIndex( Label label, String propertyKey ) throws Exception
     {
         TxState txState = new TxState();
-        txState.indexDoAdd( IndexDescriptorFactory.uniqueForSchema(
-                SchemaDescriptor.forLabel( getOrCreateLabelId( label ), getOrCreatePropertyKeyId( propertyKey ) ) ) );
+        int labelId = getOrCreateLabelId( label );
+        int propertyKeyId = getOrCreatePropertyKeyId( propertyKey );
+        txState.indexDoAdd( IndexPrototype.uniqueForSchema( forLabel( labelId, propertyKeyId ) ).materialise( commitContext.reserveSchema() ) );
         apply( txState );
     }
 
     void createIndex( Label label, String propertyKey ) throws Exception
     {
         TxState txState = new TxState();
-        txState.indexDoAdd( IndexDescriptorFactory.forSchema(
-                SchemaDescriptor.forLabel( getOrCreateLabelId( label ), getOrCreatePropertyKeyId( propertyKey ) ) ) );
+        int labelId = getOrCreateLabelId( label );
+        int propertyKeyId = getOrCreatePropertyKeyId( propertyKey );
+        txState.indexDoAdd( IndexPrototype.forSchema( forLabel( labelId, propertyKeyId ) ).materialise( commitContext.reserveSchema() ) );
         apply( txState );
     }
 

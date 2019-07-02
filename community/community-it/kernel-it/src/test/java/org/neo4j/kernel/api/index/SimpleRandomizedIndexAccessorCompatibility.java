@@ -31,10 +31,10 @@ import java.util.Set;
 import java.util.TreeSet;
 import java.util.stream.Collectors;
 
-import org.neo4j.internal.schema.IndexOrder;
 import org.neo4j.internal.kernel.api.IndexQuery;
+import org.neo4j.internal.schema.IndexOrder;
+import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.SchemaDescriptor;
-import org.neo4j.kernel.api.schema.index.TestIndexDescriptorFactory;
 import org.neo4j.storageengine.api.IndexEntryUpdate;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.ValueType;
@@ -44,6 +44,7 @@ import static org.hamcrest.Matchers.equalTo;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.neo4j.internal.helpers.collection.Iterables.single;
+import static org.neo4j.internal.schema.SchemaDescriptor.forLabel;
 import static org.neo4j.kernel.api.index.IndexQueryHelper.add;
 import static org.neo4j.kernel.api.index.IndexQueryHelper.remove;
 import static org.neo4j.storageengine.api.IndexEntryUpdate.change;
@@ -57,7 +58,7 @@ public class SimpleRandomizedIndexAccessorCompatibility extends IndexAccessorCom
 {
     public SimpleRandomizedIndexAccessorCompatibility( IndexProviderCompatibilityTestSuite testSuite )
     {
-        super( testSuite, TestIndexDescriptorFactory.forLabel( 1000, 100 ) );
+        super( testSuite, IndexPrototype.forSchema( forLabel( 1000, 100 ) ) );
     }
 
     @Test

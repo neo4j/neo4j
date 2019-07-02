@@ -52,6 +52,9 @@ import org.neo4j.internal.kernel.api.TokenRead;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
 import org.neo4j.internal.recordstorage.RecordStorageEngine;
 import org.neo4j.internal.recordstorage.SchemaCache;
+import org.neo4j.internal.schema.IndexDescriptor2;
+import org.neo4j.internal.schema.IndexPrototype;
+import org.neo4j.internal.schema.IndexProviderDescriptor;
 import org.neo4j.internal.schema.LabelSchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.internal.schema.SchemaState;
@@ -61,7 +64,6 @@ import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.exceptions.index.IndexActivationFailedKernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexPopulationFailedKernelException;
 import org.neo4j.kernel.api.index.IndexProvider;
-import org.neo4j.internal.schema.IndexProviderDescriptor;
 import org.neo4j.kernel.api.index.IndexReader;
 import org.neo4j.kernel.impl.api.index.IndexProviderMap;
 import org.neo4j.kernel.impl.api.index.IndexProxy;
@@ -71,8 +73,6 @@ import org.neo4j.kernel.impl.api.index.StoreScan;
 import org.neo4j.kernel.impl.api.index.stats.IndexStatisticsStore;
 import org.neo4j.kernel.impl.constraints.StandardConstraintSemantics;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
-import org.neo4j.kernel.impl.index.schema.IndexDescriptorFactory;
-import org.neo4j.kernel.impl.index.schema.StoreIndexDescriptor;
 import org.neo4j.kernel.impl.transaction.state.storeview.DynamicIndexStoreView;
 import org.neo4j.kernel.impl.transaction.state.storeview.EntityIdIterator;
 import org.neo4j.kernel.impl.transaction.state.storeview.LabelScanViewNodeStoreScan;
@@ -113,7 +113,7 @@ public class MultiIndexPopulationConcurrentUpdatesIT
 
     @Rule
     public EmbeddedDbmsRule embeddedDatabase = new EmbeddedDbmsRule();
-    private StoreIndexDescriptor[] rules;
+    private IndexDescriptor2[] rules;
     private StorageEngine storageEngine;
     private SchemaCache schemaCache;
 
@@ -385,13 +385,13 @@ public class MultiIndexPopulationConcurrentUpdatesIT
         indexProxy.activate();
     }
 
-    private StoreIndexDescriptor[] createIndexRules( Map<String,Integer> labelNameIdMap, int propertyId )
+    private IndexDescriptor2[] createIndexRules( Map<String,Integer> labelNameIdMap, int propertyId )
     {
         IndexProvider lookup = getIndexProviderMap().lookup( schemaIndex.providerName() );
         IndexProviderDescriptor providerDescriptor = lookup.getProviderDescriptor();
         return labelNameIdMap.values().stream()
-                .map( index -> IndexDescriptorFactory.forSchema( SchemaDescriptor.forLabel( index, propertyId ), providerDescriptor ).withId( index ) )
-                .toArray( StoreIndexDescriptor[]::new );
+                .map( index -> IndexPrototype.forSchema( SchemaDescriptor.forLabel( index, propertyId ), providerDescriptor ).materialise( index ) )
+                .toArray( IndexDescriptor2[]::new );
     }
 
     private Map<String, Integer> getLabelIdsByName( String... names )
@@ -655,13 +655,13 @@ public class MultiIndexPopulationConcurrentUpdatesIT
         public void run()
         {
             LabelSchemaDescriptor descriptor = SchemaDescriptor.forLabel( labelIdToDropIndexFor, propertyId );
-            StoreIndexDescriptor rule = findRuleForLabel( descriptor );
+            IndexDescriptor2 rule = findRuleForLabel( descriptor );
             indexService.dropIndex( rule );
         }
 
-        private StoreIndexDescriptor findRuleForLabel( LabelSchemaDescriptor schemaDescriptor )
+        private IndexDescriptor2 findRuleForLabel( LabelSchemaDescriptor schemaDescriptor )
         {
-            for ( StoreIndexDescriptor rule : rules )
+            for ( IndexDescriptor2 rule : rules )
             {
                 if ( rule.schema().equals( schemaDescriptor ) )
                 {

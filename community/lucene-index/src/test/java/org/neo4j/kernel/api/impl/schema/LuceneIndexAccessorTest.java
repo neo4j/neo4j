@@ -22,7 +22,8 @@ package org.neo4j.kernel.api.impl.schema;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import org.neo4j.kernel.impl.index.schema.IndexDescriptor;
+import org.neo4j.internal.schema.SchemaDescriptor;
+import org.neo4j.kernel.api.schema.index.TestIndexDescriptorFactory;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -32,14 +33,13 @@ import static org.mockito.Mockito.when;
 class LuceneIndexAccessorTest
 {
     private final SchemaIndex schemaIndex = mock( SchemaIndex.class );
-    private final IndexDescriptor schemaIndexDescriptor = mock( IndexDescriptor.class );
 
     private LuceneIndexAccessor accessor;
 
     @BeforeEach
     void setUp()
     {
-        accessor = new LuceneIndexAccessor( schemaIndex, schemaIndexDescriptor );
+        accessor = new LuceneIndexAccessor( schemaIndex, TestIndexDescriptorFactory.forSchema( SchemaDescriptor.forLabel( 1, 2 ) ) );
     }
 
     @Test

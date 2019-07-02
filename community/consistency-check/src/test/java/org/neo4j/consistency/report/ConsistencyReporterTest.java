@@ -53,11 +53,11 @@ import org.neo4j.consistency.store.synthetic.CountsEntry;
 import org.neo4j.consistency.store.synthetic.IndexEntry;
 import org.neo4j.consistency.store.synthetic.LabelScanDocument;
 import org.neo4j.internal.index.label.NodeLabelRange;
+import org.neo4j.internal.schema.IndexDescriptor2;
+import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.IndexProviderDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.internal.schema.SchemaRule;
-import org.neo4j.kernel.impl.index.schema.IndexDescriptorFactory;
-import org.neo4j.kernel.impl.index.schema.StoreIndexDescriptor;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.LabelTokenRecord;
@@ -379,15 +379,15 @@ public class ConsistencyReporterTest
             }
             if ( type == IndexEntry.class )
             {
-                return new IndexEntry( IndexDescriptorFactory.forSchema( SchemaDescriptor.forLabel( 1, 1 ) ).withId( 1L ), idTokenNameLookup, 0 );
+                return new IndexEntry( IndexPrototype.forSchema( SchemaDescriptor.forLabel( 1, 1 ) ).materialise( 1L ), idTokenNameLookup, 0 );
             }
             if ( type == CountsEntry.class )
             {
                 return new CountsEntry( nodeKey( 7 ), 42 );
             }
-            if ( type == StoreIndexDescriptor.class )
+            if ( type == IndexDescriptor2.class )
             {
-                return IndexDescriptorFactory.forSchema( forLabel( 2, 3 ), IndexProviderDescriptor.UNDECIDED ).withId( 1 );
+                return IndexPrototype.forSchema( forLabel( 2, 3 ), IndexProviderDescriptor.UNDECIDED ).materialise( 1 );
             }
             if ( type == SchemaRule.class )
             {
@@ -471,7 +471,7 @@ public class ConsistencyReporterTest
 
     private static Matcher<String> hasExpectedFormat()
     {
-        return new TypeSafeMatcher<String>()
+        return new TypeSafeMatcher<>()
         {
             @Override
             public boolean matchesSafely( String item )

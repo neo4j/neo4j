@@ -19,10 +19,10 @@
  */
 package org.neo4j.consistency.checking;
 
-import org.neo4j.internal.schema.constraints.ConstraintDescriptorFactory;
+import org.neo4j.internal.schema.IndexDescriptor2;
+import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.IndexProviderDescriptor;
-import org.neo4j.kernel.impl.index.schema.IndexDescriptorFactory;
-import org.neo4j.kernel.impl.index.schema.StoreIndexDescriptor;
+import org.neo4j.internal.schema.constraints.ConstraintDescriptorFactory;
 import org.neo4j.storageengine.api.ConstraintRule;
 
 import static org.neo4j.internal.schema.SchemaDescriptor.forLabel;
@@ -51,20 +51,20 @@ public class SchemaRuleUtil
                 ConstraintDescriptorFactory.existsForRelType( relTypeId, propertyId ) );
     }
 
-    public static StoreIndexDescriptor indexRule( long ruleId, int labelId, int propertyId, IndexProviderDescriptor descriptor )
+    public static IndexDescriptor2 indexRule( long ruleId, int labelId, int propertyId, IndexProviderDescriptor descriptor )
     {
-        return IndexDescriptorFactory.forSchema( forLabel( labelId, propertyId ), descriptor ).withId( ruleId );
+        return IndexPrototype.forSchema( forLabel( labelId, propertyId ), descriptor ).materialise( ruleId );
     }
 
-    public static StoreIndexDescriptor constraintIndexRule( long ruleId, int labelId, int propertyId,
+    public static IndexDescriptor2 constraintIndexRule( long ruleId, int labelId, int propertyId,
                                                             IndexProviderDescriptor descriptor, long constraintId )
     {
-        return IndexDescriptorFactory.uniqueForSchema( forLabel( labelId, propertyId ), descriptor ).withIds( ruleId, constraintId );
+        return IndexPrototype.uniqueForSchema( forLabel( labelId, propertyId ), descriptor ).materialise( ruleId ).withOwningConstraintId( constraintId );
     }
 
-    public static StoreIndexDescriptor constraintIndexRule( long ruleId, int labelId, int propertyId,
+    public static IndexDescriptor2 constraintIndexRule( long ruleId, int labelId, int propertyId,
                                                             IndexProviderDescriptor descriptor )
     {
-        return IndexDescriptorFactory.uniqueForSchema( forLabel( labelId, propertyId ), descriptor ).withId( ruleId );
+        return IndexPrototype.uniqueForSchema( forLabel( labelId, propertyId ), descriptor ).materialise( ruleId );
     }
 }

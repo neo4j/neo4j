@@ -86,7 +86,6 @@ import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.index.schema.GenericNativeIndexProvider;
-import org.neo4j.kernel.impl.index.schema.StoreIndexDescriptor;
 import org.neo4j.kernel.impl.store.DynamicRecordAllocator;
 import org.neo4j.kernel.impl.store.NodeLabelsField;
 import org.neo4j.kernel.impl.store.PropertyStore;
@@ -139,10 +138,10 @@ import static org.neo4j.internal.helpers.collection.Iterables.asIterable;
 import static org.neo4j.internal.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.internal.kernel.api.TokenRead.ANY_LABEL;
 import static org.neo4j.internal.kernel.api.TokenRead.ANY_RELATIONSHIP_TYPE;
+import static org.neo4j.internal.schema.IndexPrototype.forSchema;
+import static org.neo4j.internal.schema.IndexPrototype.uniqueForSchema;
 import static org.neo4j.internal.schema.SchemaDescriptor.forLabel;
 import static org.neo4j.kernel.impl.index.schema.ByteBufferFactory.heapBufferFactory;
-import static org.neo4j.kernel.impl.index.schema.IndexDescriptorFactory.forSchema;
-import static org.neo4j.kernel.impl.index.schema.IndexDescriptorFactory.uniqueForSchema;
 import static org.neo4j.kernel.impl.store.AbstractDynamicStore.readFullByteArrayFromHeavyRecords;
 import static org.neo4j.kernel.impl.store.DynamicArrayStore.allocateFromNumbers;
 import static org.neo4j.kernel.impl.store.DynamicArrayStore.getRightArray;
@@ -1015,7 +1014,7 @@ public class FullCheckIntegrationTest
                 SchemaRecord after = cloneRecord( before );
                 after.initialize( true, next.property() ); // Point to a record that isn't in use.
 
-                StoreIndexDescriptor rule = indexRule( after.getId(), label1, key1, DESCRIPTOR );
+                IndexDescriptor2 rule = indexRule( after.getId(), label1, key1, DESCRIPTOR );
                 tx.createSchema( before, after, rule );
             }
         } );
@@ -1047,8 +1046,8 @@ public class FullCheckIntegrationTest
                 SchemaRecord after1 = cloneRecord( before1 ).initialize( true, 0 );
                 SchemaRecord after2 = cloneRecord( before2 ).initialize( true, 0 );
 
-                StoreIndexDescriptor rule1 = constraintIndexRule( ruleId1, labelId, propertyKeyId, DESCRIPTOR, ruleId1 );
-                StoreIndexDescriptor rule2 = constraintIndexRule( ruleId2, labelId, propertyKeyId, DESCRIPTOR, ruleId1 );
+                IndexDescriptor2 rule1 = constraintIndexRule( ruleId1, labelId, propertyKeyId, DESCRIPTOR, ruleId1 );
+                IndexDescriptor2 rule2 = constraintIndexRule( ruleId2, labelId, propertyKeyId, DESCRIPTOR, ruleId1 );
 
                 serializeRule( rule1, after1, tx, next );
                 serializeRule( rule2, after2, tx, next );
@@ -1088,7 +1087,7 @@ public class FullCheckIntegrationTest
                 SchemaRecord after1 = cloneRecord( before1 ).initialize( true, 0 );
                 SchemaRecord after2 = cloneRecord( before2 ).initialize( true, 0 );
 
-                StoreIndexDescriptor rule1 = constraintIndexRule( ruleId1, labelId, propertyKeyId, DESCRIPTOR, ruleId2 );
+                IndexDescriptor2 rule1 = constraintIndexRule( ruleId1, labelId, propertyKeyId, DESCRIPTOR, ruleId2 );
                 ConstraintRule rule2 = uniquenessConstraintRule( ruleId2, labelId, propertyKeyId, ruleId2 );
 
                 serializeRule( rule1, after1, tx, next );
@@ -2379,7 +2378,7 @@ public class FullCheckIntegrationTest
             protected void transactionData( GraphStoreFixture.TransactionDataBuilder tx, GraphStoreFixture.IdGenerator next ) throws KernelException
             {
                 int id = (int) next.schema();
-                StoreIndexDescriptor index = forSchema( forLabel( labelId, propertyKeyIds ), DESCRIPTOR ).withId( id );
+                IndexDescriptor2 index = forSchema( forLabel( labelId, propertyKeyIds ), DESCRIPTOR ).materialise( id );
 
                 SchemaRecord before = new SchemaRecord( id );
                 SchemaRecord after = cloneRecord( before );
@@ -2398,8 +2397,8 @@ public class FullCheckIntegrationTest
         long ruleId1 = schemaStore.nextId();
         long ruleId2 = schemaStore.nextId();
 
-        StoreIndexDescriptor indexRule =
-                uniqueForSchema( forLabel( labelId, propertyKeyIds ), DESCRIPTOR ).withIds( ruleId1, ruleId2 );
+        IndexDescriptor2 indexRule =
+                uniqueForSchema( forLabel( labelId, propertyKeyIds ), DESCRIPTOR ).materialise( ruleId1 ).withOwningConstraintId( ruleId2 );
         ConstraintRule uniqueRule = ConstraintRule.constraintRule( ruleId2,
                 ConstraintDescriptorFactory.uniqueForLabel( labelId, propertyKeyIds ), ruleId1 );
 
@@ -2414,8 +2413,8 @@ public class FullCheckIntegrationTest
         long ruleId1 = schemaStore.nextId();
         long ruleId2 = schemaStore.nextId();
 
-        StoreIndexDescriptor indexRule =
-                uniqueForSchema( forLabel( labelId, propertyKeyIds ), DESCRIPTOR ).withIds( ruleId1, ruleId2 );
+        IndexDescriptor2 indexRule =
+                uniqueForSchema( forLabel( labelId, propertyKeyIds ), DESCRIPTOR ).materialise( ruleId1 ).withOwningConstraintId( ruleId2 );
         ConstraintRule nodeKeyRule = ConstraintRule.constraintRule( ruleId2,
                 ConstraintDescriptorFactory.nodeKeyForLabel( labelId, propertyKeyIds ), ruleId1 );
 

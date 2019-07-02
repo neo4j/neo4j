@@ -38,6 +38,8 @@ import java.util.Set;
 
 import org.neo4j.configuration.Config;
 import org.neo4j.internal.kernel.api.InternalIndexState;
+import org.neo4j.internal.schema.IndexDescriptor2;
+import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.impl.index.storage.DirectoryFactory;
@@ -45,11 +47,8 @@ import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.index.IndexQueryHelper;
 import org.neo4j.kernel.api.index.IndexUpdater;
-import org.neo4j.kernel.impl.api.index.IndexStoreView;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.kernel.impl.factory.OperationalMode;
-import org.neo4j.kernel.impl.index.schema.IndexDescriptorFactory;
-import org.neo4j.kernel.impl.index.schema.StoreIndexDescriptor;
 import org.neo4j.storageengine.api.IndexEntryUpdate;
 import org.neo4j.storageengine.api.NodePropertyAccessor;
 import org.neo4j.test.extension.DefaultFileSystemExtension;
@@ -77,14 +76,13 @@ class LuceneSchemaIndexPopulatorTest
     @Inject
     private TestDirectory testDir;
 
-    private IndexStoreView indexStoreView;
     private LuceneIndexProvider provider;
     private Directory directory;
     private IndexPopulator indexPopulator;
     private IndexReader reader;
     private IndexSearcher searcher;
     private static final int propertyKeyId = 666;
-    private StoreIndexDescriptor index;
+    private IndexDescriptor2 index;
     private NodePropertyAccessor propertyAccessor;
 
     @BeforeEach
@@ -95,10 +93,9 @@ class LuceneSchemaIndexPopulatorTest
                 new DirectoryFactory.UncloseableDirectory( directory ) );
         provider = new LuceneIndexProvider( fs, directoryFactory, directoriesByProvider( testDir.directory( "folder" ) ),
                 IndexProvider.Monitor.EMPTY, Config.defaults(), OperationalMode.SINGLE );
-        indexStoreView = mock( IndexStoreView.class );
         propertyAccessor = mock( NodePropertyAccessor.class );
         IndexSamplingConfig samplingConfig = new IndexSamplingConfig( Config.defaults() );
-        index = IndexDescriptorFactory.forSchema( forLabel( 42, propertyKeyId ), provider.getProviderDescriptor() ).withId( 0 );
+        index = IndexPrototype.forSchema( forLabel( 42, propertyKeyId ), provider.getProviderDescriptor() ).materialise( 0 );
         indexPopulator = provider.getPopulator( index, samplingConfig, heapBufferFactory( 1024 ) );
         indexPopulator.create();
     }
@@ -307,8 +304,7 @@ class LuceneSchemaIndexPopulatorTest
         searcher = new IndexSearcher( reader );
     }
 
-    private void addUpdate( IndexPopulator populator, long nodeId, Object value )
-            throws IOException, IndexEntryConflictException
+    private void addUpdate( IndexPopulator populator, long nodeId, Object value ) throws IndexEntryConflictException
     {
         populator.add( singletonList( IndexQueryHelper.add( nodeId, index.schema(), value ) ) );
     }
@@ -316,8 +312,7 @@ class LuceneSchemaIndexPopulatorTest
     private static void updatePopulator(
             IndexPopulator populator,
             Iterable<IndexEntryUpdate<?>> updates,
-            NodePropertyAccessor accessor )
-            throws IOException, IndexEntryConflictException
+            NodePropertyAccessor accessor ) throws IndexEntryConflictException
     {
         try ( IndexUpdater updater = populator.newPopulatingUpdater( accessor ) )
         {

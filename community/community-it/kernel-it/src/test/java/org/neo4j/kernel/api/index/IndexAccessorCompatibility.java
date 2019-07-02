@@ -32,12 +32,12 @@ import java.util.List;
 import java.util.Map;
 
 import org.neo4j.configuration.Config;
-import org.neo4j.internal.schema.IndexOrder;
 import org.neo4j.internal.kernel.api.IndexQuery;
+import org.neo4j.internal.schema.IndexOrder;
+import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
-import org.neo4j.kernel.impl.index.schema.IndexDescriptor;
 import org.neo4j.storageengine.api.IndexEntryUpdate;
 import org.neo4j.storageengine.api.schema.SimpleNodeValueClient;
 import org.neo4j.values.storable.RandomValues;
@@ -59,9 +59,9 @@ public abstract class IndexAccessorCompatibility extends IndexProviderCompatibil
     // This map is for spatial values, so that the #query method can lookup the values for the results and filter properly
     private Map<Long,Value[]> committedValues = new HashMap<>();
 
-    IndexAccessorCompatibility( IndexProviderCompatibilityTestSuite testSuite, IndexDescriptor descriptor )
+    IndexAccessorCompatibility( IndexProviderCompatibilityTestSuite testSuite, IndexPrototype prototype )
     {
-        super( testSuite, descriptor );
+        super( testSuite, prototype );
     }
 
     @Before

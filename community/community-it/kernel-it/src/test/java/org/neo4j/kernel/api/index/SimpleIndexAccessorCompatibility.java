@@ -41,10 +41,9 @@ import java.util.List;
 import java.util.Set;
 import java.util.function.Supplier;
 
-import org.neo4j.internal.schema.IndexOrder;
 import org.neo4j.internal.kernel.api.IndexQuery;
-import org.neo4j.kernel.api.schema.index.TestIndexDescriptorFactory;
-import org.neo4j.kernel.impl.index.schema.IndexDescriptor;
+import org.neo4j.internal.schema.IndexOrder;
+import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.storageengine.api.IndexEntryUpdate;
 import org.neo4j.storageengine.api.schema.SimpleNodeValueClient;
 import org.neo4j.values.storable.ArrayValue;
@@ -75,6 +74,7 @@ import static org.neo4j.internal.kernel.api.IndexQuery.range;
 import static org.neo4j.internal.kernel.api.IndexQuery.stringContains;
 import static org.neo4j.internal.kernel.api.IndexQuery.stringPrefix;
 import static org.neo4j.internal.kernel.api.IndexQuery.stringSuffix;
+import static org.neo4j.internal.schema.SchemaDescriptor.forLabel;
 import static org.neo4j.kernel.api.index.IndexQueryHelper.add;
 import static org.neo4j.values.storable.DateTimeValue.datetime;
 import static org.neo4j.values.storable.DateValue.epochDate;
@@ -91,9 +91,9 @@ import static org.neo4j.values.storable.Values.stringValue;
         " errors or warnings in some IDEs about test classes needing a public zero-arg constructor." )
 public abstract class SimpleIndexAccessorCompatibility extends IndexAccessorCompatibility
 {
-    SimpleIndexAccessorCompatibility( IndexProviderCompatibilityTestSuite testSuite, IndexDescriptor descriptor )
+    SimpleIndexAccessorCompatibility( IndexProviderCompatibilityTestSuite testSuite, IndexPrototype prototype )
     {
-        super( testSuite, descriptor );
+        super( testSuite, prototype );
     }
 
     // This behaviour is shared by General and Unique indexes
@@ -892,7 +892,7 @@ public abstract class SimpleIndexAccessorCompatibility extends IndexAccessorComp
     {
         public General( IndexProviderCompatibilityTestSuite testSuite )
         {
-            super( testSuite, TestIndexDescriptorFactory.forLabel( 1000, 100 ) );
+            super( testSuite, IndexPrototype.forSchema( forLabel( 1000, 100 ) ) );
         }
 
         @Test
@@ -1132,7 +1132,7 @@ public abstract class SimpleIndexAccessorCompatibility extends IndexAccessorComp
     {
         public Unique( IndexProviderCompatibilityTestSuite testSuite )
         {
-            super( testSuite, TestIndexDescriptorFactory.uniqueForLabel( 1000, 100 ) );
+            super( testSuite, IndexPrototype.uniqueForSchema( forLabel( 1000, 100 ) ) );
         }
 
         @Test

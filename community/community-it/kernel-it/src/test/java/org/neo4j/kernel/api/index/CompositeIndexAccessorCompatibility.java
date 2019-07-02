@@ -42,11 +42,10 @@ import java.util.Set;
 import java.util.stream.Stream;
 
 import org.neo4j.internal.helpers.collection.Pair;
-import org.neo4j.internal.schema.IndexOrder;
 import org.neo4j.internal.kernel.api.IndexQuery;
+import org.neo4j.internal.schema.IndexOrder;
+import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.SchemaDescriptor;
-import org.neo4j.kernel.api.schema.index.TestIndexDescriptorFactory;
-import org.neo4j.kernel.impl.index.schema.IndexDescriptor;
 import org.neo4j.storageengine.api.IndexEntryUpdate;
 import org.neo4j.storageengine.api.schema.SimpleNodeValueClient;
 import org.neo4j.values.storable.ArrayValue;
@@ -84,6 +83,7 @@ import static org.neo4j.internal.kernel.api.IndexQuery.stringContains;
 import static org.neo4j.internal.kernel.api.IndexQuery.stringPrefix;
 import static org.neo4j.internal.kernel.api.IndexQuery.stringSuffix;
 import static org.neo4j.internal.kernel.api.QueryContext.NULL_CONTEXT;
+import static org.neo4j.internal.schema.SchemaDescriptor.forLabel;
 import static org.neo4j.kernel.api.index.IndexQueryHelper.exact;
 import static org.neo4j.values.storable.CoordinateReferenceSystem.Cartesian;
 import static org.neo4j.values.storable.CoordinateReferenceSystem.WGS84;
@@ -106,9 +106,9 @@ import static org.neo4j.values.storable.Values.stringValue;
         " errors or warnings in some IDEs about test classes needing a public zero-arg constructor." )
 public abstract class CompositeIndexAccessorCompatibility extends IndexAccessorCompatibility
 {
-    CompositeIndexAccessorCompatibility( IndexProviderCompatibilityTestSuite testSuite, IndexDescriptor descriptor )
+    CompositeIndexAccessorCompatibility( IndexProviderCompatibilityTestSuite testSuite, IndexPrototype prototype )
     {
-        super( testSuite, descriptor );
+        super( testSuite, prototype );
     }
 
     /* testIndexSeekAndScan */
@@ -1323,7 +1323,7 @@ public abstract class CompositeIndexAccessorCompatibility extends IndexAccessorC
     {
         public General( IndexProviderCompatibilityTestSuite testSuite )
         {
-            super( testSuite, TestIndexDescriptorFactory.forLabel( 1000, 100, 200 ) );
+            super( testSuite, IndexPrototype.forSchema( forLabel( 1000, 100, 200 ) ) );
         }
 
         @Test
@@ -1414,7 +1414,7 @@ public abstract class CompositeIndexAccessorCompatibility extends IndexAccessorC
     {
         public Unique( IndexProviderCompatibilityTestSuite testSuite )
         {
-            super( testSuite, TestIndexDescriptorFactory.uniqueForLabel( 1000, 100, 200 ) );
+            super( testSuite, IndexPrototype.uniqueForSchema( forLabel( 1000, 100, 200 ) ) );
         }
 
         @Test

@@ -40,6 +40,7 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.internal.kernel.api.TokenRead;
 import org.neo4j.internal.kernel.api.exceptions.schema.MisconfiguredIndexException;
+import org.neo4j.internal.schema.IndexDescriptor2;
 import org.neo4j.internal.schema.LabelSchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -54,8 +55,6 @@ import org.neo4j.kernel.extension.ExtensionFactory;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.index.schema.CollectingIndexUpdater;
-import org.neo4j.kernel.impl.index.schema.IndexDescriptor;
-import org.neo4j.kernel.impl.index.schema.StoreIndexDescriptor;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.storageengine.api.IndexEntryUpdate;
 import org.neo4j.storageengine.api.NodePropertyAccessor;
@@ -181,7 +180,7 @@ class IndexCRUDIT
         when( mockedIndexProvider.getProviderDescriptor() ).thenReturn( PROVIDER_DESCRIPTOR );
         when( mockedIndexProvider.storeMigrationParticipant( any( FileSystemAbstraction.class ), any( PageCache.class ), any() ) )
                 .thenReturn( StoreMigrationParticipant.NOT_PARTICIPATING );
-        when( mockedIndexProvider.bless( any( IndexDescriptor.class ) ) ).thenCallRealMethod();
+        when( mockedIndexProvider.bless( any( IndexDescriptor2.class ) ) ).thenCallRealMethod();
 
         Dependencies dependencies = new Dependencies();
         dependencies.satisfyDependencies( SystemGraphInitializer.NO_OP );   // disable system graph construction because it will interfere with some tests
@@ -200,8 +199,8 @@ class IndexCRUDIT
     private GatheringIndexWriter newWriter() throws IOException
     {
         GatheringIndexWriter writer = new GatheringIndexWriter();
-        when( mockedIndexProvider.getPopulator( any( StoreIndexDescriptor.class ), any( IndexSamplingConfig.class ), any() ) ).thenReturn( writer );
-        when( mockedIndexProvider.getOnlineAccessor( any( StoreIndexDescriptor.class ), any( IndexSamplingConfig.class ) ) ).thenReturn( writer );
+        when( mockedIndexProvider.getPopulator( any( IndexDescriptor2.class ), any( IndexSamplingConfig.class ), any() ) ).thenReturn( writer );
+        when( mockedIndexProvider.getOnlineAccessor( any( IndexDescriptor2.class ), any( IndexSamplingConfig.class ) ) ).thenReturn( writer );
         return writer;
     }
 

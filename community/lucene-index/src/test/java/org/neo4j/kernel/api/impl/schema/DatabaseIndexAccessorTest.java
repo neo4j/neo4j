@@ -38,10 +38,11 @@ import java.util.concurrent.Future;
 import org.neo4j.collection.PrimitiveLongCollections;
 import org.neo4j.configuration.Config;
 import org.neo4j.function.IOFunction;
-import org.neo4j.internal.schema.IndexOrder;
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotApplicableKernelException;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
+import org.neo4j.internal.schema.IndexDescriptor2;
+import org.neo4j.internal.schema.IndexOrder;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.impl.index.storage.DirectoryFactory;
 import org.neo4j.kernel.api.index.IndexQueryHelper;
@@ -50,7 +51,6 @@ import org.neo4j.kernel.api.index.IndexSampler;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.schema.index.TestIndexDescriptorFactory;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
-import org.neo4j.kernel.impl.index.schema.IndexDescriptor;
 import org.neo4j.kernel.impl.index.schema.NodeValueIterator;
 import org.neo4j.storageengine.api.IndexEntryUpdate;
 import org.neo4j.test.rule.concurrent.ThreadingRule;
@@ -72,7 +72,7 @@ import static org.neo4j.test.rule.concurrent.ThreadingRule.waitingWhileIn;
 @RunWith( Parameterized.class )
 public class DatabaseIndexAccessorTest
 {
-    public static final int PROP_ID = 1;
+    private static final int PROP_ID = 1;
 
     @Rule
     public final ThreadingRule threading = new ThreadingRule();
@@ -80,7 +80,7 @@ public class DatabaseIndexAccessorTest
     public static final EphemeralFileSystemRule fileSystemRule = new EphemeralFileSystemRule();
 
     @Parameterized.Parameter( 0 )
-    public IndexDescriptor index;
+    public IndexDescriptor2 index;
     @Parameterized.Parameter( 1 )
     public IOFunction<DirectoryFactory,LuceneIndexAccessor> accessorFactory;
 
@@ -90,8 +90,8 @@ public class DatabaseIndexAccessorTest
     private final Object value = "value";
     private final Object value2 = "40";
     private DirectoryFactory.InMemoryDirectoryFactory dirFactory;
-    private static final IndexDescriptor GENERAL_INDEX = TestIndexDescriptorFactory.forLabel( 0, PROP_ID );
-    private static final IndexDescriptor UNIQUE_INDEX = TestIndexDescriptorFactory.uniqueForLabel( 1, PROP_ID );
+    private static final IndexDescriptor2 GENERAL_INDEX = TestIndexDescriptorFactory.forLabel( 0, PROP_ID );
+    private static final IndexDescriptor2 UNIQUE_INDEX = TestIndexDescriptorFactory.uniqueForLabel( 1, PROP_ID );
     private static final Config CONFIG = Config.defaults();
 
     @Parameterized.Parameters( name = "{0}" )
@@ -127,7 +127,7 @@ public class DatabaseIndexAccessorTest
     }
 
     private static Object[] arg(
-            IndexDescriptor index,
+            IndexDescriptor2 index,
             IOFunction<DirectoryFactory,LuceneIndexAccessor> foo )
     {
         return new Object[]{index, foo};
@@ -358,8 +358,7 @@ public class DatabaseIndexAccessorTest
         return IndexQueryHelper.change( nodeId, index.schema(), valueBefore, valueAfter );
     }
 
-    private void updateAndCommit( List<IndexEntryUpdate<?>> nodePropertyUpdates )
-            throws IOException, IndexEntryConflictException
+    private void updateAndCommit( List<IndexEntryUpdate<?>> nodePropertyUpdates ) throws IndexEntryConflictException
     {
         try ( IndexUpdater updater = accessor.newUpdater( IndexUpdateMode.ONLINE ) )
         {

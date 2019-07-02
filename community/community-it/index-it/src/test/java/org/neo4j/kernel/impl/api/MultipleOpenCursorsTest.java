@@ -37,23 +37,18 @@ import org.neo4j.exceptions.KernelException;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.internal.schema.IndexOrder;
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.internal.kernel.api.IndexReadSession;
 import org.neo4j.internal.kernel.api.NodeValueIndexCursor;
 import org.neo4j.internal.kernel.api.TokenRead;
-import org.neo4j.internal.kernel.api.exceptions.InvalidTransactionTypeKernelException;
-import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotApplicableKernelException;
-import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
+import org.neo4j.internal.schema.IndexDescriptor2;
+import org.neo4j.internal.schema.IndexOrder;
 import org.neo4j.kernel.api.KernelTransaction;
-import org.neo4j.kernel.api.exceptions.schema.AlreadyConstrainedException;
-import org.neo4j.kernel.api.exceptions.schema.AlreadyIndexedException;
-import org.neo4j.kernel.api.exceptions.schema.RepeatedPropertyInCompositeSchemaException;
 import org.neo4j.kernel.api.schema.index.TestIndexDescriptorFactory;
-import org.neo4j.kernel.impl.index.schema.IndexDescriptor;
 import org.neo4j.test.rule.DbmsRule;
 import org.neo4j.test.rule.EmbeddedDbmsRule;
 import org.neo4j.test.rule.RandomRule;
+import org.neo4j.values.storable.TextValue;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.collection.IsIterableContainingInAnyOrder.containsInAnyOrder;
@@ -88,9 +83,9 @@ import static org.junit.Assert.assertThat;
  * <li>Single property unique number index</li>
  * <li>Single property unique string index</li>
  * <li>Composite property mixed index</li>
- * <li>{@link IndexQuery#stringPrefix(int, String)}</li>
- * <li>{@link IndexQuery#stringSuffix(int, String)}</li>
- * <li>{@link IndexQuery#stringContains(int, String)}</li>
+ * <li>{@link IndexQuery#stringPrefix(int, TextValue)}</li>
+ * <li>{@link IndexQuery#stringSuffix(int, TextValue)}</li>
+ * <li>{@link IndexQuery#stringContains(int, TextValue)}</li>
  * <li>Composite property node key index (due to it being enterprise feature)</li>
  * <li>Label index iterators</li>
  * <li>Concurrency</li>
@@ -144,9 +139,7 @@ public class MultipleOpenCursorsTest
     private IndexCoordinator indexCoordinator;
 
     @Before
-    public void setupDb() throws InvalidTransactionTypeKernelException, RepeatedPropertyInCompositeSchemaException,
-            AlreadyIndexedException,
-            AlreadyConstrainedException, IndexNotFoundKernelException, InterruptedException
+    public void setupDb()
     {
         indexCoordinator =
                 indexCoordinatorFactory.create( indexLabel, numberProp1, numberProp2, stringProp1, stringProp2 );
@@ -433,7 +426,7 @@ public class MultipleOpenCursorsTest
         }
 
         @Override
-        protected IndexDescriptor extractIndexDescriptor()
+        protected IndexDescriptor2 extractIndexDescriptor()
         {
             return TestIndexDescriptorFactory.forLabel( indexedLabelId, stringPropId1, stringPropId2 );
         }
@@ -446,7 +439,6 @@ public class MultipleOpenCursorsTest
 
         @Override
         NodeValueIndexCursor queryRange( KernelTransaction ktx )
-                throws IndexNotApplicableKernelException, IndexNotFoundKernelException
         {
             throw new UnsupportedOperationException();
         }
@@ -498,7 +490,7 @@ public class MultipleOpenCursorsTest
         }
 
         @Override
-        protected IndexDescriptor extractIndexDescriptor()
+        protected IndexDescriptor2 extractIndexDescriptor()
         {
             return TestIndexDescriptorFactory.forLabel( indexedLabelId, numberPropId1, numberPropId2 );
         }
@@ -511,7 +503,6 @@ public class MultipleOpenCursorsTest
 
         @Override
         NodeValueIndexCursor queryRange( KernelTransaction ktx )
-                throws IndexNotApplicableKernelException, IndexNotFoundKernelException
         {
             throw new UnsupportedOperationException();
         }
@@ -562,7 +553,7 @@ public class MultipleOpenCursorsTest
         }
 
         @Override
-        protected IndexDescriptor extractIndexDescriptor()
+        protected IndexDescriptor2 extractIndexDescriptor()
         {
             return TestIndexDescriptorFactory.forLabel( indexedLabelId, stringPropId1 );
         }
@@ -633,7 +624,7 @@ public class MultipleOpenCursorsTest
         }
 
         @Override
-        protected IndexDescriptor extractIndexDescriptor()
+        protected IndexDescriptor2 extractIndexDescriptor()
         {
             return TestIndexDescriptorFactory.forLabel( indexedLabelId, numberPropId1 );
         }
@@ -715,7 +706,7 @@ public class MultipleOpenCursorsTest
         int numberPropId2;
         int stringPropId1;
         int stringPropId2;
-        IndexDescriptor indexDescriptor;
+        IndexDescriptor2 indexDescriptor;
 
         IndexCoordinator( Label indexLabel, String numberProp1, String numberProp2, String stringProp1,
                 String stringProp2 )
@@ -774,7 +765,7 @@ public class MultipleOpenCursorsTest
             indexDescriptor = extractIndexDescriptor();
         }
 
-        protected abstract IndexDescriptor extractIndexDescriptor();
+        protected abstract IndexDescriptor2 extractIndexDescriptor();
 
         void createIndex( DbmsRule db )
         {
@@ -822,7 +813,7 @@ public class MultipleOpenCursorsTest
 
         abstract void doCreateIndex( DbmsRule db );
 
-        NodeValueIndexCursor indexQuery( KernelTransaction ktx, IndexDescriptor indexDescriptor, IndexQuery... indexQueries ) throws KernelException
+        NodeValueIndexCursor indexQuery( KernelTransaction ktx, IndexDescriptor2 indexDescriptor, IndexQuery... indexQueries ) throws KernelException
         {
             NodeValueIndexCursor cursor = ktx.cursors().allocateNodeValueIndexCursor();
             IndexReadSession index = ktx.dataRead().indexReadSession( indexDescriptor );

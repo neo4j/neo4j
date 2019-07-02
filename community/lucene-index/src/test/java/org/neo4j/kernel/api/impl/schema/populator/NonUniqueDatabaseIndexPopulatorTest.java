@@ -25,14 +25,15 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.io.File;
-import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
 
 import org.neo4j.collection.PrimitiveLongCollections;
 import org.neo4j.configuration.Config;
-import org.neo4j.internal.schema.IndexOrder;
 import org.neo4j.internal.kernel.api.IndexQuery;
+import org.neo4j.internal.schema.IndexDescriptor2;
+import org.neo4j.internal.schema.IndexOrder;
+import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.io.IOUtils;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
@@ -43,8 +44,6 @@ import org.neo4j.kernel.api.impl.schema.SchemaIndex;
 import org.neo4j.kernel.api.index.IndexReader;
 import org.neo4j.kernel.api.index.IndexSample;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
-import org.neo4j.kernel.impl.index.schema.IndexDescriptor;
-import org.neo4j.kernel.impl.index.schema.IndexDescriptorFactory;
 import org.neo4j.kernel.impl.index.schema.NodeValueIterator;
 import org.neo4j.storageengine.api.IndexEntryUpdate;
 import org.neo4j.test.extension.DefaultFileSystemExtension;
@@ -76,7 +75,7 @@ class NonUniqueDatabaseIndexPopulatorTest
         File folder = testDir.directory( "folder" );
         PartitionedIndexStorage indexStorage = new PartitionedIndexStorage( dirFactory, fileSystem, folder );
 
-        IndexDescriptor descriptor = IndexDescriptorFactory.forSchema( labelSchemaDescriptor );
+        IndexDescriptor2 descriptor = IndexPrototype.forSchema( labelSchemaDescriptor ).materialise( 13 );
         index = LuceneSchemaIndexBuilder.create( descriptor, Config.defaults() )
                                         .withIndexStorage( indexStorage )
                                         .build();
@@ -93,7 +92,7 @@ class NonUniqueDatabaseIndexPopulatorTest
     }
 
     @Test
-    void sampleEmptyIndex() throws IOException
+    void sampleEmptyIndex()
     {
         populator = newPopulator();
 
@@ -103,7 +102,7 @@ class NonUniqueDatabaseIndexPopulatorTest
     }
 
     @Test
-    void sampleIncludedUpdates() throws Exception
+    void sampleIncludedUpdates()
     {
         populator = newPopulator();
 
@@ -120,7 +119,7 @@ class NonUniqueDatabaseIndexPopulatorTest
     }
 
     @Test
-    void sampleIncludedUpdatesWithDuplicates() throws Exception
+    void sampleIncludedUpdatesWithDuplicates()
     {
         populator = newPopulator();
 
@@ -158,7 +157,7 @@ class NonUniqueDatabaseIndexPopulatorTest
         }
     }
 
-    private NonUniqueLuceneIndexPopulator newPopulator() throws IOException
+    private NonUniqueLuceneIndexPopulator newPopulator()
     {
         IndexSamplingConfig samplingConfig = new IndexSamplingConfig( Config.defaults() );
         NonUniqueLuceneIndexPopulator populator = new NonUniqueLuceneIndexPopulator( index, samplingConfig );

@@ -43,10 +43,13 @@ import org.neo4j.collection.Dependencies;
 import org.neo4j.configuration.Config;
 import org.neo4j.function.IOFunction;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
-import org.neo4j.internal.schema.IndexOrder;
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotApplicableKernelException;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
+import org.neo4j.internal.schema.IndexDescriptor2;
+import org.neo4j.internal.schema.IndexOrder;
+import org.neo4j.internal.schema.IndexPrototype;
+import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.impl.index.storage.DirectoryFactory;
@@ -57,7 +60,6 @@ import org.neo4j.kernel.api.index.IndexQueryHelper;
 import org.neo4j.kernel.api.index.IndexReader;
 import org.neo4j.kernel.api.index.IndexSampler;
 import org.neo4j.kernel.api.index.IndexUpdater;
-import org.neo4j.kernel.api.schema.index.TestIndexDescriptorFactory;
 import org.neo4j.kernel.extension.DatabaseExtensions;
 import org.neo4j.kernel.extension.ExtensionFactory;
 import org.neo4j.kernel.extension.ExtensionFailureStrategies;
@@ -66,9 +68,7 @@ import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.kernel.impl.factory.DatabaseInfo;
 import org.neo4j.kernel.impl.index.schema.GenericNativeIndexProviderFactory;
-import org.neo4j.kernel.impl.index.schema.IndexDescriptor;
 import org.neo4j.kernel.impl.index.schema.NodeValueIterator;
-import org.neo4j.kernel.impl.index.schema.StoreIndexDescriptor;
 import org.neo4j.kernel.impl.pagecache.ConfigurableStandalonePageCacheFactory;
 import org.neo4j.kernel.impl.scheduler.JobSchedulerFactory;
 import org.neo4j.logging.AssertableLogProvider;
@@ -124,8 +124,8 @@ public class DatabaseCompositeIndexAccessorTest
     private final Object[] values = {"value1", "values2"};
     private final Object[] values2 = {40, 42};
     private DirectoryFactory.InMemoryDirectoryFactory dirFactory;
-    private static final IndexDescriptor SCHEMA_INDEX_DESCRIPTOR = TestIndexDescriptorFactory.forLabel( 0, PROP_ID1, PROP_ID2 );
-    private static final IndexDescriptor UNIQUE_SCHEMA_INDEX_DESCRIPTOR = TestIndexDescriptorFactory.uniqueForLabel( 1, PROP_ID1, PROP_ID2 );
+    private static final IndexPrototype SCHEMA_INDEX_DESCRIPTOR = IndexPrototype.forSchema( SchemaDescriptor.forLabel( 0, PROP_ID1, PROP_ID2 ) );
+    private static final IndexPrototype UNIQUE_SCHEMA_INDEX_DESCRIPTOR = IndexPrototype.uniqueForSchema( SchemaDescriptor.forLabel( 1, PROP_ID1, PROP_ID2 ) );
 
     @Parameterized.Parameters( name = "{0}" )
     public static Collection<Object[]> implementations() throws IOException
@@ -149,14 +149,14 @@ public class DatabaseCompositeIndexAccessorTest
         Collection<Object[]> params = new ArrayList<>();
         for ( IndexProvider provider : providers )
         {
-            params.add( parameterSetup( provider, SCHEMA_INDEX_DESCRIPTOR.withId( params.size() ) ) );
-            params.add( parameterSetup( provider, UNIQUE_SCHEMA_INDEX_DESCRIPTOR.withId( params.size() ) ) );
+            params.add( parameterSetup( provider, SCHEMA_INDEX_DESCRIPTOR.materialise( params.size() ) ) );
+            params.add( parameterSetup( provider, UNIQUE_SCHEMA_INDEX_DESCRIPTOR.materialise( params.size() ) ) );
         }
 
         return params;
     }
 
-    private static Object[] parameterSetup( IndexProvider provider, StoreIndexDescriptor descriptor )
+    private static Object[] parameterSetup( IndexProvider provider, IndexDescriptor2 descriptor )
     {
         IOFunction function = dirFactory1 ->
         {

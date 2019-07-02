@@ -52,6 +52,7 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.internal.helpers.progress.ProgressMonitorFactory;
 import org.neo4j.internal.recordstorage.RecordStorageEngine;
+import org.neo4j.internal.schema.IndexDescriptor2;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.impl.api.index.IndexProxy;
@@ -59,7 +60,6 @@ import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.coreapi.schema.IndexDefinitionImpl;
 import org.neo4j.kernel.impl.index.schema.FailingGenericNativeIndexProviderFactory;
-import org.neo4j.kernel.impl.index.schema.StoreIndexDescriptor;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
@@ -494,7 +494,7 @@ class FulltextIndexConsistencyCheckIT
             db.execute( format( NODE_CREATE, "nodes", array( "Label" ), array( "prop" ) ) ).close();
             tx.success();
         }
-        StoreIndexDescriptor indexDescriptor;
+        IndexDescriptor2 indexDescriptor;
         long nodeId;
         try ( Transaction tx = db.beginTx() )
         {
@@ -568,7 +568,7 @@ class FulltextIndexConsistencyCheckIT
             db.execute( format( RELATIONSHIP_CREATE, "rels", array( "REL" ), array( "prop" ) ) ).close();
             tx.success();
         }
-        StoreIndexDescriptor indexDescriptor;
+        IndexDescriptor2 indexDescriptor;
         long relId;
         try ( Transaction tx = db.beginTx() )
         {
@@ -644,12 +644,10 @@ class FulltextIndexConsistencyCheckIT
                 NullLogProvider.getInstance(), true, ConsistencyFlags.DEFAULT );
     }
 
-    private static StoreIndexDescriptor getIndexDescriptor( IndexDefinition definition )
+    private static IndexDescriptor2 getIndexDescriptor( IndexDefinition definition )
     {
-        StoreIndexDescriptor indexDescriptor;
         IndexDefinitionImpl indexDefinition = (IndexDefinitionImpl) definition;
-        indexDescriptor = (StoreIndexDescriptor) indexDefinition.getIndexReference();
-        return indexDescriptor;
+        return indexDefinition.getIndexReference();
     }
 
     private static IndexingService getIndexingService( GraphDatabaseService db )

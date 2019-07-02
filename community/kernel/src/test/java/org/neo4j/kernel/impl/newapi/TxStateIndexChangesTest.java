@@ -37,12 +37,11 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.TreeMap;
 
+import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.internal.schema.IndexDescriptor2;
 import org.neo4j.internal.schema.IndexOrder;
-import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.kernel.api.schema.index.TestIndexDescriptorFactory;
-import org.neo4j.kernel.impl.index.schema.IndexDescriptor;
 import org.neo4j.kernel.impl.newapi.TxStateIndexChanges.AddedAndRemoved;
 import org.neo4j.kernel.impl.newapi.TxStateIndexChanges.AddedWithValuesAndRemoved;
 import org.neo4j.kernel.impl.util.ValueUtils;

@@ -37,24 +37,22 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.Relationship;
-import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.graphdb.schema.Schema;
-import org.neo4j.internal.schema.IndexOrder;
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.internal.kernel.api.IndexReadSession;
-import org.neo4j.internal.kernel.api.IndexReference;
 import org.neo4j.internal.kernel.api.NodeValueIndexCursor;
 import org.neo4j.internal.kernel.api.RelationshipIndexCursor;
 import org.neo4j.internal.kernel.api.exceptions.InvalidTransactionTypeKernelException;
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
 import org.neo4j.internal.kernel.api.exceptions.schema.SchemaKernelException;
 import org.neo4j.internal.schema.IndexConfig;
+import org.neo4j.internal.schema.IndexDescriptor2;
+import org.neo4j.internal.schema.IndexOrder;
 import org.neo4j.internal.schema.IndexType;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
 import org.neo4j.kernel.impl.api.index.IndexingService;
-import org.neo4j.kernel.impl.index.schema.IndexDescriptor;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.procedure.Context;
 import org.neo4j.procedure.Description;
@@ -175,7 +173,7 @@ public class FulltextProcedures
     @Procedure( name = "db.index.fulltext.drop", mode = SCHEMA )
     public void drop( @Name( "indexName" ) String name ) throws InvalidTransactionTypeKernelException, SchemaKernelException
     {
-        IndexReference indexReference = getValidIndexReference( name );
+        IndexDescriptor2 indexReference = getValidIndex( name );
         tx.schemaWrite().indexDrop( indexReference );
     }
 
@@ -183,7 +181,7 @@ public class FulltextProcedures
     @Procedure( name = "db.index.fulltext.queryNodes", mode = READ )
     public Stream<NodeOutput> queryFulltextForNodes( @Name( "indexName" ) String name, @Name( "queryString" ) String query ) throws Exception
     {
-        IndexReference indexReference = getValidIndexReference( name );
+        IndexDescriptor2 indexReference = getValidIndex( name );
         awaitOnline( indexReference );
         EntityType entityType = indexReference.schema().entityType();
         if ( entityType != EntityType.NODE )
@@ -223,7 +221,7 @@ public class FulltextProcedures
     @Procedure( name = "db.index.fulltext.queryRelationships", mode = READ )
     public Stream<RelationshipOutput> queryFulltextForRelationships( @Name( "indexName" ) String name, @Name( "queryString" ) String query ) throws Exception
     {
-        IndexReference indexReference = getValidIndexReference( name );
+        IndexDescriptor2 indexReference = getValidIndex( name );
         awaitOnline( indexReference );
         EntityType entityType = indexReference.schema().entityType();
         if ( entityType != EntityType.RELATIONSHIP )
@@ -257,27 +255,26 @@ public class FulltextProcedures
         return StreamSupport.stream( spliterator, false ).onClose( cursor::close );
     }
 
-    private IndexReference getValidIndexReference( @Name( "indexName" ) String name )
+    private IndexDescriptor2 getValidIndex( @Name( "indexName" ) String name )
     {
-        IndexReference indexReference = tx.schemaRead().indexGetForName( name );
-        if ( indexReference == IndexReference.NO_INDEX || indexReference.getIndexType() != IndexType.FULLTEXT )
+        IndexDescriptor2 indexReference = tx.schemaRead().indexGetForName( name );
+        if ( indexReference == IndexDescriptor2.NO_INDEX || indexReference.getIndexType() != IndexType.FULLTEXT )
         {
             throw new IllegalArgumentException( "There is no such fulltext schema index: " + name );
         }
         return indexReference;
     }
 
-    private void awaitOnline( IndexReference indexReference )
+    private void awaitOnline( IndexDescriptor2 index )
     {
         // We do the isAdded check on the transaction state first, because indexGetState will grab a schema read-lock, which can deadlock on the write-lock
         // held by the index populator. Also, if we index was created in this transaction, then we will never see it come online in this transaction anyway.
         // Indexes don't come online until the transaction that creates them has committed.
-        if ( !((KernelTransactionImplementation)tx).txState().indexDiffSetsBySchema( indexReference.schema() ).isAdded( (IndexDescriptor) indexReference ) )
+        if ( !((KernelTransactionImplementation)tx).txState().indexDiffSetsBySchema( index.schema() ).isAdded( index ) )
         {
             // If the index was not created in this transaction, then wait for it to come online before querying.
             Schema schema = db.schema();
-            IndexDefinition index = schema.getIndexByName( indexReference.name() );
-            schema.awaitIndexOnline( index, INDEX_ONLINE_QUERY_TIMEOUT_SECONDS, TimeUnit.SECONDS );
+            schema.awaitIndexOnline( schema.getIndexByName( index.getName() ), INDEX_ONLINE_QUERY_TIMEOUT_SECONDS, TimeUnit.SECONDS );
         }
         // If the index was created in this transaction, then we skip this check entirely.
         // We will get an exception later, when we try to get an IndexReader, so this is fine.

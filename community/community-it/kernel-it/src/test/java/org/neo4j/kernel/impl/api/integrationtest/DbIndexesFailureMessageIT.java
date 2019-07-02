@@ -31,9 +31,9 @@ import org.neo4j.dbms.database.SystemGraphInitializer;
 import org.neo4j.internal.helpers.collection.MapUtil;
 import org.neo4j.internal.kernel.api.Transaction;
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
+import org.neo4j.internal.schema.IndexDescriptor2;
 import org.neo4j.internal.schema.LabelSchemaDescriptor;
 import org.neo4j.kernel.impl.index.schema.FailingGenericNativeIndexProviderFactory;
-import org.neo4j.kernel.impl.index.schema.StoreIndexDescriptor;
 import org.neo4j.kernel.impl.util.ValueUtils;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.values.AnyValue;
@@ -87,7 +87,7 @@ class DbIndexesFailureMessageIT extends KernelIntegrationTest
         assertFalse( stream.hasNext() );
 
         // Then
-        StoreIndexDescriptor index = (StoreIndexDescriptor) transaction.schemaRead().index( descriptor );
+        IndexDescriptor2 index = transaction.schemaRead().index( descriptor );
         assertEquals( stringValue( "INDEX ON :Fail(foo)" ), result[0] );
         assertEquals( stringValue( "index_" + index.getId() ), result[1] );
         assertEquals( VirtualValues.list( stringValue( "Fail" ) ), result[2] );

@@ -30,14 +30,13 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.neo4j.configuration.Config;
-import org.neo4j.internal.schema.SchemaDescriptor;
+import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.io.fs.EphemeralFileSystemAbstraction;
 import org.neo4j.kernel.api.impl.schema.LuceneSchemaIndexBuilder;
 import org.neo4j.kernel.api.impl.schema.SchemaIndex;
 import org.neo4j.kernel.api.impl.schema.writer.LuceneIndexWriter;
 import org.neo4j.kernel.api.index.IndexReader;
 import org.neo4j.kernel.impl.index.schema.GatheringNodeValueClient;
-import org.neo4j.kernel.impl.index.schema.IndexDescriptorFactory;
 import org.neo4j.storageengine.api.NodePropertyAccessor;
 import org.neo4j.test.extension.EphemeralFileSystemExtension;
 import org.neo4j.test.extension.Inject;
@@ -52,6 +51,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
+import static org.neo4j.internal.schema.SchemaDescriptor.forLabel;
 import static org.neo4j.kernel.api.impl.schema.LuceneDocumentStructure.documentRepresentingProperties;
 import static org.neo4j.values.storable.Values.stringValue;
 
@@ -70,7 +70,7 @@ public class SimpleIndexReaderDistinctValuesTest
     @BeforeEach
     void setup() throws IOException
     {
-        index = LuceneSchemaIndexBuilder.create( IndexDescriptorFactory.forSchema( SchemaDescriptor.forLabel( 1, 1 ) ), Config.defaults() )
+        index = LuceneSchemaIndexBuilder.create( IndexPrototype.forSchema( forLabel( 1, 1 ) ).materialise( 42 ), Config.defaults() )
                 .withFileSystem( fs )
                 .withIndexRootFolder( directory.directory() )
                 .build();

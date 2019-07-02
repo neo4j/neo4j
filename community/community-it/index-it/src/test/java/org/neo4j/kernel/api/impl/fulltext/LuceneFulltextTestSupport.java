@@ -35,16 +35,17 @@ import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.config.Setting;
-import org.neo4j.internal.schema.IndexOrder;
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.internal.kernel.api.IndexReadSession;
-import org.neo4j.internal.kernel.api.IndexReference;
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.kernel.api.NodeValueIndexCursor;
 import org.neo4j.internal.kernel.api.RelationshipIndexCursor;
 import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.internal.schema.IndexConfig;
+import org.neo4j.internal.schema.IndexDescriptor2;
+import org.neo4j.internal.schema.IndexOrder;
+import org.neo4j.internal.schema.SchemaDescriptorSupplier;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.impl.api.KernelImpl;
 import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
@@ -155,7 +156,7 @@ public class LuceneFulltextTestSupport
 
     void assertQueryFindsIds( KernelTransaction ktx, boolean nodes, String indexName, String query, long... ids ) throws Exception
     {
-        IndexReference index = ktx.schemaRead().indexGetForName( indexName );
+        IndexDescriptor2 index = ktx.schemaRead().indexGetForName( indexName );
         IndexReadSession indexSession = ktx.dataRead().indexReadSession( index );
         MutableLongSet set = LongSets.mutable.of( ids );
         if ( nodes )
@@ -194,7 +195,7 @@ public class LuceneFulltextTestSupport
             throws Exception
     {
 
-        IndexReference index = ktx.schemaRead().indexGetForName( indexName );
+        IndexDescriptor2 index = ktx.schemaRead().indexGetForName( indexName );
         IndexReadSession indexSession = ktx.dataRead().indexReadSession( index );
         try ( NodeValueIndexCursor cursor = ktx.cursors().allocateNodeValueIndexCursor() )
         {
@@ -229,15 +230,16 @@ public class LuceneFulltextTestSupport
         }
     }
 
-    void await( IndexReference descriptor ) throws Exception
+    void await( SchemaDescriptorSupplier descriptor ) throws Exception
     {
         try ( KernelTransactionImplementation tx = getKernelTransaction() )
         {
-            while ( tx.schemaRead().index( descriptor.schema() ) == IndexReference.NO_INDEX )
+            IndexDescriptor2 index;
+            while ( (index = tx.schemaRead().index( descriptor.schema() )) == IndexDescriptor2.NO_INDEX )
             {
                 Thread.sleep( 100 );
             }
-            while ( tx.schemaRead().indexGetState( descriptor ) != InternalIndexState.ONLINE )
+            while ( tx.schemaRead().indexGetState( index ) != InternalIndexState.ONLINE )
             {
                 Thread.sleep( 100 );
             }

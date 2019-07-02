@@ -27,16 +27,15 @@ import java.util.concurrent.CountDownLatch;
 
 import org.neo4j.function.ThrowingAction;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.internal.schema.IndexOrder;
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.internal.kernel.api.IndexReadSession;
-import org.neo4j.internal.kernel.api.IndexReference;
 import org.neo4j.internal.kernel.api.NodeValueIndexCursor;
 import org.neo4j.internal.kernel.api.SchemaWrite;
+import org.neo4j.internal.schema.IndexDescriptor2;
+import org.neo4j.internal.schema.IndexOrder;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
-import org.neo4j.kernel.impl.index.schema.IndexDescriptorFactory;
 import org.neo4j.test.Race;
 import org.neo4j.test.rule.RepeatRule;
 
@@ -78,9 +77,9 @@ public class ConcurrentLuceneFulltextUpdaterTest extends LuceneFulltextTestSuppo
         return fulltextAdapter.schemaFor( NODE, entityTokens, indexConfig, PROP );
     }
 
-    private IndexReference createInitialIndex( SchemaDescriptor descriptor ) throws Exception
+    private IndexDescriptor2 createInitialIndex( SchemaDescriptor descriptor ) throws Exception
     {
-        IndexReference index;
+        IndexDescriptor2 index;
         try ( KernelTransactionImplementation transaction = getKernelTransaction() )
         {
             SchemaWrite schemaWrite = transaction.schemaWrite();
@@ -97,7 +96,7 @@ public class ConcurrentLuceneFulltextUpdaterTest extends LuceneFulltextTestSuppo
         race.addContestant( changeConfig );
         race.addContestants( bobThreads, bobWork );
         race.go();
-        await( IndexDescriptorFactory.forSchema( newDescriptor, Optional.of( "nodes" ), FulltextIndexProviderFactory.DESCRIPTOR ) );
+        await( newDescriptor );
         try ( Transaction tx = db.beginTx() )
         {
             KernelTransaction ktx = kernelTransaction( tx );
@@ -150,7 +149,7 @@ public class ConcurrentLuceneFulltextUpdaterTest extends LuceneFulltextTestSuppo
         };
     }
 
-    private ThrowingAction<Exception> dropAndReCreateIndex( IndexReference descriptor, SchemaDescriptor newDescriptor )
+    private ThrowingAction<Exception> dropAndReCreateIndex( IndexDescriptor2 descriptor, SchemaDescriptor newDescriptor )
     {
         return () ->
         {
@@ -172,7 +171,7 @@ public class ConcurrentLuceneFulltextUpdaterTest extends LuceneFulltextTestSuppo
         String[] entityTokens = {LABEL.name()};
         SchemaDescriptor descriptor = getExistingDescriptor( entityTokens );
         SchemaDescriptor newDescriptor = getNewDescriptor( entityTokens );
-        IndexReference initialIndex = createInitialIndex( descriptor );
+        IndexDescriptor2 initialIndex = createInitialIndex( descriptor );
 
         Runnable aliceWork = work( nodesCreatedPerThread, () ->
         {
@@ -194,7 +193,7 @@ public class ConcurrentLuceneFulltextUpdaterTest extends LuceneFulltextTestSuppo
         String[] entityTokens = {LABEL.name()};
         SchemaDescriptor descriptor = getExistingDescriptor( entityTokens );
         SchemaDescriptor newDescriptor = getNewDescriptor( entityTokens );
-        IndexReference initialIndex = createInitialIndex( descriptor );
+        IndexDescriptor2 initialIndex = createInitialIndex( descriptor );
 
         Runnable aliceWork = work( nodesCreatedPerThread, () ->
         {

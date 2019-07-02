@@ -34,6 +34,7 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.internal.recordstorage.RecordStorageEngine;
 import org.neo4j.internal.recordstorage.SchemaRuleAccess;
+import org.neo4j.internal.schema.IndexDescriptor2;
 import org.neo4j.io.fs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.fs.UncloseableDelegatingFileSystemAbstraction;
 import org.neo4j.kernel.api.KernelTransaction;
@@ -41,9 +42,7 @@ import org.neo4j.kernel.api.schema.index.TestIndexDescriptorFactory;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingController;
 import org.neo4j.kernel.impl.api.index.stats.IndexStatisticsStore;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
-import org.neo4j.kernel.impl.index.schema.IndexDescriptor;
 import org.neo4j.kernel.impl.store.NeoStores;
-import org.neo4j.kernel.impl.store.counts.CountsTracker;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.register.Register.DoubleLongRegister;
@@ -102,7 +101,7 @@ public class IndexStatisticsIT
         awaitIndexOnline( indexAliensBySpecimen() );
 
         // where ALIEN and SPECIMEN are both the first ids of their kind
-        IndexDescriptor index = TestIndexDescriptorFactory.forLabel( labelId( ALIEN ), pkId( SPECIMEN ) );
+        IndexDescriptor2 index = TestIndexDescriptorFactory.forLabel( labelId( ALIEN ), pkId( SPECIMEN ) );
         SchemaRuleAccess schemaRuleAccess =
                 SchemaRuleAccess.getSchemaRuleAccess( neoStores().getSchemaStore(), resolveDependency( TokenHolders.class ) );
         long indexId = single( schemaRuleAccess.indexGetForSchema( index ) ).getId();
@@ -208,12 +207,6 @@ public class IndexStatisticsIT
     private NeoStores neoStores()
     {
         return resolveDependency( RecordStorageEngine.class ).testAccessNeoStores();
-    }
-
-    private CountsTracker counts()
-    {
-        return ( (GraphDatabaseAPI) db ).getDependencyResolver().resolveDependency( RecordStorageEngine.class )
-                .testAccessCountsStore();
     }
 
     private IndexStatisticsStore indexStatistics()

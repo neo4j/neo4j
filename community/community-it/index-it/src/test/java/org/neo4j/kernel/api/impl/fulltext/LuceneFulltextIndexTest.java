@@ -25,13 +25,13 @@ import java.util.Optional;
 
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.internal.kernel.api.IndexReference;
 import org.neo4j.internal.schema.FulltextSchemaDescriptor;
 import org.neo4j.internal.schema.IndexConfig;
+import org.neo4j.internal.schema.IndexDescriptor2;
+import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
-import org.neo4j.kernel.impl.index.schema.IndexDescriptor;
 import org.neo4j.values.storable.Values;
 
 import static org.hamcrest.Matchers.is;
@@ -49,7 +49,7 @@ public class LuceneFulltextIndexTest extends LuceneFulltextTestSupport
     @Test
     public void shouldFindNodeWithString() throws Exception
     {
-        IndexReference index;
+        IndexDescriptor2 index;
         try ( KernelTransactionImplementation tx = getKernelTransaction() )
         {
             SchemaDescriptor descriptor = fulltextAdapter.schemaFor( NODE, new String[]{LABEL.name()}, indexConfig, PROP );
@@ -81,7 +81,7 @@ public class LuceneFulltextIndexTest extends LuceneFulltextTestSupport
     @Test
     public void shouldRepresentPropertyChanges() throws Exception
     {
-        IndexReference index;
+        IndexDescriptor2 index;
         try ( KernelTransactionImplementation tx = getKernelTransaction() )
         {
             SchemaDescriptor descriptor = fulltextAdapter.schemaFor( NODE, new String[]{LABEL.name()}, indexConfig, PROP );
@@ -124,7 +124,7 @@ public class LuceneFulltextIndexTest extends LuceneFulltextTestSupport
     @Test
     public void shouldNotFindRemovedNodes() throws Exception
     {
-        IndexReference index;
+        IndexDescriptor2 index;
         try ( KernelTransactionImplementation tx = getKernelTransaction() )
         {
             SchemaDescriptor descriptor = fulltextAdapter.schemaFor( NODE, new String[]{LABEL.name()}, indexConfig, PROP );
@@ -165,7 +165,7 @@ public class LuceneFulltextIndexTest extends LuceneFulltextTestSupport
     @Test
     public void shouldNotFindRemovedProperties() throws Exception
     {
-        IndexReference index;
+        IndexDescriptor2 index;
         try ( KernelTransactionImplementation tx = getKernelTransaction() )
         {
             SchemaDescriptor descriptor = fulltextAdapter.schemaFor( NODE, new String[]{LABEL.name()}, indexConfig, "prop", "prop2" );
@@ -219,7 +219,7 @@ public class LuceneFulltextIndexTest extends LuceneFulltextTestSupport
     @Test
     public void shouldOnlyIndexIndexedProperties() throws Exception
     {
-        IndexReference index;
+        IndexDescriptor2 index;
         try ( KernelTransactionImplementation tx = getKernelTransaction() )
         {
             SchemaDescriptor descriptor = fulltextAdapter.schemaFor( NODE, new String[]{LABEL.name()}, indexConfig, PROP );
@@ -252,7 +252,7 @@ public class LuceneFulltextIndexTest extends LuceneFulltextTestSupport
     @Test
     public void shouldSearchAcrossMultipleProperties() throws Exception
     {
-        IndexReference index;
+        IndexDescriptor2 index;
         try ( KernelTransactionImplementation tx = getKernelTransaction() )
         {
             SchemaDescriptor descriptor = fulltextAdapter.schemaFor( NODE, new String[]{LABEL.name()}, indexConfig, "prop", "prop2" );
@@ -287,7 +287,7 @@ public class LuceneFulltextIndexTest extends LuceneFulltextTestSupport
     @Test
     public void shouldOrderResultsBasedOnRelevance() throws Exception
     {
-        IndexReference index;
+        IndexDescriptor2 index;
         try ( KernelTransactionImplementation tx = getKernelTransaction() )
         {
             SchemaDescriptor descriptor = fulltextAdapter.schemaFor( NODE, new String[]{LABEL.name()}, indexConfig, "first", "last" );
@@ -329,8 +329,8 @@ public class LuceneFulltextIndexTest extends LuceneFulltextTestSupport
     {
         SchemaDescriptor nodes = fulltextAdapter.schemaFor( NODE, new String[]{LABEL.name()}, indexConfig, PROP );
         SchemaDescriptor rels = fulltextAdapter.schemaFor( RELATIONSHIP, new String[]{RELTYPE.name()}, indexConfig, PROP );
-        IndexReference nodesIndex;
-        IndexReference relsIndex;
+        IndexDescriptor2 nodesIndex;
+        IndexDescriptor2 relsIndex;
         try ( KernelTransactionImplementation tx = getKernelTransaction() )
         {
             nodesIndex = tx.schemaWrite().indexCreate( nodes, FulltextIndexProviderFactory.DESCRIPTOR.name(), Optional.of( NODE_INDEX_NAME ) );
@@ -373,8 +373,8 @@ public class LuceneFulltextIndexTest extends LuceneFulltextTestSupport
     {
         SchemaDescriptor nodes = fulltextAdapter.schemaFor( NODE, new String[]{LABEL.name()}, indexConfig, PROP );
         SchemaDescriptor rels = fulltextAdapter.schemaFor( RELATIONSHIP, new String[]{RELTYPE.name()}, indexConfig, PROP );
-        IndexReference nodesIndex;
-        IndexReference relsIndex;
+        IndexDescriptor2 nodesIndex;
+        IndexDescriptor2 relsIndex;
         try ( KernelTransactionImplementation tx = getKernelTransaction() )
         {
             nodesIndex = tx.schemaWrite().indexCreate( nodes, FulltextIndexProviderFactory.DESCRIPTOR.name(), Optional.of( NODE_INDEX_NAME ) );
@@ -429,8 +429,8 @@ public class LuceneFulltextIndexTest extends LuceneFulltextTestSupport
 
         SchemaDescriptor nodes = fulltextAdapter.schemaFor( NODE, new String[]{LABEL.name()}, indexConfig, PROP );
         SchemaDescriptor rels = fulltextAdapter.schemaFor( RELATIONSHIP, new String[]{RELTYPE.name()}, indexConfig, PROP );
-        IndexReference nodesIndex;
-        IndexReference relsIndex;
+        IndexDescriptor2 nodesIndex;
+        IndexDescriptor2 relsIndex;
         try ( KernelTransactionImplementation tx = getKernelTransaction() )
         {
             nodesIndex = tx.schemaWrite().indexCreate( nodes, FulltextIndexProviderFactory.DESCRIPTOR.name(), Optional.of( NODE_INDEX_NAME ) );
@@ -457,7 +457,7 @@ public class LuceneFulltextIndexTest extends LuceneFulltextTestSupport
     @Test
     public void shouldBeAbleToUpdateAndQueryAfterIndexChange() throws Exception
     {
-        IndexReference index;
+        IndexDescriptor2 index;
         try ( KernelTransactionImplementation tx = getKernelTransaction() )
         {
             SchemaDescriptor descriptor = fulltextAdapter.schemaFor( NODE, new String[]{LABEL.name()}, indexConfig, PROP );
@@ -516,7 +516,7 @@ public class LuceneFulltextIndexTest extends LuceneFulltextTestSupport
     public void shouldBeAbleToDropAndReadIndex() throws Exception
     {
         SchemaDescriptor descriptor = fulltextAdapter.schemaFor( NODE, new String[]{LABEL.name()}, indexConfig, PROP );
-        IndexReference index;
+        IndexDescriptor2 index;
         try ( KernelTransactionImplementation tx = getKernelTransaction() )
         {
             index = tx.schemaWrite().indexCreate( descriptor, FulltextIndexProviderFactory.DESCRIPTOR.name(), Optional.of( NODE_INDEX_NAME ) );
@@ -574,7 +574,7 @@ public class LuceneFulltextIndexTest extends LuceneFulltextTestSupport
         FulltextSchemaDescriptor schema = SchemaDescriptor.fulltext( NODE, IndexConfig.empty(), new int[]{label}, new int[]{propertyKey} );
         FulltextIndexProvider provider = (FulltextIndexProvider) fulltextAdapter;
 
-        IndexDescriptor descriptor = provider.bless( new IndexDescriptor( schema, false, Optional.empty(), provider.getProviderDescriptor() ) );
+        IndexPrototype descriptor = provider.bless( IndexPrototype.forSchema( schema, provider.getProviderDescriptor() ) );
 
         assertThat( descriptor.schema().getIndexConfig().get( ANALYZER ), is( Values.stringValue( "standard-no-stop-words" ) ) );
         assertThat( descriptor.schema().getIndexConfig().get( EVENTUALLY_CONSISTENT ), is( Values.booleanValue( false ) ) );

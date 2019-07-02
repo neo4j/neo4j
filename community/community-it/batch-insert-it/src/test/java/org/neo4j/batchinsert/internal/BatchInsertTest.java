@@ -66,6 +66,7 @@ import org.neo4j.internal.recordstorage.RecordStorageEngine;
 import org.neo4j.internal.recordstorage.SchemaRuleAccess;
 import org.neo4j.internal.schema.IndexDescriptor2;
 import org.neo4j.internal.schema.IndexProviderDescriptor;
+import org.neo4j.internal.schema.IndexRef;
 import org.neo4j.internal.schema.SchemaRule;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
@@ -79,7 +80,6 @@ import org.neo4j.kernel.extension.ExtensionFactory;
 import org.neo4j.kernel.impl.MyRelTypes;
 import org.neo4j.kernel.impl.api.index.TestIndexProviderDescriptor;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
-import org.neo4j.kernel.impl.index.schema.IndexDescriptor;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.NodeLabels;
 import org.neo4j.kernel.impl.store.NodeLabelsField;
@@ -869,7 +869,7 @@ class BatchInsertTest
         when( provider.getPopulator( any( IndexDescriptor2.class ), any( IndexSamplingConfig.class ), any() ) ).thenReturn( populator );
         when( populator.sampleResult() ).thenReturn( new IndexSample() );
         when( provider.getOnlineAccessor( any( IndexDescriptor2.class ), any( IndexSamplingConfig.class ) ) ).thenReturn( accessor );
-        when( provider.bless( any( IndexDescriptor.class ) ) ).thenCallRealMethod();
+        when( provider.bless( any( IndexRef.class ) ) ).thenCallRealMethod();
 
         BatchInserter inserter = newBatchInserterWithIndexProvider(
                 singleInstanceIndexProviderFactory( KEY, provider ), provider.getProviderDescriptor(), denseNodeThreshold );
@@ -906,7 +906,7 @@ class BatchInsertTest
         when( provider.getPopulator( any( IndexDescriptor2.class ), any( IndexSamplingConfig.class ), any() ) ).thenReturn( populator );
         when( populator.sampleResult() ).thenReturn( new IndexSample() );
         when( provider.getOnlineAccessor( any( IndexDescriptor2.class ), any( IndexSamplingConfig.class ) ) ).thenReturn( accessor );
-        when( provider.bless( any( IndexDescriptor.class ) ) ).thenCallRealMethod();
+        when( provider.bless( any( IndexRef.class ) ) ).thenCallRealMethod();
 
         BatchInserter inserter = newBatchInserterWithIndexProvider(
                 singleInstanceIndexProviderFactory( KEY, provider ), provider.getProviderDescriptor(), denseNodeThreshold );

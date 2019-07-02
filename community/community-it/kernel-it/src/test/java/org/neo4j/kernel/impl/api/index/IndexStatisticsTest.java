@@ -47,20 +47,19 @@ import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.internal.schema.IndexOrder;
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.internal.kernel.api.IndexReadSession;
-import org.neo4j.internal.kernel.api.IndexReference;
 import org.neo4j.internal.kernel.api.NodeValueIndexCursor;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
 import org.neo4j.internal.recordstorage.RecordStorageEngine;
 import org.neo4j.internal.recordstorage.SchemaRuleAccess;
+import org.neo4j.internal.schema.IndexDescriptor2;
+import org.neo4j.internal.schema.IndexOrder;
 import org.neo4j.internal.schema.LabelSchemaDescriptor;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.impl.api.index.stats.IndexStatisticsStore;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
-import org.neo4j.kernel.impl.index.schema.StoreIndexDescriptor;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.monitoring.Monitors;
@@ -165,7 +164,7 @@ public class IndexStatisticsTest
         createSomePersons();
 
         // when
-        IndexReference index = createPersonNameIndex();
+        IndexDescriptor2 index = createPersonNameIndex();
         awaitIndexesOnline();
 
         // then
@@ -179,7 +178,7 @@ public class IndexStatisticsTest
     {
         // given
         indexOnlineMonitor.initialize( 0 );
-        IndexReference index = createPersonNameIndex();
+        IndexDescriptor2 index = createPersonNameIndex();
         awaitIndexesOnline();
 
         // when
@@ -198,7 +197,7 @@ public class IndexStatisticsTest
         // given
         indexOnlineMonitor.initialize( 0 );
         createSomePersons();
-        IndexReference index = createPersonNameIndex();
+        IndexDescriptor2 index = createPersonNameIndex();
         awaitIndexesOnline();
 
         // when
@@ -216,7 +215,7 @@ public class IndexStatisticsTest
         // given
         indexOnlineMonitor.initialize( 0 );
         createSomePersons();
-        IndexReference index = createPersonNameIndex();
+        IndexDescriptor2 index = createPersonNameIndex();
         awaitIndexesOnline();
 
         SchemaRuleAccess schemaRuleAccess =
@@ -251,7 +250,7 @@ public class IndexStatisticsTest
         int created = repeatCreateNamedPeopleFor( NAMES.length * CREATION_MULTIPLIER ).length;
 
         // when
-        IndexReference index = createPersonNameIndex();
+        IndexDescriptor2 index = createPersonNameIndex();
         awaitIndexesOnline();
 
         // then
@@ -269,7 +268,7 @@ public class IndexStatisticsTest
         int initialNodes = repeatCreateNamedPeopleFor( NAMES.length * CREATION_MULTIPLIER ).length;
 
         // when populating while creating
-        IndexReference index = createPersonNameIndex();
+        IndexDescriptor2 index = createPersonNameIndex();
         final UpdatesTracker updatesTracker = executeCreations( CREATION_MULTIPLIER );
         awaitIndexesOnline();
 
@@ -290,7 +289,7 @@ public class IndexStatisticsTest
         int initialNodes = nodes.length;
 
         // when populating while creating
-        IndexReference index = createPersonNameIndex();
+        IndexDescriptor2 index = createPersonNameIndex();
         UpdatesTracker updatesTracker = executeCreationsAndDeletions( nodes, CREATION_MULTIPLIER );
         awaitIndexesOnline();
 
@@ -313,7 +312,7 @@ public class IndexStatisticsTest
         int initialNodes = nodes.length;
 
         // when populating while creating
-        IndexReference index = createPersonNameIndex();
+        IndexDescriptor2 index = createPersonNameIndex();
         UpdatesTracker updatesTracker = executeCreationsAndUpdates( nodes, CREATION_MULTIPLIER );
         awaitIndexesOnline();
 
@@ -336,7 +335,7 @@ public class IndexStatisticsTest
         int initialNodes = nodes.length;
 
         // when populating while creating
-        IndexReference index = createPersonNameIndex();
+        IndexDescriptor2 index = createPersonNameIndex();
         UpdatesTracker updatesTracker = executeCreationsDeletionsAndUpdates( nodes, CREATION_MULTIPLIER );
         awaitIndexesOnline();
 
@@ -361,7 +360,7 @@ public class IndexStatisticsTest
         ExecutorService executorService = Executors.newFixedThreadPool( threads );
 
         // when populating while creating
-        final IndexReference index = createPersonNameIndex();
+        final IndexDescriptor2 index = createPersonNameIndex();
 
         final Collection<Callable<UpdatesTracker>> jobs = new ArrayList<>( threads );
         for ( int i = 0; i < threads; i++ )
@@ -396,7 +395,7 @@ public class IndexStatisticsTest
     {
         int nodesInStore = 0;
         Label label = Label.label( PERSON_LABEL );
-        try ( Transaction tx = db.beginTx() )
+        try ( Transaction ignore = db.beginTx() )
         {
             KernelTransaction ktx = resolveDependency( ThreadToStatementContextBridge.class ).getKernelTransactionBoundToThisThread( true );
             List<String> mismatches = new ArrayList<>();
@@ -543,7 +542,7 @@ public class IndexStatisticsTest
         return nodes;
     }
 
-    private void dropIndex( IndexReference index ) throws KernelException
+    private void dropIndex( IndexDescriptor2 index ) throws KernelException
     {
         try ( Transaction tx = db.beginTx() )
         {
@@ -556,17 +555,17 @@ public class IndexStatisticsTest
         }
     }
 
-    private long indexSize( IndexReference reference ) throws IndexNotFoundKernelException
+    private long indexSize( IndexDescriptor2 reference ) throws IndexNotFoundKernelException
     {
         return resolveDependency( IndexingService.class ).indexUpdatesAndSize( reference.schema() ).readSecond();
     }
 
-    private long indexUpdates( IndexReference reference  ) throws IndexNotFoundKernelException
+    private long indexUpdates( IndexDescriptor2 reference  ) throws IndexNotFoundKernelException
     {
         return resolveDependency( IndexingService.class ).indexUpdatesAndSize( reference.schema() ).readFirst();
     }
 
-    private double indexSelectivity( IndexReference reference ) throws KernelException
+    private double indexSelectivity( IndexDescriptor2 reference ) throws KernelException
     {
         try ( Transaction tx = db.beginTx() )
         {
@@ -576,7 +575,7 @@ public class IndexStatisticsTest
         }
     }
 
-    private double getSelectivity( IndexReference reference ) throws IndexNotFoundKernelException
+    private double getSelectivity( IndexDescriptor2 reference ) throws IndexNotFoundKernelException
     {
         return bridge.getKernelTransactionBoundToThisThread( true ).schemaRead().indexUniqueValuesSelectivity( reference );
     }
@@ -610,11 +609,11 @@ public class IndexStatisticsTest
         return nodeId;
     }
 
-    private IndexReference createPersonNameIndex() throws KernelException
+    private IndexDescriptor2 createPersonNameIndex() throws KernelException
     {
         try ( Transaction tx = db.beginTx() )
         {
-            IndexReference index;
+            IndexDescriptor2 index;
             KernelTransaction ktx = bridge.getKernelTransactionBoundToThisThread( true );
             try ( Statement ignore = ktx.acquireStatement() )
             {
@@ -852,7 +851,7 @@ public class IndexStatisticsTest
         }
 
         @Override
-        public void populationCompleteOn( StoreIndexDescriptor descriptor )
+        public void populationCompleteOn( IndexDescriptor2 descriptor )
         {
             if ( barrier != null )
             {

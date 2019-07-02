@@ -26,13 +26,12 @@ import java.util.Arrays;
 
 import org.neo4j.collection.PrimitiveLongCollections;
 import org.neo4j.configuration.Config;
-import org.neo4j.internal.schema.IndexOrder;
 import org.neo4j.internal.kernel.api.IndexQuery;
+import org.neo4j.internal.schema.IndexOrder;
+import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
-import org.neo4j.kernel.api.schema.index.TestIndexDescriptorFactory;
 import org.neo4j.kernel.impl.api.index.PhaseTracker;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
-import org.neo4j.kernel.impl.index.schema.IndexDescriptor;
 import org.neo4j.kernel.impl.index.schema.NodeValueIterator;
 import org.neo4j.storageengine.api.IndexEntryUpdate;
 import org.neo4j.values.storable.Value;
@@ -43,6 +42,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 import static org.neo4j.internal.helpers.collection.Iterators.asSet;
 import static org.neo4j.internal.kernel.api.QueryContext.NULL_CONTEXT;
+import static org.neo4j.internal.schema.SchemaDescriptor.forLabel;
 import static org.neo4j.kernel.api.index.IndexQueryHelper.add;
 import static org.neo4j.kernel.impl.index.schema.ByteBufferFactory.heapBufferFactory;
 
@@ -53,9 +53,9 @@ import static org.neo4j.kernel.impl.index.schema.ByteBufferFactory.heapBufferFac
         " errors or warnings in some IDEs about test classes needing a public zero-arg constructor." )
 public class CompositeIndexPopulatorCompatibility extends IndexProviderCompatibilityTestSuite.Compatibility
 {
-    CompositeIndexPopulatorCompatibility( IndexProviderCompatibilityTestSuite testSuite, IndexDescriptor descriptor )
+    CompositeIndexPopulatorCompatibility( IndexProviderCompatibilityTestSuite testSuite, IndexPrototype prototype )
     {
-        super( testSuite, descriptor );
+        super( testSuite, prototype );
     }
 
     @Ignore( "Not a test. This is a compatibility suite" )
@@ -63,7 +63,7 @@ public class CompositeIndexPopulatorCompatibility extends IndexProviderCompatibi
     {
         public General( IndexProviderCompatibilityTestSuite testSuite )
         {
-            super( testSuite, TestIndexDescriptorFactory.forLabel( 1000, 100, 200 ) );
+            super( testSuite, IndexPrototype.forSchema( forLabel( 1000, 100, 200 ) ) );
         }
 
         @Test
@@ -99,7 +99,7 @@ public class CompositeIndexPopulatorCompatibility extends IndexProviderCompatibi
 
         public Unique( IndexProviderCompatibilityTestSuite testSuite )
         {
-            super( testSuite, TestIndexDescriptorFactory.uniqueForLabel( 1000, 100, 200 ) );
+            super( testSuite, IndexPrototype.uniqueForSchema( forLabel( 1000, 100, 200 ) ) );
         }
 
         @Test

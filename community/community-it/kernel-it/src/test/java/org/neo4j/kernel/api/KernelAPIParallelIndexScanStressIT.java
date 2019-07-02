@@ -25,16 +25,16 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
-import org.neo4j.internal.schema.IndexOrder;
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.internal.kernel.api.IndexReadSession;
-import org.neo4j.internal.kernel.api.IndexReference;
 import org.neo4j.internal.kernel.api.Kernel;
 import org.neo4j.internal.kernel.api.NodeValueIndexCursor;
 import org.neo4j.internal.kernel.api.Read;
 import org.neo4j.internal.kernel.api.Transaction;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
 import org.neo4j.internal.kernel.api.security.LoginContext;
+import org.neo4j.internal.schema.IndexDescriptor2;
+import org.neo4j.internal.schema.IndexOrder;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.extension.DbmsExtension;
 import org.neo4j.test.extension.Inject;
@@ -108,7 +108,7 @@ class KernelAPIParallelIndexScanStressIT
     private static IndexReadSession indexReadSession( Transaction tx, int propKey, String label ) throws IndexNotFoundKernelException
     {
         int labelId = tx.tokenRead().nodeLabel( label );
-        IndexReference index = tx.schemaRead().index( labelId, propKey );
+        IndexDescriptor2 index = tx.schemaRead().index( labelId, propKey );
         return tx.dataRead().indexReadSession( index );
     }
 
@@ -128,7 +128,7 @@ class KernelAPIParallelIndexScanStressIT
         {
             try
             {
-                IndexQuery.ExistsPredicate query = IndexQuery.exists( index.reference().properties()[0] );
+                IndexQuery.ExistsPredicate query = IndexQuery.exists( index.reference().schema().getPropertyIds()[0] );
                 read.nodeIndexSeek( index, cursor, IndexOrder.NONE, true, query );
                 int n = 0;
                 while ( cursor.next() )
