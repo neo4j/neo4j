@@ -19,8 +19,8 @@
  */
 package org.neo4j.kernel.extension;
 
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.util.Map;
 
@@ -29,28 +29,32 @@ import org.neo4j.internal.helpers.collection.MapUtil;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.service.Services;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
+import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.TestDirectoryExtension;
 import org.neo4j.test.rule.TestDirectory;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertSame;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.fail;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 
 /**
  * Base class for testing a {@link ExtensionFactory}. The base test cases in this
  * class verifies that a extension upholds the {@link ExtensionFactory} contract.
  */
+@ExtendWith( TestDirectoryExtension.class )
 public abstract class ExtensionFactoryContractTest
 {
+    @Inject
+    private TestDirectory target;
+
     private final Class<? extends ExtensionFactory<?>> extClass;
     private final String key;
 
-    @Rule
-    public final TestDirectory target = TestDirectory.testDirectory();
     protected DatabaseManagementService managementService;
 
-    public ExtensionFactoryContractTest( String key, Class<? extends ExtensionFactory<?>> extClass )
+    protected ExtensionFactoryContractTest( String key, Class<? extends ExtensionFactory<?>> extClass )
     {
         this.extClass = extClass;
         this.key = key;
@@ -76,7 +80,7 @@ public abstract class ExtensionFactoryContractTest
     }
 
     @Test
-    public void extensionShouldHavePublicNoArgConstructor()
+    void extensionShouldHavePublicNoArgConstructor()
     {
         ExtensionFactory<?> instance = null;
         try
@@ -92,7 +96,7 @@ public abstract class ExtensionFactoryContractTest
     }
 
     @Test
-    public void shouldBeAbleToLoadExtensionAsAServiceProvider()
+    void shouldBeAbleToLoadExtensionAsAServiceProvider()
     {
         ExtensionFactory<?> instance = null;
         try
@@ -105,27 +109,27 @@ public abstract class ExtensionFactoryContractTest
             fail( "Loaded instance does not match the extension class (Exception in stderr)" );
         }
 
-        assertNotNull( "Could not load the kernel extension with the provided key", instance );
-        assertSame( "Class of the loaded instance is a subclass of the extension class", instance.getClass(), extClass );
+        assertNotNull( instance, "Could not load the kernel extension with the provided key" );
+        assertSame( instance.getClass(), extClass, "Class of the loaded instance is a subclass of the extension class" );
     }
 
     @Test
-    public void differentInstancesShouldHaveEqualHashCodesAndBeEqual()
+    void differentInstancesShouldHaveEqualHashCodesAndBeEqual()
     {
         ExtensionFactory<?> one = newInstance();
         ExtensionFactory<?> two = newInstance();
-        assertEquals( "new instances have different hash codes", one.hashCode(), two.hashCode() );
-        assertEquals( "new instances are not equals", one, two );
+        assertEquals( one.hashCode(), two.hashCode(), "new instances have different hash codes" );
+        assertEquals( one, two, "new instances are not equals" );
 
         one = loadInstance();
         two = loadInstance();
-        assertEquals( "loaded instances have different hash codes", one.hashCode(), two.hashCode() );
-        assertEquals( "loaded instances are not equals", one, two );
+        assertEquals( one.hashCode(), two.hashCode(), "loaded instances have different hash codes" );
+        assertEquals( one, two, "loaded instances are not equals" );
 
         one = loadInstance();
         two = newInstance();
-        assertEquals( "loaded instance and new instance have different hash codes", one.hashCode(), two.hashCode() );
-        assertEquals( "loaded instance and new instance are not equals", one, two );
+        assertEquals( one.hashCode(), two.hashCode(), "loaded instance and new instance have different hash codes" );
+        assertEquals( one, two, "loaded instance and new instance are not equals" );
     }
 
     private ExtensionFactory<?> newInstance()

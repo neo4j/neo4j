@@ -19,7 +19,7 @@
  */
 package org.neo4j.kernel;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import org.neo4j.dbms.database.DatabaseManager;
 import org.neo4j.kernel.extension.ExtensionFactory;
@@ -28,8 +28,8 @@ import org.neo4j.kernel.extension.GlobalExtensions;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.kernel.lifecycle.LifecycleStatus;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 /**
  * Test the implementation of the {@link ExtensionFactory} framework. Treats the
@@ -39,9 +39,9 @@ import static org.junit.Assert.assertNotNull;
  * the extension implementation as a black box to assert that it fulfills the
  * requirements stipulated by the framework.
  */
-public final class TestExtension extends ExtensionFactoryContractTest
+class TestExtension extends ExtensionFactoryContractTest
 {
-    public TestExtension()
+    TestExtension()
     {
         super( DummyExtensionFactory.EXTENSION_ID, DummyExtensionFactory.class );
     }
@@ -50,7 +50,7 @@ public final class TestExtension extends ExtensionFactoryContractTest
      * Check that lifecycle status of extension is STARTED
      */
     @Test
-    public void shouldBeStarted()
+    void shouldBeStarted()
     {
         GraphDatabaseAPI graphdb = graphDb( 0 );
         try
@@ -68,7 +68,7 @@ public final class TestExtension extends ExtensionFactoryContractTest
      * Check that dependencies can be accessed
      */
     @Test
-    public void dependenciesCanBeRetrieved()
+    void dependenciesCanBeRetrieved()
     {
         GraphDatabaseAPI graphdb = graphDb( 0 );
         try
@@ -88,7 +88,7 @@ public final class TestExtension extends ExtensionFactoryContractTest
      * Check that lifecycle status of extension is SHUTDOWN
      */
     @Test
-    public void shouldBeShutdown()
+    void shouldBeShutdown()
     {
         GraphDatabaseAPI graphdb = graphDb( 0 );
         managementService.shutdown();

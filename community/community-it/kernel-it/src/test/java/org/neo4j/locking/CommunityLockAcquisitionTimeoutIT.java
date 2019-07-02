@@ -19,13 +19,11 @@
  */
 package org.neo4j.locking;
 
-import org.junit.After;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.ClassRule;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Timeout;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
@@ -48,37 +46,37 @@ import org.neo4j.lock.LockTracer;
 import org.neo4j.lock.ResourceTypes;
 import org.neo4j.test.OtherThreadExecutor;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
+import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.TestDirectoryExtension;
 import org.neo4j.test.mockito.matcher.RootCauseMatcher;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.time.Clocks;
 import org.neo4j.time.FakeClock;
 
-import static org.junit.Assert.fail;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 
+@ExtendWith( TestDirectoryExtension.class )
 public class CommunityLockAcquisitionTimeoutIT
 {
-    @ClassRule
-    public static final TestDirectory directory = TestDirectory.testDirectory();
-    @Rule
-    public final ExpectedException expectedException = ExpectedException.none();
-
-    private final OtherThreadExecutor<Void> secondTransactionExecutor =
-            new OtherThreadExecutor<>( "transactionExecutor", null );
+    private final OtherThreadExecutor<Void> secondTransactionExecutor = new OtherThreadExecutor<>( "transactionExecutor", null );
     private final OtherThreadExecutor<Void> clockExecutor = new OtherThreadExecutor<>( "clockExecutor", null );
 
-    private static final int TEST_TIMEOUT = 5000;
     private static final String TEST_PROPERTY_NAME = "a";
     private static final Label marker = Label.label( "marker" );
     private static final FakeClock fakeClock = Clocks.fakeClock();
 
-    private static GraphDatabaseService database;
-    private static DatabaseManagementService managementService;
+    @Inject
+    private TestDirectory testDirectory;
 
-    @BeforeClass
-    public static void setUp()
+    private GraphDatabaseService database;
+    private DatabaseManagementService managementService;
+
+    @BeforeEach
+    void setUp()
     {
-        managementService = new TestDatabaseManagementServiceBuilder( directory.storeDir() )
+        managementService = new TestDatabaseManagementServiceBuilder( testDirectory.storeDir() )
                 .setClock( fakeClock )
                 .setConfig( GraphDatabaseSettings.lock_acquisition_timeout, "2s" )
                 .setConfig( "dbms.backup.enabled", "false" )
@@ -88,92 +86,89 @@ public class CommunityLockAcquisitionTimeoutIT
         createTestNode( marker );
     }
 
-    @AfterClass
-    public static void tearDownClass()
+    @AfterEach
+    void tearDown()
     {
         managementService.shutdown();
-    }
-
-    @After
-    public void tearDown()
-    {
         secondTransactionExecutor.close();
         clockExecutor.close();
     }
 
-    @Test( timeout = TEST_TIMEOUT )
-    public void timeoutOnAcquiringExclusiveLock() throws Exception
+    @Test
+    @Timeout( 5 )
+    void timeoutOnAcquiringExclusiveLock()
     {
-        expectedException.expect( new RootCauseMatcher<>( LockAcquisitionTimeoutException.class,
-                "The transaction has been terminated. " +
-                        "Retry your operation in a new transaction, and you should see a successful result. " +
-                        "Unable to acquire lock within configured timeout (dbms.lock.acquisition.timeout). " +
-                        "Unable to acquire lock for resource: NODE with id: 0 within 2000 millis." ) );
-
-        try ( Transaction ignored = database.beginTx() )
+        var e = assertThrows( Exception.class, () ->
         {
-            ResourceIterator<Node> nodes = database.findNodes( marker );
-            Node node = nodes.next();
-            node.setProperty( TEST_PROPERTY_NAME, "b" );
-
-            Future<Void> propertySetFuture = secondTransactionExecutor.executeDontWait( state ->
+            try ( Transaction ignored = database.beginTx() )
             {
-                try ( Transaction transaction1 = database.beginTx() )
+                ResourceIterator<Node> nodes = database.findNodes( marker );
+                Node node = nodes.next();
+                node.setProperty( TEST_PROPERTY_NAME, "b" );
+
+                Future<Void> propertySetFuture = secondTransactionExecutor.executeDontWait( state ->
                 {
-                    node.setProperty( TEST_PROPERTY_NAME, "b" );
-                    transaction1.success();
-                }
-                return null;
-            } );
+                    try ( Transaction transaction1 = database.beginTx() )
+                    {
+                        node.setProperty( TEST_PROPERTY_NAME, "b" );
+                        transaction1.success();
+                    }
+                    return null;
+                } );
 
-            secondTransactionExecutor.waitUntilWaiting( exclusiveLockWaitingPredicate() );
-            clockExecutor.execute( (OtherThreadExecutor.WorkerCommand<Void,Void>) state ->
-            {
-                fakeClock.forward( 3, TimeUnit.SECONDS );
-                return null;
-            } );
-            propertySetFuture.get();
-
-            fail( "Should throw termination exception." );
-        }
+                secondTransactionExecutor.waitUntilWaiting( exclusiveLockWaitingPredicate() );
+                clockExecutor.execute( (OtherThreadExecutor.WorkerCommand<Void, Void>) state ->
+                {
+                    fakeClock.forward( 3, TimeUnit.SECONDS );
+                    return null;
+                } );
+                propertySetFuture.get();
+            }
+        } );
+        assertThat( e, new RootCauseMatcher<>( LockAcquisitionTimeoutException.class,
+            "The transaction has been terminated. " +
+                "Retry your operation in a new transaction, and you should see a successful result. " +
+                "Unable to acquire lock within configured timeout (dbms.lock.acquisition.timeout). " +
+                "Unable to acquire lock for resource: NODE with id: 0 within 2000 millis." ) );
     }
 
-    @Test( timeout = TEST_TIMEOUT )
-    public void timeoutOnAcquiringSharedLock() throws Exception
+    @Test
+    @Timeout( 5 )
+    void timeoutOnAcquiringSharedLock()
     {
-        expectedException.expect( new RootCauseMatcher<>( LockAcquisitionTimeoutException.class,
-                "The transaction has been terminated. " +
-                        "Retry your operation in a new transaction, and you should see a successful result. " +
-                        "Unable to acquire lock within configured timeout (dbms.lock.acquisition.timeout). " +
-                        "Unable to acquire lock for resource: LABEL with id: 1 within 2000 millis." ) );
-
-        try ( Transaction ignored = database.beginTx() )
+        var e = assertThrows( Exception.class, () ->
         {
-            Locks lockManger = getLockManager();
-            lockManger.newClient().acquireExclusive( LockTracer.NONE, ResourceTypes.LABEL, 1 );
-
-            Future<Void> propertySetFuture = secondTransactionExecutor.executeDontWait( state ->
+            try ( Transaction ignored = database.beginTx() )
             {
-                try ( Transaction nestedTransaction = database.beginTx() )
+                Locks lockManger = getLockManager();
+                lockManger.newClient().acquireExclusive( LockTracer.NONE, ResourceTypes.LABEL, 1 );
+
+                Future<Void> propertySetFuture = secondTransactionExecutor.executeDontWait( state ->
                 {
-                    ResourceIterator<Node> nodes = database.findNodes( marker );
-                    Node node = nodes.next();
-                    node.addLabel( Label.label( "anotherLabel" ) );
-                    nestedTransaction.success();
-                }
-                return null;
-            } );
+                    try ( Transaction nestedTransaction = database.beginTx() )
+                    {
+                        ResourceIterator<Node> nodes = database.findNodes( marker );
+                        Node node = nodes.next();
+                        node.addLabel( Label.label( "anotherLabel" ) );
+                        nestedTransaction.success();
+                    }
+                    return null;
+                } );
 
-            secondTransactionExecutor.waitUntilWaiting( sharedLockWaitingPredicate() );
-            clockExecutor.execute( (OtherThreadExecutor.WorkerCommand<Void,Void>) state ->
-            {
-                fakeClock.forward( 3, TimeUnit.SECONDS );
-                return null;
-            } );
-            propertySetFuture.get();
-
-            fail( "Should throw termination exception." );
-        }
+                secondTransactionExecutor.waitUntilWaiting( sharedLockWaitingPredicate() );
+                clockExecutor.execute( (OtherThreadExecutor.WorkerCommand<Void, Void>) state ->
+                {
+                    fakeClock.forward( 3, TimeUnit.SECONDS );
+                    return null;
+                } );
+                propertySetFuture.get();
+            }
+        } );
+        assertThat( e, new RootCauseMatcher<>( LockAcquisitionTimeoutException.class,
+            "The transaction has been terminated. " +
+                "Retry your operation in a new transaction, and you should see a successful result. " +
+                "Unable to acquire lock within configured timeout (dbms.lock.acquisition.timeout). " +
+                "Unable to acquire lock for resource: LABEL with id: 1 within 2000 millis." ) );
     }
 
     protected Locks getLockManager()
@@ -196,7 +191,7 @@ public class CommunityLockAcquisitionTimeoutIT
         return waitDetails -> waitDetails.isAt( CommunityLockClient.class, "acquireShared" );
     }
 
-    private static void createTestNode( Label marker )
+    private void createTestNode( Label marker )
     {
         try ( Transaction transaction = database.beginTx() )
         {

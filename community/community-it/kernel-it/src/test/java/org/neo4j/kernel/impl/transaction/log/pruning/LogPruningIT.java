@@ -19,8 +19,7 @@
  */
 package org.neo4j.kernel.impl.transaction.log.pruning;
 
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 
@@ -34,22 +33,24 @@ import org.neo4j.kernel.impl.transaction.log.checkpoint.SimpleTriggerInfo;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
 import org.neo4j.kernel.impl.transaction.log.files.LogFilesBuilder;
 import org.neo4j.kernel.impl.transaction.log.rotation.LogRotation;
-import org.neo4j.test.rule.DbmsRule;
-import org.neo4j.test.rule.EmbeddedDbmsRule;
+import org.neo4j.kernel.internal.GraphDatabaseAPI;
+import org.neo4j.test.extension.DbmsExtension;
+import org.neo4j.test.extension.Inject;
 
 import static org.hamcrest.CoreMatchers.is;
-import static org.junit.Assert.assertThat;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.neo4j.configuration.GraphDatabaseSettings.keep_logical_logs;
 
-public class LogPruningIT
+@DbmsExtension
+class LogPruningIT
 {
-    @Rule
-    public final DbmsRule db = new EmbeddedDbmsRule().withSetting( keep_logical_logs, "true" );
-
     private static final SimpleTriggerInfo triggerInfo = new SimpleTriggerInfo( "forced trigger" );
 
+    @Inject
+    private GraphDatabaseAPI db;
+
     @Test
-    public void pruningStrategyShouldBeDynamic() throws IOException
+    void pruningStrategyShouldBeDynamic() throws IOException
     {
         CheckPointer checkPointer = getInstanceFromDb( CheckPointer.class );
         Config config = getInstanceFromDb( Config.class );
@@ -112,7 +113,7 @@ public class LogPruningIT
         return db.getDependencyResolver().resolveDependency( clazz );
     }
 
-    private int countTransactionLogs( LogFiles logFiles )
+    private static int countTransactionLogs( LogFiles logFiles )
     {
         return logFiles.logFiles().length;
     }

@@ -19,19 +19,10 @@
  */
 package org.neo4j.kernel.impl;
 
-import org.junit.After;
-import org.junit.AfterClass;
-import org.junit.Before;
-import org.junit.ClassRule;
-import org.junit.rules.TestRule;
-
-import java.io.File;
-import java.io.IOException;
-import java.lang.annotation.ElementType;
-import java.lang.annotation.Inherited;
-import java.lang.annotation.Retention;
-import java.lang.annotation.RetentionPolicy;
-import java.lang.annotation.Target;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
 
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -40,7 +31,6 @@ import org.neo4j.internal.id.IdGenerator;
 import org.neo4j.internal.id.IdGeneratorFactory;
 import org.neo4j.internal.id.IdType;
 import org.neo4j.internal.recordstorage.RecordStorageEngine;
-import org.neo4j.io.fs.FileUtils;
 import org.neo4j.kernel.impl.store.PropertyStore;
 import org.neo4j.kernel.impl.store.RecordStore;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
@@ -50,44 +40,49 @@ import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 
-@AbstractNeo4jTestCase.RequiresPersistentGraphDatabase( false )
 public abstract class AbstractNeo4jTestCase
 {
-
-    private final DatabaseManagementService managementService;
-
-    @Retention( RetentionPolicy.RUNTIME )
-    @Target( ElementType.TYPE )
-    @Inherited
-    public @interface RequiresPersistentGraphDatabase
-    {
-        boolean value() default true;
-    }
-
-    protected static final File NEO4J_BASE_DIR = new File( "target", "var" );
-
-    @ClassRule
-    public static final TestRule START_GRAPHDB = ( base, description ) ->
-    {
-        tearDownDb();
-        setupGraphDatabase( description.getTestClass().getName(),
-                description.getTestClass().getAnnotation( RequiresPersistentGraphDatabase.class ).value() );
-        return base;
-    };
-
-    private static ThreadLocal<DatabaseManagementService> threadLocalService = new ThreadLocal<>();
-    private static ThreadLocal<GraphDatabaseAPI> threadLocalGraphDb = new ThreadLocal<>();
-    private static ThreadLocal<String> currentTestClassName = new ThreadLocal<>();
-    private static ThreadLocal<Boolean> requiresPersistentGraphDatabase = new ThreadLocal<>();
-
-    private GraphDatabaseAPI graphDb;
+    private static DatabaseManagementService managementService;
+    private static GraphDatabaseAPI graphDb;
 
     private Transaction tx;
 
-    protected AbstractNeo4jTestCase()
+    @BeforeAll
+    static void beforeAll()
     {
-        graphDb = threadLocalGraphDb.get();
-        managementService = threadLocalService.get();
+        startDb();
+    }
+
+    @AfterAll
+    static void afterAll()
+    {
+        stopDb();
+    }
+
+    protected static void startDb()
+    {
+        managementService = new TestDatabaseManagementServiceBuilder().impermanent().build();
+        graphDb = (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );
+    }
+
+    protected static void stopDb()
+    {
+        managementService.shutdown();
+    }
+
+    @BeforeEach
+    void setUpTest()
+    {
+        tx = graphDb.beginTx();
+    }
+
+    @AfterEach
+    void tearDownTest()
+    {
+        if ( tx != null )
+        {
+            tx.close();
+        }
     }
 
     public GraphDatabaseService getGraphDb()
@@ -100,88 +95,14 @@ public abstract class AbstractNeo4jTestCase
         return managementService;
     }
 
-    private static void setupGraphDatabase( String testClassName, boolean requiresPersistentGraphDatabase )
-    {
-        AbstractNeo4jTestCase.requiresPersistentGraphDatabase.set( requiresPersistentGraphDatabase );
-        AbstractNeo4jTestCase.currentTestClassName.set( testClassName );
-        if ( requiresPersistentGraphDatabase )
-        {
-            try
-            {
-                FileUtils.deleteRecursively( getStorePath( "neo-test" ) );
-            }
-            catch ( IOException e )
-            {
-                throw new RuntimeException( e );
-            }
-        }
-
-        threadLocalService.set(
-                requiresPersistentGraphDatabase ? new TestDatabaseManagementServiceBuilder( getStorePath( "neo-test" ) ).build()
-                                                : new TestDatabaseManagementServiceBuilder().impermanent().build() );
-        threadLocalGraphDb.set( (GraphDatabaseAPI) threadLocalService.get().database( DEFAULT_DATABASE_NAME ) );
-    }
-
-    public GraphDatabaseAPI getGraphDbAPI()
+    protected GraphDatabaseAPI getGraphDbAPI()
     {
         return graphDb;
-    }
-
-    protected boolean restartGraphDbBetweenTests()
-    {
-        return false;
     }
 
     public Transaction getTransaction()
     {
         return tx;
-    }
-
-    public static File getStorePath( String endPath )
-    {
-        return new File( NEO4J_BASE_DIR, currentTestClassName.get() + "-" + endPath ).getAbsoluteFile();
-    }
-
-    @Before
-    public void setUpTest()
-    {
-        if ( restartGraphDbBetweenTests() && graphDb == null )
-        {
-            setupGraphDatabase( currentTestClassName.get(), requiresPersistentGraphDatabase.get() );
-            graphDb = threadLocalGraphDb.get();
-        }
-        tx = graphDb.beginTx();
-    }
-
-    @After
-    public void tearDownTest()
-    {
-        if ( tx != null )
-        {
-            tx.close();
-        }
-
-        if ( restartGraphDbBetweenTests() )
-        {
-            tearDownDb();
-        }
-    }
-
-    @AfterClass
-    public static void tearDownDb()
-    {
-        try
-        {
-            if ( threadLocalService.get() != null )
-            {
-                threadLocalService.get().shutdown();
-            }
-        }
-        finally
-        {
-            threadLocalService.remove();
-            threadLocalGraphDb.remove();
-        }
     }
 
     public void setTransaction( Transaction tx )
@@ -247,34 +168,9 @@ public abstract class AbstractNeo4jTestCase
         }
     }
 
-    public IdGenerator getIdGenerator( IdType idType )
+    protected IdGenerator getIdGenerator( IdType idType )
     {
         return graphDb.getDependencyResolver().resolveDependency( IdGeneratorFactory.class ).get( idType );
-    }
-
-    public static void deleteFileOrDirectory( String dir )
-    {
-        deleteFileOrDirectory( new File( dir ) );
-    }
-
-    public static void deleteFileOrDirectory( File file )
-    {
-        if ( !file.exists() )
-        {
-            return;
-        }
-
-        if ( file.isDirectory() )
-        {
-            for ( File child : file.listFiles() )
-            {
-                deleteFileOrDirectory( child );
-            }
-        }
-        else
-        {
-            file.delete();
-        }
     }
 
     protected long propertyRecordsInUse()
@@ -282,7 +178,7 @@ public abstract class AbstractNeo4jTestCase
         return numberOfRecordsInUse( propertyStore() );
     }
 
-    public static <RECORD extends AbstractBaseRecord> int numberOfRecordsInUse( RecordStore<RECORD> store )
+    private static <RECORD extends AbstractBaseRecord> int numberOfRecordsInUse( RecordStore<RECORD> store )
     {
         int inUse = 0;
         for ( long id = store.getNumberOfReservedLowIds(); id < store.getHighId(); id++ )

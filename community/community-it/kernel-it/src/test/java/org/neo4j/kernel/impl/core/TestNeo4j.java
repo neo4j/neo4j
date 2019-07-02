@@ -19,7 +19,7 @@
  */
 package org.neo4j.kernel.impl.core;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.Random;
 
@@ -34,28 +34,28 @@ import org.neo4j.internal.id.IdType;
 import org.neo4j.kernel.impl.AbstractNeo4jTestCase;
 import org.neo4j.kernel.impl.MyRelTypes;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.internal.helpers.collection.Iterators.asResourceIterator;
 
-public class TestNeo4j extends AbstractNeo4jTestCase
+class TestNeo4j extends AbstractNeo4jTestCase
 {
     @Test
-    public void testBasicNodeRelationships()
+    void testBasicNodeRelationships()
     {
         Node firstNode;
         Node secondNode;
         Relationship rel;
         // Create nodes and a relationship between them
         firstNode = getGraphDb().createNode();
-        assertNotNull( "Failure creating first node", firstNode );
+        assertNotNull( firstNode, "Failure creating first node" );
         secondNode = getGraphDb().createNode();
-        assertNotNull( "Failure creating second node", secondNode );
+        assertNotNull( secondNode, "Failure creating second node" );
         rel = firstNode.createRelationshipTo( secondNode, MyRelTypes.TEST );
-        assertNotNull( "Relationship is null", rel );
+        assertNotNull( rel, "Relationship is null" );
         RelationshipType relType = rel.getType();
-        assertNotNull( "Relationship's type is is null", relType );
+        assertNotNull( relType, "Relationship's type is is null" );
 
         // Verify that the node reports that it has a relationship of
         // the type we created above
@@ -72,32 +72,29 @@ public class TestNeo4j extends AbstractNeo4jTestCase
 
         // Verify that both nodes return the relationship we created above
         allRels = (ResourceIterable<Relationship>) firstNode.getRelationships();
-        assertTrue( this.objectExistsInIterable( rel, allRels ) );
+        assertTrue( objectExistsInIterable( rel, allRels ) );
         allRels = (ResourceIterable<Relationship>) firstNode.getRelationships( relType );
-        assertTrue( this.objectExistsInIterable( rel, allRels ) );
+        assertTrue( objectExistsInIterable( rel, allRels ) );
 
         allRels = (ResourceIterable<Relationship>) secondNode.getRelationships();
-        assertTrue( this.objectExistsInIterable( rel, allRels ) );
+        assertTrue( objectExistsInIterable( rel, allRels ) );
         allRels = (ResourceIterable<Relationship>) secondNode.getRelationships( relType );
-        assertTrue( this.objectExistsInIterable( rel, allRels ) );
+        assertTrue( objectExistsInIterable( rel, allRels ) );
 
         // Verify that the relationship reports that it is associated with
         // firstNode and secondNode
         Node[] relNodes = rel.getNodes();
-        assertEquals( "A relationship should always be connected to exactly "
-            + "two nodes", relNodes.length, 2 );
-        assertTrue( "Relationship says that it isn't connected to firstNode",
-            this.objectExistsInArray( firstNode, relNodes ) );
-        assertTrue( "Relationship says that it isn't connected to secondNode",
-            this.objectExistsInArray( secondNode, relNodes ) );
-        assertEquals( "The other node should be secondNode but it isn't", rel.getOtherNode( firstNode ), secondNode );
-        assertEquals( "The other node should be firstNode but it isn't", rel.getOtherNode( secondNode ), firstNode );
+        assertEquals( relNodes.length, 2, "A relationship should always be connected to exactly two nodes" );
+        assertTrue( objectExistsInArray( firstNode, relNodes ), "Relationship says that it isn't connected to firstNode" );
+        assertTrue( objectExistsInArray( secondNode, relNodes ), "Relationship says that it isn't connected to secondNode" );
+        assertEquals( rel.getOtherNode( firstNode ), secondNode, "The other node should be secondNode but it isn't" );
+        assertEquals( rel.getOtherNode( secondNode ), firstNode, "The other node should be firstNode but it isn't" );
         rel.delete();
         secondNode.delete();
         firstNode.delete();
     }
 
-    private boolean objectExistsInIterable( Relationship rel,
+    private static boolean objectExistsInIterable( Relationship rel,
         ResourceIterable<Relationship> allRels )
     {
         try ( ResourceIterator<Relationship> resourceIterator = allRels.iterator() )
@@ -116,7 +113,7 @@ public class TestNeo4j extends AbstractNeo4jTestCase
         }
     }
 
-    private boolean objectExistsInArray( Object obj, Object[] objArray )
+    private static boolean objectExistsInArray( Object obj, Object[] objArray )
     {
         for ( Object o : objArray )
         {
@@ -129,7 +126,7 @@ public class TestNeo4j extends AbstractNeo4jTestCase
     }
 
     @Test
-    public void testRandomPropertyName()
+    void testRandomPropertyName()
     {
         Node node1 = getGraphDb().createNode();
         String key = "random_"
@@ -140,7 +137,7 @@ public class TestNeo4j extends AbstractNeo4jTestCase
     }
 
     @Test
-    public void testNodeChangePropertyArray()
+    void testNodeChangePropertyArray()
     {
         getTransaction().close();
 
@@ -175,7 +172,7 @@ public class TestNeo4j extends AbstractNeo4jTestCase
     }
 
     @Test
-    public void testGetAllNodes()
+    void testGetAllNodes()
     {
         long highId = getIdGenerator( IdType.NODE ).getHighestPossibleIdInUse();
         if ( highId >= 0 && highId < 10000 )
@@ -221,7 +218,7 @@ public class TestNeo4j extends AbstractNeo4jTestCase
     }
 
     @Test
-    public void testMultipleShutdown()
+    void testMultipleShutdown()
     {
         commit();
         getManagementService().shutdown();

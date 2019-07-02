@@ -19,24 +19,19 @@
  */
 package org.neo4j.kernel.api;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.ClassRule;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.TestName;
-import org.junit.rules.Timeout;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Timeout;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
-import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.stream.Stream;
 
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.internal.helpers.collection.Iterators;
 import org.neo4j.internal.kernel.api.IndexOrder;
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.internal.kernel.api.IndexReadSession;
@@ -48,37 +43,31 @@ import org.neo4j.kernel.api.schema.index.TestIndexDescriptorFactory;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.index.schema.IndexDescriptor;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
-import org.neo4j.test.rule.ImpermanentDbmsRule;
+import org.neo4j.test.extension.ImpermanentDbmsExtension;
+import org.neo4j.test.extension.Inject;
 import org.neo4j.values.storable.Values;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.equalTo;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.params.provider.Arguments.arguments;
 
-@RunWith( Parameterized.class )
-public class CompositeIndexingIT
+@ImpermanentDbmsExtension
+@Timeout( 20 )
+class CompositeIndexingIT
 {
     private static final int LABEL_ID = 1;
 
-    @ClassRule
-    public static ImpermanentDbmsRule dbRule = new ImpermanentDbmsRule();
-
-    @Rule
-    public final TestName testName = new TestName();
-
-    @Rule
-    public Timeout globalTimeout = Timeout.seconds( 200 );
-
-    private final IndexDescriptor index;
+    @Inject
     private GraphDatabaseAPI graphDatabaseAPI;
+    private IndexDescriptor index;
 
-    @Before
-    public void setup() throws Exception
+    void setup( IndexDescriptor index ) throws Exception
     {
-        graphDatabaseAPI = dbRule.getGraphDatabaseAPI();
+        this.index = index;
         try ( Transaction tx = graphDatabaseAPI.beginTx() )
         {
             KernelTransaction ktx = ktx();
@@ -97,15 +86,15 @@ public class CompositeIndexingIT
         {
             KernelTransaction ktx = ktx();
             while ( ktx.schemaRead().indexGetState( index ) !=
-                    InternalIndexState.ONLINE )
+                InternalIndexState.ONLINE )
             {
                 Thread.sleep( 10 );
             } // Will break loop on test timeout
         }
     }
 
-    @After
-    public void clean() throws Exception
+    @AfterEach
+    void clean() throws Exception
     {
         try ( Transaction tx = graphDatabaseAPI.beginTx() )
         {
@@ -132,27 +121,24 @@ public class CompositeIndexingIT
         }
     }
 
-    @Parameterized.Parameters( name = "Index: {0}" )
-    public static Iterable<Object[]> parameterValues()
+    private static Stream<Arguments> params()
     {
-        return Arrays.asList( Iterators.array( TestIndexDescriptorFactory.forLabel( LABEL_ID, 1 ) ),
-                Iterators.array( TestIndexDescriptorFactory.forLabel( LABEL_ID, 1, 2 ) ),
-                Iterators.array( TestIndexDescriptorFactory.forLabel( LABEL_ID, 1, 2, 3, 4 ) ),
-                Iterators.array( TestIndexDescriptorFactory.forLabel( LABEL_ID, 1, 2, 3, 4, 5, 6, 7 ) ),
-                Iterators.array( TestIndexDescriptorFactory.uniqueForLabel( LABEL_ID, 1 ) ),
-                Iterators.array( TestIndexDescriptorFactory.uniqueForLabel( LABEL_ID, 1, 2 ) ),
-                Iterators.array( TestIndexDescriptorFactory.uniqueForLabel( LABEL_ID, 1, 2, 3, 4, 5, 6, 7 ) )
+        return Stream.of(
+            arguments( TestIndexDescriptorFactory.forLabel( LABEL_ID, 1 ) ),
+            arguments( TestIndexDescriptorFactory.forLabel( LABEL_ID, 1, 2 ) ),
+            arguments( TestIndexDescriptorFactory.forLabel( LABEL_ID, 1, 2, 3, 4 ) ),
+            arguments( TestIndexDescriptorFactory.forLabel( LABEL_ID, 1, 2, 3, 4, 5, 6, 7 ) ),
+            arguments( TestIndexDescriptorFactory.uniqueForLabel( LABEL_ID, 1 ) ),
+            arguments( TestIndexDescriptorFactory.uniqueForLabel( LABEL_ID, 1, 2 ) ),
+            arguments( TestIndexDescriptorFactory.uniqueForLabel( LABEL_ID, 1, 2, 3, 4, 5, 6, 7 ) )
         );
     }
 
-    public CompositeIndexingIT( IndexDescriptor nodeDescriptor )
+    @ParameterizedTest
+    @MethodSource( "params" )
+    void shouldSeeNodeAddedByPropertyToIndexInTranslation( IndexDescriptor index ) throws Exception
     {
-        this.index = nodeDescriptor;
-    }
-
-    @Test
-    public void shouldSeeNodeAddedByPropertyToIndexInTranslation() throws Exception
-    {
+        setup( index );
         try ( Transaction ignore = graphDatabaseAPI.beginTx() )
         {
             KernelTransaction ktx = ktx();
@@ -172,9 +158,11 @@ public class CompositeIndexingIT
         }
     }
 
-    @Test
-    public void shouldSeeNodeAddedToByLabelIndexInTransaction() throws Exception
+    @ParameterizedTest
+    @MethodSource( "params" )
+    void shouldSeeNodeAddedToByLabelIndexInTransaction( IndexDescriptor index ) throws Exception
     {
+        setup( index );
         try ( Transaction ignore = graphDatabaseAPI.beginTx() )
         {
             KernelTransaction ktx = ktx();
@@ -194,9 +182,11 @@ public class CompositeIndexingIT
         }
     }
 
-    @Test
-    public void shouldNotSeeNodeThatWasDeletedInTransaction() throws Exception
+    @ParameterizedTest
+    @MethodSource( "params" )
+    void shouldNotSeeNodeThatWasDeletedInTransaction( IndexDescriptor index ) throws Exception
     {
+        setup( index );
         long nodeID = createNode();
         try ( Transaction ignore = graphDatabaseAPI.beginTx() )
         {
@@ -209,9 +199,11 @@ public class CompositeIndexingIT
         }
     }
 
-    @Test
-    public void shouldNotSeeNodeThatHasItsLabelRemovedInTransaction() throws Exception
+    @ParameterizedTest
+    @MethodSource( "params" )
+    void shouldNotSeeNodeThatHasItsLabelRemovedInTransaction( IndexDescriptor index ) throws Exception
     {
+        setup( index );
         long nodeID = createNode();
         try ( Transaction ignore = graphDatabaseAPI.beginTx() )
         {
@@ -224,9 +216,11 @@ public class CompositeIndexingIT
         }
     }
 
-    @Test
-    public void shouldNotSeeNodeThatHasAPropertyRemovedInTransaction() throws Exception
+    @ParameterizedTest
+    @MethodSource( "params" )
+    void shouldNotSeeNodeThatHasAPropertyRemovedInTransaction( IndexDescriptor index ) throws Exception
     {
+        setup( index );
         long nodeID = createNode();
         try ( Transaction ignore = graphDatabaseAPI.beginTx() )
         {
@@ -239,9 +233,11 @@ public class CompositeIndexingIT
         }
     }
 
-    @Test
-    public void shouldSeeAllNodesAddedInTransaction() throws Exception
+    @ParameterizedTest
+    @MethodSource( "params" )
+    void shouldSeeAllNodesAddedInTransaction( IndexDescriptor index ) throws Exception
     {
+        setup( index );
         if ( !index.isUnique() ) // this test does not make any sense for UNIQUE indexes
         {
             try ( Transaction ignore = graphDatabaseAPI.beginTx() )
@@ -250,7 +246,7 @@ public class CompositeIndexingIT
                 long nodeID2 = createNode();
                 long nodeID3 = createNode();
                 KernelTransaction ktx = ktx();
-                Set<Long> result = new HashSet<>(  );
+                Set<Long> result = new HashSet<>();
                 try ( NodeValueIndexCursor cursor = seek( ktx ) )
                 {
                     while ( cursor.next() )
@@ -263,9 +259,11 @@ public class CompositeIndexingIT
         }
     }
 
-    @Test
-    public void shouldSeeAllNodesAddedBeforeTransaction() throws Exception
+    @ParameterizedTest
+    @MethodSource( "params" )
+    void shouldSeeAllNodesAddedBeforeTransaction( IndexDescriptor index ) throws Exception
     {
+        setup( index );
         if ( !index.isUnique() ) // this test does not make any sense for UNIQUE indexes
         {
             long nodeID1 = createNode();
@@ -274,7 +272,7 @@ public class CompositeIndexingIT
             try ( Transaction ignore = graphDatabaseAPI.beginTx() )
             {
                 KernelTransaction ktx = ktx();
-                Set<Long> result = new HashSet<>(  );
+                Set<Long> result = new HashSet<>();
                 try ( NodeValueIndexCursor cursor = seek( ktx ) )
                 {
                     while ( cursor.next() )
@@ -287,9 +285,11 @@ public class CompositeIndexingIT
         }
     }
 
-    @Test
-    public void shouldNotSeeNodesLackingOneProperty() throws Exception
+    @ParameterizedTest
+    @MethodSource( "params" )
+    void shouldNotSeeNodesLackingOneProperty( IndexDescriptor index ) throws Exception
     {
+        setup( index );
         long nodeID1 = createNode();
         try ( Transaction ignore = graphDatabaseAPI.beginTx() )
         {
@@ -303,7 +303,7 @@ public class CompositeIndexingIT
                 int propID = propertyIds[i];
                 write.nodeSetProperty( irrelevantNodeID, propID, Values.intValue( propID ) );
             }
-            Set<Long> result = new HashSet<>(  );
+            Set<Long> result = new HashSet<>();
             try ( NodeValueIndexCursor cursor = seek( ktx ) )
             {
                 while ( cursor.next() )

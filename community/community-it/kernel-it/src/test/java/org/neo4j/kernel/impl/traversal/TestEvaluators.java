@@ -19,9 +19,9 @@
  */
 package org.neo4j.kernel.impl.traversal;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.RelationshipType;
@@ -34,7 +34,7 @@ import static org.neo4j.graphdb.traversal.Evaluation.INCLUDE_AND_PRUNE;
 import static org.neo4j.graphdb.traversal.Evaluators.includeWhereEndNodeIs;
 import static org.neo4j.graphdb.traversal.Evaluators.lastRelationshipTypeIs;
 
-public class TestEvaluators extends TraversalTestBase
+class TestEvaluators extends TraversalTestBase
 {
     private enum Types implements RelationshipType
     {
@@ -43,8 +43,8 @@ public class TestEvaluators extends TraversalTestBase
 
     private Transaction tx;
 
-    @Before
-    public void createGraph()
+    @BeforeEach
+    void createGraph()
     {
         /*
          * (a)--[A]->(b)--[B]-->(c)--[B]-->(d)--[C]-->(e)--[A]-->(j)
@@ -61,14 +61,14 @@ public class TestEvaluators extends TraversalTestBase
         tx = beginTx();
     }
 
-    @After
-    public void tearDown()
+    @AfterEach
+    void tearDown()
     {
         tx.close();
     }
 
     @Test
-    public void lastRelationshipTypeEvaluator()
+    void lastRelationshipTypeEvaluator()
     {
         Node a = getNodeWithName( "a" );
         expectPaths( getGraphDb().traversalDescription().evaluator( lastRelationshipTypeIs(
@@ -81,7 +81,7 @@ public class TestEvaluators extends TraversalTestBase
     }
 
     @Test
-    public void endNodeIs()
+    void endNodeIs()
     {
         Node a = getNodeWithName( "a" );
         Node c = getNodeWithName( "c" );
@@ -94,7 +94,7 @@ public class TestEvaluators extends TraversalTestBase
     }
 
     @Test
-    public void depths()
+    void depths()
     {
         Node a = getNodeWithName( "a" );
         expectPaths( getGraphDb().traversalDescription().evaluator( Evaluators.atDepth( 1 ) ).traverse( a ), "a,b", "a,f" );

@@ -19,34 +19,34 @@
  */
 package org.neo4j.kernel.impl.traversal;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.traversal.Evaluators;
 import org.neo4j.graphdb.traversal.TraversalDescription;
 
-public class SpecificDepthTraversalTest extends TraversalTestBase
+class SpecificDepthTraversalTest extends TraversalTestBase
 {
     private Transaction tx;
 
-    @Before
-    public void createTheGraph()
+    @BeforeEach
+    void createTheGraph()
     {
         createGraph( "0 ROOT 1", "1 KNOWS 2", "2 KNOWS 3", "2 KNOWS 4",
                 "4 KNOWS 5", "5 KNOWS 6", "3 KNOWS 1" );
         tx = beginTx();
     }
 
-    @After
-    public void tearDown()
+    @AfterEach
+    void tearDown()
     {
         tx.close();
     }
 
     @Test
-    public void shouldGetStartNodeOnDepthZero()
+    void shouldGetStartNodeOnDepthZero()
     {
         TraversalDescription description = getGraphDb().traversalDescription().evaluator(
                 Evaluators.atDepth( 0 ) );
@@ -54,7 +54,7 @@ public class SpecificDepthTraversalTest extends TraversalTestBase
     }
 
     @Test
-    public void shouldGetCorrectNodesFromToDepthOne()
+    void shouldGetCorrectNodesFromToDepthOne()
     {
         TraversalDescription description = getGraphDb().traversalDescription().evaluator(
                 Evaluators.fromDepth( 1 ) ).evaluator( Evaluators.toDepth( 1 ) );
@@ -62,7 +62,7 @@ public class SpecificDepthTraversalTest extends TraversalTestBase
     }
 
     @Test
-    public void shouldGetCorrectNodeAtDepthOne()
+    void shouldGetCorrectNodeAtDepthOne()
     {
         TraversalDescription description = getGraphDb().traversalDescription().evaluator(
                 Evaluators.atDepth( 1 ) );
@@ -70,7 +70,7 @@ public class SpecificDepthTraversalTest extends TraversalTestBase
     }
 
     @Test
-    public void shouldGetCorrectNodesAtDepthZero()
+    void shouldGetCorrectNodesAtDepthZero()
     {
         TraversalDescription description = getGraphDb().traversalDescription().evaluator(
                 Evaluators.fromDepth( 0 ) ).evaluator( Evaluators.toDepth( 0 ) );
@@ -78,7 +78,7 @@ public class SpecificDepthTraversalTest extends TraversalTestBase
     }
 
     @Test
-    public void shouldGetStartNodeWhenFromToIsZeroBreadthFirst()
+    void shouldGetStartNodeWhenFromToIsZeroBreadthFirst()
     {
         TraversalDescription description = getGraphDb().traversalDescription().breadthFirst()
                 .evaluator(Evaluators.fromDepth(0)).evaluator(Evaluators.toDepth(0));
@@ -87,7 +87,7 @@ public class SpecificDepthTraversalTest extends TraversalTestBase
     }
 
     @Test
-    public void shouldGetStartNodeWhenAtIsZeroBreadthFirst()
+    void shouldGetStartNodeWhenAtIsZeroBreadthFirst()
     {
         TraversalDescription description = getGraphDb().traversalDescription().breadthFirst()
                 .evaluator(Evaluators.atDepth(0));
@@ -96,7 +96,7 @@ public class SpecificDepthTraversalTest extends TraversalTestBase
     }
 
     @Test
-    public void shouldGetSecondNodeWhenFromToIsTwoBreadthFirst()
+    void shouldGetSecondNodeWhenFromToIsTwoBreadthFirst()
     {
         TraversalDescription description = getGraphDb().traversalDescription().breadthFirst()
                 .evaluator(Evaluators.fromDepth(2)).evaluator(Evaluators.toDepth(2));
@@ -105,7 +105,7 @@ public class SpecificDepthTraversalTest extends TraversalTestBase
     }
 
     @Test
-    public void shouldGetSecondNodeWhenAtIsTwoBreadthFirst()
+    void shouldGetSecondNodeWhenAtIsTwoBreadthFirst()
     {
         TraversalDescription description = getGraphDb().traversalDescription().breadthFirst()
                 .evaluator( Evaluators.atDepth( 2 ) );

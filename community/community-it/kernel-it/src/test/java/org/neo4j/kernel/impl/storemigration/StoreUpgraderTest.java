@@ -19,14 +19,11 @@
  */
 package org.neo4j.kernel.impl.storemigration;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
-import org.junit.rules.RuleChain;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.Mockito;
 
 import java.io.File;
@@ -73,12 +70,13 @@ import org.neo4j.storageengine.migration.AbstractStoreMigrationParticipant;
 import org.neo4j.storageengine.migration.MigrationProgressMonitor;
 import org.neo4j.storageengine.migration.StoreMigrationParticipant;
 import org.neo4j.storageengine.migration.UpgradeNotAllowedException;
-import org.neo4j.test.rule.PageCacheRule;
+import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.pagecache.PageCacheExtension;
 import org.neo4j.test.rule.TestDirectory;
-import org.neo4j.test.rule.fs.DefaultFileSystemRule;
 import org.neo4j.test.scheduler.ThreadPoolJobScheduler;
 
 import static java.util.concurrent.TimeUnit.MINUTES;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.emptyArray;
 import static org.hamcrest.Matchers.emptyCollectionOf;
@@ -87,72 +85,66 @@ import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
+import static org.junit.jupiter.params.provider.Arguments.arguments;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.verifyFilesHaveSameContent;
 import static org.neo4j.storageengine.migration.StoreMigrationParticipant.NOT_PARTICIPATING;
 
-@RunWith( Parameterized.class )
+@PageCacheExtension
 public class StoreUpgraderTest
 {
     private static final String INTERNAL_LOG_FILE = "debug.log";
-    private final TestDirectory directory = TestDirectory.testDirectory();
-    private final PageCacheRule pageCacheRule = new PageCacheRule();
-    private final DefaultFileSystemRule fileSystemRule = new DefaultFileSystemRule();
-    private final ExpectedException expectedException = ExpectedException.none();
 
-    @Rule
-    public final RuleChain ruleChain = RuleChain.outerRule( expectedException )
-                                                .around( fileSystemRule )
-                                                .around( pageCacheRule )
-                                                .around( directory );
+    @Inject
+    private TestDirectory directory;
+    @Inject
+    private PageCache pageCache;
+    @Inject
+    private FileSystemAbstraction fileSystem;
 
     private DatabaseLayout databaseLayout;
-    private final FileSystemAbstraction fileSystem = fileSystemRule.get();
     private JobScheduler jobScheduler;
-    private final RecordFormats formats;
 
     private final Config allowMigrateConfig = Config.defaults( GraphDatabaseSettings.allow_upgrade, Settings.TRUE );
     private File prepareDatabaseDirectory;
 
-    public StoreUpgraderTest( RecordFormats formats )
+    private static Collection<Arguments> versions()
     {
-        this.formats = formats;
+        return Collections.singletonList( arguments( StandardV3_4.RECORD_FORMATS ) );
     }
 
-    @Parameterized.Parameters( name = "{0}" )
-    public static Collection<RecordFormats> versions()
-    {
-        return Collections.singletonList( StandardV3_4.RECORD_FORMATS );
-    }
-
-    @Before
-    public void prepareDb() throws IOException
+    @BeforeEach
+    void prepareDb()
     {
         jobScheduler = new ThreadPoolJobScheduler();
+    }
+
+    @AfterEach
+    void tearDown() throws Exception
+    {
+        jobScheduler.close();
+    }
+
+    private void init( RecordFormats formats ) throws IOException
+    {
         String version = formats.storeVersion();
         databaseLayout = directory.databaseLayout( "db_" + version );
         prepareDatabaseDirectory = directory.directory( "prepare_" + version );
         prepareSampleDatabase( version, fileSystem, databaseLayout, prepareDatabaseDirectory );
     }
 
-    @After
-    public void tearDown() throws Exception
+    @ParameterizedTest
+    @MethodSource( "versions" )
+    void shouldHaltUpgradeIfUpgradeConfigurationVetoesTheProcess( RecordFormats formats ) throws IOException
     {
-        jobScheduler.close();
-    }
-
-    @Test
-    public void shouldHaltUpgradeIfUpgradeConfigurationVetoesTheProcess() throws IOException
-    {
-        PageCache pageCache = pageCacheRule.getPageCache( fileSystem );
+        init( formats );
         Config deniedMigrationConfig = Config.defaults( GraphDatabaseSettings.allow_upgrade, "false" );
         deniedMigrationConfig.augment( GraphDatabaseSettings.record_format, Standard.LATEST_NAME );
 
@@ -169,15 +161,16 @@ public class StoreUpgraderTest
         }
     }
 
-    @Test
-    public void shouldRefuseToUpgradeIfAnyOfTheStoresWereNotShutDownCleanly() throws IOException
+    @ParameterizedTest
+    @MethodSource( "versions" )
+    void shouldRefuseToUpgradeIfAnyOfTheStoresWereNotShutDownCleanly( RecordFormats formats ) throws IOException
     {
+        init( formats );
         File comparisonDirectory = directory.directory(
-                "shouldRefuseToUpgradeIfAnyOfTheStoresWereNotShutDownCleanly-comparison" );
+            "shouldRefuseToUpgradeIfAnyOfTheStoresWereNotShutDownCleanly-comparison" );
         removeCheckPointFromTxLog( fileSystem, databaseLayout.databaseDirectory() );
         fileSystem.deleteRecursively( comparisonDirectory );
         fileSystem.copyRecursively( databaseLayout.databaseDirectory(), comparisonDirectory );
-        PageCache pageCache = pageCacheRule.getPageCache( fileSystem );
         StoreVersionCheck check = getVersionCheck( pageCache );
 
         try
@@ -193,15 +186,16 @@ public class StoreUpgraderTest
         verifyFilesHaveSameContent( fileSystem, comparisonDirectory, databaseLayout.databaseDirectory() );
     }
 
-    @Test
-    public void shouldRefuseToUpgradeIfAllOfTheStoresWereNotShutDownCleanly() throws IOException
+    @ParameterizedTest
+    @MethodSource( "versions" )
+    void shouldRefuseToUpgradeIfAllOfTheStoresWereNotShutDownCleanly( RecordFormats formats ) throws IOException
     {
+        init( formats );
         File comparisonDirectory = directory.directory(
-                "shouldRefuseToUpgradeIfAllOfTheStoresWereNotShutDownCleanly-comparison" );
+            "shouldRefuseToUpgradeIfAllOfTheStoresWereNotShutDownCleanly-comparison" );
         removeCheckPointFromTxLog( fileSystem, databaseLayout.databaseDirectory() );
         fileSystem.deleteRecursively( comparisonDirectory );
         fileSystem.copyRecursively( databaseLayout.databaseDirectory(), comparisonDirectory );
-        PageCache pageCache = pageCacheRule.getPageCache( fileSystem );
         StoreVersionCheck check = getVersionCheck( pageCache );
 
         try
@@ -217,10 +211,11 @@ public class StoreUpgraderTest
         verifyFilesHaveSameContent( fileSystem, comparisonDirectory, databaseLayout.databaseDirectory() );
     }
 
-    @Test
-    public void shouldContinueMovingFilesIfUpgradeCancelledWhileMoving() throws Exception
+    @ParameterizedTest
+    @MethodSource( "versions" )
+    void shouldContinueMovingFilesIfUpgradeCancelledWhileMoving( RecordFormats formats ) throws Exception
     {
-        PageCache pageCache = pageCacheRule.getPageCache( fileSystem );
+        init( formats );
         StoreVersionCheck check = getVersionCheck( pageCache );
 
         String versionToMigrateTo = check.configuredVersion();
@@ -257,21 +252,23 @@ public class StoreUpgraderTest
 
             // THEN
             verify( observingParticipant, Mockito.never() ).migrate( any( DatabaseLayout.class ), any( DatabaseLayout.class ),
-                    any( ProgressReporter.class ), eq( versionToMigrateFrom ), eq( versionToMigrateTo ) );
+                any( ProgressReporter.class ), eq( versionToMigrateFrom ), eq( versionToMigrateTo ) );
             verify( observingParticipant ).
-                    moveMigratedFiles( any( DatabaseLayout.class ), any( DatabaseLayout.class ), eq( versionToMigrateFrom ),
-                            eq( versionToMigrateTo ) );
+                moveMigratedFiles( any( DatabaseLayout.class ), any( DatabaseLayout.class ), eq( versionToMigrateFrom ),
+                    eq( versionToMigrateTo ) );
 
             verify( observingParticipant ).cleanup( any( DatabaseLayout.class ) );
         }
     }
 
-    @Test
-    public void upgradedNeoStoreShouldHaveNewUpgradeTimeAndUpgradeId() throws Exception
+    @ParameterizedTest
+    @MethodSource( "versions" )
+    void upgradedNeoStoreShouldHaveNewUpgradeTimeAndUpgradeId( RecordFormats formats ) throws Exception
     {
+        init( formats );
+
         // Given
         fileSystem.deleteFile( databaseLayout.file( INTERNAL_LOG_FILE ) );
-        PageCache pageCache = pageCacheRule.getPageCache( fileSystem );
         StoreVersionCheck check = getVersionCheck( pageCache );
 
         // When
@@ -279,25 +276,27 @@ public class StoreUpgraderTest
 
         // Then
         StoreFactory factory = new StoreFactory( databaseLayout, allowMigrateConfig, new DefaultIdGeneratorFactory( fileSystem ), pageCache, fileSystem,
-                NullLogProvider.getInstance() );
+            NullLogProvider.getInstance() );
         try ( NeoStores neoStores = factory.openAllNeoStores() )
         {
             assertThat( neoStores.getMetaDataStore().getUpgradeTransaction(),
-                    equalTo( neoStores.getMetaDataStore().getLastCommittedTransaction() ) );
+                equalTo( neoStores.getMetaDataStore().getLastCommittedTransaction() ) );
             assertThat( neoStores.getMetaDataStore().getUpgradeTime(),
-                    not( equalTo( MetaDataStore.FIELD_NOT_INITIALIZED ) ) );
+                not( equalTo( MetaDataStore.FIELD_NOT_INITIALIZED ) ) );
 
             long minuteAgo = System.currentTimeMillis() - MINUTES.toMillis( 1 );
             assertThat( neoStores.getMetaDataStore().getUpgradeTime(), greaterThan( minuteAgo ) );
         }
     }
 
-    @Test
-    public void upgradeShouldNotLeaveLeftoverAndMigrationDirs() throws Exception
+    @ParameterizedTest
+    @MethodSource( "versions" )
+    void upgradeShouldNotLeaveLeftoverAndMigrationDirs( RecordFormats formats ) throws Exception
     {
+        init( formats );
+
         // Given
         fileSystem.deleteFile( databaseLayout.file( INTERNAL_LOG_FILE ) );
-        PageCache pageCache = pageCacheRule.getPageCache( fileSystem );
         StoreVersionCheck check = getVersionCheck( pageCache );
 
         // When
@@ -307,17 +306,19 @@ public class StoreUpgraderTest
         assertThat( migrationHelperDirs(), is( emptyCollectionOf( File.class ) ) );
     }
 
-    @Test
-    public void upgradeShouldGiveProgressMonitorProgressMessages() throws Exception
+    @ParameterizedTest
+    @MethodSource( "versions" )
+    void upgradeShouldGiveProgressMonitorProgressMessages( RecordFormats formats ) throws Exception
     {
+        init( formats );
+
         // Given
-        PageCache pageCache = pageCacheRule.getPageCache( fileSystem );
         StoreVersionCheck check = getVersionCheck( pageCache );
 
         // When
         AssertableLogProvider logProvider = new AssertableLogProvider();
         newUpgrader( check, pageCache, allowMigrateConfig,
-                new VisibleMigrationProgressMonitor( logProvider.getLog( "test" ) ) ).migrateIfNeeded( databaseLayout );
+            new VisibleMigrationProgressMonitor( logProvider.getLog( "test" ) ) ).migrateIfNeeded( databaseLayout );
 
         // Then
         AssertableLogProvider.MessageMatcher messageMatcher = logProvider.rawMessageMatcher();
@@ -326,9 +327,12 @@ public class StoreUpgraderTest
         messageMatcher.assertContains( "Successfully finished" );
     }
 
-    @Test
-    public void upgraderShouldCleanupLegacyLeftoverAndMigrationDirs() throws Exception
+    @ParameterizedTest
+    @MethodSource( "versions" )
+    void upgraderShouldCleanupLegacyLeftoverAndMigrationDirs( RecordFormats formats ) throws Exception
     {
+        init( formats );
+
         // Given
         fileSystem.deleteFile( databaseLayout.file( INTERNAL_LOG_FILE ) );
         fileSystem.mkdir( databaseLayout.file( StoreUpgrader.MIGRATION_DIRECTORY ) );
@@ -336,7 +340,6 @@ public class StoreUpgraderTest
         fileSystem.mkdir( databaseLayout.file( StoreUpgrader.MIGRATION_LEFT_OVERS_DIRECTORY + "_1" ) );
         fileSystem.mkdir( databaseLayout.file( StoreUpgrader.MIGRATION_LEFT_OVERS_DIRECTORY + "_2" ) );
         fileSystem.mkdir( databaseLayout.file( StoreUpgrader.MIGRATION_LEFT_OVERS_DIRECTORY + "_42" ) );
-        PageCache pageCache = pageCacheRule.getPageCache( fileSystem );
 
         // When
         StoreVersionCheck check = getVersionCheck( pageCache );
@@ -347,30 +350,34 @@ public class StoreUpgraderTest
         assertThat( migrationHelperDirs(), is( emptyCollectionOf( File.class ) ) );
     }
 
-    @Test
-    public void upgradeFailsIfMigrationIsNotAllowed()
+    @ParameterizedTest
+    @MethodSource( "versions" )
+    void upgradeFailsIfMigrationIsNotAllowed( RecordFormats formats ) throws IOException
     {
-        PageCache pageCache = pageCacheRule.getPageCache( fileSystem );
+        init( formats );
+
         StoreVersionCheck check = getVersionCheck( pageCache );
 
         AssertableLogProvider logProvider = new AssertableLogProvider();
         assertThrows( UpgradeNotAllowedException.class, () -> newUpgrader( check, pageCache, Config.defaults(),
-                new VisibleMigrationProgressMonitor( logProvider.getLog( "test" ) ) ).migrateIfNeeded( databaseLayout ) );
+            new VisibleMigrationProgressMonitor( logProvider.getLog( "test" ) ) ).migrateIfNeeded( databaseLayout ) );
     }
 
-    @Test
-    public void upgradeMoveTransactionLogs() throws IOException
+    @ParameterizedTest
+    @MethodSource( "versions" )
+    void upgradeMoveTransactionLogs( RecordFormats formats ) throws IOException
     {
+        init( formats );
+
         File txRoot = directory.directory( "customTxRoot" );
         AssertableLogProvider logProvider = new AssertableLogProvider();
-        PageCache pageCache = pageCacheRule.getPageCache( fileSystem );
         StoreVersionCheck check = getVersionCheck( pageCache );
 
         Config config = Config.builder().withSettings( allowMigrateConfig.getRaw() )
-                    .withSetting( GraphDatabaseSettings.transaction_logs_root_path, txRoot.getAbsolutePath() ).build();
+            .withSetting( GraphDatabaseSettings.transaction_logs_root_path, txRoot.getAbsolutePath() ).build();
         DatabaseLayout migrationLayout = DatabaseLayout.of( databaseLayout.databaseDirectory(), LayoutConfig.of( config ) );
         newUpgrader( check, pageCache, config, new VisibleMigrationProgressMonitor( logProvider.getLog( "test" ) ) )
-                .migrateIfNeeded( migrationLayout );
+            .migrateIfNeeded( migrationLayout );
 
         logProvider.rawMessageMatcher().assertContains( "Starting transaction logs migration." );
         logProvider.rawMessageMatcher().assertContains( "Transaction logs migration completed." );
@@ -383,16 +390,18 @@ public class StoreUpgraderTest
         assertEquals( getLogFileNames( prepareDatabaseDirectory ), logFileNames );
     }
 
-    @Test
-    public void failToMoveTransactionLogsIfTheyAlreadyExist() throws IOException
+    @ParameterizedTest
+    @MethodSource( "versions" )
+    void failToMoveTransactionLogsIfTheyAlreadyExist( RecordFormats formats ) throws IOException
     {
+        init( formats );
+
         File txRoot = directory.directory( "customTxRoot" );
         AssertableLogProvider logProvider = new AssertableLogProvider();
-        PageCache pageCache = pageCacheRule.getPageCache( fileSystem );
         StoreVersionCheck check = getVersionCheck( pageCache );
 
         Config config = Config.builder().withSettings( allowMigrateConfig.getRaw() )
-                .withSetting( GraphDatabaseSettings.transaction_logs_root_path, txRoot.getAbsolutePath() ).build();
+            .withSetting( GraphDatabaseSettings.transaction_logs_root_path, txRoot.getAbsolutePath() ).build();
         DatabaseLayout migrationLayout = DatabaseLayout.of( databaseLayout.databaseDirectory(), LayoutConfig.of( config ) );
 
         File databaseTransactionLogsHome = new File( txRoot, migrationLayout.getDatabaseName() );
@@ -402,7 +411,7 @@ public class StoreUpgraderTest
         try
         {
             newUpgrader( check, pageCache, config, new VisibleMigrationProgressMonitor( logProvider.getLog( "test" ) ) )
-                    .migrateIfNeeded( migrationLayout );
+                .migrateIfNeeded( migrationLayout );
             fail( "Should fail during transaction logs move" );
         }
         catch ( StoreUpgrader.TransactionLogsRelocationException e )
@@ -411,10 +420,12 @@ public class StoreUpgraderTest
         }
     }
 
-    @Test
-    public void notParticipatingParticipantsAreNotPartOfMigration() throws IOException
+    @ParameterizedTest
+    @MethodSource( "versions" )
+    void notParticipatingParticipantsAreNotPartOfMigration( RecordFormats formats ) throws IOException
     {
-        PageCache pageCache = pageCacheRule.getPageCache( fileSystem );
+        init( formats );
+
         StoreVersionCheck check = getVersionCheck( pageCache );
         StoreUpgrader storeUpgrader = newUpgrader( check, pageCache );
         assertThat( storeUpgrader.getParticipants(), hasSize( 2 ) );
@@ -521,7 +532,7 @@ public class StoreUpgraderTest
     {
         File[] tmpDirs = databaseLayout.listDatabaseFiles( file -> file.isDirectory() &&
                 (file.getName().equals( StoreUpgrader.MIGRATION_DIRECTORY ) || file.getName().startsWith( StoreUpgrader.MIGRATION_LEFT_OVERS_DIRECTORY )) );
-        assertNotNull( "Some IO errors occurred", tmpDirs );
+        assertNotNull( tmpDirs, "Some IO errors occurred" );
         return Arrays.asList( tmpDirs );
     }
 

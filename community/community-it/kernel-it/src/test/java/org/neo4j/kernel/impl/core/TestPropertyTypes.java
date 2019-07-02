@@ -19,11 +19,8 @@
  */
 package org.neo4j.kernel.impl.core;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import java.lang.reflect.Array;
 import java.time.LocalDate;
@@ -36,6 +33,7 @@ import java.time.temporal.TemporalAmount;
 import java.util.Arrays;
 
 import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.graphdb.spatial.Point;
 import org.neo4j.internal.helpers.ArrayUtil;
 import org.neo4j.internal.helpers.Strings;
@@ -50,31 +48,23 @@ import org.neo4j.values.storable.TimeValue;
 import org.neo4j.values.storable.Values;
 
 import static java.lang.String.format;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public class TestPropertyTypes extends AbstractNeo4jTestCase
+class TestPropertyTypes extends AbstractNeo4jTestCase
 {
     private Node node1;
 
-    @Rule
-    public ExpectedException thrown = ExpectedException.none();
-
-    @Before
-    public void createInitialNode()
+    @BeforeEach
+    void createInitialNode()
     {
         node1 = getGraphDb().createNode();
     }
 
-    @After
-    public void deleteInitialNode()
-    {
-        node1.delete();
-    }
-
     @Test
-    public void testDoubleType()
+    void testDoubleType()
     {
         Double dValue = 45.678d;
         String key = "testdouble";
@@ -91,11 +81,11 @@ public class TestPropertyTypes extends AbstractNeo4jTestCase
 
         node1.removeProperty( key );
         newTransaction();
-        assertTrue( !node1.hasProperty( key ) );
+        assertFalse( node1.hasProperty( key ) );
     }
 
     @Test
-    public void testFloatType()
+    void testFloatType()
     {
         Float fValue = 45.678f;
         String key = "testfloat";
@@ -115,11 +105,11 @@ public class TestPropertyTypes extends AbstractNeo4jTestCase
         node1.removeProperty( key );
         newTransaction();
 
-        assertTrue( !node1.hasProperty( key ) );
+        assertFalse( node1.hasProperty( key ) );
     }
 
     @Test
-    public void testLongType()
+    void testLongType()
     {
         Long lValue = System.currentTimeMillis();
         String key = "testlong";
@@ -139,7 +129,7 @@ public class TestPropertyTypes extends AbstractNeo4jTestCase
         node1.removeProperty( key );
         newTransaction();
 
-        assertTrue( !node1.hasProperty( key ) );
+        assertFalse( node1.hasProperty( key ) );
 
         node1.setProperty( "other", 123L );
         assertEquals( 123L, node1.getProperty( "other" ) );
@@ -148,7 +138,7 @@ public class TestPropertyTypes extends AbstractNeo4jTestCase
     }
 
     @Test
-    public void testIntType()
+    void testIntType()
     {
         int time = (int)System.currentTimeMillis();
         Integer iValue = time;
@@ -169,7 +159,7 @@ public class TestPropertyTypes extends AbstractNeo4jTestCase
         node1.removeProperty( key );
         newTransaction();
 
-        assertTrue( !node1.hasProperty( key ) );
+        assertFalse( node1.hasProperty( key ) );
 
         node1.setProperty( "other", 123L );
         assertEquals( 123L, node1.getProperty( "other" ) );
@@ -178,7 +168,7 @@ public class TestPropertyTypes extends AbstractNeo4jTestCase
     }
 
     @Test
-    public void testByteType()
+    void testByteType()
     {
         byte b = (byte) 177;
         Byte bValue = b;
@@ -199,11 +189,11 @@ public class TestPropertyTypes extends AbstractNeo4jTestCase
         node1.removeProperty( key );
         newTransaction();
 
-        assertTrue( !node1.hasProperty( key ) );
+        assertFalse( node1.hasProperty( key ) );
     }
 
     @Test
-    public void testShortType()
+    void testShortType()
     {
         Short sValue = (short) 453;
         String key = "testshort";
@@ -223,11 +213,11 @@ public class TestPropertyTypes extends AbstractNeo4jTestCase
         node1.removeProperty( key );
         newTransaction();
 
-        assertTrue( !node1.hasProperty( key ) );
+        assertFalse( node1.hasProperty( key ) );
     }
 
     @Test
-    public void testCharType()
+    void testCharType()
     {
         Character cValue = 'c';
         String key = "testchar";
@@ -247,11 +237,11 @@ public class TestPropertyTypes extends AbstractNeo4jTestCase
         node1.removeProperty( key );
         newTransaction();
 
-        assertTrue( !node1.hasProperty( key ) );
+        assertFalse( node1.hasProperty( key ) );
     }
 
     @Test
-    public void testBooleanType()
+    void testBooleanType()
     {
         String key = "testbool";
         node1.setProperty( key, Boolean.TRUE );
@@ -269,11 +259,11 @@ public class TestPropertyTypes extends AbstractNeo4jTestCase
         node1.removeProperty( key );
         newTransaction();
 
-        assertTrue( !node1.hasProperty( key ) );
+        assertFalse( node1.hasProperty( key ) );
     }
 
     @Test
-    public void testPointType()
+    void testPointType()
     {
         Point point = Values.pointValue( CoordinateReferenceSystem.Cartesian, 1, 1 );
         String key = "location";
@@ -285,7 +275,7 @@ public class TestPropertyTypes extends AbstractNeo4jTestCase
     }
 
     @Test
-    public void testPointTypeWithOneOtherProperty()
+    void testPointTypeWithOneOtherProperty()
     {
         Point point = Values.pointValue( CoordinateReferenceSystem.Cartesian, 1, 1 );
         String key = "location";
@@ -298,7 +288,7 @@ public class TestPropertyTypes extends AbstractNeo4jTestCase
     }
 
     @Test
-    public void testPointTypeWithTwoOtherProperties()
+    void testPointTypeWithTwoOtherProperties()
     {
         Point point = Values.pointValue( CoordinateReferenceSystem.Cartesian, 1, 1 );
         String key = "location";
@@ -312,7 +302,7 @@ public class TestPropertyTypes extends AbstractNeo4jTestCase
     }
 
     @Test
-    public void test3DPointType()
+    void test3DPointType()
     {
         Point point = Values.pointValue( CoordinateReferenceSystem.Cartesian_3D, 1, 1, 1 );
         String key = "location";
@@ -324,17 +314,16 @@ public class TestPropertyTypes extends AbstractNeo4jTestCase
     }
 
     @Test
-    public void test4DPointType()
+    void test4DPointType()
     {
-        thrown.expect(Exception.class);
         node1.setProperty( "location", Values.unsafePointValue( CoordinateReferenceSystem.Cartesian, 1, 1, 1, 1 ) );
-        newTransaction();
+        assertThrows( TransactionFailureException.class, () -> commit() );
     }
 
     @Test
-    public void testPointArray()
+    void testPointArray()
     {
-        Point[] array = new Point[]{Values.pointValue( CoordinateReferenceSystem.Cartesian_3D, 1, 1, 1 ),
+        Point[] array = {Values.pointValue( CoordinateReferenceSystem.Cartesian_3D, 1, 1, 1 ),
                                     Values.pointValue( CoordinateReferenceSystem.Cartesian_3D, 2, 1, 3 )};
         String key = "testpointarray";
         node1.setProperty( key, array );
@@ -350,11 +339,11 @@ public class TestPropertyTypes extends AbstractNeo4jTestCase
         node1.removeProperty( key );
         newTransaction();
 
-        assertTrue( !node1.hasProperty( key ) );
+        assertFalse( node1.hasProperty( key ) );
     }
 
     @Test
-    public void testDateTypeSmallEpochDay()
+    void testDateTypeSmallEpochDay()
     {
         LocalDate date = DateValue.date( 2018, 1, 31 ).asObjectCopy();
         String key = "dt";
@@ -366,7 +355,7 @@ public class TestPropertyTypes extends AbstractNeo4jTestCase
     }
 
     @Test
-    public void testDateTypeLargeEpochDay()
+    void testDateTypeLargeEpochDay()
     {
         LocalDate date = DateValue.epochDate( 2147483648L ).asObjectCopy();
         String key = "dt";
@@ -378,9 +367,9 @@ public class TestPropertyTypes extends AbstractNeo4jTestCase
     }
 
     @Test
-    public void testDateArray()
+    void testDateArray()
     {
-        LocalDate[] array = new LocalDate[]{DateValue.date( 2018, 1, 31 ).asObjectCopy(), DateValue.epochDate( 2147483648L ).asObjectCopy()};
+        LocalDate[] array = {DateValue.date( 2018, 1, 31 ).asObjectCopy(), DateValue.epochDate( 2147483648L ).asObjectCopy()};
         String key = "testarray";
         node1.setProperty( key, array );
         newTransaction();
@@ -395,11 +384,11 @@ public class TestPropertyTypes extends AbstractNeo4jTestCase
         node1.removeProperty( key );
         newTransaction();
 
-        assertTrue( !node1.hasProperty( key ) );
+        assertFalse( node1.hasProperty( key ) );
     }
 
     @Test
-    public void testLocalTimeTypeSmallNano()
+    void testLocalTimeTypeSmallNano()
     {
         LocalTime time = LocalTimeValue.localTime( 0, 0, 0, 37 ).asObjectCopy();
         String key = "dt";
@@ -411,7 +400,7 @@ public class TestPropertyTypes extends AbstractNeo4jTestCase
     }
 
     @Test
-    public void testLocalTimeTypeLargeNano()
+    void testLocalTimeTypeLargeNano()
     {
         LocalTime time = LocalTimeValue.localTime( 0, 0, 13, 37 ).asObjectCopy();
         String key = "dt";
@@ -423,9 +412,9 @@ public class TestPropertyTypes extends AbstractNeo4jTestCase
     }
 
     @Test
-    public void testLocalTimeArray()
+    void testLocalTimeArray()
     {
-        LocalTime[] array = new LocalTime[]{LocalTimeValue.localTime( 0, 0, 0, 37 ).asObjectCopy(), LocalTimeValue.localTime( 0, 0, 13, 37 ).asObjectCopy()};
+        LocalTime[] array = {LocalTimeValue.localTime( 0, 0, 0, 37 ).asObjectCopy(), LocalTimeValue.localTime( 0, 0, 13, 37 ).asObjectCopy()};
         String key = "testarray";
         node1.setProperty( key, array );
         newTransaction();
@@ -440,11 +429,11 @@ public class TestPropertyTypes extends AbstractNeo4jTestCase
         node1.removeProperty( key );
         newTransaction();
 
-        assertTrue( !node1.hasProperty( key ) );
+        assertFalse( node1.hasProperty( key ) );
     }
 
     @Test
-    public void testLocalDateTimeType()
+    void testLocalDateTimeType()
     {
         LocalDateTime dateTime = LocalDateTimeValue.localDateTime( 1991, 1, 1, 0, 0, 13, 37 ).asObjectCopy();
         String key = "dt";
@@ -456,9 +445,9 @@ public class TestPropertyTypes extends AbstractNeo4jTestCase
     }
 
     @Test
-    public void testLocalDateTimeArray()
+    void testLocalDateTimeArray()
     {
-        LocalDateTime[] array = new LocalDateTime[]{LocalDateTimeValue.localDateTime( 1991, 1, 1, 0, 0, 13, 37 ).asObjectCopy(),
+        LocalDateTime[] array = {LocalDateTimeValue.localDateTime( 1991, 1, 1, 0, 0, 13, 37 ).asObjectCopy(),
                 LocalDateTimeValue.localDateTime( 1992, 2, 28, 1, 15, 0, 4000 ).asObjectCopy()};
         String key = "testarray";
         node1.setProperty( key, array );
@@ -474,11 +463,11 @@ public class TestPropertyTypes extends AbstractNeo4jTestCase
         node1.removeProperty( key );
         newTransaction();
 
-        assertTrue( !node1.hasProperty( key ) );
+        assertFalse( node1.hasProperty( key ) );
     }
 
     @Test
-    public void testTimeType()
+    void testTimeType()
     {
         OffsetTime time = TimeValue.time( 23, 11, 8, 0, "+17:59" ).asObjectCopy();
         String key = "dt";
@@ -490,7 +479,7 @@ public class TestPropertyTypes extends AbstractNeo4jTestCase
     }
 
     @Test
-    public void testTimeArray()
+    void testTimeArray()
     {
         String key = "testarray";
 
@@ -516,11 +505,11 @@ public class TestPropertyTypes extends AbstractNeo4jTestCase
         node1.removeProperty( key );
         newTransaction();
 
-        assertTrue( !node1.hasProperty( key ) );
+        assertFalse( node1.hasProperty( key ) );
     }
 
     @Test
-    public void testDurationType()
+    void testDurationType()
     {
         TemporalAmount duration = DurationValue.duration( 57, 57, 57, 57 ).asObjectCopy();
         String key = "dt";
@@ -532,9 +521,9 @@ public class TestPropertyTypes extends AbstractNeo4jTestCase
     }
 
     @Test
-    public void testDurationArray()
+    void testDurationArray()
     {
-        TemporalAmount[] array = new TemporalAmount[]{DurationValue.duration( 57, 57, 57, 57 ).asObjectCopy(),
+        TemporalAmount[] array = {DurationValue.duration( 57, 57, 57, 57 ).asObjectCopy(),
                 DurationValue.duration( -40, -189, -6247, -1 ).asObjectCopy()};
         String key = "testarray";
         node1.setProperty( key, array );
@@ -550,11 +539,11 @@ public class TestPropertyTypes extends AbstractNeo4jTestCase
         node1.removeProperty( key );
         newTransaction();
 
-        assertTrue( !node1.hasProperty( key ) );
+        assertFalse( node1.hasProperty( key ) );
     }
 
     @Test
-    public void testDateTimeTypeWithZoneOffset()
+    void testDateTimeTypeWithZoneOffset()
     {
         DateTimeValue dateTime = DateTimeValue.datetime( 1991, 1, 1, 0, 0, 13, 37, "+01:00" );
         String key = "dt";
@@ -566,9 +555,9 @@ public class TestPropertyTypes extends AbstractNeo4jTestCase
     }
 
     @Test
-    public void testDateTimeArrayWithZoneOffset()
+    void testDateTimeArrayWithZoneOffset()
     {
-        ZonedDateTime[] array = new ZonedDateTime[]{DateTimeValue.datetime( 1991, 1, 1, 0, 0, 13, 37, "-01:00" ).asObjectCopy(),
+        ZonedDateTime[] array = {DateTimeValue.datetime( 1991, 1, 1, 0, 0, 13, 37, "-01:00" ).asObjectCopy(),
                 DateTimeValue.datetime( 1992, 2, 28, 1, 15, 0, 4000, "+11:00" ).asObjectCopy()};
         String key = "testarray";
         node1.setProperty( key, array );
@@ -584,11 +573,11 @@ public class TestPropertyTypes extends AbstractNeo4jTestCase
         node1.removeProperty( key );
         newTransaction();
 
-        assertTrue( !node1.hasProperty( key ) );
+        assertFalse( node1.hasProperty( key ) );
     }
 
     @Test
-    public void testDateTimeTypeWithZoneId()
+    void testDateTimeTypeWithZoneId()
     {
         DateTimeValue dateTime = DateTimeValue.datetime( 1991, 1, 1, 0, 0, 13, 37, ZoneId.of( "Europe/Stockholm" ) );
         String key = "dt";
@@ -600,9 +589,9 @@ public class TestPropertyTypes extends AbstractNeo4jTestCase
     }
 
     @Test
-    public void testDateTimeArrayWithZoneOffsetAndZoneID()
+    void testDateTimeArrayWithZoneOffsetAndZoneID()
     {
-        ZonedDateTime[] array = new ZonedDateTime[]{DateTimeValue.datetime( 1991, 1, 1, 0, 0, 13, 37, "-01:00" ).asObjectCopy(),
+        ZonedDateTime[] array = {DateTimeValue.datetime( 1991, 1, 1, 0, 0, 13, 37, "-01:00" ).asObjectCopy(),
                 DateTimeValue.datetime( 1992, 2, 28, 1, 15, 0, 4000, "+11:00" ).asObjectCopy(),
                 DateTimeValue.datetime( 1992, 2, 28, 1, 15, 0, 4000, ZoneId.of( "Europe/Stockholm" ) ).asObjectCopy()};
         String key = "testarray";
@@ -619,14 +608,14 @@ public class TestPropertyTypes extends AbstractNeo4jTestCase
         node1.removeProperty( key );
         newTransaction();
 
-        assertTrue( !node1.hasProperty( key ) );
+        assertFalse( node1.hasProperty( key ) );
     }
 
     @Test
-    public void testIntArray()
+    void testIntArray()
     {
-        int[] array1 = new int[] { 1, 2, 3, 4, 5 };
-        Integer[] array2 = new Integer[] { 6, 7, 8 };
+        int[] array1 = { 1, 2, 3, 4, 5 };
+        Integer[] array2 = { 6, 7, 8 };
         String key = "testintarray";
         node1.setProperty( key, array1 );
         newTransaction();
@@ -651,14 +640,14 @@ public class TestPropertyTypes extends AbstractNeo4jTestCase
         node1.removeProperty( key );
         newTransaction();
 
-        assertTrue( !node1.hasProperty( key ) );
+        assertFalse( node1.hasProperty( key ) );
     }
 
     @Test
-    public void testShortArray()
+    void testShortArray()
     {
-        short[] array1 = new short[] { 1, 2, 3, 4, 5 };
-        Short[] array2 = new Short[] { 6, 7, 8 };
+        short[] array1 = { 1, 2, 3, 4, 5 };
+        Short[] array2 = { 6, 7, 8 };
         String key = "testintarray";
         node1.setProperty( key, array1 );
         newTransaction();
@@ -683,14 +672,14 @@ public class TestPropertyTypes extends AbstractNeo4jTestCase
         node1.removeProperty( key );
         newTransaction();
 
-        assertTrue( !node1.hasProperty( key ) );
+        assertFalse( node1.hasProperty( key ) );
     }
 
     @Test
-    public void testStringArray()
+    void testStringArray()
     {
-        String[] array1 = new String[] { "a", "b", "c", "d", "e" };
-        String[] array2 = new String[] { "ff", "gg", "hh" };
+        String[] array1 = { "a", "b", "c", "d", "e" };
+        String[] array2 = { "ff", "gg", "hh" };
         String key = "teststringarray";
         node1.setProperty( key, array1 );
         newTransaction();
@@ -715,14 +704,14 @@ public class TestPropertyTypes extends AbstractNeo4jTestCase
         node1.removeProperty( key );
         newTransaction();
 
-        assertTrue( !node1.hasProperty( key ) );
+        assertFalse( node1.hasProperty( key ) );
     }
 
     @Test
-    public void testBooleanArray()
+    void testBooleanArray()
     {
-        boolean[] array1 = new boolean[] { true, false, true, false, true };
-        Boolean[] array2 = new Boolean[] { false, true, false };
+        boolean[] array1 = { true, false, true, false, true };
+        Boolean[] array2 = { false, true, false };
         String key = "testboolarray";
         node1.setProperty( key, array1 );
         newTransaction();
@@ -747,14 +736,14 @@ public class TestPropertyTypes extends AbstractNeo4jTestCase
         node1.removeProperty( key );
         newTransaction();
 
-        assertTrue( !node1.hasProperty( key ) );
+        assertFalse( node1.hasProperty( key ) );
     }
 
     @Test
-    public void testDoubleArray()
+    void testDoubleArray()
     {
-        double[] array1 = new double[] { 1.0, 2.0, 3.0, 4.0, 5.0 };
-        Double[] array2 = new Double[] { 6.0, 7.0, 8.0 };
+        double[] array1 = { 1.0, 2.0, 3.0, 4.0, 5.0 };
+        Double[] array2 = { 6.0, 7.0, 8.0 };
         String key = "testdoublearray";
         node1.setProperty( key, array1 );
         newTransaction();
@@ -783,10 +772,10 @@ public class TestPropertyTypes extends AbstractNeo4jTestCase
     }
 
     @Test
-    public void testFloatArray()
+    void testFloatArray()
     {
-        float[] array1 = new float[] { 1.0f, 2.0f, 3.0f, 4.0f, 5.0f };
-        Float[] array2 = new Float[] { 6.0f, 7.0f, 8.0f };
+        float[] array1 = { 1.0f, 2.0f, 3.0f, 4.0f, 5.0f };
+        Float[] array2 = { 6.0f, 7.0f, 8.0f };
         String key = "testfloatarray";
         node1.setProperty( key, array1 );
         newTransaction();
@@ -811,14 +800,14 @@ public class TestPropertyTypes extends AbstractNeo4jTestCase
         node1.removeProperty( key );
         newTransaction();
 
-        assertTrue( !node1.hasProperty( key ) );
+        assertFalse( node1.hasProperty( key ) );
     }
 
     @Test
-    public void testLongArray()
+    void testLongArray()
     {
-        long[] array1 = new long[] { 1, 2, 3, 4, 5 };
-        Long[] array2 = new Long[] { 6L, 7L, 8L };
+        long[] array1 = { 1, 2, 3, 4, 5 };
+        Long[] array2 = { 6L, 7L, 8L };
         String key = "testlongarray";
         node1.setProperty( key, array1 );
         newTransaction();
@@ -843,14 +832,14 @@ public class TestPropertyTypes extends AbstractNeo4jTestCase
         node1.removeProperty( key );
         newTransaction();
 
-        assertTrue( !node1.hasProperty( key ) );
+        assertFalse( node1.hasProperty( key ) );
     }
 
     @Test
-    public void testByteArray()
+    void testByteArray()
     {
-        byte[] array1 = new byte[] { 1, 2, 3, 4, 5 };
-        Byte[] array2 = new Byte[] { 6, 7, 8 };
+        byte[] array1 = { 1, 2, 3, 4, 5 };
+        Byte[] array2 = { 6, 7, 8 };
         String key = "testbytearray";
         node1.setProperty( key, array1 );
         newTransaction();
@@ -875,14 +864,14 @@ public class TestPropertyTypes extends AbstractNeo4jTestCase
         node1.removeProperty( key );
         newTransaction();
 
-        assertTrue( !node1.hasProperty( key ) );
+        assertFalse( node1.hasProperty( key ) );
     }
 
     @Test
-    public void testCharArray()
+    void testCharArray()
     {
-        char[] array1 = new char[] { '1', '2', '3', '4', '5' };
-        Character[] array2 = new Character[] { '6', '7', '8' };
+        char[] array1 = { '1', '2', '3', '4', '5' };
+        Character[] array2 = { '6', '7', '8' };
         String key = "testchararray";
         node1.setProperty( key, array1 );
         newTransaction();
@@ -907,11 +896,11 @@ public class TestPropertyTypes extends AbstractNeo4jTestCase
         node1.removeProperty( key );
         newTransaction();
 
-        assertTrue( !node1.hasProperty( key ) );
+        assertFalse( node1.hasProperty( key ) );
     }
 
     @Test
-    public void testEmptyString()
+    void testEmptyString()
     {
         Node node = getGraphDb().createNode();
         node.setProperty( "1", 2 );
@@ -925,55 +914,55 @@ public class TestPropertyTypes extends AbstractNeo4jTestCase
     }
 
     @Test
-    public void shouldNotBeAbleToPoisonBooleanArrayProperty()
+    void shouldNotBeAbleToPoisonBooleanArrayProperty()
     {
         shouldNotBeAbleToPoisonArrayProperty( new boolean[] {false, false, false}, true );
     }
 
     @Test
-    public void shouldNotBeAbleToPoisonByteArrayProperty()
+    void shouldNotBeAbleToPoisonByteArrayProperty()
     {
         shouldNotBeAbleToPoisonArrayProperty( new byte[] {0, 0, 0}, (byte)1 );
     }
 
     @Test
-    public void shouldNotBeAbleToPoisonShortArrayProperty()
+    void shouldNotBeAbleToPoisonShortArrayProperty()
     {
         shouldNotBeAbleToPoisonArrayProperty( new short[] {0, 0, 0}, (short)1 );
     }
 
     @Test
-    public void shouldNotBeAbleToPoisonIntArrayProperty()
+    void shouldNotBeAbleToPoisonIntArrayProperty()
     {
         shouldNotBeAbleToPoisonArrayProperty( new int[] {0, 0, 0}, 1 );
     }
 
     @Test
-    public void shouldNotBeAbleToPoisonLongArrayProperty()
+    void shouldNotBeAbleToPoisonLongArrayProperty()
     {
         shouldNotBeAbleToPoisonArrayProperty( new long[] {0, 0, 0}, 1L );
     }
 
     @Test
-    public void shouldNotBeAbleToPoisonFloatArrayProperty()
+    void shouldNotBeAbleToPoisonFloatArrayProperty()
     {
         shouldNotBeAbleToPoisonArrayProperty( new float[] {0F, 0F, 0F}, 1F );
     }
 
     @Test
-    public void shouldNotBeAbleToPoisonDoubleArrayProperty()
+    void shouldNotBeAbleToPoisonDoubleArrayProperty()
     {
         shouldNotBeAbleToPoisonArrayProperty( new double[] {0D, 0D, 0D}, 1D );
     }
 
     @Test
-    public void shouldNotBeAbleToPoisonCharArrayProperty()
+    void shouldNotBeAbleToPoisonCharArrayProperty()
     {
         shouldNotBeAbleToPoisonArrayProperty( new char[] {'0', '0', '0'}, '1' );
     }
 
     @Test
-    public void shouldNotBeAbleToPoisonStringArrayProperty()
+    void shouldNotBeAbleToPoisonStringArrayProperty()
     {
         shouldNotBeAbleToPoisonArrayProperty( new String[] {"zero", "zero", "zero"}, "one" );
     }
@@ -992,55 +981,55 @@ public class TestPropertyTypes extends AbstractNeo4jTestCase
     }
 
     @Test
-    public void shouldNotBeAbleToPoisonVeryLongBooleanArrayProperty()
+    void shouldNotBeAbleToPoisonVeryLongBooleanArrayProperty()
     {
         shouldNotBeAbleToPoisonArrayProperty( veryLongArray( Boolean.TYPE ), true );
     }
 
     @Test
-    public void shouldNotBeAbleToPoisonVeryLongByteArrayProperty()
+    void shouldNotBeAbleToPoisonVeryLongByteArrayProperty()
     {
         shouldNotBeAbleToPoisonArrayProperty( veryLongArray( Byte.TYPE ), (byte)1 );
     }
 
     @Test
-    public void shouldNotBeAbleToPoisonVeryLongShortArrayProperty()
+    void shouldNotBeAbleToPoisonVeryLongShortArrayProperty()
     {
         shouldNotBeAbleToPoisonArrayProperty( veryLongArray( Short.TYPE ), (short)1 );
     }
 
     @Test
-    public void shouldNotBeAbleToPoisonVeryLongIntArrayProperty()
+    void shouldNotBeAbleToPoisonVeryLongIntArrayProperty()
     {
         shouldNotBeAbleToPoisonArrayProperty( veryLongArray( Integer.TYPE ), 1 );
     }
 
     @Test
-    public void shouldNotBeAbleToPoisonVeryLongLongArrayProperty()
+    void shouldNotBeAbleToPoisonVeryLongLongArrayProperty()
     {
         shouldNotBeAbleToPoisonArrayProperty( veryLongArray( Long.TYPE ), 1L );
     }
 
     @Test
-    public void shouldNotBeAbleToPoisonVeryLongFloatArrayProperty()
+    void shouldNotBeAbleToPoisonVeryLongFloatArrayProperty()
     {
         shouldNotBeAbleToPoisonArrayProperty( veryLongArray( Float.TYPE ), 1F );
     }
 
     @Test
-    public void shouldNotBeAbleToPoisonVeryLongDoubleArrayProperty()
+    void shouldNotBeAbleToPoisonVeryLongDoubleArrayProperty()
     {
         shouldNotBeAbleToPoisonArrayProperty( veryLongArray( Double.TYPE ), 1D );
     }
 
     @Test
-    public void shouldNotBeAbleToPoisonVeryLongCharArrayProperty()
+    void shouldNotBeAbleToPoisonVeryLongCharArrayProperty()
     {
         shouldNotBeAbleToPoisonArrayProperty( veryLongArray( Character.TYPE ), '1' );
     }
 
     @Test
-    public void shouldNotBeAbleToPoisonVeryLongStringArrayProperty()
+    void shouldNotBeAbleToPoisonVeryLongStringArrayProperty()
     {
         shouldNotBeAbleToPoisonArrayProperty( veryLongStringArray(), "one" );
     }
@@ -1064,8 +1053,8 @@ public class TestPropertyTypes extends AbstractNeo4jTestCase
 
         // THEN reading the value one more time should still yield the set property
         assertTrue(
-                format( "Expected %s, but was %s", Strings.prettyPrint( value ), Strings.prettyPrint( readValue ) ),
-                ArrayUtil.equals( value, node1.getProperty( key ) ) );
+            ArrayUtil.equals( value, node1.getProperty( key ) ),
+            format( "Expected %s, but was %s", Strings.prettyPrint( value ), Strings.prettyPrint( readValue ) ) );
     }
 
     private void shouldNotBeAbleToPoisonArrayPropertyOutsideTransaction( Object value, Object poison )
@@ -1082,7 +1071,7 @@ public class TestPropertyTypes extends AbstractNeo4jTestCase
 
         // THEN reading the value one more time should still yield the set property
         assertTrue(
-                format( "Expected %s, but was %s", Strings.prettyPrint( value ), Strings.prettyPrint( readValue ) ),
-                ArrayUtil.equals( value, node1.getProperty( key ) ) );
+            ArrayUtil.equals( value, node1.getProperty( key ) ),
+            format( "Expected %s, but was %s", Strings.prettyPrint( value ), Strings.prettyPrint( readValue ) ) );
     }
 }

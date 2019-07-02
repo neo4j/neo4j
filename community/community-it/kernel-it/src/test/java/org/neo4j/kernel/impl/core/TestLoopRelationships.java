@@ -19,9 +19,9 @@
  */
 package org.neo4j.kernel.impl.core;
 
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
+import org.hamcrest.Matchers;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
 
 import java.util.Arrays;
 import java.util.HashSet;
@@ -39,18 +39,14 @@ import org.neo4j.internal.helpers.collection.PrefetchingIterator;
 import org.neo4j.kernel.impl.AbstractNeo4jTestCase;
 
 import static java.util.Arrays.asList;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.neo4j.kernel.impl.MyRelTypes.TEST;
 
-public class TestLoopRelationships extends AbstractNeo4jTestCase
+class TestLoopRelationships extends AbstractNeo4jTestCase
 {
-    @Rule
-    public ExpectedException exception = ExpectedException.none();
-
     @Test
-    public void canCreateRelationshipBetweenTwoNodesWithLoopsThenDeleteOneOfTheNodesAndItsRelationships()
+    void canCreateRelationshipBetweenTwoNodesWithLoopsThenDeleteOneOfTheNodesAndItsRelationships()
     {
         Node source = getGraphDb().createNode();
         Node target = getGraphDb().createNode();
@@ -68,7 +64,7 @@ public class TestLoopRelationships extends AbstractNeo4jTestCase
     }
 
     @Test
-    public void canDeleteNodeAfterDeletingItsRelationshipsIfThoseRelationshipsIncludeLoops()
+    void canDeleteNodeAfterDeletingItsRelationshipsIfThoseRelationshipsIncludeLoops()
     {
         Node node = getGraphDb().createNode();
 
@@ -98,7 +94,7 @@ public class TestLoopRelationships extends AbstractNeo4jTestCase
     }
 
     @Test
-    public void canAddLoopRelationship()
+    void canAddLoopRelationship()
     {
         Node node = getGraphDb().createNode();
         node.createRelationshipTo( node, TEST );
@@ -111,16 +107,16 @@ public class TestLoopRelationships extends AbstractNeo4jTestCase
             for ( Relationship rel : node.getRelationships( dir ) )
             {
                 count++;
-                assertEquals( "start node", node, rel.getStartNode() );
-                assertEquals( "end node", node, rel.getEndNode() );
-                assertEquals( "other node", node, rel.getOtherNode( node ) );
+                Assertions.assertEquals( node, rel.getStartNode(), "start node" );
+                Assertions.assertEquals( node, rel.getEndNode(), "end node" );
+                Assertions.assertEquals( node, rel.getOtherNode( node ), "other node" );
             }
-            assertEquals( dir.name() + " relationship count", 1, count );
+            Assertions.assertEquals( 1, count, dir.name() + " relationship count" );
         }
     }
 
     @Test
-    public void canAddManyLoopRelationships()
+    void canAddManyLoopRelationships()
     {
         testAddManyLoopRelationships( 2 );
         testAddManyLoopRelationships( 3 );
@@ -151,7 +147,7 @@ public class TestLoopRelationships extends AbstractNeo4jTestCase
     }
 
     @Test
-    public void canAddLoopRelationshipAndOtherRelationships()
+    void canAddLoopRelationshipAndOtherRelationships()
     {
         testAddLoopRelationshipAndOtherRelationships( 2 );
         testAddLoopRelationshipAndOtherRelationships( 3 );
@@ -170,7 +166,7 @@ public class TestLoopRelationships extends AbstractNeo4jTestCase
     }
 
     @Test
-    public void canAddAndRemoveLoopRelationshipAndOtherRelationships()
+    void canAddAndRemoveLoopRelationshipAndOtherRelationships()
     {
         testAddAndRemoveLoopRelationshipAndOtherRelationships( 2 );
         testAddAndRemoveLoopRelationshipAndOtherRelationships( 3 );
@@ -178,24 +174,24 @@ public class TestLoopRelationships extends AbstractNeo4jTestCase
     }
 
     @Test
-    public void getSingleRelationshipOnNodeWithOneLoopOnly()
+    void getSingleRelationshipOnNodeWithOneLoopOnly()
     {
         Node node = getGraphDb().createNode();
         Relationship singleRelationship = node.createRelationshipTo( node, TEST );
-        assertEquals( singleRelationship, node.getSingleRelationship( TEST, Direction.OUTGOING ) );
-        assertEquals( singleRelationship, node.getSingleRelationship( TEST, Direction.INCOMING ) );
-        assertEquals( singleRelationship, node.getSingleRelationship( TEST, Direction.BOTH ) );
+        Assertions.assertEquals( singleRelationship, node.getSingleRelationship( TEST, Direction.OUTGOING ) );
+        Assertions.assertEquals( singleRelationship, node.getSingleRelationship( TEST, Direction.INCOMING ) );
+        Assertions.assertEquals( singleRelationship, node.getSingleRelationship( TEST, Direction.BOTH ) );
         commit();
 
         newTransaction();
-        assertEquals( singleRelationship, node.getSingleRelationship( TEST, Direction.OUTGOING ) );
-        assertEquals( singleRelationship, node.getSingleRelationship( TEST, Direction.INCOMING ) );
-        assertEquals( singleRelationship, node.getSingleRelationship( TEST, Direction.BOTH ) );
+        Assertions.assertEquals( singleRelationship, node.getSingleRelationship( TEST, Direction.OUTGOING ) );
+        Assertions.assertEquals( singleRelationship, node.getSingleRelationship( TEST, Direction.INCOMING ) );
+        Assertions.assertEquals( singleRelationship, node.getSingleRelationship( TEST, Direction.BOTH ) );
         finish();
     }
 
     @Test
-    public void cannotDeleteNodeWithLoopStillAttached()
+    void cannotDeleteNodeWithLoopStillAttached()
     {
         // Given
         GraphDatabaseService db = getGraphDb();
@@ -212,17 +208,13 @@ public class TestLoopRelationships extends AbstractNeo4jTestCase
         node.delete();
         tx.success();
 
-        // Expect
-        exception.expect( ConstraintViolationException.class );
-        exception.expectMessage( "Cannot delete node<" + node.getId() + ">, because it still has relationships. " +
-                "To delete this node, you must first delete its relationships." );
-
-        // When I commit
-        tx.close();
+        var e = assertThrows( ConstraintViolationException.class, () -> tx.close() );
+        assertThat( e.getMessage(), Matchers.equalTo( "Cannot delete node<" + node.getId() + ">, because it still has relationships. " +
+            "To delete this node, you must first delete its relationships." ) );
     }
 
     @Test
-    public void getOtherNodeFunctionsCorrectly()
+    void getOtherNodeFunctionsCorrectly()
     {
         Node node = getGraphDb().createNode();
         Relationship relationship = node.createRelationshipTo( node, TEST );
@@ -231,29 +223,22 @@ public class TestLoopRelationships extends AbstractNeo4jTestCase
         // assertion code. Same assertions withing the transaction as after it has committed.
         for ( int i = 0; i < 2; i++ )
         {
-            assertEquals( node, relationship.getOtherNode( node ) );
-            assertEquals( asList( node, node ), asList( relationship.getNodes() ) );
-            try
-            {
-                relationship.getOtherNode( getGraphDb().createNode() );
-                fail( "Should throw exception if another node is passed into loop.getOtherNode" );
-            }
-            catch ( NotFoundException e )
-            { // Good
-            }
+            Assertions.assertEquals( node, relationship.getOtherNode( node ) );
+            Assertions.assertEquals( asList( node, node ), asList( relationship.getNodes() ) );
+            assertThrows( NotFoundException.class, () -> relationship.getOtherNode( getGraphDb().createNode() ) );
             newTransaction();
         }
     }
 
     @Test
-    public void getNewlyCreatedLoopRelationshipFromCache()
+    void getNewlyCreatedLoopRelationshipFromCache()
     {
         Node node = getGraphDb().createNode();
         node.createRelationshipTo( getGraphDb().createNode(), TEST );
         newTransaction();
         Relationship relationship = node.createRelationshipTo( node, TEST );
         newTransaction();
-        assertEquals( relationship, node.getSingleRelationship( TEST, Direction.INCOMING ) );
+        Assertions.assertEquals( relationship, node.getSingleRelationship( TEST, Direction.INCOMING ) );
     }
 
     private void testAddAndRemoveLoopRelationshipAndOtherRelationships( int size )
@@ -285,7 +270,7 @@ public class TestLoopRelationships extends AbstractNeo4jTestCase
     private static Iterable<boolean[]> permutations( final int size )
     {
         final int max = 1 << size;
-        return () -> new PrefetchingIterator<boolean[]>()
+        return () -> new PrefetchingIterator<>()
         {
             int pos;
 
@@ -334,8 +319,8 @@ public class TestLoopRelationships extends AbstractNeo4jTestCase
         return relationships;
     }
 
-    private void verifyRelationships( String message, Node root, int loop,
-            Relationship... relationships )
+    private static void verifyRelationships( String message, Node root, int loop,
+        Relationship... relationships )
     {
         boolean[] loops = new boolean[relationships.length];
         for ( int i = 0; i < relationships.length; i++ )
@@ -345,8 +330,8 @@ public class TestLoopRelationships extends AbstractNeo4jTestCase
         verifyRelationships( message, root, loops, relationships );
     }
 
-    private void verifyRelationships( String message, Node root,
-            boolean[] loop, Relationship... relationships )
+    private static void verifyRelationships( String message, Node root,
+        boolean[] loop, Relationship... relationships )
     {
         for ( Direction dir : Direction.values() )
         {
@@ -362,12 +347,12 @@ public class TestLoopRelationships extends AbstractNeo4jTestCase
 
             for ( Relationship rel : root.getRelationships( dir ) )
             {
-                assertTrue( message + ": unexpected relationship: " + rel,
-                        expected.remove( rel ) );
+                Assertions.assertTrue(
+                    expected.remove( rel ), message + ": unexpected relationship: " + rel );
             }
-            assertTrue( message + ": expected relationships not seen "
-                            + expected,
-                    expected.isEmpty() );
+            Assertions.assertTrue(
+                expected.isEmpty(), message + ": expected relationships not seen "
+                                + expected );
         }
     }
 }

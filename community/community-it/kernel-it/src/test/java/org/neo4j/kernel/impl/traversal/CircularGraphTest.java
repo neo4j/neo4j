@@ -19,8 +19,8 @@
  */
 package org.neo4j.kernel.impl.traversal;
 
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import java.util.Iterator;
 
@@ -31,19 +31,19 @@ import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.traversal.Evaluation;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 
-public class CircularGraphTest extends TraversalTestBase
+class CircularGraphTest extends TraversalTestBase
 {
-    @Before
-    public void createTheGraph()
+    @BeforeEach
+    void createTheGraph()
     {
         createGraph( "1 TO 2", "2 TO 3", "3 TO 1" );
     }
 
     @Test
-    public void testCircularBug()
+    void testCircularBug()
     {
         final long timestamp = 3;
         try ( Transaction tx = beginTx() )

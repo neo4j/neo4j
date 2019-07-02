@@ -19,7 +19,7 @@
  */
 package org.neo4j.kernel.impl.core;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.NotFoundException;
@@ -28,16 +28,16 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.impl.AbstractNeo4jTestCase;
 import org.neo4j.kernel.impl.MyRelTypes;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
-public class Neo4jConstraintsTest extends AbstractNeo4jTestCase
+class Neo4jConstraintsTest extends AbstractNeo4jTestCase
 {
     private final String key = "testproperty";
 
     @Test
-    public void testDeleteReferenceNodeOrLastNodeIsOk()
+    void testDeleteReferenceNodeOrLastNodeIsOk()
     {
         Transaction tx = getTransaction();
         for ( int i = 0; i < 10; i++ )
@@ -66,50 +66,40 @@ public class Neo4jConstraintsTest extends AbstractNeo4jTestCase
     }
 
     @Test
-    public void testDeleteNodeWithRel1()
+    void testDeleteNodeWithRel1()
     {
         Node node1 = getGraphDb().createNode();
         Node node2 = getGraphDb().createNode();
         node1.createRelationshipTo( node2, MyRelTypes.TEST );
         node1.delete();
-        try
+        assertThrows( Exception.class, () ->
         {
             Transaction tx = getTransaction();
             tx.success();
             tx.close();
-            fail( "Should not validate" );
-        }
-        catch ( Exception e )
-        {
-            // good
-        }
+        } );
         setTransaction( getGraphDb().beginTx() );
     }
 
     @Test
-    public void testDeleteNodeWithRel2()
+    void testDeleteNodeWithRel2()
     {
         Node node1 = getGraphDb().createNode();
         Node node2 = getGraphDb().createNode();
         node1.createRelationshipTo( node2, MyRelTypes.TEST );
         node2.delete();
         node1.delete();
-        try
+        assertThrows( Exception.class, () ->
         {
             Transaction tx = getTransaction();
             tx.success();
             tx.close();
-            fail( "Should not validate" );
-        }
-        catch ( Exception e )
-        {
-            // good
-        }
+        } );
         setTransaction( getGraphDb().beginTx() );
     }
 
     @Test
-    public void testDeleteNodeWithRel3()
+    void testDeleteNodeWithRel3()
     {
         // make sure we can delete in wrong order
         Node node0 = getGraphDb().createNode();
@@ -129,7 +119,7 @@ public class Neo4jConstraintsTest extends AbstractNeo4jTestCase
     }
 
     @Test
-    public void testCreateRelOnDeletedNode()
+    void testCreateRelOnDeletedNode()
     {
         Node node1 = getGraphDb().createNode();
         Node node2 = getGraphDb().createNode();
@@ -138,175 +128,127 @@ public class Neo4jConstraintsTest extends AbstractNeo4jTestCase
         tx.close();
         tx = getGraphDb().beginTx();
         node1.delete();
-        try
+        assertThrows( Exception.class, () ->
         {
             node1.createRelationshipTo( node2, MyRelTypes.TEST );
-            fail( "Create of rel on deleted node should fail fast" );
-        }
-        catch ( Exception e )
-        { // ok
-        }
-        try
-        {
-            tx.failure();
-            tx.close();
-            // fail( "Transaction should be marked rollback" );
-        }
-        catch ( Exception e )
-        { // good
-        }
+        } );
+        tx.failure();
+        tx.close();
         setTransaction( getGraphDb().beginTx() );
         node2.delete();
         node1.delete();
     }
 
     @Test
-    public void testAddPropertyDeletedNode()
+    void testAddPropertyDeletedNode()
     {
         Node node = getGraphDb().createNode();
         node.delete();
-        try
-        {
-            node.setProperty( key, 1 );
-            fail( "Add property on deleted node should not validate" );
-        }
-        catch ( Exception e )
-        {
-            // good
-        }
+        assertThrows( Exception.class, () -> node.setProperty( key, 1 ) );
     }
 
     @Test
-    public void testRemovePropertyDeletedNode()
+    void testRemovePropertyDeletedNode()
     {
         Node node = getGraphDb().createNode();
         node.setProperty( key, 1 );
         node.delete();
-        try
+        assertThrows( Exception.class, () ->
         {
             node.removeProperty( key );
             Transaction tx = getTransaction();
             tx.success();
             tx.close();
-            fail( "Change property on deleted node should not validate" );
-        }
-        catch ( Exception e )
-        {
-            // ok
-        }
+        } );
     }
 
     @Test
-    public void testChangePropertyDeletedNode()
+    void testChangePropertyDeletedNode()
     {
         Node node = getGraphDb().createNode();
         node.setProperty( key, 1 );
         node.delete();
-        try
+        assertThrows( Exception.class, () ->
         {
             node.setProperty( key, 2 );
             Transaction tx = getTransaction();
             tx.success();
             tx.close();
-            fail( "Change property on deleted node should not validate" );
-        }
-        catch ( Exception e )
-        {
-            // ok
-        }
+        } );
     }
 
     @Test
-    public void testAddPropertyDeletedRelationship()
+    void testAddPropertyDeletedRelationship()
     {
         Node node1 = getGraphDb().createNode();
         Node node2 = getGraphDb().createNode();
         Relationship rel = node1.createRelationshipTo( node2, MyRelTypes.TEST );
         rel.delete();
-        try
+        assertThrows( Exception.class, () ->
         {
             rel.setProperty( key, 1 );
             Transaction tx = getTransaction();
             tx.success();
             tx.close();
-            fail( "Add property on deleted rel should not validate" );
-        }
-        catch ( Exception e )
-        { // good
-        }
+        } );
         node1.delete();
         node2.delete();
     }
 
     @Test
-    public void testRemovePropertyDeletedRelationship()
+    void testRemovePropertyDeletedRelationship()
     {
         Node node1 = getGraphDb().createNode();
         Node node2 = getGraphDb().createNode();
         Relationship rel = node1.createRelationshipTo( node2, MyRelTypes.TEST );
         rel.setProperty( key, 1 );
         rel.delete();
-        try
+        assertThrows( Exception.class, () ->
         {
             rel.removeProperty( key );
             Transaction tx = getTransaction();
             tx.success();
             tx.close();
-            fail( "Remove property on deleted rel should not validate" );
-        }
-        catch ( Exception e )
-        {
-            // ok
-        }
+        } );
         node1.delete();
         node2.delete();
     }
 
     @Test
-    public void testChangePropertyDeletedRelationship()
+    void testChangePropertyDeletedRelationship()
     {
         Node node1 = getGraphDb().createNode();
         Node node2 = getGraphDb().createNode();
         Relationship rel = node1.createRelationshipTo( node2, MyRelTypes.TEST );
         rel.setProperty( key, 1 );
         rel.delete();
-        try
+        assertThrows( Exception.class, () ->
         {
             rel.setProperty( key, 2 );
             Transaction tx = getTransaction();
             tx.success();
             tx.close();
-            fail( "Change property on deleted rel should not validate" );
-        }
-        catch ( Exception e )
-        {
-            // ok
-        }
+        } );
         node1.delete();
         node2.delete();
     }
 
     @Test
-    public void testMultipleDeleteNode()
+    void testMultipleDeleteNode()
     {
         Node node1 = getGraphDb().createNode();
         node1.delete();
-        try
+        assertThrows( Exception.class, () ->
         {
             node1.delete();
             Transaction tx = getTransaction();
             tx.success();
             tx.close();
-            fail( "Should not validate" );
-        }
-        catch ( Exception e )
-        {
-            // ok
-        }
+        } );
     }
 
     @Test
-    public void testMultipleDeleteRelationship()
+    void testMultipleDeleteRelationship()
     {
         Node node1 = getGraphDb().createNode();
         Node node2 = getGraphDb().createNode();
@@ -314,92 +256,45 @@ public class Neo4jConstraintsTest extends AbstractNeo4jTestCase
         rel.delete();
         node1.delete();
         node2.delete();
-        try
+        assertThrows( Exception.class, () ->
         {
             rel.delete();
             Transaction tx = getTransaction();
             tx.success();
             tx.close();
-            fail( "Should not validate" );
-        }
-        catch ( Exception e )
-        {
-            // ok
-        }
+        } );
     }
 
     @Test
-    public void testIllegalPropertyType()
+    void testIllegalPropertyType()
     {
-        Node node1 = getGraphDb().createNode();
-        try
-        {
-            node1.setProperty( key, new Object() );
-            fail( "Shouldn't validate" );
-        }
-        catch ( Exception e )
-        { // good
-        }
+        final Node node1 = getGraphDb().createNode();
+        assertThrows( Exception.class, () -> node1.setProperty( key, new Object() ) );
         {
             Transaction tx = getTransaction();
             tx.failure();
             tx.close();
         }
         setTransaction( getGraphDb().beginTx() );
-        try
-        {
-            getGraphDb().getNodeById( node1.getId() );
-            fail( "Node should not exist, previous tx didn't rollback" );
-        }
-        catch ( NotFoundException e )
-        {
-            // good
-        }
-        node1 = getGraphDb().createNode();
+        assertThrows( NotFoundException.class, () -> getGraphDb().getNodeById( node1.getId() ) );
+        Node node3 = getGraphDb().createNode();
         Node node2 = getGraphDb().createNode();
-        Relationship rel = node1.createRelationshipTo( node2,
+        Relationship rel = node3.createRelationshipTo( node2,
                 MyRelTypes.TEST );
-        try
-        {
-            rel.setProperty( key, new Object() );
-            fail( "Shouldn't validate" );
-        }
-        catch ( Exception e )
-        { // good
-        }
-        try
+        assertThrows( Exception.class, () -> rel.setProperty( key, new Object() ) );
+        assertThrows( Exception.class, () ->
         {
             Transaction tx = getTransaction();
             tx.success();
             tx.close();
-            fail( "Shouldn't validate" );
-        }
-        catch ( Exception e )
-        { // good
-        }
+        } );
         setTransaction( getGraphDb().beginTx() );
-        try
-        {
-            getGraphDb().getNodeById( node1.getId() );
-            fail( "Node should not exist, previous tx didn't rollback" );
-        }
-        catch ( NotFoundException e )
-        {
-            // good
-        }
-        try
-        {
-            getGraphDb().getNodeById( node2.getId() );
-            fail( "Node should not exist, previous tx didn't rollback" );
-        }
-        catch ( NotFoundException e )
-        {
-            // good
-        }
+        assertThrows( Exception.class, () -> getGraphDb().getNodeById( node3.getId() ) );
+        assertThrows( Exception.class, () -> getGraphDb().getNodeById( node2.getId() ) );
     }
 
     @Test
-    public void testNodeRelDeleteSemantics()
+    void testNodeRelDeleteSemantics()
     {
         Node node1 = getGraphDb().createNode();
         Node node2 = getGraphDb().createNode();
@@ -410,137 +305,25 @@ public class Neo4jConstraintsTest extends AbstractNeo4jTestCase
 
         newTransaction();
         node1.delete();
-        try
-        {
-            node1.getProperty( "key1" );
-            fail( "Should throw exception" );
-        }
-        catch ( NotFoundException e )
-        { // good
-        }
-        try
-        {
-            node1.setProperty( "key1", "value2" );
-            fail( "Should throw exception" );
-        }
-        catch ( NotFoundException e )
-        { // good
-        }
-        try
-        {
-            node1.removeProperty( "key1" );
-            fail( "Should throw exception" );
-        }
-        catch ( NotFoundException e )
-        { // good
-        }
+        assertThrows( NotFoundException.class, () -> node1.getProperty( "key1" ) );
+        assertThrows( NotFoundException.class, () -> node1.setProperty( "key1", "value2" ) );
+        assertThrows( NotFoundException.class, () -> node1.removeProperty( "key1" ) );
         node2.delete();
-        try
-        {
-            node2.delete();
-            fail( "Should throw exception" );
-        }
-        catch ( NotFoundException e )
-        { // good
-        }
-        try
-        {
-            node1.getProperty( "key1" );
-            fail( "Should throw exception" );
-        }
-        catch ( NotFoundException e )
-        { // good
-        }
-        try
-        {
-            node1.setProperty( "key1", "value2" );
-            fail( "Should throw exception" );
-        }
-        catch ( NotFoundException e )
-        { // good
-        }
-        try
-        {
-            node1.removeProperty( "key1" );
-            fail( "Should throw exception" );
-        }
-        catch ( NotFoundException e )
-        { // good
-        }
+        assertThrows( NotFoundException.class, () -> node2.delete() );
+        assertThrows( NotFoundException.class, () -> node1.getProperty( "key1" ) );
+        assertThrows( NotFoundException.class, () -> node1.setProperty( "key1", "value2" ) );
+        assertThrows( NotFoundException.class, () -> node1.removeProperty( "key1" ) );
         assertEquals( "value1", rel1.getProperty( "key1" ) );
         rel1.delete();
-        try
-        {
-            rel1.delete();
-            fail( "Should throw exception" );
-        }
-        catch ( NotFoundException e )
-        { // good
-        }
-        try
-        {
-            rel1.getProperty( "key1" );
-            fail( "Should throw exception" );
-        }
-        catch ( NotFoundException e )
-        { // good
-        }
-        try
-        {
-            rel1.setProperty( "key1", "value2" );
-            fail( "Should throw exception" );
-        }
-        catch ( NotFoundException e )
-        { // good
-        }
-        try
-        {
-            rel1.removeProperty( "key1" );
-            fail( "Should throw exception" );
-        }
-        catch ( NotFoundException e )
-        { // good
-        }
-        try
-        {
-            rel1.getProperty( "key1" );
-            fail( "Should throw exception" );
-        }
-        catch ( NotFoundException e )
-        { // good
-        }
-        try
-        {
-            rel1.setProperty( "key1", "value2" );
-            fail( "Should throw exception" );
-        }
-        catch ( NotFoundException e )
-        { // good
-        }
-        try
-        {
-            rel1.removeProperty( "key1" );
-            fail( "Should throw exception" );
-        }
-        catch ( NotFoundException e )
-        { // good
-        }
-        try
-        {
-            node2.createRelationshipTo( node1, MyRelTypes.TEST );
-            fail( "Should throw exception" );
-        }
-        catch ( NotFoundException e )
-        { // good
-        }
-        try
-        {
-            node2.createRelationshipTo( node1, MyRelTypes.TEST );
-            fail( "Should throw exception" );
-        }
-        catch ( NotFoundException e )
-        { // good
-        }
+        assertThrows( NotFoundException.class, () -> rel1.delete() );
+        assertThrows( NotFoundException.class, () -> rel1.getProperty( "key1" ) );
+        assertThrows( NotFoundException.class, () -> rel1.setProperty( "key1", "value2" ) );
+        assertThrows( NotFoundException.class, () -> rel1.removeProperty( "key1" ) );
+        assertThrows( NotFoundException.class, () -> rel1.getProperty( "key1" ) );
+        assertThrows( NotFoundException.class, () -> rel1.setProperty( "key1", "value2" ) );
+        assertThrows( NotFoundException.class, () -> rel1.removeProperty( "key1" ) );
+        assertThrows( NotFoundException.class, () -> node2.createRelationshipTo( node1, MyRelTypes.TEST ) );
+        assertThrows( NotFoundException.class, () -> node2.createRelationshipTo( node1, MyRelTypes.TEST ) );
 
         assertEquals( node1, rel1.getStartNode() );
         assertEquals( node2, rel2.getEndNode() );

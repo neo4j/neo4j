@@ -19,7 +19,7 @@
  */
 package org.neo4j.kernel.impl.core;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -38,25 +38,26 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.internal.helpers.collection.Iterables;
 import org.neo4j.kernel.impl.AbstractNeo4jTestCase;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 import static org.neo4j.graphdb.RelationshipType.withName;
 import static org.neo4j.internal.helpers.collection.Iterables.addAll;
 import static org.neo4j.kernel.impl.MyRelTypes.TEST;
 import static org.neo4j.kernel.impl.MyRelTypes.TEST2;
 import static org.neo4j.kernel.impl.MyRelTypes.TEST_TRAVERSAL;
 
-public class TestRelationship extends AbstractNeo4jTestCase
+class TestRelationship extends AbstractNeo4jTestCase
 {
-    private final String key1 = "key1";
-    private final String key2 = "key2";
-    private final String key3 = "key3";
+    private static final String key1 = "key1";
+    private static final String key2 = "key2";
+    private static final String key3 = "key3";
 
     @Test
-    public void testSimple()
+    void testSimple()
     {
         Node node1 = getGraphDb().createNode();
         Node node2 = getGraphDb().createNode();
@@ -73,7 +74,7 @@ public class TestRelationship extends AbstractNeo4jTestCase
     }
 
     @Test
-    public void testSimple2()
+    void testSimple2()
     {
         Node node1 = getGraphDb().createNode();
         Node node2 = getGraphDb().createNode();
@@ -108,7 +109,7 @@ public class TestRelationship extends AbstractNeo4jTestCase
     }
 
     @Test
-    public void testSimple3()
+    void testSimple3()
     {
         Node node1 = getGraphDb().createNode();
         Node node2 = getGraphDb().createNode();
@@ -143,7 +144,7 @@ public class TestRelationship extends AbstractNeo4jTestCase
     }
 
     @Test
-    public void testSimple4()
+    void testSimple4()
     {
         Node node1 = getGraphDb().createNode();
         Node node2 = getGraphDb().createNode();
@@ -252,7 +253,7 @@ public class TestRelationship extends AbstractNeo4jTestCase
     }
 
     @Test
-    public void testRelationshipCreateAndDelete()
+    void testRelationshipCreateAndDelete()
     {
         Node node1 = getGraphDb().createNode();
         Node node2 = getGraphDb().createNode();
@@ -293,7 +294,7 @@ public class TestRelationship extends AbstractNeo4jTestCase
     }
 
     @Test
-    public void testDeleteWithRelationship()
+    void testDeleteWithRelationship()
     {
         // do some evil stuff
         Node node1 = getGraphDb().createNode();
@@ -301,77 +302,50 @@ public class TestRelationship extends AbstractNeo4jTestCase
         node1.createRelationshipTo( node2, TEST );
         node1.delete();
         node2.delete();
-        try
+        assertThrows( Exception.class, () ->
         {
             getTransaction().success();
             getTransaction().close();
-            fail( "deleting node with relationship should not commit." );
-        }
-        catch ( Exception e )
-        {
-            // good
-        }
+        } );
         setTransaction( getGraphDb().beginTx() );
     }
 
     @Test
-    public void testDeletedRelationship()
+    void testDeletedRelationship()
     {
         Node node1 = getGraphDb().createNode();
         Node node2 = getGraphDb().createNode();
         Relationship relationship = node1.createRelationshipTo( node2, TEST );
         relationship.delete();
-        try
-        {
-            relationship.setProperty( "key1", 1 );
-            fail( "Adding property to deleted rel should throw exception." );
-        }
-        catch ( Exception e )
-        { // good
-        }
+        assertThrows( Exception.class, () -> relationship.setProperty( "key1", 1 ) );
         node1.delete();
         node2.delete();
     }
 
     @Test
-    public void testRelationshipAddPropertyWithNullKey()
+    void testRelationshipAddPropertyWithNullKey()
     {
         Node node1 = getGraphDb().createNode();
         Node node2 = getGraphDb().createNode();
         Relationship rel1 = node1.createRelationshipTo( node2, TEST );
 
-        try
-        {
-            rel1.setProperty( null, "bar" );
-            fail( "Null key should result in exception." );
-        }
-        catch ( IllegalArgumentException e )
-        {   // OK
-        }
-
+        assertThrows( Exception.class, () -> rel1.setProperty( null, "bar" ) );
     }
 
     @Test
-    public void testRelationshipAddPropertyWithNullValue()
+    void testRelationshipAddPropertyWithNullValue()
     {
         Node node1 = getGraphDb().createNode();
         Node node2 = getGraphDb().createNode();
         Relationship rel1 = node1.createRelationshipTo( node2, TEST );
 
-        try
-        {
-            rel1.setProperty( "foo", null );
-            fail( "Null value should result in exception." );
-        }
-        catch ( IllegalArgumentException e )
-        {   // OK
-        }
+        assertThrows( Exception.class, () -> rel1.setProperty( "foo", null ) );
 
         getTransaction().failure();
     }
 
     @Test
-    public void testRelationshipAddProperty()
+    void testRelationshipAddProperty()
     {
         Node node1 = getGraphDb().createNode();
         Node node2 = getGraphDb().createNode();
@@ -392,8 +366,8 @@ public class TestRelationship extends AbstractNeo4jTestCase
         assertTrue( rel2.hasProperty( key1 ) );
         assertTrue( rel1.hasProperty( key2 ) );
         assertTrue( rel2.hasProperty( key2 ) );
-        assertTrue( !rel1.hasProperty( key3 ) );
-        assertTrue( !rel2.hasProperty( key3 ) );
+        assertFalse( rel1.hasProperty( key3 ) );
+        assertFalse( rel2.hasProperty( key3 ) );
         assertEquals( int1, rel1.getProperty( key1 ) );
         assertEquals( string1, rel2.getProperty( key1 ) );
         assertEquals( string2, rel1.getProperty( key2 ) );
@@ -403,7 +377,7 @@ public class TestRelationship extends AbstractNeo4jTestCase
     }
 
     @Test
-    public void testRelationshipRemoveProperty()
+    void testRelationshipRemoveProperty()
     {
         Integer int1 = 1;
         Integer int2 = 2;
@@ -415,54 +389,28 @@ public class TestRelationship extends AbstractNeo4jTestCase
         Relationship rel1 = node1.createRelationshipTo( node2, TEST );
         Relationship rel2 = node2.createRelationshipTo( node1, TEST );
         // verify that we can rely on PL to remove non existing properties
-        try
+        if ( rel1.removeProperty( key1 ) != null )
         {
-            if ( rel1.removeProperty( key1 ) != null )
-            {
-                fail( "Remove of non existing property should return null" );
-            }
+            fail( "Remove of non existing property should return null" );
         }
-        catch ( NotFoundException e )
-        {   // OK
-        }
-        try
-        {
-            rel1.removeProperty( null );
-            fail( "Remove null property should throw exception." );
-        }
-        catch ( IllegalArgumentException e )
-        {   // OK
-        }
+
+        assertThrows( IllegalArgumentException.class, () -> rel1.removeProperty( null ) );
 
         rel1.setProperty( key1, int1 );
         rel2.setProperty( key1, string1 );
         rel1.setProperty( key2, string2 );
         rel2.setProperty( key2, int2 );
-        try
-        {
-            rel1.removeProperty( null );
-            fail( "Null argument should result in exception." );
-        }
-        catch ( IllegalArgumentException e )
-        {   // OK
-        }
+        assertThrows( IllegalArgumentException.class, () -> rel1.removeProperty( null ) );
 
         // test remove property
         assertEquals( int1, rel1.removeProperty( key1 ) );
         assertEquals( string1, rel2.removeProperty( key1 ) );
         // test remove of non existing property
-        try
+        if ( rel2.removeProperty( key1 ) != null )
         {
-            if ( rel2.removeProperty( key1 ) != null )
-            {
-                fail( "Remove of non existing property should return null" );
-            }
+            fail( "Remove of non existing property should return null" );
         }
-        catch ( NotFoundException e )
-        {
-            // have to set rollback only here
-            getTransaction().failure();
-        }
+
         rel1.delete();
         rel2.delete();
         node1.delete();
@@ -470,7 +418,7 @@ public class TestRelationship extends AbstractNeo4jTestCase
     }
 
     @Test
-    public void testRelationshipChangeProperty()
+    void testRelationshipChangeProperty()
     {
         Integer int1 = 1;
         Integer int2 = 2;
@@ -486,18 +434,7 @@ public class TestRelationship extends AbstractNeo4jTestCase
         rel1.setProperty( key2, string2 );
         rel2.setProperty( key2, int2 );
 
-        try
-        {
-            rel1.setProperty( null, null );
-            fail( "Null argument should result in exception." );
-        }
-        catch ( IllegalArgumentException e )
-        {   // OK
-        }
-        catch ( NotFoundException e )
-        {
-            fail( "wrong exception" );
-        }
+        assertThrows( IllegalArgumentException.class, () -> rel1.setProperty( null, null ) );
 
         // test type change of existing property
         // cannot test this for now because of exceptions in PL
@@ -510,7 +447,7 @@ public class TestRelationship extends AbstractNeo4jTestCase
     }
 
     @Test
-    public void testRelationshipChangeProperty2()
+    void testRelationshipChangeProperty2()
     {
         Integer int1 = 1;
         Integer int2 = 2;
@@ -539,7 +476,7 @@ public class TestRelationship extends AbstractNeo4jTestCase
     }
 
     @Test
-    public void testRelGetProperties()
+    void testRelGetProperties()
     {
         Integer int1 = 1;
         Integer int2 = 2;
@@ -548,24 +485,11 @@ public class TestRelationship extends AbstractNeo4jTestCase
         Node node1 = getGraphDb().createNode();
         Node node2 = getGraphDb().createNode();
         Relationship rel1 = node1.createRelationshipTo( node2, TEST );
-        try
-        {
-            rel1.getProperty( key1 );
-            fail( "get non existing property didn't throw exception" );
-        }
-        catch ( NotFoundException e )
-        {   // OK
-        }
-        try
-        {
-            rel1.getProperty( null );
-            fail( "get of null key didn't throw exception" );
-        }
-        catch ( IllegalArgumentException e )
-        {   // OK
-        }
-        assertTrue( !rel1.hasProperty( key1 ) );
-        assertTrue( !rel1.hasProperty( null ) );
+        assertThrows( NotFoundException.class, () -> rel1.getProperty( key1 ) );
+        assertThrows( IllegalArgumentException.class, () -> rel1.getProperty( null ) );
+
+        assertFalse( rel1.hasProperty( key1 ) );
+        assertFalse( rel1.hasProperty( null ) );
         rel1.setProperty( key1, int1 );
         rel1.setProperty( key2, int2 );
         rel1.setProperty( key3, string );
@@ -585,44 +509,26 @@ public class TestRelationship extends AbstractNeo4jTestCase
         properties = node1.getProperties();
         assertTrue( properties.isEmpty() );
 
-        try
-        {
-            node1.getProperties( (String[]) null );
-            fail();
-        }
-        catch ( NullPointerException e )
-        {
-            // Ok
-        }
+        assertThrows( NullPointerException.class, () -> node1.getProperties( (String[]) null ) );
 
-        try
+        assertThrows( NullPointerException.class, () ->
         {
             String[] names = new String[]{null};
             node1.getProperties( names );
             fail();
-        }
-        catch ( NullPointerException e )
-        {
-            // Ok
-        }
+        } );
 
-        try
-        {
-            rel1.removeProperty( key3 );
-        }
-        catch ( NotFoundException e )
-        {
-            fail( "Remove of property failed." );
-        }
-        assertTrue( !rel1.hasProperty( key3 ) );
-        assertTrue( !rel1.hasProperty( null ) );
+        assertDoesNotThrow( () -> rel1.removeProperty( key3 ), "Remove of property failed." );
+
+        assertFalse( rel1.hasProperty( key3 ) );
+        assertFalse( rel1.hasProperty( null ) );
         rel1.delete();
         node2.delete();
         node1.delete();
     }
 
     @Test
-    public void testDirectedRelationship()
+    void testDirectedRelationship()
     {
         Node node1 = getGraphDb().createNode();
         Node node2 = getGraphDb().createNode();
@@ -660,7 +566,7 @@ public class TestRelationship extends AbstractNeo4jTestCase
     }
 
     @Test
-    public void testRollbackDeleteRelationship()
+    void testRollbackDeleteRelationship()
     {
         Node node1 = getGraphDb().createNode();
         Node node2 = getGraphDb().createNode();
@@ -677,7 +583,7 @@ public class TestRelationship extends AbstractNeo4jTestCase
     }
 
     @Test
-    public void testCreateRelationshipWithCommits()// throws NotFoundException
+    void testCreateRelationshipWithCommits()
     {
         Node n1 = getGraphDb().createNode();
         newTransaction();
@@ -694,7 +600,7 @@ public class TestRelationship extends AbstractNeo4jTestCase
     }
 
     @Test
-    public void testAddPropertyThenDelete()
+    void testAddPropertyThenDelete()
     {
         Node node1 = getGraphDb().createNode();
         Node node2 = getGraphDb().createNode();
@@ -709,7 +615,7 @@ public class TestRelationship extends AbstractNeo4jTestCase
     }
 
     @Test
-    public void testRelationshipIsType()
+    void testRelationshipIsType()
     {
         Node node1 = getGraphDb().createNode();
         Node node2 = getGraphDb().createNode();
@@ -723,7 +629,7 @@ public class TestRelationship extends AbstractNeo4jTestCase
     }
 
     @Test
-    public void testChangeProperty()
+    void testChangeProperty()
     {
         Node node1 = getGraphDb().createNode();
         Node node2 = getGraphDb().createNode();
@@ -741,7 +647,7 @@ public class TestRelationship extends AbstractNeo4jTestCase
     }
 
     @Test
-    public void testChangeProperty2()
+    void testChangeProperty2()
     {
         // Create relationship with "test"="test1"
         Node node1 = getGraphDb().createNode();
@@ -767,7 +673,7 @@ public class TestRelationship extends AbstractNeo4jTestCase
     }
 
     @Test
-    public void makeSureLazyLoadingRelationshipsWorksEvenIfOtherIteratorAlsoLoadsInTheSameIteration()
+    void makeSureLazyLoadingRelationshipsWorksEvenIfOtherIteratorAlsoLoadsInTheSameIteration()
     {
         int numEdges = 100;
 
@@ -833,7 +739,7 @@ public class TestRelationship extends AbstractNeo4jTestCase
     }
 
     @Test
-    public void createRelationshipAfterClearedCache()
+    void createRelationshipAfterClearedCache()
     {
         // Assumes relationship grab size 100
         Node node1 = getGraphDb().createNode();
@@ -856,7 +762,7 @@ public class TestRelationship extends AbstractNeo4jTestCase
     }
 
     @Test
-    public void getAllRelationships()
+    void getAllRelationships()
     {
         Set<Relationship> existingRelationships = addAll( new HashSet<>(), getGraphDb().getAllRelationships() );
 
@@ -875,15 +781,15 @@ public class TestRelationship extends AbstractNeo4jTestCase
         int count = 0;
         for ( Relationship rel : getGraphDb().getAllRelationships() )
         {
-            assertTrue( "Unexpected rel " + rel + ", expected one of " + allRelationships,
-                    allRelationships.contains( rel ) );
+            assertTrue(
+                allRelationships.contains( rel ), "Unexpected rel " + rel + ", expected one of " + allRelationships );
             count++;
         }
         assertEquals( allRelationships.size(), count );
     }
 
     @Test
-    public void createAndClearCacheBeforeCommit()
+    void createAndClearCacheBeforeCommit()
     {
         Node node = getGraphDb().createNode();
         node.createRelationshipTo( getGraphDb().createNode(), TEST );
@@ -891,7 +797,7 @@ public class TestRelationship extends AbstractNeo4jTestCase
     }
 
     @Test
-    public void setPropertyAndClearCacheBeforeCommit()
+    void setPropertyAndClearCacheBeforeCommit()
     {
         Node node = getGraphDb().createNode();
         node.setProperty( "name", "Test" );
@@ -899,7 +805,7 @@ public class TestRelationship extends AbstractNeo4jTestCase
     }
 
     @Test
-    public void shouldNotGetTheSameRelationshipMoreThanOnceWhenAskingForTheSameTypeMultipleTimes()
+    void shouldNotGetTheSameRelationshipMoreThanOnceWhenAskingForTheSameTypeMultipleTimes()
     {
         // given
         Node node = getGraphDb().createNode();
@@ -913,7 +819,7 @@ public class TestRelationship extends AbstractNeo4jTestCase
     }
 
     @Test
-    public void shouldLoadAllRelationships()
+    void shouldLoadAllRelationships()
     {
         // GIVEN
         GraphDatabaseService db = getGraphDbAPI();
@@ -942,8 +848,8 @@ public class TestRelationship extends AbstractNeo4jTestCase
         assertEquals( two, one );
     }
 
-    @Test( expected = NotFoundException.class )
-    public void deletionOfSameRelationshipTwiceInOneTransactionShouldNotRollbackIt()
+    @Test
+    void deletionOfSameRelationshipTwiceInOneTransactionShouldNotRollbackIt()
     {
         // Given
         GraphDatabaseService db = getGraphDb();
@@ -954,35 +860,22 @@ public class TestRelationship extends AbstractNeo4jTestCase
         Relationship relationship = node1.createRelationshipTo( node2, TEST );
         commit();
 
-        // When
-        Exception exceptionThrownBySecondDelete = null;
-
         try ( Transaction tx = db.beginTx() )
         {
             relationship.delete();
-            try
-            {
-                relationship.delete();
-            }
-            catch ( IllegalStateException e )
-            {
-                exceptionThrownBySecondDelete = e;
-            }
+            assertThrows( NotFoundException.class, () -> relationship.delete() );
             tx.success();
         }
 
-        // Then
-        assertNotNull( exceptionThrownBySecondDelete );
-
         try ( Transaction tx = db.beginTx() )
         {
-            db.getRelationshipById( relationship.getId() ); // should throw NotFoundException
+            assertThrows( NotFoundException.class, () -> db.getRelationshipById( relationship.getId() ) );
             tx.success();
         }
     }
 
-    @Test( expected = NotFoundException.class )
-    public void deletionOfAlreadyDeletedRelationshipShouldThrow()
+    @Test
+    void deletionOfAlreadyDeletedRelationshipShouldThrow()
     {
         // Given
         GraphDatabaseService db = getGraphDb();
@@ -1002,7 +895,7 @@ public class TestRelationship extends AbstractNeo4jTestCase
         // When
         try ( Transaction tx = db.beginTx() )
         {
-            relationship.delete();
+            assertThrows( NotFoundException.class, () -> relationship.delete() );
             tx.success();
         }
     }

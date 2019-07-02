@@ -19,12 +19,11 @@
  */
 package org.neo4j.kernel.impl.transaction;
 
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
-import java.util.Arrays;
-import java.util.Collection;
+import java.util.stream.Stream;
 
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.function.ThrowingConsumer;
@@ -34,33 +33,24 @@ import org.neo4j.kernel.impl.transaction.stats.TransactionCounters;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 
+import static org.junit.jupiter.params.provider.Arguments.arguments;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 
-@RunWith( Parameterized.class )
-public class TransactionMonitorTest
+class TransactionMonitorTest
 {
-
-    @Parameterized.Parameter( 0 )
-    public ThrowingConsumer<GraphDatabaseService,Exception> dbConsumer;
-
-    @Parameterized.Parameter( 1 )
-    public boolean isWriteTx;
-
-    @Parameterized.Parameter( 2 )
-    public String ignored; // to make JUnit happy...
-
-    @Parameterized.Parameters( name = "{2}" )
-    public static Collection<Object[]> parameters()
+    private static Stream<Arguments> parameters()
     {
-        return Arrays.asList(
-                new Object[]{(ThrowingConsumer<GraphDatabaseService,Exception>) db -> {}, false, "read"},
-                new Object[]{(ThrowingConsumer<GraphDatabaseService,Exception>) GraphDatabaseService::createNode,
-                        true, "write"}
+        return Stream.of(
+            arguments( "read", (ThrowingConsumer<GraphDatabaseService, Exception>) db ->
+            {
+            }, false ),
+            arguments( "write", (ThrowingConsumer<GraphDatabaseService, Exception>) GraphDatabaseService::createNode, true )
         );
     }
 
-    @Test
-    public void shouldCountCommittedTransactions() throws Exception
+    @ParameterizedTest( name = "{0}" )
+    @MethodSource( "parameters" )
+    void shouldCountCommittedTransactions( String name, ThrowingConsumer<GraphDatabaseService, Exception> dbConsumer, boolean isWriteTx ) throws Exception
     {
         DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder().impermanent().build();
         GraphDatabaseAPI db = (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );
@@ -81,8 +71,9 @@ public class TransactionMonitorTest
         }
     }
 
-    @Test
-    public void shouldCountRolledBackTransactions() throws Exception
+    @ParameterizedTest( name = "{0}" )
+    @MethodSource( "parameters" )
+    void shouldCountRolledBackTransactions( String name, ThrowingConsumer<GraphDatabaseService, Exception> dbConsumer, boolean isWriteTx ) throws Exception
     {
         DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder().impermanent().build();
         GraphDatabaseAPI db = (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );
@@ -103,8 +94,9 @@ public class TransactionMonitorTest
         }
     }
 
-    @Test
-    public void shouldCountTerminatedTransactions() throws Exception
+    @ParameterizedTest( name = "{0}" )
+    @MethodSource( "parameters" )
+    void shouldCountTerminatedTransactions( String name, ThrowingConsumer<GraphDatabaseService, Exception> dbConsumer, boolean isWriteTx ) throws Exception
     {
         DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder().impermanent().build();
         GraphDatabaseAPI db = (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );

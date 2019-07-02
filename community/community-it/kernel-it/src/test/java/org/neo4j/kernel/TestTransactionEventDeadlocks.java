@@ -19,8 +19,7 @@
  */
 package org.neo4j.kernel;
 
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -30,24 +29,25 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.event.TransactionData;
 import org.neo4j.graphdb.event.TransactionEventListener;
 import org.neo4j.internal.helpers.collection.Iterables;
-import org.neo4j.test.rule.DbmsRule;
-import org.neo4j.test.rule.ImpermanentDbmsRule;
+import org.neo4j.test.extension.ImpermanentDbmsExtension;
+import org.neo4j.test.extension.Inject;
 
-import static org.junit.Assert.assertThat;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.test.mockito.matcher.Neo4jMatchers.hasProperty;
 import static org.neo4j.test.mockito.matcher.Neo4jMatchers.inTx;
 
-public class TestTransactionEventDeadlocks
+@ImpermanentDbmsExtension
+class TestTransactionEventDeadlocks
 {
-    @Rule
-    public DbmsRule database = new ImpermanentDbmsRule();
+    @Inject
+    private DatabaseManagementService managementService;
+    @Inject
+    private GraphDatabaseService graphdb;
 
     @Test
-    public void canAvoidDeadlockThatWouldHappenIfTheRelationshipTypeCreationTransactionModifiedData()
+    void canAvoidDeadlockThatWouldHappenIfTheRelationshipTypeCreationTransactionModifiedData()
     {
-        DatabaseManagementService managementService = database.getManagementService();
-        GraphDatabaseService graphdb = database.getGraphDatabaseAPI();
         Node node;
         try ( Transaction tx = graphdb.beginTx() )
         {

@@ -19,10 +19,10 @@
  */
 package org.neo4j.kernel.impl.traversal;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Ignore;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
 
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.Node;
@@ -37,21 +37,21 @@ import org.neo4j.graphdb.traversal.Traverser;
 import org.neo4j.graphdb.traversal.Uniqueness;
 import org.neo4j.internal.helpers.collection.Iterators;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.neo4j.graphdb.traversal.Evaluators.atDepth;
 
-public class TestPath extends TraversalTestBase
+class TestPath extends TraversalTestBase
 {
-    private static Node a;
-    private static Node b;
-    private static Node c;
-    private static Node d;
-    private static Node e;
+    private Node a;
+    private Node b;
+    private Node c;
+    private Node d;
+    private Node e;
     private Transaction tx;
 
-    @Before
-    public void setup()
+    @BeforeEach
+    void setup()
     {
         createGraph( "A TO B", "B TO C", "C TO D", "D TO E" );
 
@@ -64,14 +64,14 @@ public class TestPath extends TraversalTestBase
         e = getNodeWithName( "E" );
     }
 
-    @After
-    public void tearDown()
+    @AfterEach
+    void tearDown()
     {
         tx.close();
     }
 
     @Test
-    public void testPathIterator()
+    void testPathIterator()
     {
         Traverser traverse = getGraphDb().traversalDescription().evaluator( atDepth( 4 ) ).traverse( node( "A" ) );
         try ( ResourceIterator<Path> resourceIterator = traverse.iterator() )
@@ -82,7 +82,7 @@ public class TestPath extends TraversalTestBase
     }
 
     @Test
-    public void reverseNodes()
+    void reverseNodes()
     {
         Traverser traverse = getGraphDb().traversalDescription().evaluator( atDepth( 0 ) ).traverse( a );
         Path path = getFirstPath( traverse );
@@ -94,7 +94,7 @@ public class TestPath extends TraversalTestBase
     }
 
     @Test
-    public void reverseRelationships()
+    void reverseRelationships()
     {
         Traverser traverser = getGraphDb().traversalDescription().evaluator( atDepth( 0 ) ).traverse( a );
         Path path = getFirstPath( traverser );
@@ -102,11 +102,11 @@ public class TestPath extends TraversalTestBase
 
         Traverser traverser2 = getGraphDb().traversalDescription().evaluator( atDepth( 4 ) ).traverse( a );
         Path path2 = getFirstPath( traverser2 );
-        Node[] expectedNodes = new Node[]{e, d, c, b, a};
+        Node[] expectedNodes = {e, d, c, b, a};
         int index = 0;
         for ( Relationship rel : path2.reverseRelationships() )
         {
-            assertEquals( "For index " + index, expectedNodes[index++], rel.getEndNode() );
+            assertEquals( expectedNodes[index++], rel.getEndNode(), "For index " + index );
         }
         assertEquals( 4, index );
     }
@@ -114,7 +114,7 @@ public class TestPath extends TraversalTestBase
     //TODO: This leaks cursors, and disabling cursor checking of this entire module seems
     //      like the wrong thing. We should preferably fix the leaking and reenable the test
     //      or move it to a module where we can disable `trackCursors`
-    @Ignore
+    @Disabled
     public void testBidirectionalPath()
     {
         TraversalDescription side = getGraphDb().traversalDescription().uniqueness( Uniqueness.NODE_PATH );
@@ -150,7 +150,7 @@ public class TestPath extends TraversalTestBase
         assertEquals( a, bidirectionalPath.startNode() );
     }
 
-    private Path getFirstPath( Traverser traverse )
+    private static Path getFirstPath( Traverser traverse )
     {
         try ( ResourceIterator<Path> iterator = traverse.iterator() )
         {
@@ -181,7 +181,7 @@ public class TestPath extends TraversalTestBase
         assertContainsInOrder( path.reverseRelationships(), to4, to3, to2, to1 );
     }
 
-    private Relationship getFistRelationship( Node node )
+    private static Relationship getFistRelationship( Node node )
     {
         ResourceIterable<Relationship> relationships = (ResourceIterable<Relationship>) node.getRelationships( Direction.OUTGOING );
         try ( ResourceIterator<Relationship> iterator = relationships.iterator() )

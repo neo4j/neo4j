@@ -19,8 +19,8 @@
  */
 package org.neo4j.kernel.impl.traversal;
 
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import java.util.HashSet;
 import java.util.Set;
@@ -34,14 +34,14 @@ import org.neo4j.graphdb.traversal.Evaluators;
 import org.neo4j.graphdb.traversal.TraversalDescription;
 
 import static java.util.Arrays.asList;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.graphdb.traversal.Evaluators.toDepth;
 import static org.neo4j.internal.helpers.collection.Iterators.count;
 
-public class TestMultiPruneEvaluators extends TraversalTestBase
+class TestMultiPruneEvaluators extends TraversalTestBase
 {
-    @Before
-    public void setupGraph()
+    @BeforeEach
+    void setupGraph()
     {
         createGraph( "a to b", "a to c", "a to d", "a to e",
                 "b to f", "b to g", "b to h",
@@ -52,7 +52,7 @@ public class TestMultiPruneEvaluators extends TraversalTestBase
     }
 
     @Test
-    public void testMaxDepthAndCustomPruneEvaluatorCombined()
+    void testMaxDepthAndCustomPruneEvaluatorCombined()
     {
         Evaluator lessThanThreeRels =
                 path -> count( path.endNode().getRelationships( Direction.OUTGOING ).iterator() ) < 3 ?
@@ -66,7 +66,7 @@ public class TestMultiPruneEvaluators extends TraversalTestBase
             for ( Path position : description.traverse( node( "a" ) ) )
             {
                 String name = (String) position.endNode().getProperty( "name" );
-                assertTrue( name + " shouldn't have been returned", expectedNodes.remove( name ) );
+                assertTrue( expectedNodes.remove( name ), name + " shouldn't have been returned" );
             }
             tx.success();
         }

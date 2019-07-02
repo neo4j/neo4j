@@ -19,7 +19,7 @@
  */
 package org.neo4j.kernel.impl.traversal;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -30,14 +30,14 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.internal.helpers.collection.Iterables;
 
 import static java.util.Arrays.asList;
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.graphdb.traversal.Evaluators.excludeStartPosition;
 import static org.neo4j.graphdb.traversal.Sorting.endNodeProperty;
 
-public class TestSorting extends TraversalTestBase
+class TestSorting extends TraversalTestBase
 {
     @Test
-    public void sortFriendsByName()
+    void sortFriendsByName()
     {
         /*
          *      (Abraham)

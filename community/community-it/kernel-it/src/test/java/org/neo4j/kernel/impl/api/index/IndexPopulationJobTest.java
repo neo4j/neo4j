@@ -19,10 +19,9 @@
  */
 package org.neo4j.kernel.impl.api.index;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentMatchers;
 
 import java.util.Collection;
@@ -75,7 +74,6 @@ import org.neo4j.storageengine.api.NodePropertyAccessor;
 import org.neo4j.test.DoubleLatch;
 import org.neo4j.test.OtherThreadExecutor;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
-import org.neo4j.test.rule.CleanupRule;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 
@@ -85,9 +83,9 @@ import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.sameInstance;
 import static org.hamcrest.core.IsEqual.equalTo;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyCollection;
@@ -111,19 +109,16 @@ import static org.neo4j.kernel.impl.index.schema.ByteBufferFactory.heapBufferFac
 import static org.neo4j.logging.AssertableLogProvider.inLog;
 import static org.neo4j.storageengine.api.IndexEntryUpdate.add;
 
-public class IndexPopulationJobTest
+class IndexPopulationJobTest
 {
-    @Rule
-    public final CleanupRule cleanup = new CleanupRule();
-
     private GraphDatabaseAPI db;
 
-    private final Label FIRST = Label.label( "FIRST" );
-    private final Label SECOND = Label.label( "SECOND" );
-    private final RelationshipType likes = RelationshipType.withName( "likes" );
-    private final RelationshipType knows = RelationshipType.withName( "knows" );
-    private final String name = "name";
-    private final String age = "age";
+    private static final Label FIRST = Label.label( "FIRST" );
+    private static final Label SECOND = Label.label( "SECOND" );
+    private static final String name = "name";
+    private static final String age = "age";
+    private static final RelationshipType likes = RelationshipType.withName( "likes" );
+    private static final RelationshipType knows = RelationshipType.withName( "knows" );
 
     private Kernel kernel;
     private IndexStoreView indexStoreView;
@@ -132,8 +127,8 @@ public class IndexPopulationJobTest
     private IndexStatisticsStore indexStatisticsStore;
     private DatabaseManagementService managementService;
 
-    @Before
-    public void before() throws Exception
+    @BeforeEach
+    void before() throws Exception
     {
         managementService = new TestDatabaseManagementServiceBuilder().impermanent()
                 .setConfig( GraphDatabaseSettings.record_id_batch_size, "1" ).build();
@@ -151,14 +146,14 @@ public class IndexPopulationJobTest
         }
     }
 
-    @After
-    public void after()
+    @AfterEach
+    void after()
     {
         managementService.shutdown();
     }
 
     @Test
-    public void shouldPopulateIndexWithOneNode() throws Exception
+    void shouldPopulateIndexWithOneNode() throws Exception
     {
         // GIVEN
         String value = "Taylor";
@@ -181,7 +176,7 @@ public class IndexPopulationJobTest
     }
 
     @Test
-    public void shouldPopulateIndexWithOneRelationship() throws Exception
+    void shouldPopulateIndexWithOneRelationship() throws Exception
     {
         // GIVEN
         String value = "Taylor";
@@ -206,7 +201,7 @@ public class IndexPopulationJobTest
     }
 
     @Test
-    public void shouldFlushSchemaStateAfterPopulation() throws Exception
+    void shouldFlushSchemaStateAfterPopulation() throws Exception
     {
         // GIVEN
         String value = "Taylor";
@@ -224,7 +219,7 @@ public class IndexPopulationJobTest
     }
 
     @Test
-    public void shouldPopulateIndexWithASmallDataset() throws Exception
+    void shouldPopulateIndexWithASmallDataset() throws Exception
     {
         // GIVEN
         String value = "Mattias";
@@ -252,7 +247,7 @@ public class IndexPopulationJobTest
     }
 
     @Test
-    public void shouldPopulateRelatonshipIndexWithASmallDataset() throws Exception
+    void shouldPopulateRelatonshipIndexWithASmallDataset() throws Exception
     {
         // GIVEN
         String value = "Philip J.Fry";
@@ -287,7 +282,7 @@ public class IndexPopulationJobTest
     }
 
     @Test
-    public void shouldIndexConcurrentUpdatesWhilePopulating() throws Exception
+    void shouldIndexConcurrentUpdatesWhilePopulating() throws Exception
     {
         // GIVEN
         Object value1 = "Mattias";
@@ -318,7 +313,7 @@ public class IndexPopulationJobTest
     }
 
     @Test
-    public void shouldRemoveViaConcurrentIndexUpdatesWhilePopulating() throws Exception
+    void shouldRemoveViaConcurrentIndexUpdatesWhilePopulating() throws Exception
     {
         // GIVEN
         String value1 = "Mattias";
@@ -343,7 +338,7 @@ public class IndexPopulationJobTest
     }
 
     @Test
-    public void shouldTransitionToFailedStateIfPopulationJobCrashes() throws Exception
+    void shouldTransitionToFailedStateIfPopulationJobCrashes() throws Exception
     {
         // GIVEN
         IndexPopulator failingPopulator = mock( IndexPopulator.class );
@@ -362,7 +357,7 @@ public class IndexPopulationJobTest
     }
 
     @Test
-    public void shouldBeAbleToCancelPopulationJob() throws Exception
+    void shouldBeAbleToCancelPopulationJob() throws Exception
     {
         // GIVEN
         createNode( map( name, "Mattias" ), FIRST );
@@ -381,22 +376,25 @@ public class IndexPopulationJobTest
         JobHandle jobHandle = mock( JobHandle.class );
         job.setHandle( jobHandle );
 
-        OtherThreadExecutor<Void> populationJobRunner = cleanup.add( new OtherThreadExecutor<>(
-                "Population job test runner", null ) );
-        Future<Void> runFuture = populationJobRunner
+        Future<Void> runFuture;
+        try ( OtherThreadExecutor<Void> populationJobRunner = new OtherThreadExecutor<>(
+            "Population job test runner", null ) )
+        {
+            runFuture = populationJobRunner
                 .executeDontWait( state ->
                 {
                     job.run();
                     return null;
                 } );
 
-        storeScan.latch.waitForAllToStart();
-        job.cancel();
-        job.awaitCompletion( 0, TimeUnit.SECONDS );
-        storeScan.latch.waitForAllToFinish();
+            storeScan.latch.waitForAllToStart();
+            job.cancel();
+            job.awaitCompletion( 0, TimeUnit.SECONDS );
+            storeScan.latch.waitForAllToFinish();
 
-        // WHEN
-        runFuture.get();
+            // WHEN
+            runFuture.get();
+        }
 
         // THEN
         verify( populator ).close( false );
@@ -405,7 +403,7 @@ public class IndexPopulationJobTest
     }
 
     @Test
-    public void shouldLogJobProgress() throws Exception
+    void shouldLogJobProgress() throws Exception
     {
         // Given
         createNode( map( name, "irrelephant" ), FIRST );
@@ -434,7 +432,7 @@ public class IndexPopulationJobTest
     }
 
     @Test
-    public void logConstraintJobProgress() throws Exception
+    void logConstraintJobProgress() throws Exception
     {
         // Given
         createNode( map( name, "irrelephant" ), FIRST );
@@ -463,7 +461,7 @@ public class IndexPopulationJobTest
     }
 
     @Test
-    public void shouldLogJobFailure() throws Exception
+    void shouldLogJobFailure() throws Exception
     {
         // Given
         createNode( map( name, "irrelephant" ), FIRST );
@@ -486,7 +484,7 @@ public class IndexPopulationJobTest
     }
 
     @Test
-    public void shouldFlipToFailedUsingFailedIndexProxyFactory() throws Exception
+    void shouldFlipToFailedUsingFailedIndexProxyFactory() throws Exception
     {
         // Given
         FailedIndexProxyFactory failureDelegateFactory = mock( FailedIndexProxyFactory.class );
@@ -506,7 +504,7 @@ public class IndexPopulationJobTest
     }
 
     @Test
-    public void shouldCloseAndFailOnFailure() throws Exception
+    void shouldCloseAndFailOnFailure() throws Exception
     {
         createNode( map( name, "irrelephant" ), FIRST );
         LogProvider logProvider = NullLogProvider.getInstance();
@@ -526,7 +524,7 @@ public class IndexPopulationJobTest
     }
 
     @Test
-    public void shouldCloseMultiPopulatorOnSuccessfulPopulation()
+    void shouldCloseMultiPopulatorOnSuccessfulPopulation()
     {
         // given
         NullLogProvider logProvider = NullLogProvider.getInstance();
@@ -542,7 +540,7 @@ public class IndexPopulationJobTest
     }
 
     @Test
-    public void shouldCloseMultiPopulatorOnFailedPopulation()
+    void shouldCloseMultiPopulatorOnFailedPopulation()
     {
         // given
         NullLogProvider logProvider = NullLogProvider.getInstance();

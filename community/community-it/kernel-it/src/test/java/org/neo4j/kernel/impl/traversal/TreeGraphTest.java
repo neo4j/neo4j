@@ -19,8 +19,8 @@
  */
 package org.neo4j.kernel.impl.traversal;
 
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -35,13 +35,13 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.traversal.Traverser;
 
 import static java.util.Arrays.asList;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.graphdb.traversal.BranchOrderingPolicies.POSTORDER_BREADTH_FIRST;
 import static org.neo4j.graphdb.traversal.BranchOrderingPolicies.POSTORDER_DEPTH_FIRST;
 
-public class TreeGraphTest extends TraversalTestBase
+class TreeGraphTest extends TraversalTestBase
 {
     /*
      *                     (1)
@@ -51,18 +51,18 @@ public class TreeGraphTest extends TraversalTestBase
      *          / | \     / | \     / | \
      *        (5)(6)(7) (8)(9)(A) (B)(C)(D)
      */
-    private static final String[] THE_WORLD_AS_WE_KNOWS_IT = new String[] {
+    private static final String[] THE_WORLD_AS_WE_KNOWS_IT = {
             "1 TO 2", "1 TO 3", "1 TO 4", "2 TO 5", "2 TO 6", "2 TO 7",
             "3 TO 8", "3 TO 9", "3 TO A", "4 TO B", "4 TO C", "4 TO D", };
 
-    @Before
-    public void setupGraph()
+    @BeforeEach
+    void setupGraph()
     {
         createGraph( THE_WORLD_AS_WE_KNOWS_IT );
     }
 
     @Test
-    public void nodesIteratorReturnAllNodes()
+    void nodesIteratorReturnAllNodes()
     {
         try ( Transaction transaction = beginTx() )
         {
@@ -70,8 +70,7 @@ public class TreeGraphTest extends TraversalTestBase
             int count = 0;
             for ( Node node : traverser.nodes() )
             {
-                assertNotNull( "returned nodes should not be null. node #"
-                               + count, node );
+                assertNotNull( node, "returned nodes should not be null. node #" + count );
                 count++;
             }
             assertEquals( 13, count );
@@ -79,7 +78,7 @@ public class TreeGraphTest extends TraversalTestBase
     }
 
     @Test
-    public void relationshipsIteratorReturnAllNodes()
+    void relationshipsIteratorReturnAllNodes()
     {
         try ( Transaction transaction = beginTx() )
         {
@@ -87,9 +86,7 @@ public class TreeGraphTest extends TraversalTestBase
             int count = 0;
             for ( Relationship relationship : traverser.relationships() )
             {
-                assertNotNull(
-                        "returned relationships should not be. relationship #"
-                                + count, relationship );
+                assertNotNull( relationship, "returned relationships should not be. relationship #" + count );
                 count++;
             }
             assertEquals( 12, count );
@@ -97,7 +94,7 @@ public class TreeGraphTest extends TraversalTestBase
     }
 
     @Test
-    public void pathsIteratorReturnAllNodes()
+    void pathsIteratorReturnAllNodes()
     {
 
         try ( Transaction transaction = beginTx() )
@@ -106,8 +103,8 @@ public class TreeGraphTest extends TraversalTestBase
             int count = 0;
             for ( Path path : traverser )
             {
-                assertNotNull( "returned paths should not be null. path #"
-                               + count, path );
+                assertNotNull( path, "returned paths should not be null. path #"
+                               + count );
                 count++;
             }
             assertEquals( 13, count );
@@ -115,7 +112,7 @@ public class TreeGraphTest extends TraversalTestBase
     }
 
     @Test
-    public void testBreadthFirst()
+    void testBreadthFirst()
     {
         Traverser traverser = getGraphDb().traversalDescription().breadthFirst().traverse( node( "1" ) );
         Stack<Set<String>> levels = new Stack<>();
@@ -132,7 +129,7 @@ public class TreeGraphTest extends TraversalTestBase
     }
 
     @Test
-    public void testDepthFirstTraversalReturnsNodesOnCorrectDepths()
+    void testDepthFirstTraversalReturnsNodesOnCorrectDepths()
     {
 
         try ( Transaction transaction = beginTx() )
@@ -148,7 +145,7 @@ public class TreeGraphTest extends TraversalTestBase
     }
 
     @Test
-    public void testPostorderDepthFirstReturnsDeeperNodesFirst()
+    void testPostorderDepthFirstReturnsDeeperNodesFirst()
     {
         Traverser traverser = getGraphDb().traversalDescription().order( POSTORDER_DEPTH_FIRST ).traverse( node( "1" ) );
         int i = 0;
@@ -179,7 +176,7 @@ public class TreeGraphTest extends TraversalTestBase
     }
 
     @Test
-    public void testPostorderBreadthFirstReturnsDeeperNodesFirst()
+    void testPostorderBreadthFirstReturnsDeeperNodesFirst()
     {
         Traverser traverser = getGraphDb().traversalDescription().order( POSTORDER_BREADTH_FIRST ).traverse( node( "1" ) );
         Stack<Set<String>> levels = new Stack<>();

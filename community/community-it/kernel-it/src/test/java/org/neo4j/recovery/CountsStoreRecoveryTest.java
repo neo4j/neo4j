@@ -19,10 +19,10 @@
  */
 package org.neo4j.recovery;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.io.IOException;
 
@@ -31,6 +31,7 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.internal.kernel.api.Kernel;
 import org.neo4j.internal.recordstorage.RecordStorageEngine;
+import org.neo4j.io.fs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.store.NeoStores;
@@ -38,37 +39,39 @@ import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointer;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.SimpleTriggerInfo;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
-import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
+import org.neo4j.test.extension.EphemeralFileSystemExtension;
+import org.neo4j.test.extension.Inject;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.internal.kernel.api.TokenRead.NO_TOKEN;
 import static org.neo4j.internal.kernel.api.Transaction.Type.explicit;
 import static org.neo4j.internal.kernel.api.security.LoginContext.AUTH_DISABLED;
 
-public class CountsStoreRecoveryTest
+@ExtendWith( EphemeralFileSystemExtension.class )
+class CountsStoreRecoveryTest
 {
-    @Rule
-    public final EphemeralFileSystemRule fsRule = new EphemeralFileSystemRule();
+    @Inject
+    private EphemeralFileSystemAbstraction fs;
     private GraphDatabaseService db;
     private DatabaseManagementService managementService;
 
-    @Before
-    public void before()
+    @BeforeEach
+    void before()
     {
-        managementService = databaseFactory( fsRule.get() ).impermanent().build();
+        managementService = databaseFactory( fs ).impermanent().build();
         db = managementService.database( DEFAULT_DATABASE_NAME );
     }
 
-    @After
-    public void after()
+    @AfterEach
+    void after()
     {
         managementService.shutdown();
     }
 
     @Test
-    public void shouldRecoverTheCountsStoreEvenWhenIfNeoStoreDoesNotNeedRecovery() throws Exception
+    void shouldRecoverTheCountsStoreEvenWhenIfNeoStoreDoesNotNeedRecovery() throws Exception
     {
         // given
         createNode( "A" );
@@ -107,8 +110,17 @@ public class CountsStoreRecoveryTest
 
     private void crashAndRestart() throws Exception
     {
-        final GraphDatabaseService db1 = db;
-        FileSystemAbstraction uncleanFs = fsRule.snapshot( managementService::shutdown );
+        var uncleanFs = fs.snapshot();
+        try
+        {
+            managementService.shutdown();
+        }
+        finally
+        {
+            fs.close();
+            fs = uncleanFs;
+        }
+
         managementService = databaseFactory( uncleanFs ).impermanent().build();
         db = managementService.database( DEFAULT_DATABASE_NAME );
     }

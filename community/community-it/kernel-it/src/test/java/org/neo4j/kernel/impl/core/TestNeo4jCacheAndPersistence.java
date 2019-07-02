@@ -19,10 +19,10 @@
  */
 package org.neo4j.kernel.impl.core;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -43,35 +43,38 @@ import org.neo4j.internal.helpers.collection.Iterables;
 import org.neo4j.kernel.impl.AbstractNeo4jTestCase;
 import org.neo4j.kernel.impl.MyRelTypes;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
+import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.TestDirectoryExtension;
 import org.neo4j.test.rule.TestDirectory;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.graphdb.Direction.INCOMING;
 import static org.neo4j.graphdb.Direction.OUTGOING;
 
-public class TestNeo4jCacheAndPersistence extends AbstractNeo4jTestCase
+@ExtendWith( TestDirectoryExtension.class )
+class TestNeo4jCacheAndPersistence extends AbstractNeo4jTestCase
 {
-    @Rule
-    public final TestDirectory testDirectory = TestDirectory.testDirectory();
+    @Inject
+    private TestDirectory testDirectory;
 
+    private static final String key1 = "key1";
+    private static final String key2 = "key2";
+    private static final String arrayKey = "arrayKey";
+    private static final Integer int1 = 1;
+    private static final Integer int2 = 2;
+    private static final String string1 = "1";
+    private static final String string2 = "2";
+    private final int[] array = {1, 2, 3, 4, 5, 6, 7};
     private long node1Id = -1;
     private long node2Id = -1;
-    private final String key1 = "key1";
-    private final String key2 = "key2";
-    private final String arrayKey = "arrayKey";
-    private final Integer int1 = 1;
-    private final Integer int2 = 2;
-    private final String string1 = "1";
-    private final String string2 = "2";
-    private final int[] array = new int[] { 1, 2, 3, 4, 5, 6, 7 };
     private DatabaseManagementService managementService;
 
-    @Before
-    public void createTestingGraph()
+    @BeforeEach
+    void createTestingGraph()
     {
         Node node1 = getGraphDb().createNode();
         Node node2 = getGraphDb().createNode();
@@ -95,8 +98,8 @@ public class TestNeo4jCacheAndPersistence extends AbstractNeo4jTestCase
         setTransaction( tx );
     }
 
-    @After
-    public void deleteTestingGraph()
+    @AfterEach
+    void deleteTestingGraph()
     {
         Node node1 = getGraphDb().getNodeById( node1Id );
         Node node2 = getGraphDb().getNodeById( node2Id );
@@ -106,7 +109,7 @@ public class TestNeo4jCacheAndPersistence extends AbstractNeo4jTestCase
     }
 
     @Test
-    public void testAddProperty()
+    void testAddProperty()
     {
         String key3 = "key3";
 
@@ -136,7 +139,7 @@ public class TestNeo4jCacheAndPersistence extends AbstractNeo4jTestCase
     }
 
     @Test
-    public void testNodeRemoveProperty()
+    void testNodeRemoveProperty()
     {
         Node node1 = getGraphDb().getNodeById( node1Id );
         Node node2 = getGraphDb().getNodeById( node2Id );
@@ -156,7 +159,7 @@ public class TestNeo4jCacheAndPersistence extends AbstractNeo4jTestCase
     }
 
     @Test
-    public void testNodeChangeProperty()
+    void testNodeChangeProperty()
     {
         Node node1 = getGraphDb().getNodeById( node1Id );
         Node node2 = getGraphDb().getNodeById( node2Id );
@@ -167,14 +170,14 @@ public class TestNeo4jCacheAndPersistence extends AbstractNeo4jTestCase
         node1.setProperty( key1, int2 );
         node2.setProperty( key1, int1 );
         rel.setProperty( key1, int2 );
-        int[] newIntArray = new int[] { 3, 2, 1 };
+        int[] newIntArray = {3, 2, 1};
         node1.setProperty( arrayKey, newIntArray );
         node2.setProperty( arrayKey, newIntArray );
         rel.setProperty( arrayKey, newIntArray );
     }
 
     @Test
-    public void testNodeGetProperties()
+    void testNodeGetProperties()
     {
         Node node1 = getGraphDb().getNodeById( node1Id );
 
@@ -198,7 +201,7 @@ public class TestNeo4jCacheAndPersistence extends AbstractNeo4jTestCase
     }
 
     @Test
-    public void testDirectedRelationship1()
+    void testDirectedRelationship1()
     {
         Node node1 = getGraphDb().getNodeById( node1Id );
         Relationship rel = node1.getSingleRelationship( MyRelTypes.TEST, Direction.BOTH );
@@ -220,7 +223,7 @@ public class TestNeo4jCacheAndPersistence extends AbstractNeo4jTestCase
     }
 
     @Test
-    public void testRelCountInSameTx()
+    void testRelCountInSameTx()
     {
         Node node1 = getGraphDb().createNode();
         Node node2 = getGraphDb().createNode();
@@ -239,7 +242,7 @@ public class TestNeo4jCacheAndPersistence extends AbstractNeo4jTestCase
     }
 
     @Test
-    public void testGetDirectedRelationship()
+    void testGetDirectedRelationship()
     {
         Node node1 = getGraphDb().getNodeById( node1Id );
         Relationship rel = node1.getSingleRelationship( MyRelTypes.TEST,
@@ -248,7 +251,7 @@ public class TestNeo4jCacheAndPersistence extends AbstractNeo4jTestCase
     }
 
     @Test
-    public void testSameTxWithArray()
+    void testSameTxWithArray()
     {
         commit();
         newTransaction();
@@ -267,7 +270,7 @@ public class TestNeo4jCacheAndPersistence extends AbstractNeo4jTestCase
     }
 
     @Test
-    public void testAddCacheCleared()
+    void testAddCacheCleared()
     {
         Node nodeA = getGraphDb().createNode();
         nodeA.setProperty( "1", 1 );
@@ -306,7 +309,7 @@ public class TestNeo4jCacheAndPersistence extends AbstractNeo4jTestCase
     }
 
     @Test
-    public void testNodeMultiRemoveProperty()
+    void testNodeMultiRemoveProperty()
     {
         Node node = getGraphDb().createNode();
         node.setProperty( "key0", "0" );
@@ -328,7 +331,7 @@ public class TestNeo4jCacheAndPersistence extends AbstractNeo4jTestCase
     }
 
     @Test
-    public void testRelMultiRemoveProperty()
+    void testRelMultiRemoveProperty()
     {
         Node node1 = getGraphDb().createNode();
         Node node2 = getGraphDb().createNode();
@@ -354,7 +357,7 @@ public class TestNeo4jCacheAndPersistence extends AbstractNeo4jTestCase
     }
 
     @Test
-    public void testLowGrabSize()
+    void testLowGrabSize()
     {
         Map<String,String> config = new HashMap<>();
         config.put( "relationship_grab_size", "1" );
@@ -374,8 +377,7 @@ public class TestNeo4jCacheAndPersistence extends AbstractNeo4jTestCase
 
         try ( Transaction tx = graphDb.beginTx() )
         {
-            RelationshipType[] types = new RelationshipType[]{
-                    MyRelTypes.TEST, MyRelTypes.TEST2, MyRelTypes.TEST_TRAVERSAL};
+            RelationshipType[] types = {MyRelTypes.TEST, MyRelTypes.TEST2, MyRelTypes.TEST_TRAVERSAL};
 
             assertEquals( 3, Iterables.count( node1.getRelationships( types ) ) );
 
@@ -399,13 +401,13 @@ public class TestNeo4jCacheAndPersistence extends AbstractNeo4jTestCase
     }
 
     @Test
-    public void testAnotherLowGrabSize()
+    void testAnotherLowGrabSize()
     {
         testLowGrabSize( false );
     }
 
     @Test
-    public void testAnotherLowGrabSizeWithLoops()
+    void testAnotherLowGrabSizeWithLoops()
     {
         testLowGrabSize( true );
     }

@@ -19,9 +19,9 @@
  */
 package org.neo4j.kernel.impl.traversal;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Path;
@@ -46,32 +46,33 @@ import org.neo4j.internal.helpers.collection.Iterables;
 import org.neo4j.internal.helpers.collection.Iterators;
 
 import static java.util.Arrays.asList;
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.neo4j.graphdb.Direction.OUTGOING;
 import static org.neo4j.graphdb.RelationshipType.withName;
 import static org.neo4j.graphdb.traversal.Evaluators.includeIfContainsAll;
 import static org.neo4j.graphdb.traversal.Uniqueness.NODE_PATH;
 import static org.neo4j.graphdb.traversal.Uniqueness.RELATIONSHIP_PATH;
 
-public class TestBidirectionalTraversal extends TraversalTestBase
+class TestBidirectionalTraversal extends TraversalTestBase
 {
-    RelationshipType to = withName( "TO" );
+    private RelationshipType to = withName( "TO" );
     private Transaction tx;
 
-    @Before
-    public void init()
+    @BeforeEach
+    void init()
     {
         tx = beginTx();
     }
 
-    @After
-    public void tearDown()
+    @AfterEach
+    void tearDown()
     {
         tx.close();
     }
 
-    @Test( expected = IllegalArgumentException.class )
-    public void bothSidesMustHaveSameUniqueness()
+    @Test
+    void bothSidesMustHaveSameUniqueness()
     {
         createGraph( "A TO B" );
 
@@ -79,14 +80,18 @@ public class TestBidirectionalTraversal extends TraversalTestBase
                 .startSide( getGraphDb().traversalDescription().uniqueness( Uniqueness.NODE_GLOBAL ) )
                 .endSide( getGraphDb().traversalDescription().uniqueness( Uniqueness.RELATIONSHIP_GLOBAL ) )
                 .traverse( getNodeWithName( "A" ), getNodeWithName( "B" ) );
-        try ( ResourceIterator<Path> iterator = traverse.iterator() )
+
+        assertThrows( IllegalArgumentException.class, () ->
         {
-            Iterators.count( iterator );
-        }
+            try ( ResourceIterator<Path> iterator = traverse.iterator() )
+            {
+                Iterators.count( iterator );
+            }
+        } );
     }
 
     @Test
-    public void pathsForOneDirection()
+    void pathsForOneDirection()
     {
         /*
          * (a)-->(b)==>(c)-->(d)
@@ -106,7 +111,7 @@ public class TestBidirectionalTraversal extends TraversalTestBase
     }
 
     @Test
-    public void collisionEvaluator()
+    void collisionEvaluator()
     {
         /*
          *           (d)-->(e)--
@@ -131,7 +136,7 @@ public class TestBidirectionalTraversal extends TraversalTestBase
     }
 
     @Test
-    public void multipleCollisionEvaluators()
+    void multipleCollisionEvaluators()
     {
         /*
          *           (g)
@@ -153,7 +158,7 @@ public class TestBidirectionalTraversal extends TraversalTestBase
     }
 
     @Test
-    public void multipleStartAndEndNodes()
+    void multipleStartAndEndNodes()
     {
         /*
          * (a)--\         -->(f)
@@ -173,7 +178,7 @@ public class TestBidirectionalTraversal extends TraversalTestBase
     }
 
     @Test
-    public void ensureCorrectPathEntitiesInShortPath()
+    void ensureCorrectPathEntitiesInShortPath()
     {
         /*
          * (a)-->(b)
@@ -199,7 +204,7 @@ public class TestBidirectionalTraversal extends TraversalTestBase
     }
 
     @Test
-    public void mirroredTraversalReversesInitialState()
+    void mirroredTraversalReversesInitialState()
     {
         /*
          * (a)-->(b)-->(c)-->(d)

@@ -19,7 +19,7 @@
  */
 package org.neo4j.kernel.impl.core;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicReference;
@@ -31,15 +31,15 @@ import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.impl.AbstractNeo4jTestCase;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
-public class TestIsolationBasic extends AbstractNeo4jTestCase
+class TestIsolationBasic extends AbstractNeo4jTestCase
 {
     /*
      * Tests that changes performed in a transaction before commit are not apparent in another.
      */
     @Test
-    public void testSimpleTransactionIsolation() throws Exception
+    void testSimpleTransactionIsolation() throws Exception
     {
         // Start setup - create base data
         commit();

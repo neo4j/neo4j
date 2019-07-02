@@ -19,9 +19,9 @@
  */
 package org.neo4j.kernel.impl.traversal;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import java.util.function.Predicate;
 
@@ -39,13 +39,13 @@ import org.neo4j.internal.helpers.collection.Iterables;
 
 import static org.neo4j.graphdb.traversal.Evaluators.includeIfAcceptedByAny;
 
-public class TestMultipleFilters extends TraversalTestBase
+class TestMultipleFilters extends TraversalTestBase
 {
 
     private Transaction tx;
 
-    @Before
-    public void setupGraph()
+    @BeforeEach
+    void setupGraph()
     {
         //
         //                     (a)--------
@@ -60,8 +60,8 @@ public class TestMultipleFilters extends TraversalTestBase
         tx = beginTx();
     }
 
-    @After
-    public void tearDown()
+    @AfterEach
+    void tearDown()
     {
          tx.close();
     }
@@ -102,7 +102,7 @@ public class TestMultipleFilters extends TraversalTestBase
     }
 
     @Test
-    public void testNarrowingFilters()
+    void testNarrowingFilters()
     {
         Evaluator mustBeConnectedToK = new MustBeConnectedToNodeFilter( getNodeWithName( "k" ) );
         Evaluator mustNotHaveMoreThanTwoOutRels =
@@ -115,7 +115,7 @@ public class TestMultipleFilters extends TraversalTestBase
     }
 
     @Test
-    public void testBroadeningFilters()
+    void testBroadeningFilters()
     {
         MustBeConnectedToNodeFilter mustBeConnectedToC = new MustBeConnectedToNodeFilter( getNodeWithName( "c" ) );
         MustBeConnectedToNodeFilter mustBeConnectedToE = new MustBeConnectedToNodeFilter( getNodeWithName( "e" ) );

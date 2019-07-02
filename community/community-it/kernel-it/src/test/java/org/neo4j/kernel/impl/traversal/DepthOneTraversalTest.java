@@ -19,29 +19,29 @@
  */
 package org.neo4j.kernel.impl.traversal;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.traversal.TraversalDescription;
 
 import static org.neo4j.graphdb.traversal.Evaluators.atDepth;
 
-public class DepthOneTraversalTest extends TraversalTestBase
+class DepthOneTraversalTest extends TraversalTestBase
 {
     private Transaction tx;
 
-    @Before
-    public void createTheGraph()
+    @BeforeEach
+    void createTheGraph()
     {
         createGraph( "0 ROOT 1", "1 KNOWS 2", "2 KNOWS 3", "2 KNOWS 4",
                 "4 KNOWS 5", "5 KNOWS 6", "3 KNOWS 1" );
         tx = beginTx();
     }
 
-    @After
-    public void tearDown()
+    @AfterEach
+    void tearDown()
     {
         tx.close();
     }
@@ -53,13 +53,13 @@ public class DepthOneTraversalTest extends TraversalTestBase
     }
 
     @Test
-    public void shouldGetBothNodesOnDepthOneForDepthFirst()
+    void shouldGetBothNodesOnDepthOneForDepthFirst()
     {
         shouldGetBothNodesOnDepthOne( getGraphDb().traversalDescription().depthFirst() );
     }
 
     @Test
-    public void shouldGetBothNodesOnDepthOneForBreadthFirst()
+    void shouldGetBothNodesOnDepthOneForBreadthFirst()
     {
         shouldGetBothNodesOnDepthOne( getGraphDb().traversalDescription().breadthFirst() );
     }

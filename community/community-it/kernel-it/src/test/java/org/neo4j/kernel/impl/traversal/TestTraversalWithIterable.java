@@ -19,7 +19,7 @@
  */
 package org.neo4j.kernel.impl.traversal;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -32,10 +32,10 @@ import org.neo4j.graphdb.traversal.Evaluators;
 import org.neo4j.graphdb.traversal.TraversalDescription;
 import org.neo4j.internal.helpers.collection.IterableWrapper;
 
-public class TestTraversalWithIterable extends TraversalTestBase
+class TestTraversalWithIterable extends TraversalTestBase
 {
     @Test
-    public void traverseWithIterableForStartNodes()
+    void traverseWithIterableForStartNodes()
     {
         /*
          * (a)-->(b)-->(c)
@@ -61,7 +61,7 @@ public class TestTraversalWithIterable extends TraversalTestBase
     }
 
     @Test
-    public void useTraverserInsideTraverser()
+    void useTraverserInsideTraverser()
     {
         /*
          * (a)-->(b)-->(c)

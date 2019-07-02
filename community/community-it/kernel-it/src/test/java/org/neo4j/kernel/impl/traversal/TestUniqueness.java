@@ -19,7 +19,7 @@
  */
 package org.neo4j.kernel.impl.traversal;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.Iterator;
 
@@ -30,10 +30,10 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.traversal.Traverser;
 import org.neo4j.graphdb.traversal.Uniqueness;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 import static org.neo4j.graphdb.Direction.OUTGOING;
 import static org.neo4j.graphdb.RelationshipType.withName;
 import static org.neo4j.graphdb.traversal.Evaluators.includeWhereEndNodeIs;
@@ -42,10 +42,10 @@ import static org.neo4j.graphdb.traversal.Uniqueness.NODE_LEVEL;
 import static org.neo4j.graphdb.traversal.Uniqueness.RELATIONSHIP_GLOBAL;
 import static org.neo4j.graphdb.traversal.Uniqueness.RELATIONSHIP_LEVEL;
 
-public class TestUniqueness extends TraversalTestBase
+class TestUniqueness extends TraversalTestBase
 {
     @Test
-    public void nodeLevelUniqueness()
+    void nodeLevelUniqueness()
     {
         /*
          *         (b)
@@ -74,7 +74,7 @@ public class TestUniqueness extends TraversalTestBase
     }
 
     @Test
-    public void nodeGlobalUniqueness()
+    void nodeGlobalUniqueness()
     {
         /*
          * (a)-TO->(b)-TO->(c)
@@ -100,7 +100,7 @@ public class TestUniqueness extends TraversalTestBase
     }
 
     @Test
-    public void relationshipLevelAndGlobalUniqueness()
+    void relationshipLevelAndGlobalUniqueness()
     {
         /*
          *    (a)=TO=>(b)=TO=>(c)-TO->(d)
@@ -124,7 +124,7 @@ public class TestUniqueness extends TraversalTestBase
                 count++;
                 paths.next();
             }
-            assertEquals( "wrong number of paths calculated, the test assumption is wrong", 6, count );
+            assertEquals( 6, count, "wrong number of paths calculated, the test assumption is wrong" );
 
             // Now do the same traversal but with unique per level relationships
             paths = getGraphDb().traversalDescription().relationships( to, OUTGOING ).uniqueness( RELATIONSHIP_LEVEL ).evaluator(
@@ -135,7 +135,7 @@ public class TestUniqueness extends TraversalTestBase
                 count++;
                 paths.next();
             }
-            assertEquals( "wrong number of paths calculated with relationship level uniqueness", 2, count );
+            assertEquals( 2, count, "wrong number of paths calculated with relationship level uniqueness" );
             /*
             *  And yet again, but this time with global uniqueness, it should present only one path, since
             *  c TO d is contained on all paths.
@@ -148,11 +148,11 @@ public class TestUniqueness extends TraversalTestBase
                 count++;
                 paths.next();
             }
-            assertEquals( "wrong number of paths calculated with relationship global uniqueness", 1, count );
+            assertEquals( 1, count, "wrong number of paths calculated with relationship global uniqueness" );
         }
     }
 
-    private Path[] splitPathsOnePerLevel( Traverser traverser )
+    private static Path[] splitPathsOnePerLevel( Traverser traverser )
     {
         Path[] paths = new Path[10];
         for ( Path path : traverser )

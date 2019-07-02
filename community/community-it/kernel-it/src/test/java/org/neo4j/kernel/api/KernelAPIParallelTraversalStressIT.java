@@ -19,8 +19,7 @@
  */
 package org.neo4j.kernel.api;
 
-import org.junit.ClassRule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.concurrent.ThreadLocalRandom;
 
@@ -31,32 +30,34 @@ import org.neo4j.internal.kernel.api.RelationshipTraversalCursor;
 import org.neo4j.internal.kernel.api.Transaction;
 import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.io.IOUtils;
-import org.neo4j.test.rule.DbmsRule;
-import org.neo4j.test.rule.EmbeddedDbmsRule;
+import org.neo4j.kernel.internal.GraphDatabaseAPI;
+import org.neo4j.test.extension.DbmsExtension;
+import org.neo4j.test.extension.Inject;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.internal.kernel.api.Transaction.Type.explicit;
 
-public class KernelAPIParallelTraversalStressIT
+@DbmsExtension
+class KernelAPIParallelTraversalStressIT
 {
-    @ClassRule
-    public static final DbmsRule db = new EmbeddedDbmsRule();
+    private static final int N_THREADS = 10;
+    private static final int N_NODES = 10_000;
+    private static final int N_RELATIONSHIPS = 4 * N_NODES;
 
-    private final int N_THREADS = 10;
-    private final int N_NODES = 10_000;
-    private final int N_RELATIONSHIPS = 4 * N_NODES;
+    @Inject
+    private GraphDatabaseAPI db;
 
     @Test
-    public void shouldScanNodesAndTraverseInParallel() throws Throwable
+    void shouldScanNodesAndTraverseInParallel() throws Throwable
     {
-        Kernel kernel = db.resolveDependency( Kernel.class );
+        Kernel kernel = db.getDependencyResolver().resolveDependency( Kernel.class );
 
         createRandomGraph( kernel );
 
-        KernelAPIParallelStress.parallelStressInTx( kernel, N_THREADS, NodeAndTraverseCursors::new, this::scanAndTraverse );
+        KernelAPIParallelStress.parallelStressInTx( kernel, N_THREADS, NodeAndTraverseCursors::new, KernelAPIParallelTraversalStressIT::scanAndTraverse );
     }
 
-    private void createRandomGraph( Kernel kernel ) throws Exception
+    private static void createRandomGraph( Kernel kernel ) throws Exception
     {
         ThreadLocalRandom random = ThreadLocalRandom.current();
 
@@ -96,7 +97,7 @@ public class KernelAPIParallelTraversalStressIT
         setup.close();
     }
 
-    private Runnable scanAndTraverse( Read read, NodeAndTraverseCursors cursors )
+    private static Runnable scanAndTraverse( Read read, NodeAndTraverseCursors cursors )
     {
         return () ->
         {
@@ -112,8 +113,8 @@ public class KernelAPIParallelTraversalStressIT
                 }
                 n++;
             }
-            assertEquals( "correct number of nodes", N_NODES, n );
-            assertEquals( "correct number of traversals", 2 * N_RELATIONSHIPS, r );
+            assertEquals( N_NODES, n, "correct number of nodes" );
+            assertEquals( 2 * N_RELATIONSHIPS, r, "correct number of traversals" );
         };
     }
 

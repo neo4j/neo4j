@@ -20,18 +20,16 @@
 package org.neo4j.kernel.impl.core;
 
 import org.apache.commons.lang3.SystemUtils;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.TestName;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
-import java.io.File;
-import java.io.IOException;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.Map;
 
+import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
@@ -44,73 +42,75 @@ import org.neo4j.internal.helpers.collection.Iterables;
 import org.neo4j.internal.id.IdGeneratorFactory;
 import org.neo4j.internal.id.IdType;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
-import org.neo4j.test.rule.EmbeddedDbmsRule;
+import org.neo4j.test.TestDatabaseManagementServiceBuilder;
+import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.TestDirectoryExtension;
+import org.neo4j.test.rule.TestDirectory;
 
 import static java.lang.Math.pow;
 import static java.util.Arrays.asList;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assume.assumeTrue;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
+import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.internal.helpers.collection.MapUtil.map;
-import static org.neo4j.kernel.impl.AbstractNeo4jTestCase.deleteFileOrDirectory;
 
-public class BigStoreIT implements RelationshipType
+@ExtendWith( TestDirectoryExtension.class )
+class BigStoreIT
 {
     private static final RelationshipType OTHER_TYPE = RelationshipType.withName( "OTHER" );
+    private static final RelationshipType BIG_TYPE = RelationshipType.withName( "BIG_TYPE" );
 
-    private static final String PATH = "target/var/big";
+    @Inject
+    private TestDirectory testDirectory;
+
+    private DatabaseManagementService managementService;
     private GraphDatabaseService db;
-    @Rule
-    public TestName testName = new TestName()
-    {
-        @Override
-        public String getMethodName()
-        {
-            return BigStoreIT.this.getClass().getSimpleName() + "#" + super.getMethodName();
-        }
-    };
-    @Rule
-    public EmbeddedDbmsRule dbRule = new EmbeddedDbmsRule();
 
-    @Before
-    public void doBefore()
+    @BeforeEach
+    void doBefore()
     {
-        // Delete before just to be sure
-        deleteFileOrDirectory( new File( PATH ) );
-        db = dbRule.getGraphDatabaseAPI();
+        startDb();
     }
 
-    @Override
-    public String name()
+    private void startDb()
     {
-        return "BIG_TYPE";
+        var builder = new TestDatabaseManagementServiceBuilder( testDirectory.storeDir() );
+        managementService = builder.build();
+        db = managementService.database( DEFAULT_DATABASE_NAME );
+    }
+
+    @AfterEach
+    void tearDown()
+    {
+        managementService.shutdown();
     }
 
     @Test
-    public void create4BPlusStuff() throws Exception
+    void create4BPlusStuff()
     {
         testHighIds( (long) pow( 2, 32 ), 2, 400 );
     }
 
     @Test
-    public void create8BPlusStuff() throws Exception
+    void create8BPlusStuff()
     {
         testHighIds( (long) pow( 2, 33 ), 1, 1000 );
     }
 
     @Test
-    public void createAndVerify32BitGraph() throws Exception
+    void createAndVerify32BitGraph()
     {
         createAndVerifyGraphStartingWithId( (long) pow( 2, 32 ), 400 );
     }
 
     @Test
-    public void createAndVerify33BitGraph() throws Exception
+    void createAndVerify33BitGraph()
     {
         createAndVerifyGraphStartingWithId( (long) pow( 2, 33 ), 1000 );
     }
 
-    private void createAndVerifyGraphStartingWithId( long startId, int requiredHeapMb ) throws Exception
+    private void createAndVerifyGraphStartingWithId( long startId, int requiredHeapMb )
     {
         assumeTrue( machineIsOkToRunThisTest( requiredHeapMb ) );
 
@@ -130,14 +130,14 @@ public class BigStoreIT implements RelationshipType
         bytes[2] = 5;
         bytes[10] = 42;
         Map<String, Object> properties = map( "number", 11, "short string", "test",
-                "long string", "This is a long value, long enough", "array", bytes );
+            "long string", "This is a long value, long enough", "array", bytes );
         Transaction tx = db.beginTx();
         int count = 10000;
         for ( int i = 0; i < count; i++ )
         {
             Node node = db.createNode();
             setProperties( node, properties );
-            Relationship rel1 = refNode.createRelationshipTo( node, this );
+            Relationship rel1 = refNode.createRelationshipTo( node, BIG_TYPE );
             setProperties( rel1, properties );
             Node highNode = db.createNode();
             Relationship rel2 = node.createRelationshipTo( highNode, OTHER_TYPE );
@@ -153,7 +153,8 @@ public class BigStoreIT implements RelationshipType
         tx.success();
         tx.close();
 
-        db = dbRule.restartDatabase();
+        managementService.shutdown();
+        startDb();
 
         // Verify the data
         int verified = 0;
@@ -177,7 +178,7 @@ public class BigStoreIT implements RelationshipType
 
     private static final Label REFERENCE = Label.label( "Reference" );
 
-    private Node createReferenceNode( GraphDatabaseService db )
+    private static Node createReferenceNode( GraphDatabaseService db )
     {
         try ( Transaction tx = db.beginTx() )
         {
@@ -187,7 +188,7 @@ public class BigStoreIT implements RelationshipType
         }
     }
 
-    public static boolean machineIsOkToRunThisTest( int requiredHeapMb )
+    private static boolean machineIsOkToRunThisTest( int requiredHeapMb )
     {
         if ( SystemUtils.IS_OS_WINDOWS )
         {
@@ -205,7 +206,7 @@ public class BigStoreIT implements RelationshipType
         return heapMb >= requiredHeapMb;
     }
 
-    public static void assertProperties( Map<String, Object> properties, PropertyContainer entity )
+    private static void assertProperties( Map<String, Object> properties, PropertyContainer entity )
     {
         int count = 0;
         for ( String key : entity.getPropertyKeys() )
@@ -214,7 +215,7 @@ public class BigStoreIT implements RelationshipType
             Object entityValue = entity.getProperty( key );
             if ( expectedValue.getClass().isArray() )
             {
-                assertTrue( Arrays.equals( (byte[]) expectedValue, (byte[]) entityValue ) );
+                assertArrayEquals( (byte[]) expectedValue, (byte[]) entityValue );
             }
             else
             {
@@ -225,7 +226,7 @@ public class BigStoreIT implements RelationshipType
         assertEquals( properties.size(), count );
     }
 
-    private void setProperties( PropertyContainer entity, Map<String, Object> properties )
+    private static void setProperties( PropertyContainer entity, Map<String, Object> properties )
     {
         for ( Map.Entry<String, Object> property : properties.entrySet() )
         {
@@ -233,19 +234,16 @@ public class BigStoreIT implements RelationshipType
         }
     }
 
-    private void testHighIds( long highMark, int minus, int requiredHeapMb ) throws IOException
+    private void testHighIds( long highMark, int minus, int requiredHeapMb )
     {
-        if ( !machineIsOkToRunThisTest( requiredHeapMb ) )
-        {
-            return;
-        }
+        assumeTrue( machineIsOkToRunThisTest( requiredHeapMb ) );
 
         long idBelow = highMark - minus;
         setHighIds( idBelow );
         String propertyKey = "name";
         int intPropertyValue = 123;
         String stringPropertyValue = "Long string, longer than would fit in shortstring";
-        long[] arrayPropertyValue = new long[]{1021L, 321L, 343212L};
+        long[] arrayPropertyValue = {1021L, 321L, 343212L};
 
         Transaction tx = db.beginTx();
         Node nodeBelowTheLine = db.createNode();
@@ -253,15 +251,15 @@ public class BigStoreIT implements RelationshipType
         assertEquals( idBelow, nodeBelowTheLine.getId() );
         Node nodeAboveTheLine = db.createNode();
         nodeAboveTheLine.setProperty( propertyKey, stringPropertyValue );
-        Relationship relBelowTheLine = nodeBelowTheLine.createRelationshipTo( nodeAboveTheLine, this );
+        Relationship relBelowTheLine = nodeBelowTheLine.createRelationshipTo( nodeAboveTheLine, BIG_TYPE );
         relBelowTheLine.setProperty( propertyKey, arrayPropertyValue );
         assertEquals( idBelow, relBelowTheLine.getId() );
-        Relationship relAboveTheLine = nodeAboveTheLine.createRelationshipTo( nodeBelowTheLine, this );
+        Relationship relAboveTheLine = nodeAboveTheLine.createRelationshipTo( nodeBelowTheLine, BIG_TYPE );
         assertEquals( highMark, relAboveTheLine.getId() );
         assertEquals( highMark, nodeAboveTheLine.getId() );
         assertEquals( intPropertyValue, nodeBelowTheLine.getProperty( propertyKey ) );
         assertEquals( stringPropertyValue, nodeAboveTheLine.getProperty( propertyKey ) );
-        assertTrue( Arrays.equals( arrayPropertyValue, (long[]) relBelowTheLine.getProperty( propertyKey ) ) );
+        assertArrayEquals( arrayPropertyValue, (long[]) relBelowTheLine.getProperty( propertyKey ) );
         tx.success();
         tx.close();
 
@@ -275,18 +273,19 @@ public class BigStoreIT implements RelationshipType
                 assertEquals( idBelow, relBelowTheLine.getId() );
                 assertEquals( highMark, relAboveTheLine.getId() );
                 assertEquals( relBelowTheLine,
-                        db.getNodeById( idBelow ).getSingleRelationship( this, Direction.OUTGOING ) );
+                    db.getNodeById( idBelow ).getSingleRelationship( BIG_TYPE, Direction.OUTGOING ) );
                 assertEquals( relAboveTheLine,
-                        db.getNodeById( idBelow ).getSingleRelationship( this, Direction.INCOMING ) );
+                    db.getNodeById( idBelow ).getSingleRelationship( BIG_TYPE, Direction.INCOMING ) );
                 assertEquals( idBelow, relBelowTheLine.getId() );
                 assertEquals( highMark, relAboveTheLine.getId() );
                 assertEquals( asSet( asList( relBelowTheLine, relAboveTheLine ) ),
-                        asSet( Iterables.asCollection( db.getNodeById( idBelow ).getRelationships() ) ) );
+                    asSet( Iterables.asCollection( db.getNodeById( idBelow ).getRelationships() ) ) );
                 transaction.success();
             }
             if ( i == 0 )
             {
-                db = dbRule.restartDatabase();
+                managementService.shutdown();
+                startDb();
             }
         }
     }
@@ -307,6 +306,6 @@ public class BigStoreIT implements RelationshipType
 
     private void setHighId( IdType type, long highId )
     {
-        ((GraphDatabaseAPI)db).getDependencyResolver().resolveDependency( IdGeneratorFactory.class ).get( type ).setHighId( highId );
+        ((GraphDatabaseAPI) db).getDependencyResolver().resolveDependency( IdGeneratorFactory.class ).get( type ).setHighId( highId );
     }
 }

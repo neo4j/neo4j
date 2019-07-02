@@ -19,7 +19,7 @@
  */
 package org.neo4j.kernel.impl.traversal;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.RelationshipType;
@@ -29,10 +29,10 @@ import org.neo4j.graphdb.traversal.TraversalDescription;
 import static org.neo4j.graphdb.RelationshipType.withName;
 import static org.neo4j.graphdb.traversal.Evaluators.atDepth;
 
-public class TestMultipleStartNodes extends TraversalTestBase
+class TestMultipleStartNodes extends TraversalTestBase
 {
     @Test
-    public void myFriendsAsWellAsYourFriends()
+    void myFriendsAsWellAsYourFriends()
     {
         /*
          * Hey, this looks like a futuristic gun or something
@@ -54,12 +54,12 @@ public class TestMultipleStartNodes extends TraversalTestBase
             Node you = getNodeWithName( "you" );
             Node me = getNodeWithName( "me" );
 
-            String[] levelOneFriends = new String[]{"f1", "f2", "f3", "f4", "f7"};
+            String[] levelOneFriends = {"f1", "f2", "f3", "f4", "f7"};
             TraversalDescription levelOneTraversal = getGraphDb().traversalDescription().relationships( knowRelType ).evaluator( atDepth( 1 ) );
             expectNodes( levelOneTraversal.depthFirst().traverse( you, me ), levelOneFriends );
             expectNodes( levelOneTraversal.breadthFirst().traverse( you, me ), levelOneFriends );
 
-            String[] levelTwoFriends = new String[]{"f5", "f6", "f8"};
+            String[] levelTwoFriends = {"f5", "f6", "f8"};
             TraversalDescription levelTwoTraversal = getGraphDb().traversalDescription().relationships( knowRelType ).evaluator( atDepth( 2 ) );
             expectNodes( levelTwoTraversal.depthFirst().traverse( you, me ), levelTwoFriends );
             expectNodes( levelTwoTraversal.breadthFirst().traverse( you, me ), levelTwoFriends );

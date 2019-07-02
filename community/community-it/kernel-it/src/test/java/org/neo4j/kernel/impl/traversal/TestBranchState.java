@@ -19,9 +19,8 @@
  */
 package org.neo4j.kernel.impl.traversal;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
-import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.PathExpander;
 import org.neo4j.graphdb.Relationship;
@@ -33,14 +32,14 @@ import org.neo4j.graphdb.traversal.PathEvaluator;
 import org.neo4j.graphdb.traversal.Uniqueness;
 import org.neo4j.internal.helpers.collection.Iterables;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.graphdb.Direction.OUTGOING;
 import static org.neo4j.graphdb.traversal.Evaluation.ofIncludes;
 
-public class TestBranchState extends TraversalTestBase
+class TestBranchState extends TraversalTestBase
 {
     @Test
-    public void depthAsState()
+    void depthAsState()
     {
         /*
          * (a) -> (b) -> (c) -> (d)
@@ -60,7 +59,7 @@ public class TestBranchState extends TraversalTestBase
     }
 
     @Test
-    public void everyOtherDepthAsState()
+    void everyOtherDepthAsState()
     {
         /*
          * (a) -> (b) -> (c) -> (e)
@@ -81,7 +80,7 @@ public class TestBranchState extends TraversalTestBase
     }
 
     @Test
-    public void evaluateState()
+    void evaluateState()
     {
         /*
          * (a)-1->(b)-2->(c)-3->(d)
@@ -116,7 +115,7 @@ public class TestBranchState extends TraversalTestBase
         {
             assertEquals( path.length(), state.getState().intValue() );
             state.setState( state.getState() + 1 );
-            return path.endNode().getRelationships( Direction.OUTGOING );
+            return path.endNode().getRelationships( OUTGOING );
         }
 
         @Override
@@ -132,11 +131,11 @@ public class TestBranchState extends TraversalTestBase
         public Iterable<Relationship> expand( Path path, BranchState<Integer> state )
         {
             assertEquals( path.length() / 2, state.getState().intValue() );
-            if ( path.length() % 2 == 1 )
+            if ( path.length() % 2 != 0 )
             {
                 state.setState( state.getState() + 1 );
             }
-            return path.endNode().getRelationships( Direction.OUTGOING );
+            return path.endNode().getRelationships( OUTGOING );
         }
 
         @Override

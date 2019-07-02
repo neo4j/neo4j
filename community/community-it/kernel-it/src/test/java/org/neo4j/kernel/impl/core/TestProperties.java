@@ -19,24 +19,24 @@
  */
 package org.neo4j.kernel.impl.core;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.impl.AbstractNeo4jTestCase;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
-public class TestProperties extends AbstractNeo4jTestCase
+class TestProperties extends AbstractNeo4jTestCase
 {
     private static final int VALUE_RANGE_SPLIT = 20;
 
     @Test
-    public void addAndRemovePropertiesWithinOneTransaction()
+    void addAndRemovePropertiesWithinOneTransaction()
     {
         Node node = getGraphDb().createNode();
 
@@ -50,7 +50,7 @@ public class TestProperties extends AbstractNeo4jTestCase
     }
 
     @Test
-    public void addAndRemovePropertiesWithinOneTransaction2()
+    void addAndRemovePropertiesWithinOneTransaction2()
     {
         Node node = getGraphDb().createNode();
         node.setProperty( "foo", "bar" );
@@ -61,19 +61,11 @@ public class TestProperties extends AbstractNeo4jTestCase
 
         newTransaction();
 
-        try
-        {
-            node.getProperty( "foo" );
-            fail( "property should not exist" );
-        }
-        catch ( NotFoundException e )
-        {
-            // good
-        }
+        assertThrows( NotFoundException.class, () -> node.getProperty( "foo" ) );
     }
 
     @Test
-    public void removeAndAddSameProperty()
+    void removeAndAddSameProperty()
     {
         Node node = getGraphDb().createNode();
         node.setProperty( "foo", "bar" );
@@ -91,7 +83,7 @@ public class TestProperties extends AbstractNeo4jTestCase
     }
 
     @Test
-    public void removeSomeAndSetSome()
+    void removeSomeAndSetSome()
     {
         Node node = getGraphDb().createNode();
         node.setProperty( "remove me", "trash" );
@@ -108,7 +100,7 @@ public class TestProperties extends AbstractNeo4jTestCase
     }
 
     @Test
-    public void removeOneOfThree()
+    void removeOneOfThree()
     {
         Node node = getGraphDb().createNode();
         node.setProperty( "1", 1 );
@@ -122,7 +114,7 @@ public class TestProperties extends AbstractNeo4jTestCase
     }
 
     @Test
-    public void testLongPropertyValues()
+    void testLongPropertyValues()
     {
         Node n = getGraphDb().createNode();
         setPropertyAndAssertIt( n, -134217728L );
@@ -130,7 +122,7 @@ public class TestProperties extends AbstractNeo4jTestCase
     }
 
     @Test
-    public void testIntPropertyValues()
+    void testIntPropertyValues()
     {
         Node n = getGraphDb().createNode();
         setPropertyAndAssertIt( n, -134217728 );
@@ -138,7 +130,7 @@ public class TestProperties extends AbstractNeo4jTestCase
     }
 
     @Test
-    public void booleanRange()
+    void booleanRange()
     {
         Node node = getGraphDb().createNode();
         setPropertyAndAssertIt( node, false );
@@ -146,7 +138,7 @@ public class TestProperties extends AbstractNeo4jTestCase
     }
 
     @Test
-    public void byteRange()
+    void byteRange()
     {
         Node node = getGraphDb().createNode();
         byte stride = Byte.MAX_VALUE / VALUE_RANGE_SPLIT;
@@ -158,7 +150,7 @@ public class TestProperties extends AbstractNeo4jTestCase
     }
 
     @Test
-    public void charRange()
+    void charRange()
     {
         Node node = getGraphDb().createNode();
         char stride = Character.MAX_VALUE / VALUE_RANGE_SPLIT;
@@ -170,7 +162,7 @@ public class TestProperties extends AbstractNeo4jTestCase
     }
 
     @Test
-    public void shortRange()
+    void shortRange()
     {
         Node node = getGraphDb().createNode();
         short stride = Short.MAX_VALUE / VALUE_RANGE_SPLIT;
@@ -182,7 +174,7 @@ public class TestProperties extends AbstractNeo4jTestCase
     }
 
     @Test
-    public void intRange()
+    void intRange()
     {
         Node node = getGraphDb().createNode();
         int stride = Integer.MAX_VALUE / VALUE_RANGE_SPLIT;
@@ -194,7 +186,7 @@ public class TestProperties extends AbstractNeo4jTestCase
     }
 
     @Test
-    public void longRange()
+    void longRange()
     {
         Node node = getGraphDb().createNode();
         long stride = Long.MAX_VALUE / VALUE_RANGE_SPLIT;
@@ -206,7 +198,7 @@ public class TestProperties extends AbstractNeo4jTestCase
     }
 
     @Test
-    public void floatRange()
+    void floatRange()
     {
         Node node = getGraphDb().createNode();
         float stride = 16f;
@@ -219,7 +211,7 @@ public class TestProperties extends AbstractNeo4jTestCase
     }
 
     @Test
-    public void doubleRange()
+    void doubleRange()
     {
         Node node = getGraphDb().createNode();
         double stride = 4194304d; // 2^23
@@ -231,14 +223,14 @@ public class TestProperties extends AbstractNeo4jTestCase
         }
     }
 
-    private void setPropertyAndAssertIt( Node node, Object value )
+    private static void setPropertyAndAssertIt( Node node, Object value )
     {
         node.setProperty( "key", value );
         assertEquals( value, node.getProperty( "key" ) );
     }
 
     @Test
-    public void loadManyProperties()
+    void loadManyProperties()
     {
         Node node = getGraphDb().createNode();
         for ( int i = 0; i < 200; i++ )
@@ -250,7 +242,7 @@ public class TestProperties extends AbstractNeo4jTestCase
     }
 
     @Test
-    public void name()
+    void name()
     {
         Node node = getGraphDb().createNode();
         node.setProperty( "name", "yo" );

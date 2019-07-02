@@ -19,20 +19,17 @@
  */
 package org.neo4j.kernel.recovery;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.Collections;
-import java.util.List;
 
 import org.neo4j.dbms.api.DatabaseManagementService;
-import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.NotFoundException;
@@ -40,6 +37,7 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.internal.helpers.collection.Iterators;
 import org.neo4j.internal.kernel.api.Kernel;
 import org.neo4j.internal.kernel.api.security.LoginContext;
+import org.neo4j.io.fs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.io.pagecache.PageCache;
@@ -48,55 +46,52 @@ import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointerImpl;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.SimpleTriggerInfo;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
-import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
+import org.neo4j.test.extension.EphemeralFileSystemExtension;
+import org.neo4j.test.extension.Inject;
 import org.neo4j.token.TokenHolders;
 import org.neo4j.token.api.TokenHolder;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.fail;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.internal.kernel.api.Transaction.Type.explicit;
 
-@RunWith( Parameterized.class )
-public class TestRecoveryScenarios
+@ExtendWith( EphemeralFileSystemExtension.class )
+class TestRecoveryScenarios
 {
-    @Rule
-    public final EphemeralFileSystemRule fsRule = new EphemeralFileSystemRule();
+    @Inject
+    private EphemeralFileSystemAbstraction fs;
+
     private final Label label = label( "label" );
     private GraphDatabaseAPI db;
 
-    private final FlushStrategy flush;
     private DatabaseManagementService managementService;
 
-    @Before
-    public void before()
+    @BeforeEach
+    void before()
     {
-        managementService = databaseFactory( fsRule.get() ).impermanent().build();
+        managementService = databaseFactory( fs ).impermanent().build();
         db = (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );
     }
 
-    public TestRecoveryScenarios( FlushStrategy flush )
-    {
-        this.flush = flush;
-    }
-
-    @After
-    public void after()
+    @AfterEach
+    void after()
     {
         managementService.shutdown();
     }
 
-    @Test
-    public void shouldRecoverTransactionWhereNodeIsDeletedInTheFuture() throws Exception
+    @ParameterizedTest
+    @EnumSource( FlushStrategy.class )
+    void shouldRecoverTransactionWhereNodeIsDeletedInTheFuture( FlushStrategy strategy ) throws Exception
     {
         // GIVEN
         Node node = createNodeWithProperty( "key", "value", label );
         checkPoint();
         setProperty( node, "other-key", 1 );
         deleteNode( node );
-        flush.flush( db );
+        strategy.flush( db );
 
         // WHEN
         crashAndRestart();
@@ -115,8 +110,9 @@ public class TestRecoveryScenarios
         }
     }
 
-    @Test
-    public void shouldRecoverTransactionWherePropertyIsRemovedInTheFuture() throws Exception
+    @ParameterizedTest
+    @EnumSource( FlushStrategy.class )
+    void shouldRecoverTransactionWherePropertyIsRemovedInTheFuture( FlushStrategy strategy ) throws Exception
     {
         // GIVEN
         createIndex( label, "key" );
@@ -124,7 +120,7 @@ public class TestRecoveryScenarios
         checkPoint();
         addLabel( node, label );
         removeProperty( node, "key" );
-        flush.flush( db );
+        strategy.flush( db );
 
         // WHEN
         crashAndRestart();
@@ -133,14 +129,15 @@ public class TestRecoveryScenarios
         // -- really the problem was that recovery threw exception, so mostly assert that.
         try ( Transaction tx = db.beginTx() )
         {
-            assertEquals( "Updates not propagated correctly during recovery", Collections.<Node>emptyList(),
-                    Iterators.asList( db.findNodes( label, "key", "value" ) ) );
+            assertEquals( Collections.<Node>emptyList(),
+                Iterators.asList( db.findNodes( label, "key", "value" ) ), "Updates not propagated correctly during recovery" );
             tx.success();
         }
     }
 
-    @Test
-    public void shouldRecoverTransactionWhereManyLabelsAreRemovedInTheFuture() throws Exception
+    @ParameterizedTest
+    @EnumSource( FlushStrategy.class )
+    void shouldRecoverTransactionWhereManyLabelsAreRemovedInTheFuture( FlushStrategy strategy ) throws Exception
     {
         // GIVEN
         createIndex( label, "key" );
@@ -159,7 +156,7 @@ public class TestRecoveryScenarios
         checkPoint();
         setProperty( node, "key", "value" );
         removeLabels( node, labels );
-        flush.flush( db );
+        strategy.flush( db );
 
         // WHEN
         crashAndRestart();
@@ -174,7 +171,7 @@ public class TestRecoveryScenarios
     }
 
     @Test
-    public void shouldRecoverCounts() throws Exception
+    void shouldRecoverCounts() throws Exception
     {
         // GIVEN
         Node node = createNode( label );
@@ -262,18 +259,6 @@ public class TestRecoveryScenarios
         }
     }
 
-    @Parameterized.Parameters( name = "{0}" )
-    public static List<Object[]> flushStrategy()
-    {
-        List<Object[]> parameters = new ArrayList<>(  );
-        for ( FlushStrategy flushStrategy : FlushStrategy.values() )
-        {
-            parameters.add( flushStrategy.parameters );
-        }
-        return parameters;
-    }
-
-    @SuppressWarnings( "deprecation" )
     public enum FlushStrategy
     {
         FORCE_EVERYTHING
@@ -293,7 +278,6 @@ public class TestRecoveryScenarios
                         db.getDependencyResolver().resolveDependency( PageCache.class ).flushAndForce();
                     }
                 };
-        final Object[] parameters = new Object[]{this};
 
         abstract void flush( GraphDatabaseAPI db ) throws IOException;
     }
@@ -328,12 +312,20 @@ public class TestRecoveryScenarios
         return new TestDatabaseManagementServiceBuilder().setFileSystem( fs );
     }
 
-    @SuppressWarnings( "deprecation" )
     private void crashAndRestart() throws Exception
     {
-        final GraphDatabaseService db1 = db;
-        FileSystemAbstraction uncleanFs = fsRule.snapshot( managementService::shutdown );
-        DatabaseManagementService managementService = databaseFactory( uncleanFs ).impermanent().build();
+        var uncleanFs = fs.snapshot();
+        try
+        {
+            managementService.shutdown();
+        }
+        finally
+        {
+            fs.close();
+            fs = uncleanFs;
+        }
+
+        managementService = databaseFactory( uncleanFs ).impermanent().build();
         db = (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );
     }
 }

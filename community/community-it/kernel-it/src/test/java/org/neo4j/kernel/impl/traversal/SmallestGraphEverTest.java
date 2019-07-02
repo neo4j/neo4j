@@ -19,8 +19,8 @@
  */
 package org.neo4j.kernel.impl.traversal;
 
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.traversal.TraversalDescription;
@@ -28,98 +28,98 @@ import org.neo4j.graphdb.traversal.Traverser;
 import org.neo4j.graphdb.traversal.Uniqueness;
 import org.neo4j.internal.helpers.collection.Iterables;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.neo4j.graphdb.traversal.Evaluators.excludeStartPosition;
 
-public class SmallestGraphEverTest extends TraversalTestBase
+class SmallestGraphEverTest extends TraversalTestBase
 {
-    @Before
-    public void setup()
+    @BeforeEach
+    void setup()
     {
         createGraph( "1 TO 2" );
     }
 
     @Test
-    public void testUnrestrictedTraversalCanFinishDepthFirst()
+    void testUnrestrictedTraversalCanFinishDepthFirst()
     {
         execute( getGraphDb().traversalDescription().depthFirst(), Uniqueness.NONE );
     }
 
     @Test
-    public void testUnrestrictedTraversalCanFinishBreadthFirst()
+    void testUnrestrictedTraversalCanFinishBreadthFirst()
     {
         execute( getGraphDb().traversalDescription().breadthFirst(), Uniqueness.NONE );
     }
 
     @Test
-    public void testNodeGlobalTraversalCanFinishDepthFirst()
+    void testNodeGlobalTraversalCanFinishDepthFirst()
     {
         execute( getGraphDb().traversalDescription().depthFirst(), Uniqueness.NODE_GLOBAL );
     }
 
     @Test
-    public void testNodeGlobalTraversalCanFinishBreadthFirst()
+    void testNodeGlobalTraversalCanFinishBreadthFirst()
     {
         execute( getGraphDb().traversalDescription().breadthFirst(), Uniqueness.NODE_GLOBAL );
     }
 
     @Test
-    public void testRelationshipGlobalTraversalCanFinishDepthFirst()
+    void testRelationshipGlobalTraversalCanFinishDepthFirst()
     {
         execute( getGraphDb().traversalDescription().depthFirst(), Uniqueness.RELATIONSHIP_GLOBAL );
     }
 
     @Test
-    public void testRelationshipGlobalTraversalCanFinishBreadthFirst()
+    void testRelationshipGlobalTraversalCanFinishBreadthFirst()
     {
         execute( getGraphDb().traversalDescription().breadthFirst(), Uniqueness.RELATIONSHIP_GLOBAL );
     }
 
     @Test
-    public void testNodePathTraversalCanFinishDepthFirst()
+    void testNodePathTraversalCanFinishDepthFirst()
     {
         execute( getGraphDb().traversalDescription().depthFirst(), Uniqueness.NODE_PATH );
     }
 
     @Test
-    public void testNodePathTraversalCanFinishBreadthFirst()
+    void testNodePathTraversalCanFinishBreadthFirst()
     {
         execute( getGraphDb().traversalDescription().breadthFirst(), Uniqueness.NODE_PATH );
     }
 
     @Test
-    public void testRelationshipPathTraversalCanFinishDepthFirst()
+    void testRelationshipPathTraversalCanFinishDepthFirst()
     {
         execute( getGraphDb().traversalDescription().depthFirst(), Uniqueness.RELATIONSHIP_PATH );
     }
 
     @Test
-    public void testRelationshipPathTraversalCanFinishBreadthFirst()
+    void testRelationshipPathTraversalCanFinishBreadthFirst()
     {
         execute( getGraphDb().traversalDescription().breadthFirst(), Uniqueness.RELATIONSHIP_PATH );
     }
 
     @Test
-    public void testNodeRecentTraversalCanFinishDepthFirst()
+    void testNodeRecentTraversalCanFinishDepthFirst()
     {
         execute( getGraphDb().traversalDescription().depthFirst(), Uniqueness.NODE_RECENT );
     }
 
     @Test
-    public void testNodeRecentTraversalCanFinishBreadthFirst()
+    void testNodeRecentTraversalCanFinishBreadthFirst()
     {
         execute( getGraphDb().traversalDescription().breadthFirst(), Uniqueness.NODE_RECENT );
     }
 
     @Test
-    public void testRelationshipRecentTraversalCanFinishDepthFirst()
+    void testRelationshipRecentTraversalCanFinishDepthFirst()
     {
         execute( getGraphDb().traversalDescription().depthFirst(), Uniqueness.RELATIONSHIP_RECENT );
     }
 
     @Test
-    public void testRelationshipRecentTraversalCanFinishBreadthFirst()
+    void testRelationshipRecentTraversalCanFinishBreadthFirst()
     {
         execute( getGraphDb().traversalDescription().breadthFirst(), Uniqueness.RELATIONSHIP_RECENT );
     }
@@ -129,12 +129,12 @@ public class SmallestGraphEverTest extends TraversalTestBase
         try ( Transaction transaction = beginTx() )
         {
             Traverser traverser = traversal.uniqueness( uniqueness ).traverse( node( "1" ) );
-            assertNotEquals( "empty traversal", 0, Iterables.count( traverser ) );
+            assertNotEquals( 0, Iterables.count( traverser ), "empty traversal" );
         }
     }
 
     @Test
-    public void testTraverseRelationshipsWithStartNodeNotIncluded()
+    void testTraverseRelationshipsWithStartNodeNotIncluded()
     {
         try ( Transaction transaction = beginTx() )
         {

@@ -19,16 +19,16 @@
  */
 package org.neo4j.kernel.impl.traversal;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.PathExpanders;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
 
-public class TestConstantDirectionExpander extends TraversalTestBase
+class TestConstantDirectionExpander extends TraversalTestBase
 {
     private enum Types implements RelationshipType
     {
@@ -37,8 +37,8 @@ public class TestConstantDirectionExpander extends TraversalTestBase
 
     private Transaction tx;
 
-    @Before
-    public void createGraph()
+    @BeforeEach
+    void createGraph()
     {
         /*
          *   (l)--[A]-->(m)--[A]-->(n)<--[A]--(o)<--[B]--(p)<--[B]--(q)
@@ -47,14 +47,14 @@ public class TestConstantDirectionExpander extends TraversalTestBase
         tx = beginTx();
     }
 
-    @After
-    public void tearDown()
+    @AfterEach
+    void tearDown()
     {
         tx.close();
     }
 
     @Test
-    public void pathWithConstantDirection()
+    void pathWithConstantDirection()
     {
         Node l = getNodeWithName( "l" );
         expectPaths( getGraphDb().traversalDescription()

@@ -19,10 +19,10 @@
  */
 package org.neo4j.kernel.impl.api.index;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.io.IOException;
 import java.util.Collection;
@@ -61,11 +61,11 @@ import org.neo4j.storageengine.api.IndexEntryUpdate;
 import org.neo4j.storageengine.api.NodePropertyAccessor;
 import org.neo4j.storageengine.migration.StoreMigrationParticipant;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
-import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
+import org.neo4j.test.extension.EphemeralFileSystemExtension;
 import org.neo4j.values.storable.Values;
 
 import static org.hamcrest.CoreMatchers.equalTo;
-import static org.junit.Assert.assertThat;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -77,13 +77,21 @@ import static org.neo4j.kernel.impl.api.index.SchemaIndexTestHelper.singleInstan
 import static org.neo4j.kernel.impl.api.index.TestIndexProviderDescriptor.PROVIDER_DESCRIPTOR;
 import static org.neo4j.test.mockito.matcher.Neo4jMatchers.createIndex;
 
-public class IndexCRUDIT
+@ExtendWith( EphemeralFileSystemExtension.class )
+class IndexCRUDIT
 {
+    private FileSystemAbstraction fs;
+
+    private GraphDatabaseAPI db;
+    private final IndexProvider mockedIndexProvider = mock( IndexProvider.class );
+    private final ExtensionFactory<?> mockedIndexProviderFactory = singleInstanceIndexProviderFactory( "none", mockedIndexProvider );
+    private ThreadToStatementContextBridge ctxSupplier;
+    private final Label myLabel = Label.label( "MYLABEL" );
 
     private DatabaseManagementService managementService;
 
     @Test
-    public void addingANodeWithPropertyShouldGetIndexed() throws Exception
+    void addingANodeWithPropertyShouldGetIndexed() throws Exception
     {
         // Given
         String indexProperty = "indexProperty";
@@ -115,7 +123,7 @@ public class IndexCRUDIT
     }
 
     @Test
-    public void addingALabelToPreExistingNodeShouldGetIndexed() throws Exception
+    void addingALabelToPreExistingNodeShouldGetIndexed() throws Exception
     {
         // GIVEN
         String indexProperty = "indexProperty";
@@ -153,15 +161,6 @@ public class IndexCRUDIT
         }
     }
 
-    private GraphDatabaseAPI db;
-    @Rule
-    public EphemeralFileSystemRule fs = new EphemeralFileSystemRule();
-    private final IndexProvider mockedIndexProvider = mock( IndexProvider.class );
-    private final ExtensionFactory<?> mockedIndexProviderFactory =
-            singleInstanceIndexProviderFactory( "none", mockedIndexProvider );
-    private ThreadToStatementContextBridge ctxSupplier;
-    private final Label myLabel = Label.label( "MYLABEL" );
-
     private Node createNode( Map<String, Object> properties, Label ... labels )
     {
         try ( Transaction tx = db.beginTx() )
@@ -176,8 +175,8 @@ public class IndexCRUDIT
         }
     }
 
-    @Before
-    public void before() throws MisconfiguredIndexException
+    @BeforeEach
+    void before() throws MisconfiguredIndexException
     {
         when( mockedIndexProvider.getProviderDescriptor() ).thenReturn( PROVIDER_DESCRIPTOR );
         when( mockedIndexProvider.storeMigrationParticipant( any( FileSystemAbstraction.class ), any( PageCache.class ), any() ) )
@@ -187,7 +186,7 @@ public class IndexCRUDIT
         Dependencies dependencies = new Dependencies();
         dependencies.satisfyDependencies( SystemGraphInitializer.NO_OP );   // disable system graph construction because it will interfere with some tests
         managementService = new TestDatabaseManagementServiceBuilder()
-                .setFileSystem( fs.get() )
+            .setFileSystem( fs )
                 .setExtensions( Collections.singletonList( mockedIndexProviderFactory ) )
                 .setExternalDependencies( dependencies )
                 .impermanent()
@@ -206,8 +205,8 @@ public class IndexCRUDIT
         return writer;
     }
 
-    @After
-    public void after()
+    @AfterEach
+    void after()
     {
         managementService.shutdown();
     }

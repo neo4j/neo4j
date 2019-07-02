@@ -20,8 +20,8 @@
 package org.neo4j.kernel.impl.store;
 
 import org.eclipse.collections.api.tuple.Pair;
-import org.junit.Assume;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -35,20 +35,22 @@ import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.kernel.impl.store.record.RecordLoad;
 
 import static org.eclipse.collections.impl.tuple.Tuples.pair;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNull;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
-public class TestPropertyBlocks extends AbstractNeo4jTestCase
+class TestPropertyBlocks extends AbstractNeo4jTestCase
 {
-    @Override
-    protected boolean restartGraphDbBetweenTests()
+    @AfterEach
+    void tearDown()
     {
-        return true;
+        stopDb();
+        startDb();
     }
 
     @Test
-    public void simpleAddIntegers()
+    void simpleAddIntegers()
     {
         long inUseBefore = propertyRecordsInUse();
         Node node = getGraphDb().createNode();
@@ -77,7 +79,7 @@ public class TestPropertyBlocks extends AbstractNeo4jTestCase
     }
 
     @Test
-    public void simpleAddDoubles()
+    void simpleAddDoubles()
     {
         long inUseBefore = propertyRecordsInUse();
         Node node = getGraphDb().createNode();
@@ -106,7 +108,7 @@ public class TestPropertyBlocks extends AbstractNeo4jTestCase
     }
 
     @Test
-    public void deleteEverythingInMiddleRecord()
+    void deleteEverythingInMiddleRecord()
     {
         long inUseBefore = propertyRecordsInUse();
         Node node = getGraphDb().createNode();
@@ -158,7 +160,7 @@ public class TestPropertyBlocks extends AbstractNeo4jTestCase
     }
 
     @Test
-    public void largeTx()
+    void largeTx()
     {
         Node node = getGraphDb().createNode();
 
@@ -176,7 +178,7 @@ public class TestPropertyBlocks extends AbstractNeo4jTestCase
      * adds something that should fit.
      */
     @Test
-    public void deleteAndAddToFullPropertyRecord()
+    void deleteAndAddToFullPropertyRecord()
     {
         // Fill it up, each integer is one block
         Node node = getGraphDb().createNode();
@@ -203,7 +205,7 @@ public class TestPropertyBlocks extends AbstractNeo4jTestCase
     }
 
     @Test
-    public void checkPacking()
+    void checkPacking()
     {
         long inUseBefore = propertyRecordsInUse();
 
@@ -251,7 +253,7 @@ public class TestPropertyBlocks extends AbstractNeo4jTestCase
     }
 
     @Test
-    public void substituteOneLargeWithManySmallPropBlocks()
+    void substituteOneLargeWithManySmallPropBlocks()
     {
         Node node = getGraphDb().createNode();
         long inUseBefore = propertyRecordsInUse();
@@ -298,9 +300,9 @@ public class TestPropertyBlocks extends AbstractNeo4jTestCase
      * Adds a 2-block property and checks if it is added in the same record.
      */
     @Test
-    public void testBlockDefragmentationWithTwoSpaces()
+    void testBlockDefragmentationWithTwoSpaces()
     {
-        Assume.assumeTrue( PropertyType.getPayloadSizeLongs() > 2 );
+        assumeTrue( PropertyType.getPayloadSizeLongs() > 2 );
         Node node = getGraphDb().createNode();
         long inUseBefore = propertyRecordsInUse();
 
@@ -338,7 +340,7 @@ public class TestPropertyBlocks extends AbstractNeo4jTestCase
     }
 
     @Test
-    public void checkDeletesRemoveRecordsWhenProper()
+    void checkDeletesRemoveRecordsWhenProper()
     {
         Node node = getGraphDb().createNode();
         long recordsInUseAtStart = propertyRecordsInUse();
@@ -377,7 +379,7 @@ public class TestPropertyBlocks extends AbstractNeo4jTestCase
      * string that is a number fits in one block.
      */
     @Test
-    public void testMessWithMiddleRecordDeletes()
+    void testMessWithMiddleRecordDeletes()
     {
         Node node = getGraphDb().createNode();
         long recordsInUseAtStart = propertyRecordsInUse();
@@ -445,7 +447,7 @@ public class TestPropertyBlocks extends AbstractNeo4jTestCase
     }
 
     @Test
-    public void mixAndPackDifferentTypes()
+    void mixAndPackDifferentTypes()
     {
         Node node = getGraphDb().createNode();
         long recordsInUseAtStart = propertyRecordsInUse();
@@ -484,7 +486,7 @@ public class TestPropertyBlocks extends AbstractNeo4jTestCase
     }
 
     @Test
-    public void testAdditionsHappenAtTheFirstRecordIfFits1()
+    void testAdditionsHappenAtTheFirstRecordIfFits1()
     {
         Node node = getGraphDb().createNode();
         long recordsInUseAtStart = propertyRecordsInUse();
@@ -508,7 +510,7 @@ public class TestPropertyBlocks extends AbstractNeo4jTestCase
     }
 
     @Test
-    public void testAdditionHappensInTheMiddleIfItFits()
+    void testAdditionHappensInTheMiddleIfItFits()
     {
         Node node = getGraphDb().createNode();
 
@@ -536,7 +538,7 @@ public class TestPropertyBlocks extends AbstractNeo4jTestCase
     }
 
     @Test
-    public void testChangePropertyType()
+    void testChangePropertyType()
     {
         Node node = getGraphDb().createNode();
 
@@ -556,7 +558,7 @@ public class TestPropertyBlocks extends AbstractNeo4jTestCase
     }
 
     @Test
-    public void testRevertOverflowingChange()
+    void testRevertOverflowingChange()
     {
         Relationship rel = getGraphDb().createNode()
                                        .createRelationshipTo( getGraphDb().createNode(),
@@ -591,13 +593,13 @@ public class TestPropertyBlocks extends AbstractNeo4jTestCase
     }
 
     @Test
-    public void testYoYoArrayPropertyWithinTx()
+    void testYoYoArrayPropertyWithinTx()
     {
         testYoyoArrayBase( false );
     }
 
     @Test
-    public void testYoYoArrayPropertyOverTxs()
+    void testYoYoArrayPropertyOverTxs()
     {
         testYoyoArrayBase( true );
     }
@@ -637,7 +639,7 @@ public class TestPropertyBlocks extends AbstractNeo4jTestCase
     }
 
     @Test
-    public void testRemoveZigZag()
+    void testRemoveZigZag()
     {
         Relationship rel = getGraphDb().createNode().createRelationshipTo( getGraphDb().createNode(),
                 RelationshipType.withName( "LOCKS" ) );
@@ -695,7 +697,7 @@ public class TestPropertyBlocks extends AbstractNeo4jTestCase
     }
 
     @Test
-    public void testSetWithSameValue()
+    void testSetWithSameValue()
     {
         Node node = getGraphDb().createNode();
         node.setProperty( "rev_pos", "40000633e7ad67ff" );
@@ -740,13 +742,13 @@ public class TestPropertyBlocks extends AbstractNeo4jTestCase
     }
 
     @Test
-    public void testStringYoYoWithTx()
+    void testStringYoYoWithTx()
     {
         testStringYoYoBase( true );
     }
 
     @Test
-    public void testRemoveFirstOfTwo()
+    void testRemoveFirstOfTwo()
     {
         Node node = getGraphDb().createNode();
 
@@ -767,7 +769,7 @@ public class TestPropertyBlocks extends AbstractNeo4jTestCase
     }
 
     @Test
-    public void deleteNodeWithNewPropertyRecordShouldFreeTheNewRecord()
+    void deleteNodeWithNewPropertyRecordShouldFreeTheNewRecord()
     {
         final long propcount = getIdGenerator( IdType.PROPERTY ).getNumberOfIdsInUse();
         Node node = getGraphDb().createNode();
@@ -776,12 +778,12 @@ public class TestPropertyBlocks extends AbstractNeo4jTestCase
         node.setProperty( "three", 3 );
         node.setProperty( "four", 4 );
         newTransaction();
-        assertEquals( "Invalid assumption: property record count", propcount + 1, propertyRecordsInUse() );
+        assertEquals( propcount + 1, propertyRecordsInUse(), "Invalid assumption: property record count" );
         node.setProperty( "final", 666 );
         newTransaction();
-        assertEquals( "Invalid assumption: property record count", propcount + 2, propertyRecordsInUse() );
+        assertEquals( propcount + 2, propertyRecordsInUse(), "Invalid assumption: property record count" );
         node.delete();
         commit();
-        assertEquals( "All property records should be freed", propcount, propertyRecordsInUse() );
+        assertEquals( propcount, propertyRecordsInUse(), "All property records should be freed" );
     }
 }

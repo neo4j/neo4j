@@ -19,8 +19,8 @@
  */
 package org.neo4j.kernel.impl.traversal;
 
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import java.util.Iterator;
 
@@ -30,22 +30,22 @@ import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.impl.OrderedByTypeExpander;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.neo4j.graphdb.Direction.INCOMING;
 import static org.neo4j.graphdb.Direction.OUTGOING;
 import static org.neo4j.graphdb.RelationshipType.withName;
 
-public class TestOrderByTypeExpander extends TraversalTestBase
+class TestOrderByTypeExpander extends TraversalTestBase
 {
     private final RelationshipType next = withName( "NEXT" );
     private final RelationshipType firstComment = withName( "FIRST_COMMENT" );
     private final RelationshipType comment = withName( "COMMENT" );
 
-    @Before
-    public void setup()
+    @BeforeEach
+    void setup()
     {
-        /**
+        /*
          *                          (A1)-NEXT->(A2)-NEXT->(A3)
          *                        /             |              \
          *            FIRST_COMMENT      FIRST_COMMENT        FIRST_COMMENT
@@ -70,7 +70,7 @@ public class TestOrderByTypeExpander extends TraversalTestBase
     }
 
     @Test
-    public void makeSureNodesAreTraversedInCorrectOrder()
+    void makeSureNodesAreTraversedInCorrectOrder()
     {
         PathExpander expander =
             new OrderedByTypeExpander().add( firstComment ).add( comment ).add( next );
@@ -85,15 +85,14 @@ public class TestOrderByTypeExpander extends TraversalTestBase
     }
 
     @Test
-    public void evenDifferentDirectionsKeepsOrder()
+    void evenDifferentDirectionsKeepsOrder()
     {
         PathExpander expander = new OrderedByTypeExpander()
                 .add( next, INCOMING )
                 .add( firstComment )
                 .add( comment )
                 .add( next, OUTGOING );
-        Iterator<Node> itr =
-                getGraphDb().traversalDescription().depthFirst().expand( expander ).traverse( node( "A2" ) ).nodes().iterator();
+        Iterator<Node> itr = getGraphDb().traversalDescription().depthFirst().expand( expander ).traverse( node( "A2" ) ).nodes().iterator();
         assertOrder( itr, "A2", "A1", "C1", "C2", "C3", "C4", "C5", "C6", "A3", "C7", "C8", "C9" );
     }
 
@@ -104,8 +103,7 @@ public class TestOrderByTypeExpander extends TraversalTestBase
             for ( String name : names )
             {
                 Node node = itr.next();
-                assertEquals( "expected " + name + ", was " + node.getProperty( "name" ),
-                        getNodeWithName( name ), node );
+                assertEquals( getNodeWithName( name ), node, "expected " + name + ", was " + node.getProperty( "name" ) );
             }
             assertFalse( itr.hasNext() );
             tx.success();

@@ -19,10 +19,8 @@
  */
 package org.neo4j.kernel.api;
 
-import org.junit.ClassRule;
-import org.junit.Test;
-
-import java.util.concurrent.ThreadLocalRandom;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.graphdb.Label;
@@ -37,25 +35,30 @@ import org.neo4j.internal.kernel.api.Read;
 import org.neo4j.internal.kernel.api.Transaction;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
 import org.neo4j.internal.kernel.api.security.LoginContext;
-import org.neo4j.test.rule.DbmsRule;
-import org.neo4j.test.rule.EmbeddedDbmsRule;
+import org.neo4j.kernel.internal.GraphDatabaseAPI;
+import org.neo4j.test.extension.DbmsExtension;
+import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.RandomExtension;
+import org.neo4j.test.rule.RandomRule;
 
 import static java.util.concurrent.TimeUnit.MINUTES;
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.internal.kernel.api.Transaction.Type.explicit;
 
-public class KernelAPIParallelIndexScanStressIT
+@DbmsExtension
+@ExtendWith( RandomExtension.class )
+class KernelAPIParallelIndexScanStressIT
 {
-    @ClassRule
-    public static final DbmsRule db = new EmbeddedDbmsRule();
+    private static final int N_THREADS = 10;
+    private static final int N_NODES = 10_000;
 
-    private final int N_THREADS = 10;
-    private final int N_NODES = 10_000;
-
-    private ThreadLocalRandom random = ThreadLocalRandom.current();
+    @Inject
+    private GraphDatabaseAPI db;
+    @Inject
+    private RandomRule random;
 
     @Test
-    public void shouldDoParallelIndexScans() throws Throwable
+    void shouldDoParallelIndexScans() throws Throwable
     {
         // Given
         try ( org.neo4j.graphdb.Transaction tx = db.beginTx() )
@@ -81,7 +84,7 @@ public class KernelAPIParallelIndexScanStressIT
         }
 
         // when & then
-        Kernel kernel = db.resolveDependency( Kernel.class );
+        Kernel kernel = db.getDependencyResolver().resolveDependency( Kernel.class );
         IndexReadSession[] indexes = new IndexReadSession[3];
         try ( Transaction tx = kernel.beginTransaction( explicit, LoginContext.AUTH_DISABLED ) )
         {
@@ -102,7 +105,7 @@ public class KernelAPIParallelIndexScanStressIT
 
     }
 
-    private IndexReadSession indexReadSession( Transaction tx, int propKey, String label ) throws IndexNotFoundKernelException
+    private static IndexReadSession indexReadSession( Transaction tx, int propKey, String label ) throws IndexNotFoundKernelException
     {
         int labelId = tx.tokenRead().nodeLabel( label );
         IndexReference index = tx.schemaRead().index( labelId, propKey );
@@ -119,7 +122,7 @@ public class KernelAPIParallelIndexScanStressIT
         }
     }
 
-    private Runnable indexSeek( Read read, NodeValueIndexCursor cursor, IndexReadSession index )
+    private static Runnable indexSeek( Read read, NodeValueIndexCursor cursor, IndexReadSession index )
     {
         return () ->
         {
@@ -132,7 +135,7 @@ public class KernelAPIParallelIndexScanStressIT
                 {
                     n++;
                 }
-                assertEquals( "correct number of nodes", N_NODES, n );
+                assertEquals( N_NODES, n, "correct number of nodes" );
             }
             catch ( KernelException e )
             {

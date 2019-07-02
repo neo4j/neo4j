@@ -19,14 +19,15 @@
  */
 package org.neo4j.kernel.counts;
 
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.function.Supplier;
 
-import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
@@ -36,34 +37,40 @@ import org.neo4j.internal.kernel.api.TokenRead;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
+import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.Barrier;
-import org.neo4j.test.NamedFunction;
-import org.neo4j.test.rule.DbmsRule;
-import org.neo4j.test.rule.ImpermanentDbmsRule;
-import org.neo4j.test.rule.concurrent.ThreadingRule;
+import org.neo4j.test.extension.ImpermanentDbmsExtension;
+import org.neo4j.test.extension.Inject;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.graphdb.RelationshipType.withName;
 
-public class RelationshipCountsTest
+@ImpermanentDbmsExtension
+class RelationshipCountsTest
 {
-    @Rule
-    public final DbmsRule db = new ImpermanentDbmsRule();
-    @Rule
-    public final ThreadingRule threading = new ThreadingRule();
+    @Inject
+    private GraphDatabaseAPI db;
+
+    private final ExecutorService executor = Executors.newSingleThreadExecutor();
     private Supplier<KernelTransaction> ktxSupplier;
 
-    @Before
-    public void exposeGuts()
+    @BeforeEach
+    void exposeGuts()
     {
-        ktxSupplier = () -> db.getGraphDatabaseAPI().getDependencyResolver()
-                .resolveDependency( ThreadToStatementContextBridge.class )
-                .getKernelTransactionBoundToThisThread( true );
+        ktxSupplier = () -> db.getDependencyResolver()
+            .resolveDependency( ThreadToStatementContextBridge.class )
+            .getKernelTransactionBoundToThisThread( true );
+    }
+
+    @AfterEach
+    void tearDown()
+    {
+        executor.shutdown();
     }
 
     @Test
-    public void shouldReportNumberOfRelationshipsInAnEmptyGraph()
+    void shouldReportNumberOfRelationshipsInAnEmptyGraph()
     {
         // when
         long relationshipCount = numberOfRelationships();
@@ -73,18 +80,17 @@ public class RelationshipCountsTest
     }
 
     @Test
-    public void shouldReportTotalNumberOfRelationships()
+    void shouldReportTotalNumberOfRelationships()
     {
         // given
-        GraphDatabaseService graphDb = db.getGraphDatabaseAPI();
         long before = numberOfRelationships();
         long during;
-        try ( Transaction tx = graphDb.beginTx() )
+        try ( Transaction tx = db.beginTx() )
         {
-            Node node = graphDb.createNode();
-            node.createRelationshipTo( graphDb.createNode(), withName( "KNOWS" ) );
-            node.createRelationshipTo( graphDb.createNode(), withName( "KNOWS" ) );
-            node.createRelationshipTo( graphDb.createNode(), withName( "KNOWS" ) );
+            Node node = db.createNode();
+            node.createRelationshipTo( db.createNode(), withName( "KNOWS" ) );
+            node.createRelationshipTo( db.createNode(), withName( "KNOWS" ) );
+            node.createRelationshipTo( db.createNode(), withName( "KNOWS" ) );
             during = countsForRelationship( null, null, null );
             tx.success();
         }
@@ -99,22 +105,21 @@ public class RelationshipCountsTest
     }
 
     @Test
-    public void shouldAccountForDeletedRelationships()
+    void shouldAccountForDeletedRelationships()
     {
         // given
-        GraphDatabaseService graphDb = db.getGraphDatabaseAPI();
         Relationship rel;
-        try ( Transaction tx = graphDb.beginTx() )
+        try ( Transaction tx = db.beginTx() )
         {
-            Node node = graphDb.createNode();
-            node.createRelationshipTo( graphDb.createNode(), withName( "KNOWS" ) );
-            rel = node.createRelationshipTo( graphDb.createNode(), withName( "KNOWS" ) );
-            node.createRelationshipTo( graphDb.createNode(), withName( "KNOWS" ) );
+            Node node = db.createNode();
+            node.createRelationshipTo( db.createNode(), withName( "KNOWS" ) );
+            rel = node.createRelationshipTo( db.createNode(), withName( "KNOWS" ) );
+            node.createRelationshipTo( db.createNode(), withName( "KNOWS" ) );
             tx.success();
         }
         long before = numberOfRelationships();
         long during;
-        try ( Transaction tx = graphDb.beginTx() )
+        try ( Transaction tx = db.beginTx() )
         {
             rel.delete();
             during = countsForRelationship( null, null, null );
@@ -131,29 +136,24 @@ public class RelationshipCountsTest
     }
 
     @Test
-    public void shouldNotCountRelationshipsCreatedInOtherTransaction() throws Exception
+    void shouldNotCountRelationshipsCreatedInOtherTransaction() throws Exception
     {
         // given
-        GraphDatabaseService graphDb = db.getGraphDatabaseAPI();
         final Barrier.Control barrier = new Barrier.Control();
         long before = numberOfRelationships();
-        Future<Long> tx = threading.execute( new NamedFunction<GraphDatabaseService, Long>( "create-relationships" )
+        Future<Long> tx = executor.submit( () ->
         {
-            @Override
-            public Long apply( GraphDatabaseService graphDb )
+            try ( Transaction txn = db.beginTx() )
             {
-                try ( Transaction tx = graphDb.beginTx() )
-                {
-                    Node node = graphDb.createNode();
-                    node.createRelationshipTo( graphDb.createNode(), withName( "KNOWS" ) );
-                    node.createRelationshipTo( graphDb.createNode(), withName( "KNOWS" ) );
-                    long whatThisThreadSees = countsForRelationship( null, null, null );
-                    barrier.reached();
-                    tx.success();
-                    return whatThisThreadSees;
-                }
+                Node node = db.createNode();
+                node.createRelationshipTo( db.createNode(), withName( "KNOWS" ) );
+                node.createRelationshipTo( db.createNode(), withName( "KNOWS" ) );
+                long whatThisThreadSees = countsForRelationship( null, null, null );
+                barrier.reached();
+                txn.success();
+                return whatThisThreadSees;
             }
-        }, graphDb );
+        } );
         barrier.await();
 
         // when
@@ -170,36 +170,31 @@ public class RelationshipCountsTest
     }
 
     @Test
-    public void shouldNotCountRelationshipsDeletedInOtherTransaction() throws Exception
+    void shouldNotCountRelationshipsDeletedInOtherTransaction() throws Exception
     {
         // given
-        GraphDatabaseService graphDb = db.getGraphDatabaseAPI();
         final Relationship rel;
-        try ( Transaction tx = graphDb.beginTx() )
+        try ( Transaction tx = db.beginTx() )
         {
-            Node node = graphDb.createNode();
-            node.createRelationshipTo( graphDb.createNode(), withName( "KNOWS" ) );
-            rel = node.createRelationshipTo( graphDb.createNode(), withName( "KNOWS" ) );
-            node.createRelationshipTo( graphDb.createNode(), withName( "KNOWS" ) );
+            Node node = db.createNode();
+            node.createRelationshipTo( db.createNode(), withName( "KNOWS" ) );
+            rel = node.createRelationshipTo( db.createNode(), withName( "KNOWS" ) );
+            node.createRelationshipTo( db.createNode(), withName( "KNOWS" ) );
             tx.success();
         }
         final Barrier.Control barrier = new Barrier.Control();
         long before = numberOfRelationships();
-        Future<Long> tx = threading.execute( new NamedFunction<GraphDatabaseService, Long>( "create-relationships" )
+        Future<Long> tx = executor.submit( () ->
         {
-            @Override
-            public Long apply( GraphDatabaseService graphDb )
+            try ( Transaction txn = db.beginTx() )
             {
-                try ( Transaction tx = graphDb.beginTx() )
-                {
-                    rel.delete();
-                    long whatThisThreadSees = countsForRelationship( null, null, null );
-                    barrier.reached();
-                    tx.success();
-                    return whatThisThreadSees;
-                }
+                rel.delete();
+                long whatThisThreadSees = countsForRelationship( null, null, null );
+                barrier.reached();
+                txn.success();
+                return whatThisThreadSees;
             }
-        }, graphDb );
+        } );
         barrier.await();
 
         // when
@@ -216,18 +211,17 @@ public class RelationshipCountsTest
     }
 
     @Test
-    public void shouldCountRelationshipsByType()
+    void shouldCountRelationshipsByType()
     {
         // given
-        final GraphDatabaseService graphDb = db.getGraphDatabaseAPI();
-        try ( Transaction tx = graphDb.beginTx() )
+        try ( Transaction tx = db.beginTx() )
         {
-            graphDb.createNode().createRelationshipTo( graphDb.createNode(), withName( "FOO" ) );
-            graphDb.createNode().createRelationshipTo( graphDb.createNode(), withName( "FOO" ) );
-            graphDb.createNode().createRelationshipTo( graphDb.createNode(), withName( "BAR" ) );
-            graphDb.createNode().createRelationshipTo( graphDb.createNode(), withName( "BAR" ) );
-            graphDb.createNode().createRelationshipTo( graphDb.createNode(), withName( "BAR" ) );
-            graphDb.createNode().createRelationshipTo( graphDb.createNode(), withName( "BAZ" ) );
+            db.createNode().createRelationshipTo( db.createNode(), withName( "FOO" ) );
+            db.createNode().createRelationshipTo( db.createNode(), withName( "FOO" ) );
+            db.createNode().createRelationshipTo( db.createNode(), withName( "BAR" ) );
+            db.createNode().createRelationshipTo( db.createNode(), withName( "BAR" ) );
+            db.createNode().createRelationshipTo( db.createNode(), withName( "BAR" ) );
+            db.createNode().createRelationshipTo( db.createNode(), withName( "BAZ" ) );
             tx.success();
         }
 
@@ -247,7 +241,7 @@ public class RelationshipCountsTest
     }
 
     @Test
-    public void shouldUpdateRelationshipWithLabelCountsWhenDeletingNodeWithRelationship()
+    void shouldUpdateRelationshipWithLabelCountsWhenDeletingNodeWithRelationship()
     {
         // given
         Node foo;
@@ -279,7 +273,7 @@ public class RelationshipCountsTest
     }
 
     @Test
-    public void shouldUpdateRelationshipWithLabelCountsWhenDeletingNodesWithRelationships()
+    void shouldUpdateRelationshipWithLabelCountsWhenDeletingNodesWithRelationships()
     {
         // given
         int numberOfNodes = 2;
@@ -337,7 +331,7 @@ public class RelationshipCountsTest
     }
 
     @Test
-    public void shouldUpdateRelationshipWithLabelCountsWhenRemovingLabelAndDeletingRelationship()
+    void shouldUpdateRelationshipWithLabelCountsWhenRemovingLabelAndDeletingRelationship()
     {
         // given
         Node foo;
@@ -381,7 +375,7 @@ public class RelationshipCountsTest
     /** Transactional version of {@link #countsForRelationship(Label, RelationshipType, Label)} */
     private long numberOfRelationshipsMatching( Label lhs, RelationshipType type, Label rhs )
     {
-        try ( Transaction tx = db.getGraphDatabaseAPI().beginTx() )
+        try ( Transaction tx = db.beginTx() )
         {
             long nodeCount = countsForRelationship( lhs, type, rhs );
             tx.success();
