@@ -17,11 +17,20 @@
 package org.neo4j.cypher.internal.v4_0.parser
 
 import org.neo4j.cypher.internal.v4_0.ast
-import org.neo4j.cypher.internal.v4_0.ast.AstConstructionTestSupport
+import org.neo4j.cypher.internal.v4_0.ast._
+import org.neo4j.cypher.internal.v4_0.util.InputPosition
 import org.parboiled.scala.Rule1
 
 class DDLParserTestBase
   extends ParserAstTest[ast.Statement] with Statement with AstConstructionTestSupport {
 
   implicit val parser: Rule1[ast.Statement] = Statement
+
+  type grantOrRevokeFunc = (PrivilegeType, ActionResource, GraphScope, PrivilegeQualifier, Seq[String]) => InputPosition => ast.Statement
+
+  def grant(p: PrivilegeType, a: ActionResource, s: GraphScope, q: PrivilegeQualifier, r: Seq[String]): InputPosition => ast.Statement =
+    ast.GrantPrivilege(p, a, s, q, r)
+
+  def revoke(p: PrivilegeType, a: ActionResource, s: GraphScope, q: PrivilegeQualifier, r: Seq[String]): InputPosition => ast.Statement =
+    ast.RevokePrivilege(p, a, s, q, r)
 }

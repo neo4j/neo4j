@@ -75,14 +75,6 @@ class CommunityPrivilegeDDLAcceptanceTest extends CommunityDDLAcceptanceTestBase
     assertFailure("GRANT MATCH (*) ON GRAPH * NODES * (*) TO custom", "Unsupported management command: GRANT MATCH (*) ON GRAPH * NODES * (*) TO custom")
   }
 
-  test("should fail on granting write privileges from community") {
-    // GIVEN
-    selectDatabase(SYSTEM_DATABASE_NAME)
-
-    // THEN
-    assertFailure("GRANT WRITE (*) ON GRAPH * ELEMENTS * (*) TO custom", "Unsupported management command: GRANT WRITE (*) ON GRAPH * ELEMENTS * (*) TO custom")
-  }
-
   // Tests for revoking privileges
 
   test("should fail on revoking traverse privilege from community") {
@@ -107,13 +99,5 @@ class CommunityPrivilegeDDLAcceptanceTest extends CommunityDDLAcceptanceTestBase
 
     // THEN
     assertFailure("REVOKE MATCH (*) ON GRAPH * NODES * (*) FROM custom", "Unsupported management command: REVOKE MATCH (*) ON GRAPH * NODES * (*) FROM custom")
-  }
-
-  test("should fail on revoking write privileges from community") {
-    // GIVEN
-    selectDatabase(SYSTEM_DATABASE_NAME)
-
-    // THEN
-    assertFailure("REVOKE WRITE (*) ON GRAPH * ELEMENTS * (*) FROM custom", "Unsupported management command: REVOKE WRITE (*) ON GRAPH * ELEMENTS * (*) FROM custom")
   }
 }
