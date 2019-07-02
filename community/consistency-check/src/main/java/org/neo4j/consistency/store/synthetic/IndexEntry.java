@@ -51,6 +51,6 @@ public class IndexEntry extends AbstractBaseRecord
     @Override
     public String toString()
     {
-        return format( "IndexEntry[nodeId=%d, index=%sm]", getId(), indexDescriptor.toString( tokenNameLookup ) );
+        return format( "IndexEntry[nodeId=%d, index=%s]", getId(), indexDescriptor.toString( tokenNameLookup ) );
     }
 }
