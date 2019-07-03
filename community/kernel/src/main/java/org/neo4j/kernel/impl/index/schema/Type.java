@@ -100,7 +100,7 @@ abstract class Type
     void minimalSplitter( GenericKey left, GenericKey right, GenericKey into )
     {
         // if not a specific implementation then default is to just copy from 'right'
-        into.copyFrom( right );
+        into.copyFromInternal( right );
     }
 
     /**

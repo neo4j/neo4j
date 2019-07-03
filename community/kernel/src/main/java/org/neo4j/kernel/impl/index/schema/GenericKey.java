@@ -308,7 +308,15 @@ public class GenericKey extends NativeIndexKey<GenericKey>
     void minimalSplitter( GenericKey left, GenericKey right, GenericKey into )
     {
         into.setCompareId( right.getCompareId() );
-        into.setEntityId( right.getEntityId() );
+        if ( left.compareValueTo( right ) != 0 )
+        {
+            into.setEntityId( -1 );
+        }
+        else
+        {
+            // There was no minimal splitter to be found so entity id will serve as divider
+            into.setEntityId( right.getEntityId() );
+        }
         minimalSplitterInternal( left, right, into );
     }
 
