@@ -147,7 +147,7 @@ public class ConstraintIndexCreator
             }
             log.info( "Constraint %s verified.", constraint.ownedIndexSchema() );
             success = true;
-            return proxy.getDescriptor();
+            return index;
         }
         catch ( SchemaKernelException e )
         {

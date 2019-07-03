@@ -209,6 +209,7 @@ class ConstraintIndexCreatorTest
         StubKernel kernel = new StubKernel();
 
         long orphanedConstraintIndexId = 111;
+        IndexDescriptor2 indexReference = IndexPrototype.uniqueForSchema( descriptor ).materialise( orphanedConstraintIndexId );
         when( schemaRead.indexGetCommittedId( indexReference ) ).thenReturn( orphanedConstraintIndexId );
         IndexProxy indexProxy = mock( IndexProxy.class );
         when( indexingService.getIndexProxy( orphanedConstraintIndexId ) ).thenReturn( indexProxy );

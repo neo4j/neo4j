@@ -86,9 +86,13 @@ class SchemaIndexDescriptorFactoryTest
     @Test
     void shouldGiveNiceUserDescriptions()
     {
-        assertThat( TestIndexDescriptorFactory.forLabel( 1, 2 ).userDescription( simpleNameLookup ),
-                    equalTo( "Index( GENERAL, :Label1(property2) )" ) );
-        assertThat( TestIndexDescriptorFactory.uniqueForLabel( 2, 4 ).userDescription( simpleNameLookup ),
-                    equalTo( "Index( UNIQUE, :Label2(property4) )" ) );
+        IndexDescriptor2 forLabel = TestIndexDescriptorFactory.forLabel( 1, 2 );
+        long forLabelId = forLabel.getId();
+        IndexDescriptor2 uniqueForLabel = TestIndexDescriptorFactory.uniqueForLabel( 2, 4 );
+        long uniqueForLabelId = uniqueForLabel.getId();
+        assertThat( forLabel.userDescription( simpleNameLookup ),
+                equalTo( "Index( " + forLabelId + ", 'index_" + forLabelId + "', GENERAL, :Label1(property2) )" ) );
+        assertThat( uniqueForLabel.userDescription( simpleNameLookup ),
+                equalTo( "Index( " + uniqueForLabelId + ", 'index_" + uniqueForLabelId + "', UNIQUE, :Label2(property4) )" ) );
     }
 }

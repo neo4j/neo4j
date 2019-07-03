@@ -416,19 +416,28 @@ public class AllStoreHolder extends Read
             // This is OK since storage may not have it and it wasn't added in this tx.
             return IndexDescriptor2.NO_INDEX;
         }
-        try
+
+        if ( takeSchemaLock )
         {
-            if ( takeSchemaLock )
+            acquireSharedSchemaLock( indexish.schema() );
+        }
+
+        if ( indexish instanceof IndexDescriptor2 )
+        {
+            return (IndexDescriptor2) indexish;
+        }
+        else
+        {
+            try
             {
-                acquireSharedSchemaLock( indexish.schema() );
+                return indexingService.getIndexProxy( indexish.schema() ).getDescriptor();
             }
-            return indexingService.getIndexProxy( indexish.schema() ).getDescriptor();
+            catch ( IndexNotFoundKernelException e )
+            {
+                // OK we tried lookup in the indexing service, but it wasn't there. Not loaded yet?
+                return IndexDescriptor2.NO_INDEX;
+            }
         }
-        catch ( IndexNotFoundKernelException e )
-        {
-            // OK we tried lookup in the indexing service, but it wasn't there. Not loaded yet?
-        }
-        return (indexish instanceof IndexDescriptor2) ? (IndexDescriptor2) indexish : IndexDescriptor2.NO_INDEX;
     }
 
     /**

@@ -73,8 +73,9 @@ public interface IndexProviderMap
     default IndexDescriptor2 withCapabilities( IndexDescriptor2 descriptor )
     {
         IndexProviderDescriptor providerDescriptor = descriptor.getIndexProvider();
-        IndexCapability capability = lookup( providerDescriptor ).getCapability( descriptor );
-        return descriptor.withIndexCapability( capability );
+        IndexProvider provider = lookup( providerDescriptor );
+        IndexCapability capability = provider.getCapability( descriptor );
+        return capability != null ? descriptor.withIndexCapability( capability ) : descriptor;
     }
 
     IndexProviderMap EMPTY = new IndexProviderMap()

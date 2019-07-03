@@ -107,7 +107,7 @@ public enum DbStructureArgumentFormatter implements ArgumentFormatter
             String methodName = !descriptor.isUnique() ? "forSchema" : "uniqueForSchema";
             builder.append( String.format( "%s.%s( ", className, methodName));
             formatArgument( builder, schema );
-            builder.append( " ).materialise( " ).append( String.valueOf( descriptor.getId() ) ).append( ')' );
+            builder.append( " ).materialise( " ).append( String.valueOf( descriptor.getId() ) ).append( " )" );
         }
         else if ( arg instanceof LabelSchemaDescriptor )
         {
