@@ -339,7 +339,7 @@ public abstract class IndexProvider extends LifecycleAdapter
         @Override
         public IndexCapability getCapability( IndexDescriptor2 descriptor )
         {
-            return null;
+            return IndexCapability.NO_CAPABILITY;
         }
 
         @Override

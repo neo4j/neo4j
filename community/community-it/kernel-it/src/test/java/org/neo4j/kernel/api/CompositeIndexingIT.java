@@ -32,13 +32,18 @@ import java.util.stream.Stream;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.graphdb.schema.ConstraintDefinition;
+import org.neo4j.graphdb.schema.IndexDefinition;
+import org.neo4j.internal.helpers.collection.Iterators;
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.internal.kernel.api.IndexReadSession;
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.kernel.api.NodeValueIndexCursor;
 import org.neo4j.internal.kernel.api.Write;
+import org.neo4j.internal.schema.ConstraintDescriptor;
 import org.neo4j.internal.schema.IndexDescriptor2;
 import org.neo4j.internal.schema.IndexOrder;
+import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.constraints.ConstraintDescriptorFactory;
 import org.neo4j.kernel.api.schema.index.TestIndexDescriptorFactory;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
@@ -54,6 +59,7 @@ import static org.hamcrest.Matchers.equalTo;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.params.provider.Arguments.arguments;
+import static org.neo4j.internal.schema.SchemaDescriptor.forLabel;
 
 @ImpermanentDbmsExtension
 @Timeout( 20 )
@@ -63,21 +69,22 @@ class CompositeIndexingIT
 
     @Inject
     private GraphDatabaseAPI graphDatabaseAPI;
+    private IndexPrototype prototype;
     private IndexDescriptor2 index;
 
-    void setup( IndexDescriptor2 index ) throws Exception
+    void setup( IndexPrototype prototype ) throws Exception
     {
-        this.index = index;
         try ( Transaction tx = graphDatabaseAPI.beginTx() )
         {
             KernelTransaction ktx = ktx();
-            if ( index.isUnique() )
+            if ( prototype.isUnique() )
             {
-                ktx.schemaWrite().uniquePropertyConstraintCreate( index.schema() );
+                ktx.schemaWrite().uniquePropertyConstraintCreate( prototype.schema() );
+                index = ktx.schemaRead().index( prototype.schema() );
             }
             else
             {
-                ktx.schemaWrite().indexCreate( index.schema() );
+                index = ktx.schemaWrite().indexCreate( prototype.schema() );
             }
             tx.success();
         }
@@ -124,21 +131,21 @@ class CompositeIndexingIT
     private static Stream<Arguments> params()
     {
         return Stream.of(
-            arguments( TestIndexDescriptorFactory.forLabel( LABEL_ID, 1 ) ),
-            arguments( TestIndexDescriptorFactory.forLabel( LABEL_ID, 1, 2 ) ),
-            arguments( TestIndexDescriptorFactory.forLabel( LABEL_ID, 1, 2, 3, 4 ) ),
-            arguments( TestIndexDescriptorFactory.forLabel( LABEL_ID, 1, 2, 3, 4, 5, 6, 7 ) ),
-            arguments( TestIndexDescriptorFactory.uniqueForLabel( LABEL_ID, 1 ) ),
-            arguments( TestIndexDescriptorFactory.uniqueForLabel( LABEL_ID, 1, 2 ) ),
-            arguments( TestIndexDescriptorFactory.uniqueForLabel( LABEL_ID, 1, 2, 3, 4, 5, 6, 7 ) )
+            arguments( IndexPrototype.forSchema( forLabel( LABEL_ID, 1 ) ) ),
+            arguments( IndexPrototype.forSchema( forLabel( LABEL_ID, 1, 2 ) ) ),
+            arguments( IndexPrototype.forSchema( forLabel( LABEL_ID, 1, 2, 3, 4 ) ) ),
+            arguments( IndexPrototype.forSchema( forLabel( LABEL_ID, 1, 2, 3, 4, 5, 6, 7 ) ) ),
+            arguments( IndexPrototype.uniqueForSchema( forLabel( LABEL_ID, 1 ) ) ),
+            arguments( IndexPrototype.uniqueForSchema( forLabel( LABEL_ID, 1, 2 ) ) ),
+            arguments( IndexPrototype.uniqueForSchema( forLabel( LABEL_ID, 1, 2, 3, 4, 5, 6, 7 ) ) )
         );
     }
 
     @ParameterizedTest
     @MethodSource( "params" )
-    void shouldSeeNodeAddedByPropertyToIndexInTranslation( IndexDescriptor2 index ) throws Exception
+    void shouldSeeNodeAddedByPropertyToIndexInTranslation( IndexPrototype prototype ) throws Exception
     {
-        setup( index );
+        setup( prototype );
         try ( Transaction ignore = graphDatabaseAPI.beginTx() )
         {
             KernelTransaction ktx = ktx();
@@ -160,9 +167,9 @@ class CompositeIndexingIT
 
     @ParameterizedTest
     @MethodSource( "params" )
-    void shouldSeeNodeAddedToByLabelIndexInTransaction( IndexDescriptor2 index ) throws Exception
+    void shouldSeeNodeAddedToByLabelIndexInTransaction( IndexPrototype prototype ) throws Exception
     {
-        setup( index );
+        setup( prototype );
         try ( Transaction ignore = graphDatabaseAPI.beginTx() )
         {
             KernelTransaction ktx = ktx();
@@ -184,9 +191,9 @@ class CompositeIndexingIT
 
     @ParameterizedTest
     @MethodSource( "params" )
-    void shouldNotSeeNodeThatWasDeletedInTransaction( IndexDescriptor2 index ) throws Exception
+    void shouldNotSeeNodeThatWasDeletedInTransaction( IndexPrototype prototype ) throws Exception
     {
-        setup( index );
+        setup( prototype );
         long nodeID = createNode();
         try ( Transaction ignore = graphDatabaseAPI.beginTx() )
         {
@@ -201,9 +208,9 @@ class CompositeIndexingIT
 
     @ParameterizedTest
     @MethodSource( "params" )
-    void shouldNotSeeNodeThatHasItsLabelRemovedInTransaction( IndexDescriptor2 index ) throws Exception
+    void shouldNotSeeNodeThatHasItsLabelRemovedInTransaction( IndexPrototype prototype ) throws Exception
     {
-        setup( index );
+        setup( prototype );
         long nodeID = createNode();
         try ( Transaction ignore = graphDatabaseAPI.beginTx() )
         {
@@ -218,9 +225,9 @@ class CompositeIndexingIT
 
     @ParameterizedTest
     @MethodSource( "params" )
-    void shouldNotSeeNodeThatHasAPropertyRemovedInTransaction( IndexDescriptor2 index ) throws Exception
+    void shouldNotSeeNodeThatHasAPropertyRemovedInTransaction( IndexPrototype prototype ) throws Exception
     {
-        setup( index );
+        setup( prototype );
         long nodeID = createNode();
         try ( Transaction ignore = graphDatabaseAPI.beginTx() )
         {
@@ -235,9 +242,9 @@ class CompositeIndexingIT
 
     @ParameterizedTest
     @MethodSource( "params" )
-    void shouldSeeAllNodesAddedInTransaction( IndexDescriptor2 index ) throws Exception
+    void shouldSeeAllNodesAddedInTransaction( IndexPrototype prototype ) throws Exception
     {
-        setup( index );
+        setup( prototype );
         if ( !index.isUnique() ) // this test does not make any sense for UNIQUE indexes
         {
             try ( Transaction ignore = graphDatabaseAPI.beginTx() )
@@ -261,9 +268,9 @@ class CompositeIndexingIT
 
     @ParameterizedTest
     @MethodSource( "params" )
-    void shouldSeeAllNodesAddedBeforeTransaction( IndexDescriptor2 index ) throws Exception
+    void shouldSeeAllNodesAddedBeforeTransaction( IndexPrototype prototype ) throws Exception
     {
-        setup( index );
+        setup( prototype );
         if ( !index.isUnique() ) // this test does not make any sense for UNIQUE indexes
         {
             long nodeID1 = createNode();
@@ -287,9 +294,9 @@ class CompositeIndexingIT
 
     @ParameterizedTest
     @MethodSource( "params" )
-    void shouldNotSeeNodesLackingOneProperty( IndexDescriptor2 index ) throws Exception
+    void shouldNotSeeNodesLackingOneProperty( IndexPrototype prototype ) throws Exception
     {
-        setup( index );
+        setup( prototype );
         long nodeID1 = createNode();
         try ( Transaction ignore = graphDatabaseAPI.beginTx() )
         {
