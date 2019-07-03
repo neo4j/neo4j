@@ -25,7 +25,7 @@ Feature: SkipLimitAcceptance
   Background:
     Given an empty graph
 
-  Scenario: Negative parameter for LIMIT should not generate errors
+  Scenario: Negative parameter for LIMIT should fail
     And having executed:
       """
       CREATE (s:Person {name: 'Steven'}),
@@ -39,9 +39,23 @@ Feature: SkipLimitAcceptance
       RETURN p.name AS name
       LIMIT $limit
       """
-    Then the result should be, in order:
-      | name |
-    And no side effects
+    Then a SyntaxError should be raised at runtime: NegativeIntegerArgument
+
+  Scenario: Negative parameter for TOP should fail
+    And having executed:
+      """
+      CREATE (s:Person {name: 'Steven'}),
+             (c:Person {name: 'Craig'})
+      """
+    And parameters are:
+      | limit | -1 |
+    When executing query:
+      """
+      MATCH (p:Person)
+      RETURN p.name AS name
+      ORDER BY name LIMIT $limit
+      """
+    Then a SyntaxError should be raised at runtime: NegativeIntegerArgument
 
   Scenario: Negative LIMIT should fail with a syntax exception
     And having executed:
@@ -54,6 +68,36 @@ Feature: SkipLimitAcceptance
       MATCH (p:Person)
       RETURN p.name AS name
       LIMIT -1
+      """
+    Then a SyntaxError should be raised at compile time: NegativeIntegerArgument
+
+  Scenario: Negative parameter for SKIP should fail
+    And having executed:
+      """
+      CREATE (s:Person {name: 'Steven'}),
+             (c:Person {name: 'Craig'})
+      """
+    And parameters are:
+      | limit | -1 |
+    When executing query:
+      """
+      MATCH (p:Person)
+      RETURN p.name AS name
+      SKIP $limit
+      """
+    Then a SyntaxError should be raised at runtime: NegativeIntegerArgument
+
+  Scenario: Negative SKIP should fail with a syntax exception
+    And having executed:
+      """
+      CREATE (s:Person {name: 'Steven'}),
+             (c:Person {name: 'Craig'})
+      """
+    When executing query:
+      """
+      MATCH (p:Person)
+      RETURN p.name AS name
+      SKIP -1
       """
     Then a SyntaxError should be raised at compile time: NegativeIntegerArgument
 

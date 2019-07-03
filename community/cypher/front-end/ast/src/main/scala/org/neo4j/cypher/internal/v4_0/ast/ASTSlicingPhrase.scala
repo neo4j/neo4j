@@ -58,8 +58,7 @@ trait ASTSlicingPhrase extends SemanticCheckable with SemanticAnalysisTooling {
       expression match {
         case _: UnsignedDecimalIntegerLiteral => SemanticCheckResult.success
         case i: SignedDecimalIntegerLiteral if i.value >= 0 => SemanticCheckResult.success
-        case lit: Literal => error(s"Invalid input '${lit.asCanonicalStringVal}' is not a valid value, " +
-          "must be a positive integer", lit.position)
+        case lit: Literal => error(s"Invalid input. '${lit.asCanonicalStringVal}' is not a valid value. Must be a non-negative integer.", lit.position)
         case _ => SemanticCheckResult.success
       }
     } catch {

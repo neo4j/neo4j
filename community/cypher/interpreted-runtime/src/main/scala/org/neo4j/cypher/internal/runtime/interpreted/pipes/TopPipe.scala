@@ -23,9 +23,9 @@ import java.util.Comparator
 
 import org.neo4j.cypher.internal.DefaultComparatorTopTable
 import org.neo4j.cypher.internal.runtime.ExecutionContext
-import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expression
+import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.{Expression, NumericHelper}
+import org.neo4j.cypher.internal.v4_0.util.InvalidArgumentException
 import org.neo4j.cypher.internal.v4_0.util.attribution.Id
-import org.neo4j.values.storable.NumberValue
 
 import scala.collection.JavaConverters._
 import scala.collection.mutable
@@ -35,7 +35,7 @@ import scala.collection.mutable
  * returning the matching top results, we only keep the top results in heap, which allows us to release memory earlier
  */
 case class TopNPipe(source: Pipe, countExpression: Expression, comparator: Comparator[ExecutionContext])
-                   (val id: Id = Id.INVALID_ID) extends PipeWithSource(source) {
+                   (val id: Id = Id.INVALID_ID) extends PipeWithSource(source) with NumericHelper {
 
   countExpression.registerOwningPipe(this)
 
@@ -45,11 +45,15 @@ case class TopNPipe(source: Pipe, countExpression: Expression, comparator: Compa
     if (input.isEmpty) Iterator.empty
     else {
       val first = input.next()
-      val longCount = countExpression(first, state).asInstanceOf[NumberValue].longValue()
-      if (longCount <= 0) {
+      val limit = asPrimitiveLong(countExpression(first, state))
+
+      if (limit < 0) {
+        throw new InvalidArgumentException(s"LIMIT: Invalid input. '$limit' is not a valid value. Must be a non-negative integer.")
+      }
+      if (limit <= 0) {
         Iterator.empty
       }
-      else if (longCount > Int.MaxValue) {
+      else if (limit > Int.MaxValue) {
         // For count values larger than the maximum 32-bit integer we fallback on a full sort instead of allocating a huge top table
         // (Instead of throw new IllegalArgumentException(s"ORDER BY + LIMIT $longCount exceeds the maximum value of ${Int.MaxValue}"))
         // NOTE: If the _input size_ is larger than Int.MaxValue this will still fail, since an array cannot hold that many elements
@@ -59,11 +63,11 @@ case class TopNPipe(source: Pipe, countExpression: Expression, comparator: Compa
         val array = buffer.toArray
         java.util.Arrays.sort(array, comparator)
         var c: Long = 0 // Counter to be used inside of stream
-        array.toStream.takeWhile { _ => c = c + 1; c <= longCount }.iterator
+        array.toStream.takeWhile { _ => c = c + 1; c <= limit }.iterator
       }
       else {
         // The main case: allocate a table of size count to hold the top rows
-        val count = longCount.toInt
+        val count = limit.toInt
         val topTable = new DefaultComparatorTopTable(comparator, count)
         topTable.add(first)
 

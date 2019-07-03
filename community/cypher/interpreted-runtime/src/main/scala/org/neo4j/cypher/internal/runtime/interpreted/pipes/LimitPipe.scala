@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
 import org.neo4j.cypher.internal.runtime.ExecutionContext
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.{Expression, NumericHelper}
+import org.neo4j.cypher.internal.v4_0.util.InvalidArgumentException
 import org.neo4j.cypher.internal.v4_0.util.attribution.Id
 
 import scala.collection.AbstractIterator
@@ -37,6 +38,10 @@ case class LimitPipe(source: Pipe, exp: Expression)
     if (input.isEmpty) return empty
 
     val limit = asPrimitiveLong(exp(state.newExecutionContext(executionContextFactory), state))
+
+    if (limit < 0) {
+      throw new InvalidArgumentException(s"LIMIT: Invalid input. '$limit' is not a valid value. Must be a non-negative integer.")
+    }
 
     new AbstractIterator[ExecutionContext] {
       private var remaining = limit
