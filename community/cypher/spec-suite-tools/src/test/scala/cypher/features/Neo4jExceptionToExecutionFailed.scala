@@ -52,8 +52,10 @@ object Neo4jExceptionToExecutionFailed {
     import TCKErrorDetails._
     if (msg == null)
       ""
-    else if (msg.matches("((SKIP: )|(LIMIT: ))?Invalid input.( '-(\\d)+' is not a valid value.)? Must be a non-negative integer\\.[\\s.\\S]*"))
+    else if (msg.matches("((SKIP: )|(LIMIT: ))?Invalid input.( '-.+' is not a valid value.)? Must be a non-negative integer\\.[\\s.\\S]*"))
       NEGATIVE_INTEGER_ARGUMENT
+    else if (msg.matches("((SKIP: )|(LIMIT: ))?Invalid input.( '.+' is not a valid value.)? Must be a non-negative integer\\.[\\s.\\S]*"))
+      INVALID_ARGUMENT_TYPE
     else if (msg.matches("Type mismatch: expected a map but was .+"))
       PROPERTY_ACCESS_ON_NON_MAP
     else if (msg.matches("Expected .+ to be a ((java.lang.String)|(org.neo4j.values.storable.TextValue)), but it was a .+"))
@@ -92,8 +94,10 @@ object Neo4jExceptionToExecutionFailed {
 
   private def compileTimeDetail(msg: String): String = {
     import TCKErrorDetails._
-    if (msg.matches("Invalid input. '-(\\d)+' is not a valid value. Must be a non-negative integer\\.[\\s.\\S]*"))
+    if (msg.matches("Invalid input. '-.+' is not a valid value. Must be a non-negative integer\\.[\\s.\\S]*"))
       NEGATIVE_INTEGER_ARGUMENT
+    else if (msg.matches("Invalid input. '.+' is not a valid value. Must be a non-negative integer\\.[\\s.\\S]*"))
+      INVALID_ARGUMENT_TYPE
     else if (msg.matches("Can't use aggregate functions inside of aggregate functions\\."))
       NESTED_AGGREGATION
     else if (msg.matches("Can't create node `(\\w+)` with labels or properties here. The variable is already declared in this context"))

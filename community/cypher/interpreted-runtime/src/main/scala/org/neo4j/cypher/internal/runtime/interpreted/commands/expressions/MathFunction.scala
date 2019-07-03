@@ -64,7 +64,7 @@ trait NumericHelper {
 
   protected def asPrimitiveLong(a: AnyValue): Long = asNumber(a).longValue()
 
-  private def asNumber(a: AnyValue): NumberValue = a match {
+  protected def asNumber(a: AnyValue): NumberValue = a match {
     case null => throw new CypherTypeException("Expected a numeric value for " + toString + ", but got null")
     case x if x eq NO_VALUE => throw new CypherTypeException("Expected a numeric value for " + toString + ", but got null")
     case n: NumberValue => n

@@ -26,6 +26,7 @@ import org.neo4j.cypher.internal.runtime.ExecutionContext
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.{Expression, NumericHelper}
 import org.neo4j.cypher.internal.v4_0.util.InvalidArgumentException
 import org.neo4j.cypher.internal.v4_0.util.attribution.Id
+import org.neo4j.values.storable.FloatingPointValue
 
 import scala.collection.JavaConverters._
 import scala.collection.mutable
@@ -45,7 +46,13 @@ case class TopNPipe(source: Pipe, countExpression: Expression, comparator: Compa
     if (input.isEmpty) Iterator.empty
     else {
       val first = input.next()
-      val limit = asPrimitiveLong(countExpression(first, state))
+
+      val limitNumber = asNumber(countExpression(first, state))
+      if (limitNumber.isInstanceOf[FloatingPointValue]) {
+        val limit = limitNumber.doubleValue()
+        throw new InvalidArgumentException(s"LIMIT: Invalid input. '$limit' is not a valid value. Must be a non-negative integer.")
+      }
+      val limit = limitNumber.longValue()
 
       if (limit < 0) {
         throw new InvalidArgumentException(s"LIMIT: Invalid input. '$limit' is not a valid value. Must be a non-negative integer.")

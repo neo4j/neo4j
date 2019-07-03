@@ -23,6 +23,7 @@ import org.neo4j.cypher.internal.runtime.ExecutionContext
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.{Expression, NumericHelper}
 import org.neo4j.cypher.internal.v4_0.util.attribution.Id
 import org.neo4j.cypher.internal.v4_0.util.InvalidArgumentException
+import org.neo4j.values.storable.FloatingPointValue
 
 case class SkipPipe(source: Pipe, exp: Expression)
                    (val id: Id = Id.INVALID_ID)
@@ -34,7 +35,12 @@ case class SkipPipe(source: Pipe, exp: Expression)
     if(input.isEmpty)
       return Iterator.empty
 
-    val skip = asPrimitiveInt(exp(state.newExecutionContext(executionContextFactory), state))
+    val skipNumber = asNumber(exp(state.newExecutionContext(executionContextFactory), state))
+    if (skipNumber.isInstanceOf[FloatingPointValue]) {
+      val skip = skipNumber.doubleValue()
+      throw new InvalidArgumentException(s"SKIP: Invalid input. '$skip' is not a valid value. Must be a non-negative integer.")
+    }
+    val skip = skipNumber.longValue().toInt
 
     if (skip < 0) {
       throw new InvalidArgumentException(s"SKIP: Invalid input. '$skip' is not a valid value. Must be a non-negative integer.")

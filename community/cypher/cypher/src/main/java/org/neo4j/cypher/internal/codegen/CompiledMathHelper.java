@@ -19,17 +19,18 @@
  */
 package org.neo4j.cypher.internal.codegen;
 
-import org.neo4j.cypher.internal.v4_0.util.ArithmeticException;
-import org.neo4j.cypher.internal.v4_0.util.CypherTypeException;
-
 import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.neo4j.cypher.internal.v4_0.util.ArithmeticException;
+import org.neo4j.cypher.internal.v4_0.util.CypherTypeException;
+import org.neo4j.cypher.internal.v4_0.util.InvalidArgumentException;
 import org.neo4j.kernel.impl.util.ValueUtils;
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.storable.ArrayValue;
 import org.neo4j.values.storable.DurationValue;
+import org.neo4j.values.storable.FloatingPointValue;
 import org.neo4j.values.storable.IntegralValue;
 import org.neo4j.values.storable.NumberValue;
 import org.neo4j.values.storable.PointValue;
@@ -589,6 +590,34 @@ public final class CompiledMathHelper
         if ( value instanceof Number )
         {
             Number number = (Number) value;
+            return number.longValue();
+        }
+
+        throw new CypherTypeException( String.format( "Expected a numeric value but got %s", value.toString() ), null );
+    }
+
+    public static long transformToLongOrFail( Object value, String errorOnFloatingPoint )
+    {
+        if ( value == null )
+        {
+            throw new CypherTypeException( "Expected a numeric value but got null", null );
+        }
+        if ( value instanceof NumberValue )
+        {
+            NumberValue number = (NumberValue) value;
+            if ( number instanceof FloatingPointValue )
+            {
+                throw new InvalidArgumentException( errorOnFloatingPoint, null );
+            }
+            return number.longValue();
+        }
+        if ( value instanceof Number )
+        {
+            Number number = (Number) value;
+            if ( number instanceof Float || number instanceof Double )
+            {
+                throw new InvalidArgumentException( errorOnFloatingPoint, null );
+            }
             return number.longValue();
         }
 
