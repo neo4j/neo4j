@@ -36,9 +36,9 @@ public final class DefaultDatabaseManager extends AbstractDatabaseManager<Standa
 {
     private final DatabaseIdRepository databaseIdRepository;
 
-    public DefaultDatabaseManager( GlobalModule globalModule, AbstractEditionModule edition, Log log )
+    public DefaultDatabaseManager( GlobalModule globalModule, AbstractEditionModule edition )
     {
-        super( globalModule, edition, log, true );
+        super( globalModule, edition, true );
         databaseIdRepository = globalModule.getDatabaseIdRepository();
     }
 

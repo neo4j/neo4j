@@ -101,7 +101,7 @@ class DatabaseManagementServiceFactoryTest
         AbstractEditionModule editionModule = new CommunityEditionModule( globalModule )
         {
         };
-        globalModule.getGlobalDependencies().satisfyDependencies( new DefaultDatabaseManager( globalModule, editionModule, null ) );
+        globalModule.getGlobalDependencies().satisfyDependencies( new DefaultDatabaseManager( globalModule, editionModule ) );
         return new DatabaseManagementServiceFactory( DatabaseInfo.UNKNOWN, p -> editionModule )
         {
             @Override

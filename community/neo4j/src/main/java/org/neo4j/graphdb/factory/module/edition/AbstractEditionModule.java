@@ -116,7 +116,7 @@ public abstract class AbstractEditionModule
 
     protected abstract BaseRoutingProcedureInstaller createRoutingProcedureInstaller( GlobalModule globalModule, DatabaseManager<?> databaseManager );
 
-    public abstract DatabaseManager<?> createDatabaseManager( GlobalModule globalModule, Log msgLog );
+    public abstract DatabaseManager<?> createDatabaseManager( GlobalModule globalModule );
 
     public abstract SystemGraphInitializer createSystemGraphInitializer( GlobalModule globalModule, DatabaseManager<?> databaseManager );
 

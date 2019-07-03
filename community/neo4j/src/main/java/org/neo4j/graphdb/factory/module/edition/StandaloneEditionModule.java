@@ -32,7 +32,6 @@ import org.neo4j.kernel.database.DatabaseId;
 import org.neo4j.kernel.impl.api.CommitProcessFactory;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.locking.StatementLocksFactory;
-import org.neo4j.logging.Log;
 import org.neo4j.token.TokenHolders;
 
 public abstract class StandaloneEditionModule extends AbstractEditionModule
@@ -75,9 +74,9 @@ public abstract class StandaloneEditionModule extends AbstractEditionModule
     }
 
     @Override
-    public DatabaseManager<?> createDatabaseManager( GlobalModule globalModule, Log msgLog )
+    public DatabaseManager<?> createDatabaseManager( GlobalModule globalModule )
     {
-        DefaultDatabaseManager databaseManager = new DefaultDatabaseManager( globalModule, this, msgLog );
+        DefaultDatabaseManager databaseManager = new DefaultDatabaseManager( globalModule, this );
 
         globalModule.getGlobalLife().add( databaseManager );
         globalModule.getGlobalDependencies().satisfyDependency( databaseManager );

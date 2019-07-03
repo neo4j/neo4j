@@ -133,7 +133,7 @@ public class DatabaseManagementServiceFactory
 
         LogService logService = globalModule.getLogService();
         Log internalLog = logService.getInternalLog( getClass() );
-        DatabaseManager<?> databaseManager = edition.createDatabaseManager( globalModule, internalLog );
+        DatabaseManager<?> databaseManager = edition.createDatabaseManager( globalModule );
         DatabaseManagementService managementService = new DatabaseManagementServiceImpl( databaseManager, globalModule.getGlobalAvailabilityGuard(),
                 globalLife, globalModule.getDatabaseEventListeners(), globalModule.getTransactionEventListeners(), edition.databaseIdRepository(),
                 internalLog );

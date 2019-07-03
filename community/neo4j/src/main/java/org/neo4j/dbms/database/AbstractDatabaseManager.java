@@ -58,10 +58,10 @@ public abstract class AbstractDatabaseManager<DB extends DatabaseContext> extend
     protected final Config config;
     protected final LogProvider logProvider;
 
-    protected AbstractDatabaseManager( GlobalModule globalModule, AbstractEditionModule edition, Log log, boolean manageDatabasesOnStartAndStop )
+    protected AbstractDatabaseManager( GlobalModule globalModule, AbstractEditionModule edition, boolean manageDatabasesOnStartAndStop )
     {
         this.logProvider = globalModule.getLogService().getInternalLogProvider();
-        this.log = log;
+        this.log = logProvider.getLog( getClass() );
         this.globalModule = globalModule;
         this.config = globalModule.getGlobalConfig();
         this.edition = edition;
