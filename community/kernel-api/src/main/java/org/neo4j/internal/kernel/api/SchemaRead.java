@@ -46,6 +46,14 @@ public interface SchemaRead extends SchemaReadCore
     IndexDescriptor2 index( int label, int... properties );
 
     /**
+     * Acquire a reference to the index mapping the given {@code schema}, but without requiring a transaction to be open, and without taking any schema locks.
+     *
+     * @param schema The schema for which to look up an index.
+     * @return An index matching the schema, or {@link IndexDescriptor2#NO_INDEX} if no such index was found or something went wrong.
+     */
+    IndexDescriptor2 indexForSchemaNonTransactional( SchemaDescriptor schema );
+
+    /**
      * Returns the index with the given name
      *
      * @param name The name of the index you are looking for

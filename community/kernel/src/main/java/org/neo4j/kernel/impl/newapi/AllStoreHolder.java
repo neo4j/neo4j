@@ -49,6 +49,7 @@ import org.neo4j.internal.schema.ConstraintDescriptor;
 import org.neo4j.internal.schema.IndexDescriptor2;
 import org.neo4j.internal.schema.LabelSchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptor;
+import org.neo4j.internal.schema.SchemaDescriptorSupplier;
 import org.neo4j.internal.schema.SchemaState;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.Statement;
@@ -367,6 +368,12 @@ public class AllStoreHolder extends Read
         return indexReference( index );
     }
 
+    @Override
+    public IndexDescriptor2 indexForSchemaNonTransactional( SchemaDescriptor schema )
+    {
+        return mapToIndexReference( schema, false );
+    }
+
     /**
      * Validate that the index descriptor matches an existing index, and take its schema locks.
      * @param index committed, transaction-added or even null.
@@ -401,9 +408,10 @@ public class AllStoreHolder extends Read
         return Iterators.map( index -> mapToIndexReference( index, false ), indexes );
     }
 
-    private IndexDescriptor2 mapToIndexReference( IndexDescriptor2 index, boolean takeSchemaLock )
+    private IndexDescriptor2 mapToIndexReference( SchemaDescriptorSupplier indexish, boolean takeSchemaLock )
     {
-        if ( index == null )
+        // TODO can this mapper function be replaced with simply taking the schema lock in the places that need that?
+        if ( indexish == null )
         {
             // This is OK since storage may not have it and it wasn't added in this tx.
             return IndexDescriptor2.NO_INDEX;
@@ -412,15 +420,15 @@ public class AllStoreHolder extends Read
         {
             if ( takeSchemaLock )
             {
-                acquireSharedSchemaLock( index.schema() );
+                acquireSharedSchemaLock( indexish.schema() );
             }
-            return indexingService.getIndexProxy( index.schema() ).getDescriptor();
+            return indexingService.getIndexProxy( indexish.schema() ).getDescriptor();
         }
         catch ( IndexNotFoundKernelException e )
         {
             // OK we tried lookup in the indexing service, but it wasn't there. Not loaded yet?
         }
-        return index;
+        return (indexish instanceof IndexDescriptor2) ? (IndexDescriptor2) indexish : IndexDescriptor2.NO_INDEX;
     }
 
     /**
