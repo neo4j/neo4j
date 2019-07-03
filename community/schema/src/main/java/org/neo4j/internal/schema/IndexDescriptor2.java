@@ -25,7 +25,6 @@ import java.util.List;
 import java.util.Objects;
 import java.util.OptionalLong;
 import java.util.stream.Stream;
-import java.util.stream.StreamSupport;
 
 import org.neo4j.common.TokenNameLookup;
 
@@ -173,10 +172,10 @@ public final class IndexDescriptor2 implements IndexRef<IndexDescriptor2>, Schem
             throw new IllegalStateException(
                     "Cannot assign an owning constraint id (in this case " + owningConstraintId + ") to a non-unique index: " + this + "." );
         }
-        if ( owningConstraintId < 1 )
+        if ( owningConstraintId < 0 )
         {
             throw new IllegalArgumentException(
-                    "The owning constraint id of an index must be positive, but it was attempted to assign " + owningConstraintId + "." );
+                    "The owning constraint id of an index must not be negative, but it was attempted to assign " + owningConstraintId + "." );
         }
         return new IndexDescriptor2( id, name, schema, isUnique, indexProvider, owningConstraintId, capability );
     }

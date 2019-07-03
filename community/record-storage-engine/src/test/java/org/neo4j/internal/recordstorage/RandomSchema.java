@@ -180,7 +180,7 @@ public class RandomSchema implements Supplier<SchemaRule>
         long ruleId = nextRuleIdForIndex();
         IndexDescriptor2 index = prototype.materialise( ruleId );
 
-        if ( rng.nextBoolean() )
+        if ( isUnique && rng.nextBoolean() )
         {
             index = index.withOwningConstraintId( existingConstraintId() );
         }

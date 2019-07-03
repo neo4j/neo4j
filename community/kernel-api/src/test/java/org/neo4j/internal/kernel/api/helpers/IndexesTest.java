@@ -58,7 +58,6 @@ class IndexesTest
     void shouldNotTimeOutIfNoUpdates() throws Throwable
     {
         // Given
-        IndexDescriptor2 index =  mock( IndexDescriptor2.class );
         final SchemaRead schemaRead = schemaWithIndexes( index );
         setUpdates( schemaRead, 0 );
 
@@ -80,7 +79,6 @@ class IndexesTest
     void shouldAwaitIndexResamplingForHeavyLoad() throws Throwable
     {
         // Given
-        IndexDescriptor2 index =  mock( IndexDescriptor2.class );
         final SchemaRead schemaRead = schemaWithIndexes( index );
         setUpdates( schemaRead, 1, 2, 3, 2 );  // <- updates went down but didn't reach the first seen value
 
@@ -92,7 +90,6 @@ class IndexesTest
     void shouldTimeout() throws Throwable
     {
         // Given
-        IndexDescriptor2 index =  mock( IndexDescriptor2.class );
         final SchemaRead schemaRead = schemaWithIndexes( index );
         setUpdates( schemaRead, 1, 1, 1 );
 
