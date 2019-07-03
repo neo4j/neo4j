@@ -55,9 +55,9 @@ public final class IndexDescriptor2 implements IndexRef<IndexDescriptor2>, Schem
     private IndexDescriptor2( long id, String name, SchemaDescriptor schema, boolean isUnique, IndexProviderDescriptor indexProvider, Long owningConstraintId,
             IndexCapability capability )
     {
-        if ( id < 1 )
+        if ( id < 0 )
         {
-            throw new IllegalArgumentException( "The id of an index must be positive, but it was attempted to assign " + id + "." );
+            throw new IllegalArgumentException( "The id of an index must not be negative, but it was attempted to assign " + id + "." );
         }
         SchemaRule.checkName( name );
         Objects.requireNonNull( schema, "The schema of an index cannot be null." );
