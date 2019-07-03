@@ -212,6 +212,9 @@ class PrettifierIT extends CypherFunSuite {
       "create user abc set password $password" ->
         "CREATE USER abc SET PASSWORD $password CHANGE REQUIRED",
 
+      "create user `ab%$c` set password 'foo'" ->
+        "CREATE USER `ab%$c` SET PASSWORD '******' CHANGE REQUIRED",
+
       "create user abc set password 'foo' change required" ->
         "CREATE USER abc SET PASSWORD '******' CHANGE REQUIRED",
 
@@ -238,9 +241,6 @@ class PrettifierIT extends CypherFunSuite {
 
       "create user abc set password 'foo' change not required set status suspended" ->
         "CREATE USER abc SET PASSWORD '******' CHANGE NOT REQUIRED SET STATUS SUSPENDED",
-
-      "create user `ab%$c` set password 'foo'" ->
-        "CREATE USER `ab%$c` SET PASSWORD '******' CHANGE REQUIRED",
 
       "alter user abc set password 'foo'" ->
         "ALTER USER abc SET PASSWORD '******'",
