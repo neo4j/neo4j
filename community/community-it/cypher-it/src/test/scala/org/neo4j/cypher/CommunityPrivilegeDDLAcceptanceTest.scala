@@ -100,4 +100,30 @@ class CommunityPrivilegeDDLAcceptanceTest extends CommunityDDLAcceptanceTestBase
     // THEN
     assertFailure("REVOKE MATCH (*) ON GRAPH * NODES * (*) FROM custom", "Unsupported management command: REVOKE MATCH (*) ON GRAPH * NODES * (*) FROM custom")
   }
+
+  // Tests for denying privileges
+
+  test("should fail on denying traverse privilege from community") {
+    // GIVEN
+    selectDatabase(SYSTEM_DATABASE_NAME)
+
+    // THEN
+    assertFailure("DENY TRAVERSE ON GRAPH * NODES * (*) TO custom", "Unsupported management command: DENY TRAVERSE ON GRAPH * NODES * (*) TO custom")
+  }
+
+  test("should fail on denying read privilege from community") {
+    // GIVEN
+    selectDatabase(SYSTEM_DATABASE_NAME)
+
+    // THEN
+    assertFailure("DENY READ (*) ON GRAPH * NODES * (*) TO custom", "Unsupported management command: DENY READ (*) ON GRAPH * NODES * (*) TO custom")
+  }
+
+  test("should fail on denying MATCH privilege from community") {
+    // GIVEN
+    selectDatabase(SYSTEM_DATABASE_NAME)
+
+    // THEN
+    assertFailure("DENY MATCH (*) ON GRAPH * NODES * (*) TO custom", "Unsupported management command: DENY MATCH (*) ON GRAPH * NODES * (*) TO custom")
+  }
 }
