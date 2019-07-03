@@ -110,7 +110,7 @@ public class ConstraintIndexCreator
         {
             throw e;
         }
-        catch ( SchemaKernelException | IndexNotFoundKernelException e )
+        catch ( SchemaKernelException e )
         {
             throw new CreateConstraintFailureException( constraint, e );
         }
@@ -236,7 +236,7 @@ public class ConstraintIndexCreator
     }
 
     private IndexDescriptor2 getOrCreateUniquenessConstraintIndex( SchemaRead schemaRead, TokenRead tokenRead, SchemaDescriptor schema, String provider )
-            throws SchemaKernelException, IndexNotFoundKernelException
+            throws SchemaKernelException
     {
         IndexDescriptor2 descriptor = schemaRead.index( schema );
         if ( descriptor != IndexDescriptor2.NO_INDEX )
@@ -258,9 +258,7 @@ public class ConstraintIndexCreator
             // There's already an index for this schema descriptor, which isn't of the type we're after.
             throw new AlreadyIndexedException( schema, CONSTRAINT_CREATION );
         }
-        IndexDescriptor2 indexReference = createConstraintIndex( schema, provider );
-        IndexProxy indexProxy = indexingService.getIndexProxy( indexReference.schema() ); // todo remove this derefence?
-        return indexProxy.getDescriptor();
+        return createConstraintIndex( schema, provider );
     }
 
     public IndexDescriptor2 createConstraintIndex( final SchemaDescriptor schema, String provider )

@@ -934,7 +934,8 @@ public class Operations implements Write, SchemaWrite
     @Override
     public ConstraintDescriptor uniquePropertyConstraintCreate( SchemaDescriptor descriptor ) throws SchemaKernelException
     {
-        return uniquePropertyConstraintCreate( descriptor, config.get( GraphDatabaseSettings.default_schema_provider ) );
+        String provider = config.get( GraphDatabaseSettings.default_schema_provider );
+        return uniquePropertyConstraintCreate( descriptor, provider );
     }
 
     @Override
@@ -1244,8 +1245,8 @@ public class Operations implements Write, SchemaWrite
         try
         {
             LabelSchemaDescriptor labelSchemaDescriptor = constraint.ownedIndexSchema();
-            IndexDescriptor2 constraintIndex = allStoreHolder.index( labelSchemaDescriptor );
-            if ( ktx.hasTxStateWithChanges() && ktx.txState().indexDoUnRemove( constraintIndex ) ) // ..., DROP, *CREATE*
+            IndexDescriptor2 constraintIndex = allStoreHolder.indexForSchemaNonTransactional( labelSchemaDescriptor ); // Ignore transaction state.
+            if ( ktx.hasTxStateWithChanges() && constraintIndex.isUnique() && ktx.txState().indexDoUnRemove( constraintIndex ) ) // ..., DROP, *CREATE*
             { // creation is undoing a drop
                 if ( !ktx.txState().constraintDoUnRemove( constraint ) ) // CREATE, ..., DROP, *CREATE*
                 { // ... the drop we are undoing did itself undo a prior create...
