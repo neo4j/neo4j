@@ -19,6 +19,8 @@
  */
 package org.neo4j.internal.schema;
 
+import java.util.Objects;
+
 public class IndexProviderDescriptor
 {
     /**
@@ -70,13 +72,13 @@ public class IndexProviderDescriptor
     @Override
     public int hashCode()
     {
-        return ( 23 + key.hashCode() ) ^ version.hashCode();
+        return Objects.hash( key, version );
     }
 
     @Override
     public boolean equals( Object obj )
     {
-        if ( this.getClass() == obj.getClass() )
+        if ( obj != null && this.getClass() == obj.getClass() )
         {
             IndexProviderDescriptor otherDescriptor = (IndexProviderDescriptor) obj;
             return key.equals( otherDescriptor.getKey() ) && version.equals( otherDescriptor.getVersion() );
