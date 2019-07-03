@@ -1463,7 +1463,7 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
     }
 
     @Test
-    public void shouldCountDistinctValues() throws Exception
+    void shouldCountDistinctValues() throws Exception
     {
         // Given
         int label = token.nodeLabel( "Node" );
@@ -1520,7 +1520,7 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
     }
 
     @Test
-    public void shouldCountDistinctButSimilarPointValues() throws Exception
+    void shouldCountDistinctButSimilarPointValues() throws Exception
     {
         // given
         int label = token.nodeLabel( "Node" );

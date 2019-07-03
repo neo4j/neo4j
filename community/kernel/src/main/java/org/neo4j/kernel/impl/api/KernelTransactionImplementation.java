@@ -1192,7 +1192,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
 
     public void addIndexDoDropToTxState( IndexDescriptor2 index )
     {
-        txState().indexDoDrop( allStoreHolder.storageIndexDescriptor( index ) );
+        txState().indexDoDrop( index );
     }
 
     public static class Statistics

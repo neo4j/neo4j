@@ -193,7 +193,15 @@ public class RecordStorageReader implements StorageReader
             return null;
         }
         OptionalLong owningConstraintId = index.getOwningConstraintId();
-        return owningConstraintId.isPresent() ? owningConstraintId.getAsLong() : null;
+        if ( owningConstraintId.isPresent() )
+        {
+            Long constraintId = owningConstraintId.getAsLong();
+            if ( schemaCache.hasConstraintRule( constraintId ) )
+            {
+                return constraintId;
+            }
+        }
+        return null;
     }
 
     @Override

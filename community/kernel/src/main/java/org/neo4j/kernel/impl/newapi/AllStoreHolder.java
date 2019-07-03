@@ -440,19 +440,6 @@ public class AllStoreHolder extends Read
         }
     }
 
-    /**
-     * And then there's this method for mapping from IndexReference --> IndexDescriptor, for those places where
-     * we need to go back to storage land when we have an IndexReference.
-     * @param index an index reference to get IndexDescriptor for.
-     * @return the IndexDescriptor for the IndexReference.
-     */
-    public IndexDescriptor2 storageIndexDescriptor( IndexDescriptor2 index )
-    {
-        // TODO we should be able to remove this method entirely, since we no longer map between index descriptor types...
-        // Go and look this up by schema from storage.
-        return storageReader.indexGetForSchema( index.schema() );
-    }
-
     @Override
     public IndexDescriptor2 index( SchemaDescriptor schema )
     {
@@ -575,7 +562,7 @@ public class AllStoreHolder extends Read
         // If index is in our state, then return populating
         if ( ktx.hasTxStateWithChanges() )
         {
-            if ( checkIndexState( storageIndexDescriptor( index ), ktx.txState().indexDiffSetsBySchema( schema ) ) )
+            if ( checkIndexState( index, ktx.txState().indexDiffSetsBySchema( schema ) ) )
             {
                 return InternalIndexState.POPULATING;
             }
@@ -598,7 +585,7 @@ public class AllStoreHolder extends Read
     {
         if ( ktx.hasTxStateWithChanges() )
         {
-            if ( checkIndexState( storageIndexDescriptor( index ), ktx.txState().indexDiffSetsBySchema( index.schema() ) ) )
+            if ( checkIndexState( index, ktx.txState().indexDiffSetsBySchema( index.schema() ) ) )
             {
                 return PopulationProgress.NONE;
             }

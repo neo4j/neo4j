@@ -58,33 +58,33 @@ class IndexProxyCreator
         this.logProvider = logProvider;
     }
 
-    IndexProxy createPopulatingIndexProxy( final IndexDescriptor2 descriptor, final boolean flipToTentative, final IndexingService.Monitor monitor,
-            final IndexPopulationJob populationJob )
+    IndexProxy createPopulatingIndexProxy( IndexDescriptor2 index, boolean flipToTentative, IndexingService.Monitor monitor,
+            IndexPopulationJob populationJob )
     {
         final FlippableIndexProxy flipper = new FlippableIndexProxy();
 
-        final String indexUserDescription = indexUserDescription( descriptor );
-        IndexPopulator populator = populatorFromProvider( descriptor, samplingConfig, populationJob.bufferFactory() );
-        IndexDescriptor2 capableIndexDescriptor = providerMap.withCapabilities( descriptor );
+        final String indexUserDescription = indexUserDescription( index );
+        IndexPopulator populator = populatorFromProvider( index, samplingConfig, populationJob.bufferFactory() );
+//        IndexDescriptor2 capableIndexDescriptor = providerMap.withCapabilities( descriptor );
 
-        FailedIndexProxyFactory failureDelegateFactory = new FailedPopulatingIndexProxyFactory( capableIndexDescriptor,
+        FailedIndexProxyFactory failureDelegateFactory = new FailedPopulatingIndexProxyFactory( index,
                 populator,
                 indexUserDescription,
                 indexStatisticsStore,
                 logProvider );
 
         MultipleIndexPopulator.IndexPopulation indexPopulation = populationJob
-                .addPopulator( populator, capableIndexDescriptor, indexUserDescription, flipper, failureDelegateFactory );
-        PopulatingIndexProxy populatingIndex = new PopulatingIndexProxy( capableIndexDescriptor, populationJob, indexPopulation );
+                .addPopulator( populator, index, indexUserDescription, flipper, failureDelegateFactory );
+        PopulatingIndexProxy populatingIndex = new PopulatingIndexProxy( index, populationJob, indexPopulation );
 
         flipper.flipTo( populatingIndex );
 
         // Prepare for flipping to online mode
         flipper.setFlipTarget( () ->
         {
-            monitor.populationCompleteOn( descriptor );
-            IndexAccessor accessor = onlineAccessorFromProvider( descriptor, samplingConfig );
-            OnlineIndexProxy onlineProxy = new OnlineIndexProxy( capableIndexDescriptor, accessor, indexStatisticsStore, true );
+            monitor.populationCompleteOn( index );
+            IndexAccessor accessor = onlineAccessorFromProvider( index, samplingConfig );
+            OnlineIndexProxy onlineProxy = new OnlineIndexProxy( index, accessor, indexStatisticsStore, true );
             if ( flipToTentative )
             {
                 return new TentativeConstraintIndexProxy( flipper, onlineProxy );

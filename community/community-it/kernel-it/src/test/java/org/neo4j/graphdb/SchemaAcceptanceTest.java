@@ -33,6 +33,9 @@ import org.neo4j.test.extension.Inject;
 
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.greaterThan;
+import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.core.IsNot.not;
 import static org.hamcrest.core.IsNull.nullValue;
@@ -481,6 +484,8 @@ class SchemaAcceptanceTest
             assertThat( count( db.schema().getIndexes( label ) ), is( 3L ) );
             assertThat( db.schema().getIndexState( indexA ), is( Schema.IndexState.ONLINE ) );
             assertThat( db.schema().getIndexState( indexC ), is( Schema.IndexState.POPULATING ) );
+            assertThat( db.schema().getIndexPopulationProgress( indexA ).getCompletedPercentage(), greaterThan( 0f ) );
+            assertThat( db.schema().getIndexPopulationProgress( indexC ).getCompletedPercentage(), greaterThanOrEqualTo( 0f ) );
         }
     }
 

@@ -124,7 +124,15 @@ public final class IndexDescriptor2 implements IndexRef<IndexDescriptor2>, Schem
     @Override
     public String userDescription( TokenNameLookup tokenNameLookup )
     {
-        return "Index( " + id + ", '" + name + "', " + (isUnique ? "UNIQUE" : "GENERAL") + ", " + schema().userDescription( tokenNameLookup ) + " )";
+        return "Index( " + id + ", '" + name + "', " + (isUnique ? "UNIQUE" : "GENERAL") + ", " +
+                schema().userDescription( tokenNameLookup ) + ", " +
+                getIndexProvider().name() + " )";
+    }
+
+    @Override
+    public String toString()
+    {
+        return userDescription( TokenNameLookup.idTokenNameLookup );
     }
 
     @Override

@@ -26,6 +26,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.Optional;
+import java.util.Set;
 
 import org.neo4j.common.EntityType;
 import org.neo4j.configuration.Config;
@@ -48,6 +49,7 @@ import org.neo4j.internal.kernel.api.exceptions.schema.ConstraintValidationExcep
 import org.neo4j.internal.kernel.api.exceptions.schema.CreateConstraintFailureException;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotApplicableKernelException;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
+import org.neo4j.internal.kernel.api.exceptions.schema.MisconfiguredIndexException;
 import org.neo4j.internal.kernel.api.exceptions.schema.SchemaKernelException;
 import org.neo4j.internal.schema.ConstraintDescriptor;
 import org.neo4j.internal.schema.IndexDescriptor2;
@@ -827,11 +829,7 @@ public class Operations implements Write, SchemaWrite
         assertValidDescriptor( prototype.schema(), SchemaKernelException.OperationContext.INDEX_CREATION );
         assertIndexDoesNotExist( SchemaKernelException.OperationContext.INDEX_CREATION, prototype );
 
-        prototype = indexProviders.getBlessedDescriptorFromProvider( prototype );
-        long schemaRecordId = commandCreationContext.reserveSchema();
-        IndexDescriptor2 index = prototype.materialise( schemaRecordId );
-        ktx.txState().indexDoAdd( index );
-        return index;
+        return indexDoCreate( prototype );
     }
 
     @Override
@@ -860,11 +858,7 @@ public class Operations implements Write, SchemaWrite
         {
             prototype = prototype.withName( name.get() );
         }
-        prototype = indexProviders.getBlessedDescriptorFromProvider( prototype );
-        long schemaRecordId = commandCreationContext.reserveSchema();
-        IndexDescriptor2 index = prototype.materialise( schemaRecordId );
-        ktx.txState().indexDoAdd( index );
-        return index;
+        return indexDoCreate( prototype );
     }
 
     // Note: this will be sneakily executed by an internal transaction, so no additional locking is required.
@@ -872,18 +866,44 @@ public class Operations implements Write, SchemaWrite
     {
         IndexProviderDescriptor providerDescriptor = indexProviders.indexProviderByName( provider );
         IndexPrototype prototype = IndexPrototype.uniqueForSchema( schema, providerDescriptor );
-        prototype = indexProviders.getBlessedDescriptorFromProvider( prototype );
+        return indexDoCreate( prototype );
+    }
+
+    private IndexDescriptor2 indexDoCreate( IndexPrototype prototype ) throws MisconfiguredIndexException
+    {
+        TransactionState transactionState = ktx.txState();
+
+        // If an index just like the given prototype was previously removed in the transaction, then we should bring it back instead of allocating a new
+        // schema record and creating a new index. This is important for two reasons: 1) it saves us useless work for dropping an re-creating the index,
+        // and 2) if we then also reverses *this* index create, then we must still do so on the *original* index descriptor, which has the original schema
+        // record id. If we didn't, then the following delete would end up trying to delete a schema record (the one that would be allocated below) that is
+        // not in use, and that would blow up during transaction commit.
+        Set<IndexDescriptor2> removed = transactionState.indexChanges().getRemoved();
+        IndexDescriptor2 toUnRemove = prototype.materialise( 0 );
+        if ( removed.contains( toUnRemove ) )
+        {
+            for ( IndexDescriptor2 candidate : removed )
+            {
+                if ( candidate.equals( toUnRemove ) )
+                {
+                    transactionState.indexDoAdd( candidate );
+                    return candidate;
+                }
+            }
+        }
+
         long schemaRecordId = commandCreationContext.reserveSchema();
         IndexDescriptor2 index = prototype.materialise( schemaRecordId );
-        ktx.txState().indexDoAdd( index );
+        index = indexProviders.getBlessedDescriptorFromProvider( index );
+        transactionState.indexDoAdd( index );
         return index;
     }
 
     @Override
-    public void indexDrop( IndexDescriptor2 indexReference ) throws SchemaKernelException
+    public void indexDrop( IndexDescriptor2 index ) throws SchemaKernelException
     {
-        assertValidIndex( indexReference );
-        SchemaDescriptor schema = indexReference.schema();
+        assertValidIndex( index );
+        SchemaDescriptor schema = index.schema();
 
         exclusiveSchemaLock( schema );
         ktx.assertOpen();
@@ -908,7 +928,7 @@ public class Operations implements Write, SchemaWrite
         {
             throw new DropIndexFailureException( schema, e );
         }
-        ktx.txState().indexDoDrop( allStoreHolder.storageIndexDescriptor( indexReference ) );
+        ktx.txState().indexDoDrop( index );
     }
 
     @Override
@@ -1062,7 +1082,10 @@ public class Operations implements Write, SchemaWrite
         if ( descriptor.enforcesUniqueness() )
         {
             IndexDescriptor2 index = allStoreHolder.index( descriptor.schema() );
-            txState.indexDoDrop( index );
+            if ( index != IndexDescriptor2.NO_INDEX )
+            {
+                txState.indexDoDrop( index );
+            }
         }
     }
 

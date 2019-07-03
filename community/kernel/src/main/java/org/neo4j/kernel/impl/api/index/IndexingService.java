@@ -510,10 +510,12 @@ public class IndexingService extends LifecycleAdapter implements IndexUpdateList
     }
 
     @Override
-    public <T extends IndexRef<T>> T getBlessedDescriptorFromProvider( T index ) throws MisconfiguredIndexException
+    public IndexDescriptor2 getBlessedDescriptorFromProvider( IndexDescriptor2 index ) throws MisconfiguredIndexException
     {
         IndexProvider provider = providerMap.lookup( index.getIndexProvider() );
-        return provider.bless( index );
+        index = provider.bless( index );
+        index = index.withIndexCapability( provider.getCapability( index ) );
+        return index;
     }
 
     @Override
