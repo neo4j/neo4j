@@ -90,7 +90,7 @@ case class ShowDatabases()(implicit idGen: IdGen) extends DatabaseManagementLogi
 case class ShowDefaultDatabase()(implicit idGen: IdGen) extends DatabaseManagementLogicalPlan
 case class ShowDatabase(normalizedName: NormalizedDatabaseName)(implicit idGen: IdGen) extends DatabaseManagementLogicalPlan
 case class CreateDatabase(normalizedName: NormalizedDatabaseName)(implicit idGen: IdGen) extends DatabaseManagementLogicalPlan
-case class DropDatabase(source: Option[EnsureValidNonDefaultDatabase], normalizedName: NormalizedDatabaseName)(implicit idGen: IdGen) extends DatabaseManagementLogicalPlan
+case class DropDatabase(source: Option[EnsureValidNonSystemDatabase], normalizedName: NormalizedDatabaseName)(implicit idGen: IdGen) extends DatabaseManagementLogicalPlan
 case class StartDatabase(normalizedName: NormalizedDatabaseName)(implicit idGen: IdGen) extends DatabaseManagementLogicalPlan
-case class StopDatabase(source: Option[EnsureValidNonDefaultDatabase], normalizedName: NormalizedDatabaseName)(implicit idGen: IdGen) extends DatabaseManagementLogicalPlan
-case class EnsureValidNonDefaultDatabase(normalizedName: NormalizedDatabaseName, action: String)(implicit idGen: IdGen) extends DatabaseManagementLogicalPlan
+case class StopDatabase(source: Option[EnsureValidNonSystemDatabase], normalizedName: NormalizedDatabaseName)(implicit idGen: IdGen) extends DatabaseManagementLogicalPlan
+case class EnsureValidNonSystemDatabase(normalizedName: NormalizedDatabaseName, action: String)(implicit idGen: IdGen) extends DatabaseManagementLogicalPlan

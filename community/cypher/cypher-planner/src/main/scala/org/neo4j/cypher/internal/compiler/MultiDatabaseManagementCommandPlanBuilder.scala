@@ -194,7 +194,7 @@ case object MultiDatabaseManagementCommandPlanBuilder extends Phase[PlannerConte
       case DropDatabase(dbName) =>
         val normalizedName = new NormalizedDatabaseName(dbName)
         Some(plans.DropDatabase(
-          Some(plans.EnsureValidNonDefaultDatabase(normalizedName, "drop")),
+          Some(plans.EnsureValidNonSystemDatabase(normalizedName, "drop")),
           normalizedName))
 
       // START DATABASE foo
@@ -205,7 +205,7 @@ case object MultiDatabaseManagementCommandPlanBuilder extends Phase[PlannerConte
       case StopDatabase(dbName) =>
         val normalizedName = new NormalizedDatabaseName(dbName)
         Some(plans.StopDatabase(
-          Some(plans.EnsureValidNonDefaultDatabase(normalizedName, "stop")),
+          Some(plans.EnsureValidNonSystemDatabase(normalizedName, "stop")),
           normalizedName))
 
       // Global call: CALL foo.bar.baz("arg1", 2) // only if system procedure is allowed!

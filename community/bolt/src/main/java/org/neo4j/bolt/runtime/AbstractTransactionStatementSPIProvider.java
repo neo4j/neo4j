@@ -70,7 +70,7 @@ public abstract class AbstractTransactionStatementSPIProvider implements Transac
         }
         catch ( DatabaseNotFoundException e )
         {
-            throw new BoltIOException( Status.Database.DatabaseNotFound, format( "Database does not exists. Database name: '%s'.", selectedDatabaseName ) );
+            throw new BoltIOException( Status.Database.DatabaseNotFound, format( "Database does not exist. Database name: '%s'.", selectedDatabaseName ) );
         }
         catch ( UnavailableException e )
         {

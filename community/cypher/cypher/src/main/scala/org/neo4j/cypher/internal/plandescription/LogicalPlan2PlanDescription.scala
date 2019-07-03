@@ -246,9 +246,9 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean, cardinalities: Cardina
         val dbName = Database(Prettifier.escapeName(normalizedName.name))
         PlanDescriptionImpl(id, "StopDatabase", NoChildren, Seq(dbName), variables)
 
-      case EnsureValidNonDefaultDatabase(normalizedName, _) =>
+      case EnsureValidNonSystemDatabase(normalizedName, _) =>
         val dbName = Database(Prettifier.escapeName(normalizedName.name))
-        PlanDescriptionImpl(id, "EnsureValidNonDefaultDatabase", NoChildren, Seq(dbName), variables)
+        PlanDescriptionImpl(id, "EnsureValidNonSystemDatabase", NoChildren, Seq(dbName), variables)
 
       case LogSystemCommand(_, _) =>
         PlanDescriptionImpl(id, "LogSystemCommand", NoChildren, Seq.empty, variables)

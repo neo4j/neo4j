@@ -80,7 +80,7 @@ class TransactionStateMachineSPIProviderV4Test
         BoltIOException error = assertThrows( BoltIOException.class, () ->
                 spiProvider.getTransactionStateMachineSPI( databaseName, mock( StatementProcessorReleaseManager.class ) ) );
         assertThat( error.status(), equalTo( Status.Database.DatabaseNotFound ) );
-        assertThat( error.getMessage(), containsString( "Database does not exists. Database name: 'database'." ) );
+        assertThat( error.getMessage(), containsString( "Database does not exist. Database name: 'database'." ) );
     }
 
     private DatabaseManagementService managementService( String databaseName )
