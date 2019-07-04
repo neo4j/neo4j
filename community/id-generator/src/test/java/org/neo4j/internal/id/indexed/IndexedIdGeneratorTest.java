@@ -328,6 +328,27 @@ class IndexedIdGeneratorTest
         assertNotEquals( id, freelist.nextId() );
     }
 
+    @Test
+    void shouldMarkDroppedIdsAsDeletedAndFree() throws IOException
+    {
+        // given
+        freelist.start( NO_FREE_IDS );
+        long id = freelist.nextId();
+        long droppedId = freelist.nextId();
+        long id2 = freelist.nextId();
+
+        // when
+        try ( CommitMarker commitMarker = freelist.commitMarker() )
+        {
+            commitMarker.markUsed( id );
+            commitMarker.markUsed( id2 );
+        }
+        restart();
+
+        // then
+        assertEquals( droppedId, freelist.nextId() );
+    }
+
     private void verifyReallocationDoesNotIncreaseHighId( ConcurrentLinkedQueue<Allocation> allocations, ConcurrentSparseLongBitSet expectedInUse )
     {
         // then after all remaining allocations have been freed, allocating that many ids again should not need to increase highId,

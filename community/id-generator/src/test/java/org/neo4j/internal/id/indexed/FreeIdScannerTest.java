@@ -33,6 +33,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.Lock;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
@@ -568,7 +569,7 @@ class FreeIdScannerTest
         return handler ->
         {
             try ( IdRangeMarker marker = new IdRangeMarker( IDS_PER_ENTRY, layout, tree.writer(), mock( Lock.class ), IdRangeMerger.DEFAULT,
-                    new AtomicBoolean(), generation ) )
+                    true, new AtomicBoolean(), generation, new AtomicLong(), true ) )
             {
                 for ( Range range : ranges )
                 {

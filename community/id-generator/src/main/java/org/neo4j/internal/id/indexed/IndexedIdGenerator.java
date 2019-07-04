@@ -121,6 +121,7 @@ public class IndexedIdGenerator implements IdGenerator
     private final AtomicBoolean atLeastOneIdOnFreelist = new AtomicBoolean();
     private final long generation;
     private final boolean needsRebuild;
+    private final AtomicLong highestWrittenId;
 
     /**
      * {@code false} after construction and before a call to {@link IdGenerator#start(FreeIds)}, where false means that operations made this freelist
@@ -144,6 +145,7 @@ public class IndexedIdGenerator implements IdGenerator
         this.cacheOptimisticRefillThreshold = cacheCapacity / 4;
         this.cache = new SpmcLongQueue( cacheCapacity );
         this.highId = new AtomicLong( initialHighId );
+        this.highestWrittenId = new AtomicLong( initialHighId - 1 );
         this.maxId = maxId;
 
         Optional<HeaderReader> header = readHeader( pageCache, file );
@@ -156,6 +158,7 @@ public class IndexedIdGenerator implements IdGenerator
         {
             // This id generator exists, use the values from its header
             this.highId.set( header.get().highId );
+            this.highestWrittenId.set( header.get().highestWrittenId );
             this.generation = header.get().generation + 1;
             this.idsPerEntry = header.get().idsPerEntry;
             // Let's optimistically think assume that there may be some free ids in here. This will ensure that a scan is triggered on first request
@@ -170,8 +173,8 @@ public class IndexedIdGenerator implements IdGenerator
         }
 
         this.layout = new IdRangeLayout( idsPerEntry );
-        this.tree = new GBPTree<>( pageCache, file, layout, 0, NO_MONITOR, NO_HEADER_READER, new HeaderWriter( highId::get, STARTING_GENERATION, idsPerEntry ),
-                recoveryCleanupWorkCollector, openOptions );
+        this.tree = new GBPTree<>( pageCache, file, layout, 0, NO_MONITOR, NO_HEADER_READER,
+                new HeaderWriter( highId::get, highestWrittenId::get, STARTING_GENERATION, idsPerEntry ), recoveryCleanupWorkCollector, openOptions );
 
         boolean strictlyPrioritizeFreelist = flag( IndexedIdGenerator.class, STRICTLY_PRIORITIZE_FREELIST_NAME, STRICTLY_PRIORITIZE_FREELIST_DEFAULT );
         this.scanner = new FreeIdScanner( IDS_PER_ENTRY, tree, cache, atLeastOneIdOnFreelist, this::reuseMarker, generation, strictlyPrioritizeFreelist );
@@ -269,22 +272,23 @@ public class IndexedIdGenerator implements IdGenerator
     @Override
     public CommitMarker commitMarker()
     {
-        return lockAndInstantiateMarker();
+        return lockAndInstantiateMarker( true );
     }
 
     @Override
     public ReuseMarker reuseMarker()
     {
-        return lockAndInstantiateMarker();
+        return lockAndInstantiateMarker( true );
     }
 
-    private IdRangeMarker lockAndInstantiateMarker()
+    private IdRangeMarker lockAndInstantiateMarker( boolean bridgeIdGaps )
     {
         commitAndReuseLock.lock();
         try
         {
-            return new IdRangeMarker( idsPerEntry, layout, tree.writer(), commitAndReuseLock, started ? IdRangeMerger.DEFAULT : IdRangeMerger.RECOVERY,
-                    atLeastOneIdOnFreelist, generation );
+            return new IdRangeMarker( idsPerEntry, layout, tree.writer(), commitAndReuseLock,
+                    started ? IdRangeMerger.DEFAULT : IdRangeMerger.RECOVERY,
+                    started, atLeastOneIdOnFreelist, generation, highestWrittenId, bridgeIdGaps );
         }
         catch ( Exception e )
         {
@@ -325,7 +329,7 @@ public class IndexedIdGenerator implements IdGenerator
         if ( needsRebuild )
         {
             // This id generator was created right now, it needs to be populated with all free ids from its owning store so that it's in sync
-            try ( IdRangeMarker idRangeMarker = lockAndInstantiateMarker() )
+            try ( IdRangeMarker idRangeMarker = lockAndInstantiateMarker( false ) )
             {
                 // We can mark the ids as free right away since this is before started which means we get the very liberal merger
                 long highestFreeId = freeIdsForRebuild.accept( id ->
@@ -334,6 +338,7 @@ public class IndexedIdGenerator implements IdGenerator
                     idRangeMarker.markFree( id );
                 } );
                 highId.set( highestFreeId + 1 );
+                highestWrittenId.set( highestFreeId );
             }
             // We can checkpoint here since the free ids we read are committed
             checkpoint( IOLimiter.UNLIMITED );
@@ -350,7 +355,7 @@ public class IndexedIdGenerator implements IdGenerator
     @Override
     public void checkpoint( IOLimiter ioLimiter )
     {
-        tree.checkpoint( ioLimiter, new HeaderWriter( highId::get, generation, idsPerEntry ) );
+        tree.checkpoint( ioLimiter, new HeaderWriter( highId::get, highestWrittenId::get, generation, idsPerEntry ) );
     }
 
     @Override

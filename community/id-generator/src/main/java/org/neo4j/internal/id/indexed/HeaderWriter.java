@@ -39,12 +39,14 @@ class HeaderWriter implements Consumer<PageCursor>
      * and entering the checkpoint critical section.
      */
     private final LongSupplier highId;
+    private final LongSupplier highestWrittenId;
     private final long generation;
     private final int idsPerEntry;
 
-    HeaderWriter( LongSupplier highId, long generation, int idsPerEntry )
+    HeaderWriter( LongSupplier highId, LongSupplier highestWrittenId, long generation, int idsPerEntry )
     {
         this.highId = highId;
+        this.highestWrittenId = highestWrittenId;
         this.generation = generation;
         this.idsPerEntry = idsPerEntry;
     }
@@ -53,6 +55,7 @@ class HeaderWriter implements Consumer<PageCursor>
     public void accept( PageCursor cursor )
     {
         cursor.putLong( highId.getAsLong() );
+        cursor.putLong( highestWrittenId.getAsLong() );
         cursor.putLong( generation );
         cursor.putInt( idsPerEntry );
     }

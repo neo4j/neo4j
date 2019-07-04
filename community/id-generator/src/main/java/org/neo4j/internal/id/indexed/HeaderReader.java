@@ -34,6 +34,7 @@ import static java.lang.String.format;
 public class HeaderReader implements Header.Reader
 {
     long highId;
+    long highestWrittenId;
     long generation;
     int idsPerEntry;
 
@@ -41,6 +42,7 @@ public class HeaderReader implements Header.Reader
     public void read( ByteBuffer headerBytes )
     {
         this.highId = headerBytes.getLong();
+        this.highestWrittenId = headerBytes.getLong();
         this.generation = headerBytes.getLong();
         this.idsPerEntry = headerBytes.getInt();
     }
