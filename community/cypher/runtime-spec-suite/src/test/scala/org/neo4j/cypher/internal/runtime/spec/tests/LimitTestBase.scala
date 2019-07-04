@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.runtime.spec.tests
 
 import org.neo4j.cypher.internal.logical.plans.Ascending
 import org.neo4j.cypher.internal.runtime.spec._
+import org.neo4j.cypher.internal.v4_0.util.InvalidArgumentException
 import org.neo4j.cypher.internal.{CypherRuntime, RuntimeContext}
 
 abstract class LimitTestBase[CONTEXT <: RuntimeContext](edition: Edition[CONTEXT],
@@ -56,10 +57,10 @@ abstract class LimitTestBase[CONTEXT <: RuntimeContext](edition: Edition[CONTEXT
     val input = inputColumns(100000, 3, identity).stream()
 
     // then
-    val runtimeResult = execute(logicalQuery, runtime, input)
-    runtimeResult should beColumns("x").withNoRows()
-
-    input.hasMore should be(true)
+    val exception = intercept[InvalidArgumentException] {
+      consume(execute(logicalQuery, runtime, input))
+    }
+    exception.getMessage should include("Must be a non-negative integer")
   }
 
   test("limit higher than amount of rows") {
