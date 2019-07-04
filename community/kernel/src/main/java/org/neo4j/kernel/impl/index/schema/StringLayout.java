@@ -31,6 +31,8 @@ import static org.neo4j.kernel.impl.index.schema.StringIndexKey.ENTITY_ID_SIZE;
  */
 class StringLayout extends IndexLayout<StringIndexKey,NativeIndexValue>
 {
+    private static final int NO_ENTITY_ID = -1;
+
     StringLayout()
     {
         super( "USI", 0, 1 );
@@ -90,7 +92,7 @@ class StringLayout extends IndexLayout<StringIndexKey,NativeIndexValue>
         into.setCompareId( right.getCompareId() );
         if ( compareValue( left, right ) != 0 )
         {
-            into.setEntityId( -1 );
+            into.setEntityId( NO_ENTITY_ID );
         }
         else
         {
