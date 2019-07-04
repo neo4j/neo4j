@@ -51,7 +51,8 @@ case class SystemCommandExecutionPlan(name: String, normalExecutionEngine: Execu
                    subscriber: QuerySubscriber): RuntimeResult = {
 
     val tc = ctx.asInstanceOf[ExceptionTranslatingQueryContext].inner.asInstanceOf[TransactionBoundQueryContext].transactionalContext.tc
-    if (!name.startsWith("ShowDatabase") && !tc.securityContext().isAdmin) throw new AuthorizationViolationException(PERMISSION_DENIED)
+    if (!name.equals("ShowDefaultDatabase") && !name.startsWith("ShowDatabase") && !tc.securityContext().isAdmin)
+      throw new AuthorizationViolationException(PERMISSION_DENIED)
     val execution: QueryExecution = normalExecutionEngine.execute(query, systemParams, tc, doProfile, prePopulateResults,
                                                                   new SystemCommandQuerySubscriber(subscriber, QueryHandler.handleError(onError)))
     SystemCommandRuntimeResult(ctx, subscriber, resultMapper(ctx, execution))
