@@ -71,7 +71,7 @@ public class DatabaseId implements Comparable<DatabaseId>
             return false;
         }
         DatabaseId that = (DatabaseId) o;
-        return uuid.equals( that.uuid );
+        return Objects.equals( uuid, that.uuid );
     }
 
     @Override

@@ -41,7 +41,6 @@ public interface DatabaseIdRepository
 
     interface Caching extends DatabaseIdRepository
     {
-        // TODO call this
         void invalidate( DatabaseId databaseId );
     }
 }

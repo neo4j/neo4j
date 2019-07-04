@@ -28,7 +28,7 @@ public class DatabaseLogProvider extends AbstractLogProvider<DatabaseLog>
     private final DatabaseLogContext logContext;
     private final LogProvider delegate;
 
-    DatabaseLogProvider( DatabaseLogContext logContext, LogProvider delegate )
+    public DatabaseLogProvider( DatabaseLogContext logContext, LogProvider delegate )
     {
         this.logContext = logContext;
         this.delegate = delegate;

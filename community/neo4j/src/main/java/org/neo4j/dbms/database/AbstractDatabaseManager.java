@@ -132,7 +132,7 @@ public abstract class AbstractDatabaseManager<DB extends DatabaseContext> extend
         return unmodifiableNavigableMap( new TreeMap<>( databaseMap ) );
     }
 
-    protected abstract DB createDatabaseContext( DatabaseId databaseId );
+    protected abstract DB createDatabaseContext( DatabaseId databaseId ) throws Exception;
 
     protected ModularDatabaseCreationContext newDatabaseCreationContext( DatabaseId databaseId, Dependencies parentDependencies, Monitors parentMonitors )
     {

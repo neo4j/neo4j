@@ -214,12 +214,12 @@ class CommunityMultiDatabaseAdministrationCommandAcceptanceTest extends Communit
     managementService = graphDatabaseFactory(new File("test")).impermanent().setConfig( Config.newBuilder().fromConfig(config).build() ).setInternalLogProvider(logProvider).build()
     graphOps = managementService.database(SYSTEM_DATABASE_NAME)
     graph = new GraphDatabaseCypherService(graphOps)
-    databaseManager = graph.getDependencyResolver.resolveDependency(classOf[DatabaseManager[DatabaseContext]])
 
     initSystemGraph(config)
   }
 
   private def initSystemGraph(config: Config): Unit = {
+    val databaseManager = graph.getDependencyResolver.resolveDependency(classOf[DatabaseManager[DatabaseContext]])
     val queryExecutor: ContextSwitchingSystemGraphQueryExecutor = new ContextSwitchingSystemGraphQueryExecutor(databaseManager, threadToStatementContextBridge())
     val secureHasher: SecureHasher = new SecureHasher
     val systemGraphOperations: BasicSystemGraphOperations = new BasicSystemGraphOperations(queryExecutor, secureHasher)

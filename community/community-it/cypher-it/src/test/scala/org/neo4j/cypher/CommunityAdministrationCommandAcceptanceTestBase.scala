@@ -37,9 +37,7 @@ abstract class CommunityAdministrationCommandAcceptanceTestBase extends Executio
   override def databaseConfig(): Map[Setting[_], Object] = Map(GraphDatabaseSettings.auth_enabled -> TRUE)
 
   def selectDatabase(name: String): Unit = {
-    val maybeCtx: Optional[DatabaseContext] = databaseManager.getDatabaseContext(name)
-    val dbCtx: DatabaseContext = maybeCtx.orElseGet(() => throw new RuntimeException(s"No such database: $name"))
-    graphOps = dbCtx.databaseFacade()
+    graphOps = managementService.database(name)
     graph = new GraphDatabaseCypherService(graphOps)
     eengine = ExecutionEngineHelper.createEngine(graph)
   }
