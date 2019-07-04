@@ -89,10 +89,11 @@ class SchemaIndexDescriptorFactoryTest
         IndexDescriptor2 forLabel = TestIndexDescriptorFactory.forLabel( 1, 2 );
         long forLabelId = forLabel.getId();
         IndexDescriptor2 uniqueForLabel = TestIndexDescriptorFactory.uniqueForLabel( 2, 4 );
+        String providerName = forLabel.getIndexProvider().name();
         long uniqueForLabelId = uniqueForLabel.getId();
         assertThat( forLabel.userDescription( simpleNameLookup ),
-                equalTo( "Index( " + forLabelId + ", 'index_" + forLabelId + "', GENERAL, :Label1(property2) )" ) );
+                equalTo( "Index( " + forLabelId + ", 'index_" + forLabelId + "', GENERAL, :Label1(property2), " + providerName + " )" ) );
         assertThat( uniqueForLabel.userDescription( simpleNameLookup ),
-                equalTo( "Index( " + uniqueForLabelId + ", 'index_" + uniqueForLabelId + "', UNIQUE, :Label2(property4) )" ) );
+                equalTo( "Index( " + uniqueForLabelId + ", 'index_" + uniqueForLabelId + "', UNIQUE, :Label2(property4), " + providerName + " )" ) );
     }
 }

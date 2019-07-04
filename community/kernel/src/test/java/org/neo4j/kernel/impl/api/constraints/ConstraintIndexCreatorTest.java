@@ -379,7 +379,7 @@ class ConstraintIndexCreatorTest
             TransactionState transactionState = mock( TransactionState.class );
             when( transaction.txState() ).thenReturn( transactionState );
             when( transaction.indexUniqueCreate( any( SchemaDescriptor.class ), any( String.class ) ) ).thenAnswer(
-                    i -> IndexPrototype.uniqueForSchema( i.getArgument( 0 ) ).materialise( 42 ) );
+                    i -> IndexPrototype.uniqueForSchema( i.getArgument( 0 ) ).materialise( INDEX_ID ) );
             when( transaction.newStorageReader() ).thenReturn( mock( StorageReader.class ) );
         }
         catch ( InvalidTransactionTypeKernelException e )

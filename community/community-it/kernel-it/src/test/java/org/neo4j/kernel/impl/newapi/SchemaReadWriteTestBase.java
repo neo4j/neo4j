@@ -150,6 +150,29 @@ public abstract class SchemaReadWriteTestBase<G extends KernelAPIWriteTestSuppor
     }
 
     @Test
+    void shouldDropIndexBySchema() throws Exception
+    {
+        IndexDescriptor2 index;
+        try ( Transaction transaction = beginTransaction() )
+        {
+            index = transaction.schemaWrite().indexCreate( labelDescriptor( label, prop1 ) );
+            transaction.success();
+        }
+
+        try ( Transaction transaction = beginTransaction() )
+        {
+            transaction.schemaWrite().indexDrop( index.schema() );
+            transaction.success();
+        }
+
+        try ( Transaction transaction = beginTransaction() )
+        {
+            SchemaRead schemaRead = transaction.schemaRead();
+            assertThat( schemaRead.index( label, prop1 ), equalTo( NO_INDEX ) );
+        }
+    }
+
+    @Test
     void shouldFailToDropNoIndex() throws Exception
     {
         try ( Transaction transaction = beginTransaction() )
@@ -179,6 +202,30 @@ public abstract class SchemaReadWriteTestBase<G extends KernelAPIWriteTestSuppor
         {
             assertThrows( SchemaKernelException.class, () ->
                     transaction.schemaWrite().indexDrop( index ) );
+            transaction.success();
+        }
+    }
+
+    @Test
+    void shouldFailToDropNonExistentIndexSchema() throws Exception
+    {
+        IndexDescriptor2 index;
+        try ( Transaction transaction = beginTransaction() )
+        {
+            index = transaction.schemaWrite().indexCreate( labelDescriptor( label, prop1 ) );
+            transaction.success();
+        }
+
+        try ( Transaction transaction = beginTransaction() )
+        {
+            transaction.schemaWrite().indexDrop( index );
+            transaction.success();
+        }
+
+        try ( Transaction transaction = beginTransaction() )
+        {
+            assertThrows( SchemaKernelException.class, () ->
+                    transaction.schemaWrite().indexDrop( index.schema() ) );
             transaction.success();
         }
     }
@@ -509,6 +556,26 @@ public abstract class SchemaReadWriteTestBase<G extends KernelAPIWriteTestSuppor
             IndexDescriptor2 index = transaction.schemaRead().index( label, prop1 );
             assertThrows( SchemaKernelException.class, () ->
                     transaction.schemaWrite().indexDrop( index ) );
+            transaction.success();
+        }
+    }
+
+    @Test
+    void shouldFailToDropIndexBySchemaIfExistingUniqueConstraint() throws Exception
+    {
+        //Given
+        try ( Transaction transaction = beginTransaction() )
+        {
+            transaction.schemaWrite().uniquePropertyConstraintCreate( labelDescriptor( label, prop1 ) );
+            transaction.success();
+        }
+
+        //When
+        try ( Transaction transaction = beginTransaction() )
+        {
+            IndexDescriptor2 index = transaction.schemaRead().index( label, prop1 );
+            assertThrows( SchemaKernelException.class, () ->
+                    transaction.schemaWrite().indexDrop( index.schema() ) );
             transaction.success();
         }
     }

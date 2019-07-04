@@ -169,7 +169,7 @@ class BuiltInProceduresTest
 
         // When/Then
         assertThat( call( "db.indexes" ), contains( record(
-                "INDEX ON :User(name)", "Unnamed index", singletonList( "User" ), singletonList( "name" ), "ONLINE", "node_label_property", 100D,
+                "INDEX ON :User(name)", "index_1000", singletonList( "User" ), singletonList( "name" ), "ONLINE", "node_label_property", 100D,
                 getIndexProviderDescriptorMap( EMPTY.getProviderDescriptor() ), 42L, "" ) ) );
     }
 
@@ -181,7 +181,7 @@ class BuiltInProceduresTest
 
         // When/Then
         assertThat( call( "db.indexes" ), contains( record(
-                "INDEX ON :User(name)", "Unnamed index", singletonList( "User" ), singletonList( "name" ), "ONLINE", "node_unique_property", 100D,
+                "INDEX ON :User(name)", "index_1000", singletonList( "User" ), singletonList( "name" ), "ONLINE", "node_unique_property", 100D,
                 getIndexProviderDescriptorMap( EMPTY.getProviderDescriptor() ), 42L, "" ) ) );
     }
 
@@ -194,7 +194,7 @@ class BuiltInProceduresTest
 
         // When/Then
         assertThat( call( "db.indexes" ), contains( record(
-                "INDEX ON :User(name)", "Unnamed index", singletonList( "User" ), singletonList( "name" ), "NOT FOUND", "node_label_property", 0D,
+                "INDEX ON :User(name)", "index_1000", singletonList( "User" ), singletonList( "name" ), "NOT FOUND", "node_label_property", 0D,
                 getIndexProviderDescriptorMap( EMPTY.getProviderDescriptor() ), 42L, "Index not found. It might have been concurrently dropped." ) ) );
     }
 
@@ -341,7 +341,7 @@ class BuiltInProceduresTest
         int propId = token( propKey, propKeys );
 
         LabelSchemaDescriptor schema = forLabel( labelId, propId );
-        IndexDescriptor2 index = IndexPrototype.uniqueForSchema( schema, EMPTY.getProviderDescriptor() ).materialise( uniqueIndexes.size() );
+        IndexDescriptor2 index = IndexPrototype.uniqueForSchema( schema, EMPTY.getProviderDescriptor() ).materialise( uniqueIndexes.size() + 1000 );
         uniqueIndexes.add( index );
         constraints.add( ConstraintDescriptorFactory.uniqueForLabel( labelId, propId ) );
     }

@@ -28,6 +28,7 @@ import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.LabelSchemaDescriptor;
 import org.neo4j.internal.schema.RelationTypeSchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptor;
+import org.neo4j.internal.schema.SchemaDescriptorSupplier;
 
 /**
  * Surface for creating and dropping indexes and constraints.
@@ -69,6 +70,13 @@ public interface SchemaWrite
      * @param index the index to drop
      */
     void indexDrop( IndexDescriptor2 index ) throws SchemaKernelException;
+
+    /**
+     * Drop an index that matches the given schema.
+     *
+     * @param schemaish the schema matching the index to drop
+     */
+    void indexDrop( SchemaDescriptorSupplier schemaish ) throws SchemaKernelException;
 
     /**
      * Create unique property constraint

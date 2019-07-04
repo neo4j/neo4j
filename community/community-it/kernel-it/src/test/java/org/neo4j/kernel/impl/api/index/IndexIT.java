@@ -62,6 +62,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 import static org.neo4j.configuration.GraphDatabaseSettings.default_schema_provider;
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.graphdb.RelationshipType.withName;
@@ -239,6 +240,39 @@ class IndexIT extends KernelIntegrationTest
         } );
         assertEquals( "Unable to drop index on :label[" + labelId + "](property[" + propertyKeyId + "]): " +
             "No such INDEX ON :label[" + labelId + "](property[" + propertyKeyId + "]).", e.getMessage() );
+        commit();
+    }
+
+    @Test
+    void shouldDisallowDroppingIndexBySchemaThatDoesNotExist() throws Exception
+    {
+        // given
+        IndexDescriptor2 index;
+        {
+            SchemaWrite statement = schemaWriteInNewTransaction();
+            index = statement.indexCreate( descriptor );
+            commit();
+        }
+        {
+            SchemaWrite statement = schemaWriteInNewTransaction();
+            statement.indexDrop( index.schema() );
+            commit();
+        }
+
+        // when
+        try
+        {
+            SchemaWrite statement = schemaWriteInNewTransaction();
+            statement.indexDrop( index.schema() );
+            fail( "Expected to fail" );
+            commit();
+        }
+        // then
+        catch ( SchemaKernelException e )
+        {
+            assertEquals( "Unable to drop index on :label[" + labelId + "](property[" + propertyKeyId + "]): " +
+                          "No such INDEX ON :label[" + labelId + "](property[" + propertyKeyId + "]).", e.getMessage() );
+        }
         commit();
     }
 

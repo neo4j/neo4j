@@ -730,7 +730,7 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
 
   override def dropIndexRule(labelId: Int, propertyKeyIds: Seq[Int]): Unit = {
     val ktx = transactionalContext.kernelTransaction
-    ktx.schemaWrite().indexDrop(ktx.schemaRead().index(labelId, propertyKeyIds:_*))
+    ktx.schemaWrite().indexDrop(SchemaDescriptor.forLabel(labelId, propertyKeyIds:_*))
   }
 
   override def createNodeKeyConstraint(labelId: Int, propertyKeyIds: Seq[Int]): Boolean = try {

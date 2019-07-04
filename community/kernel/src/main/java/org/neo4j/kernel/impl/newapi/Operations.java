@@ -58,6 +58,7 @@ import org.neo4j.internal.schema.IndexProviderDescriptor;
 import org.neo4j.internal.schema.LabelSchemaDescriptor;
 import org.neo4j.internal.schema.RelationTypeSchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptor;
+import org.neo4j.internal.schema.SchemaDescriptorSupplier;
 import org.neo4j.internal.schema.constraints.ConstraintDescriptorFactory;
 import org.neo4j.internal.schema.constraints.IndexBackedConstraintDescriptor;
 import org.neo4j.internal.schema.constraints.NodeKeyConstraintDescriptor;
@@ -903,7 +904,13 @@ public class Operations implements Write, SchemaWrite
     public void indexDrop( IndexDescriptor2 index ) throws SchemaKernelException
     {
         assertValidIndex( index );
-        SchemaDescriptor schema = index.schema();
+        indexDrop( index.schema() );
+    }
+
+    @Override
+    public void indexDrop( SchemaDescriptorSupplier schemaish ) throws SchemaKernelException
+    {
+        SchemaDescriptor schema = schemaish.schema();
 
         exclusiveSchemaLock( schema );
         ktx.assertOpen();
@@ -923,12 +930,12 @@ public class Operations implements Write, SchemaWrite
                     throw new IndexBelongsToConstraintException( schema );
                 }
             }
+            ktx.txState().indexDoDrop( existingIndex );
         }
         catch ( IndexBelongsToConstraintException | NoSuchIndexException e )
         {
             throw new DropIndexFailureException( schema, e );
         }
-        ktx.txState().indexDoDrop( index );
     }
 
     @Override

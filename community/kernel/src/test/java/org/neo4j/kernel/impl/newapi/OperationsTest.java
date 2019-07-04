@@ -593,12 +593,33 @@ class OperationsTest
     }
 
     @Test
+    void shouldAcquireSchemaWriteLockBeforeRemovingIndexRuleBySchema() throws Exception
+    {
+        // given
+        IndexDescriptor2 index = IndexPrototype.forSchema( SchemaDescriptor.forLabel( 0, 0 ) ).materialise( 0 );
+        IndexProxy indexProxy = mock( IndexProxy.class );
+        when( indexProxy.getDescriptor() ).thenReturn( index );
+        when( indexingService.getIndexProxy( index.schema() ) ).thenReturn( indexProxy );
+        when( storageReader.indexGetForSchema( index.schema() ) ).thenReturn( index );
+
+        // when
+        operations.indexDrop( index.schema() );
+
+        // then
+        order.verify( locks ).acquireExclusive( LockTracer.NONE, ResourceTypes.LABEL, 0 );
+        order.verify( txState ).indexDoDrop( index );
+    }
+
+    @Test
     void shouldAcquireSchemaWriteLockBeforeCreatingUniquenessConstraint() throws Exception
     {
         // given
         String defaultProvider = Config.defaults().get( default_schema_provider );
         IndexDescriptor2 constraintIndex = IndexPrototype.forSchema( descriptor ).materialise( 42 );
         when( constraintIndexCreator.createUniquenessConstraintIndex( transaction, descriptor, defaultProvider ) ).thenReturn( constraintIndex );
+        IndexProxy indexProxy = mock( IndexProxy.class );
+        when( indexProxy.getDescriptor() ).thenReturn( constraintIndex );
+        when( indexingService.getIndexProxy( constraintIndex.schema() ) ).thenReturn( indexProxy );
         when( storageReader.constraintsGetForSchema(  descriptor.schema() ) ).thenReturn( Collections.emptyIterator() );
 
         // when

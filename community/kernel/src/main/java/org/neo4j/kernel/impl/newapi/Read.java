@@ -175,7 +175,7 @@ abstract class Read implements TxStateHolder,
 
         if ( schema.entityType().equals( EntityType.RELATIONSHIP ) )
         {
-            for ( int prop : properties )
+            for ( int prop : propertyIds )
             {
                 for ( int relType : schema.getEntityTokenIds() )
                 {
