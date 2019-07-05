@@ -22,7 +22,6 @@ package org.neo4j.cypher.internal.javacompat;
 import org.junit.Test;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Stream;
 
@@ -32,6 +31,7 @@ import org.neo4j.graphdb.InputPosition;
 import org.neo4j.graphdb.Notification;
 import org.neo4j.graphdb.QueryExecutionException;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.graphdb.impl.notification.NotificationDetail;
 import org.neo4j.internal.helpers.collection.Iterables;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 
@@ -52,15 +52,26 @@ public class NotificationAcceptanceTest extends NotificationTestSupport
     public void shouldWarnWhenRequestingCompiledRuntimeOnUnsupportedQuery()
     {
         Stream.of( "CYPHER 3.5", "CYPHER 4.0" ).forEach(
-                version -> shouldNotifyInStream( version, "EXPLAIN CYPHER runtime=compiled MATCH (a)-->(b), (c)-->(d) RETURN count(*)", InputPosition.empty,
-                        RUNTIME_UNSUPPORTED ) );
+                version -> shouldNotifyInStreamWithDetail( version,
+                                                           "EXPLAIN CYPHER runtime=compiled RETURN 1",
+                                                           InputPosition.empty,
+                                                           RUNTIME_UNSUPPORTED,
+                                                           NotificationDetail.Factory.message( "Runtime unsupported",
+                                                                                               "This version of Neo4j does not " +
+                                                                                                       "support requested runtime: compiled" ) ) );
     }
 
     @Test
     public void shouldWarnWhenRequestingSlottedRuntimeOnUnsupportedQuery()
     {
         Stream.of( "CYPHER 3.5", "CYPHER 4.0" ).forEach(
-                version -> shouldNotifyInStream( version, "explain cypher runtime=slotted merge (a)-[:X]->(b)", InputPosition.empty, RUNTIME_UNSUPPORTED ) );
+                version -> shouldNotifyInStreamWithDetail( version,
+                                                           "EXPLAIN CYPHER runtime=slotted RETURN 1",
+                                                           InputPosition.empty,
+                                                           RUNTIME_UNSUPPORTED,
+                                                           NotificationDetail.Factory.message( "Runtime unsupported",
+                                                                                               "This version of Neo4j does not " +
+                                                                                                       "support requested runtime: slotted" ) ) );
     }
 
     @Test
