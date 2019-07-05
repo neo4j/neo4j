@@ -19,38 +19,32 @@
  */
 package org.neo4j.index.internal.gbptree;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.function.Supplier;
 
-import static org.junit.Assert.assertSame;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
-public class TripCountingRootCatchupTest
+class TripCountingRootCatchupTest
 {
     @Test
-    public void mustThrowOnConsecutiveCatchupsFromSamePage()
+    void mustThrowOnConsecutiveCatchupsFromSamePage()
     {
         // Given
         TripCountingRootCatchup tripCountingRootCatchup = getTripCounter();
 
-        // When
-        try
+        assertThrows( TreeInconsistencyException.class, () ->
         {
             for ( int i = 0; i < TripCountingRootCatchup.MAX_TRIP_COUNT; i++ )
             {
                 tripCountingRootCatchup.catchupFrom( 10 );
             }
-            fail( "Expected to throw" );
-        }
-        catch ( TreeInconsistencyException e )
-        {
-            // Then good
-        }
+        } );
     }
 
     @Test
-    public void mustNotThrowOnInterleavedCatchups()
+    void mustNotThrowOnInterleavedCatchups()
     {
         // given
         TripCountingRootCatchup tripCountingRootCatchup = getTripCounter();
@@ -65,7 +59,7 @@ public class TripCountingRootCatchupTest
     }
 
     @Test
-    public void mustReturnRootUsingProvidedSupplier()
+    void mustReturnRootUsingProvidedSupplier()
     {
         // given
         Root expectedRoot = new Root( 1, 2 );

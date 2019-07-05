@@ -19,10 +19,9 @@
  */
 package org.neo4j.index.internal.gbptree;
 
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.RuleChain;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.io.File;
 import java.io.IOException;
@@ -36,30 +35,37 @@ import java.util.TreeMap;
 import java.util.TreeSet;
 import java.util.stream.Collectors;
 
+import org.neo4j.io.fs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.test.extension.EphemeralFileSystemExtension;
+import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.RandomExtension;
+import org.neo4j.test.extension.TestDirectoryExtension;
 import org.neo4j.test.rule.PageCacheRule;
 import org.neo4j.test.rule.RandomRule;
 import org.neo4j.test.rule.TestDirectory;
-import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
-import static org.junit.rules.RuleChain.outerRule;
-import static org.neo4j.index.internal.gbptree.ThrowingRunnable.throwing;
+import static java.lang.String.format;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.io.pagecache.IOLimiter.UNLIMITED;
 import static org.neo4j.test.rule.PageCacheConfig.config;
 
-public abstract class GBPTreeRecoveryITBase<KEY,VALUE>
+@ExtendWith( {EphemeralFileSystemExtension.class, TestDirectoryExtension.class, RandomExtension.class} )
+abstract class GBPTreeRecoveryITBase<KEY,VALUE>
 {
-    private final EphemeralFileSystemRule fs = new EphemeralFileSystemRule();
-    private final TestDirectory directory = TestDirectory.testDirectory( getClass(), fs.get() );
-    private final PageCacheRule pageCacheRule = new PageCacheRule(
-            config().withPageSize( PAGE_SIZE ).withAccessChecks( true ) );
-    private final RandomRule random = new RandomRule();
+    private static final int PAGE_SIZE = 256;
 
-    @Rule
-    public final RuleChain rules = outerRule( fs ).around( directory ).around( pageCacheRule ).around( random );
+    @Inject
+    private EphemeralFileSystemAbstraction fs;
+    @Inject
+    private TestDirectory directory;
+    @Inject
+    private RandomRule random;
+
+    private final PageCacheRule pageCacheRule = new PageCacheRule( config().withPageSize( PAGE_SIZE ).withAccessChecks( true ) );
+    private final Action CHECKPOINT = new CheckpointAction();
 
     // Test config
     private int loadCountTransactions;
@@ -67,18 +73,14 @@ public abstract class GBPTreeRecoveryITBase<KEY,VALUE>
     private int maxInsertCountPerBatch;
     private int minRemoveCountPerBatch;
     private int maxRemoveCountPerBatch;
-
-    private static final int PAGE_SIZE = 256;
-    private final Action CHECKPOINT = new CheckpointAction();
-
     private TestLayout<KEY,VALUE> layout;
 
     /* Global variables for recoverFromAnything test */
     private boolean recoverFromAnythingInitialized;
     private int keyRange;
 
-    @Before
-    public void setUp()
+    @BeforeEach
+    void setUp()
     {
         this.layout = getLayout( random, PAGE_SIZE );
         loadCountTransactions = random.intBetween( 300, 1_000 );
@@ -91,7 +93,7 @@ public abstract class GBPTreeRecoveryITBase<KEY,VALUE>
     protected abstract TestLayout<KEY,VALUE> getLayout( RandomRule random, int pageSize );
 
     @Test
-    public void shouldRecoverFromCrashBeforeFirstCheckpoint() throws Exception
+    void shouldRecoverFromCrashBeforeFirstCheckpoint() throws Exception
     {
         // GIVEN
         // a tree with only small amount of data that has not yet seen checkpoint from outside
@@ -133,28 +135,28 @@ public abstract class GBPTreeRecoveryITBase<KEY,VALUE>
     }
 
     @Test
-    public void shouldRecoverFromAnythingReplayExactFromCheckpointHighKeyContention() throws Exception
+    void shouldRecoverFromAnythingReplayExactFromCheckpointHighKeyContention() throws Exception
     {
         initializeRecoveryFromAnythingTest( 100 );
         doShouldRecoverFromAnything( true );
     }
 
     @Test
-    public void shouldRecoverFromAnythingReplayFromBeforeLastCheckpointHighKeyContention() throws Exception
+    void shouldRecoverFromAnythingReplayFromBeforeLastCheckpointHighKeyContention() throws Exception
     {
         initializeRecoveryFromAnythingTest( 100 );
         doShouldRecoverFromAnything( false );
     }
 
     @Test
-    public void shouldRecoverFromAnythingReplayExactFromCheckpointLowKeyContention() throws Exception
+    void shouldRecoverFromAnythingReplayExactFromCheckpointLowKeyContention() throws Exception
     {
         initializeRecoveryFromAnythingTest( 1_000_000 );
         doShouldRecoverFromAnything( true );
     }
 
     @Test
-    public void shouldRecoverFromAnythingReplayFromBeforeLastCheckpointLowKeyContention() throws Exception
+    void shouldRecoverFromAnythingReplayFromBeforeLastCheckpointLowKeyContention() throws Exception
     {
         initializeRecoveryFromAnythingTest( 1_000_000 );
         doShouldRecoverFromAnything( false );
@@ -201,11 +203,18 @@ public abstract class GBPTreeRecoveryITBase<KEY,VALUE>
             // ... execute the remaining actions
             execute( shuffledLoad.subList( crashFlushIndex, shuffledLoad.size() ), index );
             // ... and finally crash
-            fs.snapshot( throwing( () ->
+
+            EphemeralFileSystemAbstraction snapshot = fs.snapshot();
+            try
             {
                 index.close();
                 pageCache.close();
-            } ) );
+            }
+            finally
+            {
+                fs.close();
+                fs = snapshot;
+            }
         }
 
         // WHEN doing recovery
@@ -439,14 +448,14 @@ public abstract class GBPTreeRecoveryITBase<KEY,VALUE>
         return data;
     }
 
-    private GBPTree<KEY,VALUE> createIndex( PageCache pageCache, File file ) throws IOException
+    private GBPTree<KEY,VALUE> createIndex( PageCache pageCache, File file )
     {
         return new GBPTreeBuilder<>( pageCache, file, layout ).build();
     }
 
     private PageCache createPageCache()
     {
-        return pageCacheRule.getPageCache( fs.get() );
+        return pageCacheRule.getPageCache( fs );
     }
 
     enum ActionType
@@ -615,14 +624,12 @@ public abstract class GBPTreeRecoveryITBase<KEY,VALUE>
 
     private void assertEqualsKey( KEY expected, KEY actual )
     {
-        assertEquals( String.format( "expected equal, expected=%s, actual=%s", expected.toString(), actual.toString() ), 0,
-                layout.compare( expected, actual ) );
+        assertEquals( 0, layout.compare( expected, actual ), format( "expected equal, expected=%s, actual=%s", expected, actual ) );
     }
 
     private void assertEqualsValue( VALUE expected, VALUE actual )
     {
-        assertEquals( String.format( "expected equal, expected=%s, actual=%s", expected.toString(), actual.toString() ), 0,
-                layout.compareValue( expected, actual ) );
+        assertEquals( 0, layout.compareValue( expected, actual ), format( "expected equal, expected=%s, actual=%s", expected, actual ) );
     }
 
     private long keySeed( KEY key )

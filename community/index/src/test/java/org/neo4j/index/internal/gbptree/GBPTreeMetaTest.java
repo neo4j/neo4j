@@ -19,7 +19,7 @@
  */
 package org.neo4j.index.internal.gbptree;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 
@@ -27,15 +27,15 @@ import org.neo4j.io.pagecache.ByteArrayPageCursor;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCursor;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
-public class GBPTreeMetaTest
+class GBPTreeMetaTest
 {
     private static final int PAGE_SIZE = PageCache.PAGE_SIZE;
     private final PageCursor cursor = ByteArrayPageCursor.wrap( new byte[PAGE_SIZE] );
 
     @Test
-    public void mustReadWhatIsWritten() throws IOException
+    void mustReadWhatIsWritten() throws IOException
     {
         // given
         Layout layout = SimpleLongLayout.longLayout()

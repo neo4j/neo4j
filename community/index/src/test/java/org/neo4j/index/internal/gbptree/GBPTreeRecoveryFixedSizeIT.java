@@ -25,7 +25,7 @@ import org.neo4j.test.rule.RandomRule;
 
 import static org.neo4j.index.internal.gbptree.SimpleLongLayout.longLayout;
 
-public class GBPTreeRecoveryFixedSizeIT extends GBPTreeRecoveryITBase<MutableLong,MutableLong>
+class GBPTreeRecoveryFixedSizeIT extends GBPTreeRecoveryITBase<MutableLong,MutableLong>
 {
     @Override
     protected TestLayout<MutableLong,MutableLong> getLayout( RandomRule random, int pageSize )
