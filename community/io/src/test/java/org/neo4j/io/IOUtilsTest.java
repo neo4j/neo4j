@@ -31,6 +31,7 @@ import static org.hamcrest.Matchers.isA;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.verify;
+import static org.neo4j.io.IOUtils.closeAll;
 
 class IOUtilsTest
 {
@@ -57,7 +58,7 @@ class IOUtilsTest
     @Test
     void closeAllAndRethrowException()
     {
-        final var e = assertThrows( IOException.class, () -> IOUtils.closeAll( goodClosable1, faultyClosable, goodClosable2 ) );
+        final var e = assertThrows( IOException.class, () -> closeAll( goodClosable1, faultyClosable, goodClosable2 ) );
         assertThat( e.getMessage(), is( "Exception closing multiple resources." ) );
         assertThat( e.getCause(), isA( IOException.class ) );
     }

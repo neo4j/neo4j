@@ -46,7 +46,7 @@ public final class AssertingStructureBuilder<Input, Result> implements Structure
 
     public static Matcher<Exception> exception( Class<? extends Exception> type, Matcher<String> message )
     {
-        return new TypeSafeMatcher<Exception>( type )
+        return new TypeSafeMatcher<>( type )
         {
             @Override
             protected boolean matchesSafely( Exception item )
@@ -57,8 +57,7 @@ public final class AssertingStructureBuilder<Input, Result> implements Structure
             @Override
             public void describeTo( Description description )
             {
-                description.appendText( "Exception of type " ).appendValue( type.getName() )
-                        .appendText( " with message " ).appendDescriptionOf( message );
+                description.appendText( "Exception of type " ).appendValue( type.getName() ).appendText( " with message " ).appendDescriptionOf( message );
             }
         };
     }

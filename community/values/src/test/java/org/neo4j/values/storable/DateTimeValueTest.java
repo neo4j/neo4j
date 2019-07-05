@@ -82,13 +82,6 @@ class DateTimeValueTest
                 parse( "-1-12-17T17:14:35.123456789+0000", orFail ) );
     }
 
-    @Disabled
-    void shouldSupportLeapSeconds()
-    {
-        // Leap second according to https://www.timeanddate.com/time/leap-seconds-future.html
-        assertEquals( datetime( 2016, 12, 31, 23, 59, 60, 0, UTC ), parse( "2016-12-31T23:59:60Z", orFail ) );
-    }
-
     @Test
     void shouldRejectInvalidDateTimeString()
     {

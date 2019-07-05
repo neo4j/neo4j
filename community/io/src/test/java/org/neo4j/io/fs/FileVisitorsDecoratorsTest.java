@@ -35,6 +35,7 @@ import java.util.stream.Stream;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.params.provider.Arguments.of;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -50,27 +51,27 @@ class FileVisitorsDecoratorsTest
     static Stream<Arguments> parameters()
     {
         return Stream.of(
-            Arguments.of(
+            of(
                 "decorator",
                 (DecoratorCtor) FileVisitors.Decorator::new,
                 false
             ),
-            Arguments.of(
+            of(
                 "onFile",
                 (DecoratorCtor) wrapped -> FileVisitors.onFile( noop(), wrapped ),
                 false
             ),
-            Arguments.of(
+            of(
                 "onDirectory",
                 (DecoratorCtor) wrapped -> FileVisitors.onDirectory( noop(), wrapped ),
                 false
             ),
-            Arguments.of(
+            of(
                 "throwExceptions",
                 (DecoratorCtor) FileVisitors::throwExceptions,
                 true
             ),
-            Arguments.of(
+            of(
                 "onlyMatching",
                 (DecoratorCtor) wrapped -> FileVisitors.onlyMatching( alwaysTrue(), wrapped ),
                 false

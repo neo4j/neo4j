@@ -20,7 +20,6 @@
 package org.neo4j.csv.reader;
 
 import org.hamcrest.MatcherAssert;
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
@@ -47,28 +46,14 @@ import org.neo4j.test.rule.TestDirectory;
 
 import static java.util.Arrays.copyOfRange;
 import static org.hamcrest.Matchers.containsString;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.params.provider.Arguments.of;
 
 @ExtendWith( TestDirectoryExtension.class )
 class ReadablesTest
 {
-
-    private static Stream<Arguments> parameters()
-    {
-        return Stream.of(
-            Arguments.of( (ReadMethod) ( readable, length ) ->
-                {
-                    SectionedCharBuffer readText = new SectionedCharBuffer( length );
-                    readable.read( readText, readText.front() );
-                    return copyOfRange( readText.array(), readText.pivot(), readText.front() );
-                } ),
-            Arguments.of( (ReadMethod) ( readable, length ) ->
-            {
-                char[] result = new char[length];
-                readable.read( result, 0, length );
-                return result;
-            } ) );
-    }
-
     @Inject
     private TestDirectory directory;
 
@@ -142,15 +127,8 @@ class ReadablesTest
         File compressed = compressWithZip( text, ".nothing", ".DS_Store", "somewhere/something" );
 
         // WHEN
-        try
-        {
-            Readables.files( Charset.defaultCharset(), compressed );
-            Assertions.fail( "Should fail since there are multiple suitable files in the zip archive" );
-        }
-        catch ( IOException e )
-        {   // Good
-            MatcherAssert.assertThat( e.getMessage(), containsString( "Multiple" ) );
-        }
+        IOException exception = assertThrows( IOException.class, () -> Readables.files( Charset.defaultCharset(), compressed ) );
+        MatcherAssert.assertThat( exception.getMessage(), containsString( "Multiple" ) );
     }
 
     @ParameterizedTest( name = "read method {index}" )
@@ -171,12 +149,12 @@ class ReadablesTest
             expected += buffer.available();
 
             // THEN
-            Assertions.assertEquals( expected, reader.position() );
+            assertEquals( expected, reader.position() );
         }
         while ( buffer.hasAvailable() );
 
         // and THEN
-        Assertions.assertEquals( data.toCharArray().length, expected );
+        assertEquals( data.toCharArray().length, expected );
     }
 
     @ParameterizedTest( name = "read method {index}" )
@@ -252,8 +230,8 @@ class ReadablesTest
         reader.read( secondLineCharacters, 0, secondLineCharacters.length );
 
         // then
-        Assertions.assertArrayEquals( firstLine.toCharArray(), firstLineCharacters );
-        Assertions.assertArrayEquals( secondLine.toCharArray(), secondLineCharacters );
+        assertArrayEquals( firstLine.toCharArray(), firstLineCharacters );
+        assertArrayEquals( secondLine.toCharArray(), secondLineCharacters );
     }
 
     @ParameterizedTest( name = "read method {index}" )
@@ -269,8 +247,8 @@ class ReadablesTest
         int readAfterwards = reader.read( new char[1], 0, 1 );
 
         // then
-        Assertions.assertArrayEquals( firstLine.toCharArray(), firstLineCharacters );
-        Assertions.assertEquals( -1, readAfterwards );
+        assertArrayEquals( firstLine.toCharArray(), firstLineCharacters );
+        assertEquals( -1, readAfterwards );
     }
 
     private void shouldReadTextFromFileWithBom( Magic bom, String text, ReadMethod readMethod ) throws IOException
@@ -297,10 +275,10 @@ class ReadablesTest
         // THEN
         char[] expected = data.toCharArray();
         char[] array = buffer.array();
-        Assertions.assertEquals( expected.length, buffer.available() );
+        assertEquals( expected.length, buffer.available() );
         for ( int i = 0; i < expected.length; i++ )
         {
-            Assertions.assertEquals( expected[i], array[buffer.pivot() + i] );
+            assertEquals( expected[i], array[buffer.pivot() + i] );
         }
     }
 
@@ -335,8 +313,6 @@ class ReadablesTest
         }
         return file;
     }
-
-    // TODO test for failing reading a ZIP archive with multiple files in
 
     private File compressWithZip( String text, String... otherEntries ) throws IOException
     {
@@ -380,6 +356,23 @@ class ReadablesTest
     private void assertReadText( CharReadable readable, String text, ReadMethod readMethod ) throws IOException
     {
         char[] readText = readMethod.read( readable, text.toCharArray().length );
-        Assertions.assertArrayEquals( readText, text.toCharArray() );
+        assertArrayEquals( readText, text.toCharArray() );
+    }
+
+    private static Stream<Arguments> parameters()
+    {
+        return Stream.of(
+                of( (ReadMethod) ( readable, length ) ->
+                {
+                    SectionedCharBuffer readText = new SectionedCharBuffer( length );
+                    readable.read( readText, readText.front() );
+                    return copyOfRange( readText.array(), readText.pivot(), readText.front() );
+                } ),
+                of( (ReadMethod) ( readable, length ) ->
+                {
+                    char[] result = new char[length];
+                    readable.read( result, 0, length );
+                    return result;
+                } ) );
     }
 }

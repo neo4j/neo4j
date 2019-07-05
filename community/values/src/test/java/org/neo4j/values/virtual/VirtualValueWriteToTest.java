@@ -30,6 +30,7 @@ import org.neo4j.values.AnyValue;
 import org.neo4j.values.BufferAnyValueWriter;
 import org.neo4j.values.storable.BufferValueWriter.Specials;
 
+import static org.junit.jupiter.params.provider.Arguments.of;
 import static org.neo4j.values.BufferAnyValueWriter.Specials.beginList;
 import static org.neo4j.values.BufferAnyValueWriter.Specials.beginMap;
 import static org.neo4j.values.BufferAnyValueWriter.Specials.endList;
@@ -57,7 +58,7 @@ class VirtualValueWriteToTest
     private static Stream<Arguments> parameters()
     {
         return Stream.of(
-                Arguments.of(shouldWrite(
+                of(shouldWrite(
                         VirtualValues.list(
                                 booleanValue( false ),
                                 byteArray( new byte[]{3, 4, 5} ),
@@ -69,7 +70,7 @@ class VirtualValueWriteToTest
                         "yo",
                         endList()
                 ) ),
-                Arguments.of(shouldWrite(
+                of(shouldWrite(
                         VirtualValues.map(
                                 new String[]{"foo", "bar"},
                                 new AnyValue[]{intValue( 100 ), charValue( 'c' )}
@@ -79,15 +80,15 @@ class VirtualValueWriteToTest
                         "foo", 100,
                         endMap()
                 ) ),
-                Arguments.of(shouldWrite(
+                of(shouldWrite(
                         VirtualValues.node( 1L ),
                         writeNodeReference( 1L )
                 ) ),
-                Arguments.of(shouldWrite(
+                of(shouldWrite(
                         relationship( 2L ),
                         writeRelationshipReference( 2L )
                 ) ),
-                Arguments.of(shouldWrite(
+                of(shouldWrite(
                         VirtualValues.path(
                                 new NodeValue[]{nodeValue( 20L, stringArray( "L" ), EMPTY_MAP ),
                                         nodeValue( 40L, stringArray( "L" ), EMPTY_MAP )},
@@ -104,7 +105,7 @@ class VirtualValueWriteToTest
                                                 stringValue( "T" ), EMPTY_MAP )} )
                 ) ),
                 // map( list( map( list() ) ) )
-                Arguments.of(shouldWrite(
+                of(shouldWrite(
                         VirtualValues.map(
                                 new String[]{"foo"},
                                 new AnyValue[]{
@@ -127,7 +128,7 @@ class VirtualValueWriteToTest
                         endList(),
                         endMap()
                 ) ) ,
-                Arguments.of(shouldWrite(
+                of(shouldWrite(
                         nodeValue( 1337L,
                                 stringArray( "L1", "L2" ),
                                 map( new String[]{"foo"}, new AnyValue[]{stringValue( "foo" )} ) ),
@@ -135,7 +136,7 @@ class VirtualValueWriteToTest
                                 stringArray( "L1", "L2" ) ,
                                 map( new String[]{"foo"}, new AnyValue[]{stringValue( "foo" )} ) )
                 ) ),
-                Arguments.of(shouldWrite(
+                of(shouldWrite(
                         relationshipValue( 1337L, nodeValue( 42L, stringArray( "L" ), EMPTY_MAP ),
                                 nodeValue( 43L, stringArray( "L" ), EMPTY_MAP ),
                                 stringValue( "T" ),

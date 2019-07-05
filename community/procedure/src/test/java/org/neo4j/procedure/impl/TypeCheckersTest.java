@@ -32,6 +32,7 @@ import java.util.stream.Stream;
 import org.neo4j.internal.kernel.api.procs.Neo4jTypes;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.params.provider.Arguments.of;
 import static org.neo4j.internal.kernel.api.procs.Neo4jTypes.NTAny;
 import static org.neo4j.internal.kernel.api.procs.Neo4jTypes.NTBoolean;
 import static org.neo4j.internal.kernel.api.procs.Neo4jTypes.NTFloat;
@@ -46,19 +47,21 @@ class TypeCheckersTest
     private static Stream<Arguments> parameters()
     {
         return Stream.of(
-            Arguments.of( Object.class, NTAny ),
-            Arguments.of( String.class, NTString ),
-            Arguments.of( Map.class, NTMap ),
-            Arguments.of( List.class, NTList( NTAny ) ),
-            Arguments.of( listOfListOfMap, NTList( NTList( NTMap ) ) ),
-            Arguments.of( boolean.class, NTBoolean ),
-            Arguments.of( Number.class, NTNumber ),
-            Arguments.of( long.class, NTInteger ),
-            Arguments.of( Long.class, NTInteger ),
-            Arguments.of( double.class, NTFloat ),
-            Arguments.of( Double.class, NTFloat )
+            of( Object.class, NTAny ),
+            of( String.class, NTString ),
+            of( Map.class, NTMap ),
+            of( List.class, NTList( NTAny ) ),
+            of( listOfListOfMap, NTList( NTList( NTMap ) ) ),
+            of( boolean.class, NTBoolean ),
+            of( Number.class, NTNumber ),
+            of( long.class, NTInteger ),
+            of( Long.class, NTInteger ),
+            of( double.class, NTFloat ),
+            of( Double.class, NTFloat )
         );
     }
+
+    private static Type listOfListOfMap = typeOf( "listOfListOfMap" );
 
     @ParameterizedTest( name = "{0} to {1}" )
     @MethodSource( "parameters" )
@@ -68,8 +71,6 @@ class TypeCheckersTest
         assertEquals( expected, actual );
     }
 
-    static Type listOfListOfMap = typeOf( "listOfListOfMap" );
-
     @SuppressWarnings( "unused" )
     interface ClassToGetGenericTypeSignatures
     {
@@ -78,20 +79,13 @@ class TypeCheckersTest
 
     static Type typeOf( String methodName )
     {
-        try
+        for ( Method method : ClassToGetGenericTypeSignatures.class.getDeclaredMethods() )
         {
-            for ( Method method : ClassToGetGenericTypeSignatures.class.getDeclaredMethods() )
+            if ( method.getName().equals( methodName ) )
             {
-                if ( method.getName().equals( methodName ) )
-                {
-                    return method.getGenericParameterTypes()[0];
-                }
+                return method.getGenericParameterTypes()[0];
             }
-            throw new AssertionError( "No method named " + methodName );
         }
-        catch ( Throwable e )
-        {
-            throw new AssertionError( e );
-        }
+        throw new AssertionError( "No method named " + methodName );
     }
 }
