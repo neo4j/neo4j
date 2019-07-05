@@ -20,7 +20,6 @@
 package org.neo4j.kernel.impl.api.index.stats;
 
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -38,6 +37,7 @@ import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.pagecache.EphemeralPageCacheExtension;
 import org.neo4j.test.rule.TestDirectory;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.register.Registers.newDoubleLongRegister;
 import static org.neo4j.test.Race.throwing;
 
@@ -220,7 +220,7 @@ class IndexStatisticsStoreTest
 
     private static void assertRegister( long first, long second, DoubleLongRegister register )
     {
-        Assertions.assertEquals( first, register.readFirst() );
-        Assertions.assertEquals( second, register.readSecond() );
+        assertEquals( first, register.readFirst() );
+        assertEquals( second, register.readSecond() );
     }
 }

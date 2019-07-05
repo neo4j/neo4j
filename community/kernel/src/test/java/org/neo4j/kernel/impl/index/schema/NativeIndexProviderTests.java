@@ -19,7 +19,6 @@
  */
 package org.neo4j.kernel.impl.index.schema;
 
-import org.hamcrest.MatcherAssert;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -49,6 +48,7 @@ import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.values.storable.Value;
 
 import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
@@ -139,7 +139,7 @@ abstract class NativeIndexProviderTests
         // ... no failure on populator
 
         var e = assertThrows( IllegalStateException.class, () -> provider.getPopulationFailure( descriptor() ) );
-        MatcherAssert.assertThat( e.getMessage(), Matchers.containsString( Long.toString( indexId ) ) );
+        assertThat( e.getMessage(), Matchers.containsString( Long.toString( indexId ) ) );
     }
 
     @Test
@@ -162,7 +162,7 @@ abstract class NativeIndexProviderTests
         failedPopulator.close( false );
 
         var e = assertThrows( IllegalStateException.class, () -> provider.getPopulationFailure( descriptor( nonFailedIndexId ) ) );
-        MatcherAssert.assertThat( e.getMessage(), Matchers.containsString( Long.toString( nonFailedIndexId ) ) );
+        assertThat( e.getMessage(), Matchers.containsString( Long.toString( nonFailedIndexId ) ) );
     }
 
     @Test
@@ -180,7 +180,7 @@ abstract class NativeIndexProviderTests
 
         // then
         String populationFailure = provider.getPopulationFailure( descriptor() );
-        MatcherAssert.assertThat( populationFailure, is( failureMessage ) );
+        assertThat( populationFailure, is( failureMessage ) );
     }
 
     @Test
@@ -208,8 +208,8 @@ abstract class NativeIndexProviderTests
         thirdPopulator.close( false );
 
         // then
-        MatcherAssert.assertThat( provider.getPopulationFailure( descriptor( first ) ), is( firstFailure ) );
-        MatcherAssert.assertThat( provider.getPopulationFailure( descriptor( third ) ), is( thirdFailure ) );
+        assertThat( provider.getPopulationFailure( descriptor( first ) ), is( firstFailure ) );
+        assertThat( provider.getPopulationFailure( descriptor( third ) ), is( thirdFailure ) );
         assertThrows( IllegalStateException.class, () -> provider.getPopulationFailure( descriptor( second ) ) );
     }
 
@@ -229,7 +229,7 @@ abstract class NativeIndexProviderTests
         // then
         provider = newProvider();
         String populationFailure = provider.getPopulationFailure( descriptor() );
-        MatcherAssert.assertThat( populationFailure, is( failureMessage ) );
+        assertThat( populationFailure, is( failureMessage ) );
     }
 
     /* getInitialState */

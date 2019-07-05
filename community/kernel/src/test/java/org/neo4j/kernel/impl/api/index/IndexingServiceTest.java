@@ -54,7 +54,6 @@ import org.neo4j.common.DependencyResolver;
 import org.neo4j.common.TokenNameLookup;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
-import org.neo4j.exceptions.KernelException;
 import org.neo4j.exceptions.UnderlyingStorageException;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.internal.helpers.collection.BoundedIterable;
@@ -681,24 +680,15 @@ class IndexingServiceTest
     }
 
     @Test
-    void applicationOfIndexUpdatesShouldThrowIfServiceIsShutdown() throws IOException, KernelException
+    void applicationOfIndexUpdatesShouldThrowIfServiceIsShutdown() throws IOException
     {
         // Given
         IndexingService indexingService = newIndexingServiceWithMockedDependencies( populator, accessor, withData() );
         life.start();
         life.shutdown();
 
-        try
-        {
-            // When
-            indexingService.applyUpdates( asSet( add( 1, "foo" ) ) );
-            fail( "Should have thrown " + IllegalStateException.class.getSimpleName() );
-        }
-        catch ( IllegalStateException e )
-        {
-            // Then
-            assertThat( e.getMessage(), startsWith( "Can't apply index updates" ) );
-        }
+        var e = assertThrows( IllegalStateException.class, () -> indexingService.applyUpdates( asSet( add( 1, "foo" ) ) ) );
+        assertThat( e.getMessage(), startsWith( "Can't apply index updates" ) );
     }
 
     @Test

@@ -19,7 +19,6 @@
  */
 package org.neo4j.kernel.impl.util;
 
-import org.hamcrest.MatcherAssert;
 import org.junit.jupiter.api.Test;
 
 import java.nio.ByteBuffer;
@@ -27,6 +26,7 @@ import java.nio.ByteOrder;
 
 import org.neo4j.util.Bits;
 
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.Is.is;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.util.Bits.bits;
@@ -53,7 +53,7 @@ class TestBits
     @Test
     void doubleAsBytes()
     {
-        double[] array1 = { 1.0, 2.0, 3.0, 4.0, 5.0 };
+        double[] array1 = {1.0, 2.0, 3.0, 4.0, 5.0};
         Bits bits = bits( array1.length * 8 );
         for ( double value : array1 )
         {
@@ -113,21 +113,19 @@ class TestBits
     void writeAndReadByteBuffer()
     {
         byte[] bytes = new byte[512];
-        ByteBuffer buffer = ByteBuffer.wrap(bytes).order( ByteOrder.LITTLE_ENDIAN );
+        ByteBuffer buffer = ByteBuffer.wrap( bytes ).order( ByteOrder.LITTLE_ENDIAN );
         buffer.putLong( 123456789L );
         buffer.flip();
         Bits bits = Bits.bitsFromBytes( bytes, 0, buffer.limit() );
 
-        assertEquals( 123456789L, bits.getLong());
-
+        assertEquals( 123456789L, bits.getLong() );
     }
 
     @Test
     void numberToStringSeparatesAfter8Bits()
     {
         StringBuilder builder = new StringBuilder();
-        Bits.numberToString(builder, 0b11111111, 2);
-        MatcherAssert.assertThat(builder.toString(), is("[00000000,11111111]"));
+        Bits.numberToString( builder, 0b11111111, 2 );
+        assertThat( builder.toString(), is( "[00000000,11111111]" ) );
     }
-
 }

@@ -35,6 +35,7 @@ import org.neo4j.values.storable.Value;
 import static java.lang.String.format;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
@@ -74,17 +75,10 @@ class GenericIndexKeyValidatorTest
         GenericIndexKeyValidator validator = new GenericIndexKeyValidator( 48, layout );
 
         // when
-        try
-        {
-            validator.validate( new Value[]{intValue( 10 ), epochDate( 100 ), stringValue( "abcdefghijklmnopqrstuvw" )} );
-            fail( "Should have failed" );
-        }
-        catch ( IllegalArgumentException e )
-        {
-            // then good
-            assertThat( e.getMessage(), containsString( "abcdefghijklmnopqrstuvw" ) );
-            verify( layout ).newKey();
-        }
+        var e = assertThrows( IllegalArgumentException.class,
+                () -> validator.validate( new Value[]{intValue( 10 ), epochDate( 100 ), stringValue( "abcdefghijklmnopqrstuvw" )} ) );
+        assertThat( e.getMessage(), containsString( "abcdefghijklmnopqrstuvw" ) );
+        verify( layout ).newKey();
     }
 
     @Test

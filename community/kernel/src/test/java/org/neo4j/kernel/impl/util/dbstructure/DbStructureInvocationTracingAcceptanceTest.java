@@ -19,7 +19,6 @@
  */
 package org.neo4j.kernel.impl.util.dbstructure;
 
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 import java.io.ByteArrayOutputStream;
@@ -49,6 +48,7 @@ import org.neo4j.internal.helpers.collection.Visitable;
 import org.neo4j.internal.schema.constraints.ConstraintDescriptorFactory;
 import org.neo4j.kernel.api.schema.index.TestIndexDescriptorFactory;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
@@ -119,7 +119,7 @@ class DbStructureInvocationTracingAcceptanceTest
         String source2 = output2.toString();
 
         // THEN
-        Assertions.assertEquals( source1, source2 );
+        assertEquals( source1, source2 );
     }
 
     private static void exerciseVisitor( Function<Object, DbStructureVisitor> visitor )

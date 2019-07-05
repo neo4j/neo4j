@@ -19,7 +19,6 @@
  */
 package org.neo4j.kernel.impl.api;
 
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
@@ -66,7 +65,10 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.greaterThan;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotSame;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.params.provider.Arguments.arguments;
@@ -112,7 +114,7 @@ class KernelTransactionImplementationTest extends KernelTransactionTestBase
         {
             // WHEN
             transactionInitializer.accept( transaction );
-            Assertions.assertSame( TransactionInitializationTrace.NONE, transaction.getInitializationTrace() );
+            assertSame( TransactionInitializationTrace.NONE, transaction.getInitializationTrace() );
             transaction.success();
         }
         config.updateDynamicSetting( GraphDatabaseSettings.transaction_tracing_level.name(), TransactionTracingLevel.ALL.name(), "test" );
@@ -120,7 +122,7 @@ class KernelTransactionImplementationTest extends KernelTransactionTestBase
         {
             // WHEN
             transactionInitializer.accept( transaction );
-            Assertions.assertNotSame( TransactionInitializationTrace.NONE, transaction.getInitializationTrace() );
+            assertNotSame( TransactionInitializationTrace.NONE, transaction.getInitializationTrace() );
             transaction.success();
         }
     }
@@ -145,7 +147,7 @@ class KernelTransactionImplementationTest extends KernelTransactionTestBase
             Map<String, Object> externalMetadata = map( "Robot", "Bender", "Human", "Fry" );
             transaction.setMetaData( externalMetadata );
             Map<String, Object> transactionMetadata = transaction.getMetaData();
-            Assertions.assertFalse( transactionMetadata.isEmpty() );
+            assertFalse( transactionMetadata.isEmpty() );
             assertEquals( "Bender", transactionMetadata.get( "Robot" ) );
             assertEquals( "Fry", transactionMetadata.get( "Human" ) );
         }
@@ -606,7 +608,7 @@ class KernelTransactionImplementationTest extends KernelTransactionTestBase
     void initializedTransactionShouldHaveNoTerminationReason( String name, boolean isWriteTx, Consumer<KernelTransaction> transactionInitializer )
     {
         KernelTransactionImplementation tx = newTransaction( loginContext( isWriteTx ) );
-        Assertions.assertFalse( tx.getReasonIfTerminated().isPresent() );
+        assertFalse( tx.getReasonIfTerminated().isPresent() );
     }
 
     @ParameterizedTest
@@ -616,7 +618,7 @@ class KernelTransactionImplementationTest extends KernelTransactionTestBase
         Status status = Status.Transaction.Terminated;
         KernelTransactionImplementation tx = newTransaction( loginContext( isWriteTx ) );
         tx.markForTermination( status );
-        Assertions.assertSame( status, tx.getReasonIfTerminated().get() );
+        assertSame( status, tx.getReasonIfTerminated().get() );
     }
 
     @ParameterizedTest
@@ -626,7 +628,7 @@ class KernelTransactionImplementationTest extends KernelTransactionTestBase
         KernelTransactionImplementation tx = newTransaction( loginContext( isWriteTx ) );
         tx.markForTermination( Status.Transaction.Terminated );
         tx.close();
-        Assertions.assertFalse( tx.getReasonIfTerminated().isPresent() );
+        assertFalse( tx.getReasonIfTerminated().isPresent() );
     }
 
     @ParameterizedTest
@@ -721,9 +723,9 @@ class KernelTransactionImplementationTest extends KernelTransactionTestBase
         tx.initialize( 42, 42, statementLocks, KernelTransaction.Type.implicit,
             loginContext( isWriteTx ).authorize( LoginContext.IdLookup.EMPTY, GraphDatabaseSettings.DEFAULT_DATABASE_NAME ), 0L, 0L, EMBEDDED_CONNECTION );
 
-        Assertions.assertFalse( tx.markForTermination( nextReuseCount, terminationReason ) );
+        assertFalse( tx.markForTermination( nextReuseCount, terminationReason ) );
 
-        Assertions.assertFalse( tx.getReasonIfTerminated().isPresent() );
+        assertFalse( tx.getReasonIfTerminated().isPresent() );
         verify( locksClient, never() ).stop();
     }
 

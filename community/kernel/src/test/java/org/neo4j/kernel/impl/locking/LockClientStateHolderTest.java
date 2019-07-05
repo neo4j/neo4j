@@ -21,11 +21,9 @@ package org.neo4j.kernel.impl.locking;
 
 import org.junit.jupiter.api.Test;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.instanceOf;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assertions.fail;
 
 class LockClientStateHolderTest
 {
@@ -59,15 +57,7 @@ class LockClientStateHolderTest
 
         // then
         assertFalse( lockClientStateHolder.hasActiveClients() );
-        try
-        {
-            lockClientStateHolder.incrementActiveClients( new NoOpClient() );
-            fail( "Exception expected" );
-        }
-        catch ( Exception e )
-        {
-            assertThat( e, instanceOf( LockClientStoppedException.class ) );
-        }
+        assertThrows( LockClientStoppedException.class, () -> lockClientStateHolder.incrementActiveClients( new NoOpClient() ) );
     }
 
     @Test

@@ -19,7 +19,6 @@
  */
 package org.neo4j.kernel.impl.api;
 
-import org.hamcrest.MatcherAssert;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
 
@@ -65,11 +64,10 @@ import org.neo4j.test.Race;
 import org.neo4j.time.Clocks;
 
 import static java.lang.System.currentTimeMillis;
-import static org.hamcrest.Matchers.instanceOf;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.Mockito.RETURNS_MOCKS;
 import static org.mockito.Mockito.mock;
 import static org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo.EMBEDDED_CONNECTION;
@@ -258,15 +256,7 @@ class KernelTransactionTerminationTest
                     void closeTerminated( TestKernelTransaction tx )
                     {
                         tx.assertTerminated();
-                        try
-                        {
-                            tx.close();
-                            fail( "Exception expected" );
-                        }
-                        catch ( Exception e )
-                        {
-                            MatcherAssert.assertThat( e, instanceOf( TransactionTerminatedException.class ) );
-                        }
+                        assertThrows( TransactionTerminatedException.class, tx::close );
                         tx.assertRolledBack();
                     }
 
@@ -317,15 +307,7 @@ class KernelTransactionTerminationTest
                     void closeNotTerminated( TestKernelTransaction tx )
                     {
                         tx.assertNotTerminated();
-                        try
-                        {
-                            tx.close();
-                            fail( "Exception expected" );
-                        }
-                        catch ( Exception e )
-                        {
-                            MatcherAssert.assertThat( e, instanceOf( TransactionFailureException.class ) );
-                        }
+                        assertThrows( TransactionFailureException.class, tx::close );
                         tx.assertRolledBack();
                     }
                 };

@@ -19,7 +19,6 @@
  */
 package org.neo4j.kernel.impl.api;
 
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 import org.neo4j.graphdb.security.AuthorizationViolationException;
@@ -29,6 +28,7 @@ import org.neo4j.internal.kernel.api.TokenRead;
 import org.neo4j.internal.kernel.api.Write;
 import org.neo4j.kernel.api.security.AnonymousContext;
 
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.neo4j.internal.kernel.api.security.LoginContext.AUTH_DISABLED;
 
@@ -80,7 +80,7 @@ class KernelTransactionSecurityContextTest extends KernelTransactionTestBase
         Read reads = tx.dataRead();
 
         // Then
-        Assertions.assertNotNull( reads );
+        assertNotNull( reads );
     }
 
     @Test
@@ -120,7 +120,7 @@ class KernelTransactionSecurityContextTest extends KernelTransactionTestBase
         TokenRead tokenRead = tx.tokenRead();
 
         // Then
-        Assertions.assertNotNull( tokenRead );
+        assertNotNull( tokenRead );
     }
 
     @Test
@@ -133,7 +133,7 @@ class KernelTransactionSecurityContextTest extends KernelTransactionTestBase
         Write writes = tx.dataWrite();
 
         // Then
-        Assertions.assertNotNull( writes );
+        assertNotNull( writes );
     }
 
     @Test
@@ -155,7 +155,7 @@ class KernelTransactionSecurityContextTest extends KernelTransactionTestBase
         Read reads = tx.dataRead();
 
         // Then
-        Assertions.assertNotNull( reads );
+        assertNotNull( reads );
     }
 
     @Test
@@ -168,7 +168,7 @@ class KernelTransactionSecurityContextTest extends KernelTransactionTestBase
         Write writes = tx.dataWrite();
 
         // Then
-        Assertions.assertNotNull( writes );
+        assertNotNull( writes );
     }
 
     @Test
@@ -190,7 +190,7 @@ class KernelTransactionSecurityContextTest extends KernelTransactionTestBase
         Read reads = tx.dataRead();
 
         // Then
-        Assertions.assertNotNull( reads );
+        assertNotNull( reads );
     }
 
     @Test
@@ -203,7 +203,7 @@ class KernelTransactionSecurityContextTest extends KernelTransactionTestBase
         Write writes = tx.dataWrite();
 
         // Then
-        Assertions.assertNotNull( writes );
+        assertNotNull( writes );
     }
 
     @Test
@@ -216,6 +216,6 @@ class KernelTransactionSecurityContextTest extends KernelTransactionTestBase
         SchemaWrite writes = tx.schemaWrite();
 
         // Then
-        Assertions.assertNotNull( writes );
+        assertNotNull( writes );
     }
 }

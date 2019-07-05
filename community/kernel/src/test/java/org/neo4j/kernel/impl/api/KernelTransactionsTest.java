@@ -114,7 +114,6 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyCollection;
 import static org.mockito.ArgumentMatchers.anyLong;
@@ -392,15 +391,9 @@ class KernelTransactionsTest
     {
         KernelTransactions kernelTransactions = newKernelTransactions();
         kernelTransactions.blockNewTransactions();
-        try
-        {
-            kernelTransactions.newInstance( KernelTransaction.Type.implicit, AnonymousContext.write(), EMBEDDED_CONNECTION, 0L );
-            fail( "Exception expected" );
-        }
-        catch ( Exception e )
-        {
-            assertThat( e, instanceOf( IllegalStateException.class ) );
-        }
+        var e = assertThrows( Exception.class,
+                () -> kernelTransactions.newInstance( KernelTransaction.Type.implicit, AnonymousContext.write(), EMBEDDED_CONNECTION, 0L ) );
+        assertThat( e, instanceOf( IllegalStateException.class ) );
     }
 
     @Test
@@ -544,15 +537,7 @@ class KernelTransactionsTest
         KernelTransaction ignore = kernelTransactions.newInstance( explicit, none(), EMBEDDED_CONNECTION, 0L );
         KernelTransaction ignore2 = kernelTransactions.newInstance( explicit, none(), EMBEDDED_CONNECTION, 0L );
 
-        try
-        {
-            kernelTransactions.newInstance( explicit, none(), EMBEDDED_CONNECTION, 0L );
-            fail( "should not be able to start" );
-        }
-        catch ( MaximumTransactionLimitExceededException e )
-        {
-            // expected
-        }
+        assertThrows( MaximumTransactionLimitExceededException.class, () -> kernelTransactions.newInstance( explicit, none(), EMBEDDED_CONNECTION, 0L ) );
 
         ignore.close();
         // fine to start again
@@ -567,15 +552,7 @@ class KernelTransactionsTest
         KernelTransaction ignore = kernelTransactions.newInstance( explicit, none(), EMBEDDED_CONNECTION, 0L );
         KernelTransaction ignore2 = kernelTransactions.newInstance( explicit, none(), EMBEDDED_CONNECTION, 0L );
 
-        try
-        {
-            kernelTransactions.newInstance( explicit, none(), EMBEDDED_CONNECTION, 0L );
-            fail( "should not be able to start" );
-        }
-        catch ( MaximumTransactionLimitExceededException e )
-        {
-            // expected
-        }
+        assertThrows( MaximumTransactionLimitExceededException.class, () -> kernelTransactions.newInstance( explicit, none(), EMBEDDED_CONNECTION, 0L ) );
 
         config.updateDynamicSetting( GraphDatabaseSettings.max_concurrent_transactions.name(), "3", "test" );
 

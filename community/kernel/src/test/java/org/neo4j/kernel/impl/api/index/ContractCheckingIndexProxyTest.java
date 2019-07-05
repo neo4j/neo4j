@@ -115,7 +115,7 @@ class ContractCheckingIndexProxyTest
     }
 
     @Test
-    void shouldNotUpdateBeforeCreate() throws Exception
+    void shouldNotUpdateBeforeCreate()
     {
         // GIVEN
         IndexProxy inner = mockIndexProxy();

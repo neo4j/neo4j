@@ -21,7 +21,6 @@ package org.neo4j.kernel.impl.index.schema;
 
 import org.apache.commons.lang3.mutable.MutableInt;
 import org.apache.commons.lang3.tuple.Pair;
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
@@ -43,6 +42,9 @@ import org.neo4j.test.rule.RandomRule;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.kernel.impl.index.schema.NativeIndexKey.Inclusion.NEUTRAL;
 import static org.neo4j.kernel.impl.index.schema.NativeIndexValue.INSTANCE;
 import static org.neo4j.values.storable.Values.stringValue;
@@ -78,8 +80,8 @@ class NativeDistinctValuesProgressorTest
         {
             Value string = client.values[0];
             MutableInt expectedCount = expectedCounts.remove( string );
-            Assertions.assertNotNull( expectedCount );
-            Assertions.assertEquals( expectedCount.intValue(), client.reference );
+            assertNotNull( expectedCount );
+            assertEquals( expectedCount.intValue(), client.reference );
 
             if ( expectedCount.intValue() > 1 )
             {
@@ -90,9 +92,9 @@ class NativeDistinctValuesProgressorTest
                 uniqueValues++;
             }
         }
-        Assertions.assertTrue( expectedCounts.isEmpty() );
-        Assertions.assertTrue( uniqueValues > 0 );
-        Assertions.assertTrue( nonUniqueValues > 0 );
+        assertTrue( expectedCounts.isEmpty() );
+        assertTrue( uniqueValues > 0 );
+        assertTrue( nonUniqueValues > 0 );
     }
 
     private static Map<Value, MutableInt> asDistinctCounts( Value[] strings )

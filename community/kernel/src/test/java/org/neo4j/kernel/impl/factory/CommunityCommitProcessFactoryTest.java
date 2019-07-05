@@ -19,7 +19,6 @@
  */
 package org.neo4j.kernel.impl.factory;
 
-import org.hamcrest.MatcherAssert;
 import org.junit.jupiter.api.Test;
 
 import org.neo4j.configuration.Config;
@@ -30,6 +29,7 @@ import org.neo4j.kernel.impl.api.TransactionRepresentationCommitProcess;
 import org.neo4j.kernel.impl.transaction.log.TransactionAppender;
 import org.neo4j.storageengine.api.StorageEngine;
 
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.mockito.Mockito.mock;
 
@@ -45,7 +45,7 @@ class CommunityCommitProcessFactoryTest
         TransactionCommitProcess commitProcess = factory.create( mock( TransactionAppender.class ),
                 mock( StorageEngine.class ), config );
 
-        MatcherAssert.assertThat( commitProcess, instanceOf( ReadOnlyTransactionCommitProcess.class ) );
+        assertThat( commitProcess, instanceOf( ReadOnlyTransactionCommitProcess.class ) );
     }
 
     @Test
@@ -56,6 +56,6 @@ class CommunityCommitProcessFactoryTest
         TransactionCommitProcess commitProcess = factory.create( mock( TransactionAppender.class ),
                 mock( StorageEngine.class ), Config.defaults() );
 
-        MatcherAssert.assertThat( commitProcess, instanceOf( TransactionRepresentationCommitProcess.class ) );
+        assertThat( commitProcess, instanceOf( TransactionRepresentationCommitProcess.class ) );
     }
 }

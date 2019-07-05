@@ -20,7 +20,6 @@
 package org.neo4j.kernel.impl.transaction.log;
 
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -53,6 +52,7 @@ import org.neo4j.test.rule.TestDirectory;
 
 import static java.lang.System.currentTimeMillis;
 import static java.util.concurrent.TimeUnit.SECONDS;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Tests an issue where writer would append data and sometimes rotate the log to new file. When rotating the log
@@ -134,7 +134,7 @@ class TransactionLogFileRotateAndReadRaceIT
             }
             return null;
         } );
-        Assertions.assertTrue( startSignal.await( 10, SECONDS ) );
+        assertTrue( startSignal.await( 10, SECONDS ) );
         // one thread reading through the channel
         long maxEndTime = currentTimeMillis() + LIMIT_TIME;
         int reads = 0;

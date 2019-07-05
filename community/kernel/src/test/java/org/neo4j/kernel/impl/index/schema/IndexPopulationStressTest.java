@@ -20,7 +20,6 @@
 package org.neo4j.kernel.impl.index.schema;
 
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -68,6 +67,7 @@ import org.neo4j.values.storable.ValueTuple;
 
 import static org.apache.commons.lang3.ArrayUtils.toArray;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyLong;
@@ -195,7 +195,7 @@ abstract class IndexPopulationStressTest
                     assertEquals( ValueTuple.of( referenceEntries.values ), ValueTuple.of( entries.values ) );
                 }
             }
-            Assertions.assertFalse( entries.next() );
+            assertFalse( entries.next() );
         }
     }
 

@@ -28,6 +28,7 @@ import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.params.provider.Arguments.of;
 import static org.neo4j.graphdb.QueryExecutionType.QueryType.READ_ONLY;
 import static org.neo4j.graphdb.QueryExecutionType.QueryType.READ_WRITE;
 import static org.neo4j.graphdb.QueryExecutionType.QueryType.SCHEMA_WRITE;
@@ -42,70 +43,70 @@ class QueryExecutionTypeTest
     private static Stream<Arguments> parameters()
     {
         return Stream.of(
-            Arguments.of(
+            of(
                 verify( that( query( READ_ONLY ) )
                     .canContainResults() ) ),
-            Arguments.of(
+            of(
                 verify( that( query( READ_WRITE ) )
                     .canContainResults()
                     .canUpdateData() ) ),
-            Arguments.of(
+            of(
                 verify( that( query( WRITE ) )
                     .canUpdateData() ) ),
-            Arguments.of(
+            of(
                 verify( that( query( SCHEMA_WRITE ) )
                     .canUpdateSchema() ) ),
             // PROFILE
-            Arguments.of(
+            of(
                 verify( that( profiled( READ_ONLY ) )
                     .isExplained()
                     .isProfiled()
                     .canContainResults() ) ),
-            Arguments.of(
+            of(
                 verify( that( profiled( READ_WRITE ) )
                     .isExplained()
                     .isProfiled()
                     .canContainResults()
                     .canUpdateData() ) ),
-            Arguments.of(
+            of(
                 verify( that( profiled( WRITE ) )
                     .isExplained()
                     .isProfiled()
                     .canUpdateData() ) ),
-            Arguments.of(
+            of(
                 verify( that( profiled( SCHEMA_WRITE ) )
                     .isExplained()
                     .isProfiled()
                     .canUpdateSchema() ) ),
             // EXPLAIN
-            Arguments.of(
+            of(
                 verify( that( explained( READ_ONLY ) )
                     .isExplained()
                     .isOnlyExplained() ) ),
-            Arguments.of(
+            of(
                 verify( that( explained( READ_WRITE ) )
                     .isExplained()
                     .isOnlyExplained() ) ),
-            Arguments.of(
+            of(
                 verify( that( explained( WRITE ) )
                     .isExplained()
                     .isOnlyExplained() ) ),
-            Arguments.of(
+            of(
                 verify( that( explained( SCHEMA_WRITE ) )
                     .isExplained()
                     .isOnlyExplained() ) ),
             // query of EXPLAIN
-            Arguments.of(
+            of(
                 verify( thatQueryOf( explained( READ_ONLY ) )
                     .canContainResults() ) ),
-            Arguments.of(
+            of(
                 verify( thatQueryOf( explained( READ_WRITE ) )
                     .canContainResults()
                     .canUpdateData() ) ),
-            Arguments.of(
+            of(
                 verify( thatQueryOf( explained( WRITE ) )
                     .canUpdateData() ) ),
-            Arguments.of(
+            of(
                 verify( thatQueryOf( explained( SCHEMA_WRITE ) )
                     .canUpdateSchema() ) )
         );
