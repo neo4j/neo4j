@@ -25,6 +25,8 @@ import java.io.IOException;
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.schema.IndexConfigCompleter;
 import org.neo4j.internal.schema.IndexDescriptor2;
+import org.neo4j.internal.schema.IndexKind;
+import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.IndexProviderDescriptor;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
@@ -243,6 +245,20 @@ public abstract class IndexProvider extends LifecycleAdapter implements IndexCon
     public IndexProviderDescriptor getProviderDescriptor()
     {
         return providerDescriptor;
+    }
+
+    /**
+     * Validate that the given index prototype can be used to create an index with the given index provider, or throw an {@link IllegalArgumentException} if
+     * that is not the case.
+     * @param prototype The prototype to be validated.
+     */
+    public void validatePrototype( IndexPrototype prototype )
+    {
+        // By default we accept any index of the general kind.
+        if ( prototype.getIndexType().getKind() != IndexKind.GENERAL )
+        {
+            throw new IllegalArgumentException( "The '" + getProviderDescriptor().name() + "' index provider do not support SPECIAL indexes: " + prototype );
+        }
     }
 
     @Override

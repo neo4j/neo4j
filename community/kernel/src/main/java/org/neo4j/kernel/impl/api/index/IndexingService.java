@@ -55,6 +55,7 @@ import org.neo4j.internal.helpers.collection.Iterators;
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
 import org.neo4j.internal.schema.IndexDescriptor2;
+import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.IndexProviderDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.internal.schema.SchemaState;
@@ -505,6 +506,13 @@ public class IndexingService extends LifecycleAdapter implements IndexUpdateList
     public void validateBeforeCommit( SchemaDescriptor index, Value[] tuple )
     {
         indexMapRef.validateBeforeCommit( index, tuple );
+    }
+
+    @Override
+    public void validateIndexPrototype( IndexPrototype prototype )
+    {
+        IndexProvider provider = providerMap.lookup( prototype.getIndexProvider() );
+        provider.validatePrototype( prototype );
     }
 
     @Override

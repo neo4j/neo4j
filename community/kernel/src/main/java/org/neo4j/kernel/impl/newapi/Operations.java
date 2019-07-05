@@ -871,6 +871,7 @@ public class Operations implements Write, SchemaWrite
 
     private IndexDescriptor2 indexDoCreate( IndexPrototype prototype )
     {
+        indexProviders.validateIndexPrototype( prototype );
         TransactionState transactionState = ktx.txState();
 
         // If an index just like the given prototype was previously removed in the transaction, then we should bring it back instead of allocating a new

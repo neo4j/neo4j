@@ -2253,7 +2253,7 @@ public class FulltextProceduresTest
         }
         catch ( QueryExecutionException e )
         {
-            assertThat( e.getMessage(), containsString( "only supports fulltext index descriptors" ) );
+            assertThat( e.getMessage(), containsString( "only supports FULLTEXT" ) );
         }
 
         try ( Transaction tx = db.beginTx() )

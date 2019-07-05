@@ -34,7 +34,10 @@ import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.schema.IndexCapability;
 import org.neo4j.internal.schema.IndexConfig;
 import org.neo4j.internal.schema.IndexDescriptor2;
+import org.neo4j.internal.schema.IndexKind;
+import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.IndexProviderDescriptor;
+import org.neo4j.internal.schema.IndexType;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
@@ -225,6 +228,15 @@ class FulltextIndexProvider extends IndexProvider implements FulltextAdapter
     public StoreMigrationParticipant storeMigrationParticipant( final FileSystemAbstraction fs, PageCache pageCache, StorageEngineFactory storageEngineFactory )
     {
         return new SchemaIndexMigrator( fs, this, storageEngineFactory );
+    }
+
+    @Override
+    public void validatePrototype( IndexPrototype prototype )
+    {
+        if ( prototype.getIndexType() != IndexType.FULLTEXT )
+        {
+            throw new IllegalArgumentException( "The '" + getProviderDescriptor().name() + "' only supports FULLTEXT index types: " + prototype );
+        }
     }
 
     @Override
