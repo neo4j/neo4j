@@ -79,6 +79,7 @@
       -Dorg.neo4j.codegen.bytecode.ByteCodeExpressionVisitor.checkByteCode=false
       -Djunit.jupiter.extensions.autodetection.enabled=true
       -Djunit.jupiter.execution.parallel.enabled=true
+      -Djunit.jupiter.execution.timeout.test.method.default=5m
       -XX:+UnlockExperimentalVMOptions -XX:+TrustFinalNonStaticFields ${test.runner.jvm.settings.additional}
     </test.runner.jvm.settings>
     <jetty.version>9.4.17.v20190418</jetty.version>
