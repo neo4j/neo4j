@@ -43,6 +43,7 @@ import org.neo4j.internal.kernel.api.exceptions.schema.CreateConstraintFailureEx
 import org.neo4j.internal.recordstorage.NeoStoresDiagnostics.NeoStoreIdUsage;
 import org.neo4j.internal.recordstorage.NeoStoresDiagnostics.NeoStoreRecords;
 import org.neo4j.internal.recordstorage.NeoStoresDiagnostics.NeoStoreVersions;
+import org.neo4j.internal.schema.IndexConfigCompleter;
 import org.neo4j.internal.schema.SchemaState;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
@@ -125,6 +126,7 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
             TokenHolders tokenHolders,
             SchemaState schemaState,
             ConstraintRuleAccessor constraintSemantics,
+            IndexConfigCompleter indexConfigCompleter,
             LockService lockService,
             Health databaseHealth,
             IdGeneratorFactory idGeneratorFactory,
@@ -149,7 +151,7 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
         try
         {
             schemaRuleAccess = SchemaRuleAccess.getSchemaRuleAccess( neoStores.getSchemaStore(), tokenHolders );
-            schemaCache = new SchemaCache( constraintSemantics );
+            this.schemaCache = new SchemaCache( constraintSemantics, indexConfigCompleter );
 
             integrityValidator = new IntegrityValidator( neoStores );
             cacheAccess = new BridgingCacheAccess( schemaCache, schemaState, tokenHolders );

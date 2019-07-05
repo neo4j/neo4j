@@ -19,17 +19,18 @@
  */
 package org.neo4j.kernel.impl.index.schema.fusion;
 
+import org.eclipse.collections.api.tuple.Pair;
+
 import java.io.IOException;
 import java.util.EnumMap;
 import java.util.List;
 
 import org.neo4j.internal.helpers.collection.Iterables;
 import org.neo4j.internal.kernel.api.InternalIndexState;
-import org.neo4j.internal.kernel.api.exceptions.schema.MisconfiguredIndexException;
 import org.neo4j.internal.schema.IndexCapability;
+import org.neo4j.internal.schema.IndexConfig;
 import org.neo4j.internal.schema.IndexDescriptor2;
 import org.neo4j.internal.schema.IndexProviderDescriptor;
-import org.neo4j.internal.schema.IndexRef;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.api.index.IndexAccessor;
@@ -41,6 +42,7 @@ import org.neo4j.kernel.impl.index.schema.ByteBufferFactory;
 import org.neo4j.kernel.impl.storemigration.SchemaIndexMigrator;
 import org.neo4j.storageengine.api.StorageEngineFactory;
 import org.neo4j.storageengine.migration.StoreMigrationParticipant;
+import org.neo4j.values.storable.Value;
 
 import static org.neo4j.internal.kernel.api.InternalIndexState.FAILED;
 import static org.neo4j.internal.kernel.api.InternalIndexState.POPULATING;
@@ -85,13 +87,28 @@ public class FusionIndexProvider extends IndexProvider
     }
 
     @Override
-    public <T extends IndexRef<T>> T bless( T index ) throws MisconfiguredIndexException
+    public IndexDescriptor2 completeConfiguration( IndexDescriptor2 index )
     {
+        EnumMap<IndexSlot,IndexDescriptor2> descriptors = new EnumMap<>( IndexSlot.class );
+        EnumMap<IndexSlot,IndexCapability> capabilities = new EnumMap<>( IndexSlot.class );
         for ( IndexSlot slot : IndexSlot.values() )
         {
-            index = providers.select( slot ).bless( index );
+            IndexDescriptor2 result = providers.select( slot ).completeConfiguration( index );
+            descriptors.put( slot, result );
+            capabilities.put( slot, result.getCapability() );
         }
-        return super.bless( index );
+        IndexConfig config = index.schema().getIndexConfig();
+        for ( IndexDescriptor2 result : descriptors.values() )
+        {
+            IndexConfig resultConfig = result.schema().getIndexConfig();
+            for ( Pair<String,Value> entry : resultConfig.entries() )
+            {
+                config = config.withIfAbsent( entry.getOne(), entry.getTwo() );
+            }
+        }
+        index = index.withSchemaDescriptor( index.schema().withIndexConfig( config ) );
+        index = index.withIndexCapability( new FusionIndexCapability( slotSelector, new InstanceSelector<>( capabilities ) ) );
+        return index;
     }
 
     @Override
@@ -154,13 +171,6 @@ public class FusionIndexProvider extends IndexProvider
         }
         // This means that all parts are ONLINE
         return InternalIndexState.ONLINE;
-    }
-
-    @Override
-    public IndexCapability getCapability( IndexDescriptor2 descriptor )
-    {
-        EnumMap<IndexSlot,IndexCapability> capabilities = providers.map( provider -> provider.getCapability( descriptor ) );
-        return new FusionIndexCapability( slotSelector, new InstanceSelector<>( capabilities ) );
     }
 
     @Override

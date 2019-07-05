@@ -118,7 +118,7 @@ class OnlineIndexUpdatesTest
         relationshipStore = neoStores.getRelationshipStore();
         PropertyStore propertyStore = neoStores.getPropertyStore();
 
-        schemaCache = new SchemaCache( new StandardConstraintRuleAccessor() );
+        schemaCache = new SchemaCache( new StandardConstraintRuleAccessor(), index -> index );
         propertyPhysicalToLogicalConverter = new PropertyPhysicalToLogicalConverter( neoStores.getPropertyStore() );
         life.start();
         CountsComputer.recomputeCounts( neoStores, counts, pageCache, databaseLayout );

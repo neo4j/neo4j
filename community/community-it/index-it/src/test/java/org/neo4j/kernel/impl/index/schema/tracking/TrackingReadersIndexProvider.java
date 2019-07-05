@@ -21,22 +21,12 @@ package org.neo4j.kernel.impl.index.schema.tracking;
 
 import java.io.IOException;
 
-import org.neo4j.internal.kernel.api.InternalIndexState;
-import org.neo4j.internal.schema.IndexCapability;
 import org.neo4j.internal.schema.IndexDescriptor2;
-import org.neo4j.internal.schema.IndexProviderDescriptor;
-import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.api.index.IndexAccessor;
-import org.neo4j.kernel.api.index.IndexDirectoryStructure;
-import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
-import org.neo4j.kernel.impl.index.schema.ByteBufferFactory;
-import org.neo4j.storageengine.api.StorageEngineFactory;
-import org.neo4j.storageengine.migration.StoreMigrationParticipant;
 
-public class TrackingReadersIndexProvider extends IndexProvider
+public class TrackingReadersIndexProvider extends IndexProvider.Delegating
 {
     private final IndexProvider indexProvider;
 
@@ -47,62 +37,8 @@ public class TrackingReadersIndexProvider extends IndexProvider
     }
 
     @Override
-    public IndexPopulator getPopulator( IndexDescriptor2 descriptor, IndexSamplingConfig samplingConfig, ByteBufferFactory bufferFactory )
-    {
-        return indexProvider.getPopulator( descriptor, samplingConfig, bufferFactory );
-    }
-
-    @Override
     public IndexAccessor getOnlineAccessor( IndexDescriptor2 descriptor, IndexSamplingConfig samplingConfig ) throws IOException
     {
         return new TrackingReadersIndexAccessor( indexProvider.getOnlineAccessor( descriptor, samplingConfig ) );
-    }
-
-    @Override
-    public String getPopulationFailure( IndexDescriptor2 descriptor ) throws IllegalStateException
-    {
-        return indexProvider.getPopulationFailure( descriptor );
-    }
-
-    @Override
-    public InternalIndexState getInitialState( IndexDescriptor2 descriptor )
-    {
-        return indexProvider.getInitialState( descriptor );
-    }
-
-    @Override
-    public IndexCapability getCapability( IndexDescriptor2 descriptor )
-    {
-        return indexProvider.getCapability( descriptor );
-    }
-
-    @Override
-    public IndexProviderDescriptor getProviderDescriptor()
-    {
-        return indexProvider.getProviderDescriptor();
-    }
-
-    @Override
-    public boolean equals( Object o )
-    {
-        return indexProvider.equals( o );
-    }
-
-    @Override
-    public int hashCode()
-    {
-        return indexProvider.hashCode();
-    }
-
-    @Override
-    public IndexDirectoryStructure directoryStructure()
-    {
-        return indexProvider.directoryStructure();
-    }
-
-    @Override
-    public StoreMigrationParticipant storeMigrationParticipant( FileSystemAbstraction fs, PageCache pageCache, StorageEngineFactory storageEngineFactory )
-    {
-        return indexProvider.storeMigrationParticipant( fs, pageCache, storageEngineFactory );
     }
 }

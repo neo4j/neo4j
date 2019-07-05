@@ -41,12 +41,9 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.internal.id.IdController;
 import org.neo4j.internal.index.label.LabelScanReader;
-import org.neo4j.internal.schema.IndexCapability;
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.schema.IndexDescriptor2;
 import org.neo4j.internal.schema.IndexProviderDescriptor;
-import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.IndexProvider;
@@ -60,8 +57,6 @@ import org.neo4j.kernel.impl.index.schema.ByteBufferFactory;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.storageengine.api.IndexEntryUpdate;
 import org.neo4j.storageengine.api.NodePropertyAccessor;
-import org.neo4j.storageengine.api.StorageEngineFactory;
-import org.neo4j.storageengine.migration.StoreMigrationParticipant;
 import org.neo4j.test.Barrier;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.rule.DbmsRule;
@@ -80,7 +75,6 @@ import static org.neo4j.internal.kernel.api.InternalIndexState.POPULATING;
 import static org.neo4j.kernel.api.index.IndexDirectoryStructure.directoriesByProvider;
 import static org.neo4j.kernel.impl.api.index.MultipleIndexPopulator.BATCH_SIZE_NAME;
 import static org.neo4j.kernel.impl.api.index.MultipleIndexPopulator.QUEUE_THRESHOLD_NAME;
-import static org.neo4j.storageengine.migration.StoreMigrationParticipant.NOT_PARTICIPATING;
 import static org.neo4j.test.TestLabels.LABEL_ONE;
 
 public class IndexPopulationMissConcurrentUpdateIT
@@ -219,7 +213,7 @@ public class IndexPopulationMissConcurrentUpdateIT
         @Override
         public Lifecycle newInstance( ExtensionContext context, Supplier noDependencies )
         {
-            return new IndexProvider( INDEX_PROVIDER, directoriesByProvider( new File( "not-even-persistent" ) ) )
+            return new IndexProvider.Adaptor( INDEX_PROVIDER, directoriesByProvider( new File( "not-even-persistent" ) ) )
             {
                 @Override
                 public IndexPopulator getPopulator( IndexDescriptor2 descriptor, IndexSamplingConfig samplingConfig, ByteBufferFactory bufferFactory )
@@ -307,28 +301,9 @@ public class IndexPopulationMissConcurrentUpdateIT
                 }
 
                 @Override
-                public String getPopulationFailure( IndexDescriptor2 descriptor )
-                {
-                    throw new IllegalStateException();
-                }
-
-                @Override
                 public InternalIndexState getInitialState( IndexDescriptor2 descriptor )
                 {
                     return POPULATING;
-                }
-
-                @Override
-                public IndexCapability getCapability( IndexDescriptor2 descriptor )
-                {
-                    return IndexCapability.NO_CAPABILITY;
-                }
-
-                @Override
-                public StoreMigrationParticipant storeMigrationParticipant( FileSystemAbstraction fs, PageCache pageCache,
-                        StorageEngineFactory storageEngineFactory )
-                {
-                    return NOT_PARTICIPATING;
                 }
             };
         }

@@ -190,7 +190,7 @@ public abstract class IndexAccessorCompatibility extends IndexProviderCompatibil
         {
             categories[i] = predicates[i].valueGroup().category();
         }
-        return indexProvider.getCapability( descriptor ).orderCapability( categories );
+        return descriptor.getCapability().orderCapability( categories );
     }
 
     private void assertLessThanOrEqualTo( Value[] o1, Value[] o2 )

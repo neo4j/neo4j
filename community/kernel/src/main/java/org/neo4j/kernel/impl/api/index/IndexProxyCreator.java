@@ -22,6 +22,7 @@ package org.neo4j.kernel.impl.api.index;
 import java.io.IOException;
 
 import org.neo4j.common.TokenNameLookup;
+import org.neo4j.internal.schema.IndexCapability;
 import org.neo4j.internal.schema.IndexDescriptor2;
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexPopulator;
@@ -65,7 +66,6 @@ class IndexProxyCreator
 
         final String indexUserDescription = indexUserDescription( index );
         IndexPopulator populator = populatorFromProvider( index, samplingConfig, populationJob.bufferFactory() );
-//        IndexDescriptor2 capableIndexDescriptor = providerMap.withCapabilities( descriptor );
 
         FailedIndexProxyFactory failureDelegateFactory = new FailedPopulatingIndexProxyFactory( index,
                 populator,
@@ -97,8 +97,7 @@ class IndexProxyCreator
 
     IndexProxy createRecoveringIndexProxy( IndexDescriptor2 descriptor )
     {
-        IndexDescriptor2 capableIndexDescriptor = providerMap.withCapabilities( descriptor );
-        IndexProxy proxy = new RecoveringIndexProxy( capableIndexDescriptor );
+        IndexProxy proxy = new RecoveringIndexProxy( descriptor );
         return new ContractCheckingIndexProxy( proxy, true );
     }
 
@@ -107,9 +106,8 @@ class IndexProxyCreator
         try
         {
             IndexAccessor onlineAccessor = onlineAccessorFromProvider( descriptor, samplingConfig );
-            IndexDescriptor2 capableIndexDescriptor = providerMap.withCapabilities( descriptor );
             IndexProxy proxy;
-            proxy = new OnlineIndexProxy( capableIndexDescriptor, onlineAccessor, indexStatisticsStore, false );
+            proxy = new OnlineIndexProxy( descriptor, onlineAccessor, indexStatisticsStore, false );
             proxy = new ContractCheckingIndexProxy( proxy, true );
             return proxy;
         }
@@ -127,10 +125,9 @@ class IndexProxyCreator
         // Note about the buffer factory instantiation here. Question is why an index populator is instantiated for a failed index proxy to begin with.
         // The byte buffer factory should not be used here anyway so the buffer size doesn't actually matter.
         IndexPopulator indexPopulator = populatorFromProvider( descriptor, samplingConfig, heapBufferFactory( 1024 ) );
-        IndexDescriptor2 capableIndexDescriptor = providerMap.withCapabilities( descriptor );
         String indexUserDescription = indexUserDescription( descriptor );
         IndexProxy proxy;
-        proxy = new FailedIndexProxy( capableIndexDescriptor,
+        proxy = new FailedIndexProxy( descriptor,
                 indexUserDescription,
                 indexPopulator,
                 populationFailure,

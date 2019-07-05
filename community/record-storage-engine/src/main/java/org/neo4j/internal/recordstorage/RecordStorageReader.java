@@ -47,7 +47,6 @@ import org.neo4j.storageengine.api.StorageSchemaReader;
 import org.neo4j.token.TokenHolders;
 
 import static org.neo4j.collection.PrimitiveLongCollections.EMPTY_LONG_ARRAY;
-import static org.neo4j.internal.helpers.collection.Iterators.map;
 import static org.neo4j.register.Registers.newDoubleLongRegister;
 import static org.neo4j.token.api.TokenConstants.ANY_LABEL;
 
@@ -98,13 +97,13 @@ public class RecordStorageReader implements StorageReader
     @Override
     public Iterator<IndexDescriptor2> indexesGetForLabel( int labelId )
     {
-        return map( descriptor -> descriptor, schemaCache.indexDescriptorsForLabel( labelId ) );
+        return schemaCache.indexDescriptorsForLabel( labelId );
     }
 
     @Override
     public Iterator<IndexDescriptor2> indexesGetForRelationshipType( int relationshipType )
     {
-        return null;
+        return schemaCache.indexDescriptorsForRelationshipType( relationshipType );
     }
 
     @Override
@@ -116,7 +115,7 @@ public class RecordStorageReader implements StorageReader
     @Override
     public Iterator<IndexDescriptor2> indexesGetAll()
     {
-        return map( descriptor -> descriptor, schemaCache.indexDescriptors().iterator() );
+        return schemaCache.indexDescriptors().iterator();
     }
 
     @Override

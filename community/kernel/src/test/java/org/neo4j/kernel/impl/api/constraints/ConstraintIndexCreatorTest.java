@@ -43,6 +43,8 @@ import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.IndexProviderDescriptor;
 import org.neo4j.internal.schema.LabelSchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptor;
+import org.neo4j.internal.schema.constraints.ConstraintDescriptorFactory;
+import org.neo4j.internal.schema.constraints.UniquenessConstraintDescriptor;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.exceptions.index.IndexPopulationFailedKernelException;
@@ -85,6 +87,7 @@ class ConstraintIndexCreatorTest
     private static final long INDEX_ID = 0L;
 
     private final LabelSchemaDescriptor descriptor = forLabel( LABEL_ID, PROPERTY_KEY_ID );
+    private final UniquenessConstraintDescriptor constraint = ConstraintDescriptorFactory.uniqueForSchema( descriptor );
     private final IndexDescriptor2 index = IndexPrototype.uniqueForSchema( forLabel( LABEL_ID, PROPERTY_KEY_ID ) ).materialise( INDEX_ID );
     private final IndexDescriptor2 indexReference = TestIndexDescriptorFactory.uniqueForLabel( LABEL_ID, PROPERTY_KEY_ID );
     private final SchemaRead schemaRead = schemaRead();
@@ -105,7 +108,7 @@ class ConstraintIndexCreatorTest
         ConstraintIndexCreator creator = new ConstraintIndexCreator( () -> kernel, indexingService, logProvider );
 
         // when
-        IndexDescriptor2 constraintIndex = creator.createUniquenessConstraintIndex( createTransaction(), descriptor, getDefaultProvider() );
+        IndexDescriptor2 constraintIndex = creator.createUniquenessConstraintIndex( createTransaction(), constraint, getDefaultProvider() );
 
         // then
         assertEquals( INDEX_ID, constraintIndex.getId() );
@@ -140,7 +143,7 @@ class ConstraintIndexCreatorTest
         // when
         KernelTransactionImplementation transaction = createTransaction();
         UniquePropertyValueValidationException exception = assertThrows( UniquePropertyValueValidationException.class,
-                () -> creator.createUniquenessConstraintIndex( transaction, descriptor, getDefaultProvider() ) );
+                () -> creator.createUniquenessConstraintIndex( transaction, constraint, getDefaultProvider() ) );
         assertEquals( "Existing data does not satisfy CONSTRAINT ON ( label[123]:label[123] ) " +
                 "ASSERT label[123].property[456] IS UNIQUE: Both node 2 and node 1 share the property value ( String(\"a\") )",
                 exception.getMessage() );
@@ -191,7 +194,7 @@ class ConstraintIndexCreatorTest
 
         // when
         KernelTransactionImplementation transaction = createTransaction();
-        creator.createUniquenessConstraintIndex( transaction, descriptor, getDefaultProvider() );
+        creator.createUniquenessConstraintIndex( transaction, constraint, getDefaultProvider() );
 
         // then
         verify( transaction.statementLocks().pessimistic() )
@@ -221,7 +224,7 @@ class ConstraintIndexCreatorTest
 
         // when
         KernelTransactionImplementation transaction = createTransaction();
-        IndexDescriptor2 constraintIndex = creator.createUniquenessConstraintIndex( transaction, descriptor, getDefaultProvider() );
+        IndexDescriptor2 constraintIndex = creator.createUniquenessConstraintIndex( transaction, constraint, getDefaultProvider() );
 
         // then
         assertEquals( orphanedConstraintIndexId, constraintIndex.getId() );
@@ -257,7 +260,7 @@ class ConstraintIndexCreatorTest
         assertThrows( AlreadyConstrainedException.class, () ->
         {
             KernelTransactionImplementation transaction = createTransaction();
-            creator.createUniquenessConstraintIndex( transaction, descriptor, getDefaultProvider() );
+            creator.createUniquenessConstraintIndex( transaction, constraint, getDefaultProvider() );
         } );
 
         // then
@@ -284,7 +287,7 @@ class ConstraintIndexCreatorTest
 
         // when
         KernelTransactionImplementation transaction = createTransaction();
-        creator.createUniquenessConstraintIndex( transaction, descriptor, providerDescriptor.name() );
+        creator.createUniquenessConstraintIndex( transaction, constraint, providerDescriptor.name() );
 
         // then
         assertEquals( 1, kernel.transactions.size() );
@@ -308,7 +311,7 @@ class ConstraintIndexCreatorTest
         ConstraintIndexCreator creator = new ConstraintIndexCreator( () -> kernel, indexingService, logProvider );
         KernelTransactionImplementation transaction = createTransaction();
 
-        creator.createUniquenessConstraintIndex( transaction, descriptor, "indexProviderByName-1.0" );
+        creator.createUniquenessConstraintIndex( transaction, constraint, "indexProviderByName-1.0" );
 
         logProvider.rawMessageMatcher().assertContains( "Starting constraint creation: %s." );
         logProvider.rawMessageMatcher().assertContains( "Constraint %s populated, starting verification." );

@@ -26,8 +26,10 @@ import java.util.function.Consumer;
 import org.neo4j.common.DependencyResolver;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
-import org.neo4j.kernel.api.index.IndexProvider;
+import org.neo4j.internal.schema.IndexCapability;
+import org.neo4j.internal.schema.IndexDescriptor2;
 import org.neo4j.internal.schema.IndexProviderDescriptor;
+import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.impl.api.index.IndexProviderMap;
 import org.neo4j.kernel.impl.api.index.IndexProviderNotFoundException;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
@@ -131,5 +133,13 @@ public class DefaultIndexProviderMap extends LifecycleAdapter implements IndexPr
         IndexProvider existing = indexProvidersByDescriptor.putIfAbsent( providerDescriptor, provider );
         indexProvidersByName.putIfAbsent( providerDescriptor.name(), provider );
         return existing;
+    }
+
+    @Override
+    public IndexDescriptor2 completeConfiguration( IndexDescriptor2 index )
+    {
+        IndexProviderDescriptor providerDescriptor = index.getIndexProvider();
+        IndexProvider provider = lookup( providerDescriptor );
+        return provider.completeConfiguration( index );
     }
 }

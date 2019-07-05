@@ -126,12 +126,6 @@ public class LuceneIndexProvider extends IndexProvider
     }
 
     @Override
-    public IndexCapability getCapability( IndexDescriptor2 descriptor )
-    {
-        return IndexCapability.NO_CAPABILITY;
-    }
-
-    @Override
     public StoreMigrationParticipant storeMigrationParticipant( final FileSystemAbstraction fs, PageCache pageCache, StorageEngineFactory storageEngineFactory )
     {
         return new SchemaIndexMigrator( fs, this, storageEngineFactory );
@@ -164,5 +158,11 @@ public class LuceneIndexProvider extends IndexProvider
             }
             return false;
         }
+    }
+
+    @Override
+    public IndexDescriptor2 completeConfiguration( IndexDescriptor2 index )
+    {
+        return index;
     }
 }

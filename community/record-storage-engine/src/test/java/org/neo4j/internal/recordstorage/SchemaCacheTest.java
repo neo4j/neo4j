@@ -29,6 +29,7 @@ import org.neo4j.internal.helpers.collection.Iterators;
 import org.neo4j.internal.schema.ConstraintDescriptor;
 import org.neo4j.internal.schema.ConstraintDescriptor.Type;
 import org.neo4j.internal.schema.IndexConfig;
+import org.neo4j.internal.schema.IndexConfigCompleter;
 import org.neo4j.internal.schema.IndexDescriptor2;
 import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.LabelSchemaDescriptor;
@@ -63,6 +64,7 @@ class SchemaCacheTest
     private final SchemaRule witch = nodePropertyExistenceConstraintRule( 2, 3, 6 );
     private final SchemaRule gretel = newIndexRule( 3, 0, 7 );
     private final ConstraintRule robot = relPropertyExistenceConstraintRule( 7L, 8, 9 );
+    private IndexConfigCompleter indexConfigCompleter = index -> index;
 
     private static final long[] noEntityToken = {};
 
@@ -469,7 +471,7 @@ class SchemaCacheTest
     void shouldGetRelatedNodeConstraints()
     {
         // given
-        SchemaCache cache = new SchemaCache( new ConstraintSemantics() );
+        SchemaCache cache = new SchemaCache( new ConstraintSemantics(), indexConfigCompleter );
         ConstraintRule constraint1 = ConstraintRule.constraintRule( 1L, ConstraintDescriptorFactory.uniqueForLabel( 1, 5, 6 ), null );
         ConstraintRule constraint2 = ConstraintRule.constraintRule( 2L, ConstraintDescriptorFactory.uniqueForLabel( 1, 5 ), null );
         ConstraintRule constraint3 = ConstraintRule.constraintRule( 3L, ConstraintDescriptorFactory.uniqueForLabel( 2, 5 ), null );
@@ -499,7 +501,7 @@ class SchemaCacheTest
     void shouldRemoveNodeConstraints()
     {
         // given
-        SchemaCache cache = new SchemaCache( new ConstraintSemantics() );
+        SchemaCache cache = new SchemaCache( new ConstraintSemantics(), indexConfigCompleter );
         ConstraintRule constraint1 = ConstraintRule.constraintRule( 1L, ConstraintDescriptorFactory.uniqueForLabel( 1, 5, 6 ), null );
         ConstraintRule constraint2 = ConstraintRule.constraintRule( 2L, ConstraintDescriptorFactory.uniqueForLabel( 1, 5 ), null );
         ConstraintRule constraint3 = ConstraintRule.constraintRule( 3L, ConstraintDescriptorFactory.uniqueForLabel( 2, 5 ), null );
@@ -518,6 +520,7 @@ class SchemaCacheTest
         // then
         assertTrue( cache.getUniquenessConstraintsRelatedTo( entityTokens( 1 ), entityTokens(), properties( 5 ), true, NODE ).isEmpty() );
     }
+    // TODO add tests to verify that schema rules added to the cache are sent through the configuration completer
 
     // HELPERS
 
@@ -551,9 +554,9 @@ class SchemaCacheTest
         return constraintRule( ruleId, uniqueForLabel( labelId, propertyId ), indexId );
     }
 
-    private static SchemaCache newSchemaCache( SchemaRule... rules )
+    private SchemaCache newSchemaCache( SchemaRule... rules )
     {
-        SchemaCache cache = new SchemaCache( new ConstraintSemantics() );
+        SchemaCache cache = new SchemaCache( new ConstraintSemantics(), indexConfigCompleter );
         cache.load( (rules == null || rules.length == 0) ? Collections.emptyList() : asList( rules ) );
         return cache;
     }

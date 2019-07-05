@@ -38,7 +38,6 @@ import java.util.Arrays;
 import java.util.List;
 
 import org.neo4j.function.ThrowingConsumer;
-import org.neo4j.internal.kernel.api.exceptions.schema.MisconfiguredIndexException;
 import org.neo4j.internal.schema.IndexDescriptor2;
 import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -148,13 +147,13 @@ public abstract class IndexProviderCompatibilityTestSuite
         final List<NodeAndValue> valueSet2;
 
         @Before
-        public void setup() throws MisconfiguredIndexException
+        public void setup()
         {
             fs = pageCacheAndDependenciesRule.fileSystem();
             graphDbDir = pageCacheAndDependenciesRule.directory().storeDir();
             PageCache pageCache = pageCacheAndDependenciesRule.pageCache();
             indexProvider = testSuite.createIndexProvider( pageCache, fs, graphDbDir );
-            this.descriptor = indexProvider.bless( unblessedIndexPrototype ).materialise( 17 );
+            this.descriptor = indexProvider.completeConfiguration( unblessedIndexPrototype.materialise( 17 ) );
         }
 
         Compatibility( IndexProviderCompatibilityTestSuite testSuite, IndexPrototype prototype )

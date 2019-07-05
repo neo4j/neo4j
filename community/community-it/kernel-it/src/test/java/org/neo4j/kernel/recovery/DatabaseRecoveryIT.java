@@ -52,12 +52,9 @@ import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.TransactionFailureException;
-import org.neo4j.internal.helpers.collection.BoundedIterable;
 import org.neo4j.internal.helpers.collection.Iterators;
 import org.neo4j.internal.id.DefaultIdGeneratorFactory;
-import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.recordstorage.Command;
-import org.neo4j.internal.schema.IndexCapability;
 import org.neo4j.internal.schema.IndexDescriptor2;
 import org.neo4j.io.ByteUnit;
 import org.neo4j.io.IOUtils;
@@ -73,16 +70,14 @@ import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier
 import org.neo4j.io.pagecache.tracing.cursor.context.VersionContextSupplier;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexAccessor;
-import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.IndexProvider;
-import org.neo4j.kernel.api.index.IndexReader;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.extension.ExtensionFactory;
 import org.neo4j.kernel.extension.ExtensionType;
 import org.neo4j.kernel.extension.context.ExtensionContext;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
-import org.neo4j.kernel.impl.index.schema.ByteBufferFactory;
+import org.neo4j.kernel.impl.api.index.updater.DelegatingIndexUpdater;
 import org.neo4j.kernel.impl.pagecache.ConfiguringPageCacheFactory;
 import org.neo4j.kernel.impl.store.AbstractDynamicStore;
 import org.neo4j.kernel.impl.store.NeoStores;
@@ -103,10 +98,7 @@ import org.neo4j.monitoring.DatabaseHealth;
 import org.neo4j.monitoring.Health;
 import org.neo4j.monitoring.Monitors;
 import org.neo4j.storageengine.api.IndexEntryUpdate;
-import org.neo4j.storageengine.api.NodePropertyAccessor;
-import org.neo4j.storageengine.api.StorageEngineFactory;
 import org.neo4j.storageengine.api.TransactionIdStore;
-import org.neo4j.storageengine.migration.StoreMigrationParticipant;
 import org.neo4j.test.AdversarialPageCacheGraphDatabaseFactory;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.TestLabels;
@@ -841,55 +833,23 @@ class DatabaseRecoveryIT
         return new TestDatabaseManagementServiceBuilder( storeDir ).setInternalLogProvider( logProvider ).build();
     }
 
-    public class UpdateCapturingIndexProvider extends IndexProvider
+    public class UpdateCapturingIndexProvider extends IndexProvider.Delegating
     {
-        private final IndexProvider actual;
         private final Map<Long,UpdateCapturingIndexAccessor> indexes = new ConcurrentHashMap<>();
         private final Map<Long,Collection<IndexEntryUpdate<?>>> initialUpdates;
 
         UpdateCapturingIndexProvider( IndexProvider actual, Map<Long,Collection<IndexEntryUpdate<?>>> initialUpdates )
         {
             super( actual );
-            this.actual = actual;
             this.initialUpdates = initialUpdates;
-        }
-
-        @Override
-        public IndexPopulator getPopulator( IndexDescriptor2 descriptor, IndexSamplingConfig samplingConfig, ByteBufferFactory bufferFactory )
-        {
-            return actual.getPopulator( descriptor, samplingConfig, bufferFactory );
         }
 
         @Override
         public IndexAccessor getOnlineAccessor( IndexDescriptor2 descriptor, IndexSamplingConfig samplingConfig )
                 throws IOException
         {
-            IndexAccessor actualAccessor = actual.getOnlineAccessor( descriptor, samplingConfig );
+            IndexAccessor actualAccessor = super.getOnlineAccessor( descriptor, samplingConfig );
             return indexes.computeIfAbsent( descriptor.getId(), id -> new UpdateCapturingIndexAccessor( actualAccessor, initialUpdates.get( id ) ) );
-        }
-
-        @Override
-        public String getPopulationFailure( IndexDescriptor2 descriptor ) throws IllegalStateException
-        {
-            return actual.getPopulationFailure( descriptor );
-        }
-
-        @Override
-        public InternalIndexState getInitialState( IndexDescriptor2 descriptor )
-        {
-            return actual.getInitialState( descriptor );
-        }
-
-        @Override
-        public IndexCapability getCapability( IndexDescriptor2 descriptor )
-        {
-            return actual.getCapability( descriptor );
-        }
-
-        @Override
-        public StoreMigrationParticipant storeMigrationParticipant( FileSystemAbstraction fs, PageCache pageCache, StorageEngineFactory storageEngineFactory )
-        {
-            return actual.storeMigrationParticipant( fs, pageCache, storageEngineFactory );
         }
 
         public Map<Long,Collection<IndexEntryUpdate<?>>> snapshot()
@@ -900,14 +860,13 @@ class DatabaseRecoveryIT
         }
     }
 
-    public class UpdateCapturingIndexAccessor implements IndexAccessor
+    public class UpdateCapturingIndexAccessor extends IndexAccessor.Delegating
     {
-        private final IndexAccessor actual;
         private final Collection<IndexEntryUpdate<?>> updates = new ArrayList<>();
 
         UpdateCapturingIndexAccessor( IndexAccessor actual, Collection<IndexEntryUpdate<?>> initialUpdates )
         {
-            this.actual = actual;
+            super( actual );
             if ( initialUpdates != null )
             {
                 this.updates.addAll( initialUpdates );
@@ -915,68 +874,14 @@ class DatabaseRecoveryIT
         }
 
         @Override
-        public void drop()
-        {
-            actual.drop();
-        }
-
-        @Override
         public IndexUpdater newUpdater( IndexUpdateMode mode )
         {
-            return wrap( actual.newUpdater( mode ) );
+            return wrap( super.newUpdater( mode ) );
         }
 
         private IndexUpdater wrap( IndexUpdater actual )
         {
             return new UpdateCapturingIndexUpdater( actual, updates );
-        }
-
-        @Override
-        public void force( IOLimiter ioLimiter )
-        {
-            actual.force( ioLimiter );
-        }
-
-        @Override
-        public void refresh()
-        {
-            actual.refresh();
-        }
-
-        @Override
-        public void close()
-        {
-            actual.close();
-        }
-
-        @Override
-        public IndexReader newReader()
-        {
-            return actual.newReader();
-        }
-
-        @Override
-        public BoundedIterable<Long> newAllEntriesReader()
-        {
-            return actual.newAllEntriesReader();
-        }
-
-        @Override
-        public ResourceIterator<File> snapshotFiles()
-        {
-            return actual.snapshotFiles();
-        }
-
-        @Override
-        public void verifyDeferredConstraints( NodePropertyAccessor propertyAccessor ) throws IndexEntryConflictException
-        {
-            actual.verifyDeferredConstraints( propertyAccessor );
-        }
-
-        @Override
-        public boolean isDirty()
-        {
-            return actual.isDirty();
         }
 
         public Collection<IndexEntryUpdate<?>> snapshot()
@@ -985,28 +890,21 @@ class DatabaseRecoveryIT
         }
     }
 
-    public static class UpdateCapturingIndexUpdater implements IndexUpdater
+    public static class UpdateCapturingIndexUpdater extends DelegatingIndexUpdater
     {
-        private final IndexUpdater actual;
         private final Collection<IndexEntryUpdate<?>> updatesTarget;
 
         UpdateCapturingIndexUpdater( IndexUpdater actual, Collection<IndexEntryUpdate<?>> updatesTarget )
         {
-            this.actual = actual;
+            super( actual );
             this.updatesTarget = updatesTarget;
         }
 
         @Override
         public void process( IndexEntryUpdate<?> update ) throws IndexEntryConflictException
         {
-            actual.process( update );
+            super.process( update );
             updatesTarget.add( update );
-        }
-
-        @Override
-        public void close() throws IndexEntryConflictException
-        {
-            actual.close();
         }
     }
 

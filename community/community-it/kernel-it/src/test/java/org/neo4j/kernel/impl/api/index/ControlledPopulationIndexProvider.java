@@ -23,11 +23,8 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.neo4j.internal.kernel.api.InternalIndexState;
-import org.neo4j.internal.schema.IndexCapability;
 import org.neo4j.internal.schema.IndexDescriptor2;
 import org.neo4j.internal.schema.IndexProviderDescriptor;
-import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexDirectoryStructure;
 import org.neo4j.kernel.api.index.IndexPopulator;
@@ -36,8 +33,6 @@ import org.neo4j.kernel.api.index.IndexReader;
 import org.neo4j.kernel.api.index.IndexSample;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.kernel.impl.index.schema.ByteBufferFactory;
-import org.neo4j.storageengine.api.StorageEngineFactory;
-import org.neo4j.storageengine.migration.StoreMigrationParticipant;
 import org.neo4j.test.DoubleLatch;
 
 import static org.mockito.Mockito.mock;
@@ -45,7 +40,7 @@ import static org.mockito.Mockito.when;
 import static org.neo4j.internal.kernel.api.InternalIndexState.POPULATING;
 import static org.neo4j.test.DoubleLatch.awaitLatch;
 
-public class ControlledPopulationIndexProvider extends IndexProvider
+public class ControlledPopulationIndexProvider extends IndexProvider.Adaptor
 {
     private IndexPopulator mockedPopulator = new IndexPopulator.Adapter();
     private final IndexAccessor mockedWriter = mock( IndexAccessor.class );
@@ -111,26 +106,8 @@ public class ControlledPopulationIndexProvider extends IndexProvider
         return initialIndexState;
     }
 
-    @Override
-    public IndexCapability getCapability( IndexDescriptor2 descriptor )
-    {
-        return IndexCapability.NO_CAPABILITY;
-    }
-
     public void setInitialIndexState( InternalIndexState initialIndexState )
     {
         this.initialIndexState = initialIndexState;
-    }
-
-    @Override
-    public String getPopulationFailure( IndexDescriptor2 descriptor ) throws IllegalStateException
-    {
-        throw new IllegalStateException();
-    }
-
-    @Override
-    public StoreMigrationParticipant storeMigrationParticipant( FileSystemAbstraction fs, PageCache pageCache, StorageEngineFactory storageEngineFactory )
-    {
-        return StoreMigrationParticipant.NOT_PARTICIPATING;
     }
 }

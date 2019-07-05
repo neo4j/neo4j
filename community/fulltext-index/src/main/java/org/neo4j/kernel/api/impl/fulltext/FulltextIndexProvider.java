@@ -31,13 +31,10 @@ import org.neo4j.exceptions.KernelException;
 import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.graphdb.schema.AnalyzerProvider;
 import org.neo4j.internal.kernel.api.InternalIndexState;
-import org.neo4j.internal.kernel.api.exceptions.schema.MisconfiguredIndexException;
 import org.neo4j.internal.schema.IndexCapability;
 import org.neo4j.internal.schema.IndexConfig;
 import org.neo4j.internal.schema.IndexDescriptor2;
 import org.neo4j.internal.schema.IndexProviderDescriptor;
-import org.neo4j.internal.schema.IndexRef;
-import org.neo4j.internal.schema.IndexType;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
@@ -65,7 +62,6 @@ import org.neo4j.storageengine.migration.StoreMigrationParticipant;
 import org.neo4j.token.TokenHolders;
 import org.neo4j.values.storable.Values;
 
-import static org.neo4j.kernel.api.exceptions.Status.General.InvalidArguments;
 import static org.neo4j.kernel.api.impl.fulltext.FulltextIndexSettings.createAnalyzer;
 import static org.neo4j.kernel.api.impl.fulltext.FulltextIndexSettings.createPropertyNames;
 import static org.neo4j.kernel.api.impl.fulltext.FulltextIndexSettings.isEventuallyConsistent;
@@ -131,28 +127,21 @@ class FulltextIndexProvider extends IndexProvider implements FulltextAdapter
     }
 
     @Override
-    public IndexCapability getCapability( IndexDescriptor2 descriptor )
+    public IndexDescriptor2 completeConfiguration( IndexDescriptor2 index )
     {
-        return new FulltextIndexCapability( isEventuallyConsistent( descriptor.schema() ) );
-    }
-
-    @Override
-    public <T extends IndexRef<T>> T bless( T index ) throws MisconfiguredIndexException
-    {
-        index = super.bless( index );
         SchemaDescriptor schema = index.schema();
-        if ( schema.getIndexType() != IndexType.FULLTEXT )
-        {
-            // The fulltext index provider only support fulltext indexes.
-            throw new MisconfiguredIndexException( InvalidArguments, "The index provider '" + getProviderDescriptor() + "' only supports fulltext index " +
-                    "descriptors. Make sure that fulltext indexes are created using the relevant fulltext index procedures. " +
-                    "Refused to bless the index descriptor: " + index + "." );
-        }
+        // TODO make the createIndex procedure verify that the created index types and providers make sense.
         IndexConfig indexConfig = schema.getIndexConfig();
         indexConfig = addMissingDefaultIndexConfig( indexConfig );
         schema = schema.withIndexConfig( indexConfig );
         index = index.withSchemaDescriptor( schema );
+        index = index.withIndexCapability( getCapability( index ) );
         return index;
+    }
+
+    private IndexCapability getCapability( IndexDescriptor2 descriptor )
+    {
+        return new FulltextIndexCapability( isEventuallyConsistent( descriptor.schema() ) );
     }
 
     @Override
@@ -188,14 +177,6 @@ class FulltextIndexProvider extends IndexProvider implements FulltextAdapter
     @Override
     public IndexPopulator getPopulator( IndexDescriptor2 descriptor, IndexSamplingConfig samplingConfig, ByteBufferFactory bufferFactory )
     {
-        try
-        {
-            descriptor = bless( descriptor ); // TODO remove this once the index configuration migration is implemented!
-        }
-        catch ( MisconfiguredIndexException e )
-        {
-            throw new RuntimeException( e );
-        }
         PartitionedIndexStorage indexStorage = getIndexStorage( descriptor.getId() );
         NonTransactionalTokenNameLookup tokenNameLookup = new NonTransactionalTokenNameLookup( tokenHolders );
         Analyzer analyzer = createAnalyzer( descriptor, tokenNameLookup );
@@ -218,14 +199,6 @@ class FulltextIndexProvider extends IndexProvider implements FulltextAdapter
     @Override
     public IndexAccessor getOnlineAccessor( IndexDescriptor2 descriptor, IndexSamplingConfig samplingConfig ) throws IOException
     {
-        try
-        {
-            descriptor = bless( descriptor ); // TODO remove this once the index configuration migration is implemented!
-        }
-        catch ( MisconfiguredIndexException e )
-        {
-            throw new RuntimeException( e );
-        }
         PartitionedIndexStorage indexStorage = getIndexStorage( descriptor.getId() );
         NonTransactionalTokenNameLookup tokenNameLookup = new NonTransactionalTokenNameLookup( tokenHolders );
         Analyzer analyzer = createAnalyzer( descriptor, tokenNameLookup );

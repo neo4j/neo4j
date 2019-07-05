@@ -49,7 +49,6 @@ import org.neo4j.internal.kernel.api.exceptions.schema.ConstraintValidationExcep
 import org.neo4j.internal.kernel.api.exceptions.schema.CreateConstraintFailureException;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotApplicableKernelException;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
-import org.neo4j.internal.kernel.api.exceptions.schema.MisconfiguredIndexException;
 import org.neo4j.internal.kernel.api.exceptions.schema.SchemaKernelException;
 import org.neo4j.internal.schema.ConstraintDescriptor;
 import org.neo4j.internal.schema.IndexDescriptor2;
@@ -870,7 +869,7 @@ public class Operations implements Write, SchemaWrite
         return indexDoCreate( prototype );
     }
 
-    private IndexDescriptor2 indexDoCreate( IndexPrototype prototype ) throws MisconfiguredIndexException
+    private IndexDescriptor2 indexDoCreate( IndexPrototype prototype )
     {
         TransactionState transactionState = ktx.txState();
 
@@ -895,7 +894,7 @@ public class Operations implements Write, SchemaWrite
 
         long schemaRecordId = commandCreationContext.reserveSchema();
         IndexDescriptor2 index = prototype.materialise( schemaRecordId );
-        index = indexProviders.getBlessedDescriptorFromProvider( index );
+        index = indexProviders.completeConfiguration( index );
         transactionState.indexDoAdd( index );
         return index;
     }
@@ -1253,7 +1252,7 @@ public class Operations implements Write, SchemaWrite
         {
             LabelSchemaDescriptor labelSchemaDescriptor = constraint.ownedIndexSchema();
             IndexDescriptor2 constraintIndex = allStoreHolder.indexForSchemaNonTransactional( labelSchemaDescriptor ); // Ignore transaction state.
-            if ( ktx.hasTxStateWithChanges() && constraintIndex.isUnique() && ktx.txState().indexDoUnRemove( constraintIndex ) ) // ..., DROP, *CREATE*
+            if ( constraintIndex.isUnique() && ktx.hasTxStateWithChanges() && ktx.txState().indexDoUnRemove( constraintIndex ) ) // ..., DROP, *CREATE*
             { // creation is undoing a drop
                 if ( !ktx.txState().constraintDoUnRemove( constraint ) ) // CREATE, ..., DROP, *CREATE*
                 { // ... the drop we are undoing did itself undo a prior create...
@@ -1271,7 +1270,7 @@ public class Operations implements Write, SchemaWrite
                         return;
                     }
                 }
-                IndexDescriptor2 index = constraintIndexCreator.createUniquenessConstraintIndex( ktx, descriptor, provider );
+                IndexDescriptor2 index = constraintIndexCreator.createUniquenessConstraintIndex( ktx, constraint, provider );
                 if ( !allStoreHolder.constraintExists( constraint ) )
                 {
                     // This looks weird, but since we release the label lock while awaiting population of the index

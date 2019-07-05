@@ -21,7 +21,7 @@ package org.neo4j.kernel.impl.api.index;
 
 import java.util.function.Consumer;
 
-import org.neo4j.internal.schema.IndexCapability;
+import org.neo4j.internal.schema.IndexConfigCompleter;
 import org.neo4j.internal.schema.IndexDescriptor2;
 import org.neo4j.internal.schema.IndexProviderDescriptor;
 import org.neo4j.kernel.api.index.IndexProvider;
@@ -29,7 +29,7 @@ import org.neo4j.kernel.api.index.IndexProvider;
 /**
  * Contains mapping from {@link IndexProviderDescriptor} or provider name to {@link IndexProvider}.
  */
-public interface IndexProviderMap
+public interface IndexProviderMap extends IndexConfigCompleter
 {
     /**
      * Looks up and returns the {@link IndexProvider} for the given {@link IndexProviderDescriptor}.
@@ -64,22 +64,14 @@ public interface IndexProviderMap
      */
     void accept( Consumer<IndexProvider> visitor );
 
-    /**
-     * Create a new {@link IndexDescriptor2} from the given index descriptor, which includes the capabilities
-     * that correspond to those of the index provider of the given {@code descriptor}, found in this {@link IndexProviderMap}.
-     *
-     * @return an index descriptor with capabilities attached.
-     */
-    default IndexDescriptor2 withCapabilities( IndexDescriptor2 descriptor )
-    {
-        IndexProviderDescriptor providerDescriptor = descriptor.getIndexProvider();
-        IndexProvider provider = lookup( providerDescriptor );
-        IndexCapability capability = provider.getCapability( descriptor );
-        return capability != null ? descriptor.withIndexCapability( capability ) : descriptor;
-    }
-
     IndexProviderMap EMPTY = new IndexProviderMap()
     {
+        @Override
+        public IndexDescriptor2 completeConfiguration( IndexDescriptor2 index )
+        {
+            return index;
+        }
+
         @Override
         public IndexProvider lookup( IndexProviderDescriptor descriptor ) throws IndexProviderNotFoundException
         {

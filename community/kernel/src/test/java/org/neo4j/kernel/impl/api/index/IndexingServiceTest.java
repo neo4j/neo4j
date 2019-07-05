@@ -187,7 +187,6 @@ class IndexingServiceTest
         when( indexStatisticsStore.indexUpdatesAndSize( anyLong(), any( DoubleLongRegister.class ) ) )
                 .thenAnswer( invocation -> invocation.getArgument( 1 ) );
         when( storeView.newPropertyAccessor() ).thenReturn( propertyAccessor );
-        when( indexProvider.getCapability( any() ) ).thenReturn( NO_CAPABILITY );
     }
 
     @AfterEach
@@ -447,7 +446,6 @@ class IndexingServiceTest
         when( provider.getInitialState( onlineIndex ) ).thenReturn( ONLINE );
         when( provider.getInitialState( populatingIndex ) ).thenReturn( POPULATING );
         when( provider.getInitialState( failedIndex ) ).thenReturn( FAILED );
-        when( provider.getCapability( any() ) ).thenReturn( NO_CAPABILITY );
 
         indexingService.init();
 
@@ -980,7 +978,7 @@ class IndexingServiceTest
     {
         // given
         long indexId = 1;
-        IndexDescriptor2 indexRule = uniqueIndex.materialise( indexId ).withIndexCapability( NO_CAPABILITY );
+        IndexDescriptor2 indexRule = uniqueIndex.materialise( indexId );
         Barrier.Control barrier = new Barrier.Control();
         CountDownLatch exceptionBarrier = new CountDownLatch( 1 );
         IndexingService indexing = newIndexingServiceWithMockedDependencies( populator, accessor, withData(), new IndexingService.MonitorAdapter()
@@ -1097,7 +1095,6 @@ class IndexingServiceTest
         indexes.add( populatingIndex );
         IndexDescriptor2 failedIndex = storeIndex( nextIndexId, nextIndexId++, 1, PROVIDER_DESCRIPTOR );
         when( provider.getInitialState( failedIndex ) ).thenReturn( FAILED );
-        when( provider.getCapability( any() ) ).thenReturn( NO_CAPABILITY );
         indexes.add( failedIndex );
         for ( int i = 0; i < 10; i++ )
         {
@@ -1237,7 +1234,7 @@ class IndexingServiceTest
     private static IndexProxy createIndexProxyMock( long indexId )
     {
         IndexProxy proxy = mock( IndexProxy.class );
-        IndexDescriptor2 descriptor = storeIndex( indexId, 1, 2, PROVIDER_DESCRIPTOR ).withIndexCapability( NO_CAPABILITY );
+        IndexDescriptor2 descriptor = storeIndex( indexId, 1, 2, PROVIDER_DESCRIPTOR );
         when( proxy.getDescriptor() ).thenReturn( descriptor );
         return proxy;
     }

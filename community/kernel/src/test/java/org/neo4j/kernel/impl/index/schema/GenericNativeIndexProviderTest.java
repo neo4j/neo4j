@@ -25,8 +25,8 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.neo4j.configuration.Config;
-import org.neo4j.internal.kernel.api.exceptions.schema.MisconfiguredIndexException;
 import org.neo4j.internal.schema.IndexConfig;
+import org.neo4j.internal.schema.IndexDescriptor2;
 import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.IndexProviderDescriptor;
 import org.neo4j.internal.schema.LabelSchemaDescriptor;
@@ -51,15 +51,15 @@ import static org.neo4j.kernel.impl.index.schema.SpatialIndexConfig.key;
 class GenericNativeIndexProviderTest
 {
     @Test
-    void mustBlessIndexDescriptorWithSpatialConfig() throws MisconfiguredIndexException
+    void mustBlessIndexDescriptorWithSpatialConfig()
     {
         // Given
         GenericNativeIndexProvider provider = new GenericNativeIndexProvider( IndexDirectoryStructure.NONE, null, null, null, null, false, Config.defaults() );
         LabelSchemaDescriptor sinfulSchema = SchemaDescriptor.forLabel( 1, 1 );
-        IndexPrototype sinfulDescriptor = IndexPrototype.forSchema( sinfulSchema, IndexProviderDescriptor.UNDECIDED );
+        IndexDescriptor2 sinfulDescriptor = IndexPrototype.forSchema( sinfulSchema, IndexProviderDescriptor.UNDECIDED ).materialise( 1 );
 
         // When
-        IndexPrototype blessesDescriptor = provider.bless( sinfulDescriptor );
+        IndexDescriptor2 blessesDescriptor = provider.completeConfiguration( sinfulDescriptor );
         SchemaDescriptor blessedSchema = blessesDescriptor.schema();
 
         // Then
@@ -78,7 +78,7 @@ class GenericNativeIndexProviderTest
     }
 
     @Test
-    void blessMustNotOverrideExistingSettings() throws MisconfiguredIndexException
+    void blessMustNotOverrideExistingSettings()
     {
         // Given
         GenericNativeIndexProvider provider = new GenericNativeIndexProvider( IndexDirectoryStructure.NONE, null, null, null, null, false, Config.defaults() );
@@ -98,10 +98,10 @@ class GenericNativeIndexProviderTest
         existingSettings.put( key( existingCrs.getName(), MAX ), max );
         IndexConfig existingIndexConfig = IndexConfig.with( existingSettings );
         LabelSchemaDescriptor sinfulSchema = SchemaDescriptor.forLabel( 1, 1 ).withIndexConfig( existingIndexConfig );
-        IndexPrototype sinfulPrototype = IndexPrototype.forSchema( sinfulSchema, IndexProviderDescriptor.UNDECIDED );
+        IndexDescriptor2 sinfulDescriptor = IndexPrototype.forSchema( sinfulSchema, IndexProviderDescriptor.UNDECIDED ).materialise( 1 );
 
         // When
-        IndexPrototype blessesPrototype = provider.bless( sinfulPrototype );
+        IndexDescriptor2 blessesPrototype = provider.completeConfiguration( sinfulDescriptor );
         SchemaDescriptor blessedSchema = blessesPrototype.schema();
 
         // Then

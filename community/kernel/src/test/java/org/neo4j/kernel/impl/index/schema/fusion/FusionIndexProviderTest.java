@@ -29,7 +29,6 @@ import java.util.EnumMap;
 import java.util.List;
 
 import org.neo4j.internal.kernel.api.InternalIndexState;
-import org.neo4j.internal.kernel.api.exceptions.schema.MisconfiguredIndexException;
 import org.neo4j.internal.schema.IndexDescriptor2;
 import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.IndexProviderDescriptor;
@@ -294,19 +293,19 @@ abstract class FusionIndexProviderTest
     }
 
     @Test
-    void shouldBlessWithAllProviders() throws MisconfiguredIndexException
+    void shouldBlessWithAllProviders()
     {
         // when
         for ( IndexProvider aliveProvider : aliveProviders )
         {
-            when( aliveProvider.bless( any( IndexDescriptor2.class ) ) ).then( returnsFirstArg() );
+            when( aliveProvider.completeConfiguration( any( IndexDescriptor2.class ) ) ).then( returnsFirstArg() );
         }
-        fusionIndexProvider.bless( AN_INDEX );
+        fusionIndexProvider.completeConfiguration( AN_INDEX );
 
         // then
         for ( IndexProvider aliveProvider : aliveProviders )
         {
-            verify( aliveProvider, times( 1 ) ).bless( any( IndexDescriptor2.class ) );
+            verify( aliveProvider, times( 1 ) ).completeConfiguration( any( IndexDescriptor2.class ) );
         }
     }
 

@@ -19,9 +19,7 @@
  */
 package org.neo4j.internal.schema.constraints;
 
-import org.neo4j.internal.schema.IndexDescriptor2;
 import org.neo4j.internal.schema.LabelSchemaDescriptor;
-import org.neo4j.internal.schema.SchemaDescriptor;
 
 public class UniquenessConstraintDescriptor extends IndexBackedConstraintDescriptor
 {

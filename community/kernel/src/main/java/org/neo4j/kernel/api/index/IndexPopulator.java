@@ -21,6 +21,7 @@ package org.neo4j.kernel.api.index;
 
 import java.io.UncheckedIOException;
 import java.util.Collection;
+import java.util.Map;
 
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.kernel.api.PopulationProgress;
@@ -31,6 +32,7 @@ import org.neo4j.kernel.impl.api.index.updater.SwallowingIndexUpdater;
 import org.neo4j.storageengine.api.IndexEntryUpdate;
 import org.neo4j.storageengine.api.NodePropertyAccessor;
 import org.neo4j.storageengine.api.UpdateMode;
+import org.neo4j.values.storable.Value;
 
 /**
  * Used for initial population of an index.
@@ -213,6 +215,88 @@ public interface IndexPopulator extends IndexConfigProvider
         @Override
         public void verifyDeferredConstraints( NodePropertyAccessor nodePropertyAccessor )
         {
+        }
+    }
+
+    class Delegating implements IndexPopulator
+    {
+        private final IndexPopulator delegate;
+
+        public Delegating( IndexPopulator delegate )
+        {
+            this.delegate = delegate;
+        }
+
+        @Override
+        public void create()
+        {
+            delegate.create();
+        }
+
+        @Override
+        public void drop()
+        {
+            delegate.drop();
+        }
+
+        @Override
+        public void add( Collection<? extends IndexEntryUpdate<?>> updates ) throws IndexEntryConflictException
+        {
+            delegate.add( updates );
+        }
+
+        @Override
+        public void verifyDeferredConstraints( NodePropertyAccessor nodePropertyAccessor ) throws IndexEntryConflictException
+        {
+            delegate.verifyDeferredConstraints( nodePropertyAccessor );
+        }
+
+        @Override
+        public IndexUpdater newPopulatingUpdater( NodePropertyAccessor accessor )
+        {
+            return delegate.newPopulatingUpdater( accessor );
+        }
+
+        @Override
+        public void close( boolean populationCompletedSuccessfully )
+        {
+            delegate.close( populationCompletedSuccessfully );
+        }
+
+        @Override
+        public void markAsFailed( String failure )
+        {
+            delegate.markAsFailed( failure );
+        }
+
+        @Override
+        public void includeSample( IndexEntryUpdate<?> update )
+        {
+            delegate.includeSample( update );
+        }
+
+        @Override
+        public IndexSample sampleResult()
+        {
+            return delegate.sampleResult();
+        }
+
+        @Override
+        public PopulationProgress progress( PopulationProgress scanProgress )
+        {
+            return delegate.progress( scanProgress );
+        }
+
+        @Override
+        public void scanCompleted( PhaseTracker phaseTracker ) throws IndexEntryConflictException
+        {
+            delegate.scanCompleted( phaseTracker );
+        }
+
+        @Override
+        public Map<String,Value> indexConfig()
+        {
+            return delegate.indexConfig();
         }
     }
 }

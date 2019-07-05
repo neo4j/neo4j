@@ -129,7 +129,7 @@ public class BuiltInProcedures
 
             SchemaReadCore schemaRead = tx.schemaRead().snapshot();
             List<IndexDescriptor2> indexes = asList( schemaRead.indexesGetAll() );
-            indexes.sort( Comparator.comparing( a -> a.userDescription( tokens ) ) );
+            indexes.sort( Comparator.comparing( a -> a.schema().userDescription( tokens ) ) );
 
             ArrayList<IndexResult> result = new ArrayList<>();
             for ( IndexDescriptor2 index : indexes )

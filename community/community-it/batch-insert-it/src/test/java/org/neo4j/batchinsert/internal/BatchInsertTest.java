@@ -66,7 +66,6 @@ import org.neo4j.internal.recordstorage.RecordStorageEngine;
 import org.neo4j.internal.recordstorage.SchemaRuleAccess;
 import org.neo4j.internal.schema.IndexDescriptor2;
 import org.neo4j.internal.schema.IndexProviderDescriptor;
-import org.neo4j.internal.schema.IndexRef;
 import org.neo4j.internal.schema.SchemaRule;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
@@ -869,7 +868,7 @@ class BatchInsertTest
         when( provider.getPopulator( any( IndexDescriptor2.class ), any( IndexSamplingConfig.class ), any() ) ).thenReturn( populator );
         when( populator.sampleResult() ).thenReturn( new IndexSample() );
         when( provider.getOnlineAccessor( any( IndexDescriptor2.class ), any( IndexSamplingConfig.class ) ) ).thenReturn( accessor );
-        when( provider.bless( any( IndexRef.class ) ) ).thenCallRealMethod();
+        when( provider.completeConfiguration( any( IndexDescriptor2.class ) ) ).then( inv -> inv.getArgument( 0 ) );
 
         BatchInserter inserter = newBatchInserterWithIndexProvider(
                 singleInstanceIndexProviderFactory( KEY, provider ), provider.getProviderDescriptor(), denseNodeThreshold );
@@ -906,7 +905,7 @@ class BatchInsertTest
         when( provider.getPopulator( any( IndexDescriptor2.class ), any( IndexSamplingConfig.class ), any() ) ).thenReturn( populator );
         when( populator.sampleResult() ).thenReturn( new IndexSample() );
         when( provider.getOnlineAccessor( any( IndexDescriptor2.class ), any( IndexSamplingConfig.class ) ) ).thenReturn( accessor );
-        when( provider.bless( any( IndexRef.class ) ) ).thenCallRealMethod();
+        when( provider.completeConfiguration( any( IndexDescriptor2.class ) ) ).then( inv -> inv.getArgument( 0 ) );
 
         BatchInserter inserter = newBatchInserterWithIndexProvider(
                 singleInstanceIndexProviderFactory( KEY, provider ), provider.getProviderDescriptor(), denseNodeThreshold );
@@ -942,6 +941,7 @@ class BatchInsertTest
         IndexAccessor accessor = mock( IndexAccessor.class );
 
         when( provider.getProviderDescriptor() ).thenReturn( DESCRIPTOR );
+        when( provider.completeConfiguration( any( IndexDescriptor2.class ) ) ).then( inv -> inv.getArgument( 0 ) );
         when( provider.getPopulator( any( IndexDescriptor2.class ), any( IndexSamplingConfig.class ), any() ) ).thenReturn( populator );
         when( populator.sampleResult() ).thenReturn( new IndexSample() );
         when( provider.getOnlineAccessor( any( IndexDescriptor2.class ), any( IndexSamplingConfig.class ) ) ).thenReturn( accessor );
@@ -1463,7 +1463,7 @@ class BatchInsertTest
         when( provider.getProviderDescriptor() ).thenReturn( DESCRIPTOR );
         when( provider.getPopulator( any( IndexDescriptor2.class ), any( IndexSamplingConfig.class ), any() ) )
                 .thenReturn( populator );
-        when( provider.bless( any( IndexDescriptor2.class ) ) ).thenCallRealMethod();
+        when( provider.completeConfiguration( any( IndexDescriptor2.class ) ) ).then( inv -> inv.getArgument( 0 ) );
 
         BatchInserter inserter = newBatchInserterWithIndexProvider(
                 singleInstanceIndexProviderFactory( KEY, provider ), provider.getProviderDescriptor(), denseNodeThreshold );

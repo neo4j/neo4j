@@ -327,7 +327,7 @@ public class MultiIndexPopulationConcurrentUpdatesIT
             indexService.start();
 
             rules = createIndexRules( labelNameIdMap, propertyId );
-            schemaCache = new SchemaCache( new StandardConstraintSemantics() );
+            schemaCache = new SchemaCache( new StandardConstraintSemantics(), providerMap );
             schemaCache.load( iterable( rules ) );
 
             indexService.createIndexes( rules );

@@ -555,7 +555,7 @@ public class LuceneFulltextIndexTest extends LuceneFulltextTestSupport
     }
 
     @Test
-    public void blessMustInjectMissingConfigurations() throws Exception
+    public void completeConfigurationMustInjectMissingConfigurations() throws Exception
     {
         int label;
         int propertyKey;
@@ -574,7 +574,7 @@ public class LuceneFulltextIndexTest extends LuceneFulltextTestSupport
         FulltextSchemaDescriptor schema = SchemaDescriptor.fulltext( NODE, IndexConfig.empty(), new int[]{label}, new int[]{propertyKey} );
         FulltextIndexProvider provider = (FulltextIndexProvider) fulltextAdapter;
 
-        IndexPrototype descriptor = provider.bless( IndexPrototype.forSchema( schema, provider.getProviderDescriptor() ) );
+        IndexDescriptor2 descriptor = provider.completeConfiguration( IndexPrototype.forSchema( schema, provider.getProviderDescriptor() ).materialise( 1 ) );
 
         assertThat( descriptor.schema().getIndexConfig().get( ANALYZER ), is( Values.stringValue( "standard-no-stop-words" ) ) );
         assertThat( descriptor.schema().getIndexConfig().get( EVENTUALLY_CONSISTENT ), is( Values.booleanValue( false ) ) );

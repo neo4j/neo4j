@@ -39,10 +39,8 @@ import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.internal.kernel.api.TokenRead;
-import org.neo4j.internal.kernel.api.exceptions.schema.MisconfiguredIndexException;
 import org.neo4j.internal.schema.IndexCapability;
 import org.neo4j.internal.schema.IndexDescriptor2;
-import org.neo4j.internal.schema.IndexRef;
 import org.neo4j.internal.schema.LabelSchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -177,13 +175,12 @@ class IndexCRUDIT
     }
 
     @BeforeEach
-    void before() throws MisconfiguredIndexException
+    void before()
     {
         when( mockedIndexProvider.getProviderDescriptor() ).thenReturn( PROVIDER_DESCRIPTOR );
         when( mockedIndexProvider.storeMigrationParticipant( any( FileSystemAbstraction.class ), any( PageCache.class ), any() ) )
                 .thenReturn( StoreMigrationParticipant.NOT_PARTICIPATING );
-        when( mockedIndexProvider.bless( any( IndexRef.class ) ) ).thenCallRealMethod();
-        when( mockedIndexProvider.getCapability( any( IndexDescriptor2.class ) ) ).thenReturn( IndexCapability.NO_CAPABILITY );
+        when( mockedIndexProvider.completeConfiguration( any( IndexDescriptor2.class ) ) ).then( inv -> inv.getArgument( 0 ) );
 
         Dependencies dependencies = new Dependencies();
         dependencies.satisfyDependencies( SystemGraphInitializer.NO_OP );   // disable system graph construction because it will interfere with some tests

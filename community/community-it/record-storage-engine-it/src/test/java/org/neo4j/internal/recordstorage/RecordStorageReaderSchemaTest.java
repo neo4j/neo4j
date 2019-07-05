@@ -24,6 +24,7 @@ import org.junit.jupiter.api.Test;
 import java.util.Set;
 
 import org.neo4j.graphdb.Label;
+import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.internal.schema.ConstraintDescriptor;
 import org.neo4j.internal.schema.IndexDescriptor2;
 import org.neo4j.internal.schema.IndexPrototype;
@@ -109,6 +110,82 @@ class RecordStorageReaderSchemaTest extends RecordStorageReaderTestBase
     }
 
     @Test
+    void shouldListAllIndexesForLabel() throws Exception
+    {
+        // Given
+        createUniquenessConstraint( label1, propertyKey );
+        createIndex( label1, otherPropertyKey );
+        createUniquenessConstraint( label2, propertyKey );
+        createIndex( label2, otherPropertyKey );
+
+        // When
+        Set<IndexDescriptor2> indexes = asSet( storageReader.indexesGetForLabel( labelId( label1 ) ) );
+
+        // Then
+        Set<IndexDescriptor2> expectedIndexes = asSet(
+                uniqueIndexDescriptor( label1, propertyKey ),
+                indexDescriptor( label1, otherPropertyKey ) );
+
+        assertEquals( expectedIndexes, indexes );
+    }
+
+    @Test
+    void shouldListAllIndexesForLabelAtTimeOfSnapshot() throws Exception
+    {
+        // Given
+        createUniquenessConstraint( label1, propertyKey );
+        createIndex( label1, otherPropertyKey );
+        createUniquenessConstraint( label2, propertyKey );
+        createIndex( label2, otherPropertyKey );
+
+        // When
+        StorageSchemaReader snapshot = storageReader.schemaSnapshot();
+        Set<IndexDescriptor2> indexes = asSet( snapshot.indexesGetForLabel( labelId( label1 ) ) );
+
+        // Then
+        Set<IndexDescriptor2> expectedIndexes = asSet(
+                uniqueIndexDescriptor( label1, propertyKey ),
+                indexDescriptor( label1, otherPropertyKey ) );
+
+        assertEquals( expectedIndexes, indexes );
+    }
+
+    @Test
+    void shouldListAllIndexesForRelationshipType() throws Exception
+    {
+        // Given
+        createIndex( relType1, propertyKey );
+        createIndex( relType2, propertyKey );
+
+        // When
+        Set<IndexDescriptor2> indexes = asSet( storageReader.indexesGetForRelationshipType( relationshipTypeId( relType1 ) ) );
+
+        // Then
+        Set<IndexDescriptor2> expectedIndexes = asSet(
+                indexDescriptor( relType1, propertyKey ) );
+
+        assertEquals( expectedIndexes, indexes );
+    }
+
+    @Test
+    void shouldListAllIndexesForRelationshipTypeAtTimeOfSnapshot() throws Exception
+    {
+        // Given
+        createIndex( relType1, propertyKey );
+        createIndex( relType2, propertyKey );
+
+        // When
+        StorageSchemaReader snapshot = storageReader.schemaSnapshot();
+        Set<IndexDescriptor2> indexes = asSet( snapshot.indexesGetForRelationshipType( relationshipTypeId( relType1 ) ) );
+
+        // Then
+        Set<IndexDescriptor2> expectedIndexes = asSet(
+                indexDescriptor( relType1, propertyKey ) );
+
+        assertEquals( expectedIndexes, indexes );
+    }
+
+    @Test
     void shouldListAllConstraintsForLabel() throws Exception
     {
         // Given
@@ -165,6 +242,20 @@ class RecordStorageReaderSchemaTest extends RecordStorageReaderTestBase
         int labelId = labelId( label );
         int propKeyId = propertyKeyId( propertyKey );
         return IndexPrototype.forSchema( SchemaDescriptor.forLabel( labelId, propKeyId ) ).materialise( 0 );
+    }
+
+    private IndexDescriptor2 indexDescriptor( RelationshipType relType, String propertyKey )
+    {
+        int relTypeId = relationshipTypeId( relType );
+        int propKeyId = propertyKeyId( propertyKey );
+        return IndexPrototype.forSchema( SchemaDescriptor.forRelType( relTypeId, propKeyId ) ).materialise( 0 );
+    }
+
+    private IndexDescriptor2 uniqueIndexDescriptor( Label label, String propertyKey )
+    {
+        int labelId = labelId( label );
+        int propKeyId = propertyKeyId( propertyKey );
+        return IndexPrototype.uniqueForSchema( SchemaDescriptor.forLabel( labelId, propKeyId ) ).materialise( 0 );
     }
 
     private ConstraintDescriptor uniqueConstraintDescriptor( Label label, String propertyKey )

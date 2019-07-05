@@ -171,7 +171,7 @@ class OperationsTest
         indexingProvidersService = mock( IndexingProvidersService.class );
         when( indexingProvidersService.indexProviderByName( "native-btree-1.0" ) ).thenReturn( new IndexProviderDescriptor( "native-btree", "1.0" ) );
         when( indexingProvidersService.indexProviderByName( "provider-1.0" ) ).thenReturn( new IndexProviderDescriptor( "provider", "1.0" ) );
-        when( indexingProvidersService.getBlessedDescriptorFromProvider( any() ) ).thenAnswer( inv -> inv.getArgument( 0 ) );
+        when( indexingProvidersService.completeConfiguration( any() ) ).thenAnswer( inv -> inv.getArgument( 0 ) );
         operations = new Operations( allStoreHolder, storageReader, mock( IndexTxStateUpdater.class ), creationContext,
                  transaction, new KernelToken( storageReader, creationContext, transaction, tokenHolders ), cursors,
                 constraintIndexCreator, mock( ConstraintSemantics.class ), indexingProvidersService, Config.defaults() );
@@ -615,8 +615,9 @@ class OperationsTest
     {
         // given
         String defaultProvider = Config.defaults().get( default_schema_provider );
-        IndexDescriptor2 constraintIndex = IndexPrototype.forSchema( descriptor ).materialise( 42 );
-        when( constraintIndexCreator.createUniquenessConstraintIndex( transaction, descriptor, defaultProvider ) ).thenReturn( constraintIndex );
+        IndexDescriptor2 constraintIndex = IndexPrototype.uniqueForSchema( descriptor ).materialise( 42 );
+        UniquenessConstraintDescriptor constraint = ConstraintDescriptorFactory.uniqueForSchema( descriptor );
+        when( constraintIndexCreator.createUniquenessConstraintIndex( transaction, constraint, defaultProvider ) ).thenReturn( constraintIndex );
         IndexProxy indexProxy = mock( IndexProxy.class );
         when( indexProxy.getDescriptor() ).thenReturn( constraintIndex );
         when( indexingService.getIndexProxy( constraintIndex.schema() ) ).thenReturn( indexProxy );

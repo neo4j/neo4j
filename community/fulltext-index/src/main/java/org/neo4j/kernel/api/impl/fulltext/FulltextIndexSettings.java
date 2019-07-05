@@ -90,13 +90,13 @@ final class FulltextIndexSettings
         String analyzer = map.remove( PROCEDURE_ANALYZER );
         if ( analyzer != null )
         {
-            config = config.with( ANALYZER, Values.stringValue( analyzer ) );
+            config = config.withIfAbsent( ANALYZER, Values.stringValue( analyzer ) );
         }
 
         String eventuallyConsistent = map.remove( PROCEDURE_EVENTUALLY_CONSISTENT );
         if ( eventuallyConsistent != null )
         {
-            config = config.with( EVENTUALLY_CONSISTENT, Values.booleanValue( Boolean.parseBoolean( eventuallyConsistent ) ) );
+            config = config.withIfAbsent( EVENTUALLY_CONSISTENT, Values.booleanValue( Boolean.parseBoolean( eventuallyConsistent ) ) );
         }
 
         // Ignore any other entries that the map might contain.

@@ -143,7 +143,7 @@ class TransactionRecordStateTest
     private final long[] bothLabelIds = new long[]{labelIdOne, labelIdSecond};
     private final IntegrityValidator integrityValidator = mock( IntegrityValidator.class );
     private RecordChangeSet recordChangeSet;
-    private final SchemaCache schemaCache = new SchemaCache( new StandardConstraintRuleAccessor() );
+    private final SchemaCache schemaCache = new SchemaCache( new StandardConstraintRuleAccessor(), index -> index );
     private long nextRuleId = 1;
 
     @Inject

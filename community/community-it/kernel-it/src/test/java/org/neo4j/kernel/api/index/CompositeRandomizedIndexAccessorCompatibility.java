@@ -207,7 +207,7 @@ public class CompositeRandomizedIndexAccessorCompatibility extends IndexAccessor
                         IndexQuery.exact( 100, booleanValue ),
                         IndexQuery.range( 101, from, fromInclusive, to, toInclusive )};
                 ValueCategory[] valueCategories = getValueCategories( predicates );
-                IndexOrder[] indexOrders = indexProvider.getCapability( descriptor ).orderCapability( valueCategories );
+                IndexOrder[] indexOrders = descriptor.getCapability().orderCapability( valueCategories );
                 for ( IndexOrder order : indexOrders )
                 {
                     List<Long> actualIds = assertInOrder( order, predicates );

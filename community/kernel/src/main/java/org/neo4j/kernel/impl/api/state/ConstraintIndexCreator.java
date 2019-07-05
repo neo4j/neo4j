@@ -36,7 +36,7 @@ import org.neo4j.internal.kernel.api.exceptions.schema.SchemaKernelException.Ope
 import org.neo4j.internal.schema.IndexDescriptor2;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.internal.schema.constraints.ConstraintDescriptorFactory;
-import org.neo4j.internal.schema.constraints.UniquenessConstraintDescriptor;
+import org.neo4j.internal.schema.constraints.IndexBackedConstraintDescriptor;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.SilentTokenNameLookup;
 import org.neo4j.kernel.api.Statement;
@@ -92,19 +92,20 @@ public class ConstraintIndexCreator
      * and this tx committed, which will create the uniqueness constraint</li>
      * </ol>
      */
-    public IndexDescriptor2 createUniquenessConstraintIndex( KernelTransactionImplementation transaction, SchemaDescriptor descriptor, String provider )
+    public IndexDescriptor2 createUniquenessConstraintIndex( KernelTransactionImplementation transaction,
+            IndexBackedConstraintDescriptor constraint, String provider )
             throws TransactionFailureException, CreateConstraintFailureException,
             UniquePropertyValueValidationException, AlreadyConstrainedException
     {
 
-        UniquenessConstraintDescriptor constraint = ConstraintDescriptorFactory.uniqueForSchema( descriptor );
+        SchemaDescriptor schema = constraint.schema();
         log.info( "Starting constraint creation: %s.", constraint );
 
         IndexDescriptor2 index;
         SchemaRead schemaRead = transaction.schemaRead();
         try
         {
-            index = getOrCreateUniquenessConstraintIndex( schemaRead, transaction.tokenRead(), descriptor, provider );
+            index = getOrCreateUniquenessConstraintIndex( schemaRead, transaction.tokenRead(), schema, provider );
         }
         catch ( AlreadyConstrainedException e )
         {
@@ -118,8 +119,8 @@ public class ConstraintIndexCreator
         boolean success = false;
         boolean reacquiredLabelLock = false;
         Client locks = transaction.statementLocks().pessimistic();
-        ResourceType keyType = descriptor.keyType();
-        long[] lockingKeys = descriptor.lockingKeys();
+        ResourceType keyType = schema.keyType();
+        long[] lockingKeys = schema.lockingKeys();
         try
         {
             long indexId = schemaRead.indexGetCommittedId( index );
@@ -152,12 +153,12 @@ public class ConstraintIndexCreator
         catch ( SchemaKernelException e )
         {
             throw new IllegalStateException(
-                    String.format( "Index (%s) that we just created does not exist.", descriptor ), e );
+                    String.format( "Index (%s) that we just created does not exist.", schema ), e );
         }
         catch ( IndexNotFoundKernelException e )
         {
             throw new TransactionFailureException(
-                    String.format( "Index (%s) that we just created does not exist.", descriptor ), e );
+                    String.format( "Index (%s) that we just created does not exist.", schema ), e );
         }
         catch ( IndexEntryConflictException e )
         {
@@ -176,7 +177,7 @@ public class ConstraintIndexCreator
                     locks.acquireExclusive( transaction.lockTracer(), keyType, lockingKeys );
                 }
 
-                if ( indexStillExists( schemaRead, descriptor, index ) )
+                if ( indexStillExists( schemaRead, schema, index ) )
                 {
                     dropUniquenessConstraintIndex( index );
                 }
@@ -204,7 +205,7 @@ public class ConstraintIndexCreator
         }
     }
 
-    private void awaitConstraintIndexPopulation( UniquenessConstraintDescriptor constraint, IndexProxy proxy, KernelTransactionImplementation transaction )
+    private void awaitConstraintIndexPopulation( IndexBackedConstraintDescriptor constraint, IndexProxy proxy, KernelTransactionImplementation transaction )
             throws InterruptedException, UniquePropertyValueValidationException
     {
         try

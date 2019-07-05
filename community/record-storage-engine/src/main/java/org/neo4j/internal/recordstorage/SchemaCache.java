@@ -37,6 +37,7 @@ import java.util.function.Function;
 import org.neo4j.common.EntityType;
 import org.neo4j.internal.helpers.collection.Iterators;
 import org.neo4j.internal.schema.ConstraintDescriptor;
+import org.neo4j.internal.schema.IndexConfigCompleter;
 import org.neo4j.internal.schema.IndexDescriptor2;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptorLookupSet;
@@ -59,10 +60,10 @@ public class SchemaCache
     private final Lock cacheUpdateLock;
     private volatile SchemaCacheState schemaCacheState;
 
-    public SchemaCache( ConstraintRuleAccessor constraintSemantics )
+    public SchemaCache( ConstraintRuleAccessor constraintSemantics, IndexConfigCompleter indexConfigCompleter )
     {
         this.cacheUpdateLock = new StampedLock().asWriteLock();
-        this.schemaCacheState = new SchemaCacheState( constraintSemantics, Collections.emptyList() );
+        this.schemaCacheState = new SchemaCacheState( constraintSemantics, indexConfigCompleter, Collections.emptyList() );
     }
 
     /**
@@ -130,7 +131,8 @@ public class SchemaCache
         try
         {
             ConstraintRuleAccessor constraintSemantics = schemaCacheState.constraintSemantics;
-            this.schemaCacheState = new SchemaCacheState( constraintSemantics, rules );
+            IndexConfigCompleter indexConfigCompleter = schemaCacheState.indexConfigCompleter;
+            this.schemaCacheState = new SchemaCacheState( constraintSemantics, indexConfigCompleter, rules );
         }
         finally
         {
@@ -219,6 +221,7 @@ public class SchemaCache
     private static class SchemaCacheState
     {
         private final ConstraintRuleAccessor constraintSemantics;
+        private final IndexConfigCompleter indexConfigCompleter;
         private final Set<ConstraintDescriptor> constraints;
         private final MutableLongObjectMap<IndexDescriptor2> indexDescriptorById;
         private final MutableLongObjectMap<ConstraintRule> constraintRuleById;
@@ -232,9 +235,10 @@ public class SchemaCache
 
         private final Map<Class<?>,Object> dependantState;
 
-        SchemaCacheState( ConstraintRuleAccessor constraintSemantics, Iterable<SchemaRule> rules )
+        SchemaCacheState( ConstraintRuleAccessor constraintSemantics, IndexConfigCompleter indexConfigCompleter, Iterable<SchemaRule> rules )
         {
             this.constraintSemantics = constraintSemantics;
+            this.indexConfigCompleter = indexConfigCompleter;
             this.constraints = new HashSet<>();
             this.indexDescriptorById = new LongObjectHashMap<>();
             this.constraintRuleById = new LongObjectHashMap<>();
@@ -252,6 +256,7 @@ public class SchemaCache
         SchemaCacheState( SchemaCacheState schemaCacheState )
         {
             this.constraintSemantics = schemaCacheState.constraintSemantics;
+            this.indexConfigCompleter = schemaCacheState.indexConfigCompleter;
             this.indexDescriptorById = LongObjectHashMap.newMap( schemaCacheState.indexDescriptorById );
             this.constraintRuleById = LongObjectHashMap.newMap( schemaCacheState.constraintRuleById );
             this.constraints = new HashSet<>( schemaCacheState.constraints );
@@ -446,7 +451,7 @@ public class SchemaCache
             }
             else if ( rule instanceof IndexDescriptor2 )
             {
-                IndexDescriptor2 index = (IndexDescriptor2) rule;
+                IndexDescriptor2 index = indexConfigCompleter.completeConfiguration( (IndexDescriptor2) rule );
                 indexDescriptorById.put( index.getId(), index );
                 SchemaDescriptor schemaDescriptor = index.schema();
                 indexDescriptors.put( schemaDescriptor, index );

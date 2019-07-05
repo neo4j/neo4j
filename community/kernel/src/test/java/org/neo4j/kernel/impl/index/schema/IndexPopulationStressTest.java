@@ -38,7 +38,6 @@ import java.util.function.Function;
 
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.internal.kernel.api.exceptions.EntityNotFoundException;
-import org.neo4j.internal.kernel.api.exceptions.schema.MisconfiguredIndexException;
 import org.neo4j.internal.schema.IndexDescriptor2;
 import org.neo4j.internal.schema.IndexOrder;
 import org.neo4j.internal.schema.IndexProviderDescriptor;
@@ -134,11 +133,11 @@ abstract class IndexPopulationStressTest
     }
 
     @BeforeEach
-    void setup() throws IOException, EntityNotFoundException, MisconfiguredIndexException
+    void setup() throws IOException, EntityNotFoundException
     {
         indexProvider = providerCreator.apply( this );
-        descriptor = indexProvider.bless( forSchema( forLabel( 0, 0 ), PROVIDER ) ).materialise( 0 );
-        descriptor2 = indexProvider.bless( forSchema( forLabel( 1, 0 ), PROVIDER ) ).materialise( 1 );
+        descriptor = indexProvider.completeConfiguration( forSchema( forLabel( 0, 0 ), PROVIDER ).materialise( 0 ) );
+        descriptor2 = indexProvider.completeConfiguration( forSchema( forLabel( 1, 0 ), PROVIDER ).materialise( 1 ) );
         fs.mkdirs( indexProvider.directoryStructure().rootDirectory() );
         populator = indexProvider.getPopulator( descriptor, samplingConfig, heapBufferFactory( (int) kibiBytes( 40 ) ) );
         when( nodePropertyAccessor.getNodePropertyValue( anyLong(), anyInt() ) ).thenThrow( UnsupportedOperationException.class );

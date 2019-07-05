@@ -37,7 +37,7 @@ class IndexConfigTest
     void addingAndGetting()
     {
         IndexConfig config = IndexConfig.empty();
-        config = config.with( "a", BooleanValue.TRUE );
+        config = config.withIfAbsent( "a", BooleanValue.TRUE );
         assertTrue( config.<BooleanValue>get( "a" ).booleanValue() );
 
         config = config.withIfAbsent( "a", BooleanValue.FALSE );
@@ -52,8 +52,8 @@ class IndexConfigTest
     void shouldNotBePossibleToMutateIndexConfigFromAsMap()
     {
         IndexConfig config = IndexConfig.empty();
-        config = config.with( "a", BooleanValue.TRUE );
-        config = config.with( "b", BooleanValue.TRUE );
+        config = config.withIfAbsent( "a", BooleanValue.TRUE );
+        config = config.withIfAbsent( "b", BooleanValue.TRUE );
 
         Map<String,Value> map = config.asMap();
         assertThrows( UnsupportedOperationException.class, () -> map.remove( "a" ) );

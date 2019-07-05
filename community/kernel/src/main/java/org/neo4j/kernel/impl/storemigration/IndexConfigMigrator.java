@@ -24,7 +24,6 @@ import java.io.IOException;
 import org.neo4j.common.ProgressReporter;
 import org.neo4j.configuration.Config;
 import org.neo4j.exceptions.KernelException;
-import org.neo4j.internal.kernel.api.exceptions.schema.MisconfiguredIndexException;
 import org.neo4j.internal.schema.IndexConfig;
 import org.neo4j.internal.schema.IndexDescriptor2;
 import org.neo4j.internal.schema.IndexProviderDescriptor;
@@ -83,7 +82,7 @@ public class IndexConfigMigrator extends AbstractStoreMigrationParticipant
         }
     }
 
-    private SchemaRule migrateIndexConfig( SchemaRule rule, DatabaseLayout directoryLayout ) throws IOException, MisconfiguredIndexException
+    private SchemaRule migrateIndexConfig( SchemaRule rule, DatabaseLayout directoryLayout ) throws IOException
     {
         if ( rule instanceof IndexDescriptor2 )
         {
@@ -98,7 +97,7 @@ public class IndexConfigMigrator extends AbstractStoreMigrationParticipant
             SchemaDescriptor schemaDescriptorWithIndexConfig = old.schema().withIndexConfig( indexConfig );
             IndexDescriptor2 newIndexReference = old.withSchemaDescriptor( schemaDescriptorWithIndexConfig );
             IndexProvider indexProvider = indexProviderMap.lookup( indexMigration.desiredAlternativeProvider );
-            return indexProvider.bless( newIndexReference );
+            return indexProvider.completeConfiguration( newIndexReference );
         }
         return rule;
     }

@@ -80,12 +80,6 @@ public final class IndexConfig
         }
     }
 
-    public IndexConfig with( String key, Value value )
-    {
-        validate( value );
-        return new IndexConfig( map.newWithKeyValue( key, value ) );
-    }
-
     public IndexConfig withIfAbsent( String key, Value value )
     {
         validate( value );

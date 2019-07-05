@@ -54,10 +54,8 @@ import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.internal.helpers.collection.Iterators;
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
-import org.neo4j.internal.kernel.api.exceptions.schema.MisconfiguredIndexException;
 import org.neo4j.internal.schema.IndexDescriptor2;
 import org.neo4j.internal.schema.IndexProviderDescriptor;
-import org.neo4j.internal.schema.IndexRef;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.internal.schema.SchemaState;
 import org.neo4j.io.pagecache.IOLimiter;
@@ -510,12 +508,9 @@ public class IndexingService extends LifecycleAdapter implements IndexUpdateList
     }
 
     @Override
-    public IndexDescriptor2 getBlessedDescriptorFromProvider( IndexDescriptor2 index ) throws MisconfiguredIndexException
+    public IndexDescriptor2 completeConfiguration( IndexDescriptor2 index )
     {
-        IndexProvider provider = providerMap.lookup( index.getIndexProvider() );
-        index = provider.bless( index );
-        index = index.withIndexCapability( provider.getCapability( index ) );
-        return index;
+        return providerMap.completeConfiguration( index );
     }
 
     @Override

@@ -27,14 +27,12 @@ import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.gis.spatial.index.curves.SpaceFillingCurveConfiguration;
 import org.neo4j.index.internal.gbptree.GBPTree;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
-import org.neo4j.internal.kernel.api.exceptions.schema.MisconfiguredIndexException;
 import org.neo4j.internal.schema.IndexCapability;
 import org.neo4j.internal.schema.IndexConfig;
 import org.neo4j.internal.schema.IndexDescriptor2;
 import org.neo4j.internal.schema.IndexLimitation;
 import org.neo4j.internal.schema.IndexOrder;
 import org.neo4j.internal.schema.IndexProviderDescriptor;
-import org.neo4j.internal.schema.IndexRef;
 import org.neo4j.internal.schema.IndexValueCapability;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -135,7 +133,7 @@ public class GenericNativeIndexProvider extends NativeIndexProvider<GenericKey,N
     }
 
     @Override
-    public <T extends IndexRef<T>> T bless( T index ) throws MisconfiguredIndexException
+    public IndexDescriptor2 completeConfiguration( IndexDescriptor2 index )
     {
         SchemaDescriptor sinfulSchema = index.schema();
         IndexConfig indexConfig = sinfulSchema.getIndexConfig();
@@ -145,8 +143,9 @@ public class GenericNativeIndexProvider extends NativeIndexProvider<GenericKey,N
             indexConfig = SpatialIndexConfig.addSpatialConfig( indexConfig, crs, spaceFillingCurveSettings );
         }
         SchemaDescriptor blessedSchema = sinfulSchema.withIndexConfig( indexConfig );
-        index = (T) index.withSchemaDescriptor( blessedSchema );
-        return super.bless( index );
+        index = index.withSchemaDescriptor( blessedSchema );
+        index = index.withIndexCapability( CAPABILITY );
+        return index;
     }
 
     @Override
@@ -176,12 +175,6 @@ public class GenericNativeIndexProvider extends NativeIndexProvider<GenericKey,N
     {
         return new GenericNativeIndexAccessor( pageCache, fs, indexFiles, layout, recoveryCleanupWorkCollector, monitor, descriptor,
                 layout.getSpaceFillingCurveSettings(), configuration );
-    }
-
-    @Override
-    public IndexCapability getCapability( IndexDescriptor2 descriptor )
-    {
-        return CAPABILITY;
     }
 
     private static class GenericIndexCapability implements IndexCapability

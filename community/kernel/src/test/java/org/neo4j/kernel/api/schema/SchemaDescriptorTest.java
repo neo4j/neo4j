@@ -103,7 +103,7 @@ class SchemaDescriptorTest
     {
         LabelSchemaDescriptor a = SchemaDescriptor.forLabel( 1, 2, 3 );
         LabelSchemaDescriptor aa = SchemaDescriptor.forLabel( 1, 2, 3 );
-        LabelSchemaDescriptor b = a.withIndexConfig( a.getIndexConfig().with( "x", Values.stringValue( "y" ) ) );
+        LabelSchemaDescriptor b = a.withIndexConfig( a.getIndexConfig().withIfAbsent( "x", Values.stringValue( "y" ) ) );
 
         assertThat( a.getIndexConfig(), not( equalTo( b.getIndexConfig() ) ) );
         assertThat( a, equalTo( b ) );

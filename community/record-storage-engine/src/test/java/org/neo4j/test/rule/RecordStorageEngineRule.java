@@ -31,6 +31,7 @@ import org.neo4j.internal.recordstorage.BatchTransactionApplierFacade;
 import org.neo4j.internal.recordstorage.IndexActivator;
 import org.neo4j.internal.recordstorage.RecordStorageEngine;
 import org.neo4j.internal.schema.ConstraintDescriptor;
+import org.neo4j.internal.schema.IndexConfigCompleter;
 import org.neo4j.internal.schema.SchemaState;
 import org.neo4j.internal.schema.constraints.NodeKeyConstraintDescriptor;
 import org.neo4j.internal.schema.constraints.UniquenessConstraintDescriptor;
@@ -87,13 +88,13 @@ public class RecordStorageEngineRule extends ExternalResource
     private RecordStorageEngine get( FileSystemAbstraction fs, PageCache pageCache, Health databaseHealth,
             DatabaseLayout databaseLayout, Function<BatchTransactionApplierFacade,BatchTransactionApplierFacade> transactionApplierTransformer,
             IndexUpdateListener indexUpdateListener, NodeLabelUpdateListener nodeLabelUpdateListener, LockService lockService, TokenHolders tokenHolders,
-            Config config, ConstraintRuleAccessor constraintSemantics )
+            Config config, ConstraintRuleAccessor constraintSemantics, IndexConfigCompleter indexConfigCompleter )
     {
         IdGeneratorFactory idGeneratorFactory = new DefaultIdGeneratorFactory( fs, immediate() );
         NullLogProvider nullLogProvider = NullLogProvider.getInstance();
         RecordStorageEngine engine = life.add(
                 new ExtendedRecordStorageEngine( databaseLayout, config, pageCache, fs, nullLogProvider, tokenHolders, mock( SchemaState.class ),
-                        constraintSemantics, lockService, databaseHealth, idGeneratorFactory,
+                        constraintSemantics, indexConfigCompleter, lockService, databaseHealth, idGeneratorFactory,
                         new DefaultIdController(), transactionApplierTransformer ) );
         engine.addIndexUpdateListener( indexUpdateListener );
         engine.addNodeLabelUpdateListener( nodeLabelUpdateListener );
@@ -148,6 +149,7 @@ public class RecordStorageEngineRule extends ExternalResource
                 throw new UnsupportedOperationException( "Not needed a.t.m." );
             }
         };
+        private IndexConfigCompleter indexConfigCompleter = index -> index;
 
         public Builder( FileSystemAbstraction fs, PageCache pageCache, DatabaseLayout databaseLayout )
         {
@@ -205,10 +207,16 @@ public class RecordStorageEngineRule extends ExternalResource
             return this;
         }
 
+        public Builder indexConfigCompleter( IndexConfigCompleter indexConfigCompleter )
+        {
+            this.indexConfigCompleter = indexConfigCompleter;
+            return this;
+        }
+
         public RecordStorageEngine build()
         {
             return get( fs, pageCache, databaseHealth, databaseLayout, transactionApplierTransformer, indexUpdateListener,
-                    nodeLabelUpdateListener, lockService, tokenHolders, config, constraintSemantics );
+                    nodeLabelUpdateListener, lockService, tokenHolders, config, constraintSemantics, indexConfigCompleter );
         }
     }
 
@@ -220,11 +228,12 @@ public class RecordStorageEngineRule extends ExternalResource
         ExtendedRecordStorageEngine( DatabaseLayout databaseLayout, Config config, PageCache pageCache, FileSystemAbstraction fs,
                 LogProvider logProvider, TokenHolders tokenHolders, SchemaState schemaState,
                 ConstraintRuleAccessor constraintSemantics,
+                IndexConfigCompleter indexConfigCompleter,
                 LockService lockService, Health databaseHealth,
                 IdGeneratorFactory idGeneratorFactory, IdController idController,
                 Function<BatchTransactionApplierFacade,BatchTransactionApplierFacade> transactionApplierTransformer )
         {
-            super( databaseLayout, config, pageCache, fs, logProvider, tokenHolders, schemaState, constraintSemantics,
+            super( databaseLayout, config, pageCache, fs, logProvider, tokenHolders, schemaState, constraintSemantics, indexConfigCompleter,
                     lockService, databaseHealth, idGeneratorFactory, idController, EmptyVersionContextSupplier.EMPTY, true );
             this.transactionApplierTransformer = transactionApplierTransformer;
         }

@@ -295,7 +295,7 @@ public final class Recovery
         DefaultIndexProviderMap indexProviderMap = new DefaultIndexProviderMap( extensions, config );
 
         StorageEngine storageEngine = storageEngineFactory.instantiate( fs, databaseLayout, config, databasePageCache, tokenHolders, schemaState,
-                getConstraintSemantics(), NO_LOCK_SERVICE, new DefaultIdGeneratorFactory( fs, recoveryCleanupCollector ), new DefaultIdController(),
+                getConstraintSemantics(), indexProviderMap, NO_LOCK_SERVICE, new DefaultIdGeneratorFactory( fs, recoveryCleanupCollector ), new DefaultIdController(),
                 databaseHealth, EmptyVersionContextSupplier.EMPTY, logService.getInternalLogProvider(), true );
 
         // Label index

@@ -41,10 +41,7 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.graphdb.schema.Schema;
 import org.neo4j.internal.kernel.api.InternalIndexState;
-import org.neo4j.internal.kernel.api.exceptions.schema.MisconfiguredIndexException;
-import org.neo4j.internal.schema.IndexCapability;
 import org.neo4j.internal.schema.IndexDescriptor2;
-import org.neo4j.internal.schema.IndexRef;
 import org.neo4j.internal.schema.LabelSchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.io.fs.EphemeralFileSystemAbstraction;
@@ -118,13 +115,12 @@ class IndexRecoveryIT
     private DatabaseManagementService managementService;
 
     @BeforeEach
-    void setUp() throws MisconfiguredIndexException
+    void setUp()
     {
         when( mockedIndexProvider.getProviderDescriptor() ).thenReturn( PROVIDER_DESCRIPTOR );
         when( mockedIndexProvider.storeMigrationParticipant( any( FileSystemAbstraction.class ), any( PageCache.class ), any() ) )
                 .thenReturn( StoreMigrationParticipant.NOT_PARTICIPATING );
-        when( mockedIndexProvider.getCapability( any() ) ).thenReturn( IndexCapability.NO_CAPABILITY );
-        when( mockedIndexProvider.bless( any( IndexRef.class ) ) ).thenCallRealMethod();
+        when( mockedIndexProvider.completeConfiguration( any( IndexDescriptor2.class ) ) ).then( inv -> inv.getArgument( 0 ) );
     }
 
     @AfterEach

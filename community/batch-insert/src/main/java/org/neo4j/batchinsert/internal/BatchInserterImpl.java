@@ -60,7 +60,6 @@ import org.neo4j.internal.id.IdValidator;
 import org.neo4j.internal.index.label.NativeLabelScanStore;
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
-import org.neo4j.internal.kernel.api.exceptions.schema.MisconfiguredIndexException;
 import org.neo4j.internal.recordstorage.DirectRecordAccessSet;
 import org.neo4j.internal.recordstorage.PropertyCreator;
 import org.neo4j.internal.recordstorage.PropertyDeleter;
@@ -326,7 +325,7 @@ public class BatchInserterImpl implements BatchInserter
             tokenHolders.setInitialTokens( StoreTokens.allTokens( neoStores ) );
 
             schemaRuleAccess = SchemaRuleAccess.getSchemaRuleAccess( schemaStore, tokenHolders );
-            schemaCache = new SchemaCache( getConstraintSemantics() );
+            schemaCache = new SchemaCache( getConstraintSemantics(), indexProviderMap );
             schemaCache.load( schemaRuleAccess.getAll() );
 
             actions = new BatchSchemaActions();
@@ -511,17 +510,8 @@ public class BatchInserterImpl implements BatchInserter
             prototype = prototype.withName( indexName.get() );
         }
 
-        IndexDescriptor2 index;
-        try
-        {
-            index = prototype.materialise( schemaStore.nextId() );
-            index = provider.bless( index );
-        }
-        catch ( MisconfiguredIndexException e )
-        {
-            throw new ConstraintViolationException(
-                    "Unable to create index. The index configuration was refused by the '" + providerDescriptor + "' index provider.", e );
-        }
+        IndexDescriptor2 index = prototype.materialise( schemaStore.nextId() );
+        index = provider.completeConfiguration( index );
 
         try
         {
@@ -627,15 +617,7 @@ public class BatchInserterImpl implements BatchInserter
         IndexProvider provider = indexProviderMap.getDefaultProvider();
         IndexProviderDescriptor providerDescriptor = provider.getProviderDescriptor();
         IndexDescriptor2 index = IndexPrototype.uniqueForSchema( schema, providerDescriptor ).materialise( indexId );
-        try
-        {
-            index = provider.bless( index ).withOwningConstraintId( constraintRuleId );
-        }
-        catch ( MisconfiguredIndexException e )
-        {
-            throw new ConstraintViolationException(
-                    "Unable to create index. The index configuration was refused by the '" + providerDescriptor + "' index provider.", e );
-        }
+        index = provider.completeConfiguration( index ).withOwningConstraintId( constraintRuleId );
 
         ConstraintRule constraintRule = ConstraintRule.constraintRule( constraintRuleId, constraintDescriptor, indexId );
 

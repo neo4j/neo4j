@@ -35,6 +35,7 @@ import org.neo4j.internal.id.DefaultIdController;
 import org.neo4j.internal.id.DefaultIdGeneratorFactory;
 import org.neo4j.internal.recordstorage.RecordStorageEngine;
 import org.neo4j.internal.recordstorage.RecordStorageReader;
+import org.neo4j.internal.schema.IndexConfigCompleter;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.io.pagecache.PageCache;
@@ -319,10 +320,11 @@ class BatchingNeoStoresTest
                     new DelegatingTokenHolder( propertyKeyTokenCreator, TokenHolder.TYPE_PROPERTY_KEY ),
                     new DelegatingTokenHolder( labelTokenCreator, TokenHolder.TYPE_LABEL ),
                     new DelegatingTokenHolder( relationshipTypeTokenCreator, TokenHolder.TYPE_RELATIONSHIP_TYPE ) );
+            IndexConfigCompleter indexConfigCompleter = index -> index;
             RecordStorageEngine storageEngine = life.add(
                     new RecordStorageEngine( testDirectory.databaseLayout(), Config.defaults(), pageCache, fileSystem, NullLogProvider.getInstance(),
                             tokenHolders, new DatabaseSchemaState( NullLogProvider.getInstance() ),
-                            new StandardConstraintSemantics(), LockService.NO_LOCK_SERVICE,
+                            new StandardConstraintSemantics(), indexConfigCompleter, LockService.NO_LOCK_SERVICE,
                             new DatabaseHealth( new DatabasePanicEventGenerator( new DatabaseEventListeners( nullLog ), DEFAULT_DATABASE_NAME ), nullLog ),
                             new DefaultIdGeneratorFactory( fileSystem, immediate() ), new DefaultIdController(),
                             EmptyVersionContextSupplier.EMPTY, true ) );

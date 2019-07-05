@@ -161,7 +161,6 @@ import org.neo4j.token.TokenHolders;
 import org.neo4j.util.VisibleForTesting;
 
 import static java.lang.String.format;
-import static org.neo4j.configuration.GraphDatabaseSettings.SYSTEM_DATABASE_NAME;
 import static org.neo4j.configuration.GraphDatabaseSettings.fail_on_corrupted_log_files;
 import static org.neo4j.function.Predicates.alwaysTrue;
 import static org.neo4j.function.ThrowingAction.executeAll;
@@ -375,8 +374,8 @@ public class Database extends LifecycleAdapter
 
             boolean storageExists = storageEngineFactory.storageExists( fs, databaseLayout, databasePageCache );
             storageEngine = storageEngineFactory.instantiate( fs, databaseLayout, databaseConfig, databasePageCache, tokenHolders, databaseSchemaState,
-                    constraintSemantics, lockService, idGeneratorFactory, idController, databaseHealth, versionContextSupplier, internalLogProvider,
-                    !storageExists );
+                    constraintSemantics, indexProviderMap, lockService, idGeneratorFactory, idController, databaseHealth, versionContextSupplier,
+                    internalLogProvider, !storageExists );
 
             life.add( storageEngine );
             life.add( storageEngine.schemaAndTokensLifecycle() );

@@ -206,11 +206,11 @@ public interface IndexAccessor extends Closeable, IndexConfigProvider
         }
     }
 
-    class Delegator implements IndexAccessor
+    class Delegating implements IndexAccessor
     {
         private final IndexAccessor delegate;
 
-        public Delegator( IndexAccessor delegate )
+        public Delegating( IndexAccessor delegate )
         {
             this.delegate = delegate;
         }

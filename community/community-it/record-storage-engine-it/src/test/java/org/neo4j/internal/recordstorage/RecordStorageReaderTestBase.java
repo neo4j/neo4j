@@ -62,6 +62,7 @@ import org.neo4j.values.storable.Values;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.internal.schema.SchemaDescriptor.forLabel;
+import static org.neo4j.internal.schema.SchemaDescriptor.forRelType;
 
 /**
  * Base class for disk layer tests, which test read-access to committed data.
@@ -202,6 +203,15 @@ public abstract class RecordStorageReaderTestBase
         int labelId = getOrCreateLabelId( label );
         int propertyKeyId = getOrCreatePropertyKeyId( propertyKey );
         txState.indexDoAdd( IndexPrototype.forSchema( forLabel( labelId, propertyKeyId ) ).materialise( commitContext.reserveSchema() ) );
+        apply( txState );
+    }
+
+    protected void createIndex( RelationshipType relType, String propertyKey ) throws Exception
+    {
+        TxState txState = new TxState();
+        int relTypeId = getOrCreateRelationshipTypeId( relType );
+        int propertyKeyId = getOrCreatePropertyKeyId( propertyKey );
+        txState.indexDoAdd( IndexPrototype.forSchema( forRelType( relTypeId, propertyKeyId ) ).materialise( commitContext.reserveSchema() ) );
         apply( txState );
     }
 

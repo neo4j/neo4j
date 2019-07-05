@@ -23,11 +23,9 @@ import java.io.File;
 import java.io.IOException;
 
 import org.neo4j.internal.kernel.api.InternalIndexState;
-import org.neo4j.internal.kernel.api.exceptions.schema.MisconfiguredIndexException;
-import org.neo4j.internal.schema.IndexCapability;
+import org.neo4j.internal.schema.IndexConfigCompleter;
 import org.neo4j.internal.schema.IndexDescriptor2;
 import org.neo4j.internal.schema.IndexProviderDescriptor;
-import org.neo4j.internal.schema.IndexRef;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.impl.api.index.IndexingService;
@@ -95,7 +93,7 @@ import org.neo4j.storageengine.migration.StoreMigrationParticipant;
  * {@link #getOnlineAccessor(IndexDescriptor2, IndexSamplingConfig) online accessor} to
  * write to the index.
  */
-public abstract class IndexProvider extends LifecycleAdapter
+public abstract class IndexProvider extends LifecycleAdapter implements IndexConfigCompleter
 {
     public interface Monitor
     {
@@ -152,6 +150,12 @@ public abstract class IndexProvider extends LifecycleAdapter
     public static final IndexProvider EMPTY =
             new IndexProvider( new IndexProviderDescriptor( "no-index-provider", "1.0" ), IndexDirectoryStructure.NONE )
             {
+                @Override
+                public IndexDescriptor2 completeConfiguration( IndexDescriptor2 index )
+                {
+                    return index;
+                }
+
                 private final IndexAccessor singleWriter = IndexAccessor.EMPTY;
                 private final IndexPopulator singlePopulator = IndexPopulator.EMPTY;
 
@@ -171,12 +175,6 @@ public abstract class IndexProvider extends LifecycleAdapter
                 public InternalIndexState getInitialState( IndexDescriptor2 descriptor )
                 {
                     return InternalIndexState.ONLINE;
-                }
-
-                @Override
-                public IndexCapability getCapability( IndexDescriptor2 descriptor )
-                {
-                    return IndexCapability.NO_CAPABILITY;
                 }
 
                 @Override
@@ -211,22 +209,6 @@ public abstract class IndexProvider extends LifecycleAdapter
     }
 
     /**
-     * Before an index is created, the chosen index provider will be asked to bless the index descriptor by calling this method, giving the index descriptor
-     * as an argument. The returned index descriptor is then blessed, and will be used for creating the index. This gives the provider an opportunity to check
-     * the index configuration, and make sure that it is sensible and support by this provider.
-     *
-     * @param index The index descriptor to bless.
-     * @return The blessed index descriptor that will be used for creating the index.
-     * @throws MisconfiguredIndexException if the index descriptor cannot be blessed by this provider for some reason.
-     */
-    public <T extends IndexRef<T>> T bless( T index ) throws MisconfiguredIndexException
-    {
-        // Normal schema indexes accept all configurations by default. More specialised or custom providers, such as the fulltext index provider,
-        // can override this method to do whatever checking suits their needs.
-        return index;
-    }
-
-    /**
      * Used for initially populating a created index, using batch insertion.
      */
     public abstract IndexPopulator getPopulator( IndexDescriptor2 descriptor, IndexSamplingConfig samplingConfig, ByteBufferFactory bufferFactory );
@@ -254,13 +236,6 @@ public abstract class IndexProvider extends LifecycleAdapter
      * @param descriptor to get initial state for.
      */
     public abstract InternalIndexState getInitialState( IndexDescriptor2 descriptor );
-
-    /**
-     * Return {@link IndexCapability} for this index provider.
-     *
-     * @param descriptor The specific {@link IndexDescriptor2} to get the capabilities for, in case it matters.
-     */
-    public abstract IndexCapability getCapability( IndexDescriptor2 descriptor );
 
     /**
      * @return a description of this index provider
@@ -327,7 +302,7 @@ public abstract class IndexProvider extends LifecycleAdapter
         @Override
         public String getPopulationFailure( IndexDescriptor2 descriptor ) throws IllegalStateException
         {
-            return null;
+            throw new IllegalStateException();
         }
 
         @Override
@@ -337,15 +312,110 @@ public abstract class IndexProvider extends LifecycleAdapter
         }
 
         @Override
-        public IndexCapability getCapability( IndexDescriptor2 descriptor )
+        public StoreMigrationParticipant storeMigrationParticipant( FileSystemAbstraction fs, PageCache pageCache, StorageEngineFactory storageEngineFactory )
         {
-            return IndexCapability.NO_CAPABILITY;
+            return StoreMigrationParticipant.NOT_PARTICIPATING;
+        }
+
+        @Override
+        public IndexDescriptor2 completeConfiguration( IndexDescriptor2 index )
+        {
+            return index;
+        }
+    }
+
+    public static class Delegating extends IndexProvider
+    {
+        private final IndexProvider provider;
+
+        public Delegating( IndexProvider provider )
+        {
+            super( provider );
+            this.provider = provider;
+        }
+
+        @Override
+        public IndexPopulator getPopulator( IndexDescriptor2 descriptor, IndexSamplingConfig samplingConfig, ByteBufferFactory bufferFactory )
+        {
+            return provider.getPopulator( descriptor, samplingConfig, bufferFactory );
+        }
+
+        @Override
+        public IndexAccessor getOnlineAccessor( IndexDescriptor2 descriptor, IndexSamplingConfig samplingConfig ) throws IOException
+        {
+            return provider.getOnlineAccessor( descriptor, samplingConfig );
+        }
+
+        @Override
+        public String getPopulationFailure( IndexDescriptor2 descriptor ) throws IllegalStateException
+        {
+            return provider.getPopulationFailure( descriptor );
+        }
+
+        @Override
+        public InternalIndexState getInitialState( IndexDescriptor2 descriptor )
+        {
+            return provider.getInitialState( descriptor );
+        }
+
+        @Override
+        public IndexProviderDescriptor getProviderDescriptor()
+        {
+            return provider.getProviderDescriptor();
+        }
+
+        @Override
+        public boolean equals( Object o )
+        {
+            return provider.equals( o );
+        }
+
+        @Override
+        public int hashCode()
+        {
+            return provider.hashCode();
+        }
+
+        @Override
+        public IndexDirectoryStructure directoryStructure()
+        {
+            return provider.directoryStructure();
         }
 
         @Override
         public StoreMigrationParticipant storeMigrationParticipant( FileSystemAbstraction fs, PageCache pageCache, StorageEngineFactory storageEngineFactory )
         {
-            return null;
+            return provider.storeMigrationParticipant( fs, pageCache, storageEngineFactory );
+        }
+
+        @Override
+        public void init() throws Exception
+        {
+            provider.init();
+        }
+
+        @Override
+        public void start() throws Exception
+        {
+            provider.start();
+        }
+
+        @Override
+        public void stop() throws Exception
+        {
+            provider.stop();
+        }
+
+        @Override
+        public void shutdown() throws Exception
+        {
+            provider.shutdown();
+        }
+
+        @Override
+        public IndexDescriptor2 completeConfiguration( IndexDescriptor2 index )
+        {
+            return provider.completeConfiguration( index );
         }
     }
 }

@@ -19,37 +19,25 @@
  */
 package org.neo4j.kernel.impl.index.schema;
 
-import java.io.File;
 import java.io.IOException;
 import java.util.Collection;
 import java.util.EnumSet;
 
-import org.neo4j.graphdb.ResourceIterator;
-import org.neo4j.internal.helpers.collection.BoundedIterable;
 import org.neo4j.internal.kernel.api.InternalIndexState;
-import org.neo4j.internal.schema.IndexCapability;
 import org.neo4j.internal.schema.IndexDescriptor2;
-import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.io.pagecache.IOLimiter;
-import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexAccessor;
-import org.neo4j.kernel.api.index.IndexDirectoryStructure;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.IndexProvider;
-import org.neo4j.kernel.api.index.IndexReader;
-import org.neo4j.kernel.api.index.IndexSample;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.extension.ExtensionFactory;
 import org.neo4j.kernel.extension.ExtensionType;
 import org.neo4j.kernel.extension.context.ExtensionContext;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
+import org.neo4j.kernel.impl.api.index.updater.DelegatingIndexUpdater;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.storageengine.api.IndexEntryUpdate;
-import org.neo4j.storageengine.api.NodePropertyAccessor;
-import org.neo4j.storageengine.api.StorageEngineFactory;
-import org.neo4j.storageengine.migration.StoreMigrationParticipant;
 
 import static java.util.Arrays.copyOfRange;
 
@@ -102,7 +90,7 @@ public class FailingGenericNativeIndexProviderFactory extends ExtensionFactory<A
     public Lifecycle newInstance( ExtensionContext context, AbstractIndexProviderFactory.Dependencies dependencies )
     {
         IndexProvider actualProvider = actual.newInstance( context, dependencies );
-        return new IndexProvider( actualProvider.getProviderDescriptor(), IndexDirectoryStructure.given( actualProvider.directoryStructure() ) )
+        return new IndexProvider.Delegating( actualProvider )
         {
             @Override
             public IndexPopulator getPopulator( IndexDescriptor2 descriptor, IndexSamplingConfig samplingConfig, ByteBufferFactory bufferFactory )
@@ -110,60 +98,12 @@ public class FailingGenericNativeIndexProviderFactory extends ExtensionFactory<A
                 IndexPopulator actualPopulator = actualProvider.getPopulator( descriptor, samplingConfig, bufferFactory );
                 if ( failureTypes.contains( FailureType.POPULATION ) )
                 {
-                    return new IndexPopulator()
+                    return new IndexPopulator.Delegating( actualPopulator )
                     {
-                        @Override
-                        public void create()
-                        {
-                            actualPopulator.create();
-                        }
-
-                        @Override
-                        public void drop()
-                        {
-                            actualPopulator.drop();
-                        }
-
                         @Override
                         public void add( Collection<? extends IndexEntryUpdate<?>> updates )
                         {
                             throw new RuntimeException( POPULATION_FAILURE_MESSAGE );
-                        }
-
-                        @Override
-                        public void verifyDeferredConstraints( NodePropertyAccessor nodePropertyAccessor ) throws IndexEntryConflictException
-                        {
-                            actualPopulator.verifyDeferredConstraints( nodePropertyAccessor );
-                        }
-
-                        @Override
-                        public IndexUpdater newPopulatingUpdater( NodePropertyAccessor accessor )
-                        {
-                            return actualPopulator.newPopulatingUpdater( accessor );
-                        }
-
-                        @Override
-                        public void close( boolean populationCompletedSuccessfully )
-                        {
-                            actualPopulator.close( populationCompletedSuccessfully );
-                        }
-
-                        @Override
-                        public void markAsFailed( String failure )
-                        {
-                            actualPopulator.markAsFailed( failure );
-                        }
-
-                        @Override
-                        public void includeSample( IndexEntryUpdate<?> update )
-                        {
-                            actualPopulator.includeSample( update );
-                        }
-
-                        @Override
-                        public IndexSample sampleResult()
-                        {
-                            return actualPopulator.sampleResult();
                         }
                     };
                 }
@@ -174,83 +114,23 @@ public class FailingGenericNativeIndexProviderFactory extends ExtensionFactory<A
             public IndexAccessor getOnlineAccessor( IndexDescriptor2 descriptor, IndexSamplingConfig samplingConfig ) throws IOException
             {
                 IndexAccessor actualAccessor = actualProvider.getOnlineAccessor( descriptor, samplingConfig );
-                return new IndexAccessor()
+                return new IndexAccessor.Delegating( actualAccessor )
                 {
-                    @Override
-                    public void drop()
-                    {
-                        actualAccessor.drop();
-                    }
-
                     @Override
                     public IndexUpdater newUpdater( IndexUpdateMode mode )
                     {
                         IndexUpdater actualUpdater = actualAccessor.newUpdater( mode );
-                        return new IndexUpdater()
+                        return new DelegatingIndexUpdater( actualUpdater )
                         {
                             @Override
                             public void process( IndexEntryUpdate<?> update ) throws IndexEntryConflictException
                             {
                                 if ( !failureTypes.contains( FailureType.SKIP_ONLINE_UPDATES ) )
                                 {
-                                    actualUpdater.process( update );
+                                    super.process( update );
                                 }
                             }
-
-                            @Override
-                            public void close() throws IndexEntryConflictException
-                            {
-                                actualUpdater.close();
-                            }
                         };
-                    }
-
-                    @Override
-                    public void force( IOLimiter ioLimiter )
-                    {
-                        actualAccessor.force( ioLimiter );
-                    }
-
-                    @Override
-                    public void refresh()
-                    {
-                        actualAccessor.refresh();
-                    }
-
-                    @Override
-                    public void close()
-                    {
-                        actualAccessor.close();
-                    }
-
-                    @Override
-                    public IndexReader newReader()
-                    {
-                        return actualAccessor.newReader();
-                    }
-
-                    @Override
-                    public BoundedIterable<Long> newAllEntriesReader()
-                    {
-                        return actualAccessor.newAllEntriesReader();
-                    }
-
-                    @Override
-                    public ResourceIterator<File> snapshotFiles()
-                    {
-                        return actualAccessor.snapshotFiles();
-                    }
-
-                    @Override
-                    public void verifyDeferredConstraints( NodePropertyAccessor nodePropertyAccessor ) throws IndexEntryConflictException
-                    {
-                        actualAccessor.verifyDeferredConstraints( nodePropertyAccessor );
-                    }
-
-                    @Override
-                    public boolean isDirty()
-                    {
-                        return actualAccessor.isDirty();
                     }
                 };
             }
@@ -265,19 +145,6 @@ public class FailingGenericNativeIndexProviderFactory extends ExtensionFactory<A
             public InternalIndexState getInitialState( IndexDescriptor2 descriptor )
             {
                 return failureTypes.contains( FailureType.INITIAL_STATE ) ? InternalIndexState.FAILED : actualProvider.getInitialState( descriptor );
-            }
-
-            @Override
-            public IndexCapability getCapability( IndexDescriptor2 descriptor )
-            {
-                return actualProvider.getCapability( descriptor );
-            }
-
-            @Override
-            public StoreMigrationParticipant storeMigrationParticipant( FileSystemAbstraction fs, PageCache pageCache,
-                    StorageEngineFactory storageEngineFactory )
-            {
-                return actualProvider.storeMigrationParticipant( fs, pageCache, storageEngineFactory );
             }
         };
     }
