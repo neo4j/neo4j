@@ -43,7 +43,7 @@ class DijkstraIteratorTest extends Neo4jAlgoTestCase
         new TestDijkstra().runTest();
     }
 
-    protected class TestDijkstra extends Dijkstra<Double>
+    static class TestDijkstra extends Dijkstra<Double>
     {
         TestDijkstra()
         {
@@ -66,7 +66,7 @@ class DijkstraIteratorTest extends Neo4jAlgoTestCase
         }
 
         @Test
-        public void runTest()
+        void runTest()
         {
             graph.makeEdge( "start", "a", "cost", (double) 1 );
             graph.makeEdge( "a", "x", "cost", (double) 9 );

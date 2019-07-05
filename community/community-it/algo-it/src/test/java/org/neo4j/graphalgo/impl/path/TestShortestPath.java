@@ -84,8 +84,7 @@ class TestShortestPath extends Neo4jAlgoTestCase
                 f.createRelationshipTo( e, relType );
             }
         }
-        final CountingPathExpander countingPathExpander =
-                new CountingPathExpander( PathExpanders.forTypeAndDirection( relType, OUTGOING ) );
+        final CountingPathExpander countingPathExpander = new CountingPathExpander( PathExpanders.forTypeAndDirection( relType, OUTGOING ) );
         final ShortestPath shortestPath = new ShortestPath( Integer.MAX_VALUE, countingPathExpander, Integer.MAX_VALUE );
         try ( ResourceIterator<Node> allF = graphDb.findNodes( F ) )
         {
@@ -541,7 +540,7 @@ class TestShortestPath extends Neo4jAlgoTestCase
     }
 
     // Used to count how many nodes are visited
-    private class CountingPathExpander implements PathExpander
+    private static class CountingPathExpander implements PathExpander
     {
         private MutableInt nodesVisited;
         private final PathExpander delegate;

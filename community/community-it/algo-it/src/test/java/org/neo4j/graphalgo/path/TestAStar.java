@@ -20,7 +20,6 @@
 package org.neo4j.graphalgo.path;
 
 import common.Neo4jAlgoTestCase;
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
@@ -45,6 +44,8 @@ import org.neo4j.graphdb.traversal.InitialBranchState;
 import org.neo4j.internal.helpers.collection.Iterables;
 import org.neo4j.internal.helpers.collection.MapUtil;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.params.provider.Arguments.arguments;
 import static org.neo4j.graphalgo.CommonEvaluators.doubleCostEvaluator;
 import static org.neo4j.graphalgo.GraphAlgoFactory.aStar;
@@ -79,10 +80,10 @@ class TestAStar extends Neo4jAlgoTestCase
         // WHEN
         WeightedPath path = finder.findSinglePath( start, start );
         // THEN
-        Assertions.assertNotNull( path );
-        Assertions.assertEquals( start, path.startNode() );
-        Assertions.assertEquals( start, path.endNode() );
-        Assertions.assertEquals( 0, path.length() );
+        assertNotNull( path );
+        assertEquals( start, path.startNode() );
+        assertEquals( start, path.endNode() );
+        assertEquals( 0, path.length() );
     }
 
     @ParameterizedTest
@@ -98,10 +99,10 @@ class TestAStar extends Neo4jAlgoTestCase
         // THEN
         for ( WeightedPath path : paths )
         {
-            Assertions.assertNotNull( path );
-            Assertions.assertEquals( start, path.startNode() );
-            Assertions.assertEquals( start, path.endNode() );
-            Assertions.assertEquals( 0, path.length() );
+            assertNotNull( path );
+            assertEquals( start, path.startNode() );
+            assertEquals( start, path.endNode() );
+            assertEquals( 0, path.length() );
         }
     }
 
@@ -171,11 +172,11 @@ class TestAStar extends Neo4jAlgoTestCase
         Iterable<WeightedPath> allPaths = finder.findAllPaths( nodeA, nodeC );
         for ( WeightedPath path : allPaths )
         {
-            Assertions.assertEquals( (Double) 5d, (Double) path.weight() );
+            assertEquals( (Double) 5d, (Double) path.weight() );
             assertPath( path, nodeA, nodeB, nodeC );
             counter++;
         }
-        Assertions.assertEquals( 1, counter );
+        assertEquals( 1, counter );
     }
 
     @SuppressWarnings( {"rawtypes", "unchecked"} )
@@ -239,9 +240,9 @@ class TestAStar extends Neo4jAlgoTestCase
             new InitialBranchState.State( initialStateValue, initialStateValue ),
             doubleCostEvaluator( "length" ), ESTIMATE_EVALUATOR );
         WeightedPath path = traversalFinder.findSinglePath( nodeA, nodeC );
-        Assertions.assertEquals( (Double) 5.0D, (Double) path.weight() );
+        assertEquals( (Double) 5.0D, (Double) path.weight() );
         assertPathDef( path, "A", "B", "C" );
-        Assertions.assertEquals( MapUtil.<Node, Double>genericMap( nodeA, 0D, nodeB, 2D ), seenBranchStates );
+        assertEquals( MapUtil.<Node, Double>genericMap( nodeA, 0D, nodeB, 2D ), seenBranchStates );
     }
 
     @Test
