@@ -31,7 +31,7 @@ import org.neo4j.cypher.internal.v4_0.util.{LabelId, PropertyKeyId, symbols => t
 import org.neo4j.exceptions.KernelException
 import org.neo4j.internal.kernel.api.{InternalIndexState, procs, _}
 import org.neo4j.internal.schema
-import org.neo4j.internal.schema.{ConstraintDescriptor, IndexDescriptor2, IndexKind, IndexLimitation, IndexOrder, IndexValueCapability, SchemaDescriptor}
+import org.neo4j.internal.schema.{ConstraintDescriptor, IndexKind, IndexLimitation, IndexOrder, IndexValueCapability, SchemaDescriptor}
 import org.neo4j.values.storable.ValueCategory
 
 import scala.collection.JavaConverters._
@@ -83,7 +83,7 @@ class TransactionBoundPlanContext(tc: TransactionalContextWrapper, logger: Inter
       case _: KernelException => None
     }
 
-  private def getOnlineIndex(reference: IndexDescriptor2): Option[IndexDescriptor] =
+  private def getOnlineIndex(reference: schema.IndexDescriptor): Option[IndexDescriptor] =
     tc.schemaRead.indexGetState(reference) match {
       case InternalIndexState.ONLINE =>
         val label = LabelId(reference.schema().getEntityTokenIds()(0))

@@ -23,8 +23,7 @@ import java.io.IOException;
 
 import org.neo4j.configuration.Config;
 import org.neo4j.internal.kernel.api.InternalIndexState;
-import org.neo4j.internal.schema.IndexCapability;
-import org.neo4j.internal.schema.IndexDescriptor2;
+import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexProviderDescriptor;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
@@ -75,7 +74,7 @@ public class LuceneIndexProvider extends IndexProvider
     }
 
     @Override
-    public IndexPopulator getPopulator( IndexDescriptor2 descriptor, IndexSamplingConfig samplingConfig, ByteBufferFactory bufferFactory )
+    public IndexPopulator getPopulator( IndexDescriptor descriptor, IndexSamplingConfig samplingConfig, ByteBufferFactory bufferFactory )
     {
         SchemaIndex luceneIndex = LuceneSchemaIndexBuilder.create( descriptor, config )
                                         .withFileSystem( fileSystem )
@@ -94,7 +93,7 @@ public class LuceneIndexProvider extends IndexProvider
     }
 
     @Override
-    public IndexAccessor getOnlineAccessor( IndexDescriptor2 descriptor, IndexSamplingConfig samplingConfig ) throws IOException
+    public IndexAccessor getOnlineAccessor( IndexDescriptor descriptor, IndexSamplingConfig samplingConfig ) throws IOException
     {
         SchemaIndex luceneIndex = LuceneSchemaIndexBuilder.create( descriptor, config )
                                             .withOperationalMode( operationalMode )
@@ -106,7 +105,7 @@ public class LuceneIndexProvider extends IndexProvider
     }
 
     @Override
-    public InternalIndexState getInitialState( IndexDescriptor2 descriptor )
+    public InternalIndexState getInitialState( IndexDescriptor descriptor )
     {
         PartitionedIndexStorage indexStorage = getIndexStorage( descriptor.getId() );
         String failure = indexStorage.getStoredIndexFailure();
@@ -132,7 +131,7 @@ public class LuceneIndexProvider extends IndexProvider
     }
 
     @Override
-    public String getPopulationFailure( IndexDescriptor2 descriptor ) throws IllegalStateException
+    public String getPopulationFailure( IndexDescriptor descriptor ) throws IllegalStateException
     {
         String failure = getIndexStorage( descriptor.getId() ).getStoredIndexFailure();
         if ( failure == null )
@@ -147,7 +146,7 @@ public class LuceneIndexProvider extends IndexProvider
         return indexStorageFactory.indexStorageOf( indexId );
     }
 
-    private boolean indexIsOnline( PartitionedIndexStorage indexStorage, IndexDescriptor2 descriptor ) throws IOException
+    private boolean indexIsOnline( PartitionedIndexStorage indexStorage, IndexDescriptor descriptor ) throws IOException
     {
         try ( SchemaIndex index = LuceneSchemaIndexBuilder.create( descriptor, config ).withIndexStorage( indexStorage ).build() )
         {
@@ -161,7 +160,7 @@ public class LuceneIndexProvider extends IndexProvider
     }
 
     @Override
-    public IndexDescriptor2 completeConfiguration( IndexDescriptor2 index )
+    public IndexDescriptor completeConfiguration( IndexDescriptor index )
     {
         return index;
     }

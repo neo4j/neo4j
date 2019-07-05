@@ -29,7 +29,7 @@ import org.neo4j.index.internal.gbptree.GBPTree;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.internal.schema.IndexCapability;
 import org.neo4j.internal.schema.IndexConfig;
-import org.neo4j.internal.schema.IndexDescriptor2;
+import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexLimitation;
 import org.neo4j.internal.schema.IndexOrder;
 import org.neo4j.internal.schema.IndexProviderDescriptor;
@@ -133,7 +133,7 @@ public class GenericNativeIndexProvider extends NativeIndexProvider<GenericKey,N
     }
 
     @Override
-    public IndexDescriptor2 completeConfiguration( IndexDescriptor2 index )
+    public IndexDescriptor completeConfiguration( IndexDescriptor index )
     {
         SchemaDescriptor sinfulSchema = index.schema();
         IndexConfig indexConfig = sinfulSchema.getIndexConfig();
@@ -149,7 +149,7 @@ public class GenericNativeIndexProvider extends NativeIndexProvider<GenericKey,N
     }
 
     @Override
-    GenericLayout layout( IndexDescriptor2 descriptor, File storeFile )
+    GenericLayout layout( IndexDescriptor descriptor, File storeFile )
     {
         int numberOfSlots = descriptor.schema().getPropertyIds().length;
         IndexConfig indexConfig = descriptor.schema().getIndexConfig();
@@ -158,7 +158,7 @@ public class GenericNativeIndexProvider extends NativeIndexProvider<GenericKey,N
     }
 
     @Override
-    protected IndexPopulator newIndexPopulator( IndexFiles indexFiles, GenericLayout layout, IndexDescriptor2 descriptor, ByteBufferFactory bufferFactory )
+    protected IndexPopulator newIndexPopulator( IndexFiles indexFiles, GenericLayout layout, IndexDescriptor descriptor, ByteBufferFactory bufferFactory )
     {
         if ( blockBasedPopulation )
         {
@@ -171,7 +171,7 @@ public class GenericNativeIndexProvider extends NativeIndexProvider<GenericKey,N
     }
 
     @Override
-    protected IndexAccessor newIndexAccessor( IndexFiles indexFiles, GenericLayout layout, IndexDescriptor2 descriptor )
+    protected IndexAccessor newIndexAccessor( IndexFiles indexFiles, GenericLayout layout, IndexDescriptor descriptor )
     {
         return new GenericNativeIndexAccessor( pageCache, fs, indexFiles, layout, recoveryCleanupWorkCollector, monitor, descriptor,
                 layout.getSpaceFillingCurveSettings(), configuration );

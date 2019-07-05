@@ -26,7 +26,7 @@ import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.hashing.HashFunction;
-import org.neo4j.internal.schema.IndexDescriptor2;
+import org.neo4j.internal.schema.IndexDescriptor;
 
 import static java.util.Arrays.asList;
 import static java.util.stream.Collectors.joining;
@@ -36,13 +36,13 @@ public class IndexDefinitionImpl implements IndexDefinition
 {
     private final InternalSchemaActions actions;
 
-    private final IndexDescriptor2 indexReference;
+    private final IndexDescriptor indexReference;
     private final Label[] labels;
     private final RelationshipType[] relTypes;
     private final String[] propertyKeys;
     private final boolean constraintIndex;
 
-    public IndexDefinitionImpl( InternalSchemaActions actions, IndexDescriptor2 ref, Label[] labels, String[] propertyKeys, boolean constraintIndex )
+    public IndexDefinitionImpl( InternalSchemaActions actions, IndexDescriptor ref, Label[] labels, String[] propertyKeys, boolean constraintIndex )
     {
         this.actions = actions;
         this.indexReference = ref;
@@ -54,7 +54,7 @@ public class IndexDefinitionImpl implements IndexDefinition
         assertInUnterminatedTransaction();
     }
 
-    IndexDefinitionImpl( InternalSchemaActions actions, IndexDescriptor2 ref, RelationshipType[] relTypes, String[] propertyKeys, boolean constraintIndex )
+    IndexDefinitionImpl( InternalSchemaActions actions, IndexDescriptor ref, RelationshipType[] relTypes, String[] propertyKeys, boolean constraintIndex )
     {
         this.actions = actions;
         this.indexReference = ref;
@@ -66,7 +66,7 @@ public class IndexDefinitionImpl implements IndexDefinition
         assertInUnterminatedTransaction();
     }
 
-    public IndexDescriptor2 getIndexReference()
+    public IndexDescriptor getIndexReference()
     {
         return indexReference;
     }
@@ -216,7 +216,7 @@ public class IndexDefinitionImpl implements IndexDefinition
     @Override
     public String getName()
     {
-        IndexDescriptor2 descriptor = indexReference == null ? IndexDescriptor2.NO_INDEX : indexReference;
+        IndexDescriptor descriptor = indexReference == null ? IndexDescriptor.NO_INDEX : indexReference;
         return descriptor.getName();
     }
 

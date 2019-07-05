@@ -32,7 +32,7 @@ import org.neo4j.configuration.Config;
 import org.neo4j.internal.id.DefaultIdGeneratorFactory;
 import org.neo4j.internal.id.IdType;
 import org.neo4j.internal.schema.IndexConfig;
-import org.neo4j.internal.schema.IndexDescriptor2;
+import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.IndexProviderDescriptor;
 import org.neo4j.internal.schema.SchemaRule;
@@ -91,10 +91,10 @@ class SchemaStore35Test
     void storeAndLoadSchemaRule() throws Exception
     {
         // GIVEN
-        IndexDescriptor2 indexRule = IndexPrototype.forSchema( forLabel( 1, 4 ), PROVIDER ).materialise( store.nextId() );
+        IndexDescriptor indexRule = IndexPrototype.forSchema( forLabel( 1, 4 ), PROVIDER ).materialise( store.nextId() );
 
         // WHEN
-        IndexDescriptor2 readIndexRule = (IndexDescriptor2) SchemaRuleSerialization35.deserialize(
+        IndexDescriptor readIndexRule = (IndexDescriptor) SchemaRuleSerialization35.deserialize(
                 indexRule.getId(), wrap( SchemaRuleSerialization35.serialize( indexRule ) ) );
 
         // THEN
@@ -109,10 +109,10 @@ class SchemaStore35Test
     {
         // GIVEN
         int[] propertyIds = {4, 5, 6, 7};
-        IndexDescriptor2 indexRule = IndexPrototype.forSchema( forLabel( 2, propertyIds ), PROVIDER ).materialise( store.nextId() );
+        IndexDescriptor indexRule = IndexPrototype.forSchema( forLabel( 2, propertyIds ), PROVIDER ).materialise( store.nextId() );
 
         // WHEN
-        IndexDescriptor2 readIndexRule = (IndexDescriptor2) SchemaRuleSerialization35.deserialize(
+        IndexDescriptor readIndexRule = (IndexDescriptor) SchemaRuleSerialization35.deserialize(
                 indexRule.getId(), wrap( SchemaRuleSerialization35.serialize( indexRule ) ) );
 
         // THEN
@@ -128,12 +128,12 @@ class SchemaStore35Test
         // GIVEN
         int[] propertyIds = {4, 5, 6, 7};
         int[] entityTokens = {2, 3, 4};
-        IndexDescriptor2 indexRule = IndexPrototype.forSchema(
+        IndexDescriptor indexRule = IndexPrototype.forSchema(
                 fulltext( EntityType.RELATIONSHIP, IndexConfig.empty(), entityTokens, propertyIds ), PROVIDER ).materialise( store.nextId() );
 
         // WHEN
-        IndexDescriptor2 readIndexRule =
-                (IndexDescriptor2) SchemaRuleSerialization35.deserialize( indexRule.getId(),
+        IndexDescriptor readIndexRule =
+                (IndexDescriptor) SchemaRuleSerialization35.deserialize( indexRule.getId(),
                         wrap( SchemaRuleSerialization35.serialize( indexRule ) ) );
 
         // THEN
@@ -147,11 +147,11 @@ class SchemaStore35Test
     void storeAndLoad_Big_CompositeSchemaRule() throws Exception
     {
         // GIVEN
-        IndexDescriptor2 indexRule =
+        IndexDescriptor indexRule =
                 IndexPrototype.forSchema( forLabel( 2, IntStream.range( 1, 200 ).toArray() ), PROVIDER ).materialise( store.nextId() );
 
         // WHEN
-        IndexDescriptor2 readIndexRule = (IndexDescriptor2) SchemaRuleSerialization35.deserialize(
+        IndexDescriptor readIndexRule = (IndexDescriptor) SchemaRuleSerialization35.deserialize(
                 indexRule.getId(), wrap( SchemaRuleSerialization35.serialize( indexRule ) ) );
 
         // THEN
@@ -165,12 +165,12 @@ class SchemaStore35Test
     void storeAndLoad_Big_CompositeMultiTokenSchemaRule() throws Exception
     {
         // GIVEN
-        IndexDescriptor2 indexRule = IndexPrototype.forSchema(
+        IndexDescriptor indexRule = IndexPrototype.forSchema(
                 fulltext( EntityType.RELATIONSHIP, IndexConfig.empty(), IntStream.range( 1, 200 ).toArray(), IntStream.range( 1, 200 ).toArray() ),
                 PROVIDER ).materialise( store.nextId() );
 
         // WHEN
-        IndexDescriptor2 readIndexRule = (IndexDescriptor2) SchemaRuleSerialization35.deserialize( indexRule.getId(),
+        IndexDescriptor readIndexRule = (IndexDescriptor) SchemaRuleSerialization35.deserialize( indexRule.getId(),
                 wrap( SchemaRuleSerialization35.serialize( indexRule ) ) );
 
         // THEN
@@ -216,12 +216,12 @@ class SchemaStore35Test
         }
     }
 
-    private static IndexDescriptor2 indexRule( long ruleId, int labelId, int... propertyIds )
+    private static IndexDescriptor indexRule( long ruleId, int labelId, int... propertyIds )
     {
         return IndexPrototype.forSchema( forLabel( labelId, propertyIds ), PROVIDER ).materialise( ruleId );
     }
 
-    private static IndexDescriptor2 uniqueIndexRule( long ruleId, long owningConstraint, int labelId, int... propertyIds )
+    private static IndexDescriptor uniqueIndexRule( long ruleId, long owningConstraint, int labelId, int... propertyIds )
     {
         return IndexPrototype.uniqueForSchema( forLabel( labelId, propertyIds ), PROVIDER ).materialise( ruleId ).withOwningConstraintId( owningConstraint );
     }

@@ -23,7 +23,7 @@ import java.util.Iterator;
 
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
 import org.neo4j.internal.schema.ConstraintDescriptor;
-import org.neo4j.internal.schema.IndexDescriptor2;
+import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptor;
 
 /**
@@ -35,9 +35,9 @@ public interface SchemaReadCore
      * Acquire a reference to the index mapping the given {@code SchemaDescriptor}.
      *
      * @param schema {@link SchemaDescriptor} for the index
-     * @return the IndexReference, or {@link IndexDescriptor2#NO_INDEX} if such an index does not exist.
+     * @return the IndexReference, or {@link IndexDescriptor#NO_INDEX} if such an index does not exist.
      */
-    IndexDescriptor2 index( SchemaDescriptor schema );
+    IndexDescriptor index( SchemaDescriptor schema );
 
     /**
      * Returns all indexes associated with the given label
@@ -45,7 +45,7 @@ public interface SchemaReadCore
      * @param labelId The id of the label which associated indexes you are looking for
      * @return The indexes associated with the given label
      */
-    Iterator<IndexDescriptor2> indexesGetForLabel( int labelId );
+    Iterator<IndexDescriptor> indexesGetForLabel( int labelId );
 
     /**
      * Returns all indexes associated with the given relationship type
@@ -53,14 +53,14 @@ public interface SchemaReadCore
      * @param relationshipType The id of the relationship type which associated indexes you are looking for
      * @return The indexes associated with the given relationship type.
      */
-    Iterator<IndexDescriptor2> indexesGetForRelationshipType( int relationshipType );
+    Iterator<IndexDescriptor> indexesGetForRelationshipType( int relationshipType );
 
     /**
      * Returns all indexes used in the database
      *
      * @return all indexes used in the database
      */
-    Iterator<IndexDescriptor2> indexesGetAll();
+    Iterator<IndexDescriptor> indexesGetAll();
 
     /**
      * Retrieves the state of an index
@@ -69,7 +69,7 @@ public interface SchemaReadCore
      * @return The state of the provided index
      * @throws IndexNotFoundKernelException if the index was not found in the database
      */
-    InternalIndexState indexGetState( IndexDescriptor2 index ) throws IndexNotFoundKernelException;
+    InternalIndexState indexGetState( IndexDescriptor index ) throws IndexNotFoundKernelException;
 
     /**
      * Retrives the population progress of the index
@@ -78,7 +78,7 @@ public interface SchemaReadCore
      * @return The population progress of the given index
      * @throws IndexNotFoundKernelException if the index was not found in the database
      */
-    PopulationProgress indexGetPopulationProgress( IndexDescriptor2 index ) throws IndexNotFoundKernelException;
+    PopulationProgress indexGetPopulationProgress( IndexDescriptor index ) throws IndexNotFoundKernelException;
 
     /**
      * Returns the failure description of a failed index.
@@ -87,7 +87,7 @@ public interface SchemaReadCore
      * @return The failure message from the index
      * @throws IndexNotFoundKernelException if the index was not found in the database
      */
-    String indexGetFailure( IndexDescriptor2 index ) throws IndexNotFoundKernelException;
+    String indexGetFailure( IndexDescriptor index ) throws IndexNotFoundKernelException;
 
     /**
      * Finds all constraints for the given label

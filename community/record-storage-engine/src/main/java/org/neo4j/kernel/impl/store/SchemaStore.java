@@ -40,7 +40,7 @@ import org.neo4j.internal.id.IdType;
 import org.neo4j.internal.kernel.api.exceptions.schema.MalformedSchemaRuleException;
 import org.neo4j.internal.schema.ConstraintDescriptor;
 import org.neo4j.internal.schema.IndexConfig;
-import org.neo4j.internal.schema.IndexDescriptor2;
+import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.IndexProviderDescriptor;
 import org.neo4j.internal.schema.PropertySchemaType;
@@ -193,9 +193,9 @@ public class SchemaStore extends CommonAbstractStore<SchemaRecord,IntStoreHeader
         schemaDescriptorToMap( rule.schema(), map );
 
         // Rule
-        if ( rule instanceof IndexDescriptor2 )
+        if ( rule instanceof IndexDescriptor )
         {
-            schemaIndexToMap( (IndexDescriptor2) rule, map );
+            schemaIndexToMap( (IndexDescriptor) rule, map );
         }
         else if ( rule instanceof StorageConstraintReference )
         {
@@ -257,7 +257,7 @@ public class SchemaStore extends CommonAbstractStore<SchemaRecord,IntStoreHeader
         }
     }
 
-    private static void schemaIndexToMap( IndexDescriptor2 rule, Map<String,Value> map )
+    private static void schemaIndexToMap( IndexDescriptor rule, Map<String,Value> map )
     {
         // Rule
         putStringProperty( map, PROP_SCHEMA_RULE_TYPE, "INDEX" );
@@ -278,7 +278,7 @@ public class SchemaStore extends CommonAbstractStore<SchemaRecord,IntStoreHeader
         indexProviderToMap( rule, map );
     }
 
-    private static void indexProviderToMap( IndexDescriptor2 rule, Map<String,Value> map )
+    private static void indexProviderToMap( IndexDescriptor rule, Map<String,Value> map )
     {
         IndexProviderDescriptor provider = rule.getIndexProvider();
         String name = provider.getKey();
@@ -354,7 +354,7 @@ public class SchemaStore extends CommonAbstractStore<SchemaRecord,IntStoreHeader
         IndexProviderDescriptor providerDescriptor = new IndexProviderDescriptor( providerKey, providerVersion );
         prototype = prototype.withIndexProvider( providerDescriptor );
 
-        IndexDescriptor2 index = prototype.materialise( schemaRuleId );
+        IndexDescriptor index = prototype.materialise( schemaRuleId );
 
         if ( props.containsKey( PROP_OWNING_CONSTRAINT ) )
         {

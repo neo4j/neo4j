@@ -45,7 +45,7 @@ import org.neo4j.internal.kernel.api.helpers.StubNodeCursor;
 import org.neo4j.internal.kernel.api.helpers.TestRelationshipChain;
 import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.internal.schema.ConstraintDescriptor;
-import org.neo4j.internal.schema.IndexDescriptor2;
+import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.IndexProviderDescriptor;
 import org.neo4j.internal.schema.LabelSchemaDescriptor;
@@ -578,7 +578,7 @@ class OperationsTest
     void shouldAcquireSchemaWriteLockBeforeRemovingIndexRule() throws Exception
     {
         // given
-        IndexDescriptor2 index = IndexPrototype.forSchema( SchemaDescriptor.forLabel( 0, 0 ) ).materialise( 0 );
+        IndexDescriptor index = IndexPrototype.forSchema( SchemaDescriptor.forLabel( 0, 0 ) ).materialise( 0 );
         IndexProxy indexProxy = mock( IndexProxy.class );
         when( indexProxy.getDescriptor() ).thenReturn( index );
         when( indexingService.getIndexProxy( index.schema() ) ).thenReturn( indexProxy );
@@ -596,7 +596,7 @@ class OperationsTest
     void shouldAcquireSchemaWriteLockBeforeRemovingIndexRuleBySchema() throws Exception
     {
         // given
-        IndexDescriptor2 index = IndexPrototype.forSchema( SchemaDescriptor.forLabel( 0, 0 ) ).materialise( 0 );
+        IndexDescriptor index = IndexPrototype.forSchema( SchemaDescriptor.forLabel( 0, 0 ) ).materialise( 0 );
         IndexProxy indexProxy = mock( IndexProxy.class );
         when( indexProxy.getDescriptor() ).thenReturn( index );
         when( indexingService.getIndexProxy( index.schema() ) ).thenReturn( indexProxy );
@@ -615,7 +615,7 @@ class OperationsTest
     {
         // given
         String defaultProvider = Config.defaults().get( default_schema_provider );
-        IndexDescriptor2 constraintIndex = IndexPrototype.uniqueForSchema( descriptor ).materialise( 42 );
+        IndexDescriptor constraintIndex = IndexPrototype.uniqueForSchema( descriptor ).materialise( 42 );
         UniquenessConstraintDescriptor constraint = ConstraintDescriptorFactory.uniqueForSchema( descriptor );
         when( constraintIndexCreator.createUniquenessConstraintIndex( transaction, constraint, defaultProvider ) ).thenReturn( constraintIndex );
         IndexProxy indexProxy = mock( IndexProxy.class );
@@ -807,7 +807,7 @@ class OperationsTest
     {
         // given
         UniquenessConstraintDescriptor constraint = uniqueForSchema( descriptor );
-        IndexDescriptor2 index = IndexPrototype.uniqueForSchema( descriptor ).materialise( 13 );
+        IndexDescriptor index = IndexPrototype.uniqueForSchema( descriptor ).materialise( 13 );
         when( storageReader.constraintExists( constraint ) ).thenReturn( true );
         when( storageReader.indexGetForSchema( descriptor ) ).thenReturn( index );
 
@@ -958,10 +958,10 @@ class OperationsTest
         operations.indexCreate( SchemaDescriptor.forLabel( 1, 1 ) );
         operations.indexCreate( SchemaDescriptor.forLabel( 2, 1 ), Optional.empty() );
         operations.indexCreate( SchemaDescriptor.forLabel( 3, 1 ), "provider-1.0", Optional.empty() );
-        IndexDescriptor2[] indexDescriptors = txState.indexChanges().getAdded()
+        IndexDescriptor[] indexDescriptors = txState.indexChanges().getAdded()
                 .stream()
                 .sorted( Comparator.comparing( d -> d.schema().getLabelId() ) )
-                .toArray( IndexDescriptor2[]::new );
+                .toArray( IndexDescriptor[]::new );
         assertThat( Arrays.toString( indexDescriptors ), indexDescriptors.length, is( 3 ) );
         assertThat( indexDescriptors[0].toString(), indexDescriptors[0].getName(), is( "index_1" ) );
         assertThat( indexDescriptors[1].toString(), indexDescriptors[1].getName(), is( "index_2" ) );
@@ -973,7 +973,7 @@ class OperationsTest
     {
         when( creationContext.reserveSchema() ).thenReturn( 1L, 2L, 3L );
         operations.indexUniqueCreate( SchemaDescriptor.forLabel( 1, 1 ), "provider-1.0" );
-        IndexDescriptor2 indexDescriptor = single( txState.indexChanges().getAdded() );
+        IndexDescriptor indexDescriptor = single( txState.indexChanges().getAdded() );
         assertThat( indexDescriptor.toString(), indexDescriptor.getName(), is( "index_1" ) );
     }
 

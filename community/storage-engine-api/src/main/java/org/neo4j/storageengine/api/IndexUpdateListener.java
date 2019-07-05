@@ -22,7 +22,7 @@ package org.neo4j.storageengine.api;
 import java.io.IOException;
 
 import org.neo4j.exceptions.KernelException;
-import org.neo4j.internal.schema.IndexDescriptor2;
+import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptor;
 
 public interface IndexUpdateListener
@@ -31,7 +31,7 @@ public interface IndexUpdateListener
      * One or more indexes were created. This listener should take care of managing initial population of it.
      * @param indexes indexes that were created.
      */
-    void createIndexes( IndexDescriptor2... indexes );
+    void createIndexes( IndexDescriptor... indexes );
 
     /**
      * Used when activating an index after it has been created and populated.
@@ -41,13 +41,13 @@ public interface IndexUpdateListener
      * @param index index to activate.
      * @throws KernelException if index failed to be activated.
      */
-    void activateIndex( IndexDescriptor2 index ) throws KernelException;
+    void activateIndex( IndexDescriptor index ) throws KernelException;
 
     /**
      * Drops an index.
      * @param index index to be dropped.
      */
-    void dropIndex( IndexDescriptor2 index );
+    void dropIndex( IndexDescriptor index );
 
     /**
      * Applies indexing updates from changes in underlying storage.
@@ -65,17 +65,17 @@ public interface IndexUpdateListener
     class Adapter implements IndexUpdateListener
     {
         @Override
-        public void createIndexes( IndexDescriptor2[] indexes )
+        public void createIndexes( IndexDescriptor[] indexes )
         {
         }
 
         @Override
-        public void activateIndex( IndexDescriptor2 index ) throws KernelException
+        public void activateIndex( IndexDescriptor index ) throws KernelException
         {
         }
 
         @Override
-        public void dropIndex( IndexDescriptor2 index )
+        public void dropIndex( IndexDescriptor index )
         {
         }
 

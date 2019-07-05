@@ -25,7 +25,7 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.Iterator;
 
-import org.neo4j.internal.schema.IndexDescriptor2;
+import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.kernel.api.index.IndexSample;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.schema.index.TestIndexDescriptorFactory;
@@ -53,7 +53,7 @@ abstract class NativeNonUniqueIndexPopulatorTest<KEY extends NativeIndexKey<KEY>
         this.indexLayoutFactory = indexLayoutFactory;
     }
 
-    private static final IndexDescriptor2 nonUniqueDescriptor = TestIndexDescriptorFactory.forLabel( 42, 666 );
+    private static final IndexDescriptor nonUniqueDescriptor = TestIndexDescriptorFactory.forLabel( 42, 666 );
 
     private static Value[] asValues( IndexEntryUpdate<IndexDescriptor>[] updates )
     {

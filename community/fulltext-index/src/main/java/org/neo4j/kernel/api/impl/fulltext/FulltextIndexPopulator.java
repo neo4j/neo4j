@@ -26,7 +26,7 @@ import java.io.UncheckedIOException;
 import java.util.Collection;
 import java.util.Map;
 
-import org.neo4j.internal.schema.IndexDescriptor2;
+import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.kernel.api.impl.index.DatabaseIndex;
 import org.neo4j.kernel.api.impl.schema.populator.LuceneIndexPopulator;
 import org.neo4j.kernel.api.index.IndexSample;
@@ -37,10 +37,10 @@ import org.neo4j.values.storable.Value;
 
 public class FulltextIndexPopulator extends LuceneIndexPopulator<DatabaseIndex<FulltextIndexReader>>
 {
-    private final IndexDescriptor2 descriptor;
+    private final IndexDescriptor descriptor;
     private final String[] propertyNames;
 
-    FulltextIndexPopulator( IndexDescriptor2 descriptor, DatabaseIndex<FulltextIndexReader> luceneFulltext, String[] propertyNames )
+    FulltextIndexPopulator( IndexDescriptor descriptor, DatabaseIndex<FulltextIndexReader> luceneFulltext, String[] propertyNames )
     {
         super( luceneFulltext );
         this.descriptor = descriptor;

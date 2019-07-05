@@ -30,7 +30,7 @@ import org.neo4j.common.EntityType;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.internal.kernel.api.Read;
 import org.neo4j.internal.schema.ConstraintDescriptor;
-import org.neo4j.internal.schema.IndexDescriptor2;
+import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.internal.schema.constraints.IndexBackedConstraintDescriptor;
 import org.neo4j.token.DelegatingTokenHolder;
@@ -119,19 +119,19 @@ public class StubStorageCursors implements StorageReader
     }
 
     @Override
-    public Iterator<IndexDescriptor2> indexesGetForLabel( int labelId )
+    public Iterator<IndexDescriptor> indexesGetForLabel( int labelId )
     {
         throw new UnsupportedOperationException( "Not implemented yet" );
     }
 
     @Override
-    public IndexDescriptor2 indexGetForName( String name )
+    public IndexDescriptor indexGetForName( String name )
     {
         throw new UnsupportedOperationException( "Not implemented yet" );
     }
 
     @Override
-    public Iterator<IndexDescriptor2> indexesGetAll()
+    public Iterator<IndexDescriptor> indexesGetAll()
     {
         throw new UnsupportedOperationException( "Not implemented yet" );
     }
@@ -173,13 +173,13 @@ public class StubStorageCursors implements StorageReader
     }
 
     @Override
-    public Iterator<IndexDescriptor2> indexesGetForRelationshipType( int relationshipType )
+    public Iterator<IndexDescriptor> indexesGetForRelationshipType( int relationshipType )
     {
         throw new UnsupportedOperationException( "Not implemented yet" );
     }
 
     @Override
-    public Long indexGetOwningUniquenessConstraintId( IndexDescriptor2 index )
+    public Long indexGetOwningUniquenessConstraintId( IndexDescriptor index )
     {
         throw new UnsupportedOperationException( "Not implemented yet" );
     }
@@ -215,7 +215,7 @@ public class StubStorageCursors implements StorageReader
     }
 
     @Override
-    public IndexDescriptor2 indexGetForSchema( SchemaDescriptor descriptor )
+    public IndexDescriptor indexGetForSchema( SchemaDescriptor descriptor )
     {
         throw new UnsupportedOperationException( "Not implemented yet" );
     }

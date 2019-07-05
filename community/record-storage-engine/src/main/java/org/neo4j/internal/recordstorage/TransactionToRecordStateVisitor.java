@@ -30,7 +30,7 @@ import org.neo4j.exceptions.KernelException;
 import org.neo4j.internal.kernel.api.exceptions.schema.DuplicateSchemaRuleException;
 import org.neo4j.internal.kernel.api.exceptions.schema.SchemaRuleNotFoundException;
 import org.neo4j.internal.schema.ConstraintDescriptor;
-import org.neo4j.internal.schema.IndexDescriptor2;
+import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.SchemaState;
 import org.neo4j.internal.schema.constraints.NodeKeyConstraintDescriptor;
 import org.neo4j.internal.schema.constraints.UniquenessConstraintDescriptor;
@@ -160,13 +160,13 @@ class TransactionToRecordStateVisitor extends TxStateVisitor.Adapter
     }
 
     @Override
-    public void visitAddedIndex( IndexDescriptor2 index ) throws KernelException
+    public void visitAddedIndex( IndexDescriptor index ) throws KernelException
     {
         schemaStateChanger.createSchemaRule( recordState, index );
     }
 
     @Override
-    public void visitRemovedIndex( IndexDescriptor2 index )
+    public void visitRemovedIndex( IndexDescriptor index )
     {
         schemaStateChanger.dropSchemaRule( recordState, index );
     }
@@ -199,7 +199,7 @@ class TransactionToRecordStateVisitor extends TxStateVisitor.Adapter
 
     private void visitAddedUniquenessConstraint( UniquenessConstraintDescriptor uniqueConstraint, long constraintId ) throws KernelException
     {
-        IndexDescriptor2 indexRule = firstUniqueConstraintIndex( schemaStorage.indexGetForSchema( uniqueConstraint.ownedIndexSchema() ) );
+        IndexDescriptor indexRule = firstUniqueConstraintIndex( schemaStorage.indexGetForSchema( uniqueConstraint.ownedIndexSchema() ) );
         ConstraintRule constraintRule = constraintSemantics.createUniquenessConstraintRule( constraintId, uniqueConstraint, indexRule.getId() );
         schemaStateChanger.createSchemaRule( recordState, constraintRule );
         schemaStateChanger.setConstraintIndexOwner( recordState, indexRule, constraintId );
@@ -207,15 +207,15 @@ class TransactionToRecordStateVisitor extends TxStateVisitor.Adapter
 
     private void visitAddedNodeKeyConstraint( NodeKeyConstraintDescriptor uniqueConstraint, long constraintId ) throws KernelException
     {
-        IndexDescriptor2 indexRule = firstUniqueConstraintIndex( schemaStorage.indexGetForSchema( uniqueConstraint.ownedIndexSchema() ) );
+        IndexDescriptor indexRule = firstUniqueConstraintIndex( schemaStorage.indexGetForSchema( uniqueConstraint.ownedIndexSchema() ) );
         ConstraintRule constraintRule = constraintSemantics.createNodeKeyConstraintRule( constraintId, uniqueConstraint, indexRule.getId() );
         schemaStateChanger.createSchemaRule( recordState, constraintRule );
         schemaStateChanger.setConstraintIndexOwner( recordState, indexRule, constraintId );
     }
 
-    private IndexDescriptor2 firstUniqueConstraintIndex( IndexDescriptor2[] indexGetForSchema )
+    private IndexDescriptor firstUniqueConstraintIndex( IndexDescriptor[] indexGetForSchema )
     {
-        return Stream.of( indexGetForSchema ).filter( IndexDescriptor2::isUnique ).findFirst().orElse( null );
+        return Stream.of( indexGetForSchema ).filter( IndexDescriptor::isUnique ).findFirst().orElse( null );
     }
 
     @Override
@@ -230,8 +230,8 @@ class TransactionToRecordStateVisitor extends TxStateVisitor.Adapter
             if ( constraint.enforcesUniqueness() )
             {
                 // Remove the index for the constraint as well
-                IndexDescriptor2[] indexes = schemaStorage.indexGetForSchema( constraint.schema() );
-                for ( IndexDescriptor2 index : indexes )
+                IndexDescriptor[] indexes = schemaStorage.indexGetForSchema( constraint.schema() );
+                for ( IndexDescriptor index : indexes )
                 {
                     OptionalLong owningConstraintId = index.getOwningConstraintId();
                     if ( owningConstraintId.isPresent() && owningConstraintId.getAsLong() == rule.getId() )

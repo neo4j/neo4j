@@ -41,7 +41,7 @@ import org.neo4j.internal.kernel.api.TokenRead;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotApplicableKernelException;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
 import org.neo4j.internal.kernel.api.security.AccessMode;
-import org.neo4j.internal.schema.IndexDescriptor2;
+import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexOrder;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.kernel.api.AssertOpen;
@@ -110,7 +110,7 @@ abstract class Read implements TxStateHolder,
     }
 
     @Override
-    public final void relationshipIndexSeek( IndexDescriptor2 index, RelationshipIndexCursor cursor, IndexQuery... query )
+    public final void relationshipIndexSeek( IndexDescriptor index, RelationshipIndexCursor cursor, IndexQuery... query )
             throws IndexNotApplicableKernelException, IndexNotFoundKernelException
     {
         ktx.assertOpen();
@@ -128,7 +128,7 @@ abstract class Read implements TxStateHolder,
     }
 
     @Override
-    public void nodeIndexDistinctValues( IndexDescriptor2 index, NodeValueIndexCursor cursor, boolean needsValues ) throws IndexNotFoundKernelException
+    public void nodeIndexDistinctValues( IndexDescriptor index, NodeValueIndexCursor cursor, boolean needsValues ) throws IndexNotFoundKernelException
     {
         ktx.assertOpen();
         DefaultNodeValueIndexCursor cursorImpl = (DefaultNodeValueIndexCursor) cursor;
@@ -139,7 +139,7 @@ abstract class Read implements TxStateHolder,
     }
 
     private IndexProgressor.EntityValueClient injectSecurity( IndexProgressor.EntityValueClient cursor, AccessMode accessMode,
-            IndexDescriptor2 index )
+            IndexDescriptor index )
     {
         SchemaDescriptor schema = index.schema();
         int[] propertyIds = schema.getPropertyIds();
@@ -258,7 +258,7 @@ abstract class Read implements TxStateHolder,
     }
 
     @Override
-    public long lockingNodeUniqueIndexSeek( IndexDescriptor2 index,
+    public long lockingNodeUniqueIndexSeek( IndexDescriptor index,
                                             NodeValueIndexCursor cursor,
                                             IndexQuery.ExactPredicate... predicates )
             throws IndexNotApplicableKernelException, IndexNotFoundKernelException, IndexBrokenKernelException
@@ -466,12 +466,12 @@ abstract class Read implements TxStateHolder,
         ((DefaultPropertyCursor) cursor).initGraph( this, ktx );
     }
 
-    public abstract IndexReader indexReader( IndexDescriptor2 index, boolean fresh ) throws IndexNotFoundKernelException;
+    public abstract IndexReader indexReader( IndexDescriptor index, boolean fresh ) throws IndexNotFoundKernelException;
 
     abstract LabelScanReader labelScanReader();
 
     @Override
-    public abstract IndexDescriptor2 index( int label, int... properties );
+    public abstract IndexDescriptor index( int label, int... properties );
 
     @Override
     public TransactionState txState()
@@ -600,7 +600,7 @@ abstract class Read implements TxStateHolder,
         ktx.statementLocks().pessimistic().releaseShared( types, ids );
     }
 
-    private void assertIndexOnline( IndexDescriptor2 index )
+    private void assertIndexOnline( IndexDescriptor index )
             throws IndexNotFoundKernelException, IndexBrokenKernelException
     {
         if ( indexGetState( index ) == InternalIndexState.ONLINE )
@@ -610,7 +610,7 @@ abstract class Read implements TxStateHolder,
         throw new IndexBrokenKernelException( indexGetFailure( index ) );
     }
 
-    private static void assertPredicatesMatchSchema( IndexDescriptor2 index, IndexQuery.ExactPredicate[] predicates )
+    private static void assertPredicatesMatchSchema( IndexDescriptor index, IndexQuery.ExactPredicate[] predicates )
             throws IndexNotApplicableKernelException
     {
         int[] propertyIds = index.schema().getPropertyIds();

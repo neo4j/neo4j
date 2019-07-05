@@ -23,7 +23,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import org.neo4j.kernel.impl.api.index.MultipleIndexPopulator.IndexPopulation;
-import org.neo4j.internal.schema.IndexDescriptor2;
+import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.SchemaDescriptor;
 
@@ -32,7 +32,7 @@ import static org.mockito.Mockito.verify;
 
 class PopulatingIndexProxyTest
 {
-    private final IndexDescriptor2 index = IndexPrototype.forSchema( SchemaDescriptor.forLabel( 1, 2 ) ).materialise( 13 );
+    private final IndexDescriptor index = IndexPrototype.forSchema( SchemaDescriptor.forLabel( 1, 2 ) ).materialise( 13 );
     private final IndexPopulationJob indexPopulationJob = mock( IndexPopulationJob.class );
     private final IndexPopulation indexPopulation = mock( IndexPopulation.class );
     private PopulatingIndexProxy populatingIndexProxy;

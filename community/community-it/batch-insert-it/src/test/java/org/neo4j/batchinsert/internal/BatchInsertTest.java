@@ -64,7 +64,7 @@ import org.neo4j.internal.index.label.LabelScanStore;
 import org.neo4j.internal.index.label.NativeLabelScanStore;
 import org.neo4j.internal.recordstorage.RecordStorageEngine;
 import org.neo4j.internal.recordstorage.SchemaRuleAccess;
-import org.neo4j.internal.schema.IndexDescriptor2;
+import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexProviderDescriptor;
 import org.neo4j.internal.schema.SchemaRule;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -142,8 +142,8 @@ class BatchInsertTest
     private static final String KEY = DESCRIPTOR.getKey();
     private static final String INTERNAL_LOG_FILE = "debug.log";
     // This is the assumed internal index descriptor based on knowledge of what ids get assigned
-    private static final IndexDescriptor2 internalIndex = TestIndexDescriptorFactory.forLabel( 0, 0 );
-    private static final IndexDescriptor2 internalUniqueIndex = TestIndexDescriptorFactory.uniqueForLabel( 0, 0 );
+    private static final IndexDescriptor internalIndex = TestIndexDescriptorFactory.forLabel( 0, 0 );
+    private static final IndexDescriptor internalUniqueIndex = TestIndexDescriptorFactory.uniqueForLabel( 0, 0 );
     private static final Map<String, Object> properties = new HashMap<>();
     private static final RelationshipType[] relTypeArray = {
         RelTypes.REL_TYPE1, RelTypes.REL_TYPE2, RelTypes.REL_TYPE3,
@@ -767,17 +767,17 @@ class BatchInsertTest
             assertEquals( 2, inUse.size(), "records in use" );
             SchemaRule rule0 = schemaRuleAccess.loadSingleSchemaRule( inUse.get( 0 ) );
             SchemaRule rule1 = schemaRuleAccess.loadSingleSchemaRule( inUse.get( 1 ) );
-            IndexDescriptor2 indexRule;
+            IndexDescriptor indexRule;
             ConstraintRule constraintRule;
-            if ( rule0 instanceof IndexDescriptor2 )
+            if ( rule0 instanceof IndexDescriptor )
             {
-                indexRule = (IndexDescriptor2) rule0;
+                indexRule = (IndexDescriptor) rule0;
                 constraintRule = (ConstraintRule) rule1;
             }
             else
             {
                 constraintRule = (ConstraintRule) rule0;
-                indexRule = (IndexDescriptor2) rule1;
+                indexRule = (IndexDescriptor) rule1;
             }
             OptionalLong owningConstraintId = indexRule.getOwningConstraintId();
             assertTrue( "index should have owning constraint", owningConstraintId.isPresent() );
@@ -865,10 +865,10 @@ class BatchInsertTest
         IndexAccessor accessor = mock( IndexAccessor.class );
 
         when( provider.getProviderDescriptor() ).thenReturn( DESCRIPTOR );
-        when( provider.getPopulator( any( IndexDescriptor2.class ), any( IndexSamplingConfig.class ), any() ) ).thenReturn( populator );
+        when( provider.getPopulator( any( IndexDescriptor.class ), any( IndexSamplingConfig.class ), any() ) ).thenReturn( populator );
         when( populator.sampleResult() ).thenReturn( new IndexSample() );
-        when( provider.getOnlineAccessor( any( IndexDescriptor2.class ), any( IndexSamplingConfig.class ) ) ).thenReturn( accessor );
-        when( provider.completeConfiguration( any( IndexDescriptor2.class ) ) ).then( inv -> inv.getArgument( 0 ) );
+        when( provider.getOnlineAccessor( any( IndexDescriptor.class ), any( IndexSamplingConfig.class ) ) ).thenReturn( accessor );
+        when( provider.completeConfiguration( any( IndexDescriptor.class ) ) ).then( inv -> inv.getArgument( 0 ) );
 
         BatchInserter inserter = newBatchInserterWithIndexProvider(
                 singleInstanceIndexProviderFactory( KEY, provider ), provider.getProviderDescriptor(), denseNodeThreshold );
@@ -883,7 +883,7 @@ class BatchInsertTest
         // THEN
         verify( provider ).init();
         verify( provider ).start();
-        verify( provider ).getPopulator( any( IndexDescriptor2.class ), any( IndexSamplingConfig.class ), any() );
+        verify( provider ).getPopulator( any( IndexDescriptor.class ), any( IndexSamplingConfig.class ), any() );
         verify( populator ).create();
         verify( populator ).add( argThat( matchesCollection( add( nodeId, internalIndex.schema(), Values.of( "Jakewins" ) ) ) ) );
         verify( populator ).verifyDeferredConstraints( any( NodePropertyAccessor.class ) );
@@ -902,10 +902,10 @@ class BatchInsertTest
         IndexAccessor accessor = mock( IndexAccessor.class );
 
         when( provider.getProviderDescriptor() ).thenReturn( DESCRIPTOR );
-        when( provider.getPopulator( any( IndexDescriptor2.class ), any( IndexSamplingConfig.class ), any() ) ).thenReturn( populator );
+        when( provider.getPopulator( any( IndexDescriptor.class ), any( IndexSamplingConfig.class ), any() ) ).thenReturn( populator );
         when( populator.sampleResult() ).thenReturn( new IndexSample() );
-        when( provider.getOnlineAccessor( any( IndexDescriptor2.class ), any( IndexSamplingConfig.class ) ) ).thenReturn( accessor );
-        when( provider.completeConfiguration( any( IndexDescriptor2.class ) ) ).then( inv -> inv.getArgument( 0 ) );
+        when( provider.getOnlineAccessor( any( IndexDescriptor.class ), any( IndexSamplingConfig.class ) ) ).thenReturn( accessor );
+        when( provider.completeConfiguration( any( IndexDescriptor.class ) ) ).then( inv -> inv.getArgument( 0 ) );
 
         BatchInserter inserter = newBatchInserterWithIndexProvider(
                 singleInstanceIndexProviderFactory( KEY, provider ), provider.getProviderDescriptor(), denseNodeThreshold );
@@ -920,7 +920,7 @@ class BatchInsertTest
         // THEN
         verify( provider ).init();
         verify( provider ).start();
-        verify( provider ).getPopulator( any( IndexDescriptor2.class ), any( IndexSamplingConfig.class ), any() );
+        verify( provider ).getPopulator( any( IndexDescriptor.class ), any( IndexSamplingConfig.class ), any() );
         verify( populator ).create();
         verify( populator ).add( argThat( matchesCollection( add( nodeId, internalUniqueIndex.schema(), Values.of( "Jakewins" ) ) ) ) );
         verify( populator ).verifyDeferredConstraints( any( NodePropertyAccessor.class ) );
@@ -941,10 +941,10 @@ class BatchInsertTest
         IndexAccessor accessor = mock( IndexAccessor.class );
 
         when( provider.getProviderDescriptor() ).thenReturn( DESCRIPTOR );
-        when( provider.completeConfiguration( any( IndexDescriptor2.class ) ) ).then( inv -> inv.getArgument( 0 ) );
-        when( provider.getPopulator( any( IndexDescriptor2.class ), any( IndexSamplingConfig.class ), any() ) ).thenReturn( populator );
+        when( provider.completeConfiguration( any( IndexDescriptor.class ) ) ).then( inv -> inv.getArgument( 0 ) );
+        when( provider.getPopulator( any( IndexDescriptor.class ), any( IndexSamplingConfig.class ), any() ) ).thenReturn( populator );
         when( populator.sampleResult() ).thenReturn( new IndexSample() );
-        when( provider.getOnlineAccessor( any( IndexDescriptor2.class ), any( IndexSamplingConfig.class ) ) ).thenReturn( accessor );
+        when( provider.getOnlineAccessor( any( IndexDescriptor.class ), any( IndexSamplingConfig.class ) ) ).thenReturn( accessor );
 
         BatchInserter inserter = newBatchInserterWithIndexProvider(
                 singleInstanceIndexProviderFactory( KEY, provider ), provider.getProviderDescriptor(), denseNodeThreshold );
@@ -957,7 +957,7 @@ class BatchInsertTest
         // THEN
         verify( provider ).init();
         verify( provider ).start();
-        verify( provider ).getPopulator( any( IndexDescriptor2.class ), any( IndexSamplingConfig.class ), any() );
+        verify( provider ).getPopulator( any( IndexDescriptor.class ), any( IndexSamplingConfig.class ), any() );
         verify( populator ).create();
         verify( populator ).add( argThat( matchesCollection(
                 add( jakewins, internalIndex.schema(), Values.of( "Jakewins" ) ),
@@ -1461,9 +1461,9 @@ class BatchInsertTest
         IndexProvider provider = mock( IndexProvider.class );
 
         when( provider.getProviderDescriptor() ).thenReturn( DESCRIPTOR );
-        when( provider.getPopulator( any( IndexDescriptor2.class ), any( IndexSamplingConfig.class ), any() ) )
+        when( provider.getPopulator( any( IndexDescriptor.class ), any( IndexSamplingConfig.class ), any() ) )
                 .thenReturn( populator );
-        when( provider.completeConfiguration( any( IndexDescriptor2.class ) ) ).then( inv -> inv.getArgument( 0 ) );
+        when( provider.completeConfiguration( any( IndexDescriptor.class ) ) ).then( inv -> inv.getArgument( 0 ) );
 
         BatchInserter inserter = newBatchInserterWithIndexProvider(
                 singleInstanceIndexProviderFactory( KEY, provider ), provider.getProviderDescriptor(), denseNodeThreshold );

@@ -51,7 +51,7 @@ import org.neo4j.internal.recordstorage.Command.RelationshipCommand;
 import org.neo4j.internal.recordstorage.Command.RelationshipGroupCommand;
 import org.neo4j.internal.recordstorage.Command.SchemaRuleCommand;
 import org.neo4j.internal.recordstorage.RecordAccess.RecordProxy;
-import org.neo4j.internal.schema.IndexDescriptor2;
+import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.internal.schema.SchemaRule;
@@ -368,8 +368,8 @@ class TransactionRecordStateTest
         recordState.nodeAddProperty( nodeId, propertyId1, value1 );
         recordState.nodeAddProperty( nodeId, propertyId2, value2 );
         apply( recordState );
-        IndexDescriptor2 rule1 = createIndex( labelIdOne, propertyId1 );
-        IndexDescriptor2 rule2 = createIndex( labelIdOne, propertyId2 );
+        IndexDescriptor rule1 = createIndex( labelIdOne, propertyId1 );
+        IndexDescriptor rule2 = createIndex( labelIdOne, propertyId2 );
 
         // WHEN
         recordState = newTransactionRecordState();
@@ -394,8 +394,8 @@ class TransactionRecordStateTest
         recordState.nodeAddProperty( nodeId, propertyId1, value1 );
         addLabelsToNode( recordState, nodeId, oneLabelId );
         apply( recordState );
-        IndexDescriptor2 rule1 = createIndex( labelIdOne, propertyId2 );
-        IndexDescriptor2 rule2 = createIndex( labelIdOne, propertyId1, propertyId2 );
+        IndexDescriptor rule1 = createIndex( labelIdOne, propertyId2 );
+        IndexDescriptor rule2 = createIndex( labelIdOne, propertyId1, propertyId2 );
 
         // WHEN
         recordState = newTransactionRecordState();
@@ -422,7 +422,7 @@ class TransactionRecordStateTest
         recordState.nodeAddProperty( nodeId, propertyId2, value2 );
         addLabelsToNode( recordState, nodeId, oneLabelId );
         apply( recordState );
-        IndexDescriptor2 rule = createIndex( labelIdOne, propertyId1 );
+        IndexDescriptor rule = createIndex( labelIdOne, propertyId1 );
 
         // WHEN
         recordState = newTransactionRecordState();
@@ -444,8 +444,8 @@ class TransactionRecordStateTest
         recordState.nodeAddProperty( nodeId, propertyId1, value1 );
         addLabelsToNode( recordState, nodeId, bothLabelIds );
         apply( recordState );
-        IndexDescriptor2 rule1 = createIndex( labelIdOne, propertyId1 );
-        IndexDescriptor2 rule2 = createIndex( labelIdSecond, propertyId1 );
+        IndexDescriptor rule1 = createIndex( labelIdOne, propertyId1 );
+        IndexDescriptor rule2 = createIndex( labelIdSecond, propertyId1 );
 
         // WHEN
         recordState = newTransactionRecordState();
@@ -471,8 +471,8 @@ class TransactionRecordStateTest
         recordState.nodeAddProperty( nodeId, propertyId1, value1 );
         addLabelsToNode( recordState, nodeId, bothLabelIds );
         apply( recordState );
-        IndexDescriptor2 rule2 = createIndex( labelIdOne, propertyId2 );
-        IndexDescriptor2 rule3 = createIndex( labelIdSecond, propertyId1 );
+        IndexDescriptor rule2 = createIndex( labelIdOne, propertyId2 );
+        IndexDescriptor rule3 = createIndex( labelIdSecond, propertyId1 );
 
         // WHEN
         recordState = newTransactionRecordState();
@@ -499,9 +499,9 @@ class TransactionRecordStateTest
         recordState.nodeAddProperty( nodeId, propertyId2, value2 );
         addLabelsToNode( recordState, nodeId, oneLabelId );
         apply( transaction( recordState ) );
-        IndexDescriptor2 rule1 = createIndex( labelIdOne, propertyId1 );
-        IndexDescriptor2 rule2 = createIndex( labelIdOne, propertyId2 );
-        IndexDescriptor2 rule3 = createIndex( labelIdOne, propertyId1, propertyId2 );
+        IndexDescriptor rule1 = createIndex( labelIdOne, propertyId1 );
+        IndexDescriptor rule2 = createIndex( labelIdOne, propertyId2 );
+        IndexDescriptor rule3 = createIndex( labelIdOne, propertyId1, propertyId2 );
 
         // WHEN
         Value newValue1 = Values.of( "new" );
@@ -531,9 +531,9 @@ class TransactionRecordStateTest
         recordState.nodeAddProperty( nodeId, propertyId1, value1 );
         recordState.nodeAddProperty( nodeId, propertyId2, value2 );
         apply( transaction( recordState ) );
-        IndexDescriptor2 rule1 = createIndex( labelIdOne, propertyId1 );
-        IndexDescriptor2 rule2 = createIndex( labelIdOne, propertyId2 );
-        IndexDescriptor2 rule3 = createIndex( labelIdOne, propertyId1, propertyId2 );
+        IndexDescriptor rule1 = createIndex( labelIdOne, propertyId1 );
+        IndexDescriptor rule2 = createIndex( labelIdOne, propertyId2 );
+        IndexDescriptor rule3 = createIndex( labelIdOne, propertyId1, propertyId2 );
 
         // WHEN
         recordState = newTransactionRecordState();
@@ -792,9 +792,9 @@ class TransactionRecordStateTest
         // GIVEN
         long nodeId = 0;
         TransactionRecordState recordState = newTransactionRecordState();
-        IndexDescriptor2 rule1 = createIndex( labelIdOne, propertyId1 );
-        IndexDescriptor2 rule2 = createIndex( labelIdOne, propertyId2 );
-        IndexDescriptor2 rule3 = createIndex( labelIdOne, propertyId1, propertyId2 );
+        IndexDescriptor rule1 = createIndex( labelIdOne, propertyId1 );
+        IndexDescriptor rule2 = createIndex( labelIdOne, propertyId2 );
+        IndexDescriptor rule3 = createIndex( labelIdOne, propertyId1, propertyId2 );
 
         // WHEN
         recordState.nodeCreate( nodeId );
@@ -1220,7 +1220,7 @@ class TransactionRecordStateTest
         neoStores = createStores();
         TransactionRecordState state = newTransactionRecordState();
         long ruleId = neoStores.getSchemaStore().nextId();
-        IndexDescriptor2 rule = IndexPrototype.forSchema( forLabel( 0, 1 ) ).materialise( ruleId );
+        IndexDescriptor rule = IndexPrototype.forSchema( forLabel( 0, 1 ) ).materialise( ruleId );
         state.schemaRuleCreate( ruleId, false, rule );
 
         List<StorageCommand> commands = new ArrayList<>();
@@ -1268,7 +1268,7 @@ class TransactionRecordStateTest
         neoStores = createStores();
         TransactionRecordState state = newTransactionRecordState();
         long ruleId = neoStores.getSchemaStore().nextId();
-        IndexDescriptor2 rule = IndexPrototype.forSchema( forLabel( 0, 1 ) ).materialise( ruleId );
+        IndexDescriptor rule = IndexPrototype.forSchema( forLabel( 0, 1 ) ).materialise( ruleId );
         state.schemaRuleCreate( ruleId, false, rule );
 
         apply( state );
@@ -1317,7 +1317,7 @@ class TransactionRecordStateTest
         neoStores = createStores();
         TransactionRecordState state = newTransactionRecordState();
         long ruleId = neoStores.getSchemaStore().nextId();
-        IndexDescriptor2 rule = IndexPrototype.forSchema( forLabel( 0, 1 ) ).materialise( ruleId );
+        IndexDescriptor rule = IndexPrototype.forSchema( forLabel( 0, 1 ) ).materialise( ruleId );
         state.schemaRuleCreate( ruleId, false, rule );
         state.schemaRuleSetProperty( ruleId, 42, Values.booleanValue( true ), rule );
 
@@ -1347,7 +1347,7 @@ class TransactionRecordStateTest
         neoStores = createStores();
         TransactionRecordState state = newTransactionRecordState();
         long ruleId = neoStores.getSchemaStore().nextId();
-        IndexDescriptor2 rule = IndexPrototype.uniqueForSchema( forLabel( 0, 1 ) ).materialise( ruleId );
+        IndexDescriptor rule = IndexPrototype.uniqueForSchema( forLabel( 0, 1 ) ).materialise( ruleId );
         state.schemaRuleCreate( ruleId, false, rule );
 
         apply( state );
@@ -1386,7 +1386,7 @@ class TransactionRecordStateTest
         neoStores = createStores();
         TransactionRecordState state = newTransactionRecordState();
         long ruleId = neoStores.getSchemaStore().nextId();
-        IndexDescriptor2 rule = IndexPrototype.uniqueForSchema( forLabel( 0, 1 ) ).materialise( ruleId );
+        IndexDescriptor rule = IndexPrototype.uniqueForSchema( forLabel( 0, 1 ) ).materialise( ruleId );
         state.schemaRuleCreate( ruleId, false, rule );
         state.schemaRuleSetProperty( ruleId, 42, Values.booleanValue( true ), rule );
 
@@ -1634,9 +1634,9 @@ class TransactionRecordStateTest
         return (RelationshipGroupCommand) single( filter( t -> t instanceof RelationshipGroupCommand, commands ) );
     }
 
-    private IndexDescriptor2 createIndex( int labeId, int... propertyKeyIds )
+    private IndexDescriptor createIndex( int labeId, int... propertyKeyIds )
     {
-        IndexDescriptor2 descriptor = IndexPrototype.forSchema( forLabel( labeId, propertyKeyIds ) ).materialise( nextRuleId++ );
+        IndexDescriptor descriptor = IndexPrototype.forSchema( forLabel( labeId, propertyKeyIds ) ).materialise( nextRuleId++ );
         schemaCache.addSchemaRule( descriptor );
         return descriptor;
     }

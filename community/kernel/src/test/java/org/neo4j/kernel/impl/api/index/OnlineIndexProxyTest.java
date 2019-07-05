@@ -21,7 +21,7 @@ package org.neo4j.kernel.impl.api.index;
 
 import org.junit.jupiter.api.Test;
 
-import org.neo4j.internal.schema.IndexDescriptor2;
+import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.kernel.api.index.IndexAccessor;
@@ -34,7 +34,7 @@ import static org.mockito.Mockito.verifyNoMoreInteractions;
 class OnlineIndexProxyTest
 {
     private final long indexId = 1;
-    private final IndexDescriptor2 descriptor = IndexPrototype.forSchema( SchemaDescriptor.forLabel( 1, 2 ) ).materialise( indexId );
+    private final IndexDescriptor descriptor = IndexPrototype.forSchema( SchemaDescriptor.forLabel( 1, 2 ) ).materialise( indexId );
     private final IndexAccessor accessor = mock( IndexAccessor.class );
     private final IndexStoreView storeView = mock( IndexStoreView.class );
     private final IndexStatisticsStore indexStatisticsStore = mock( IndexStatisticsStore.class );

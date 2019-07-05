@@ -30,7 +30,7 @@ import org.neo4j.internal.kernel.api.IndexReadSession;
 import org.neo4j.internal.kernel.api.NodeValueIndexCursor;
 import org.neo4j.internal.kernel.api.RelationshipIndexCursor;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotApplicableKernelException;
-import org.neo4j.internal.schema.IndexDescriptor2;
+import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexOrder;
 import org.neo4j.kernel.impl.newapi.KernelAPIReadTestBase;
 import org.neo4j.kernel.impl.newapi.KernelAPIReadTestSupport;
@@ -69,7 +69,7 @@ public abstract class AbstractIndexQueryingTest<S extends KernelAPIReadTestSuppo
     @Test
     void relationshipIndexSeekMustThrowOnWrongIndexEntityType()
     {
-        IndexDescriptor2 index = schemaRead.indexGetForName( "ftsNodes" );
+        IndexDescriptor index = schemaRead.indexGetForName( "ftsNodes" );
         try ( RelationshipIndexCursor cursor = cursors.allocateRelationshipIndexCursor() )
         {
             assertThrows( IndexNotApplicableKernelException.class, () ->

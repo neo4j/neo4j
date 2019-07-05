@@ -29,7 +29,7 @@ import java.util.EnumMap;
 import java.util.List;
 
 import org.neo4j.internal.kernel.api.InternalIndexState;
-import org.neo4j.internal.schema.IndexDescriptor2;
+import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.IndexProviderDescriptor;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -65,7 +65,7 @@ import static org.neo4j.kernel.impl.index.schema.fusion.IndexSlot.LUCENE;
 abstract class FusionIndexProviderTest
 {
     private static final IndexProviderDescriptor DESCRIPTOR = new IndexProviderDescriptor( "test-fusion", "1" );
-    private static final IndexDescriptor2 AN_INDEX =
+    private static final IndexDescriptor AN_INDEX =
             IndexPrototype.forSchema( forLabel( 0, 0 ), PROVIDER_DESCRIPTOR ).materialise( 0 );
 
     private final FusionVersion fusionVersion;
@@ -197,7 +197,7 @@ abstract class FusionIndexProviderTest
         IllegalStateException failure = new IllegalStateException( "not failed" );
         for ( IndexProvider provider : aliveProviders )
         {
-            when( provider.getPopulationFailure( any( IndexDescriptor2.class ) ) ).thenThrow( failure );
+            when( provider.getPopulationFailure( any( IndexDescriptor.class ) ) ).thenThrow( failure );
         }
 
         assertThrows( IllegalStateException.class, () -> fusionIndexProvider.getPopulationFailure( AN_INDEX ) );
@@ -215,11 +215,11 @@ abstract class FusionIndexProviderTest
             {
                 if ( provider == failingProvider )
                 {
-                    when( provider.getPopulationFailure( any( IndexDescriptor2.class ) ) ).thenReturn( failure );
+                    when( provider.getPopulationFailure( any( IndexDescriptor.class ) ) ).thenReturn( failure );
                 }
                 else
                 {
-                    when( provider.getPopulationFailure( any( IndexDescriptor2.class ) ) ).thenThrow( exception );
+                    when( provider.getPopulationFailure( any( IndexDescriptor.class ) ) ).thenThrow( exception );
                 }
             }
 
@@ -237,7 +237,7 @@ abstract class FusionIndexProviderTest
         {
             String failureMessage = "FAILURE[" + aliveProvider + "]";
             failureMessages.add( failureMessage );
-            when( aliveProvider.getPopulationFailure( any( IndexDescriptor2.class ) ) ).thenReturn( failureMessage );
+            when( aliveProvider.getPopulationFailure( any( IndexDescriptor.class ) ) ).thenReturn( failureMessage );
         }
 
         // then
@@ -298,20 +298,20 @@ abstract class FusionIndexProviderTest
         // when
         for ( IndexProvider aliveProvider : aliveProviders )
         {
-            when( aliveProvider.completeConfiguration( any( IndexDescriptor2.class ) ) ).then( returnsFirstArg() );
+            when( aliveProvider.completeConfiguration( any( IndexDescriptor.class ) ) ).then( returnsFirstArg() );
         }
         fusionIndexProvider.completeConfiguration( AN_INDEX );
 
         // then
         for ( IndexProvider aliveProvider : aliveProviders )
         {
-            verify( aliveProvider, times( 1 ) ).completeConfiguration( any( IndexDescriptor2.class ) );
+            verify( aliveProvider, times( 1 ) ).completeConfiguration( any( IndexDescriptor.class ) );
         }
     }
 
     private static void setInitialState( IndexProvider mockedProvider, InternalIndexState state )
     {
-        when( mockedProvider.getInitialState( any( IndexDescriptor2.class ) ) ).thenReturn( state );
+        when( mockedProvider.getInitialState( any( IndexDescriptor.class ) ) ).thenReturn( state );
     }
 
     private IndexProvider orLucene( IndexProvider provider )

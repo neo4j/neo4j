@@ -41,7 +41,7 @@ import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.internal.kernel.api.IndexReadSession;
 import org.neo4j.internal.kernel.api.NodeValueIndexCursor;
 import org.neo4j.internal.kernel.api.TokenRead;
-import org.neo4j.internal.schema.IndexDescriptor2;
+import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexOrder;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.schema.index.TestIndexDescriptorFactory;
@@ -426,7 +426,7 @@ public class MultipleOpenCursorsTest
         }
 
         @Override
-        protected IndexDescriptor2 extractIndexDescriptor()
+        protected IndexDescriptor extractIndexDescriptor()
         {
             return TestIndexDescriptorFactory.forLabel( indexedLabelId, stringPropId1, stringPropId2 );
         }
@@ -490,7 +490,7 @@ public class MultipleOpenCursorsTest
         }
 
         @Override
-        protected IndexDescriptor2 extractIndexDescriptor()
+        protected IndexDescriptor extractIndexDescriptor()
         {
             return TestIndexDescriptorFactory.forLabel( indexedLabelId, numberPropId1, numberPropId2 );
         }
@@ -553,7 +553,7 @@ public class MultipleOpenCursorsTest
         }
 
         @Override
-        protected IndexDescriptor2 extractIndexDescriptor()
+        protected IndexDescriptor extractIndexDescriptor()
         {
             return TestIndexDescriptorFactory.forLabel( indexedLabelId, stringPropId1 );
         }
@@ -624,7 +624,7 @@ public class MultipleOpenCursorsTest
         }
 
         @Override
-        protected IndexDescriptor2 extractIndexDescriptor()
+        protected IndexDescriptor extractIndexDescriptor()
         {
             return TestIndexDescriptorFactory.forLabel( indexedLabelId, numberPropId1 );
         }
@@ -706,7 +706,7 @@ public class MultipleOpenCursorsTest
         int numberPropId2;
         int stringPropId1;
         int stringPropId2;
-        IndexDescriptor2 indexDescriptor;
+        IndexDescriptor indexDescriptor;
 
         IndexCoordinator( Label indexLabel, String numberProp1, String numberProp2, String stringProp1,
                 String stringProp2 )
@@ -765,7 +765,7 @@ public class MultipleOpenCursorsTest
             indexDescriptor = extractIndexDescriptor();
         }
 
-        protected abstract IndexDescriptor2 extractIndexDescriptor();
+        protected abstract IndexDescriptor extractIndexDescriptor();
 
         void createIndex( DbmsRule db )
         {
@@ -813,7 +813,7 @@ public class MultipleOpenCursorsTest
 
         abstract void doCreateIndex( DbmsRule db );
 
-        NodeValueIndexCursor indexQuery( KernelTransaction ktx, IndexDescriptor2 indexDescriptor, IndexQuery... indexQueries ) throws KernelException
+        NodeValueIndexCursor indexQuery( KernelTransaction ktx, IndexDescriptor indexDescriptor, IndexQuery... indexQueries ) throws KernelException
         {
             NodeValueIndexCursor cursor = ktx.cursors().allocateNodeValueIndexCursor();
             IndexReadSession index = ktx.dataRead().indexReadSession( indexDescriptor );

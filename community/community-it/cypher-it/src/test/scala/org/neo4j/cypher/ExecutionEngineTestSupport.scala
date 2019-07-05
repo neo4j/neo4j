@@ -30,7 +30,7 @@ import org.neo4j.cypher.internal.runtime.interpreted.{TransactionBoundQueryConte
 import org.neo4j.cypher.internal.runtime.{QueryContext, RuntimeJavaValueConverter, RuntimeScalaValueConverter}
 import org.neo4j.cypher.internal.v4_0.util.test_helpers.{CypherFunSuite, CypherTestSupport}
 import org.neo4j.graphdb.{GraphDatabaseService, Result}
-import org.neo4j.internal.schema.IndexDescriptor2
+import org.neo4j.internal.schema.IndexDescriptor
 import org.neo4j.kernel.GraphDatabaseQueryService
 import org.neo4j.kernel.impl.query.{QueryExecutionEngine, RecordingQuerySubscriber}
 import org.neo4j.kernel.impl.util.ValueUtils
@@ -165,7 +165,7 @@ trait ExecutionEngineHelper {
 
 case object DummyIndexSearchMonitor extends IndexSearchMonitor {
 
-  override def indexSeek(index: IndexDescriptor2, values: Seq[Any]): Unit = {}
+  override def indexSeek(index: IndexDescriptor, values: Seq[Any]): Unit = {}
 
-  override def lockingUniqueIndexSeek(index: IndexDescriptor2, values: Seq[Any]): Unit = {}
+  override def lockingUniqueIndexSeek(index: IndexDescriptor, values: Seq[Any]): Unit = {}
 }

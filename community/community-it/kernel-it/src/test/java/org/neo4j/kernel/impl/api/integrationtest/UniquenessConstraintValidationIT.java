@@ -28,7 +28,7 @@ import org.neo4j.internal.kernel.api.SchemaWrite;
 import org.neo4j.internal.kernel.api.TokenRead;
 import org.neo4j.internal.kernel.api.TokenWrite;
 import org.neo4j.internal.kernel.api.Transaction;
-import org.neo4j.internal.schema.IndexDescriptor2;
+import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.kernel.api.SilentTokenNameLookup;
 import org.neo4j.kernel.api.exceptions.schema.UniquePropertyValueValidationException;
 import org.neo4j.kernel.api.security.AnonymousContext;
@@ -303,7 +303,7 @@ class UniquenessConstraintValidationIT extends KernelIntegrationTest
         TokenRead tokenRead = transaction.tokenRead();
         int person = tokenRead.nodeLabel( "Person" );
         int propId = tokenRead.propertyKey( "id" );
-        IndexDescriptor2 idx = transaction.schemaRead().index(  person, propId );
+        IndexDescriptor idx = transaction.schemaRead().index(  person, propId );
 
         // when
         createLabeledNode( transaction, "Item", "id", 2 );
@@ -334,7 +334,7 @@ class UniquenessConstraintValidationIT extends KernelIntegrationTest
         TokenRead tokenRead = transaction.tokenRead();
         int person = tokenRead.nodeLabel( "Person" );
         int propId = tokenRead.propertyKey( "id" );
-        IndexDescriptor2 idx = transaction.schemaRead().index( person, propId  );
+        IndexDescriptor idx = transaction.schemaRead().index( person, propId  );
 
         // when
         createLabeledNode( transaction, "Person", "id", 2 );

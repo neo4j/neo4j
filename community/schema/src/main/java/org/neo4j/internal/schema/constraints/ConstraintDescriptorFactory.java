@@ -20,7 +20,6 @@
 package org.neo4j.internal.schema.constraints;
 
 import org.neo4j.common.TokenNameLookup;
-import org.neo4j.internal.schema.IndexDescriptor2;
 import org.neo4j.internal.schema.LabelSchemaDescriptor;
 import org.neo4j.internal.schema.RelationTypeSchemaDescriptor;
 import org.neo4j.internal.schema.SchemaComputer;

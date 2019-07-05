@@ -28,7 +28,7 @@ import java.io.IOException;
 
 import org.neo4j.configuration.Config;
 import org.neo4j.internal.helpers.TaskControl;
-import org.neo4j.internal.schema.IndexDescriptor2;
+import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.IndexProviderDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptor;
@@ -67,7 +67,7 @@ import static org.neo4j.logging.NullLogProvider.getInstance;
 class LuceneIndexSamplerReleaseTaskControlUnderFusion
 {
     private static final int indexId = 1;
-    private static final IndexDescriptor2 descriptor = IndexPrototype.forSchema( SchemaDescriptor.forLabel( 1, 1 ) ).materialise( indexId );
+    private static final IndexDescriptor descriptor = IndexPrototype.forSchema( SchemaDescriptor.forLabel( 1, 1 ) ).materialise( indexId );
     private static final IndexProviderDescriptor providerDescriptor = IndexProviderDescriptor.UNDECIDED;
     private static final DirectoryFactory.InMemoryDirectoryFactory luceneDirectoryFactory = new DirectoryFactory.InMemoryDirectoryFactory();
     private static final Config config = Config.defaults();
@@ -150,7 +150,7 @@ class LuceneIndexSamplerReleaseTaskControlUnderFusion
         IndexProxyAdapter indexProxy = new IndexProxyAdapter()
         {
             @Override
-            public IndexDescriptor2 getDescriptor()
+            public IndexDescriptor getDescriptor()
             {
                 return descriptor;
             }
@@ -179,7 +179,7 @@ class LuceneIndexSamplerReleaseTaskControlUnderFusion
         return new IndexProvider.Adaptor( providerDescriptor, directoryFactory )
         {
             @Override
-            public IndexAccessor getOnlineAccessor( IndexDescriptor2 descriptor, IndexSamplingConfig samplingConfig ) throws IOException
+            public IndexAccessor getOnlineAccessor( IndexDescriptor descriptor, IndexSamplingConfig samplingConfig ) throws IOException
             {
                 return failingIndexAccessor();
             }

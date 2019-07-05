@@ -25,7 +25,7 @@ import org.neo4j.exceptions.KernelException;
 import org.neo4j.internal.kernel.api.CursorFactory;
 import org.neo4j.internal.kernel.api.NodeValueIndexCursor;
 import org.neo4j.internal.kernel.api.Read;
-import org.neo4j.internal.schema.IndexDescriptor2;
+import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.SchemaDescriptor;
 
@@ -44,7 +44,7 @@ class CompiledIndexUtilsTest
     {
         // GIVEN
         Read read = mock( Read.class );
-        IndexDescriptor2 index = IndexPrototype.forSchema( SchemaDescriptor.forLabel( 1, 42 ) ).materialise( 13 );
+        IndexDescriptor index = IndexPrototype.forSchema( SchemaDescriptor.forLabel( 1, 42 ) ).materialise( 13 );
 
         // WHEN
         CompiledIndexUtils.indexSeek( read, mock( CursorFactory.class ), index, "hello" );
@@ -58,7 +58,7 @@ class CompiledIndexUtilsTest
     {
         // GIVEN
         Read read = mock( Read.class );
-        IndexDescriptor2 index = IndexPrototype.forSchema( SchemaDescriptor.forLabel( 1, 42 ) ).materialise( 13 );
+        IndexDescriptor index = IndexPrototype.forSchema( SchemaDescriptor.forLabel( 1, 42 ) ).materialise( 13 );
 
         // WHEN
         NodeValueIndexCursor cursor = CompiledIndexUtils.indexSeek( mock( Read.class ), mock( CursorFactory.class ), index, null );

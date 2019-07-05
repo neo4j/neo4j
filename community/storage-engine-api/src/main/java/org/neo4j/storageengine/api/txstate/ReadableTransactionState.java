@@ -19,7 +19,6 @@
  */
 package org.neo4j.storageengine.api.txstate;
 
-import org.eclipse.collections.api.iterator.LongIterator;
 import org.eclipse.collections.api.set.primitive.MutableLongSet;
 import org.eclipse.collections.impl.UnmodifiableMap;
 
@@ -29,7 +28,7 @@ import javax.annotation.Nullable;
 
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.internal.schema.ConstraintDescriptor;
-import org.neo4j.internal.schema.IndexDescriptor2;
+import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.storageengine.api.RelationshipVisitor;
 import org.neo4j.values.storable.ValueTuple;
@@ -92,15 +91,15 @@ public interface ReadableTransactionState
 
     // SCHEMA RELATED
 
-    DiffSets<IndexDescriptor2> indexDiffSetsByLabel( int labelId );
+    DiffSets<IndexDescriptor> indexDiffSetsByLabel( int labelId );
 
-    DiffSets<IndexDescriptor2> indexDiffSetsByRelationshipType( int relationshipType );
+    DiffSets<IndexDescriptor> indexDiffSetsByRelationshipType( int relationshipType );
 
-    DiffSets<IndexDescriptor2> indexDiffSetsBySchema( SchemaDescriptor schema );
+    DiffSets<IndexDescriptor> indexDiffSetsBySchema( SchemaDescriptor schema );
 
-    DiffSets<IndexDescriptor2> indexChanges();
+    DiffSets<IndexDescriptor> indexChanges();
 
-    Iterator<IndexDescriptor2> constraintIndexesCreatedInTx();
+    Iterator<IndexDescriptor> constraintIndexesCreatedInTx();
 
     DiffSets<ConstraintDescriptor> constraintsChanges();
 
@@ -110,7 +109,7 @@ public interface ReadableTransactionState
 
     DiffSets<ConstraintDescriptor> constraintsChangesForRelationshipType( int relTypeId );
 
-    IndexDescriptor2 indexCreatedForConstraint( ConstraintDescriptor constraint );
+    IndexDescriptor indexCreatedForConstraint( ConstraintDescriptor constraint );
 
     // INDEX UPDATES
 

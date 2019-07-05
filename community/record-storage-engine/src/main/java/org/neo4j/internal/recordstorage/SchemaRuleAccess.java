@@ -26,7 +26,7 @@ import org.neo4j.internal.kernel.api.exceptions.schema.DuplicateSchemaRuleExcept
 import org.neo4j.internal.kernel.api.exceptions.schema.MalformedSchemaRuleException;
 import org.neo4j.internal.kernel.api.exceptions.schema.SchemaRuleNotFoundException;
 import org.neo4j.internal.schema.ConstraintDescriptor;
-import org.neo4j.internal.schema.IndexDescriptor2;
+import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptorSupplier;
 import org.neo4j.internal.schema.SchemaRule;
 import org.neo4j.kernel.impl.store.SchemaStore;
@@ -47,15 +47,15 @@ public interface SchemaRuleAccess
 
     SchemaRule loadSingleSchemaRule( long ruleId ) throws MalformedSchemaRuleException;
 
-    Iterator<IndexDescriptor2> indexesGetAll();
+    Iterator<IndexDescriptor> indexesGetAll();
 
     /**
      * Find the IndexRule that matches the given {@link SchemaDescriptorSupplier}.
      *
      * @return an array of all the matching index rules. Empty array if none found.
-     * @param index the target {@link IndexDescriptor2}
+     * @param index the target {@link IndexDescriptor}
      */
-    IndexDescriptor2[] indexGetForSchema( SchemaDescriptorSupplier index );
+    IndexDescriptor[] indexGetForSchema( SchemaDescriptorSupplier index );
 
     /**
      * Find the IndexRule that has the given user supplied name.
@@ -63,7 +63,7 @@ public interface SchemaRuleAccess
      * @param indexName the user supplied index name to look for.
      * @return the matching IndexRule, or null if no matching index rule was found.
      */
-    IndexDescriptor2 indexGetForName( String indexName );
+    IndexDescriptor indexGetForName( String indexName );
 
     /**
      * Get the constraint rule that matches the given ConstraintDescriptor

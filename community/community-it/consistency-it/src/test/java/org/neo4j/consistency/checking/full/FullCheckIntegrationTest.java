@@ -72,7 +72,7 @@ import org.neo4j.internal.kernel.api.TokenRead;
 import org.neo4j.internal.kernel.api.TokenWrite;
 import org.neo4j.internal.recordstorage.SchemaRuleAccess;
 import org.neo4j.internal.recordstorage.StoreTokens;
-import org.neo4j.internal.schema.IndexDescriptor2;
+import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexProviderDescriptor;
 import org.neo4j.internal.schema.SchemaRule;
 import org.neo4j.internal.schema.constraints.ConstraintDescriptorFactory;
@@ -454,10 +454,10 @@ public class FullCheckIntegrationTest
         DirectStoreAccess storeAccess = fixture.directStoreAccess();
 
         // fail all indexes
-        Iterator<IndexDescriptor2> rules = getIndexDescriptors();
+        Iterator<IndexDescriptor> rules = getIndexDescriptors();
         while ( rules.hasNext() )
         {
-            IndexDescriptor2 rule = rules.next();
+            IndexDescriptor rule = rules.next();
             IndexSamplingConfig samplingConfig = new IndexSamplingConfig( Config.defaults() );
             IndexPopulator populator = storeAccess.indexes().lookup( rule.getIndexProvider() ).getPopulator( rule, samplingConfig, heapBufferFactory( 1024 ) );
             populator.markAsFailed( "Oh noes! I was a shiny index and then I was failed" );
@@ -559,10 +559,10 @@ public class FullCheckIntegrationTest
     {
         // given
         IndexSamplingConfig samplingConfig = new IndexSamplingConfig( Config.defaults() );
-        Iterator<IndexDescriptor2> indexDescriptorIterator = getIndexDescriptors();
+        Iterator<IndexDescriptor> indexDescriptorIterator = getIndexDescriptors();
         while ( indexDescriptorIterator.hasNext() )
         {
-            IndexDescriptor2 indexDescriptor = indexDescriptorIterator.next();
+            IndexDescriptor indexDescriptor = indexDescriptorIterator.next();
             IndexAccessor accessor = fixture.directStoreAccess().indexes().
                     lookup( indexDescriptor.getIndexProvider() ).getOnlineAccessor( indexDescriptor, samplingConfig );
             try ( IndexUpdater updater = accessor.newUpdater( IndexUpdateMode.ONLINE ) )
@@ -593,10 +593,10 @@ public class FullCheckIntegrationTest
     {
         // given
         IndexSamplingConfig samplingConfig = new IndexSamplingConfig( Config.defaults() );
-        Iterator<IndexDescriptor2> indexRuleIterator = getIndexDescriptors();
+        Iterator<IndexDescriptor> indexRuleIterator = getIndexDescriptors();
         while ( indexRuleIterator.hasNext() )
         {
-            IndexDescriptor2 indexRule = indexRuleIterator.next();
+            IndexDescriptor indexRule = indexRuleIterator.next();
             IndexAccessor accessor = fixture.directStoreAccess().indexes().lookup( indexRule.getIndexProvider() )
                     .getOnlineAccessor( indexRule, samplingConfig );
             IndexUpdater updater = accessor.newUpdater( IndexUpdateMode.ONLINE );
@@ -615,7 +615,7 @@ public class FullCheckIntegrationTest
                    .andThatsAllFolks();
     }
 
-    private Value[] values( IndexDescriptor2 indexRule )
+    private Value[] values( IndexDescriptor indexRule )
     {
         switch ( indexRule.schema().getPropertyIds().length )
         {
@@ -1014,7 +1014,7 @@ public class FullCheckIntegrationTest
                 SchemaRecord after = cloneRecord( before );
                 after.initialize( true, next.property() ); // Point to a record that isn't in use.
 
-                IndexDescriptor2 rule = indexRule( after.getId(), label1, key1, DESCRIPTOR );
+                IndexDescriptor rule = indexRule( after.getId(), label1, key1, DESCRIPTOR );
                 tx.createSchema( before, after, rule );
             }
         } );
@@ -1046,8 +1046,8 @@ public class FullCheckIntegrationTest
                 SchemaRecord after1 = cloneRecord( before1 ).initialize( true, 0 );
                 SchemaRecord after2 = cloneRecord( before2 ).initialize( true, 0 );
 
-                IndexDescriptor2 rule1 = constraintIndexRule( ruleId1, labelId, propertyKeyId, DESCRIPTOR, ruleId1 );
-                IndexDescriptor2 rule2 = constraintIndexRule( ruleId2, labelId, propertyKeyId, DESCRIPTOR, ruleId1 );
+                IndexDescriptor rule1 = constraintIndexRule( ruleId1, labelId, propertyKeyId, DESCRIPTOR, ruleId1 );
+                IndexDescriptor rule2 = constraintIndexRule( ruleId2, labelId, propertyKeyId, DESCRIPTOR, ruleId1 );
 
                 serializeRule( rule1, after1, tx, next );
                 serializeRule( rule2, after2, tx, next );
@@ -1087,7 +1087,7 @@ public class FullCheckIntegrationTest
                 SchemaRecord after1 = cloneRecord( before1 ).initialize( true, 0 );
                 SchemaRecord after2 = cloneRecord( before2 ).initialize( true, 0 );
 
-                IndexDescriptor2 rule1 = constraintIndexRule( ruleId1, labelId, propertyKeyId, DESCRIPTOR, ruleId2 );
+                IndexDescriptor rule1 = constraintIndexRule( ruleId1, labelId, propertyKeyId, DESCRIPTOR, ruleId2 );
                 ConstraintRule rule2 = uniquenessConstraintRule( ruleId2, labelId, propertyKeyId, ruleId2 );
 
                 serializeRule( rule1, after1, tx, next );
@@ -2378,7 +2378,7 @@ public class FullCheckIntegrationTest
             protected void transactionData( GraphStoreFixture.TransactionDataBuilder tx, GraphStoreFixture.IdGenerator next ) throws KernelException
             {
                 int id = (int) next.schema();
-                IndexDescriptor2 index = forSchema( forLabel( labelId, propertyKeyIds ), DESCRIPTOR ).materialise( id );
+                IndexDescriptor index = forSchema( forLabel( labelId, propertyKeyIds ), DESCRIPTOR ).materialise( id );
 
                 SchemaRecord before = new SchemaRecord( id );
                 SchemaRecord after = cloneRecord( before );
@@ -2397,7 +2397,7 @@ public class FullCheckIntegrationTest
         long ruleId1 = schemaStore.nextId();
         long ruleId2 = schemaStore.nextId();
 
-        IndexDescriptor2 indexRule =
+        IndexDescriptor indexRule =
                 uniqueForSchema( forLabel( labelId, propertyKeyIds ), DESCRIPTOR ).materialise( ruleId1 ).withOwningConstraintId( ruleId2 );
         ConstraintRule uniqueRule = ConstraintRule.constraintRule( ruleId2,
                 ConstraintDescriptorFactory.uniqueForLabel( labelId, propertyKeyIds ), ruleId1 );
@@ -2413,7 +2413,7 @@ public class FullCheckIntegrationTest
         long ruleId1 = schemaStore.nextId();
         long ruleId2 = schemaStore.nextId();
 
-        IndexDescriptor2 indexRule =
+        IndexDescriptor indexRule =
                 uniqueForSchema( forLabel( labelId, propertyKeyIds ), DESCRIPTOR ).materialise( ruleId1 ).withOwningConstraintId( ruleId2 );
         ConstraintRule nodeKeyRule = ConstraintRule.constraintRule( ruleId2,
                 ConstraintDescriptorFactory.nodeKeyForLabel( labelId, propertyKeyIds ), ruleId1 );
@@ -2442,7 +2442,7 @@ public class FullCheckIntegrationTest
         schemaRuleAccess.writeSchemaRule( rule );
     }
 
-    private Iterator<IndexDescriptor2> getIndexDescriptors()
+    private Iterator<IndexDescriptor> getIndexDescriptors()
     {
         StoreAccess storeAccess = fixture.directStoreAccess().nativeStores();
         TokenHolders tokenHolders = StoreTokens.readOnlyTokenHolders( storeAccess.getRawNeoStores() );

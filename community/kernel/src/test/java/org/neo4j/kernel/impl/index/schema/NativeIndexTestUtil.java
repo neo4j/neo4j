@@ -33,7 +33,7 @@ import org.neo4j.index.internal.gbptree.GBPTree;
 import org.neo4j.index.internal.gbptree.Layout;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.index.internal.gbptree.Seeker;
-import org.neo4j.internal.schema.IndexDescriptor2;
+import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.api.index.IndexDirectoryStructure;
@@ -70,7 +70,7 @@ public abstract class NativeIndexTestUtil<KEY extends NativeIndexKey<KEY>,VALUE 
     @Inject
     protected RandomRule random;
 
-    IndexDescriptor2 indexDescriptor;
+    IndexDescriptor indexDescriptor;
     ValueCreatorUtil<KEY,VALUE> valueCreatorUtil;
     IndexLayout<KEY,VALUE> layout;
     private IndexDirectoryStructure indexDirectoryStructure;
@@ -97,7 +97,7 @@ public abstract class NativeIndexTestUtil<KEY extends NativeIndexKey<KEY>,VALUE 
         valueCreatorUtil.copyValue( value, intoValue );
     }
 
-    void verifyUpdates( IndexEntryUpdate<IndexDescriptor2>[] updates )
+    void verifyUpdates( IndexEntryUpdate<IndexDescriptor>[] updates )
             throws IOException
     {
         Pair<KEY,VALUE>[] expectedHits = convertToHits( updates, layout );
@@ -170,11 +170,11 @@ public abstract class NativeIndexTestUtil<KEY extends NativeIndexKey<KEY>,VALUE 
         return Pair.of( intoKey, intoValue );
     }
 
-    private Pair<KEY,VALUE>[] convertToHits( IndexEntryUpdate<IndexDescriptor2>[] updates,
+    private Pair<KEY,VALUE>[] convertToHits( IndexEntryUpdate<IndexDescriptor>[] updates,
             Layout<KEY,VALUE> layout )
     {
         List<Pair<KEY,VALUE>> hits = new ArrayList<>( updates.length );
-        for ( IndexEntryUpdate<IndexDescriptor2> u : updates )
+        for ( IndexEntryUpdate<IndexDescriptor> u : updates )
         {
             KEY key = layout.newKey();
             key.initialize( u.getEntityId() );

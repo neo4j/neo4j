@@ -50,7 +50,7 @@ import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
 import org.neo4j.internal.kernel.api.procs.ProcedureSignature;
 import org.neo4j.internal.kernel.api.security.SecurityContext;
-import org.neo4j.internal.schema.IndexDescriptor2;
+import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.IndexProviderDescriptor;
 import org.neo4j.internal.schema.LabelSchemaDescriptor;
@@ -92,8 +92,8 @@ import static org.neo4j.kernel.api.procedure.BasicContext.buildContext;
 
 class BuiltInProceduresTest
 {
-    private final List<IndexDescriptor2> indexes = new LinkedList<>();
-    private final List<IndexDescriptor2> uniqueIndexes = new LinkedList<>();
+    private final List<IndexDescriptor> indexes = new LinkedList<>();
+    private final List<IndexDescriptor> uniqueIndexes = new LinkedList<>();
     private final List<AbstractConstraintDescriptor> constraints = new LinkedList<>();
     private final Map<Integer,String> labels = new HashMap<>();
     private final Map<Integer,String> propKeys = new HashMap<>();
@@ -140,7 +140,7 @@ class BuiltInProceduresTest
         when( tokens.relationshipTypesGetAllTokens() ).thenAnswer( asTokens( relTypes ) );
         when( schemaReadCore.indexesGetAll() ).thenAnswer(
                 i -> Iterators.concat( indexes.iterator(), uniqueIndexes.iterator() ) );
-        when( schemaReadCore.index( any( SchemaDescriptor.class ) ) ).thenAnswer( (Answer<IndexDescriptor2>) invocationOnMock -> {
+        when( schemaReadCore.index( any( SchemaDescriptor.class ) ) ).thenAnswer( (Answer<IndexDescriptor>) invocationOnMock -> {
             SchemaDescriptor schema = invocationOnMock.getArgument( 0 );
             return getIndexReference( schema );
         } );
@@ -158,7 +158,7 @@ class BuiltInProceduresTest
         when( schemaReadCore.constraintsGetForLabel( anyInt() ) ).thenReturn( emptyIterator() );
         when( read.countsForNode( anyInt() ) ).thenReturn( 1L );
         when( read.countsForRelationship( anyInt(), anyInt(), anyInt() ) ).thenReturn( 1L );
-        when( schemaReadCore.indexGetState( any( IndexDescriptor2.class ) ) ).thenReturn( InternalIndexState.ONLINE );
+        when( schemaReadCore.indexGetState( any( IndexDescriptor.class ) ) ).thenReturn( InternalIndexState.ONLINE );
     }
 
     @Test
@@ -190,7 +190,7 @@ class BuiltInProceduresTest
     {
         // Given
         givenIndex( "User", "name" );
-        when( schemaReadCore.indexGetState( any( IndexDescriptor2.class) ) ).thenThrow( new IndexNotFoundKernelException( "Not found." ) );
+        when( schemaReadCore.indexGetState( any( IndexDescriptor.class) ) ).thenThrow( new IndexNotFoundKernelException( "Not found." ) );
 
         // When/Then
         assertThat( call( "db.indexes" ), contains( record(
@@ -331,7 +331,7 @@ class BuiltInProceduresTest
         int labelId = token( label, labels );
         int propId = token( propKey, propKeys );
 
-        IndexDescriptor2 index = IndexPrototype.forSchema( forLabel( labelId, propId ), EMPTY.getProviderDescriptor() ).materialise( indexes.size() + 1000 );
+        IndexDescriptor index = IndexPrototype.forSchema( forLabel( labelId, propId ), EMPTY.getProviderDescriptor() ).materialise( indexes.size() + 1000 );
         indexes.add( index );
     }
 
@@ -341,7 +341,7 @@ class BuiltInProceduresTest
         int propId = token( propKey, propKeys );
 
         LabelSchemaDescriptor schema = forLabel( labelId, propId );
-        IndexDescriptor2 index = IndexPrototype.uniqueForSchema( schema, EMPTY.getProviderDescriptor() ).materialise( uniqueIndexes.size() + 1000 );
+        IndexDescriptor index = IndexPrototype.uniqueForSchema( schema, EMPTY.getProviderDescriptor() ).materialise( uniqueIndexes.size() + 1000 );
         uniqueIndexes.add( index );
         constraints.add( ConstraintDescriptorFactory.uniqueForLabel( labelId, propId ) );
     }
@@ -404,16 +404,16 @@ class BuiltInProceduresTest
                      .findFirst().orElseGet( allocateFromMap );
     }
 
-    private IndexDescriptor2 getIndexReference( SchemaDescriptor schema )
+    private IndexDescriptor getIndexReference( SchemaDescriptor schema )
     {
-        for ( IndexDescriptor2 index : indexes )
+        for ( IndexDescriptor index : indexes )
         {
             if ( index.schema().equals( schema ) )
             {
                 return index;
             }
         }
-        for ( IndexDescriptor2 index : uniqueIndexes )
+        for ( IndexDescriptor index : uniqueIndexes )
         {
             if ( index.schema().equals( schema ) )
             {
@@ -441,7 +441,7 @@ class BuiltInProceduresTest
         when( resolver.resolveDependency( GraphDatabaseAPI.class ) ).thenReturn( graphDatabaseAPI );
         when( resolver.resolveDependency( GlobalProceduresRegistry.class ) ).thenReturn( procs );
         when( resolver.resolveDependency( IndexingService.class ) ).thenReturn( indexingService );
-        when( schemaReadCore.indexGetPopulationProgress( any( IndexDescriptor2.class) ) ).thenReturn( PopulationProgress.DONE );
+        when( schemaReadCore.indexGetPopulationProgress( any( IndexDescriptor.class) ) ).thenReturn( PopulationProgress.DONE );
         AnyValue[] input = Arrays.stream( args ).map( ValueUtils::of ).toArray( AnyValue[]::new );
         int procId = procs.procedure( ProcedureSignature.procedureName( name.split( "\\." ) ) ).id();
         List<AnyValue[]> anyValues =

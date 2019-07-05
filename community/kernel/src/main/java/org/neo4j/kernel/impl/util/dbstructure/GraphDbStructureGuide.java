@@ -34,7 +34,7 @@ import org.neo4j.internal.kernel.api.SchemaRead;
 import org.neo4j.internal.kernel.api.TokenRead;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
 import org.neo4j.internal.schema.ConstraintDescriptor;
-import org.neo4j.internal.schema.IndexDescriptor2;
+import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.constraints.NodeExistenceConstraintDescriptor;
 import org.neo4j.internal.schema.constraints.NodeKeyConstraintDescriptor;
 import org.neo4j.internal.schema.constraints.RelExistenceConstraintDescriptor;
@@ -135,7 +135,7 @@ public class GraphDbStructureGuide implements Visitable<DbStructureVisitor>
             throws IndexNotFoundKernelException
     {
         SchemaRead schemaRead = ktx.schemaRead();
-        for ( IndexDescriptor2 reference : loop( IndexDescriptor2.sortByType( schemaRead.indexesGetAll() ) ) )
+        for ( IndexDescriptor reference : loop( IndexDescriptor.sortByType( schemaRead.indexesGetAll() ) ) )
         {
             String userDescription = reference.schema().userDescription( nameLookup );
             double uniqueValuesPercentage = schemaRead.indexUniqueValuesSelectivity( reference );

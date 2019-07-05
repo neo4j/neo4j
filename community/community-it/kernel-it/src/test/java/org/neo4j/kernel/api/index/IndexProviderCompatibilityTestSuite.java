@@ -38,7 +38,7 @@ import java.util.Arrays;
 import java.util.List;
 
 import org.neo4j.function.ThrowingConsumer;
-import org.neo4j.internal.schema.IndexDescriptor2;
+import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
@@ -141,7 +141,7 @@ public abstract class IndexProviderCompatibilityTestSuite
         protected FileSystemAbstraction fs;
         protected IndexProvider indexProvider;
         private final IndexPrototype unblessedIndexPrototype;
-        protected IndexDescriptor2 descriptor;
+        protected IndexDescriptor descriptor;
         final IndexProviderCompatibilityTestSuite testSuite;
         final List<NodeAndValue> valueSet1;
         final List<NodeAndValue> valueSet2;

@@ -35,5 +35,5 @@ public interface IndexConfigCompleter
      * @param index The descriptor of an index that we are about to create, and we wish to be blessed by its chosen index provider.
      * @return The blessed index descriptor.
      */
-    IndexDescriptor2 completeConfiguration( IndexDescriptor2 index );
+    IndexDescriptor completeConfiguration( IndexDescriptor index );
 }

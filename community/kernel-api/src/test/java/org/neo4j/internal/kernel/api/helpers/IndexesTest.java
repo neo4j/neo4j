@@ -28,7 +28,7 @@ import java.util.concurrent.TimeoutException;
 import org.neo4j.internal.helpers.collection.Iterators;
 import org.neo4j.internal.kernel.api.SchemaRead;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
-import org.neo4j.internal.schema.IndexDescriptor2;
+import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.register.Register;
@@ -42,7 +42,7 @@ import static org.neo4j.internal.kernel.api.helpers.Indexes.awaitResampling;
 class IndexesTest
 {
 
-    private final IndexDescriptor2 index = IndexPrototype.forSchema( SchemaDescriptor.forLabel( 1, 2 ) ).materialise( 1 );
+    private final IndexDescriptor index = IndexPrototype.forSchema( SchemaDescriptor.forLabel( 1, 2 ) ).materialise( 1 );
 
     @Test
     void shouldNotTimeOutIfNoIndexes() throws Throwable
@@ -97,7 +97,7 @@ class IndexesTest
         assertThrows( TimeoutException.class, () -> awaitResampling( schemaRead, 1 ) );
     }
 
-    private SchemaRead schemaWithIndexes( IndexDescriptor2... indexes )
+    private SchemaRead schemaWithIndexes( IndexDescriptor... indexes )
     {
         final SchemaRead schemaRead = mock( SchemaRead.class );
         when( schemaRead.indexesGetAll() ).thenReturn( Iterators.iterator( indexes ) );
@@ -106,7 +106,7 @@ class IndexesTest
 
     private void setUpdates( SchemaRead schemaRead, int... updates ) throws IndexNotFoundKernelException
     {
-        when( schemaRead.indexUpdatesAndSize( any( IndexDescriptor2.class ), any( Register.DoubleLongRegister.class ) ) ).thenAnswer(
+        when( schemaRead.indexUpdatesAndSize( any( IndexDescriptor.class ), any( Register.DoubleLongRegister.class ) ) ).thenAnswer(
                 new Answer<Register.DoubleLongRegister>()
                 {
                     private int i;

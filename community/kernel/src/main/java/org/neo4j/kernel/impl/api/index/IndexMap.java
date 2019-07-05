@@ -30,7 +30,7 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 
-import org.neo4j.internal.schema.IndexDescriptor2;
+import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptor;
 
 /**
@@ -77,7 +77,7 @@ public final class IndexMap implements Cloneable
 
     public void putIndexProxy( IndexProxy indexProxy )
     {
-        IndexDescriptor2 descriptor = indexProxy.getDescriptor();
+        IndexDescriptor descriptor = indexProxy.getDescriptor();
         SchemaDescriptor schema = descriptor.schema();
         indexesById.put( descriptor.getId(), indexProxy );
         indexesByDescriptor.put( schema, indexProxy );

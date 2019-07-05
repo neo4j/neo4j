@@ -24,7 +24,7 @@ import java.util.Collection;
 import java.util.EnumSet;
 
 import org.neo4j.internal.kernel.api.InternalIndexState;
-import org.neo4j.internal.schema.IndexDescriptor2;
+import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexPopulator;
@@ -93,7 +93,7 @@ public class FailingGenericNativeIndexProviderFactory extends ExtensionFactory<A
         return new IndexProvider.Delegating( actualProvider )
         {
             @Override
-            public IndexPopulator getPopulator( IndexDescriptor2 descriptor, IndexSamplingConfig samplingConfig, ByteBufferFactory bufferFactory )
+            public IndexPopulator getPopulator( IndexDescriptor descriptor, IndexSamplingConfig samplingConfig, ByteBufferFactory bufferFactory )
             {
                 IndexPopulator actualPopulator = actualProvider.getPopulator( descriptor, samplingConfig, bufferFactory );
                 if ( failureTypes.contains( FailureType.POPULATION ) )
@@ -111,7 +111,7 @@ public class FailingGenericNativeIndexProviderFactory extends ExtensionFactory<A
             }
 
             @Override
-            public IndexAccessor getOnlineAccessor( IndexDescriptor2 descriptor, IndexSamplingConfig samplingConfig ) throws IOException
+            public IndexAccessor getOnlineAccessor( IndexDescriptor descriptor, IndexSamplingConfig samplingConfig ) throws IOException
             {
                 IndexAccessor actualAccessor = actualProvider.getOnlineAccessor( descriptor, samplingConfig );
                 return new IndexAccessor.Delegating( actualAccessor )
@@ -136,13 +136,13 @@ public class FailingGenericNativeIndexProviderFactory extends ExtensionFactory<A
             }
 
             @Override
-            public String getPopulationFailure( IndexDescriptor2 descriptor ) throws IllegalStateException
+            public String getPopulationFailure( IndexDescriptor descriptor ) throws IllegalStateException
             {
                 return failureTypes.contains( FailureType.INITIAL_STATE ) ? INITIAL_STATE_FAILURE_MESSAGE : actualProvider.getPopulationFailure( descriptor );
             }
 
             @Override
-            public InternalIndexState getInitialState( IndexDescriptor2 descriptor )
+            public InternalIndexState getInitialState( IndexDescriptor descriptor )
             {
                 return failureTypes.contains( FailureType.INITIAL_STATE ) ? InternalIndexState.FAILED : actualProvider.getInitialState( descriptor );
             }

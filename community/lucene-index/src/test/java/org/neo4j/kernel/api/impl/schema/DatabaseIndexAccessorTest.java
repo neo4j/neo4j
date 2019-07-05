@@ -41,7 +41,7 @@ import org.neo4j.function.IOFunction;
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotApplicableKernelException;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
-import org.neo4j.internal.schema.IndexDescriptor2;
+import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexOrder;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.impl.index.storage.DirectoryFactory;
@@ -80,7 +80,7 @@ public class DatabaseIndexAccessorTest
     public static final EphemeralFileSystemRule fileSystemRule = new EphemeralFileSystemRule();
 
     @Parameterized.Parameter( 0 )
-    public IndexDescriptor2 index;
+    public IndexDescriptor index;
     @Parameterized.Parameter( 1 )
     public IOFunction<DirectoryFactory,LuceneIndexAccessor> accessorFactory;
 
@@ -90,8 +90,8 @@ public class DatabaseIndexAccessorTest
     private final Object value = "value";
     private final Object value2 = "40";
     private DirectoryFactory.InMemoryDirectoryFactory dirFactory;
-    private static final IndexDescriptor2 GENERAL_INDEX = TestIndexDescriptorFactory.forLabel( 0, PROP_ID );
-    private static final IndexDescriptor2 UNIQUE_INDEX = TestIndexDescriptorFactory.uniqueForLabel( 1, PROP_ID );
+    private static final IndexDescriptor GENERAL_INDEX = TestIndexDescriptorFactory.forLabel( 0, PROP_ID );
+    private static final IndexDescriptor UNIQUE_INDEX = TestIndexDescriptorFactory.uniqueForLabel( 1, PROP_ID );
     private static final Config CONFIG = Config.defaults();
 
     @Parameterized.Parameters( name = "{0}" )
@@ -127,7 +127,7 @@ public class DatabaseIndexAccessorTest
     }
 
     private static Object[] arg(
-            IndexDescriptor2 index,
+            IndexDescriptor index,
             IOFunction<DirectoryFactory,LuceneIndexAccessor> foo )
     {
         return new Object[]{index, foo};

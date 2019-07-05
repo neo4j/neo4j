@@ -73,7 +73,7 @@ import org.neo4j.internal.recordstorage.SchemaCache;
 import org.neo4j.internal.recordstorage.SchemaRuleAccess;
 import org.neo4j.internal.recordstorage.StoreTokens;
 import org.neo4j.internal.schema.ConstraintDescriptor;
-import org.neo4j.internal.schema.IndexDescriptor2;
+import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.IndexProviderDescriptor;
 import org.neo4j.internal.schema.LabelSchemaDescriptor;
@@ -500,7 +500,7 @@ public class BatchInserterImpl implements BatchInserter
         }
     }
 
-    private IndexDescriptor2 createIndex( LabelSchemaDescriptor schema, Optional<String> indexName )
+    private IndexDescriptor createIndex( LabelSchemaDescriptor schema, Optional<String> indexName )
     {
         IndexProvider provider = indexProviderMap.getDefaultProvider();
         IndexProviderDescriptor providerDescriptor = provider.getProviderDescriptor();
@@ -510,7 +510,7 @@ public class BatchInserterImpl implements BatchInserter
             prototype = prototype.withName( indexName.get() );
         }
 
-        IndexDescriptor2 index = prototype.materialise( schemaStore.nextId() );
+        IndexDescriptor index = prototype.materialise( schemaStore.nextId() );
         index = provider.completeConfiguration( index );
 
         try
@@ -541,9 +541,9 @@ public class BatchInserterImpl implements BatchInserter
         life.add( indexingService );
         try
         {
-            IndexDescriptor2[] descriptors = getIndexesNeedingPopulation();
+            IndexDescriptor[] descriptors = getIndexesNeedingPopulation();
             indexingService.createIndexes( true /*verify constraints before flipping over*/, descriptors );
-            for ( IndexDescriptor2 descriptor : descriptors )
+            for ( IndexDescriptor descriptor : descriptors )
             {
                 IndexProxy indexProxy = getIndexProxy( indexingService, descriptor );
                 try
@@ -564,7 +564,7 @@ public class BatchInserterImpl implements BatchInserter
         }
     }
 
-    private static IndexProxy getIndexProxy( IndexingService indexingService, IndexDescriptor2 descriptpr )
+    private static IndexProxy getIndexProxy( IndexingService indexingService, IndexDescriptor descriptpr )
     {
         try
         {
@@ -586,10 +586,10 @@ public class BatchInserterImpl implements BatchInserter
         TransactionLogsInitializer.INSTANCE.initializeLogFiles( config, databaseLayout, neoStores, fileSystem );
     }
 
-    private IndexDescriptor2[] getIndexesNeedingPopulation()
+    private IndexDescriptor[] getIndexesNeedingPopulation()
     {
-        List<IndexDescriptor2> indexesNeedingPopulation = new ArrayList<>();
-        for ( IndexDescriptor2 descriptor : schemaCache.indexDescriptors() )
+        List<IndexDescriptor> indexesNeedingPopulation = new ArrayList<>();
+        for ( IndexDescriptor descriptor : schemaCache.indexDescriptors() )
         {
             IndexProvider provider = indexProviderMap.lookup( descriptor.getIndexProvider() );
             if ( provider.getInitialState( descriptor ) != InternalIndexState.FAILED )
@@ -597,7 +597,7 @@ public class BatchInserterImpl implements BatchInserter
                 indexesNeedingPopulation.add( descriptor );
             }
         }
-        return indexesNeedingPopulation.toArray( new IndexDescriptor2[0] );
+        return indexesNeedingPopulation.toArray( new IndexDescriptor[0] );
     }
 
     @Override
@@ -616,7 +616,7 @@ public class BatchInserterImpl implements BatchInserter
 
         IndexProvider provider = indexProviderMap.getDefaultProvider();
         IndexProviderDescriptor providerDescriptor = provider.getProviderDescriptor();
-        IndexDescriptor2 index = IndexPrototype.uniqueForSchema( schema, providerDescriptor ).materialise( indexId );
+        IndexDescriptor index = IndexPrototype.uniqueForSchema( schema, providerDescriptor ).materialise( indexId );
         index = provider.completeConfiguration( index ).withOwningConstraintId( constraintRuleId );
 
         ConstraintRule constraintRule = ConstraintRule.constraintRule( constraintRuleId, constraintDescriptor, indexId );
@@ -1162,7 +1162,7 @@ public class BatchInserterImpl implements BatchInserter
 
             validateIndexCanBeCreated( schema );
 
-            IndexDescriptor2 index = createIndex( schema, indexName );
+            IndexDescriptor index = createIndex( schema, indexName );
             return new IndexDefinitionImpl( this, index, new Label[]{label}, propertyKeys, false );
         }
 

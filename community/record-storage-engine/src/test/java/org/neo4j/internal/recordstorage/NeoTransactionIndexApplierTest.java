@@ -24,7 +24,7 @@ import org.junit.jupiter.api.Test;
 import java.util.Collection;
 import java.util.Collections;
 
-import org.neo4j.internal.schema.IndexDescriptor2;
+import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.PropertyStore;
@@ -87,7 +87,7 @@ class NeoTransactionIndexApplierTest
     void shouldCreateIndexGivenCreateSchemaRuleCommand() throws Exception
     {
         // Given
-        IndexDescriptor2 indexRule = indexRule( 1, 42, 42 );
+        IndexDescriptor indexRule = indexRule( 1, 42, 42 );
 
         IndexBatchTransactionApplier applier = newIndexTransactionApplier();
 
@@ -108,7 +108,7 @@ class NeoTransactionIndexApplierTest
         verify( indexingService ).createIndexes( indexRule );
     }
 
-    private IndexDescriptor2 indexRule( long ruleId, int labelId, int propertyId )
+    private IndexDescriptor indexRule( long ruleId, int labelId, int propertyId )
     {
         return IndexPrototype.forSchema( forLabel( labelId, propertyId ) ).materialise( ruleId );
     }
@@ -117,7 +117,7 @@ class NeoTransactionIndexApplierTest
     void shouldDropIndexGivenDropSchemaRuleCommand() throws Exception
     {
         // Given
-        IndexDescriptor2 indexRule = indexRule( 1, 42, 42 );
+        IndexDescriptor indexRule = indexRule( 1, 42, 42 );
 
         IndexBatchTransactionApplier applier = newIndexTransactionApplier();
 

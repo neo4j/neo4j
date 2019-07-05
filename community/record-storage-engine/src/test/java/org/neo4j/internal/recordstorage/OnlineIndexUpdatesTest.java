@@ -30,7 +30,7 @@ import org.neo4j.internal.id.DefaultIdGeneratorFactory;
 import org.neo4j.internal.recordstorage.Command.NodeCommand;
 import org.neo4j.internal.recordstorage.Command.PropertyCommand;
 import org.neo4j.internal.schema.IndexConfig;
-import org.neo4j.internal.schema.IndexDescriptor2;
+import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -151,7 +151,7 @@ class OnlineIndexUpdatesTest
         propertyBlocks.setNodeId( nodeId );
         PropertyCommand propertyCommand = new PropertyCommand( recordAccess.getIfLoaded( propertyId ).forReadingData(), propertyBlocks );
 
-        IndexDescriptor2 indexDescriptor = IndexPrototype.forSchema(
+        IndexDescriptor indexDescriptor = IndexPrototype.forSchema(
                 fulltext( NODE, IndexConfig.empty(), ENTITY_TOKENS, new int[]{1, 4, 6} ) ).materialise( 0 );
         createIndexes( indexDescriptor );
 
@@ -180,7 +180,7 @@ class OnlineIndexUpdatesTest
         propertyBlocks.setRelId( relId );
         PropertyCommand propertyCommand = new PropertyCommand( recordAccess.getIfLoaded( propertyId ).forReadingData(), propertyBlocks );
 
-        IndexDescriptor2 indexDescriptor = IndexPrototype.forSchema(
+        IndexDescriptor indexDescriptor = IndexPrototype.forSchema(
                 fulltext( RELATIONSHIP, IndexConfig.empty(), ENTITY_TOKENS, new int[]{1, 4, 6} ) ).materialise( 0 );
         createIndexes( indexDescriptor );
 
@@ -210,7 +210,7 @@ class OnlineIndexUpdatesTest
         PropertyCommand nodePropertyCommand =
                 new PropertyCommand( recordAccess.getIfLoaded( nodePropertyId ).forReadingData(), nodePropertyBlocks );
 
-        IndexDescriptor2 nodeIndexDescriptor = IndexPrototype.forSchema(
+        IndexDescriptor nodeIndexDescriptor = IndexPrototype.forSchema(
                 fulltext( NODE, IndexConfig.empty(), ENTITY_TOKENS, new int[]{1, 4, 6} ) ).materialise( 0 );
         createIndexes( nodeIndexDescriptor );
 
@@ -227,7 +227,7 @@ class OnlineIndexUpdatesTest
         PropertyCommand relationshipPropertyCommand =
                 new PropertyCommand( recordAccess.getIfLoaded( propertyId ).forReadingData(), relationshipPropertyBlocks );
 
-        IndexDescriptor2 relationshipIndexDescriptor =
+        IndexDescriptor relationshipIndexDescriptor =
                 IndexPrototype.forSchema( fulltext( RELATIONSHIP, IndexConfig.empty(), ENTITY_TOKENS, new int[]{1, 4, 6} ) ).materialise( 1 );
         createIndexes( relationshipIndexDescriptor );
 
@@ -262,27 +262,27 @@ class OnlineIndexUpdatesTest
         propertyBlocks2.setRelId( relId );
         PropertyCommand propertyCommand2 = new PropertyCommand( recordAccess.getIfLoaded( propertyId2 ).forReadingData(), propertyBlocks2 );
 
-        IndexDescriptor2 indexDescriptor0 = IndexPrototype.forSchema(
+        IndexDescriptor indexDescriptor0 = IndexPrototype.forSchema(
                 fulltext( RELATIONSHIP, IndexConfig.empty(), ENTITY_TOKENS, new int[]{1, 4, 6} ) ).materialise( 0 );
-        IndexDescriptor2 indexDescriptor1 = IndexPrototype.forSchema(
+        IndexDescriptor indexDescriptor1 = IndexPrototype.forSchema(
                 fulltext( RELATIONSHIP, IndexConfig.empty(), ENTITY_TOKENS, new int[]{2, 4, 6} ) ).materialise( 1 );
-        IndexDescriptor2 indexDescriptor2 = IndexPrototype.forSchema(
+        IndexDescriptor indexDescriptor = IndexPrototype.forSchema(
                 fulltext( RELATIONSHIP, IndexConfig.empty(), new int[]{ENTITY_TOKEN, OTHER_ENTITY_TOKEN}, new int[]{1} ) ).materialise( 2 );
-        IndexDescriptor2 indexDescriptor3 = IndexPrototype.forSchema(
+        IndexDescriptor indexDescriptor3 = IndexPrototype.forSchema(
                 fulltext( RELATIONSHIP, IndexConfig.empty(), new int[]{OTHER_ENTITY_TOKEN}, new int[]{1} ) ).materialise( 3 );
-        createIndexes( indexDescriptor0, indexDescriptor1, indexDescriptor2 );
+        createIndexes( indexDescriptor0, indexDescriptor1, indexDescriptor );
 
         onlineIndexUpdates.feed( nodeGroup( null ), relationshipGroup( relationshipCommand, propertyCommand, propertyCommand2 ) );
         assertTrue( onlineIndexUpdates.hasUpdates() );
         assertThat( onlineIndexUpdates, containsInAnyOrder( IndexEntryUpdate.remove( relId, indexDescriptor0, propertyValue, propertyValue2, null ),
                 IndexEntryUpdate.remove( relId, indexDescriptor1, null, propertyValue2, null ),
-                IndexEntryUpdate.remove( relId, indexDescriptor2, propertyValue ) ) );
+                IndexEntryUpdate.remove( relId, indexDescriptor, propertyValue ) ) );
         assertThat( onlineIndexUpdates, not( containsInAnyOrder( indexDescriptor3 ) ) ); // This index is only for a different relationship type.
     }
 
-    private void createIndexes( IndexDescriptor2... indexDescriptors )
+    private void createIndexes( IndexDescriptor... indexDescriptors )
     {
-        for ( IndexDescriptor2 indexDescriptor : indexDescriptors )
+        for ( IndexDescriptor indexDescriptor : indexDescriptors )
         {
             schemaCache.addSchemaRule( indexDescriptor );
         }

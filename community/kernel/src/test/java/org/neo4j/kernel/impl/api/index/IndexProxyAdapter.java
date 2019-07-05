@@ -27,7 +27,7 @@ import java.util.concurrent.TimeUnit;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.kernel.api.PopulationProgress;
-import org.neo4j.internal.schema.IndexDescriptor2;
+import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.kernel.api.index.IndexReader;
 import org.neo4j.kernel.api.index.IndexUpdater;
@@ -76,7 +76,7 @@ public class IndexProxyAdapter implements IndexProxy
     }
 
     @Override
-    public IndexDescriptor2 getDescriptor()
+    public IndexDescriptor getDescriptor()
     {
         return null;
     }

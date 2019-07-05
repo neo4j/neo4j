@@ -24,7 +24,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
-import org.neo4j.internal.schema.IndexDescriptor2;
+import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.kernel.api.index.IndexReader;
 
 import static org.neo4j.io.IOUtils.closeAllUnchecked;
@@ -32,10 +32,10 @@ import static org.neo4j.io.IOUtils.closeAllUnchecked;
 class IndexReaders implements Closeable
 {
     private final List<IndexReader> indexReaders = new ArrayList<>();
-    private final IndexDescriptor2 descriptor;
+    private final IndexDescriptor descriptor;
     private final Read read;
 
-    IndexReaders( IndexDescriptor2 descriptor, Read read )
+    IndexReaders( IndexDescriptor descriptor, Read read )
     {
         this.descriptor = descriptor;
         this.read = read;

@@ -33,7 +33,7 @@ import org.neo4j.internal.kernel.api.exceptions.schema.DuplicateSchemaRuleExcept
 import org.neo4j.internal.kernel.api.exceptions.schema.MalformedSchemaRuleException;
 import org.neo4j.internal.kernel.api.exceptions.schema.SchemaRuleNotFoundException;
 import org.neo4j.internal.schema.ConstraintDescriptor;
-import org.neo4j.internal.schema.IndexDescriptor2;
+import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptorSupplier;
 import org.neo4j.internal.schema.SchemaRule;
@@ -83,22 +83,22 @@ public class SchemaStorage implements SchemaRuleAccess
     }
 
     @Override
-    public Iterator<IndexDescriptor2> indexesGetAll()
+    public Iterator<IndexDescriptor> indexesGetAll()
     {
         return indexRules( streamAllSchemaRules( false ) ).iterator();
     }
 
     @Override
-    public IndexDescriptor2[] indexGetForSchema( SchemaDescriptorSupplier supplier )
+    public IndexDescriptor[] indexGetForSchema( SchemaDescriptorSupplier supplier )
     {
         SchemaDescriptor schema = supplier.schema();
         return indexRules( streamAllSchemaRules( false ) )
                 .filter( rule -> rule.schema().equals( schema ) )
-                .toArray( IndexDescriptor2[]::new );
+                .toArray( IndexDescriptor[]::new );
     }
 
     @Override
-    public IndexDescriptor2 indexGetForName( String indexName )
+    public IndexDescriptor indexGetForName( String indexName )
     {
         return indexRules( streamAllSchemaRules( false ) )
                 .filter( idx -> idx.getName().equals( indexName ) )
@@ -237,11 +237,11 @@ public class SchemaStorage implements SchemaRuleAccess
                 .flatMap( record -> readSchemaRuleThrowingRuntimeException( record, ignoreMalformed ) );
     }
 
-    private Stream<IndexDescriptor2> indexRules( Stream<SchemaRule> stream )
+    private Stream<IndexDescriptor> indexRules( Stream<SchemaRule> stream )
     {
         return stream
-                .filter( rule -> rule instanceof IndexDescriptor2 )
-                .map( rule -> (IndexDescriptor2) rule );
+                .filter( rule -> rule instanceof IndexDescriptor )
+                .map( rule -> (IndexDescriptor) rule );
     }
 
     private Stream<ConstraintRule> constraintRules( Stream<SchemaRule> stream )

@@ -27,7 +27,7 @@ import java.util.function.Function;
 import org.neo4j.collection.PrimitiveLongCollections;
 import org.neo4j.common.EntityType;
 import org.neo4j.internal.schema.ConstraintDescriptor;
-import org.neo4j.internal.schema.IndexDescriptor2;
+import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.internal.schema.constraints.IndexBackedConstraintDescriptor;
 import org.neo4j.kernel.impl.store.MetaDataStore;
@@ -89,31 +89,31 @@ public class RecordStorageReader implements StorageReader
     }
 
     @Override
-    public IndexDescriptor2 indexGetForSchema( SchemaDescriptor descriptor )
+    public IndexDescriptor indexGetForSchema( SchemaDescriptor descriptor )
     {
         return schemaCache.indexDescriptor( descriptor );
     }
 
     @Override
-    public Iterator<IndexDescriptor2> indexesGetForLabel( int labelId )
+    public Iterator<IndexDescriptor> indexesGetForLabel( int labelId )
     {
         return schemaCache.indexDescriptorsForLabel( labelId );
     }
 
     @Override
-    public Iterator<IndexDescriptor2> indexesGetForRelationshipType( int relationshipType )
+    public Iterator<IndexDescriptor> indexesGetForRelationshipType( int relationshipType )
     {
         return schemaCache.indexDescriptorsForRelationshipType( relationshipType );
     }
 
     @Override
-    public IndexDescriptor2 indexGetForName( String name )
+    public IndexDescriptor indexGetForName( String name )
     {
         return schemaCache.indexDescriptorForName( name );
     }
 
     @Override
-    public Iterator<IndexDescriptor2> indexesGetAll()
+    public Iterator<IndexDescriptor> indexesGetAll()
     {
         return schemaCache.indexDescriptors().iterator();
     }
@@ -185,7 +185,7 @@ public class RecordStorageReader implements StorageReader
     }
 
     @Override
-    public Long indexGetOwningUniquenessConstraintId( IndexDescriptor2 index )
+    public Long indexGetOwningUniquenessConstraintId( IndexDescriptor index )
     {
         if ( index == null )
         {

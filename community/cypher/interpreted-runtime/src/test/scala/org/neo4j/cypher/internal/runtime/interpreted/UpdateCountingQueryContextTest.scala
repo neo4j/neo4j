@@ -28,7 +28,7 @@ import org.neo4j.cypher.internal.runtime.{QueryContext, QueryStatistics, _}
 import org.neo4j.graphdb.{Node, Relationship}
 import org.neo4j.values.storable.Values
 import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
-import org.neo4j.internal.schema.{IndexDescriptor2, IndexPrototype, SchemaDescriptor}
+import org.neo4j.internal.schema.{IndexDescriptor, IndexPrototype, SchemaDescriptor}
 
 class UpdateCountingQueryContextTest extends CypherFunSuite {
 

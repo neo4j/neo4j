@@ -26,7 +26,7 @@ import java.util.function.Predicate;
 import org.neo4j.function.Predicates;
 import org.neo4j.internal.helpers.collection.PrefetchingIterator;
 import org.neo4j.internal.kernel.api.exceptions.schema.MalformedSchemaRuleException;
-import org.neo4j.internal.schema.IndexDescriptor2;
+import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.SchemaRule;
 import org.neo4j.kernel.impl.store.InvalidRecordException;
 import org.neo4j.kernel.impl.store.RecordStore;
@@ -50,17 +50,17 @@ public class SchemaStorage35
         return this::loadAllSchemaRules;
     }
 
-    public Iterator<IndexDescriptor2> indexesGetAll()
+    public Iterator<IndexDescriptor> indexesGetAll()
     {
-        return loadAllSchemaRules( Predicates.alwaysTrue(), IndexDescriptor2.class );
+        return loadAllSchemaRules( Predicates.alwaysTrue(), IndexDescriptor.class );
     }
 
-    public IndexDescriptor2 indexGetForName( String indexName )
+    public IndexDescriptor indexGetForName( String indexName )
     {
-        Iterator<IndexDescriptor2> itr = indexesGetAll();
+        Iterator<IndexDescriptor> itr = indexesGetAll();
         while ( itr.hasNext() )
         {
-            IndexDescriptor2 sid = itr.next();
+            IndexDescriptor sid = itr.next();
             if ( sid.getName().equals( indexName ) )
             {
                 return sid;

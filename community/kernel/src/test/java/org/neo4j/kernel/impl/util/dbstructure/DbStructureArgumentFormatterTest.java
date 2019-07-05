@@ -23,7 +23,7 @@ import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 
-import org.neo4j.internal.schema.IndexDescriptor2;
+import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.constraints.ConstraintDescriptorFactory;
 import org.neo4j.kernel.api.schema.index.TestIndexDescriptorFactory;
 
@@ -65,7 +65,7 @@ class DbStructureArgumentFormatterTest
     @Test
     void shouldFormatIndexDescriptors()
     {
-        IndexDescriptor2 index = TestIndexDescriptorFactory.forLabel( 23, 42 );
+        IndexDescriptor index = TestIndexDescriptorFactory.forLabel( 23, 42 );
         assertEquals( "IndexPrototype.forSchema( SchemaDescriptor.forLabel( 23, 42 ) ).materialise( " + index.getId() + " )",
                 formatArgument( index ) );
     }

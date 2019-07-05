@@ -26,7 +26,7 @@ import org.neo4j.common.EntityType;
 import org.neo4j.internal.kernel.api.exceptions.schema.MalformedSchemaRuleException;
 import org.neo4j.internal.schema.ConstraintDescriptor;
 import org.neo4j.internal.schema.IndexConfig;
-import org.neo4j.internal.schema.IndexDescriptor2;
+import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.IndexProviderDescriptor;
 import org.neo4j.internal.schema.LabelSchemaDescriptor;
@@ -84,9 +84,9 @@ public class SchemaRuleSerialization35
      */
     public static byte[] serialize( SchemaRule schemaRule )
     {
-        if ( schemaRule instanceof IndexDescriptor2 )
+        if ( schemaRule instanceof IndexDescriptor )
         {
-            return serialize( (IndexDescriptor2) schemaRule );
+            return serialize( (IndexDescriptor) schemaRule );
         }
         else if ( schemaRule instanceof ConstraintRule )
         {
@@ -129,7 +129,7 @@ public class SchemaRuleSerialization35
      * @param indexDescriptor the StoreIndexDescriptor to serialize
      * @throws IllegalStateException if the StoreIndexDescriptor is of type unique, but the owning constrain has not been set
      */
-    public static byte[] serialize( IndexDescriptor2 indexDescriptor )
+    public static byte[] serialize( IndexDescriptor indexDescriptor )
     {
         ByteBuffer target = ByteBuffer.allocate( lengthOf( indexDescriptor ) );
         target.putInt( LEGACY_LABEL_OR_REL_TYPE_ID );
@@ -198,7 +198,7 @@ public class SchemaRuleSerialization35
      * @param indexDescriptor the StoreIndexDescriptor
      * @return the byte size of StoreIndexDescriptor
      */
-    static int lengthOf( IndexDescriptor2 indexDescriptor )
+    static int lengthOf( IndexDescriptor indexDescriptor )
     {
         int length = 4; // legacy label or relType id
         length += 1;    // schema rule type
@@ -243,7 +243,7 @@ public class SchemaRuleSerialization35
 
     // READ INDEX
 
-    private static IndexDescriptor2 readIndexRule( long id, ByteBuffer source ) throws MalformedSchemaRuleException
+    private static IndexDescriptor readIndexRule( long id, ByteBuffer source ) throws MalformedSchemaRuleException
     {
         String providerKey = getDecodedStringFrom( source );
         String providerVersion = getDecodedStringFrom( source );
@@ -274,7 +274,7 @@ public class SchemaRuleSerialization35
             {
                 prototype = prototype.withName( name.get() );
             }
-            IndexDescriptor2 index = prototype.materialise( id );
+            IndexDescriptor index = prototype.materialise( id );
             if ( readOwningConstraint != NO_OWNING_CONSTRAINT_YET )
             {
                 index = index.withOwningConstraintId( readOwningConstraint );

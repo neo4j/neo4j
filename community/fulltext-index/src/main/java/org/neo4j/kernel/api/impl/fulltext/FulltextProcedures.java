@@ -46,7 +46,7 @@ import org.neo4j.internal.kernel.api.exceptions.InvalidTransactionTypeKernelExce
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
 import org.neo4j.internal.kernel.api.exceptions.schema.SchemaKernelException;
 import org.neo4j.internal.schema.IndexConfig;
-import org.neo4j.internal.schema.IndexDescriptor2;
+import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexOrder;
 import org.neo4j.internal.schema.IndexType;
 import org.neo4j.internal.schema.SchemaDescriptor;
@@ -173,7 +173,7 @@ public class FulltextProcedures
     @Procedure( name = "db.index.fulltext.drop", mode = SCHEMA )
     public void drop( @Name( "indexName" ) String name ) throws InvalidTransactionTypeKernelException, SchemaKernelException
     {
-        IndexDescriptor2 indexReference = getValidIndex( name );
+        IndexDescriptor indexReference = getValidIndex( name );
         tx.schemaWrite().indexDrop( indexReference );
     }
 
@@ -181,7 +181,7 @@ public class FulltextProcedures
     @Procedure( name = "db.index.fulltext.queryNodes", mode = READ )
     public Stream<NodeOutput> queryFulltextForNodes( @Name( "indexName" ) String name, @Name( "queryString" ) String query ) throws Exception
     {
-        IndexDescriptor2 indexReference = getValidIndex( name );
+        IndexDescriptor indexReference = getValidIndex( name );
         awaitOnline( indexReference );
         EntityType entityType = indexReference.schema().entityType();
         if ( entityType != EntityType.NODE )
@@ -221,7 +221,7 @@ public class FulltextProcedures
     @Procedure( name = "db.index.fulltext.queryRelationships", mode = READ )
     public Stream<RelationshipOutput> queryFulltextForRelationships( @Name( "indexName" ) String name, @Name( "queryString" ) String query ) throws Exception
     {
-        IndexDescriptor2 indexReference = getValidIndex( name );
+        IndexDescriptor indexReference = getValidIndex( name );
         awaitOnline( indexReference );
         EntityType entityType = indexReference.schema().entityType();
         if ( entityType != EntityType.RELATIONSHIP )
@@ -255,17 +255,17 @@ public class FulltextProcedures
         return StreamSupport.stream( spliterator, false ).onClose( cursor::close );
     }
 
-    private IndexDescriptor2 getValidIndex( @Name( "indexName" ) String name )
+    private IndexDescriptor getValidIndex( @Name( "indexName" ) String name )
     {
-        IndexDescriptor2 indexReference = tx.schemaRead().indexGetForName( name );
-        if ( indexReference == IndexDescriptor2.NO_INDEX || indexReference.getIndexType() != IndexType.FULLTEXT )
+        IndexDescriptor indexReference = tx.schemaRead().indexGetForName( name );
+        if ( indexReference == IndexDescriptor.NO_INDEX || indexReference.getIndexType() != IndexType.FULLTEXT )
         {
             throw new IllegalArgumentException( "There is no such fulltext schema index: " + name );
         }
         return indexReference;
     }
 
-    private void awaitOnline( IndexDescriptor2 index )
+    private void awaitOnline( IndexDescriptor index )
     {
         // We do the isAdded check on the transaction state first, because indexGetState will grab a schema read-lock, which can deadlock on the write-lock
         // held by the index populator. Also, if we index was created in this transaction, then we will never see it come online in this transaction anyway.

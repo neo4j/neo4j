@@ -22,7 +22,7 @@ package org.neo4j.kernel.api.impl.schema;
 import java.io.IOException;
 import java.util.List;
 
-import org.neo4j.internal.schema.IndexDescriptor2;
+import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.impl.index.WritableAbstractDatabaseIndex;
 import org.neo4j.kernel.api.impl.index.partition.WritableIndexPartitionFactory;
@@ -38,7 +38,7 @@ import org.neo4j.values.storable.Value;
 public class WritableDatabaseSchemaIndex extends WritableAbstractDatabaseIndex<LuceneSchemaIndex,IndexReader> implements SchemaIndex
 {
 
-    WritableDatabaseSchemaIndex( PartitionedIndexStorage storage, IndexDescriptor2 descriptor,
+    WritableDatabaseSchemaIndex( PartitionedIndexStorage storage, IndexDescriptor descriptor,
             IndexSamplingConfig samplingConfig, WritableIndexPartitionFactory writableIndexPartitionFactory )
     {
         super( new LuceneSchemaIndex( storage, descriptor, samplingConfig, writableIndexPartitionFactory ) );

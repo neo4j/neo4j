@@ -29,7 +29,7 @@ import org.neo4j.configuration.Config;
 import org.neo4j.gis.spatial.index.curves.SpaceFillingCurveConfiguration;
 import org.neo4j.index.internal.gbptree.TreeNodeDynamicSize;
 import org.neo4j.internal.kernel.api.IndexQuery;
-import org.neo4j.internal.schema.IndexDescriptor2;
+import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexOrder;
 import org.neo4j.internal.schema.IndexProviderDescriptor;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -69,8 +69,8 @@ import static org.neo4j.values.storable.Values.stringValue;
 @PageCacheExtension
 class GenericBlockBasedIndexPopulatorTest
 {
-    private static final IndexDescriptor2 INDEX_DESCRIPTOR = forSchema( forLabel( 1, 1 ) ).materialise( 1 );
-    private static final IndexDescriptor2 UNIQUE_INDEX_DESCRIPTOR = uniqueForSchema( forLabel( 1, 1 ) ).materialise( 1 );
+    private static final IndexDescriptor INDEX_DESCRIPTOR = forSchema( forLabel( 1, 1 ) ).materialise( 1 );
+    private static final IndexDescriptor UNIQUE_INDEX_DESCRIPTOR = uniqueForSchema( forLabel( 1, 1 ) ).materialise( 1 );
 
     @Inject
     private FileSystemAbstraction fs;
@@ -236,7 +236,7 @@ class GenericBlockBasedIndexPopulatorTest
 
         String largestString = RandomStringUtils.randomAlphabetic( keySizeLimit - stringKeyOverhead );
         TextValue largestStringValue = stringValue( largestString );
-        IndexEntryUpdate<IndexDescriptor2> update = add( 1, INDEX_DESCRIPTOR, largestStringValue );
+        IndexEntryUpdate<IndexDescriptor> update = add( 1, INDEX_DESCRIPTOR, largestStringValue );
 
         BlockBasedIndexPopulator<GenericKey, NativeIndexValue> populator = instantiatePopulator( INDEX_DESCRIPTOR );
         try
@@ -267,7 +267,7 @@ class GenericBlockBasedIndexPopulatorTest
 
         String largestString = RandomStringUtils.randomAlphabetic( keySizeLimit - stringKeyOverhead + 1 );
         TextValue largestStringValue = stringValue( largestString );
-        IndexEntryUpdate<IndexDescriptor2> update = add( 1, INDEX_DESCRIPTOR, largestStringValue );
+        IndexEntryUpdate<IndexDescriptor> update = add( 1, INDEX_DESCRIPTOR, largestStringValue );
 
         BlockBasedIndexPopulator<GenericKey, NativeIndexValue> populator = instantiatePopulator( INDEX_DESCRIPTOR );
         try
@@ -324,7 +324,7 @@ class GenericBlockBasedIndexPopulatorTest
         }
     }
 
-    private GenericBlockBasedIndexPopulator instantiatePopulator( IndexDescriptor2 indexDescriptor )
+    private GenericBlockBasedIndexPopulator instantiatePopulator( IndexDescriptor indexDescriptor )
     {
         Config config = Config.defaults();
         IndexSpecificSpaceFillingCurveSettings spatialSettings = IndexSpecificSpaceFillingCurveSettings.fromConfig( config );

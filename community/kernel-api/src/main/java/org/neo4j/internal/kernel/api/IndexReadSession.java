@@ -19,7 +19,7 @@
  */
 package org.neo4j.internal.kernel.api;
 
-import org.neo4j.internal.schema.IndexDescriptor2;
+import org.neo4j.internal.schema.IndexDescriptor;
 
 /**
  * Token which represents a read session towards a specific index. The life-span of this session is tied to
@@ -28,5 +28,5 @@ import org.neo4j.internal.schema.IndexDescriptor2;
  */
 public interface IndexReadSession
 {
-    IndexDescriptor2 reference();
+    IndexDescriptor reference();
 }

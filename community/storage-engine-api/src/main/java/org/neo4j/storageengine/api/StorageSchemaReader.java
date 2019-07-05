@@ -22,7 +22,7 @@ package org.neo4j.storageengine.api;
 import java.util.Iterator;
 
 import org.neo4j.internal.schema.ConstraintDescriptor;
-import org.neo4j.internal.schema.IndexDescriptor2;
+import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptor;
 
 public interface StorageSchemaReader
@@ -31,26 +31,26 @@ public interface StorageSchemaReader
      * Looks for a stored index by given {@code descriptor}
      *
      * @param descriptor a description of the index.
-     * @return {@link IndexDescriptor2} for matching index, or {@code null} if not found.
+     * @return {@link IndexDescriptor} for matching index, or {@code null} if not found.
      */
-    IndexDescriptor2 indexGetForSchema( SchemaDescriptor descriptor );
+    IndexDescriptor indexGetForSchema( SchemaDescriptor descriptor );
 
     /**
      * @param labelId label to list indexes for.
-     * @return {@link IndexDescriptor2} associated with the given {@code labelId}.
+     * @return {@link IndexDescriptor} associated with the given {@code labelId}.
      */
-    Iterator<IndexDescriptor2> indexesGetForLabel( int labelId );
+    Iterator<IndexDescriptor> indexesGetForLabel( int labelId );
 
     /**
      * @param relationshipType relationship type to list indexes for.
-     * @return {@link IndexDescriptor2} associated with the given {@code relationshipType}.
+     * @return {@link IndexDescriptor} associated with the given {@code relationshipType}.
      */
-    Iterator<IndexDescriptor2> indexesGetForRelationshipType( int relationshipType );
+    Iterator<IndexDescriptor> indexesGetForRelationshipType( int relationshipType );
 
     /**
-     * @return all {@link IndexDescriptor2} in storage.
+     * @return all {@link IndexDescriptor} in storage.
      */
-    Iterator<IndexDescriptor2> indexesGetAll();
+    Iterator<IndexDescriptor> indexesGetAll();
 
     /**
      * @param labelId label token id.

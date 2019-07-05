@@ -52,7 +52,7 @@ import org.neo4j.internal.kernel.api.TokenRead;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
 import org.neo4j.internal.recordstorage.RecordStorageEngine;
 import org.neo4j.internal.recordstorage.SchemaCache;
-import org.neo4j.internal.schema.IndexDescriptor2;
+import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.IndexProviderDescriptor;
 import org.neo4j.internal.schema.LabelSchemaDescriptor;
@@ -113,7 +113,7 @@ public class MultiIndexPopulationConcurrentUpdatesIT
 
     @Rule
     public EmbeddedDbmsRule embeddedDatabase = new EmbeddedDbmsRule();
-    private IndexDescriptor2[] rules;
+    private IndexDescriptor[] rules;
     private StorageEngine storageEngine;
     private SchemaCache schemaCache;
 
@@ -385,13 +385,13 @@ public class MultiIndexPopulationConcurrentUpdatesIT
         indexProxy.activate();
     }
 
-    private IndexDescriptor2[] createIndexRules( Map<String,Integer> labelNameIdMap, int propertyId )
+    private IndexDescriptor[] createIndexRules( Map<String,Integer> labelNameIdMap, int propertyId )
     {
         IndexProvider lookup = getIndexProviderMap().lookup( schemaIndex.providerName() );
         IndexProviderDescriptor providerDescriptor = lookup.getProviderDescriptor();
         return labelNameIdMap.values().stream()
                 .map( index -> IndexPrototype.forSchema( SchemaDescriptor.forLabel( index, propertyId ), providerDescriptor ).materialise( index ) )
-                .toArray( IndexDescriptor2[]::new );
+                .toArray( IndexDescriptor[]::new );
     }
 
     private Map<String, Integer> getLabelIdsByName( String... names )
@@ -655,13 +655,13 @@ public class MultiIndexPopulationConcurrentUpdatesIT
         public void run()
         {
             LabelSchemaDescriptor descriptor = SchemaDescriptor.forLabel( labelIdToDropIndexFor, propertyId );
-            IndexDescriptor2 rule = findRuleForLabel( descriptor );
+            IndexDescriptor rule = findRuleForLabel( descriptor );
             indexService.dropIndex( rule );
         }
 
-        private IndexDescriptor2 findRuleForLabel( LabelSchemaDescriptor schemaDescriptor )
+        private IndexDescriptor findRuleForLabel( LabelSchemaDescriptor schemaDescriptor )
         {
-            for ( IndexDescriptor2 rule : rules )
+            for ( IndexDescriptor rule : rules )
             {
                 if ( rule.schema().equals( schemaDescriptor ) )
                 {

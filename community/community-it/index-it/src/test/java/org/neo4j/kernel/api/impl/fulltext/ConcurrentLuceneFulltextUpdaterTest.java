@@ -31,7 +31,7 @@ import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.internal.kernel.api.IndexReadSession;
 import org.neo4j.internal.kernel.api.NodeValueIndexCursor;
 import org.neo4j.internal.kernel.api.SchemaWrite;
-import org.neo4j.internal.schema.IndexDescriptor2;
+import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexOrder;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.kernel.api.KernelTransaction;
@@ -77,9 +77,9 @@ public class ConcurrentLuceneFulltextUpdaterTest extends LuceneFulltextTestSuppo
         return fulltextAdapter.schemaFor( NODE, entityTokens, indexConfig, PROP );
     }
 
-    private IndexDescriptor2 createInitialIndex( SchemaDescriptor descriptor ) throws Exception
+    private IndexDescriptor createInitialIndex( SchemaDescriptor descriptor ) throws Exception
     {
-        IndexDescriptor2 index;
+        IndexDescriptor index;
         try ( KernelTransactionImplementation transaction = getKernelTransaction() )
         {
             SchemaWrite schemaWrite = transaction.schemaWrite();
@@ -149,7 +149,7 @@ public class ConcurrentLuceneFulltextUpdaterTest extends LuceneFulltextTestSuppo
         };
     }
 
-    private ThrowingAction<Exception> dropAndReCreateIndex( IndexDescriptor2 descriptor, SchemaDescriptor newDescriptor )
+    private ThrowingAction<Exception> dropAndReCreateIndex( IndexDescriptor descriptor, SchemaDescriptor newDescriptor )
     {
         return () ->
         {
@@ -171,7 +171,7 @@ public class ConcurrentLuceneFulltextUpdaterTest extends LuceneFulltextTestSuppo
         String[] entityTokens = {LABEL.name()};
         SchemaDescriptor descriptor = getExistingDescriptor( entityTokens );
         SchemaDescriptor newDescriptor = getNewDescriptor( entityTokens );
-        IndexDescriptor2 initialIndex = createInitialIndex( descriptor );
+        IndexDescriptor initialIndex = createInitialIndex( descriptor );
 
         Runnable aliceWork = work( nodesCreatedPerThread, () ->
         {
@@ -193,7 +193,7 @@ public class ConcurrentLuceneFulltextUpdaterTest extends LuceneFulltextTestSuppo
         String[] entityTokens = {LABEL.name()};
         SchemaDescriptor descriptor = getExistingDescriptor( entityTokens );
         SchemaDescriptor newDescriptor = getNewDescriptor( entityTokens );
-        IndexDescriptor2 initialIndex = createInitialIndex( descriptor );
+        IndexDescriptor initialIndex = createInitialIndex( descriptor );
 
         Runnable aliceWork = work( nodesCreatedPerThread, () ->
         {

@@ -50,7 +50,7 @@ import org.neo4j.internal.kernel.api.NodeValueIndexCursor;
 import org.neo4j.internal.kernel.api.SchemaRead;
 import org.neo4j.internal.kernel.api.TokenRead;
 import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
-import org.neo4j.internal.schema.IndexDescriptor2;
+import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexOrder;
 import org.neo4j.internal.schema.IndexProviderDescriptor;
 import org.neo4j.io.compress.ZipUtils;
@@ -362,7 +362,7 @@ class StartOldDbOnCurrentVersionAndCreateFusionIndexIT
             int key1Id = tokenRead.propertyKey( KEY1 );
             int key2Id = tokenRead.propertyKey( KEY2 );
 
-            IndexDescriptor2 index = schemaRead.index( labelId, key1Id );
+            IndexDescriptor index = schemaRead.index( labelId, key1Id );
             assertIndexHasExpectedProvider( expectedDescriptor, index );
             index = schemaRead.index( labelId, key1Id, key2Id );
             assertIndexHasExpectedProvider( expectedDescriptor, index );
@@ -370,7 +370,7 @@ class StartOldDbOnCurrentVersionAndCreateFusionIndexIT
         }
     }
 
-    private static void assertIndexHasExpectedProvider( IndexProviderDescriptor expectedDescriptor, IndexDescriptor2 index )
+    private static void assertIndexHasExpectedProvider( IndexProviderDescriptor expectedDescriptor, IndexDescriptor index )
     {
         assertEquals( expectedDescriptor.getKey(), index.getIndexProvider().getKey(), "same key" );
         assertEquals( expectedDescriptor.getVersion(), index.getIndexProvider().getVersion(), "same version" );
@@ -510,7 +510,7 @@ class StartOldDbOnCurrentVersionAndCreateFusionIndexIT
             {
                 predicates[i] = IndexQuery.exists( propertyKeyIds[i] );
             }
-            IndexDescriptor2 index = ktx.schemaRead().index( labelId, propertyKeyIds );
+            IndexDescriptor index = ktx.schemaRead().index( labelId, propertyKeyIds );
             IndexReadSession indexSession = ktx.dataRead().indexReadSession( index );
             try ( NodeValueIndexCursor cursor = ktx.cursors().allocateNodeValueIndexCursor() )
             {
@@ -546,10 +546,10 @@ class StartOldDbOnCurrentVersionAndCreateFusionIndexIT
 
     private static class IndexRecoveryTracker extends IndexingService.MonitorAdapter
     {
-        Map<IndexDescriptor2,InternalIndexState> initialStateMap = new HashMap<>();
+        Map<IndexDescriptor,InternalIndexState> initialStateMap = new HashMap<>();
 
         @Override
-        public void initialState( IndexDescriptor2 descriptor, InternalIndexState state )
+        public void initialState( IndexDescriptor descriptor, InternalIndexState state )
         {
             initialStateMap.put( descriptor, state );
         }

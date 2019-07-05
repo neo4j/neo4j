@@ -28,7 +28,7 @@ import java.util.function.ToLongFunction;
 
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.internal.helpers.collection.BoundedIterable;
-import org.neo4j.internal.schema.IndexDescriptor2;
+import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.impl.schema.LuceneIndexReaderAcquisitionException;
@@ -46,9 +46,9 @@ public abstract class AbstractLuceneIndexAccessor<READER extends IndexReader, IN
 {
     protected final LuceneIndexWriter writer;
     protected final INDEX luceneIndex;
-    protected final IndexDescriptor2 descriptor;
+    protected final IndexDescriptor descriptor;
 
-    protected AbstractLuceneIndexAccessor( INDEX luceneIndex, IndexDescriptor2 descriptor )
+    protected AbstractLuceneIndexAccessor( INDEX luceneIndex, IndexDescriptor descriptor )
     {
         this.writer = luceneIndex.isReadOnly() ? null : luceneIndex.getIndexWriter();
         this.luceneIndex = luceneIndex;

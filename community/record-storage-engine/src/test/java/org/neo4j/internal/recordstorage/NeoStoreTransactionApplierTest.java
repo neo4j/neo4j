@@ -32,7 +32,7 @@ import org.neo4j.internal.recordstorage.Command.LabelTokenCommand;
 import org.neo4j.internal.recordstorage.Command.PropertyKeyTokenCommand;
 import org.neo4j.internal.recordstorage.Command.RelationshipTypeTokenCommand;
 import org.neo4j.internal.recordstorage.CommandHandlerContract.ApplyFunction;
-import org.neo4j.internal.schema.IndexDescriptor2;
+import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.IndexProviderDescriptor;
 import org.neo4j.internal.schema.constraints.ConstraintDescriptorFactory;
@@ -566,7 +566,7 @@ class NeoStoreTransactionApplierTest
     {
         // given
         BatchTransactionApplier applier = newApplierFacade( newApplier( false ), newIndexApplier() );
-        IndexDescriptor2 rule = indexRule( 0, 1, 2, "K", "X.Y" );
+        IndexDescriptor rule = indexRule( 0, 1, 2, "K", "X.Y" );
         SchemaRecord before = new SchemaRecord( rule.getId() );
         SchemaRecord after = before.clone().initialize( true, Record.NO_NEXT_PROPERTY.longValue() );
         after.setCreated();
@@ -591,7 +591,7 @@ class NeoStoreTransactionApplierTest
         SchemaRecord before = new SchemaRecord( 21 );
         SchemaRecord after = before.clone().initialize( true, Record.NO_NEXT_PROPERTY.longValue() );
         after.setCreated();
-        IndexDescriptor2 rule = indexRule( 21, 1, 2, "K", "X.Y" );
+        IndexDescriptor rule = indexRule( 21, 1, 2, "K", "X.Y" );
         Command.SchemaRuleCommand command = new Command.SchemaRuleCommand( before, after, rule );
 
         // when
@@ -614,7 +614,7 @@ class NeoStoreTransactionApplierTest
         SchemaRecord before = new SchemaRecord( 21 );
         SchemaRecord after = before.clone().initialize( true, Record.NO_NEXT_PROPERTY.longValue() );
         after.setConstraint( true );
-        IndexDescriptor2 rule = constraintIndexRule( 21, 1, 2, "K", "X.Y", 42L );
+        IndexDescriptor rule = constraintIndexRule( 21, 1, 2, "K", "X.Y", 42L );
         Command.SchemaRuleCommand command = new Command.SchemaRuleCommand( before, after, rule );
 
         // when
@@ -635,7 +635,7 @@ class NeoStoreTransactionApplierTest
         BatchTransactionApplier applier = newApplierFacade( newIndexApplier(), newApplier( true ) );
         SchemaRecord before = new SchemaRecord( 21 );
         SchemaRecord after = before.clone().initialize( true, Record.NO_NEXT_PROPERTY.longValue() );
-        IndexDescriptor2 rule = constraintIndexRule( 0, 1, 2, "K", "X.Y", 42L );
+        IndexDescriptor rule = constraintIndexRule( 0, 1, 2, "K", "X.Y", 42L );
         Command.SchemaRuleCommand command = new Command.SchemaRuleCommand( before, after, rule );
 
         // when
@@ -659,7 +659,7 @@ class NeoStoreTransactionApplierTest
 
         SchemaRecord before = new SchemaRecord( 21 );
         SchemaRecord after = before.clone().initialize( true, Record.NO_NEXT_PROPERTY.longValue() );
-        IndexDescriptor2 rule = constraintIndexRule( 0, 1, 2, "K", "X.Y", 42L );
+        IndexDescriptor rule = constraintIndexRule( 0, 1, 2, "K", "X.Y", 42L );
         Command.SchemaRuleCommand command = new Command.SchemaRuleCommand( before, after, rule );
 
         var e = assertThrows( Exception.class, () -> apply( applier, command::handle, transactionToApply ) );
@@ -675,7 +675,7 @@ class NeoStoreTransactionApplierTest
         BatchTransactionApplierFacade applier = new BatchTransactionApplierFacade( base, indexApplier );
         SchemaRecord before = new SchemaRecord( 21 ).initialize( true, Record.NO_NEXT_PROPERTY.longValue() );
         SchemaRecord after = before.clone().initialize( false, Record.NO_NEXT_PROPERTY.longValue() );
-        IndexDescriptor2 rule = indexRule( 0, 1, 2, "K", "X.Y" );
+        IndexDescriptor rule = indexRule( 0, 1, 2, "K", "X.Y" );
         Command.SchemaRuleCommand command = new Command.SchemaRuleCommand( before, after, rule );
 
         // when
@@ -696,7 +696,7 @@ class NeoStoreTransactionApplierTest
         BatchTransactionApplier applier = newApplierFacade( newIndexApplier(), newApplier( true ) );
         SchemaRecord before = new SchemaRecord( 21 ).initialize( true, Record.NO_NEXT_PROPERTY.longValue() );
         SchemaRecord after = before.clone().initialize( false, Record.NO_NEXT_PROPERTY.longValue() );
-        IndexDescriptor2 rule = indexRule( 0, 1, 2, "K", "X.Y" );
+        IndexDescriptor rule = indexRule( 0, 1, 2, "K", "X.Y" );
         Command.SchemaRuleCommand command = new Command.SchemaRuleCommand( before, after, rule );
 
         // when
@@ -928,12 +928,12 @@ class NeoStoreTransactionApplierTest
 
     // SCHEMA RULE COMMAND
 
-    private static IndexDescriptor2 indexRule( long id, int label, int propertyKeyId, String providerKey, String providerVersion )
+    private static IndexDescriptor indexRule( long id, int label, int propertyKeyId, String providerKey, String providerVersion )
     {
         return IndexPrototype.forSchema( forLabel( label, propertyKeyId ), new IndexProviderDescriptor( providerKey, providerVersion ) ).materialise( id );
     }
 
-    private static IndexDescriptor2 constraintIndexRule( long id, int label, int propertyKeyId, String providerKey, String providerVersion, long constraintId )
+    private static IndexDescriptor constraintIndexRule( long id, int label, int propertyKeyId, String providerKey, String providerVersion, long constraintId )
     {
         return IndexPrototype.uniqueForSchema( forLabel( label, propertyKeyId ), new IndexProviderDescriptor( providerKey, providerVersion ) )
                 .materialise( id ).withOwningConstraintId( constraintId );

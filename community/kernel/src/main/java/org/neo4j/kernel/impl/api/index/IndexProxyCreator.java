@@ -22,8 +22,7 @@ package org.neo4j.kernel.impl.api.index;
 import java.io.IOException;
 
 import org.neo4j.common.TokenNameLookup;
-import org.neo4j.internal.schema.IndexCapability;
-import org.neo4j.internal.schema.IndexDescriptor2;
+import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.IndexProvider;
@@ -59,7 +58,7 @@ class IndexProxyCreator
         this.logProvider = logProvider;
     }
 
-    IndexProxy createPopulatingIndexProxy( IndexDescriptor2 index, boolean flipToTentative, IndexingService.Monitor monitor,
+    IndexProxy createPopulatingIndexProxy( IndexDescriptor index, boolean flipToTentative, IndexingService.Monitor monitor,
             IndexPopulationJob populationJob )
     {
         final FlippableIndexProxy flipper = new FlippableIndexProxy();
@@ -95,13 +94,13 @@ class IndexProxyCreator
         return new ContractCheckingIndexProxy( flipper, false );
     }
 
-    IndexProxy createRecoveringIndexProxy( IndexDescriptor2 descriptor )
+    IndexProxy createRecoveringIndexProxy( IndexDescriptor descriptor )
     {
         IndexProxy proxy = new RecoveringIndexProxy( descriptor );
         return new ContractCheckingIndexProxy( proxy, true );
     }
 
-    IndexProxy createOnlineIndexProxy( IndexDescriptor2 descriptor )
+    IndexProxy createOnlineIndexProxy( IndexDescriptor descriptor )
     {
         try
         {
@@ -120,7 +119,7 @@ class IndexProxyCreator
         }
     }
 
-    IndexProxy createFailedIndexProxy( IndexDescriptor2 descriptor, IndexPopulationFailure populationFailure )
+    IndexProxy createFailedIndexProxy( IndexDescriptor descriptor, IndexPopulationFailure populationFailure )
     {
         // Note about the buffer factory instantiation here. Question is why an index populator is instantiated for a failed index proxy to begin with.
         // The byte buffer factory should not be used here anyway so the buffer size doesn't actually matter.
@@ -137,19 +136,19 @@ class IndexProxyCreator
         return proxy;
     }
 
-    private String indexUserDescription( IndexDescriptor2 descriptor )
+    private String indexUserDescription( IndexDescriptor descriptor )
     {
         return format( "%s [provider: %s]",
                 descriptor.schema().userDescription( tokenNameLookup ), descriptor.getIndexProvider().toString() );
     }
 
-    private IndexPopulator populatorFromProvider( IndexDescriptor2 descriptor, IndexSamplingConfig samplingConfig, ByteBufferFactory bufferFactory )
+    private IndexPopulator populatorFromProvider( IndexDescriptor descriptor, IndexSamplingConfig samplingConfig, ByteBufferFactory bufferFactory )
     {
         IndexProvider indexProvider = providerMap.lookup( descriptor.getIndexProvider() );
         return indexProvider.getPopulator( descriptor, samplingConfig, bufferFactory );
     }
 
-    private IndexAccessor onlineAccessorFromProvider( IndexDescriptor2 descriptor, IndexSamplingConfig samplingConfig ) throws IOException
+    private IndexAccessor onlineAccessorFromProvider( IndexDescriptor descriptor, IndexSamplingConfig samplingConfig ) throws IOException
     {
         IndexProvider indexProvider = providerMap.lookup( descriptor.getIndexProvider() );
         return indexProvider.getOnlineAccessor( descriptor, samplingConfig );

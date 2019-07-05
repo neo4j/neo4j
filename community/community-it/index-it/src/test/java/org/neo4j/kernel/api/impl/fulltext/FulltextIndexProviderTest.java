@@ -52,7 +52,7 @@ import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelExcept
 import org.neo4j.internal.kernel.api.exceptions.schema.SchemaKernelException;
 import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.internal.schema.IndexConfig;
-import org.neo4j.internal.schema.IndexDescriptor2;
+import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexOrder;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.kernel.api.KernelTransaction;
@@ -121,10 +121,10 @@ public class FulltextIndexProviderTest
     @Test
     public void createFulltextIndex() throws Exception
     {
-        IndexDescriptor2 fulltextIndex = createIndex( new int[]{7, 8, 9}, new int[]{2, 3, 4} );
+        IndexDescriptor fulltextIndex = createIndex( new int[]{7, 8, 9}, new int[]{2, 3, 4} );
         try ( KernelTransactionImplementation transaction = getKernelTransaction() )
         {
-            IndexDescriptor2 descriptor = transaction.schemaRead().indexGetForName( NAME );
+            IndexDescriptor descriptor = transaction.schemaRead().indexGetForName( NAME );
             assertEquals( descriptor.schema(), fulltextIndex.schema() );
             transaction.success();
         }
@@ -133,7 +133,7 @@ public class FulltextIndexProviderTest
     @Test
     public void createAndRetainFulltextIndex() throws Exception
     {
-        IndexDescriptor2 fulltextIndex = createIndex( new int[]{7, 8, 9}, new int[]{2, 3, 4} );
+        IndexDescriptor fulltextIndex = createIndex( new int[]{7, 8, 9}, new int[]{2, 3, 4} );
         db.restartDatabase( DbmsRule.RestartAction.EMPTY );
 
         verifyThatFulltextIndexIsPresent( fulltextIndex );
@@ -142,7 +142,7 @@ public class FulltextIndexProviderTest
     @Test
     public void createAndRetainRelationshipFulltextIndex() throws Exception
     {
-        IndexDescriptor2 indexReference;
+        IndexDescriptor indexReference;
         try ( KernelTransactionImplementation transaction = getKernelTransaction() )
         {
             SchemaDescriptor schema = SchemaDescriptor.fulltext( EntityType.RELATIONSHIP, IndexConfig.empty(), new int[]{0, 1, 2}, new int[]{0, 1, 2, 3} );
@@ -158,7 +158,7 @@ public class FulltextIndexProviderTest
     @Test
     public void createAndQueryFulltextIndex() throws Exception
     {
-        IndexDescriptor2 indexReference;
+        IndexDescriptor indexReference;
         indexReference = createIndex( new int[]{0, 1, 2}, new int[]{0, 1, 2, 3} );
         await( indexReference );
         long thirdNodeId;
@@ -171,7 +171,7 @@ public class FulltextIndexProviderTest
     @Test
     public void createAndQueryFulltextRelationshipIndex() throws Exception
     {
-        IndexDescriptor2 indexReference;
+        IndexDescriptor indexReference;
         try ( KernelTransactionImplementation transaction = getKernelTransaction() )
         {
             SchemaDescriptor schema = SchemaDescriptor.fulltext( EntityType.RELATIONSHIP, IndexConfig.empty(), new int[]{0, 1, 2}, new int[]{0, 1, 2, 3} );
@@ -362,7 +362,7 @@ public class FulltextIndexProviderTest
     public void queryingWithIndexProgressorMustProvideScore() throws Exception
     {
         long nodeId = createTheThirdNode();
-        IndexDescriptor2 index;
+        IndexDescriptor index;
         index = createIndex( new int[]{0, 1, 2}, new int[]{0, 1, 2, 3} );
         await( index );
         List<String> acceptedEntities = new ArrayList<>();
@@ -386,7 +386,7 @@ public class FulltextIndexProviderTest
                 }
 
                 @Override
-                public void initialize( IndexDescriptor2 descriptor, IndexProgressor progressor,
+                public void initialize( IndexDescriptor descriptor, IndexProgressor progressor,
                         IndexQuery[] query, IndexOrder indexOrder, boolean needsValues,
                         boolean indexIncludesTransactionState )
                 {
@@ -432,11 +432,11 @@ public class FulltextIndexProviderTest
         }
     }
 
-    private IndexDescriptor2 createIndex( int[] entityTokens, int[] propertyIds )
+    private IndexDescriptor createIndex( int[] entityTokens, int[] propertyIds )
             throws TransactionFailureException, InvalidTransactionTypeKernelException, SchemaKernelException
 
     {
-        IndexDescriptor2 fulltext;
+        IndexDescriptor fulltext;
         try ( KernelTransactionImplementation transaction = getKernelTransaction() )
         {
             SchemaDescriptor schema = SchemaDescriptor.fulltext( EntityType.NODE, IndexConfig.empty(), entityTokens, propertyIds );
@@ -446,11 +446,11 @@ public class FulltextIndexProviderTest
         return fulltext;
     }
 
-    private void verifyThatFulltextIndexIsPresent( IndexDescriptor2 fulltextIndexDescriptor ) throws TransactionFailureException
+    private void verifyThatFulltextIndexIsPresent( IndexDescriptor fulltextIndexDescriptor ) throws TransactionFailureException
     {
         try ( KernelTransactionImplementation transaction = getKernelTransaction() )
         {
-            IndexDescriptor2 descriptor = transaction.schemaRead().indexGetForName( NAME );
+            IndexDescriptor descriptor = transaction.schemaRead().indexGetForName( NAME );
             assertEquals( fulltextIndexDescriptor.schema(), descriptor.schema() );
             assertEquals( fulltextIndexDescriptor.isUnique(), descriptor.isUnique() );
             transaction.success();
@@ -508,7 +508,7 @@ public class FulltextIndexProviderTest
         try ( Transaction tx = db.beginTx() )
         {
             KernelTransaction ktx = LuceneFulltextTestSupport.kernelTransaction( tx );
-            IndexDescriptor2 index = ktx.schemaRead().indexGetForName( "fulltext" );
+            IndexDescriptor index = ktx.schemaRead().indexGetForName( "fulltext" );
             try ( RelationshipIndexCursor cursor = ktx.cursors().allocateRelationshipIndexCursor() )
             {
                 ktx.dataRead().relationshipIndexSeek( index, cursor, fulltextSearch( "valuuu" ) );
@@ -532,7 +532,7 @@ public class FulltextIndexProviderTest
         }
     }
 
-    private void await( IndexDescriptor2 descriptor ) throws IndexNotFoundKernelException
+    private void await( IndexDescriptor descriptor ) throws IndexNotFoundKernelException
     {
         try ( Transaction ignore = db.beginTx() )
         {

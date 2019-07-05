@@ -38,7 +38,7 @@ import java.util.function.Function;
 
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.internal.kernel.api.exceptions.EntityNotFoundException;
-import org.neo4j.internal.schema.IndexDescriptor2;
+import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexOrder;
 import org.neo4j.internal.schema.IndexProviderDescriptor;
 import org.neo4j.internal.unsafe.UnsafeUtil;
@@ -108,8 +108,8 @@ abstract class IndexPopulationStressTest
     private final Function<RandomValues, Value> valueGenerator;
     private final Function<IndexPopulationStressTest, IndexProvider> providerCreator;
 
-    private IndexDescriptor2 descriptor;
-    private IndexDescriptor2 descriptor2;
+    private IndexDescriptor descriptor;
+    private IndexDescriptor descriptor2;
     private final IndexSamplingConfig samplingConfig = new IndexSamplingConfig( 1000, 0.2, true );
     private final NodePropertyAccessor nodePropertyAccessor = mock( NodePropertyAccessor.class );
     private IndexPopulator populator;

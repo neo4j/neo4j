@@ -29,7 +29,7 @@ import java.io.IOException;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.configuration.Settings;
-import org.neo4j.internal.schema.IndexDescriptor2;
+import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.IOLimiter;
@@ -60,7 +60,7 @@ class LuceneIndexProviderTest
     private TestDirectory testDir;
 
     private File graphDbDir;
-    private static final IndexDescriptor2 descriptor = forSchema( forLabel( 1, 1 ), PROVIDER_DESCRIPTOR ).materialise( 1 );
+    private static final IndexDescriptor descriptor = forSchema( forLabel( 1, 1 ), PROVIDER_DESCRIPTOR ).materialise( 1 );
 
     @BeforeEach
     void setup()

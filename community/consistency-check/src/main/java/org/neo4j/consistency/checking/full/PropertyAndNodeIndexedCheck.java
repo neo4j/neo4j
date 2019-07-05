@@ -42,7 +42,7 @@ import org.neo4j.consistency.report.ConsistencyReport;
 import org.neo4j.consistency.store.RecordAccess;
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotApplicableKernelException;
-import org.neo4j.internal.schema.IndexDescriptor2;
+import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexOrder;
 import org.neo4j.internal.schema.PropertySchemaType;
 import org.neo4j.internal.schema.SchemaDescriptor;
@@ -108,7 +108,7 @@ public class PropertyAndNodeIndexedCheck implements RecordCheck<NodeRecord, Cons
     {
         long[] labels = NodeLabelReader.getListOfLabels( record, records, engine ).stream().mapToLong( Long::longValue ).toArray();
         IntObjectMap<PropertyBlock> nodePropertyMap = null;
-        for ( IndexDescriptor2 indexRule : indexes.onlineRules() )
+        for ( IndexDescriptor indexRule : indexes.onlineRules() )
         {
             SchemaDescriptor schema = indexRule.schema();
             if ( schema.entityType() == EntityType.NODE && schema.isAffected( labels ) )
@@ -141,7 +141,7 @@ public class PropertyAndNodeIndexedCheck implements RecordCheck<NodeRecord, Cons
     }
 
     private void verifyNodeCorrectlyIndexedUniquely( long nodeId, Value[] propertyValues,
-            CheckerEngine<NodeRecord,ConsistencyReport.NodeConsistencyReport> engine, IndexDescriptor2 descriptor,
+            CheckerEngine<NodeRecord,ConsistencyReport.NodeConsistencyReport> engine, IndexDescriptor descriptor,
             IndexReader reader )
     {
         IndexQuery[] query = seek( descriptor.schema(), propertyValues );
@@ -168,7 +168,7 @@ public class PropertyAndNodeIndexedCheck implements RecordCheck<NodeRecord, Cons
     }
 
     private void reportIncorrectIndexCount(
-            Value[] propertyValues, CheckerEngine<NodeRecord,ConsistencyReport.NodeConsistencyReport> engine, IndexDescriptor2 indexRule, long count )
+            Value[] propertyValues, CheckerEngine<NodeRecord,ConsistencyReport.NodeConsistencyReport> engine, IndexDescriptor indexRule, long count )
     {
         if ( count == 0 )
         {

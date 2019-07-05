@@ -27,7 +27,7 @@ import org.neo4j.index.internal.gbptree.Layout;
 import org.neo4j.index.internal.gbptree.MetadataMismatchException;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.internal.kernel.api.InternalIndexState;
-import org.neo4j.internal.schema.IndexDescriptor2;
+import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexProviderDescriptor;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
@@ -69,15 +69,15 @@ abstract class NativeIndexProvider<KEY extends NativeIndexKey<KEY>,VALUE extends
     /**
      * Instantiates the {@link Layout} which is used in the index backing this native index provider.
      *
-     * @param descriptor the {@link IndexDescriptor2} for this index.
+     * @param descriptor the {@link IndexDescriptor} for this index.
      * @param storeFile index store file, since some layouts may depend on contents of the header.
      * If {@code null} it means that nothing must be read from the file before or while instantiating the layout.
      * @return the correct {@link Layout} for the index.
      */
-    abstract LAYOUT layout( IndexDescriptor2 descriptor, File storeFile );
+    abstract LAYOUT layout( IndexDescriptor descriptor, File storeFile );
 
     @Override
-    public IndexPopulator getPopulator( IndexDescriptor2 descriptor, IndexSamplingConfig samplingConfig, ByteBufferFactory bufferFactory )
+    public IndexPopulator getPopulator( IndexDescriptor descriptor, IndexSamplingConfig samplingConfig, ByteBufferFactory bufferFactory )
     {
         if ( readOnly )
         {
@@ -89,20 +89,20 @@ abstract class NativeIndexProvider<KEY extends NativeIndexKey<KEY>,VALUE extends
                 bufferFactory );
     }
 
-    protected abstract IndexPopulator newIndexPopulator( IndexFiles indexFiles, LAYOUT layout, IndexDescriptor2 descriptor,
+    protected abstract IndexPopulator newIndexPopulator( IndexFiles indexFiles, LAYOUT layout, IndexDescriptor descriptor,
             ByteBufferFactory bufferFactory );
 
     @Override
-    public IndexAccessor getOnlineAccessor( IndexDescriptor2 descriptor, IndexSamplingConfig samplingConfig ) throws IOException
+    public IndexAccessor getOnlineAccessor( IndexDescriptor descriptor, IndexSamplingConfig samplingConfig ) throws IOException
     {
         IndexFiles indexFiles = new IndexFiles.Directory( fs, directoryStructure(), descriptor.getId() );
         return newIndexAccessor( indexFiles, layout( descriptor, indexFiles.getStoreFile() ), descriptor );
     }
 
-    protected abstract IndexAccessor newIndexAccessor( IndexFiles indexFiles, LAYOUT layout, IndexDescriptor2 descriptor ) throws IOException;
+    protected abstract IndexAccessor newIndexAccessor( IndexFiles indexFiles, LAYOUT layout, IndexDescriptor descriptor ) throws IOException;
 
     @Override
-    public String getPopulationFailure( IndexDescriptor2 descriptor ) throws IllegalStateException
+    public String getPopulationFailure( IndexDescriptor descriptor ) throws IllegalStateException
     {
         try
         {
@@ -120,7 +120,7 @@ abstract class NativeIndexProvider<KEY extends NativeIndexKey<KEY>,VALUE extends
     }
 
     @Override
-    public InternalIndexState getInitialState( IndexDescriptor2 descriptor )
+    public InternalIndexState getInitialState( IndexDescriptor descriptor )
     {
         try
         {
@@ -141,7 +141,7 @@ abstract class NativeIndexProvider<KEY extends NativeIndexKey<KEY>,VALUE extends
         return StoreMigrationParticipant.NOT_PARTICIPATING;
     }
 
-    private File storeFile( IndexDescriptor2 descriptor )
+    private File storeFile( IndexDescriptor descriptor )
     {
         IndexFiles indexFiles = new IndexFiles.Directory( fs, directoryStructure(), descriptor.getId() );
         return indexFiles.getStoreFile();

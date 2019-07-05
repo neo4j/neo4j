@@ -31,7 +31,7 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.SchemaWrite;
 import org.neo4j.internal.kernel.api.TokenWrite;
-import org.neo4j.internal.schema.IndexDescriptor2;
+import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.LabelSchemaDescriptor;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.exceptions.Status;
@@ -96,7 +96,7 @@ class KernelIT extends KernelIntegrationTest
     void schemaStateShouldBeEvictedOnIndexDropped() throws Exception
     {
         // GIVEN
-        IndexDescriptor2 idx = createIndex( newTransaction( AUTH_DISABLED ) );
+        IndexDescriptor idx = createIndex( newTransaction( AUTH_DISABLED ) );
         commit();
 
         try ( Transaction tx = db.beginTx() )
@@ -204,7 +204,7 @@ class KernelIT extends KernelIntegrationTest
         return txIdStore.getLastCommittedTransactionId();
     }
 
-    private static IndexDescriptor2 createIndex( org.neo4j.internal.kernel.api.Transaction transaction )
+    private static IndexDescriptor createIndex( org.neo4j.internal.kernel.api.Transaction transaction )
             throws KernelException
     {
         TokenWrite tokenWrite = transaction.tokenWrite();

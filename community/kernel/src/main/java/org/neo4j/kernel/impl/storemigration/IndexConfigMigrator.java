@@ -25,7 +25,7 @@ import org.neo4j.common.ProgressReporter;
 import org.neo4j.configuration.Config;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.internal.schema.IndexConfig;
-import org.neo4j.internal.schema.IndexDescriptor2;
+import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexProviderDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.internal.schema.SchemaRule;
@@ -84,9 +84,9 @@ public class IndexConfigMigrator extends AbstractStoreMigrationParticipant
 
     private SchemaRule migrateIndexConfig( SchemaRule rule, DatabaseLayout directoryLayout ) throws IOException
     {
-        if ( rule instanceof IndexDescriptor2 )
+        if ( rule instanceof IndexDescriptor )
         {
-            IndexDescriptor2 old = (IndexDescriptor2) rule;
+            IndexDescriptor old = (IndexDescriptor) rule;
             long indexId = old.getId();
             IndexProviderDescriptor provider = old.getIndexProvider();
 
@@ -95,7 +95,7 @@ public class IndexConfigMigrator extends AbstractStoreMigrationParticipant
             IndexConfig indexConfig = indexMigration.extractIndexConfig( fs, pageCache, directoryLayout, indexId, log );
 
             SchemaDescriptor schemaDescriptorWithIndexConfig = old.schema().withIndexConfig( indexConfig );
-            IndexDescriptor2 newIndexReference = old.withSchemaDescriptor( schemaDescriptorWithIndexConfig );
+            IndexDescriptor newIndexReference = old.withSchemaDescriptor( schemaDescriptorWithIndexConfig );
             IndexProvider indexProvider = indexProviderMap.lookup( indexMigration.desiredAlternativeProvider );
             return indexProvider.completeConfiguration( newIndexReference );
         }

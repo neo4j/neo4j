@@ -137,9 +137,9 @@ public class IndexPrototype implements IndexRef<IndexPrototype>
      * @param id The real, final, id of the index.
      * @return An index descriptor identifying the physical index derived from this index prototype.
      */
-    public IndexDescriptor2 materialise( long id )
+    public IndexDescriptor materialise( long id )
     {
-        return new IndexDescriptor2( id, this );
+        return new IndexDescriptor( id, this );
     }
 
     @Override

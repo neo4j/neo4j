@@ -30,7 +30,7 @@ import org.neo4j.internal.kernel.api.Transaction;
 import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
 import org.neo4j.internal.schema.ConstraintDescriptor;
-import org.neo4j.internal.schema.IndexDescriptor2;
+import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.kernel.impl.api.index.SchemaIndexTestHelper;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
@@ -90,7 +90,7 @@ class KernelSchemaStateFlushingTest
     @Test
     void shouldInvalidateSchemaStateOnDropIndex() throws Exception
     {
-        IndexDescriptor2 ref = createIndex();
+        IndexDescriptor ref = createIndex();
 
         awaitIndexOnline( ref, "test" );
 
@@ -158,18 +158,18 @@ class KernelSchemaStateFlushingTest
         }
     }
 
-    private IndexDescriptor2 createIndex() throws KernelException
+    private IndexDescriptor createIndex() throws KernelException
     {
         try ( Transaction transaction = beginTransaction() )
         {
-            IndexDescriptor2 reference = transaction.schemaWrite().indexCreate(
+            IndexDescriptor reference = transaction.schemaWrite().indexCreate(
                     SchemaDescriptor.forLabel( 1, 1 ) );
             transaction.success();
             return reference;
         }
     }
 
-    private void dropIndex( IndexDescriptor2 reference ) throws KernelException
+    private void dropIndex( IndexDescriptor reference ) throws KernelException
     {
         try ( Transaction transaction = beginTransaction() )
         {
@@ -178,7 +178,7 @@ class KernelSchemaStateFlushingTest
         }
     }
 
-    private void awaitIndexOnline( IndexDescriptor2 descriptor, String keyForProbing )
+    private void awaitIndexOnline( IndexDescriptor descriptor, String keyForProbing )
             throws IndexNotFoundKernelException, TransactionFailureException
     {
         try ( Transaction transaction = beginTransaction() )

@@ -47,7 +47,7 @@ import org.neo4j.internal.kernel.api.SchemaReadCore;
 import org.neo4j.internal.kernel.api.TokenRead;
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
-import org.neo4j.internal.schema.IndexDescriptor2;
+import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexProviderDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.kernel.api.KernelTransaction;
@@ -128,11 +128,11 @@ public class BuiltInProcedures
             IndexingService indexingService = resolver.resolveDependency( IndexingService.class );
 
             SchemaReadCore schemaRead = tx.schemaRead().snapshot();
-            List<IndexDescriptor2> indexes = asList( schemaRead.indexesGetAll() );
+            List<IndexDescriptor> indexes = asList( schemaRead.indexesGetAll() );
             indexes.sort( Comparator.comparing( a -> a.schema().userDescription( tokens ) ) );
 
             ArrayList<IndexResult> result = new ArrayList<>();
-            for ( IndexDescriptor2 index : indexes )
+            for ( IndexDescriptor index : indexes )
             {
                 IndexType type = IndexType.getIndexTypeOf( index );
 
@@ -158,7 +158,7 @@ public class BuiltInProcedures
         }
     }
 
-    private static IndexStatus getIndexStatus( SchemaReadCore schemaRead, IndexDescriptor2 index )
+    private static IndexStatus getIndexStatus( SchemaReadCore schemaRead, IndexDescriptor index )
     {
         IndexStatus status = new IndexStatus();
         try
@@ -322,13 +322,13 @@ public class BuiltInProcedures
         }
     }
 
-    private static Map<String,String> indexProviderDescriptorMap( IndexDescriptor2 index )
+    private static Map<String,String> indexProviderDescriptorMap( IndexDescriptor index )
     {
         IndexProviderDescriptor provider = index.getIndexProvider();
         return MapUtil.stringMap( "key", provider.getKey(), "version", provider.getVersion() );
     }
 
-    private static List<String> propertyNames( TokenNameLookup tokens, IndexDescriptor2 index )
+    private static List<String> propertyNames( TokenNameLookup tokens, IndexDescriptor index )
     {
         int[] propertyIds = index.schema().getPropertyIds();
         List<String> propertyNames = new ArrayList<>( propertyIds.length );
@@ -530,7 +530,7 @@ public class BuiltInProcedures
             this.typeName = typeName;
         }
 
-        private static IndexType getIndexTypeOf( IndexDescriptor2 index )
+        private static IndexType getIndexTypeOf( IndexDescriptor index )
         {
             if ( index.getIndexType() == org.neo4j.internal.schema.IndexType.FULLTEXT )
             {

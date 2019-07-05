@@ -52,7 +52,7 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.internal.helpers.progress.ProgressMonitorFactory;
 import org.neo4j.internal.recordstorage.RecordStorageEngine;
-import org.neo4j.internal.schema.IndexDescriptor2;
+import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.impl.api.index.IndexProxy;
@@ -494,7 +494,7 @@ class FulltextIndexConsistencyCheckIT
             db.execute( format( NODE_CREATE, "nodes", array( "Label" ), array( "prop" ) ) ).close();
             tx.success();
         }
-        IndexDescriptor2 indexDescriptor;
+        IndexDescriptor indexDescriptor;
         long nodeId;
         try ( Transaction tx = db.beginTx() )
         {
@@ -568,7 +568,7 @@ class FulltextIndexConsistencyCheckIT
             db.execute( format( RELATIONSHIP_CREATE, "rels", array( "REL" ), array( "prop" ) ) ).close();
             tx.success();
         }
-        IndexDescriptor2 indexDescriptor;
+        IndexDescriptor indexDescriptor;
         long relId;
         try ( Transaction tx = db.beginTx() )
         {
@@ -644,7 +644,7 @@ class FulltextIndexConsistencyCheckIT
                 NullLogProvider.getInstance(), true, ConsistencyFlags.DEFAULT );
     }
 
-    private static IndexDescriptor2 getIndexDescriptor( IndexDefinition definition )
+    private static IndexDescriptor getIndexDescriptor( IndexDefinition definition )
     {
         IndexDefinitionImpl indexDefinition = (IndexDefinitionImpl) definition;
         return indexDefinition.getIndexReference();

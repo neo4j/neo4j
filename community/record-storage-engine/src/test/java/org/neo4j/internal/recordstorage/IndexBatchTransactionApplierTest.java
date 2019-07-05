@@ -22,7 +22,7 @@ package org.neo4j.internal.recordstorage;
 import org.junit.jupiter.api.Test;
 
 import org.neo4j.internal.recordstorage.Command.NodeCommand;
-import org.neo4j.internal.schema.IndexDescriptor2;
+import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.IndexProviderDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptor;
@@ -95,9 +95,9 @@ class IndexBatchTransactionApplierTest
         long constraintId3 = 12;
         String providerKey = "index-key";
         String providerVersion = "v1";
-        IndexDescriptor2 rule1 = uniqueForSchema( forLabel( 1, 1 ), providerKey, providerVersion, indexId1, constraintId1 );
-        IndexDescriptor2 rule2 = uniqueForSchema( forLabel( 2, 1 ), providerKey, providerVersion, indexId2, constraintId2 );
-        IndexDescriptor2 rule3 = uniqueForSchema( forLabel( 3, 1 ), providerKey, providerVersion, indexId3, constraintId3 );
+        IndexDescriptor rule1 = uniqueForSchema( forLabel( 1, 1 ), providerKey, providerVersion, indexId1, constraintId1 );
+        IndexDescriptor rule2 = uniqueForSchema( forLabel( 2, 1 ), providerKey, providerVersion, indexId2, constraintId2 );
+        IndexDescriptor rule3 = uniqueForSchema( forLabel( 3, 1 ), providerKey, providerVersion, indexId3, constraintId3 );
         try ( IndexBatchTransactionApplier applier = new IndexBatchTransactionApplier( indexUpdateListener, labelScanSync,
                 indexUpdatesSync, mock( NodeStore.class ), mock( RelationshipStore.class ), propertyStore,
                 mock( StorageEngine.class ), mock( SchemaCache.class ), indexActivator ) )
@@ -126,7 +126,7 @@ class IndexBatchTransactionApplierTest
         verifyNoMoreInteractions( indexUpdateListener );
     }
 
-    private IndexDescriptor2 uniqueForSchema( SchemaDescriptor schema, String providerKey, String providerVersion, long id, long owningConstraint )
+    private IndexDescriptor uniqueForSchema( SchemaDescriptor schema, String providerKey, String providerVersion, long id, long owningConstraint )
     {
         final IndexProviderDescriptor indexProvider = new IndexProviderDescriptor( providerKey, providerVersion );
         return IndexPrototype.uniqueForSchema( schema, indexProvider ).materialise( id ).withOwningConstraintId( owningConstraint );

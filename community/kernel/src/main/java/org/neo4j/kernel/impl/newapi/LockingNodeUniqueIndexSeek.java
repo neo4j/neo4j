@@ -23,7 +23,7 @@ import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.internal.kernel.api.NodeValueIndexCursor;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotApplicableKernelException;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
-import org.neo4j.internal.schema.IndexDescriptor2;
+import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.kernel.api.index.IndexReader;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.lock.LockTracer;
@@ -38,7 +38,7 @@ public class LockingNodeUniqueIndexSeek
                                                                     CURSOR cursor,
                                                                     UniqueNodeIndexSeeker<CURSOR> nodeIndexSeeker,
                                                                     Read read,
-                                                                    IndexDescriptor2 index,
+                                                                    IndexDescriptor index,
                                                                     IndexQuery.ExactPredicate... predicates )
             throws IndexNotApplicableKernelException, IndexNotFoundKernelException
     {

@@ -27,7 +27,7 @@ import java.util.Map;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.internal.helpers.collection.BoundedIterable;
 import org.neo4j.internal.helpers.collection.Iterables;
-import org.neo4j.internal.schema.IndexDescriptor2;
+import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
@@ -45,12 +45,12 @@ import static org.neo4j.internal.helpers.collection.Iterators.concatResourceIter
 
 class FusionIndexAccessor extends FusionIndexBase<IndexAccessor> implements IndexAccessor
 {
-    private final IndexDescriptor2 descriptor;
+    private final IndexDescriptor descriptor;
     private final IndexFiles indexFiles;
 
     FusionIndexAccessor( SlotSelector slotSelector,
             InstanceSelector<IndexAccessor> instanceSelector,
-            IndexDescriptor2 descriptor,
+            IndexDescriptor descriptor,
             FileSystemAbstraction fs,
             IndexDirectoryStructure directoryStructure )
     {

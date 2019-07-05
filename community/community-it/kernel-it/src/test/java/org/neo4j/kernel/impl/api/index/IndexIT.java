@@ -45,7 +45,7 @@ import org.neo4j.internal.kernel.api.Transaction;
 import org.neo4j.internal.kernel.api.Write;
 import org.neo4j.internal.kernel.api.exceptions.schema.SchemaKernelException;
 import org.neo4j.internal.schema.IndexConfig;
-import org.neo4j.internal.schema.IndexDescriptor2;
+import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.LabelSchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.internal.schema.constraints.IndexBackedConstraintDescriptor;
@@ -147,7 +147,7 @@ class IndexIT extends KernelIntegrationTest
         SchemaWrite schemaWriteOperations = schemaWriteInNewTransaction();
 
         // WHEN
-        IndexDescriptor2 expectedRule = schemaWriteOperations.indexCreate( descriptor );
+        IndexDescriptor expectedRule = schemaWriteOperations.indexCreate( descriptor );
         commit();
 
         // THEN
@@ -162,13 +162,13 @@ class IndexIT extends KernelIntegrationTest
     {
         // GIVEN
         SchemaWrite schemaWriteOperations = schemaWriteInNewTransaction();
-        IndexDescriptor2 existingRule = schemaWriteOperations.indexCreate( descriptor );
+        IndexDescriptor existingRule = schemaWriteOperations.indexCreate( descriptor );
         commit();
 
         // WHEN
         Transaction transaction = newTransaction( AUTH_DISABLED );
-        IndexDescriptor2 addedRule = transaction.schemaWrite().indexCreate( SchemaDescriptor.forLabel( labelId, 10 ) );
-        Set<IndexDescriptor2> indexRulesInTx = asSet( transaction.schemaRead().indexesGetForLabel( labelId ) );
+        IndexDescriptor addedRule = transaction.schemaWrite().indexCreate( SchemaDescriptor.forLabel( labelId, 10 ) );
+        Set<IndexDescriptor> indexRulesInTx = asSet( transaction.schemaRead().indexesGetForLabel( labelId ) );
         commit();
 
         // THEN
@@ -200,7 +200,7 @@ class IndexIT extends KernelIntegrationTest
         ConstraintIndexCreator creator = new ConstraintIndexCreator( () -> kernel, indexingService, logProvider );
 
         String defaultProvider = Config.defaults().get( default_schema_provider );
-        IndexDescriptor2 constraintIndex = creator.createConstraintIndex( descriptor, defaultProvider );
+        IndexDescriptor constraintIndex = creator.createConstraintIndex( descriptor, defaultProvider );
         // then
         Transaction transaction = newTransaction();
         assertEquals( emptySet(), asSet( transaction.schemaRead().constraintsGetForLabel( labelId ) ) );
@@ -221,7 +221,7 @@ class IndexIT extends KernelIntegrationTest
     void shouldDisallowDroppingIndexThatDoesNotExist() throws Exception
     {
         // given
-        IndexDescriptor2 index;
+        IndexDescriptor index;
         {
             SchemaWrite statement = schemaWriteInNewTransaction();
             index = statement.indexCreate( descriptor );
@@ -247,7 +247,7 @@ class IndexIT extends KernelIntegrationTest
     void shouldDisallowDroppingIndexBySchemaThatDoesNotExist() throws Exception
     {
         // given
-        IndexDescriptor2 index;
+        IndexDescriptor index;
         {
             SchemaWrite statement = schemaWriteInNewTransaction();
             index = statement.indexCreate( descriptor );
@@ -446,14 +446,14 @@ class IndexIT extends KernelIntegrationTest
     {
         // given
         SchemaWrite schemaWrite = schemaWriteInNewTransaction();
-        IndexDescriptor2 index1 = schemaWrite.indexCreate( descriptor );
+        IndexDescriptor index1 = schemaWrite.indexCreate( descriptor );
         IndexBackedConstraintDescriptor constraint = (IndexBackedConstraintDescriptor) schemaWrite.uniquePropertyConstraintCreate( descriptor2 );
         commit();
 
         // then/when
         SchemaRead schemaRead = newTransaction().schemaRead();
-        IndexDescriptor2 index2 = schemaRead.index( constraint.ownedIndexSchema() );
-        List<IndexDescriptor2> indexes = Iterators.asList( schemaRead.indexesGetAll() );
+        IndexDescriptor index2 = schemaRead.index( constraint.ownedIndexSchema() );
+        List<IndexDescriptor> indexes = Iterators.asList( schemaRead.indexesGetAll() );
         assertThat( indexes, containsInAnyOrder( index1, index2 ) );
         commit();
     }

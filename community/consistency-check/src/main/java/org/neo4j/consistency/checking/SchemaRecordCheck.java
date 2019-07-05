@@ -27,7 +27,7 @@ import org.neo4j.consistency.report.ConsistencyReport;
 import org.neo4j.consistency.store.RecordAccess;
 import org.neo4j.internal.kernel.api.exceptions.schema.MalformedSchemaRuleException;
 import org.neo4j.internal.recordstorage.SchemaRuleAccess;
-import org.neo4j.internal.schema.IndexDescriptor2;
+import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.LabelSchemaDescriptor;
 import org.neo4j.internal.schema.RelationTypeSchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptor;
@@ -108,9 +108,9 @@ public class SchemaRecordCheck implements RecordCheck<SchemaRecord, ConsistencyR
                 return;
             }
 
-            if ( rule instanceof IndexDescriptor2 )
+            if ( rule instanceof IndexDescriptor )
             {
-                strategy.checkIndexRule( (IndexDescriptor2)rule, record, records, engine );
+                strategy.checkIndexRule( (IndexDescriptor)rule, record, records, engine );
             }
             else if ( rule instanceof ConstraintRule )
             {
@@ -125,7 +125,7 @@ public class SchemaRecordCheck implements RecordCheck<SchemaRecord, ConsistencyR
 
     private interface CheckStrategy
     {
-        void checkIndexRule( IndexDescriptor2 rule, SchemaRecord record, RecordAccess records,
+        void checkIndexRule( IndexDescriptor rule, SchemaRecord record, RecordAccess records,
                              CheckerEngine<SchemaRecord,ConsistencyReport.SchemaConsistencyReport> engine );
 
         void checkConstraintRule( ConstraintRule rule, SchemaRecord record,
@@ -141,7 +141,7 @@ public class SchemaRecordCheck implements RecordCheck<SchemaRecord, ConsistencyR
     private class RulesCheckStrategy implements CheckStrategy
     {
         @Override
-        public void checkIndexRule( IndexDescriptor2 rule, SchemaRecord record, RecordAccess records,
+        public void checkIndexRule( IndexDescriptor rule, SchemaRecord record, RecordAccess records,
                                     CheckerEngine<SchemaRecord,ConsistencyReport.SchemaConsistencyReport> engine )
         {
             checkSchema( rule, record, records, engine );
@@ -185,7 +185,7 @@ public class SchemaRecordCheck implements RecordCheck<SchemaRecord, ConsistencyR
     private class ObligationsCheckStrategy implements CheckStrategy
     {
         @Override
-        public void checkIndexRule( IndexDescriptor2 rule, SchemaRecord record, RecordAccess records,
+        public void checkIndexRule( IndexDescriptor rule, SchemaRecord record, RecordAccess records,
                                     CheckerEngine<SchemaRecord,ConsistencyReport.SchemaConsistencyReport> engine )
         {
             if ( rule.isUnique() )

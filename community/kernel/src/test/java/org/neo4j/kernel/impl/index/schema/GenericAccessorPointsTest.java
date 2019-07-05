@@ -34,7 +34,7 @@ import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.internal.kernel.api.QueryContext;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotApplicableKernelException;
-import org.neo4j.internal.schema.IndexDescriptor2;
+import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexOrder;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
@@ -81,7 +81,7 @@ class GenericAccessorPointsTest
     private RandomRule random;
 
     private NativeIndexAccessor accessor;
-    private IndexDescriptor2 descriptor;
+    private IndexDescriptor descriptor;
 
     @BeforeEach
     void setup()

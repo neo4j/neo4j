@@ -28,7 +28,7 @@ import java.util.HashMap;
 import java.util.List;
 
 import org.neo4j.internal.kernel.api.helpers.StubNodeCursor;
-import org.neo4j.internal.schema.IndexDescriptor2;
+import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.values.storable.Value;
 
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -51,11 +51,11 @@ class NodeSchemaMatcherTest
     private static final int specialPropId = 24;
     private static final int[] props = {propId1, propId2, unIndexedPropId};
 
-    private final IndexDescriptor2 index1 = forLabel( labelId1, propId1 );
-    private final IndexDescriptor2 index1_2 = forLabel( labelId1, propId1, propId2 );
-    private final IndexDescriptor2 indexWithMissingProperty = forLabel( labelId1, propId1, nonExistentPropId );
-    private final IndexDescriptor2 indexWithMissingLabel = forLabel( nonExistentLabelId, propId1, propId2 );
-    private final IndexDescriptor2 indexOnSpecialProperty = forLabel( labelId1, propId1, specialPropId );
+    private final IndexDescriptor index1 = forLabel( labelId1, propId1 );
+    private final IndexDescriptor index1_2 = forLabel( labelId1, propId1, propId2 );
+    private final IndexDescriptor indexWithMissingProperty = forLabel( labelId1, propId1, nonExistentPropId );
+    private final IndexDescriptor indexWithMissingLabel = forLabel( nonExistentLabelId, propId1, propId2 );
+    private final IndexDescriptor indexOnSpecialProperty = forLabel( labelId1, propId1, specialPropId );
     private StubNodeCursor node;
 
     @BeforeEach
@@ -74,7 +74,7 @@ class NodeSchemaMatcherTest
     void shouldMatchOnSingleProperty()
     {
         // when
-        List<IndexDescriptor2> matched = new ArrayList<>();
+        List<IndexDescriptor> matched = new ArrayList<>();
         NodeSchemaMatcher.onMatchingSchema( iterator( index1 ), unIndexedPropId, props, matched::add );
 
         // then
@@ -85,7 +85,7 @@ class NodeSchemaMatcherTest
     void shouldMatchOnTwoProperties()
     {
         // when
-        List<IndexDescriptor2> matched = new ArrayList<>();
+        List<IndexDescriptor> matched = new ArrayList<>();
         NodeSchemaMatcher.onMatchingSchema( iterator( index1_2 ), unIndexedPropId, props, matched::add );
 
         // then
@@ -96,7 +96,7 @@ class NodeSchemaMatcherTest
     void shouldNotMatchIfNodeIsMissingProperty()
     {
         // when
-        List<IndexDescriptor2> matched = new ArrayList<>();
+        List<IndexDescriptor> matched = new ArrayList<>();
         NodeSchemaMatcher.onMatchingSchema( iterator( indexWithMissingProperty ), unIndexedPropId, props, matched::add );
 
         // then
@@ -107,7 +107,7 @@ class NodeSchemaMatcherTest
     void shouldNotMatchIfNodeIsMissingLabel()
     {
         // when
-        List<IndexDescriptor2> matched = new ArrayList<>();
+        List<IndexDescriptor> matched = new ArrayList<>();
         NodeSchemaMatcher.onMatchingSchema( iterator( indexWithMissingLabel ), node.labels().all(), unIndexedPropId, props, matched::add );
 
         // then
@@ -118,7 +118,7 @@ class NodeSchemaMatcherTest
     void shouldMatchOnSpecialProperty()
     {
         // when
-        List<IndexDescriptor2> matched = new ArrayList<>();
+        List<IndexDescriptor> matched = new ArrayList<>();
         NodeSchemaMatcher.onMatchingSchema( iterator( indexOnSpecialProperty ), specialPropId, props, matched::add );
 
         // then
@@ -129,10 +129,10 @@ class NodeSchemaMatcherTest
     void shouldMatchSeveralTimes()
     {
         // given
-        List<IndexDescriptor2> indexes = Arrays.asList( index1, index1, index1_2, index1_2 );
+        List<IndexDescriptor> indexes = Arrays.asList( index1, index1, index1_2, index1_2 );
 
         // when
-        final List<IndexDescriptor2> matched = new ArrayList<>();
+        final List<IndexDescriptor> matched = new ArrayList<>();
         NodeSchemaMatcher.onMatchingSchema( indexes.iterator(), unIndexedPropId, props, matched::add );
 
         // then

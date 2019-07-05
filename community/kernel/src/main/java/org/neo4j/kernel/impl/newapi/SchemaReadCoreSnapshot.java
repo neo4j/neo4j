@@ -26,7 +26,7 @@ import org.neo4j.internal.kernel.api.PopulationProgress;
 import org.neo4j.internal.kernel.api.SchemaReadCore;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
 import org.neo4j.internal.schema.ConstraintDescriptor;
-import org.neo4j.internal.schema.IndexDescriptor2;
+import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
 import org.neo4j.storageengine.api.StorageSchemaReader;
@@ -45,35 +45,35 @@ class SchemaReadCoreSnapshot implements SchemaReadCore
     }
 
     @Override
-    public IndexDescriptor2 index( SchemaDescriptor schema )
+    public IndexDescriptor index( SchemaDescriptor schema )
     {
         ktx.assertOpen();
         return stores.indexReferenceNoLocking( stores.indexGetForSchema( snapshot, schema ) );
     }
 
     @Override
-    public Iterator<IndexDescriptor2> indexesGetForLabel( int labelId )
+    public Iterator<IndexDescriptor> indexesGetForLabel( int labelId )
     {
         ktx.assertOpen();
         return stores.indexReferencesNoLocking( stores.indexesGetForLabel( snapshot, labelId ) );
     }
 
     @Override
-    public Iterator<IndexDescriptor2> indexesGetForRelationshipType( int relationshipType )
+    public Iterator<IndexDescriptor> indexesGetForRelationshipType( int relationshipType )
     {
         ktx.assertOpen();
         return stores.indexReferencesNoLocking( stores.indexesGetForRelationshipType( snapshot, relationshipType ) );
     }
 
     @Override
-    public Iterator<IndexDescriptor2> indexesGetAll()
+    public Iterator<IndexDescriptor> indexesGetAll()
     {
         ktx.assertOpen();
         return stores.indexReferencesNoLocking( stores.indexesGetAll( snapshot ) );
     }
 
     @Override
-    public InternalIndexState indexGetState( IndexDescriptor2 index ) throws IndexNotFoundKernelException
+    public InternalIndexState indexGetState( IndexDescriptor index ) throws IndexNotFoundKernelException
     {
         AllStoreHolder.assertValidIndex( index );
         ktx.assertOpen();
@@ -81,7 +81,7 @@ class SchemaReadCoreSnapshot implements SchemaReadCore
     }
 
     @Override
-    public PopulationProgress indexGetPopulationProgress( IndexDescriptor2 index ) throws IndexNotFoundKernelException
+    public PopulationProgress indexGetPopulationProgress( IndexDescriptor index ) throws IndexNotFoundKernelException
     {
         AllStoreHolder.assertValidIndex( index );
         ktx.assertOpen();
@@ -89,7 +89,7 @@ class SchemaReadCoreSnapshot implements SchemaReadCore
     }
 
     @Override
-    public String indexGetFailure( IndexDescriptor2 index ) throws IndexNotFoundKernelException
+    public String indexGetFailure( IndexDescriptor index ) throws IndexNotFoundKernelException
     {
         AllStoreHolder.assertValidIndex( index );
         return stores.indexGetFailure( index );

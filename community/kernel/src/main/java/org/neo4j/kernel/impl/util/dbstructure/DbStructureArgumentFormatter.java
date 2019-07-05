@@ -26,7 +26,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 import org.neo4j.internal.helpers.Strings;
-import org.neo4j.internal.schema.IndexDescriptor2;
+import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.LabelSchemaDescriptor;
 import org.neo4j.internal.schema.RelationTypeSchemaDescriptor;
@@ -50,7 +50,7 @@ public enum DbStructureArgumentFormatter implements ArgumentFormatter
             NodeExistenceConstraintDescriptor.class.getCanonicalName(),
             NodeKeyConstraintDescriptor.class.getCanonicalName(),
             SchemaDescriptor.class.getCanonicalName(),
-            IndexDescriptor2.class.getCanonicalName(),
+            IndexDescriptor.class.getCanonicalName(),
             IndexPrototype.class.getCanonicalName()
     );
 
@@ -99,9 +99,9 @@ public enum DbStructureArgumentFormatter implements ArgumentFormatter
                 builder.append( 'd' );
             }
         }
-        else if ( arg instanceof IndexDescriptor2 )
+        else if ( arg instanceof IndexDescriptor )
         {
-            IndexDescriptor2 descriptor = (IndexDescriptor2) arg;
+            IndexDescriptor descriptor = (IndexDescriptor) arg;
             String className = IndexPrototype.class.getSimpleName();
             SchemaDescriptor schema = descriptor.schema();
             String methodName = !descriptor.isUnique() ? "forSchema" : "uniqueForSchema";

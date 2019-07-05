@@ -25,7 +25,7 @@ import java.util.stream.Stream;
 
 import org.neo4j.common.EntityType;
 import org.neo4j.internal.schema.IndexConfig;
-import org.neo4j.internal.schema.IndexDescriptor2;
+import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.IndexProviderDescriptor;
 import org.neo4j.internal.schema.LabelSchemaDescriptor;
@@ -144,7 +144,7 @@ public class RandomSchema implements Supplier<SchemaRule>
         }
     }
 
-    public IndexDescriptor2 nextIndex()
+    public IndexDescriptor nextIndex()
     {
         int choice = rng.nextInt( 4 );
         SchemaDescriptor schema;
@@ -178,7 +178,7 @@ public class RandomSchema implements Supplier<SchemaRule>
         }
 
         long ruleId = nextRuleIdForIndex();
-        IndexDescriptor2 index = prototype.materialise( ruleId );
+        IndexDescriptor index = prototype.materialise( ruleId );
 
         if ( isUnique && rng.nextBoolean() )
         {

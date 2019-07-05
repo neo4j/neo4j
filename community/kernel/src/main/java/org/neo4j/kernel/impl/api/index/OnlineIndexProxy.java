@@ -27,7 +27,7 @@ import java.util.concurrent.TimeUnit;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.kernel.api.PopulationProgress;
-import org.neo4j.internal.schema.IndexDescriptor2;
+import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexAccessor;
@@ -41,7 +41,7 @@ import org.neo4j.values.storable.Value;
 public class OnlineIndexProxy implements IndexProxy
 {
     private final long indexId;
-    private final IndexDescriptor2 descriptor;
+    private final IndexDescriptor descriptor;
     final IndexAccessor accessor;
     private final IndexStatisticsStore indexStatisticsStore;
     private boolean started;
@@ -72,7 +72,7 @@ public class OnlineIndexProxy implements IndexProxy
     //   slightly more costly, but shouldn't make that big of a difference hopefully.
     private final boolean forcedIdempotentMode;
 
-    OnlineIndexProxy( IndexDescriptor2 descriptor, IndexAccessor accessor, IndexStatisticsStore indexStatisticsStore,
+    OnlineIndexProxy( IndexDescriptor descriptor, IndexAccessor accessor, IndexStatisticsStore indexStatisticsStore,
             boolean forcedIdempotentMode )
     {
         assert accessor != null;
@@ -124,7 +124,7 @@ public class OnlineIndexProxy implements IndexProxy
     }
 
     @Override
-    public IndexDescriptor2 getDescriptor()
+    public IndexDescriptor getDescriptor()
     {
         return descriptor;
     }

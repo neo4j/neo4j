@@ -20,22 +20,22 @@
 package org.neo4j.kernel.impl.newapi;
 
 import org.neo4j.internal.kernel.api.IndexReadSession;
-import org.neo4j.internal.schema.IndexDescriptor2;
+import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.kernel.api.index.IndexReader;
 
 class DefaultIndexReadSession implements IndexReadSession
 {
     final IndexReader reader;
-    final IndexDescriptor2 reference;
+    final IndexDescriptor reference;
 
-    DefaultIndexReadSession( IndexReader reader, IndexDescriptor2 reference )
+    DefaultIndexReadSession( IndexReader reader, IndexDescriptor reference )
     {
         this.reader = reader;
         this.reference = reference;
     }
 
     @Override
-    public IndexDescriptor2 reference()
+    public IndexDescriptor reference()
     {
         return reference;
     }

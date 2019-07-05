@@ -27,7 +27,7 @@ import java.io.IOException;
 import java.util.List;
 
 import org.neo4j.common.EntityType;
-import org.neo4j.internal.schema.IndexDescriptor2;
+import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.kernel.api.impl.index.AbstractLuceneIndex;
 import org.neo4j.kernel.api.impl.index.SearcherReference;
 import org.neo4j.kernel.api.impl.index.partition.AbstractIndexPartition;
@@ -45,9 +45,9 @@ public class LuceneFulltextIndex extends AbstractLuceneIndex<FulltextIndexReader
     private final TokenHolder propertyKeyTokenHolder;
     private final String[] propertyNames;
     private final File transactionsFolder;
-    private final IndexDescriptor2 descriptor;
+    private final IndexDescriptor descriptor;
 
-    LuceneFulltextIndex( PartitionedIndexStorage storage, IndexPartitionFactory partitionFactory, IndexDescriptor2 descriptor,
+    LuceneFulltextIndex( PartitionedIndexStorage storage, IndexPartitionFactory partitionFactory, IndexDescriptor descriptor,
             TokenHolder propertyKeyTokenHolder, Analyzer analyzer, String[] propertyNames )
     {
         super( storage, partitionFactory, descriptor );
@@ -92,7 +92,7 @@ public class LuceneFulltextIndex extends AbstractLuceneIndex<FulltextIndexReader
     }
 
     @Override
-    public IndexDescriptor2 getDescriptor()
+    public IndexDescriptor getDescriptor()
     {
         return descriptor;
     }

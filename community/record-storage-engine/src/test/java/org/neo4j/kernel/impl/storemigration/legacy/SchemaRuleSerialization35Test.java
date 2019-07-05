@@ -30,7 +30,7 @@ import org.neo4j.common.EntityType;
 import org.neo4j.internal.kernel.api.exceptions.schema.MalformedSchemaRuleException;
 import org.neo4j.internal.schema.ConstraintDescriptor;
 import org.neo4j.internal.schema.IndexConfig;
-import org.neo4j.internal.schema.IndexDescriptor2;
+import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.IndexProviderDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptor;
@@ -99,32 +99,32 @@ class SchemaRuleSerialization35Test
         return indexPrototype( true, name, labelId, propertyIds );
     }
 
-    static IndexDescriptor2 withId( IndexPrototype prototype, long id )
+    static IndexDescriptor withId( IndexPrototype prototype, long id )
     {
         return prototype.materialise( id );
     }
 
-    private static IndexDescriptor2 withIds( IndexPrototype prototype, long id, long owningConstraintId )
+    private static IndexDescriptor withIds( IndexPrototype prototype, long id, long owningConstraintId )
     {
         return withId( prototype, id ).withOwningConstraintId( owningConstraintId );
     }
 
-    private final IndexDescriptor2 indexRegular = withId( forLabel( LABEL_ID, PROPERTY_ID_1 ), RULE_ID );
+    private final IndexDescriptor indexRegular = withId( forLabel( LABEL_ID, PROPERTY_ID_1 ), RULE_ID );
 
-    private final IndexDescriptor2 indexUnique = withIds( uniqueForLabel( LABEL_ID, PROPERTY_ID_1 ), RULE_ID_2, RULE_ID );
+    private final IndexDescriptor indexUnique = withIds( uniqueForLabel( LABEL_ID, PROPERTY_ID_1 ), RULE_ID_2, RULE_ID );
 
-    private final IndexDescriptor2 indexCompositeRegular = withId( forLabel( LABEL_ID, PROPERTY_ID_1, PROPERTY_ID_2 ), RULE_ID );
+    private final IndexDescriptor indexCompositeRegular = withId( forLabel( LABEL_ID, PROPERTY_ID_1, PROPERTY_ID_2 ), RULE_ID );
 
-    private final IndexDescriptor2 indexMultiTokenRegular = withId(
+    private final IndexDescriptor indexMultiTokenRegular = withId(
             indexPrototype( false, null,
                     fulltext( EntityType.NODE, IndexConfig.empty(), new int[]{LABEL_ID, LABEL_ID_2}, new int[]{PROPERTY_ID_1, PROPERTY_ID_2} ) ),
             RULE_ID );
 
-    private final IndexDescriptor2 indexCompositeUnique = withIds( uniqueForLabel( LABEL_ID, PROPERTY_ID_1, PROPERTY_ID_2 ), RULE_ID_2, RULE_ID );
+    private final IndexDescriptor indexCompositeUnique = withIds( uniqueForLabel( LABEL_ID, PROPERTY_ID_1, PROPERTY_ID_2 ), RULE_ID_2, RULE_ID );
 
-    private final IndexDescriptor2 indexBigComposite = withId( forLabel( LABEL_ID, IntStream.range(1, 200).toArray() ), RULE_ID );
+    private final IndexDescriptor indexBigComposite = withId( forLabel( LABEL_ID, IntStream.range(1, 200).toArray() ), RULE_ID );
 
-    private final IndexDescriptor2 indexBigMultiToken = withId(
+    private final IndexDescriptor indexBigMultiToken = withId(
             indexPrototype( false, null,
                     fulltext( EntityType.RELATIONSHIP, IndexConfig.empty(), IntStream.range( 1, 200 ).toArray(), IntStream.range( 1, 200 ).toArray() ) ),
             RULE_ID );
@@ -509,7 +509,7 @@ class SchemaRuleSerialization35Test
         byte[] bytes = decodeBase64( serialized );
 
         // WHEN
-        IndexDescriptor2 deserialized = assertIndexRule( SchemaRuleSerialization35.deserialize( ruleId, ByteBuffer.wrap( bytes ) ) );
+        IndexDescriptor deserialized = assertIndexRule( SchemaRuleSerialization35.deserialize( ruleId, ByteBuffer.wrap( bytes ) ) );
 
         // THEN
         assertThat( deserialized.getId(), equalTo( ruleId ) );
@@ -531,7 +531,7 @@ class SchemaRuleSerialization35Test
         byte[] bytes = decodeBase64( serialized );
 
         // WHEN
-        IndexDescriptor2 deserialized = assertIndexRule( SchemaRuleSerialization35.deserialize( ruleId, ByteBuffer.wrap( bytes ) ) );
+        IndexDescriptor deserialized = assertIndexRule( SchemaRuleSerialization35.deserialize( ruleId, ByteBuffer.wrap( bytes ) ) );
 
         // THEN
         assertThat( deserialized.getId(), equalTo( ruleId ) );
@@ -628,10 +628,10 @@ class SchemaRuleSerialization35Test
 
     // HELPERS
 
-    private static void assertSerializeAndDeserializeIndexRule( IndexDescriptor2 indexRule )
+    private static void assertSerializeAndDeserializeIndexRule( IndexDescriptor indexRule )
             throws MalformedSchemaRuleException
     {
-        IndexDescriptor2 deserialized = assertIndexRule( serialiseAndDeserialise( indexRule ) );
+        IndexDescriptor deserialized = assertIndexRule( serialiseAndDeserialise( indexRule ) );
 
         assertThat( deserialized.getId(), equalTo( indexRule.getId() ) );
         assertThat( deserialized, equalTo( indexRule ) );
@@ -639,13 +639,13 @@ class SchemaRuleSerialization35Test
         assertThat( deserialized.getIndexProvider(), equalTo( indexRule.getIndexProvider() ) );
     }
 
-    private static IndexDescriptor2 assertIndexRule( SchemaRule schemaRule )
+    private static IndexDescriptor assertIndexRule( SchemaRule schemaRule )
     {
-        if ( !(schemaRule instanceof IndexDescriptor2) )
+        if ( !(schemaRule instanceof IndexDescriptor) )
         {
             fail( "Expected IndexRule, but got " + schemaRule.getClass().getSimpleName() );
         }
-        return (IndexDescriptor2)schemaRule;
+        return (IndexDescriptor)schemaRule;
     }
 
     private static void assertSerializeAndDeserializeConstraintRule( ConstraintRule constraintRule )
@@ -664,7 +664,7 @@ class SchemaRuleSerialization35Test
         return SchemaRuleSerialization35.deserialize( constraintRule.getId(), buffer );
     }
 
-    private static SchemaRule serialiseAndDeserialise( IndexDescriptor2 indexRule ) throws MalformedSchemaRuleException
+    private static SchemaRule serialiseAndDeserialise( IndexDescriptor indexRule ) throws MalformedSchemaRuleException
     {
         ByteBuffer buffer = ByteBuffer.wrap( SchemaRuleSerialization35.serialize( indexRule ) );
         return SchemaRuleSerialization35.deserialize( indexRule.getId(), buffer );
@@ -679,7 +679,7 @@ class SchemaRuleSerialization35Test
         return (ConstraintRule)schemaRule;
     }
 
-    private static void assertCorrectLength( IndexDescriptor2 indexRule )
+    private static void assertCorrectLength( IndexDescriptor indexRule )
     {
         // GIVEN
         ByteBuffer buffer = ByteBuffer.wrap( SchemaRuleSerialization35.serialize( indexRule ) );

@@ -32,7 +32,7 @@ import org.neo4j.internal.helpers.collection.Iterables;
 import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.internal.recordstorage.Command.Mode;
 import org.neo4j.internal.recordstorage.RecordAccess.RecordProxy;
-import org.neo4j.internal.schema.IndexDescriptor2;
+import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.SchemaRule;
 import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.store.NeoStores;
@@ -603,7 +603,7 @@ public class TransactionRecordState implements RecordState
         propertyCreator.primitiveSetProperty( record, propertyKeyId, value, recordChangeSet.getPropertyRecords() );
     }
 
-    void schemaRuleSetIndexOwner( IndexDescriptor2 rule, long constraintId, int propertyKeyId, Value value )
+    void schemaRuleSetIndexOwner( IndexDescriptor rule, long constraintId, int propertyKeyId, Value value )
     {
         // It is possible that the added property will only modify the property chain and leave the owning record untouched.
         // However, we need the schema record to be marked as updated so that an UPDATE schema command is generated.

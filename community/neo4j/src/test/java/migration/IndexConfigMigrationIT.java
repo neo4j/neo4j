@@ -48,7 +48,7 @@ import org.neo4j.internal.helpers.collection.Iterables;
 import org.neo4j.internal.kernel.api.SchemaRead;
 import org.neo4j.internal.kernel.api.TokenRead;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
-import org.neo4j.internal.schema.IndexDescriptor2;
+import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.io.compress.ZipUtils;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
@@ -314,7 +314,7 @@ class IndexConfigMigrationIT
     private static Map<String,Value> getFulltextIndexConfig( GraphDatabaseAPI db, String indexName ) throws IndexNotFoundKernelException
     {
         IndexingService indexingService = getIndexingService( db );
-        IndexDescriptor2 indexReference = schemaRead( db ).indexGetForName( indexName );
+        IndexDescriptor indexReference = schemaRead( db ).indexGetForName( indexName );
         IndexProxy indexProxy = indexingService.getIndexProxy( indexReference.schema() );
         return indexProxy.indexConfig();
     }

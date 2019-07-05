@@ -41,7 +41,7 @@ import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.NodeValueIndexCursor;
 import org.neo4j.internal.kernel.api.PropertyCursor;
 import org.neo4j.internal.kernel.api.Write;
-import org.neo4j.internal.schema.IndexDescriptor2;
+import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexOrder;
 import org.neo4j.internal.schema.IndexValueCapability;
 import org.neo4j.values.storable.CoordinateReferenceSystem;
@@ -971,9 +971,9 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
         int badLabel = token.nodeLabel( "BAD_LABEL" );
         int badProp = token.propertyKey( "badProp" );
 
-        assertEquals( IndexDescriptor2.NO_INDEX, schemaRead.index( badLabel, prop ), "bad label" );
-        assertEquals( IndexDescriptor2.NO_INDEX, schemaRead.index( label, badProp ), "bad prop" );
-        assertEquals( IndexDescriptor2.NO_INDEX, schemaRead.index( badLabel, badProp ), "just bad" );
+        assertEquals( IndexDescriptor.NO_INDEX, schemaRead.index( badLabel, prop ), "bad label" );
+        assertEquals( IndexDescriptor.NO_INDEX, schemaRead.index( label, badProp ), "bad prop" );
+        assertEquals( IndexDescriptor.NO_INDEX, schemaRead.index( badLabel, badProp ), "just bad" );
     }
 
     @Test
@@ -984,9 +984,9 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
         int badLabel = Integer.MAX_VALUE;
         int badProp = Integer.MAX_VALUE;
 
-        assertEquals( IndexDescriptor2.NO_INDEX, schemaRead.index( badLabel, prop ), "bad label" );
-        assertEquals( IndexDescriptor2.NO_INDEX, schemaRead.index( label, badProp ), "bad prop" );
-        assertEquals( IndexDescriptor2.NO_INDEX, schemaRead.index( badLabel, badProp ), "just bad" );
+        assertEquals( IndexDescriptor.NO_INDEX, schemaRead.index( badLabel, prop ), "bad label" );
+        assertEquals( IndexDescriptor.NO_INDEX, schemaRead.index( label, badProp ), "bad prop" );
+        assertEquals( IndexDescriptor.NO_INDEX, schemaRead.index( badLabel, badProp ), "just bad" );
     }
 
     @Test
@@ -995,7 +995,7 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
         // Given
         int label = token.nodeLabel( "Node" );
         int prop = token.propertyKey( "prop" );
-        IndexDescriptor2 index = schemaRead.index( label, prop );
+        IndexDescriptor index = schemaRead.index( label, prop );
 
         assertEquals( providerKey(), index.getIndexProvider().getKey() );
         assertEquals( providerVersion(), index.getIndexProvider().getVersion() );
@@ -1468,7 +1468,7 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
         // Given
         int label = token.nodeLabel( "Node" );
         int key = token.propertyKey( "prop2" );
-        IndexDescriptor2 index = schemaRead.index( label, key );
+        IndexDescriptor index = schemaRead.index( label, key );
         int expectedCount = 100;
         Map<Value,Set<Long>> expected = new HashMap<>();
         try ( org.neo4j.internal.kernel.api.Transaction tx = beginTransaction() )
@@ -1525,7 +1525,7 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
         // given
         int label = token.nodeLabel( "Node" );
         int key = token.propertyKey( "prop3" );
-        IndexDescriptor2 index = schemaRead.index( label, key );
+        IndexDescriptor index = schemaRead.index( label, key );
 
         // when
         Map<Value,Integer> expected = new HashMap<>();

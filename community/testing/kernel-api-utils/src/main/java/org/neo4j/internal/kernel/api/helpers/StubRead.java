@@ -31,14 +31,14 @@ import org.neo4j.internal.kernel.api.RelationshipIndexCursor;
 import org.neo4j.internal.kernel.api.RelationshipScanCursor;
 import org.neo4j.internal.kernel.api.RelationshipTraversalCursor;
 import org.neo4j.internal.kernel.api.Scan;
-import org.neo4j.internal.schema.IndexDescriptor2;
+import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexOrder;
 import org.neo4j.values.storable.Value;
 
 public class StubRead implements Read
 {
     @Override
-    public IndexReadSession indexReadSession( IndexDescriptor2 index )
+    public IndexReadSession indexReadSession( IndexDescriptor index )
     {
         throw new UnsupportedOperationException();
     }
@@ -49,7 +49,7 @@ public class StubRead implements Read
     }
 
     @Override
-    public void nodeIndexDistinctValues( IndexDescriptor2 index, NodeValueIndexCursor cursor, boolean needsValues )
+    public void nodeIndexDistinctValues( IndexDescriptor index, NodeValueIndexCursor cursor, boolean needsValues )
     {
         throw new UnsupportedOperationException();
     }
@@ -61,13 +61,13 @@ public class StubRead implements Read
     }
 
     @Override
-    public void relationshipIndexSeek( IndexDescriptor2 index, RelationshipIndexCursor cursor, IndexQuery... query )
+    public void relationshipIndexSeek( IndexDescriptor index, RelationshipIndexCursor cursor, IndexQuery... query )
     {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public long lockingNodeUniqueIndexSeek( IndexDescriptor2 index,
+    public long lockingNodeUniqueIndexSeek( IndexDescriptor index,
                                             NodeValueIndexCursor cursor,
                                             IndexQuery.ExactPredicate... predicates )
     {

@@ -40,7 +40,7 @@ import org.neo4j.internal.kernel.api.RelationshipScanCursor;
 import org.neo4j.internal.kernel.api.RelationshipTraversalCursor;
 import org.neo4j.internal.kernel.api.Transaction;
 import org.neo4j.internal.schema.IndexConfig;
-import org.neo4j.internal.schema.IndexDescriptor2;
+import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexOrder;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.values.storable.Values;
@@ -131,7 +131,7 @@ abstract class KernelReadTracerTxStateTestBase<G extends KernelAPIWriteTestSuppo
             long n = tx.dataWrite().nodeCreate();
             tx.dataWrite().nodeAddLabel( n, user );
             tx.dataWrite().nodeSetProperty( n, name, Values.stringValue( "Bosse" ) );
-            IndexDescriptor2 index = tx.schemaRead().index( user, name );
+            IndexDescriptor index = tx.schemaRead().index( user, name );
             IndexReadSession session = tx.dataRead().indexReadSession( index );
 
             // when
@@ -284,7 +284,7 @@ abstract class KernelReadTracerTxStateTestBase<G extends KernelAPIWriteTestSuppo
         int connection;
         int name;
         String indexName = "myIndex";
-        IndexDescriptor2 index;
+        IndexDescriptor index;
 
         try ( Transaction tx = beginTransaction() )
         {

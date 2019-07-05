@@ -26,7 +26,7 @@ import org.neo4j.internal.kernel.api.SchemaRead;
 import org.neo4j.internal.kernel.api.TokenRead;
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
-import org.neo4j.internal.schema.IndexDescriptor2;
+import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.exceptions.Status;
@@ -88,7 +88,7 @@ class ResampleIndexProcedureTest
     @Test
     void shouldLookUpTheIndexByLabelIdAndPropertyKeyId() throws ProcedureException
     {
-        IndexDescriptor2 index = IndexPrototype.forSchema( forLabel( 0, 0 ) ).materialise( 42 );
+        IndexDescriptor index = IndexPrototype.forSchema( forLabel( 0, 0 ) ).materialise( 42 );
         when( tokenRead.nodeLabel( anyString() ) ).thenReturn( 123 );
         when( tokenRead.propertyKey( anyString() ) ).thenReturn( 456 );
         when( schemaRead.index( anyInt(), any() ) ).thenReturn( index );
@@ -101,7 +101,7 @@ class ResampleIndexProcedureTest
     @Test
     void shouldLookUpTheCompositeIndexByLabelIdAndPropertyKeyId() throws ProcedureException
     {
-        IndexDescriptor2 index = IndexPrototype.forSchema( forLabel( 0, 0, 1 ) ).materialise( 42 );
+        IndexDescriptor index = IndexPrototype.forSchema( forLabel( 0, 0, 1 ) ).materialise( 42 );
         when( tokenRead.nodeLabel( anyString() ) ).thenReturn( 123 );
         when( tokenRead.propertyKey( "name" ) ).thenReturn( 0 );
         when( tokenRead.propertyKey( "lastName" ) ).thenReturn( 1 );
@@ -117,7 +117,7 @@ class ResampleIndexProcedureTest
     {
         when( tokenRead.nodeLabel( anyString() ) ).thenReturn( 0 );
         when( tokenRead.propertyKey( anyString() ) ).thenReturn( 0 );
-        when( schemaRead.index( anyInt(), any() ) ).thenReturn( IndexDescriptor2.NO_INDEX );
+        when( schemaRead.index( anyInt(), any() ) ).thenReturn( IndexDescriptor.NO_INDEX );
 
         ProcedureException exception = assertThrows( ProcedureException.class, () -> procedure.resampleIndex( ":Person(name)" ) );
         assertThat( exception.status(), is( Status.Schema.IndexNotFound ) );
@@ -126,7 +126,7 @@ class ResampleIndexProcedureTest
     @Test
     void shouldTriggerResampling() throws ProcedureException, IndexNotFoundKernelException
     {
-        IndexDescriptor2 index = IndexPrototype.forSchema( forLabel( 123, 456 ) ).materialise( 42 );
+        IndexDescriptor index = IndexPrototype.forSchema( forLabel( 123, 456 ) ).materialise( 42 );
         when( schemaRead.index( anyInt(), any() ) ).thenReturn( index );
 
         procedure.resampleIndex( ":Person(name)" );

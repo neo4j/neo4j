@@ -33,8 +33,7 @@ import org.neo4j.graphdb.schema.AnalyzerProvider;
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.schema.IndexCapability;
 import org.neo4j.internal.schema.IndexConfig;
-import org.neo4j.internal.schema.IndexDescriptor2;
-import org.neo4j.internal.schema.IndexKind;
+import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.IndexProviderDescriptor;
 import org.neo4j.internal.schema.IndexType;
@@ -103,7 +102,7 @@ class FulltextIndexProvider extends IndexProvider implements FulltextAdapter
         return new IndexStorageFactory( directoryFactory, fileSystem, directoryStructure() );
     }
 
-    private boolean indexIsOnline( PartitionedIndexStorage indexStorage, IndexDescriptor2 descriptor ) throws IOException
+    private boolean indexIsOnline( PartitionedIndexStorage indexStorage, IndexDescriptor descriptor ) throws IOException
     {
         try ( SchemaIndex index = LuceneSchemaIndexBuilder.create( descriptor, config ).withIndexStorage( indexStorage ).build() )
         {
@@ -130,7 +129,7 @@ class FulltextIndexProvider extends IndexProvider implements FulltextAdapter
     }
 
     @Override
-    public IndexDescriptor2 completeConfiguration( IndexDescriptor2 index )
+    public IndexDescriptor completeConfiguration( IndexDescriptor index )
     {
         SchemaDescriptor schema = index.schema();
         // TODO make the createIndex procedure verify that the created index types and providers make sense.
@@ -142,13 +141,13 @@ class FulltextIndexProvider extends IndexProvider implements FulltextAdapter
         return index;
     }
 
-    private IndexCapability getCapability( IndexDescriptor2 descriptor )
+    private IndexCapability getCapability( IndexDescriptor descriptor )
     {
         return new FulltextIndexCapability( isEventuallyConsistent( descriptor.schema() ) );
     }
 
     @Override
-    public String getPopulationFailure( IndexDescriptor2 descriptor ) throws IllegalStateException
+    public String getPopulationFailure( IndexDescriptor descriptor ) throws IllegalStateException
     {
         String failure = getIndexStorage( descriptor.getId() ).getStoredIndexFailure();
         if ( failure == null )
@@ -159,7 +158,7 @@ class FulltextIndexProvider extends IndexProvider implements FulltextAdapter
     }
 
     @Override
-    public InternalIndexState getInitialState( IndexDescriptor2 descriptor )
+    public InternalIndexState getInitialState( IndexDescriptor descriptor )
     {
         PartitionedIndexStorage indexStorage = getIndexStorage( descriptor.getId() );
         String failure = indexStorage.getStoredIndexFailure();
@@ -178,7 +177,7 @@ class FulltextIndexProvider extends IndexProvider implements FulltextAdapter
     }
 
     @Override
-    public IndexPopulator getPopulator( IndexDescriptor2 descriptor, IndexSamplingConfig samplingConfig, ByteBufferFactory bufferFactory )
+    public IndexPopulator getPopulator( IndexDescriptor descriptor, IndexSamplingConfig samplingConfig, ByteBufferFactory bufferFactory )
     {
         PartitionedIndexStorage indexStorage = getIndexStorage( descriptor.getId() );
         NonTransactionalTokenNameLookup tokenNameLookup = new NonTransactionalTokenNameLookup( tokenHolders );
@@ -200,7 +199,7 @@ class FulltextIndexProvider extends IndexProvider implements FulltextAdapter
     }
 
     @Override
-    public IndexAccessor getOnlineAccessor( IndexDescriptor2 descriptor, IndexSamplingConfig samplingConfig ) throws IOException
+    public IndexAccessor getOnlineAccessor( IndexDescriptor descriptor, IndexSamplingConfig samplingConfig ) throws IOException
     {
         PartitionedIndexStorage indexStorage = getIndexStorage( descriptor.getId() );
         NonTransactionalTokenNameLookup tokenNameLookup = new NonTransactionalTokenNameLookup( tokenHolders );

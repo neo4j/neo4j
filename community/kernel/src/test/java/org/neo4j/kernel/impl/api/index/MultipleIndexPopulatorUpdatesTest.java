@@ -28,7 +28,7 @@ import java.util.function.Supplier;
 
 import org.neo4j.common.EntityType;
 import org.neo4j.internal.helpers.collection.Visitor;
-import org.neo4j.internal.schema.IndexDescriptor2;
+import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.LabelSchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptor;
@@ -98,7 +98,7 @@ class MultipleIndexPopulatorUpdatesTest
                 mock( FailedIndexProxyFactory.class ) );
     }
 
-    private static void addPopulator( MultipleIndexPopulator multipleIndexPopulator, IndexDescriptor2 descriptor,
+    private static void addPopulator( MultipleIndexPopulator multipleIndexPopulator, IndexDescriptor descriptor,
         IndexPopulator indexPopulator, FlippableIndexProxy flippableIndexProxy, FailedIndexProxyFactory failedIndexProxyFactory )
     {
         multipleIndexPopulator.addPopulator( indexPopulator, descriptor, flippableIndexProxy, failedIndexProxyFactory, "userIndexDescription" );

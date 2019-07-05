@@ -23,7 +23,7 @@ import org.eclipse.collections.api.block.procedure.primitive.IntObjectProcedure;
 import org.eclipse.collections.api.map.primitive.IntObjectMap;
 
 import org.neo4j.exceptions.KernelException;
-import org.neo4j.internal.schema.IndexDescriptor2;
+import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.SchemaRule;
 import org.neo4j.storageengine.api.ConstraintRule;
 import org.neo4j.values.storable.Value;
@@ -46,7 +46,7 @@ public abstract class PropertyBasedSchemaRecordChangeTranslator implements Schem
     }
 
     @Override
-    public void setConstraintIndexOwner( TransactionRecordState recordState, IndexDescriptor2 indexRule, long constraintId ) throws KernelException
+    public void setConstraintIndexOwner( TransactionRecordState recordState, IndexDescriptor indexRule, long constraintId ) throws KernelException
     {
         setConstraintIndexOwnerProperty( constraintId,
                 ( propertyKeyId, value ) -> recordState.schemaRuleSetIndexOwner( indexRule, constraintId, propertyKeyId, value ) );

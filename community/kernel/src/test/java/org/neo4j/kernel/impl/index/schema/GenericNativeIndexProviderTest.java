@@ -26,7 +26,7 @@ import java.util.Map;
 
 import org.neo4j.configuration.Config;
 import org.neo4j.internal.schema.IndexConfig;
-import org.neo4j.internal.schema.IndexDescriptor2;
+import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.IndexProviderDescriptor;
 import org.neo4j.internal.schema.LabelSchemaDescriptor;
@@ -56,10 +56,10 @@ class GenericNativeIndexProviderTest
         // Given
         GenericNativeIndexProvider provider = new GenericNativeIndexProvider( IndexDirectoryStructure.NONE, null, null, null, null, false, Config.defaults() );
         LabelSchemaDescriptor sinfulSchema = SchemaDescriptor.forLabel( 1, 1 );
-        IndexDescriptor2 sinfulDescriptor = IndexPrototype.forSchema( sinfulSchema, IndexProviderDescriptor.UNDECIDED ).materialise( 1 );
+        IndexDescriptor sinfulDescriptor = IndexPrototype.forSchema( sinfulSchema, IndexProviderDescriptor.UNDECIDED ).materialise( 1 );
 
         // When
-        IndexDescriptor2 blessesDescriptor = provider.completeConfiguration( sinfulDescriptor );
+        IndexDescriptor blessesDescriptor = provider.completeConfiguration( sinfulDescriptor );
         SchemaDescriptor blessedSchema = blessesDescriptor.schema();
 
         // Then
@@ -98,10 +98,10 @@ class GenericNativeIndexProviderTest
         existingSettings.put( key( existingCrs.getName(), MAX ), max );
         IndexConfig existingIndexConfig = IndexConfig.with( existingSettings );
         LabelSchemaDescriptor sinfulSchema = SchemaDescriptor.forLabel( 1, 1 ).withIndexConfig( existingIndexConfig );
-        IndexDescriptor2 sinfulDescriptor = IndexPrototype.forSchema( sinfulSchema, IndexProviderDescriptor.UNDECIDED ).materialise( 1 );
+        IndexDescriptor sinfulDescriptor = IndexPrototype.forSchema( sinfulSchema, IndexProviderDescriptor.UNDECIDED ).materialise( 1 );
 
         // When
-        IndexDescriptor2 blessesPrototype = provider.completeConfiguration( sinfulDescriptor );
+        IndexDescriptor blessesPrototype = provider.completeConfiguration( sinfulDescriptor );
         SchemaDescriptor blessedSchema = blessesPrototype.schema();
 
         // Then

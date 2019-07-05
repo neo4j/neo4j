@@ -27,7 +27,7 @@ import org.neo4j.internal.kernel.api.{NodeCursor, RelationshipScanCursor}
 import org.neo4j.values.storable.Value
 import org.neo4j.values.virtual.{NodeValue, RelationshipValue}
 import org.neo4j.cypher.internal.v4_0.expressions.SemanticDirection
-import org.neo4j.internal.schema.IndexDescriptor2
+import org.neo4j.internal.schema.IndexDescriptor
 
 class UpdateCountingQueryContext(inner: QueryContext) extends DelegatingQueryContext(inner) {
 
@@ -101,7 +101,7 @@ class UpdateCountingQueryContext(inner: QueryContext) extends DelegatingQueryCon
     removed
   }
 
-  override def addIndexRule(labelId: Int, propertyKeyIds: Seq[Int]): IdempotentResult[IndexDescriptor2] = {
+  override def addIndexRule(labelId: Int, propertyKeyIds: Seq[Int]): IdempotentResult[IndexDescriptor] = {
     val result = inner.addIndexRule(labelId, propertyKeyIds)
     result.ifCreated { indexesAdded.increase() }
     result

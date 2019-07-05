@@ -22,7 +22,7 @@ package org.neo4j.kernel.impl.api.index;
 import java.util.function.Consumer;
 
 import org.neo4j.internal.schema.IndexConfigCompleter;
-import org.neo4j.internal.schema.IndexDescriptor2;
+import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexProviderDescriptor;
 import org.neo4j.kernel.api.index.IndexProvider;
 
@@ -67,7 +67,7 @@ public interface IndexProviderMap extends IndexConfigCompleter
     IndexProviderMap EMPTY = new IndexProviderMap()
     {
         @Override
-        public IndexDescriptor2 completeConfiguration( IndexDescriptor2 index )
+        public IndexDescriptor completeConfiguration( IndexDescriptor index )
         {
             return index;
         }

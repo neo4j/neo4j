@@ -33,7 +33,7 @@ import org.neo4j.internal.kernel.api.Read;
 import org.neo4j.internal.kernel.api.Transaction;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
 import org.neo4j.internal.kernel.api.security.LoginContext;
-import org.neo4j.internal.schema.IndexDescriptor2;
+import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexOrder;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.extension.DbmsExtension;
@@ -108,7 +108,7 @@ class KernelAPIParallelIndexScanStressIT
     private static IndexReadSession indexReadSession( Transaction tx, int propKey, String label ) throws IndexNotFoundKernelException
     {
         int labelId = tx.tokenRead().nodeLabel( label );
-        IndexDescriptor2 index = tx.schemaRead().index( labelId, propKey );
+        IndexDescriptor index = tx.schemaRead().index( labelId, propKey );
         return tx.dataRead().indexReadSession( index );
     }
 

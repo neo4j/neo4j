@@ -32,7 +32,7 @@ import java.util.Iterator;
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.NodeValueIndexCursor;
-import org.neo4j.internal.schema.IndexDescriptor2;
+import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexOrder;
 import org.neo4j.kernel.api.index.IndexProgressor;
 import org.neo4j.kernel.api.txstate.TransactionState;
@@ -79,7 +79,7 @@ final class DefaultNodeValueIndexCursor extends IndexCursor<IndexProgressor>
     }
 
     @Override
-    public void initialize( IndexDescriptor2 descriptor,
+    public void initialize( IndexDescriptor descriptor,
                             IndexProgressor progressor,
                             IndexQuery[] query,
                             IndexOrder indexOrder,
@@ -367,7 +367,7 @@ final class DefaultNodeValueIndexCursor extends IndexCursor<IndexProgressor>
         }
     }
 
-    private void prefixQuery( IndexDescriptor2 descriptor, Value[] equalityPrefix, IndexQuery.StringPrefixPredicate predicate )
+    private void prefixQuery( IndexDescriptor descriptor, Value[] equalityPrefix, IndexQuery.StringPrefixPredicate predicate )
     {
         TransactionState txState = read.txState();
 
@@ -386,7 +386,7 @@ final class DefaultNodeValueIndexCursor extends IndexCursor<IndexProgressor>
         }
     }
 
-    private void rangeQuery( IndexDescriptor2 descriptor, Value[] equalityPrefix, IndexQuery.RangePredicate<?> predicate )
+    private void rangeQuery( IndexDescriptor descriptor, Value[] equalityPrefix, IndexQuery.RangePredicate<?> predicate )
     {
         TransactionState txState = read.txState();
 
@@ -404,7 +404,7 @@ final class DefaultNodeValueIndexCursor extends IndexCursor<IndexProgressor>
         }
     }
 
-    private void scanQuery( IndexDescriptor2 descriptor )
+    private void scanQuery( IndexDescriptor descriptor )
     {
         TransactionState txState = read.txState();
 
@@ -422,7 +422,7 @@ final class DefaultNodeValueIndexCursor extends IndexCursor<IndexProgressor>
         }
     }
 
-    private void suffixOrContainsQuery( IndexDescriptor2 descriptor, IndexQuery query )
+    private void suffixOrContainsQuery( IndexDescriptor descriptor, IndexQuery query )
     {
         TransactionState txState = read.txState();
 
@@ -440,7 +440,7 @@ final class DefaultNodeValueIndexCursor extends IndexCursor<IndexProgressor>
         }
     }
 
-    private void seekQuery( IndexDescriptor2 descriptor, Value[] values )
+    private void seekQuery( IndexDescriptor descriptor, Value[] values )
     {
         TransactionState txState = read.txState();
 

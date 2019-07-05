@@ -70,7 +70,7 @@ import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.internal.kernel.api.exceptions.schema.ConstraintValidationException;
 import org.neo4j.internal.kernel.api.exceptions.schema.SchemaKernelException;
 import org.neo4j.internal.kernel.api.security.LoginContext;
-import org.neo4j.internal.schema.IndexDescriptor2;
+import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexOrder;
 import org.neo4j.io.IOUtils;
 import org.neo4j.io.layout.DatabaseLayout;
@@ -601,8 +601,8 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI, EmbeddedProxySPI
             statement.close();
             return emptyResourceIterator();
         }
-        IndexDescriptor2 index = transaction.schemaRead().index( labelId, query.propertyKeyId() );
-        if ( index != IndexDescriptor2.NO_INDEX )
+        IndexDescriptor index = transaction.schemaRead().index( labelId, query.propertyKeyId() );
+        if ( index != IndexDescriptor.NO_INDEX )
         {
             // Ha! We found an index - let's use it to find matching nodes
             try
@@ -635,9 +635,9 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI, EmbeddedProxySPI
         }
 
         int[] propertyIds = getPropertyIds( queries );
-        IndexDescriptor2 index = findMatchingIndex( transaction, labelId, propertyIds );
+        IndexDescriptor index = findMatchingIndex( transaction, labelId, propertyIds );
 
-        if ( index != IndexDescriptor2.NO_INDEX )
+        if ( index != IndexDescriptor.NO_INDEX )
         {
             try
             {
@@ -654,10 +654,10 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI, EmbeddedProxySPI
         return getNodesByLabelAndPropertyWithoutIndex( statement, labelId, queries );
     }
 
-    private static IndexDescriptor2 findMatchingIndex( KernelTransaction transaction, int labelId, int[] propertyIds )
+    private static IndexDescriptor findMatchingIndex( KernelTransaction transaction, int labelId, int[] propertyIds )
     {
-        IndexDescriptor2 index = transaction.schemaRead().index( labelId, propertyIds );
-        if ( index != IndexDescriptor2.NO_INDEX )
+        IndexDescriptor index = transaction.schemaRead().index( labelId, propertyIds );
+        if ( index != IndexDescriptor.NO_INDEX )
         {
             // index found with property order matching the query
             return index;
@@ -670,7 +670,7 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI, EmbeddedProxySPI
 
             int[] workingCopy = new int[propertyIds.length];
 
-            Iterator<IndexDescriptor2> indexes = transaction.schemaRead().indexesGetForLabel( labelId );
+            Iterator<IndexDescriptor> indexes = transaction.schemaRead().indexesGetForLabel( labelId );
             while ( indexes.hasNext() )
             {
                 index = indexes.next();
@@ -681,7 +681,7 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI, EmbeddedProxySPI
                     return index;
                 }
             }
-            return IndexDescriptor2.NO_INDEX;
+            return IndexDescriptor.NO_INDEX;
         }
     }
 

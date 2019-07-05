@@ -23,7 +23,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import org.neo4j.internal.schema.IndexConfig;
-import org.neo4j.internal.schema.IndexDescriptor2;
+import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.LabelSchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptor;
 
@@ -72,15 +72,15 @@ class IndexMapTest
 
     private class TestIndexProxy extends IndexProxyAdapter
     {
-        private final IndexDescriptor2 descriptor;
+        private final IndexDescriptor descriptor;
 
-        private TestIndexProxy( IndexDescriptor2 descriptor )
+        private TestIndexProxy( IndexDescriptor descriptor )
         {
             this.descriptor = descriptor;
         }
 
         @Override
-        public IndexDescriptor2 getDescriptor()
+        public IndexDescriptor getDescriptor()
         {
             return descriptor;
         }

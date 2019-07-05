@@ -26,7 +26,7 @@ import java.io.IOException;
 import java.util.List;
 
 import org.neo4j.configuration.Config;
-import org.neo4j.internal.schema.IndexDescriptor2;
+import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.io.fs.EphemeralFileSystemAbstraction;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.impl.index.storage.DirectoryFactory;
@@ -61,7 +61,7 @@ class AccessUniqueDatabaseIndexTest
     @Inject
     private TestDirectory testDirectory;
     private final DirectoryFactory directoryFactory = new DirectoryFactory.InMemoryDirectoryFactory();
-    private final IndexDescriptor2 index = TestIndexDescriptorFactory.uniqueForLabel( 1000, 100 );
+    private final IndexDescriptor index = TestIndexDescriptorFactory.uniqueForLabel( 1000, 100 );
 
     @Test
     void shouldAddUniqueEntries() throws Exception

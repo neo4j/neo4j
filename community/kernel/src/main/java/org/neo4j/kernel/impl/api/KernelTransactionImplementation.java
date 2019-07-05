@@ -59,7 +59,7 @@ import org.neo4j.internal.kernel.api.exceptions.schema.SchemaKernelException;
 import org.neo4j.internal.kernel.api.security.AccessMode;
 import org.neo4j.internal.kernel.api.security.AuthSubject;
 import org.neo4j.internal.kernel.api.security.SecurityContext;
-import org.neo4j.internal.schema.IndexDescriptor2;
+import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.internal.schema.SchemaState;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
@@ -435,7 +435,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     }
 
     @Override
-    public IndexDescriptor2 indexUniqueCreate( SchemaDescriptor schema, String provider ) throws SchemaKernelException
+    public IndexDescriptor indexUniqueCreate( SchemaDescriptor schema, String provider ) throws SchemaKernelException
     {
         return operations.indexUniqueCreate( schema, provider );
     }
@@ -471,10 +471,10 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     {
         if ( hasTxStateWithChanges() )
         {
-            Iterator<IndexDescriptor2> createdIndexIds = txState().constraintIndexesCreatedInTx();
+            Iterator<IndexDescriptor> createdIndexIds = txState().constraintIndexesCreatedInTx();
             while ( createdIndexIds.hasNext() )
             {
-                IndexDescriptor2 createdIndex = createdIndexIds.next();
+                IndexDescriptor createdIndex = createdIndexIds.next();
                 constraintIndexCreator.dropUniquenessConstraintIndex( createdIndex );
             }
         }
@@ -781,7 +781,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
                         }
 
                         @Override
-                        public void visitAddedIndex( IndexDescriptor2 index )
+                        public void visitAddedIndex( IndexDescriptor index )
                         {
                             commandCreationContext.releaseSchema( index.getId() );
                         }
@@ -1190,7 +1190,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         return storageEngine.newReader();
     }
 
-    public void addIndexDoDropToTxState( IndexDescriptor2 index )
+    public void addIndexDoDropToTxState( IndexDescriptor index )
     {
         txState().indexDoDrop( index );
     }

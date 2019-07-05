@@ -30,7 +30,7 @@ import org.neo4j.collection.PrimitiveLongCollections;
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotApplicableKernelException;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
-import org.neo4j.internal.schema.IndexDescriptor2;
+import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexOrder;
 import org.neo4j.kernel.api.impl.index.SearcherReference;
 import org.neo4j.kernel.api.impl.index.partition.PartitionSearcher;
@@ -59,7 +59,7 @@ class PartitionedIndexReaderTest
     private static final int PROP_KEY = 1;
     private static final int LABEL_ID = 0;
 
-    private final IndexDescriptor2 schemaIndexDescriptor = TestIndexDescriptorFactory.forLabel( LABEL_ID, PROP_KEY );
+    private final IndexDescriptor schemaIndexDescriptor = TestIndexDescriptorFactory.forLabel( LABEL_ID, PROP_KEY );
     private final IndexSamplingConfig samplingConfig = mock( IndexSamplingConfig.class );
     private final TaskCoordinator taskCoordinator = mock( TaskCoordinator.class );
     private final PartitionSearcher partitionSearcher1 = mock( PartitionSearcher.class );

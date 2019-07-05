@@ -30,7 +30,7 @@ import java.util.function.Predicate;
 import org.neo4j.internal.id.IdGenerator;
 import org.neo4j.internal.id.IdType;
 import org.neo4j.internal.recordstorage.Command.SchemaRuleCommand;
-import org.neo4j.internal.schema.IndexDescriptor2;
+import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptorPredicates;
@@ -86,7 +86,7 @@ class SchemaRuleCommandTest
             new IndexBatchTransactionApplier( indexUpdateListener, labelScanStoreSynchronizer, indexUpdatesSync, mock( NodeStore.class ),
                     neoStores.getRelationshipStore(), propertyStore, storageEngine, schemaCache, new IndexActivator( indexes ) );
     private final BaseCommandReader reader = new PhysicalLogCommandReaderV4_0();
-    private final IndexDescriptor2 rule = IndexPrototype.forSchema( SchemaDescriptor.forLabel( labelId, propertyKey ) ).materialise( id );
+    private final IndexDescriptor rule = IndexPrototype.forSchema( SchemaDescriptor.forLabel( labelId, propertyKey ) ).materialise( id );
 
     @BeforeEach
     void setup()

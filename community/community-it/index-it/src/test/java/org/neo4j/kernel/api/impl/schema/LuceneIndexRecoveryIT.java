@@ -36,7 +36,7 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.internal.kernel.api.InternalIndexState;
-import org.neo4j.internal.schema.IndexDescriptor2;
+import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.io.fs.EphemeralFileSystemAbstraction;
 import org.neo4j.kernel.api.impl.index.storage.DirectoryFactory;
 import org.neo4j.kernel.api.index.IndexProvider;
@@ -358,7 +358,7 @@ class LuceneIndexRecoveryIT
                     IndexProvider.Monitor.EMPTY, dependencies.getConfig(), context.databaseInfo().operationalMode )
             {
                 @Override
-                public InternalIndexState getInitialState( IndexDescriptor2 descriptor )
+                public InternalIndexState getInitialState( IndexDescriptor descriptor )
                 {
                     return InternalIndexState.POPULATING;
                 }

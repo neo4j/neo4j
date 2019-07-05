@@ -29,7 +29,7 @@ import org.neo4j.internal.helpers.collection.Iterables;
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.schema.IndexCapability;
 import org.neo4j.internal.schema.IndexConfig;
-import org.neo4j.internal.schema.IndexDescriptor2;
+import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexProviderDescriptor;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
@@ -87,18 +87,18 @@ public class FusionIndexProvider extends IndexProvider
     }
 
     @Override
-    public IndexDescriptor2 completeConfiguration( IndexDescriptor2 index )
+    public IndexDescriptor completeConfiguration( IndexDescriptor index )
     {
-        EnumMap<IndexSlot,IndexDescriptor2> descriptors = new EnumMap<>( IndexSlot.class );
+        EnumMap<IndexSlot,IndexDescriptor> descriptors = new EnumMap<>( IndexSlot.class );
         EnumMap<IndexSlot,IndexCapability> capabilities = new EnumMap<>( IndexSlot.class );
         for ( IndexSlot slot : IndexSlot.values() )
         {
-            IndexDescriptor2 result = providers.select( slot ).completeConfiguration( index );
+            IndexDescriptor result = providers.select( slot ).completeConfiguration( index );
             descriptors.put( slot, result );
             capabilities.put( slot, result.getCapability() );
         }
         IndexConfig config = index.schema().getIndexConfig();
-        for ( IndexDescriptor2 result : descriptors.values() )
+        for ( IndexDescriptor result : descriptors.values() )
         {
             IndexConfig resultConfig = result.schema().getIndexConfig();
             for ( Pair<String,Value> entry : resultConfig.entries() )
@@ -112,7 +112,7 @@ public class FusionIndexProvider extends IndexProvider
     }
 
     @Override
-    public IndexPopulator getPopulator( IndexDescriptor2 descriptor, IndexSamplingConfig samplingConfig, ByteBufferFactory bufferFactory )
+    public IndexPopulator getPopulator( IndexDescriptor descriptor, IndexSamplingConfig samplingConfig, ByteBufferFactory bufferFactory )
     {
         EnumMap<IndexSlot,IndexPopulator> populators = providers.map( provider -> provider.getPopulator( descriptor, samplingConfig, bufferFactory ) );
         return new FusionIndexPopulator( slotSelector, new InstanceSelector<>( populators ), descriptor.getId(), fs, directoryStructure(),
@@ -120,14 +120,14 @@ public class FusionIndexProvider extends IndexProvider
     }
 
     @Override
-    public IndexAccessor getOnlineAccessor( IndexDescriptor2 descriptor, IndexSamplingConfig samplingConfig ) throws IOException
+    public IndexAccessor getOnlineAccessor( IndexDescriptor descriptor, IndexSamplingConfig samplingConfig ) throws IOException
     {
         EnumMap<IndexSlot,IndexAccessor> accessors = providers.map( provider -> provider.getOnlineAccessor( descriptor, samplingConfig ) );
         return new FusionIndexAccessor( slotSelector, new InstanceSelector<>( accessors ), descriptor, fs, directoryStructure() );
     }
 
     @Override
-    public String getPopulationFailure( IndexDescriptor2 descriptor ) throws IllegalStateException
+    public String getPopulationFailure( IndexDescriptor descriptor ) throws IllegalStateException
     {
         StringBuilder builder = new StringBuilder();
         providers.forAll( p -> writeFailure( p.getClass().getSimpleName(), builder, p, descriptor ) );
@@ -139,7 +139,7 @@ public class FusionIndexProvider extends IndexProvider
         throw new IllegalStateException( "None of the indexes were in a failed state" );
     }
 
-    private void writeFailure( String indexName, StringBuilder builder, IndexProvider provider, IndexDescriptor2 descriptor )
+    private void writeFailure( String indexName, StringBuilder builder, IndexProvider provider, IndexDescriptor descriptor )
     {
         try
         {
@@ -155,7 +155,7 @@ public class FusionIndexProvider extends IndexProvider
     }
 
     @Override
-    public InternalIndexState getInitialState( IndexDescriptor2 descriptor )
+    public InternalIndexState getInitialState( IndexDescriptor descriptor )
     {
         Iterable<InternalIndexState> statesIterable = providers.transform( p -> p.getInitialState( descriptor ) );
         List<InternalIndexState> states = Iterables.asList( statesIterable );

@@ -42,7 +42,7 @@ import org.neo4j.internal.helpers.collection.MapUtil;
 import org.neo4j.internal.helpers.collection.Pair;
 import org.neo4j.internal.kernel.api.SchemaRead;
 import org.neo4j.internal.kernel.api.TokenRead;
-import org.neo4j.internal.schema.IndexDescriptor2;
+import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
@@ -94,7 +94,7 @@ class BatchInsertIndexTest
             SchemaRead schemaRead = kernelTransaction.schemaRead();
             int labelId = tokenRead.nodeLabel( TestLabels.LABEL_ONE.name() );
             int propertyId = tokenRead.propertyKey( "key" );
-            IndexDescriptor2 index = schemaRead.index( labelId, propertyId );
+            IndexDescriptor index = schemaRead.index( labelId, propertyId );
             assertTrue( schemaIndex.providerName().contains( index.getIndexProvider().getKey() ), unexpectedIndexProviderMessage( index ) );
             assertTrue( schemaIndex.providerName().contains( index.getIndexProvider().getVersion() ), unexpectedIndexProviderMessage( index ) );
             tx.success();
@@ -198,7 +198,7 @@ class BatchInsertIndexTest
         }
     }
 
-    private static String unexpectedIndexProviderMessage( IndexDescriptor2 index )
+    private static String unexpectedIndexProviderMessage( IndexDescriptor index )
     {
         return "Unexpected provider: key=" + index.getIndexProvider().getKey() + ", version=" + index.getIndexProvider().getVersion();
     }

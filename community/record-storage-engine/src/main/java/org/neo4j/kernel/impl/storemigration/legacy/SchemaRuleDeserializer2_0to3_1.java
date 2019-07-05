@@ -22,7 +22,7 @@ package org.neo4j.kernel.impl.storemigration.legacy;
 import java.nio.ByteBuffer;
 
 import org.neo4j.internal.kernel.api.exceptions.schema.MalformedSchemaRuleException;
-import org.neo4j.internal.schema.IndexDescriptor2;
+import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.IndexProviderDescriptor;
 import org.neo4j.internal.schema.LabelSchemaDescriptor;
@@ -91,7 +91,7 @@ public class SchemaRuleDeserializer2_0to3_1
 
     // === INDEX RULES ===
 
-    private static IndexDescriptor2 readIndexRule( long id, boolean constraintIndex, int label, ByteBuffer serialized )
+    private static IndexDescriptor readIndexRule( long id, boolean constraintIndex, int label, ByteBuffer serialized )
     {
         String providerKey = getDecodedStringFrom( serialized );
         String providerVersion = getDecodedStringFrom( serialized );

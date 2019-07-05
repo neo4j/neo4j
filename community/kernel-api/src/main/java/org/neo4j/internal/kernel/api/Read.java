@@ -21,7 +21,7 @@ package org.neo4j.internal.kernel.api;
 
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
-import org.neo4j.internal.schema.IndexDescriptor2;
+import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexOrder;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
@@ -39,7 +39,7 @@ public interface Read
      * @param index descriptor for the index to read from
      * @return the IndexReadSession
      */
-    IndexReadSession indexReadSession( IndexDescriptor2 index ) throws IndexNotFoundKernelException;
+    IndexReadSession indexReadSession( IndexDescriptor index ) throws IndexNotFoundKernelException;
 
     /**
      * Ensure this transaction is prepared for node label scans. This avoids concurrency issues. Not Thread-safe.
@@ -51,7 +51,7 @@ public interface Read
      * @param index {@link IndexReadSession} referencing index to query.
      * @param cursor the cursor to use for consuming the results.
      * @param indexOrder requested {@link IndexOrder} of result. Must be among the capabilities of
-     * {@link IndexDescriptor2 referenced index}, or {@link IndexOrder#NONE}.
+     * {@link IndexDescriptor referenced index}, or {@link IndexOrder#NONE}.
      * @param needsValues if the index should fetch property values together with node ids for index queries
      * @param query Combination of {@link IndexQuery index queries} to run against referenced index.
      */
@@ -66,11 +66,11 @@ public interface Read
      * values from the index. This may be added in the future. When this happens, this method may be extended with parameters for {@code indexOrder} and
      * {@code needsValues}, and the cursor parameter will likely require a "value" cursor instead of just an "index" cursor.
      *
-     * @param index {@link IndexDescriptor2} for the index to query. This must be an index of relationships.
+     * @param index {@link IndexDescriptor} for the index to query. This must be an index of relationships.
      * @param cursor the cursor to use for consuming the results.
      * @param query Combination of {@link IndexQuery index queries} to run against referenced index.
      */
-    void relationshipIndexSeek( IndexDescriptor2 index, RelationshipIndexCursor cursor, IndexQuery... query ) throws KernelException;
+    void relationshipIndexSeek( IndexDescriptor index, RelationshipIndexCursor cursor, IndexQuery... query ) throws KernelException;
 
     /**
      * Access all distinct counts in an index. Entries fed to the {@code cursor} will be (count,Value[]),
@@ -84,11 +84,11 @@ public interface Read
      *
      * NOTE distinct values may not be 100% accurate for point values that are very close to each other. In those cases they can be
      * reported as a single distinct values with a higher count instead of several separate values.
-     * @param index {@link IndexDescriptor2} for the index.
+     * @param index {@link IndexDescriptor} for the index.
      * @param cursor {@link NodeValueIndexCursor} receiving distinct count data.
      * @param needsValues whether or not values should be loaded and given to the cursor.
      */
-    void nodeIndexDistinctValues( IndexDescriptor2 index, NodeValueIndexCursor cursor, boolean needsValues ) throws IndexNotFoundKernelException;
+    void nodeIndexDistinctValues( IndexDescriptor index, NodeValueIndexCursor cursor, boolean needsValues ) throws IndexNotFoundKernelException;
 
     /**
      * Returns node id of node found in unique index or -1 if no node was found.
@@ -100,11 +100,11 @@ public interface Read
      * Note: This method does not take an IndexReadSession, as it has to acquire a new index session internally to
      * ensure node uniqueness.
      *
-     * @param index {@link IndexDescriptor2} for the index to query.
+     * @param index {@link IndexDescriptor} for the index to query.
      * @param cursor cursor to use for performing the index seek
      * @param predicates Combination of {@link IndexQuery.ExactPredicate index queries} to run against referenced index.
      */
-    long lockingNodeUniqueIndexSeek( IndexDescriptor2 index,
+    long lockingNodeUniqueIndexSeek( IndexDescriptor index,
                                      NodeValueIndexCursor cursor,
                                      IndexQuery.ExactPredicate... predicates )
             throws KernelException;

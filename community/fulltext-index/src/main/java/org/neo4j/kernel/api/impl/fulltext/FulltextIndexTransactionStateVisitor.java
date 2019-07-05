@@ -36,7 +36,7 @@ import org.neo4j.internal.kernel.api.PropertyCursor;
 import org.neo4j.internal.kernel.api.Read;
 import org.neo4j.internal.kernel.api.RelationshipScanCursor;
 import org.neo4j.internal.schema.FulltextSchemaDescriptor;
-import org.neo4j.internal.schema.IndexDescriptor2;
+import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.storageengine.api.StorageProperty;
 import org.neo4j.storageengine.api.txstate.TxStateVisitor;
@@ -63,7 +63,7 @@ class FulltextIndexTransactionStateVisitor extends TxStateVisitor.Adapter
     private PropertyCursor propertyCursor;
     private RelationshipScanCursor relationshipCursor;
 
-    FulltextIndexTransactionStateVisitor( IndexDescriptor2 descriptor, String[] propertyNames, MutableLongSet modifiedEntityIdsInThisTransaction,
+    FulltextIndexTransactionStateVisitor( IndexDescriptor descriptor, String[] propertyNames, MutableLongSet modifiedEntityIdsInThisTransaction,
             TransactionStateLuceneIndexWriter writer )
     {
         this.propertyNames = propertyNames;

@@ -43,7 +43,7 @@ import org.neo4j.internal.kernel.api.Transaction;
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
 import org.neo4j.internal.kernel.api.procs.ProcedureHandle;
 import org.neo4j.internal.kernel.api.security.LoginContext;
-import org.neo4j.internal.schema.IndexDescriptor2;
+import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.LabelSchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.kernel.api.index.IndexProvider;
@@ -328,9 +328,9 @@ class BuiltInProceduresIT extends KernelIntegrationTest
         }
 
         transaction = newTransaction();
-        IndexDescriptor2 personFooIndex = transaction.schemaRead().index( personFooDescriptor );
-        IndexDescriptor2 ageFooIndex = transaction.schemaRead().index( ageFooDescriptor );
-        IndexDescriptor2 personFooBarIndex = transaction.schemaRead().index( personFooBarDescriptor );
+        IndexDescriptor personFooIndex = transaction.schemaRead().index( personFooDescriptor );
+        IndexDescriptor ageFooIndex = transaction.schemaRead().index( ageFooDescriptor );
+        IndexDescriptor personFooBarIndex = transaction.schemaRead().index( personFooBarDescriptor );
 
         // When
         RawIterator<AnyValue[],ProcedureException> stream =
@@ -391,9 +391,9 @@ class BuiltInProceduresIT extends KernelIntegrationTest
         commit();
 
         transaction = newTransaction();
-        IndexDescriptor2 personFooIndex = transaction.schemaRead().index( personFooDescriptor );
-        IndexDescriptor2 ageFooIndex = transaction.schemaRead().index( ageFooDescriptor );
-        IndexDescriptor2 personFooBarIndex = transaction.schemaRead().index( personFooBarDescriptor );
+        IndexDescriptor personFooIndex = transaction.schemaRead().index( personFooDescriptor );
+        IndexDescriptor ageFooIndex = transaction.schemaRead().index( ageFooDescriptor );
+        IndexDescriptor personFooBarIndex = transaction.schemaRead().index( personFooBarDescriptor );
         commit();
 
         //let indexes come online

@@ -54,7 +54,7 @@ import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.internal.helpers.collection.Iterators;
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
-import org.neo4j.internal.schema.IndexDescriptor2;
+import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.IndexProviderDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptor;
@@ -92,7 +92,7 @@ import static org.neo4j.kernel.impl.api.index.IndexPopulationFailure.failure;
 
 /**
  * Manages the indexes that were introduced in 2.0. These indexes depend on the normal neo4j logical log for
- * transactionality. Each index has an {@link IndexDescriptor2}, which it uses to filter
+ * transactionality. Each index has an {@link IndexDescriptor}, which it uses to filter
  * changes that come into the database. Changes that apply to the the rule are indexed. This way, "normal" changes to
  * the database can be replayed to perform recovery after a crash.
  * <p>
@@ -112,7 +112,7 @@ public class IndexingService extends LifecycleAdapter implements IndexUpdateList
     private final IndexStoreView storeView;
     private final IndexProviderMap providerMap;
     private final IndexMapReference indexMapRef;
-    private final Iterable<IndexDescriptor2> indexDescriptors;
+    private final Iterable<IndexDescriptor> indexDescriptors;
     private final Log internalLog;
     private final Log userLog;
     private final IndexStatisticsStore indexStatisticsStore;
@@ -134,15 +134,15 @@ public class IndexingService extends LifecycleAdapter implements IndexUpdateList
 
     public interface Monitor
     {
-        void initialState( IndexDescriptor2 descriptor, InternalIndexState state );
+        void initialState( IndexDescriptor descriptor, InternalIndexState state );
 
-        void populationCompleteOn( IndexDescriptor2 descriptor );
+        void populationCompleteOn( IndexDescriptor descriptor );
 
         void indexPopulationScanStarting();
 
         void indexPopulationScanComplete();
 
-        void awaitingPopulationOfRecoveredIndex( IndexDescriptor2 descriptor );
+        void awaitingPopulationOfRecoveredIndex( IndexDescriptor descriptor );
 
         void indexSamplingTriggered( IndexSamplingMode mode );
 
@@ -154,12 +154,12 @@ public class IndexingService extends LifecycleAdapter implements IndexUpdateList
     public static class MonitorAdapter implements Monitor
     {
         @Override
-        public void initialState( IndexDescriptor2 descriptor, InternalIndexState state )
+        public void initialState( IndexDescriptor descriptor, InternalIndexState state )
         {   // Do nothing
         }
 
         @Override
-        public void populationCompleteOn( IndexDescriptor2 descriptor )
+        public void populationCompleteOn( IndexDescriptor descriptor )
         {   // Do nothing
         }
 
@@ -174,7 +174,7 @@ public class IndexingService extends LifecycleAdapter implements IndexUpdateList
         }
 
         @Override
-        public void awaitingPopulationOfRecoveredIndex( IndexDescriptor2 descriptor )
+        public void awaitingPopulationOfRecoveredIndex( IndexDescriptor descriptor )
         {   // Do nothing
         }
 
@@ -200,7 +200,7 @@ public class IndexingService extends LifecycleAdapter implements IndexUpdateList
             IndexProviderMap providerMap,
             IndexMapReference indexMapRef,
             IndexStoreView storeView,
-            Iterable<IndexDescriptor2> indexDescriptors,
+            Iterable<IndexDescriptor> indexDescriptors,
             IndexSamplingController samplingController,
             TokenNameLookup tokenNameLookup,
             JobScheduler scheduler,
@@ -239,7 +239,7 @@ public class IndexingService extends LifecycleAdapter implements IndexUpdateList
         indexMapRef.modify( indexMap ->
         {
             Map<InternalIndexState, List<IndexLogRecord>> indexStates = new EnumMap<>( InternalIndexState.class );
-            for ( IndexDescriptor2 descriptor : indexDescriptors )
+            for ( IndexDescriptor descriptor : indexDescriptors )
             {
                 IndexProxy indexProxy;
 
@@ -301,7 +301,7 @@ public class IndexingService extends LifecycleAdapter implements IndexUpdateList
         // do it at one point after recovery... i.e. here
         indexMapRef.indexMapSnapshot().forEachIndexProxy( indexProxyOperation( "refresh", IndexProxy::refresh ) );
 
-        final MutableLongObjectMap<IndexDescriptor2> rebuildingDescriptors = new LongObjectHashMap<>();
+        final MutableLongObjectMap<IndexDescriptor> rebuildingDescriptors = new LongObjectHashMap<>();
         indexMapRef.modify( indexMap ->
         {
             Map<InternalIndexState, List<IndexLogRecord>> indexStates = new EnumMap<>( InternalIndexState.class );
@@ -311,7 +311,7 @@ public class IndexingService extends LifecycleAdapter implements IndexUpdateList
             indexMap.forEachIndexProxy( ( indexId, proxy ) ->
             {
                 InternalIndexState state = proxy.getState();
-                IndexDescriptor2 descriptor = proxy.getDescriptor();
+                IndexDescriptor descriptor = proxy.getDescriptor();
                 IndexProviderDescriptor providerDescriptor = descriptor.getIndexProvider();
                 IndexLogRecord indexLogRecord = new IndexLogRecord( descriptor );
                 indexStates.computeIfAbsent( state, internalIndexState -> new ArrayList<>() )
@@ -379,16 +379,16 @@ public class IndexingService extends LifecycleAdapter implements IndexUpdateList
         state = State.RUNNING;
     }
 
-    private void populateIndexesOfAllTypes( MutableLongObjectMap<IndexDescriptor2> rebuildingDescriptors, IndexMap indexMap )
+    private void populateIndexesOfAllTypes( MutableLongObjectMap<IndexDescriptor> rebuildingDescriptors, IndexMap indexMap )
     {
-        Map<EntityType,MutableLongObjectMap<IndexDescriptor2>> rebuildingDescriptorsByType = new EnumMap<>( EntityType.class );
-        for ( IndexDescriptor2 descriptor : rebuildingDescriptors )
+        Map<EntityType,MutableLongObjectMap<IndexDescriptor>> rebuildingDescriptorsByType = new EnumMap<>( EntityType.class );
+        for ( IndexDescriptor descriptor : rebuildingDescriptors )
         {
             rebuildingDescriptorsByType.computeIfAbsent( descriptor.schema().entityType(), type -> new LongObjectHashMap<>() )
                     .put( descriptor.getId(), descriptor );
         }
 
-        for ( Map.Entry<EntityType,MutableLongObjectMap<IndexDescriptor2>> descriptorToPopulate : rebuildingDescriptorsByType.entrySet() )
+        for ( Map.Entry<EntityType,MutableLongObjectMap<IndexDescriptor>> descriptorToPopulate : rebuildingDescriptorsByType.entrySet() )
         {
             IndexPopulationJob populationJob = newIndexPopulationJob( descriptorToPopulate.getKey(), false );
             populate( descriptorToPopulate.getValue(), indexMap, populationJob );
@@ -420,7 +420,7 @@ public class IndexingService extends LifecycleAdapter implements IndexUpdateList
         indexesToDropAfterCompletedRecovery.clear();
     }
 
-    private void populate( MutableLongObjectMap<IndexDescriptor2> rebuildingDescriptors, IndexMap indexMap, IndexPopulationJob populationJob )
+    private void populate( MutableLongObjectMap<IndexDescriptor> rebuildingDescriptors, IndexMap indexMap, IndexPopulationJob populationJob )
     {
         rebuildingDescriptors.forEachKeyValue( ( indexId, descriptor ) ->
         {
@@ -516,7 +516,7 @@ public class IndexingService extends LifecycleAdapter implements IndexUpdateList
     }
 
     @Override
-    public IndexDescriptor2 completeConfiguration( IndexDescriptor2 index )
+    public IndexDescriptor completeConfiguration( IndexDescriptor index )
     {
         return providerMap.completeConfiguration( index );
     }
@@ -576,7 +576,7 @@ public class IndexingService extends LifecycleAdapter implements IndexUpdateList
      * instead that will be done by code that activates the indexes later.
      */
     @Override
-    public void createIndexes( IndexDescriptor2... rules )
+    public void createIndexes( IndexDescriptor... rules )
     {
         createIndexes( false, rules );
     }
@@ -591,7 +591,7 @@ public class IndexingService extends LifecycleAdapter implements IndexUpdateList
      * @param verifyBeforeFlipping whether or not to call {@link IndexPopulator#verifyDeferredConstraints(NodePropertyAccessor)}
      * as part of population, before flipping to a successful state.
      */
-    public void createIndexes( boolean verifyBeforeFlipping, IndexDescriptor2... rules )
+    public void createIndexes( boolean verifyBeforeFlipping, IndexDescriptor... rules )
     {
         IndexPopulationStarter populationStarter = new IndexPopulationStarter( verifyBeforeFlipping, rules );
         indexMapRef.modify( populationStarter );
@@ -608,7 +608,7 @@ public class IndexingService extends LifecycleAdapter implements IndexUpdateList
     }
 
     @Override
-    public void dropIndex( IndexDescriptor2 rule )
+    public void dropIndex( IndexDescriptor rule )
     {
         indexMapRef.modify( indexMap ->
         {
@@ -656,7 +656,7 @@ public class IndexingService extends LifecycleAdapter implements IndexUpdateList
     }
 
     @Override
-    public void activateIndex( IndexDescriptor2 descriptor ) throws
+    public void activateIndex( IndexDescriptor descriptor ) throws
             IndexNotFoundKernelException, IndexActivationFailedKernelException, IndexPopulationFailedKernelException
     {
         try
@@ -782,7 +782,7 @@ public class IndexingService extends LifecycleAdapter implements IndexUpdateList
         populationJobController.startIndexPopulation( job );
     }
 
-    private String indexStateInfo( String tag, InternalIndexState state, IndexDescriptor2 descriptor )
+    private String indexStateInfo( String tag, InternalIndexState state, IndexDescriptor descriptor )
     {
         return format( "IndexingService.%s: index %d on %s is %s", tag, descriptor.getId(),
                 descriptor.schema().userDescription( tokenNameLookup ), state.name() );
@@ -844,11 +844,11 @@ public class IndexingService extends LifecycleAdapter implements IndexUpdateList
     private final class IndexPopulationStarter implements Function<IndexMap,IndexMap>
     {
         private final boolean verifyBeforeFlipping;
-        private final IndexDescriptor2[] descriptors;
+        private final IndexDescriptor[] descriptors;
         private IndexPopulationJob nodePopulationJob;
         private IndexPopulationJob relationshipPopulationJob;
 
-        IndexPopulationStarter( boolean verifyBeforeFlipping, IndexDescriptor2[] descriptors )
+        IndexPopulationStarter( boolean verifyBeforeFlipping, IndexDescriptor[] descriptors )
         {
             this.verifyBeforeFlipping = verifyBeforeFlipping;
             this.descriptors = descriptors;
@@ -857,7 +857,7 @@ public class IndexingService extends LifecycleAdapter implements IndexUpdateList
         @Override
         public IndexMap apply( IndexMap indexMap )
         {
-            for ( IndexDescriptor2 descriptor : descriptors )
+            for ( IndexDescriptor descriptor : descriptors )
             {
                 if ( state == State.NOT_STARTED )
                 {
@@ -928,9 +928,9 @@ public class IndexingService extends LifecycleAdapter implements IndexUpdateList
 
     private static final class IndexLogRecord
     {
-        private final IndexDescriptor2 descriptor;
+        private final IndexDescriptor descriptor;
 
-        IndexLogRecord( IndexDescriptor2 descriptor )
+        IndexLogRecord( IndexDescriptor descriptor )
         {
             this.descriptor = descriptor;
         }
@@ -940,7 +940,7 @@ public class IndexingService extends LifecycleAdapter implements IndexUpdateList
             return descriptor.getId();
         }
 
-        public IndexDescriptor2 getDescriptor()
+        public IndexDescriptor getDescriptor()
         {
             return descriptor;
         }

@@ -19,7 +19,7 @@
  */
 package org.neo4j.kernel.impl.api.index;
 
-import org.neo4j.internal.schema.IndexDescriptor2;
+import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.impl.api.index.stats.IndexStatisticsStore;
 import org.neo4j.logging.LogProvider;
@@ -28,13 +28,13 @@ import static org.neo4j.kernel.impl.api.index.IndexPopulationFailure.failure;
 
 public class FailedPopulatingIndexProxyFactory implements FailedIndexProxyFactory
 {
-    private final IndexDescriptor2 descriptor;
+    private final IndexDescriptor descriptor;
     private final IndexPopulator populator;
     private final String indexUserDescription;
     private final IndexStatisticsStore indexStatisticsStore;
     private final LogProvider logProvider;
 
-    FailedPopulatingIndexProxyFactory( IndexDescriptor2 descriptor,
+    FailedPopulatingIndexProxyFactory( IndexDescriptor descriptor,
             IndexPopulator populator,
             String indexUserDescription,
             IndexStatisticsStore indexStatisticsStore,

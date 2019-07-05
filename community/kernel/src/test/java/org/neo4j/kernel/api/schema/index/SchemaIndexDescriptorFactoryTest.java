@@ -21,7 +21,7 @@ package org.neo4j.kernel.api.schema.index;
 
 import org.junit.jupiter.api.Test;
 
-import org.neo4j.internal.schema.IndexDescriptor2;
+import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptor;
 
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -38,7 +38,7 @@ class SchemaIndexDescriptorFactoryTest
     @Test
     void shouldCreateIndexDescriptors()
     {
-        IndexDescriptor2 desc;
+        IndexDescriptor desc;
 
         desc = TestIndexDescriptorFactory.forLabel( LABEL_ID, 1 );
         assertFalse( desc.isUnique() );
@@ -48,7 +48,7 @@ class SchemaIndexDescriptorFactoryTest
     @Test
     void shouldCreateUniqueIndexDescriptors()
     {
-        IndexDescriptor2 desc;
+        IndexDescriptor desc;
 
         desc = TestIndexDescriptorFactory.uniqueForLabel( LABEL_ID, 1 );
         assertTrue( desc.isUnique() );
@@ -58,7 +58,7 @@ class SchemaIndexDescriptorFactoryTest
     @Test
     void shouldCreateIndexDescriptorsFromSchema()
     {
-        IndexDescriptor2 desc;
+        IndexDescriptor desc;
 
         desc = TestIndexDescriptorFactory.forSchema( SchemaDescriptor.forLabel( LABEL_ID, 1 ) );
         assertFalse( desc.isUnique() );
@@ -72,8 +72,8 @@ class SchemaIndexDescriptorFactoryTest
     @Test
     void shouldCreateEqualDescriptors()
     {
-        IndexDescriptor2 desc1;
-        IndexDescriptor2 desc2;
+        IndexDescriptor desc1;
+        IndexDescriptor desc2;
         desc1 = TestIndexDescriptorFactory.forLabel( LABEL_ID, 1 );
         desc2 = TestIndexDescriptorFactory.forLabel( LABEL_ID, 1 );
         assertEquality( desc1, desc2 );
@@ -86,9 +86,9 @@ class SchemaIndexDescriptorFactoryTest
     @Test
     void shouldGiveNiceUserDescriptions()
     {
-        IndexDescriptor2 forLabel = TestIndexDescriptorFactory.forLabel( 1, 2 );
+        IndexDescriptor forLabel = TestIndexDescriptorFactory.forLabel( 1, 2 );
         long forLabelId = forLabel.getId();
-        IndexDescriptor2 uniqueForLabel = TestIndexDescriptorFactory.uniqueForLabel( 2, 4 );
+        IndexDescriptor uniqueForLabel = TestIndexDescriptorFactory.uniqueForLabel( 2, 4 );
         String providerName = forLabel.getIndexProvider().name();
         long uniqueForLabelId = uniqueForLabel.getId();
         assertThat( forLabel.userDescription( simpleNameLookup ),

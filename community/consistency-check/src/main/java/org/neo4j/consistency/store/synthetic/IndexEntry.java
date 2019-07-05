@@ -20,7 +20,7 @@
 package org.neo4j.consistency.store.synthetic;
 
 import org.neo4j.common.TokenNameLookup;
-import org.neo4j.internal.schema.IndexDescriptor2;
+import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 
 import static java.lang.String.format;
@@ -31,10 +31,10 @@ import static java.lang.String.format;
  */
 public class IndexEntry extends AbstractBaseRecord
 {
-    private final IndexDescriptor2 indexDescriptor;
+    private final IndexDescriptor indexDescriptor;
     private final TokenNameLookup tokenNameLookup;
 
-    public IndexEntry( IndexDescriptor2 indexDescriptor, TokenNameLookup tokenNameLookup, long nodeId )
+    public IndexEntry( IndexDescriptor indexDescriptor, TokenNameLookup tokenNameLookup, long nodeId )
     {
         super( nodeId );
         this.indexDescriptor = indexDescriptor;

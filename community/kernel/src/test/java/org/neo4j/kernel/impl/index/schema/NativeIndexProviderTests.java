@@ -29,7 +29,7 @@ import java.io.IOException;
 import org.neo4j.configuration.Config;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.internal.kernel.api.InternalIndexState;
-import org.neo4j.internal.schema.IndexDescriptor2;
+import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
@@ -114,7 +114,7 @@ abstract class NativeIndexProviderTests
         provider = newProvider();
 
         // when
-        IndexDescriptor2 descriptor = descriptorUnique();
+        IndexDescriptor descriptor = descriptorUnique();
         try ( IndexAccessor accessor = provider.getOnlineAccessor( descriptor, samplingConfig() );
             IndexUpdater indexUpdater = accessor.newUpdater( IndexUpdateMode.ONLINE ) )
         {
@@ -327,17 +327,17 @@ abstract class NativeIndexProviderTests
         return new IndexSamplingConfig( Config.defaults() );
     }
 
-    private static IndexDescriptor2 descriptor()
+    private static IndexDescriptor descriptor()
     {
         return IndexPrototype.forSchema( forLabel( labelId, propId ), PROVIDER_DESCRIPTOR ).materialise( indexId );
     }
 
-    private static IndexDescriptor2 descriptor( long indexId )
+    private static IndexDescriptor descriptor( long indexId )
     {
         return IndexPrototype.forSchema( forLabel( labelId, propId ), PROVIDER_DESCRIPTOR ).materialise( indexId );
     }
 
-    private static IndexDescriptor2 descriptorUnique()
+    private static IndexDescriptor descriptorUnique()
     {
         return IndexPrototype.uniqueForSchema( forLabel( labelId, propId ), PROVIDER_DESCRIPTOR ).materialise( indexId );
     }

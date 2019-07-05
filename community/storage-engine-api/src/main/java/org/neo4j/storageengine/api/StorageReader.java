@@ -26,7 +26,7 @@ import java.util.function.Function;
 import org.neo4j.common.EntityType;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
 import org.neo4j.internal.schema.ConstraintDescriptor;
-import org.neo4j.internal.schema.IndexDescriptor2;
+import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.internal.schema.constraints.IndexBackedConstraintDescriptor;
 
@@ -44,9 +44,9 @@ public interface StorageReader extends AutoCloseable, StorageSchemaReader
 
     /**
      * @param name name of index to find
-     * @return {@link IndexDescriptor2} associated with the given {@code name}.
+     * @return {@link IndexDescriptor} associated with the given {@code name}.
      */
-    IndexDescriptor2 indexGetForName( String name );
+    IndexDescriptor indexGetForName( String name );
 
     /**
      * Returns all indexes (including unique) related to a property, any of the labels and the entity type.
@@ -64,11 +64,11 @@ public interface StorageReader extends AutoCloseable, StorageSchemaReader
     boolean hasRelatedSchema( int label, EntityType entityType );
 
     /**
-     * @param index {@link IndexDescriptor2} to get related uniqueness constraint for.
+     * @param index {@link IndexDescriptor} to get related uniqueness constraint for.
      * @return schema rule id of uniqueness constraint that owns the given {@code index}, or {@code null}
      * if the given index isn't related to a uniqueness constraint.
      */
-    Long indexGetOwningUniquenessConstraintId( IndexDescriptor2 index );
+    Long indexGetOwningUniquenessConstraintId( IndexDescriptor index );
 
     /**
      * @param descriptor describing the label and property key (or keys) defining the requested constraint.

@@ -38,7 +38,7 @@ import java.util.Set;
 
 import org.neo4j.configuration.Config;
 import org.neo4j.internal.kernel.api.InternalIndexState;
-import org.neo4j.internal.schema.IndexDescriptor2;
+import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
@@ -82,7 +82,7 @@ class LuceneSchemaIndexPopulatorTest
     private IndexReader reader;
     private IndexSearcher searcher;
     private static final int propertyKeyId = 666;
-    private IndexDescriptor2 index;
+    private IndexDescriptor index;
     private NodePropertyAccessor propertyAccessor;
 
     @BeforeEach

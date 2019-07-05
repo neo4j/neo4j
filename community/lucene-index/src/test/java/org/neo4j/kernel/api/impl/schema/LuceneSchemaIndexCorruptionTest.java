@@ -33,7 +33,7 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import org.neo4j.configuration.Config;
 import org.neo4j.internal.kernel.api.InternalIndexState;
-import org.neo4j.internal.schema.IndexDescriptor2;
+import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.io.fs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.api.impl.index.storage.DirectoryFactory;
@@ -81,7 +81,7 @@ class LuceneSchemaIndexCorruptionTest
         LuceneIndexProvider provider = newFaultyIndexProvider( faultyIndexId, error );
 
         // When
-        IndexDescriptor2 descriptor = forSchema( forLabel( 1, 1 ), provider.getProviderDescriptor() ).materialise( faultyIndexId );
+        IndexDescriptor descriptor = forSchema( forLabel( 1, 1 ), provider.getProviderDescriptor() ).materialise( faultyIndexId );
         InternalIndexState initialState = provider.getInitialState( descriptor );
 
         // Then
@@ -99,7 +99,7 @@ class LuceneSchemaIndexCorruptionTest
         LuceneIndexProvider provider = newFaultyIndexProvider( faultyIndexId, error );
 
         // When
-        IndexDescriptor2 descriptor = forSchema( forLabel( 1, 1 ), provider.getProviderDescriptor() ).materialise( faultyIndexId );
+        IndexDescriptor descriptor = forSchema( forLabel( 1, 1 ), provider.getProviderDescriptor() ).materialise( faultyIndexId );
         InternalIndexState initialState = provider.getInitialState( descriptor );
 
         // Then
@@ -117,7 +117,7 @@ class LuceneSchemaIndexCorruptionTest
         LuceneIndexProvider provider = newFaultyIndexProvider( faultyIndexId, error );
 
         // When
-        IndexDescriptor2 descriptor = forSchema( forLabel( 1, 1 ), provider.getProviderDescriptor() ).materialise( faultyIndexId );
+        IndexDescriptor descriptor = forSchema( forLabel( 1, 1 ), provider.getProviderDescriptor() ).materialise( faultyIndexId );
         InternalIndexState initialState = provider.getInitialState( descriptor );
 
         // Then

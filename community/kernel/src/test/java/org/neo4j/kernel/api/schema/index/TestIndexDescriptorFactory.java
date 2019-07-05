@@ -21,7 +21,7 @@ package org.neo4j.kernel.api.schema.index;
 
 import java.util.concurrent.ThreadLocalRandom;
 
-import org.neo4j.internal.schema.IndexDescriptor2;
+import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.SchemaDescriptor;
 
@@ -31,22 +31,22 @@ public class TestIndexDescriptorFactory
     {
     }
 
-    public static IndexDescriptor2 forSchema( SchemaDescriptor schema )
+    public static IndexDescriptor forSchema( SchemaDescriptor schema )
     {
         return IndexPrototype.forSchema( schema ).materialise( randomId() );
     }
 
-    public static IndexDescriptor2 uniqueForSchema( SchemaDescriptor schema )
+    public static IndexDescriptor uniqueForSchema( SchemaDescriptor schema )
     {
         return IndexPrototype.uniqueForSchema( schema ).materialise( randomId() );
     }
 
-    public static IndexDescriptor2 forLabel( int labelId, int... propertyIds )
+    public static IndexDescriptor forLabel( int labelId, int... propertyIds )
     {
         return forSchema( SchemaDescriptor.forLabel( labelId, propertyIds ) );
     }
 
-    public static IndexDescriptor2 uniqueForLabel( int labelId, int... propertyIds )
+    public static IndexDescriptor uniqueForLabel( int labelId, int... propertyIds )
     {
         return uniqueForSchema( SchemaDescriptor.forLabel( labelId, propertyIds ) );
     }

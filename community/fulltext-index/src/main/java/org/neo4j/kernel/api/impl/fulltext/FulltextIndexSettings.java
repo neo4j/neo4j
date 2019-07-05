@@ -26,7 +26,7 @@ import java.util.Map;
 import org.neo4j.common.TokenNameLookup;
 import org.neo4j.graphdb.schema.AnalyzerProvider;
 import org.neo4j.internal.schema.IndexConfig;
-import org.neo4j.internal.schema.IndexDescriptor2;
+import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.service.Services;
 import org.neo4j.values.storable.BooleanValue;
@@ -55,7 +55,7 @@ final class FulltextIndexSettings
         }
     }
 
-    static Analyzer createAnalyzer( IndexDescriptor2 descriptor, TokenNameLookup tokenNameLookup )
+    static Analyzer createAnalyzer( IndexDescriptor descriptor, TokenNameLookup tokenNameLookup )
     {
         TextValue analyzerName = descriptor.schema().getIndexConfig().get( ANALYZER );
         if ( analyzerName == null )
@@ -72,7 +72,7 @@ final class FulltextIndexSettings
         }
     }
 
-    static String[] createPropertyNames( IndexDescriptor2 descriptor, TokenNameLookup tokenNameLookup )
+    static String[] createPropertyNames( IndexDescriptor descriptor, TokenNameLookup tokenNameLookup )
     {
         int[] propertyIds = descriptor.schema().getPropertyIds();
         String[] propertyNames = new String[propertyIds.length];

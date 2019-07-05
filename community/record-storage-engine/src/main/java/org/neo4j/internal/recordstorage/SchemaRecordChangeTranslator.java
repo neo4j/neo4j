@@ -20,7 +20,7 @@
 package org.neo4j.internal.recordstorage;
 
 import org.neo4j.exceptions.KernelException;
-import org.neo4j.internal.schema.IndexDescriptor2;
+import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.SchemaRule;
 
 public interface SchemaRecordChangeTranslator
@@ -29,5 +29,5 @@ public interface SchemaRecordChangeTranslator
 
     void dropSchemaRule( TransactionRecordState recordState, SchemaRule rule );
 
-    void setConstraintIndexOwner( TransactionRecordState recordState, IndexDescriptor2 indexRule, long constraintId ) throws KernelException;
+    void setConstraintIndexOwner( TransactionRecordState recordState, IndexDescriptor indexRule, long constraintId ) throws KernelException;
 }

@@ -40,7 +40,7 @@ import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
 import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.internal.schema.ConstraintDescriptor;
-import org.neo4j.internal.schema.IndexDescriptor2;
+import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.kernel.api.SilentTokenNameLookup;
 import org.neo4j.register.Register;
 import org.neo4j.register.Registers;
@@ -144,10 +144,10 @@ final class GraphCountsSection
 
         SilentTokenNameLookup tokenLookup = new SilentTokenNameLookup( tokens );
 
-        Iterator<IndexDescriptor2> iterator = schemaRead.indexesGetAll();
+        Iterator<IndexDescriptor> iterator = schemaRead.indexesGetAll();
         while ( iterator.hasNext() )
         {
-            IndexDescriptor2 index = iterator.next();
+            IndexDescriptor index = iterator.next();
 
             Map<String,Object> data = new HashMap<>();
             data.put( "labels", map( index.schema().getEntityTokenIds(),

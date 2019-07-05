@@ -38,7 +38,7 @@ import org.neo4j.common.EntityType;
 import org.neo4j.internal.helpers.collection.Iterators;
 import org.neo4j.internal.schema.ConstraintDescriptor;
 import org.neo4j.internal.schema.IndexConfigCompleter;
-import org.neo4j.internal.schema.IndexDescriptor2;
+import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptorLookupSet;
 import org.neo4j.internal.schema.SchemaDescriptorPredicates;
@@ -75,7 +75,7 @@ public class SchemaCache
         this.schemaCacheState = schemaCacheState;
     }
 
-    public Iterable<IndexDescriptor2> indexDescriptors()
+    public Iterable<IndexDescriptor> indexDescriptors()
     {
         return schemaCacheState.indexDescriptors();
     }
@@ -170,22 +170,22 @@ public class SchemaCache
         }
     }
 
-    public IndexDescriptor2 indexDescriptor( SchemaDescriptor descriptor )
+    public IndexDescriptor indexDescriptor( SchemaDescriptor descriptor )
     {
         return schemaCacheState.indexDescriptor( descriptor );
     }
 
-    Iterator<IndexDescriptor2> indexDescriptorsForLabel( int labelId )
+    Iterator<IndexDescriptor> indexDescriptorsForLabel( int labelId )
     {
         return schemaCacheState.indexDescriptorsForLabel( labelId );
     }
 
-    Iterator<IndexDescriptor2> indexDescriptorsForRelationshipType( int relationshipType )
+    Iterator<IndexDescriptor> indexDescriptorsForRelationshipType( int relationshipType )
     {
         return schemaCacheState.indexDescriptorsForRelationshipType( relationshipType );
     }
 
-    IndexDescriptor2 indexDescriptorForName( String name )
+    IndexDescriptor indexDescriptorForName( String name )
     {
         return schemaCacheState.indexDescriptorByName( name );
     }
@@ -223,15 +223,15 @@ public class SchemaCache
         private final ConstraintRuleAccessor constraintSemantics;
         private final IndexConfigCompleter indexConfigCompleter;
         private final Set<ConstraintDescriptor> constraints;
-        private final MutableLongObjectMap<IndexDescriptor2> indexDescriptorById;
+        private final MutableLongObjectMap<IndexDescriptor> indexDescriptorById;
         private final MutableLongObjectMap<ConstraintRule> constraintRuleById;
 
-        private final Map<SchemaDescriptor,IndexDescriptor2> indexDescriptors;
+        private final Map<SchemaDescriptor,IndexDescriptor> indexDescriptors;
         private final SchemaDescriptorLookupSet<SchemaDescriptor> indexDescriptorsByNode;
         private final SchemaDescriptorLookupSet<SchemaDescriptor> indexDescriptorsByRelationship;
         private final SchemaDescriptorLookupSet<IndexBackedConstraintDescriptor> uniquenessConstraintsByNode;
         private final SchemaDescriptorLookupSet<IndexBackedConstraintDescriptor> uniquenessConstraintsByRelationship;
-        private final Map<String,IndexDescriptor2> indexDescriptorsByName;
+        private final Map<String,IndexDescriptor> indexDescriptorsByName;
 
         private final Map<Class<?>,Object> dependantState;
 
@@ -290,7 +290,7 @@ public class SchemaCache
             }
         }
 
-        Iterable<IndexDescriptor2> indexDescriptors()
+        Iterable<IndexDescriptor> indexDescriptors()
         {
             return indexDescriptorById.values();
         }
@@ -320,23 +320,23 @@ public class SchemaCache
             return constraints.iterator();
         }
 
-        IndexDescriptor2 indexDescriptor( SchemaDescriptor descriptor )
+        IndexDescriptor indexDescriptor( SchemaDescriptor descriptor )
         {
             return indexDescriptors.get( descriptor );
         }
 
-        IndexDescriptor2 indexDescriptorByName( String name )
+        IndexDescriptor indexDescriptorByName( String name )
         {
             return indexDescriptorsByName.get( name );
         }
 
-        Iterator<IndexDescriptor2> indexDescriptorsForLabel( int labelId )
+        Iterator<IndexDescriptor> indexDescriptorsForLabel( int labelId )
         {
             return Iterators.map( indexDescriptors::get,
                     getSchemaRelatedTo( indexDescriptorsByNode, new long[]{labelId}, EMPTY_LONG_ARRAY, EMPTY_INT_ARRAY, false ).iterator() );
         }
 
-        Iterator<IndexDescriptor2> indexDescriptorsForRelationshipType( int relationshipType )
+        Iterator<IndexDescriptor> indexDescriptorsForRelationshipType( int relationshipType )
         {
             return Iterators.map( indexDescriptors::get,
                     getSchemaRelatedTo( indexDescriptorsByRelationship, new long[]{relationshipType}, EMPTY_LONG_ARRAY, EMPTY_INT_ARRAY, false ).iterator() );
@@ -449,9 +449,9 @@ public class SchemaCache
                 constraints.add( constraintSemantics.readConstraint( constraintRule ) );
                 cacheUniquenessConstraint( constraintRule );
             }
-            else if ( rule instanceof IndexDescriptor2 )
+            else if ( rule instanceof IndexDescriptor )
             {
-                IndexDescriptor2 index = indexConfigCompleter.completeConfiguration( (IndexDescriptor2) rule );
+                IndexDescriptor index = indexConfigCompleter.completeConfiguration( (IndexDescriptor) rule );
                 indexDescriptorById.put( index.getId(), index );
                 SchemaDescriptor schemaDescriptor = index.schema();
                 indexDescriptors.put( schemaDescriptor, index );
@@ -475,7 +475,7 @@ public class SchemaCache
             }
             else if ( indexDescriptorById.containsKey( id ) )
             {
-                IndexDescriptor2 index = indexDescriptorById.remove( id );
+                IndexDescriptor index = indexDescriptorById.remove( id );
                 SchemaDescriptor schema = index.schema();
                 indexDescriptors.remove( schema );
                 indexDescriptorsByName.remove( index.getName(), index );

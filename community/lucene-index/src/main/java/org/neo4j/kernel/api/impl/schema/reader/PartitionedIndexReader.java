@@ -26,7 +26,7 @@ import java.util.stream.Collectors;
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.internal.kernel.api.QueryContext;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotApplicableKernelException;
-import org.neo4j.internal.schema.IndexDescriptor2;
+import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexOrder;
 import org.neo4j.io.IOUtils;
 import org.neo4j.kernel.api.impl.index.SearcherReference;
@@ -51,7 +51,7 @@ public class PartitionedIndexReader extends AbstractIndexReader
     private final List<SimpleIndexReader> indexReaders;
 
     public PartitionedIndexReader( List<SearcherReference> partitionSearchers,
-            IndexDescriptor2 descriptor,
+            IndexDescriptor descriptor,
             IndexSamplingConfig samplingConfig,
             TaskCoordinator taskCoordinator )
     {
@@ -61,7 +61,7 @@ public class PartitionedIndexReader extends AbstractIndexReader
                 .collect( Collectors.toList() ) );
     }
 
-    PartitionedIndexReader( IndexDescriptor2 descriptor, List<SimpleIndexReader> readers )
+    PartitionedIndexReader( IndexDescriptor descriptor, List<SimpleIndexReader> readers )
     {
         super( descriptor );
         this.indexReaders = readers;

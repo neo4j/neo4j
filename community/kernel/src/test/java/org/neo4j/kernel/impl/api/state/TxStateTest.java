@@ -47,7 +47,7 @@ import org.neo4j.function.Predicates;
 import org.neo4j.internal.helpers.collection.Iterators;
 import org.neo4j.internal.helpers.collection.Pair;
 import org.neo4j.internal.schema.ConstraintDescriptor;
-import org.neo4j.internal.schema.IndexDescriptor2;
+import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.LabelSchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptor;
@@ -97,9 +97,9 @@ abstract class TxStateTest
     @Inject
     private RandomRule random;
 
-    private final IndexDescriptor2 indexOn_1_1 = TestIndexDescriptorFactory.forLabel( 1, 1 );
-    private final IndexDescriptor2 indexOn_2_1 = TestIndexDescriptorFactory.forLabel( 2, 1 );
-    private final IndexDescriptor2 indexOnRels = TestIndexDescriptorFactory.forSchema( SchemaDescriptor.forRelType( 3, 1 ) );
+    private final IndexDescriptor indexOn_1_1 = TestIndexDescriptorFactory.forLabel( 1, 1 );
+    private final IndexDescriptor indexOn_2_1 = TestIndexDescriptorFactory.forLabel( 2, 1 );
+    private final IndexDescriptor indexOnRels = TestIndexDescriptorFactory.forSchema( SchemaDescriptor.forRelType( 3, 1 ) );
     private final CollectionsFactorySupplier collectionsFactorySupplier;
     private CollectionsFactory collectionsFactory;
     private TxState state;
@@ -1078,7 +1078,7 @@ abstract class TxStateTest
         void withDefaultStringProperties( long... nodeIds );
     }
 
-    private IndexUpdater addNodesToIndex( final IndexDescriptor2 descriptor )
+    private IndexUpdater addNodesToIndex( final IndexDescriptor descriptor )
     {
         return new IndexUpdater()
         {

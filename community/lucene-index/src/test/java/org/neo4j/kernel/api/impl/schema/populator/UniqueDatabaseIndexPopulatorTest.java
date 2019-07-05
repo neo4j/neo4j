@@ -35,7 +35,7 @@ import java.util.concurrent.Executors;
 import org.neo4j.collection.PrimitiveLongCollections;
 import org.neo4j.configuration.Config;
 import org.neo4j.internal.kernel.api.IndexQuery;
-import org.neo4j.internal.schema.IndexDescriptor2;
+import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexOrder;
 import org.neo4j.internal.schema.LabelSchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptor;
@@ -78,7 +78,7 @@ class UniqueDatabaseIndexPopulatorTest
 {
     private static final int LABEL_ID = 1;
     private static final int PROPERTY_KEY_ID = 2;
-    private static final IndexDescriptor2 descriptor = TestIndexDescriptorFactory.forLabel( LABEL_ID, PROPERTY_KEY_ID );
+    private static final IndexDescriptor descriptor = TestIndexDescriptorFactory.forLabel( LABEL_ID, PROPERTY_KEY_ID );
 
     @Inject
     private TestDirectory testDir;

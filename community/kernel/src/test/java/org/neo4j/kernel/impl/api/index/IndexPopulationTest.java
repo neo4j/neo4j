@@ -27,7 +27,7 @@ import org.neo4j.common.EntityType;
 import org.neo4j.internal.helpers.collection.Visitor;
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.kernel.api.PopulationProgress;
-import org.neo4j.internal.schema.IndexDescriptor2;
+import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.LabelSchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.internal.schema.SchemaState;
@@ -152,7 +152,7 @@ class IndexPopulationTest
         };
     }
 
-    private IndexDescriptor2 dummyMeta()
+    private IndexDescriptor dummyMeta()
     {
         return TestIndexDescriptorFactory.forLabel( 0, 0 );
     }

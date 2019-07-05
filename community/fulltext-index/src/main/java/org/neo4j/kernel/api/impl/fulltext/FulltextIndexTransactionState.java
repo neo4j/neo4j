@@ -36,7 +36,7 @@ import org.neo4j.internal.kernel.api.PropertyCursor;
 import org.neo4j.internal.kernel.api.QueryContext;
 import org.neo4j.internal.kernel.api.Read;
 import org.neo4j.internal.kernel.api.RelationshipScanCursor;
-import org.neo4j.internal.schema.IndexDescriptor2;
+import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.io.IOUtils;
 import org.neo4j.kernel.api.impl.index.SearcherReference;
 import org.neo4j.kernel.api.impl.index.collector.ValuesIterator;
@@ -68,7 +68,7 @@ class FulltextIndexTransactionState implements Closeable
     private long lastUpdateRevision;
     private SearcherReference currentSearcher;
 
-    FulltextIndexTransactionState( IndexDescriptor2 descriptor, Analyzer analyzer, String[] propertyNames )
+    FulltextIndexTransactionState( IndexDescriptor descriptor, Analyzer analyzer, String[] propertyNames )
     {
         toCloseLater = new ArrayList<>();
         writer = new TransactionStateLuceneIndexWriter( analyzer );

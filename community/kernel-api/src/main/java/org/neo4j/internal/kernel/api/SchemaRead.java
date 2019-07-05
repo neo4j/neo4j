@@ -26,7 +26,7 @@ import org.neo4j.exceptions.KernelException;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
 import org.neo4j.internal.kernel.api.exceptions.schema.SchemaKernelException;
 import org.neo4j.internal.schema.ConstraintDescriptor;
-import org.neo4j.internal.schema.IndexDescriptor2;
+import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.register.Register;
 import org.neo4j.values.storable.Value;
@@ -41,17 +41,17 @@ public interface SchemaRead extends SchemaReadCore
      *
      * @param label the index label
      * @param properties the index properties
-     * @return the IndexDescriptor2, or {@link IndexDescriptor2#NO_INDEX} if such an index does not exist.
+     * @return the IndexDescriptor, or {@link IndexDescriptor#NO_INDEX} if such an index does not exist.
      */
-    IndexDescriptor2 index( int label, int... properties );
+    IndexDescriptor index( int label, int... properties );
 
     /**
      * Acquire a reference to the index mapping the given {@code schema}, but without requiring a transaction to be open, and without taking any schema locks.
      *
      * @param schema The schema for which to look up an index.
-     * @return An index matching the schema, or {@link IndexDescriptor2#NO_INDEX} if no such index was found or something went wrong.
+     * @return An index matching the schema, or {@link IndexDescriptor#NO_INDEX} if no such index was found or something went wrong.
      */
-    IndexDescriptor2 indexForSchemaNonTransactional( SchemaDescriptor schema );
+    IndexDescriptor indexForSchemaNonTransactional( SchemaDescriptor schema );
 
     /**
      * Returns the index with the given name
@@ -59,13 +59,13 @@ public interface SchemaRead extends SchemaReadCore
      * @param name The name of the index you are looking for
      * @return The index associated with the given name
      */
-    IndexDescriptor2 indexGetForName( String name );
+    IndexDescriptor indexGetForName( String name );
 
     /**
      * Get the index id (the id or the schema rule record) for a committed index
      * - throws exception for indexes that aren't committed.
      */
-    long indexGetCommittedId( IndexDescriptor2 index ) throws SchemaKernelException;
+    long indexGetCommittedId( IndexDescriptor index ) throws SchemaKernelException;
 
     /**
      * Computes the selectivity of the unique values.
@@ -74,7 +74,7 @@ public interface SchemaRead extends SchemaReadCore
      * @return The selectivity of the given index
      * @throws IndexNotFoundKernelException if the index is not there
      */
-    double indexUniqueValuesSelectivity( IndexDescriptor2 index ) throws IndexNotFoundKernelException;
+    double indexUniqueValuesSelectivity( IndexDescriptor index ) throws IndexNotFoundKernelException;
 
     /**
      * Returns the size of the index.
@@ -83,7 +83,7 @@ public interface SchemaRead extends SchemaReadCore
      * @return The size of the current index
      * @throws IndexNotFoundKernelException if the index is not there
      */
-    long indexSize( IndexDescriptor2 index ) throws IndexNotFoundKernelException;
+    long indexSize( IndexDescriptor index ) throws IndexNotFoundKernelException;
 
     /**
      * Count the number of index entries for the given nodeId and value.
@@ -94,7 +94,7 @@ public interface SchemaRead extends SchemaReadCore
      * @param value the property value
      * @return number of index entries for the given {@code nodeId} and {@code value}.
      */
-    long nodesCountIndexed( IndexDescriptor2 index, long nodeId, int propertyKeyId, Value value ) throws KernelException;
+    long nodesCountIndexed( IndexDescriptor index, long nodeId, int propertyKeyId, Value value ) throws KernelException;
 
     /**
      * Returns how many updates that have been applied to the index since the last sampling, and total index size at the last sampling.
@@ -107,7 +107,7 @@ public interface SchemaRead extends SchemaReadCore
      * @return {@code target}
      * @throws IndexNotFoundKernelException if the index does not exist.
      */
-    Register.DoubleLongRegister indexUpdatesAndSize( IndexDescriptor2 index, Register.DoubleLongRegister target )
+    Register.DoubleLongRegister indexUpdatesAndSize( IndexDescriptor index, Register.DoubleLongRegister target )
             throws IndexNotFoundKernelException;
 
     /**
@@ -121,7 +121,7 @@ public interface SchemaRead extends SchemaReadCore
      * @return {@code target}
      * @throws IndexNotFoundKernelException if the index does not exist.
      */
-    Register.DoubleLongRegister indexSample( IndexDescriptor2 index, Register.DoubleLongRegister target )
+    Register.DoubleLongRegister indexSample( IndexDescriptor index, Register.DoubleLongRegister target )
             throws IndexNotFoundKernelException;
 
     /**
@@ -155,7 +155,7 @@ public interface SchemaRead extends SchemaReadCore
      * Get the owning constraint for a constraint index or <tt>null</tt> if the index does not have an owning
      * constraint.
      */
-    Long indexGetOwningUniquenessConstraintId( IndexDescriptor2 index );
+    Long indexGetOwningUniquenessConstraintId( IndexDescriptor index );
 
     /**
      * Returns schema state for the given key or create a new state if not there

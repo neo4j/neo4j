@@ -24,7 +24,7 @@ import java.io.IOException;
 
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.schema.IndexConfigCompleter;
-import org.neo4j.internal.schema.IndexDescriptor2;
+import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexKind;
 import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.IndexProviderDescriptor;
@@ -47,7 +47,7 @@ import org.neo4j.storageengine.migration.StoreMigrationParticipant;
  *
  * When an index rule is added, the {@link IndexingService} is notified. It will, in turn, ask
  * your {@link IndexProvider} for a
- * {@link #getPopulator(IndexDescriptor2, IndexSamplingConfig, ByteBufferFactory) batch index writer}.
+ * {@link #getPopulator(IndexDescriptor, IndexSamplingConfig, ByteBufferFactory) batch index writer}.
  *
  * A background index job is triggered, and all existing data that applies to the new rule, as well as new data
  * from the "outside", will be inserted using the writer. You are guaranteed that usage of this writer,
@@ -92,7 +92,7 @@ import org.neo4j.storageengine.migration.StoreMigrationParticipant;
  * <h3>Online operation</h3>
  *
  * Once the index is online, the database will move to using the
- * {@link #getOnlineAccessor(IndexDescriptor2, IndexSamplingConfig) online accessor} to
+ * {@link #getOnlineAccessor(IndexDescriptor, IndexSamplingConfig) online accessor} to
  * write to the index.
  */
 public abstract class IndexProvider extends LifecycleAdapter implements IndexConfigCompleter
@@ -104,56 +104,56 @@ public abstract class IndexProvider extends LifecycleAdapter implements IndexCon
         class Adaptor implements Monitor
         {
             @Override
-            public void failedToOpenIndex( IndexDescriptor2 index, String action, Exception cause )
+            public void failedToOpenIndex( IndexDescriptor index, String action, Exception cause )
             {   // no-op
             }
 
             @Override
-            public void recoveryCleanupRegistered( File indexFile, IndexDescriptor2 index )
+            public void recoveryCleanupRegistered( File indexFile, IndexDescriptor index )
             {   // no-op
             }
 
             @Override
-            public void recoveryCleanupStarted( File indexFile, IndexDescriptor2 index )
+            public void recoveryCleanupStarted( File indexFile, IndexDescriptor index )
             {   // no-op
             }
 
             @Override
-            public void recoveryCleanupFinished( File indexFile, IndexDescriptor2 index,
+            public void recoveryCleanupFinished( File indexFile, IndexDescriptor index,
                     long numberOfPagesVisited, long numberOfTreeNodes, long numberOfCleanedCrashPointers, long durationMillis )
             {   // no-op
             }
 
             @Override
-            public void recoveryCleanupClosed( File indexFile, IndexDescriptor2 index )
+            public void recoveryCleanupClosed( File indexFile, IndexDescriptor index )
             {   // no-op
             }
 
             @Override
-            public void recoveryCleanupFailed( File indexFile, IndexDescriptor2 index, Throwable throwable )
+            public void recoveryCleanupFailed( File indexFile, IndexDescriptor index, Throwable throwable )
             {   // no-op
             }
         }
 
-        void failedToOpenIndex( IndexDescriptor2 index, String action, Exception cause );
+        void failedToOpenIndex( IndexDescriptor index, String action, Exception cause );
 
-        void recoveryCleanupRegistered( File indexFile, IndexDescriptor2 index );
+        void recoveryCleanupRegistered( File indexFile, IndexDescriptor index );
 
-        void recoveryCleanupStarted( File indexFile, IndexDescriptor2 index );
+        void recoveryCleanupStarted( File indexFile, IndexDescriptor index );
 
-        void recoveryCleanupFinished( File indexFile, IndexDescriptor2 index,
+        void recoveryCleanupFinished( File indexFile, IndexDescriptor index,
                 long numberOfPagesVisited, long numberOfTreeNodes, long numberOfCleanedCrashPointers, long durationMillis );
 
-        void recoveryCleanupClosed( File indexFile, IndexDescriptor2 index );
+        void recoveryCleanupClosed( File indexFile, IndexDescriptor index );
 
-        void recoveryCleanupFailed( File indexFile, IndexDescriptor2 index, Throwable throwable );
+        void recoveryCleanupFailed( File indexFile, IndexDescriptor index, Throwable throwable );
     }
 
     public static final IndexProvider EMPTY =
             new IndexProvider( new IndexProviderDescriptor( "no-index-provider", "1.0" ), IndexDirectoryStructure.NONE )
             {
                 @Override
-                public IndexDescriptor2 completeConfiguration( IndexDescriptor2 index )
+                public IndexDescriptor completeConfiguration( IndexDescriptor index )
                 {
                     return index;
                 }
@@ -162,19 +162,19 @@ public abstract class IndexProvider extends LifecycleAdapter implements IndexCon
                 private final IndexPopulator singlePopulator = IndexPopulator.EMPTY;
 
                 @Override
-                public IndexAccessor getOnlineAccessor( IndexDescriptor2 descriptor, IndexSamplingConfig samplingConfig )
+                public IndexAccessor getOnlineAccessor( IndexDescriptor descriptor, IndexSamplingConfig samplingConfig )
                 {
                     return singleWriter;
                 }
 
                 @Override
-                public IndexPopulator getPopulator( IndexDescriptor2 descriptor, IndexSamplingConfig samplingConfig, ByteBufferFactory bufferFactory )
+                public IndexPopulator getPopulator( IndexDescriptor descriptor, IndexSamplingConfig samplingConfig, ByteBufferFactory bufferFactory )
                 {
                     return singlePopulator;
                 }
 
                 @Override
-                public InternalIndexState getInitialState( IndexDescriptor2 descriptor )
+                public InternalIndexState getInitialState( IndexDescriptor descriptor )
                 {
                     return InternalIndexState.ONLINE;
                 }
@@ -187,7 +187,7 @@ public abstract class IndexProvider extends LifecycleAdapter implements IndexCon
                 }
 
                 @Override
-                public String getPopulationFailure( IndexDescriptor2 descriptor ) throws IllegalStateException
+                public String getPopulationFailure( IndexDescriptor descriptor ) throws IllegalStateException
                 {
                     throw new IllegalStateException();
                 }
@@ -213,31 +213,31 @@ public abstract class IndexProvider extends LifecycleAdapter implements IndexCon
     /**
      * Used for initially populating a created index, using batch insertion.
      */
-    public abstract IndexPopulator getPopulator( IndexDescriptor2 descriptor, IndexSamplingConfig samplingConfig, ByteBufferFactory bufferFactory );
+    public abstract IndexPopulator getPopulator( IndexDescriptor descriptor, IndexSamplingConfig samplingConfig, ByteBufferFactory bufferFactory );
 
     /**
      * Used for updating an index once initial population has completed.
      */
-    public abstract IndexAccessor getOnlineAccessor( IndexDescriptor2 descriptor, IndexSamplingConfig samplingConfig ) throws IOException;
+    public abstract IndexAccessor getOnlineAccessor( IndexDescriptor descriptor, IndexSamplingConfig samplingConfig ) throws IOException;
 
     /**
      * Returns a failure previously gotten from {@link IndexPopulator#markAsFailed(String)}
      *
      * Implementations are expected to persist this failure
-     * @param descriptor {@link IndexDescriptor2} of the index.
+     * @param descriptor {@link IndexDescriptor} of the index.
      * @return failure, in the form of a stack trace, that happened during population.
      * @throws IllegalStateException If there was no failure during population.
      */
-    public abstract String getPopulationFailure( IndexDescriptor2 descriptor ) throws IllegalStateException;
+    public abstract String getPopulationFailure( IndexDescriptor descriptor ) throws IllegalStateException;
 
     /**
      * Called during startup to find out which state an index is in. If {@link InternalIndexState#FAILED}
-     * is returned then a further call to {@link #getPopulationFailure(IndexDescriptor2)} is expected and should return
+     * is returned then a further call to {@link #getPopulationFailure(IndexDescriptor)} is expected and should return
      * the failure accepted by any call to {@link IndexPopulator#markAsFailed(String)} call at the time
      * of failure.
      * @param descriptor to get initial state for.
      */
-    public abstract InternalIndexState getInitialState( IndexDescriptor2 descriptor );
+    public abstract InternalIndexState getInitialState( IndexDescriptor descriptor );
 
     /**
      * @return a description of this index provider
@@ -304,25 +304,25 @@ public abstract class IndexProvider extends LifecycleAdapter implements IndexCon
         }
 
         @Override
-        public IndexPopulator getPopulator( IndexDescriptor2 descriptor, IndexSamplingConfig samplingConfig, ByteBufferFactory bufferFactory )
+        public IndexPopulator getPopulator( IndexDescriptor descriptor, IndexSamplingConfig samplingConfig, ByteBufferFactory bufferFactory )
         {
             return null;
         }
 
         @Override
-        public IndexAccessor getOnlineAccessor( IndexDescriptor2 descriptor, IndexSamplingConfig samplingConfig ) throws IOException
+        public IndexAccessor getOnlineAccessor( IndexDescriptor descriptor, IndexSamplingConfig samplingConfig ) throws IOException
         {
             return null;
         }
 
         @Override
-        public String getPopulationFailure( IndexDescriptor2 descriptor ) throws IllegalStateException
+        public String getPopulationFailure( IndexDescriptor descriptor ) throws IllegalStateException
         {
             throw new IllegalStateException();
         }
 
         @Override
-        public InternalIndexState getInitialState( IndexDescriptor2 descriptor )
+        public InternalIndexState getInitialState( IndexDescriptor descriptor )
         {
             return null;
         }
@@ -334,7 +334,7 @@ public abstract class IndexProvider extends LifecycleAdapter implements IndexCon
         }
 
         @Override
-        public IndexDescriptor2 completeConfiguration( IndexDescriptor2 index )
+        public IndexDescriptor completeConfiguration( IndexDescriptor index )
         {
             return index;
         }
@@ -351,25 +351,25 @@ public abstract class IndexProvider extends LifecycleAdapter implements IndexCon
         }
 
         @Override
-        public IndexPopulator getPopulator( IndexDescriptor2 descriptor, IndexSamplingConfig samplingConfig, ByteBufferFactory bufferFactory )
+        public IndexPopulator getPopulator( IndexDescriptor descriptor, IndexSamplingConfig samplingConfig, ByteBufferFactory bufferFactory )
         {
             return provider.getPopulator( descriptor, samplingConfig, bufferFactory );
         }
 
         @Override
-        public IndexAccessor getOnlineAccessor( IndexDescriptor2 descriptor, IndexSamplingConfig samplingConfig ) throws IOException
+        public IndexAccessor getOnlineAccessor( IndexDescriptor descriptor, IndexSamplingConfig samplingConfig ) throws IOException
         {
             return provider.getOnlineAccessor( descriptor, samplingConfig );
         }
 
         @Override
-        public String getPopulationFailure( IndexDescriptor2 descriptor ) throws IllegalStateException
+        public String getPopulationFailure( IndexDescriptor descriptor ) throws IllegalStateException
         {
             return provider.getPopulationFailure( descriptor );
         }
 
         @Override
-        public InternalIndexState getInitialState( IndexDescriptor2 descriptor )
+        public InternalIndexState getInitialState( IndexDescriptor descriptor )
         {
             return provider.getInitialState( descriptor );
         }
@@ -429,7 +429,7 @@ public abstract class IndexProvider extends LifecycleAdapter implements IndexCon
         }
 
         @Override
-        public IndexDescriptor2 completeConfiguration( IndexDescriptor2 index )
+        public IndexDescriptor completeConfiguration( IndexDescriptor index )
         {
             return provider.completeConfiguration( index );
         }

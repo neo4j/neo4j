@@ -33,7 +33,7 @@ import org.neo4j.internal.kernel.api.exceptions.schema.CreateConstraintFailureEx
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
 import org.neo4j.internal.kernel.api.exceptions.schema.SchemaKernelException;
 import org.neo4j.internal.kernel.api.exceptions.schema.SchemaKernelException.OperationContext;
-import org.neo4j.internal.schema.IndexDescriptor2;
+import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.internal.schema.constraints.ConstraintDescriptorFactory;
 import org.neo4j.internal.schema.constraints.IndexBackedConstraintDescriptor;
@@ -92,7 +92,7 @@ public class ConstraintIndexCreator
      * and this tx committed, which will create the uniqueness constraint</li>
      * </ol>
      */
-    public IndexDescriptor2 createUniquenessConstraintIndex( KernelTransactionImplementation transaction,
+    public IndexDescriptor createUniquenessConstraintIndex( KernelTransactionImplementation transaction,
             IndexBackedConstraintDescriptor constraint, String provider )
             throws TransactionFailureException, CreateConstraintFailureException,
             UniquePropertyValueValidationException, AlreadyConstrainedException
@@ -101,7 +101,7 @@ public class ConstraintIndexCreator
         SchemaDescriptor schema = constraint.schema();
         log.info( "Starting constraint creation: %s.", constraint );
 
-        IndexDescriptor2 index;
+        IndexDescriptor index;
         SchemaRead schemaRead = transaction.schemaRead();
         try
         {
@@ -185,16 +185,16 @@ public class ConstraintIndexCreator
         }
     }
 
-    private boolean indexStillExists( SchemaRead schemaRead, SchemaDescriptor descriptor, IndexDescriptor2 index )
+    private boolean indexStillExists( SchemaRead schemaRead, SchemaDescriptor descriptor, IndexDescriptor index )
     {
-        IndexDescriptor2 existingIndex = schemaRead.index( descriptor );
-        return existingIndex != IndexDescriptor2.NO_INDEX && existingIndex.equals( index );
+        IndexDescriptor existingIndex = schemaRead.index( descriptor );
+        return existingIndex != IndexDescriptor.NO_INDEX && existingIndex.equals( index );
     }
 
     /**
      * You MUST hold a schema write lock before you call this method.
      */
-    public void dropUniquenessConstraintIndex( IndexDescriptor2 index )
+    public void dropUniquenessConstraintIndex( IndexDescriptor index )
             throws TransactionFailureException
     {
         try ( Transaction transaction = kernelSupplier.get().beginTransaction( implicit, AUTH_DISABLED );
@@ -236,11 +236,11 @@ public class ConstraintIndexCreator
         }
     }
 
-    private IndexDescriptor2 getOrCreateUniquenessConstraintIndex( SchemaRead schemaRead, TokenRead tokenRead, SchemaDescriptor schema, String provider )
+    private IndexDescriptor getOrCreateUniquenessConstraintIndex( SchemaRead schemaRead, TokenRead tokenRead, SchemaDescriptor schema, String provider )
             throws SchemaKernelException
     {
-        IndexDescriptor2 descriptor = schemaRead.index( schema );
-        if ( descriptor != IndexDescriptor2.NO_INDEX )
+        IndexDescriptor descriptor = schemaRead.index( schema );
+        if ( descriptor != IndexDescriptor.NO_INDEX )
         {
             if ( descriptor.isUnique() )
             {
@@ -262,11 +262,11 @@ public class ConstraintIndexCreator
         return createConstraintIndex( schema, provider );
     }
 
-    public IndexDescriptor2 createConstraintIndex( final SchemaDescriptor schema, String provider )
+    public IndexDescriptor createConstraintIndex( final SchemaDescriptor schema, String provider )
     {
         try ( Transaction transaction = kernelSupplier.get().beginTransaction( implicit, AUTH_DISABLED ) )
         {
-            IndexDescriptor2 index = ((KernelTransaction) transaction).indexUniqueCreate( schema, provider );
+            IndexDescriptor index = ((KernelTransaction) transaction).indexUniqueCreate( schema, provider );
             transaction.success();
             return index;
         }

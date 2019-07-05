@@ -31,7 +31,7 @@ import java.util.List;
 import org.neo4j.collection.PrimitiveLongCollections;
 import org.neo4j.configuration.Config;
 import org.neo4j.internal.kernel.api.IndexQuery;
-import org.neo4j.internal.schema.IndexDescriptor2;
+import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexOrder;
 import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.SchemaDescriptor;
@@ -75,7 +75,7 @@ class NonUniqueDatabaseIndexPopulatorTest
         File folder = testDir.directory( "folder" );
         PartitionedIndexStorage indexStorage = new PartitionedIndexStorage( dirFactory, fileSystem, folder );
 
-        IndexDescriptor2 descriptor = IndexPrototype.forSchema( labelSchemaDescriptor ).materialise( 13 );
+        IndexDescriptor descriptor = IndexPrototype.forSchema( labelSchemaDescriptor ).materialise( 13 );
         index = LuceneSchemaIndexBuilder.create( descriptor, Config.defaults() )
                                         .withIndexStorage( indexStorage )
                                         .build();

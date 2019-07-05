@@ -24,7 +24,7 @@ import org.junit.jupiter.api.Test;
 import java.io.IOException;
 
 import org.neo4j.internal.helpers.Exceptions;
-import org.neo4j.internal.schema.IndexDescriptor2;
+import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
@@ -42,7 +42,7 @@ import static org.neo4j.kernel.impl.api.index.PhaseTracker.nullInstance;
 
 abstract class NativeUniqueIndexPopulatorTest<KEY extends NativeIndexKey<KEY>, VALUE extends NativeIndexValue> extends NativeIndexPopulatorTests<KEY,VALUE>
 {
-    private static final IndexDescriptor2 uniqueDescriptor = IndexPrototype.uniqueForSchema( SchemaDescriptor.forLabel( 42, 666 ) ).materialise( 0 );
+    private static final IndexDescriptor uniqueDescriptor = IndexPrototype.uniqueForSchema( SchemaDescriptor.forLabel( 42, 666 ) ).materialise( 0 );
 
     private final NativeIndexPopulatorTestCases.PopulatorFactory<KEY, VALUE> populatorFactory;
     private final ValueType[] typesOfGroup;

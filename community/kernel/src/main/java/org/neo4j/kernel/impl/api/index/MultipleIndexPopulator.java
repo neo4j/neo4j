@@ -39,7 +39,7 @@ import org.neo4j.internal.helpers.collection.Pair;
 import org.neo4j.internal.helpers.collection.Visitor;
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.kernel.api.PopulationProgress;
-import org.neo4j.internal.schema.IndexDescriptor2;
+import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptorSupplier;
 import org.neo4j.internal.schema.SchemaState;
@@ -79,7 +79,7 @@ import static org.neo4j.kernel.impl.api.index.IndexPopulationFailure.failure;
  * Usage of this class should be something like:
  * <ol>
  * <li>Instantiation.</li>
- * <li>One or more calls to {@link #addPopulator(IndexPopulator, IndexDescriptor2, FlippableIndexProxy, FailedIndexProxyFactory, String)}.</li>
+ * <li>One or more calls to {@link #addPopulator(IndexPopulator, IndexDescriptor, FlippableIndexProxy, FailedIndexProxyFactory, String)}.</li>
  * <li>Call to {@link #create()} to create data structures and files to start accepting updates.</li>
  * <li>Call to {@link #indexAllEntities()} (blocking call).</li>
  * <li>While all nodes are being indexed, calls to {@link #queueConcurrentUpdate(IndexEntryUpdate)} are accepted.</li>
@@ -127,7 +127,7 @@ public class MultipleIndexPopulator implements IndexPopulator
         this.phaseTracker = new LoggingPhaseTracker( logProvider.getLog( IndexPopulationJob.class ) );
     }
 
-    IndexPopulation addPopulator( IndexPopulator populator, IndexDescriptor2 indexDescriptor, FlippableIndexProxy flipper,
+    IndexPopulation addPopulator( IndexPopulator populator, IndexDescriptor indexDescriptor, FlippableIndexProxy flipper,
             FailedIndexProxyFactory failedIndexProxyFactory, String indexUserDescription )
     {
         IndexPopulation population = createPopulation( populator, indexDescriptor, flipper, failedIndexProxyFactory, indexUserDescription );
@@ -135,7 +135,7 @@ public class MultipleIndexPopulator implements IndexPopulator
         return population;
     }
 
-    private IndexPopulation createPopulation( IndexPopulator populator, IndexDescriptor2 indexDescriptor, FlippableIndexProxy flipper,
+    private IndexPopulation createPopulation( IndexPopulator populator, IndexDescriptor indexDescriptor, FlippableIndexProxy flipper,
             FailedIndexProxyFactory failedIndexProxyFactory, String indexUserDescription )
     {
         return new IndexPopulation( populator, indexDescriptor, flipper, failedIndexProxyFactory, indexUserDescription );
@@ -523,7 +523,7 @@ public class MultipleIndexPopulator implements IndexPopulator
         public final IndexPopulator populator;
         final FlippableIndexProxy flipper;
         private final long indexId;
-        private final IndexDescriptor2 indexDescriptor;
+        private final IndexDescriptor indexDescriptor;
         private final FailedIndexProxyFactory failedIndexProxyFactory;
         private final String indexUserDescription;
         private boolean populationOngoing = true;
@@ -531,7 +531,7 @@ public class MultipleIndexPopulator implements IndexPopulator
 
         List<IndexEntryUpdate<?>> batchedUpdatesFromScan;
 
-        IndexPopulation( IndexPopulator populator, IndexDescriptor2 indexDescriptor, FlippableIndexProxy flipper,
+        IndexPopulation( IndexPopulator populator, IndexDescriptor indexDescriptor, FlippableIndexProxy flipper,
                 FailedIndexProxyFactory failedIndexProxyFactory, String indexUserDescription )
         {
             this.populator = populator;

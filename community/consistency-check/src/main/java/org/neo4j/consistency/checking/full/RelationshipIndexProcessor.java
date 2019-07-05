@@ -23,7 +23,7 @@ import java.util.List;
 
 import org.neo4j.consistency.checking.index.IndexAccessors;
 import org.neo4j.consistency.report.ConsistencyReporter;
-import org.neo4j.internal.schema.IndexDescriptor2;
+import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 
 public class RelationshipIndexProcessor extends RecordProcessor.Adapter<RelationshipRecord>
@@ -32,7 +32,7 @@ public class RelationshipIndexProcessor extends RecordProcessor.Adapter<Relation
     private final RelationshipToIndexCheck checker;
 
     RelationshipIndexProcessor( ConsistencyReporter reporter, IndexAccessors indexes, PropertyReader propertyReader,
-            List<IndexDescriptor2> relationshipIndexes )
+            List<IndexDescriptor> relationshipIndexes )
     {
         this.reporter = reporter;
         checker = new RelationshipToIndexCheck( relationshipIndexes, indexes, propertyReader );

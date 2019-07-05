@@ -35,7 +35,7 @@ import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.internal.kernel.api.Kernel;
 import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
-import org.neo4j.internal.schema.IndexDescriptor2;
+import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.register.Register.DoubleLongRegister;
 import org.neo4j.register.Registers;
@@ -195,7 +195,7 @@ class IndexSamplingIntegrationTest
         assertEquals( nodes - deletedNodes, indexSizeRegister.readSecond() );
     }
 
-    private IndexDescriptor2 indexId( org.neo4j.internal.kernel.api.Transaction tx )
+    private IndexDescriptor indexId( org.neo4j.internal.kernel.api.Transaction tx )
     {
         int labelId = tx.tokenRead().nodeLabel( label.name() );
         int propertyKeyId = tx.tokenRead().propertyKey( property );

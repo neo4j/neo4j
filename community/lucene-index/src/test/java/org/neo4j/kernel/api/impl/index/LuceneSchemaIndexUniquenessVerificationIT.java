@@ -40,7 +40,7 @@ import org.neo4j.configuration.Config;
 import org.neo4j.function.Factory;
 import org.neo4j.internal.helpers.Exceptions;
 import org.neo4j.internal.helpers.Strings;
-import org.neo4j.internal.schema.IndexDescriptor2;
+import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.io.IOUtils;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
@@ -66,7 +66,7 @@ class LuceneSchemaIndexUniquenessVerificationIT
 {
     private static final int DOCS_PER_PARTITION = ThreadLocalRandom.current().nextInt( 10, 100 );
     private static final int PROPERTY_KEY_ID = 42;
-    private static final IndexDescriptor2 descriptor = TestIndexDescriptorFactory.uniqueForLabel( 0, PROPERTY_KEY_ID );
+    private static final IndexDescriptor descriptor = TestIndexDescriptorFactory.uniqueForLabel( 0, PROPERTY_KEY_ID );
     private static final int nodesToCreate = DOCS_PER_PARTITION * 2 + 1;
     private static final long MAX_LONG_VALUE = Long.MAX_VALUE >> 10;
     private static final long MIN_LONG_VALUE = MAX_LONG_VALUE - 20;

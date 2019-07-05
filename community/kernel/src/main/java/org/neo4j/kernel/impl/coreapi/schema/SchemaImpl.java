@@ -59,7 +59,7 @@ import org.neo4j.internal.kernel.api.exceptions.schema.SchemaRuleNotFoundExcepti
 import org.neo4j.internal.kernel.api.exceptions.schema.TokenCapacityExceededKernelException;
 import org.neo4j.internal.schema.ConstraintDescriptor;
 import org.neo4j.internal.schema.IndexConfig;
-import org.neo4j.internal.schema.IndexDescriptor2;
+import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.LabelSchemaDescriptor;
 import org.neo4j.internal.schema.RelationTypeSchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptor;
@@ -126,8 +126,8 @@ public class SchemaImpl implements Schema
             {
                 return emptyList();
             }
-            Iterator<IndexDescriptor2> indexes = schemaRead.indexesGetForLabel( labelId );
-            addDefinitions( definitions, tokenRead, IndexDescriptor2.sortByType( indexes ) );
+            Iterator<IndexDescriptor> indexes = schemaRead.indexesGetForLabel( labelId );
+            addDefinitions( definitions, tokenRead, IndexDescriptor.sortByType( indexes ) );
             return definitions;
         }
     }
@@ -141,13 +141,13 @@ public class SchemaImpl implements Schema
         {
             List<IndexDefinition> definitions = new ArrayList<>();
 
-            Iterator<IndexDescriptor2> indexes = schemaRead.indexesGetAll();
-            addDefinitions( definitions, transaction.tokenRead(), IndexDescriptor2.sortByType( indexes ) );
+            Iterator<IndexDescriptor> indexes = schemaRead.indexesGetAll();
+            addDefinitions( definitions, transaction.tokenRead(), IndexDescriptor.sortByType( indexes ) );
             return definitions;
         }
     }
 
-    private IndexDefinition descriptorToDefinition( final TokenRead tokenRead, IndexDescriptor2 index )
+    private IndexDefinition descriptorToDefinition( final TokenRead tokenRead, IndexDescriptor index )
     {
         try
         {
@@ -182,7 +182,7 @@ public class SchemaImpl implements Schema
     }
 
     private void addDefinitions( List<IndexDefinition> definitions, final TokenRead tokenRead,
-            Iterator<IndexDescriptor2> indexes )
+            Iterator<IndexDescriptor> indexes )
     {
         addToCollection(
                 map( index -> descriptorToDefinition( tokenRead, index ), indexes ),
@@ -281,7 +281,7 @@ public class SchemaImpl implements Schema
         {
 
             SchemaRead schemaRead = transaction.schemaRead();
-            IndexDescriptor2 reference = getIndexReference( schemaRead, transaction.tokenRead(), (IndexDefinitionImpl) index );
+            IndexDescriptor reference = getIndexReference( schemaRead, transaction.tokenRead(), (IndexDefinitionImpl) index );
             InternalIndexState indexState = schemaRead.indexGetState( reference );
             switch ( indexState )
             {
@@ -313,7 +313,7 @@ public class SchemaImpl implements Schema
         try ( Statement ignore = transaction.acquireStatement() )
         {
             SchemaRead schemaRead = transaction.schemaRead();
-            IndexDescriptor2 descriptor = getIndexReference( schemaRead, transaction.tokenRead(), (IndexDefinitionImpl) index );
+            IndexDescriptor descriptor = getIndexReference( schemaRead, transaction.tokenRead(), (IndexDefinitionImpl) index );
             PopulationProgress progress = schemaRead.indexGetPopulationProgress( descriptor );
             return progress.toIndexPopulationProgress();
         }
@@ -330,7 +330,7 @@ public class SchemaImpl implements Schema
         try ( Statement ignore = transaction.acquireStatement() )
         {
             SchemaRead schemaRead = transaction.schemaRead();
-            IndexDescriptor2 descriptor = getIndexReference( schemaRead, transaction.tokenRead(), (IndexDefinitionImpl) index );
+            IndexDescriptor descriptor = getIndexReference( schemaRead, transaction.tokenRead(), (IndexDefinitionImpl) index );
             return schemaRead.indexGetFailure( descriptor );
         }
         catch ( SchemaRuleNotFoundException | IndexNotFoundKernelException e )
@@ -390,11 +390,11 @@ public class SchemaImpl implements Schema
         }
     }
 
-    private static IndexDescriptor2 getIndexReference( SchemaRead schemaRead, TokenRead tokenRead, IndexDefinitionImpl index )
+    private static IndexDescriptor getIndexReference( SchemaRead schemaRead, TokenRead tokenRead, IndexDefinitionImpl index )
             throws SchemaRuleNotFoundException
     {
         // Use the precise embedded index reference when available.
-        IndexDescriptor2 reference = index.getIndexReference();
+        IndexDescriptor reference = index.getIndexReference();
         if ( reference != null )
         {
             return reference;
@@ -437,7 +437,7 @@ public class SchemaImpl implements Schema
         }
 
         reference = schemaRead.index( schema );
-        if ( reference == IndexDescriptor2.NO_INDEX )
+        if ( reference == IndexDescriptor.NO_INDEX )
         {
             throw new SchemaRuleNotFoundException( schema );
         }
@@ -559,7 +559,7 @@ public class SchemaImpl implements Schema
                     int labelId = tokenWrite.labelGetOrCreateForName( label.name() );
                     int[] propertyKeyIds = getOrCreatePropertyKeyIds( tokenWrite, propertyKeys );
                     LabelSchemaDescriptor descriptor = forLabel( labelId, propertyKeyIds );
-                    IndexDescriptor2 indexReference = transaction.schemaWrite().indexCreate( descriptor, indexName );
+                    IndexDescriptor indexReference = transaction.schemaWrite().indexCreate( descriptor, indexName );
                     return new IndexDefinitionImpl( this, indexReference, new Label[]{label}, propertyKeys, false );
                 }
                 catch ( IllegalTokenNameException e )
@@ -586,7 +586,7 @@ public class SchemaImpl implements Schema
             {
                 try
                 {
-                    IndexDescriptor2 reference = getIndexReference( transaction.schemaRead(), transaction.tokenRead(), (IndexDefinitionImpl) indexDefinition );
+                    IndexDescriptor reference = getIndexReference( transaction.schemaRead(), transaction.tokenRead(), (IndexDefinitionImpl) indexDefinition );
                     transaction.schemaWrite().indexDrop( reference );
                 }
                 catch ( NotFoundException e )

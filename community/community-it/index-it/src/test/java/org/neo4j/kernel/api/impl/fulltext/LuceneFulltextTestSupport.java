@@ -43,7 +43,7 @@ import org.neo4j.internal.kernel.api.RelationshipIndexCursor;
 import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.internal.schema.IndexConfig;
-import org.neo4j.internal.schema.IndexDescriptor2;
+import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexOrder;
 import org.neo4j.internal.schema.SchemaDescriptorSupplier;
 import org.neo4j.kernel.api.KernelTransaction;
@@ -156,7 +156,7 @@ public class LuceneFulltextTestSupport
 
     void assertQueryFindsIds( KernelTransaction ktx, boolean nodes, String indexName, String query, long... ids ) throws Exception
     {
-        IndexDescriptor2 index = ktx.schemaRead().indexGetForName( indexName );
+        IndexDescriptor index = ktx.schemaRead().indexGetForName( indexName );
         IndexReadSession indexSession = ktx.dataRead().indexReadSession( index );
         MutableLongSet set = LongSets.mutable.of( ids );
         if ( nodes )
@@ -195,7 +195,7 @@ public class LuceneFulltextTestSupport
             throws Exception
     {
 
-        IndexDescriptor2 index = ktx.schemaRead().indexGetForName( indexName );
+        IndexDescriptor index = ktx.schemaRead().indexGetForName( indexName );
         IndexReadSession indexSession = ktx.dataRead().indexReadSession( index );
         try ( NodeValueIndexCursor cursor = ktx.cursors().allocateNodeValueIndexCursor() )
         {
@@ -234,8 +234,8 @@ public class LuceneFulltextTestSupport
     {
         try ( KernelTransactionImplementation tx = getKernelTransaction() )
         {
-            IndexDescriptor2 index;
-            while ( (index = tx.schemaRead().index( descriptor.schema() )) == IndexDescriptor2.NO_INDEX )
+            IndexDescriptor index;
+            while ( (index = tx.schemaRead().index( descriptor.schema() )) == IndexDescriptor.NO_INDEX )
             {
                 Thread.sleep( 100 );
             }

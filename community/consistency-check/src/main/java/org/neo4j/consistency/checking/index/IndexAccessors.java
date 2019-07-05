@@ -32,7 +32,7 @@ import java.util.List;
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.recordstorage.SchemaRuleAccess;
 import org.neo4j.internal.recordstorage.StoreTokens;
-import org.neo4j.internal.schema.IndexDescriptor2;
+import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.io.IOUtils;
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexProvider;
@@ -44,15 +44,15 @@ import org.neo4j.token.TokenHolders;
 public class IndexAccessors implements Closeable
 {
     private final MutableLongObjectMap<IndexAccessor> accessors = new LongObjectHashMap<>();
-    private final List<IndexDescriptor2> onlineIndexRules = new ArrayList<>();
-    private final List<IndexDescriptor2> notOnlineIndexRules = new ArrayList<>();
+    private final List<IndexDescriptor> onlineIndexRules = new ArrayList<>();
+    private final List<IndexDescriptor> notOnlineIndexRules = new ArrayList<>();
 
     public IndexAccessors( IndexProviderMap providers,
                            StoreAccess storeAccess,
                            IndexSamplingConfig samplingConfig ) throws IOException
     {
         TokenHolders tokenHolders = StoreTokens.readOnlyTokenHolders( storeAccess.getRawNeoStores() );
-        Iterator<IndexDescriptor2> indexes = SchemaRuleAccess.getSchemaRuleAccess( storeAccess.getSchemaStore(), tokenHolders ).indexesGetAll();
+        Iterator<IndexDescriptor> indexes = SchemaRuleAccess.getSchemaRuleAccess( storeAccess.getSchemaStore(), tokenHolders ).indexesGetAll();
         for (; ; )
         {
             try
@@ -62,7 +62,7 @@ public class IndexAccessors implements Closeable
                     // we intentionally only check indexes that are online since
                     // - populating indexes will be rebuilt on next startup
                     // - failed indexes have to be dropped by the user anyways
-                    IndexDescriptor2 indexDescriptor = indexes.next();
+                    IndexDescriptor indexDescriptor = indexes.next();
                     if ( indexDescriptor.isUnique() && indexDescriptor.getOwningConstraintId().isEmpty() )
                     {
                         notOnlineIndexRules.add( indexDescriptor );
@@ -91,7 +91,7 @@ public class IndexAccessors implements Closeable
             }
         }
 
-        for ( IndexDescriptor2 indexRule : onlineIndexRules )
+        for ( IndexDescriptor indexRule : onlineIndexRules )
         {
             long indexId = indexRule.getId();
             accessors.put( indexId, provider( providers, indexRule )
@@ -99,22 +99,22 @@ public class IndexAccessors implements Closeable
         }
     }
 
-    private IndexProvider provider( IndexProviderMap providers, IndexDescriptor2 indexRule )
+    private IndexProvider provider( IndexProviderMap providers, IndexDescriptor indexRule )
     {
         return providers.lookup( indexRule.getIndexProvider() );
     }
 
-    public Collection<IndexDescriptor2> notOnlineRules()
+    public Collection<IndexDescriptor> notOnlineRules()
     {
         return notOnlineIndexRules;
     }
 
-    public IndexAccessor accessorFor( IndexDescriptor2 indexRule )
+    public IndexAccessor accessorFor( IndexDescriptor indexRule )
     {
         return accessors.get( indexRule.getId() );
     }
 
-    public Iterable<IndexDescriptor2> onlineRules()
+    public Iterable<IndexDescriptor> onlineRules()
     {
         return onlineIndexRules;
     }

@@ -27,7 +27,7 @@ import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.schema.IndexDefinition;
-import org.neo4j.internal.schema.IndexDescriptor2;
+import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.kernel.impl.coreapi.schema.IndexDefinitionImpl;
 import org.neo4j.test.rule.DbmsRule;
 import org.neo4j.test.rule.EmbeddedDbmsRule;
@@ -143,8 +143,8 @@ public class ReuseExcessBatchIdsOnRestartIT
         }
         IndexDefinitionImpl firstImpl = (IndexDefinitionImpl) first;
         IndexDefinitionImpl secondImpl = (IndexDefinitionImpl) second;
-        IndexDescriptor2 firstRef = firstImpl.getIndexReference();
-        IndexDescriptor2 secondRef = secondImpl.getIndexReference();
+        IndexDescriptor firstRef = firstImpl.getIndexReference();
+        IndexDescriptor secondRef = secondImpl.getIndexReference();
         assertEquals( firstRef.getId() + 1, secondRef.getId() );
     }
 
@@ -184,8 +184,8 @@ public class ReuseExcessBatchIdsOnRestartIT
         }
         IndexDefinitionImpl firstImpl = (IndexDefinitionImpl) first;
         IndexDefinitionImpl secondImpl = (IndexDefinitionImpl) second;
-        IndexDescriptor2 firstRef = firstImpl.getIndexReference();
-        IndexDescriptor2 secondRef = secondImpl.getIndexReference();
+        IndexDescriptor firstRef = firstImpl.getIndexReference();
+        IndexDescriptor secondRef = secondImpl.getIndexReference();
         // This time we "+2" because there are both index and constraint schema records being created.
         assertEquals( firstRef.getId() + 2, secondRef.getId() );
     }

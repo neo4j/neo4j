@@ -23,7 +23,7 @@ import java.util.HashSet;
 import java.util.Set;
 
 import org.neo4j.exceptions.KernelException;
-import org.neo4j.internal.schema.IndexDescriptor2;
+import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.storageengine.api.IndexUpdateListener;
 
 /**
@@ -36,7 +36,7 @@ import org.neo4j.storageengine.api.IndexUpdateListener;
 public class IndexActivator implements AutoCloseable
 {
     private final IndexUpdateListener listener;
-    private Set<IndexDescriptor2> indexesToActivate;
+    private Set<IndexDescriptor> indexesToActivate;
 
     IndexActivator( IndexUpdateListener listener )
     {
@@ -44,14 +44,14 @@ public class IndexActivator implements AutoCloseable
     }
 
     /**
-     * Activates any index that needs activation, i.e. have been added with {@link #activateIndex(IndexDescriptor2)}.
+     * Activates any index that needs activation, i.e. have been added with {@link #activateIndex(IndexDescriptor)}.
      */
     @Override
     public void close()
     {
         if ( indexesToActivate != null )
         {
-            for ( IndexDescriptor2 indexId : indexesToActivate )
+            for ( IndexDescriptor indexId : indexesToActivate )
             {
                 try
                 {
@@ -69,7 +69,7 @@ public class IndexActivator implements AutoCloseable
      * Makes a note to activate index after batch of transaction have been applied, i.e. in {@link #close()}.
      * @param index index.
      */
-    void activateIndex( IndexDescriptor2 index )
+    void activateIndex( IndexDescriptor index )
     {
         if ( indexesToActivate == null )
         {
@@ -82,7 +82,7 @@ public class IndexActivator implements AutoCloseable
      * Called when an index is dropped, so that a previously noted index to activate is removed from this internal list.
      * @param index index.
      */
-    void indexDropped( IndexDescriptor2 index )
+    void indexDropped( IndexDescriptor index )
     {
         if ( indexesToActivate != null )
         {

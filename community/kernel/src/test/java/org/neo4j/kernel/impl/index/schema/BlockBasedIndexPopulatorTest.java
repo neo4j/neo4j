@@ -31,7 +31,7 @@ import java.util.function.LongPredicate;
 
 import org.neo4j.configuration.Config;
 import org.neo4j.internal.kernel.api.PopulationProgress;
-import org.neo4j.internal.schema.IndexDescriptor2;
+import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.IndexProviderDescriptor;
 import org.neo4j.internal.schema.IndexType;
@@ -71,7 +71,7 @@ import static org.neo4j.values.storable.Values.stringValue;
 class BlockBasedIndexPopulatorTest
 {
     private static final LabelSchemaDescriptor SCHEMA_DESCRIPTOR = SchemaDescriptor.forLabelOfType( IndexType.TREE, 1, 1 );
-    private static final IndexDescriptor2 INDEX_DESCRIPTOR = IndexPrototype.forSchema( SCHEMA_DESCRIPTOR ).materialise( 1 );
+    private static final IndexDescriptor INDEX_DESCRIPTOR = IndexPrototype.forSchema( SCHEMA_DESCRIPTOR ).materialise( 1 );
 
     @Inject
     Actor merger;
@@ -397,7 +397,7 @@ class BlockBasedIndexPopulatorTest
         return updates;
     }
 
-    private static IndexEntryUpdate<IndexDescriptor2> add( int i )
+    private static IndexEntryUpdate<IndexDescriptor> add( int i )
     {
         return IndexEntryUpdate.add( i, INDEX_DESCRIPTOR, stringValue( "Value" + i ) );
     }

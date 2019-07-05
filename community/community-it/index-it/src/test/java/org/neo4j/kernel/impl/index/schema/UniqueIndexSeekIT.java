@@ -38,7 +38,7 @@ import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.internal.kernel.api.NodeValueIndexCursor;
 import org.neo4j.internal.kernel.api.Read;
 import org.neo4j.internal.kernel.api.TokenRead;
-import org.neo4j.internal.schema.IndexDescriptor2;
+import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexProviderDescriptor;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.impl.schema.NativeLuceneFusionIndexProviderFactory30;
@@ -136,7 +136,7 @@ class UniqueIndexSeekIT
 
             int labelId = tokenRead.nodeLabel( label.name() );
             int propertyId = tokenRead.propertyKey( nameProperty );
-            IndexDescriptor2 indexReference = kernelTransaction.schemaRead().index( labelId, propertyId );
+            IndexDescriptor indexReference = kernelTransaction.schemaRead().index( labelId, propertyId );
             try ( NodeValueIndexCursor cursor = kernelTransaction.cursors().allocateNodeValueIndexCursor()  )
             {
                 dataRead.lockingNodeUniqueIndexSeek( indexReference, cursor, IndexQuery.ExactPredicate.exact( propertyId, "value" ) );

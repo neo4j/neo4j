@@ -30,7 +30,7 @@ import java.io.File;
 import org.neo4j.collection.PrimitiveLongCollections;
 import org.neo4j.configuration.Config;
 import org.neo4j.internal.kernel.api.IndexQuery;
-import org.neo4j.internal.schema.IndexDescriptor2;
+import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexOrder;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.pagecache.IOLimiter;
@@ -60,7 +60,7 @@ import static org.neo4j.internal.kernel.api.QueryContext.NULL_CONTEXT;
 @ExtendWith( {DefaultFileSystemExtension.class, TestDirectoryExtension.class} )
 class LuceneSchemaIndexPopulationIT
 {
-    private final IndexDescriptor2 descriptor = TestIndexDescriptorFactory.uniqueForLabel( 0, 0 );
+    private final IndexDescriptor descriptor = TestIndexDescriptorFactory.uniqueForLabel( 0, 0 );
 
     @Inject
     private TestDirectory testDir;

@@ -36,7 +36,7 @@ import javax.annotation.Nullable;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.internal.helpers.collection.Iterables;
 import org.neo4j.internal.schema.ConstraintDescriptor;
-import org.neo4j.internal.schema.IndexDescriptor2;
+import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptorPredicates;
 import org.neo4j.internal.schema.constraints.IndexBackedConstraintDescriptor;
@@ -88,13 +88,13 @@ public class TxState implements TransactionState, RelationshipVisitor.Home
     private MutableLongObjectMap<TokenState> createdRelationshipTypeTokens;
 
     private GraphStateImpl graphState;
-    private MutableDiffSets<IndexDescriptor2> indexChanges;
+    private MutableDiffSets<IndexDescriptor> indexChanges;
     private MutableDiffSets<ConstraintDescriptor> constraintsChanges;
 
     private RemovalsCountingDiffSets nodes;
     private RemovalsCountingDiffSets relationships;
 
-    private Map<IndexBackedConstraintDescriptor,IndexDescriptor2> createdConstraintIndexesByConstraint;
+    private Map<IndexBackedConstraintDescriptor,IndexDescriptor> createdConstraintIndexesByConstraint;
 
     private Map<SchemaDescriptor, Map<ValueTuple, MutableLongDiffSets>> indexUpdates;
 
@@ -164,7 +164,7 @@ public class TxState implements TransactionState, RelationshipVisitor.Home
 
         if ( indexChanges != null )
         {
-            for ( IndexDescriptor2 indexDescriptor : indexChanges.getAdded() )
+            for ( IndexDescriptor indexDescriptor : indexChanges.getAdded() )
             {
                 visitor.visitAddedIndex( indexDescriptor );
             }
@@ -520,9 +520,9 @@ public class TxState implements TransactionState, RelationshipVisitor.Home
     }
 
     @Override
-    public void indexDoAdd( IndexDescriptor2 descriptor )
+    public void indexDoAdd( IndexDescriptor descriptor )
     {
-        MutableDiffSets<IndexDescriptor2> diff = indexChangesDiffSets();
+        MutableDiffSets<IndexDescriptor> diff = indexChangesDiffSets();
         if ( !diff.unRemove( descriptor ) )
         {
             diff.add( descriptor );
@@ -531,43 +531,43 @@ public class TxState implements TransactionState, RelationshipVisitor.Home
     }
 
     @Override
-    public void indexDoDrop( IndexDescriptor2 index )
+    public void indexDoDrop( IndexDescriptor index )
     {
         indexChangesDiffSets().remove( index );
         changed();
     }
 
     @Override
-    public boolean indexDoUnRemove( IndexDescriptor2 index )
+    public boolean indexDoUnRemove( IndexDescriptor index )
     {
         return indexChangesDiffSets().unRemove( index );
     }
 
     @Override
-    public DiffSets<IndexDescriptor2> indexDiffSetsByLabel( int labelId )
+    public DiffSets<IndexDescriptor> indexDiffSetsByLabel( int labelId )
     {
         return indexChangesDiffSets().filterAdded( SchemaDescriptorPredicates.hasLabel( labelId ) );
     }
 
     @Override
-    public DiffSets<IndexDescriptor2> indexDiffSetsByRelationshipType( int relationshipType )
+    public DiffSets<IndexDescriptor> indexDiffSetsByRelationshipType( int relationshipType )
     {
         return indexChangesDiffSets().filterAdded( SchemaDescriptorPredicates.hasRelType( relationshipType ) );
     }
 
     @Override
-    public DiffSets<IndexDescriptor2> indexDiffSetsBySchema( SchemaDescriptor schema )
+    public DiffSets<IndexDescriptor> indexDiffSetsBySchema( SchemaDescriptor schema )
     {
         return indexChangesDiffSets().filterAdded( indexDescriptor -> indexDescriptor.schema().equals( schema ) );
     }
 
     @Override
-    public DiffSets<IndexDescriptor2> indexChanges()
+    public DiffSets<IndexDescriptor> indexChanges()
     {
         return DiffSets.Empty.ifNull( indexChanges );
     }
 
-    private MutableDiffSets<IndexDescriptor2> indexChangesDiffSets()
+    private MutableDiffSets<IndexDescriptor> indexChangesDiffSets()
     {
         if ( indexChanges == null )
         {
@@ -642,10 +642,10 @@ public class TxState implements TransactionState, RelationshipVisitor.Home
     }
 
     @Override
-    public void constraintDoAdd( IndexBackedConstraintDescriptor constraint, IndexDescriptor2 index )
+    public void constraintDoAdd( IndexBackedConstraintDescriptor constraint, IndexDescriptor index )
     {
         constraintsChangesDiffSets().add( constraint );
-        if ( index != null && index != IndexDescriptor2.NO_INDEX )
+        if ( index != null && index != IndexDescriptor.NO_INDEX )
         {
             createdConstraintIndexesByConstraint().put( constraint, index );
         }
@@ -706,7 +706,7 @@ public class TxState implements TransactionState, RelationshipVisitor.Home
     }
 
     @Override
-    public Iterator<IndexDescriptor2> constraintIndexesCreatedInTx()
+    public Iterator<IndexDescriptor> constraintIndexesCreatedInTx()
     {
         if ( createdConstraintIndexesByConstraint != null && !createdConstraintIndexesByConstraint.isEmpty() )
         {
@@ -716,7 +716,7 @@ public class TxState implements TransactionState, RelationshipVisitor.Home
     }
 
     @Override
-    public IndexDescriptor2 indexCreatedForConstraint( ConstraintDescriptor constraint )
+    public IndexDescriptor indexCreatedForConstraint( ConstraintDescriptor constraint )
     {
         if ( constraint instanceof IndexBackedConstraintDescriptor )
         {
@@ -724,7 +724,7 @@ public class TxState implements TransactionState, RelationshipVisitor.Home
             return createdConstraintIndexesByConstraint == null ? null :
                    createdConstraintIndexesByConstraint.get( indexBacked );
         }
-        return IndexDescriptor2.NO_INDEX;
+        return IndexDescriptor.NO_INDEX;
     }
 
     @Override
@@ -820,7 +820,7 @@ public class TxState implements TransactionState, RelationshipVisitor.Home
         return indexUpdates.computeIfAbsent( schema, k -> new HashMap<>() );
     }
 
-    private Map<IndexBackedConstraintDescriptor,IndexDescriptor2> createdConstraintIndexesByConstraint()
+    private Map<IndexBackedConstraintDescriptor,IndexDescriptor> createdConstraintIndexesByConstraint()
     {
         if ( createdConstraintIndexesByConstraint == null )
         {

@@ -25,7 +25,7 @@ import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.internal.kernel.api.IndexReadSession;
 import org.neo4j.internal.kernel.api.NodeValueIndexCursor;
 import org.neo4j.internal.kernel.api.Read;
-import org.neo4j.internal.schema.IndexDescriptor2;
+import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexOrder;
 import org.neo4j.values.storable.Values;
 
@@ -54,7 +54,7 @@ public final class CompiledIndexUtils
      * @param value The value to seek for
      * @return A cursor positioned at the data found in index.
      */
-    public static NodeValueIndexCursor indexSeek( Read read, CursorFactory cursors, IndexDescriptor2 index, Object value )
+    public static NodeValueIndexCursor indexSeek( Read read, CursorFactory cursors, IndexDescriptor index, Object value )
             throws KernelException
     {
         assert index.schema().getPropertyIds().length == 1;

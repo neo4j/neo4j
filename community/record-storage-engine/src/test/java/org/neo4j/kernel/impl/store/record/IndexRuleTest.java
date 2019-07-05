@@ -25,7 +25,7 @@ import java.util.NoSuchElementException;
 import java.util.OptionalLong;
 import java.util.function.BiFunction;
 
-import org.neo4j.internal.schema.IndexDescriptor2;
+import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.IndexProviderDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptor;
@@ -43,7 +43,7 @@ class IndexRuleTest extends SchemaRuleTestBase
     {
         // GIVEN
         IndexPrototype prototype = forLabel( LABEL_ID, PROPERTY_ID_1 );
-        IndexDescriptor2 indexRule = prototype.materialise( RULE_ID );
+        IndexDescriptor indexRule = prototype.materialise( RULE_ID );
 
         // THEN
         assertThat( indexRule.getId(), equalTo( RULE_ID ) );
@@ -59,7 +59,7 @@ class IndexRuleTest extends SchemaRuleTestBase
     {
         // GIVEN
         IndexPrototype descriptor = uniqueForLabel( LABEL_ID, PROPERTY_ID_1 );
-        IndexDescriptor2 indexRule = descriptor.materialise( RULE_ID );
+        IndexDescriptor indexRule = descriptor.materialise( RULE_ID );
 
         // THEN
         assertThat( indexRule.getId(), equalTo( RULE_ID ) );
@@ -69,7 +69,7 @@ class IndexRuleTest extends SchemaRuleTestBase
         assertThat( indexRule.getIndexProvider(), equalTo( PROVIDER ) );
         assertTrue( indexRule.getOwningConstraintId().isEmpty() );
 
-        IndexDescriptor2 withConstraint = indexRule.withOwningConstraintId( RULE_ID_2 );
+        IndexDescriptor withConstraint = indexRule.withOwningConstraintId( RULE_ID_2 );
         OptionalLong owningConstraintId = withConstraint.getOwningConstraintId();
         assertTrue( owningConstraintId.isPresent() );
         assertThat( owningConstraintId.getAsLong(), equalTo( RULE_ID_2 ) );
@@ -89,19 +89,19 @@ class IndexRuleTest extends SchemaRuleTestBase
     void detectUniqueIndexWithoutOwningConstraint()
     {
         IndexPrototype descriptor = uniqueForLabel( LABEL_ID, PROPERTY_ID_1 );
-        IndexDescriptor2 indexRule = descriptor.materialise( RULE_ID );
+        IndexDescriptor indexRule = descriptor.materialise( RULE_ID );
 
         assertTrue( indexRule.isUnique() && indexRule.getOwningConstraintId().isEmpty() );
     }
 
     private void assertEqualityByDescriptor( IndexPrototype descriptor )
     {
-        IndexDescriptor2 rule1 = descriptor.materialise( RULE_ID );
-        IndexDescriptor2 rule2 = descriptor.materialise( RULE_ID_2 );
+        IndexDescriptor rule1 = descriptor.materialise( RULE_ID );
+        IndexDescriptor rule2 = descriptor.materialise( RULE_ID_2 );
 
         BiFunction<SchemaDescriptor,IndexProviderDescriptor,IndexPrototype> factory =
                 descriptor.isUnique() ? IndexPrototype::uniqueForSchema : IndexPrototype::forSchema;
-        IndexDescriptor2 rule3 = factory.apply( descriptor.schema(), descriptor.getIndexProvider() ).materialise( RULE_ID );
+        IndexDescriptor rule3 = factory.apply( descriptor.schema(), descriptor.getIndexProvider() ).materialise( RULE_ID );
 
         assertEquality( rule1, rule2 );
         assertEquality( rule1, rule3 );

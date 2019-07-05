@@ -27,7 +27,7 @@ import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.kernel.api.PopulationProgress;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
-import org.neo4j.internal.schema.IndexDescriptor2;
+import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.kernel.api.index.IndexReader;
 import org.neo4j.kernel.api.index.IndexUpdater;
@@ -38,11 +38,11 @@ import static org.neo4j.internal.helpers.collection.Iterators.emptyResourceItera
 
 public class PopulatingIndexProxy implements IndexProxy
 {
-    private final IndexDescriptor2 indexDescriptor;
+    private final IndexDescriptor indexDescriptor;
     private final IndexPopulationJob job;
     private final MultipleIndexPopulator.IndexPopulation indexPopulation;
 
-    PopulatingIndexProxy( IndexDescriptor2 indexDescriptor, IndexPopulationJob job, MultipleIndexPopulator.IndexPopulation indexPopulation )
+    PopulatingIndexProxy( IndexDescriptor indexDescriptor, IndexPopulationJob job, MultipleIndexPopulator.IndexPopulation indexPopulation )
     {
         this.indexDescriptor = indexDescriptor;
         this.job = job;
@@ -88,7 +88,7 @@ public class PopulatingIndexProxy implements IndexProxy
     }
 
     @Override
-    public IndexDescriptor2 getDescriptor()
+    public IndexDescriptor getDescriptor()
     {
         return indexDescriptor;
     }

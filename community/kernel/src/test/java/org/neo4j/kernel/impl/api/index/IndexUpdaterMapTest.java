@@ -22,7 +22,7 @@ package org.neo4j.kernel.impl.api.index;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import org.neo4j.internal.schema.IndexDescriptor2;
+import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.kernel.api.index.IndexUpdater;
 
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -43,14 +43,14 @@ class IndexUpdaterMapTest
     private IndexMap indexMap;
 
     private IndexProxy indexProxy1;
-    private IndexDescriptor2 schemaIndexDescriptor1;
+    private IndexDescriptor schemaIndexDescriptor1;
     private IndexUpdater indexUpdater1;
 
     private IndexProxy indexProxy2;
-    private IndexDescriptor2 schemaIndexDescriptor2;
+    private IndexDescriptor schemaIndexDescriptor;
 
     private IndexProxy indexProxy3;
-    private IndexDescriptor2 schemaIndexDescriptor3;
+    private IndexDescriptor schemaIndexDescriptor3;
 
     private IndexUpdaterMap updaterMap;
 
@@ -66,9 +66,9 @@ class IndexUpdaterMapTest
         when( indexProxy1.newUpdater( any( IndexUpdateMode.class ) ) ).thenReturn( indexUpdater1 );
 
         indexProxy2 = mock( IndexProxy.class );
-        schemaIndexDescriptor2 = forSchema( forLabel( 5, 6 ), PROVIDER_DESCRIPTOR ).materialise( 1 );
+        schemaIndexDescriptor = forSchema( forLabel( 5, 6 ), PROVIDER_DESCRIPTOR ).materialise( 1 );
         IndexUpdater indexUpdater2 = mock( IndexUpdater.class );
-        when( indexProxy2.getDescriptor() ).thenReturn( schemaIndexDescriptor2 );
+        when( indexProxy2.getDescriptor() ).thenReturn( schemaIndexDescriptor );
         when( indexProxy2.newUpdater( any( IndexUpdateMode.class ) ) ).thenReturn( indexUpdater2 );
 
         indexProxy3 = mock( IndexProxy.class );
@@ -141,7 +141,7 @@ class IndexUpdaterMapTest
         indexMap.putIndexProxy( indexProxy2 );
 
         IndexUpdater updater1 = updaterMap.getUpdater( schemaIndexDescriptor1.schema() );
-        IndexUpdater updater2 = updaterMap.getUpdater( schemaIndexDescriptor2.schema() );
+        IndexUpdater updater2 = updaterMap.getUpdater( schemaIndexDescriptor.schema() );
 
         // hen
         updaterMap.close();

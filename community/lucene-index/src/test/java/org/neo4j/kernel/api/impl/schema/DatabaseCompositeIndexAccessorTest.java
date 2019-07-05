@@ -46,7 +46,7 @@ import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotApplicableKernelException;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
-import org.neo4j.internal.schema.IndexDescriptor2;
+import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexOrder;
 import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.SchemaDescriptor;
@@ -156,7 +156,7 @@ public class DatabaseCompositeIndexAccessorTest
         return params;
     }
 
-    private static Object[] parameterSetup( IndexProvider provider, IndexDescriptor2 descriptor )
+    private static Object[] parameterSetup( IndexProvider provider, IndexDescriptor descriptor )
     {
         IOFunction function = dirFactory1 ->
         {

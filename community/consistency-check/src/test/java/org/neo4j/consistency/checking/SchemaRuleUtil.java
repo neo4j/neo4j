@@ -19,7 +19,7 @@
  */
 package org.neo4j.consistency.checking;
 
-import org.neo4j.internal.schema.IndexDescriptor2;
+import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.IndexProviderDescriptor;
 import org.neo4j.internal.schema.constraints.ConstraintDescriptorFactory;
@@ -51,18 +51,18 @@ public class SchemaRuleUtil
                 ConstraintDescriptorFactory.existsForRelType( relTypeId, propertyId ) );
     }
 
-    public static IndexDescriptor2 indexRule( long ruleId, int labelId, int propertyId, IndexProviderDescriptor descriptor )
+    public static IndexDescriptor indexRule( long ruleId, int labelId, int propertyId, IndexProviderDescriptor descriptor )
     {
         return IndexPrototype.forSchema( forLabel( labelId, propertyId ), descriptor ).materialise( ruleId );
     }
 
-    public static IndexDescriptor2 constraintIndexRule( long ruleId, int labelId, int propertyId,
+    public static IndexDescriptor constraintIndexRule( long ruleId, int labelId, int propertyId,
                                                             IndexProviderDescriptor descriptor, long constraintId )
     {
         return IndexPrototype.uniqueForSchema( forLabel( labelId, propertyId ), descriptor ).materialise( ruleId ).withOwningConstraintId( constraintId );
     }
 
-    public static IndexDescriptor2 constraintIndexRule( long ruleId, int labelId, int propertyId,
+    public static IndexDescriptor constraintIndexRule( long ruleId, int labelId, int propertyId,
                                                             IndexProviderDescriptor descriptor )
     {
         return IndexPrototype.uniqueForSchema( forLabel( labelId, propertyId ), descriptor ).materialise( ruleId );

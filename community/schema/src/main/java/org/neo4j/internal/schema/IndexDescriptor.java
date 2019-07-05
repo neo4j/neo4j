@@ -28,13 +28,13 @@ import java.util.stream.Stream;
 
 import org.neo4j.common.TokenNameLookup;
 
-public final class IndexDescriptor2 implements IndexRef<IndexDescriptor2>, SchemaRule
+public final class IndexDescriptor implements IndexRef<IndexDescriptor>, SchemaRule
 {
     /**
      * A special index descriptor used to represent the absence of an index.
      * This descriptor <em>cannot</em> be modified by any of the {@code with*} methods.
      */
-    public static final IndexDescriptor2 NO_INDEX = new IndexDescriptor2();
+    public static final IndexDescriptor NO_INDEX = new IndexDescriptor();
 
     private final long id;
     private final String name;
@@ -44,14 +44,14 @@ public final class IndexDescriptor2 implements IndexRef<IndexDescriptor2>, Schem
     private final Long owningConstraintId;
     private final IndexCapability capability;
 
-    IndexDescriptor2( long id, IndexPrototype prototype )
+    IndexDescriptor( long id, IndexPrototype prototype )
     {
         // TODO we should throw an exception instead of generating a name for unnamed index prototypes. Or generate a name based on the schema tokens.
         this( id, prototype.getName().orElseGet( () -> "index_" + id ), prototype.schema(), prototype.isUnique(), prototype.getIndexProvider(), null,
                 IndexCapability.NO_CAPABILITY );
     }
 
-    private IndexDescriptor2( long id, String name, SchemaDescriptor schema, boolean isUnique, IndexProviderDescriptor indexProvider, Long owningConstraintId,
+    private IndexDescriptor( long id, String name, SchemaDescriptor schema, boolean isUnique, IndexProviderDescriptor indexProvider, Long owningConstraintId,
             IndexCapability capability )
     {
         if ( id < 0 )
@@ -76,7 +76,7 @@ public final class IndexDescriptor2 implements IndexRef<IndexDescriptor2>, Schem
     /**
      * This constructor is used <em>exclusively</em> for the {@link #NO_INDEX} field!
      */
-    private IndexDescriptor2()
+    private IndexDescriptor()
     {
         this.id = -1;
         this.name = "No index";
@@ -156,15 +156,15 @@ public final class IndexDescriptor2 implements IndexRef<IndexDescriptor2>, Schem
     }
 
     @Override
-    public IndexDescriptor2 withIndexProvider( IndexProviderDescriptor indexProvider )
+    public IndexDescriptor withIndexProvider( IndexProviderDescriptor indexProvider )
     {
-        return new IndexDescriptor2( id, name, schema, isUnique, indexProvider, owningConstraintId, capability );
+        return new IndexDescriptor( id, name, schema, isUnique, indexProvider, owningConstraintId, capability );
     }
 
     @Override
-    public IndexDescriptor2 withSchemaDescriptor( SchemaDescriptor schema )
+    public IndexDescriptor withSchemaDescriptor( SchemaDescriptor schema )
     {
-        return new IndexDescriptor2( id, name, schema, isUnique, indexProvider, owningConstraintId, capability );
+        return new IndexDescriptor( id, name, schema, isUnique, indexProvider, owningConstraintId, capability );
     }
 
     /**
@@ -173,7 +173,7 @@ public final class IndexDescriptor2 implements IndexRef<IndexDescriptor2>, Schem
      * @param owningConstraintId The id of the constraint that owns the index represented by this index descriptor.
      * @return A new index descriptor with the given owning constraint id.
      */
-    public IndexDescriptor2 withOwningConstraintId( long owningConstraintId )
+    public IndexDescriptor withOwningConstraintId( long owningConstraintId )
     {
         if ( !isUnique() )
         {
@@ -185,7 +185,7 @@ public final class IndexDescriptor2 implements IndexRef<IndexDescriptor2>, Schem
             throw new IllegalArgumentException(
                     "The owning constraint id of an index must not be negative, but it was attempted to assign " + owningConstraintId + "." );
         }
-        return new IndexDescriptor2( id, name, schema, isUnique, indexProvider, owningConstraintId, capability );
+        return new IndexDescriptor( id, name, schema, isUnique, indexProvider, owningConstraintId, capability );
     }
 
     /**
@@ -194,9 +194,9 @@ public final class IndexDescriptor2 implements IndexRef<IndexDescriptor2>, Schem
      * @param capability The capabilities of the new index descriptor.
      * @return A new index descriptor with the given capabilities.
      */
-    public IndexDescriptor2 withIndexCapability( IndexCapability capability )
+    public IndexDescriptor withIndexCapability( IndexCapability capability )
     {
-        return new IndexDescriptor2( id, name, schema, isUnique, indexProvider, owningConstraintId, capability );
+        return new IndexDescriptor( id, name, schema, isUnique, indexProvider, owningConstraintId, capability );
     }
 
     @Override
@@ -221,10 +221,10 @@ public final class IndexDescriptor2 implements IndexRef<IndexDescriptor2>, Schem
      * @param indexes Indexes to sort
      * @return sorted indexes
      */
-    public static Iterator<IndexDescriptor2> sortByType( Iterator<IndexDescriptor2> indexes )
+    public static Iterator<IndexDescriptor> sortByType( Iterator<IndexDescriptor> indexes )
     {
-        List<IndexDescriptor2> nonUnique = new ArrayList<>();
-        List<IndexDescriptor2> unique = new ArrayList<>();
+        List<IndexDescriptor> nonUnique = new ArrayList<>();
+        List<IndexDescriptor> unique = new ArrayList<>();
         indexes.forEachRemaining( index -> (index.isUnique() ? unique : nonUnique).add( index ) );
         return Stream.concat( nonUnique.stream(), unique.stream() ).iterator();
     }

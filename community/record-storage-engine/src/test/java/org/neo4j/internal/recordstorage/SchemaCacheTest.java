@@ -30,7 +30,7 @@ import org.neo4j.internal.schema.ConstraintDescriptor;
 import org.neo4j.internal.schema.ConstraintDescriptor.Type;
 import org.neo4j.internal.schema.IndexConfig;
 import org.neo4j.internal.schema.IndexConfigCompleter;
-import org.neo4j.internal.schema.IndexDescriptor2;
+import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.LabelSchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptor;
@@ -91,8 +91,8 @@ class SchemaCacheTest
     {
         SchemaCache cache = newSchemaCache( hans, witch, gretel, robot );
 
-        IndexDescriptor2 rule1 = newIndexRule( 10, 11, 12 );
-        IndexDescriptor2 rule2 = newIndexRule( 13, 14, 15 );
+        IndexDescriptor rule1 = newIndexRule( 10, 11, 12 );
+        IndexDescriptor rule2 = newIndexRule( 13, 14, 15 );
         cache.addSchemaRule( rule1 );
         cache.addSchemaRule( rule2 );
 
@@ -215,7 +215,7 @@ class SchemaCacheTest
 
         // When
         LabelSchemaDescriptor schema = forLabel( 1, 3 );
-        IndexDescriptor2 descriptor = cache.indexDescriptor( schema );
+        IndexDescriptor descriptor = cache.indexDescriptor( schema );
 
         // Then
         assertThat( descriptor.schema(), equalTo( schema ) );
@@ -235,10 +235,10 @@ class SchemaCacheTest
         cache.addSchemaRule( newIndexRule( 3L, 1, 2 ) );
 
         // When
-        Set<IndexDescriptor2> indexes = asSet( snapshot.indexDescriptorsForLabel( 1 ) );
+        Set<IndexDescriptor> indexes = asSet( snapshot.indexDescriptorsForLabel( 1 ) );
 
         // Then
-        Set<IndexDescriptor2> expected = asSet( newIndexRule( 1L, 1, 2 ) );
+        Set<IndexDescriptor> expected = asSet( newIndexRule( 1L, 1, 2 ) );
         assertEquals( expected, indexes );
 
         assertThrows( IllegalStateException.class, () -> snapshot.addSchemaRule( newIndexRule( 3L, 1, 2 ) ) );
@@ -251,7 +251,7 @@ class SchemaCacheTest
         SchemaCache schemaCache = newSchemaCache();
 
         // When
-        IndexDescriptor2 schemaIndexDescriptor = schemaCache.indexDescriptor( forLabel( 1, 1 ) );
+        IndexDescriptor schemaIndexDescriptor = schemaCache.indexDescriptor( forLabel( 1, 1 ) );
 
         // Then
         assertNull( schemaIndexDescriptor );
@@ -534,7 +534,7 @@ class SchemaCacheTest
         return propertyIds;
     }
 
-    private static IndexDescriptor2 newIndexRule( long id, int label, int... propertyKeys )
+    private static IndexDescriptor newIndexRule( long id, int label, int... propertyKeys )
     {
         return IndexPrototype.forSchema( forLabel( label, propertyKeys ) ).materialise( id );
     }

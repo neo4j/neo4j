@@ -26,7 +26,7 @@ import java.util.Set;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.internal.schema.ConstraintDescriptor;
-import org.neo4j.internal.schema.IndexDescriptor2;
+import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.internal.schema.constraints.ConstraintDescriptorFactory;
@@ -45,10 +45,10 @@ class RecordStorageReaderSchemaTest extends RecordStorageReaderTestBase
         createIndex( label2, propertyKey );
 
         // When
-        Set<IndexDescriptor2> indexes = asSet( storageReader.indexesGetAll() );
+        Set<IndexDescriptor> indexes = asSet( storageReader.indexesGetAll() );
 
         // Then
-        Set<IndexDescriptor2> expectedIndexes = asSet(
+        Set<IndexDescriptor> expectedIndexes = asSet(
                 indexDescriptor( label1, propertyKey ),
                 indexDescriptor( label2, propertyKey ) );
 
@@ -64,10 +64,10 @@ class RecordStorageReaderSchemaTest extends RecordStorageReaderTestBase
         // When
         StorageSchemaReader snapshot = storageReader.schemaSnapshot();
         createIndex( label2, propertyKey );
-        Set<IndexDescriptor2> indexes = asSet( snapshot.indexesGetAll() );
+        Set<IndexDescriptor> indexes = asSet( snapshot.indexesGetAll() );
 
         // Then
-        Set<IndexDescriptor2> expectedIndexes = asSet(
+        Set<IndexDescriptor> expectedIndexes = asSet(
                 indexDescriptor( label1, propertyKey ) );
 
         assertEquals( expectedIndexes, indexes );
@@ -119,10 +119,10 @@ class RecordStorageReaderSchemaTest extends RecordStorageReaderTestBase
         createIndex( label2, otherPropertyKey );
 
         // When
-        Set<IndexDescriptor2> indexes = asSet( storageReader.indexesGetForLabel( labelId( label1 ) ) );
+        Set<IndexDescriptor> indexes = asSet( storageReader.indexesGetForLabel( labelId( label1 ) ) );
 
         // Then
-        Set<IndexDescriptor2> expectedIndexes = asSet(
+        Set<IndexDescriptor> expectedIndexes = asSet(
                 uniqueIndexDescriptor( label1, propertyKey ),
                 indexDescriptor( label1, otherPropertyKey ) );
 
@@ -140,10 +140,10 @@ class RecordStorageReaderSchemaTest extends RecordStorageReaderTestBase
 
         // When
         StorageSchemaReader snapshot = storageReader.schemaSnapshot();
-        Set<IndexDescriptor2> indexes = asSet( snapshot.indexesGetForLabel( labelId( label1 ) ) );
+        Set<IndexDescriptor> indexes = asSet( snapshot.indexesGetForLabel( labelId( label1 ) ) );
 
         // Then
-        Set<IndexDescriptor2> expectedIndexes = asSet(
+        Set<IndexDescriptor> expectedIndexes = asSet(
                 uniqueIndexDescriptor( label1, propertyKey ),
                 indexDescriptor( label1, otherPropertyKey ) );
 
@@ -158,10 +158,10 @@ class RecordStorageReaderSchemaTest extends RecordStorageReaderTestBase
         createIndex( relType2, propertyKey );
 
         // When
-        Set<IndexDescriptor2> indexes = asSet( storageReader.indexesGetForRelationshipType( relationshipTypeId( relType1 ) ) );
+        Set<IndexDescriptor> indexes = asSet( storageReader.indexesGetForRelationshipType( relationshipTypeId( relType1 ) ) );
 
         // Then
-        Set<IndexDescriptor2> expectedIndexes = asSet(
+        Set<IndexDescriptor> expectedIndexes = asSet(
                 indexDescriptor( relType1, propertyKey ) );
 
         assertEquals( expectedIndexes, indexes );
@@ -176,10 +176,10 @@ class RecordStorageReaderSchemaTest extends RecordStorageReaderTestBase
 
         // When
         StorageSchemaReader snapshot = storageReader.schemaSnapshot();
-        Set<IndexDescriptor2> indexes = asSet( snapshot.indexesGetForRelationshipType( relationshipTypeId( relType1 ) ) );
+        Set<IndexDescriptor> indexes = asSet( snapshot.indexesGetForRelationshipType( relationshipTypeId( relType1 ) ) );
 
         // Then
-        Set<IndexDescriptor2> expectedIndexes = asSet(
+        Set<IndexDescriptor> expectedIndexes = asSet(
                 indexDescriptor( relType1, propertyKey ) );
 
         assertEquals( expectedIndexes, indexes );
@@ -237,21 +237,21 @@ class RecordStorageReaderSchemaTest extends RecordStorageReaderTestBase
         assertEquals( expectedConstraints, constraints );
     }
 
-    private IndexDescriptor2 indexDescriptor( Label label, String propertyKey )
+    private IndexDescriptor indexDescriptor( Label label, String propertyKey )
     {
         int labelId = labelId( label );
         int propKeyId = propertyKeyId( propertyKey );
         return IndexPrototype.forSchema( SchemaDescriptor.forLabel( labelId, propKeyId ) ).materialise( 0 );
     }
 
-    private IndexDescriptor2 indexDescriptor( RelationshipType relType, String propertyKey )
+    private IndexDescriptor indexDescriptor( RelationshipType relType, String propertyKey )
     {
         int relTypeId = relationshipTypeId( relType );
         int propKeyId = propertyKeyId( propertyKey );
         return IndexPrototype.forSchema( SchemaDescriptor.forRelType( relTypeId, propKeyId ) ).materialise( 0 );
     }
 
-    private IndexDescriptor2 uniqueIndexDescriptor( Label label, String propertyKey )
+    private IndexDescriptor uniqueIndexDescriptor( Label label, String propertyKey )
     {
         int labelId = labelId( label );
         int propKeyId = propertyKeyId( propertyKey );

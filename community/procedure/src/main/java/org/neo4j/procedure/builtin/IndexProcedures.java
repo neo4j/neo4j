@@ -34,7 +34,7 @@ import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
 import org.neo4j.internal.kernel.api.exceptions.schema.SchemaKernelException;
 import org.neo4j.internal.kernel.api.helpers.Indexes;
-import org.neo4j.internal.schema.IndexDescriptor2;
+import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.LabelSchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.kernel.api.KernelTransaction;
@@ -205,14 +205,14 @@ public class IndexProcedures implements AutoCloseable
         return propertyKeyIds;
     }
 
-    private IndexDescriptor2 getIndex( IndexSpecifier specifier ) throws ProcedureException
+    private IndexDescriptor getIndex( IndexSpecifier specifier ) throws ProcedureException
     {
         if ( specifier.name() != null )
         {
             // Find index by name.
-            IndexDescriptor2 indexReference = ktx.schemaRead().indexGetForName( specifier.name() );
+            IndexDescriptor indexReference = ktx.schemaRead().indexGetForName( specifier.name() );
 
-            if ( indexReference == IndexDescriptor2.NO_INDEX )
+            if ( indexReference == IndexDescriptor.NO_INDEX )
             {
                 throw new ProcedureException( Status.Schema.IndexNotFound, "No such index '%s'", specifier );
             }
@@ -223,9 +223,9 @@ public class IndexProcedures implements AutoCloseable
             // Find index by label and properties.
             int labelId = getLabelId( specifier.label() );
             int[] propertyKeyIds = getPropertyIds( specifier.properties() );
-            IndexDescriptor2 indexReference = ktx.schemaRead().index( labelId, propertyKeyIds );
+            IndexDescriptor indexReference = ktx.schemaRead().index( labelId, propertyKeyIds );
 
-            if ( indexReference == IndexDescriptor2.NO_INDEX )
+            if ( indexReference == IndexDescriptor.NO_INDEX )
             {
                 throw new ProcedureException( Status.Schema.IndexNotFound, "No such index %s", specifier );
             }
@@ -233,7 +233,7 @@ public class IndexProcedures implements AutoCloseable
         }
     }
 
-    private void waitUntilOnline( IndexDescriptor2 index, IndexSpecifier indexDescription, long timeout, TimeUnit timeoutUnits ) throws ProcedureException
+    private void waitUntilOnline( IndexDescriptor index, IndexSpecifier indexDescription, long timeout, TimeUnit timeoutUnits ) throws ProcedureException
     {
         try
         {
@@ -246,7 +246,7 @@ public class IndexProcedures implements AutoCloseable
         }
     }
 
-    private boolean isOnline( IndexSpecifier specifier, IndexDescriptor2 index ) throws ProcedureException
+    private boolean isOnline( IndexSpecifier specifier, IndexDescriptor index ) throws ProcedureException
     {
         InternalIndexState state = getState( specifier, index );
         switch ( state )
@@ -264,7 +264,7 @@ public class IndexProcedures implements AutoCloseable
         }
     }
 
-    private InternalIndexState getState( IndexSpecifier specifier, IndexDescriptor2 index ) throws ProcedureException
+    private InternalIndexState getState( IndexSpecifier specifier, IndexDescriptor index ) throws ProcedureException
     {
         try
         {
@@ -276,7 +276,7 @@ public class IndexProcedures implements AutoCloseable
         }
     }
 
-    private String getFailure( IndexSpecifier indexDescription, IndexDescriptor2 index ) throws ProcedureException
+    private String getFailure( IndexSpecifier indexDescription, IndexDescriptor index ) throws ProcedureException
     {
         try
         {
@@ -288,7 +288,7 @@ public class IndexProcedures implements AutoCloseable
         }
     }
 
-    private void triggerSampling( IndexDescriptor2 index ) throws IndexNotFoundKernelException
+    private void triggerSampling( IndexDescriptor index ) throws IndexNotFoundKernelException
     {
         indexingService.triggerIndexSampling( index.schema(), IndexSamplingMode.TRIGGER_REBUILD_ALL );
     }
