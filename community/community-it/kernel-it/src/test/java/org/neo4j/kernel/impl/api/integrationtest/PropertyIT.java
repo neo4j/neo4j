@@ -33,7 +33,7 @@ import org.neo4j.values.storable.Values;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.IsIterableContaining.hasItems;
-import static org.junit.jupiter.api.Assertions.fail;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.neo4j.internal.helpers.collection.Iterators.asCollection;
 
 class PropertyIT extends KernelIntegrationTest
@@ -81,15 +81,8 @@ class PropertyIT extends KernelIntegrationTest
         transaction.dataWrite().relationshipDelete( rel );
 
         // When
-        try
-        {
-            transaction.dataWrite().relationshipRemoveProperty( rel, prop1 );
-            fail( "Should have failed." );
-        }
-        catch ( EntityNotFoundException e )
-        {
-            assertThat( e.getMessage(), equalTo( "Unable to load RELATIONSHIP with id " + rel + "." ) );
-        }
+        var e = assertThrows( EntityNotFoundException.class, () -> transaction.dataWrite().relationshipRemoveProperty( rel, prop1 ) );
+        assertThat( e.getMessage(), equalTo( "Unable to load RELATIONSHIP with id " + rel + "." ) );
         commit();
     }
 

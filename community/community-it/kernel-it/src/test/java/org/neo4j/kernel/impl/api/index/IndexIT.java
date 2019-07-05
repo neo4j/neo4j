@@ -235,7 +235,6 @@ class IndexIT extends KernelIntegrationTest
 
         var e = assertThrows( SchemaKernelException.class, () ->
         {
-
             SchemaWrite statement = schemaWriteInNewTransaction();
             statement.indexDrop( index );
         } );
@@ -290,7 +289,7 @@ class IndexIT extends KernelIntegrationTest
             assertTrue( index.isConstraintIndex(), "index should be a constraint index" );
 
             // when
-            var e = assertThrows( IllegalStateException.class, () -> index.drop() );
+            var e = assertThrows( IllegalStateException.class, index::drop );
             assertEquals( "Constraint indexes cannot be dropped directly, instead drop the owning uniqueness constraint.", e.getMessage() );
         }
     }

@@ -19,7 +19,6 @@
  */
 package org.neo4j.kernel.impl.api.integrationtest;
 
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
@@ -39,6 +38,7 @@ import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.core.IsIterableContaining.hasItems;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.neo4j.internal.helpers.collection.Iterators.asList;
 import static org.neo4j.internal.kernel.api.procs.Neo4jTypes.NTInteger;
@@ -148,7 +148,7 @@ class ProceduresKernelIT extends KernelIntegrationTest
                 procs().procedureCallRead( procs().procedureGet( signature.name() ).id(), new AnyValue[]{Values.EMPTY_STRING} );
 
         // Then
-        Assertions.assertNotNull( asList( stream  ).get( 0 )[0] );
+        assertNotNull( asList( stream  ).get( 0 )[0] );
         commit();
     }
 
