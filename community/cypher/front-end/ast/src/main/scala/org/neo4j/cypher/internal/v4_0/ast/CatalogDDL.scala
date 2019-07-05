@@ -174,6 +174,10 @@ final case class RelationshipsQualifier(reltypes: Seq[String])(val position: Inp
   override def simplify: Seq[PrivilegeQualifier] = reltypes.map(RelationshipQualifier(_)(position))
 }
 
+final case class ElementsQualifier(values: Seq[String])(val position: InputPosition) extends PrivilegeQualifier {
+  override def simplify: Seq[PrivilegeQualifier] = values.map(LabelQualifier(_)(position)) ++ values.map(RelationshipQualifier(_)(position))
+}
+
 final case class AllQualifier()(val position: InputPosition) extends PrivilegeQualifier {
   override def simplify: Seq[PrivilegeQualifier] = Seq(LabelAllQualifier()(position), RelationshipAllQualifier()(position))
 }
