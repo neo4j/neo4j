@@ -37,7 +37,6 @@ import org.neo4j.kernel.impl.store.RecordStore;
 import org.neo4j.kernel.impl.store.RelationshipGroupStore;
 import org.neo4j.kernel.impl.store.format.ForcedSecondaryUnitRecordFormats;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
-import org.neo4j.kernel.impl.store.format.standard.Standard;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.Record;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
@@ -52,11 +51,13 @@ import org.neo4j.test.scheduler.ThreadPoolJobScheduler;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.params.provider.Arguments.of;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.atLeast;
 import static org.mockito.Mockito.atMost;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
+import static org.neo4j.kernel.impl.store.format.standard.Standard.LATEST_RECORD_FORMATS;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.CHECK;
 
 @ExtendWith( {RandomExtension.class, TestDirectoryExtension.class} )
@@ -72,8 +73,8 @@ class RelationshipGroupDefragmenterTest
     private static Stream<Arguments> parameters()
     {
         return Stream.of(
-            Arguments.of( Standard.LATEST_RECORD_FORMATS, 1 ),
-            Arguments.of( new ForcedSecondaryUnitRecordFormats( Standard.LATEST_RECORD_FORMATS ), 2 )
+            of( LATEST_RECORD_FORMATS, 1 ),
+            of( new ForcedSecondaryUnitRecordFormats( LATEST_RECORD_FORMATS ), 2 )
         );
     }
 

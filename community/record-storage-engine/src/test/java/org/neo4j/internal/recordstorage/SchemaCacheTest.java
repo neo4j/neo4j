@@ -222,7 +222,7 @@ class SchemaCacheTest
     }
 
     @Test
-    public void schemaCacheSnapshotsShouldBeReadOnly()
+    void schemaCacheSnapshotsShouldBeReadOnly()
     {
         // Given
         SchemaCache cache = newSchemaCache();

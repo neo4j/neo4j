@@ -19,7 +19,6 @@
  */
 package org.neo4j.kernel.impl.store.format;
 
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
@@ -28,6 +27,7 @@ import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.RandomExtension;
 import org.neo4j.test.rule.RandomRule;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -91,7 +91,7 @@ class BaseRecordFormatsTest
     {
         for ( CapabilityType type : capabilityTypes )
         {
-            Assertions.assertEquals( compatible, format( from ).hasCompatibleCapabilities( format( to ), type ) );
+            assertEquals( compatible, format( from ).hasCompatibleCapabilities( format( to ), type ) );
         }
     }
 

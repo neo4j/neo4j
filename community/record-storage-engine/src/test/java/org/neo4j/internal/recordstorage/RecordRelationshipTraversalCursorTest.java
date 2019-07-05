@@ -48,6 +48,7 @@ import org.neo4j.test.rule.TestDirectory;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.params.provider.Arguments.of;
 import static org.neo4j.kernel.impl.store.record.Record.NO_NEXT_RELATIONSHIP;
 import static org.neo4j.storageengine.api.RelationshipDirection.INCOMING;
 import static org.neo4j.storageengine.api.RelationshipDirection.LOOP;
@@ -72,12 +73,12 @@ class RecordRelationshipTraversalCursorTest
     private static Stream<Arguments> parameters()
     {
         return Stream.of(
-            Arguments.of( LOOP, false ),
-            Arguments.of( LOOP, true ),
-            Arguments.of( OUTGOING, false ),
-            Arguments.of( OUTGOING, true ),
-            Arguments.of( INCOMING, false ),
-            Arguments.of( INCOMING, true )
+            of( LOOP, false ),
+            of( LOOP, true ),
+            of( OUTGOING, false ),
+            of( OUTGOING, true ),
+            of( INCOMING, false ),
+            of( INCOMING, true )
         );
     }
 

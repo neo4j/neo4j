@@ -419,21 +419,14 @@ class KeyValueDatabaseStoreFormatTest
 
     private static void assertDeepEquals( Map<String, byte[]> expected, Headers actual )
     {
-        try
+
+        int size = 0;
+        for ( HeaderField<?> field : actual.fields() )
         {
-            int size = 0;
-            for ( HeaderField<?> field : actual.fields() )
-            {
-                assertArrayEquals( expected.get( field.toString() ), (byte[]) actual.get( field ), field.toString() );
-                size++;
-            }
-            assertEquals( expected.size(), size, "number of headers" );
+            assertArrayEquals( expected.get( field.toString() ), (byte[]) actual.get( field ), field.toString() );
+            size++;
         }
-        catch ( AssertionError e )
-        {
-            System.out.println( actual );
-            throw e;
-        }
+        assertEquals( expected.size(), size, "number of headers" );
     }
 
     private static void assertEntries( final int expected, KeyValueStoreFile file ) throws IOException

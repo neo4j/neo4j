@@ -19,7 +19,6 @@
  */
 package org.neo4j.internal.recordstorage;
 
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 import java.util.Set;
@@ -33,6 +32,7 @@ import org.neo4j.kernel.impl.index.schema.IndexDescriptorFactory;
 import org.neo4j.storageengine.api.StorageIndexReference;
 import org.neo4j.storageengine.api.StorageSchemaReader;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.internal.helpers.collection.Iterators.asSet;
 
 class RecordStorageReaderSchemaTest extends RecordStorageReaderTestBase
@@ -52,7 +52,7 @@ class RecordStorageReaderSchemaTest extends RecordStorageReaderTestBase
                 indexDescriptor( label1, propertyKey ),
                 indexDescriptor( label2, propertyKey ) );
 
-        Assertions.assertEquals( expectedIndexes, indexes );
+        assertEquals( expectedIndexes, indexes );
     }
 
     @Test
@@ -70,7 +70,7 @@ class RecordStorageReaderSchemaTest extends RecordStorageReaderTestBase
         Set<?> expectedIndexes = asSet(
                 indexDescriptor( label1, propertyKey ) );
 
-        Assertions.assertEquals( expectedIndexes, indexes );
+        assertEquals( expectedIndexes, indexes );
     }
 
     @Test
@@ -88,7 +88,7 @@ class RecordStorageReaderSchemaTest extends RecordStorageReaderTestBase
                 uniqueConstraintDescriptor( label1, propertyKey ),
                 uniqueConstraintDescriptor( label2, propertyKey ) );
 
-        Assertions.assertEquals( expectedConstraints, constraints );
+        assertEquals( expectedConstraints, constraints );
     }
 
     @Test
@@ -106,7 +106,7 @@ class RecordStorageReaderSchemaTest extends RecordStorageReaderTestBase
         Set<?> expectedConstraints = asSet(
                 uniqueConstraintDescriptor( label1, propertyKey ) );
 
-        Assertions.assertEquals( expectedConstraints, constraints );
+        assertEquals( expectedConstraints, constraints );
     }
 
     @Test
@@ -122,7 +122,7 @@ class RecordStorageReaderSchemaTest extends RecordStorageReaderTestBase
         // Then
         Set<?> expectedConstraints = asSet( uniqueConstraintDescriptor( label1, propertyKey ) );
 
-        Assertions.assertEquals( expectedConstraints, constraints );
+        assertEquals( expectedConstraints, constraints );
     }
 
     @Test
@@ -140,7 +140,7 @@ class RecordStorageReaderSchemaTest extends RecordStorageReaderTestBase
         // Then
         Set<?> expectedConstraints = asSet( uniqueConstraintDescriptor( label1, propertyKey ) );
 
-        Assertions.assertEquals( expectedConstraints, constraints );
+        assertEquals( expectedConstraints, constraints );
     }
 
     @Test
@@ -158,7 +158,7 @@ class RecordStorageReaderSchemaTest extends RecordStorageReaderTestBase
         Set<?> expectedConstraints = asSet(
                 uniqueConstraintDescriptor( label1, propertyKey ) );
 
-        Assertions.assertEquals( expectedConstraints, constraints );
+        assertEquals( expectedConstraints, constraints );
     }
 
     private IndexDescriptor indexDescriptor( Label label, String propertyKey )

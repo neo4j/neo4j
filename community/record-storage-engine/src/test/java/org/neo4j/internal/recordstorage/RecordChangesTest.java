@@ -19,12 +19,12 @@
  */
 package org.neo4j.internal.recordstorage;
 
-import org.hamcrest.MatcherAssert;
 import org.junit.jupiter.api.Test;
 
 import org.neo4j.util.IntCounter;
 
 import static org.hamcrest.CoreMatchers.equalTo;
+import static org.hamcrest.MatcherAssert.assertThat;
 
 class RecordChangesTest
 {
@@ -68,6 +68,6 @@ class RecordChangesTest
         change.getOrLoad( 3, null ).forReadingData();
 
         // Then
-        MatcherAssert.assertThat( change.changeSize(), equalTo( 2 ) );
+        assertThat( change.changeSize(), equalTo( 2 ) );
     }
 }

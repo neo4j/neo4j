@@ -19,7 +19,6 @@
  */
 package org.neo4j.internal.recordstorage;
 
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 import java.util.Set;
@@ -35,7 +34,11 @@ import org.neo4j.test.rule.RecordStorageEngineRule;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsInAnyOrder;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.internal.helpers.collection.Iterators.asSet;
+import static org.neo4j.internal.schema.constraints.ConstraintDescriptorFactory.existsForLabel;
+import static org.neo4j.internal.schema.constraints.ConstraintDescriptorFactory.nodeKeyForLabel;
+import static org.neo4j.internal.schema.constraints.ConstraintDescriptorFactory.uniqueForLabel;
 
 class RecordStorageReaderSchemaWithPECTest extends RecordStorageReaderTestBase
 {
@@ -69,11 +72,11 @@ class RecordStorageReaderSchemaWithPECTest extends RecordStorageReaderTestBase
         int propKeyId2 = propertyKeyId( otherPropertyKey );
 
         assertThat( constraints, containsInAnyOrder(
-                ConstraintDescriptorFactory.uniqueForLabel( labelId1, propKeyId ),
-                ConstraintDescriptorFactory.uniqueForLabel( labelId2, propKeyId ),
-                ConstraintDescriptorFactory.nodeKeyForLabel( labelId1, propKeyId2 ),
-                ConstraintDescriptorFactory.nodeKeyForLabel( labelId2, propKeyId2 ),
-                ConstraintDescriptorFactory.existsForLabel( labelId2, propKeyId ),
+                uniqueForLabel( labelId1, propKeyId ),
+                uniqueForLabel( labelId2, propKeyId ),
+                nodeKeyForLabel( labelId1, propKeyId2 ),
+                nodeKeyForLabel( labelId2, propKeyId2 ),
+                existsForLabel( labelId2, propKeyId ),
                 ConstraintDescriptorFactory.existsForRelType( relTypeId, propKeyId )
             ) );
     }
@@ -98,7 +101,7 @@ class RecordStorageReaderSchemaWithPECTest extends RecordStorageReaderTestBase
                 nodeKeyConstraintDescriptor( label1, otherPropertyKey ),
                 nodePropertyExistenceDescriptor( label1, propertyKey ) );
 
-        Assertions.assertEquals( expectedConstraints, constraints );
+        assertEquals( expectedConstraints, constraints );
     }
 
     @Test
@@ -122,7 +125,7 @@ class RecordStorageReaderSchemaWithPECTest extends RecordStorageReaderTestBase
                 nodeKeyConstraintDescriptor( label1, propertyKey ),
                 nodePropertyExistenceDescriptor( label1, propertyKey ) );
 
-        Assertions.assertEquals( expected, constraints );
+        assertEquals( expected, constraints );
     }
 
     @Test
@@ -142,7 +145,7 @@ class RecordStorageReaderSchemaWithPECTest extends RecordStorageReaderTestBase
                 relationshipPropertyExistenceDescriptor( relType2, propertyKey ),
                 relationshipPropertyExistenceDescriptor( relType2, otherPropertyKey ) );
 
-        Assertions.assertEquals( expectedConstraints, constraints );
+        assertEquals( expectedConstraints, constraints );
     }
 
     @Test
@@ -165,28 +168,28 @@ class RecordStorageReaderSchemaWithPECTest extends RecordStorageReaderTestBase
         Set<ConstraintDescriptor> expectedConstraints = Iterators.asSet(
                 relationshipPropertyExistenceDescriptor( relType1, propertyKey ) );
 
-        Assertions.assertEquals( expectedConstraints, constraints );
+        assertEquals( expectedConstraints, constraints );
     }
 
     private ConstraintDescriptor uniqueConstraintDescriptor( Label label, String propertyKey )
     {
         int labelId = labelId( label );
         int propKeyId = propertyKeyId( propertyKey );
-        return ConstraintDescriptorFactory.uniqueForLabel( labelId, propKeyId );
+        return uniqueForLabel( labelId, propKeyId );
     }
 
     private ConstraintDescriptor nodeKeyConstraintDescriptor( Label label, String propertyKey )
     {
         int labelId = labelId( label );
         int propKeyId = propertyKeyId( propertyKey );
-        return ConstraintDescriptorFactory.nodeKeyForLabel( labelId, propKeyId );
+        return nodeKeyForLabel( labelId, propKeyId );
     }
 
     private ConstraintDescriptor nodePropertyExistenceDescriptor( Label label, String propertyKey )
     {
         int labelId = labelId( label );
         int propKeyId = propertyKeyId( propertyKey );
-        return ConstraintDescriptorFactory.existsForLabel( labelId, propKeyId );
+        return existsForLabel( labelId, propKeyId );
     }
 
     private ConstraintDescriptor relationshipPropertyExistenceDescriptor( RelationshipType relType, String propertyKey )

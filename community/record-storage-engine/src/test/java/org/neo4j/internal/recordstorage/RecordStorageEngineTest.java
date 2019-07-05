@@ -68,6 +68,7 @@ import static org.hamcrest.Matchers.sameInstance;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doThrow;
@@ -120,15 +121,8 @@ class RecordStorageEngineTest
                 .build();
         CommandsToApply commandsToApply = mock( CommandsToApply.class );
 
-        try
-        {
-            engine.apply( commandsToApply, TransactionApplicationMode.INTERNAL );
-            fail( "Exception expected" );
-        }
-        catch ( Exception exception )
-        {
-            assertSame( failure, Exceptions.rootCause( exception ) );
-        }
+        var exception = assertThrows( Exception.class, () -> engine.apply( commandsToApply, TransactionApplicationMode.INTERNAL ) );
+        assertSame( failure, Exceptions.rootCause( exception ) );
 
         verify( databaseHealth ).panic( any( Throwable.class ) );
     }

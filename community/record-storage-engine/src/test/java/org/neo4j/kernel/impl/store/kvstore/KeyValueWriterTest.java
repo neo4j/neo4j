@@ -20,7 +20,6 @@
 package org.neo4j.kernel.impl.store.kvstore;
 
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 import java.io.ByteArrayOutputStream;
@@ -28,6 +27,7 @@ import java.io.IOException;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.startsWith;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -87,18 +87,8 @@ class KeyValueWriterTest
         value.putByte( 7, (byte) 0x7F );
 
         // when
-        try
-        {
-            writer.writeHeader( key, value );
-            // don't assert that we throw an exception - because:
-            // 1) we'd catch that AssertionError
-            // 2) we want this test to pass even without assertions enabled...
-        }
-        // then
-        catch ( AssertionError e )
-        {
-            assertEquals( "key should have been cleared by previous call", e.getMessage() );
-        }
+        var e = assertThrows( AssertionError.class, () -> writer.writeHeader( key, value ) );
+        assertEquals( "key should have been cleared by previous call", e.getMessage() );
     }
 
     @Test
@@ -226,7 +216,7 @@ class KeyValueWriterTest
 
         void assertData( byte... expected )
         {
-            Assertions.assertArrayEquals( expected, this.data.toByteArray() );
+            assertArrayEquals( expected, this.data.toByteArray() );
         }
 
         private void io() throws IOException

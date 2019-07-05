@@ -20,7 +20,6 @@
 package org.neo4j.kernel.impl.store;
 
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 import java.io.File;
@@ -47,6 +46,8 @@ import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.pagecache.EphemeralPageCacheExtension;
 
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.io.pagecache.PageCache.PAGE_SIZE;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.CHECK;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.FORCE;
@@ -90,28 +91,12 @@ class CommonAbstractStoreBehaviourTest
 
     private static void assertThrowsUnderlyingStorageException( ThrowingAction<Exception> action ) throws Exception
     {
-        try
-        {
-            action.apply();
-            Assertions.fail( "expected an UnderlyingStorageException exception" );
-        }
-        catch ( UnderlyingStorageException exception )
-        {
-            // Good!
-        }
+        assertThrows( UnderlyingStorageException.class, action::apply );
     }
 
     private static void assertThrowsInvalidRecordException( ThrowingAction<Exception> action ) throws Exception
     {
-        try
-        {
-            action.apply();
-            Assertions.fail( "expected an InvalidRecordException exception" );
-        }
-        catch ( InvalidRecordException exception )
-        {
-            // Good!
-        }
+        assertThrows( InvalidRecordException.class, action::apply );
     }
 
     private void verifyExceptionOnOutOfBoundsAccess( ThrowingAction<Exception> access ) throws Exception
@@ -261,7 +246,7 @@ class CommonAbstractStoreBehaviourTest
         int headerSizeInBytes = headerSizeInRecords * store.getRecordSize();
         try ( PageCursor cursor = store.pagedFile.io( 0, PagedFile.PF_SHARED_WRITE_LOCK ) )
         {
-            Assertions.assertTrue( cursor.next() );
+            assertTrue( cursor.next() );
             for ( int i = 0; i < headerSizeInBytes; i++ )
             {
                 cursor.putByte( (byte) 0 );

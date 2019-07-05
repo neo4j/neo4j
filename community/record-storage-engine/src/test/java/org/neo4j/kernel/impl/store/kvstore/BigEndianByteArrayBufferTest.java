@@ -30,7 +30,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 class BigEndianByteArrayBufferTest
 {
-    private BigEndianByteArrayBuffer buffer = new BigEndianByteArrayBuffer( new byte[8] );
+    private final BigEndianByteArrayBuffer buffer = new BigEndianByteArrayBuffer( new byte[8] );
 
     @Test
     void shouldWriteLong()

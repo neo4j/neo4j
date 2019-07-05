@@ -19,13 +19,12 @@
  */
 package org.neo4j.kernel.impl.store;
 
-import org.apache.commons.lang3.SystemUtils;
-import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.DisabledOnOs;
+import org.junit.jupiter.api.condition.OS;
 
 import org.neo4j.configuration.Config;
 import org.neo4j.internal.id.DefaultIdGeneratorFactory;
-import org.neo4j.io.ByteUnit;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.logging.NullLogProvider;
@@ -47,11 +46,9 @@ class TestGrowingFileMemoryMapping
     private TestDirectory testDirectory;
 
     @Test
+    @DisabledOnOs( OS.WINDOWS )
     void shouldGrowAFileWhileContinuingToMemoryMapNewRegions()
     {
-        // don't run on windows because memory mapping doesn't work properly there
-        Assumptions.assumeTrue( !SystemUtils.IS_OS_WINDOWS );
-
         // given
         final int NUMBER_OF_RECORDS = 1000000;
 
@@ -87,16 +84,5 @@ class TestGrowingFileMemoryMapping
         }
 
         neoStores.close();
-    }
-
-    private static String mmapSize( int numberOfRecords, int recordSize )
-    {
-        int bytes = numberOfRecords * recordSize;
-        long mebiByte = ByteUnit.mebiBytes( 1 );
-        if ( bytes < mebiByte )
-        {
-            throw new IllegalArgumentException( "too few records: " + numberOfRecords );
-        }
-        return bytes / mebiByte + "M";
     }
 }

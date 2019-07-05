@@ -83,8 +83,7 @@ class CoarseBoundedProgressExecutionMonitorTest
     private StageExecution execution( long doneBatches, Configuration config )
     {
         Step<?> step = ControlledStep.stepWithStats( "Test", 0, Keys.done_batches, doneBatches );
-        StageExecution execution = new StageExecution( "Test", null, config, Collections.singletonList( step ), 0 );
-        return execution;
+        return new StageExecution( "Test", null, config, Collections.singletonList( step ), 0 );
     }
 
     private Configuration config( int batchSize )
@@ -99,7 +98,7 @@ class CoarseBoundedProgressExecutionMonitorTest
         };
     }
 
-    private class ProgressExecutionMonitor extends CoarseBoundedProgressExecutionMonitor
+    private static class ProgressExecutionMonitor extends CoarseBoundedProgressExecutionMonitor
     {
         private long progress;
 

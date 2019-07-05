@@ -22,9 +22,7 @@ package org.neo4j.kernel.impl.storemigration;
 import org.eclipse.collections.api.iterator.MutableLongIterator;
 import org.eclipse.collections.api.set.primitive.MutableLongSet;
 import org.eclipse.collections.impl.set.mutable.primitive.LongHashSet;
-import org.hamcrest.MatcherAssert;
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -76,7 +74,10 @@ import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.scheduler.ThreadPoolJobScheduler;
 import org.neo4j.token.TokenHolders;
 
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @PageCacheExtension
 class RecordStorageMigratorIT
@@ -224,7 +225,7 @@ class RecordStorageMigratorIT
         migrator.migrate( databaseLayout, migrationLayout, progressMonitor.startSection( "section" ), versionToMigrateFrom, getVersionToMigrateTo( check ) );
 
         // THEN it should compute the correct last tx log position
-        Assertions.assertEquals( expectedLogPosition, migrator.readLastTxLogPosition( migrationLayout ) );
+        assertEquals( expectedLogPosition, migrator.readLastTxLogPosition( migrationLayout ) );
     }
 
     @ParameterizedTest
@@ -250,7 +251,7 @@ class RecordStorageMigratorIT
         migrator.migrate( databaseLayout, migrationLayout, progressMonitor.startSection( "section" ), versionToMigrateFrom, getVersionToMigrateTo( check ) );
 
         // then
-        Assertions.assertTrue( txIdComparator.apply( migrator.readLastTxInformation( migrationLayout ) ) );
+        assertTrue( txIdComparator.apply( migrator.readLastTxInformation( migrationLayout ) ) );
     }
 
     @ParameterizedTest
@@ -337,7 +338,7 @@ class RecordStorageMigratorIT
             List<SchemaRule> migratedRules = new ArrayList<>();
             storage.getAll().iterator().forEachRemaining( migratedRules::add );
 
-            MatcherAssert.assertThat( migratedRules, equalTo( generatedRules ) );
+            assertThat( migratedRules, equalTo( generatedRules ) );
         }
     }
 
@@ -424,7 +425,7 @@ class RecordStorageMigratorIT
     private String getVersionToMigrateFrom( RecordStoreVersionCheck check )
     {
         StoreVersionCheck.Result result = check.checkUpgrade( check.configuredVersion() );
-        Assertions.assertTrue( result.outcome.isSuccessful() );
+        assertTrue( result.outcome.isSuccessful() );
         return result.actualVersion;
     }
 

@@ -19,9 +19,7 @@
  */
 package org.neo4j.kernel.impl.store;
 
-import org.hamcrest.MatcherAssert;
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -44,7 +42,9 @@ import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.pagecache.EphemeralPageCacheExtension;
 import org.neo4j.test.rule.TestDirectory;
 
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.NORMAL;
 
@@ -186,10 +186,10 @@ class TestDynamicStore
 
     private static void validateData( byte[] data1, byte[] data2 )
     {
-        Assertions.assertEquals( data1.length, data2.length );
+        assertEquals( data1.length, data2.length );
         for ( int i = 0; i < data1.length; i++ )
         {
-            Assertions.assertEquals( data1[i], data2[i] );
+            assertEquals( data1[i], data2[i] );
         }
     }
 
@@ -212,7 +212,7 @@ class TestDynamicStore
         long blockId = create( store, emptyToWrite );
         store.getRecords( blockId, NORMAL, false );
         byte[] bytes = (byte[]) store.getArrayFor( store.getRecords( blockId, NORMAL, false ) );
-        Assertions.assertEquals( 0, bytes.length );
+        assertEquals( 0, bytes.length );
 
         Collection<DynamicRecord> records = store.getRecords( blockId, NORMAL, false );
         for ( DynamicRecord record : records )
@@ -229,7 +229,7 @@ class TestDynamicStore
         long blockId = create( store, new String[0] );
         store.getRecords( blockId, NORMAL, false );
         String[] readBack = (String[]) store.getArrayFor( store.getRecords( blockId, NORMAL, false ) );
-        Assertions.assertEquals( 0, readBack.length );
+        assertEquals( 0, readBack.length );
 
         Collection<DynamicRecord> records = store.getRecords( blockId, NORMAL, false );
         for ( DynamicRecord record : records )
@@ -252,16 +252,9 @@ class TestDynamicStore
         secondLastRecord.setNextBlock( secondLastId );
         records.forEach( store::updateRecord );
 
-        try
-        {
-            store.getRecords( firstId, NORMAL, true );
-            Assertions.fail( "Expected to detect a cycle and throw an exception." );
-        }
-        catch ( RecordChainCycleDetectedException e )
-        {
-            String message = e.getMessage();
-            MatcherAssert.assertThat( message, containsString( "" + firstId ) );
-            MatcherAssert.assertThat( message, containsString( "" + secondLastRecord.getId() ) );
-        }
+        var e = assertThrows( RecordChainCycleDetectedException.class, () -> store.getRecords( firstId, NORMAL, true ) );
+        String message = e.getMessage();
+        assertThat( message, containsString( "" + firstId ) );
+        assertThat( message, containsString( "" + secondLastRecord.getId() ) );
     }
 }

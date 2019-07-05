@@ -19,7 +19,6 @@
  */
 package org.neo4j.kernel.impl.store.format;
 
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInfo;
@@ -47,6 +46,9 @@ import org.neo4j.test.rule.RandomRule;
 
 import static java.lang.System.currentTimeMillis;
 import static java.nio.file.StandardOpenOption.CREATE;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 import static org.neo4j.io.ByteUnit.kibiBytes;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.NORMAL;
 
@@ -203,7 +205,7 @@ public abstract class AbstractRecordFormatTest
             assertWithinBounds( written, cursor, "reading" );
             if ( assertPostReadOffset )
             {
-                Assertions.assertEquals(
+                assertEquals(
                     offset + recordSize, cursor.getOffset(), "Cursor is positioned on first byte of next record after a read" );
             }
             cursor.checkAndClearCursorException();
@@ -211,14 +213,14 @@ public abstract class AbstractRecordFormatTest
             // THEN
             if ( written.inUse() )
             {
-                Assertions.assertEquals( written.inUse(), read.inUse() );
-                Assertions.assertEquals( written.getId(), read.getId() );
-                Assertions.assertEquals( written.getSecondaryUnitId(), read.getSecondaryUnitId() );
+                assertEquals( written.inUse(), read.inUse() );
+                assertEquals( written.getId(), read.getId() );
+                assertEquals( written.getSecondaryUnitId(), read.getSecondaryUnitId() );
                 key.assertRecordsEquals( written, read );
             }
             else
             {
-                Assertions.assertEquals( written.inUse(), read.inUse() );
+                assertEquals( written.inUse(), read.inUse() );
             }
         }
     }
@@ -245,13 +247,13 @@ public abstract class AbstractRecordFormatTest
     {
         if ( cursor.checkAndClearBoundsFlag() )
         {
-            Assertions.fail( "Out-of-bounds when " + operation + " record " + record );
+            fail( "Out-of-bounds when " + operation + " record " + record );
         }
     }
 
     private static void assertedNext( PageCursor cursor ) throws IOException
     {
-        Assertions.assertTrue( cursor.next() );
+        assertTrue( cursor.next() );
     }
 
     private static long idSureToBeOnTheNextPage( int pageSize, int recordSize )
