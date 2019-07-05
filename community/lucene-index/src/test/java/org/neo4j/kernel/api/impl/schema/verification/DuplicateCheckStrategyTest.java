@@ -19,18 +19,13 @@
  */
 package org.neo4j.kernel.api.impl.schema.verification;
 
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
-import java.util.Arrays;
-import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.stream.Stream;
 
-import org.neo4j.function.Factory;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.impl.schema.verification.DuplicateCheckStrategy.BucketsDuplicateCheckStrategy;
 import org.neo4j.kernel.api.impl.schema.verification.DuplicateCheckStrategy.MapDuplicateCheckStrategy;
@@ -40,63 +35,55 @@ import org.neo4j.values.storable.ValueTuple;
 import org.neo4j.values.storable.Values;
 
 import static java.lang.String.format;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.params.provider.Arguments.arguments;
 import static org.neo4j.kernel.api.impl.schema.verification.DuplicateCheckStrategy.BucketsDuplicateCheckStrategy.BUCKET_STRATEGY_ENTRIES_THRESHOLD;
 
-@RunWith( Parameterized.class )
-public class DuplicateCheckStrategyTest
+class DuplicateCheckStrategyTest
 {
 
-    @Parameterized.Parameters
-    public static List<Factory<? extends DuplicateCheckStrategy>> duplicateCheckStrategies()
+    private static Stream<Arguments> duplicateCheckStrategies()
     {
-        return Arrays.asList( () -> new MapDuplicateCheckStrategy( 1000 ),
-                () -> new BucketsDuplicateCheckStrategy( randomNumberOfEntries() ) );
+        return Stream.of(
+            arguments( new MapDuplicateCheckStrategy( 1000 ) ),
+            arguments( new BucketsDuplicateCheckStrategy( randomNumberOfEntries() ) )
+        );
     }
 
-    @Parameterized.Parameter
-    public Factory<DuplicateCheckStrategy> duplicateCheckStrategyFactory;
-    private DuplicateCheckStrategy checkStrategy;
-
-    @Rule
-    public ExpectedException expectedException = ExpectedException.none();
-
-    @Before
-    public void setUp()
-    {
-        checkStrategy = duplicateCheckStrategyFactory.newInstance();
-    }
-
-    @Test
-    public void checkStringSinglePropertyDuplicates() throws Exception
+    @ParameterizedTest
+    @MethodSource( "duplicateCheckStrategies" )
+    void checkStringSinglePropertyDuplicates( DuplicateCheckStrategy checkStrategy ) throws Exception
     {
         String duplicatedString = "duplicate";
-
         Value propertyValue = Values.stringValue( duplicatedString );
 
-        expectedException.expect( IndexEntryConflictException.class );
-        expectedException.expectMessage(
-                format( "Both node 1 and node 2 share the property value %s", ValueTuple.of( propertyValue ) ) );
-
-        checkStrategy.checkForDuplicate( propertyValue, 1 );
-        checkStrategy.checkForDuplicate( propertyValue, 2 );
+        var e = assertThrows( IndexEntryConflictException.class, () ->
+        {
+            checkStrategy.checkForDuplicate( propertyValue, 1 );
+            checkStrategy.checkForDuplicate( propertyValue, 2 );
+        } );
+        assertEquals( format( "Both node 1 and node 2 share the property value %s", ValueTuple.of( propertyValue ) ), e.getMessage() );
     }
 
-    @Test
-    public void checkNumericSinglePropertyDuplicates() throws Exception
+    @ParameterizedTest
+    @MethodSource( "duplicateCheckStrategies" )
+    void checkNumericSinglePropertyDuplicates( DuplicateCheckStrategy checkStrategy ) throws Exception
     {
         double duplicatedNumber = 0.33d;
         Value property = Values.doubleValue( duplicatedNumber );
 
-        expectedException.expect( IndexEntryConflictException.class );
-        expectedException.expectMessage(
-                format( "Both node 3 and node 4 share the property value %s", ValueTuple.of( property ) ) );
-
-        checkStrategy.checkForDuplicate( property, 3 );
-        checkStrategy.checkForDuplicate( property, 4 );
+        var e = assertThrows( IndexEntryConflictException.class, () ->
+        {
+            checkStrategy.checkForDuplicate( property, 3 );
+            checkStrategy.checkForDuplicate( property, 4 );
+        } );
+        assertEquals( format( "Both node 3 and node 4 share the property value %s", ValueTuple.of( property ) ), e.getMessage() );
     }
 
-    @Test
-    public void duplicateFoundAmongUniqueStringSingleProperty() throws IndexEntryConflictException
+    @ParameterizedTest
+    @MethodSource( "duplicateCheckStrategies" )
+    void duplicateFoundAmongUniqueStringSingleProperty( DuplicateCheckStrategy checkStrategy ) throws IndexEntryConflictException
     {
         for ( int i = 0; i < randomNumberOfEntries(); i++ )
         {
@@ -108,14 +95,14 @@ public class DuplicateCheckStrategyTest
         int duplicateTarget = BUCKET_STRATEGY_ENTRIES_THRESHOLD - 2;
         String duplicate = String.valueOf( duplicateTarget );
         TextValue duplicatedValue = Values.stringValue( duplicate );
-        expectedException.expect( IndexEntryConflictException.class );
-        expectedException.expectMessage(
-                format( "Both node %d and node 3 share the property value %s", duplicateTarget, ValueTuple.of( duplicatedValue ) ) );
-        checkStrategy.checkForDuplicate( duplicatedValue, 3 );
+        var e = assertThrows( IndexEntryConflictException.class, () ->
+            checkStrategy.checkForDuplicate( duplicatedValue, 3 ) );
+        assertEquals( format( "Both node %d and node 3 share the property value %s", duplicateTarget, ValueTuple.of( duplicatedValue ) ), e.getMessage() );
     }
 
-    @Test
-    public void duplicateFoundAmongUniqueNumberSingleProperty() throws IndexEntryConflictException
+    @ParameterizedTest
+    @MethodSource( "duplicateCheckStrategies" )
+    void duplicateFoundAmongUniqueNumberSingleProperty( DuplicateCheckStrategy checkStrategy ) throws IndexEntryConflictException
     {
         double propertyValue = 0;
         for ( int i = 0; i < randomNumberOfEntries(); i++ )
@@ -128,14 +115,15 @@ public class DuplicateCheckStrategyTest
         int duplicateTarget = BUCKET_STRATEGY_ENTRIES_THRESHOLD - 8;
         double duplicateValue = duplicateTarget;
         Value duplicate = Values.doubleValue( duplicateValue );
-        expectedException.expect( IndexEntryConflictException.class );
-        expectedException.expectMessage(
-                format( "Both node %d and node 3 share the property value %s", duplicateTarget, ValueTuple.of( duplicate ) ) );
-        checkStrategy.checkForDuplicate( duplicate, 3 );
+        var e = assertThrows( IndexEntryConflictException.class, () ->
+            checkStrategy.checkForDuplicate( duplicate, 3 ) );
+        assertEquals( format( "Both node %d and node 3 share the property value %s", duplicateTarget, ValueTuple.of( duplicate ) ), e.getMessage() );
+
     }
 
-    @Test
-    public void noDuplicatesDetectedForUniqueStringSingleProperty() throws IndexEntryConflictException
+    @ParameterizedTest
+    @MethodSource( "duplicateCheckStrategies" )
+    void noDuplicatesDetectedForUniqueStringSingleProperty( DuplicateCheckStrategy checkStrategy ) throws IndexEntryConflictException
     {
         for ( int i = 0; i < randomNumberOfEntries(); i++ )
         {
@@ -145,8 +133,9 @@ public class DuplicateCheckStrategyTest
         }
     }
 
-    @Test
-    public void noDuplicatesDetectedForUniqueNumberSingleProperty() throws IndexEntryConflictException
+    @ParameterizedTest
+    @MethodSource( "duplicateCheckStrategies" )
+    void noDuplicatesDetectedForUniqueNumberSingleProperty( DuplicateCheckStrategy checkStrategy ) throws IndexEntryConflictException
     {
         double propertyValue = 0;
         int numberOfIterations = randomNumberOfEntries();
@@ -160,40 +149,44 @@ public class DuplicateCheckStrategyTest
 
     // multiple
 
-    @Test
-    public void checkStringMultiplePropertiesDuplicates() throws Exception
+    @ParameterizedTest
+    @MethodSource( "duplicateCheckStrategies" )
+    void checkStringMultiplePropertiesDuplicates( DuplicateCheckStrategy checkStrategy ) throws Exception
     {
         String duplicateA = "duplicateA";
         String duplicateB = "duplicateB";
         Value propertyA = Values.stringValue( duplicateA );
         Value propertyB = Values.stringValue( duplicateB );
 
-        expectedException.expect( IndexEntryConflictException.class );
-        expectedException.expectMessage( format( "Both node 1 and node 2 share the property value %s",
-                ValueTuple.of( duplicateA, duplicateB ) ) );
-
-        checkStrategy.checkForDuplicate( new Value[]{propertyA, propertyB}, 1 );
-        checkStrategy.checkForDuplicate( new Value[]{propertyA, propertyB}, 2 );
+        var e = assertThrows( IndexEntryConflictException.class, () ->
+        {
+            checkStrategy.checkForDuplicate( new Value[]{propertyA, propertyB}, 1 );
+            checkStrategy.checkForDuplicate( new Value[]{propertyA, propertyB}, 2 );
+        } );
+        assertEquals( format( "Both node 1 and node 2 share the property value %s", ValueTuple.of( duplicateA, duplicateB ) ), e.getMessage() );
     }
 
-    @Test
-    public void checkNumericMultiplePropertiesDuplicates() throws Exception
+    @ParameterizedTest
+    @MethodSource( "duplicateCheckStrategies" )
+    void checkNumericMultiplePropertiesDuplicates( DuplicateCheckStrategy checkStrategy ) throws Exception
     {
         Number duplicatedNumberA = 0.33d;
         Number duplicatedNumberB = 2;
         Value propertyA = Values.doubleValue( duplicatedNumberA.doubleValue() );
         Value propertyB = Values.intValue( duplicatedNumberB.intValue() );
 
-        expectedException.expect( IndexEntryConflictException.class );
-        expectedException.expectMessage( format( "Both node 3 and node 4 share the property value %s",
-                ValueTuple.of( propertyA, propertyB ) ) );
-
-        checkStrategy.checkForDuplicate( new Value[]{propertyA, propertyB}, 3 );
-        checkStrategy.checkForDuplicate( new Value[]{propertyA, propertyB}, 4 );
+        var e = assertThrows( IndexEntryConflictException.class, () ->
+        {
+            checkStrategy.checkForDuplicate( new Value[]{propertyA, propertyB}, 3 );
+            checkStrategy.checkForDuplicate( new Value[]{propertyA, propertyB}, 4 );
+        } );
+        assertEquals( format( "Both node 3 and node 4 share the property value %s",
+            ValueTuple.of( propertyA, propertyB ) ), e.getMessage() );
     }
 
-    @Test
-    public void duplicateFoundAmongUniqueStringMultipleProperties() throws IndexEntryConflictException
+    @ParameterizedTest
+    @MethodSource( "duplicateCheckStrategies" )
+    void duplicateFoundAmongUniqueStringMultipleProperties( DuplicateCheckStrategy checkStrategy ) throws IndexEntryConflictException
     {
         for ( int i = 0; i < randomNumberOfEntries(); i++ )
         {
@@ -209,14 +202,15 @@ public class DuplicateCheckStrategyTest
         String duplicatedValueB = String.valueOf( -duplicateTarget );
         Value propertyA = Values.stringValue( duplicatedValueA );
         Value propertyB = Values.stringValue( duplicatedValueB );
-        expectedException.expect( IndexEntryConflictException.class );
-        expectedException.expectMessage( format( "Both node %d and node 3 share the property value %s",
-                duplicateTarget, ValueTuple.of( propertyA, propertyB ) ) );
-        checkStrategy.checkForDuplicate( new Value[]{propertyA, propertyB}, 3 );
+        var e = assertThrows( IndexEntryConflictException.class, () ->
+            checkStrategy.checkForDuplicate( new Value[]{propertyA, propertyB}, 3 ) );
+        assertEquals( format( "Both node %d and node 3 share the property value %s",
+            duplicateTarget, ValueTuple.of( propertyA, propertyB ) ), e.getMessage() );
     }
 
-    @Test
-    public void duplicateFoundAmongUniqueNumberMultipleProperties() throws IndexEntryConflictException
+    @ParameterizedTest
+    @MethodSource( "duplicateCheckStrategies" )
+    void duplicateFoundAmongUniqueNumberMultipleProperties( DuplicateCheckStrategy checkStrategy ) throws IndexEntryConflictException
     {
         double propertyValue = 0;
         for ( int i = 0; i < randomNumberOfEntries(); i++ )
@@ -234,14 +228,14 @@ public class DuplicateCheckStrategyTest
         double duplicateValueB = -duplicateTarget;
         Value propertyA = Values.doubleValue( duplicateValueA );
         Value propertyB = Values.doubleValue( duplicateValueB );
-        expectedException.expect( IndexEntryConflictException.class );
-        expectedException.expectMessage( format( "Both node %d and node 3 share the property value %s",
-                duplicateTarget, ValueTuple.of( duplicateValueA, duplicateValueB ) ) );
-        checkStrategy.checkForDuplicate( new Value[]{propertyA, propertyB}, 3 );
+        var e = assertThrows( IndexEntryConflictException.class, () -> checkStrategy.checkForDuplicate( new Value[]{propertyA, propertyB}, 3 ) );
+        assertEquals( format( "Both node %d and node 3 share the property value %s",
+            duplicateTarget, ValueTuple.of( duplicateValueA, duplicateValueB ) ), e.getMessage() );
     }
 
-    @Test
-    public void noDuplicatesDetectedForUniqueStringMultipleProperties() throws IndexEntryConflictException
+    @ParameterizedTest
+    @MethodSource( "duplicateCheckStrategies" )
+    void noDuplicatesDetectedForUniqueStringMultipleProperties( DuplicateCheckStrategy checkStrategy ) throws IndexEntryConflictException
     {
         for ( int i = 0; i < randomNumberOfEntries(); i++ )
         {
@@ -253,8 +247,9 @@ public class DuplicateCheckStrategyTest
         }
     }
 
-    @Test
-    public void noDuplicatesDetectedForUniqueNumberMultipleProperties() throws IndexEntryConflictException
+    @ParameterizedTest
+    @MethodSource( "duplicateCheckStrategies" )
+    void noDuplicatesDetectedForUniqueNumberMultipleProperties( DuplicateCheckStrategy checkStrategy ) throws IndexEntryConflictException
     {
         double propertyValueA = 0;
         double propertyValueB = 0;

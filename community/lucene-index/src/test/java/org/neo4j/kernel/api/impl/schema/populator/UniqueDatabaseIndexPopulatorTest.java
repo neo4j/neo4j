@@ -20,17 +20,17 @@
 package org.neo4j.kernel.api.impl.schema.populator;
 
 import org.apache.lucene.store.Directory;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.RuleChain;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.io.File;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.Executors;
 
 import org.neo4j.collection.PrimitiveLongCollections;
 import org.neo4j.configuration.Config;
@@ -39,6 +39,7 @@ import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.internal.schema.LabelSchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.io.IOUtils;
+import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.impl.index.storage.DirectoryFactory;
 import org.neo4j.kernel.api.impl.index.storage.PartitionedIndexStorage;
@@ -53,19 +54,18 @@ import org.neo4j.kernel.impl.index.schema.IndexDescriptor;
 import org.neo4j.kernel.impl.index.schema.NodeValueIterator;
 import org.neo4j.storageengine.api.IndexEntryUpdate;
 import org.neo4j.storageengine.api.NodePropertyAccessor;
-import org.neo4j.test.OtherThreadExecutor;
-import org.neo4j.test.OtherThreadExecutor.WorkerCommand;
-import org.neo4j.test.rule.CleanupRule;
+import org.neo4j.test.extension.DefaultFileSystemExtension;
+import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.TestDirectoryExtension;
 import org.neo4j.test.rule.TestDirectory;
-import org.neo4j.test.rule.fs.DefaultFileSystemRule;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 
 import static java.util.Arrays.asList;
 import static java.util.concurrent.TimeUnit.SECONDS;
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.neo4j.internal.kernel.api.QueryContext.NULL_CONTEXT;
@@ -73,21 +73,19 @@ import static org.neo4j.kernel.api.index.IndexQueryHelper.add;
 import static org.neo4j.kernel.api.index.IndexQueryHelper.change;
 import static org.neo4j.kernel.api.index.IndexQueryHelper.remove;
 
-public class UniqueDatabaseIndexPopulatorTest
+@ExtendWith( {DefaultFileSystemExtension.class, TestDirectoryExtension.class} )
+class UniqueDatabaseIndexPopulatorTest
 {
-    private final CleanupRule cleanup = new CleanupRule();
-    private final TestDirectory testDir = TestDirectory.testDirectory();
-    private final DefaultFileSystemRule fileSystemRule = new DefaultFileSystemRule();
-
-    @Rule
-    public final RuleChain ruleChain = RuleChain.outerRule( testDir ).around( cleanup ).around( fileSystemRule );
-
     private static final int LABEL_ID = 1;
     private static final int PROPERTY_KEY_ID = 2;
-
-    private final DirectoryFactory directoryFactory = new DirectoryFactory.InMemoryDirectoryFactory();
     private static final IndexDescriptor descriptor = TestIndexDescriptorFactory.forLabel( LABEL_ID, PROPERTY_KEY_ID );
 
+    @Inject
+    private TestDirectory testDir;
+    @Inject
+    private FileSystemAbstraction fs;
+
+    private final DirectoryFactory directoryFactory = new DirectoryFactory.InMemoryDirectoryFactory();
     private final NodePropertyAccessor nodePropertyAccessor = mock( NodePropertyAccessor.class );
 
     private PartitionedIndexStorage indexStorage;
@@ -95,19 +93,19 @@ public class UniqueDatabaseIndexPopulatorTest
     private UniqueLuceneIndexPopulator populator;
     private SchemaDescriptor schemaDescriptor;
 
-    @Before
-    public void setUp()
+    @BeforeEach
+    void setUp()
     {
         File folder = testDir.directory( "folder" );
-        indexStorage = new PartitionedIndexStorage( directoryFactory, fileSystemRule.get(), folder );
+        indexStorage = new PartitionedIndexStorage( directoryFactory, fs, folder );
         index = LuceneSchemaIndexBuilder.create( descriptor, Config.defaults() )
                 .withIndexStorage( indexStorage )
                 .build();
         schemaDescriptor = descriptor.schema();
     }
 
-    @After
-    public void tearDown() throws Exception
+    @AfterEach
+    void tearDown() throws Exception
     {
         if ( populator != null )
         {
@@ -117,7 +115,7 @@ public class UniqueDatabaseIndexPopulatorTest
     }
 
     @Test
-    public void shouldVerifyThatThereAreNoDuplicates() throws Exception
+    void shouldVerifyThatThereAreNoDuplicates() throws Exception
     {
         // given
         populator = newPopulator();
@@ -143,7 +141,7 @@ public class UniqueDatabaseIndexPopulatorTest
     }
 
     @Test
-    public void shouldUpdateEntryForNodeThatHasAlreadyBeenIndexed() throws Exception
+    void shouldUpdateEntryForNodeThatHasAlreadyBeenIndexed() throws Exception
     {
         // given
         populator = newPopulator();
@@ -163,7 +161,7 @@ public class UniqueDatabaseIndexPopulatorTest
     }
 
     @Test
-    public void shouldUpdateEntryForNodeThatHasPropertyRemovedAndThenAddedAgain() throws Exception
+    void shouldUpdateEntryForNodeThatHasPropertyRemovedAndThenAddedAgain() throws Exception
     {
         // given
         populator = newPopulator();
@@ -183,7 +181,7 @@ public class UniqueDatabaseIndexPopulatorTest
     }
 
     @Test
-    public void shouldRemoveEntryForNodeThatHasAlreadyBeenIndexed() throws Exception
+    void shouldRemoveEntryForNodeThatHasAlreadyBeenIndexed() throws Exception
     {
         // given
         populator = newPopulator();
@@ -202,7 +200,7 @@ public class UniqueDatabaseIndexPopulatorTest
     }
 
     @Test
-    public void shouldBeAbleToHandleSwappingOfIndexValues() throws Exception
+    void shouldBeAbleToHandleSwappingOfIndexValues() throws Exception
     {
         // given
         populator = newPopulator();
@@ -224,7 +222,7 @@ public class UniqueDatabaseIndexPopulatorTest
     }
 
     @Test
-    public void shouldFailAtVerificationStageWithAlreadyIndexedStringValue() throws Exception
+    void shouldFailAtVerificationStageWithAlreadyIndexedStringValue() throws Exception
     {
         // given
         populator = newPopulator();
@@ -254,7 +252,7 @@ public class UniqueDatabaseIndexPopulatorTest
     }
 
     @Test
-    public void shouldRejectDuplicateEntryWhenUsingPopulatingUpdater() throws Exception
+    void shouldRejectDuplicateEntryWhenUsingPopulatingUpdater() throws Exception
     {
         // given
         populator = newPopulator();
@@ -285,7 +283,7 @@ public class UniqueDatabaseIndexPopulatorTest
     }
 
     @Test
-    public void shouldRejectDuplicateEntryAfterUsingPopulatingUpdater() throws Exception
+    void shouldRejectDuplicateEntryAfterUsingPopulatingUpdater() throws Exception
     {
         // given
         populator = newPopulator();
@@ -316,7 +314,7 @@ public class UniqueDatabaseIndexPopulatorTest
     }
 
     @Test
-    public void shouldNotRejectDuplicateEntryOnSameNodeIdAfterUsingPopulatingUpdater() throws Exception
+    void shouldNotRejectDuplicateEntryOnSameNodeIdAfterUsingPopulatingUpdater() throws Exception
     {
         // given
         populator = newPopulator();
@@ -342,7 +340,7 @@ public class UniqueDatabaseIndexPopulatorTest
     }
 
     @Test
-    public void shouldCheckAllCollisionsFromPopulatorAdd() throws Exception
+    void shouldCheckAllCollisionsFromPopulatorAdd() throws Exception
     {
         // given
         populator = newPopulator();
@@ -378,7 +376,7 @@ public class UniqueDatabaseIndexPopulatorTest
     }
 
     @Test
-    public void shouldCheckAllCollisionsFromUpdaterClose() throws Exception
+    void shouldCheckAllCollisionsFromUpdaterClose() throws Exception
     {
         // given
         populator = newPopulator();
@@ -413,7 +411,7 @@ public class UniqueDatabaseIndexPopulatorTest
     }
 
     @Test
-    public void shouldReleaseSearcherProperlyAfterVerifyingDeferredConstraints() throws Exception
+    void shouldReleaseSearcherProperlyAfterVerifyingDeferredConstraints() throws Exception
     {
         // given
         populator = newPopulator();
@@ -424,34 +422,43 @@ public class UniqueDatabaseIndexPopulatorTest
          */
 
         // GIVEN an index updater that we close
-        OtherThreadExecutor<Void> executor = cleanup.add( new OtherThreadExecutor<>( "Deferred", null ) );
-        executor.execute( (WorkerCommand<Void,Void>) state ->
+        var executor = Executors.newCachedThreadPool();
+        executor.submit( () ->
         {
             try ( IndexUpdater updater = populator.newPopulatingUpdater( nodePropertyAccessor ) )
             {   // Just open it and let it be closed
             }
-            return null;
+            catch ( IndexEntryConflictException e )
+            {
+                throw new RuntimeException( e );
+            }
         } );
         // ... and where we verify deferred constraints after
-        executor.execute( (WorkerCommand<Void,Void>) state ->
+        executor.submit( () ->
         {
-            populator.verifyDeferredConstraints( nodePropertyAccessor );
-            return null;
+            try
+            {
+                populator.verifyDeferredConstraints( nodePropertyAccessor );
+            }
+            catch ( IndexEntryConflictException e )
+            {
+                throw new RuntimeException( e );
+            }
         } );
 
         // WHEN doing more index updating after that
         // THEN it should be able to complete within a very reasonable time
-        executor.execute( (WorkerCommand<Void,Void>) state ->
+        executor.submit( () ->
         {
             try ( IndexUpdater secondUpdater = populator.newPopulatingUpdater( nodePropertyAccessor ) )
             {   // Just open it and let it be closed
             }
             return null;
-        }, 5, SECONDS );
+        } ).get( 5, SECONDS );
     }
 
     @Test
-    public void sampleEmptyIndex() throws Exception
+    void sampleEmptyIndex() throws Exception
     {
         populator = newPopulator();
 
@@ -461,7 +468,7 @@ public class UniqueDatabaseIndexPopulatorTest
     }
 
     @Test
-    public void sampleIncludedUpdates() throws Exception
+    void sampleIncludedUpdates() throws Exception
     {
         LabelSchemaDescriptor schemaDescriptor = SchemaDescriptor.forLabel( 1, 1 );
         populator = newPopulator();
@@ -479,7 +486,7 @@ public class UniqueDatabaseIndexPopulatorTest
     }
 
     @Test
-    public void addUpdates() throws Exception
+    void addUpdates() throws Exception
     {
         populator = newPopulator();
 

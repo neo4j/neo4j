@@ -19,42 +19,38 @@
  */
 package org.neo4j.kernel.api.impl.schema;
 
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.mockito.Mock;
-import org.mockito.junit.MockitoJUnitRunner;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import org.neo4j.kernel.impl.index.schema.IndexDescriptor;
 
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-@RunWith( MockitoJUnitRunner.class )
-public class LuceneIndexAccessorTest
+class LuceneIndexAccessorTest
 {
-    @Mock
-    private SchemaIndex schemaIndex;
-    @Mock
-    private IndexDescriptor schemaIndexDescriptor;
+    private final SchemaIndex schemaIndex = mock( SchemaIndex.class );
+    private final IndexDescriptor schemaIndexDescriptor = mock( IndexDescriptor.class );
+
     private LuceneIndexAccessor accessor;
 
-    @Before
-    public void setUp()
+    @BeforeEach
+    void setUp()
     {
         accessor = new LuceneIndexAccessor( schemaIndex, schemaIndexDescriptor );
     }
 
     @Test
-    public void indexIsDirtyWhenLuceneIndexIsNotValid()
+    void indexIsDirtyWhenLuceneIndexIsNotValid()
     {
         when( schemaIndex.isValid() ).thenReturn( false );
         assertTrue( accessor.isDirty() );
     }
 
     @Test
-    public void indexIsCleanWhenLuceneIndexIsValid()
+    void indexIsCleanWhenLuceneIndexIsValid()
     {
         when( schemaIndex.isValid() ).thenReturn( true );
         assertFalse( accessor.isDirty() );

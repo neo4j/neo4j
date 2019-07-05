@@ -20,10 +20,7 @@
 package org.neo4j.kernel.api.impl.schema.reader;
 
 import org.eclipse.collections.api.set.primitive.LongSet;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.mockito.Mock;
-import org.mockito.junit.MockitoJUnitRunner;
+import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 import java.util.Arrays;
@@ -46,42 +43,34 @@ import org.neo4j.kernel.impl.index.schema.NodeIdsIndexReaderQueryAnswer;
 import org.neo4j.kernel.impl.index.schema.NodeValueIterator;
 import org.neo4j.values.storable.Values;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.neo4j.internal.kernel.api.QueryContext.NULL_CONTEXT;
 import static org.neo4j.values.storable.Values.stringValue;
 
-@RunWith( MockitoJUnitRunner.class )
-public class PartitionedIndexReaderTest
+class PartitionedIndexReaderTest
 {
     private static final int PROP_KEY = 1;
     private static final int LABEL_ID = 0;
 
-    private IndexDescriptor schemaIndexDescriptor = TestIndexDescriptorFactory.forLabel( LABEL_ID, PROP_KEY );
-    @Mock
-    private IndexSamplingConfig samplingConfig;
-    @Mock
-    private TaskCoordinator taskCoordinator;
-    @Mock
-    private PartitionSearcher partitionSearcher1;
-    @Mock
-    private PartitionSearcher partitionSearcher2;
-    @Mock
-    private PartitionSearcher partitionSearcher3;
-    @Mock
-    private SimpleIndexReader indexReader1;
-    @Mock
-    private SimpleIndexReader indexReader2;
-    @Mock
-    private SimpleIndexReader indexReader3;
+    private final IndexDescriptor schemaIndexDescriptor = TestIndexDescriptorFactory.forLabel( LABEL_ID, PROP_KEY );
+    private final IndexSamplingConfig samplingConfig = mock( IndexSamplingConfig.class );
+    private final TaskCoordinator taskCoordinator = mock( TaskCoordinator.class );
+    private final PartitionSearcher partitionSearcher1 = mock( PartitionSearcher.class );
+    private final PartitionSearcher partitionSearcher2 = mock( PartitionSearcher.class );
+    private final PartitionSearcher partitionSearcher3 = mock( PartitionSearcher.class );
+    private final SimpleIndexReader indexReader1 = mock( SimpleIndexReader.class );
+    private final SimpleIndexReader indexReader2 = mock( SimpleIndexReader.class );
+    private final SimpleIndexReader indexReader3 = mock( SimpleIndexReader.class );
 
     @Test
-    public void partitionedReaderCloseAllSearchers() throws IOException
+    void partitionedReaderCloseAllSearchers() throws IOException
     {
         PartitionedIndexReader partitionedIndexReader = createPartitionedReader();
 
@@ -93,7 +82,7 @@ public class PartitionedIndexReaderTest
     }
 
     @Test
-    public void seekOverAllPartitions() throws Exception
+    void seekOverAllPartitions() throws Exception
     {
         PartitionedIndexReader indexReader = createPartitionedReaderFromReaders();
 
@@ -107,7 +96,7 @@ public class PartitionedIndexReaderTest
     }
 
     @Test
-    public void rangeSeekByNumberOverPartitions() throws Exception
+    void rangeSeekByNumberOverPartitions() throws Exception
     {
         PartitionedIndexReader indexReader = createPartitionedReaderFromReaders();
 
@@ -121,7 +110,7 @@ public class PartitionedIndexReaderTest
     }
 
     @Test
-    public void rangeSeekByStringOverPartitions() throws Exception
+    void rangeSeekByStringOverPartitions() throws Exception
     {
         PartitionedIndexReader indexReader = createPartitionedReaderFromReaders();
 
@@ -135,7 +124,7 @@ public class PartitionedIndexReaderTest
     }
 
     @Test
-    public void rangeSeekByPrefixOverPartitions() throws Exception
+    void rangeSeekByPrefixOverPartitions() throws Exception
     {
         PartitionedIndexReader indexReader = createPartitionedReaderFromReaders();
         IndexQuery.StringPrefixPredicate query = IndexQuery.stringPrefix( 1,  stringValue( "prefix" ) );
@@ -148,7 +137,7 @@ public class PartitionedIndexReaderTest
     }
 
     @Test
-    public void scanOverPartitions() throws Exception
+    void scanOverPartitions() throws Exception
     {
         PartitionedIndexReader indexReader = createPartitionedReaderFromReaders();
         IndexQuery.ExistsPredicate query = IndexQuery.exists( 1 );
@@ -161,7 +150,7 @@ public class PartitionedIndexReaderTest
     }
 
     @Test
-    public void countNodesOverPartitions()
+    void countNodesOverPartitions()
     {
         PartitionedIndexReader indexReader = createPartitionedReaderFromReaders();
         when( indexReader1.countIndexedNodes( 1, new int[] {PROP_KEY}, Values.of( "a" ) ) ).thenReturn( 1L );
@@ -172,7 +161,7 @@ public class PartitionedIndexReaderTest
     }
 
     @Test
-    public void samplingOverPartitions() throws IndexNotFoundKernelException
+    void samplingOverPartitions() throws IndexNotFoundKernelException
     {
         PartitionedIndexReader indexReader = createPartitionedReaderFromReaders();
         when( indexReader1.createSampler() ).thenReturn( new SimpleSampler( 1 ) );
@@ -222,7 +211,7 @@ public class PartitionedIndexReaderTest
 
     private class SimpleSampler implements IndexSampler
     {
-        private long sampleValue;
+        private final long sampleValue;
 
         SimpleSampler( long sampleValue )
         {

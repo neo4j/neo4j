@@ -19,15 +19,18 @@
  */
 package org.neo4j.kernel.api.impl.schema.sampler;
 
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Timeout;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.io.IOException;
 
 import org.neo4j.configuration.Config;
 import org.neo4j.internal.helpers.TaskControl;
 import org.neo4j.internal.schema.IndexProviderDescriptor;
+import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.impl.index.storage.DirectoryFactory;
 import org.neo4j.kernel.api.impl.schema.LuceneIndexProvider;
@@ -50,26 +53,21 @@ import org.neo4j.kernel.impl.index.schema.fusion.FusionIndexProvider;
 import org.neo4j.kernel.impl.index.schema.fusion.SlotSelector;
 import org.neo4j.storageengine.api.IndexEntryUpdate;
 import org.neo4j.storageengine.api.StorageIndexReference;
+import org.neo4j.test.extension.EphemeralFileSystemExtension;
+import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.TestDirectoryExtension;
 import org.neo4j.test.rule.TestDirectory;
-import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
-import org.neo4j.test.rule.fs.FileSystemRule;
 import org.neo4j.values.storable.Values;
 
-import static org.junit.Assert.assertSame;
 import static org.neo4j.internal.kernel.api.IndexCapability.NO_CAPABILITY;
 import static org.neo4j.kernel.api.index.IndexDirectoryStructure.directoriesByProvider;
 import static org.neo4j.kernel.api.schema.SchemaTestUtil.simpleNameLookup;
 import static org.neo4j.kernel.api.schema.index.TestIndexDescriptorFactory.forLabel;
 import static org.neo4j.logging.NullLogProvider.getInstance;
 
-public class LuceneIndexSamplerReleaseTaskControlUnderFusion
+@ExtendWith( {EphemeralFileSystemExtension.class, TestDirectoryExtension.class} )
+class LuceneIndexSamplerReleaseTaskControlUnderFusion
 {
-    @Rule
-    public FileSystemRule fs = new EphemeralFileSystemRule();
-
-    @Rule
-    public TestDirectory dir = TestDirectory.testDirectory( fs.get() );
-
     private static final int indexId = 1;
     private static final StoreIndexDescriptor storeIndexDescriptor = forLabel( 1, 1 ).withId( indexId );
     private static final CapableIndexDescriptor capableIndexDescriptor = new CapableIndexDescriptor( storeIndexDescriptor, NO_CAPABILITY );
@@ -78,10 +76,16 @@ public class LuceneIndexSamplerReleaseTaskControlUnderFusion
     private static final Config config = Config.defaults();
     private static final IndexSamplingConfig samplingConfig = new IndexSamplingConfig( config );
     private static final RuntimeException sampleException = new RuntimeException( "Killroy messed with your index sample." );
+
+    @Inject
+    private FileSystemAbstraction fs;
+    @Inject
+    private TestDirectory dir;
+
     private IndexDirectoryStructure.Factory directoryFactory;
 
-    @Before
-    public void setup()
+    @BeforeEach
+    void setup()
     {
         directoryFactory = directoriesByProvider( dir.storeDir() );
     }
@@ -99,8 +103,9 @@ public class LuceneIndexSamplerReleaseTaskControlUnderFusion
      * This situation was solved by making {@link IndexSampler} {@link java.io.Closeable} and include it in try-with-resource together with
      * {@link IndexReader} that created it.
      */
-    @Test( timeout = 5_000L )
-    public void failedIndexSamplingMustNotPreventIndexDrop() throws IOException, IndexEntryConflictException
+    @Test
+    @Timeout( 5 )
+    void failedIndexSamplingMustNotPreventIndexDrop() throws IOException, IndexEntryConflictException
     {
         LuceneIndexProvider luceneProvider = luceneProvider();
         makeSureIndexHasSomeData( luceneProvider ); // Otherwise no sampler will be created.
@@ -118,7 +123,7 @@ public class LuceneIndexSamplerReleaseTaskControlUnderFusion
             }
             catch ( RuntimeException e )
             {
-                assertSame( e, sampleException );
+                Assertions.assertSame( e, sampleException );
             }
 
             // then
@@ -140,7 +145,7 @@ public class LuceneIndexSamplerReleaseTaskControlUnderFusion
     {
         SlotSelector slotSelector = SlotSelector.nullInstance;
         return new FusionIndexProvider( failingProvider, luceneProvider,
-                slotSelector, providerDescriptor, directoryFactory, fs.get(), false );
+            slotSelector, providerDescriptor, directoryFactory, fs, false );
     }
 
     private IndexSamplingJob createIndexSamplingJob( IndexAccessor fusionAccessor )
@@ -165,7 +170,7 @@ public class LuceneIndexSamplerReleaseTaskControlUnderFusion
 
     private LuceneIndexProvider luceneProvider()
     {
-        return new LuceneIndexProvider( fs.get(), luceneDirectoryFactory, directoryFactory, IndexProvider.Monitor.EMPTY, config, OperationalMode.SINGLE );
+        return new LuceneIndexProvider( fs, luceneDirectoryFactory, directoryFactory, IndexProvider.Monitor.EMPTY, config, OperationalMode.SINGLE );
     }
 
     /**
