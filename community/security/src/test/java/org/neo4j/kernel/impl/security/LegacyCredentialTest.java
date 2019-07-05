@@ -19,20 +19,20 @@
  */
 package org.neo4j.kernel.impl.security;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import org.neo4j.server.security.auth.LegacyCredential;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.server.security.auth.LegacyCredential.INACCESSIBLE;
 
-public class LegacyCredentialTest
+class LegacyCredentialTest
 {
     @Test
-    public void testMatchesPassword()
+    void testMatchesPassword()
     {
         LegacyCredential credential = LegacyCredential.forPassword( "foo" );
         assertTrue( credential.matchesPassword( "foo" ) );
@@ -42,7 +42,7 @@ public class LegacyCredentialTest
     }
 
     @Test
-    public void testEquals()
+    void testEquals()
     {
         LegacyCredential credential = LegacyCredential.forPassword( "foo" );
         LegacyCredential sameCredential = new LegacyCredential( credential.salt(), credential.passwordHash() );
@@ -50,7 +50,7 @@ public class LegacyCredentialTest
     }
 
     @Test
-    public void testInaccessibleCredentials()
+    void testInaccessibleCredentials()
     {
         LegacyCredential credential = new LegacyCredential( INACCESSIBLE.salt(), INACCESSIBLE.passwordHash() );
 

@@ -19,10 +19,9 @@
  */
 package org.neo4j.commandline.admin.security;
 
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import picocli.CommandLine;
 
 import java.io.ByteArrayOutputStream;
@@ -33,7 +32,6 @@ import java.io.PrintStream;
 import org.neo4j.cli.CommandFailedException;
 import org.neo4j.cli.ExecutionContext;
 import org.neo4j.configuration.Config;
-import org.neo4j.io.fs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.api.exceptions.InvalidArgumentsException;
 import org.neo4j.kernel.impl.security.User;
@@ -42,45 +40,49 @@ import org.neo4j.server.security.auth.CommunitySecurityModule;
 import org.neo4j.server.security.auth.FileUserRepository;
 import org.neo4j.server.security.auth.LegacyCredential;
 import org.neo4j.server.security.auth.UserRepository;
+import org.neo4j.test.extension.EphemeralFileSystemExtension;
+import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.TestDirectoryExtension;
 import org.neo4j.test.rule.TestDirectory;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.equalTo;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 
-public class SetDefaultAdminCommandTest
+@ExtendWith( {EphemeralFileSystemExtension.class, TestDirectoryExtension.class} )
+class SetDefaultAdminCommandTest
 {
+    @Inject
+    private FileSystemAbstraction fileSystem;
+    @Inject
+    private TestDirectory testDir;
+
     private SetDefaultAdminCommand command;
     private File adminIniFile;
-    private FileSystemAbstraction fileSystem = new EphemeralFileSystemAbstraction();
-    private Config config;
 
-    @Rule
-    public ExpectedException expect = ExpectedException.none();
-    @Rule
-    public TestDirectory testDir = TestDirectory.testDirectory( fileSystem );
-
-    @Before
-    public void setup() throws IOException, InvalidArgumentsException
+    @BeforeEach
+    void setup() throws IOException, InvalidArgumentsException
     {
         command = new SetDefaultAdminCommand( new ExecutionContext( testDir.directory( "home" ).toPath(),
-                testDir.directory( "conf" ).toPath(), mock( PrintStream.class ), mock( PrintStream.class ), fileSystem ) );
-        config = command.loadNeo4jConfig();
+            testDir.directory( "conf" ).toPath(), mock( PrintStream.class ), mock( PrintStream.class ), fileSystem ) );
+        final Config config = command.loadNeo4jConfig();
         UserRepository users = CommunitySecurityModule.getUserRepository( config, NullLogProvider.getInstance(),
-                fileSystem );
+            fileSystem );
         users.create(
-                new User.Builder( "jake", LegacyCredential.forPassword( "123" ) )
-                        .withRequiredPasswordChange( false )
-                        .build()
-            );
+            new User.Builder( "jake", LegacyCredential.forPassword( "123" ) )
+                .withRequiredPasswordChange( false )
+                .build()
+        );
         adminIniFile = new File( CommunitySecurityModule.getUserRepositoryFile( config ).getParentFile(), "admin.ini" );
     }
 
     @Test
-    public void printUsageHelp()
+    void printUsageHelp()
     {
         final var baos = new ByteArrayOutputStream();
         try ( var out = new PrintStream( baos ) )
@@ -88,7 +90,7 @@ public class SetDefaultAdminCommandTest
             CommandLine.usage( command, new PrintStream( out ) );
         }
         assertThat( baos.toString().trim(), equalTo( String.format(
-                "USAGE%n" +
+            "USAGE%n" +
                 "%n" +
                 "set-default-admin [--verbose] <username>%n" +
                 "%n" +
@@ -107,7 +109,7 @@ public class SetDefaultAdminCommandTest
     }
 
     @Test
-    public void shouldSetDefaultAdmin() throws Throwable
+    void shouldSetDefaultAdmin() throws Throwable
     {
         // Given
         assertFalse( fileSystem.fileExists( adminIniFile ) );
@@ -122,15 +124,12 @@ public class SetDefaultAdminCommandTest
     }
 
     @Test
-    public void shouldNotSetDefaultAdminForNonExistentUser() throws Throwable
+    void shouldNotSetDefaultAdminForNonExistentUser() throws Throwable
     {
-        // Then
-        expect.expect( CommandFailedException.class );
-        expect.expectMessage( "no such user: 'noName'" );
-
-        // When
         CommandLine.populateCommand( command, "noName" );
-        command.execute();
+
+        var e = assertThrows( CommandFailedException.class, () -> command.execute() );
+        assertEquals( "no such user: 'noName'", e.getMessage() );
     }
 
     private void assertAdminIniFile( String username ) throws Throwable

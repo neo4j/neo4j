@@ -19,7 +19,7 @@
  */
 package org.neo4j.server.security.auth;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.List;
 
@@ -30,10 +30,10 @@ import static java.util.Arrays.asList;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 
-public class UserSerializationTest
+class UserSerializationTest
 {
     @Test
-    public void shouldSerializeAndDeserialize() throws Exception
+    void shouldSerializeAndDeserialize() throws Exception
     {
         // Given
         UserSerialization serialization = new UserSerialization();
@@ -57,14 +57,14 @@ public class UserSerializationTest
      * this is your reminder to make sure to build this is in a backwards compatible way.
      */
     @Test
-    public void shouldReadV1SerializationFormat() throws Exception
+    void shouldReadV1SerializationFormat() throws Exception
     {
         // Given
         UserSerialization serialization = new UserSerialization();
-        byte[] salt1 = new byte[] { (byte) 0xa5, (byte) 0x43 };
-        byte[] hash1 = new byte[] { (byte) 0xfe, (byte) 0x00, (byte) 0x56, (byte) 0xc3, (byte) 0x7e };
-        byte[] salt2 = new byte[] { (byte) 0x34, (byte) 0xa4 };
-        byte[] hash2 = new byte[] { (byte) 0x0e, (byte) 0x1f, (byte) 0xff, (byte) 0xc2, (byte) 0x3e };
+        byte[] salt1 = { (byte) 0xa5, (byte) 0x43 };
+        byte[] hash1 = { (byte) 0xfe, (byte) 0x00, (byte) 0x56, (byte) 0xc3, (byte) 0x7e };
+        byte[] salt2 = { (byte) 0x34, (byte) 0xa4 };
+        byte[] hash2 = { (byte) 0x0e, (byte) 0x1f, (byte) 0xff, (byte) 0xc2, (byte) 0x3e };
 
         // When
         List<User> deserialized = serialization.deserializeRecords( UTF8.encode( "Mike:SHA-256,FE0056C37E,A543:\n" +

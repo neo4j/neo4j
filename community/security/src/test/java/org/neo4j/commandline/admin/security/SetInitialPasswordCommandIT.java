@@ -19,9 +19,10 @@
  */
 package org.neo4j.commandline.admin.security;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import picocli.CommandLine;
 
 import java.io.File;
@@ -29,33 +30,37 @@ import java.io.PrintStream;
 
 import org.neo4j.cli.ExecutionContext;
 import org.neo4j.configuration.GraphDatabaseSettings;
-import org.neo4j.io.fs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.api.security.UserManager;
 import org.neo4j.kernel.impl.security.User;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.server.security.auth.FileUserRepository;
+import org.neo4j.test.extension.EphemeralFileSystemExtension;
+import org.neo4j.test.extension.Inject;
 
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
-public class SetInitialPasswordCommandIT
+@ExtendWith( EphemeralFileSystemExtension.class )
+class SetInitialPasswordCommandIT
 {
-    private FileSystemAbstraction fileSystem = new EphemeralFileSystemAbstraction();
+    @Inject
+    private FileSystemAbstraction fileSystem;
     private File confDir;
     private File homeDir;
     private PrintStream out;
     private PrintStream err;
 
-    @Before
-    public void setup()
+    @BeforeEach
+    void setup()
     {
         File graphDir = new File( GraphDatabaseSettings.DEFAULT_DATABASE_NAME );
         confDir = new File( graphDir, "conf" );
@@ -64,14 +69,14 @@ public class SetInitialPasswordCommandIT
         err = mock( PrintStream.class );
     }
 
-    @After
-    public void tearDown() throws Exception
+    @AfterEach
+    void tearDown() throws Exception
     {
         fileSystem.close();
     }
 
     @Test
-    public void shouldSetPassword() throws Throwable
+    void shouldSetPassword() throws Throwable
     {
         executeCommand( "abc" );
         assertAuthIniFile( "abc" );
@@ -80,7 +85,7 @@ public class SetInitialPasswordCommandIT
     }
 
     @Test
-    public void shouldOverwriteIfSetPasswordAgain() throws Throwable
+    void shouldOverwriteIfSetPasswordAgain() throws Throwable
     {
         executeCommand( "abc" );
         assertAuthIniFile( "abc" );
@@ -91,7 +96,7 @@ public class SetInitialPasswordCommandIT
     }
 
     @Test
-    public void shouldWorkWithSamePassword() throws Throwable
+    void shouldWorkWithSamePassword() throws Throwable
     {
         executeCommand( "neo4j" );
         assertAuthIniFile( "neo4j" );
@@ -102,7 +107,7 @@ public class SetInitialPasswordCommandIT
     }
 
     @Test
-    public void shouldErrorIfRealUsersAlreadyExistCommunity() throws Throwable
+    void shouldErrorIfRealUsersAlreadyExistCommunity() throws Throwable
     {
         // Given
         File authFile = getAuthFile( "auth" );
@@ -110,23 +115,15 @@ public class SetInitialPasswordCommandIT
         fileSystem.write( authFile );
 
         // When
-        try
-        {
-            executeCommand( "will-be-ignored" );
-            fail("must fail");
-        }
-        catch ( Exception e )
-        {
-            assertThat( e.getMessage(), containsString(
-                    "the provided initial password was not set because existing Neo4j users were detected" ) );
-        }
+        var e = assertThrows( Exception.class, () -> executeCommand( "will-be-ignored" ) );
+        assertThat( e.getMessage(), containsString( "the provided initial password was not set because existing Neo4j users were detected" ) );
 
         // Then
         assertNoAuthIniFile();
     }
 
     @Test
-    public void shouldErrorIfRealUsersAlreadyExistEnterprise() throws Throwable
+    void shouldErrorIfRealUsersAlreadyExistEnterprise() throws Throwable
     {
         // Given
         File authFile = getAuthFile( "auth" );
@@ -153,7 +150,7 @@ public class SetInitialPasswordCommandIT
     }
 
     @Test
-    public void shouldErrorIfRealUsersAlreadyExistV2() throws Throwable
+    void shouldErrorIfRealUsersAlreadyExistV2() throws Throwable
     {
         // Given
         // Create an `auth` file with the default neo4j user, but not the default password
@@ -163,15 +160,8 @@ public class SetInitialPasswordCommandIT
         fileSystem.renameFile( getAuthFile( "auth.ini" ), authFile );
 
         // When
-        try
-        {
-            executeCommand( "will-be-ignored" );
-            fail( "must fail" );
-        }
-        catch ( Exception e )
-        {
-            assertThat( e.getMessage(), containsString( "the provided initial password was not set because existing Neo4j users were detected" ) );
-        }
+        var e = assertThrows( Exception.class, () -> executeCommand( "will-be-ignored" ) );
+        assertThat( e.getMessage(), containsString( "the provided initial password was not set because existing Neo4j users were detected" ) );
 
         // Then
         assertNoAuthIniFile();
@@ -179,7 +169,7 @@ public class SetInitialPasswordCommandIT
     }
 
     @Test
-    public void shouldNotErrorIfOnlyTheUnmodifiedDefaultNeo4jUserAlreadyExists() throws Throwable
+    void shouldNotErrorIfOnlyTheUnmodifiedDefaultNeo4jUserAlreadyExists() throws Throwable
     {
         // Given
         // Create an `auth` file with the default neo4j user

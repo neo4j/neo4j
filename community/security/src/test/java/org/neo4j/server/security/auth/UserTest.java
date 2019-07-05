@@ -19,7 +19,7 @@
  */
 package org.neo4j.server.security.auth;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import org.neo4j.kernel.impl.security.User;
 import org.neo4j.server.security.systemgraph.SystemGraphCredential;
@@ -29,10 +29,10 @@ import static org.hamcrest.CoreMatchers.not;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.neo4j.server.security.auth.SecurityTestUtils.credentialFor;
 
-public class UserTest
+class UserTest
 {
     @Test
-    public void shouldBuildImmutableUser()
+    void shouldBuildImmutableUser()
     {
         SystemGraphCredential abc = credentialFor( "123abc" );
         SystemGraphCredential fruit = credentialFor( "fruit" );

@@ -19,9 +19,9 @@
  */
 package org.neo4j.server.security.auth;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
@@ -32,19 +32,19 @@ import org.neo4j.kernel.impl.api.security.OverriddenAccessMode;
 import org.neo4j.kernel.impl.api.security.RestrictedAccessMode;
 import org.neo4j.server.security.systemgraph.BasicSystemGraphRealm;
 
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
-import static org.junit.Assert.assertThat;
 import static org.neo4j.server.security.auth.SecurityTestUtils.authToken;
 import static org.neo4j.server.security.auth.SecurityTestUtils.password;
 import static org.neo4j.server.security.auth.SecurityTestUtils.simpleBasicSystemGraphRealm;
 
-public class SecurityContextDescriptionTest
+class SecurityContextDescriptionTest
 {
     private BasicSystemGraphRealm manager;
     private SecurityContext context;
 
-    @Before
-    public void setup() throws Throwable
+    @BeforeEach
+    void setup() throws Throwable
     {
         manager = simpleBasicSystemGraphRealm( Config.defaults() );
         manager.init();
@@ -53,28 +53,28 @@ public class SecurityContextDescriptionTest
         context = manager.login( authToken( "johan", "bar" ) ).authorize( LoginContext.IdLookup.EMPTY, GraphDatabaseSettings.DEFAULT_DATABASE_NAME );
     }
 
-    @After
-    public void teardown()
+    @AfterEach
+    void teardown()
     {
         manager.stop();
         manager.shutdown();
     }
 
     @Test
-    public void shouldMakeNiceDescription()
+    void shouldMakeNiceDescription()
     {
         assertThat( context.description(), equalTo( "user 'johan' with FULL" ) );
     }
 
     @Test
-    public void shouldMakeNiceDescriptionWithMode()
+    void shouldMakeNiceDescriptionWithMode()
     {
         SecurityContext modified = context.withMode( AccessMode.Static.WRITE );
         assertThat( modified.description(), equalTo( "user 'johan' with WRITE" ) );
     }
 
     @Test
-    public void shouldMakeNiceDescriptionRestricted()
+    void shouldMakeNiceDescriptionRestricted()
     {
         SecurityContext restricted =
                 context.withMode( new RestrictedAccessMode( context.mode(), AccessMode.Static.READ ) );
@@ -82,7 +82,7 @@ public class SecurityContextDescriptionTest
     }
 
     @Test
-    public void shouldMakeNiceDescriptionOverridden()
+    void shouldMakeNiceDescriptionOverridden()
     {
         SecurityContext overridden =
                 context.withMode( new OverriddenAccessMode( context.mode(), AccessMode.Static.READ ) );
@@ -90,14 +90,14 @@ public class SecurityContextDescriptionTest
     }
 
     @Test
-    public void shouldMakeNiceDescriptionAuthDisabled()
+    void shouldMakeNiceDescriptionAuthDisabled()
     {
         SecurityContext disabled = SecurityContext.AUTH_DISABLED;
         assertThat( disabled.description(), equalTo( "AUTH_DISABLED with FULL" ) );
     }
 
     @Test
-    public void shouldMakeNiceDescriptionAuthDisabledAndRestricted()
+    void shouldMakeNiceDescriptionAuthDisabledAndRestricted()
     {
         SecurityContext disabled = SecurityContext.AUTH_DISABLED;
         SecurityContext restricted =

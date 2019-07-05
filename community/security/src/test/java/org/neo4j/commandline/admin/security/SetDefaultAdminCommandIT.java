@@ -19,8 +19,9 @@
  */
 package org.neo4j.commandline.admin.security;
 
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import picocli.CommandLine;
 
 import java.io.File;
@@ -40,14 +41,12 @@ import org.neo4j.server.security.auth.LegacyCredential;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.containsString;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
-public class SetDefaultAdminCommandIT
+class SetDefaultAdminCommandIT
 {
     private FileSystemAbstraction fileSystem = new EphemeralFileSystemAbstraction();
     private File confDir;
@@ -55,8 +54,8 @@ public class SetDefaultAdminCommandIT
     private PrintStream out;
     private PrintStream err;
 
-    @Before
-    public void setup()
+    @BeforeEach
+    void setup()
     {
         File graphDir = new File( GraphDatabaseSettings.DEFAULT_DATABASE_NAME );
         confDir = new File( graphDir, "conf" );
@@ -66,7 +65,7 @@ public class SetDefaultAdminCommandIT
     }
 
     @Test
-    public void shouldSetDefaultAdmin() throws Throwable
+    void shouldSetDefaultAdmin() throws Throwable
     {
         insertUser( "jane", false );
         execute( "jane" );
@@ -76,7 +75,7 @@ public class SetDefaultAdminCommandIT
     }
 
     @Test
-    public void shouldSetDefaultAdminForInitialUser() throws Throwable
+    void shouldSetDefaultAdminForInitialUser() throws Throwable
     {
         insertUser( "jane", true );
         execute( "jane" );
@@ -86,7 +85,7 @@ public class SetDefaultAdminCommandIT
     }
 
     @Test
-    public void shouldOverwrite() throws Throwable
+    void shouldOverwrite() throws Throwable
     {
         insertUser( "jane", false );
         insertUser( "janette", false );
@@ -100,12 +99,12 @@ public class SetDefaultAdminCommandIT
     }
 
     @Test
-    public void shouldErrorWithNoSuchUser()
+    void shouldErrorWithNoSuchUser()
     {
         try
         {
             execute( "bob" );
-            fail( "must fail" );
+            Assertions.fail( "must fail" );
         }
         catch ( CommandFailedException e )
         {
@@ -115,7 +114,7 @@ public class SetDefaultAdminCommandIT
     }
 
     @Test
-    public void shouldIgnoreInitialUserIfUsersExist() throws Throwable
+    void shouldIgnoreInitialUserIfUsersExist() throws Throwable
     {
         insertUser( "jane", false );
         insertUser( "janette", true );
@@ -125,7 +124,7 @@ public class SetDefaultAdminCommandIT
         try
         {
             execute( "janette" );
-            fail( "must fail" );
+            Assertions.fail( "must fail" );
         }
         catch ( CommandFailedException e )
         {
@@ -143,7 +142,7 @@ public class SetDefaultAdminCommandIT
                 NullLogProvider.getInstance() );
         userRepository.start();
         userRepository.create( new User.Builder( username, LegacyCredential.INACCESSIBLE ).build() );
-        assertTrue( userRepository.getAllUsernames().contains( username ) );
+        Assertions.assertTrue( userRepository.getAllUsernames().contains( username ) );
         userRepository.stop();
         userRepository.shutdown();
     }
@@ -151,7 +150,7 @@ public class SetDefaultAdminCommandIT
     private void assertAdminIniFile( String username ) throws Throwable
     {
         File adminIniFile = getAuthFile( SetDefaultAdminCommand.ADMIN_INI );
-        assertTrue( fileSystem.fileExists( adminIniFile ) );
+        Assertions.assertTrue( fileSystem.fileExists( adminIniFile ) );
         FileUserRepository userRepository = new FileUserRepository( fileSystem, adminIniFile,
                 NullLogProvider.getInstance() );
         userRepository.start();
