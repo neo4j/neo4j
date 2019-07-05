@@ -126,11 +126,11 @@ class RuntimeResourceLeakException(msg: String) extends IllegalStateException(ms
 /**
   * Cypher runtime representing a user-selected runtime which is not supported.
   */
-object UnknownRuntime extends CypherRuntime[RuntimeContext] {
+case class UnknownRuntime(requestedRuntime: String) extends CypherRuntime[RuntimeContext] {
   override def name: String = "unknown"
 
   override def compileToExecutable(logicalQuery: LogicalQuery, context: RuntimeContext, securityContext: SecurityContext): ExecutionPlan =
-    throw new CantCompileQueryException()
+    throw new CantCompileQueryException(s"This version of Neo4j does not support requested runtime: $requestedRuntime")
 }
 
 /**
@@ -145,8 +145,7 @@ class FallbackRuntime[CONTEXT <: RuntimeContext](runtimes: Seq[CypherRuntime[CON
   override def name: String = "fallback"
 
   private def publicCannotCompile(originalException: Exception) = {
-    val message = s"This version of Neo4j does not support requested runtime: ${requestedRuntime.name}"
-    throw new RuntimeUnsupportedException(message, originalException)
+    throw new RuntimeUnsupportedException(originalException.getMessage, originalException)
   }
 
   override def compileToExecutable(logicalQuery: LogicalQuery, context: CONTEXT, securityContext: SecurityContext): ExecutionPlan = {
@@ -166,7 +165,7 @@ class FallbackRuntime[CONTEXT <: RuntimeContext](runtimes: Seq[CypherRuntime[CON
         case e: CantCompileQueryException =>
           lastException = e
           if (runtime != SchemaCommandRuntime && requestedRuntime != CypherRuntimeOption.default) {
-            logger.log(RuntimeUnsupportedNotification)
+            logger.log(RuntimeUnsupportedNotification(e.getMessage))
           }
         case e: Exception =>
           lastException = e

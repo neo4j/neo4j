@@ -23,20 +23,23 @@ import org.neo4j.configuration.GraphDatabaseSettings
 import org.neo4j.cypher.ExecutionEngineHelper._
 import org.neo4j.graphdb.InputPosition
 import org.neo4j.graphdb.impl.notification.NotificationCode.RUNTIME_UNSUPPORTED
+import org.neo4j.graphdb.impl.notification.NotificationDetail
 
 import scala.language.reflectiveCalls
 
 class RuntimeUnsupportedNotificationTest extends ExecutionEngineFunSuite {
 
-  test("default behaviour is to not fail when asked for compiled runtime") {
-    val result = execute("cypher runtime=compiled explain return 42")
-    result.notifications should contain(RUNTIME_UNSUPPORTED.notification(InputPosition.empty))
+  test("Should say when an enterprise runtime is not supported on community") {
+    val result = execute("CYPHER runtime=morsel EXPLAIN RETURN 1")
+    result.notifications should contain(RUNTIME_UNSUPPORTED.notification(InputPosition.empty,
+      NotificationDetail.Factory.message("Runtime unsupported", "This version of Neo4j does not support requested runtime: morsel")))
   }
 
   test("can also be configured to fail hard") {
     restartWithConfig(Map(GraphDatabaseSettings.cypher_hints_error -> "true"))
     eengine = createEngine(graph)
 
-    intercept[InvalidArgumentException](execute("cypher runtime=compiled return 42"))
+    val exception = intercept[RuntimeUnsupportedException](execute("CYPHER runtime=morsel EXPLAIN RETURN 1"))
+    exception.getMessage should be ("This version of Neo4j does not support requested runtime: morsel")
   }
 }

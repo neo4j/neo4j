@@ -31,7 +31,7 @@ case class CreateUniqueUnavailableFallback(position: InputPosition) extends Inte
 
 case class CreateUniqueDeprecated(position: InputPosition) extends InternalNotification
 
-case object RuntimeUnsupportedNotification extends InternalNotification
+case class RuntimeUnsupportedNotification(msg: String) extends InternalNotification
 
 case class IndexHintUnfulfillableNotification(label: String, propertyKeys: Seq[String]) extends InternalNotification
 

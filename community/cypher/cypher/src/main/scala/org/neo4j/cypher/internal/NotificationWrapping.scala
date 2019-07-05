@@ -33,8 +33,8 @@ object NotificationWrapping {
       NotificationCode.CARTESIAN_PRODUCT.notification(pos.withOffset(offset).asInputPosition, NotificationDetail.Factory.cartesianProduct(variables.asJava))
     case LengthOnNonPathNotification(pos) =>
       NotificationCode.LENGTH_ON_NON_PATH.notification(pos.withOffset(offset).asInputPosition)
-    case RuntimeUnsupportedNotification =>
-      NotificationCode.RUNTIME_UNSUPPORTED.notification(graphdb.InputPosition.empty)
+    case RuntimeUnsupportedNotification(msg) =>
+      NotificationCode.RUNTIME_UNSUPPORTED.notification(graphdb.InputPosition.empty, NotificationDetail.Factory.message("Runtime unsupported", msg))
     case IndexHintUnfulfillableNotification(label, propertyKeys) =>
       NotificationCode.INDEX_HINT_UNFULFILLABLE.notification(graphdb.InputPosition.empty, NotificationDetail.Factory.index(label, propertyKeys: _*))
     case JoinHintUnfulfillableNotification(variables) =>

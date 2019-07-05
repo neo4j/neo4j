@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal
 
-import org.neo4j.cypher.{CypherRuntimeOption, InvalidArgumentException}
+import org.neo4j.cypher.{CypherRuntimeOption, RuntimeUnsupportedException}
 
 object CommunityRuntimeFactory {
 
@@ -33,8 +33,8 @@ object CommunityRuntimeFactory {
       case CypherRuntimeOption.default => default
 
       case unsupported if disallowFallback =>
-        throw new InvalidArgumentException(s"This version of Neo4j does not support requested runtime: $unsupported")
+        throw new RuntimeUnsupportedException(s"This version of Neo4j does not support requested runtime: $unsupported")
 
-      case unsupported => new FallbackRuntime[RuntimeContext](List(UnknownRuntime, SchemaCommandRuntime,  InterpretedRuntime), unsupported)
+      case unsupported => new FallbackRuntime[RuntimeContext](List(UnknownRuntime(unsupported.name), SchemaCommandRuntime,  InterpretedRuntime), unsupported)
     }
 }
