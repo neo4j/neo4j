@@ -72,7 +72,7 @@ public abstract class NativeIndexTestUtil<KEY extends NativeIndexKey<KEY>,VALUE 
     StoreIndexDescriptor indexDescriptor;
     ValueCreatorUtil<KEY,VALUE> valueCreatorUtil;
     IndexLayout<KEY,VALUE> layout;
-    IndexDirectoryStructure indexDirectoryStructure;
+    private IndexDirectoryStructure indexDirectoryStructure;
     IndexFiles indexFiles;
     IndexProvider.Monitor monitor = IndexProvider.Monitor.EMPTY;
 

@@ -30,8 +30,8 @@ import java.util.stream.Collectors;
 import org.neo4j.internal.helpers.collection.Iterables;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assertions.fail;
 import static org.neo4j.kernel.impl.index.schema.fusion.IndexSlot.GENERIC;
 import static org.neo4j.kernel.impl.index.schema.fusion.IndexSlot.LUCENE;
 
@@ -62,17 +62,7 @@ class InstanceSelectorTest
         // given
         InstanceSelector<String> selector = selector( LUCENE, "0" );
 
-        try
-        {
-            // when
-            selector.select( GENERIC );
-            fail( "Should have failed" );
-        }
-        catch ( IllegalStateException e )
-        {
-            // then
-            // good
-        }
+        assertThrows( IllegalStateException.class, () -> selector.select( GENERIC ) );
     }
 
     @Test
@@ -82,16 +72,7 @@ class InstanceSelectorTest
         InstanceSelector<String> selector = selector( LUCENE, "0" );
 
         // when
-        try
-        {
-            selector.transform( Integer::parseInt );
-            fail( "Should have failed" );
-        }
-        catch ( IllegalStateException e )
-        {
-            // then
-            // good
-        }
+        assertThrows( IllegalStateException.class, () -> selector.transform( Integer::parseInt ) );
     }
 
     @Test
@@ -101,16 +82,7 @@ class InstanceSelectorTest
         InstanceSelector<String> selector = selector( LUCENE, "0" );
 
         // when
-        try
-        {
-            selector.map( Integer::parseInt );
-            fail( "Should have failed" );
-        }
-        catch ( IllegalStateException e )
-        {
-            // then
-            // good
-        }
+        assertThrows( IllegalStateException.class, () -> selector.map( Integer::parseInt ) );
     }
 
     @Test
@@ -155,16 +127,7 @@ class InstanceSelectorTest
         InstanceSelector<String> selector = selector( LUCENE, "0" );
 
         // when
-        try
-        {
-            selector.forAll( Integer::parseInt );
-            fail( "Should have failed" );
-        }
-        catch ( IllegalStateException e )
-        {
-            // then
-            // good
-        }
+        assertThrows( IllegalStateException.class, () -> selector.forAll( Integer::parseInt ) );
     }
 
     @Test

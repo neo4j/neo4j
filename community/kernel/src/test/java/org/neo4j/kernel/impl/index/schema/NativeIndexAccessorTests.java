@@ -20,9 +20,7 @@
 package org.neo4j.kernel.impl.index.schema;
 
 import org.eclipse.collections.api.iterator.LongIterator;
-import org.hamcrest.MatcherAssert;
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -68,7 +66,12 @@ import static java.lang.String.format;
 import static org.hamcrest.CoreMatchers.allOf;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.collection.PrimitiveLongCollections.EMPTY_LONG_ARRAY;
 import static org.neo4j.function.Predicates.alwaysTrue;
 import static org.neo4j.function.Predicates.in;
@@ -226,7 +229,7 @@ abstract class NativeIndexAccessorTests<KEY extends NativeIndexKey<KEY>, VALUE e
             long count = reader.countIndexedNodes( 123, valueCreatorUtil.indexDescriptor.properties(), update.values()[0] );
 
             // then
-            Assertions.assertEquals( 0, count );
+            assertEquals( 0, count );
         }
     }
 
@@ -245,7 +248,7 @@ abstract class NativeIndexAccessorTests<KEY extends NativeIndexKey<KEY>, VALUE e
                 long count = reader.countIndexedNodes( update.getEntityId(), valueCreatorUtil.indexDescriptor.properties(), update.values() );
 
                 // then
-                Assertions.assertEquals( 1, count );
+                assertEquals( 1, count );
             }
 
             // and when
@@ -253,7 +256,7 @@ abstract class NativeIndexAccessorTests<KEY extends NativeIndexKey<KEY>, VALUE e
             long count = reader.countIndexedNodes( 123, valueCreatorUtil.indexDescriptor.properties(), generator.next().values()[0] );
 
             // then
-            Assertions.assertEquals( 0, count );
+            assertEquals( 0, count );
         }
     }
 
@@ -275,9 +278,9 @@ abstract class NativeIndexAccessorTests<KEY extends NativeIndexKey<KEY>, VALUE e
             long countWithNonExistentValue = reader.countIndexedNodes( update.getEntityId(), propKeys, generateUniqueValue( updates ) );
 
             // then
-            Assertions.assertEquals( 0, countWithMismatchingData );
-            Assertions.assertEquals( 0, countWithNonExistentEntityId );
-            Assertions.assertEquals( 0, countWithNonExistentValue );
+            assertEquals( 0, countWithMismatchingData );
+            assertEquals( 0, countWithNonExistentEntityId );
+            assertEquals( 0, countWithNonExistentValue );
         }
     }
 
@@ -307,7 +310,7 @@ abstract class NativeIndexAccessorTests<KEY extends NativeIndexKey<KEY>, VALUE e
         {
             // then
             actual = PrimitiveLongCollections.asArray( result );
-            Assertions.assertEquals( 0, actual.length );
+            assertEquals( 0, actual.length );
         }
     }
 
@@ -438,7 +441,6 @@ abstract class NativeIndexAccessorTests<KEY extends NativeIndexKey<KEY>, VALUE e
     }
 
     @Test
-//( timeout = 10_000L )
     void mustHandleNestedQueries() throws Exception
     {
         // given
@@ -617,9 +619,9 @@ abstract class NativeIndexAccessorTests<KEY extends NativeIndexKey<KEY>, VALUE e
         ResourceIterator<File> files = accessor.snapshotFiles();
 
         // then
-        Assertions.assertTrue( files.hasNext() );
-        Assertions.assertEquals( indexFiles.getStoreFile(), files.next() );
-        Assertions.assertFalse( files.hasNext() );
+        assertTrue( files.hasNext() );
+        assertEquals( indexFiles.getStoreFile(), files.next() );
+        assertFalse( files.hasNext() );
     }
 
     @Test
@@ -635,9 +637,9 @@ abstract class NativeIndexAccessorTests<KEY extends NativeIndexKey<KEY>, VALUE e
             IndexSample sample = sampler.sampleIndex();
 
             // then
-            Assertions.assertEquals( updates.length, sample.indexSize() );
-            Assertions.assertEquals( updates.length, sample.sampleSize() );
-            Assertions.assertEquals( countUniqueValues( updates ), sample.uniqueValues() );
+            assertEquals( updates.length, sample.indexSize() );
+            assertEquals( updates.length, sample.sampleSize() );
+            assertEquals( countUniqueValues( updates ), sample.uniqueValues() );
         }
     }
 
@@ -691,7 +693,7 @@ abstract class NativeIndexAccessorTests<KEY extends NativeIndexKey<KEY>, VALUE e
         Set<Long> expectedIds = Stream.of( updates )
                 .map( IndexEntryUpdate::getEntityId )
                 .collect( Collectors.toCollection( HashSet::new ) );
-        Assertions.assertEquals( expectedIds, ids );
+        assertEquals( expectedIds, ids );
     }
 
     @Test
@@ -702,7 +704,7 @@ abstract class NativeIndexAccessorTests<KEY extends NativeIndexKey<KEY>, VALUE e
 
         // then
         Set<Long> expectedIds = Collections.emptySet();
-        Assertions.assertEquals( expectedIds, ids );
+        assertEquals( expectedIds, ids );
     }
 
     @Test
@@ -723,13 +725,11 @@ abstract class NativeIndexAccessorTests<KEY extends NativeIndexKey<KEY>, VALUE e
             reader.query( NULL_CONTEXT, filterClient, IndexOrder.NONE, false, rangeQuery );
 
             // then
-            Assertions.assertTrue( iter.hasNext() );
-            Assertions.assertEquals( entityIdOf( updates[1] ), iter.next() );
-            Assertions.assertFalse( iter.hasNext() );
+            assertTrue( iter.hasNext() );
+            assertEquals( entityIdOf( updates[1] ), iter.next() );
+            assertFalse( iter.hasNext() );
         }
     }
-
-    // <READER ordering>
 
     @Test
     void respectIndexOrder() throws Exception
@@ -778,9 +778,9 @@ abstract class NativeIndexAccessorTests<KEY extends NativeIndexKey<KEY>, VALUE e
                 int i = 0;
                 while ( client.next() )
                 {
-                    Assertions.assertEquals( expectedValues[i++], client.values[0], "values in order" );
+                    assertEquals( expectedValues[i++], client.values[0], "values in order" );
                 }
-                Assertions.assertEquals( i, expectedValues.length, "found all values" );
+                assertEquals( i, expectedValues.length, "found all values" );
             }
         }
     }
@@ -797,7 +797,7 @@ abstract class NativeIndexAccessorTests<KEY extends NativeIndexKey<KEY>, VALUE e
 
             var e = assertThrows( UnsupportedOperationException.class, () ->
                 reader.query( NULL_CONTEXT, new SimpleNodeValueClient(), unsupportedOrder, false, unsupportedQuery ) );
-            MatcherAssert.assertThat( e.getMessage(), allOf(
+            assertThat( e.getMessage(), allOf(
                 containsString( "unsupported order" ),
                 containsString( unsupportedOrder.toString() ),
                 containsString( unsupportedQuery.toString() ) ) );
@@ -860,13 +860,11 @@ abstract class NativeIndexAccessorTests<KEY extends NativeIndexKey<KEY>, VALUE e
                 while ( client.next() )
                 {
                     Value foundValue = client.values[0];
-                    Assertions.assertTrue( expectedValues.remove( foundValue ), "found value that was not expected " + foundValue );
+                    assertTrue( expectedValues.remove( foundValue ), "found value that was not expected " + foundValue );
                 }
-            MatcherAssert.assertThat( "did not find all expected values", expectedValues.size(), is( 0 ) );
+            assertThat( "did not find all expected values", expectedValues.size(), is( 0 ) );
         }
     }
-
-    // </READER ordering>
 
     private Value generateUniqueValue( IndexEntryUpdate<IndexDescriptor>[] updates )
     {
@@ -952,7 +950,7 @@ abstract class NativeIndexAccessorTests<KEY extends NativeIndexKey<KEY>, VALUE e
     {
         Arrays.sort( actual );
         Arrays.sort( expected );
-        Assertions.assertArrayEquals( expected, actual, format( "Expected arrays to be equal but wasn't.%nexpected:%s%n  actual:%s%n",
+        assertArrayEquals( expected, actual, format( "Expected arrays to be equal but wasn't.%nexpected:%s%n  actual:%s%n",
             Arrays.toString( expected ), Arrays.toString( actual ) ) );
     }
 
@@ -1108,8 +1106,4 @@ abstract class NativeIndexAccessorTests<KEY extends NativeIndexKey<KEY>, VALUE e
                         t == ValueType.STRING ||
                         t == ValueType.STRING_ARRAY );
     }
-
-    // TODO: multiple query predicates... actually Lucene SimpleIndexReader only supports single predicate
-    //       so perhaps we should wait with this until we know exactly how this works and which combinations
-    //       that should be supported/optimized for.
 }

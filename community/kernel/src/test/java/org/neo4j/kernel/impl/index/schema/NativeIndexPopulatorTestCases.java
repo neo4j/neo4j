@@ -34,7 +34,7 @@ class NativeIndexPopulatorTestCases
 {
     static final IndexSpecificSpaceFillingCurveSettings spaceFillingCurveSettings =
             IndexSpecificSpaceFillingCurveSettings.fromConfig( Config.defaults() );
-    static final StandardConfiguration configuration = new StandardConfiguration();
+    private static final StandardConfiguration configuration = new StandardConfiguration();
 
     static PopulatorFactory<GenericKey,NativeIndexValue> genericPopulatorFactory()
     {

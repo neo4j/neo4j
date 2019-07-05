@@ -283,10 +283,7 @@ abstract class FusionIndexAccessorTest
     {
         // given
         List<Long>[] ids = new List[aliveAccessors.length];
-        for ( int j = 0; j < ids.length; j++ )
-        {
-            ids[j] = Collections.emptyList();
-        }
+        Arrays.fill( ids, Collections.emptyList() );
         mockAllEntriesReaders( ids );
 
         // when
@@ -301,10 +298,7 @@ abstract class FusionIndexAccessorTest
     {
         // given
         List<Long>[] parts = new List[aliveAccessors.length];
-        for ( int i = 0; i < parts.length; i++ )
-        {
-            parts[i] = new ArrayList<>();
-        }
+        Arrays.fill( parts, new ArrayList<>() );
         for ( long i = 0; i < 10; i++ )
         {
             random.among( parts ).add( i );
@@ -463,10 +457,10 @@ abstract class FusionIndexAccessorTest
     {
         // when getting a new reader, no part-reader should be instantiated
         IndexReader fusionReader = fusionIndexAccessor.newReader();
-        for ( int j = 0; j < aliveAccessors.length; j++ )
+        for ( IndexAccessor aliveAccessor : aliveAccessors )
         {
             // then
-            verifyNoMoreInteractions( aliveAccessors[j] );
+            verifyNoMoreInteractions( aliveAccessor );
         }
     }
 
@@ -475,10 +469,10 @@ abstract class FusionIndexAccessorTest
     {
         // when getting a new reader, no part-reader should be instantiated
         IndexUpdater updater = fusionIndexAccessor.newUpdater( IndexUpdateMode.ONLINE );
-        for ( int j = 0; j < aliveAccessors.length; j++ )
+        for ( IndexAccessor aliveAccessor : aliveAccessors )
         {
             // then
-            verifyNoMoreInteractions( aliveAccessors[j] );
+            verifyNoMoreInteractions( aliveAccessor );
         }
     }
 
