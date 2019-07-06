@@ -44,7 +44,6 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -134,16 +133,9 @@ class SetInitialPasswordCommandIT
         fileSystem.write( rolesFile );
 
         // When
-        try
-        {
-            executeCommand( "will-be-ignored" );
-            fail( "must fail" );
-        }
-        catch ( Exception e )
-        {
-            assertThat( e.getMessage(), containsString(
+        var e = assertThrows( Exception.class, () -> executeCommand( "will-be-ignored" ) );
+        assertThat( e.getMessage(), containsString(
                     "the provided initial password was not set because existing Neo4j users were detected" ) );
-        }
 
         // Then
         assertNoAuthIniFile();

@@ -209,7 +209,7 @@ class PartitionedIndexReaderTest
         return Arrays.asList( partitionSearcher1, partitionSearcher2, partitionSearcher3 );
     }
 
-    private class SimpleSampler implements IndexSampler
+    private static class SimpleSampler implements IndexSampler
     {
         private final long sampleValue;
 

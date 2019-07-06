@@ -19,7 +19,6 @@
  */
 package org.neo4j.kernel.api.impl.schema.sampler;
 
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
@@ -59,6 +58,7 @@ import org.neo4j.test.extension.TestDirectoryExtension;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.values.storable.Values;
 
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.neo4j.internal.kernel.api.IndexCapability.NO_CAPABILITY;
 import static org.neo4j.kernel.api.index.IndexDirectoryStructure.directoriesByProvider;
 import static org.neo4j.kernel.api.schema.SchemaTestUtil.simpleNameLookup;
@@ -123,7 +123,7 @@ class LuceneIndexSamplerReleaseTaskControlUnderFusion
             }
             catch ( RuntimeException e )
             {
-                Assertions.assertSame( e, sampleException );
+                assertSame( e, sampleException );
             }
 
             // then

@@ -25,7 +25,7 @@ import static org.neo4j.index.internal.gbptree.SimpleLongLayout.longLayout;
 
 class InternalTreeLogicFixedSizeTest extends InternalTreeLogicTestBase<MutableLong,MutableLong>
 {
-    SimpleLongLayout layout = longLayout().build();
+    private SimpleLongLayout layout = longLayout().build();
 
     @Override
     protected ValueMerger<MutableLong,MutableLong> getAdder()

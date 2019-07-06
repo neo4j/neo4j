@@ -54,7 +54,6 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.fail;
 import static org.neo4j.test.assertion.Assert.assertException;
 
 @ExtendWith( {EphemeralFileSystemExtension.class, TestDirectoryExtension.class} )
@@ -175,15 +174,8 @@ class FileUserRepositoryTest
         User user = new User.Builder( "jake", LegacyCredential.INACCESSIBLE ).withRequiredPasswordChange( true ).build();
 
         // When
-        try
-        {
-            users.create( user );
-            fail( "Expected an IOException" );
-        }
-        catch ( IOException e )
-        {
-            assertSame( exception, e );
-        }
+        var e = assertThrows( IOException.class, () -> users.create( user ) );
+        assertSame( exception, e );
 
         // Then
         assertFalse( crashingFileSystem.fileExists( authFile ) );
@@ -201,16 +193,7 @@ class FileUserRepositoryTest
         // When
         User updatedUser = new User.Builder( "john", LegacyCredential.INACCESSIBLE ).withRequiredPasswordChange( true )
                 .build();
-        try
-        {
-            users.update( user, updatedUser );
-            fail( "expected exception not thrown" );
-        }
-        catch ( IllegalArgumentException e )
-        {
-            // Then continue
-        }
-
+        var e = assertThrows( IllegalArgumentException.class, () -> users.update( user, updatedUser ) );
         assertThat( users.getUserByName( user.name() ), equalTo( user ) );
     }
 
@@ -225,15 +208,7 @@ class FileUserRepositoryTest
 
         // When
         User updatedUser = user.augment().withCredentials( LegacyCredential.forPassword( "bar" ) ).build();
-        try
-        {
-            users.update( modifiedUser, updatedUser );
-            fail( "expected exception not thrown" );
-        }
-        catch ( ConcurrentModificationException e )
-        {
-            // Then continue
-        }
+        var e = assertThrows( ConcurrentModificationException.class, () -> users.update( modifiedUser, updatedUser ) );
     }
 
     @Test

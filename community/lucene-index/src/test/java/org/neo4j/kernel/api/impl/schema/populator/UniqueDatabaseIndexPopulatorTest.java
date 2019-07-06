@@ -65,7 +65,7 @@ import static java.util.Arrays.asList;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.fail;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.neo4j.internal.kernel.api.QueryContext.NULL_CONTEXT;
@@ -235,20 +235,10 @@ class UniqueDatabaseIndexPopulatorTest
         when( nodePropertyAccessor.getNodePropertyValue( 1, PROPERTY_KEY_ID ) ).thenReturn( Values.of( value ) );
         when( nodePropertyAccessor.getNodePropertyValue( 3, PROPERTY_KEY_ID ) ).thenReturn( Values.of( value ) );
 
-        // when
-        try
-        {
-            populator.verifyDeferredConstraints( nodePropertyAccessor );
-
-            fail( "should have thrown exception" );
-        }
-        // then
-        catch ( IndexEntryConflictException conflict )
-        {
-            assertEquals( 1, conflict.getExistingNodeId() );
-            assertEquals( Values.of( value ), conflict.getSinglePropertyValue() );
-            assertEquals( 3, conflict.getAddedNodeId() );
-        }
+        var conflict = assertThrows( IndexEntryConflictException.class, () -> populator.verifyDeferredConstraints( nodePropertyAccessor ) );
+        assertEquals( 1, conflict.getExistingNodeId() );
+        assertEquals( Values.of( value ), conflict.getSinglePropertyValue() );
+        assertEquals( 3, conflict.getAddedNodeId() );
     }
 
     @Test
@@ -265,21 +255,15 @@ class UniqueDatabaseIndexPopulatorTest
         when( nodePropertyAccessor.getNodePropertyValue( 3, PROPERTY_KEY_ID ) ).thenReturn( value );
 
         // when
-        try
+        var conflict = assertThrows( IndexEntryConflictException.class, () ->
         {
             IndexUpdater updater = populator.newPopulatingUpdater( nodePropertyAccessor );
             updater.process( add( 3, schemaDescriptor, "value1" ) );
             updater.close();
-
-            fail( "should have thrown exception" );
-        }
-        // then
-        catch ( IndexEntryConflictException conflict )
-        {
-            assertEquals( 1, conflict.getExistingNodeId() );
-            assertEquals( value, conflict.getSinglePropertyValue() );
-            assertEquals( 3, conflict.getAddedNodeId() );
-        }
+        } );
+        assertEquals( 1, conflict.getExistingNodeId() );
+        assertEquals( value, conflict.getSinglePropertyValue() );
+        assertEquals( 3, conflict.getAddedNodeId() );
     }
 
     @Test
@@ -298,19 +282,10 @@ class UniqueDatabaseIndexPopulatorTest
         when( nodePropertyAccessor.getNodePropertyValue( 2, PROPERTY_KEY_ID ) ).thenReturn( value );
 
         // when
-        try
-        {
-            populator.verifyDeferredConstraints( nodePropertyAccessor );
-
-            fail( "should have thrown exception" );
-        }
-        // then
-        catch ( IndexEntryConflictException conflict )
-        {
-            assertEquals( 1, conflict.getExistingNodeId() );
-            assertEquals( value, conflict.getSinglePropertyValue() );
-            assertEquals( 2, conflict.getAddedNodeId() );
-        }
+        var conflict = assertThrows( IndexEntryConflictException.class, () -> populator.verifyDeferredConstraints( nodePropertyAccessor ) );
+        assertEquals( 1, conflict.getExistingNodeId() );
+        assertEquals( value, conflict.getSinglePropertyValue() );
+        assertEquals( 2, conflict.getAddedNodeId() );
     }
 
     @Test
@@ -361,18 +336,10 @@ class UniqueDatabaseIndexPopulatorTest
                 Values.of( 1 ) ); // This collision is real!!!
 
         // when
-        try
-        {
-            updater.close();
-            fail( "should have thrown exception" );
-        }
-        // then
-        catch ( IndexEntryConflictException conflict )
-        {
-            assertEquals( 1, conflict.getExistingNodeId() );
-            assertEquals( Values.of( 1 ), conflict.getSinglePropertyValue() );
-            assertEquals( iterations, conflict.getAddedNodeId() );
-        }
+        var conflict = assertThrows( IndexEntryConflictException.class, updater::close );
+        assertEquals( 1, conflict.getExistingNodeId() );
+        assertEquals( Values.of( 1 ), conflict.getSinglePropertyValue() );
+        assertEquals( iterations, conflict.getAddedNodeId() );
     }
 
     @Test
@@ -396,18 +363,10 @@ class UniqueDatabaseIndexPopulatorTest
                 Values.of( 1 ) ); // This collision is real!!!
 
         // when
-        try
-        {
-            populator.verifyDeferredConstraints( nodePropertyAccessor );
-            fail( "should have thrown exception" );
-        }
-        // then
-        catch ( IndexEntryConflictException conflict )
-        {
-            assertEquals( 1, conflict.getExistingNodeId() );
-            assertEquals( Values.of( 1 ), conflict.getSinglePropertyValue() );
-            assertEquals( iterations, conflict.getAddedNodeId() );
-        }
+        var conflict = assertThrows( IndexEntryConflictException.class, () -> populator.verifyDeferredConstraints( nodePropertyAccessor ) );
+        assertEquals( 1, conflict.getExistingNodeId() );
+        assertEquals( Values.of( 1 ), conflict.getSinglePropertyValue() );
+        assertEquals( iterations, conflict.getAddedNodeId() );
     }
 
     @Test

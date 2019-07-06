@@ -41,6 +41,7 @@ import org.neo4j.server.security.auth.LegacyCredential;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.containsString;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -101,15 +102,8 @@ class SetDefaultAdminCommandIT
     @Test
     void shouldErrorWithNoSuchUser()
     {
-        try
-        {
-            execute( "bob" );
-            Assertions.fail( "must fail" );
-        }
-        catch ( CommandFailedException e )
-        {
-            assertThat( e.getMessage(), containsString( "no such user: 'bob'" ) );
-        }
+        var e = assertThrows( CommandFailedException.class, () -> execute( "bob" ) );
+        assertThat( e.getMessage(), containsString( "no such user: 'bob'" ) );
         verify( out, never() ).println( anyString() );
     }
 
@@ -121,15 +115,8 @@ class SetDefaultAdminCommandIT
         execute( "jane" );
         assertAdminIniFile( "jane" );
 
-        try
-        {
-            execute( "janette" );
-            Assertions.fail( "must fail" );
-        }
-        catch ( CommandFailedException e )
-        {
-            assertThat( e.getMessage(), containsString( "no such user: 'janette'" ) );
-        }
+        var e = assertThrows( CommandFailedException.class, () -> execute( "janette" ) );
+        assertThat( e.getMessage(), containsString( "no such user: 'janette'" ) );
 
         verify( out ).println( "default admin user set to 'jane'" );
     }
