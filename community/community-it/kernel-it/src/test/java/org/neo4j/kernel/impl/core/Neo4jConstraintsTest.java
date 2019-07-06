@@ -59,8 +59,6 @@ class Neo4jConstraintsTest extends AbstractNeo4jTestCase
         tx.close();
         tx = getGraphDb().beginTx();
         assertFalse( getGraphDb().getAllNodes().iterator().hasNext() );
-        // TODO: this should be valid, fails right now!
-        // assertEquals( 0, numNodesPost );
         tx.success();
         tx.close();
     }

@@ -19,7 +19,6 @@
  */
 package org.neo4j.kernel.impl.traversal;
 
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -29,6 +28,7 @@ import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.traversal.TraversalDescription;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.graphdb.Direction.OUTGOING;
 import static org.neo4j.graphdb.RelationshipType.withName;
 
@@ -62,7 +62,7 @@ class TestMultiRelTypesAndDirections extends TraversalTestBase
             int i = 0;
             for ( Path position : description.traverse( node( "A" ) ) )
             {
-                Assertions.assertEquals( i++, position.length() );
+                assertEquals( i++, position.length() );
             }
         }
     }

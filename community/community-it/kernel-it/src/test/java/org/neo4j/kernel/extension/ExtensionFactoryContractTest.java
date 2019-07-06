@@ -36,7 +36,6 @@ import org.neo4j.test.rule.TestDirectory;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
-import static org.junit.jupiter.api.Assertions.fail;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 
 /**
@@ -82,33 +81,14 @@ public abstract class ExtensionFactoryContractTest
     @Test
     void extensionShouldHavePublicNoArgConstructor()
     {
-        ExtensionFactory<?> instance = null;
-        try
-        {
-            instance = newInstance();
-        }
-        catch ( IllegalArgumentException failure )
-        {
-            failure.printStackTrace();
-            fail( "Contract violation: extension class must have public no-arg constructor (Exception in stderr)" );
-        }
+        ExtensionFactory<?> instance = newInstance();
         assertNotNull( instance );
     }
 
     @Test
     void shouldBeAbleToLoadExtensionAsAServiceProvider()
     {
-        ExtensionFactory<?> instance = null;
-        try
-        {
-            instance = loadInstance();
-        }
-        catch ( ClassCastException failure )
-        {
-            failure.printStackTrace();
-            fail( "Loaded instance does not match the extension class (Exception in stderr)" );
-        }
-
+        ExtensionFactory<?> instance = loadInstance();
         assertNotNull( instance, "Could not load the kernel extension with the provided key" );
         assertSame( instance.getClass(), extClass, "Class of the loaded instance is a subclass of the extension class" );
     }

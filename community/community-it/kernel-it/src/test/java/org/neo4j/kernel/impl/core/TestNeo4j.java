@@ -35,6 +35,7 @@ import org.neo4j.kernel.impl.AbstractNeo4jTestCase;
 import org.neo4j.kernel.impl.MyRelTypes;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.internal.helpers.collection.Iterators.asResourceIterator;
@@ -211,7 +212,7 @@ class TestNeo4j extends AbstractNeo4jTestCase
                     found = true;
                 }
             }
-            assertTrue( !found );
+            assertFalse( found );
             assertEquals( count, oldCount );
         }
         // else we skip test, takes too long

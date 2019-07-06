@@ -96,7 +96,6 @@ class TestIsolationBasic extends AbstractNeo4jTestCase
             }
             catch ( Exception e )
             {
-                e.printStackTrace();
                 Thread.interrupted();
                 t1Exception.set( e );
             }

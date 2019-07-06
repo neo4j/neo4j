@@ -89,7 +89,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assertions.fail;
 import static org.junit.jupiter.params.provider.Arguments.arguments;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
@@ -150,15 +149,7 @@ public class StoreUpgraderTest
 
         StoreVersionCheck check = getVersionCheck( pageCache );
 
-        try
-        {
-            newUpgrader( check, deniedMigrationConfig, pageCache ).migrateIfNeeded( databaseLayout );
-            fail( "Should throw exception" );
-        }
-        catch ( UpgradeNotAllowedException e )
-        {
-            // expected
-        }
+        assertThrows( UpgradeNotAllowedException.class, () -> newUpgrader( check, deniedMigrationConfig, pageCache ).migrateIfNeeded( databaseLayout ) );
     }
 
     @ParameterizedTest
@@ -173,16 +164,7 @@ public class StoreUpgraderTest
         fileSystem.copyRecursively( databaseLayout.databaseDirectory(), comparisonDirectory );
         StoreVersionCheck check = getVersionCheck( pageCache );
 
-        try
-        {
-            newUpgrader( check, pageCache ).migrateIfNeeded( databaseLayout );
-            fail( "Should throw exception" );
-        }
-        catch ( StoreUpgrader.UnableToUpgradeException e )
-        {
-            // expected
-        }
-
+        assertThrows( StoreUpgrader.UnableToUpgradeException.class, () -> newUpgrader( check, pageCache ).migrateIfNeeded( databaseLayout ) );
         verifyFilesHaveSameContent( fileSystem, comparisonDirectory, databaseLayout.databaseDirectory() );
     }
 
@@ -198,16 +180,7 @@ public class StoreUpgraderTest
         fileSystem.copyRecursively( databaseLayout.databaseDirectory(), comparisonDirectory );
         StoreVersionCheck check = getVersionCheck( pageCache );
 
-        try
-        {
-            newUpgrader( check, pageCache ).migrateIfNeeded( databaseLayout );
-            fail( "Should throw exception" );
-        }
-        catch ( StoreUpgrader.UnableToUpgradeException e )
-        {
-            // expected
-        }
-
+        assertThrows( StoreUpgrader.UnableToUpgradeException.class, () -> newUpgrader( check, pageCache ).migrateIfNeeded( databaseLayout ) );
         verifyFilesHaveSameContent( fileSystem, comparisonDirectory, databaseLayout.databaseDirectory() );
     }
 
@@ -230,32 +203,23 @@ public class StoreUpgraderTest
             upgrader.addParticipant( participantThatWillFailWhenMoving( failureMessage ) );
 
             // WHEN
-            try
-            {
-                upgrader.migrateIfNeeded( databaseLayout );
-                fail( "should have thrown" );
-            }
-            catch ( UnableToUpgradeException e )
-            {   // THEN
-                assertTrue( e.getCause() instanceof IOException );
-                assertEquals( failureMessage, e.getCause().getMessage() );
-            }
+            var e = assertThrows( UnableToUpgradeException.class, () -> upgrader.migrateIfNeeded( databaseLayout ) );
+            assertTrue( e.getCause() instanceof IOException );
+            assertEquals( failureMessage, e.getCause().getMessage() );
         }
 
         // AND WHEN
         {
-
             StoreUpgrader upgrader = newUpgrader( check, pageCache );
             StoreMigrationParticipant observingParticipant = Mockito.mock( StoreMigrationParticipant.class );
             upgrader.addParticipant( observingParticipant );
             upgrader.migrateIfNeeded( databaseLayout );
 
             // THEN
-            verify( observingParticipant, Mockito.never() ).migrate( any( DatabaseLayout.class ), any( DatabaseLayout.class ),
-                any( ProgressReporter.class ), eq( versionToMigrateFrom ), eq( versionToMigrateTo ) );
+            verify( observingParticipant, Mockito.never() ).migrate( any( DatabaseLayout.class ), any( DatabaseLayout.class ), any( ProgressReporter.class ),
+                    eq( versionToMigrateFrom ), eq( versionToMigrateTo ) );
             verify( observingParticipant ).
-                moveMigratedFiles( any( DatabaseLayout.class ), any( DatabaseLayout.class ), eq( versionToMigrateFrom ),
-                    eq( versionToMigrateTo ) );
+                    moveMigratedFiles( any( DatabaseLayout.class ), any( DatabaseLayout.class ), eq( versionToMigrateFrom ), eq( versionToMigrateTo ) );
 
             verify( observingParticipant ).cleanup( any( DatabaseLayout.class ) );
         }
@@ -408,16 +372,9 @@ public class StoreUpgraderTest
         assertTrue( fileSystem.mkdir( databaseTransactionLogsHome ) );
         createDummyTxLogFiles( databaseTransactionLogsHome );
 
-        try
-        {
-            newUpgrader( check, pageCache, config, new VisibleMigrationProgressMonitor( logProvider.getLog( "test" ) ) )
-                .migrateIfNeeded( migrationLayout );
-            fail( "Should fail during transaction logs move" );
-        }
-        catch ( StoreUpgrader.TransactionLogsRelocationException e )
-        {
-            // expected
-        }
+        assertThrows( StoreUpgrader.TransactionLogsRelocationException.class, () ->
+                newUpgrader( check, pageCache, config, new VisibleMigrationProgressMonitor( logProvider.getLog( "test" ) ) )
+                .migrateIfNeeded( migrationLayout ) );
     }
 
     @ParameterizedTest
