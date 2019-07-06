@@ -25,6 +25,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -49,6 +50,7 @@ import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.LabelSchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.internal.schema.constraints.IndexBackedConstraintDescriptor;
+import org.neo4j.kernel.api.impl.fulltext.FulltextIndexProviderFactory;
 import org.neo4j.kernel.impl.api.integrationtest.KernelIntegrationTest;
 import org.neo4j.kernel.impl.api.state.ConstraintIndexCreator;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
@@ -333,7 +335,7 @@ class IndexIT extends KernelIntegrationTest
         Transaction transaction = newTransaction( AUTH_DISABLED );
         SchemaDescriptor descriptor = SchemaDescriptor.fulltext(
                 EntityType.NODE, IndexConfig.empty(), new int[]{labelId, labelId2}, new int[]{propertyKeyId} );
-        transaction.schemaWrite().indexCreate( descriptor );
+        transaction.schemaWrite().indexCreate( descriptor, FulltextIndexProviderFactory.DESCRIPTOR.name(), Optional.empty() );
         commit();
 
         try ( @SuppressWarnings( "unused" ) org.neo4j.graphdb.Transaction tx = db.beginTx() )
@@ -418,7 +420,7 @@ class IndexIT extends KernelIntegrationTest
         Transaction transaction = newTransaction( AUTH_DISABLED );
         SchemaDescriptor descriptor = SchemaDescriptor.fulltext( EntityType.RELATIONSHIP, IndexConfig.empty(), new int[]{relType, relType2},
                 new int[]{propertyKeyId, propertyKeyId2} );
-        transaction.schemaWrite().indexCreate( descriptor );
+        transaction.schemaWrite().indexCreate( descriptor, FulltextIndexProviderFactory.DESCRIPTOR.name(), Optional.empty() );
         commit();
 
         try ( org.neo4j.graphdb.Transaction tx = db.beginTx() )
