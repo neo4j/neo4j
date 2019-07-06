@@ -24,7 +24,7 @@ import org.neo4j.configuration.Description;
 import org.neo4j.configuration.LoadableConfig;
 import org.neo4j.configuration.Settings;
 import org.neo4j.graphdb.config.Setting;
-import org.neo4j.kernel.api.impl.fulltext.analyzer.providers.Standard;
+import org.neo4j.kernel.api.impl.fulltext.analyzer.providers.StandardNoStopWords;
 
 import static org.neo4j.configuration.Settings.BOOLEAN;
 import static org.neo4j.configuration.Settings.INTEGER;
@@ -40,7 +40,7 @@ import static org.neo4j.configuration.Settings.setting;
 @ServiceProvider
 public class FulltextConfig implements LoadableConfig
 {
-    private static final String DEFAULT_ANALYZER = Standard.STANDARD_ANALYZER_NAME;
+    private static final String DEFAULT_ANALYZER = StandardNoStopWords.ANALYZER_NAME;
 
     @Description( "The name of the analyzer that the fulltext indexes should use by default." )
     public static final Setting<String> fulltext_default_analyzer = setting( "dbms.index.fulltext.default_analyzer", STRING, DEFAULT_ANALYZER );

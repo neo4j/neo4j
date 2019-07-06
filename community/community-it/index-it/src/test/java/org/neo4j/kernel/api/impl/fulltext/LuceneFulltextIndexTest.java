@@ -576,7 +576,7 @@ public class LuceneFulltextIndexTest extends LuceneFulltextTestSupport
 
         IndexDescriptor descriptor = provider.bless( new IndexDescriptor( schema, false, Optional.empty(), provider.getProviderDescriptor() ) );
 
-        assertThat( descriptor.schema().getIndexConfig().get( ANALYZER ), is( Values.stringValue( "standard" ) ) );
+        assertThat( descriptor.schema().getIndexConfig().get( ANALYZER ), is( Values.stringValue( "standard-no-stop-words" ) ) );
         assertThat( descriptor.schema().getIndexConfig().get( EVENTUALLY_CONSISTENT ), is( Values.booleanValue( false ) ) );
     }
 }
