@@ -780,7 +780,7 @@ class BatchInsertTest
                 indexRule = (IndexDescriptor) rule1;
             }
             OptionalLong owningConstraintId = indexRule.getOwningConstraintId();
-            assertTrue( "index should have owning constraint", owningConstraintId.isPresent() );
+            assertTrue( owningConstraintId.isPresent(), "index should have owning constraint" );
             assertEquals(
                 constraintRule.getId(), owningConstraintId.getAsLong(), "index should reference constraint" );
             assertEquals(
