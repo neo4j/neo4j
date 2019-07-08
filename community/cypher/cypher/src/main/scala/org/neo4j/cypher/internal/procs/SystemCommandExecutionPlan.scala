@@ -107,7 +107,10 @@ class SystemCommandQuerySubscriber(inner: QuerySubscriber, queryHandler: QueryHa
     failed = Some(cypherError)
   }
 
-  def assertNotFailed(): Unit = if (failed.isDefined) throw failed.get
+  def assertNotFailed(onFailure: Throwable => Unit = t => ()): Unit = failed.foreach { exception =>
+    onFailure(exception) // used to close resources
+    throw exception
+  }
 
   override def equals(obj: Any): Boolean = inner.equals(obj)
 }

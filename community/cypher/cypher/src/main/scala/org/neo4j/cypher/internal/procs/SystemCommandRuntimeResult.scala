@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.procs
 
 import java.util
 
-import org.neo4j.cypher.internal.result.InternalExecutionResult
+import org.neo4j.cypher.internal.result.{Error, InternalExecutionResult}
 import org.neo4j.cypher.internal.runtime.{QueryContext, QueryStatistics}
 import org.neo4j.cypher.result.RuntimeResult.ConsumptionState
 import org.neo4j.cypher.result.{OperatorProfile, QueryProfile, RuntimeResult}
@@ -48,7 +48,7 @@ case class SystemCommandRuntimeResult(ctx: QueryContext,
     state = ConsumptionState.HAS_MORE
     execution.inner.request(numberOfRecords)
     // The lower level (execution) is capturing exceptions using the subscriber, but this level is expecting to do the same higher up, so re-throw to trigger that code path
-    subscriber.assertNotFailed()
+    subscriber.assertNotFailed(e => execution.inner.close(Error(e)))
   }
 
   override def cancel(): Unit = execution.inner.cancel()
