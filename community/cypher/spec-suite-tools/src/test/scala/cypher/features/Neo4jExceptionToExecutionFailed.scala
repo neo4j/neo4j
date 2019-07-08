@@ -52,9 +52,9 @@ object Neo4jExceptionToExecutionFailed {
     import TCKErrorDetails._
     if (msg == null)
       ""
-    else if (msg.matches("((SKIP: )|(LIMIT: ))?Invalid input.( '-.+' is not a valid value.)? Must be a non-negative integer\\.[\\s.\\S]*"))
+    else if (msg.matches("((SKIP: )|(LIMIT: ))?Invalid input. ('-.+' is not a valid value|Got a negative integer)\\. Must be a non-negative integer\\.[\\s.\\S]*"))
       NEGATIVE_INTEGER_ARGUMENT
-    else if (msg.matches("((SKIP: )|(LIMIT: ))?Invalid input.( '.+' is not a valid value.)? Must be a non-negative integer\\.[\\s.\\S]*"))
+    else if (msg.matches("((SKIP: )|(LIMIT: ))?Invalid input. ('.+' is not a valid value|Got a floating-point number)\\. Must be a non-negative integer\\.[\\s.\\S]*"))
       INVALID_ARGUMENT_TYPE
     else if (msg.matches("Type mismatch: expected a map but was .+"))
       PROPERTY_ACCESS_ON_NON_MAP
