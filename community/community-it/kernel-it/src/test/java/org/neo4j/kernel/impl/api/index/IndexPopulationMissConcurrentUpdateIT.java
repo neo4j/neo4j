@@ -47,7 +47,6 @@ import org.neo4j.internal.schema.IndexProviderDescriptor;
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.IndexProvider;
-import org.neo4j.kernel.api.index.IndexSample;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.extension.ExtensionFactory;
 import org.neo4j.kernel.extension.ExtensionType;
@@ -218,18 +217,8 @@ public class IndexPopulationMissConcurrentUpdateIT
                 @Override
                 public IndexPopulator getPopulator( IndexDescriptor descriptor, IndexSamplingConfig samplingConfig, ByteBufferFactory bufferFactory )
                 {
-                    return new IndexPopulator()
+                    return new IndexPopulator.Adapter()
                     {
-                        @Override
-                        public void create()
-                        {
-                        }
-
-                        @Override
-                        public void drop()
-                        {
-                        }
-
                         @Override
                         public void add( Collection<? extends IndexEntryUpdate<?>> updates )
                         {
@@ -243,11 +232,6 @@ public class IndexPopulationMissConcurrentUpdateIT
                                     barrier.reached();
                                 }
                             }
-                        }
-
-                        @Override
-                        public void verifyDeferredConstraints( NodePropertyAccessor nodePropertyAccessor )
-                        {
                         }
 
                         @Override
@@ -279,17 +263,6 @@ public class IndexPopulationMissConcurrentUpdateIT
                         public void markAsFailed( String failure )
                         {
                             throw new UnsupportedOperationException();
-                        }
-
-                        @Override
-                        public void includeSample( IndexEntryUpdate<?> update )
-                        {
-                        }
-
-                        @Override
-                        public IndexSample sampleResult()
-                        {
-                            return new IndexSample( 0, 0, 0 );
                         }
                     };
                 }
