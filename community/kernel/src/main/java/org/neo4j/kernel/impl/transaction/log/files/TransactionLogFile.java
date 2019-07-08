@@ -20,6 +20,7 @@
 package org.neo4j.kernel.impl.transaction.log.files;
 
 import java.io.Closeable;
+import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -157,10 +158,11 @@ class TransactionLogFile extends LifecycleAdapter implements LogFile
     }
 
     @Override
-    public synchronized void rotate() throws IOException
+    public synchronized File rotate() throws IOException
     {
         channel = rotate( channel );
         writer.setChannel( channel );
+        return channel.getFile();
     }
 
     /**

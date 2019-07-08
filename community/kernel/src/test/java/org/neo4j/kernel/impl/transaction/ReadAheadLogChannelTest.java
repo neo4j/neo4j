@@ -76,7 +76,7 @@ class ReadAheadLogChannelTest
 
         StoreChannel storeChannel = fileSystem.read( file );
         PhysicalLogVersionedStoreChannel versionedStoreChannel =
-                new PhysicalLogVersionedStoreChannel( storeChannel, -1 /* ignored */, (byte) -1 /* ignored */ );
+                new PhysicalLogVersionedStoreChannel( storeChannel, -1 /* ignored */, (byte) -1, file );
         try ( ReadAheadLogChannel channel = new ReadAheadLogChannel( versionedStoreChannel, NO_MORE_CHANNELS, 16 ) )
         {
             // THEN
@@ -116,7 +116,7 @@ class ReadAheadLogChannelTest
 
         StoreChannel storeChannel = fileSystem.read( file( 0 ) );
         PhysicalLogVersionedStoreChannel versionedStoreChannel =
-                new PhysicalLogVersionedStoreChannel( storeChannel, -1 /* ignored */, (byte) -1 /* ignored */ );
+                new PhysicalLogVersionedStoreChannel( storeChannel, -1 /* ignored */, (byte) -1, file( 0 ) );
         try ( ReadAheadLogChannel channel = new ReadAheadLogChannel( versionedStoreChannel, new LogVersionBridge()
         {
             private boolean returned;
@@ -129,7 +129,7 @@ class ReadAheadLogChannelTest
                     returned = true;
                     channel.close();
                     return new PhysicalLogVersionedStoreChannel( fileSystem.read( file( 1 ) ),
-                            -1 /* ignored */, (byte) -1 /* ignored */ );
+                            -1 /* ignored */, (byte) -1, file( 1 ) );
                 }
                 return channel;
             }

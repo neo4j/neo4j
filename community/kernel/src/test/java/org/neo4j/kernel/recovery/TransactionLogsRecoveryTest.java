@@ -472,8 +472,8 @@ class TransactionLogsRecoveryTest
     {
 
         try ( LogVersionedStoreChannel versionedStoreChannel = new PhysicalLogVersionedStoreChannel( fileSystem.write( file ), logVersion,
-                CURRENT_LOG_VERSION );
-                PositionAwarePhysicalFlushableChannel writableLogChannel = new PositionAwarePhysicalFlushableChannel( versionedStoreChannel,
+                CURRENT_LOG_VERSION, file );
+              PositionAwarePhysicalFlushableChannel writableLogChannel = new PositionAwarePhysicalFlushableChannel( versionedStoreChannel,
                         ByteBuffer.allocate( 1024 ) ) )
         {
             writeLogHeader( writableLogChannel, logVersion, 2L );

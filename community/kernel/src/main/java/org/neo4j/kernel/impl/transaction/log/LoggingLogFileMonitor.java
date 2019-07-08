@@ -22,7 +22,7 @@ package org.neo4j.kernel.impl.transaction.log;
 import java.io.File;
 
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryCommit;
-import org.neo4j.kernel.impl.transaction.log.files.LogFileCreationMonitor;
+import org.neo4j.kernel.impl.transaction.log.rotation.monitor.LogRotationMonitor;
 import org.neo4j.kernel.recovery.RecoveryMonitor;
 import org.neo4j.kernel.recovery.RecoveryStartInformationProvider;
 import org.neo4j.logging.Log;
@@ -30,8 +30,7 @@ import org.neo4j.logging.Log;
 import static java.lang.String.format;
 import static org.neo4j.internal.helpers.Format.duration;
 
-public class LoggingLogFileMonitor implements LogFileCreationMonitor, RecoveryMonitor,
-        RecoveryStartInformationProvider.Monitor
+public class LoggingLogFileMonitor implements RecoveryMonitor, RecoveryStartInformationProvider.Monitor, LogRotationMonitor
 {
     private long firstTransactionRecovered = -1;
     private long lastTransactionRecovered;
@@ -88,13 +87,6 @@ public class LoggingLogFileMonitor implements LogFileCreationMonitor, RecoveryMo
     }
 
     @Override
-    public void created( File logFile, long logVersion, long lastTransactionId )
-    {
-        log.info( format( "Rotated to transaction log [%s] version=%d, last transaction in previous log=%d",
-                logFile, logVersion, lastTransactionId ) );
-    }
-
-    @Override
     public void noCommitsAfterLastCheckPoint( LogPosition logPosition )
     {
         log.info( format( "No commits found after last check point (which is at %s)",
@@ -113,5 +105,23 @@ public class LoggingLogFileMonitor implements LogFileCreationMonitor, RecoveryMo
     public void noCheckPointFound()
     {
         log.info( "No check point found in transaction log" );
+    }
+
+    @Override
+    public void startRotation( long currentLogVersion )
+    {
+    }
+
+    @Override
+    public void finishLogRotation( File logFile, long logVersion, long lastTransactionId, long rotationMillis, long millisSinceLastRotation )
+    {
+        StringBuilder sb = new StringBuilder( "Rotated to transaction log [" );
+        sb.append( logFile ).append( "] version=" ).append( logVersion ).append( ", last transaction in previous log=" );
+        sb.append( lastTransactionId ).append( ", rotation took " ).append( rotationMillis ).append( " millis" );
+        if ( millisSinceLastRotation > 0 )
+        {
+            sb.append( ", started after " ).append( millisSinceLastRotation ).append( " millis" );
+        }
+        log.info( sb.append( '.' ).toString() );
     }
 }

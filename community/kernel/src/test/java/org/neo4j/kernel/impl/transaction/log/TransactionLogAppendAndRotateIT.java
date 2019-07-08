@@ -43,7 +43,6 @@ import org.neo4j.kernel.impl.transaction.log.entry.LogEntryCommit;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReader;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryStart;
 import org.neo4j.kernel.impl.transaction.log.files.LogFile;
-import org.neo4j.kernel.impl.transaction.log.files.LogFileCreationMonitor;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
 import org.neo4j.kernel.impl.transaction.log.files.LogFilesBuilder;
 import org.neo4j.kernel.impl.transaction.log.rotation.LogRotation;
@@ -193,7 +192,7 @@ class TransactionLogAppendAndRotateIT
         return tx;
     }
 
-    private static class AllTheMonitoring extends LogRotationMonitorAdapter implements LogFileCreationMonitor
+    private static class AllTheMonitoring extends LogRotationMonitorAdapter
     {
         private final AtomicBoolean end;
         private final int maxNumberOfRotations;
@@ -213,11 +212,11 @@ class TransactionLogAppendAndRotateIT
         }
 
         @Override
-        public void finishLogRotation( long currentLogVersion )
+        public void finishLogRotation( File logFile, long logVersion, long lastTransactionId, long rotationMillis, long millisSinceLastRotation )
         {
             try
             {
-                assertWholeTransactionsIn( logFile, currentLogVersion );
+                assertWholeTransactionsIn( this.logFile, logVersion );
             }
             catch ( IOException e )
             {
@@ -235,11 +234,6 @@ class TransactionLogAppendAndRotateIT
         int numberOfRotations()
         {
             return rotations;
-        }
-
-        @Override
-        public void created( File logFile, long logVersion, long lastTransactionId )
-        {
         }
     }
 }

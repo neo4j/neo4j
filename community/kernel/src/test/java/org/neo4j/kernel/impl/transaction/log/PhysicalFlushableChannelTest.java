@@ -55,7 +55,7 @@ class PhysicalFlushableChannelTest
     {
         final File firstFile = new File( directory.directory(), "file1" );
         StoreChannel storeChannel = fileSystem.write( firstFile );
-        PhysicalLogVersionedStoreChannel versionedStoreChannel = new PhysicalLogVersionedStoreChannel( storeChannel, 1, (byte) -1 /* ignored */ );
+        PhysicalLogVersionedStoreChannel versionedStoreChannel = new PhysicalLogVersionedStoreChannel( storeChannel, 1, (byte) -1, firstFile );
         int length = 26_145;
         byte[] bytes;
         try ( PhysicalFlushableChannel channel = new PhysicalFlushableChannel( versionedStoreChannel ) )
@@ -79,7 +79,7 @@ class PhysicalFlushableChannelTest
         final File firstFile = new File( directory.directory(), "file1" );
         StoreChannel storeChannel = fileSystem.write( firstFile );
         PhysicalLogVersionedStoreChannel versionedStoreChannel =
-                new PhysicalLogVersionedStoreChannel( storeChannel, 1, (byte) -1 /* ignored */ );
+                new PhysicalLogVersionedStoreChannel( storeChannel, 1, (byte) -1, firstFile );
         int length = 262_145;
         byte[] bytes;
         try ( PhysicalFlushableChannel channel = new PhysicalFlushableChannel( versionedStoreChannel ) )
@@ -103,7 +103,7 @@ class PhysicalFlushableChannelTest
         final File firstFile = new File( directory.directory(), "file1" );
         StoreChannel storeChannel = fileSystem.write( firstFile );
         PhysicalLogVersionedStoreChannel versionedStoreChannel =
-                new PhysicalLogVersionedStoreChannel( storeChannel, 1, (byte) -1 /* ignored */ );
+                new PhysicalLogVersionedStoreChannel( storeChannel, 1, (byte) -1, firstFile );
         int length = 1_000_000;
         byte[] bytes;
         try ( PhysicalFlushableChannel channel = new PhysicalFlushableChannel( versionedStoreChannel ) )
@@ -141,7 +141,7 @@ class PhysicalFlushableChannelTest
         final File secondFile = new File( directory.directory(), "file2" );
         StoreChannel storeChannel = fileSystem.write( firstFile );
         PhysicalLogVersionedStoreChannel versionedStoreChannel =
-                new PhysicalLogVersionedStoreChannel( storeChannel, 1, (byte) -1 /* ignored */ );
+                new PhysicalLogVersionedStoreChannel( storeChannel, 1, (byte) -1, firstFile );
         PhysicalFlushableLogChannel channel = new PhysicalFlushableLogChannel( versionedStoreChannel );
 
         // WHEN writing a transaction, of sorts
@@ -162,7 +162,7 @@ class PhysicalFlushableChannelTest
 
         // "Rotate" and continue
         storeChannel = fileSystem.write( secondFile );
-        channel.setChannel( new PhysicalLogVersionedStoreChannel( storeChannel, 2, (byte) -1 /* ignored */ ) );
+        channel.setChannel( new PhysicalLogVersionedStoreChannel( storeChannel, 2, (byte) -1, secondFile ) );
         channel.putFloat( floatValue );
         channel.putDouble( doubleValue );
         channel.put( byteArrayValue, byteArrayValue.length );
@@ -190,7 +190,7 @@ class PhysicalFlushableChannelTest
         final File file = new File( directory.directory(), "file" );
         StoreChannel storeChannel = fileSystem.write( file );
         PhysicalLogVersionedStoreChannel versionedStoreChannel =
-                new PhysicalLogVersionedStoreChannel( storeChannel, 1, (byte) -1 /* ignored */ );
+                new PhysicalLogVersionedStoreChannel( storeChannel, 1, (byte) -1, file );
         PositionAwarePhysicalFlushableChannel channel =
                 new PositionAwarePhysicalFlushableChannel( versionedStoreChannel, ByteBuffer.allocateDirect( 1024 ) );
         LogPositionMarker positionMarker = new LogPositionMarker();
@@ -213,7 +213,7 @@ class PhysicalFlushableChannelTest
         final File file = new File( directory.directory(), "file" );
         StoreChannel storeChannel = fileSystem.write( file );
         PhysicalLogVersionedStoreChannel versionedStoreChannel =
-                new PhysicalLogVersionedStoreChannel( storeChannel, 1, (byte) -1 /* ignored */ );
+                new PhysicalLogVersionedStoreChannel( storeChannel, 1, (byte) -1, file );
         PhysicalFlushableChannel channel = new PhysicalFlushableChannel( versionedStoreChannel );
 
         // closing the WritableLogChannel, then the underlying channel is what PhysicalLogFile does
@@ -233,7 +233,7 @@ class PhysicalFlushableChannelTest
         final File file = new File( directory.directory(), "file" );
         StoreChannel storeChannel = fileSystem.write( file );
         PhysicalLogVersionedStoreChannel versionedStoreChannel =
-                new PhysicalLogVersionedStoreChannel( storeChannel, 1, (byte) -1 /* ignored */ );
+                new PhysicalLogVersionedStoreChannel( storeChannel, 1, (byte) -1, file );
         PhysicalFlushableChannel channel = new PhysicalFlushableChannel( versionedStoreChannel );
 
         // just close the underlying channel

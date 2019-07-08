@@ -67,7 +67,6 @@ public class LogFilesBuilder
     private Long rotationThreshold;
     private LogEntryReader logEntryReader;
     private LogProvider logProvider = NullLogProvider.getInstance();
-    private LogFileCreationMonitor logFileCreationMonitor;
     private DependencyResolver dependencies;
     private FileSystemAbstraction fileSystem;
     private LogVersionRepository logVersionRepository;
@@ -170,12 +169,6 @@ public class LogFilesBuilder
         return this;
     }
 
-    public LogFilesBuilder withLogFileMonitor( LogFileCreationMonitor logFileCreationMonitor )
-    {
-        this.logFileCreationMonitor = logFileCreationMonitor;
-        return this;
-    }
-
     public LogFilesBuilder withConfig( Config config )
     {
         this.config = config;
@@ -223,10 +216,6 @@ public class LogFilesBuilder
         {
             logEntryReader = new VersionAwareLogEntryReader();
         }
-        if ( logFileCreationMonitor == null )
-        {
-            logFileCreationMonitor = LogFileCreationMonitor.NO_MONITOR;
-        }
         if ( config == null )
         {
             config = Config.defaults();
@@ -242,7 +231,7 @@ public class LogFilesBuilder
         AtomicBoolean tryPreallocateTransactionLogs = getTryToPreallocateTransactionLogs();
 
         return new TransactionLogFilesContext( rotationThreshold, tryPreallocateTransactionLogs, logEntryReader, lastCommittedIdSupplier,
-                committingTransactionIdSupplier, lastClosedTransactionPositionSupplier, logFileCreationMonitor, logVersionRepositorySupplier, fileSystem,
+                committingTransactionIdSupplier, lastClosedTransactionPositionSupplier, logVersionRepositorySupplier, fileSystem,
                 logProvider, databaseTracer );
     }
 

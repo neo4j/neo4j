@@ -36,11 +36,9 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.impl.transaction.SimpleLogVersionRepository;
 import org.neo4j.kernel.impl.transaction.log.LogHeaderCache;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
-import org.neo4j.kernel.impl.transaction.log.LoggingLogFileMonitor;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogVersionedStoreChannel;
 import org.neo4j.kernel.impl.transaction.log.entry.VersionAwareLogEntryReader;
 import org.neo4j.kernel.impl.transaction.tracing.DatabaseTracer;
-import org.neo4j.logging.NullLog;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.extension.DefaultFileSystemExtension;
 import org.neo4j.test.extension.Inject;
@@ -110,7 +108,7 @@ class TransactionLogChannelAllocatorIT
     {
         return new TransactionLogFilesContext( new AtomicLong( ROTATION_THRESHOLD ), new AtomicBoolean( true ),
                 new VersionAwareLogEntryReader(), () -> 1L,
-                () -> 1L, () -> new LogPosition( 0, 1 ), new LoggingLogFileMonitor( NullLog.getInstance() ),
+                () -> 1L, () -> new LogPosition( 0, 1 ),
                 SimpleLogVersionRepository::new, fileSystem,
                 NullLogProvider.getInstance(), DatabaseTracer.NULL );
     }

@@ -40,7 +40,6 @@ import org.neo4j.test.rule.TestDirectory;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.neo4j.configuration.GraphDatabaseSettings.transaction_logs_root_path;
 import static org.neo4j.configuration.LayoutConfig.of;
@@ -78,7 +77,6 @@ class LogFilesBuilderTest
 
         assertEquals( fileSystem, context.getFileSystem() );
         assertNotNull( context.getLogEntryReader() );
-        assertSame( LogFileCreationMonitor.NO_MONITOR, context.getLogFileCreationMonitor() );
         assertEquals( Long.MAX_VALUE, context.getRotationThreshold().get() );
         assertEquals( TransactionIdStore.BASE_TX_ID, context.getLastCommittedTransactionId() );
         assertEquals( 0, context.getLogVersionRepository().getCurrentLogVersion() );
@@ -91,7 +89,6 @@ class LogFilesBuilderTest
                 .withLogEntryReader( logEntryReader() )
                 .buildContext();
         assertEquals( fileSystem, context.getFileSystem() );
-        assertSame( LogFileCreationMonitor.NO_MONITOR, context.getLogFileCreationMonitor() );
     }
 
     @Test
@@ -104,7 +101,6 @@ class LogFilesBuilderTest
                 .buildContext();
         assertEquals( fileSystem, context.getFileSystem() );
         assertNotNull( context.getLogEntryReader() );
-        assertSame( LogFileCreationMonitor.NO_MONITOR, context.getLogFileCreationMonitor() );
         assertEquals( ByteUnit.mebiBytes( 250 ), context.getRotationThreshold().get() );
         assertEquals( 1, context.getLastCommittedTransactionId() );
         assertEquals( 2, context.getLogVersionRepository().getCurrentLogVersion() );
@@ -126,7 +122,6 @@ class LogFilesBuilderTest
 
         assertEquals( fileSystem, context.getFileSystem() );
         assertNotNull( context.getLogEntryReader() );
-        assertSame( LogFileCreationMonitor.NO_MONITOR, context.getLogFileCreationMonitor() );
         assertEquals( ByteUnit.mebiBytes( 250 ), context.getRotationThreshold().get() );
         assertEquals( 1, context.getLastCommittedTransactionId() );
         assertEquals( 2, context.getLogVersionRepository().getCurrentLogVersion() );

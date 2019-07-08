@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.transaction.log;
 
+import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
@@ -32,14 +33,21 @@ public class PhysicalLogVersionedStoreChannel implements LogVersionedStoreChanne
     private final long version;
     private final byte formatVersion;
     private long position;
+    private final File file;
 
-    public PhysicalLogVersionedStoreChannel( StoreChannel delegateChannel, long version, byte formatVersion )
+    public PhysicalLogVersionedStoreChannel( StoreChannel delegateChannel, long version, byte formatVersion, File file )
             throws IOException
     {
         this.delegateChannel = delegateChannel;
         this.version = version;
         this.formatVersion = formatVersion;
         this.position = delegateChannel.position();
+        this.file = file;
+    }
+
+    public File getFile()
+    {
+        return file;
     }
 
     @Override

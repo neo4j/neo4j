@@ -36,7 +36,6 @@ import org.neo4j.kernel.impl.transaction.log.LogVersionUpgradeChecker;
 import org.neo4j.kernel.impl.transaction.log.ReadableClosablePositionAwareChannel;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReader;
 import org.neo4j.kernel.impl.transaction.log.entry.VersionAwareLogEntryReader;
-import org.neo4j.kernel.impl.transaction.log.files.LogFileCreationMonitor;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
 import org.neo4j.kernel.impl.transaction.log.files.LogFilesBuilder;
 import org.neo4j.kernel.recovery.LogTailScanner;
@@ -74,7 +73,6 @@ public class DatabaseMigratorFactory
         final DatabaseConfig dbConfig = DatabaseConfig.from( config, databaseId );
         final IndexProviderMap indexProviderMap = dependencyResolver.resolveDependency( IndexProviderMap.class );
         final Monitors monitors = dependencyResolver.resolveDependency( Monitors.class );
-        final LogFileCreationMonitor logFileCreationMonitor = monitors.newMonitor( LogFileCreationMonitor.class );
         final LogEntryReader<ReadableClosablePositionAwareChannel> logEntryReader = new VersionAwareLogEntryReader<>();
         final LegacyTransactionLogsLocator logsLocator = new LegacyTransactionLogsLocator( dbConfig, databaseLayout );
         final LogFiles logFiles;
@@ -86,7 +84,6 @@ public class DatabaseMigratorFactory
                     logsLocator );
             logFiles = LogFilesBuilder.builder( oldDatabaseLayout, fs )
                 .withLogEntryReader( logEntryReader )
-                .withLogFileMonitor( logFileCreationMonitor )
                 .withConfig( dbConfig )
                 .withDependencies( dependencyResolver ).build();
         }

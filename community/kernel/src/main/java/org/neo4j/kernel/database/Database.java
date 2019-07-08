@@ -109,7 +109,6 @@ import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckpointerLifecycle;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.StoreCopyCheckPointMutex;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReader;
 import org.neo4j.kernel.impl.transaction.log.entry.VersionAwareLogEntryReader;
-import org.neo4j.kernel.impl.transaction.log.files.LogFileCreationMonitor;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
 import org.neo4j.kernel.impl.transaction.log.files.LogFilesBuilder;
 import org.neo4j.kernel.impl.transaction.log.files.TransactionLogFilesHelper;
@@ -306,8 +305,6 @@ public class Database extends LifecycleAdapter
             DatabaseAvailability databaseAvailability =
                     new DatabaseAvailability( databaseAvailabilityGuard, transactionStats, clock, getAwaitActiveTransactionDeadlineMillis() );
 
-            LogFileCreationMonitor physicalLogMonitor = databaseMonitors.newMonitor( LogFileCreationMonitor.class );
-
             databaseDependencies.satisfyDependency( this );
             databaseDependencies.satisfyDependency( databaseConfig );
             databaseDependencies.satisfyDependency( databaseMonitors );
@@ -347,7 +344,7 @@ public class Database extends LifecycleAdapter
             final LogEntryReader<ReadableClosablePositionAwareChannel> logEntryReader = new VersionAwareLogEntryReader<>();
 
             LogFiles logFiles = LogFilesBuilder.builder( databaseLayout, fs ).withLogEntryReader( logEntryReader )
-                                               .withLogFileMonitor( physicalLogMonitor ).withConfig( databaseConfig )
+                                               .withConfig( databaseConfig )
                                                .withDependencies( databaseDependencies )
                                                .withLogProvider( internalLogProvider )
                                                .withDatabaseTracer( databaseTracer )

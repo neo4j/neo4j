@@ -49,7 +49,6 @@ class TransactionLogChannelAllocator
     private final Log log;
     private final TransactionLogFilesHelper fileHelper;
     private final LogHeaderCache logHeaderCache;
-    private final LogFileCreationMonitor monitor;
     private final DatabaseTracer databaseTracer;
 
     TransactionLogChannelAllocator( TransactionLogFilesContext logFilesContext, TransactionLogFilesHelper fileHelper, LogHeaderCache logHeaderCache )
@@ -58,7 +57,6 @@ class TransactionLogChannelAllocator
         this.fileSystem = logFilesContext.getFileSystem();
         this.nativeAccess = logFilesContext.getNativeAccess();
         this.log = logFilesContext.getLogProvider().getLog( getClass() );
-        this.monitor = logFilesContext.getLogFileCreationMonitor();
         this.databaseTracer = logFilesContext.getDatabaseTracer();
         this.fileHelper = fileHelper;
         this.logHeaderCache = logHeaderCache;
@@ -81,11 +79,10 @@ class TransactionLogChannelAllocator
                 writeLogHeader( headerBuffer, version, lastTxId );
                 logHeaderCache.putHeader( version, lastTxId );
                 storeChannel.writeAll( headerBuffer );
-                monitor.created( logFile, version, lastTxId );
             }
         }
         byte formatVersion = header == null ? CURRENT_LOG_VERSION : header.logFormatVersion;
-        return new PhysicalLogVersionedStoreChannel( storeChannel, version, formatVersion );
+        return new PhysicalLogVersionedStoreChannel( storeChannel, version, formatVersion, logFile );
     }
 
     PhysicalLogVersionedStoreChannel openLogChannel( long version ) throws IOException
@@ -109,7 +106,7 @@ class TransactionLogChannelAllocator
                         format( "Unexpected log file header. Expected header version: %d, actual header: %s", version,
                                 header != null ? header.toString() : "null header." ) );
             }
-            return new PhysicalLogVersionedStoreChannel( rawChannel, version, header.logFormatVersion );
+            return new PhysicalLogVersionedStoreChannel( rawChannel, version, header.logFormatVersion, fileToOpen );
         }
         catch ( FileNotFoundException cause )
         {

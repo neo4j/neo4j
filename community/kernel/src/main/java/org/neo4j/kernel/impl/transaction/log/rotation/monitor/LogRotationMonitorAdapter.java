@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.impl.transaction.log.rotation.monitor;
 
+import java.io.File;
+
 public class LogRotationMonitorAdapter implements LogRotationMonitor
 {
     public static final LogRotationMonitor EMPTY = new LogRotationMonitorAdapter();
@@ -30,7 +32,7 @@ public class LogRotationMonitorAdapter implements LogRotationMonitor
     }
 
     @Override
-    public void finishLogRotation( long currentLogVersion )
+    public void finishLogRotation( File logFile, long logVersion, long lastTransactionId, long rotationMillis, long millisSinceLastRotation )
     {
         //empty
     }

@@ -41,6 +41,11 @@ public interface LogFileInformation
     long getLastEntryId();
 
     /**
+     * @return the committing entry id for this l
+     */
+    long committingEntryId();
+
+    /**
      * @param version the log version to get first entry timestamp for.
      * @return the timestamp for the start record for the first encountered entry
      * in the log {@code version}.

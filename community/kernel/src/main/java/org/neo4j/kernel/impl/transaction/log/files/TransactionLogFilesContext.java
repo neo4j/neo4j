@@ -42,14 +42,13 @@ class TransactionLogFilesContext
     private final LongSupplier committingTransactionIdSupplier;
     private final Supplier<LogPosition> lastClosedPositionSupplier;
     private final Supplier<LogVersionRepository> logVersionRepositorySupplier;
-    private final LogFileCreationMonitor logFileCreationMonitor;
     private final FileSystemAbstraction fileSystem;
     private final LogProvider logProvider;
     private final DatabaseTracer databaseTracer;
 
     TransactionLogFilesContext( AtomicLong rotationThreshold, AtomicBoolean tryPreallocateTransactionLogs, LogEntryReader logEntryReader,
             LongSupplier lastCommittedTransactionIdSupplier, LongSupplier committingTransactionIdSupplier, Supplier<LogPosition> lastClosedPositionSupplier,
-            LogFileCreationMonitor logFileCreationMonitor, Supplier<LogVersionRepository> logVersionRepositorySupplier, FileSystemAbstraction fileSystem,
+            Supplier<LogVersionRepository> logVersionRepositorySupplier, FileSystemAbstraction fileSystem,
             LogProvider logProvider, DatabaseTracer databaseTracer )
     {
         this.rotationThreshold = rotationThreshold;
@@ -59,7 +58,6 @@ class TransactionLogFilesContext
         this.committingTransactionIdSupplier = committingTransactionIdSupplier;
         this.lastClosedPositionSupplier = lastClosedPositionSupplier;
         this.logVersionRepositorySupplier = logVersionRepositorySupplier;
-        this.logFileCreationMonitor = logFileCreationMonitor;
         this.fileSystem = fileSystem;
         this.logProvider = logProvider;
         this.databaseTracer = databaseTracer;
@@ -93,11 +91,6 @@ class TransactionLogFilesContext
     LogPosition getLastClosedTransactionPosition()
     {
         return lastClosedPositionSupplier.get();
-    }
-
-    LogFileCreationMonitor getLogFileCreationMonitor()
-    {
-        return logFileCreationMonitor;
     }
 
     FileSystemAbstraction getFileSystem()

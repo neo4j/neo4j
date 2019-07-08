@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.impl.transaction.tracing;
 
+import java.io.File;
+
 /**
  * Represents the event of a log rotation.
  */

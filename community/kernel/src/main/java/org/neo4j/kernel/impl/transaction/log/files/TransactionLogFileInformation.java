@@ -87,6 +87,12 @@ public class TransactionLogFileInformation implements LogFileInformation
     }
 
     @Override
+    public long committingEntryId()
+    {
+        return logFileContext.committingTransactionId();
+    }
+
+    @Override
     public long getFirstStartRecordTimestamp( long version ) throws IOException
     {
         return logFileTimestampMapper.getTimestampForVersion( version );

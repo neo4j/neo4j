@@ -19,10 +19,12 @@
  */
 package org.neo4j.kernel.impl.transaction.log.rotation.monitor;
 
+import java.io.File;
+
 public interface LogRotationMonitor
 {
     void startRotation( long currentLogVersion );
 
-    void finishLogRotation( long currentLogVersion );
+    void finishLogRotation( File logFile, long logVersion, long lastTransactionId, long rotationMillis, long millisSinceLastRotation );
 
 }

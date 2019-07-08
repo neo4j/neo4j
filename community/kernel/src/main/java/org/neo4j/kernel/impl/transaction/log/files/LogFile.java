@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.transaction.log.files;
 
+import java.io.File;
 import java.io.IOException;
 
 import org.neo4j.io.fs.FlushableChannel;
@@ -69,9 +70,13 @@ public interface LogFile
 
     /**
      * @return {@code true} if a rotation is needed.
-     * @throws IOException on I/O error.
      */
     boolean rotationNeeded();
 
-    void rotate() throws IOException;
+    /**
+     * Rotate the active log file.
+     * @return A file object representing the file name and path of the log file rotated to.
+     * @throws IOException if something goes wrong with either flushing the existing log file, or creating the new log file.
+     */
+    File rotate() throws IOException;
 }
