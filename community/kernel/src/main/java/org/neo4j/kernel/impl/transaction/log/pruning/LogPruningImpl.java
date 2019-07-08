@@ -40,7 +40,7 @@ public class LogPruningImpl implements LogPruning
     private final Lock pruneLock = new ReentrantLock();
     private final FileSystemAbstraction fs;
     private final LogFiles logFiles;
-    private final Log msgLog;
+    private final Log log;
     private final LogPruneStrategyFactory strategyFactory;
     private final Clock clock;
     private final LogProvider logProvider;
@@ -56,7 +56,7 @@ public class LogPruningImpl implements LogPruning
         this.fs = fs;
         this.logFiles = logFiles;
         this.logProvider = logProvider;
-        this.msgLog = logProvider.getLog( getClass() );
+        this.log = logProvider.getLog( getClass() );
         this.strategyFactory = strategyFactory;
         this.clock = clock;
         this.pruneStrategy = strategyFactory.strategyFromConfigValue( fs, logFiles, logProvider, clock, config.get( GraphDatabaseSettings.keep_logical_logs ) );
@@ -69,7 +69,7 @@ public class LogPruningImpl implements LogPruning
     private void updateConfiguration( String pruningConf )
     {
         this.pruneStrategy = strategyFactory.strategyFromConfigValue( fs, logFiles, logProvider, clock, pruningConf );
-        msgLog.info( "Retention policy updated, value will take effect during the next evaluation." );
+        log.info( "Retention policy updated, value will take effect during the next evaluation." );
     }
 
     @Override
@@ -83,7 +83,7 @@ public class LogPruningImpl implements LogPruning
             {
                 CountingDeleter deleter = new CountingDeleter( logFiles, fs, upToVersion );
                 pruneStrategy.findLogVersionsToDelete( upToVersion ).forEachOrdered( deleter );
-                msgLog.info( deleter.describeResult() );
+                log.info( deleter.describeResult() );
             }
             finally
             {
