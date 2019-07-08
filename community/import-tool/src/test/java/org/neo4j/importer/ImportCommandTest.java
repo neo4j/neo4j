@@ -171,7 +171,7 @@ class ImportCommandTest
                         "                               there is no lower bound for this value. For optimal%n" +
                         "                               performance this value shouldn't be greater than the%n" +
                         "                               number of available processors.%n" +
-                        "                               Default: 8%n" +
+                        "                               Default: " + Runtime.getRuntime().availableProcessors() + "%n" +
                         "      --bad-tolerance=<num>  Number of bad entries before the import is considered%n" +
                         "                               failed. This tolerance threshold is about%n" +
                         "                               relationships referring to missing nodes. Format%n" +
@@ -238,7 +238,7 @@ class ImportCommandTest
         Config resultingConfig = command.loadNeo4jConfig();
 
         // then
-        assertEquals( homeDir, resultingConfig.get( GraphDatabaseSettings.neo4j_home ) );
+        assertEquals( homeDir, resultingConfig.get( GraphDatabaseSettings.neo4j_home ).toFile() );
     }
 
     @Test
@@ -256,7 +256,7 @@ class ImportCommandTest
         Config resultingConfig = command.loadNeo4jConfig();
 
         // then
-        assertEquals( homeDir, resultingConfig.get( GraphDatabaseSettings.neo4j_home ) );
+        assertEquals( homeDir, resultingConfig.get( GraphDatabaseSettings.neo4j_home ).toFile() );
     }
 
     @Nested

@@ -260,7 +260,7 @@ public class ImportCommand extends AbstractCommand
     Config loadNeo4jConfig()
     {
         Config cfg = Config.newBuilder()
-                .set( GraphDatabaseSettings.neo4j_home, ctx.confDir().toAbsolutePath().toString() )
+                .set( GraphDatabaseSettings.neo4j_home, ctx.homeDir().toAbsolutePath().toString() )
                 .fromFileNoThrow( ctx.confDir().resolve( Config.DEFAULT_CONFIG_FILE_NAME ) )
                 .fromFileNoThrow( additionalConfig )
                 .build();

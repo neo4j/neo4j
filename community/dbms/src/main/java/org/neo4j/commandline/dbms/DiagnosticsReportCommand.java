@@ -235,7 +235,7 @@ public class DiagnosticsReportCommand extends AbstractCommand
         {
             Config cfg = Config.newBuilder()
                     .fromFileNoThrow( configFile )
-                    .set( GraphDatabaseSettings.neo4j_home, ctx.toString() ).build();
+                    .set( GraphDatabaseSettings.neo4j_home, ctx.homeDir().toString() ).build();
             ConfigUtils.disableAllConnectors( cfg );
             return cfg;
         }
