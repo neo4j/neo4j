@@ -37,7 +37,6 @@ import org.neo4j.internal.kernel.api.SchemaReadCore;
 import org.neo4j.internal.kernel.api.TokenRead;
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
-import org.neo4j.internal.kernel.api.exceptions.schema.SchemaRuleNotFoundException;
 import org.neo4j.internal.kernel.api.procs.ProcedureHandle;
 import org.neo4j.internal.kernel.api.procs.ProcedureSignature;
 import org.neo4j.internal.kernel.api.procs.QualifiedName;
@@ -49,7 +48,6 @@ import org.neo4j.internal.schema.ConstraintDescriptor;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.LabelSchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptor;
-import org.neo4j.internal.schema.SchemaDescriptorSupplier;
 import org.neo4j.internal.schema.SchemaState;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.Statement;
@@ -365,86 +363,47 @@ public class AllStoreHolder extends Read
             }
         }
 
-        return indexReference( index );
+        return lockedIndex( index );
     }
 
     @Override
     public IndexDescriptor indexForSchemaNonTransactional( SchemaDescriptor schema )
     {
-        return mapToIndexReference( schema, false );
+        IndexDescriptor index = storageReader.indexGetForSchema( schema );
+        if ( index == null )
+        {
+            return IndexDescriptor.NO_INDEX;
+        }
+        return index;
     }
 
     /**
-     * Validate that the index descriptor matches an existing index, and take its schema locks.
+     *
      * @param index committed, transaction-added or even null.
      * @return The validated index descriptor, which is not necessarily the same as the one given as an argument.
      */
-    public IndexDescriptor indexReference( IndexDescriptor index )
+    public IndexDescriptor lockedIndex( IndexDescriptor index )
     {
-        return mapToIndexReference( index, true );
-    }
-
-    /**
-     * Maps all index descriptors according to {@link #indexReference(IndexDescriptor)}.
-     */
-    public Iterator<IndexDescriptor> indexReferences( Iterator<? extends IndexDescriptor> indexes )
-    {
-        return Iterators.map( index -> mapToIndexReference( index, true ), indexes );
-    }
-
-    /**
-     * The same as {@link #indexReference(IndexDescriptor)}, except no schema lock is taken.
-     */
-    public IndexDescriptor indexReferenceNoLocking( IndexDescriptor index )
-    {
-        return mapToIndexReference( index, false );
-    }
-
-    /**
-     * Maps all index descriptors according to {@link #indexReferenceNoLocking(IndexDescriptor)}.
-     */
-    public Iterator<IndexDescriptor> indexReferencesNoLocking( Iterator<? extends IndexDescriptor> indexes )
-    {
-        return Iterators.map( index -> mapToIndexReference( index, false ), indexes );
-    }
-
-    private IndexDescriptor mapToIndexReference( SchemaDescriptorSupplier indexish, boolean takeSchemaLock )
-    {
-        // TODO can this mapper function be replaced with simply taking the schema lock in the places that need that?
-        if ( indexish == null )
+        if ( index == null )
         {
-            // This is OK since storage may not have it and it wasn't added in this tx.
             return IndexDescriptor.NO_INDEX;
         }
+        return acquireSharedSchemaLock( index );
+    }
 
-        if ( takeSchemaLock )
-        {
-            acquireSharedSchemaLock( indexish.schema() );
-        }
-
-        if ( indexish instanceof IndexDescriptor )
-        {
-            return (IndexDescriptor) indexish;
-        }
-        else
-        {
-            try
-            {
-                return indexingService.getIndexProxy( indexish.schema() ).getDescriptor();
-            }
-            catch ( IndexNotFoundKernelException e )
-            {
-                // OK we tried lookup in the indexing service, but it wasn't there. Not loaded yet?
-                return IndexDescriptor.NO_INDEX;
-            }
-        }
+    /**
+     * Maps all index descriptors according to {@link #lockedIndex(IndexDescriptor)}.
+     */
+    public Iterator<IndexDescriptor> indexReferences( Iterator<IndexDescriptor> indexes )
+    {
+        return Iterators.map( this::lockedIndex, indexes );
     }
 
     @Override
     public IndexDescriptor index( SchemaDescriptor schema )
     {
         ktx.assertOpen();
-        return indexReference( indexGetForSchema( storageReader, schema ) );
+        return lockedIndex( indexGetForSchema( storageReader, schema ) );
     }
 
     IndexDescriptor indexGetForSchema( StorageSchemaReader reader, SchemaDescriptor schema )
@@ -479,12 +438,12 @@ public class AllStoreHolder extends Read
     {
         acquireSharedLock( ResourceTypes.LABEL, labelId );
         ktx.assertOpen();
-        return Iterators.map( this::indexReference, indexesGetForLabel( storageReader, labelId ) );
+        return Iterators.map( this::lockedIndex, indexesGetForLabel( storageReader, labelId ) );
     }
 
-    Iterator<? extends IndexDescriptor> indexesGetForLabel( StorageSchemaReader reader, int labelId )
+    Iterator<IndexDescriptor> indexesGetForLabel( StorageSchemaReader reader, int labelId )
     {
-        Iterator<? extends IndexDescriptor> iterator = reader.indexesGetForLabel( labelId );
+        Iterator<IndexDescriptor> iterator = reader.indexesGetForLabel( labelId );
         if ( ktx.hasTxStateWithChanges() )
         {
             iterator = ktx.txState().indexDiffSetsByLabel( labelId ).apply( iterator );
@@ -500,9 +459,9 @@ public class AllStoreHolder extends Read
         return indexReferences( indexesGetForRelationshipType( storageReader, relationshipType ) );
     }
 
-    Iterator<? extends IndexDescriptor> indexesGetForRelationshipType( StorageSchemaReader reader, int relationshipType )
+    Iterator<IndexDescriptor> indexesGetForRelationshipType( StorageSchemaReader reader, int relationshipType )
     {
-        Iterator<? extends IndexDescriptor> iterator = reader.indexesGetForRelationshipType( relationshipType );
+        Iterator<IndexDescriptor> iterator = reader.indexesGetForRelationshipType( relationshipType );
         if ( ktx.hasTxStateWithChanges() )
         {
             iterator = ktx.txState().indexDiffSetsByRelationshipType( relationshipType ).apply( iterator );
@@ -522,7 +481,7 @@ public class AllStoreHolder extends Read
             Iterator<IndexDescriptor> indexes = ktx.txState().indexChanges().filterAdded( namePredicate ).apply( Iterators.iterator( index ) );
             index = singleOrNull( indexes );
         }
-        return indexReference( index );
+        return lockedIndex( index );
     }
 
     @Override
@@ -532,7 +491,7 @@ public class AllStoreHolder extends Read
 
         Iterator<IndexDescriptor> iterator = indexesGetAll( storageReader );
 
-        return Iterators.map( this::indexReference, iterator );
+        return Iterators.map( this::lockedIndex, iterator );
     }
 
     Iterator<IndexDescriptor> indexesGetAll( StorageSchemaReader reader )
@@ -600,19 +559,6 @@ public class AllStoreHolder extends Read
         acquireSharedSchemaLock( index.schema() );
         ktx.assertOpen();
         return storageReader.indexGetOwningUniquenessConstraintId( storageReader.indexGetForSchema( index.schema() ) );
-    }
-
-    @Override
-    public long indexGetCommittedId( IndexDescriptor index ) throws SchemaRuleNotFoundException
-    {
-        // todo can we remove this method or something?
-        acquireSharedSchemaLock( index.schema() );
-        ktx.assertOpen();
-        if ( ktx.hasTxStateWithChanges() && ktx.txState().indexChanges().isAdded( index ) )
-        {
-            throw new SchemaRuleNotFoundException( index );
-        }
-        return index.getId();
     }
 
     @Override
@@ -720,7 +666,7 @@ public class AllStoreHolder extends Read
                     SchemaDescriptor.equalTo( descriptor ),
                     ktx.txState().indexDiffSetsBySchema( descriptor ).apply( indexes ) );
         }
-        return indexReference( singleOrNull( indexes ) );
+        return lockedIndex( singleOrNull( indexes ) );
     }
 
     private boolean checkIndexState( IndexDescriptor index, DiffSets<IndexDescriptor> diffSet )

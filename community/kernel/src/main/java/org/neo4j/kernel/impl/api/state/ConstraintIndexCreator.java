@@ -123,7 +123,8 @@ public class ConstraintIndexCreator
         long[] lockingKeys = schema.lockingKeys();
         try
         {
-            long indexId = schemaRead.indexGetCommittedId( index );
+            locks.acquireShared( transaction.lockTracer(), keyType, lockingKeys );
+            long indexId = index.getId();
             IndexProxy proxy = indexingService.getIndexProxy( indexId );
 
             // Release the LABEL WRITE lock during index population.
@@ -149,11 +150,6 @@ public class ConstraintIndexCreator
             log.info( "Constraint %s verified.", constraint.ownedIndexSchema() );
             success = true;
             return index;
-        }
-        catch ( SchemaKernelException e )
-        {
-            throw new IllegalStateException(
-                    String.format( "Index (%s) that we just created does not exist.", schema ), e );
         }
         catch ( IndexNotFoundKernelException e )
         {

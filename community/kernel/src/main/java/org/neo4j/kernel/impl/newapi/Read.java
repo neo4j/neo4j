@@ -44,6 +44,7 @@ import org.neo4j.internal.kernel.api.security.AccessMode;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexOrder;
 import org.neo4j.internal.schema.SchemaDescriptor;
+import org.neo4j.internal.schema.SchemaDescriptorSupplier;
 import org.neo4j.kernel.api.AssertOpen;
 import org.neo4j.kernel.api.exceptions.schema.IndexBrokenKernelException;
 import org.neo4j.kernel.api.index.IndexProgressor;
@@ -569,10 +570,12 @@ abstract class Read implements TxStateHolder,
         ktx.assertOpen();
     }
 
-    void acquireSharedSchemaLock( SchemaDescriptor schema )
+    <T extends SchemaDescriptorSupplier> T acquireSharedSchemaLock( T schemaLike )
     {
+        SchemaDescriptor schema = schemaLike.schema();
         long[] lockingKeys = schema.lockingKeys();
         ktx.statementLocks().optimistic().acquireShared( ktx.lockTracer(), schema.keyType(), lockingKeys );
+        return schemaLike;
     }
 
     void acquireSharedLock( ResourceType resource, long resourceId )

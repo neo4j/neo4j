@@ -24,7 +24,6 @@ import java.util.function.Function;
 
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
-import org.neo4j.internal.kernel.api.exceptions.schema.SchemaKernelException;
 import org.neo4j.internal.schema.ConstraintDescriptor;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptor;
@@ -60,12 +59,6 @@ public interface SchemaRead extends SchemaReadCore
      * @return The index associated with the given name
      */
     IndexDescriptor indexGetForName( String name );
-
-    /**
-     * Get the index id (the id or the schema rule record) for a committed index
-     * - throws exception for indexes that aren't committed.
-     */
-    long indexGetCommittedId( IndexDescriptor index ) throws SchemaKernelException;
 
     /**
      * Computes the selectivity of the unique values.

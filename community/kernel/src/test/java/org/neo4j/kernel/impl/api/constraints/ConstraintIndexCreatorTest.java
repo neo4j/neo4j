@@ -112,7 +112,6 @@ class ConstraintIndexCreatorTest
 
         // then
         assertEquals( INDEX_ID, constraintIndex.getId() );
-        verify( schemaRead ).indexGetCommittedId( indexReference );
         verify( schemaRead ).index( descriptor );
         verifyNoMoreInteractions( schemaRead );
         verify( indexProxy ).awaitStoreScanCompleted( anyLong(), any() );
@@ -151,7 +150,6 @@ class ConstraintIndexCreatorTest
         KernelTransactionImplementation tx1 = kernel.transactions.get( 0 );
         SchemaDescriptor newIndex = index.schema();
         verify( tx1 ).indexUniqueCreate( eq( newIndex ), eq( getDefaultProvider() ) );
-        verify( schemaRead ).indexGetCommittedId( indexReference );
         verify( schemaRead, times( 2 ) ).index( descriptor );
         verifyNoMoreInteractions( schemaRead );
         KernelTransactionImplementation kti2 = kernel.transactions.get( 1 );
@@ -183,7 +181,6 @@ class ConstraintIndexCreatorTest
         StubKernel kernel = new StubKernel();
         IndexingService indexingService = mock( IndexingService.class );
 
-        when( schemaRead.indexGetCommittedId( indexReference ) ).thenReturn( INDEX_ID );
         IndexProxy indexProxy = mock( IndexProxy.class );
         when( indexingService.getIndexProxy( anyLong() ) ).thenReturn( indexProxy );
         when( indexingService.getIndexProxy( descriptor ) ).thenReturn( indexProxy );
@@ -213,7 +210,6 @@ class ConstraintIndexCreatorTest
 
         long orphanedConstraintIndexId = 111;
         IndexDescriptor indexReference = IndexPrototype.uniqueForSchema( descriptor ).materialise( orphanedConstraintIndexId );
-        when( schemaRead.indexGetCommittedId( indexReference ) ).thenReturn( orphanedConstraintIndexId );
         IndexProxy indexProxy = mock( IndexProxy.class );
         when( indexingService.getIndexProxy( orphanedConstraintIndexId ) ).thenReturn( indexProxy );
         when( schemaRead.index( descriptor ) ).thenReturn( indexReference );
@@ -229,7 +225,6 @@ class ConstraintIndexCreatorTest
         // then
         assertEquals( orphanedConstraintIndexId, constraintIndex.getId() );
         assertEquals( 0, kernel.transactions.size(), "There should have been no need to acquire a statement to create the constraint index" );
-        verify( schemaRead ).indexGetCommittedId( indexReference );
         verify( schemaRead ).index( descriptor );
         verify( schemaRead ).indexGetOwningUniquenessConstraintId( indexReference );
         verifyNoMoreInteractions( schemaRead );
@@ -245,7 +240,6 @@ class ConstraintIndexCreatorTest
 
         long constraintIndexId = 111;
         long constraintIndexOwnerId = 222;
-        when( schemaRead.indexGetCommittedId( indexReference ) ).thenReturn( constraintIndexId );
         IndexProxy indexProxy = mock( IndexProxy.class );
         when( indexingService.getIndexProxy( constraintIndexId ) ).thenReturn( indexProxy );
         when( schemaRead.index( descriptor ) ).thenReturn( indexReference );
@@ -278,7 +272,6 @@ class ConstraintIndexCreatorTest
         IndexingService indexingService = mock( IndexingService.class );
         StubKernel kernel = new StubKernel();
 
-        when( schemaRead.indexGetCommittedId( indexReference ) ).thenReturn( INDEX_ID );
         IndexProxy indexProxy = mock( IndexProxy.class );
         when( indexingService.getIndexProxy( INDEX_ID ) ).thenReturn( indexProxy );
         when( indexingService.getIndexProxy( descriptor ) ).thenReturn( indexProxy );
@@ -294,7 +287,6 @@ class ConstraintIndexCreatorTest
         KernelTransactionImplementation transactionInstance = kernel.transactions.get( 0 );
         verify( transactionInstance ).indexUniqueCreate( eq( descriptor ), eq( providerDescriptor.name() ) );
         verify( schemaRead ).index( descriptor );
-        verify( schemaRead ).indexGetCommittedId( any() );
         verifyNoMoreInteractions( schemaRead );
     }
 
@@ -351,14 +343,6 @@ class ConstraintIndexCreatorTest
     {
         SchemaRead schemaRead = mock( SchemaRead.class );
         when( schemaRead.index( descriptor ) ).thenReturn( IndexDescriptor.NO_INDEX );
-        try
-        {
-            when( schemaRead.indexGetCommittedId( indexReference ) ).thenReturn( INDEX_ID );
-        }
-        catch ( SchemaKernelException e )
-        {
-            throw new AssertionError( e );
-        }
         return schemaRead;
     }
 

@@ -132,7 +132,6 @@ class FulltextIndexProvider extends IndexProvider implements FulltextAdapter
     public IndexDescriptor completeConfiguration( IndexDescriptor index )
     {
         SchemaDescriptor schema = index.schema();
-        // TODO make the createIndex procedure verify that the created index types and providers make sense.
         IndexConfig indexConfig = schema.getIndexConfig();
         indexConfig = addMissingDefaultIndexConfig( indexConfig );
         schema = schema.withIndexConfig( indexConfig );
