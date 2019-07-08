@@ -21,17 +21,22 @@ package org.neo4j.internal.recordstorage;
 
 import org.junit.jupiter.api.Test;
 
+import java.util.ArrayList;
 import java.util.Collections;
+import java.util.List;
 import java.util.Set;
 
 import org.neo4j.internal.helpers.collection.Iterables;
 import org.neo4j.internal.helpers.collection.Iterators;
 import org.neo4j.internal.schema.ConstraintDescriptor;
 import org.neo4j.internal.schema.ConstraintDescriptor.Type;
+import org.neo4j.internal.schema.IndexCapability;
 import org.neo4j.internal.schema.IndexConfig;
 import org.neo4j.internal.schema.IndexConfigCompleter;
 import org.neo4j.internal.schema.IndexDescriptor;
+import org.neo4j.internal.schema.IndexOrder;
 import org.neo4j.internal.schema.IndexPrototype;
+import org.neo4j.internal.schema.IndexValueCapability;
 import org.neo4j.internal.schema.LabelSchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.internal.schema.SchemaRule;
@@ -39,6 +44,7 @@ import org.neo4j.internal.schema.constraints.ConstraintDescriptorFactory;
 import org.neo4j.storageengine.api.ConstraintRule;
 import org.neo4j.storageengine.api.StandardConstraintRuleAccessor;
 import org.neo4j.test.Race;
+import org.neo4j.values.storable.ValueCategory;
 
 import static java.util.Arrays.asList;
 import static java.util.Collections.singleton;
@@ -520,7 +526,48 @@ class SchemaCacheTest
         // then
         assertTrue( cache.getUniquenessConstraintsRelatedTo( entityTokens( 1 ), entityTokens(), properties( 5 ), true, NODE ).isEmpty() );
     }
-    // TODO add tests to verify that schema rules added to the cache are sent through the configuration completer
+
+    @Test
+    void shouldCompleteConfigurationOfIndexesAddedToCache()
+    {
+        IndexCapability capability = new IndexCapability()
+        {
+            @Override
+            public IndexOrder[] orderCapability( ValueCategory... valueCategories )
+            {
+                return new IndexOrder[0];
+            }
+
+            @Override
+            public IndexValueCapability valueCapability( ValueCategory... valueCategories )
+            {
+                return IndexValueCapability.NO;
+            }
+        };
+        ArrayList<IndexDescriptor> completed = new ArrayList<>();
+        IndexConfigCompleter completer = index ->
+        {
+            completed.add( index );
+            return index.withIndexCapability( capability );
+        };
+        SchemaCache cache = new SchemaCache( new ConstraintSemantics(), completer );
+
+        IndexDescriptor index1 = newIndexRule( 1, 2, 3 );
+        ConstraintRule constraint1 = uniquenessConstraintRule( 2, 2, 3, 1 );
+        IndexDescriptor index2 = newIndexRule( 3, 4, 5 );
+        ConstraintRule constraint2 = uniquenessConstraintRule( 4, 4, 5, 3 );
+        IndexDescriptor index3 = newIndexRule( 5, 5, 5 );
+
+        cache.load( asList( index1, constraint1 ) );
+        cache.addSchemaRule( index2 );
+        cache.addSchemaRule( constraint2 );
+        cache.addSchemaRule( index3 );
+
+        assertEquals( List.of( index1, index2, index3 ), completed );
+        assertEquals( capability, cache.indexDescriptor( index1.schema() ).getCapability() );
+        assertEquals( capability, cache.indexDescriptor( index2.schema() ).getCapability() );
+        assertEquals( capability, cache.indexDescriptor( index3.schema() ).getCapability() );
+    }
 
     // HELPERS
 
