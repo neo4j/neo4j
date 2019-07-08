@@ -157,20 +157,20 @@ case object MultiDatabaseManagementCommandPlanBuilder extends Phase[PlannerConte
           case (source, (roleName, segment)) => Some(plans.GrantTraverse(source, database, segment, roleName))
         }.map(plan => plans.LogSystemCommand(plan, prettifier.asString(c)))
 
-      // REVOKE TRAVERSE ON GRAPH foo ELEMENTS A (*) FROM role
-      case c@RevokePrivilege(TraversePrivilege(), _, database, segments, roleNames) =>
-        (for (roleName <- roleNames; segment <- segments.simplify) yield {
-          roleName -> segment
-        }).foldLeft(Option.empty[plans.RevokeTraverse]) {
-          case (source, (roleName, segment)) => Some(plans.RevokeTraverse(source, database, segment, roleName))
-        }.map(plan => plans.LogSystemCommand(plan, prettifier.asString(c)))
-
       // DENY TRAVERSE ON GRAPH foo ELEMENTS A (*) TO role
       case c@DenyPrivilege(TraversePrivilege(), _, database, segments, roleNames) =>
         (for (roleName <- roleNames; segment <- segments.simplify) yield {
           roleName -> segment
         }).foldLeft(Option.empty[plans.DenyTraverse]) {
           case (source, (roleName, segment)) => Some(plans.DenyTraverse(source, database, segment, roleName))
+        }.map(plan => plans.LogSystemCommand(plan, prettifier.asString(c)))
+
+      // REVOKE TRAVERSE ON GRAPH foo ELEMENTS A (*) FROM role
+      case c@RevokePrivilege(TraversePrivilege(), _, database, segments, roleNames) =>
+        (for (roleName <- roleNames; segment <- segments.simplify) yield {
+          roleName -> segment
+        }).foldLeft(Option.empty[plans.RevokeTraverse]) {
+          case (source, (roleName, segment)) => Some(plans.RevokeTraverse(source, database, segment, roleName))
         }.map(plan => plans.LogSystemCommand(plan, prettifier.asString(c)))
 
       // GRANT WRITE (*) ON GRAPH foo ELEMENTS * (*) TO role
@@ -181,20 +181,20 @@ case object MultiDatabaseManagementCommandPlanBuilder extends Phase[PlannerConte
           case (source, (roleName, segment)) => Some(plans.GrantWrite(source, AllResource()(InputPosition.NONE), database, segment, roleName))
         }.map(plan => plans.LogSystemCommand(plan, prettifier.asString(c)))
 
-      // REVOKE WRITE (*) ON GRAPH foo ELEMENTS * (*) FROM role
-      case c@RevokePrivilege(WritePrivilege(), _, database, segments, roleNames) =>
-        (for (roleName <- roleNames; segment <- segments.simplify) yield {
-          roleName -> segment
-        }).foldLeft(Option.empty[plans.RevokeWrite]) {
-          case (source, (roleName, segment)) => Some(plans.RevokeWrite(source, AllResource()(InputPosition.NONE), database, segment, roleName))
-        }.map(plan => plans.LogSystemCommand(plan, prettifier.asString(c)))
-
       // DENY WRITE (*) ON GRAPH foo ELEMENTS * (*) TO role
       case c@DenyPrivilege(WritePrivilege(), _, database, segments, roleNames) =>
         (for (roleName <- roleNames; segment <- segments.simplify) yield {
           roleName -> segment
         }).foldLeft(Option.empty[plans.DenyWrite]) {
           case (source, (roleName, segment)) => Some(plans.DenyWrite(source, AllResource()(InputPosition.NONE), database, segment, roleName))
+        }.map(plan => plans.LogSystemCommand(plan, prettifier.asString(c)))
+
+      // REVOKE WRITE (*) ON GRAPH foo ELEMENTS * (*) FROM role
+      case c@RevokePrivilege(WritePrivilege(), _, database, segments, roleNames) =>
+        (for (roleName <- roleNames; segment <- segments.simplify) yield {
+          roleName -> segment
+        }).foldLeft(Option.empty[plans.RevokeWrite]) {
+          case (source, (roleName, segment)) => Some(plans.RevokeWrite(source, AllResource()(InputPosition.NONE), database, segment, roleName))
         }.map(plan => plans.LogSystemCommand(plan, prettifier.asString(c)))
 
       // GRANT READ (prop) ON GRAPH foo ELEMENTS A (*) TO role
@@ -213,15 +213,6 @@ case object MultiDatabaseManagementCommandPlanBuilder extends Phase[PlannerConte
           case (source, (roleName, (segment, resource))) => Some(plans.GrantRead(source, resource, database, segment, roleName))
         }.map(plan => plans.LogSystemCommand(plan, prettifier.asString(c)))
 
-      // REVOKE READ (prop) ON GRAPH foo ELEMENTS A (*) FROM role
-      // REVOKE MATCH (prop) ON GRAPH foo ELEMENTS A (*) FROM role
-      case c@RevokePrivilege(_, resources, database, segments, roleNames) =>
-        (for (roleName <- roleNames; segment <- segments.simplify; resource <- resources.simplify) yield {
-          roleName -> (segment, resource)
-        }).foldLeft(Option.empty[plans.RevokeRead]) {
-          case (source, (roleName, (segment, resource))) => Some(plans.RevokeRead(source, resource, database, segment, roleName))
-        }.map(plan => plans.LogSystemCommand(plan, prettifier.asString(c)))
-
       // DENY READ (prop) ON GRAPH foo ELEMENTS A (*) TO role
       // DENY MATCH (prop) ON GRAPH foo ELEMENTS A (*) TO role
       case c@DenyPrivilege(privilege, resources, database, segments, roleNames) =>
@@ -236,6 +227,15 @@ case object MultiDatabaseManagementCommandPlanBuilder extends Phase[PlannerConte
         }
         combos.foldLeft(plan) {
           case (source, (roleName, (segment, resource))) => Some(plans.DenyRead(source, resource, database, segment, roleName))
+        }.map(plan => plans.LogSystemCommand(plan, prettifier.asString(c)))
+
+      // REVOKE READ (prop) ON GRAPH foo ELEMENTS A (*) FROM role
+      // REVOKE MATCH (prop) ON GRAPH foo ELEMENTS A (*) FROM role
+      case c@RevokePrivilege(_, resources, database, segments, roleNames) =>
+        (for (roleName <- roleNames; segment <- segments.simplify; resource <- resources.simplify) yield {
+          roleName -> (segment, resource)
+        }).foldLeft(Option.empty[plans.RevokeRead]) {
+          case (source, (roleName, (segment, resource))) => Some(plans.RevokeRead(source, resource, database, segment, roleName))
         }.map(plan => plans.LogSystemCommand(plan, prettifier.asString(c)))
 
       // SHOW [ALL | USER user | ROLE role] PRIVILEGES

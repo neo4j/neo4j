@@ -453,7 +453,7 @@ class PrettifierIT extends CypherFunSuite {
     ) ++ startTests("node") ++ startTests("relationship") ++ privilegeTests()
 
   def privilegeTests(): Seq[(String, String)] = {
-    Seq(("GRANT", "TO"), ("REVOKE", "FROM"), ("DENY", "TO")) flatMap {
+    Seq(("GRANT", "TO"), ("DENY", "TO"), ("REVOKE", "FROM")) flatMap {
       case (action, preposition) =>
         Seq(
           s"$action traverse on graph * $preposition role" ->

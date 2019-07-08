@@ -31,9 +31,9 @@ class DDLParserTestBase
   def grant(p: PrivilegeType, a: ActionResource, s: GraphScope, q: PrivilegeQualifier, r: Seq[String]): InputPosition => ast.Statement =
     ast.GrantPrivilege(p, a, s, q, r)
 
-  def revoke(p: PrivilegeType, a: ActionResource, s: GraphScope, q: PrivilegeQualifier, r: Seq[String]): InputPosition => ast.Statement =
-    ast.RevokePrivilege(p, a, s, q, r)
-
   def deny(p: PrivilegeType, a: ActionResource, s: GraphScope, q: PrivilegeQualifier, r: Seq[String]): InputPosition => ast.Statement =
     ast.DenyPrivilege(p, a, s, q, r)
+
+  def revoke(p: PrivilegeType, a: ActionResource, s: GraphScope, q: PrivilegeQualifier, r: Seq[String]): InputPosition => ast.Statement =
+    ast.RevokePrivilege(p, a, s, q, r)
 }

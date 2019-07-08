@@ -77,16 +77,16 @@ case class CopyRolePrivileges(source: Option[SecurityManagementLogicalPlan], to:
 
 abstract class PrivilegePlan()(implicit idGen: IdGen) extends SecurityManagementLogicalPlan
 case class GrantTraverse(source: Option[PrivilegePlan], database: GraphScope, qualifier: PrivilegeQualifier, roleName: String)(implicit idGen: IdGen) extends PrivilegePlan
-case class RevokeTraverse(source: Option[PrivilegePlan], database: GraphScope, qualifier: PrivilegeQualifier, roleName: String)(implicit idGen: IdGen) extends PrivilegePlan
 case class DenyTraverse(source: Option[PrivilegePlan], database: GraphScope, qualifier: PrivilegeQualifier, roleName: String)(implicit idGen: IdGen) extends PrivilegePlan
+case class RevokeTraverse(source: Option[PrivilegePlan], database: GraphScope, qualifier: PrivilegeQualifier, roleName: String)(implicit idGen: IdGen) extends PrivilegePlan
 
 case class GrantRead(source: Option[PrivilegePlan], resource: ActionResource, database: GraphScope, qualifier: PrivilegeQualifier, roleName: String)(implicit idGen: IdGen) extends PrivilegePlan
-case class RevokeRead(source: Option[PrivilegePlan], resource: ActionResource, database: GraphScope, qualifier: PrivilegeQualifier, roleName: String)(implicit idGen: IdGen) extends PrivilegePlan
 case class DenyRead(source: Option[PrivilegePlan], resource: ActionResource, database: GraphScope, qualifier: PrivilegeQualifier, roleName: String)(implicit idGen: IdGen) extends PrivilegePlan
+case class RevokeRead(source: Option[PrivilegePlan], resource: ActionResource, database: GraphScope, qualifier: PrivilegeQualifier, roleName: String)(implicit idGen: IdGen) extends PrivilegePlan
 
 case class GrantWrite(source: Option[PrivilegePlan], resource: ActionResource, database: GraphScope, qualifier: PrivilegeQualifier, roleName: String)(implicit idGen: IdGen) extends PrivilegePlan
-case class RevokeWrite(source: Option[PrivilegePlan], resource: ActionResource, database: GraphScope, qualifier: PrivilegeQualifier, roleName: String)(implicit idGen: IdGen) extends PrivilegePlan
 case class DenyWrite(source: Option[PrivilegePlan], resource: ActionResource, database: GraphScope, qualifier: PrivilegeQualifier, roleName: String)(implicit idGen: IdGen) extends PrivilegePlan
+case class RevokeWrite(source: Option[PrivilegePlan], resource: ActionResource, database: GraphScope, qualifier: PrivilegeQualifier, roleName: String)(implicit idGen: IdGen) extends PrivilegePlan
 
 case class ShowPrivileges(scope: ShowPrivilegeScope)(implicit idGen: IdGen) extends SecurityManagementLogicalPlan
 

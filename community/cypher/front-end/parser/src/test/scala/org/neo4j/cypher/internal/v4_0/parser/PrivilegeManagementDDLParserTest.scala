@@ -94,8 +94,8 @@ class PrivilegeManagementDDLParserTest extends DDLParserTestBase {
 
   Seq(
     ("GRANT", "TO", grant: privilegeFunc),
-    ("REVOKE", "FROM", revoke: privilegeFunc),
-    ("DENY", "TO", deny: privilegeFunc)
+    ("DENY", "TO", deny: privilegeFunc),
+    ("REVOKE", "FROM", revoke: privilegeFunc)
   ).foreach {
     case (command: String, preposition: String, func: privilegeFunc) =>
 
@@ -439,11 +439,11 @@ class PrivilegeManagementDDLParserTest extends DDLParserTestBase {
 
   Seq(
     (ast.ReadPrivilege()(pos), "GRANT", "TO", grant: privilegeFunc),
-    (ast.ReadPrivilege()(pos), "REVOKE", "FROM", revoke: privilegeFunc),
     (ast.ReadPrivilege()(pos), "DENY", "TO", deny: privilegeFunc),
+    (ast.ReadPrivilege()(pos), "REVOKE", "FROM", revoke: privilegeFunc),
     (ast.MatchPrivilege()(pos), "GRANT", "TO", grant: privilegeFunc),
-    (ast.MatchPrivilege()(pos), "REVOKE", "FROM", revoke: privilegeFunc),
-    (ast.MatchPrivilege()(pos), "DENY", "TO", deny: privilegeFunc)
+    (ast.MatchPrivilege()(pos), "DENY", "TO", deny: privilegeFunc),
+    (ast.MatchPrivilege()(pos), "REVOKE", "FROM", revoke: privilegeFunc)
   ).foreach {
     case (privilege: ast.PrivilegeType, command: String, preposition: String, func: privilegeFunc) =>
 

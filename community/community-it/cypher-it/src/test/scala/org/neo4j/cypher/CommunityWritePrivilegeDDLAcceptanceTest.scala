@@ -31,19 +31,19 @@ class CommunityWritePrivilegeDDLAcceptanceTest extends CommunityDDLAcceptanceTes
     assertFailure("GRANT WRITE (*) ON GRAPH * ELEMENTS * (*) TO custom", "Unsupported management command: GRANT WRITE (*) ON GRAPH * ELEMENTS * (*) TO custom")
   }
 
-  test("should fail on revoking write privileges from community") {
-    // GIVEN
-    selectDatabase(SYSTEM_DATABASE_NAME)
-
-    // THEN
-    assertFailure("REVOKE WRITE (*) ON GRAPH * ELEMENTS * (*) FROM custom", "Unsupported management command: REVOKE WRITE (*) ON GRAPH * ELEMENTS * (*) FROM custom")
-  }
-
   test("should fail on denying write privileges from community") {
     // GIVEN
     selectDatabase(SYSTEM_DATABASE_NAME)
 
     // THEN
     assertFailure("DENY WRITE (*) ON GRAPH * ELEMENTS * (*) TO custom", "Unsupported management command: DENY WRITE (*) ON GRAPH * ELEMENTS * (*) TO custom")
+  }
+
+  test("should fail on revoking write privileges from community") {
+    // GIVEN
+    selectDatabase(SYSTEM_DATABASE_NAME)
+
+    // THEN
+    assertFailure("REVOKE WRITE (*) ON GRAPH * ELEMENTS * (*) FROM custom", "Unsupported management command: REVOKE WRITE (*) ON GRAPH * ELEMENTS * (*) FROM custom")
   }
 }

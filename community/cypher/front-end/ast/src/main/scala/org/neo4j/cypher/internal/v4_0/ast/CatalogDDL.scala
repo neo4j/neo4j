@@ -227,17 +227,6 @@ object GrantPrivilege {
     GrantPrivilege(WritePrivilege()(InputPosition.NONE), resource, scope, qualifier, roleNames)
 }
 
-object RevokePrivilege {
-  def traverse(scope: GraphScope, qualifier: PrivilegeQualifier, roleNames: Seq[String]): InputPosition => RevokePrivilege =
-    RevokePrivilege(TraversePrivilege()(InputPosition.NONE), AllResource()(InputPosition.NONE), scope, qualifier, roleNames)
-  def read(resource: ActionResource, scope: GraphScope, qualifier: PrivilegeQualifier, roleNames: Seq[String]): InputPosition => RevokePrivilege =
-    RevokePrivilege(ReadPrivilege()(InputPosition.NONE), resource, scope, qualifier, roleNames)
-  def asMatch(resource: ActionResource, scope: GraphScope, qualifier: PrivilegeQualifier, roleNames: Seq[String]): InputPosition => RevokePrivilege =
-    RevokePrivilege(MatchPrivilege()(InputPosition.NONE), resource, scope, qualifier, roleNames)
-  def write(resource: ActionResource, scope: GraphScope, qualifier: PrivilegeQualifier, roleNames: Seq[String]): InputPosition => RevokePrivilege =
-    RevokePrivilege(WritePrivilege()(InputPosition.NONE), resource, scope, qualifier, roleNames)
-}
-
 object DenyPrivilege {
   def traverse(scope: GraphScope, qualifier: PrivilegeQualifier, roleNames: Seq[String]): InputPosition => DenyPrivilege =
     DenyPrivilege(TraversePrivilege()(InputPosition.NONE), AllResource()(InputPosition.NONE), scope, qualifier, roleNames)
@@ -247,6 +236,17 @@ object DenyPrivilege {
     DenyPrivilege(MatchPrivilege()(InputPosition.NONE), resource, scope, qualifier, roleNames)
   def write(resource: ActionResource, scope: GraphScope, qualifier: PrivilegeQualifier, roleNames: Seq[String]): InputPosition => DenyPrivilege =
     DenyPrivilege(WritePrivilege()(InputPosition.NONE), resource, scope, qualifier, roleNames)
+}
+
+object RevokePrivilege {
+  def traverse(scope: GraphScope, qualifier: PrivilegeQualifier, roleNames: Seq[String]): InputPosition => RevokePrivilege =
+    RevokePrivilege(TraversePrivilege()(InputPosition.NONE), AllResource()(InputPosition.NONE), scope, qualifier, roleNames)
+  def read(resource: ActionResource, scope: GraphScope, qualifier: PrivilegeQualifier, roleNames: Seq[String]): InputPosition => RevokePrivilege =
+    RevokePrivilege(ReadPrivilege()(InputPosition.NONE), resource, scope, qualifier, roleNames)
+  def asMatch(resource: ActionResource, scope: GraphScope, qualifier: PrivilegeQualifier, roleNames: Seq[String]): InputPosition => RevokePrivilege =
+    RevokePrivilege(MatchPrivilege()(InputPosition.NONE), resource, scope, qualifier, roleNames)
+  def write(resource: ActionResource, scope: GraphScope, qualifier: PrivilegeQualifier, roleNames: Seq[String]): InputPosition => RevokePrivilege =
+    RevokePrivilege(WritePrivilege()(InputPosition.NONE), resource, scope, qualifier, roleNames)
 }
 
 final case class GrantPrivilege(privilege: PrivilegeType, resource: ActionResource, scope: GraphScope, qualifier: PrivilegeQualifier, roleNames: Seq[String])
@@ -259,20 +259,20 @@ final case class GrantPrivilege(privilege: PrivilegeType, resource: ActionResour
       SemanticState.recordCurrentScope(this)
 }
 
-final case class RevokePrivilege(privilege: PrivilegeType, resource: ActionResource, scope: GraphScope, qualifier: PrivilegeQualifier, roleNames: Seq[String])
-                               (val position: InputPosition) extends MultiDatabaseDDL {
+final case class DenyPrivilege(privilege: PrivilegeType, resource: ActionResource, scope: GraphScope, qualifier: PrivilegeQualifier, roleNames: Seq[String])
+                                (val position: InputPosition) extends MultiDatabaseDDL {
 
-  override def name = s"REVOKE ${privilege.name}"
+  override def name = s"DENY ${privilege.name}"
 
   override def semanticCheck: SemanticCheck =
     super.semanticCheck chain
       SemanticState.recordCurrentScope(this)
 }
 
-final case class DenyPrivilege(privilege: PrivilegeType, resource: ActionResource, scope: GraphScope, qualifier: PrivilegeQualifier, roleNames: Seq[String])
-                                (val position: InputPosition) extends MultiDatabaseDDL {
+final case class RevokePrivilege(privilege: PrivilegeType, resource: ActionResource, scope: GraphScope, qualifier: PrivilegeQualifier, roleNames: Seq[String])
+                               (val position: InputPosition) extends MultiDatabaseDDL {
 
-  override def name = s"DENY ${privilege.name}"
+  override def name = s"REVOKE ${privilege.name}"
 
   override def semanticCheck: SemanticCheck =
     super.semanticCheck chain
