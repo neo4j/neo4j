@@ -142,10 +142,6 @@ public class DefaultPropertyCursor extends TraceableCursor implements PropertyCu
     boolean allowed()
     {
         int propertyKey = propertyKey();
-        if ( !accessMode.allowsPropertyReads( propertyKey ) )
-        {
-            return false;
-        }
         if ( isNode() )
         {
             return accessMode.allowsReadNodeProperty( this, propertyKey );

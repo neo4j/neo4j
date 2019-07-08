@@ -145,15 +145,6 @@ abstract class Read implements TxStateHolder,
         SchemaDescriptor schema = index.schema();
         int[] propertyIds = schema.getPropertyIds();
 
-        // old property blacklisting
-        for ( int prop : propertyIds )
-        {
-            if ( !accessMode.allowsPropertyReads( prop ) )
-            {
-                return new NodeLabelSecurityFilter( propertyIds, cursor, cursors.allocateNodeCursor(), this, AccessMode.Static.NONE );
-            }
-        }
-
         boolean allowsForAllLabels = true;
         for ( int prop : propertyIds )
         {
