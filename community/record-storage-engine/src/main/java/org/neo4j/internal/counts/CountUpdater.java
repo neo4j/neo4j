@@ -56,8 +56,14 @@ class CountUpdater implements CountsAccessor.Updater
     @Override
     public void close()
     {
-        writer.close();
-        lock.unlock();
+        try
+        {
+            writer.close();
+        }
+        finally
+        {
+            lock.unlock();
+        }
     }
 
     public interface CountWriter extends AutoCloseable

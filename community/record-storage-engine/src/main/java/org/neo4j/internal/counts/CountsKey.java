@@ -64,10 +64,10 @@ public class CountsKey
     private static final byte TYPE_RELATIONSHIP = 2;
 
     // Commonly used keys
-    static final CountsKey MIN_COUNT = new CountsKey().initialize( TYPE_NODE, Long.MIN_VALUE, Integer.MIN_VALUE );
-    static final CountsKey MAX_COUNT = new CountsKey().initialize( TYPE_RELATIONSHIP, Long.MAX_VALUE, Integer.MAX_VALUE );
-    static final CountsKey MIN_STRAY_TX_ID = new CountsKey().initializeStrayTxId( Long.MIN_VALUE );
-    static final CountsKey MAX_STRAY_TX_ID = new CountsKey().initializeStrayTxId( Long.MAX_VALUE );
+    static final CountsKey MIN_COUNT = new CountsKey( TYPE_NODE, Long.MIN_VALUE, Integer.MIN_VALUE );
+    static final CountsKey MAX_COUNT = new CountsKey( TYPE_RELATIONSHIP, Long.MAX_VALUE, Integer.MAX_VALUE );
+    static final CountsKey MIN_STRAY_TX_ID = strayTxId( Long.MIN_VALUE );
+    static final CountsKey MAX_STRAY_TX_ID = strayTxId( Long.MAX_VALUE );
 
     /**
      * Type of key, as defined by "TYPE_" constants in this class.
@@ -85,27 +85,20 @@ public class CountsKey
      */
     int second;
 
-    private CountsKey initialize( byte type, long keyFirst, int keySecond )
+    CountsKey()
+    {
+    }
+
+    CountsKey( byte type, long keyFirst, int keySecond )
+    {
+        initialize( type, keyFirst, keySecond );
+    }
+
+    void initialize( byte type, long keyFirst, int keySecond )
     {
         this.type = type;
         this.first = keyFirst;
         this.second = keySecond;
-        return this;
-    }
-
-    private CountsKey initializeNode( long labelId )
-    {
-        return initialize( TYPE_NODE, labelId, 0 );
-    }
-
-    private CountsKey initializeRelationship( long startLabelId, long typeId, long endLabelId )
-    {
-        return initialize( TYPE_RELATIONSHIP, (startLabelId << Integer.SIZE) | (typeId & 0xFFFFFFFFL), (int) endLabelId );
-    }
-
-    CountsKey initializeStrayTxId( long txId )
-    {
-        return initialize( TYPE_STRAY_TX_ID, txId, 0 );
     }
 
     /**
@@ -115,7 +108,7 @@ public class CountsKey
      */
     public static CountsKey nodeKey( long labelId )
     {
-        return new CountsKey().initializeNode( labelId );
+        return new CountsKey( TYPE_NODE, labelId, 0 );
     }
 
     /**
@@ -127,7 +120,12 @@ public class CountsKey
      */
     public static CountsKey relationshipKey( long startLabelId, long typeId, long endLabelId )
     {
-        return new CountsKey().initializeRelationship( startLabelId, typeId, endLabelId );
+        return new CountsKey( TYPE_RELATIONSHIP, (startLabelId << Integer.SIZE) | (typeId & 0xFFFFFFFFL), (int) endLabelId );
+    }
+
+    static CountsKey strayTxId( long txId )
+    {
+        return new CountsKey( TYPE_STRAY_TX_ID, txId, 0 );
     }
 
     // Implements hashCode/equals so that these instances can be keys in a map

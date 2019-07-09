@@ -57,6 +57,7 @@ import static org.neo4j.internal.counts.CountsKey.MAX_STRAY_TX_ID;
 import static org.neo4j.internal.counts.CountsKey.MIN_STRAY_TX_ID;
 import static org.neo4j.internal.counts.CountsKey.nodeKey;
 import static org.neo4j.internal.counts.CountsKey.relationshipKey;
+import static org.neo4j.internal.counts.CountsKey.strayTxId;
 import static org.neo4j.internal.counts.TreeWriter.merge;
 import static org.neo4j.io.IOUtils.closeAllUnchecked;
 import static org.neo4j.storageengine.api.TransactionIdStore.BASE_TX_ID;
@@ -192,16 +193,16 @@ public class GBPTreeCountsStore implements CountsStore
             // otherwise an applying transaction after we've released the lock below but before writing the changes to the tree
             // could load old counts into the new changes cache and therefore corrupt the counts store.
             ConcurrentHashMap<CountsKey,AtomicLong> changesToWrite = changes;
-            changes = new ConcurrentHashMap<>();
             writeCountsChanges( changesToWrite );
+            changes = new ConcurrentHashMap<>();
         }
         finally
         {
             writeLock.unlock();
         }
 
-        // Now write the transaction information to the tree
-        writeTxIdInformationToTree( txIdSnapshot );
+        // Now update the transaction information in the tree
+        updateTxIdInformationInTree( txIdSnapshot );
 
         // Good, check-point all these changes
         tree.checkpoint( ioLimiter, new CountsHeader( txIdSnapshot.highestGapFree()[0] ) );
@@ -223,7 +224,7 @@ public class GBPTreeCountsStore implements CountsStore
         }
     }
 
-    private void writeTxIdInformationToTree( OutOfOrderSequence.Snapshot txIdSnapshot ) throws IOException
+    private void updateTxIdInformationInTree( OutOfOrderSequence.Snapshot txIdSnapshot ) throws IOException
     {
         PrimitiveLongArrayQueue strayIds = new PrimitiveLongArrayQueue();
         visitStrayTxIdsInTree( strayIds::enqueue );
@@ -231,12 +232,11 @@ public class GBPTreeCountsStore implements CountsStore
         try ( Writer<CountsKey,CountsValue> writer = tree.writer() )
         {
             // First clear all the stray ids from the previous checkpoint
-            CountsKey key = new CountsKey();
             CountsValue value = new CountsValue();
             while ( !strayIds.isEmpty() )
             {
                 long strayTxId = strayIds.dequeue();
-                writer.remove( key.initializeStrayTxId( strayTxId ) );
+                writer.remove( strayTxId( strayTxId ) );
             }
 
             // And write all stray txIds into the tree
@@ -245,7 +245,7 @@ public class GBPTreeCountsStore implements CountsStore
             for ( long[] strayTxId : strayTxIds )
             {
                 long txId = strayTxId[0];
-                writer.put( key.initializeStrayTxId( txId ), value );
+                writer.put( strayTxId( txId ), value );
             }
         }
     }

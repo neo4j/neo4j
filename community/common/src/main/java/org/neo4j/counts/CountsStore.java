@@ -21,10 +21,6 @@ package org.neo4j.counts;
 
 import java.io.IOException;
 
-import org.neo4j.kernel.lifecycle.LifeSupport;
-import org.neo4j.kernel.lifecycle.Lifecycle;
-import org.neo4j.kernel.lifecycle.LifecycleAdapter;
-
 /**
  * Store and accessor of entity counts. Counts changes revolves around one or a combination of multiple tokens and are applied as deltas.
  * This makes it necessary to tie all changes to transaction ids so that this store can tell whether or not to re-apply any given
@@ -50,31 +46,4 @@ public interface CountsStore extends CountsAccessor, AutoCloseable
      * @throws IOException any type of error happening when transitioning to started state.
      */
     void start() throws IOException;
-
-    /**
-     * Makes a counts store play nice with {@link LifeSupport}. Calls:
-     * <ul>
-     *     <li>{@link #start()} in {@link Lifecycle#start()}</li>
-     *     <li>{@link #close()} in {@link Lifecycle#shutdown()}</li>
-     * </ul>
-     * @param countsStore {@link CountsStore} to wrap in a {@link Lifecycle}.
-     * @return Lifecycle with the wrapped {@link CountsStore} inside of it.
-     */
-    static Lifecycle wrapInLifecycle( CountsStore countsStore )
-    {
-        return new LifecycleAdapter()
-        {
-            @Override
-            public void start() throws IOException
-            {
-                countsStore.start();
-            }
-
-            @Override
-            public void shutdown()
-            {
-                countsStore.close();
-            }
-        };
-    }
 }

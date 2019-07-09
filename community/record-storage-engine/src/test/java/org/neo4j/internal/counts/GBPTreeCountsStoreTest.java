@@ -445,6 +445,34 @@ class GBPTreeCountsStoreTest
     }
 
     @Test
+    void shouldNotSeeOutdatedCountsOnCheckpoint() throws Throwable
+    {
+        // given
+        try ( CountsAccessor.Updater updater = countsStore.apply( BASE_TX_ID + 1 ) )
+        {
+            updater.incrementNodeCount( LABEL_ID_1, 10 );
+            updater.incrementRelationshipCount( LABEL_ID_1, RELATIONSHIP_TYPE_ID_1, LABEL_ID_2, 3 );
+            updater.incrementRelationshipCount( LABEL_ID_1, RELATIONSHIP_TYPE_ID_2, LABEL_ID_2, 7 );
+        }
+
+        // when
+        Race race = new Race();
+        race.addContestant( throwing( () ->
+        {
+            countsStore.checkpoint( UNLIMITED );
+        } ), 1 );
+        race.addContestants( 10, throwing( () ->
+        {
+            assertEquals( 10, countsStore.nodeCount( LABEL_ID_1 ) );
+            assertEquals( 3, countsStore.relationshipCount( LABEL_ID_1, RELATIONSHIP_TYPE_ID_1, LABEL_ID_2 ) );
+            assertEquals( 7, countsStore.relationshipCount( LABEL_ID_1, RELATIONSHIP_TYPE_ID_2, LABEL_ID_2 ) );
+        } ), 1 );
+
+        // then
+        race.go();
+    }
+
+    @Test
     void shouldNotCreateFileOnDumpingNonExistentCountsStore()
     {
         // given

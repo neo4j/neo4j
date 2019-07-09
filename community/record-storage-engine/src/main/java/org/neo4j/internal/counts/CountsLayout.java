@@ -38,9 +38,7 @@ class CountsLayout extends Layout.Adapter<CountsKey,CountsValue>
     @Override
     public CountsKey copyKey( CountsKey key, CountsKey into )
     {
-        into.type = key.type;
-        into.first = key.first;
-        into.second = key.second;
+        into.initialize( key.type, key.first, key.second );
         return into;
     }
 
@@ -79,15 +77,16 @@ class CountsLayout extends Layout.Adapter<CountsKey,CountsValue>
     @Override
     public void readKey( PageCursor cursor, CountsKey into, int keySize )
     {
-        into.type = cursor.getByte();
-        into.first = cursor.getLong();
-        into.second = cursor.getInt();
+        byte type = cursor.getByte();
+        long first = cursor.getLong();
+        int second = cursor.getInt();
+        into.initialize( type, first, second );
     }
 
     @Override
     public void readValue( PageCursor cursor, CountsValue into, int valueSize )
     {
-        into.count = cursor.getLong();
+        into.initialize( cursor.getLong() );
     }
 
     @Override
@@ -103,6 +102,6 @@ class CountsLayout extends Layout.Adapter<CountsKey,CountsValue>
         {
             return keyFirstCompare;
         }
-        return Long.compare( o1.second, o2.second );
+        return Integer.compare( o1.second, o2.second );
     }
 }
