@@ -20,6 +20,8 @@
 package org.neo4j.bolt.v4.messaging;
 
 import org.neo4j.bolt.messaging.BoltIOException;
+import org.neo4j.bolt.runtime.Bookmark;
+import org.neo4j.bolt.v4.runtime.bookmarking.BookmarkWithDatabaseId;
 import org.neo4j.values.virtual.MapValue;
 
 import static org.neo4j.bolt.v4.messaging.MessageMetadataParser.ABSENT_DB_NAME;
@@ -39,6 +41,12 @@ public class BeginMessage extends org.neo4j.bolt.v3.messaging.request.BeginMessa
     {
         super( meta );
         this.databaseName = parseDatabaseName( meta );
+    }
+
+    @Override
+    protected Bookmark parseBookmark( MapValue meta ) throws BoltIOException
+    {
+        return BookmarkWithDatabaseId.fromParamsOrNull( meta );
     }
 
     public String databaseName()

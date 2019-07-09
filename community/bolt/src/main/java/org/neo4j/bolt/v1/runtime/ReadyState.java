@@ -23,6 +23,7 @@ import org.neo4j.bolt.messaging.RequestMessage;
 import org.neo4j.bolt.runtime.BoltConnectionFatality;
 import org.neo4j.bolt.runtime.BoltResult;
 import org.neo4j.bolt.runtime.BoltStateMachineState;
+import org.neo4j.bolt.runtime.Bookmark;
 import org.neo4j.bolt.runtime.StateMachineContext;
 import org.neo4j.bolt.runtime.StatementMetadata;
 import org.neo4j.bolt.runtime.StatementProcessor;
@@ -32,7 +33,7 @@ import org.neo4j.bolt.v1.messaging.request.InterruptSignal;
 import org.neo4j.bolt.v1.messaging.request.PullAllMessage;
 import org.neo4j.bolt.v1.messaging.request.ResetMessage;
 import org.neo4j.bolt.v1.messaging.request.RunMessage;
-import org.neo4j.bolt.v1.runtime.bookmarking.Bookmark;
+import org.neo4j.bolt.v1.runtime.bookmarking.BookmarkWithPrefix;
 import org.neo4j.bolt.v1.runtime.spi.BookmarkResult;
 import org.neo4j.bolt.v4.messaging.ResultConsumer;
 import org.neo4j.graphdb.security.AuthorizationExpiredException;
@@ -138,7 +139,7 @@ public class ReadyState implements BoltStateMachineState
         StatementMetadata statementMetadata = StatementMetadata.EMPTY;
         if ( isBegin( message ) )
         {
-            Bookmark bookmark = Bookmark.fromParamsOrNull( message.params() );
+            BookmarkWithPrefix bookmark = BookmarkWithPrefix.fromParamsOrNull( message.params() );
             statementProcessor.beginTransaction( bookmark );
             txBeginCommitRollbackResponse = BoltResult.EMPTY;
         }

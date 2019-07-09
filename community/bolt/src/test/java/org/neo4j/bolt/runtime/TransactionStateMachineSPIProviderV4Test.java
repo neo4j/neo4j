@@ -33,6 +33,7 @@ import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.dbms.api.DatabaseNotFoundException;
 import org.neo4j.kernel.GraphDatabaseQueryService;
 import org.neo4j.kernel.api.exceptions.Status;
+import org.neo4j.kernel.database.Database;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.time.SystemNanoClock;
 
@@ -94,7 +95,7 @@ class TransactionStateMachineSPIProviderV4Test
         when( managementService.database( databaseName ) ).thenReturn( databaseFacade );
         when( databaseFacade.getDependencyResolver() ).thenReturn( dependencyResolver );
         when( dependencyResolver.resolveDependency( GraphDatabaseQueryService.class ) ).thenReturn( queryService );
-
+        when( dependencyResolver.resolveDependency( Database.class ) ).thenReturn( mock( Database.class ) );
         when( queryService.getDependencyResolver() ).thenReturn( dependencyResolver );
 
         return managementService;

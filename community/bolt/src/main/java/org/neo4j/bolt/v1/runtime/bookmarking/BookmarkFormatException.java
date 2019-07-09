@@ -22,7 +22,7 @@ package org.neo4j.bolt.v1.runtime.bookmarking;
 import org.neo4j.bolt.messaging.BoltIOException;
 import org.neo4j.kernel.api.exceptions.Status;
 
-import static org.neo4j.bolt.v1.runtime.bookmarking.Bookmark.BOOKMARK_TX_PREFIX;
+import static org.neo4j.bolt.v1.runtime.bookmarking.BookmarkWithPrefix.BOOKMARK_TX_PREFIX;
 
 class BookmarkFormatException extends BoltIOException
 {

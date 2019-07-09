@@ -34,7 +34,7 @@ import org.neo4j.bolt.runtime.StatementProcessorProvider;
 import org.neo4j.bolt.runtime.TransactionStateMachineSPIProvider;
 import org.neo4j.bolt.security.auth.AuthenticationResult;
 import org.neo4j.bolt.v1.runtime.StatementProcessorReleaseManager;
-import org.neo4j.bolt.v1.runtime.TransactionStateMachine;
+import org.neo4j.bolt.runtime.TransactionStateMachine;
 
 import static java.lang.String.format;
 import static org.neo4j.bolt.runtime.StatementProcessor.EMPTY;

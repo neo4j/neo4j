@@ -20,6 +20,8 @@
 package org.neo4j.bolt.v4.messaging;
 
 import org.neo4j.bolt.messaging.BoltIOException;
+import org.neo4j.bolt.runtime.Bookmark;
+import org.neo4j.bolt.v4.runtime.bookmarking.BookmarkWithDatabaseId;
 import org.neo4j.values.virtual.MapValue;
 import org.neo4j.values.virtual.VirtualValues;
 
@@ -43,6 +45,12 @@ public class RunMessage extends org.neo4j.bolt.v3.messaging.request.RunMessage
     {
         super( statement, params, meta );
         databaseName = parseDatabaseName( meta );
+    }
+
+    @Override
+    protected Bookmark parseBookmark( MapValue meta ) throws BoltIOException
+    {
+        return BookmarkWithDatabaseId.fromParamsOrNull( meta );
     }
 
     public String databaseName()

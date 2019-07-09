@@ -34,17 +34,17 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-class BookmarkTest
+class BookmarkWithPrefixTest
 {
     @Test
     void shouldFormatAndParseSingleBookmarkContainingTransactionId() throws Exception
     {
         // given
         long txId = 1234;
-        MapValue params = singletonMap( "bookmark", new Bookmark( txId ).toString() );
+        MapValue params = singletonMap( "bookmark", new BookmarkWithPrefix( txId ).toString() );
 
         // when
-        Bookmark bookmark = Bookmark.fromParamsOrNull( params );
+        BookmarkWithPrefix bookmark = BookmarkWithPrefix.fromParamsOrNull( params );
 
         // then
         assertEquals( txId, bookmark.txId() );
@@ -57,11 +57,11 @@ class BookmarkTest
         long txId1 = 1234;
         long txId2 = 12345;
         MapValue params = singletonMap( "bookmarks",
-                asList( new Bookmark( txId1 ).toString(), new Bookmark( txId2 ).toString() )
+                asList( new BookmarkWithPrefix( txId1 ).toString(), new BookmarkWithPrefix( txId2 ).toString() )
         );
 
         // when
-        Bookmark bookmark = Bookmark.fromParamsOrNull( params );
+        BookmarkWithPrefix bookmark = BookmarkWithPrefix.fromParamsOrNull( params );
 
         // then
         assertEquals( txId2, bookmark.txId() );
@@ -75,7 +75,7 @@ class BookmarkTest
         MapValue params = singletonMap( "bookmark", expected );
 
         // when
-        String actual = new Bookmark( Bookmark.fromParamsOrNull( params ).txId() ).toString();
+        String actual = new BookmarkWithPrefix( BookmarkWithPrefix.fromParamsOrNull( params ).txId() ).toString();
 
         // then
         assertEquals( expected, actual );
@@ -90,7 +90,7 @@ class BookmarkTest
         MapValue params = singletonMap( "bookmarks", asList( txId1, txId2 ) );
 
         // when
-        String actual = new Bookmark( Bookmark.fromParamsOrNull( params ).txId() ).toString();
+        String actual = new BookmarkWithPrefix( BookmarkWithPrefix.fromParamsOrNull( params ).txId() ).toString();
 
         // then
         assertEquals( txId2, actual );
@@ -102,7 +102,7 @@ class BookmarkTest
         String bookmarkString = "neo4q:markbook:v9:xt998";
 
         BookmarkFormatException e = assertThrows( BookmarkFormatException.class,
-                () -> Bookmark.fromParamsOrNull( singletonMap( "bookmark", bookmarkString ) ) );
+                () -> BookmarkWithPrefix.fromParamsOrNull( singletonMap( "bookmark", bookmarkString ) ) );
 
         assertTrue( e.causesFailureMessage() );
     }
@@ -114,7 +114,7 @@ class BookmarkTest
         String wrongBookmarkString = "neo4q:markbook:v9:xt998";
 
         BookmarkFormatException e = assertThrows( BookmarkFormatException.class,
-                () -> Bookmark.fromParamsOrNull( singletonMap( "bookmarks", asList( bookmarkString, wrongBookmarkString ) ) ) );
+                () -> BookmarkWithPrefix.fromParamsOrNull( singletonMap( "bookmarks", asList( bookmarkString, wrongBookmarkString ) ) ) );
 
         assertTrue( e.causesFailureMessage() );
     }
@@ -125,7 +125,7 @@ class BookmarkTest
         String bookmarkString = "neo4j:bookmark:v1:tx";
 
         BookmarkFormatException e = assertThrows( BookmarkFormatException.class,
-                () -> Bookmark.fromParamsOrNull( singletonMap( "bookmark", bookmarkString ) ) );
+                () -> BookmarkWithPrefix.fromParamsOrNull( singletonMap( "bookmark", bookmarkString ) ) );
 
         assertTrue( e.causesFailureMessage() );
     }
@@ -137,7 +137,7 @@ class BookmarkTest
         String wrongBookmarkString = "neo4j:bookmark:v1:tx";
 
         BookmarkFormatException e = assertThrows( BookmarkFormatException.class,
-                () -> Bookmark.fromParamsOrNull( singletonMap( "bookmarks", asList( bookmarkString, wrongBookmarkString ) ) ) );
+                () -> BookmarkWithPrefix.fromParamsOrNull( singletonMap( "bookmarks", asList( bookmarkString, wrongBookmarkString ) ) ) );
 
         assertTrue( e.causesFailureMessage() );
     }
@@ -148,7 +148,7 @@ class BookmarkTest
         String bookmarkString = "neo4j:bookmark:v1:tx1234supercalifragilisticexpialidocious";
 
         BookmarkFormatException e = assertThrows( BookmarkFormatException.class,
-                () -> Bookmark.fromParamsOrNull( singletonMap( "bookmark", bookmarkString ) ) );
+                () -> BookmarkWithPrefix.fromParamsOrNull( singletonMap( "bookmark", bookmarkString ) ) );
 
         assertTrue( e.causesFailureMessage() );
     }
@@ -160,7 +160,7 @@ class BookmarkTest
         String wrongBookmarkString = "neo4j:bookmark:v1:tx1234supercalifragilisticexpialidocious";
 
         BookmarkFormatException e = assertThrows( BookmarkFormatException.class,
-                () -> Bookmark.fromParamsOrNull( singletonMap( "bookmarks", asList( bookmarkString, wrongBookmarkString ) ) ) );
+                () -> BookmarkWithPrefix.fromParamsOrNull( singletonMap( "bookmarks", asList( bookmarkString, wrongBookmarkString ) ) ) );
 
         assertTrue( e.causesFailureMessage() );
     }
@@ -172,7 +172,7 @@ class BookmarkTest
                 "neo4j:bookmark:v1:tx42",
                 asList( "neo4j:bookmark:v1:tx10", "neo4j:bookmark:v1:tx99", "neo4j:bookmark:v1:tx3" ) );
 
-        Bookmark bookmark = Bookmark.fromParamsOrNull( params );
+        BookmarkWithPrefix bookmark = BookmarkWithPrefix.fromParamsOrNull( params );
 
         assertEquals( 99, bookmark.txId() );
     }
@@ -183,7 +183,7 @@ class BookmarkTest
         MapValue params = params( null, asList( "neo4j:bookmark:v1:tx85", "neo4j:bookmark:v1:tx47",
                 "neo4j:bookmark:v1:tx15", "neo4j:bookmark:v1:tx6" ) );
 
-        Bookmark bookmark = Bookmark.fromParamsOrNull( params );
+        BookmarkWithPrefix bookmark = BookmarkWithPrefix.fromParamsOrNull( params );
 
         assertEquals( 85, bookmark.txId() );
     }
@@ -193,7 +193,7 @@ class BookmarkTest
     {
         MapValue params = params( "neo4j:bookmark:v1:tx82", null );
 
-        Bookmark bookmark = Bookmark.fromParamsOrNull( params );
+        BookmarkWithPrefix bookmark = BookmarkWithPrefix.fromParamsOrNull( params );
 
         assertEquals( 82, bookmark.txId() );
     }
@@ -203,7 +203,7 @@ class BookmarkTest
     {
         MapValue params = params( "neo4j:bookmark:v1:tx58", null );
 
-        Bookmark bookmark = Bookmark.fromParamsOrNull( params );
+        BookmarkWithPrefix bookmark = BookmarkWithPrefix.fromParamsOrNull( params );
 
         assertEquals( 58, bookmark.txId() );
     }
@@ -213,7 +213,7 @@ class BookmarkTest
     {
         MapValue params = params( "neo4j:bookmark:v1:tx67", emptyList() );
 
-        Bookmark bookmark = Bookmark.fromParamsOrNull( params );
+        BookmarkWithPrefix bookmark = BookmarkWithPrefix.fromParamsOrNull( params );
 
         assertEquals( 67, bookmark.txId() );
     }
@@ -223,7 +223,7 @@ class BookmarkTest
     {
         MapValue params = params( "neo4j:bookmark:v1:tx67", new String[]{"neo4j:bookmark:v1:tx68"} );
 
-        BookmarkFormatException e = assertThrows( BookmarkFormatException.class, () -> Bookmark.fromParamsOrNull( params ) );
+        BookmarkFormatException e = assertThrows( BookmarkFormatException.class, () -> BookmarkWithPrefix.fromParamsOrNull( params ) );
 
         assertTrue( e.causesFailureMessage() );
     }
@@ -235,7 +235,7 @@ class BookmarkTest
                 "neo4j:bookmark:v1:tx67",
                 asList( new String[]{"neo4j:bookmark:v1:tx50"}, new Object[]{"neo4j:bookmark:v1:tx89"} ) );
 
-        BookmarkFormatException e = assertThrows( BookmarkFormatException.class, () -> Bookmark.fromParamsOrNull( params ) );
+        BookmarkFormatException e = assertThrows( BookmarkFormatException.class, () -> BookmarkWithPrefix.fromParamsOrNull( params ) );
 
         assertTrue( e.causesFailureMessage() );
     }
@@ -247,7 +247,7 @@ class BookmarkTest
                 "neo4j:bookmark:v1:tx67",
                 asList( "neo4j:bookmark:v1:tx99", "neo4j:bookmark:v1:tx12", "neo4j:bookmark:www:tx99" ) );
 
-        BookmarkFormatException e = assertThrows( BookmarkFormatException.class, () -> Bookmark.fromParamsOrNull( params ) );
+        BookmarkFormatException e = assertThrows( BookmarkFormatException.class, () -> BookmarkWithPrefix.fromParamsOrNull( params ) );
 
         assertTrue( e.causesFailureMessage() );
     }
@@ -257,7 +257,7 @@ class BookmarkTest
     {
         MapValue params = params( "neo4j:strange-bookmark:v1:tx6", null );
 
-        BookmarkFormatException e = assertThrows( BookmarkFormatException.class, () -> Bookmark.fromParamsOrNull( params ) );
+        BookmarkFormatException e = assertThrows( BookmarkFormatException.class, () -> BookmarkWithPrefix.fromParamsOrNull( params ) );
 
         assertTrue( e.causesFailureMessage() );
     }
@@ -265,14 +265,14 @@ class BookmarkTest
     @Test
     void shouldReturnNullWhenNoBookmarks() throws Exception
     {
-        assertNull( Bookmark.fromParamsOrNull( VirtualValues.EMPTY_MAP ) );
+        assertNull( BookmarkWithPrefix.fromParamsOrNull( VirtualValues.EMPTY_MAP ) );
     }
 
     @Test
     void shouldReturnNullWhenGivenEmptyListForMultipleBookmarks() throws Exception
     {
         MapValue params = params( null, emptyList() );
-        assertNull( Bookmark.fromParamsOrNull( params ) );
+        assertNull( BookmarkWithPrefix.fromParamsOrNull( params ) );
     }
 
     @Test
@@ -281,7 +281,7 @@ class BookmarkTest
         MapValue params = params( null,
                 asList( "neo4j:bookmark:v1:tx3", "neo4j:bookmark:v1:tx5", null, "neo4j:bookmark:v1:tx17" ) );
 
-        Bookmark bookmark = Bookmark.fromParamsOrNull( params );
+        BookmarkWithPrefix bookmark = BookmarkWithPrefix.fromParamsOrNull( params );
 
         assertEquals( 17, bookmark.txId() );
     }

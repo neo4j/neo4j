@@ -37,55 +37,49 @@ import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.txtracking.TransactionIdTracker;
 import org.neo4j.kernel.availability.AvailabilityGuard;
 import org.neo4j.kernel.availability.DatabaseAvailabilityGuard;
-import org.neo4j.kernel.availability.UnavailableException;
+import org.neo4j.kernel.database.Database;
+import org.neo4j.kernel.database.DatabaseId;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
-import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.kernel.impl.query.Neo4jTransactionalContextFactory;
 import org.neo4j.kernel.impl.query.QueryExecutionEngine;
 import org.neo4j.kernel.impl.query.TransactionalContextFactory;
+import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.storageengine.api.TransactionIdStore;
 import org.neo4j.time.SystemNanoClock;
-
-import static java.lang.String.format;
 
 public class BoltKernelGraphDatabaseServiceProvider implements BoltGraphDatabaseServiceSPI
 {
     private final TransactionIdTracker transactionIdTracker;
-    private final GraphDatabaseFacade databaseFacade;
+    private final GraphDatabaseAPI databaseFacade;
     private final QueryExecutionEngine queryExecutionEngine;
     private final ThreadToStatementContextBridge txBridge;
     private final TransactionalContextFactory transactionalContextFactory;
-    private final String databaseName;
+    private final DatabaseId databaseId;
 
-    public BoltKernelGraphDatabaseServiceProvider( GraphDatabaseFacade facade, SystemNanoClock clock, String databaseName ) throws UnavailableException
+    public BoltKernelGraphDatabaseServiceProvider( GraphDatabaseAPI facade, SystemNanoClock clock )
     {
         this.databaseFacade = facade;
-        this.databaseName = databaseName;
-        if ( !databaseFacade.isAvailable( 0 ) )
-        {
-            throw new UnavailableException( format( "Database `%s` is unavailable.", databaseName ) );
-        }
-
         this.txBridge = resolveDependency( facade, ThreadToStatementContextBridge.class );
         this.queryExecutionEngine = resolveDependency( facade, QueryExecutionEngine.class );
         this.transactionIdTracker = newTransactionIdTracker( facade, clock );
         this.transactionalContextFactory = newTransactionalContextFactory( facade );
+        this.databaseId = resolveDependency( facade, Database.class ).getDatabaseId();
     }
 
-    private static <T> T resolveDependency( GraphDatabaseFacade databaseContext, Class<T> clazz )
+    private static <T> T resolveDependency( GraphDatabaseAPI databaseContext, Class<T> clazz )
     {
         return databaseContext.getDependencyResolver().resolveDependency( clazz );
     }
 
-    private static TransactionIdTracker newTransactionIdTracker( GraphDatabaseFacade databaseContext, SystemNanoClock clock )
+    private static TransactionIdTracker newTransactionIdTracker( GraphDatabaseAPI databaseContext, SystemNanoClock clock )
     {
         Supplier<TransactionIdStore> transactionIdStoreSupplier = databaseContext.getDependencyResolver().provideDependency( TransactionIdStore.class );
         AvailabilityGuard guard = resolveDependency( databaseContext, DatabaseAvailabilityGuard.class );
         return new TransactionIdTracker( transactionIdStoreSupplier, guard, clock );
     }
 
-    private static TransactionalContextFactory newTransactionalContextFactory( GraphDatabaseFacade databaseContext )
+    private static TransactionalContextFactory newTransactionalContextFactory( GraphDatabaseAPI databaseContext )
     {
         GraphDatabaseQueryService queryService = resolveDependency( databaseContext, GraphDatabaseQueryService.class );
         return Neo4jTransactionalContextFactory.create( queryService );
@@ -131,9 +125,9 @@ public class BoltKernelGraphDatabaseServiceProvider implements BoltGraphDatabase
     }
 
     @Override
-    public String getDatabaseName()
+    public DatabaseId getDatabaseId()
     {
-        return databaseName;
+        return databaseId;
     }
 
     private InternalTransaction beginInternalTransaction( KernelTransaction.Type type, LoginContext loginContext, ClientConnectionInfo clientInfo,

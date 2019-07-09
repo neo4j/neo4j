@@ -29,10 +29,12 @@ import org.neo4j.bolt.dbapi.BoltGraphDatabaseServiceSPI;
 import org.neo4j.bolt.dbapi.BoltQueryExecution;
 import org.neo4j.bolt.dbapi.BoltQueryExecutor;
 import org.neo4j.bolt.dbapi.BoltTransaction;
+import org.neo4j.bolt.runtime.Bookmark;
 import org.neo4j.bolt.runtime.AccessMode;
 import org.neo4j.bolt.runtime.BoltResult;
 import org.neo4j.bolt.runtime.BoltResultHandle;
 import org.neo4j.bolt.runtime.TransactionStateMachineSPI;
+import org.neo4j.bolt.v1.runtime.bookmarking.BookmarkWithPrefix;
 import org.neo4j.cypher.CypherExecutionException;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.graphdb.QueryStatistics;
@@ -67,13 +69,19 @@ public class TransactionStateMachineV1SPI implements TransactionStateMachineSPI
     }
 
     @Override
-    public void awaitUpToDate( long oldestAcceptableTxId ) throws TransactionFailureException
+    public void awaitUpToDate( Bookmark bookmark ) throws TransactionFailureException
     {
-        boltGraphDatabaseServiceSPI.awaitUpToDate( oldestAcceptableTxId, txAwaitDuration );
+        boltGraphDatabaseServiceSPI.awaitUpToDate( bookmark.txId(), txAwaitDuration );
     }
 
     @Override
-    public long newestEncounteredTxId()
+    public Bookmark newestBookmark()
+    {
+        var txId = boltGraphDatabaseServiceSPI.newestEncounteredTxId();
+        return new BookmarkWithPrefix( txId );
+    }
+
+    protected long newestEncounteredTxId()
     {
         return boltGraphDatabaseServiceSPI.newestEncounteredTxId();
     }

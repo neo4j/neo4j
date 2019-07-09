@@ -61,7 +61,7 @@ public class RunMessageDecoder implements RequestMessageDecoder
         return newRunMessage( statement, params, meta );
     }
 
-    protected RunMessage newRunMessage( String statement, MapValue params, MapValue meta ) throws BoltIOException
+    protected RequestMessage newRunMessage( String statement, MapValue params, MapValue meta ) throws BoltIOException
     {
         return new RunMessage( statement, params, meta );
     }

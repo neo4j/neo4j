@@ -41,7 +41,11 @@ import org.neo4j.bolt.v3.messaging.request.RollbackMessage;
 import org.neo4j.bolt.v4.messaging.BeginMessage;
 import org.neo4j.bolt.v4.messaging.PullMessage;
 import org.neo4j.bolt.v4.messaging.RunMessage;
+import org.neo4j.bolt.v4.runtime.bookmarking.BookmarkWithDatabaseId;
 import org.neo4j.internal.helpers.HostnamePort;
+import org.neo4j.kernel.database.Database;
+import org.neo4j.kernel.internal.GraphDatabaseAPI;
+import org.neo4j.storageengine.api.TransactionIdStore;
 import org.neo4j.values.virtual.VirtualValues;
 
 import static java.util.Arrays.asList;
@@ -101,6 +105,42 @@ public class BoltV4TransportIT
         {
             connection.disconnect();
         }
+    }
+
+    @Test
+    public void shouldReturnUpdatedBookmarkAfterAutoCommitTransaction() throws Throwable
+    {
+        negotiateBoltV4();
+
+        // bookmark is expected to advance once the auto-commit transaction is committed
+        var lastClosedTransactionId = getLastClosedTransactionId();
+        var expectedBookmark = new BookmarkWithDatabaseId( getDatabaseId(), lastClosedTransactionId + 1 ).toString();
+
+        connection.send( util.chunk( new RunMessage( "CREATE ()" ), new PullMessage( asMapValue( map( "n", -1L ) ) ) ) );
+
+        assertThat( connection, util.eventuallyReceives(
+                msgSuccess(),
+                msgSuccess( allOf( hasEntry( "bookmark", expectedBookmark ) ) ) ) );
+    }
+
+    @Test
+    public void shouldReturnUpdatedBookmarkAfterExplicitTransaction() throws Throwable
+    {
+        negotiateBoltV4();
+
+        // bookmark is expected to advance once the auto-commit transaction is committed
+        var lastClosedTransactionId = getLastClosedTransactionId();
+        var expectedBookmark = new BookmarkWithDatabaseId( getDatabaseId(), lastClosedTransactionId + 1 ).toString();
+
+        connection.send( util.chunk( new BeginMessage( VirtualValues.EMPTY_MAP ) ) );
+        assertThat( connection, util.eventuallyReceives( msgSuccess() ) );
+
+        connection.send( util.chunk( new RunMessage( "CREATE ()" ), new PullMessage( asMapValue( map( "n", -1L ) ) ) ) );
+
+        assertThat( connection, util.eventuallyReceives( msgSuccess(), msgSuccess( allOf( not( hasEntry( "bookmark", expectedBookmark ) ) ) ) ) );
+
+        connection.send( util.chunk( CommitMessage.COMMIT_MESSAGE ) );
+        assertThat( connection, util.eventuallyReceives( msgSuccess( allOf( hasEntry( "bookmark", expectedBookmark ) ) ) ) );
     }
 
     @Test
@@ -246,5 +286,19 @@ public class BoltV4TransportIT
 
         connection.send( util.chunk( new HelloMessage( map( "user_agent", USER_AGENT ) ) ) );
         assertThat( connection, util.eventuallyReceives( msgSuccess() ) );
+    }
+
+    private long getLastClosedTransactionId()
+    {
+        var resolver = ((GraphDatabaseAPI) server.graphDatabaseService()).getDependencyResolver();
+        var txIdStore = resolver.resolveDependency( TransactionIdStore.class );
+        return txIdStore.getLastClosedTransactionId();
+    }
+
+    private String getDatabaseId()
+    {
+        var resolver = ((GraphDatabaseAPI) server.graphDatabaseService()).getDependencyResolver();
+        var database = resolver.resolveDependency( Database.class );
+        return database.getDatabaseId().name();
     }
 }

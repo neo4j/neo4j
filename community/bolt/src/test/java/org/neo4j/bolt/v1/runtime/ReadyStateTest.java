@@ -45,7 +45,7 @@ import org.neo4j.bolt.v1.messaging.request.InterruptSignal;
 import org.neo4j.bolt.v1.messaging.request.PullAllMessage;
 import org.neo4j.bolt.v1.messaging.request.ResetMessage;
 import org.neo4j.bolt.v1.messaging.request.RunMessage;
-import org.neo4j.bolt.v1.runtime.bookmarking.Bookmark;
+import org.neo4j.bolt.v1.runtime.bookmarking.BookmarkWithPrefix;
 import org.neo4j.bolt.v1.runtime.spi.BookmarkResult;
 import org.neo4j.graphdb.security.AuthorizationExpiredException;
 
@@ -203,7 +203,7 @@ class ReadyStateTest
 
         BoltStateMachineState newState = state.process( new RunMessage( "BEGIN", asMapValue( params ) ), context );
         assertEquals( state, newState );
-        verify( statementProcessor ).beginTransaction( new Bookmark( 15 ) );
+        verify( statementProcessor ).beginTransaction( new BookmarkWithPrefix( 15 ) );
     }
 
     @Test
@@ -214,7 +214,7 @@ class ReadyStateTest
 
         BoltStateMachineState newState = state.process( new RunMessage( "BEGIN", asMapValue( params ) ), context );
         assertEquals( state, newState );
-        verify( statementProcessor ).beginTransaction( new Bookmark( 92 ) );
+        verify( statementProcessor ).beginTransaction( new BookmarkWithPrefix( 92 ) );
     }
 
     @ParameterizedTest

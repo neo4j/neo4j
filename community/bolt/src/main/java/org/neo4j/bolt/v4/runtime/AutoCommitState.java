@@ -20,8 +20,8 @@
 package org.neo4j.bolt.v4.runtime;
 
 import org.neo4j.bolt.runtime.BoltStateMachineState;
+import org.neo4j.bolt.runtime.Bookmark;
 import org.neo4j.bolt.runtime.StateMachineContext;
-import org.neo4j.bolt.v1.runtime.bookmarking.Bookmark;
 import org.neo4j.bolt.v4.messaging.ResultConsumer;
 
 /**

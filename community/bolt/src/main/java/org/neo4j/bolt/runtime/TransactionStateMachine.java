@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.bolt.v1.runtime;
+package org.neo4j.bolt.runtime;
 
 import java.time.Clock;
 import java.time.Duration;
@@ -27,16 +27,7 @@ import java.util.Optional;
 
 import org.neo4j.bolt.dbapi.BoltQueryExecutor;
 import org.neo4j.bolt.dbapi.BoltTransaction;
-import org.neo4j.bolt.runtime.AccessMode;
-import org.neo4j.bolt.runtime.AutoCommitStatementMetadata;
-import org.neo4j.bolt.runtime.BoltResult;
-import org.neo4j.bolt.runtime.BoltResultHandle;
-import org.neo4j.bolt.runtime.ExplicitTxStatementMetadata;
-import org.neo4j.bolt.runtime.StatementMetadata;
-import org.neo4j.bolt.runtime.StatementProcessor;
-import org.neo4j.bolt.runtime.TransactionStateMachineSPI;
 import org.neo4j.bolt.security.auth.AuthenticationResult;
-import org.neo4j.bolt.v1.runtime.bookmarking.Bookmark;
 import org.neo4j.bolt.v4.messaging.ResultConsumer;
 import org.neo4j.cypher.InvalidSemanticsException;
 import org.neo4j.exceptions.KernelException;
@@ -46,7 +37,7 @@ import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.impl.query.QueryExecutionKernelException;
 import org.neo4j.values.virtual.MapValue;
 
-import static org.neo4j.bolt.v1.runtime.bookmarking.Bookmark.EMPTY_BOOKMARK;
+import static org.neo4j.bolt.runtime.Bookmark.EMPTY_BOOKMARK;
 import static org.neo4j.util.Preconditions.checkState;
 
 public class TransactionStateMachine implements StatementProcessor
@@ -61,11 +52,6 @@ public class TransactionStateMachine implements StatementProcessor
         this.spi = spi;
         ctx = new MutableTransactionState( authenticationResult, clock );
         this.databaseName = databaseName;
-    }
-
-    public State state()
-    {
-        return state;
     }
 
     private void before()
@@ -624,14 +610,13 @@ public class TransactionStateMachine implements StatementProcessor
     {
         if ( bookmark != null )
         {
-            spi.awaitUpToDate( bookmark.txId() );
+            spi.awaitUpToDate( bookmark );
         }
     }
 
     private static Bookmark newestBookmark( TransactionStateMachineSPI spi )
     {
-        long txId = spi.newestEncounteredTxId();
-        return new Bookmark( txId );
+        return spi.newestBookmark();
     }
 
     static class MutableTransactionState

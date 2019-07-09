@@ -17,24 +17,31 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.bolt.v4.messaging;
+package org.neo4j.bolt.runtime;
 
-import org.neo4j.bolt.messaging.BoltIOException;
-import org.neo4j.bolt.messaging.RequestMessage;
-import org.neo4j.bolt.runtime.BoltResponseHandler;
-import org.neo4j.values.virtual.MapValue;
-
-public class RunMessageDecoder extends org.neo4j.bolt.v3.messaging.decoder.RunMessageDecoder
+public interface Bookmark
 {
-    public RunMessageDecoder( BoltResponseHandler responseHandler )
+    long txId();
+
+    default String databaseId()
     {
-        super( responseHandler );
+        throw new UnsupportedOperationException( "Unable to get database id." );
     }
 
-    @Override
-    protected RequestMessage newRunMessage( String statement, MapValue params, MapValue meta ) throws BoltIOException
+    void attachTo( BoltResponseHandler state );
+
+    Bookmark EMPTY_BOOKMARK = new Bookmark()
     {
-        return new RunMessage( statement, params, meta ); // v4 RUN message
-    }
+        @Override
+        public long txId()
+        {
+            throw new UnsupportedOperationException( "Unable to get transaction id." );
+        }
+
+        @Override
+        public void attachTo( BoltResponseHandler state )
+        {
+            // doing nothing
+        }
+    };
 }
-

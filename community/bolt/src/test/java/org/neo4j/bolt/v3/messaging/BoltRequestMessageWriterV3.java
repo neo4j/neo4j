@@ -108,7 +108,6 @@ public class BoltRequestMessageWriterV3 extends BoltRequestMessageWriter
         {
             throw new UncheckedIOException( e );
         }
-
     }
 
     private void writeSignatureOnlyMessage( byte signature )

@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.bolt.v1.runtime;
+package org.neo4j.bolt.runtime;
 
 import org.junit.Test;
 
@@ -27,14 +27,7 @@ import java.util.List;
 
 import org.neo4j.bolt.BoltChannel;
 import org.neo4j.bolt.messaging.RequestMessage;
-import org.neo4j.bolt.runtime.BoltConnectionAuthFatality;
-import org.neo4j.bolt.runtime.BoltConnectionFatality;
-import org.neo4j.bolt.runtime.BoltResponseHandler;
-import org.neo4j.bolt.runtime.BoltResult;
-import org.neo4j.bolt.runtime.BoltStateMachine;
-import org.neo4j.bolt.runtime.Neo4jError;
-import org.neo4j.bolt.runtime.StatementMetadata;
-import org.neo4j.bolt.runtime.TransactionStateMachineSPI;
+import org.neo4j.bolt.runtime.TransactionStateMachine.StatementOutcome;
 import org.neo4j.bolt.testing.BoltResponseRecorder;
 import org.neo4j.bolt.v1.messaging.request.AckFailureMessage;
 import org.neo4j.bolt.v1.messaging.request.DiscardAllMessage;
@@ -42,7 +35,11 @@ import org.neo4j.bolt.v1.messaging.request.InitMessage;
 import org.neo4j.bolt.v1.messaging.request.PullAllMessage;
 import org.neo4j.bolt.v1.messaging.request.ResetMessage;
 import org.neo4j.bolt.v1.messaging.request.RunMessage;
-import org.neo4j.bolt.v1.runtime.TransactionStateMachine.StatementOutcome;
+import org.neo4j.bolt.v1.runtime.BoltStateMachineV1;
+import org.neo4j.bolt.v1.runtime.BoltStateMachineV1SPI;
+import org.neo4j.bolt.v1.runtime.ConnectedState;
+import org.neo4j.bolt.v1.runtime.FailedState;
+import org.neo4j.bolt.v1.runtime.ReadyState;
 import org.neo4j.function.ThrowingBiConsumer;
 import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.graphdb.security.AuthorizationExpiredException;

@@ -23,10 +23,11 @@ import java.time.Duration;
 import java.util.Map;
 import java.util.Objects;
 
+import org.neo4j.bolt.runtime.Bookmark;
 import org.neo4j.bolt.messaging.BoltIOException;
 import org.neo4j.bolt.messaging.RequestMessage;
 import org.neo4j.bolt.runtime.AccessMode;
-import org.neo4j.bolt.v1.runtime.bookmarking.Bookmark;
+import org.neo4j.bolt.v1.runtime.bookmarking.BookmarkWithPrefix;
 import org.neo4j.values.virtual.MapValue;
 import org.neo4j.values.virtual.VirtualValues;
 
@@ -51,10 +52,15 @@ public abstract class TransactionInitiatingMessage implements RequestMessage
     public TransactionInitiatingMessage( MapValue meta ) throws BoltIOException
     {
         this.meta = requireNonNull( meta );
-        this.bookmark = Bookmark.fromParamsOrNull( meta );
+        this.bookmark = parseBookmark( meta );
         this.txTimeout = parseTransactionTimeout( meta );
         this.accessMode = parseAccessMode( meta );
         this.txMetadata = parseTransactionMetadata( meta );
+    }
+
+    protected Bookmark parseBookmark( MapValue meta ) throws BoltIOException
+    {
+        return BookmarkWithPrefix.fromParamsOrNull( meta );
     }
 
     public Bookmark bookmark()

@@ -30,9 +30,9 @@ import org.neo4j.values.virtual.MapValue;
 
 public interface TransactionStateMachineSPI
 {
-    void awaitUpToDate( long oldestAcceptableTxId ) throws TransactionFailureException;
+    void awaitUpToDate( Bookmark bookmark ) throws TransactionFailureException;
 
-    long newestEncounteredTxId();
+    Bookmark newestBookmark();
 
     BoltTransaction beginTransaction( LoginContext loginContext, Duration txTimeout, AccessMode accessMode, Map<String,Object> txMetaData );
 

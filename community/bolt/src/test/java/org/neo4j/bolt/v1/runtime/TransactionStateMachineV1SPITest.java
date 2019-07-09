@@ -29,17 +29,21 @@ import java.util.concurrent.Future;
 import java.util.function.Supplier;
 
 import org.neo4j.bolt.BoltChannel;
+import org.neo4j.bolt.dbapi.BoltGraphDatabaseServiceSPI;
 import org.neo4j.bolt.dbapi.impl.BoltKernelGraphDatabaseServiceProvider;
+import org.neo4j.bolt.runtime.Bookmark;
+import org.neo4j.bolt.v1.runtime.bookmarking.BookmarkWithPrefix;
 import org.neo4j.collection.Dependencies;
 import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.GraphDatabaseQueryService;
 import org.neo4j.kernel.availability.CompositeDatabaseAvailabilityGuard;
 import org.neo4j.kernel.availability.DatabaseAvailabilityGuard;
+import org.neo4j.kernel.database.Database;
 import org.neo4j.kernel.database.DatabaseId;
 import org.neo4j.kernel.database.TestDatabaseIdRepository;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
-import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.kernel.impl.query.QueryExecutionEngine;
+import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.logging.NullLog;
 import org.neo4j.storageengine.api.TransactionIdStore;
 import org.neo4j.test.rule.OtherThreadRule;
@@ -48,12 +52,16 @@ import org.neo4j.time.FakeClock;
 import org.neo4j.time.SystemNanoClock;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
+import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThat;
 import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 public class TransactionStateMachineV1SPITest
@@ -88,7 +96,7 @@ public class TransactionStateMachineV1SPITest
 
         Future<Void> result = otherThread.execute( state ->
         {
-            txSpi.awaitUpToDate( lastClosedTransactionId + 42 );
+            txSpi.awaitUpToDate( new BookmarkWithPrefix( lastClosedTransactionId + 42 ) );
             return null;
         } );
 
@@ -113,11 +121,50 @@ public class TransactionStateMachineV1SPITest
 
         Future<Void> result = otherThread.execute( state ->
         {
-            txSpi.awaitUpToDate( lastClosedTransactionId - 42 );
+            txSpi.awaitUpToDate( new BookmarkWithPrefix( lastClosedTransactionId - 42 ) );
             return null;
         } );
 
         assertNull( result.get( 20, SECONDS ) );
+    }
+
+    @Test
+    public void shouldNotCheckDatabaseIdInBookmark() throws Throwable
+    {
+        // Given
+        var dbSpi = mock( BoltGraphDatabaseServiceSPI.class );
+        var txDuration = Duration.ofMinutes( 10 );
+        var spi = new TransactionStateMachineV1SPI( dbSpi, mock( BoltChannel.class ), txDuration, mock( SystemNanoClock.class ),
+                mock( StatementProcessorReleaseManager.class ) );
+        var bookmark = mock( Bookmark.class );
+        when( bookmark.txId() ).thenReturn( 42L );
+
+        // When
+        spi.awaitUpToDate( bookmark );
+
+        // Then
+        verify( bookmark ).txId();
+        verify( bookmark, never() ).databaseId();
+        verify( dbSpi ).awaitUpToDate( eq( 42L ), eq( txDuration ) );
+    }
+
+    @Test
+    public void shouldReturnBookmarkWithPrefix() throws Throwable
+    {
+        // Given
+        var dbSpi = mock( BoltGraphDatabaseServiceSPI.class );
+        when( dbSpi.newestEncounteredTxId() ).thenReturn( 42L );
+        var txDuration = Duration.ofMinutes( 10 );
+        var spi = new TransactionStateMachineV1SPI( dbSpi, mock( BoltChannel.class ), txDuration, mock( SystemNanoClock.class ),
+                mock( StatementProcessorReleaseManager.class ) );
+
+        // When
+        var bookmark = spi.newestBookmark();
+
+        // Then
+        verify( dbSpi ).newestEncounteredTxId();
+        assertThat( bookmark, instanceOf( BookmarkWithPrefix.class ) );
+        assertThat( bookmark.txId(), equalTo( 42L ) );
     }
 
     private static TransactionIdStore fixedTxIdStore( long lastClosedTransactionId )
@@ -142,26 +189,27 @@ public class TransactionStateMachineV1SPITest
     private static TransactionStateMachineV1SPI createTxSpi( Supplier<TransactionIdStore> txIdStore, Duration txAwaitDuration,
             DatabaseAvailabilityGuard availabilityGuard, SystemNanoClock clock ) throws Exception
     {
-        QueryExecutionEngine queryExecutionEngine = mock( QueryExecutionEngine.class );
+        var queryExecutionEngine = mock( QueryExecutionEngine.class );
 
-        Dependencies dependencyResolver = mock( Dependencies.class );
-        ThreadToStatementContextBridge bridge = new ThreadToStatementContextBridge();
+        var dependencyResolver = mock( Dependencies.class );
+        var bridge = new ThreadToStatementContextBridge();
         when( dependencyResolver.resolveDependency( ThreadToStatementContextBridge.class ) ).thenReturn( bridge );
         when( dependencyResolver.resolveDependency( QueryExecutionEngine.class ) ).thenReturn( queryExecutionEngine );
         when( dependencyResolver.resolveDependency( DatabaseAvailabilityGuard.class ) ).thenReturn( availabilityGuard );
         when( dependencyResolver.provideDependency( TransactionIdStore.class ) ).thenReturn( txIdStore );
+        when( dependencyResolver.resolveDependency( Database.class ) ).thenReturn( mock( Database.class ) );
 
-        GraphDatabaseFacade facade = mock( GraphDatabaseFacade.class );
+        var facade = mock( GraphDatabaseAPI.class );
         when( facade.getDependencyResolver() ).thenReturn( dependencyResolver );
         when( facade.isAvailable( anyLong() ) ).thenReturn( true );
 
-        GraphDatabaseQueryService queryService = mock( GraphDatabaseQueryService.class );
+        var queryService = mock( GraphDatabaseQueryService.class );
         when( queryService.getDependencyResolver() ).thenReturn( dependencyResolver );
         when( dependencyResolver.resolveDependency( GraphDatabaseQueryService.class ) ).thenReturn( queryService );
 
-        BoltChannel boltChannel = new BoltChannel( "bolt-42", "bolt", new EmbeddedChannel() );
+        var boltChannel = new BoltChannel( "bolt-42", "bolt", new EmbeddedChannel() );
 
-        BoltKernelGraphDatabaseServiceProvider databaseServiceProvider = new BoltKernelGraphDatabaseServiceProvider( facade, clock, "" );
+        var databaseServiceProvider = new BoltKernelGraphDatabaseServiceProvider( facade, clock );
         return new TransactionStateMachineV1SPI( databaseServiceProvider, boltChannel, txAwaitDuration, clock, mock( StatementProcessorReleaseManager.class ) );
     }
 }

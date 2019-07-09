@@ -27,6 +27,7 @@ import org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo;
 import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.kernel.api.KernelTransaction;
+import org.neo4j.kernel.database.DatabaseId;
 
 /**
  * A database representation as seen and used by Bolt.
@@ -51,5 +52,5 @@ public interface BoltGraphDatabaseServiceSPI
 
     long newestEncounteredTxId();
 
-    String getDatabaseName();
+    DatabaseId getDatabaseId();
 }

@@ -19,13 +19,15 @@
  */
 package org.neo4j.bolt.dbapi.impl;
 
-import org.neo4j.bolt.dbapi.BoltGraphDatabaseServiceSPI;
 import org.neo4j.bolt.dbapi.BoltGraphDatabaseManagementServiceSPI;
+import org.neo4j.bolt.dbapi.BoltGraphDatabaseServiceSPI;
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.dbms.api.DatabaseNotFoundException;
 import org.neo4j.kernel.availability.UnavailableException;
-import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
+import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.time.SystemNanoClock;
+
+import static java.lang.String.format;
 
 public class BoltKernelDatabaseManagementServiceProvider implements BoltGraphDatabaseManagementServiceSPI
 {
@@ -41,7 +43,11 @@ public class BoltKernelDatabaseManagementServiceProvider implements BoltGraphDat
     @Override
     public BoltGraphDatabaseServiceSPI database( String databaseName ) throws DatabaseNotFoundException, UnavailableException
     {
-        GraphDatabaseFacade databaseFacade = (GraphDatabaseFacade) managementService.database( databaseName );
-        return new BoltKernelGraphDatabaseServiceProvider( databaseFacade, clock, databaseName );
+        var databaseFacade = (GraphDatabaseAPI) managementService.database( databaseName );
+        if ( !databaseFacade.isAvailable( 0 ) )
+        {
+            throw new UnavailableException( format( "Database `%s` is unavailable.", databaseName ) );
+        }
+        return new BoltKernelGraphDatabaseServiceProvider( databaseFacade, clock );
     }
 }

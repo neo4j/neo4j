@@ -30,6 +30,7 @@ import org.neo4j.bolt.v1.runtime.StatementProcessorReleaseManager;
 import org.neo4j.common.DependencyResolver;
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.kernel.GraphDatabaseQueryService;
+import org.neo4j.kernel.database.Database;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.time.SystemNanoClock;
 
@@ -76,6 +77,7 @@ class DefaultDatabaseTransactionStateMachineSPIProviderTest
         GraphDatabaseQueryService queryService = mock( GraphDatabaseQueryService.class );
         when( dependencyResolver.resolveDependency( GraphDatabaseQueryService.class ) ).thenReturn( queryService );
         when( queryService.getDependencyResolver() ).thenReturn( dependencyResolver );
+        when( dependencyResolver.resolveDependency( Database.class ) ).thenReturn( mock( Database.class ) );
 
         return managementService;
     }

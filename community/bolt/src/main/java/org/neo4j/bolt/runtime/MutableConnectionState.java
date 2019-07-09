@@ -21,7 +21,6 @@ package org.neo4j.bolt.runtime;
 
 import java.util.concurrent.atomic.AtomicInteger;
 
-import org.neo4j.bolt.v1.runtime.TransactionStateMachine;
 import org.neo4j.graphdb.TransactionTerminatedException;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.values.AnyValue;

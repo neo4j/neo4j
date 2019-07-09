@@ -20,7 +20,7 @@
 package org.neo4j.bolt.v1.runtime.spi;
 
 import org.neo4j.bolt.runtime.BoltResult;
-import org.neo4j.bolt.v1.runtime.bookmarking.Bookmark;
+import org.neo4j.bolt.runtime.Bookmark;
 
 import static org.neo4j.values.storable.Values.stringValue;
 

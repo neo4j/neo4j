@@ -33,7 +33,7 @@ import org.neo4j.bolt.v1.messaging.request.DiscardAllMessage;
 import org.neo4j.bolt.v1.messaging.request.PullAllMessage;
 import org.neo4j.bolt.v1.messaging.request.ResetMessage;
 import org.neo4j.bolt.v1.packstream.PackedOutputArray;
-import org.neo4j.bolt.v1.runtime.bookmarking.Bookmark;
+import org.neo4j.bolt.v1.runtime.bookmarking.BookmarkWithPrefix;
 import org.neo4j.bolt.v3.messaging.request.BeginMessage;
 import org.neo4j.bolt.v3.messaging.request.HelloMessage;
 import org.neo4j.bolt.v3.messaging.request.RunMessage;
@@ -482,7 +482,7 @@ public class BoltV3TransportIT extends BoltV3TransportBase
 
         // bookmark is expected to advance once the auto-commit transaction is committed
         long lastClosedTransactionId = getLastClosedTransactionId();
-        String expectedBookmark = new Bookmark( lastClosedTransactionId + 1 ).toString();
+        String expectedBookmark = new BookmarkWithPrefix( lastClosedTransactionId + 1 ).toString();
 
         connection.send( util.chunk(
                 new RunMessage( "CREATE ()" ),

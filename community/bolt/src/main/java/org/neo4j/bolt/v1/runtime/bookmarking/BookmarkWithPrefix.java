@@ -21,6 +21,7 @@ package org.neo4j.bolt.v1.runtime.bookmarking;
 
 import java.util.Objects;
 
+import org.neo4j.bolt.runtime.Bookmark;
 import org.neo4j.bolt.runtime.BoltResponseHandler;
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.storable.TextValue;
@@ -29,28 +30,32 @@ import org.neo4j.values.virtual.ListValue;
 import org.neo4j.values.virtual.MapValue;
 
 import static java.lang.String.format;
+import static org.neo4j.bolt.v4.runtime.bookmarking.BookmarkWithDatabaseId.EMPTY_BOOKMARK;
 import static org.neo4j.values.storable.Values.stringValue;
 
-public class Bookmark
+/**
+ * This is the bookmark used in Bolt V1-V3. It is prefixed to identify this string is a bookmark.
+ * This bookmark cannot be used with multi-databases as we cannot identify the database where the bookmark is originally generated.
+ */
+public class BookmarkWithPrefix implements Bookmark
 {
     private static final String BOOKMARK_KEY = "bookmark";
     private static final String BOOKMARKS_KEY = "bookmarks";
     static final String BOOKMARK_TX_PREFIX = "neo4j:bookmark:v1:tx";
 
     private static final Long ABSENT_BOOKMARK_ID = -1L;
-    public static final Bookmark EMPTY_BOOKMARK = new Bookmark( ABSENT_BOOKMARK_ID );
 
     private final long txId;
 
-    public Bookmark( long txId )
+    public BookmarkWithPrefix( long txId )
     {
         this.txId = txId;
     }
 
-    public static Bookmark fromParamsOrNull( MapValue params ) throws BookmarkFormatException
+    public static BookmarkWithPrefix fromParamsOrNull( MapValue params ) throws BookmarkFormatException
     {
         // try to parse multiple bookmarks, if available
-        Bookmark bookmark = parseMultipleBookmarks( params );
+        BookmarkWithPrefix bookmark = parseMultipleBookmarks( params );
         if ( bookmark == null )
         {
             // fallback to parsing single bookmark, if available, for backwards compatibility reasons
@@ -64,7 +69,6 @@ public class Bookmark
     {
         return txId;
     }
-
     @Override
     public boolean equals( Object o )
     {
@@ -76,7 +80,7 @@ public class Bookmark
         {
             return false;
         }
-        Bookmark bookmark = (Bookmark) o;
+        BookmarkWithPrefix bookmark = (BookmarkWithPrefix) o;
         return txId == bookmark.txId;
     }
 
@@ -92,7 +96,7 @@ public class Bookmark
         return format( BOOKMARK_TX_PREFIX + "%d", txId );
     }
 
-    private static Bookmark parseMultipleBookmarks( MapValue params ) throws BookmarkFormatException
+    private static BookmarkWithPrefix parseMultipleBookmarks( MapValue params ) throws BookmarkFormatException
     {
         AnyValue bookmarksObject = params.get( BOOKMARKS_KEY );
 
@@ -116,7 +120,7 @@ public class Bookmark
                     }
                 }
             }
-            return maxTxId == ABSENT_BOOKMARK_ID ? null : new Bookmark( maxTxId );
+            return maxTxId == ABSENT_BOOKMARK_ID ? null : new BookmarkWithPrefix( maxTxId );
         }
         else
         {
@@ -124,7 +128,7 @@ public class Bookmark
         }
     }
 
-    private static Bookmark parseSingleBookmark( MapValue params ) throws BookmarkFormatException
+    private static BookmarkWithPrefix parseSingleBookmark( MapValue params ) throws BookmarkFormatException
     {
         AnyValue bookmarkObject = params.get( BOOKMARK_KEY );
         if ( bookmarkObject == Values.NO_VALUE )
@@ -132,7 +136,7 @@ public class Bookmark
             return null;
         }
 
-        return new Bookmark( txIdFrom( bookmarkObject ) );
+        return new BookmarkWithPrefix( txIdFrom( bookmarkObject ) );
     }
 
     private static long txIdFrom( AnyValue bookmark ) throws BookmarkFormatException
