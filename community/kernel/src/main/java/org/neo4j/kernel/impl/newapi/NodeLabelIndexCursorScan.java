@@ -60,13 +60,21 @@ class NodeLabelIndexCursorScan extends BaseCursorScan<NodeLabelIndexCursor,Label
         IndexProgressor indexProgressor;
 
         AccessMode mode = read.ktx.securityContext().mode();
-        if ( mode.allowsTraverseLabels( label ) )
+        if ( mode.allowsTraverseLabel( label ) )
         {
-            indexProgressor = storageScan.initializeBatch( indexCursor, sizeHint );
+            // all nodes will be allowed
+            indexProgressor = storageScan.initializeBatch( indexCursor.nodeLabelClient(), sizeHint );
+        }
+        else if ( mode.disallowsTraverseLabel( label ) )
+        {
+            // no nodes with this label will be allowed
+            indexProgressor = IndexProgressor.EMPTY;
         }
         else
         {
-            indexProgressor = IndexProgressor.EMPTY;
+            // some nodes of this label might be blocked. we need to filter
+            // TODO: Find which code path hits this and write tests for DENY (seems to be part of parallel runtime)
+            indexProgressor = storageScan.initializeBatch( read.filteringNodeLabelClient( indexCursor.nodeLabelClient(), mode ), sizeHint );
         }
 
         if ( indexProgressor == IndexProgressor.EMPTY && !addedItems.hasNext() )

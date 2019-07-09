@@ -27,6 +27,7 @@ import org.neo4j.internal.kernel.api.CursorFactory;
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.internal.kernel.api.IndexReadSession;
 import org.neo4j.internal.kernel.api.InternalIndexState;
+import org.neo4j.internal.kernel.api.LabelSet;
 import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.NodeLabelIndexCursor;
 import org.neo4j.internal.kernel.api.NodeValueIndexCursor;
@@ -157,7 +158,7 @@ abstract class Read implements TxStateHolder,
             {
                 for ( int label : schema.getEntityTokenIds() )
                 {
-                    if ( !accessMode.allowsTraverseLabels( label ) || !accessMode.allowsReadNodeProperty( () -> Labels.from( label ), prop ) )
+                    if ( !accessMode.allowsTraverseLabel( label ) || !accessMode.allowsReadNodeProperty( () -> Labels.from( label ), prop ) )
                     {
                         return new NodeLabelSecurityFilter( propertyIds, cursor, cursors.allocateNodeCursor(), this, accessMode );
                     }
@@ -307,16 +308,59 @@ abstract class Read implements TxStateHolder,
         DefaultNodeLabelIndexCursor indexCursor = (DefaultNodeLabelIndexCursor) cursor;
         indexCursor.setRead( this );
         IndexProgressor indexProgressor;
-        if ( ktx.securityContext().mode().allowsTraverseLabels( label ) )
+        AccessMode accessMode = ktx.securityContext().mode();
+        if ( accessMode.allowsTraverseLabel( label ) )
         {
+            // all nodes will be allowed
             LabelScan labelScan = labelScanReader().nodeLabelScan( label );
-            indexProgressor = labelScan.initialize( indexCursor );
+            indexProgressor = labelScan.initialize( indexCursor.nodeLabelClient() );
+        }
+        else if ( accessMode.disallowsTraverseLabel( label ) )
+        {
+            // no nodes of this label will be allowed
+            indexProgressor = IndexProgressor.EMPTY;
         }
         else
         {
-            indexProgressor = IndexProgressor.EMPTY;
+            // some nodes of this label might be blocked. we need to filter
+            LabelScan labelScan = labelScanReader().nodeLabelScan( label );
+            indexProgressor = labelScan.initialize( filteringNodeLabelClient( indexCursor.nodeLabelClient(), accessMode ) );
         }
         indexCursor.scan( indexProgressor, label );
+    }
+
+    IndexProgressor.NodeLabelClient filteringNodeLabelClient( IndexProgressor.NodeLabelClient inner, AccessMode accessMode )
+    {
+        return new FilteringNodeLabelClient( inner, accessMode );
+    }
+
+    private class FilteringNodeLabelClient implements IndexProgressor.NodeLabelClient
+    {
+        private final FullAccessNodeCursor node;
+        private IndexProgressor.NodeLabelClient inner;
+        private AccessMode accessMode;
+
+        private FilteringNodeLabelClient( IndexProgressor.NodeLabelClient inner, AccessMode accessMode )
+        {
+            this.inner = inner;
+            this.accessMode = accessMode;
+            this.node = Read.this.cursors.allocateFullAccessNodeCursor();
+        }
+
+        @Override
+        public boolean acceptNode( long reference, LabelSet labels )
+        {
+            if ( labels == null )
+            {
+                node.single( reference, Read.this );
+                if ( !node.next() )
+                {
+                    return false;
+                }
+                labels = node.labels();
+            }
+            return inner.acceptNode( reference, labels ) && accessMode.allowsTraverseNodeLabels( labels.all() );
+        }
     }
 
     @Override

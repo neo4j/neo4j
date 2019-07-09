@@ -73,9 +73,21 @@ public class RestrictedAccessMode extends WrappedAccessMode
     }
 
     @Override
-    public boolean allowsTraverseLabels( long... labels )
+    public boolean allowsTraverseLabel( long label )
     {
-        return original.allowsTraverseLabels( labels ) && wrapping.allowsTraverseLabels( labels );
+        return original.allowsTraverseLabel( label ) && wrapping.allowsTraverseLabel( label );
+    }
+
+    @Override
+    public boolean disallowsTraverseLabel( long label )
+    {
+        return original.disallowsTraverseLabel( label ) || wrapping.disallowsTraverseLabel( label );
+    }
+
+    @Override
+    public boolean allowsTraverseNodeLabels( long... labels )
+    {
+        return original.allowsTraverseNodeLabels( labels ) && wrapping.allowsTraverseNodeLabels( labels );
     }
 
     @Override

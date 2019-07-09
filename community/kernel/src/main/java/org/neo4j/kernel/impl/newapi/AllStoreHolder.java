@@ -167,7 +167,54 @@ public class AllStoreHolder extends Read
     @Override
     public long countsForNode( int labelId )
     {
-        long count = countsForNodeWithoutTxState( labelId );
+        AccessMode mode = ktx.securityContext().mode();
+        if ( mode.allowsTraverseAllLabels() )
+        {
+            return countsForNodeWithoutTxState( labelId ) + countsForNodeInTxState( labelId );
+        }
+        else
+        {
+            return countsByAllNodeScan( labelId );
+        }
+    }
+
+    @Override
+    public long countsForNodeWithoutTxState( int labelId )
+    {
+        AccessMode mode = ktx.securityContext().mode();
+        if ( mode.allowsTraverseAllLabels() )
+        {
+            return storageReader.countsForNode( labelId );
+        }
+        else
+        {
+            return countsByAllNodeScan( labelId ) - countsForNodeInTxState( labelId );
+        }
+    }
+
+    private long countsByAllNodeScan( int labelId )
+    {
+        // We have a restriction on what part of the graph can be traversed. This disables the count store entirely.
+        // We need to calculate the counts through expensive operations. We cannot use a NodeLabelScan because the
+        // label requested might not be allowed for that node, and yet the node might be visible due to Traverse rules.
+        long count = 0;
+        try ( DefaultNodeCursor nodes = cursors.allocateNodeCursor() ) // DefaultNodeCursor already contains traversal checks within next()
+        {
+            this.allNodesScan( nodes );
+            while ( nodes.next() )
+            {
+                if ( labelId == TokenRead.ANY_LABEL || nodes.labels().contains( labelId ) )
+                {
+                    count++;
+                }
+            }
+            return count;
+        }
+    }
+
+    private long countsForNodeInTxState( int labelId )
+    {
+        long count = 0;
         if ( ktx.hasTxStateWithChanges() )
         {
             CountsDelta counts = new CountsDelta();
@@ -186,35 +233,6 @@ public class AllStoreHolder extends Read
             }
         }
         return count;
-    }
-
-    @Override
-    public long countsForNodeWithoutTxState( int labelId )
-    {
-        AccessMode mode = ktx.securityContext().mode();
-        if ( labelId == TokenRead.ANY_LABEL && mode.allowsTraverseAllLabels() )
-        {
-            return storageReader.countsForNode( labelId );
-        }
-        else
-        {
-            // We have a restriction on what part of the graph can be traversed. This disables the count store entirely.
-            // We need to calculate the counts through expensive operations. We cannot use a NodeLabelScan because the
-            // label requested might not be allowed for that node, and yet the node might be visible due to Traverse rules.
-            long count = 0;
-            try ( DefaultNodeCursor nodes = cursors.allocateNodeCursor() ) // DefaultNodeCursor already contains traversal checks within next()
-            {
-                this.allNodesScan( nodes );
-                while ( nodes.next() )
-                {
-                    if ( labelId == TokenRead.ANY_LABEL || nodes.labels().contains( labelId ) )
-                    {
-                        count++;
-                    }
-                }
-                return count;
-            }
-        }
     }
 
     @Override
@@ -246,8 +264,8 @@ public class AllStoreHolder extends Read
     {
         AccessMode mode = ktx.securityContext().mode();
         if ( (typeId == TokenRead.ANY_RELATIONSHIP_TYPE && mode.allowsTraverseAllRelTypes() || mode.allowsTraverseRelType( typeId )) &&
-                (startLabelId == TokenRead.ANY_LABEL && mode.allowsTraverseAllLabels() || mode.allowsTraverseLabels( startLabelId )) &&
-                (endLabelId == TokenRead.ANY_LABEL && mode.allowsTraverseAllLabels() || mode.allowsTraverseLabels( endLabelId )) )
+                (startLabelId == TokenRead.ANY_LABEL && mode.allowsTraverseAllLabels() || mode.allowsTraverseLabel( startLabelId )) &&
+                (endLabelId == TokenRead.ANY_LABEL && mode.allowsTraverseAllLabels() || mode.allowsTraverseLabel( endLabelId )) )
         {
             return storageReader.countsForRelationship( startLabelId, typeId, endLabelId );
         }

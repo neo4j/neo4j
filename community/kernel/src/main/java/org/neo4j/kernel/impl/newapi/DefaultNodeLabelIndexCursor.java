@@ -34,7 +34,7 @@ import static org.neo4j.collection.PrimitiveLongCollections.mergeToSet;
 import static org.neo4j.kernel.impl.newapi.Read.NO_ID;
 
 class DefaultNodeLabelIndexCursor extends IndexCursor<IndexProgressor>
-        implements NodeLabelIndexCursor, NodeLabelClient
+        implements NodeLabelIndexCursor
 {
     private Read read;
     private long node;
@@ -69,20 +69,22 @@ class DefaultNodeLabelIndexCursor extends IndexCursor<IndexProgressor>
         this.removed = removed;
     }
 
-    @Override
-    public boolean acceptNode( long reference, LabelSet labels )
+    public NodeLabelClient nodeLabelClient()
     {
-        if ( isRemoved( reference ) )
+        return ( reference, labels ) ->
         {
-            return false;
-        }
-        else
-        {
-            this.node = reference;
-            this.labels = labels;
+            if ( isRemoved( reference ) )
+            {
+                return false;
+            }
+            else
+            {
+                DefaultNodeLabelIndexCursor.this.node = reference;
+                DefaultNodeLabelIndexCursor.this.labels = labels;
 
-            return true;
-        }
+                return true;
+            }
+        };
     }
 
     @Override

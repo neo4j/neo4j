@@ -117,7 +117,19 @@ public interface AccessMode
         }
 
         @Override
-        public boolean allowsTraverseLabels( long... labels )
+        public boolean allowsTraverseLabel( long label )
+        {
+            return read;
+        }
+
+        @Override
+        public boolean disallowsTraverseLabel( long label )
+        {
+            return false;
+        }
+
+        @Override
+        public boolean allowsTraverseNodeLabels( long... labels )
         {
             return read;
         }
@@ -183,8 +195,14 @@ public interface AccessMode
     boolean allowsTokenCreates();
     boolean allowsSchemaWrites();
 
+    /** true if all nodes can be traversed */
     boolean allowsTraverseAllLabels();
-    boolean allowsTraverseLabels( long... labels );
+    /** true if all nodes with this label can be traversed */
+    boolean allowsTraverseLabel( long label );
+    /** true if this label is blacklisted for traversal */
+    boolean disallowsTraverseLabel( long label );
+    /** true if a particular node with exactly these labels can be traversed */
+    boolean allowsTraverseNodeLabels( long... labels );
 
     boolean allowsTraverseAllRelTypes();
     boolean allowsTraverseRelType( int relType );
