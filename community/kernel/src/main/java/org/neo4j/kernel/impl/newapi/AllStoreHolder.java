@@ -76,7 +76,6 @@ import org.neo4j.values.storable.Value;
 import static java.lang.String.format;
 import static org.neo4j.common.TokenNameLookup.idTokenNameLookup;
 import static org.neo4j.internal.helpers.collection.Iterators.filter;
-import static org.neo4j.internal.helpers.collection.Iterators.iterator;
 import static org.neo4j.internal.helpers.collection.Iterators.singleOrNull;
 import static org.neo4j.kernel.api.procedure.BasicContext.buildContext;
 import static org.neo4j.register.Registers.newDoubleLongRegister;
@@ -341,29 +340,7 @@ public class AllStoreHolder extends Read
             // This means we have invalid label or property ids.
             return IndexDescriptor.NO_INDEX;
         }
-        IndexDescriptor index = storageReader.indexGetForSchema( descriptor );
-        if ( ktx.hasTxStateWithChanges() )
-        {
-            DiffSets<IndexDescriptor> diffSets = ktx.txState().indexDiffSetsByLabel( label );
-            if ( index != null )
-            {
-                if ( diffSets.isRemoved( index ) )
-                {
-                    index = null;
-                }
-            }
-            else
-            {
-                Iterator<IndexDescriptor> fromTxState =
-                        filter( SchemaDescriptor.equalTo( descriptor ), diffSets.getAdded().iterator() );
-                if ( fromTxState.hasNext() )
-                {
-                    index = fromTxState.next();
-                }
-            }
-        }
-
-        return lockedIndex( index );
+        return index( descriptor );
     }
 
     @Override
@@ -382,7 +359,7 @@ public class AllStoreHolder extends Read
      * @param index committed, transaction-added or even null.
      * @return The validated index descriptor, which is not necessarily the same as the one given as an argument.
      */
-    public IndexDescriptor lockedIndex( IndexDescriptor index )
+    private IndexDescriptor lockedIndex( IndexDescriptor index )
     {
         if ( index == null )
         {
@@ -394,7 +371,7 @@ public class AllStoreHolder extends Read
     /**
      * Maps all index descriptors according to {@link #lockedIndex(IndexDescriptor)}.
      */
-    public Iterator<IndexDescriptor> indexReferences( Iterator<IndexDescriptor> indexes )
+    private Iterator<IndexDescriptor> lockedIndexes( Iterator<IndexDescriptor> indexes )
     {
         return Iterators.map( this::lockedIndex, indexes );
     }
@@ -438,7 +415,7 @@ public class AllStoreHolder extends Read
     {
         acquireSharedLock( ResourceTypes.LABEL, labelId );
         ktx.assertOpen();
-        return Iterators.map( this::lockedIndex, indexesGetForLabel( storageReader, labelId ) );
+        return lockedIndexes( indexesGetForLabel( storageReader, labelId ) );
     }
 
     Iterator<IndexDescriptor> indexesGetForLabel( StorageSchemaReader reader, int labelId )
@@ -456,7 +433,7 @@ public class AllStoreHolder extends Read
     {
         acquireSharedLock( ResourceTypes.RELATIONSHIP_TYPE, relationshipType );
         ktx.assertOpen();
-        return indexReferences( indexesGetForRelationshipType( storageReader, relationshipType ) );
+        return lockedIndexes( indexesGetForRelationshipType( storageReader, relationshipType ) );
     }
 
     Iterator<IndexDescriptor> indexesGetForRelationshipType( StorageSchemaReader reader, int relationshipType )
@@ -488,10 +465,8 @@ public class AllStoreHolder extends Read
     public Iterator<IndexDescriptor> indexesGetAll()
     {
         ktx.assertOpen();
-
         Iterator<IndexDescriptor> iterator = indexesGetAll( storageReader );
-
-        return Iterators.map( this::lockedIndex, iterator );
+        return lockedIndexes( iterator );
     }
 
     Iterator<IndexDescriptor> indexesGetAll( StorageSchemaReader reader )
@@ -656,19 +631,6 @@ public class AllStoreHolder extends Read
         return indexStatisticsStore.indexSample( storageIndex.getId(), target );
     }
 
-    IndexDescriptor indexGetForSchema( SchemaDescriptor descriptor )
-    {
-        IndexDescriptor index = storageReader.indexGetForSchema( descriptor );
-        Iterator<IndexDescriptor> indexes = iterator( index );
-        if ( ktx.hasTxStateWithChanges() )
-        {
-            indexes = filter(
-                    SchemaDescriptor.equalTo( descriptor ),
-                    ktx.txState().indexDiffSetsBySchema( descriptor ).apply( indexes ) );
-        }
-        return lockedIndex( singleOrNull( indexes ) );
-    }
-
     private boolean checkIndexState( IndexDescriptor index, DiffSets<IndexDescriptor> diffSet )
             throws IndexNotFoundKernelException
     {
@@ -774,11 +736,6 @@ public class AllStoreHolder extends Read
         ktx.assertOpen();
         StorageSchemaReader snapshot = storageReader.schemaSnapshot();
         return new SchemaReadCoreSnapshot( snapshot, ktx, this );
-    }
-
-    boolean nodeExistsInStore( long id )
-    {
-        return storageReader.nodeExists( id );
     }
 
     @Override

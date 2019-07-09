@@ -82,7 +82,7 @@ class SchemaCacheTest
     private SchemaRule rel35_8 = IndexPrototype.forSchema( fulltext( RELATIONSHIP, IndexConfig.empty(), new int[]{3, 5}, new int[]{8} ) ).materialise( 14 );
 
     @Test
-    void should_construct_schema_cache()
+    void shouldConstructSchemaCache()
     {
         // GIVEN
         SchemaCache cache = newSchemaCache( hans, witch, gretel, robot );
@@ -127,7 +127,7 @@ class SchemaCacheTest
     }
 
     @Test
-    void should_list_constraints()
+    void shouldListConstraints()
     {
         // GIVEN
         SchemaCache cache = newSchemaCache();
@@ -166,7 +166,7 @@ class SchemaCacheTest
     }
 
     @Test
-    void should_remove_constraints()
+    void shouldRemoveConstraints()
     {
         // GIVEN
         SchemaCache cache = newSchemaCache();
@@ -194,7 +194,7 @@ class SchemaCacheTest
     }
 
     @Test
-    void adding_constraints_should_be_idempotent()
+    void addingConstraintsShouldBeIdempotent()
     {
         // given
         SchemaCache cache = newSchemaCache();

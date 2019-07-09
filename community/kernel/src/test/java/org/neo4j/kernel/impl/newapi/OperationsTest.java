@@ -418,7 +418,6 @@ class OperationsTest
         // GIVEN
         when( nodeCursor.next() ).thenReturn( true );
         when( nodeCursor.labels() ).thenReturn( LabelSet.NONE );
-        when( allStoreHolder.nodeExistsInStore( 123 ) ).thenReturn( true );
 
         // WHEN
         operations.nodeDelete(  123 );

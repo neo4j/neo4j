@@ -49,6 +49,9 @@ import org.neo4j.storageengine.api.ConstraintRule;
  */
 public class SchemaRecordCheck implements RecordCheck<SchemaRecord, ConsistencyReport.SchemaConsistencyReport>
 {
+    static final String CONSTRAINT_OBLIGATION = "UNIQUENESS_CONSTRAINT";
+    static final String INDEX_OBLIGATION = "CONSTRAINT_INDEX_RULE";
+
     final SchemaRuleAccess ruleAccess;
     final IndexAccessors indexAccessors;
 
@@ -195,7 +198,7 @@ public class SchemaRecordCheck implements RecordCheck<SchemaRecord, ConsistencyR
                 {
                     if ( rule.getOwningConstraintId().isPresent() ) // we only expect a pointer if we have an owner
                     {
-                        engine.report().missingObligation( "UNIQUENESS_CONSTRAINT" );
+                        engine.report().missingObligation( CONSTRAINT_OBLIGATION );
                     }
                 }
                 else
@@ -222,7 +225,7 @@ public class SchemaRecordCheck implements RecordCheck<SchemaRecord, ConsistencyR
                 SchemaRecord obligation = constraintObligations.get( constraint.getId() );
                 if ( obligation == null )
                 {
-                    engine.report().missingObligation( "CONSTRAINT_INDEX_RULE" );
+                    engine.report().missingObligation( INDEX_OBLIGATION );
                 }
                 else
                 {

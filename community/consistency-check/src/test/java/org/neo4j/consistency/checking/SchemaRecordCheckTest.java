@@ -40,13 +40,14 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyZeroInteractions;
 import static org.mockito.Mockito.when;
+import static org.neo4j.consistency.checking.SchemaRecordCheck.CONSTRAINT_OBLIGATION;
+import static org.neo4j.consistency.checking.SchemaRecordCheck.INDEX_OBLIGATION;
 import static org.neo4j.consistency.checking.SchemaRuleUtil.constraintIndexRule;
 import static org.neo4j.consistency.checking.SchemaRuleUtil.indexRule;
 import static org.neo4j.consistency.checking.SchemaRuleUtil.relPropertyExistenceConstraintRule;
 import static org.neo4j.consistency.checking.SchemaRuleUtil.uniquenessConstraintRule;
 
-class SchemaRecordCheckTest
-        extends RecordCheckTestBase<SchemaRecord, ConsistencyReport.SchemaConsistencyReport, SchemaRecordCheck>
+class SchemaRecordCheckTest extends RecordCheckTestBase<SchemaRecord, ConsistencyReport.SchemaConsistencyReport, SchemaRecordCheck>
 {
     private final int labelId = 1;
     private final int propertyKeyId = 2;
@@ -263,7 +264,7 @@ class SchemaRecordCheckTest
         ConsistencyReport.SchemaConsistencyReport report = check( obligationChecker, record );
 
         // then
-        verify( report ).missingObligation( "CONSTRAINT_INDEX_RULE" );
+        verify( report ).missingObligation( INDEX_OBLIGATION );
     }
 
     @Test
@@ -350,7 +351,7 @@ class SchemaRecordCheckTest
         ConsistencyReport.SchemaConsistencyReport report = check( obligationChecker, record );
 
         // then
-        verify( report ).missingObligation( "UNIQUENESS_CONSTRAINT" );
+        verify( report ).missingObligation( CONSTRAINT_OBLIGATION );
     }
 
     @Test

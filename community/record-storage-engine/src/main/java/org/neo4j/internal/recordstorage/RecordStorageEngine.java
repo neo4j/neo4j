@@ -151,7 +151,7 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
         try
         {
             schemaRuleAccess = SchemaRuleAccess.getSchemaRuleAccess( neoStores.getSchemaStore(), tokenHolders );
-            this.schemaCache = new SchemaCache( constraintSemantics, indexConfigCompleter );
+            schemaCache = new SchemaCache( constraintSemantics, indexConfigCompleter );
 
             integrityValidator = new IntegrityValidator( neoStores );
             cacheAccess = new BridgingCacheAccess( schemaCache, schemaState, tokenHolders );
