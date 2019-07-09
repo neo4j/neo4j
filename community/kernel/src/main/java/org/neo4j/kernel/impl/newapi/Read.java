@@ -23,6 +23,7 @@ import org.neo4j.common.EntityType;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.internal.index.label.LabelScan;
 import org.neo4j.internal.index.label.LabelScanReader;
+import org.neo4j.internal.kernel.api.AutoCloseablePlus;
 import org.neo4j.internal.kernel.api.CursorFactory;
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.internal.kernel.api.IndexReadSession;
@@ -334,9 +335,9 @@ abstract class Read implements TxStateHolder,
         return new FilteringNodeLabelClient( inner, accessMode );
     }
 
-    private class FilteringNodeLabelClient implements IndexProgressor.NodeLabelClient
+    private class FilteringNodeLabelClient implements IndexProgressor.NodeLabelClient, AutoCloseablePlus
     {
-        private final FullAccessNodeCursor node;
+        private FullAccessNodeCursor node;
         private IndexProgressor.NodeLabelClient inner;
         private AccessMode accessMode;
 
@@ -360,6 +361,22 @@ abstract class Read implements TxStateHolder,
                 labels = node.labels();
             }
             return inner.acceptNode( reference, labels ) && accessMode.allowsTraverseNodeLabels( labels.all() );
+        }
+
+        @Override
+        public void close()
+        {
+            if ( !isClosed() )
+            {
+                node.close();
+                node = null;
+            }
+        }
+
+        @Override
+        public boolean isClosed()
+        {
+            return node == null;
         }
     }
 

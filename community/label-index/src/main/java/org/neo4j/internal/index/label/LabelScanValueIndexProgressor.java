@@ -25,6 +25,7 @@ import java.io.UncheckedIOException;
 import org.neo4j.cursor.RawCursor;
 import org.neo4j.graphdb.Resource;
 import org.neo4j.index.internal.gbptree.Seeker;
+import org.neo4j.internal.kernel.api.AutoCloseablePlus;
 import org.neo4j.kernel.api.index.IndexProgressor;
 
 /**
@@ -82,6 +83,16 @@ public class LabelScanValueIndexProgressor extends LabelScanValueIndexAccessor i
 
             //noinspection AssertWithSideEffects
             assert keysInOrder( key );
+        }
+    }
+
+    @Override
+    public void close()
+    {
+        super.close();
+        if ( client instanceof AutoCloseablePlus )
+        {
+            ((AutoCloseablePlus) client).close();
         }
     }
 }
