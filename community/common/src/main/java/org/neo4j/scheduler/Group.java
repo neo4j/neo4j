@@ -86,12 +86,7 @@ public enum Group
     /** Rolls back idle transactions on the server. */
     SERVER_TRANSACTION_TIMEOUT( "ServerTransactionTimeout" ),
     /** Pulls updates from the leader. */
-    PULL_UPDATES( "PullUpdates" ),
-
-    // MISC.
-    /** UDC timed events. */
-    UDC( "UsageDataCollector" )
-    ;
+    PULL_UPDATES( "PullUpdates" );
 
     private final String name;
     private final ExecutorServiceFactory executorServiceFactory;
