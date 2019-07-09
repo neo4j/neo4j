@@ -22,12 +22,12 @@ package org.neo4j.server.web;
 import java.net.URI;
 import java.net.URISyntaxException;
 
-import org.neo4j.configuration.helpers.SocketAddress;
+import org.neo4j.internal.helpers.AdvertisedSocketAddress;
 
 public class SimpleUriBuilder
 {
 
-    public URI buildURI( SocketAddress address, boolean isSsl )
+    public URI buildURI( AdvertisedSocketAddress address, boolean isSsl )
     {
         StringBuilder sb = new StringBuilder();
         sb.append( "http" );

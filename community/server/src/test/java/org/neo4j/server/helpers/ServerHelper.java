@@ -31,8 +31,6 @@ import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.server.NeoServer;
 
-import static org.neo4j.configuration.SettingValueParsers.TRUE;
-
 public class ServerHelper
 {
 
@@ -66,7 +64,7 @@ public class ServerHelper
     public static NeoServer createNonPersistentReadOnlyServer() throws IOException
     {
         CommunityServerBuilder builder = CommunityServerBuilder.server();
-        builder.withProperty( GraphDatabaseSettings.read_only.name(), TRUE );
+        builder.withProperty( GraphDatabaseSettings.read_only.name(), "true" );
         return createServer( builder, false, null );
     }
 

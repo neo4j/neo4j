@@ -22,7 +22,6 @@ package org.neo4j.cypher
 import java.util.Optional
 
 import org.neo4j.configuration.GraphDatabaseSettings
-import org.neo4j.configuration.SettingValueParsers.TRUE
 import org.neo4j.cypher.internal.javacompat.GraphDatabaseCypherService
 import org.neo4j.dbms.database.{DatabaseContext, DatabaseManager}
 import org.neo4j.graphdb.config.Setting
@@ -36,7 +35,7 @@ abstract class CommunityDDLAcceptanceTestBase extends ExecutionEngineFunSuite wi
   def authManager: AuthManager = graph.getDependencyResolver.resolveDependency(classOf[AuthManager])
   def databaseManager: DatabaseManager[DatabaseContext] = graph.getDependencyResolver.resolveDependency(classOf[DatabaseManager[DatabaseContext]])
 
-  override def databaseConfig(): Map[Setting[_], String] = Map(GraphDatabaseSettings.auth_enabled -> TRUE)
+  override def databaseConfig(): Map[Setting[_], String] = Map(GraphDatabaseSettings.auth_enabled -> "true")
 
   def selectDatabase(name: String): Unit = {
     val maybeCtx: Optional[DatabaseContext] = databaseManager.getDatabaseContext(new TestDatabaseIdRepository().get(name))

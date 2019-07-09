@@ -25,7 +25,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.io.File;
-import java.util.Map;
 
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
@@ -34,7 +33,6 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.graphdb.config.Setting;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.impl.store.RecordStore;
@@ -131,7 +129,9 @@ public class RelationshipChainExplorerTest
     private StoreAccess createStoreWithOneHighDegreeNodeAndSeveralDegreeTwoNodes( int nDegreeTwoNodes )
     {
         File storeDirectory = testDirectory.storeDir();
-        DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder( storeDirectory ).setConfig( getConfig() ).build();
+        DatabaseManagementService managementService =
+                new TestDatabaseManagementServiceBuilder( storeDirectory ).setConfig( GraphDatabaseSettings.record_format, getRecordFormatName() )
+                .setConfig( "dbms.backup.enabled", "false" ).build();
         GraphDatabaseService database = managementService.database( DEFAULT_DATABASE_NAME );
 
         try ( Transaction transaction = database.beginTx() )
@@ -156,11 +156,6 @@ public class RelationshipChainExplorerTest
         managementService.shutdown();
         StoreAccess storeAccess = new StoreAccess( fileSystem, pageCache, testDirectory.databaseLayout(), Config.defaults() );
         return storeAccess.initialize();
-    }
-
-    protected Map<Setting<?>,String> getConfig()
-    {
-        return Map.of( GraphDatabaseSettings.record_format, getRecordFormatName() );
     }
 
     protected String getRecordFormatName()

@@ -35,6 +35,7 @@ import java.util.function.LongSupplier;
 import org.neo4j.collection.Dependencies;
 import org.neo4j.common.DependencyResolver;
 import org.neo4j.configuration.GraphDatabaseSettings;
+import org.neo4j.configuration.Settings;
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
@@ -63,7 +64,6 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
-import static org.neo4j.configuration.SettingValueParsers.TRUE;
 
 @ExtendWith( TestDirectoryExtension.class )
 class EagerResultIT
@@ -249,7 +249,7 @@ class EagerResultIT
         dependencies.satisfyDependencies( testContextSupplier );
         managementService = new TestDatabaseManagementServiceBuilder( storeDir )
                 .setExternalDependencies( dependencies )
-                .setConfig( GraphDatabaseSettings.snapshot_query, TRUE ).build();
+                .setConfig( GraphDatabaseSettings.snapshot_query, Settings.TRUE ).build();
         return managementService.database( DEFAULT_DATABASE_NAME );
     }
 

@@ -92,9 +92,9 @@ class FulltextIndexProvider extends IndexProvider implements FulltextAdapter
         this.operationalMode = operationalMode;
         this.log = log;
 
-        defaultAnalyzerName = config.get( FulltextSettings.fulltext_default_analyzer );
-        defaultEventuallyConsistentSetting = config.get( FulltextSettings.eventually_consistent );
-        indexUpdateSink = new IndexUpdateSink( scheduler, config.get( FulltextSettings.eventually_consistent_index_update_queue_max_length ) );
+        defaultAnalyzerName = config.get( FulltextConfig.fulltext_default_analyzer );
+        defaultEventuallyConsistentSetting = config.get( FulltextConfig.eventually_consistent );
+        indexUpdateSink = new IndexUpdateSink( scheduler, config.get( FulltextConfig.eventually_consistent_index_update_queue_max_length ) );
         indexStorageFactory = buildIndexStorageFactory( fileSystem, directoryFactory );
     }
 

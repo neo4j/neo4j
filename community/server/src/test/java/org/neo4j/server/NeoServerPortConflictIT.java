@@ -25,7 +25,7 @@ import java.io.IOException;
 import java.net.InetAddress;
 import java.net.ServerSocket;
 
-import org.neo4j.configuration.helpers.SocketAddress;
+import org.neo4j.internal.helpers.ListenSocketAddress;
 import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.server.helpers.CommunityServerBuilder;
 import org.neo4j.test.server.ExclusiveServerTestBase;
@@ -43,7 +43,7 @@ public class NeoServerPortConflictIT extends ExclusiveServerTestBase
     {
         try ( ServerSocket socket = new ServerSocket( 0, 0, InetAddress.getLocalHost() ) )
         {
-            SocketAddress contestedAddress = new SocketAddress( socket.getInetAddress().getHostName(), socket.getLocalPort() );
+            ListenSocketAddress contestedAddress = new ListenSocketAddress( socket.getInetAddress().getHostName(), socket.getLocalPort() );
             AssertableLogProvider logProvider = new AssertableLogProvider();
             CommunityNeoServer server = CommunityServerBuilder.server( logProvider )
                     .onAddress( contestedAddress )
@@ -76,8 +76,8 @@ public class NeoServerPortConflictIT extends ExclusiveServerTestBase
     {
         try ( ServerSocket httpsSocket = new ServerSocket( 0, 0, InetAddress.getLocalHost() ) )
         {
-            SocketAddress unContestedAddress = new SocketAddress( httpsSocket.getInetAddress().getHostName(), 0 );
-            SocketAddress httpsAddress = new SocketAddress( httpsSocket.getInetAddress().getHostName(), httpsSocket.getLocalPort() );
+            ListenSocketAddress unContestedAddress = new ListenSocketAddress( httpsSocket.getInetAddress().getHostName(), 0 );
+            ListenSocketAddress httpsAddress = new ListenSocketAddress( httpsSocket.getInetAddress().getHostName(), httpsSocket.getLocalPort() );
             AssertableLogProvider logProvider = new AssertableLogProvider();
             CommunityNeoServer server = CommunityServerBuilder.server( logProvider )
                     .onAddress( unContestedAddress )

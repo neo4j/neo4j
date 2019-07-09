@@ -95,7 +95,7 @@ public class HttpsRequestCustomizerTest
 
     private static Customizer newCustomizer()
     {
-        return new HttpsRequestCustomizer( Config.defaults() );
+        return newCustomizer( null );
     }
 
     private static Customizer newCustomizer( String hstsValue )

@@ -32,7 +32,6 @@ import org.neo4j.server.configuration.ServerSettings;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
-import static org.neo4j.configuration.SettingValueParsers.TRUE;
 import static org.neo4j.internal.helpers.collection.MapUtil.map;
 import static org.neo4j.server.rest.discovery.CommunityDiscoverableURIs.communityDiscoverableURIs;
 
@@ -58,14 +57,15 @@ public class CommunityDiscoverableURIsTest
     @Test
     public void shouldLookupBoltPortInRegisterIfConfiguredTo0() throws Exception
     {
-        BoltConnector bolt = BoltConnector.group( "honestJakesBoltConnector" );
+        BoltConnector bolt = new BoltConnector( "honestJakesBoltConnector" );
         ConnectorPortRegister register = new ConnectorPortRegister();
-        register.register( bolt.name(), new InetSocketAddress( 1337 ) );
+        register.register( bolt.key(), new InetSocketAddress( 1337 ) );
 
         DiscoverableURIs uris = communityDiscoverableURIs(
-                Config.newBuilder()
-                        .set( bolt.advertised_address, "apple.com:0" )
-                        .set( bolt.enabled, TRUE )
+                Config.builder()
+                        .withSetting( bolt.advertised_address, "apple.com:0" )
+                        .withSetting( bolt.enabled, "true" )
+                        .withSetting( bolt.type, BoltConnector.ConnectorType.BOLT.name() )
                         .build(), register );
 
         assertEquals( "bolt://apple.com:1337", toMap(uris).get("bolt")  );
@@ -74,7 +74,7 @@ public class CommunityDiscoverableURIsTest
     @Test
     public void shouldOmitBoltIfNoConnectorConfigured() throws Exception
     {
-        DiscoverableURIs uris = communityDiscoverableURIs( Config.defaults(), null );
+        DiscoverableURIs uris = communityDiscoverableURIs( Config.builder().build(), null );
 
         assertFalse( toMap( uris ).containsKey( "bolt" ) );
     }

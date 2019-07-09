@@ -23,8 +23,6 @@ import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.neo4j.configuration.SettingValueParsers.FALSE;
-import static org.neo4j.configuration.SettingValueParsers.TRUE;
 import static org.neo4j.kernel.impl.transaction.log.pruning.ThresholdConfigParser.ThresholdConfigValue;
 import static org.neo4j.kernel.impl.transaction.log.pruning.ThresholdConfigParser.ThresholdConfigValue.KEEP_LAST_FILE;
 import static org.neo4j.kernel.impl.transaction.log.pruning.ThresholdConfigParser.ThresholdConfigValue.NO_PRUNING;
@@ -35,14 +33,14 @@ class ThresholdConfigParserTest
     @Test
     void parseTrue()
     {
-        ThresholdConfigValue configValue = parse( TRUE );
+        ThresholdConfigValue configValue = parse( "true" );
         assertEquals( NO_PRUNING, configValue );
     }
 
     @Test
     void parseFalse()
     {
-        ThresholdConfigValue configValue = parse( FALSE );
+        ThresholdConfigValue configValue = parse( "false" );
         assertEquals( KEEP_LAST_FILE, configValue );
     }
 

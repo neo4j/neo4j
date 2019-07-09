@@ -35,11 +35,11 @@ import java.util.concurrent.ThreadLocalRandom;
 import java.util.function.Function;
 
 import org.neo4j.configuration.Config;
-import org.neo4j.configuration.ConfigUtils;
 import org.neo4j.configuration.GraphDatabaseSettings;
+import org.neo4j.configuration.Settings;
 import org.neo4j.configuration.connectors.BoltConnector;
 import org.neo4j.configuration.connectors.HttpConnector;
-import org.neo4j.configuration.connectors.HttpsConnector;
+import org.neo4j.configuration.connectors.HttpConnector.Encryption;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.facade.ExternalDependencies;
@@ -65,8 +65,6 @@ import static org.neo4j.configuration.GraphDatabaseSettings.auth_enabled;
 import static org.neo4j.configuration.GraphDatabaseSettings.data_directory;
 import static org.neo4j.configuration.GraphDatabaseSettings.db_timezone;
 import static org.neo4j.configuration.GraphDatabaseSettings.pagecache_memory;
-import static org.neo4j.configuration.SettingValueParsers.FALSE;
-import static org.neo4j.configuration.SettingValueParsers.TRUE;
 import static org.neo4j.internal.helpers.collection.Iterables.addAll;
 import static org.neo4j.internal.helpers.collection.Iterables.append;
 import static org.neo4j.io.fs.FileSystemUtils.createOrOpenAsOutputStream;
@@ -127,8 +125,8 @@ public abstract class AbstractInProcessNeo4jBuilder implements Neo4jBuilder
 
             if ( disabledServer )
             {
-                config.put( HttpConnector.group("http").enabled.name(), FALSE );
-                config.put( HttpsConnector.group("https").enabled.name(), FALSE );
+                config.put( "dbms.connector.http.enabled", Settings.FALSE );
+                config.put( "dbms.connector.https.enabled", Settings.FALSE );
             }
 
             LogProvider userLogProvider = FormattedLogProvider.withZoneId( logZoneIdFrom( config ) ).toOutputStream( userLogOutputStream );
@@ -137,8 +135,7 @@ public abstract class AbstractInProcessNeo4jBuilder implements Neo4jBuilder
 
             Config dbConfig = Config.defaults( config );
             GraphFactory graphFactory = createGraphFactory( dbConfig );
-            boolean httpAndHttpsDisabled =
-                    ConfigUtils.getEnabledHttpConnectors( dbConfig ).isEmpty() && ConfigUtils.getEnabledHttpsConnectors( dbConfig ).isEmpty();
+            boolean httpAndHttpsDisabled = dbConfig.enabledHttpConnectors().isEmpty();
 
             NeoServer server = startNeo4jServer( dependencies, dbConfig, graphFactory, httpAndHttpsDisabled );
 
@@ -262,21 +259,26 @@ public abstract class AbstractInProcessNeo4jBuilder implements Neo4jBuilder
     private void setWorkingDirectory( File workingDir )
     {
         setDirectory( workingDir );
-        withConfig( auth_enabled, FALSE );
+        withConfig( auth_enabled, "false" );
         withConfig( pagecache_memory, "8m" );
 
-        BoltConnector bolt0 = BoltConnector.group( "bolt" );
-        HttpConnector http1 = HttpConnector.group( "http" );
-        HttpsConnector http2 = HttpsConnector.group( "https");
+        BoltConnector bolt0 = new BoltConnector( "bolt" );
+        HttpConnector http1 = new HttpConnector( "http", Encryption.NONE );
+        HttpConnector http2 = new HttpConnector( "https", Encryption.TLS );
 
-        withConfig( http1.enabled, TRUE );
-        withConfig( http1.listen_address, "localhost:0" );
+        withConfig( http1.type, "HTTP" );
+        withConfig( http1.encryption, Encryption.NONE.name() );
+        withConfig( http1.enabled, "true" );
+        withConfig( http1.address, "localhost:0" );
 
-        withConfig( http2.enabled, FALSE );
-        withConfig( http2.listen_address, "localhost:0" );
+        withConfig( http2.type, "HTTP" );
+        withConfig( http2.encryption, Encryption.TLS.name() );
+        withConfig( http2.enabled, "false" );
+        withConfig( http2.address, "localhost:0" );
 
-        withConfig( bolt0.enabled, TRUE );
-        withConfig( bolt0.listen_address, "localhost:0" );
+        withConfig( bolt0.type, "BOLT" );
+        withConfig( bolt0.enabled, "true" );
+        withConfig( bolt0.address, "localhost:0" );
     }
 
     private Neo4jBuilder setDirectory( File dir )
@@ -303,7 +305,7 @@ public abstract class AbstractInProcessNeo4jBuilder implements Neo4jBuilder
         for ( int i = 0; i < packageCount - 1; i++ )
         {
             jaxRsPackage = extensions.get( i );
-            describeJaxRsPackage( builder, jaxRsPackage ).append( ',' );
+            describeJaxRsPackage( builder, jaxRsPackage ).append( Settings.SEPARATOR );
         }
         jaxRsPackage = extensions.get( packageCount - 1 );
         describeJaxRsPackage( builder, jaxRsPackage );
@@ -317,7 +319,7 @@ public abstract class AbstractInProcessNeo4jBuilder implements Neo4jBuilder
 
     private static ZoneId logZoneIdFrom( Map<String,String> config )
     {
-        String dbTimeZone = config.getOrDefault( db_timezone.name(), db_timezone.defaultValue().toString() );
+        String dbTimeZone = config.getOrDefault( db_timezone.name(), db_timezone.getDefaultValue() );
         return LogTimeZone.valueOf( dbTimeZone ).getZoneId();
     }
 

@@ -43,7 +43,6 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.is;
 import static org.mockito.Mockito.mock;
-import static org.neo4j.configuration.SettingValueParsers.FALSE;
 
 @EphemeralPageCacheExtension
 class TestIdGeneratorRebuilding
@@ -59,7 +58,7 @@ class TestIdGeneratorRebuilding
     void verifyFixedSizeStoresCanRebuildIdGeneratorSlowly()
     {
         // Given we have a store ...
-        Config config = Config.defaults( GraphDatabaseSettings.rebuild_idgenerators_fast, FALSE );
+        Config config = Config.defaults( GraphDatabaseSettings.rebuild_idgenerators_fast, "false" );
         File storeFile = testDirectory.file( "nodes" );
         File idFile = testDirectory.file( "idNodes" );
 
@@ -111,7 +110,7 @@ class TestIdGeneratorRebuilding
     void verifyDynamicSizedStoresCanRebuildIdGeneratorSlowly()
     {
         // Given we have a store ...
-        Config config = Config.defaults( GraphDatabaseSettings.rebuild_idgenerators_fast, FALSE );
+        Config config = Config.defaults( GraphDatabaseSettings.rebuild_idgenerators_fast, "false" );
 
         StoreFactory storeFactory = new StoreFactory( testDirectory.databaseLayout(), config,
                 new DefaultIdGeneratorFactory( fs ), pageCache, fs, NullLogProvider
@@ -164,7 +163,7 @@ class TestIdGeneratorRebuilding
     void rebuildingIdGeneratorMustNotMissOutOnFreeRecordsAtEndOfFilePage()
     {
         // Given we have a store ...
-        Config config = Config.defaults( GraphDatabaseSettings.rebuild_idgenerators_fast, FALSE );
+        Config config = Config.defaults( GraphDatabaseSettings.rebuild_idgenerators_fast, "false" );
         File storeFile = testDirectory.file( "nodes" );
         File idFile = testDirectory.file( "idNodes" );
 

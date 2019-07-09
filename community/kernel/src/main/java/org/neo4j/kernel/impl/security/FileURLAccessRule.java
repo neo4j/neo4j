@@ -26,7 +26,6 @@ import java.net.URL;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
-import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.graphdb.config.Configuration;
 import org.neo4j.graphdb.security.URLAccessRule;
@@ -54,11 +53,11 @@ class FileURLAccessRule implements URLAccessRule
                     "configuration property '" + GraphDatabaseSettings.allow_file_urls.name() + "' is false" );
         }
 
-        if ( !( (Config) config ).isExplicitlySet( GraphDatabaseSettings.load_csv_file_url_root ) )
+        final File root = config.get( GraphDatabaseSettings.load_csv_file_url_root );
+        if ( root == null )
         {
             return url;
         }
-        final File root = config.get( GraphDatabaseSettings.load_csv_file_url_root ).toFile();
 
         try
         {

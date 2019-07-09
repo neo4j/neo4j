@@ -37,6 +37,7 @@ import java.util.concurrent.TimeUnit;
 
 import org.neo4j.common.DependencyResolver;
 import org.neo4j.configuration.GraphDatabaseSettings;
+import org.neo4j.configuration.Settings;
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
@@ -65,7 +66,6 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.junit.jupiter.api.Assertions.assertTimeoutPreemptively;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
-import static org.neo4j.configuration.SettingValueParsers.FALSE;
 
 @ExtendWith( TestDirectoryExtension.class )
 class FileWatchIT
@@ -265,7 +265,7 @@ class FileWatchIT
                 service = new TestDatabaseManagementServiceBuilder( testDirectory.databaseLayout( "failed-start-db" ).databaseDirectory() )
                         .setInternalLogProvider( logProvider )
                         .setFileSystem( new NonWatchableFileSystemAbstraction() )
-                        .setConfig( GraphDatabaseSettings.filewatcher_enabled, FALSE )
+                        .setConfig( GraphDatabaseSettings.filewatcher_enabled, Settings.FALSE )
                         .build();
                 db = managementService.database( DEFAULT_DATABASE_NAME );
 

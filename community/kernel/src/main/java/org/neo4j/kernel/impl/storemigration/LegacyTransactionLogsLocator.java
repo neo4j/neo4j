@@ -20,12 +20,17 @@
 package org.neo4j.kernel.impl.storemigration;
 
 import java.io.File;
+import java.util.Optional;
+import java.util.function.Function;
 
 import org.neo4j.configuration.Config;
+import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.io.layout.DatabaseLayout;
 
+import static org.apache.commons.lang3.StringUtils.isNotBlank;
 import static org.neo4j.configuration.GraphDatabaseSettings.SYSTEM_DATABASE_NAME;
-import static org.neo4j.configuration.GraphDatabaseSettings.logical_logs_location;
+import static org.neo4j.configuration.GraphDatabaseSettings.databases_root_path;
+import static org.neo4j.configuration.Settings.pathSetting;
 
 public class LegacyTransactionLogsLocator
 {
@@ -46,7 +51,16 @@ public class LegacyTransactionLogsLocator
         {
             return databaseDirectory;
         }
-        config.setIfNotSet( logical_logs_location, databaseDirectory.toPath() );
-        return config.get( logical_logs_location ).toFile();
+        Optional<String> customOldLogsLocation = config.getRaw( LEGACY_TX_LOGS_LOCATION_SETTING );
+        return customOldLogsLocation.map( mapLegacyLocationValue() ).orElse( databaseDirectory );
+    }
+
+    private Function<String,File> mapLegacyLocationValue()
+    {
+        return value ->
+        {
+            String defaultDatabase = config.get( GraphDatabaseSettings.default_database );
+            return isNotBlank( value ) ? config.get( pathSetting( LEGACY_TX_LOGS_LOCATION_SETTING, defaultDatabase, databases_root_path ) ) : null;
+        };
     }
 }

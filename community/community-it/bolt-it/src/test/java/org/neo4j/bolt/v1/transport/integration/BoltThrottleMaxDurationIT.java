@@ -47,7 +47,6 @@ import org.neo4j.bolt.v1.transport.socket.client.SocketConnection;
 import org.neo4j.bolt.v1.transport.socket.client.TransportConnection;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.function.Factory;
-import org.neo4j.graphdb.config.Setting;
 import org.neo4j.internal.helpers.Exceptions;
 import org.neo4j.internal.helpers.HostnamePort;
 import org.neo4j.kernel.impl.util.ValueUtils;
@@ -67,7 +66,6 @@ import static org.hamcrest.Matchers.instanceOf;
 import static org.junit.Assert.fail;
 import static org.neo4j.bolt.v1.messaging.util.MessageMatchers.msgSuccess;
 import static org.neo4j.bolt.v1.transport.integration.TransportTestUtil.eventuallyReceives;
-import static org.neo4j.configuration.SettingValueParsers.FALSE;
 import static org.neo4j.logging.AssertableLogProvider.inLog;
 import static org.neo4j.test.matchers.CommonMatchers.matchesExceptionMessage;
 
@@ -107,12 +105,12 @@ public class BoltThrottleMaxDurationIT
         return factory;
     }
 
-    protected Consumer<Map<Setting<?>, String>> getSettingsFunction()
+    protected Consumer<Map<String, String>> getSettingsFunction()
     {
         return settings ->
         {
-            settings.put( GraphDatabaseSettings.auth_enabled, FALSE );
-            settings.put( GraphDatabaseSettings.bolt_outbound_buffer_throttle_max_duration, "30s" );
+            settings.put( GraphDatabaseSettings.auth_enabled.name(), "false" );
+            settings.put( GraphDatabaseSettings.bolt_outbound_buffer_throttle_max_duration.name(), "30s" );
         };
     }
 

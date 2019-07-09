@@ -88,7 +88,7 @@ public class KernelDiagnosticsOfflineReportProvider extends DiagnosticsOfflineRe
      */
     private void listPlugins( List<DiagnosticsReportSource> sources )
     {
-        File pluginDirectory = config.get( GraphDatabaseSettings.plugin_dir ).toFile();
+        File pluginDirectory = config.get( GraphDatabaseSettings.plugin_dir );
         if ( fs.fileExists( pluginDirectory ) )
         {
             StringBuilder sb = new StringBuilder();
@@ -144,14 +144,14 @@ public class KernelDiagnosticsOfflineReportProvider extends DiagnosticsOfflineRe
     private void getLogFiles( List<DiagnosticsReportSource> sources )
     {
         // debug.log
-        File debugLogFile = config.get( GraphDatabaseSettings.store_internal_log_path ).toFile();
+        File debugLogFile = config.get( GraphDatabaseSettings.store_internal_log_path );
         if ( fs.fileExists( debugLogFile ) )
         {
             sources.addAll( DiagnosticsReportSources.newDiagnosticsRotatingFile( "logs/debug.log", fs, debugLogFile ) );
         }
 
         // neo4j.log
-        File logDirectory = config.get( GraphDatabaseSettings.logs_directory ).toFile();
+        File logDirectory = config.get( GraphDatabaseSettings.logs_directory );
         File neo4jLog = new File( logDirectory, "neo4j.log" );
         if ( fs.fileExists( neo4jLog ) )
         {

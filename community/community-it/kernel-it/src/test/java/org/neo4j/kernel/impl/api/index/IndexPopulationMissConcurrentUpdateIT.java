@@ -34,6 +34,7 @@ import java.util.function.Supplier;
 
 import org.neo4j.collection.Dependencies;
 import org.neo4j.configuration.GraphDatabaseSettings;
+import org.neo4j.configuration.Settings;
 import org.neo4j.dbms.api.DatabaseManagementServiceBuilder;
 import org.neo4j.dbms.database.SystemGraphInitializer;
 import org.neo4j.graphdb.Node;
@@ -73,7 +74,6 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
-import static org.neo4j.configuration.SettingValueParsers.FALSE;
 import static org.neo4j.internal.helpers.collection.Iterables.count;
 import static org.neo4j.internal.helpers.collection.Iterables.filter;
 import static org.neo4j.internal.kernel.api.InternalIndexState.POPULATING;
@@ -101,7 +101,7 @@ public class IndexPopulationMissConcurrentUpdateIT
             dependencies.satisfyDependencies( SystemGraphInitializer.NO_OP );   // disable system graph construction because it will interfere with some tests
             return new TestDatabaseManagementServiceBuilder().impermanent().setExternalDependencies( dependencies ).addExtension( index );
         }
-    }.withSetting( GraphDatabaseSettings.multi_threaded_schema_index_population_enabled, FALSE )
+    }.withSetting( GraphDatabaseSettings.multi_threaded_schema_index_population_enabled, Settings.FALSE )
      .withSetting( GraphDatabaseSettings.default_schema_provider, ControlledSchemaIndexProvider.INDEX_PROVIDER.name() );
     // The single-threaded setting makes the test deterministic. The multi-threaded variant has the same problem tested below.
 

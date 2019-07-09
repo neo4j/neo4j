@@ -40,7 +40,6 @@ import org.neo4j.cli.CommandFailedException;
 import org.neo4j.cli.Converters.ByteUnitConverter;
 import org.neo4j.cli.ExecutionContext;
 import org.neo4j.configuration.Config;
-import org.neo4j.configuration.ConfigUtils;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.configuration.LayoutConfig;
 import org.neo4j.internal.batchimport.Configuration;
@@ -57,7 +56,7 @@ import static java.util.stream.Collectors.toSet;
 import static org.eclipse.collections.impl.tuple.Tuples.pair;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.configuration.GraphDatabaseSettings.databases_root_path;
-import static org.neo4j.configuration.SettingValueParsers.parseLongWithUnit;
+import static org.neo4j.configuration.Settings.parseLongWithUnit;
 import static org.neo4j.csv.reader.Configuration.COMMAS;
 import static org.neo4j.importer.CsvImporter.DEFAULT_REPORT_FILE_NAME;
 import static org.neo4j.internal.batchimport.Configuration.DEFAULT;
@@ -211,7 +210,7 @@ public class ImportCommand extends AbstractCommand
         try
         {
             final var databaseConfig = loadNeo4jConfig();
-            final var databaseLayout = DatabaseLayout.of( databaseConfig.get( databases_root_path ).toFile(), LayoutConfig.of( databaseConfig ), database );
+            final var databaseLayout = DatabaseLayout.of( databaseConfig.get( databases_root_path ), LayoutConfig.of( databaseConfig ), database );
             final var csvConfig = csvConfiguration();
             final var importConfig = importConfiguration();
 
@@ -259,13 +258,23 @@ public class ImportCommand extends AbstractCommand
     @VisibleForTesting
     Config loadNeo4jConfig()
     {
-        Config cfg = Config.newBuilder()
-                .set( GraphDatabaseSettings.neo4j_home, ctx.confDir().toAbsolutePath().toString() )
-                .fromFileNoThrow( ctx.confDir().resolve( Config.DEFAULT_CONFIG_FILE_NAME ) )
-                .fromFileNoThrow( additionalConfig )
+        Config config = Config.fromFile( ctx.confDir().resolve( Config.DEFAULT_CONFIG_FILE_NAME ) )
+                .withHome( ctx.homeDir() )
+                .withConnectorsDisabled()
+                .withNoThrowOnFileLoadFailure()
                 .build();
-        ConfigUtils.disableAllConnectors( cfg );
-        return cfg;
+
+        if ( additionalConfig != null )
+        {
+            final var cfg = Config.fromFile( additionalConfig ).build();
+            // This is a temporary hack. Without this line there the loaded additionalConfig instance will always have the
+            // neo4j_home setting set to the value of system property "user.dir", which overrides whatever homeDir that was given to
+            // this command. At the time of writing this there's a configuration refactoring which will, among other things, fix this issue.
+            cfg.augment( GraphDatabaseSettings.neo4j_home, ctx.homeDir().toString() );
+            config.augment( cfg );
+        }
+
+        return config;
     }
 
     private org.neo4j.csv.reader.Configuration csvConfiguration()

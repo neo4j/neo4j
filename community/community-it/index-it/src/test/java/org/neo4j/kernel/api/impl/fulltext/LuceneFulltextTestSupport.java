@@ -28,7 +28,6 @@ import org.junit.rules.RuleChain;
 import java.io.IOException;
 import java.lang.reflect.Field;
 import java.util.Arrays;
-import java.util.Map;
 
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
@@ -92,7 +91,7 @@ public class LuceneFulltextTestSupport
 
     void applySetting( Setting<String> setting, String value ) throws IOException
     {
-        db.restartDatabase( Map.of( setting, value ) );
+        db.restartDatabase( setting.name(), value );
         db.ensureStarted();
         fulltextAdapter = getAccessor();
     }

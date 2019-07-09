@@ -19,7 +19,8 @@
  */
 package org.neo4j.kernel.impl.event;
 
-import org.junit.jupiter.api.Test;
+import org.junit.Rule;
+import org.junit.Test;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -50,20 +51,19 @@ import org.neo4j.internal.helpers.Exceptions;
 import org.neo4j.kernel.impl.MyRelTypes;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.TestLabels;
-import org.neo4j.test.extension.ImpermanentDbmsExtension;
-import org.neo4j.test.extension.Inject;
+import org.neo4j.test.rule.DbmsRule;
+import org.neo4j.test.rule.ImpermanentDbmsRule;
 
 import static java.lang.String.format;
 import static org.hamcrest.CoreMatchers.containsString;
-import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assertions.fail;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.configuration.GraphDatabaseSettings.SYSTEM_DATABASE_NAME;
 import static org.neo4j.graphdb.Label.label;
@@ -72,62 +72,95 @@ import static org.neo4j.internal.helpers.collection.Iterables.count;
 import static org.neo4j.test.mockito.matcher.Neo4jMatchers.hasProperty;
 import static org.neo4j.test.mockito.matcher.Neo4jMatchers.inTx;
 
-@ImpermanentDbmsExtension
-class TestTransactionEvents
+public class TestTransactionEvents
 {
-    @Inject
-    private DatabaseManagementService dbms;
-
-    @Inject
-    private GraphDatabaseAPI db;
-
+    @Rule
+    public final DbmsRule dbRule = new ImpermanentDbmsRule();
     private static final TimeUnit AWAIT_INDEX_UNIT = TimeUnit.SECONDS;
     private static final int AWAIT_INDEX_DURATION = 60;
 
     @Test
-    void forbidToRegisterTransactionEventListenerOnSystemDatabase()
+    public void forbidToRegisterTransactionEventListenerOnSystemDatabase()
     {
-        assertThrows( IllegalArgumentException.class,
-                () -> dbms.registerTransactionEventListener( SYSTEM_DATABASE_NAME, new DummyTransactionEventListener<>( 0 ) ) );
+        DatabaseManagementService managementService = dbRule.getManagementService();
+        try
+        {
+            managementService.registerTransactionEventListener( SYSTEM_DATABASE_NAME, new DummyTransactionEventListener<>( 0 ) );
+            fail( "Shouldn't be able to do unregister on a unregistered listener" );
+        }
+        catch ( IllegalArgumentException e )
+        {
+            // expected
+        }
     }
 
     @Test
-    void forbidToRegisterNullTransactionEventListener()
+    public void forbidToRegisterNullTransactionEventListener()
     {
-        assertThrows( NullPointerException.class,
-                () -> dbms.registerTransactionEventListener( DEFAULT_DATABASE_NAME, null ) );
+        DatabaseManagementService managementService = dbRule.getManagementService();
+        try
+        {
+            managementService.registerTransactionEventListener( DEFAULT_DATABASE_NAME, null );
+            fail( "Should fail" );
+        }
+        catch ( NullPointerException e )
+        {
+            // expected
+        }
     }
 
     @Test
-    void forbidToRegisterTransactionEventListenerForDatabaseNull()
+    public void forbidToRegisterTransactionEventListenerForDatabaseNull()
     {
-        assertThrows( NullPointerException.class,
-                () -> dbms.registerTransactionEventListener( null, new DummyTransactionEventListener<>( 0 ) ) );
+        DatabaseManagementService managementService = dbRule.getManagementService();
+        try
+        {
+            managementService.registerTransactionEventListener( null, new DummyTransactionEventListener<>( 0 ) );
+            fail( "Should fail" );
+        }
+        catch ( NullPointerException e )
+        {
+            // expected
+        }
     }
 
     @Test
-    void testRegisterUnregisterListeners()
+    public void testRegisterUnregisterListeners()
     {
         Object value1 = 10;
         Object value2 = 3.5D;
         DummyTransactionEventListener<Integer> listener1 = new DummyTransactionEventListener<>( (Integer) value1 );
         DummyTransactionEventListener<Double> listener2 = new DummyTransactionEventListener<>( (Double) value2 );
 
-        assertThrows( IllegalStateException.class,
-                () -> dbms.unregisterTransactionEventListener( DEFAULT_DATABASE_NAME, listener1 ) );
+        DatabaseManagementService managementService = dbRule.getManagementService();
+        try
+        {
+            managementService.unregisterTransactionEventListener( DEFAULT_DATABASE_NAME, listener1 );
+            fail( "Shouldn't be able to do unregister on a unregistered listener" );
+        }
+        catch ( IllegalStateException e )
+        { /* Good */
+        }
 
-        dbms.registerTransactionEventListener( DEFAULT_DATABASE_NAME, listener1 );
-        dbms.unregisterTransactionEventListener( DEFAULT_DATABASE_NAME, listener1 );
+        managementService.registerTransactionEventListener( DEFAULT_DATABASE_NAME, listener1 );
+        managementService.unregisterTransactionEventListener( DEFAULT_DATABASE_NAME, listener1 );
 
-        assertThrows( IllegalStateException.class,
-                () -> dbms.unregisterTransactionEventListener( DEFAULT_DATABASE_NAME, listener1 ) );
+        try
+        {
+            managementService.unregisterTransactionEventListener( DEFAULT_DATABASE_NAME, listener1 );
+            fail( "Shouldn't be able to do unregister on a unregistered listener" );
+        }
+        catch ( IllegalStateException e )
+        { /* Good */
+        }
 
-        dbms.registerTransactionEventListener( DEFAULT_DATABASE_NAME, listener1 );
-        dbms.registerTransactionEventListener( DEFAULT_DATABASE_NAME, listener2 );
-        dbms.unregisterTransactionEventListener( DEFAULT_DATABASE_NAME, listener1 );
-        dbms.unregisterTransactionEventListener( DEFAULT_DATABASE_NAME, listener2 );
+        managementService.registerTransactionEventListener( DEFAULT_DATABASE_NAME, listener1 );
+        managementService.registerTransactionEventListener( DEFAULT_DATABASE_NAME, listener2 );
+        managementService.unregisterTransactionEventListener( DEFAULT_DATABASE_NAME, listener1 );
+        managementService.unregisterTransactionEventListener( DEFAULT_DATABASE_NAME, listener2 );
 
-        dbms.registerTransactionEventListener( DEFAULT_DATABASE_NAME, listener1 );
+        managementService.registerTransactionEventListener( DEFAULT_DATABASE_NAME, listener1 );
+        GraphDatabaseAPI db = dbRule.getGraphDatabaseAPI();
         try ( Transaction tx = db.beginTx() )
         {
             db.createNode().delete();
@@ -139,15 +172,17 @@ class TestTransactionEvents
         assertNull( listener1.afterRollback );
         assertEquals( value1, listener1.receivedState );
         assertNotNull( listener1.receivedTransactionData );
-        dbms.unregisterTransactionEventListener( DEFAULT_DATABASE_NAME, listener1 );
+        managementService.unregisterTransactionEventListener( DEFAULT_DATABASE_NAME, listener1 );
     }
 
     @Test
-    void makeSureListenersCantBeRegisteredTwice()
+    public void makeSureListenersCantBeRegisteredTwice()
     {
         DummyTransactionEventListener<Object> listener = new DummyTransactionEventListener<>( null );
-        dbms.registerTransactionEventListener( DEFAULT_DATABASE_NAME, listener );
-        dbms.registerTransactionEventListener( DEFAULT_DATABASE_NAME, listener );
+        DatabaseManagementService managementService = dbRule.getManagementService();
+        GraphDatabaseService db = dbRule.getGraphDatabaseAPI();
+        managementService.registerTransactionEventListener( DEFAULT_DATABASE_NAME, listener );
+        managementService.registerTransactionEventListener( DEFAULT_DATABASE_NAME, listener );
         try ( Transaction tx = db.beginTx() )
         {
             db.createNode().delete();
@@ -157,16 +192,18 @@ class TestTransactionEvents
         assertEquals( Integer.valueOf( 1 ), listener.afterCommit );
         assertNull( listener.afterRollback );
 
-        dbms.unregisterTransactionEventListener( DEFAULT_DATABASE_NAME, listener );
+        managementService.unregisterTransactionEventListener( DEFAULT_DATABASE_NAME, listener );
     }
 
     @Test
-    void shouldGetCorrectTransactionDataUponCommit()
+    public void shouldGetCorrectTransactionDataUponCommit()
     {
         // Create new data, nothing modified, just added/created
         ExpectedTransactionData expectedData = new ExpectedTransactionData();
         VerifyingTransactionEventListener listener = new VerifyingTransactionEventListener( expectedData );
-        dbms.registerTransactionEventListener( DEFAULT_DATABASE_NAME, listener );
+        DatabaseManagementService managementService = dbRule.getManagementService();
+        GraphDatabaseService db = dbRule.getGraphDatabaseAPI();
+        managementService.registerTransactionEventListener( DEFAULT_DATABASE_NAME, listener );
         Node node1;
         Node node2;
         Node node3;
@@ -211,7 +248,7 @@ class TestTransactionEvents
                 tx.success();
             }
 
-            assertTrue( listener.hasBeenCalled(), "Should have been invoked" );
+            assertTrue( "Should have been invoked", listener.hasBeenCalled() );
             Throwable failure = listener.failure();
             if ( failure != null )
             {
@@ -220,13 +257,13 @@ class TestTransactionEvents
         }
         finally
         {
-            dbms.unregisterTransactionEventListener( DEFAULT_DATABASE_NAME, listener );
+            managementService.unregisterTransactionEventListener( DEFAULT_DATABASE_NAME, listener );
         }
 
         // Use the above data and modify it, change properties, delete stuff
         expectedData = new ExpectedTransactionData();
         listener = new VerifyingTransactionEventListener( expectedData );
-        dbms.registerTransactionEventListener( DEFAULT_DATABASE_NAME, listener );
+        managementService.registerTransactionEventListener( DEFAULT_DATABASE_NAME, listener );
         try
         {
             try ( Transaction tx = db.beginTx() )
@@ -276,7 +313,7 @@ class TestTransactionEvents
                 tx.success();
             }
 
-            assertTrue( listener.hasBeenCalled(), "Should have been invoked" );
+            assertTrue( "Should have been invoked", listener.hasBeenCalled() );
             Throwable failure = listener.failure();
             if ( failure != null )
             {
@@ -285,21 +322,23 @@ class TestTransactionEvents
         }
         finally
         {
-            dbms.unregisterTransactionEventListener( DEFAULT_DATABASE_NAME, listener );
+            managementService.unregisterTransactionEventListener( DEFAULT_DATABASE_NAME, listener );
         }
     }
 
     @Test
-    void makeSureBeforeAfterAreCalledCorrectly()
+    public void makeSureBeforeAfterAreCalledCorrectly()
     {
         List<TransactionEventListener<Object>> listeners = new ArrayList<>();
         listeners.add( new FailingEventListener<>( new DummyTransactionEventListener<>( null ), false ) );
         listeners.add( new FailingEventListener<>( new DummyTransactionEventListener<>( null ), false ) );
         listeners.add( new FailingEventListener<>( new DummyTransactionEventListener<>( null ), true ) );
         listeners.add( new FailingEventListener<>( new DummyTransactionEventListener<>( null ), false ) );
+        DatabaseManagementService managementService = dbRule.getManagementService();
+        GraphDatabaseService db = dbRule.getGraphDatabaseAPI();
         for ( TransactionEventListener<Object> listener : listeners )
         {
-            dbms.registerTransactionEventListener( DEFAULT_DATABASE_NAME, listener );
+            managementService.registerTransactionEventListener( DEFAULT_DATABASE_NAME, listener );
         }
 
         try
@@ -317,7 +356,7 @@ class TestTransactionEvents
             }
             verifyListenerCalls( listeners, false );
 
-            dbms.unregisterTransactionEventListener( DEFAULT_DATABASE_NAME, listeners.remove( 2 ) );
+            managementService.unregisterTransactionEventListener( DEFAULT_DATABASE_NAME, listeners.remove( 2 ) );
             for ( TransactionEventListener<Object> listener : listeners )
             {
                 ((DummyTransactionEventListener<Object>) ((FailingEventListener<Object>)listener).source).reset();
@@ -333,13 +372,13 @@ class TestTransactionEvents
         {
             for ( TransactionEventListener<Object> listener : listeners )
             {
-                dbms.unregisterTransactionEventListener( DEFAULT_DATABASE_NAME, listener );
+                managementService.unregisterTransactionEventListener( DEFAULT_DATABASE_NAME, listener );
             }
         }
     }
 
     @Test
-    void shouldBeAbleToAccessExceptionThrownInEventHook()
+    public void shouldBeAbleToAccessExceptionThrownInEventHook()
     {
         class MyFancyException extends Exception
         {
@@ -347,7 +386,9 @@ class TestTransactionEvents
         }
 
         ExceptionThrowingEventListener listener = new ExceptionThrowingEventListener( new MyFancyException(), null, null );
-        dbms.registerTransactionEventListener( DEFAULT_DATABASE_NAME, listener );
+        DatabaseManagementService managementService = dbRule.getManagementService();
+        GraphDatabaseService db = dbRule.getGraphDatabaseAPI();
+        managementService.registerTransactionEventListener( DEFAULT_DATABASE_NAME, listener );
 
         try
         {
@@ -371,18 +412,20 @@ class TestTransactionEvents
                     }
                 }
                 while ( currentEx.getCause() != null );
-                fail( "Expected to find the exception thrown in the event hook as the cause of transaction failure." );
+                fail("Expected to find the exception thrown in the event hook as the cause of transaction failure.");
             }
         }
         finally
         {
-            dbms.unregisterTransactionEventListener( DEFAULT_DATABASE_NAME, listener );
+            managementService.unregisterTransactionEventListener( DEFAULT_DATABASE_NAME, listener );
         }
     }
 
     @Test
-    void deleteNodeRelTriggerPropertyRemoveEvents()
+    public void deleteNodeRelTriggerPropertyRemoveEvents()
     {
+        DatabaseManagementService managementService = dbRule.getManagementService();
+        GraphDatabaseService db = dbRule.getGraphDatabaseAPI();
         Node node1;
         Node node2;
         Relationship rel;
@@ -399,7 +442,7 @@ class TestTransactionEvents
             tx.success();
         }
         MyTxEventListener listener = new MyTxEventListener();
-        dbms.registerTransactionEventListener( DEFAULT_DATABASE_NAME, listener );
+        managementService.registerTransactionEventListener( DEFAULT_DATABASE_NAME, listener );
         try ( Transaction tx = db.beginTx() )
         {
             rel.delete();
@@ -419,10 +462,12 @@ class TestTransactionEvents
     }
 
     @Test
-    void makeSureListenerIsntCalledWhenTxRolledBack()
+    public void makeSureListenerIsntCalledWhenTxRolledBack()
     {
         DummyTransactionEventListener<Integer> listener = new DummyTransactionEventListener<>( 10 );
-        dbms.registerTransactionEventListener( DEFAULT_DATABASE_NAME, listener );
+        DatabaseManagementService managementService = dbRule.getManagementService();
+        GraphDatabaseService db = dbRule.getGraphDatabaseAPI();
+        managementService.registerTransactionEventListener( DEFAULT_DATABASE_NAME, listener );
         try
         {
             try ( Transaction ignore = db.beginTx() )
@@ -435,15 +480,17 @@ class TestTransactionEvents
         }
         finally
         {
-            dbms.unregisterTransactionEventListener( DEFAULT_DATABASE_NAME, listener );
+            managementService.unregisterTransactionEventListener( DEFAULT_DATABASE_NAME, listener );
         }
     }
 
     @Test
-    void modifiedPropertyCanByFurtherModifiedInBeforeCommit()
+    public void modifiedPropertyCanByFurtherModifiedInBeforeCommit()
     {
         // Given
         // -- create node and set property on it in one transaction
+        DatabaseManagementService managementService = dbRule.getManagementService();
+        GraphDatabaseService db = dbRule.getGraphDatabaseAPI();
         final String key = "key";
         final Object value1 = "the old value";
         final Object value2 = "the new value";
@@ -466,7 +513,7 @@ class TestTransactionEvents
                 return null;
             }
         };
-        dbms.registerTransactionEventListener( DEFAULT_DATABASE_NAME, listener );
+        managementService.registerTransactionEventListener( DEFAULT_DATABASE_NAME, listener );
 
         try ( Transaction tx = db.beginTx() )
         {
@@ -476,13 +523,15 @@ class TestTransactionEvents
         }
         // Then
         assertThat(node, inTx(db, hasProperty(key).withValue(value2)));
-        dbms.unregisterTransactionEventListener( DEFAULT_DATABASE_NAME, listener );
+        managementService.unregisterTransactionEventListener( DEFAULT_DATABASE_NAME, listener );
     }
 
     @Test
-    void nodeCanBecomeSchemaIndexableInBeforeCommitByAddingProperty()
+    public void nodeCanBecomeSchemaIndexableInBeforeCommitByAddingProperty()
     {
         // Given we have a schema index...
+        DatabaseManagementService managementService = dbRule.getManagementService();
+        GraphDatabaseService db = dbRule.getGraphDatabaseAPI();
         Label label = label( "Label" );
         try ( Transaction tx = db.beginTx() )
         {
@@ -491,7 +540,7 @@ class TestTransactionEvents
         }
 
         // ... and a transaction event listener that likes to add the indexed property on nodes
-        dbms.registerTransactionEventListener( DEFAULT_DATABASE_NAME, new TransactionEventListenerAdapter<>()
+        managementService.registerTransactionEventListener( DEFAULT_DATABASE_NAME, new TransactionEventListenerAdapter<>()
         {
             @Override
             public Object beforeCommit( TransactionData data, GraphDatabaseService databaseService )
@@ -524,9 +573,11 @@ class TestTransactionEvents
     }
 
     @Test
-    void nodeCanBecomeSchemaIndexableInBeforeCommitByAddingLabel()
+    public void nodeCanBecomeSchemaIndexableInBeforeCommitByAddingLabel()
     {
         // Given we have a schema index...
+        DatabaseManagementService managementService = dbRule.getManagementService();
+        GraphDatabaseService db = dbRule.getGraphDatabaseAPI();
         final Label label = label( "Label" );
         try ( Transaction tx = db.beginTx() )
         {
@@ -535,7 +586,7 @@ class TestTransactionEvents
         }
 
         // ... and a transaction event listener that likes to add the indexed property on nodes
-        dbms.registerTransactionEventListener( DEFAULT_DATABASE_NAME, new TransactionEventListenerAdapter<>()
+        managementService.registerTransactionEventListener( DEFAULT_DATABASE_NAME, new TransactionEventListenerAdapter<>()
         {
             @Override
             public Object beforeCommit( TransactionData data, GraphDatabaseService databaseService )
@@ -569,11 +620,14 @@ class TestTransactionEvents
     }
 
     @Test
-    void shouldAccessAssignedLabels()
+    public void shouldAccessAssignedLabels()
     {
         // given
+        DatabaseManagementService managementService = dbRule.getManagementService();
+        GraphDatabaseService db = dbRule.getGraphDatabaseAPI();
+
         ChangedLabels labels = new ChangedLabels();
-        dbms.registerTransactionEventListener( DEFAULT_DATABASE_NAME, labels );
+        managementService.registerTransactionEventListener( DEFAULT_DATABASE_NAME, labels );
         try
         {
             // when
@@ -596,17 +650,19 @@ class TestTransactionEvents
         }
         finally
         {
-            dbms.unregisterTransactionEventListener( DEFAULT_DATABASE_NAME, labels );
+            managementService.unregisterTransactionEventListener( DEFAULT_DATABASE_NAME, labels );
         }
     }
 
     @Test
-    void shouldAccessRemovedLabels()
+    public void shouldAccessRemovedLabels()
     {
         // given
+        DatabaseManagementService managementService = dbRule.getManagementService();
+        GraphDatabaseService db = dbRule.getGraphDatabaseAPI();
 
         ChangedLabels labels = new ChangedLabels();
-        dbms.registerTransactionEventListener( DEFAULT_DATABASE_NAME, labels );
+        managementService.registerTransactionEventListener( DEFAULT_DATABASE_NAME, labels );
         try
         {
             Node node1;
@@ -643,14 +699,16 @@ class TestTransactionEvents
         }
         finally
         {
-            dbms.unregisterTransactionEventListener( DEFAULT_DATABASE_NAME, labels );
+            managementService.unregisterTransactionEventListener( DEFAULT_DATABASE_NAME, labels );
         }
     }
 
     @Test
-    void shouldAccessRelationshipDataInAfterCommit()
+    public void shouldAccessRelationshipDataInAfterCommit()
     {
         // GIVEN
+        DatabaseManagementService managementService = dbRule.getManagementService();
+        final GraphDatabaseService db = dbRule.getGraphDatabaseAPI();
         final AtomicInteger accessCount = new AtomicInteger();
         final Map<Long,RelationshipData> expectedRelationshipData = new HashMap<>();
         TransactionEventListener<Void> listener = new TransactionEventListenerAdapter<>()
@@ -687,7 +745,7 @@ class TestTransactionEvents
                 assertEquals( expectancy.endNode, relationship.getEndNode() );
             }
         };
-        dbms.registerTransactionEventListener( DEFAULT_DATABASE_NAME, listener );
+        managementService.registerTransactionEventListener( DEFAULT_DATABASE_NAME, listener );
 
         // WHEN
         try
@@ -725,13 +783,16 @@ class TestTransactionEvents
         }
         finally
         {
-            dbms.unregisterTransactionEventListener( DEFAULT_DATABASE_NAME, listener );
+            managementService.unregisterTransactionEventListener( DEFAULT_DATABASE_NAME, listener );
         }
     }
 
     @Test
-    void shouldProvideTheCorrectRelationshipData()
+    public void shouldProvideTheCorrectRelationshipData()
     {
+        DatabaseManagementService managementService = dbRule.getManagementService();
+        GraphDatabaseService db = dbRule.getGraphDatabaseAPI();
+
         // create a rel type so the next type id is non zero
         try ( Transaction tx = db.beginTx() )
         {
@@ -755,7 +816,7 @@ class TestTransactionEvents
 
         final Set<String> changedRelationships = new HashSet<>();
 
-        dbms.registerTransactionEventListener( DEFAULT_DATABASE_NAME, new TransactionEventListenerAdapter<Void>()
+        managementService.registerTransactionEventListener( DEFAULT_DATABASE_NAME, new TransactionEventListenerAdapter<Void>()
         {
             @Override
             public Void beforeCommit( TransactionData data, GraphDatabaseService databaseService )
@@ -777,37 +838,41 @@ class TestTransactionEvents
         }
 
         assertEquals( 1, changedRelationships.size() );
-        assertTrue( changedRelationships.contains( livesIn.name() ), livesIn + " not in " + changedRelationships.toString() );
+        assertTrue( livesIn + " not in " + changedRelationships.toString(),
+                changedRelationships.contains( livesIn.name() ) );
     }
 
     @Test
-    void shouldNotFireEventForReadOnlyTransaction()
+    public void shouldNotFireEventForReadOnlyTransaction()
     {
         // GIVEN
         Node root = createTree( 3, 3 );
-        dbms.registerTransactionEventListener( DEFAULT_DATABASE_NAME,
+        DatabaseManagementService managementService = dbRule.getManagementService();
+        managementService.registerTransactionEventListener( DEFAULT_DATABASE_NAME,
                 new ExceptionThrowingEventListener( new RuntimeException( "Just failing" ) ) );
 
         // WHEN
-        try ( Transaction tx = db.beginTx() )
+        try ( Transaction tx = dbRule.beginTx() )
         {
-            count( db.traversalDescription().traverse( root ) );
+            count( dbRule.getGraphDatabaseAPI().traversalDescription().traverse( root ) );
             tx.success();
         }
     }
 
     @Test
-    void shouldNotFireEventForNonDataTransactions()
+    public void shouldNotFireEventForNonDataTransactions()
     {
         // GIVEN
         final AtomicInteger counter = new AtomicInteger();
-        dbms.registerTransactionEventListener( DEFAULT_DATABASE_NAME, new TransactionEventListenerAdapter<Void>()
+        DatabaseManagementService managementService = dbRule.getManagementService();
+        managementService.registerTransactionEventListener( DEFAULT_DATABASE_NAME, new TransactionEventListenerAdapter<Void>()
         {
             @Override
             public Void beforeCommit( TransactionData data, GraphDatabaseService databaseService )
             {
-                assertTrue( data.createdNodes().iterator().hasNext() ||
-                        data.createdRelationships().iterator().hasNext(), "Expected only transactions that had nodes or relationships created" );
+                assertTrue( "Expected only transactions that had nodes or relationships created",
+                        data.createdNodes().iterator().hasNext() ||
+                        data.createdRelationships().iterator().hasNext() );
                 counter.incrementAndGet();
                 return null;
             }
@@ -817,36 +882,36 @@ class TestTransactionEvents
         assertEquals( 0, counter.get() );
 
         // WHEN creating a label token
-        try ( Transaction tx = db.beginTx() )
+        try ( Transaction tx = dbRule.beginTx() )
         {
-            db.createNode( label );
+            dbRule.createNode( label );
             tx.success();
         }
         assertEquals( 1, counter.get() );
         // ... a property key token
-        try ( Transaction tx = db.beginTx() )
+        try ( Transaction tx = dbRule.beginTx() )
         {
-            db.createNode().setProperty( key, "value" );
+            dbRule.createNode().setProperty( key, "value" );
             tx.success();
         }
         assertEquals( 2, counter.get() );
         // ... and a relationship type
-        try ( Transaction tx = db.beginTx() )
+        try ( Transaction tx = dbRule.beginTx() )
         {
-            db.createNode().createRelationshipTo( db.createNode(), withName( "A_TYPE" ) );
+            dbRule.createNode().createRelationshipTo( dbRule.createNode(), withName( "A_TYPE" ) );
             tx.success();
         }
         assertEquals( 3, counter.get() );
         // ... also when creating an index
-        try ( Transaction tx = db.beginTx() )
+        try ( Transaction tx = dbRule.beginTx() )
         {
-            db.schema().indexFor( label ).on( key ).create();
+            dbRule.schema().indexFor( label ).on( key ).create();
             tx.success();
         }
         // ... or a constraint
-        try ( Transaction tx = db.beginTx() )
+        try ( Transaction tx = dbRule.beginTx() )
         {
-            db.schema().constraintFor( label ).assertPropertyIsUnique( "otherkey" ).create();
+            dbRule.schema().constraintFor( label ).assertPropertyIsUnique( "otherkey" ).create();
             tx.success();
         }
 
@@ -855,16 +920,17 @@ class TestTransactionEvents
     }
 
     @Test
-    void shouldBeAbleToTouchDataOutsideTxDataInAfterCommit()
+    public void shouldBeAbleToTouchDataOutsideTxDataInAfterCommit()
     {
         // GIVEN
         final Node node = createNode( "one", "Two", "three", "Four" );
-        dbms.registerTransactionEventListener( DEFAULT_DATABASE_NAME, new TransactionEventListenerAdapter<>()
+        DatabaseManagementService managementService = dbRule.getManagementService();
+        managementService.registerTransactionEventListener( DEFAULT_DATABASE_NAME, new TransactionEventListenerAdapter<>()
         {
             @Override
             public void afterCommit( TransactionData data, Object nothing, GraphDatabaseService databaseService )
             {
-                try ( Transaction tx = db.beginTx() )
+                try ( Transaction tx = dbRule.beginTx() )
                 {
                     for ( String key : node.getPropertyKeys() )
                     {   // Just to see if one can reach them
@@ -875,34 +941,35 @@ class TestTransactionEvents
             }
         } );
 
-        try ( Transaction tx = db.beginTx() )
+        try ( Transaction tx = dbRule.beginTx() )
         {
             // WHEN/THEN
-            db.createNode();
+            dbRule.createNode();
             node.setProperty( "five", "Six" );
             tx.success();
         }
     }
 
     @Test
-    void shouldAllowToStringOnCreatedRelationshipInAfterCommit()
+    public void shouldAllowToStringOnCreatedRelationshipInAfterCommit()
     {
         // GIVEN
         Relationship relationship;
         Node startNode;
         Node endNode;
         RelationshipType type = MyRelTypes.TEST;
-        try ( Transaction tx = db.beginTx() )
+        DatabaseManagementService managementService = dbRule.getManagementService();
+        try ( Transaction tx = dbRule.beginTx() )
         {
-            startNode = db.createNode();
-            endNode = db.createNode();
+            startNode = dbRule.createNode();
+            endNode = dbRule.createNode();
             relationship = startNode.createRelationshipTo( endNode, type );
             tx.success();
         }
 
         // WHEN
         AtomicReference<String> deletedToString = new AtomicReference<>();
-        dbms.registerTransactionEventListener( DEFAULT_DATABASE_NAME, new TransactionEventListenerAdapter<>()
+        managementService.registerTransactionEventListener( DEFAULT_DATABASE_NAME, new TransactionEventListenerAdapter<>()
         {
             @Override
             public void afterCommit( TransactionData data, Object state, GraphDatabaseService databaseService )
@@ -913,7 +980,7 @@ class TestTransactionEvents
                 }
             }
         } );
-        try ( Transaction tx = db.beginTx() )
+        try ( Transaction tx = dbRule.beginTx() )
         {
             relationship.delete();
             tx.success();
@@ -927,9 +994,10 @@ class TestTransactionEvents
     }
 
     @Test
-    void shouldGetCallToAfterRollbackEvenIfBeforeCommitFailed()
+    public void shouldGetCallToAfterRollbackEvenIfBeforeCommitFailed()
     {
         // given
+        DatabaseManagementService managementService = dbRule.getManagementService();
         CapturingEventListener<Integer> firstWorkingListener = new CapturingEventListener<>( () -> 5 );
         String failureMessage = "Massive fail";
         CapturingEventListener<Integer> faultyListener = new CapturingEventListener<>( () ->
@@ -937,15 +1005,15 @@ class TestTransactionEvents
             throw new RuntimeException( failureMessage );
         } );
         CapturingEventListener<Integer> otherWorkingListener = new CapturingEventListener<>( () -> 10 );
-        dbms.registerTransactionEventListener( DEFAULT_DATABASE_NAME, firstWorkingListener );
-        dbms.registerTransactionEventListener( DEFAULT_DATABASE_NAME, faultyListener );
-        dbms.registerTransactionEventListener( DEFAULT_DATABASE_NAME, otherWorkingListener );
+        managementService.registerTransactionEventListener( DEFAULT_DATABASE_NAME, firstWorkingListener );
+        managementService.registerTransactionEventListener( DEFAULT_DATABASE_NAME, faultyListener );
+        managementService.registerTransactionEventListener( DEFAULT_DATABASE_NAME, otherWorkingListener );
 
         boolean failed = false;
-        try ( Transaction tx = db.beginTx() )
+        try ( Transaction tx = dbRule.beginTx() )
         {
             // when
-            db.createNode();
+            dbRule.createNode();
             tx.success();
         }
         catch ( Exception e )
@@ -1171,9 +1239,9 @@ class TestTransactionEvents
 
     private Node createNode( String... properties )
     {
-        try ( Transaction tx = db.beginTx() )
+        try ( Transaction tx = dbRule.beginTx() )
         {
-            Node node = db.createNode();
+            Node node = dbRule.createNode();
             for ( int i = 0; i < properties.length; i++ )
             {
                 node.setProperty( properties[i++], properties[i] );
@@ -1185,9 +1253,9 @@ class TestTransactionEvents
 
     private Node createTree( int depth, int width )
     {
-        try ( Transaction tx = db.beginTx() )
+        try ( Transaction tx = dbRule.beginTx() )
         {
-            Node root = db.createNode( TestLabels.LABEL_ONE );
+            Node root = dbRule.createNode( TestLabels.LABEL_ONE );
             createTree( root, depth, width, 0 );
             tx.success();
             return root;
@@ -1202,7 +1270,7 @@ class TestTransactionEvents
         }
         for ( int i = 0; i < width; i++ )
         {
-            Node child = db.createNode( TestLabels.LABEL_TWO );
+            Node child = dbRule.createNode( TestLabels.LABEL_TWO );
             parent.createRelationshipTo( child, MyRelTypes.TEST );
             createTree( child, maxDepth, width, currentDepth + 1 );
         }
@@ -1233,14 +1301,14 @@ class TestTransactionEvents
                 Set<String> labels = expected.get(entry.node());
                 String message = String.format("':%s' should not be %s %s",
                         entry.label().name(), change, entry.node() );
-                assertNotNull( labels, message );
-                assertTrue( labels.remove( entry.label().name() ), message );
+                assertNotNull( message, labels );
+                assertTrue( message, labels.remove( entry.label().name() ) );
                 if ( labels.isEmpty() )
                 {
                     expected.remove( entry.node() );
                 }
             }
-            assertTrue( expected.isEmpty(), String.format("Expected more labels %s nodes: %s", change, expected) );
+            assertTrue(String.format("Expected more labels %s nodes: %s", change, expected), expected.isEmpty());
         }
 
         public boolean isEmpty()

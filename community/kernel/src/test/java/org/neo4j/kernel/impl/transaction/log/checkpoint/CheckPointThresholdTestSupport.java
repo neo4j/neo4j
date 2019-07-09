@@ -29,7 +29,6 @@ import java.util.function.Consumer;
 
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
-import org.neo4j.configuration.SettingImpl;
 import org.neo4j.kernel.impl.transaction.log.pruning.LogPruning;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.NullLogProvider;
@@ -39,6 +38,7 @@ import org.neo4j.time.FakeClock;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.neo4j.internal.helpers.collection.MapUtil.stringMap;
 
 public class CheckPointThresholdTestSupport
 {
@@ -68,19 +68,17 @@ public class CheckPointThresholdTestSupport
 
     protected void withPolicy( String policy )
     {
-        config.set( GraphDatabaseSettings.check_point_policy,
-                ((SettingImpl<GraphDatabaseSettings.CheckpointPolicy>) GraphDatabaseSettings.check_point_policy).parse( policy ) );
+        config.augment( stringMap( GraphDatabaseSettings.check_point_policy.name(), policy ) );
     }
 
     protected void withIntervalTime( String time )
     {
-        config.set( GraphDatabaseSettings.check_point_interval_time ,
-                ((SettingImpl<Duration>) GraphDatabaseSettings.check_point_interval_time).parse( time ) );
+        config.augment( stringMap( GraphDatabaseSettings.check_point_interval_time.name(), time ) );
     }
 
     protected void withIntervalTx( int count )
     {
-        config.set( GraphDatabaseSettings.check_point_interval_tx, count );
+        config.augment( stringMap( GraphDatabaseSettings.check_point_interval_tx.name(), String.valueOf( count ) ) );
     }
 
     protected CheckPointThreshold createThreshold()

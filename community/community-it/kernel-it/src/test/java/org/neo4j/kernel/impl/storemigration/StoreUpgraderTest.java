@@ -39,6 +39,7 @@ import org.neo4j.common.ProgressReporter;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.configuration.LayoutConfig;
+import org.neo4j.configuration.Settings;
 import org.neo4j.internal.id.DefaultIdGeneratorFactory;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
@@ -92,8 +93,6 @@ import static org.junit.jupiter.params.provider.Arguments.arguments;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
-import static org.neo4j.configuration.SettingValueParsers.FALSE;
-import static org.neo4j.configuration.SettingValueParsers.TRUE;
 import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.verifyFilesHaveSameContent;
 import static org.neo4j.storageengine.migration.StoreMigrationParticipant.NOT_PARTICIPATING;
 
@@ -112,7 +111,7 @@ public class StoreUpgraderTest
     private DatabaseLayout databaseLayout;
     private JobScheduler jobScheduler;
 
-    private final Config allowMigrateConfig = Config.defaults( GraphDatabaseSettings.allow_upgrade, TRUE );
+    private final Config allowMigrateConfig = Config.defaults( GraphDatabaseSettings.allow_upgrade, Settings.TRUE );
     private File prepareDatabaseDirectory;
 
     private static Collection<Arguments> versions()
@@ -145,10 +144,9 @@ public class StoreUpgraderTest
     void shouldHaltUpgradeIfUpgradeConfigurationVetoesTheProcess( RecordFormats formats ) throws IOException
     {
         init( formats );
-        Config deniedMigrationConfig = Config.newBuilder()
-                .set( GraphDatabaseSettings.allow_upgrade, FALSE )
-                .set( GraphDatabaseSettings.record_format, Standard.LATEST_NAME )
-                .build();
+        Config deniedMigrationConfig = Config.defaults( GraphDatabaseSettings.allow_upgrade, "false" );
+        deniedMigrationConfig.augment( GraphDatabaseSettings.record_format, Standard.LATEST_NAME );
+
         StoreVersionCheck check = getVersionCheck( pageCache );
 
         assertThrows( UpgradeNotAllowedException.class, () -> newUpgrader( check, deniedMigrationConfig, pageCache ).migrateIfNeeded( databaseLayout ) );
@@ -339,8 +337,8 @@ public class StoreUpgraderTest
         AssertableLogProvider logProvider = new AssertableLogProvider();
         StoreVersionCheck check = getVersionCheck( pageCache );
 
-        Config config = Config.newBuilder().fromConfig( allowMigrateConfig )
-            .set( GraphDatabaseSettings.transaction_logs_root_path, txRoot.getAbsolutePath() ).build();
+        Config config = Config.builder().withSettings( allowMigrateConfig.getRaw() )
+            .withSetting( GraphDatabaseSettings.transaction_logs_root_path, txRoot.getAbsolutePath() ).build();
         DatabaseLayout migrationLayout = DatabaseLayout.of( databaseLayout.databaseDirectory(), LayoutConfig.of( config ) );
         newUpgrader( check, pageCache, config, new VisibleMigrationProgressMonitor( logProvider.getLog( "test" ) ) )
             .migrateIfNeeded( migrationLayout );
@@ -366,8 +364,8 @@ public class StoreUpgraderTest
         AssertableLogProvider logProvider = new AssertableLogProvider();
         StoreVersionCheck check = getVersionCheck( pageCache );
 
-        Config config = Config.newBuilder().fromConfig( allowMigrateConfig )
-            .set( GraphDatabaseSettings.transaction_logs_root_path, txRoot.getAbsolutePath() ).build();
+        Config config = Config.builder().withSettings( allowMigrateConfig.getRaw() )
+            .withSetting( GraphDatabaseSettings.transaction_logs_root_path, txRoot.getAbsolutePath() ).build();
         DatabaseLayout migrationLayout = DatabaseLayout.of( databaseLayout.databaseDirectory(), LayoutConfig.of( config ) );
 
         File databaseTransactionLogsHome = new File( txRoot, migrationLayout.getDatabaseName() );

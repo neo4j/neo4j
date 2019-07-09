@@ -24,6 +24,7 @@ import org.junit.jupiter.api.Test;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.configuration.SettingChangeListener;
+import org.neo4j.configuration.TransactionTracingLevel;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.kernel.database.DatabaseId;
 import org.neo4j.kernel.database.TestDatabaseIdRepository;
@@ -39,7 +40,7 @@ class DatabaseConfigTest
         // given
         DatabaseId databaseId = new TestDatabaseIdRepository().defaultDatabase();
         DatabaseConfig dbConfig = DatabaseConfig.from( Config.defaults(), databaseId );
-        Setting<GraphDatabaseSettings.TransactionTracingLevel> setting = GraphDatabaseSettings.transaction_tracing_level;
+        Setting<TransactionTracingLevel> setting = GraphDatabaseSettings.transaction_tracing_level;
         int threads = 100; // big because we want to exercise what happens when the potentially backing List wants to grow
         Listener[] listeners = new Listener[threads];
         for ( int i = 0; i < threads; i++ )
@@ -52,24 +53,24 @@ class DatabaseConfigTest
         for ( int i = 0; i < threads; i++ )
         {
             int slot = i;
-            race.addContestant( () -> dbConfig.addListener( setting, listeners[slot] ), 1 );
+            race.addContestant( () -> dbConfig.registerDynamicUpdateListener( setting, listeners[slot] ), 1 );
         }
         race.go();
 
         // then
-        dbConfig.setDynamic( setting, GraphDatabaseSettings.TransactionTracingLevel.DISABLED, getClass().getSimpleName() );
+        dbConfig.updateDynamicSetting( setting.name(), TransactionTracingLevel.DISABLED.name(), "test" );
         for ( int i = 0; i < threads; i++ )
         {
             assertEquals( 1, listeners[i].callCount );
         }
     }
 
-    private static class Listener implements SettingChangeListener<GraphDatabaseSettings.TransactionTracingLevel>
+    private static class Listener implements SettingChangeListener<TransactionTracingLevel>
     {
         private int callCount;
 
         @Override
-        public void accept( GraphDatabaseSettings.TransactionTracingLevel from, GraphDatabaseSettings.TransactionTracingLevel to )
+        public void accept( TransactionTracingLevel from, TransactionTracingLevel to )
         {
             callCount++;
         }

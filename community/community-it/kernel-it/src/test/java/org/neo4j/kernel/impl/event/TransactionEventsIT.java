@@ -19,8 +19,10 @@
  */
 package org.neo4j.kernel.impl.event;
 
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.ExpectedException;
+import org.junit.rules.RuleChain;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -45,7 +47,6 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.event.TransactionData;
 import org.neo4j.graphdb.event.TransactionEventListener;
 import org.neo4j.graphdb.event.TransactionEventListenerAdapter;
-import org.neo4j.internal.helpers.Exceptions;
 import org.neo4j.internal.kernel.api.security.AccessMode;
 import org.neo4j.internal.kernel.api.security.AuthSubject;
 import org.neo4j.internal.kernel.api.security.LoginContext;
@@ -53,19 +54,17 @@ import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.security.AnonymousContext;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
-import org.neo4j.kernel.internal.GraphDatabaseAPI;
-import org.neo4j.test.extension.ImpermanentDbmsExtension;
-import org.neo4j.test.extension.Inject;
-import org.neo4j.test.extension.RandomExtension;
+import org.neo4j.test.mockito.matcher.RootCauseMatcher;
+import org.neo4j.test.rule.DbmsRule;
+import org.neo4j.test.rule.ImpermanentDbmsRule;
 import org.neo4j.test.rule.RandomRule;
 import org.neo4j.util.concurrent.BinaryLatch;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.sameInstance;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
@@ -74,23 +73,20 @@ import static org.neo4j.internal.helpers.collection.MapUtil.genericMap;
 /**
  * Test for randomly creating data and verifying transaction data seen in transaction event handlers.
  */
-@ExtendWith( RandomExtension.class )
-@ImpermanentDbmsExtension
-class TransactionEventsIT
+public class TransactionEventsIT
 {
-    @Inject
-    private DatabaseManagementService dbms;
+    private final DbmsRule db = new ImpermanentDbmsRule();
+    private final RandomRule random = new RandomRule();
+    private final ExpectedException expectedException = ExpectedException.none();
 
-    @Inject
-    private GraphDatabaseAPI db;
-
-    @Inject
-    private RandomRule random;
+    @Rule
+    public RuleChain ruleChain = RuleChain.outerRule( random ).around( expectedException ).around( db );
 
     @Test
-    void shouldSeeExpectedTransactionData()
+    public void shouldSeeExpectedTransactionData()
     {
         // GIVEN
+        DatabaseManagementService managementService = db.getManagementService();
         final Graph state = new Graph( db, random );
         final ExpectedTransactionData expected = new ExpectedTransactionData( true );
         final TransactionEventListener<Object> listener = new VerifyingTransactionEventListener( expected );
@@ -107,7 +103,7 @@ class TransactionEventsIT
             tx.success();
         }
 
-        dbms.registerTransactionEventListener( DEFAULT_DATABASE_NAME, listener );
+        managementService.registerTransactionEventListener( DEFAULT_DATABASE_NAME, listener );
 
         // WHEN
         Operation[] operations = Operation.values();
@@ -129,51 +125,56 @@ class TransactionEventsIT
     }
 
     @Test
-    void transactionIdAndCommitTimeAccessibleAfterCommit()
+    public void transactionIdAndCommitTimeAccessibleAfterCommit()
     {
         TransactionIdCommitTimeTracker commitTimeTracker = new TransactionIdCommitTimeTracker();
-        dbms.registerTransactionEventListener( DEFAULT_DATABASE_NAME, commitTimeTracker );
+        DatabaseManagementService managementService = db.getManagementService();
+        managementService.registerTransactionEventListener( DEFAULT_DATABASE_NAME, commitTimeTracker );
 
         runTransaction();
 
         long firstTransactionId = commitTimeTracker.getTransactionIdAfterCommit();
         long firstTransactionCommitTime = commitTimeTracker.getCommitTimeAfterCommit();
-        assertTrue( firstTransactionId > 0, "Should be positive tx id." );
-        assertTrue( firstTransactionCommitTime > 0, "Should be positive." );
+        assertTrue("Should be positive tx id.", firstTransactionId > 0 );
+        assertTrue("Should be positive.", firstTransactionCommitTime > 0);
 
         runTransaction();
 
         long secondTransactionId = commitTimeTracker.getTransactionIdAfterCommit();
         long secondTransactionCommitTime = commitTimeTracker.getCommitTimeAfterCommit();
-        assertTrue( secondTransactionId > 0, "Should be positive tx id." );
-        assertTrue( secondTransactionCommitTime > 0, "Should be positive commit time value." );
+        assertTrue("Should be positive tx id.", secondTransactionId > 0 );
+        assertTrue("Should be positive commit time value.", secondTransactionCommitTime > 0);
 
-        assertTrue( secondTransactionId > firstTransactionId, "Second tx id should be higher then first one." );
-        assertTrue( secondTransactionCommitTime >= firstTransactionCommitTime, "Second commit time should be higher or equals then first one." );
+        assertTrue( "Second tx id should be higher then first one.", secondTransactionId > firstTransactionId );
+        assertTrue( "Second commit time should be higher or equals then first one.",
+                secondTransactionCommitTime >= firstTransactionCommitTime );
     }
 
     @Test
-    void transactionIdNotAccessibleBeforeCommit()
+    public void transactionIdNotAccessibleBeforeCommit()
     {
-        dbms.registerTransactionEventListener( DEFAULT_DATABASE_NAME, getBeforeCommitListener( TransactionData::getTransactionId ) );
-        Throwable rootCause = Exceptions.rootCause( assertThrows( RuntimeException.class, this::runTransaction ) );
-        assertTrue( rootCause instanceof IllegalStateException );
-        assertEquals( "Transaction id is not assigned yet. It will be assigned during transaction commit.", rootCause.getMessage() );
+        DatabaseManagementService managementService = db.getManagementService();
+        managementService.registerTransactionEventListener( DEFAULT_DATABASE_NAME, getBeforeCommitListener( TransactionData::getTransactionId ) );
+        String message = "Transaction id is not assigned yet. It will be assigned during transaction commit.";
+        expectedException.expectCause( new RootCauseMatcher<>( IllegalStateException.class, message ) );
+        runTransaction();
     }
 
     @Test
-    void commitTimeNotAccessibleBeforeCommit()
+    public void commitTimeNotAccessibleBeforeCommit()
     {
-        dbms.registerTransactionEventListener( DEFAULT_DATABASE_NAME, getBeforeCommitListener( TransactionData::getCommitTime ) );
-        Throwable rootCause = Exceptions.rootCause( assertThrows( RuntimeException.class, this::runTransaction ) );
-        assertTrue( rootCause instanceof IllegalStateException );
-        assertEquals( "Transaction commit time is not assigned yet. It will be assigned during transaction commit.", rootCause.getMessage() );
+        DatabaseManagementService managementService = db.getManagementService();
+        managementService.registerTransactionEventListener( DEFAULT_DATABASE_NAME, getBeforeCommitListener( TransactionData::getCommitTime ) );
+        String message = "Transaction commit time is not assigned yet. It will be assigned during transaction commit.";
+        expectedException.expectCause( new RootCauseMatcher<>( IllegalStateException.class, message ) );
+        runTransaction();
     }
 
     @Test
-    void shouldGetEmptyUsernameOnAuthDisabled()
+    public void shouldGetEmptyUsernameOnAuthDisabled()
     {
-        dbms.registerTransactionEventListener( DEFAULT_DATABASE_NAME, getBeforeCommitListener( txData ->
+        DatabaseManagementService managementService = db.getManagementService();
+        managementService.registerTransactionEventListener( DEFAULT_DATABASE_NAME, getBeforeCommitListener( txData ->
         {
             assertThat( "Should have no username", txData.username(), equalTo( "" ) );
             assertThat( "Should have no metadata", txData.metaData(), equalTo( Collections.emptyMap() ) );
@@ -182,11 +183,12 @@ class TransactionEventsIT
     }
 
     @Test
-    void shouldGetSpecifiedUsernameAndMetaDataInTXData()
+    public void shouldGetSpecifiedUsernameAndMetaDataInTXData()
     {
         final AtomicReference<String> usernameRef = new AtomicReference<>();
         final AtomicReference<Map<String,Object>> metaDataRef = new AtomicReference<>();
-        dbms.registerTransactionEventListener( DEFAULT_DATABASE_NAME, getBeforeCommitListener( txData ->
+        DatabaseManagementService managementService = db.getManagementService();
+        managementService.registerTransactionEventListener( DEFAULT_DATABASE_NAME, getBeforeCommitListener( txData ->
         {
             usernameRef.set( txData.username() );
             metaDataRef.set( txData.metaData() );
@@ -215,103 +217,97 @@ class TransactionEventsIT
     }
 
     @Test
-    void registerUnregisterWithConcurrentTransactions() throws Exception
+    public void registerUnregisterWithConcurrentTransactions() throws Exception
     {
         ExecutorService executor = Executors.newFixedThreadPool( 2 );
-        try
+        AtomicInteger runningCounter = new AtomicInteger();
+        AtomicInteger doneCounter = new AtomicInteger();
+        BinaryLatch startLatch = new BinaryLatch();
+        RelationshipType relationshipType = RelationshipType.withName( "REL" );
+        DatabaseManagementService managementService = db.getManagementService();
+        CountingTransactionEventListener[] handlers = new CountingTransactionEventListener[20];
+        for ( int i = 0; i < handlers.length; i++ )
         {
-            AtomicInteger runningCounter = new AtomicInteger();
-            AtomicInteger doneCounter = new AtomicInteger();
-            BinaryLatch startLatch = new BinaryLatch();
-            RelationshipType relationshipType = RelationshipType.withName( "REL" );
-            CountingTransactionEventListener[] handlers = new CountingTransactionEventListener[20];
-            for ( int i = 0; i < handlers.length; i++ )
-            {
-                handlers[i] = new CountingTransactionEventListener();
-            }
-            long relNodeId;
-            try ( Transaction tx = db.beginTx() )
-            {
-                relNodeId = db.createNode().getId();
-                tx.success();
-            }
-            Future<?> nodeCreator = executor.submit( () ->
-            {
-                try
-                {
-                    runningCounter.incrementAndGet();
-                    startLatch.await();
-                    for ( int i = 0; i < 2_000; i++ )
-                    {
-                        try ( Transaction tx = db.beginTx() )
-                        {
-                            db.createNode();
-                            if ( ThreadLocalRandom.current().nextBoolean() )
-                            {
-                                tx.success();
-                            }
-                        }
-                    }
-                }
-                finally
-                {
-                    doneCounter.incrementAndGet();
-                }
-            } );
-            Future<?> relationshipCreator = executor.submit( () ->
-            {
-                try
-                {
-                    runningCounter.incrementAndGet();
-                    startLatch.await();
-                    for ( int i = 0; i < 1_000; i++ )
-                    {
-                        try ( Transaction tx = db.beginTx() )
-                        {
-                            Node relNode = db.getNodeById( relNodeId );
-                            relNode.createRelationshipTo( relNode, relationshipType );
-                            if ( ThreadLocalRandom.current().nextBoolean() )
-                            {
-                                tx.success();
-                            }
-                        }
-                    }
-                }
-                finally
-                {
-                    doneCounter.incrementAndGet();
-                }
-            } );
-            while ( runningCounter.get() < 2 )
-            {
-                Thread.yield();
-            }
-            int i = 0;
-            dbms.registerTransactionEventListener( DEFAULT_DATABASE_NAME, handlers[i] );
-            CountingTransactionEventListener currentlyRegistered = handlers[i];
-            i++;
-            startLatch.release();
-            while ( doneCounter.get() < 2 )
-            {
-                dbms.registerTransactionEventListener( DEFAULT_DATABASE_NAME, handlers[i] );
-                i++;
-                if ( i == handlers.length )
-                {
-                    i = 0;
-                }
-                dbms.unregisterTransactionEventListener( DEFAULT_DATABASE_NAME, currentlyRegistered );
-                currentlyRegistered = handlers[i];
-            }
-            nodeCreator.get();
-            relationshipCreator.get();
-            for ( CountingTransactionEventListener handler : handlers )
-            {
-                assertEquals( 0, handler.get() );
-            }
+            handlers[i] = new CountingTransactionEventListener();
         }
-        finally
+        long relNodeId;
+        try ( Transaction tx = db.beginTx() )
         {
-            executor.shutdown();
+            relNodeId = db.createNode().getId();
+            tx.success();
+        }
+        Future<?> nodeCreator = executor.submit( () ->
+        {
+            try
+            {
+                runningCounter.incrementAndGet();
+                startLatch.await();
+                for ( int i = 0; i < 2_000; i++ )
+                {
+                    try ( Transaction tx = db.beginTx() )
+                    {
+                        db.createNode();
+                        if ( ThreadLocalRandom.current().nextBoolean() )
+                        {
+                            tx.success();
+                        }
+                    }
+                }
+            }
+            finally
+            {
+                doneCounter.incrementAndGet();
+            }
+        } );
+        Future<?> relationshipCreator = executor.submit( () ->
+        {
+            try
+            {
+                runningCounter.incrementAndGet();
+                startLatch.await();
+                for ( int i = 0; i < 1_000; i++ )
+                {
+                    try ( Transaction tx = db.beginTx() )
+                    {
+                        Node relNode = db.getNodeById( relNodeId );
+                        relNode.createRelationshipTo( relNode, relationshipType );
+                        if ( ThreadLocalRandom.current().nextBoolean() )
+                        {
+                            tx.success();
+                        }
+                    }
+                }
+            }
+            finally
+            {
+                doneCounter.incrementAndGet();
+            }
+        } );
+        while ( runningCounter.get() < 2 )
+        {
+            Thread.yield();
+        }
+        int i = 0;
+        managementService.registerTransactionEventListener( DEFAULT_DATABASE_NAME, handlers[i] );
+        CountingTransactionEventListener currentlyRegistered = handlers[i];
+        i++;
+        startLatch.release();
+        while ( doneCounter.get() < 2 )
+        {
+            managementService.registerTransactionEventListener( DEFAULT_DATABASE_NAME, handlers[i] );
+            i++;
+            if ( i == handlers.length )
+            {
+                i = 0;
+            }
+            managementService.unregisterTransactionEventListener( DEFAULT_DATABASE_NAME, currentlyRegistered );
+            currentlyRegistered = handlers[i];
+        }
+        nodeCreator.get();
+        relationshipCreator.get();
+        for ( CountingTransactionEventListener handler : handlers )
+        {
+            assertEquals( 0, handler.get() );
         }
     }
 
@@ -629,12 +625,12 @@ class TransactionEventsIT
             super.afterCommit( data, state, databaseService );
         }
 
-        long getTransactionIdAfterCommit()
+        public long getTransactionIdAfterCommit()
         {
             return transactionIdAfterCommit;
         }
 
-        long getCommitTimeAfterCommit()
+        public long getCommitTimeAfterCommit()
         {
             return commitTimeAfterCommit;
         }

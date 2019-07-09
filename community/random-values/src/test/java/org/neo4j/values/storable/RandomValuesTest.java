@@ -46,7 +46,7 @@ import static org.hamcrest.Matchers.notNullValue;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
-import static org.junit.jupiter.api.Assertions.assertTimeoutPreemptively;
+import static org.junit.jupiter.api.Assertions.assertTimeout;
 import static org.neo4j.values.storable.Values.ZERO_INT;
 import static org.neo4j.values.storable.Values.longValue;
 
@@ -183,7 +183,7 @@ abstract class RandomValuesTest
     @Test
     void nextNumberValue()
     {
-        assertTimeoutPreemptively( Duration.ofMillis( 10_000 ), () ->
+        assertTimeout( Duration.ofMillis( 10_000 ), () ->
         {
             HashSet<Class<? extends NumberValue>> seen = new HashSet<>( NUMBER_TYPES );
 
@@ -199,7 +199,7 @@ abstract class RandomValuesTest
     @Test
     void nextAlphaNumericString()
     {
-        assertTimeoutPreemptively( Duration.ofMillis( 10_000 ), () ->
+        assertTimeout( Duration.ofMillis( 10_000 ), () ->
         {
             Set<Integer> seenDigits = "ABCDEFGHIJKLMNOPQRSTUVXYZabcdefghijklmnopqrstuvxyz0123456789".chars().boxed()
                     .collect( Collectors.toSet() );
@@ -248,7 +248,7 @@ abstract class RandomValuesTest
     @Test
     void nextArray()
     {
-        assertTimeoutPreemptively( Duration.ofMillis( 10_000 ), () ->
+        assertTimeout( Duration.ofMillis( 10_000 ), () ->
         {
             HashSet<Class<? extends AnyValue>> seen = new HashSet<>( TYPES );
             while ( !seen.isEmpty() )
@@ -265,7 +265,7 @@ abstract class RandomValuesTest
     @Test
     void nextValue()
     {
-        assertTimeoutPreemptively( Duration.ofMillis( 10_000 ), () ->
+        assertTimeout( Duration.ofMillis( 10_000 ), () ->
         {
             HashSet<Class<? extends AnyValue>> all = new HashSet<>( TYPES );
             all.add( ArrayValue.class );
@@ -283,7 +283,7 @@ abstract class RandomValuesTest
     @Test
     void nextValueOfTypes()
     {
-        assertTimeoutPreemptively( Duration.ofMillis( 10_000 ), () ->
+        assertTimeout( Duration.ofMillis( 10_000 ), () ->
         {
             ValueType[] allTypes = ValueType.values();
             ValueType[] including = randomValues.selection( allTypes, 1, allTypes.length, false );
@@ -306,7 +306,7 @@ abstract class RandomValuesTest
     {
         ValueType[] allTypes = ValueType.values();
         ValueType[] excluding = randomValues.selection( allTypes, 1, allTypes.length, false );
-        ValueType[] including = RandomValues.excluding( excluding );
+        ValueType[] including = randomValues.excluding( excluding );
         for ( ValueType excludedType : excluding )
         {
             if ( ArrayUtils.contains( including, excludedType ) )

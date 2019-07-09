@@ -70,7 +70,7 @@ class RecordStorageReaderRelTypesAndDegreeTest extends RecordStorageReaderTestBa
     @Override
     protected RecordStorageEngineRule.Builder modify( RecordStorageEngineRule.Builder builder )
     {
-        return builder.setting( GraphDatabaseSettings.dense_node_threshold, RELATIONSHIPS_COUNT );
+        return builder.setting( GraphDatabaseSettings.dense_node_threshold, String.valueOf( RELATIONSHIPS_COUNT ) );
     }
 
     @Test

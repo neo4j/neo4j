@@ -44,9 +44,9 @@ public final class RecordFormatPropertyConfigurator
         // util class
     }
 
-    private static void configureIntegerSetting( Config config, Setting<Integer> setting, int fullBlockSize, int headerSize, Map<String,String> format )
+    private static void configureIntegerSetting( Config config, Setting<Integer> setting, int fullBlockSize, int headerSize, Map<String,String> formatConfig )
     {
-        int defaultValue = setting.defaultValue();
+        int defaultValue = Integer.parseInt( setting.getDefaultValue() );
         int propertyValue = config.get( setting );
         if ( propertyValue == defaultValue )
         {
@@ -57,9 +57,14 @@ public final class RecordFormatPropertyConfigurator
                 {
                     throw new IllegalArgumentException( "Block size should be bigger then " + MINIMAL_BLOCK_SIZE );
                 }
-                config.set( setting, updatedBlockSize );
+                addFormatSetting( formatConfig, setting, updatedBlockSize );
             }
         }
+    }
+
+    private static void addFormatSetting( Map<String,String> configMap, Setting setting, int value )
+    {
+        configMap.put( setting.name(), String.valueOf( value ) );
     }
 
     public static void configureRecordFormat( RecordFormats recordFormats, Config config )
@@ -70,5 +75,9 @@ public final class RecordFormatPropertyConfigurator
         configureIntegerSetting( config, string_block_size, DEFAULT_BLOCK_SIZE, headerSize, formatConfig );
         configureIntegerSetting( config, array_block_size, DEFAULT_BLOCK_SIZE, headerSize, formatConfig );
         configureIntegerSetting( config, label_block_size, DEFAULT_LABEL_BLOCK_SIZE, headerSize, formatConfig );
+        if ( !formatConfig.isEmpty() )
+        {
+            config.augment( formatConfig );
+        }
     }
 }

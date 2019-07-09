@@ -133,9 +133,9 @@ class CsvInputBatchImportIT
     void shouldImportDataComingFromCsvFiles() throws Exception
     {
         // GIVEN
-        Config dbConfig = Config.newBuilder()
-                .set( db_timezone, LogTimeZone.SYSTEM.name() )
-                .set( dense_node_threshold, String.valueOf( 5 ) )
+        Config dbConfig = Config.builder()
+                .withSetting( db_timezone, LogTimeZone.SYSTEM.name() )
+                .withSetting( dense_node_threshold, String.valueOf( 5 ) )
                 .build();
         try ( JobScheduler scheduler = new ThreadPoolJobScheduler() )
         {

@@ -22,6 +22,7 @@ package org.neo4j.kernel.recovery;
 import java.io.File;
 import java.io.IOException;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
@@ -238,8 +239,10 @@ public final class Recovery
         requireNonNull( config );
         requireNonNull( databaseLayout );
         requireNonNull( storageEngineFactory );
+        Map<String,String> configRaw = config.getRaw();
         //remove any custom logical logs location
-        Config recoveryConfig = Config.newBuilder().fromConfig( config ).set( GraphDatabaseSettings.transaction_logs_root_path, null ).build();
+        configRaw.remove( GraphDatabaseSettings.transaction_logs_root_path.name() );
+        Config recoveryConfig = defaults( configRaw );
         performRecovery( fs, pageCache, recoveryConfig, databaseLayout, selectStorageEngine(), NullLogProvider.getInstance(), new Monitors(), loadExtensions(),
                 Optional.empty() );
     }

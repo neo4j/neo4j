@@ -22,7 +22,6 @@ package org.neo4j.cypher.internal.runtime.spec
 import java.util
 
 import org.neo4j.common.DependencyResolver
-import org.neo4j.configuration.SettingValueParsers.TRUE
 import org.neo4j.configuration.{Config, GraphDatabaseSettings}
 import org.neo4j.cypher.internal._
 import org.neo4j.dbms.api.DatabaseManagementService
@@ -69,7 +68,7 @@ class Edition[CONTEXT <: RuntimeContext](graphBuilderFactory: () => TestDatabase
 
   private def runtimeConfig() = {
     val javaConfigMap: util.Map[String, String] = configs.map { case (setting, value) => (setting.name(), value) }.toMap.asJava
-    val config = Config.defaults(javaConfigMap)
+    val config = Config.fromSettings(javaConfigMap).build()
     CypherConfiguration.fromConfig(config).toCypherRuntimeConfiguration
   }
 }
@@ -78,5 +77,5 @@ object COMMUNITY {
   val EDITION = new Edition(
     () => new TestDatabaseManagementServiceBuilder,
     (runtimeConfig, _, _) => CommunityRuntimeContextManager(NullLog.getInstance(), runtimeConfig),
-    GraphDatabaseSettings.cypher_hints_error -> TRUE)
+    GraphDatabaseSettings.cypher_hints_error -> "true")
 }

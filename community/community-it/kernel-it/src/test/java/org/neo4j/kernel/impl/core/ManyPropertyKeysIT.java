@@ -25,6 +25,7 @@ import java.util.Collection;
 
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
+import org.neo4j.configuration.Settings;
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
@@ -54,7 +55,6 @@ import org.neo4j.test.rule.TestDirectory;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
-import static org.neo4j.configuration.SettingValueParsers.FALSE;
 
 /**
  * Tests for handling many property keys (even after restart of database)
@@ -116,9 +116,9 @@ class ManyPropertyKeysIT
 
     private GraphDatabaseAPI database()
     {
-        managementService = new TestDatabaseManagementServiceBuilder( testDirectory.storeDir() )
-                .setConfig( GraphDatabaseSettings.fail_on_missing_files, FALSE )
-                .build();
+        managementService =
+                new TestDatabaseManagementServiceBuilder( testDirectory.storeDir() ).setConfig( GraphDatabaseSettings.fail_on_missing_files, Settings.FALSE )
+                        .build();
         return (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );
     }
 

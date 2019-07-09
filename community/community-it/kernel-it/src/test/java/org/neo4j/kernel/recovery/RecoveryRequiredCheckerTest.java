@@ -117,7 +117,8 @@ class RecoveryRequiredCheckerTest
     void shouldBeAbleToRecoverBrokenStoreWithLogsInSeparateAbsoluteLocation() throws Exception
     {
         File customTransactionLogsLocation = testDirectory.directory( DEFAULT_TX_LOGS_ROOT_DIR_NAME );
-        Config config = Config.defaults( transaction_logs_root_path, customTransactionLogsLocation.getAbsolutePath() );
+        Config config = Config.builder().withSetting( transaction_logs_root_path,
+                customTransactionLogsLocation.getAbsolutePath() ).build();
         recoverBrokenStoreWithConfig( config );
     }
 
@@ -259,7 +260,7 @@ class RecoveryRequiredCheckerTest
 
             DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder( storeDir )
                         .setFileSystem( ephemeralFs )
-                        .setConfig( config )
+                        .setConfigRaw( config.getRaw() )
                     .build();
             managementService.shutdown();
 
@@ -306,7 +307,7 @@ class RecoveryRequiredCheckerTest
         {
             DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder( store )
                         .setFileSystem( ephemeralFs )
-                        .setConfig( config )
+                        .setConfigRaw( config.getRaw() )
                     .build();
             final GraphDatabaseService db = managementService.database( DEFAULT_DATABASE_NAME );
 

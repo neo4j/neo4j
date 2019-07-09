@@ -30,6 +30,7 @@ import java.util.function.LongSupplier;
 
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
+import org.neo4j.configuration.Settings;
 import org.neo4j.internal.id.DefaultIdGeneratorFactory;
 import org.neo4j.internal.id.IdCapacityExceededException;
 import org.neo4j.internal.id.IdGenerator;
@@ -134,7 +135,7 @@ class CommonAbstractStoreTest
         RecordFormats recordFormats = Standard.LATEST_RECORD_FORMATS;
 
         try ( DynamicArrayStore dynamicArrayStore = new DynamicArrayStore( storeFile, idFile, config, IdType.NODE_LABELS, idGeneratorFactory, pageCache,
-                NullLogProvider.getInstance(), GraphDatabaseSettings.label_block_size.defaultValue(), recordFormats ) )
+                NullLogProvider.getInstance(), Settings.INTEGER.apply( GraphDatabaseSettings.label_block_size.getDefaultValue() ), recordFormats ) )
         {
             StoreNotFoundException storeNotFoundException = assertThrows( StoreNotFoundException.class, () -> dynamicArrayStore.initialise( false ) );
             assertEquals( "Fail to read header record of store file: " + storeFile.getAbsolutePath(), storeNotFoundException.getMessage() );

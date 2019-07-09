@@ -19,23 +19,21 @@
  */
 package org.neo4j.kernel.impl.store;
 
-import org.junit.jupiter.api.Test;
+import org.junit.Rule;
+import org.junit.Test;
 
 import java.util.Iterator;
 
 import org.neo4j.configuration.GraphDatabaseSettings;
-import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.test.TestDatabaseManagementServiceBuilder;
-import org.neo4j.test.extension.ExtensionCallback;
-import org.neo4j.test.extension.ImpermanentDbmsExtension;
-import org.neo4j.test.extension.Inject;
+import org.neo4j.test.rule.DbmsRule;
+import org.neo4j.test.rule.ImpermanentDbmsRule;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 import static org.neo4j.internal.helpers.collection.Iterables.asArray;
 import static org.neo4j.kernel.impl.MyRelTypes.TEST;
 import static org.neo4j.kernel.impl.MyRelTypes.TEST2;
@@ -51,22 +49,16 @@ import static org.neo4j.kernel.impl.MyRelTypes.TEST_TRAVERSAL;
  * behaviour has been changed to continue through such unused relationships, reading its pointers,
  * until arriving at either {@code -1} or a used relationship.
  */
-@ImpermanentDbmsExtension( configurationCallback = "configure" )
-class RelationshipChainPointerChasingTest
+public class RelationshipChainPointerChasingTest
 {
     private static final int THRESHOLD = 10;
 
-    @Inject
-    private GraphDatabaseService db;
-
-    @ExtensionCallback
-    static void configure( TestDatabaseManagementServiceBuilder builder )
-    {
-        builder.setConfig( GraphDatabaseSettings.dense_node_threshold, String.valueOf( THRESHOLD ) );
-    }
+    @Rule
+    public final DbmsRule db = new ImpermanentDbmsRule()
+            .withSetting( GraphDatabaseSettings.dense_node_threshold, String.valueOf( THRESHOLD ) );
 
     @Test
-    void shouldChaseTheLivingRelationships() throws Exception
+    public void shouldChaseTheLivingRelationships() throws Exception
     {
         // GIVEN a sound relationship chain
         int numberOfRelationships = THRESHOLD / 2;
@@ -109,7 +101,7 @@ class RelationshipChainPointerChasingTest
     }
 
     @Test
-    void shouldChaseTheLivingRelationshipGroups() throws Exception
+    public void shouldChaseTheLivingRelationshipGroups() throws Exception
     {
         // GIVEN
         Node node;
@@ -156,10 +148,10 @@ class RelationshipChainPointerChasingTest
         }
     }
 
-    private static void assertNext( Relationship expected, Iterator<Relationship> iterator )
+    private void assertNext( Relationship expected, Iterator<Relationship> iterator )
     {
-        assertTrue( iterator.hasNext(), "Expected there to be more relationships" );
-        assertEquals( expected, iterator.next(), "Unexpected next relationship" );
+        assertTrue( "Expected there to be more relationships", iterator.hasNext() );
+        assertEquals( "Unexpected next relationship", expected, iterator.next() );
     }
 
     private void deleteRelationshipsInSeparateThread( final Relationship... relationships ) throws InterruptedException

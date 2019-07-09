@@ -20,11 +20,11 @@
 package org.neo4j.test;
 
 import java.io.File;
-import java.time.Duration;
 import java.util.function.Function;
 
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
+import org.neo4j.configuration.Settings;
 import org.neo4j.graphdb.facade.DatabaseManagementServiceFactory;
 import org.neo4j.graphdb.facade.ExternalDependencies;
 import org.neo4j.graphdb.factory.module.GlobalModule;
@@ -59,15 +59,19 @@ public class TestDatabaseManagementServiceFactory extends DatabaseManagementServ
     @Override
     protected GlobalModule createGlobalModule( File storeDir, Config config, ExternalDependencies dependencies )
     {
-        config.setIfNotSet( GraphDatabaseSettings.shutdown_transaction_end_timeout, Duration.ZERO );
+        if ( !config.isConfigured( GraphDatabaseSettings.shutdown_transaction_end_timeout ) )
+        {
+            config.augment( GraphDatabaseSettings.shutdown_transaction_end_timeout, "0s" );
+        }
+        config.augment( GraphDatabaseSettings.ephemeral, impermanent ? Settings.TRUE : Settings.FALSE );
         if ( impermanent )
         {
-            config.set( GraphDatabaseSettings.ephemeral, true );
-            config.setIfNotSet( GraphDatabaseSettings.keep_logical_logs, "1 files" );
             return new ImpermanentTestDatabaseGlobalModule( storeDir, config, dependencies, this.databaseInfo );
         }
-
-        return new TestDatabaseGlobalModule( storeDir, config, dependencies, this.databaseInfo );
+        else
+        {
+            return new TestDatabaseGlobalModule( storeDir, config, dependencies, this.databaseInfo );
+        }
     }
 
     class TestDatabaseGlobalModule extends GlobalModule

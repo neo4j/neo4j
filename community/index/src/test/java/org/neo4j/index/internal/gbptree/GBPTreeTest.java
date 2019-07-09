@@ -95,6 +95,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTimeout;
 import static org.junit.jupiter.api.Assertions.assertTimeoutPreemptively;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
@@ -1636,7 +1637,7 @@ class GBPTreeTest
             // Corrupt the child
             corruptTheChild( pageCache, corruptChild );
 
-            assertTimeoutPreemptively( Duration.ofSeconds( 60 ), () ->
+            assertTimeout( Duration.ofSeconds( 60 ), () ->
             {
                 TreeInconsistencyException e = assertThrows( TreeInconsistencyException.class, () ->
                 {
@@ -1676,7 +1677,7 @@ class GBPTreeTest
             corruptTheChild( pageCache, leftChild );
             corruptTheChild( pageCache, rightChild );
 
-            assertTimeoutPreemptively( Duration.ofSeconds( 5 ), () ->
+            assertTimeout( Duration.ofSeconds( 5 ), () ->
             {
                 // When seek end up in this corrupt child we should eventually fail with a tree inconsistency exception
                 // even if we have multiple seeker that traverse different part of the tree and both get stuck in start from root loop.

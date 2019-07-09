@@ -25,19 +25,18 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import java.util.Map;
 
 import org.neo4j.configuration.GraphDatabaseSettings;
+import org.neo4j.configuration.Settings;
 import org.neo4j.dbms.api.DatabaseManagementService;
-import org.neo4j.graphdb.config.Setting;
 import org.neo4j.kernel.StoreLockException;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.TestDirectoryExtension;
 import org.neo4j.test.rule.TestDirectory;
 
-import static java.util.Collections.emptyMap;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.IsInstanceOf.instanceOf;
 import static org.junit.jupiter.api.Assertions.fail;
-import static org.neo4j.configuration.SettingValueParsers.TRUE;
+import static org.neo4j.internal.helpers.collection.MapUtil.stringMap;
 
 @ExtendWith( TestDirectoryExtension.class )
 class StoreLockerLifecycleAdapterTest
@@ -57,22 +56,23 @@ class StoreLockerLifecycleAdapterTest
     @Test
     void shouldNotAllowDatabasesToUseFilesetsConcurrently()
     {
-        shouldNotAllowDatabasesToUseFilesetsConcurrently( emptyMap() );
+        shouldNotAllowDatabasesToUseFilesetsConcurrently( stringMap() );
     }
 
     @Test
     void shouldNotAllowDatabasesToUseFilesetsConcurrentlyEvenIfTheyAreInReadOnlyMode()
     {
-        shouldNotAllowDatabasesToUseFilesetsConcurrently( Map.of( GraphDatabaseSettings.read_only, TRUE ) );
+        shouldNotAllowDatabasesToUseFilesetsConcurrently(
+                stringMap( GraphDatabaseSettings.read_only.name(), Settings.TRUE ) );
     }
 
-    private void shouldNotAllowDatabasesToUseFilesetsConcurrently( Map<Setting<?>,String> config )
+    private void shouldNotAllowDatabasesToUseFilesetsConcurrently( Map<String,String> config )
     {
         DatabaseManagementService managementService = newDb();
         DatabaseManagementService embeddedService = null;
         try
         {
-            embeddedService = new TestDatabaseManagementServiceBuilder( directory.storeDir() ).setConfig( config ).build();
+            embeddedService = new TestDatabaseManagementServiceBuilder( directory.storeDir() ).setConfigRaw( config ).build();
             fail();
         }
         catch ( RuntimeException e )

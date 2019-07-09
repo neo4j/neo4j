@@ -31,7 +31,7 @@ import java.util.List;
 import java.util.UUID;
 
 import org.neo4j.configuration.Config;
-import org.neo4j.configuration.helpers.SocketAddress;
+import org.neo4j.internal.helpers.ListenSocketAddress;
 import org.neo4j.kernel.api.net.NetworkConnectionTracker;
 import org.neo4j.server.web.HttpConnectorFactory;
 import org.neo4j.server.web.JettyThreadCalculator;
@@ -57,7 +57,7 @@ public class SslSocketConnectorFactory extends HttpConnectorFactory
         return httpConfig;
     }
 
-    public ServerConnector createConnector( Server server, SslPolicy sslPolicy, SocketAddress address,
+    public ServerConnector createConnector( Server server, SslPolicy sslPolicy, ListenSocketAddress address,
             JettyThreadCalculator jettyThreadCalculator )
     {
         SslConnectionFactory sslConnectionFactory = createSslConnectionFactory( sslPolicy );

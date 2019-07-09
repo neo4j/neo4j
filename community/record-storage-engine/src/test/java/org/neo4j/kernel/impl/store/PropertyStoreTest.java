@@ -47,7 +47,6 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
-import static org.neo4j.configuration.SettingValueParsers.TRUE;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.FORCE;
 import static org.neo4j.test.rule.PageCacheConfig.config;
 
@@ -76,7 +75,7 @@ class PropertyStoreTest
     {
         // given
         PageCache pageCache = pageCacheExtension.getPageCache( fs );
-        Config config = Config.defaults( GraphDatabaseSettings.rebuild_idgenerators_fast, TRUE );
+        Config config = Config.defaults( GraphDatabaseSettings.rebuild_idgenerators_fast, "true" );
 
         DynamicStringStore stringPropertyStore = mock( DynamicStringStore.class );
 

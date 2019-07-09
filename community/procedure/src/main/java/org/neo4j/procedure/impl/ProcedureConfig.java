@@ -35,6 +35,9 @@ import static java.util.Arrays.stream;
 
 public class ProcedureConfig
 {
+    public static final String PROC_ALLOWED_SETTING_DEFAULT_NAME = "dbms.security.procedures.default_allowed";
+    public static final String PROC_ALLOWED_SETTING_ROLES = "dbms.security.procedures.roles";
+
     private static final String ROLES_DELIMITER = ",";
     private static final String SETTING_DELIMITER = ";";
     private static final String MAPPING_DELIMITER = ":";
@@ -57,9 +60,12 @@ public class ProcedureConfig
 
     public ProcedureConfig( Config config )
     {
-        this.defaultValue = config.get( GraphDatabaseSettings.default_allowed );
+        this.defaultValue = config.getValue( PROC_ALLOWED_SETTING_DEFAULT_NAME )
+                .map( Object::toString )
+                .orElse( "" );
 
-        String allowedRoles = config.get( GraphDatabaseSettings.procedure_roles );
+        String allowedRoles = config.getValue( PROC_ALLOWED_SETTING_ROLES ).map( Object::toString )
+                .orElse( "" );
         this.matchers = Stream.of( allowedRoles.split( SETTING_DELIMITER ) )
                 .map( procToRoleSpec -> procToRoleSpec.split( MAPPING_DELIMITER ) )
                 .filter( spec -> spec.length > 1 )
@@ -70,19 +76,28 @@ public class ProcedureConfig
                     return new ProcMatcher( spec[0].trim(), roles );
                 } ).collect( Collectors.toList() );
 
-        this.accessPatterns = parseMatchers( config.get( GraphDatabaseSettings.procedure_unrestricted ), ProcedureConfig::compilePattern );
-        this.whiteList = parseMatchers( config.get( GraphDatabaseSettings.procedure_whitelist ), ProcedureConfig::compilePattern );
+        this.accessPatterns =
+                parseMatchers( GraphDatabaseSettings.procedure_unrestricted.name(), config, PROCEDURE_DELIMITER,
+                        ProcedureConfig::compilePattern );
+        this.whiteList =
+                parseMatchers( GraphDatabaseSettings.procedure_whitelist.name(), config, PROCEDURE_DELIMITER,
+                        ProcedureConfig::compilePattern );
         this.defaultTemporalTimeZone = config.get( GraphDatabaseSettings.db_temporal_timezone );
     }
 
-    private <T> List<T> parseMatchers( List<String> fullAccessProcedures, Function<String,T>
+    private <T> List<T> parseMatchers( String configName, Config config, String delimiter, Function<String,T>
             matchFunc )
     {
-        if ( fullAccessProcedures == null || fullAccessProcedures.isEmpty() )
+        String fullAccessProcedures = config.getValue( configName ).map( Object::toString ).orElse( "" );
+        if ( fullAccessProcedures.isEmpty() )
         {
             return Collections.emptyList();
         }
-        return fullAccessProcedures.stream().map( matchFunc ).collect( Collectors.toList() );
+        else
+        {
+            return Stream.of( fullAccessProcedures.split( delimiter ) ).map( matchFunc )
+                    .collect( Collectors.toList() );
+        }
     }
 
     public String[] rolesFor( String procedureName )

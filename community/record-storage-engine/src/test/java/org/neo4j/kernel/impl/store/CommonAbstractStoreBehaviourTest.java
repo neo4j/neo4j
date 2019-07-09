@@ -216,7 +216,7 @@ class CommonAbstractStoreBehaviourTest
     @Test
     void rebuildIdGeneratorSlowMustThrowOnPageOverflow() throws Exception
     {
-        config.set( GraphDatabaseSettings.rebuild_idgenerators_fast, false );
+        config.augment( GraphDatabaseSettings.rebuild_idgenerators_fast, "false" );
         createStore();
         store.setStoreNotOk( new RuntimeException() );
         IntRecord record = new IntRecord( 200 );

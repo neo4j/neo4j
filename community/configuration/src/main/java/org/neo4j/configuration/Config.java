@@ -19,597 +19,553 @@
  */
 package org.neo4j.configuration;
 
-import org.apache.commons.lang3.reflect.FieldUtils;
-
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
-import java.lang.reflect.Constructor;
+import java.io.UncheckedIOException;
 import java.nio.file.Path;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
-import java.util.Deque;
+import java.util.Comparator;
 import java.util.HashMap;
-import java.util.HashSet;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
+import java.util.Optional;
 import java.util.Properties;
 import java.util.Set;
+import java.util.TreeSet;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
+import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 
+import org.neo4j.configuration.connectors.BoltConnector;
+import org.neo4j.configuration.connectors.Connector;
+import org.neo4j.configuration.connectors.HttpConnector;
+import org.neo4j.configuration.connectors.HttpConnector.Encryption;
+import org.neo4j.configuration.connectors.HttpConnectorValidator;
+import org.neo4j.graphdb.config.BaseSetting;
 import org.neo4j.graphdb.config.Configuration;
+import org.neo4j.graphdb.config.InvalidSettingException;
 import org.neo4j.graphdb.config.Setting;
-import org.neo4j.internal.helpers.Exceptions;
+import org.neo4j.graphdb.config.SettingValidator;
 import org.neo4j.logging.BufferingLog;
 import org.neo4j.logging.Log;
-import org.neo4j.service.Services;
 
-import static java.lang.String.format;
-import static java.util.Objects.requireNonNull;
-import static org.neo4j.configuration.GraphDatabaseSettings.strict_config_validation;
+import static java.util.Collections.emptyList;
+import static java.util.Collections.emptyMap;
+import static java.util.Collections.singletonMap;
+import static org.neo4j.configuration.Settings.TRUE;
+import static org.neo4j.configuration.connectors.Connector.ConnectorType.BOLT;
+import static org.neo4j.configuration.connectors.Connector.ConnectorType.HTTP;
+import static org.neo4j.configuration.connectors.HttpConnector.Encryption.NONE;
+import static org.neo4j.configuration.connectors.HttpConnector.Encryption.TLS;
+import static org.neo4j.internal.helpers.collection.MapUtil.stringMap;
 
+/**
+ * This class holds the overall configuration of a Neo4j database instance. Use the accessors to convert the internal
+ * key-value settings to other types.
+ * <p>
+ * Users can assume that old settings have been migrated to their new counterparts, and that defaults have been
+ * applied.
+ */
 public class Config implements Configuration
 {
     public static final String DEFAULT_CONFIG_FILE_NAME = "neo4j.conf";
 
+    private final List<ConfigOptions> configOptions;
+
+    private final Map<String,String> params = new ConcurrentHashMap<>();
+    private final Map<String,Object> parsedParams = new ConcurrentHashMap<>();
+    private final Map<String, Collection<DynamicUpdateListener>> updateListeners = new ConcurrentHashMap<>();
+    private final ConfigurationMigrator migrator;
+    private final List<ConfigurationValidator> validators = new ArrayList<>();
+    private final Map<String,String> overriddenDefaults = new ConcurrentHashMap<>();
+    private final Map<String,BaseSetting<?>> settingsMap; // Only contains fixed settings and not groups
+
+    // Messages to this log get replayed target a real logger once logging has been instantiated.
+    private Log log = new BufferingLog();
+
+    /**
+     * Builder class for a configuration.
+     * <p>
+     * The configuration has three layers of values:
+     * <ol>
+     *   <li>Defaults settings, which is provided by validators.
+     *   <li>File settings, parsed from the configuration file if one is provided.
+     *   <li>Overridden settings, as provided by the user with the {@link Builder#withSettings(Map)} methods.
+     * </ol>
+     * They are added in the order specified, and is thus overridden by each layer.
+     * <p>
+     * Although the builder allows you to override the {@link LoadableConfig}'s with <code>withConfigClasses</code>,
+     * this functionality is mainly for testing. If no classes are provided to the builder, they will be located through
+     * service loading, and this is probably what you want in most of the cases.
+     * <p>
+     * Loaded {@link LoadableConfig}'s, whether provided though service loading or explicitly passed, will be scanned
+     * for validators that provides migration, validation and default values. Migrators can be specified with the
+     * {@link Migrator} annotation and should reside in a class implementing {@link LoadableConfig}.
+     */
     public static class Builder
     {
-        private final Collection<Class<? extends SettingsDeclaration>> settingsClasses = new HashSet<>();
-        private final Collection<Class<? extends GroupSetting>> groupSettingClasses = new HashSet<>();
-        private final Collection<SettingMigrator> settingMigrators = new HashSet<>();
-        private final List<Class<? extends GroupSettingValidator>> validators = new ArrayList<>();
-        private final Map<String,String> settingValues = new HashMap<>();
-        private final Map<String,String> overriddenDefaults = new HashMap<>();
-        private Config fromConfig;
-        private Log log = new BufferingLog();
+        private Map<String,String> overriddenSettings = stringMap();
+        private Map<String,String> overriddenDefaults = stringMap();
+        private List<ConfigurationValidator> validators = new ArrayList<>();
+        private File configFile;
+        private List<LoadableConfig> settingsClasses;
+        private boolean connectorsDisabled;
+        private boolean throwOnFileLoadFailure = true;
 
-        private Builder set( String setting, String value )
+        /**
+         * Augment the configuration with the passed setting.
+         *
+         * @param setting The setting to set.
+         * @param value The value of the setting, pre parsed.
+         */
+        public Builder withSetting( final Setting<?> setting, final String value )
         {
-            if ( settingValues.containsKey( setting ) )
+            return withSetting( setting.name(), value );
+        }
+
+        /**
+         * Augment the configuration with the passed setting.
+         *
+         * @param setting The setting to set.
+         * @param value The value of the setting, pre parsed.
+         */
+        public Builder withSetting( final String setting, final String value )
+        {
+            overriddenSettings.put( setting, value );
+            return this;
+        }
+
+        /**
+         * Augment the configuration with the passed settings.
+         *
+         * @param initialSettings settings to augment the configuration with.
+         */
+        public Builder withSettings( final Map<String,String> initialSettings )
+        {
+            this.overriddenSettings.putAll( initialSettings );
+            return this;
+        }
+
+        /**
+         * Set the classes that contains the {@link Setting} fields. If no classes are provided to the builder, they
+         * will be located through service loading.
+         *
+         * @param loadableConfigs A collection fo class instances providing settings.
+         */
+        @Nonnull
+        public Builder withConfigClasses( final Collection<? extends LoadableConfig> loadableConfigs )
+        {
+            if ( settingsClasses == null )
             {
-                log.warn( "The '%s' setting is overridden. Setting value changed from '%s' to '%s'.", setting, settingValues.get( setting ), value );
+                settingsClasses = new ArrayList<>();
             }
-            settingValues.put( setting, value );
+            settingsClasses.addAll( loadableConfigs );
             return this;
         }
 
-        public Builder set( Map<String,String> settingValues )
-        {
-            settingValues.forEach( this::set );
-            return this;
-        }
-
-        public <T> Builder set( Setting<T> setting, String value )
-        {
-            return set( setting.name(), value );
-        }
-
-        private Builder setDefault( String setting, String value )
-        {
-            if ( overriddenDefaults.containsKey( setting ) )
-            {
-                log.warn( "The overridden default value of '%s' setting is overridden. Setting value changed from '%s' to '%s'.", setting,
-                        settingValues.get( setting ), value );
-            }
-            overriddenDefaults.put( setting, value );
-            return this;
-        }
-
-        public Builder setDefaults( Map<String,String> overriddenDefaults )
-        {
-            overriddenDefaults.forEach( this::setDefault );
-            return this;
-        }
-
-        public <T> Builder setDefault( Setting<T> setting, String value )
-        {
-            return setDefault( setting.name(), value );
-        }
-
-        Builder addSettingsClass( Class<? extends SettingsDeclaration> settingsClass )
-        {
-            this.settingsClasses.add( settingsClass );
-            return this;
-        }
-
-        Builder addGroupSettingClass( Class<? extends GroupSetting> groupSettingClass )
-        {
-            this.groupSettingClasses.add( groupSettingClass );
-            return this;
-        }
-
-        public Builder addValidators( List<Class<? extends GroupSettingValidator>> validators )
-        {
-            this.validators.addAll( validators );
-            return this;
-        }
-
-        public Builder addValidator( Class<? extends GroupSettingValidator> validator )
+        /**
+         * Provide an additional validator. Validators are automatically localed within classes with
+         * {@link LoadableConfig}, but this allows you to add others.
+         *
+         * @param validator an additional validator.
+         */
+        @Nonnull
+        public Builder withValidator( final ConfigurationValidator validator )
         {
             this.validators.add( validator );
             return this;
         }
 
-        public Builder addMigrator( SettingMigrator migrator )
+        /**
+         * @see Builder#withValidator(ConfigurationValidator)
+         */
+        @Nonnull
+        public Builder withValidators( final Collection<ConfigurationValidator> validators )
         {
-            this.settingMigrators.add( migrator );
+            this.validators.addAll( validators );
             return this;
         }
 
-        public Builder fromConfig( Config config )
+        /**
+         * Extends config with defaults for server, i.e. auth and connector settings.
+         */
+        @Nonnull
+        public Builder withServerDefaults()
         {
-            if ( fromConfig != null )
-            {
-                throw new IllegalArgumentException( "Can only build a config from one other config." );
-            }
-            fromConfig = config;
+            // Add server defaults
+            HttpConnector http = new HttpConnector( "http", NONE );
+            HttpConnector https = new HttpConnector( "https", TLS );
+            BoltConnector bolt = new BoltConnector( "bolt" );
+            overriddenDefaults.put( GraphDatabaseSettings.auth_enabled.name(), TRUE );
+            overriddenDefaults.put( http.enabled.name(), TRUE );
+            overriddenDefaults.put( https.enabled.name(), TRUE );
+            overriddenDefaults.put( bolt.enabled.name(), TRUE );
+
             return this;
         }
 
-        public Builder fromFileNoThrow( Path path )
+        /**
+         * Provide a file for initial configuration. The settings added with the {@link Builder#withSettings(Map)}
+         * methods will be applied on top of the settings in the file.
+         *
+         * @param configFile A configuration file to parse for initial settings.
+         */
+        @Nonnull
+        public Builder withFile( final @Nullable File configFile )
         {
-            if ( path != null )
-            {
-                fromFile( path.toFile(), false );
-            }
+            this.configFile = configFile;
             return this;
         }
 
-        public Builder fromFileNoThrow( File cfg )
+        /**
+         * @see Builder#withFile(File)
+         */
+        @Nonnull
+        public Builder withFile( final Path configFile )
         {
-            return fromFile( cfg, false );
+            return withFile( configFile.toFile() );
         }
 
-        public Builder fromFile( File cfg )
+        /**
+         * @param configFile an optional configuration file. If not present, this call changes nothing.
+         */
+        @Nonnull
+        public Builder withFile( Optional<File> configFile )
         {
-            return fromFile( cfg, true );
-        }
-
-        private Builder fromFile( File file, boolean allowThrow )
-        {
-            if ( file == null || !file.exists() )
-            {
-                if ( allowThrow )
-                {
-                    throw new IllegalArgumentException( new IOException( "Config file [" + file + "] does not exist." ) );
-                }
-                log.warn( "Config file [%s] does not exist.", file );
-                return this;
-            }
-
-            try
-            {
-                try ( FileInputStream stream = new FileInputStream( file ) )
-                {
-                    new Properties()
-                    {
-                        @Override
-                        public synchronized Object put( Object key, Object value )
-                        {
-                            set( key.toString(), value.toString() );
-                            return null;
-                        }
-                    }.load( stream );
-                }
-            }
-            catch ( IOException e )
-            {
-                if ( allowThrow )
-                {
-                    throw new IllegalArgumentException( "Unable to load config file [" + file + "].", e );
-                }
-                log.error( "Unable to load config file [%s]: %s", file, e.getMessage() );
-            }
+            configFile.ifPresent( file -> this.configFile = file );
             return this;
         }
 
-        private Builder()
+        /**
+         * Specifies the neo4j home directory to be set for this particular config. This will modify {@link
+         * GraphDatabaseSettings#neo4j_home} to the same value as provided. If this is not called, the home directory
+         * will be set to a system specific default home directory.
+         *
+         * @param homeDir The home directory this config belongs to.
+         */
+        @Nonnull
+        public Builder withHome( final File homeDir )
         {
-
+            overriddenSettings.put( GraphDatabaseSettings.neo4j_home.name(), homeDir.getAbsolutePath() );
+            return this;
         }
 
-        public Config build()
+        /**
+         * @see Builder#withHome(File)
+         */
+        @Nonnull
+        public Builder withHome( final Path homeDir )
         {
-            return new Config( settingsClasses, groupSettingClasses, validators, settingMigrators, settingValues, overriddenDefaults, fromConfig, log );
+            return withHome( homeDir.toFile() );
+        }
+
+        /**
+         * This will force all connectors to be disabled during creation of the config. This can be useful if an
+         * offline mode is wanted, e.g. in dbms tools or test environments.
+         */
+        @Nonnull
+        public Builder withConnectorsDisabled()
+        {
+            connectorsDisabled = true;
+            return this;
+        }
+
+        /**
+         * Prevent the {@link #build()} method from throwing an {@link UncheckedIOException} if the given {@code withFile} configuration file could not be
+         * loaded for some reason. Instead, an error will be logged. The default behaviour is to throw the exception.
+         */
+        public Builder withNoThrowOnFileLoadFailure()
+        {
+            throwOnFileLoadFailure = false;
+            return this;
+        }
+
+        /**
+         * @return The config reflecting the state of the builder.
+         * @throws InvalidSettingException is thrown if an invalid setting is encountered and {@link
+         * GraphDatabaseSettings#strict_config_validation} is true.
+         */
+        @Nonnull
+        public Config build() throws InvalidSettingException
+        {
+            List<LoadableConfig> loadableConfigs =
+                    Optional.ofNullable( settingsClasses ).orElseGet( LoadableConfig::allConfigClasses );
+
+            // If reading from a file, make sure we always have a neo4j_home
+            if ( configFile != null && !overriddenSettings.containsKey( GraphDatabaseSettings.neo4j_home.name() ) )
+            {
+                nullSafePut( overriddenSettings, GraphDatabaseSettings.neo4j_home.name(), System.getProperty( "user.dir" ) );
+            }
+
+            Config config = new Config( configFile, throwOnFileLoadFailure, overriddenSettings, overriddenDefaults, validators, loadableConfigs );
+
+            if ( connectorsDisabled )
+            {
+                config.augment( config.allConnectorIdentifiers().stream().collect(
+                        Collectors.toMap( id -> new Connector( id ).enabled.name(), id -> Settings.FALSE ) ) );
+            }
+
+            return config;
         }
     }
 
-    public static Config defaults()
-    {
-        return defaults( Map.of() );
-    }
-
-    public static Config defaults( Setting<?> setting, String value )
-    {
-        return defaults( Map.of( setting.name(), value ) );
-    }
-
-    public static Config defaults( Map<String,String> settingValues )
-    {
-        return Config.newBuilder().set( settingValues ).build();
-    }
-
-    public static Builder newBuilder()
-    {
-        Builder builder = new Builder();
-        Services.loadAll( SettingsDeclaration.class ).forEach( decl -> builder.addSettingsClass( decl.getClass() ) );
-        Services.loadAll( GroupSetting.class ).forEach( decl -> builder.addGroupSettingClass( decl.getClass() ) );
-        Services.loadAll( SettingMigrator.class ).forEach( builder::addMigrator );
-
-        return builder;
-    }
-
-    public static Builder emptyBuilder()
+    @Nonnull
+    public static Builder builder()
     {
         return new Builder();
     }
 
-    protected final Map<String,Entry<?>> settings = new HashMap<>();
-    private final Map<Class<? extends GroupSetting>, Map<String,GroupSetting>> allGroupInstances = new HashMap<>();
-    private Log log;
+    /**
+     * Convenient method for starting building from a file.
+     */
+    @Nonnull
+    public static Builder fromFile( @Nullable final File configFile )
+    {
+        return builder().withFile( configFile );
+    }
+
+    /**
+     * Convenient method for starting building from a file.
+     */
+    @Nonnull
+    public static Builder fromFile( @Nonnull final Path configFile )
+    {
+        return builder().withFile( configFile );
+    }
+
+    /**
+     * Convenient method for starting building from initial settings.
+     */
+    @Nonnull
+    public static Builder fromSettings( final Map<String,String> initialSettings )
+    {
+        return builder().withSettings( initialSettings );
+    }
+
+    /**
+     * @return a configuration with default values.
+     */
+    @Nonnull
+    public static Config defaults()
+    {
+        return builder().build();
+    }
+
+    /**
+     * @param initialSettings a map with settings to be present in the config.
+     * @return a configuration with default values augmented with the provided <code>overriddenSettings</code>.
+     */
+    @Nonnull
+    public static Config defaults( @Nonnull final Map<String,String> initialSettings )
+    {
+        return builder().withSettings( initialSettings ).build();
+    }
+
+    /**
+     * Constructs a <code>Config</code> with default values and sets the supplied <code>setting</code> to the <code>value</code>.
+     * @param setting The initial setting to use.
+     * @param value The initial value to give the setting.
+     */
+    @Nonnull
+    public static Config defaults( @Nonnull final Setting<?> setting, final String value )
+    {
+        return builder().withSetting( setting, value ).build();
+    }
 
     protected Config()
     {
+        this( null, false, emptyMap(), emptyMap(), emptyList(), emptyList() );
     }
 
-    private Config( Collection<Class<? extends SettingsDeclaration>> settingsClasses,
-            Collection<Class<? extends GroupSetting>> groupSettingClasses,
-            List<Class<? extends GroupSettingValidator>> validatorClasses,
-            Collection<SettingMigrator> settingMigrators,
-            Map<String,String> settingValues,
+    private Config( File configFile,
+            boolean throwOnFileLoadFailure,
+            Map<String,String> overriddenSettings,
             Map<String,String> overriddenDefaults,
-            Config fromConfig,
-            Log log )
+            Collection<ConfigurationValidator> additionalValidators,
+            List<LoadableConfig> settingsClasses )
     {
-        this.log = log;
+        configOptions = settingsClasses.stream()
+                .map( LoadableConfig::getConfigOptions )
+                .flatMap( List::stream )
+                .collect( Collectors.toList() );
 
-        settingMigrators.forEach( migrator -> migrator.migrate( settingValues, log )  );
+        settingsMap = new HashMap<>();
+        configOptions.stream()
+                .map( ConfigOptions::settingGroup )
+                .filter( BaseSetting.class::isInstance )
+                .map( BaseSetting.class::cast )
+                .forEach( setting -> settingsMap.put( setting.name(), setting ) );
 
-        Map<String,SettingImpl<?>> definedSettings = getDefinedSettings( settingsClasses );
-        Map<String,Class<? extends GroupSetting>> definedGroups = getDefinedGroups( groupSettingClasses );
-        HashSet<String> keys = new HashSet<>( definedSettings.keySet() );
-        keys.addAll( settingValues.keySet() );
+        validators.addAll( additionalValidators );
+        migrator = new AnnotationBasedConfigurationMigrator( settingsClasses );
+        nullSafePutAll( this.overriddenDefaults, overriddenDefaults );
 
-        List<SettingImpl<?>> newSettings = new ArrayList<>();
+        boolean fromFile = configFile != null;
+        Map<String,String> settings = buildConfiguredSettings( configFile, throwOnFileLoadFailure, overriddenSettings, overriddenDefaults, fromFile );
 
-        if ( fromConfig != null ) //When building from another config, extract values
+        migrateAndValidateAndUpdateSettings( settings, fromFile );
+
+        // Only warn for deprecations if red from a file
+        if ( fromFile )
         {
-            //fromConfig.log is ignored, until different behaviour is expected
-            fromConfig.allGroupInstances.forEach( ( cls, fromGroupMap ) -> {
-                Map<String, GroupSetting> groupMap = allGroupInstances.computeIfAbsent( cls, k -> new HashMap<>() );
-                groupMap.putAll( fromGroupMap );
-            } );
-            for ( Map.Entry<String,Entry<?>> entry : fromConfig.settings.entrySet() )
-            {
-                newSettings.add( entry.getValue().setting );
-                keys.remove( entry.getKey() );
-            }
-        }
-
-        boolean strict = true;
-        if ( keys.remove( strict_config_validation.name() ) ) //evaluate strict_config_validation setting first, as we need it when validating other settings
-        {
-            evaluateSetting( strict_config_validation, settingValues, fromConfig, overriddenDefaults );
-            strict = get( strict_config_validation );
-        }
-
-        newSettings.addAll( getActiveSettings( keys, definedGroups, definedSettings, strict ) );
-
-        evaluateSettingValues( newSettings, settingValues, overriddenDefaults, fromConfig );
-
-        validateGroupsettings( validatorClasses );
-    }
-
-    @SuppressWarnings( "unchecked" )
-    private void evaluateSettingValues( Collection<SettingImpl<?>> settingsToEvaluate, Map<String,String> settingValues, Map<String,String> overriddenDefaults,
-            Config fromConfig )
-    {
-        Deque<SettingImpl<?>> newSettings = new LinkedList<>( settingsToEvaluate );
-        while ( !newSettings.isEmpty() )
-        {
-            boolean modified = false;
-            SettingImpl<?> last = newSettings.peekLast();
-            SettingImpl<Object> setting;
-            do
-            {
-                setting = (SettingImpl<Object>) requireNonNull( newSettings.pollFirst() );
-
-                if ( setting.dependency() != null && !settings.containsKey( setting.dependency().name() ) )
-                {
-                    //dependency not yet evaluated, put last
-                    newSettings.addLast( setting );
-                }
-                else
-                {
-                    modified = true;
-                    try
-                    {
-                        evaluateSetting( setting, settingValues, fromConfig, overriddenDefaults );
-                    }
-                    catch ( RuntimeException e )
-                    {
-                        throw new IllegalArgumentException( format( "Error evaluate setting '%s' %s", setting.name(), e.getMessage() ), e );
-                    }
-                }
-            }
-            while ( setting != last );
-
-            if ( !modified && !newSettings.isEmpty() )
-            {
-                //Settings left depend on settings not present in this config.
-                String unsolvable = newSettings.stream()
-                        .map( s -> format("'%s'->'%s'", s.name(), s.dependency().name() ) )
-                        .collect( Collectors.joining(",\n","[","]"));
-                throw new IllegalArgumentException(
-                        format( "Can not resolve setting dependencies. %s depend on settings not present in config, or are in a circular dependency ",
-                                unsolvable ) );
-            }
+            warnAboutDeprecations( params );
         }
     }
 
-    private Collection<SettingImpl<?>> getActiveSettings( Set<String> settingNames, Map<String,Class<? extends GroupSetting>> definedGroups,
-            Map<String,SettingImpl<?>> declaredSettings, boolean strict )
+    private Map<String,String> buildConfiguredSettings( File configFile, boolean throwOnFileLoadFailure, Map<String,String> overriddenSettings,
+            Map<String,String> overriddenDefaults, boolean fromFile )
     {
-        List<SettingImpl<?>> newSettings = new ArrayList<>();
-        for ( String key : settingNames )
+        Map<String,String> settings = new HashMap<>();
+        if ( fromFile )
         {
-            // Try to find in settings
-            SettingImpl<?> setting = declaredSettings.get( key );
-            if ( setting != null )
-            {
-                newSettings.add( setting );
-            }
-            else
-            {
-                // Not found, could be a group setting, e.g "dbms.connector.*"
-                var groupEntryOpt = definedGroups.entrySet().stream().filter( e -> key.startsWith( e.getKey() + '.' ) ).findAny();
-                if ( groupEntryOpt.isEmpty() )
-                {
-                    String msg = format( "Unrecognized setting. No declared setting with name: %s", key );
-                    if ( strict )
-                    {
-                        throw new IllegalArgumentException( msg );
-                    }
-                    log.warn( msg );
-                    continue;
-                }
-                var groupEntry = groupEntryOpt.get();
-
-                String prefix = groupEntry.getKey();
-                String keyWithoutPrefix = key.substring( prefix.length() + 1 );
-                String id;
-                if ( keyWithoutPrefix.matches("^[^.]+$") )
-                {
-                    id = keyWithoutPrefix;
-                }
-                else if ( keyWithoutPrefix.matches("^[^.]+\\.[^.]+$") )
-                {
-                    id = keyWithoutPrefix.substring( 0, keyWithoutPrefix.indexOf( '.' ) );
-                }
-                else
-                {
-                    String msg = format( "Malformed group setting name: '%s', does not match any setting in its group.", key );
-                    if ( strict )
-                    {
-                        throw new IllegalArgumentException( msg );
-                    }
-                    log.warn( msg );
-                    continue;
-                }
-
-                Map<String, GroupSetting> groupInstances = allGroupInstances.computeIfAbsent( groupEntry.getValue(), k -> new HashMap<>() );
-                if ( !groupInstances.containsKey( id ) )
-                {
-                    GroupSetting group = createStringInstance( groupEntry.getValue(), id );
-                    groupInstances.put( id, group );
-                    //Add all settings from created groups, to get possible default values.
-                    Map<String,SettingImpl<?>> definedSettings = getDefinedSettings( group.getClass(), group );
-                    if ( definedSettings.values().stream().anyMatch( SettingImpl::dynamic ) )
-                    {
-                        throw new IllegalArgumentException( format( "Group setting can not be dynamic: '%s'", key ) );
-                    }
-                    newSettings.addAll( definedSettings.values() );
-                }
-            }
+            loadFromFile( configFile, log, throwOnFileLoadFailure, settings );
         }
-        return newSettings;
+        for ( Map.Entry<String,String> overriddenSetting : overriddenSettings.entrySet() )
+        {
+            addSettingToMap( settings, overriddenSetting.getKey(), overriddenSetting.getValue(), log );
+        }
+        overriddenDefaults.forEach( settings::putIfAbsent );
+        return settings;
     }
 
-    private void validateGroupsettings( List<Class<? extends GroupSettingValidator>> validatorClasses )
-    {
-        for ( GroupSettingValidator validator : getGroupSettingValidators( validatorClasses ) )
-        {
-            String prefix = validator.getPrefix() + '.';
-            Map<Setting<?>, Object> values = settings.entrySet().stream()
-                    .filter( e -> e.getKey().startsWith( prefix ) )
-                    .collect( HashMap::new, ( map, entry ) -> map.put( entry.getValue().setting, entry.getValue().getValue() ), HashMap::putAll );
-
-            validator.validate( values, this );
-        }
-    }
-
-    @SuppressWarnings( "unchecked" )
-    private void evaluateSetting( Setting<?> untypedSetting, Map<String,String> settingValues, Config fromConfig, Map<String,String> overriddenDefaults )
-    {
-        SettingImpl<Object> setting = (SettingImpl<Object>) untypedSetting;
-        String key = setting.name();
-        Object defaultValue = setting.parse( overriddenDefaults.get( key ) );
-        if ( defaultValue == null )
-        {
-            defaultValue = setting.defaultValue();
-            if ( fromConfig != null && fromConfig.settings.containsKey( key ) )
-            {
-                Object fromDefault = fromConfig.settings.get( key ).defaultValue;
-                if ( !Objects.equals( defaultValue, fromDefault) )
-                {
-                    defaultValue = fromDefault;
-                }
-            }
-        }
-
-        // Map value
-        Object value = null;
-        if ( settingValues.containsKey( key ) )
-        {
-            value = setting.parse( settingValues.get( key ) );
-        }
-        else if ( fromConfig != null && fromConfig.settings.containsKey( key ) )
-        {
-            Entry<?> entry = fromConfig.settings.get( key );
-            value = entry.isDefault ? null : entry.value;
-        }
-
-        value = setting.solveDefault( value, defaultValue );
-        if ( setting.dependency() != null )
-        {
-            var dep = settings.get( setting.dependency().name() );
-            Object solvedValue = setting.solveDependency( value != null ? value : defaultValue, dep.getValue() );
-            settings.put( key, new DepEntry<>( setting, value, defaultValue, solvedValue ) );
-        }
-        else
-        {
-            settings.put( key, new Entry<>( setting, value, defaultValue ) );
-        }
-
-    }
-
-    @SuppressWarnings( "unchecked" )
-    public <T extends GroupSetting> Map<String,T> getGroups( Class<T> group )
-    {
-        return new HashMap<>( (Map<? extends String,? extends T>) allGroupInstances.getOrDefault( group, new HashMap<>() ) );
-    }
-
-    @SuppressWarnings( "unchecked" )
-    public <T extends GroupSetting, U extends T> Map<Class<U>,Map<String,U>> getGroupsFromInheritance( Class<T> parentClass )
-    {
-        return allGroupInstances.keySet().stream()
-                .filter( parentClass::isAssignableFrom )
-                .map( childClass -> (Class<U>) childClass )
-                .collect( Collectors.toMap( childClass -> childClass, this::getGroups ) );
-    }
-
-    private static List<GroupSettingValidator> getGroupSettingValidators( List<Class<? extends GroupSettingValidator>> validatorClasses )
-    {
-        List<GroupSettingValidator> validators = new ArrayList<>();
-        validatorClasses.forEach( validatorClass -> validators.add( createInstance( validatorClass ) ) );
-        return validators;
-    }
-
-    private static <T> T createInstance( Class<T> classObj )
-    {
-
-        T instance;
-        try
-        {
-            instance = createStringInstance( classObj, null );
-        }
-        catch ( Exception first )
-        {
-            try
-            {
-                Constructor<T> constructor = classObj.getDeclaredConstructor();
-                constructor.setAccessible( true );
-                instance = constructor.newInstance();
-            }
-            catch ( Exception second )
-            {
-                String name = classObj.getSimpleName();
-                String msg = format( "Failed to create instance of: %s, please see the exception cause", name );
-                throw new IllegalArgumentException( msg, Exceptions.chain( second, first ) );
-            }
-
-        }
-        return instance;
-    }
-
+    /**
+     * Retrieves a configuration value. If no value is configured, a default value will be returned instead. Note that
+     * {@code null} is a valid value.
+     *
+     * @param setting The configuration property.
+     * @param <T> the underlying type of the setting.
+     * @return the value of the given setting, {@code null} can be returned.
+     */
     @Override
-    public <T> T get( org.neo4j.graphdb.config.Setting<T> setting )
+    public <T> T get( Setting<T> setting )
     {
-        return getObserver( setting ).getValue();
+        return (T) parsedParams.computeIfAbsent( setting.name(), name -> setting.apply( params::get ) );
     }
 
-    @SuppressWarnings( "unchecked" )
-    public <T> SettingObserver<T> getObserver( Setting<T> setting )
+    /**
+     * Test whether a setting is configured or not. Can be used to check if default value will be returned or not.
+     *
+     * @param setting The setting to check.
+     * @return {@code true} if the setting is configures, {@code false} otherwise implying that the default value will
+     * be returned if applicable.
+     */
+    public boolean isConfigured( Setting<?> setting )
     {
-        SettingObserver<T> observer = (SettingObserver<T>) settings.get( setting.name() );
-        if ( observer != null )
+        return params.containsKey( setting.name() );
+    }
+
+    /**
+     * Returns the currently configured identifiers for grouped settings.
+     *
+     * Identifiers for groups exists to allow multiple configured settings of the same setting type.
+     * E.g. giving that prefix of a group is {@code dbms.ssl.policy} and the following settings are configured:
+     * <ul>
+     * <li> {@code dbms.ssl.policy.default.base_directory}
+     * <li> {@code dbms.ssl.policy.other.base_directory}
+     * </ul>
+     * a call to this will method return {@code ["default", "other"]}.
+     * <p>
+     * The key difference to these identifiers are that they are only known at runtime after a valid configuration is
+     * parsed and validated.
+     *
+     * @param groupClass A class that represents a setting group. Must be annotated with {@link Group}
+     * @return A set of configured identifiers for the given group.
+     * @throws IllegalArgumentException if the provided class is not annotated with {@link Group}.
+     */
+    public Set<String> identifiersFromGroup( Class<?> groupClass )
+    {
+        if ( !groupClass.isAnnotationPresent( Group.class ) )
         {
-            return observer;
+            throw new IllegalArgumentException( "Class must be annotated with @Group" );
         }
-        throw new IllegalArgumentException( format( "Config has no association with setting: '%s'", setting.name() ) );
-    }
 
-    public <T> void setDynamic( Setting<T> setting, T value, String scope )
-    {
-        Entry<T> entry = (Entry<T>) getObserver( setting );
-        SettingImpl<T> actualSetting = entry.setting;
-        if ( !actualSetting.dynamic() )
+        String prefix = groupClass.getAnnotation( Group.class ).value();
+        Pattern pattern = Pattern.compile( Pattern.quote( prefix ) + "\\.([^.]+)\\.(.+)" );
+
+        Set<String> identifiers = new TreeSet<>();
+        for ( String setting : params.keySet() )
         {
-            throw new IllegalArgumentException( format("Setting '%s' is not dynamic and can not be changed at runtime", setting.name() ) );
+            Matcher matcher = pattern.matcher( setting );
+            if ( matcher.matches() )
+            {
+                identifiers.add( matcher.group( 1 ) );
+            }
         }
-        set( setting, value );
-        log.info( "%s changed to %s, by %s", setting.name(), actualSetting.valueToString( value ), scope );
-
+        return identifiers;
     }
 
-    public <T> void set( Setting<T> setting, T value )
+    /**
+     * Augment the existing config with new settings, overriding any conflicting settings, but keeping all old
+     * non-overlapping ones.
+     *
+     * @param settings to add and override.
+     * @throws InvalidSettingException when and invalid setting is found and {@link
+     * GraphDatabaseSettings#strict_config_validation} is true.
+     */
+    public void augment( Map<String,String> settings ) throws InvalidSettingException
     {
-        Entry<T> entry = (Entry<T>) getObserver( setting );
-        SettingImpl<T> actualSetting = entry.setting;
-        if ( actualSetting.immutable() )
+        migrateAndValidateAndUpdateSettings( settings, false );
+    }
+
+    /**
+     * @see Config#augment(Map)
+     */
+    public void augment( String setting, String value ) throws InvalidSettingException
+    {
+        augment( singletonMap( setting, value ) );
+    }
+
+    /**
+     * @see Config#augment(Map)
+     */
+    public void augment( Setting<?> setting, String value )
+    {
+        augment( setting.name(), value );
+    }
+
+    /**
+     * Augment the existing config with new settings, overriding any conflicting settings, but keeping all old
+     * non-overlapping ones.
+     *
+     * @param config config to add and override with.
+     * @throws InvalidSettingException when and invalid setting is found and {@link
+     * GraphDatabaseSettings#strict_config_validation} is true.
+     */
+    public void augment( Config config ) throws InvalidSettingException
+    {
+        augment( config.params );
+    }
+
+    /**
+     * Augment the existing config with new settings, ignoring any conflicting settings.
+     *
+     * @param setting settings to add and override
+     * @throws InvalidSettingException when and invalid setting is found and {@link
+     * GraphDatabaseSettings#strict_config_validation} is true.
+     */
+    public void augmentDefaults( Setting<?> setting, String value ) throws InvalidSettingException
+    {
+        nullSafePut( overriddenDefaults, setting.name(), value );
+        if ( value != null )
         {
-            throw new IllegalArgumentException( format("Setting '%s' immutable (final). Can not amend", actualSetting.name() ) );
+            params.putIfAbsent( setting.name(), value );
         }
-        entry.setValue( value );
+        parsedParams.remove( setting.name() );
     }
 
-    public <T> void setIfNotSet( Setting<T> setting, T value )
-    {
-        Entry<T> entry = (Entry<T>) getObserver( setting );
-        if ( entry == null || entry.isDefault )
-        {
-            set( setting, value );
-        }
-    }
-
-    public boolean isExplicitlySet( Setting<?> setting )
-    {
-        if ( settings.containsKey( setting.name() ) )
-        {
-            return !settings.get( setting.name() ).isDefault;
-        }
-        return false;
-    }
-
-    @Override
-    public String toString()
-    {
-        return toString( true );
-    }
-
-    @SuppressWarnings( "unchecked" )
-    public String toString( boolean includeNullValues )
-    {
-        StringBuilder sb = new StringBuilder();
-        settings.entrySet().stream()
-                .sorted( Map.Entry.comparingByKey() )
-                .forEachOrdered( e ->
-                {
-                    SettingImpl<Object> setting = (SettingImpl<Object>) e.getValue().setting;
-                    Object valueObj = e.getValue().getValue();
-                    if ( valueObj != null || includeNullValues )
-                    {
-                        String value = setting.valueToString( valueObj );
-                        sb.append( format( "%s=%s%n", e.getKey(), value ) );
-                    }
-                } );
-        return sb.toString();
-    }
-
+    /**
+     * Specify a log where errors and warnings will be reported. Log messages that happens prior to setting a logger
+     * will be buffered and replayed onto the first logger that is set.
+     *
+     * @param log to use.
+     */
     public void setLogger( Log log )
     {
         if ( this.log instanceof BufferingLog )
@@ -619,169 +575,499 @@ public class Config implements Configuration
         this.log = log;
     }
 
-    @SuppressWarnings( "unchecked" )
-    public Map<Setting<Object>,Object> getValues()
+    /**
+     * @param key to lookup in the config
+     * @return the value or none if it doesn't exist in the config
+     */
+    public Optional<String> getRaw( @Nonnull String key )
     {
-        HashMap<Setting<Object>,Object> values = new HashMap<>();
-        settings.forEach( ( s, entry ) -> values.put( (Setting<Object>) entry.setting, entry.value ) );
-        return values;
+        return Optional.ofNullable( params.get( key ) );
     }
 
-    @SuppressWarnings( "unchecked" )
-    public Setting<Object> getSetting( String name )
+    /**
+     * @return a copy of the raw configuration map
+     */
+    public Map<String,String> getRaw()
     {
-        if ( !settings.containsKey( name ) )
+        return new HashMap<>( params );
+    }
+
+    /**
+     * @return a configured setting
+     */
+    public Optional<Object> getValue( @Nonnull String key )
+    {
+        return configOptions.stream()
+                .map( it -> it.asConfigValues( params ) )
+                .flatMap( List::stream )
+                .filter( it -> it.name().equals( key ) )
+                .map( ConfigValue::value )
+                .findFirst()
+                .orElseGet( Optional::empty );
+    }
+
+    /**
+     * Updates a provided setting to a given value. This method is intended to be used for changing settings during
+     * runtime. If you want to change settings at startup, use {@link Config#augment}.
+     *
+     * @implNote No migration or config validation is done. If you need this you have to refactor this method.
+     *
+     * @param setting The setting to set to the specified value.
+     * @param update The new value to set, passing {@code null} or the empty string should reset the value back to default value.
+     * @param origin The source of the change, e.g. {@code dbms.setConfigValue()}.
+     * @throws IllegalArgumentException if the provided setting is unknown or not dynamic.
+     * @throws InvalidSettingException if the value is not formatted correctly.
+     */
+    public void updateDynamicSetting( String setting, String update, String origin )
+            throws IllegalArgumentException, InvalidSettingException
+    {
+        verifyValidDynamicSetting( setting );
+
+        synchronized ( params )
         {
-            throw new IllegalArgumentException( format( "Setting `%s` not found", name ) );
-        }
-        return (Setting<Object>) settings.get( name ).setting;
-    }
-    @SuppressWarnings( "unchecked" )
-    public Map<String,Setting<Object>> getDeclaredSettings()
-    {
-        return settings.entrySet().stream().collect( Collectors.toMap( Map.Entry::getKey, entry -> (Setting<Object>) entry.getValue().setting ) );
-    }
-
-    private static Map<String,Class<? extends GroupSetting>> getDefinedGroups( Collection<Class<? extends GroupSetting>> groupSettingClasses )
-    {
-        return groupSettingClasses.stream().collect( Collectors.toMap( cls -> createInstance( cls ).getPrefix(), cls -> cls ) );
-    }
-
-    private static <T> T createStringInstance( Class<T> cls, String id )
-    {
-        try
-        {
-            Constructor<T> constructor = cls.getDeclaredConstructor( String.class );
-            constructor.setAccessible( true );
-            return constructor.newInstance( id );
-        }
-        catch ( Exception e )
-        {
-            String msg = format( "'%s' must have a ( @Nullable String ) constructor, be static & non-abstract", cls.getSimpleName() );
-            throw new IllegalArgumentException( msg, e );
-        }
-    }
-
-    private static Map<String,SettingImpl<?>> getDefinedSettings( Collection<Class<? extends SettingsDeclaration>> settingsClasses )
-    {
-        Map<String,SettingImpl<?>> settings = new HashMap<>();
-        settingsClasses.forEach( c -> settings.putAll( getDefinedSettings( c, null ) ) );
-        return settings;
-    }
-
-    private static Map<String,SettingImpl<?>> getDefinedSettings( Class<?> settingClass, Object fromObject )
-    {
-        Map<String,SettingImpl<?>> settings = new HashMap<>();
-        Arrays.stream( FieldUtils.getAllFields( settingClass ) )
-                .filter( f -> f.getType().isAssignableFrom( SettingImpl.class ) )
-                .forEach( field ->
+            boolean oldValueIsDefault = false;
+            boolean newValueIsDefault = false;
+            String oldValue;
+            String newValue;
+            if ( update == null || update.isEmpty() )
+            {
+                // Empty means we want to delete the configured value and fallback to the default value
+                String overriddenDefault = overriddenDefaults.get( setting );
+                boolean hasDefault = overriddenDefault != null;
+                oldValue = hasDefault ? params.put( setting, overriddenDefault ) : params.remove( setting );
+                newValue = getDefaultValueOf( setting );
+                newValueIsDefault = true;
+            }
+            else
+            {
+                // Change setting, make sure it's valid
+                Map<String,String> newEntry = stringMap( setting, update );
+                List<SettingValidator> settingValidators = configOptions.stream()
+                                                                        .map( ConfigOptions::settingGroup )
+                                                                        .collect( Collectors.toList() );
+                for ( SettingValidator validator : settingValidators )
                 {
-                    try
-                    {
-                        field.setAccessible( true );
-                        SettingImpl<?> setting = (SettingImpl<?>) field.get( fromObject );
-                        if ( field.isAnnotationPresent( Description.class ) )
-                        {
-                            setting.setDescription( field.getAnnotation( Description.class ).value() );
-                        }
-                        if ( field.isAnnotationPresent( Internal.class ) )
-                        {
-                            setting.setInternal();
-                        }
-                        settings.put( setting.name(), setting );
-                    }
-                    catch ( Exception e )
-                    {
-                        throw new RuntimeException( format( "%s %s, from %s is not accessible.", field.getType(), field.getName(),
-                                settingClass.getSimpleName() ), e );
-                    }
-                } );
-        return settings;
-    }
+                    validator.validate( newEntry, ignore -> {} ); // Throws if invalid
+                }
 
-    public <T> void addListener( Setting<T> setting, SettingChangeListener<T> listener )
-    {
-        Entry<T> entry = (Entry<T>) getObserver( setting );
-        entry.addListener( listener );
-    }
+                String previousValue = params.put( setting, update );
+                if ( previousValue != null )
+                {
+                    oldValue = previousValue;
+                }
+                else
+                {
+                    oldValue = getDefaultValueOf( setting );
+                    oldValueIsDefault = true;
+                }
+                newValue = update;
+            }
 
-    public <T> void removeListener( Setting<T> setting, SettingChangeListener<T> listener )
-    {
-        Entry<T> entry = (Entry<T>) getObserver( setting );
-        entry.removeListener( listener );
-    }
-
-    private class DepEntry<T> extends Entry<T>
-    {
-        private volatile T solved;
-        private DepEntry( SettingImpl<T> setting, T value, T defaultValue, T solved )
-        {
-            super( setting, value, defaultValue );
-            this.solved = solved;
-        }
-
-        @Override
-        public T getValue()
-        {
-            return solved;
-        }
-
-        @Override
-        synchronized void setValue( T value )
-        {
-            super.setValue( value );
-            solved = setting.solveDependency( value != null ? value : defaultValue, getObserver( setting.dependency() ).getValue() );
-
+            String oldValueForLog = obfuscateIfSecret( setting, oldValue );
+            String newValueForLog = obfuscateIfSecret( setting, newValue );
+            log.info( "Setting changed: '%s' changed from '%s' to '%s' via '%s'",
+                    setting, oldValueIsDefault ? "default (" + oldValueForLog + ")" : oldValueForLog,
+                    newValueIsDefault ? "default (" + newValueForLog + ")" : newValueForLog, origin );
+            parsedParams.remove( setting );
+            updateListeners.getOrDefault( setting, emptyList() ).forEach( l -> l.accept( oldValue, newValue ) );
         }
     }
 
-    private static class Entry<T> implements SettingObserver<T>
+    private void verifyValidDynamicSetting( String setting )
     {
-        protected final SettingImpl<T> setting;
-        protected final T defaultValue;
-        private final Collection<SettingChangeListener<T>> updateListeners = new ConcurrentLinkedQueue<>();
-        private volatile T value;
-        private volatile boolean isDefault;
+        Optional<ConfigValue> option = findConfigValue( setting );
 
-        private Entry( SettingImpl<T> setting, T value, T defaultValue )
+        if ( !option.isPresent() )
         {
-            this.setting = setting;
-            this.defaultValue = defaultValue;
-            internalSetValue( value );
+            throw new IllegalArgumentException( "Unknown setting: " + setting );
         }
 
-        @Override
-        public T getValue()
+        ConfigValue configValue = option.get();
+        if ( !configValue.dynamic() )
+        {
+            throw new IllegalArgumentException( "Setting is not dynamic and can not be changed at runtime" );
+        }
+    }
+
+    private String getDefaultValueOf( String setting )
+    {
+        if ( overriddenDefaults.containsKey( setting ) )
+        {
+            return overriddenDefaults.get( setting );
+        }
+        if ( settingsMap.containsKey( setting ) )
+        {
+            return settingsMap.get( setting ).getDefaultValue();
+        }
+        return "<no default>";
+    }
+
+    private Optional<ConfigValue> findConfigValue( String setting )
+    {
+        return configOptions.stream().map( it -> it.asConfigValues( params ) ).flatMap( List::stream )
+                .filter( it -> it.name().equals( setting ) ).findFirst();
+    }
+
+    /**
+     * Register a listener for dynamic updates to the given setting.
+     * <p>
+     * The listener will get called whenever the {@link #updateDynamicSetting(String, String, String)} method is used
+     * to change the given setting, and the listener will be supplied the parsed values of the old and the new
+     * configuration value.
+     *
+     * @param setting The {@link Setting} to listen for changes to.
+     * @param listener The listener callback that will be notified of any configuration changes to the given setting.
+     * @param <V> The value type of the setting.
+     */
+    public <V> void registerDynamicUpdateListener( Setting<V> setting, SettingChangeListener<V> listener )
+    {
+        String settingName = setting.name();
+        verifyValidDynamicSetting( settingName );
+        DynamicUpdateListener projectedListener = new DynamicUpdateListener<>( setting, listener );
+        updateListeners.computeIfAbsent( settingName, k -> new ConcurrentLinkedQueue<>() ).add( projectedListener );
+    }
+
+    /**
+     * Remove listener of dynamic updates to the given setting.
+     * @param setting The {@link Setting} that was listen for changes.
+     * @param externalListener previously registered callback
+     * @param <V> The value type of the setting.
+     */
+    public <V> void unregisterDynamicUpdateListener( Setting<V> setting, SettingChangeListener<V> externalListener )
+    {
+        updateListeners.computeIfPresent( setting.name(), ( s, dynamicUpdateListeners ) ->
+        {
+            dynamicUpdateListeners.removeIf( listener -> listener.getExternalListener().equals( externalListener ) );
+            return dynamicUpdateListeners.isEmpty() ? null : dynamicUpdateListeners;
+        } );
+    }
+
+    /**
+     * @return all effective config values
+     */
+    public Map<String,ConfigValue> getConfigValues()
+    {
+        return configOptions.stream()
+                .map( it -> it.asConfigValues( params ) )
+                .flatMap( List::stream )
+                .collect( Collectors.toMap( ConfigValue::name, it -> it, ( val1, val2 ) ->
+                {
+                    throw new RuntimeException( "Duplicate setting: " + val1.name() + ": " + val1 + " and " + val2 );
+                } ) );
+    }
+
+    public String obfuscateIfSecret( Map.Entry<String,String> param )
+    {
+        return obfuscateIfSecret( param.getKey(), param.getValue() );
+    }
+
+    private String obfuscateIfSecret( String key, String value )
+    {
+        if ( settingsMap.containsKey( key ) && settingsMap.get( key ).secret() )
+        {
+            return Secret.OBFUSCATED;
+        }
+        else
         {
             return value;
         }
+    }
+    /**
+     * Migrates and validates all string values in the provided <code>settings</code> map.
+     *
+     * This will update the configuration with the provided values regardless whether errors are encountered or not.
+     *
+     * @param settings the settings to migrate and validate.
+     * @param warnOnUnknownSettings if true method log messages to {@link Config#log}.
+     * @throws InvalidSettingException when and invalid setting is found and {@link
+     * GraphDatabaseSettings#strict_config_validation} is true.
+     */
+    private void migrateAndValidateAndUpdateSettings( Map<String,String> settings, boolean warnOnUnknownSettings )
+            throws InvalidSettingException
+    {
+        Map<String,String> migratedSettings = migrateSettings( settings );
+        nullSafePutAll( params, migratedSettings );
 
-        synchronized void setValue( T value )
+        List<SettingValidator> settingValidators = configOptions.stream()
+                .map( ConfigOptions::settingGroup )
+                .collect( Collectors.toList() );
+
+        // Validate settings
+        if ( !settingValidators.isEmpty() )
         {
-            T oldValue = this.value;
-            internalSetValue( value );
-            updateListeners.forEach( listener -> listener.accept( oldValue, this.value ) );
+            Map<String,String> additionalSettings =
+                    new IndividualSettingsValidator( settingValidators, warnOnUnknownSettings ).validate( this, log );
+            nullSafePutAll( params, additionalSettings );
         }
 
-        private void internalSetValue( T value )
+        // Validate configuration
+        for ( ConfigurationValidator validator : validators )
         {
-            isDefault = value == null;
-            this.value = isDefault ? defaultValue : value;
+            validator.validate( this, log );
         }
 
-        private void addListener( SettingChangeListener<T> listener )
+        settings.keySet().forEach( parsedParams::remove );
+    }
+
+    private Map<String,String> migrateSettings( Map<String,String> settings )
+    {
+        return migrator.apply( settings, log );
+    }
+
+    private void warnAboutDeprecations( Map<String,String> userSettings )
+    {
+        configOptions.stream()
+                .flatMap( it -> it.asConfigValues( userSettings ).stream() )
+                .filter( config -> userSettings.containsKey( config.name() ) && config.deprecated() )
+                .forEach( c ->
+                {
+                    if ( c.replacement().isPresent() )
+                    {
+                        log.warn( "%s is deprecated. Replaced by %s", c.name(), c.replacement().get() );
+                    }
+                    else
+                    {
+                        log.warn( "%s is deprecated.", c.name() );
+                    }
+                } );
+    }
+
+    @Nonnull
+    private static void loadFromFile( @Nonnull File file, @Nonnull Log log, boolean throwOnFileLoadFailure, Map<String,String> into )
+    {
+        if ( !file.exists() )
         {
-            if ( !setting.dynamic() )
+            if ( throwOnFileLoadFailure )
             {
-                throw new IllegalArgumentException( "Setting is not dynamic and will not change" );
+                throw new ConfigLoadIOException( new IOException( "Config file [" + file + "] does not exist." ) );
             }
-            updateListeners.add( listener );
+            log.warn( "Config file [%s] does not exist.", file );
+            return;
         }
-
-        private void removeListener( SettingChangeListener<T> listener )
+        try
         {
-            updateListeners.remove( listener );
+            PropertiesLoader loader = new PropertiesLoader( into, log );
+            try ( FileInputStream stream = new FileInputStream( file ) )
+            {
+                loader.load( stream );
+            }
+        }
+        catch ( IOException e )
+        {
+            if ( throwOnFileLoadFailure )
+            {
+                throw new ConfigLoadIOException( "Unable to load config file [" + file + "].", e );
+            }
+            log.error( "Unable to load config file [%s]: %s", file, e.getMessage() );
         }
     }
 
+    /**
+     * @return a list of all connector names like 'http' in 'dbms.connector.http.enabled = true'
+     */
+    @Nonnull
+    public Set<String> allConnectorIdentifiers()
+    {
+        return allConnectorIdentifiers( params );
+    }
+
+    /**
+     * @return a list of all connector names like 'http' in 'dbms.connector.http.enabled = true'
+     */
+    @Nonnull
+    public Set<String> allConnectorIdentifiers( @Nonnull Map<String,String> params )
+    {
+        return identifiersFromGroup( Connector.class );
+    }
+
+    /**
+     * @return list of all configured bolt connectors
+     */
+    @Nonnull
+    public List<BoltConnector> boltConnectors()
+    {
+        return boltConnectors( params ).collect( Collectors.toList() );
+    }
+
+    /**
+     * @return stream of all configured bolt connectors
+     */
+    @Nonnull
+    private Stream<BoltConnector> boltConnectors( @Nonnull Map<String,String> params )
+    {
+        return allConnectorIdentifiers( params ).stream().map( BoltConnector::new ).filter(
+                c -> c.group.groupKey.equalsIgnoreCase( "bolt" ) || BOLT == c.type.apply( params::get ) );
+    }
+
+    /**
+     * @return list of all configured bolt connectors which are enabled
+     */
+    @Nonnull
+    public List<BoltConnector> enabledBoltConnectors()
+    {
+        return enabledBoltConnectors( params );
+    }
+
+    /**
+     * @return list of all configured bolt connectors which are enabled
+     */
+    @Nonnull
+    public List<BoltConnector> enabledBoltConnectors( @Nonnull Map<String,String> params )
+    {
+        return boltConnectors( params )
+                .filter( c -> c.enabled.apply( params::get ) )
+                .collect( Collectors.toList() );
+    }
+
+    /**
+     * @return list of all configured http connectors
+     */
+    @Nonnull
+    public List<HttpConnector> httpConnectors()
+    {
+        return httpConnectors( params ).collect( Collectors.toList() );
+    }
+
+    /**
+     * @return stream of all configured http connectors
+     */
+    @Nonnull
+    private Stream<HttpConnector> httpConnectors( @Nonnull Map<String,String> params )
+    {
+        return allConnectorIdentifiers( params ).stream()
+                .map( Connector::new )
+                .filter( c -> c.group.groupKey.equalsIgnoreCase( "http" ) ||
+                        c.group.groupKey.equalsIgnoreCase( "https" ) ||
+                        HTTP == c.type.apply( params::get ) )
+                .map( c ->
+                {
+                    final String name = c.group.groupKey;
+                    final Encryption defaultEncryption;
+                    switch ( name )
+                    {
+                    case "https":
+                        defaultEncryption = TLS;
+                        break;
+                    case "http":
+                    default:
+                        defaultEncryption = NONE;
+                        break;
+                    }
+
+                    return new HttpConnector( name,
+                            HttpConnectorValidator.encryptionSetting( name, defaultEncryption ).apply( params::get ) );
+                } );
+    }
+
+    /**
+     * @return list of all configured http connectors which are enabled
+     */
+    @Nonnull
+    public List<HttpConnector> enabledHttpConnectors()
+    {
+        return enabledHttpConnectors( params );
+    }
+
+    /**
+     * @return list of all configured http connectors which are enabled
+     */
+    @Nonnull
+    private List<HttpConnector> enabledHttpConnectors( @Nonnull Map<String,String> params )
+    {
+        return httpConnectors( params )
+                .filter( c -> c.enabled.apply( params::get ) )
+                .collect( Collectors.toList() );
+    }
+
+    @Override
+    public String toString()
+    {
+        return params.entrySet().stream()
+                .sorted( Comparator.comparing( Map.Entry::getKey ) )
+                .map( entry -> entry.getKey() + "=" + obfuscateIfSecret( entry ) )
+                .collect( Collectors.joining( ", ") );
+    }
+
+    private static void addSettingToMap( Map<String,String> settingMap, String setting, String newValue, Log log )
+    {
+        String oldValue = settingMap.put( setting, newValue );
+        if ( oldValue != null && !setting.equals( ExternalSettings.additionalJvm.name() ) )
+        {
+            log.warn( "The '%s' setting is overridden. Setting value changed from '%s' to '%s'.", setting, oldValue, newValue );
+        }
+    }
+
+    private static <K, V> void nullSafePutAll( Map<K,V> toMap, Map<K,V> fromMap )
+    {
+        for ( Map.Entry<K,V> entry : fromMap.entrySet() )
+        {
+            nullSafePut( toMap, entry.getKey(), entry.getValue() );
+        }
+    }
+
+    private static <K, V> void nullSafePut( Map<K,V> toMap, K key, V value )
+    {
+        if ( value == null )
+        {
+            toMap.remove( key );
+        }
+        else
+        {
+            toMap.put( key, value );
+        }
+    }
+
+    private static class PropertiesLoader extends Properties
+    {
+        private final Map<String,String> target;
+        private final Log log;
+
+        PropertiesLoader( Map<String,String> target, Log log )
+        {
+            this.target = target;
+            this.log = log;
+        }
+
+        @Override
+        public Object put( Object key, Object val )
+        {
+            String setting = key.toString();
+            String value = val.toString();
+
+            addSettingToMap( target, setting, value, log );
+            return null;
+        }
+    }
+
+    private class DynamicUpdateListener<V> implements SettingChangeListener<String>
+    {
+        private final Setting<V> setting;
+        private final SettingChangeListener<V> externalListener;
+
+        DynamicUpdateListener( Setting<V> setting, SettingChangeListener<V> externalListener )
+        {
+            this.setting = setting;
+            this.externalListener = externalListener;
+        }
+
+        SettingChangeListener<V> getExternalListener()
+        {
+            return externalListener;
+        }
+
+        @Override
+        public void accept( String oldValStr, String newValStr )
+        {
+            try
+            {
+                V oldVal = setting.apply( s -> oldValStr );
+                V newVal = setting.apply( s -> newValStr );
+                externalListener.accept( oldVal, newVal );
+            }
+            catch ( Exception e )
+            {
+                log.error( "Failure when notifying listeners after dynamic setting change; new setting might not have taken effect: " + e.getMessage(), e );
+            }
+        }
+    }
 }

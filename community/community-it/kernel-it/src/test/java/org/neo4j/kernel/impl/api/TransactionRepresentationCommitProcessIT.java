@@ -19,100 +19,90 @@
  */
 package org.neo4j.kernel.impl.api;
 
-import org.junit.jupiter.api.Test;
+import org.junit.Rule;
+import org.junit.Test;
 
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.neo4j.configuration.GraphDatabaseSettings;
+import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.internal.batchimport.cache.idmapping.string.Workers;
 import org.neo4j.internal.recordstorage.RecordStorageEngine;
 import org.neo4j.kernel.impl.store.counts.CountsTracker;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointer;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.SimpleTriggerInfo;
-import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.storageengine.api.TransactionIdStore;
-import org.neo4j.test.TestDatabaseManagementServiceBuilder;
-import org.neo4j.test.extension.ExtensionCallback;
-import org.neo4j.test.extension.ImpermanentDbmsExtension;
-import org.neo4j.test.extension.Inject;
+import org.neo4j.test.rule.DbmsRule;
+import org.neo4j.test.rule.ImpermanentDbmsRule;
 
-import static java.time.Duration.ofSeconds;
 import static java.util.concurrent.TimeUnit.SECONDS;
-import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.greaterThan;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTimeoutPreemptively;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertThat;
 
-@ImpermanentDbmsExtension( configurationCallback = "configure" )
-class TransactionRepresentationCommitProcessIT
+public class TransactionRepresentationCommitProcessIT
 {
+    private static final String INDEX_NAME = "index";
     private static final int TOTAL_ACTIVE_THREADS = 6;
 
-    @Inject
-    private GraphDatabaseAPI db;
+    @Rule
+    public final DbmsRule db = new ImpermanentDbmsRule()
+            .withSetting( GraphDatabaseSettings.check_point_interval_time, "10ms" );
 
-    @ExtensionCallback
-    static void configure( TestDatabaseManagementServiceBuilder builder )
+    @Test( timeout = 15000 )
+    public void commitDuringContinuousCheckpointing() throws Exception
     {
-        builder.setConfig( GraphDatabaseSettings.check_point_interval_time, "10ms" );
-    }
-
-    @Test
-    void commitDuringContinuousCheckpointing()
-    {
-        assertTimeoutPreemptively( ofSeconds( 15 ), () ->
+        final AtomicBoolean done = new AtomicBoolean();
+        Workers<Runnable> workers = new Workers<>( getClass().getSimpleName() );
+        for ( int i = 0; i < TOTAL_ACTIVE_THREADS; i++ )
         {
-            final AtomicBoolean done = new AtomicBoolean();
-            Workers<Runnable> workers = new Workers<>( getClass().getSimpleName() );
-            for ( int i = 0; i < TOTAL_ACTIVE_THREADS; i++ )
+            workers.start( new Runnable()
             {
-                workers.start( new Runnable()
+                private final ThreadLocalRandom random = ThreadLocalRandom.current();
+
+                @Override
+                public void run()
                 {
-                    private final ThreadLocalRandom random = ThreadLocalRandom.current();
-
-                    @Override
-                    public void run()
+                    while ( !done.get() )
                     {
-                        while ( !done.get() )
+                        try ( Transaction tx = db.beginTx() )
                         {
-                            try ( Transaction tx = db.beginTx() )
-                            {
-                                db.createNode();
-                                tx.success();
-                            }
-                            randomSleep();
+                            Node node = db.createNode();
+                            tx.success();
                         }
+                        randomSleep();
                     }
+                }
 
-                    private void randomSleep()
+                private void randomSleep()
+                {
+                    try
                     {
-                        try
-                        {
-                            Thread.sleep( random.nextInt( 50 ) );
-                        }
-                        catch ( InterruptedException e )
-                        {
-                            throw new RuntimeException( e );
-                        }
+                        Thread.sleep( random.nextInt( 50 ) );
                     }
-                } );
-            }
+                    catch ( InterruptedException e )
+                    {
+                        throw new RuntimeException( e );
+                    }
+                }
+            } );
+        }
 
-            Thread.sleep( SECONDS.toMillis( 2 ) );
-            done.set( true );
-            workers.awaitAndThrowOnError();
+        Thread.sleep( SECONDS.toMillis( 2 ) );
+        done.set( true );
+        workers.awaitAndThrowOnError();
 
-            CountsTracker counts = getDependency( RecordStorageEngine.class ).testAccessCountsStore();
-            assertThat( "Count store should be rotated once at least", counts.txId(), greaterThan( 0L ) );
+        CountsTracker counts = getDependency( RecordStorageEngine.class ).testAccessCountsStore();
+        assertThat( "Count store should be rotated once at least", counts.txId(), greaterThan( 0L ) );
 
-            long lastRotationTx = getDependency( CheckPointer.class ).forceCheckPoint( new SimpleTriggerInfo( "test" ) );
-            TransactionIdStore txIdStore = getDependency( TransactionIdStore.class );
-            assertEquals( txIdStore.getLastClosedTransactionId(), lastRotationTx,
-                    "NeoStore last closed transaction id should be equal last count store rotation transaction id." );
-            assertEquals( txIdStore.getLastClosedTransactionId(), counts.txId(), "Last closed transaction should be last rotated tx in count store" );
-        } );
+        long lastRotationTx = getDependency( CheckPointer.class ).forceCheckPoint( new SimpleTriggerInfo( "test" ) );
+        TransactionIdStore txIdStore = getDependency( TransactionIdStore.class );
+        assertEquals( "NeoStore last closed transaction id should be equal last count store rotation transaction id.",
+                txIdStore.getLastClosedTransactionId(), lastRotationTx );
+        assertEquals( "Last closed transaction should be last rotated tx in count store",
+                txIdStore.getLastClosedTransactionId(), counts.txId() );
     }
 
     private <T> T getDependency( Class<T> clazz )

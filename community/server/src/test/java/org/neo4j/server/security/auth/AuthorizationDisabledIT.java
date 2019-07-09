@@ -31,7 +31,6 @@ import org.neo4j.test.server.HTTP;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.equalTo;
 import static org.junit.Assert.assertThat;
-import static org.neo4j.configuration.SettingValueParsers.FALSE;
 import static org.neo4j.test.server.HTTP.RawPayload.rawPayload;
 
 public class AuthorizationDisabledIT extends ExclusiveServerTestBase
@@ -44,7 +43,7 @@ public class AuthorizationDisabledIT extends ExclusiveServerTestBase
     {
         // Given
         server = CommunityServerBuilder.serverOnRandomPorts()
-                .withProperty( GraphDatabaseSettings.auth_enabled.name(), FALSE ).build();
+                .withProperty( GraphDatabaseSettings.auth_enabled.name(), "false" ).build();
 
         // When
         server.start();

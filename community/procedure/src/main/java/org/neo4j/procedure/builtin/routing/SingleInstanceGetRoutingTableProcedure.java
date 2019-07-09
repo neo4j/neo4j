@@ -26,8 +26,8 @@ import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.configuration.connectors.BoltConnector;
 import org.neo4j.configuration.connectors.ConnectorPortRegister;
-import org.neo4j.configuration.helpers.SocketAddress;
 import org.neo4j.dbms.database.DatabaseManager;
+import org.neo4j.internal.helpers.AdvertisedSocketAddress;
 import org.neo4j.kernel.database.DatabaseId;
 import org.neo4j.kernel.database.DatabaseIdRepository;
 import org.neo4j.values.virtual.MapValue;
@@ -56,9 +56,8 @@ public class SingleInstanceGetRoutingTableProcedure extends BaseGetRoutingTableP
     @Override
     protected RoutingResult invoke( DatabaseId databaseId, MapValue routingContext )
     {
-        return config.getGroups( BoltConnector.class).values()
+        return config.enabledBoltConnectors()
                 .stream()
-                .filter( boltConnector -> config.get( boltConnector.enabled ) )
                 .findFirst()
                 .map( this::createRoutingResult )
                 .orElseGet( this::createEmptyRoutingResult );
@@ -71,7 +70,7 @@ public class SingleInstanceGetRoutingTableProcedure extends BaseGetRoutingTableP
         return createRoutingResult( advertisedAddress, ttl );
     }
 
-    protected RoutingResult createRoutingResult( SocketAddress address, long routingTableTtl )
+    protected RoutingResult createRoutingResult( AdvertisedSocketAddress address, long routingTableTtl )
     {
         var addresses = Collections.singletonList( address );
         return new RoutingResult( addresses, addresses, addresses, routingTableTtl );
@@ -87,7 +86,7 @@ public class SingleInstanceGetRoutingTableProcedure extends BaseGetRoutingTableP
         return config.get( GraphDatabaseSettings.routing_ttl ).toMillis();
     }
 
-    private SocketAddress findAdvertisedAddress( BoltConnector connector )
+    private AdvertisedSocketAddress findAdvertisedAddress( BoltConnector connector )
     {
         var advertisedAddress = config.get( connector.advertised_address );
         if ( advertisedAddress.getPort() == 0 )
@@ -95,10 +94,10 @@ public class SingleInstanceGetRoutingTableProcedure extends BaseGetRoutingTableP
             // advertised address with port zero is not useful for callers of the routing procedure
             // it is most likely inherited from the listen address
             // attempt to resolve the actual port using the port register
-            var localAddress = portRegister.getLocalAddress( connector.name() );
+            var localAddress = portRegister.getLocalAddress( connector.key() );
             if ( localAddress != null )
             {
-                advertisedAddress = new SocketAddress( advertisedAddress.getHostname(), localAddress.getPort() );
+                advertisedAddress = new AdvertisedSocketAddress( advertisedAddress.getHostname(), localAddress.getPort() );
             }
         }
         return advertisedAddress;

@@ -34,7 +34,6 @@ import static java.util.Collections.emptyMap;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.neo4j.bolt.v1.transport.integration.Neo4jWithSocket.DEFAULT_CONNECTOR_KEY;
 import static org.neo4j.bolt.v1.transport.integration.TransportTestUtil.eventuallyDisconnects;
-import static org.neo4j.configuration.SettingValueParsers.TRUE;
 import static org.neo4j.configuration.connectors.BoltConnector.EncryptionLevel.REQUIRED;
 
 public class BoltConfigIT extends AbstractBoltTransportsTest
@@ -45,11 +44,13 @@ public class BoltConfigIT extends AbstractBoltTransportsTest
     public Neo4jWithSocket server = new Neo4jWithSocket( getClass(),
             settings ->
             {
-                settings.put( BoltConnector.group( DEFAULT_CONNECTOR_KEY ).enabled, TRUE );
-                settings.put( BoltConnector.group( DEFAULT_CONNECTOR_KEY ).advertised_address, "localhost:0" );
-                settings.put( BoltConnector.group( ANOTHER_CONNECTOR_KEY ).enabled, TRUE );
-                settings.put( BoltConnector.group( ANOTHER_CONNECTOR_KEY ).advertised_address, "localhost:0" );
-                settings.put( BoltConnector.group( ANOTHER_CONNECTOR_KEY ).encryption_level, REQUIRED.name() );
+                settings.put( new BoltConnector( DEFAULT_CONNECTOR_KEY ).type.name(), "BOLT" );
+                settings.put( new BoltConnector( DEFAULT_CONNECTOR_KEY ).enabled.name(), "true" );
+                settings.put( new BoltConnector( DEFAULT_CONNECTOR_KEY ).address.name(), "localhost:0" );
+                settings.put( new BoltConnector( ANOTHER_CONNECTOR_KEY ).type.name(), "BOLT" );
+                settings.put( new BoltConnector( ANOTHER_CONNECTOR_KEY ).enabled.name(), "true" );
+                settings.put( new BoltConnector( ANOTHER_CONNECTOR_KEY ).address.name(), "localhost:0" );
+                settings.put( new BoltConnector( ANOTHER_CONNECTOR_KEY ).encryption_level.name(), REQUIRED.name() );
             } );
     @Rule
     public SuppressOutput suppressOutput = SuppressOutput.suppressAll();

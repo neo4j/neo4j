@@ -243,7 +243,7 @@ public class LogFilesBuilder
             return new AtomicLong( Long.MAX_VALUE );
         }
         AtomicLong configThreshold = new AtomicLong( config.get( logical_log_rotation_threshold ) );
-        config.addListener( logical_log_rotation_threshold, ( prev, update ) -> configThreshold.set( update ) );
+        config.registerDynamicUpdateListener( logical_log_rotation_threshold, ( prev, update ) -> configThreshold.set( update ) );
         return configThreshold;
     }
 

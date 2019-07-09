@@ -156,7 +156,7 @@ class CsvImporter implements Importer
         boolean success;
         LifeSupport life = new LifeSupport();
 
-        File internalLogFile = databaseConfig.get( store_internal_log_path ).toFile();
+        File internalLogFile = databaseConfig.get( store_internal_log_path );
         LogService logService = life.add( StoreLogService.withInternalLog( internalLogFile ).build( fileSystem ) );
         final JobScheduler jobScheduler = life.add( createScheduler() );
 

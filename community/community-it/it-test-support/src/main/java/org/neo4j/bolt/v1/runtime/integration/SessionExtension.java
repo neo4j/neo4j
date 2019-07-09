@@ -27,7 +27,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.function.Supplier;
 
 import org.neo4j.bolt.BoltChannel;
 import org.neo4j.bolt.dbapi.BoltGraphDatabaseManagementServiceSPI;
@@ -51,24 +50,23 @@ import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.time.Clocks;
 import org.neo4j.time.SystemNanoClock;
 
-import static org.neo4j.configuration.SettingValueParsers.FALSE;
-
 public class SessionExtension implements BeforeEachCallback, AfterEachCallback
 {
-    private final Supplier<TestDatabaseManagementServiceBuilder> builderFactory;
+    private final TestDatabaseManagementServiceBuilder graphDatabaseFactory;
     private GraphDatabaseAPI gdb;
     private BoltStateMachineFactoryImpl boltFactory;
     private List<BoltStateMachine> runningMachines = new ArrayList<>();
+    private boolean authEnabled;
     private DatabaseManagementService managementService;
 
     public SessionExtension()
     {
-        this( TestDatabaseManagementServiceBuilder::new );
+        this( new TestDatabaseManagementServiceBuilder() );
     }
 
-    public SessionExtension( Supplier<TestDatabaseManagementServiceBuilder> builderFactory )
+    public SessionExtension( TestDatabaseManagementServiceBuilder graphDatabaseFactory )
     {
-        this.builderFactory = builderFactory;
+        this.graphDatabaseFactory = graphDatabaseFactory;
     }
 
     public BoltStateMachine newMachine( long version, BoltChannel boltChannel )
@@ -97,8 +95,8 @@ public class SessionExtension implements BeforeEachCallback, AfterEachCallback
     public void beforeEach( ExtensionContext extensionContext )
     {
         Map<Setting<?>,String> configMap = new HashMap<>();
-        configMap.put( GraphDatabaseSettings.auth_enabled, FALSE );
-        managementService = builderFactory.get().impermanent().setConfig( configMap ).build();
+        configMap.put( GraphDatabaseSettings.auth_enabled, Boolean.toString( authEnabled ) );
+        managementService = graphDatabaseFactory.impermanent().setConfig( configMap ).build();
         gdb = (GraphDatabaseAPI) managementService.database( GraphDatabaseSettings.DEFAULT_DATABASE_NAME );
         DependencyResolver resolver = gdb.getDependencyResolver();
         Authentication authentication = authentication( resolver.resolveDependency( AuthManager.class ),
@@ -141,7 +139,7 @@ public class SessionExtension implements BeforeEachCallback, AfterEachCallback
         }
     }
 
-    private static Authentication authentication( AuthManager authManager, UserManagerSupplier userManagerSupplier )
+    private Authentication authentication( AuthManager authManager, UserManagerSupplier userManagerSupplier )
     {
         return new BasicAuthentication( authManager, userManagerSupplier );
     }

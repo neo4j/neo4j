@@ -34,9 +34,9 @@ import scala.concurrent.duration.Duration
 object CypherConfiguration {
   def fromConfig(config: Config): CypherConfiguration = {
     CypherConfiguration(
-      CypherVersion(config.get(GraphDatabaseSettings.cypher_parser_version).toString),
-      CypherPlannerOption(config.get(GraphDatabaseSettings.cypher_planner).toString),
-      CypherRuntimeOption(config.get(GraphDatabaseSettings.cypher_runtime).toString),
+      CypherVersion(config.get(GraphDatabaseSettings.cypher_parser_version)),
+      CypherPlannerOption(config.get(GraphDatabaseSettings.cypher_planner)),
+      CypherRuntimeOption(config.get(GraphDatabaseSettings.cypher_runtime)),
       config.get(GraphDatabaseSettings.query_cache_size).toInt,
       statsDivergenceFromConfig(config),
       config.get(GraphDatabaseSettings.cypher_hints_error),
@@ -45,14 +45,14 @@ object CypherConfiguration {
       config.get(GraphDatabaseSettings.forbid_exhaustive_shortestpath),
       config.get(GraphDatabaseSettings.forbid_shortestpath_common_nodes),
       config.get(GraphDatabaseSettings.csv_legacy_quote_escaping),
-      config.get(GraphDatabaseSettings.csv_buffer_size).intValue(),
-      CypherExpressionEngineOption(config.get(GraphDatabaseSettings.cypher_expression_engine).toString),
+      config.get(GraphDatabaseSettings.csv_buffer_size),
+      CypherExpressionEngineOption(config.get(GraphDatabaseSettings.cypher_expression_engine)),
       config.get(GraphDatabaseSettings.cypher_lenient_create_relationship),
       config.get(GraphDatabaseSettings.cypher_worker_count),
-      CypherMorselRuntimeSchedulerOption(config.get(GraphDatabaseSettings.cypher_morsel_runtime_scheduler).toString),
+      CypherMorselRuntimeSchedulerOption(config.get(GraphDatabaseSettings.cypher_morsel_runtime_scheduler)),
       config.get(GraphDatabaseSettings.cypher_morsel_size),
       config.get(GraphDatabaseSettings.enable_morsel_runtime_trace),
-      config.get(GraphDatabaseSettings.morsel_scheduler_trace_filename).toFile,
+      config.get(GraphDatabaseSettings.morsel_scheduler_trace_filename),
       config.get(GraphDatabaseSettings.cypher_task_wait),
       config.get(GraphDatabaseSettings.cypher_expression_recompilation_limit),
       config.get(GraphDatabaseSettings.cypher_morsel_fuse_operators)
@@ -64,7 +64,7 @@ object CypherConfiguration {
     val targetThreshold = config.get(GraphDatabaseSettings.query_statistics_divergence_target).doubleValue()
     val minReplanTime = config.get(GraphDatabaseSettings.cypher_min_replan_interval).toMillis.longValue()
     val targetReplanTime = config.get(GraphDatabaseSettings.cypher_replan_interval_target).toMillis.longValue()
-    val divergenceAlgorithm = config.get(GraphDatabaseSettings.cypher_replan_algorithm).toString
+    val divergenceAlgorithm = config.get(GraphDatabaseSettings.cypher_replan_algorithm)
     StatsDivergenceCalculator.divergenceCalculatorFor(divergenceAlgorithm,
                                                       divergenceThreshold,
                                                       targetThreshold,

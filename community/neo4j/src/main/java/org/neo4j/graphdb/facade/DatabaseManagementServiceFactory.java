@@ -233,7 +233,7 @@ public class DatabaseManagementServiceFactory
             DatabaseManager<?> databaseManager )
     {
         Config globalConfig = globalModule.getGlobalConfig();
-        File proceduresDirectory = globalConfig.get( GraphDatabaseSettings.plugin_dir ).toFile();
+        File proceduresDirectory = globalConfig.get( GraphDatabaseSettings.plugin_dir );
         LogService logService = globalModule.getLogService();
         Log internalLog = logService.getInternalLog( GlobalProcedures.class );
         Log proceduresLog = logService.getUserLog( GlobalProcedures.class );

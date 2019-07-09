@@ -282,7 +282,7 @@ public class BasicSystemGraphRealmIT
     @Test
     void shouldHandleCustomDefaultDatabase() throws Throwable
     {
-        defaultConfig.set( default_database, "foo" );
+        defaultConfig.augment( default_database, "foo" );
 
         BasicImportOptionsBuilder importOptions = new BasicImportOptionsBuilder().migrateUsers( "alice" );
         BasicSystemGraphRealm realm = TestBasicSystemGraphRealm.testRealm( importOptions, dbManager, defaultConfig );
@@ -301,7 +301,7 @@ public class BasicSystemGraphRealmIT
         realm.stop();
 
         // Set a new database foo to default db in config
-        defaultConfig.set( default_database, "foo" );
+        defaultConfig.augment( default_database, "foo" );
 
         realm.start();
 
@@ -311,7 +311,7 @@ public class BasicSystemGraphRealmIT
         realm.stop();
 
         // Switch back default db to 'neo4j'
-        defaultConfig.set( default_database, DEFAULT_DATABASE_NAME );
+        defaultConfig.augment( default_database, DEFAULT_DATABASE_NAME );
 
         realm.start();
 

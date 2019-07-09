@@ -441,7 +441,7 @@ public class KernelTransactions extends LifecycleAdapter implements Supplier<IdC
             super( delegatePool );
             this.activeTransactionCounter = activeTransactionCounter;
             this.maxNumberOfTransaction = config.get( GraphDatabaseSettings.max_concurrent_transactions );
-            config.addListener( GraphDatabaseSettings.max_concurrent_transactions,
+            config.registerDynamicUpdateListener( GraphDatabaseSettings.max_concurrent_transactions,
                     ( oldValue, newValue ) -> maxNumberOfTransaction = newValue );
         }
 

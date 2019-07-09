@@ -55,6 +55,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.neo4j.configuration.GraphDatabaseSettings;
+import org.neo4j.configuration.Settings;
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.dbms.api.DatabaseManagementServiceBuilder;
 import org.neo4j.graphdb.Entity;
@@ -98,7 +99,6 @@ import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
-import static org.neo4j.configuration.SettingValueParsers.TRUE;
 import static org.neo4j.internal.helpers.collection.Iterables.single;
 import static org.neo4j.kernel.impl.index.schema.FulltextIndexSettingsKeys.ANALYZER;
 import static org.neo4j.kernel.impl.index.schema.FulltextIndexSettingsKeys.PROCEDURE_ANALYZER;
@@ -657,7 +657,7 @@ public class FulltextProceduresTest
     @Test
     public void fulltextIndexesMustBeEventuallyConsistentByDefaultWhenThisIsConfigured() throws InterruptedException
     {
-        builder.setConfig( FulltextSettings.eventually_consistent, TRUE );
+        builder.setConfig( FulltextConfig.eventually_consistent, Settings.TRUE );
         db = createDatabase();
 
         try ( Transaction tx = db.beginTx() )

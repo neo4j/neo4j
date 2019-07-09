@@ -25,6 +25,8 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.function.BiConsumer;
 
+import org.neo4j.graphdb.config.InvalidSettingException;
+
 import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.startsWith;
@@ -88,7 +90,7 @@ public class DiscoverableURIsTest
         }
         catch ( Throwable t )
         {
-            assertThat( t, is( instanceOf( IllegalArgumentException.class ) ) );
+            assertThat( t, is( instanceOf( InvalidSettingException.class ) ) );
             assertThat( t.getMessage(), startsWith( "Unable to add two entries with the same precedence using key " ) );
         }
     }

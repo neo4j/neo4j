@@ -40,7 +40,6 @@ import org.neo4j.test.extension.Inject;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.neo4j.configuration.GraphDatabaseSettings.keep_logical_logs;
-import static org.neo4j.configuration.SettingValueParsers.FALSE;
 
 @DbmsExtension
 class LogPruningIT
@@ -72,7 +71,7 @@ class LogPruningIT
         assertThat( countTransactionLogs( logFiles ), is( 3 ) );
 
         // Change pruning to true
-        config.setDynamic( keep_logical_logs, FALSE, "LogPruningIT" );
+        config.updateDynamicSetting( keep_logical_logs.name(), "false", "test" );
 
         // Checkpoint to make sure strategy is evaluated
         checkPointer.forceCheckPoint( triggerInfo );

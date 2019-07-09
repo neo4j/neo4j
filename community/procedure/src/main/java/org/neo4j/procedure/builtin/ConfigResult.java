@@ -19,8 +19,9 @@
  */
 package org.neo4j.procedure.builtin;
 
-import org.neo4j.configuration.SettingImpl;
-import org.neo4j.graphdb.config.Setting;
+import org.neo4j.configuration.ConfigValue;
+
+import static org.apache.commons.lang3.StringUtils.EMPTY;
 
 public class ConfigResult
 {
@@ -29,11 +30,11 @@ public class ConfigResult
     public final String value;
     public final boolean dynamic;
 
-    ConfigResult( Setting<Object> setting, Object value )
+    ConfigResult( ConfigValue configValue )
     {
-        this.name = setting.name();
-        this.description = setting.description();
-        this.value = ((SettingImpl<Object>) setting).valueToString( value );
-        this.dynamic = setting.dynamic();
+        this.name = configValue.name();
+        this.description = configValue.description().orElse( EMPTY );
+        this.value = configValue.valueAsString().orElse( EMPTY );
+        this.dynamic = configValue.dynamic();
     }
 }

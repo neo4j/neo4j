@@ -42,7 +42,6 @@ import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.neo4j.configuration.SettingValueParsers.TRUE;
 import static org.neo4j.internal.helpers.collection.Iterators.asList;
 import static org.neo4j.internal.kernel.api.procs.ProcedureSignature.procedureName;
 import static org.neo4j.internal.kernel.api.security.SecurityContext.AUTH_DISABLED;
@@ -82,8 +81,8 @@ class BuiltInDbmsProceduresIT extends KernelIntegrationTest
                 stringValue(
                         "A strict configuration validation will prevent the database from starting up if unknown " +
                         "configuration options are specified in the neo4j settings namespace (such as dbms., " +
-                        "cypher., etc)." ),
-                stringValue( TRUE ), Values.FALSE}, config.get( 0 ) );
+                        "cypher., etc). This is currently false by default but will be true by default in 4.0." ),
+                stringValue( "false" ), Values.FALSE}, config.get( 0 ) );
     }
 
     @Test
@@ -95,7 +94,7 @@ class BuiltInDbmsProceduresIT extends KernelIntegrationTest
         assertEquals( 1, config.size() );
         assertArrayEquals( new AnyValue[]{ stringValue( "dbms.transaction.timeout" ),
                 stringValue( "The maximum time interval of a transaction within which it should be completed." ),
-                stringValue( "0ns" ), Values.TRUE }, config.get( 0 ) );
+                stringValue( "0ms" ), Values.TRUE }, config.get( 0 ) );
     }
 
     @Test

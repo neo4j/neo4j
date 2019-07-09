@@ -77,6 +77,5 @@ class ServerBootstrapperTest
 
         // then no exceptions are thrown and
         assertThat( suppress.getOutputVoice().lines(), not( empty() ) );
-        serverBootstrapper.stop();
     }
 }

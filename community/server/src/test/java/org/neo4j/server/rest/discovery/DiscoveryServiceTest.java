@@ -38,7 +38,7 @@ import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.configuration.connectors.BoltConnector;
 import org.neo4j.configuration.connectors.ConnectorPortRegister;
-import org.neo4j.configuration.helpers.SocketAddress;
+import org.neo4j.internal.helpers.AdvertisedSocketAddress;
 import org.neo4j.internal.helpers.HostnamePort;
 import org.neo4j.server.NeoServer;
 import org.neo4j.server.configuration.ServerSettings;
@@ -53,8 +53,6 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
-import static org.neo4j.configuration.SettingValueParsers.FALSE;
-import static org.neo4j.configuration.SettingValueParsers.TRUE;
 import static org.neo4j.server.rest.discovery.CommunityDiscoverableURIs.communityDiscoverableURIs;
 
 @RunWith( Parameterized.class )
@@ -130,14 +128,14 @@ public class DiscoveryServiceTest
     private URI dataUri;
     private URI managementUri;
     private Consumer<ConnectorPortRegister> portRegistryOverrider;
-    private Consumer<Config.Builder> configOverrider;
+    private Consumer<Config> configOverrider;
 
     private String expectedDataUri;
     private String expectedManagementUri;
     private String expectedBoltUri;
 
-    public DiscoveryServiceTest( String description, String baseUri, Consumer<ConnectorPortRegister> portRegistryOverrider,
-            Consumer<Config.Builder> configOverrider, String expectedBoltUri ) throws Throwable
+    public DiscoveryServiceTest( String description, String baseUri, Consumer<ConnectorPortRegister> portRegistryOverrider, Consumer<Config> configOverrider,
+            String expectedBoltUri ) throws Throwable
     {
         this.baseUri = new URI( baseUri );
         this.dataUri = new URI( "/data" );
@@ -170,19 +168,20 @@ public class DiscoveryServiceTest
     private Config mockConfig()
     {
         HashMap<String,String> settings = new HashMap<>();
-        settings.put( GraphDatabaseSettings.auth_enabled.name(), FALSE );
-        settings.put( BoltConnector.group( "bolt" ).enabled.name(), TRUE );
+        settings.put( GraphDatabaseSettings.auth_enabled.name(), "false" );
+        settings.put( new BoltConnector( "bolt" ).type.name(), "BOLT" );
+        settings.put( new BoltConnector( "bolt" ).enabled.name(), "true" );
         settings.put( ServerSettings.management_api_path.name(), managementUri.toString() );
         settings.put( ServerSettings.rest_api_path.name(), dataUri.toString() );
 
-        Config.Builder builder = Config.newBuilder().set( settings );
+        Config config = Config.defaults( settings );
 
         if ( configOverrider != null )
         {
-            configOverrider.accept( builder );
+            configOverrider.accept( config );
         }
 
-        return builder.build();
+        return config;
     }
 
     private DiscoveryService testDiscoveryService()
@@ -264,32 +263,32 @@ public class DiscoveryServiceTest
         };
     }
 
-    private static Consumer<Config.Builder> overrideWithAdvertisedAddress( String host, int port )
+    private static Consumer<Config> overrideWithAdvertisedAddress( String host, int port )
     {
-        return builder -> builder.set( BoltConnector.group( "bolt" ).advertised_address, SocketAddress.format( host, port ) );
+        return config -> config.augment( new BoltConnector( "bolt" ).advertised_address.name(), AdvertisedSocketAddress.advertisedAddress( host, port ) );
     }
 
-    private static Consumer<Config.Builder> overrideWithListenAddress( String host, int port )
+    private static Consumer<Config> overrideWithListenAddress( String host, int port )
     {
-        return builder -> builder.set( BoltConnector.group( "bolt" ).listen_address, SocketAddress.format( host, port ) );
+        return config -> config.augment( new BoltConnector( "bolt" ).listen_address.name(), AdvertisedSocketAddress.advertisedAddress( host, port ) );
     }
 
-    private static Consumer<Config.Builder> overrideWithDefaultListenAddress( String host )
+    private static Consumer<Config> overrideWithDefaultListenAddress( String host )
     {
-        return builder -> builder.set( GraphDatabaseSettings.default_listen_address, host );
+        return config -> config.augment( GraphDatabaseSettings.default_listen_address, host );
     }
 
-    private static Consumer<Config.Builder> overrideWithDiscoverable( String uri )
+    private static Consumer<Config> overrideWithDiscoverable( String uri )
     {
-        return builder -> builder.set( ServerSettings.bolt_discoverable_address, uri );
+        return config -> config.augment( ServerSettings.bolt_discoverable_address, uri );
     }
 
     @SafeVarargs
-    private static Consumer<Config.Builder> combineConfigOverriders( Consumer<Config.Builder>... overriders )
+    private static Consumer<Config> combineConfigOverriders( Consumer<Config>... overriders )
     {
         return config ->
         {
-            for ( Consumer<Config.Builder> overrider : overriders )
+            for ( Consumer<Config> overrider : overriders )
             {
                 overrider.accept( config );
             }

@@ -26,9 +26,6 @@ import org.neo4j.cli.AbstractCommand;
 import org.neo4j.cli.CommandFailedException;
 import org.neo4j.cli.ExecutionContext;
 import org.neo4j.configuration.Config;
-import org.neo4j.configuration.ConfigUtils;
-import org.neo4j.configuration.GraphDatabaseSettings;
-import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.impl.security.User;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.server.security.auth.CommunitySecurityModule;
@@ -112,10 +109,10 @@ public class SetDefaultAdminCommand extends AbstractCommand
     @VisibleForTesting
     Config loadNeo4jConfig()
     {
-        Config cfg = Config.newBuilder()
-                .fromFileNoThrow( ctx.confDir().resolve( Config.DEFAULT_CONFIG_FILE_NAME ) )
-                .set( GraphDatabaseSettings.neo4j_home, ctx.homeDir().toAbsolutePath().toString() ).build();
-        ConfigUtils.disableAllConnectors( cfg );
-        return cfg;
+        return Config.fromFile( ctx.confDir().resolve( Config.DEFAULT_CONFIG_FILE_NAME ) )
+                .withHome( ctx.homeDir() )
+                .withConnectorsDisabled()
+                .withNoThrowOnFileLoadFailure()
+                .build();
     }
 }

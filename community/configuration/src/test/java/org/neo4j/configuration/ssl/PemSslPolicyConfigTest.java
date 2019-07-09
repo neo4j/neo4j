@@ -28,7 +28,6 @@ import java.util.Map;
 
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
-import org.neo4j.string.SecureString;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.TestDirectoryExtension;
 import org.neo4j.test.rule.TestDirectory;
@@ -39,7 +38,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.neo4j.configuration.SettingValueParsers.TRUE;
+import static org.neo4j.configuration.ssl.BaseSslPolicyConfig.Format.PEM;
 import static org.neo4j.internal.helpers.collection.MapUtil.stringMap;
 
 @ExtendWith( TestDirectoryExtension.class )
@@ -55,12 +54,13 @@ class PemSslPolicyConfigTest
         Map<String,String> params = stringMap();
 
         String policyName = "XYZ";
-        PemSslPolicyConfig policyConfig = PemSslPolicyConfig.group( policyName );
+        PemSslPolicyConfig policyConfig = new PemSslPolicyConfig( policyName );
 
         File homeDir = testDirectory.directory( "home" );
 
         params.put( GraphDatabaseSettings.neo4j_home.name(), homeDir.getAbsolutePath() );
         params.put( policyConfig.base_directory.name(), "certificates/XYZ" );
+        params.put( policyConfig.format.name(), PEM.name() );
         Config config = Config.defaults( params );
 
         // derived defaults
@@ -70,11 +70,11 @@ class PemSslPolicyConfigTest
         File revokedDir = new File( homeDir, "certificates/XYZ/revoked" );
 
         // when
-        File privateKeyFromConfig = config.get( policyConfig.private_key ).toFile();
-        File publicCertificateFromConfig = config.get( policyConfig.public_certificate ).toFile();
-        File trustedDirFromConfig = config.get( policyConfig.trusted_dir ).toFile();
-        File revokedDirFromConfig = config.get( policyConfig.revoked_dir ).toFile();
-        SecureString privateKeyPassword = config.get( policyConfig.private_key_password );
+        File privateKeyFromConfig = config.get( policyConfig.private_key );
+        File publicCertificateFromConfig = config.get( policyConfig.public_certificate );
+        File trustedDirFromConfig = config.get( policyConfig.trusted_dir );
+        File revokedDirFromConfig = config.get( policyConfig.revoked_dir );
+        String privateKeyPassword = config.get( policyConfig.private_key_password );
         boolean allowKeyGeneration = config.get( policyConfig.allow_key_generation );
         boolean trustAll = config.get( policyConfig.trust_all );
         List<String> tlsVersions = config.get( policyConfig.tls_versions );
@@ -101,11 +101,12 @@ class PemSslPolicyConfigTest
         Map<String,String> params = stringMap();
 
         String policyName = "XYZ";
-        PemSslPolicyConfig policyConfig = PemSslPolicyConfig.group( policyName );
+        PemSslPolicyConfig policyConfig = new PemSslPolicyConfig( policyName );
 
         File homeDir = testDirectory.directory( "home" );
 
         params.put( GraphDatabaseSettings.neo4j_home.name(), homeDir.getAbsolutePath() );
+        params.put( policyConfig.format.name(), PEM.name() );
         params.put( policyConfig.base_directory.name(), "certificates/XYZ" );
 
         File privateKey = testDirectory.directory( "/path/to/my.key" );
@@ -118,8 +119,8 @@ class PemSslPolicyConfigTest
         params.put( policyConfig.trusted_dir.name(), trustedDir.getAbsolutePath() );
         params.put( policyConfig.revoked_dir.name(), revokedDir.getAbsolutePath() );
 
-        params.put( policyConfig.allow_key_generation.name(), TRUE );
-        params.put( policyConfig.trust_all.name(), TRUE );
+        params.put( policyConfig.allow_key_generation.name(), "true" );
+        params.put( policyConfig.trust_all.name(), "true" );
 
         params.put( policyConfig.private_key_password.name(), "setecastronomy" );
         params.put( policyConfig.tls_versions.name(), "TLSv1.1,TLSv1.2" );
@@ -129,12 +130,12 @@ class PemSslPolicyConfigTest
         Config config = Config.defaults( params );
 
         // when
-        File privateKeyFromConfig = config.get( policyConfig.private_key ).toFile();
-        File publicCertificateFromConfig = config.get( policyConfig.public_certificate ).toFile();
-        File trustedDirFromConfig = config.get( policyConfig.trusted_dir ).toFile();
-        File revokedDirFromConfig = config.get( policyConfig.revoked_dir ).toFile();
+        File privateKeyFromConfig = config.get( policyConfig.private_key );
+        File publicCertificateFromConfig = config.get( policyConfig.public_certificate );
+        File trustedDirFromConfig = config.get( policyConfig.trusted_dir );
+        File revokedDirFromConfig = config.get( policyConfig.revoked_dir );
 
-        SecureString privateKeyPassword = config.get( policyConfig.private_key_password );
+        String privateKeyPassword = config.get( policyConfig.private_key_password );
         boolean allowKeyGeneration = config.get( policyConfig.allow_key_generation );
         boolean trustAll = config.get( policyConfig.trust_all );
         List<String> tlsVersions = config.get( policyConfig.tls_versions );
@@ -149,7 +150,7 @@ class PemSslPolicyConfigTest
 
         assertTrue( allowKeyGeneration );
         assertTrue( trustAll );
-        assertEquals( "setecastronomy", privateKeyPassword.getString() );
+        assertEquals( "setecastronomy", privateKeyPassword );
         assertEquals( asList( "TLSv1.1", "TLSv1.2" ), tlsVersions );
         assertEquals( asList( "TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA384", "TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384" ), ciphers );
         assertEquals( ClientAuth.OPTIONAL, clientAuth );

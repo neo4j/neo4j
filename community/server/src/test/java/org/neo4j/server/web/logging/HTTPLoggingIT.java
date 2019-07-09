@@ -36,8 +36,10 @@ import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
 import org.neo4j.configuration.GraphDatabaseSettings;
+import org.neo4j.configuration.Settings;
 import org.neo4j.configuration.connectors.BoltConnector;
 import org.neo4j.function.ThrowingSupplier;
+import org.neo4j.server.NeoServer;
 import org.neo4j.server.configuration.ServerSettings;
 import org.neo4j.server.helpers.FunctionalTestHelper;
 import org.neo4j.test.rule.TestDirectory;
@@ -49,8 +51,6 @@ import static org.eclipse.jetty.http.HttpStatus.OK_200;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.Matchers.containsString;
 import static org.junit.Assert.assertThat;
-import static org.neo4j.configuration.SettingValueParsers.FALSE;
-import static org.neo4j.configuration.SettingValueParsers.TRUE;
 import static org.neo4j.server.helpers.CommunityServerBuilder.serverOnRandomPorts;
 import static org.neo4j.test.assertion.Assert.assertEventually;
 
@@ -73,9 +73,9 @@ public class HTTPLoggingIT extends ExclusiveServerTestBase
         var logDirectory = testDirectory.directory( directoryPrefix + "-logdir" );
 
         var server = serverOnRandomPorts().withDefaultDatabaseTuning().persistent()
-                .withProperty( ServerSettings.http_logging_enabled.name(), FALSE )
+                .withProperty( ServerSettings.http_logging_enabled.name(), Settings.FALSE )
                 .withProperty( GraphDatabaseSettings.logs_directory.name(), logDirectory.toString() )
-                .withProperty( BoltConnector.group( "bolt" ).listen_address.name(), ":0" )
+                .withProperty( new BoltConnector( "bolt" ).listen_address.name(), ":0" )
                 .usingDataDir( testDirectory.directory( directoryPrefix + "-dbdir" ).getAbsolutePath() )
                 .build();
         try
@@ -107,9 +107,9 @@ public class HTTPLoggingIT extends ExclusiveServerTestBase
         var query = "?explicitlyEnabled=" + randomString();
 
         var server = serverOnRandomPorts().withDefaultDatabaseTuning().persistent()
-                .withProperty( ServerSettings.http_logging_enabled.name(), TRUE )
+                .withProperty( ServerSettings.http_logging_enabled.name(), Settings.TRUE )
                 .withProperty( GraphDatabaseSettings.logs_directory.name(), logDirectory.getAbsolutePath() )
-                .withProperty( BoltConnector.group( "bolt" ).listen_address.name(), ":0" )
+                .withProperty( new BoltConnector( "bolt" ).listen_address.name(), ":0" )
                 .usingDataDir( testDirectory.directory( directoryPrefix + "-dbdir" ).getAbsolutePath() )
                 .build();
         try

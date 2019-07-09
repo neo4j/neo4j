@@ -21,12 +21,16 @@ package org.neo4j.internal.helpers;
 
 import org.junit.jupiter.api.Test;
 
-import org.neo4j.configuration.helpers.SocketAddress;
-
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 class SocketAddressTest
 {
+    @Test
+    void shouldNotAllowNullAsHostname()
+    {
+        assertThrows( IllegalArgumentException.class, () -> new SocketAddress( null, 1 ) );
+    }
+
     @Test
     void shouldNotAllowStartBracket()
     {

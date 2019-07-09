@@ -25,17 +25,17 @@ import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
 import java.io.OutputStream;
-import java.util.List;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.Map;
 import java.util.Optional;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import org.neo4j.configuration.Config;
-import org.neo4j.configuration.ConfigUtils;
+import org.neo4j.configuration.ConfigurationValidator;
 import org.neo4j.configuration.GraphDatabaseSettings;
-import org.neo4j.configuration.GroupSettingValidator;
-import org.neo4j.configuration.connectors.HttpConnector;
+import org.neo4j.configuration.connectors.HttpConnector.Encryption;
 import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.graphdb.facade.GraphDatabaseDependencies;
 import org.neo4j.io.IOUtils;
@@ -94,13 +94,13 @@ public abstract class ServerBootstrapper implements Bootstrapper
     {
         addShutdownHook();
         installSignalHandlers();
-        Config config = Config.newBuilder()
-                .fromFileNoThrow( configFile.orElse( null ) ) // TODO 4.0: Remove this, and require a neo4j.conf file to be present?
-                .set( configOverrides )
-                .set( GraphDatabaseSettings.neo4j_home, homeDir.toString() )
-                .setDefaults( GraphDatabaseSettings.SERVER_DEFAULTS )
-                .addValidators( configurationValidators() )
-                .build();
+        Config config = Config.builder()
+                .withFile( configFile )
+                .withSettings( configOverrides )
+                .withHome(homeDir)
+                .withValidators( configurationValidators() )
+                .withNoThrowOnFileLoadFailure() // TODO 4.0: Remove this, and require a neo4j.conf file to be present?
+                .withServerDefaults().build();
         try
         {
             LogProvider userLogProvider = setupLogging( config );
@@ -108,7 +108,8 @@ public abstract class ServerBootstrapper implements Bootstrapper
             log = userLogProvider.getLog( getClass() );
             config.setLogger( log );
 
-            serverAddress =  config.getGroups( HttpConnector.class ).values().stream()
+            serverAddress =  config.httpConnectors().stream()
+                    .filter( c -> Encryption.NONE.equals( c.encryptionLevel() ) )
                     .findFirst()
                     .map( connector -> config.get( connector.listen_address ).toString() )
                     .orElse( serverAddress );
@@ -135,11 +136,6 @@ public abstract class ServerBootstrapper implements Bootstrapper
             log.error( format( "Failed to start Neo4j on %s.", serverAddress ), e );
             return WEB_SERVER_STARTUP_ERROR_CODE;
         }
-    }
-
-    protected List<Class<? extends GroupSettingValidator>> configurationValidators()
-    {
-        return List.of();
     }
 
     @Override
@@ -181,7 +177,7 @@ public abstract class ServerBootstrapper implements Bootstrapper
     {
         GraphFactory graphFactory = createGraphFactory( config );
 
-        boolean httpAndHttpsDisabled = ConfigUtils.getEnabledHttpConnectors( config ).isEmpty() && ConfigUtils.getEnabledHttpsConnectors( config ).isEmpty();
+        boolean httpAndHttpsDisabled = config.enabledHttpConnectors().isEmpty();
         if ( httpAndHttpsDisabled )
         {
             return new DisabledNeoServer( graphFactory, dependencies, config );
@@ -195,6 +191,11 @@ public abstract class ServerBootstrapper implements Bootstrapper
      * Create a new server component. This method is invoked only when at least one HTTP connector is enabled.
      */
     protected abstract NeoServer createNeoServer( GraphFactory graphFactory, Config config, GraphDatabaseDependencies dependencies );
+
+    protected Collection<ConfigurationValidator> configurationValidators()
+    {
+        return Collections.emptyList();
+    }
 
     private LogProvider setupLogging( Config config )
     {
@@ -281,7 +282,7 @@ public abstract class ServerBootstrapper implements Bootstrapper
         dependencies = dependencies.withDeferredExecutor( deferredExecutor, Group.LOG_ROTATION );
 
         FileSystemAbstraction fs = new DefaultFileSystemAbstraction();
-        File destination = config.get( GraphDatabaseSettings.store_user_log_path ).toFile();
+        File destination = config.get( GraphDatabaseSettings.store_user_log_path );
         Long rotationThreshold = config.get( GraphDatabaseSettings.store_user_log_rotation_threshold );
         try
         {

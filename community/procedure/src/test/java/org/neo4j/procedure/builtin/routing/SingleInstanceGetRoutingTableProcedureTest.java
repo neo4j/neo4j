@@ -29,9 +29,9 @@ import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.configuration.connectors.BoltConnector;
 import org.neo4j.configuration.connectors.ConnectorPortRegister;
-import org.neo4j.configuration.helpers.SocketAddress;
 import org.neo4j.dbms.database.DatabaseContext;
 import org.neo4j.dbms.database.DatabaseManager;
+import org.neo4j.internal.helpers.AdvertisedSocketAddress;
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
 import org.neo4j.internal.kernel.api.procs.QualifiedName;
 import org.neo4j.kernel.api.exceptions.Status;
@@ -49,7 +49,8 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
-import static org.neo4j.configuration.SettingValueParsers.TRUE;
+import static org.neo4j.configuration.Settings.TRUE;
+import static org.neo4j.configuration.connectors.Connector.ConnectorType.BOLT;
 import static org.neo4j.internal.kernel.api.procs.DefaultParameterValue.nullValue;
 import static org.neo4j.internal.kernel.api.procs.FieldSignature.inputField;
 import static org.neo4j.internal.kernel.api.procs.FieldSignature.outputField;
@@ -121,7 +122,7 @@ public class SingleInstanceGetRoutingTableProcedureTest
 
         assertEquals( Duration.ofMinutes( 42 ).toMillis(), result.ttlMillis() );
 
-        var address = new SocketAddress( "neo4j.com", 7687 );
+        var address = new AdvertisedSocketAddress( "neo4j.com", 7687 );
         assertEquals( singletonList( address ), result.readEndpoints() );
         assertEquals( expectedWriters( address ), result.writeEndpoints() );
         assertEquals( singletonList( address ), result.routeEndpoints() );
@@ -159,7 +160,7 @@ public class SingleInstanceGetRoutingTableProcedureTest
         return new SingleInstanceGetRoutingTableProcedure( DEFAULT_NAMESPACE, databaseManager, portRegister, databaseIdRepository, config );
     }
 
-    protected List<SocketAddress> expectedWriters( SocketAddress selfAddress )
+    protected List<AdvertisedSocketAddress> expectedWriters( AdvertisedSocketAddress selfAddress )
     {
         return singletonList( selfAddress );
     }
@@ -172,17 +173,18 @@ public class SingleInstanceGetRoutingTableProcedureTest
 
     private static Config newConfig( String routingTtl, String boltAddress )
     {
-        var builder = Config.newBuilder();
+        var builder = Config.builder();
         if ( routingTtl != null )
         {
-            builder.set( GraphDatabaseSettings.routing_ttl, routingTtl );
+            builder.withSetting( GraphDatabaseSettings.routing_ttl, routingTtl );
         }
         if ( boltAddress != null )
         {
-            var connector = BoltConnector.group( "my_bolt" );
-            builder.set( connector.enabled, TRUE );
-            builder.set( connector.listen_address, boltAddress );
-            builder.set( connector.advertised_address, boltAddress );
+            var connector = new BoltConnector( "my_bolt" );
+            builder.withSetting( connector.enabled, TRUE );
+            builder.withSetting( connector.type, BOLT.toString() );
+            builder.withSetting( connector.listen_address, boltAddress );
+            builder.withSetting( connector.advertised_address, boltAddress );
         }
         return builder.build();
     }

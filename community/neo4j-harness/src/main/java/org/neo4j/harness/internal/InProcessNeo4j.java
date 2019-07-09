@@ -26,10 +26,9 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.net.URI;
-import java.util.Collection;
+import java.util.List;
 import java.util.Optional;
 
-import org.neo4j.configuration.ConfigUtils;
 import org.neo4j.configuration.connectors.BoltConnector;
 import org.neo4j.configuration.connectors.Connector;
 import org.neo4j.configuration.connectors.ConnectorPortRegister;
@@ -39,6 +38,8 @@ import org.neo4j.internal.helpers.HostnamePort;
 import org.neo4j.io.fs.FileUtils;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.server.NeoServer;
+
+import static org.neo4j.configuration.connectors.HttpConnector.Encryption;
 
 public class InProcessNeo4j implements Neo4j, AutoCloseable
 {
@@ -63,14 +64,14 @@ public class InProcessNeo4j implements Neo4j, AutoCloseable
     @Override
     public URI boltURI()
     {
-        Collection<BoltConnector> connectors = ConfigUtils.getEnabledBoltConnectors( server.getConfig() );
+        List<BoltConnector> connectors = server.getConfig().enabledBoltConnectors();
 
         BoltConnector defaultConnector = null;
         BoltConnector firstConnector = null;
 
         for ( BoltConnector connector : connectors )
         {
-            if ( DEFAULT_BOLT_CONNECTOR_KEY.equals( connector.name() ) )
+            if ( DEFAULT_BOLT_CONNECTOR_KEY.equals( connector.key() ) )
             {
                 defaultConnector = connector;
             }
@@ -97,14 +98,14 @@ public class InProcessNeo4j implements Neo4j, AutoCloseable
     @Override
     public URI httpURI()
     {
-        return httpConnectorUri( "http" )
+        return httpConnectorUri( "http", Encryption.NONE )
                 .orElseThrow( () -> new IllegalStateException( "HTTP connector is not configured" ) );
     }
 
     @Override
     public URI httpsURI()
     {
-        return httpsConnectorUri( "https" )
+        return httpConnectorUri( "https", Encryption.TLS )
                 .orElseThrow( () -> new IllegalStateException( "HTTPS connector is not configured" ) );
     }
 
@@ -188,19 +189,19 @@ public class InProcessNeo4j implements Neo4j, AutoCloseable
         return server.getConfig();
     }
 
-    private Optional<URI> httpConnectorUri( String scheme )
+    private Optional<URI> httpConnectorUri( String scheme, Encryption encryption )
     {
-        return ConfigUtils.getEnabledHttpConnectors( server.getConfig() ).stream().findFirst().map( connector -> connectorUri( scheme, connector ) );
-    }
-
-    private Optional<URI> httpsConnectorUri( String scheme )
-    {
-        return ConfigUtils.getEnabledHttpsConnectors( server.getConfig() ).stream().findFirst().map( connector -> connectorUri( scheme, connector ) );
+        return server.getConfig()
+                .enabledHttpConnectors()
+                .stream()
+                .filter( connector -> connector.encryptionLevel() == encryption )
+                .findFirst()
+                .map( connector -> connectorUri( scheme, connector ) );
     }
 
     private URI connectorUri( String scheme, Connector connector )
     {
-        HostnamePort hostPort = connectorPortRegister.getLocalAddress( connector.name() );
+        HostnamePort hostPort = connectorPortRegister.getLocalAddress( connector.key() );
         return URI.create( scheme + "://" + hostPort + "/" );
     }
 

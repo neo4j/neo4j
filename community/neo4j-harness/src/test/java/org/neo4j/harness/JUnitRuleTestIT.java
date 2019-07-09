@@ -32,6 +32,7 @@ import java.util.List;
 
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
+import org.neo4j.configuration.ssl.LegacySslPolicyConfig;
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
@@ -71,8 +72,8 @@ public class JUnitRuleTestIT
     public Neo4jRule neo4j = new Neo4jRule()
             .withFixture( "CREATE (u:User)" )
             .withConfig( GraphDatabaseSettings.db_timezone.name(), LogTimeZone.SYSTEM.toString() )
-            .withConfig( GraphDatabaseSettings.legacy_certificates_directory.name(),
-                    getRelativePath( getSharedTestTemporaryFolder(), GraphDatabaseSettings.legacy_certificates_directory ) )
+            .withConfig( LegacySslPolicyConfig.certificates_directory.name(),
+                    getRelativePath( getSharedTestTemporaryFolder(), LegacySslPolicyConfig.certificates_directory ) )
             .withFixture( graphDatabaseService ->
             {
                 try ( Transaction tx = graphDatabaseService.beginTx() )
@@ -128,7 +129,7 @@ public class JUnitRuleTestIT
         // given a root folder, create /databases/neo4j folders.
         File oldDir = testDirectory.directory( "old" );
         Config config = Config.defaults( data_directory, oldDir.toPath().toString() );
-        File rootDirectory = config.get( databases_root_path ).toFile();
+        File rootDirectory = config.get( databases_root_path );
         DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder( rootDirectory )
                 .setConfig( transaction_logs_root_path, new File( oldDir, DEFAULT_TX_LOGS_ROOT_DIR_NAME ).getAbsolutePath() )
                 .build();
@@ -177,7 +178,7 @@ public class JUnitRuleTestIT
     {
         GraphDatabaseAPI api = (GraphDatabaseAPI) neo4j.getGraphDatabaseService();
         Config config = api.getDependencyResolver().resolveDependency( Config.class );
-        File dataDirectory = config.get( GraphDatabaseSettings.data_directory ).toFile();
+        File dataDirectory = config.get( GraphDatabaseSettings.data_directory );
         return Files.readString( new File( dataDirectory, file ).toPath() );
     }
 

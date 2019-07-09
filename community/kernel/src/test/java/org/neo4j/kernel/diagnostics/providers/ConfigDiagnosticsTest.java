@@ -36,10 +36,7 @@ class ConfigDiagnosticsTest
     @Test
     void dumpConfigValues()
     {
-        Config config = Config.newBuilder()
-                .set( default_database, "testDb" )
-                .set( max_concurrent_transactions, "400" )
-                .build();
+        Config config = Config.builder().withSetting( default_database, "testDb" ).withSetting( max_concurrent_transactions, "400" ).build();
 
         ConfigDiagnostics configDiagnostics = new ConfigDiagnostics( config );
         configDiagnostics.dump( log.infoLogger() );

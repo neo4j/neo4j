@@ -32,15 +32,15 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import org.neo4j.configuration.helpers.SocketAddress;
+import org.neo4j.internal.helpers.ListenSocketAddress;
 import org.neo4j.server.bind.ComponentsBinder;
 import org.neo4j.ssl.SslPolicy;
 
 public interface WebServer
 {
-    void setHttpAddress( SocketAddress address );
+    void setHttpAddress( ListenSocketAddress address );
 
-    void setHttpsAddress( SocketAddress address );
+    void setHttpsAddress( ListenSocketAddress address );
 
     void setSslPolicy( SslPolicy sslPolicy );
 

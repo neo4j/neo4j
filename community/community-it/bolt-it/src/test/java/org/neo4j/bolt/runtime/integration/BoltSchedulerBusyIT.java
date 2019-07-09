@@ -41,7 +41,6 @@ import org.neo4j.bolt.v1.transport.integration.Neo4jWithSocket;
 import org.neo4j.bolt.v1.transport.socket.client.TransportConnection;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.configuration.connectors.BoltConnector;
-import org.neo4j.graphdb.config.Setting;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
@@ -57,8 +56,6 @@ import static org.neo4j.bolt.v1.messaging.util.MessageMatchers.msgFailure;
 import static org.neo4j.bolt.v1.messaging.util.MessageMatchers.msgSuccess;
 import static org.neo4j.bolt.v1.transport.integration.Neo4jWithSocket.DEFAULT_CONNECTOR_KEY;
 import static org.neo4j.bolt.v1.transport.integration.TransportTestUtil.eventuallyReceives;
-import static org.neo4j.configuration.SettingValueParsers.FALSE;
-import static org.neo4j.configuration.SettingValueParsers.TRUE;
 
 @RunWith( Parameterized.class )
 public class BoltSchedulerBusyIT extends AbstractBoltTransportsTest
@@ -66,7 +63,7 @@ public class BoltSchedulerBusyIT extends AbstractBoltTransportsTest
     private AssertableLogProvider internalLogProvider = new AssertableLogProvider();
     private AssertableLogProvider userLogProvider = new AssertableLogProvider();
     private EphemeralFileSystemRule fsRule = new EphemeralFileSystemRule();
-    private Neo4jWithSocket server = new Neo4jWithSocket( getClass(), getTestGraphDatabaseFactory(), fsRule, getSettingsFunction() );
+    private Neo4jWithSocket server = new Neo4jWithSocket( getClass(), getTestGraphDatabaseFactory(), fsRule::get, getSettingsFunction() );
     private TransportConnection connection1;
     private TransportConnection connection2;
     private TransportConnection connection3;
@@ -75,7 +72,7 @@ public class BoltSchedulerBusyIT extends AbstractBoltTransportsTest
     @Rule
     public RuleChain ruleChain = RuleChain.outerRule( fsRule ).around( server );
 
-    private TestDatabaseManagementServiceBuilder getTestGraphDatabaseFactory()
+    protected TestDatabaseManagementServiceBuilder getTestGraphDatabaseFactory()
     {
         TestDatabaseManagementServiceBuilder factory = new TestDatabaseManagementServiceBuilder();
         factory.setInternalLogProvider( internalLogProvider );
@@ -83,15 +80,16 @@ public class BoltSchedulerBusyIT extends AbstractBoltTransportsTest
         return factory;
     }
 
-    private static Consumer<Map<Setting<?>,String>> getSettingsFunction()
+    protected Consumer<Map<String,String>> getSettingsFunction()
     {
         return settings ->
         {
-            settings.put( GraphDatabaseSettings.auth_enabled, FALSE );
-            settings.put( BoltConnector.group( DEFAULT_CONNECTOR_KEY ).enabled, TRUE );
-            settings.put( BoltConnector.group( DEFAULT_CONNECTOR_KEY ).listen_address, "localhost:0" );
-            settings.put( BoltConnector.group( DEFAULT_CONNECTOR_KEY ).thread_pool_min_size, "0" );
-            settings.put( BoltConnector.group( DEFAULT_CONNECTOR_KEY ).thread_pool_max_size, "2" );
+            settings.put( GraphDatabaseSettings.auth_enabled.name(), "false" );
+            settings.put( new BoltConnector( DEFAULT_CONNECTOR_KEY ).enabled.name(), "TRUE" );
+            settings.put( new BoltConnector( DEFAULT_CONNECTOR_KEY ).listen_address.name(), "localhost:0" );
+            settings.put( new BoltConnector( DEFAULT_CONNECTOR_KEY ).type.name(), BoltConnector.ConnectorType.BOLT.name() );
+            settings.put( new BoltConnector( DEFAULT_CONNECTOR_KEY ).thread_pool_min_size.name(), "0" );
+            settings.put( new BoltConnector( DEFAULT_CONNECTOR_KEY ).thread_pool_max_size.name(), "2" );
         };
     }
 

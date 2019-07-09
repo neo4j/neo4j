@@ -23,8 +23,8 @@ import org.junit.jupiter.api.Test;
 
 import java.net.InetSocketAddress;
 
-import org.neo4j.configuration.helpers.SocketAddress;
 import org.neo4j.internal.helpers.HostnamePort;
+import org.neo4j.internal.helpers.ListenSocketAddress;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -45,9 +45,9 @@ class ConnectorPortRegisterTest
     }
 
     @Test
-    void shouldRegisterSocketAddress()
+    void shouldRegisterListenSocketAddress()
     {
-        SocketAddress address = new SocketAddress( "neo4j.com", 12345 );
+        ListenSocketAddress address = new ListenSocketAddress( "neo4j.com", 12345 );
 
         portRegister.register( "key", address );
 
@@ -57,7 +57,7 @@ class ConnectorPortRegisterTest
     @Test
     void shouldDeregister()
     {
-        SocketAddress address = new SocketAddress( "neo4j.com", 42 );
+        ListenSocketAddress address = new ListenSocketAddress( "neo4j.com", 42 );
         portRegister.register( "key", address );
         assertNotNull( portRegister.getLocalAddress( "key" ) );
 
@@ -69,9 +69,9 @@ class ConnectorPortRegisterTest
     @Test
     void shouldReturnAddressByKey()
     {
-        SocketAddress address1 = new SocketAddress( "localhost", 7574 );
-        SocketAddress address2 = new SocketAddress( "neo4j.com", 8989 );
-        SocketAddress address3 = new SocketAddress( "8.8.8.8", 80 );
+        ListenSocketAddress address1 = new ListenSocketAddress( "localhost", 7574 );
+        ListenSocketAddress address2 = new ListenSocketAddress( "neo4j.com", 8989 );
+        ListenSocketAddress address3 = new ListenSocketAddress( "8.8.8.8", 80 );
 
         portRegister.register( "key1", address1 );
         portRegister.register( "key2", address2 );

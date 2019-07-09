@@ -28,7 +28,6 @@ import org.neo4j.lock.ResourceType;
 
 public class CommunityLocksFactory implements LocksFactory
 {
-    public static final String NAME = "community";
     @Override
     public Locks newInstance( Config config, Clock clock, ResourceType[] resourceTypes )
     {

@@ -19,7 +19,8 @@
  */
 package org.neo4j.kernel.impl.store;
 
-import org.junit.jupiter.api.Test;
+import org.junit.Rule;
+import org.junit.Test;
 
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.graphdb.Node;
@@ -27,30 +28,22 @@ import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.internal.recordstorage.RecordStorageEngine;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
-import org.neo4j.test.TestDatabaseManagementServiceBuilder;
-import org.neo4j.test.extension.ExtensionCallback;
-import org.neo4j.test.extension.ImpermanentDbmsExtension;
-import org.neo4j.test.extension.Inject;
+import org.neo4j.test.rule.DbmsRule;
+import org.neo4j.test.rule.ImpermanentDbmsRule;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.Assert.assertEquals;
 import static org.neo4j.internal.helpers.collection.Iterables.count;
 
-@ImpermanentDbmsExtension( configurationCallback = "configure" )
-class RelationshipGroupStoreIT
+public class RelationshipGroupStoreIT
 {
     private static final int RELATIONSHIP_COUNT = 20;
 
-    @Inject
-    private GraphDatabaseAPI db;
-
-    @ExtensionCallback
-    static void configure( TestDatabaseManagementServiceBuilder builder )
-    {
-        builder.setConfig( GraphDatabaseSettings.dense_node_threshold, "1" );
-    }
+    @Rule
+    public final DbmsRule db = new ImpermanentDbmsRule()
+            .withSetting( GraphDatabaseSettings.dense_node_threshold, "1" );
 
     @Test
-    void shouldCreateAllTheseRelationshipTypes()
+    public void shouldCreateAllTheseRelationshipTypes()
     {
         shiftHighId( db );
 
@@ -69,20 +62,20 @@ class RelationshipGroupStoreIT
         {
             for ( int i = 0; i < RELATIONSHIP_COUNT; i++ )
             {
-                assertEquals( 1, count( node.getRelationships( type( i ) ) ),
-                        "Should be possible to get relationships of type with id in unsigned short range." );
+                assertEquals( "Should be possible to get relationships of type with id in unsigned short range.",
+                        1, count( node.getRelationships( type( i ) ) ) );
             }
         }
     }
 
-    private static void shiftHighId( GraphDatabaseAPI db )
+    private void shiftHighId( GraphDatabaseAPI db )
     {
         RecordStorageEngine storageEngine = db.getDependencyResolver().resolveDependency( RecordStorageEngine.class );
         NeoStores neoStores = storageEngine.testAccessNeoStores();
         neoStores.getRelationshipTypeTokenStore().setHighId( Short.MAX_VALUE - RELATIONSHIP_COUNT / 2 );
     }
 
-    private static RelationshipType type( int i )
+    private RelationshipType type( int i )
     {
         return RelationshipType.withName( "TYPE_" + i );
     }

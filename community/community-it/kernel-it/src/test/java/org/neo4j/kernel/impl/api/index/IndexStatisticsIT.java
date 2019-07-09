@@ -55,7 +55,6 @@ import static org.hamcrest.Matchers.containsString;
 import static org.junit.Assert.assertEquals;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.configuration.GraphDatabaseSettings.index_background_sampling_enabled;
-import static org.neo4j.configuration.SettingValueParsers.FALSE;
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.internal.helpers.ArrayUtil.single;
 import static org.neo4j.logging.AssertableLogProvider.inLog;
@@ -228,7 +227,7 @@ public class IndexStatisticsIT
                 .setInternalLogProvider( logProvider )
                 .setFileSystem( new UncloseableDelegatingFileSystemAbstraction( fileSystem ) )
                 .impermanent()
-                .setConfig( index_background_sampling_enabled, FALSE )
+                .setConfig( index_background_sampling_enabled, "false" )
                 .build();
         db = managementService.database( DEFAULT_DATABASE_NAME );
     }

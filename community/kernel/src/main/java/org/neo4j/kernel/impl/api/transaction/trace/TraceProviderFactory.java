@@ -22,7 +22,7 @@ package org.neo4j.kernel.impl.api.transaction.trace;
 import java.util.concurrent.ThreadLocalRandom;
 
 import org.neo4j.configuration.Config;
-import org.neo4j.configuration.GraphDatabaseSettings;
+import org.neo4j.configuration.TransactionTracingLevel;
 
 import static org.neo4j.configuration.GraphDatabaseSettings.transaction_sampling_percentage;
 import static org.neo4j.configuration.GraphDatabaseSettings.transaction_tracing_level;
@@ -35,7 +35,7 @@ public class TraceProviderFactory
 
     public static TraceProvider getTraceProvider( Config config )
     {
-        GraphDatabaseSettings.TransactionTracingLevel tracingLevel = config.get( transaction_tracing_level );
+        TransactionTracingLevel tracingLevel = config.get( transaction_tracing_level );
         switch ( tracingLevel )
         {
         case DISABLED:

@@ -231,7 +231,7 @@
 
             <!-- Include the following packages... (yes, has to be one line) -->
             <subpackages>
-              org.neo4j.graphalgo:org.neo4j.cypher.export:org.neo4j.graphdb:org.neo4j.dbms.api:org.neo4j.server.helpers:org.neo4j.server.rest.repr:org.neo4j.server.rest.web:org.neo4j.batchinsert:org.neo4j.logging:org.neo4j.procedure:org.neo4j.harness.junit:org.neo4j.configuration
+              org.neo4j.graphalgo:org.neo4j.cypher.export:org.neo4j.graphdb:org.neo4j.dbms.api:org.neo4j.server.helpers:org.neo4j.server.rest.repr:org.neo4j.server.rest.web:org.neo4j.batchinsert:org.neo4j.logging:org.neo4j.procedure:org.neo4j.harness.junit
             </subpackages>
             <!-- ...unless the package contains -->
             <excludePackageNames>

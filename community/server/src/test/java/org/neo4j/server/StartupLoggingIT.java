@@ -33,9 +33,11 @@ import java.util.Map;
 import java.util.Optional;
 
 import org.neo4j.configuration.GraphDatabaseSettings;
+import org.neo4j.configuration.Settings;
 import org.neo4j.configuration.connectors.BoltConnector;
 import org.neo4j.configuration.connectors.HttpConnector;
-import org.neo4j.configuration.connectors.HttpsConnector;
+import org.neo4j.configuration.connectors.HttpConnector.Encryption;
+import org.neo4j.configuration.ssl.LegacySslPolicyConfig;
 import org.neo4j.test.rule.SuppressOutput;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.server.ExclusiveServerTestBase;
@@ -43,7 +45,6 @@ import org.neo4j.test.server.ExclusiveServerTestBase;
 import static java.util.Arrays.asList;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.neo4j.bolt.v1.transport.integration.Neo4jWithSocket.DEFAULT_CONNECTOR_KEY;
-import static org.neo4j.configuration.SettingValueParsers.TRUE;
 import static org.neo4j.server.AbstractNeoServer.NEO4J_IS_STARTING_MESSAGE;
 
 public class StartupLoggingIT extends ExclusiveServerTestBase
@@ -82,19 +83,22 @@ public class StartupLoggingIT extends ExclusiveServerTestBase
 
         properties.put( GraphDatabaseSettings.data_directory.name(), testDir.storeDir().toString() );
         properties.put( GraphDatabaseSettings.logs_directory.name(), testDir.storeDir().toString() );
-        properties.put( GraphDatabaseSettings.legacy_certificates_directory.name(), testDir.storeDir().toString() );
-        properties.put( GraphDatabaseSettings.allow_upgrade.name(), TRUE );
+        properties.put( LegacySslPolicyConfig.certificates_directory.name(), testDir.storeDir().toString() );
+        properties.put( GraphDatabaseSettings.allow_upgrade.name(), Settings.TRUE );
 
-        HttpConnector http = HttpConnector.group( "http" );
+        HttpConnector http = new HttpConnector( "http", Encryption.NONE );
+        properties.put( http.type.name(), "HTTP" );
         properties.put( http.listen_address.name(), "localhost:0" );
-        properties.put( http.enabled.name(), TRUE );
+        properties.put( http.enabled.name(), Settings.TRUE );
 
-        HttpsConnector https = HttpsConnector.group( "https" );
+        HttpConnector https = new HttpConnector( "https", Encryption.TLS );
+        properties.put( https.type.name(), "HTTP" );
         properties.put( https.listen_address.name(), "localhost:0" );
-        properties.put( https.enabled.name(), TRUE );
+        properties.put( https.enabled.name(), Settings.TRUE );
 
-        BoltConnector bolt = BoltConnector.group( DEFAULT_CONNECTOR_KEY );
-        properties.put( bolt.enabled.name(), TRUE );
+        BoltConnector bolt = new BoltConnector( DEFAULT_CONNECTOR_KEY );
+        properties.put( bolt.type.name(), "BOLT" );
+        properties.put( bolt.enabled.name(), "true" );
         properties.put( bolt.listen_address.name(), "localhost:0" );
 
         properties.put( GraphDatabaseSettings.databases_root_path.name(), testDir.absolutePath().getAbsolutePath() );

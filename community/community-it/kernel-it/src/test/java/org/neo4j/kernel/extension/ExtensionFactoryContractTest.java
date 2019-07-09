@@ -22,7 +22,10 @@ package org.neo4j.kernel.extension;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
+import java.util.Map;
+
 import org.neo4j.dbms.api.DatabaseManagementService;
+import org.neo4j.internal.helpers.collection.MapUtil;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.service.Services;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
@@ -58,8 +61,21 @@ public abstract class ExtensionFactoryContractTest
 
     protected GraphDatabaseAPI graphDb( int instance )
     {
-        managementService = new TestDatabaseManagementServiceBuilder().impermanent().build();
+        Map<String, String> config = configuration( instance );
+        managementService = new TestDatabaseManagementServiceBuilder().impermanent().setConfigRaw( config ).build();
         return (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );
+    }
+
+    /**
+     * Override to create default configuration for the {@link ExtensionFactory}
+     * under test.
+     *
+     * @param instance   used for differentiating multiple instances that will run
+     *                   simultaneously.
+     */
+    protected Map<String, String> configuration( int instance )
+    {
+        return MapUtil.stringMap();
     }
 
     @Test

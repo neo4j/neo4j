@@ -34,7 +34,7 @@ import java.util.function.ToIntFunction;
 import org.neo4j.batchinsert.internal.TransactionLogsInitializer;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
-import org.neo4j.configuration.SettingValueParsers;
+import org.neo4j.configuration.Settings;
 import org.neo4j.consistency.ConsistencyCheckService;
 import org.neo4j.consistency.ConsistencyCheckService.Result;
 import org.neo4j.dbms.api.DatabaseManagementService;
@@ -146,7 +146,7 @@ public class MultipleIndexPopulationStressIT
     private void readConfigAndRunTest( boolean multiThreaded ) throws Exception
     {
         // GIVEN a database with random data in it
-        int nodeCount = (int) SettingValueParsers.parseLongWithUnit( System.getProperty( getClass().getName() + ".nodes", "200k" ) );
+        int nodeCount = (int) Settings.parseLongWithUnit( System.getProperty( getClass().getName() + ".nodes", "200k" ) );
         long duration = TimeUtil.parseTimeMillis.apply( System.getProperty( getClass().getName() + ".duration", "5s" ) );
         prepareAndRunTest( multiThreaded, nodeCount, duration );
     }

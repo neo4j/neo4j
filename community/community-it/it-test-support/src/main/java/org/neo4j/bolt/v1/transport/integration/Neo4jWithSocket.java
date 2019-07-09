@@ -35,7 +35,6 @@ import org.neo4j.configuration.connectors.BoltConnector;
 import org.neo4j.configuration.connectors.ConnectorPortRegister;
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.graphdb.GraphDatabaseService;
-import org.neo4j.graphdb.config.Setting;
 import org.neo4j.internal.helpers.HostnamePort;
 import org.neo4j.io.fs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -44,7 +43,6 @@ import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.rule.TestDirectory;
 
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
-import static org.neo4j.configuration.SettingValueParsers.TRUE;
 import static org.neo4j.configuration.connectors.BoltConnector.EncryptionLevel.OPTIONAL;
 
 public class Neo4jWithSocket extends ExternalResource
@@ -52,7 +50,7 @@ public class Neo4jWithSocket extends ExternalResource
     public static final String DEFAULT_CONNECTOR_KEY = "bolt";
 
     private final Supplier<FileSystemAbstraction> fileSystemProvider;
-    private final Consumer<Map<Setting<?>,String>> configure;
+    private final Consumer<Map<String,String>> configure;
     private final TestDirectory testDirectory;
     private final TestDatabaseManagementServiceBuilder graphDatabaseFactory;
     private GraphDatabaseService gdb;
@@ -67,19 +65,19 @@ public class Neo4jWithSocket extends ExternalResource
         } );
     }
 
-    public Neo4jWithSocket( Class<?> testClass, Consumer<Map<Setting<?>,String>> configure )
+    public Neo4jWithSocket( Class<?> testClass, Consumer<Map<String,String>> configure )
     {
         this( testClass, new TestDatabaseManagementServiceBuilder(), configure );
     }
 
     public Neo4jWithSocket( Class<?> testClass, TestDatabaseManagementServiceBuilder graphDatabaseFactory,
-            Consumer<Map<Setting<?>,String>> configure )
+            Consumer<Map<String,String>> configure )
     {
         this( testClass, graphDatabaseFactory, EphemeralFileSystemAbstraction::new, configure );
     }
 
     public Neo4jWithSocket( Class<?> testClass, TestDatabaseManagementServiceBuilder graphDatabaseFactory,
-            Supplier<FileSystemAbstraction> fileSystemProvider, Consumer<Map<Setting<?>,String>> configure )
+            Supplier<FileSystemAbstraction> fileSystemProvider, Consumer<Map<String,String>> configure )
     {
         this.testDirectory = TestDirectory.testDirectory( testClass, fileSystemProvider.get() );
         this.graphDatabaseFactory = graphDatabaseFactory;
@@ -160,30 +158,30 @@ public class Neo4jWithSocket extends ExternalResource
         }
     }
 
-    public void ensureDatabase( Consumer<Map<Setting<?>,String>> overrideSettingsFunction )
+    public void ensureDatabase( Consumer<Map<String,String>> overrideSettingsFunction )
     {
         if ( gdb != null )
         {
             return;
         }
 
-        Map<Setting<?>,String> settings = configure( overrideSettingsFunction );
+        Map<String,String> settings = configure( overrideSettingsFunction );
         File storeDir = new File( workingDirectory, "storeDir" );
         graphDatabaseFactory.setFileSystem( fileSystemProvider.get() );
         managementService = graphDatabaseFactory.setDatabaseRootDirectory( storeDir ).impermanent().
-                setConfig( settings ).build();
+                setConfigRaw( settings ).build();
         gdb = managementService.database( DEFAULT_DATABASE_NAME );
         connectorRegister =
                 ((GraphDatabaseAPI) gdb).getDependencyResolver().resolveDependency( ConnectorPortRegister.class );
     }
 
-    private Map<Setting<?>,String> configure( Consumer<Map<Setting<?>,String>> overrideSettingsFunction )
+    private Map<String,String> configure( Consumer<Map<String,String>> overrideSettingsFunction )
     {
-        Map<Setting<?>,String> settings = new HashMap<>();
-        BoltConnector bolt = BoltConnector.group( DEFAULT_CONNECTOR_KEY );
-        settings.put( bolt.enabled, TRUE );
-        settings.put( bolt.listen_address, "localhost:0" );
-        settings.put( bolt.encryption_level, OPTIONAL.name() );
+        Map<String,String> settings = new HashMap<>();
+        settings.put( new BoltConnector( DEFAULT_CONNECTOR_KEY ).type.name(), "BOLT" );
+        settings.put( new BoltConnector( DEFAULT_CONNECTOR_KEY ).enabled.name(), "true" );
+        settings.put( new BoltConnector( DEFAULT_CONNECTOR_KEY ).listen_address.name(), "localhost:0" );
+        settings.put( new BoltConnector( DEFAULT_CONNECTOR_KEY ).encryption_level.name(), OPTIONAL.name() );
         configure.accept( settings );
         overrideSettingsFunction.accept( settings );
         return settings;

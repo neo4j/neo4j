@@ -31,7 +31,6 @@ import org.neo4j.test.server.HTTP;
 import static org.hamcrest.Matchers.equalTo;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assume.assumeTrue;
-import static org.neo4j.configuration.SettingValueParsers.TRUE;
 
 public class AuthorizationWhitelistIT extends ExclusiveServerTestBase
 {
@@ -43,7 +42,7 @@ public class AuthorizationWhitelistIT extends ExclusiveServerTestBase
         // Given
         assumeTrue( browserIsLoaded() );
         server = CommunityServerBuilder.serverOnRandomPorts()
-                .withProperty( GraphDatabaseSettings.auth_enabled.name(), TRUE ).build();
+                .withProperty( GraphDatabaseSettings.auth_enabled.name(), "true" ).build();
 
         // When
         server.start();
@@ -58,7 +57,7 @@ public class AuthorizationWhitelistIT extends ExclusiveServerTestBase
     {
         // Given
         server = CommunityServerBuilder.serverOnRandomPorts()
-                .withProperty( GraphDatabaseSettings.auth_enabled.name(), TRUE ).build();
+                .withProperty( GraphDatabaseSettings.auth_enabled.name(), "true" ).build();
 
         // When
         server.start();
@@ -73,7 +72,7 @@ public class AuthorizationWhitelistIT extends ExclusiveServerTestBase
     {
         // Given
         server = CommunityServerBuilder.serverOnRandomPorts()
-                .withProperty( GraphDatabaseSettings.auth_enabled.name(), TRUE ).build();
+                .withProperty( GraphDatabaseSettings.auth_enabled.name(), "true" ).build();
 
         // When
         server.start();

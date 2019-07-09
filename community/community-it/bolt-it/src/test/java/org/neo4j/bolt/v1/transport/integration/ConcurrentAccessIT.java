@@ -49,7 +49,6 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.hasEntry;
 import static org.hamcrest.Matchers.hasKey;
 import static org.neo4j.bolt.v1.messaging.util.MessageMatchers.msgSuccess;
-import static org.neo4j.configuration.SettingValueParsers.FALSE;
 
 /**
  * Multiple concurrent users should be able to connect simultaneously. We test this with multiple users running
@@ -59,7 +58,7 @@ public class ConcurrentAccessIT extends AbstractBoltTransportsTest
 {
     @Rule
     public Neo4jWithSocket server = new Neo4jWithSocket( getClass(), settings ->
-            settings.put( GraphDatabaseSettings.auth_enabled, FALSE ) );
+            settings.put( GraphDatabaseSettings.auth_enabled.name(), "false" ) );
 
     @Test
     public void shouldRunSimpleStatement() throws Throwable

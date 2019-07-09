@@ -45,7 +45,6 @@ import static org.hamcrest.CoreMatchers.nullValue;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThat;
-import static org.neo4j.configuration.SettingValueParsers.TRUE;
 import static org.neo4j.graphdb.schema.Schema.IndexState.ONLINE;
 import static org.neo4j.index.SabotageNativeIndex.nativeIndexDirectoryStructure;
 
@@ -110,7 +109,7 @@ public class IndexFailureOnStartupTest
     public void shouldArchiveFailedIndex() throws Exception
     {
         // given
-        db.withSetting( GraphDatabaseSettings.archive_failed_index, TRUE );
+        db.withSetting( GraphDatabaseSettings.archive_failed_index, "true" );
         try ( Transaction tx = db.beginTx() )
         {
             Node node = db.createNode( PERSON );

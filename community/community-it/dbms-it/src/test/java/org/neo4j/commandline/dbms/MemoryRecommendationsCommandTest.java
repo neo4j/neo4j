@@ -37,12 +37,11 @@ import java.nio.file.attribute.BasicFileAttributes;
 
 import org.neo4j.cli.ExecutionContext;
 import org.neo4j.configuration.Config;
-import org.neo4j.configuration.GraphDatabaseSettings;
-import org.neo4j.configuration.SettingImpl;
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.graphdb.config.Setting;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.kernel.api.impl.index.storage.FailureStorage;
 import org.neo4j.kernel.api.index.IndexDirectoryStructure;
@@ -69,6 +68,7 @@ import static org.neo4j.commandline.dbms.MemoryRecommendationsCommand.recommendH
 import static org.neo4j.commandline.dbms.MemoryRecommendationsCommand.recommendOsMemory;
 import static org.neo4j.commandline.dbms.MemoryRecommendationsCommand.recommendPageCacheMemory;
 import static org.neo4j.configuration.Config.DEFAULT_CONFIG_FILE_NAME;
+import static org.neo4j.configuration.Config.fromFile;
 import static org.neo4j.configuration.ExternalSettings.initialHeapSize;
 import static org.neo4j.configuration.ExternalSettings.maxHeapSize;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
@@ -78,8 +78,8 @@ import static org.neo4j.configuration.GraphDatabaseSettings.data_directory;
 import static org.neo4j.configuration.GraphDatabaseSettings.databases_root_path;
 import static org.neo4j.configuration.GraphDatabaseSettings.default_schema_provider;
 import static org.neo4j.configuration.GraphDatabaseSettings.pagecache_memory;
-import static org.neo4j.configuration.SettingValueParsers.BYTES;
-
+import static org.neo4j.configuration.Settings.BYTES;
+import static org.neo4j.configuration.Settings.buildSetting;
 import static org.neo4j.internal.helpers.collection.MapUtil.store;
 import static org.neo4j.internal.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.io.ByteUnit.exbiBytes;
@@ -166,13 +166,13 @@ class MemoryRecommendationsCommandTest
     @Test
     void bytesToStringMustBeParseableBySettings()
     {
-        SettingImpl<Long> setting = (SettingImpl<Long>) SettingImpl.newBuilder( "arg", BYTES, null ).build();
+        Setting<Long> setting = buildSetting( "arg", BYTES ).build();
         for ( int i = 1; i < 10_000; i++ )
         {
             int mebibytes = 75 * i;
             long expectedBytes = mebiBytes( mebibytes );
             String bytesToString = bytesToString( expectedBytes );
-            long actualBytes = setting.parse( bytesToString );
+            long actualBytes = setting.apply( s -> bytesToString );
             long tenPercent = (long) (expectedBytes * 0.1);
             assertThat( mebibytes + "m",
                     actualBytes,
@@ -233,10 +233,8 @@ class MemoryRecommendationsCommandTest
         Path configFile = configDir.resolve( DEFAULT_CONFIG_FILE_NAME );
         String databaseName = "mydb";
         store( stringMap( data_directory.name(), homeDir.toString() ), configFile.toFile() );
-        Config config = Config.newBuilder()
-                .fromFile( configFile.toFile() )
-                .set( GraphDatabaseSettings.neo4j_home, homeDir.toString() ).build();
-        File rootPath = config.get( databases_root_path ).toFile();
+        Config config = fromFile( configFile ).withHome( homeDir ).build();
+        File rootPath = config.get( databases_root_path );
         DatabaseLayout databaseLayout = DatabaseLayout.of( rootPath, databaseName );
         DatabaseLayout systemLayout = DatabaseLayout.of( rootPath, SYSTEM_DATABASE_NAME );
         createDatabaseWithNativeIndexes( databaseLayout );
@@ -277,10 +275,8 @@ class MemoryRecommendationsCommandTest
 
         long totalPageCacheSize = 0;
         long totalLuceneIndexesSize = 0;
-        Config config = Config.newBuilder()
-                .fromFile( configFile.toFile() )
-                .set( GraphDatabaseSettings.neo4j_home, homeDir.toString() ).build();
-        File rootDirectory = config.get( databases_root_path ).toFile();
+        Config config = fromFile( configFile ).withHome( homeDir ).build();
+        File rootDirectory = config.get( databases_root_path );
         for ( int i = 0; i < 5; i++ )
         {
             DatabaseLayout databaseLayout = DatabaseLayout.of( rootDirectory, "db" + i );

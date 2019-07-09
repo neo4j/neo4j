@@ -63,7 +63,6 @@ import org.neo4j.function.ThrowingFunction;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
-import org.neo4j.graphdb.config.Setting;
 import org.neo4j.internal.helpers.collection.Iterators;
 import org.neo4j.internal.helpers.collection.Pair;
 import org.neo4j.internal.helpers.progress.ProgressMonitorFactory;
@@ -126,7 +125,6 @@ import static java.util.Arrays.asList;
 import static java.util.Collections.singletonList;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
-import static org.neo4j.configuration.SettingValueParsers.TRUE;
 import static org.neo4j.consistency.ConsistencyCheckService.defaultConsistencyCheckThreadsNumber;
 import static org.neo4j.consistency.checking.RecordCheckTestBase.inUse;
 import static org.neo4j.consistency.checking.RecordCheckTestBase.notInUse;
@@ -289,18 +287,7 @@ public class FullCheckIntegrationTest
                 throw new RuntimeException( e );
             }
         }
-
-        @Override
-        protected Map<Setting<?>,String> getConfig()
-        {
-            return getSettings();
-        }
     };
-
-    protected Map<Setting<?>,String> getSettings()
-    {
-        return new HashMap<>();
-    }
 
     private final SuppressOutput suppressOutput = SuppressOutput.suppressAll();
 

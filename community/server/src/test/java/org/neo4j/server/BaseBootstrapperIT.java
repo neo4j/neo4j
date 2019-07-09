@@ -26,15 +26,11 @@ import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
 import java.io.File;
-import java.io.IOException;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
 
 import org.neo4j.configuration.Config;
-import org.neo4j.configuration.connectors.BoltConnector;
-import org.neo4j.configuration.connectors.HttpConnector;
-import org.neo4j.configuration.connectors.HttpsConnector;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
@@ -49,7 +45,6 @@ import static org.junit.Assert.assertThat;
 import static org.neo4j.configuration.GraphDatabaseSettings.data_directory;
 import static org.neo4j.configuration.GraphDatabaseSettings.forced_kernel_id;
 import static org.neo4j.configuration.GraphDatabaseSettings.logs_directory;
-import static org.neo4j.configuration.SettingValueParsers.TRUE;
 import static org.neo4j.internal.helpers.collection.Iterators.single;
 import static org.neo4j.internal.helpers.collection.MapUtil.store;
 import static org.neo4j.internal.helpers.collection.MapUtil.stringMap;
@@ -84,18 +79,15 @@ public abstract class BaseBootstrapperIT extends ExclusiveServerTestBase
     public void shouldStartStopNeoServerWithoutAnyConfigFiles() throws Throwable
     {
         // When
-        int resultCode = ServerBootstrapper.start( bootstrapper, withConnectorsOnRandomPortsConfig( getAdditionalArguments() ) );
+        int resultCode = ServerBootstrapper.start( bootstrapper, withConnectorsOnRandomPortsConfig(
+                "--home-dir", tempDir.newFolder( "home-dir" ).getAbsolutePath(),
+                "-c", configOption( data_directory, tempDir.getRoot().getAbsolutePath() ),
+                "-c", configOption( logs_directory, tempDir.getRoot().getAbsolutePath() ),
+                "-c", "dbms.backup.enabled=false" ) );
 
         // Then
         assertEquals( ServerBootstrapper.OK, resultCode );
         assertEventually( "Server was not started", bootstrapper::isRunning, is( true ), 1, TimeUnit.MINUTES );
-    }
-
-    protected String[] getAdditionalArguments() throws IOException
-    {
-        return new String[]{"--home-dir", tempDir.newFolder( "home-dir" ).getAbsolutePath(),
-                "-c", configOption( data_directory, tempDir.getRoot().getAbsolutePath() ),
-                "-c", configOption( logs_directory, tempDir.getRoot().getAbsolutePath() )};
     }
 
     @Test
@@ -190,14 +182,14 @@ public abstract class BaseBootstrapperIT extends ExclusiveServerTestBase
                 "-c", configOption( data_directory, tempDir.getRoot().getAbsolutePath() ),
                 "-c", configOption( logs_directory, tempDir.getRoot().getAbsolutePath() ),
 
-                "-c", HttpConnector.group("http").enabled.name() + "=" + httpEnabled,
-                "-c", HttpConnector.group("http").listen_address.name() + "=localhost:0",
+                "-c", "dbms.connector.http.enabled=" + httpEnabled,
+                "-c", "dbms.connector.http.listen_address=:0",
 
-                "-c", HttpsConnector.group("https").enabled.name() + "=" + httpsEnabled,
-                "-c", HttpsConnector.group("https").listen_address.name() + "=localhost:0",
+                "-c", "dbms.connector.https.enabled=" + httpsEnabled,
+                "-c", "dbms.connector.https.listen_address=:0",
 
-                "-c", BoltConnector.group("bolt").enabled.name() + "=" + boltEnabled,
-                "-c", BoltConnector.group("bolt").listen_address.name() + "=localhost:0"
+                "-c", "dbms.connector.bolt.enabled=" + boltEnabled,
+                "-c", "dbms.connector.bolt.listen_address=:0"
         );
 
         assertEquals( ServerBootstrapper.OK, resultCode );
@@ -229,15 +221,20 @@ public abstract class BaseBootstrapperIT extends ExclusiveServerTestBase
     protected static Map<String,String> connectorsOnRandomPortsConfig()
     {
         return stringMap(
-                HttpConnector.group("default").listen_address.name(), "localhost:0",
-                HttpConnector.group("default").enabled.name(), TRUE,
+                "dbms.connector.http.type", "HTTP",
+                "dbms.connector.http.listen_address", "localhost:0",
+                "dbms.connector.http.encryption", "NONE",
+                "dbms.connector.http.enabled", "true",
 
-                HttpsConnector.group("default").listen_address.name(), "localhost:0",
-                HttpsConnector.group("default").enabled.name(), TRUE,
+                "dbms.connector.https.type", "HTTP",
+                "dbms.connector.https.listen_address", "localhost:0",
+                "dbms.connector.https.encryption", "TLS",
+                "dbms.connector.https.enabled", "true",
 
-                BoltConnector.group("default").listen_address.name(), "localhost:0",
-                BoltConnector.group("default").encryption_level.name(), "OPTIONAL",
-                BoltConnector.group("default").enabled.name(), TRUE
+                "dbms.connector.bolt.type", "BOLT",
+                "dbms.connector.bolt.listen_address", "localhost:0",
+                "dbms.connector.bolt.tls_level", "OPTIONAL",
+                "dbms.connector.bolt.enabled", "true"
         );
     }
 

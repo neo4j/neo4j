@@ -21,10 +21,13 @@ package org.neo4j.configuration.ssl;
 
 import org.junit.jupiter.api.Test;
 
-import org.neo4j.configuration.Config;
-import org.neo4j.configuration.GraphDatabaseSettings;
+import java.util.stream.Stream;
 
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import org.neo4j.configuration.Config;
+import org.neo4j.configuration.ConfigValue;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.neo4j.configuration.ssl.LegacySslPolicyConfig.certificates_directory;
 
 class LegacySslPolicyConfigTest
 {
@@ -32,9 +35,12 @@ class LegacySslPolicyConfigTest
     void shouldBeFoundInServerDefaults()
     {
         // given
-        Config serverDefaultConfig = Config.defaults();
+        Config serverDefaultConfig = Config.builder().withServerDefaults().build();
+
+        // when
+        Stream<ConfigValue> cvStream = serverDefaultConfig.getConfigValues().values().stream();
 
         // then
-        assertTrue( serverDefaultConfig.getValues().containsKey( GraphDatabaseSettings.legacy_certificates_directory ) );
+        assertEquals( 1, cvStream.filter( c -> c.name().equals( certificates_directory.name() ) ).count() );
     }
 }

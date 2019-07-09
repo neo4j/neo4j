@@ -30,7 +30,7 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.function.Function;
 
-import org.neo4j.configuration.helpers.SocketAddress;
+import org.neo4j.internal.helpers.AdvertisedSocketAddress;
 import org.neo4j.internal.helpers.HostnamePort;
 
 public class Converters
@@ -108,13 +108,13 @@ public class Converters
         };
     }
 
-    public static SocketAddress toSocketAddress( HostnamePort hostnamePort, String defaultHostname, int defaultPort )
+    public static AdvertisedSocketAddress toAdvertisedSocketAddress( HostnamePort hostnamePort, String defaultHostname, int defaultPort )
     {
         String hostname = removeIpV6Brackets( hostnamePort.getHost() != null ? hostnamePort.getHost() : defaultHostname );
         // port 0 only makes sense for a listen address, not advertised address
         // it is thus safe to treat port 0 as missing port when converting the given host and port into an advertised address
         int port = hostnamePort.getPort() != 0 ? hostnamePort.getPort() : defaultPort;
-        return new SocketAddress( hostname, port );
+        return new AdvertisedSocketAddress( hostname, port );
     }
 
     private static String removeIpV6Brackets( String hostname )

@@ -22,117 +22,135 @@ package org.neo4j.configuration.ssl;
 import org.junit.jupiter.api.Test;
 
 import java.util.Map;
+import java.util.function.Consumer;
 
-import org.neo4j.configuration.Config;
+import org.neo4j.graphdb.config.InvalidSettingException;
 
 import static java.util.Collections.unmodifiableMap;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
-import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.neo4j.configuration.SettingValueParsers.FALSE;
-import static org.neo4j.configuration.SettingValueParsers.TRUE;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.internal.helpers.collection.MapUtil.stringMap;
 
 class SslPolicyConfigValidatorTest
 {
+    private final Consumer<String> warnings = warning -> {};
+
     @Test
     void shouldAcceptAllValidPemPolicyKeys()
     {
-        PemSslPolicyConfig sslPolicy = PemSslPolicyConfig.group( "default" );
+        // given
+        SslPolicyConfigValidator validator = new SslPolicyConfigValidator();
         Map<String,String> originalParams = params(
-                sslPolicy.base_directory.name(), "xyz",
-                sslPolicy.revoked_dir.name(), "xyz",
-                sslPolicy.trust_all.name(), FALSE,
-                sslPolicy.client_auth.name(), "NONE",
-                sslPolicy.tls_versions.name(), "xyz",
-                sslPolicy.ciphers.name(), "xyz",
-                sslPolicy.verify_hostname.name(), TRUE,
+                "dbms.ssl.policy.default.format", "pem",
+                "dbms.ssl.policy.default.base_directory", "xyz",
+                "dbms.ssl.policy.default.revoked_dir", "xyz",
+                "dbms.ssl.policy.default.trust_all", "xyz",
+                "dbms.ssl.policy.default.client_auth", "xyz",
+                "dbms.ssl.policy.default.tls_versions", "xyz",
+                "dbms.ssl.policy.default.ciphers", "xyz",
+                "dbms.ssl.policy.default.verify_hostname", "true",
 
-                sslPolicy.allow_key_generation.name(), TRUE,
-                sslPolicy.private_key.name(), "xyz",
-                sslPolicy.private_key_password.name(), "xyz",
-                sslPolicy.public_certificate.name(), "xyz",
-                sslPolicy.trusted_dir.name(), "xyz"
+                "dbms.ssl.policy.default.allow_key_generation", "xyz",
+                "dbms.ssl.policy.default.private_key", "xyz",
+                "dbms.ssl.policy.default.private_key_password", "xyz",
+                "dbms.ssl.policy.default.public_certificate", "xyz",
+                "dbms.ssl.policy.default.trusted_dir", "xyz"
         );
 
-        assertDoesNotThrow( () -> Config.defaults( originalParams ) );
+        // when
+        Map<String,String> validatedParams = validator.validate( originalParams, warnings );
+
+        // then
+        assertEquals( originalParams, validatedParams );
     }
 
     @Test
     void shouldAcceptAllValidJksPolicyKeys()
     {
-        JksSslPolicyConfig sslPolicy = JksSslPolicyConfig.group( "default" );
-
+        // given
+        SslPolicyConfigValidator validator = new SslPolicyConfigValidator();
         Map<String,String> originalParams = params(
-                sslPolicy.base_directory.name(), "xyz",
-                sslPolicy.revoked_dir.name(), "xyz",
-                sslPolicy.trust_all.name(), TRUE,
-                sslPolicy.client_auth.name(), "none",
-                sslPolicy.tls_versions.name(), "xyz",
-                sslPolicy.ciphers.name(), "xyz",
-                sslPolicy.verify_hostname.name(), TRUE,
+                "dbms.ssl.policy.default.format", "jks",
+                "dbms.ssl.policy.default.base_directory", "xyz",
+                "dbms.ssl.policy.default.revoked_dir", "xyz",
+                "dbms.ssl.policy.default.trust_all", "xyz",
+                "dbms.ssl.policy.default.client_auth", "xyz",
+                "dbms.ssl.policy.default.tls_versions", "xyz",
+                "dbms.ssl.policy.default.ciphers", "xyz",
+                "dbms.ssl.policy.default.verify_hostname", "true",
 
-                sslPolicy.keystore.name(), "abc",
-                sslPolicy.keystore_pass.name(), "abc",
-                sslPolicy.entry_alias.name(), "abc",
-                sslPolicy.entry_pass.name(), "abc"
+                "dbms.ssl.policy.default.keystore", "abc",
+                "dbms.ssl.policy.default.keystore_pass", "abc",
+                "dbms.ssl.policy.default.entry_alias", "abc",
+                "dbms.ssl.policy.default.entry_pass", "abc"
         );
-        assertDoesNotThrow( () -> Config.defaults( originalParams ) );
 
+        // when
+        Map<String,String> validatedParams = validator.validate( originalParams, warnings );
+
+        // then
+        assertEquals( originalParams, validatedParams );
     }
 
     @Test()
     void shouldThrowIfCombinationOfPemAndJks()
     {
         // given
+        SslPolicyConfigValidator validator = new SslPolicyConfigValidator();
         Map<String,String> originalParams = params(
-                "dbms.ssl.policy.pem.default.base_directory", "xyz",
-                "dbms.ssl.policy.pem.default.allow_key_generation", "xyz",
-                "dbms.ssl.policy.pem.default.trust_all", "xyz",
-                "dbms.ssl.policy.pem.default.keystore", "xyz",
-                "dbms.ssl.policy.pem.default.private_key_password", "xyz",
-                "dbms.ssl.policy.pem.default.public_certificate", "xyz",
-                "dbms.ssl.policy.pem.default.client_auth", "xyz",
-                "dbms.ssl.policy.pem.default.tls_versions", "xyz",
-                "dbms.ssl.policy.pem.default.ciphers", "xyz"
+                "dbms.ssl.policy.default.format", "pem",
+                "dbms.ssl.policy.default.base_directory", "xyz",
+                "dbms.ssl.policy.default.allow_key_generation", "xyz",
+                "dbms.ssl.policy.default.trust_all", "xyz",
+                "dbms.ssl.policy.default.keystore", "xyz",
+                "dbms.ssl.policy.default.private_key_password", "xyz",
+                "dbms.ssl.policy.default.public_certificate", "xyz",
+                "dbms.ssl.policy.default.client_auth", "xyz",
+                "dbms.ssl.policy.default.tls_versions", "xyz",
+                "dbms.ssl.policy.default.ciphers", "xyz"
         );
 
         // when
-        IllegalArgumentException exception = assertThrows( IllegalArgumentException.class, () -> Config.defaults( originalParams ) );
-        assertThat( exception.getMessage(), containsString( "Error evaluate setting" ) );
+        InvalidSettingException exception = assertThrows( InvalidSettingException.class, () -> validator.validate( originalParams, warnings ) );
+        assertThat( exception.getMessage(), containsString( "Invalid setting name" ) );
     }
 
     @Test
     void shouldThrowOnUnknownPolicySetting()
     {
         // given
+        SslPolicyConfigValidator validator = new SslPolicyConfigValidator();
         Map<String,String> originalParams = params(
-                "dbms.ssl.policy.pem.default.trust_all", "xyz",
-                "dbms.ssl.policy.pem.default.color", "blue" );
+                "dbms.ssl.policy.default.format", "pem",
+                "dbms.ssl.policy.default.color", "blue" );
 
         // when
-        IllegalArgumentException exception = assertThrows( IllegalArgumentException.class, () -> Config.defaults( originalParams ) );
-        assertThat( exception.getMessage(), containsString( "Error evaluate setting" ) );
+        InvalidSettingException exception = assertThrows( InvalidSettingException.class, () -> validator.validate( originalParams, warnings ) );
+        assertThat( exception.getMessage(), containsString( "Invalid setting name" ) );
     }
 
     @Test
     void shouldThrowOnDirectPolicySetting()
     {
         // given
+        SslPolicyConfigValidator validator = new SslPolicyConfigValidator();
         Map<String,String> originalParams = params(
-                "dbms.ssl.policy.pem.base_directory.trust_all", "xyz",
-                "dbms.ssl.policy.pem.base_directory", "path" );
+                "dbms.ssl.policy.base_directory.format", "pem",
+                "dbms.ssl.policy.base_directory", "path" );
 
         // when
-        IllegalArgumentException exception = assertThrows( IllegalArgumentException.class, () -> Config.defaults( originalParams ) );
-        assertThat( exception.getMessage(), containsString( "Error evaluate setting" ) );
+        InvalidSettingException exception = assertThrows( InvalidSettingException.class, () -> validator.validate( originalParams, warnings ) );
+        assertThat( exception.getMessage(), containsString( "Invalid setting name" ) );
     }
 
     @Test
     void shouldIgnoreUnknownNonPolicySettings()
     {
         // given
+        SslPolicyConfigValidator validator = new SslPolicyConfigValidator();
         Map<String,String> originalParams = params(
                 "dbms.ssl.unknown", "xyz",
                 "dbms.ssl.something", "xyz",
@@ -140,8 +158,83 @@ class SslPolicyConfigValidatorTest
         );
 
         // when
-        IllegalArgumentException exception = assertThrows( IllegalArgumentException.class, () -> Config.defaults( originalParams ) );
-        assertThat( exception.getMessage(), containsString( "Unrecognized setting" ) );
+        Map<String,String> validatedParams = validator.validate( originalParams, warnings );
+
+        // then
+        assertTrue( validatedParams.isEmpty() );
+    }
+
+    @Test
+    void shouldComplainWhenMissingMandatoryBaseDirectory()
+    {
+        // given
+        SslPolicyConfigValidator validator = new SslPolicyConfigValidator();
+        Map<String,String> originalParams = params(
+                "dbms.ssl.policy.default.format", "pem",
+                "dbms.ssl.policy.default.private_key", "private.key",
+                "dbms.ssl.policy.default.public_certificate", "public.crt"
+        );
+
+        // when
+        InvalidSettingException exception = assertThrows( InvalidSettingException.class, () -> validator.validate( originalParams, warnings ) );
+        assertThat( exception.getMessage(), containsString( "Missing mandatory setting" ) );
+    }
+
+    @Test
+    void shouldThrowIfUnknownFormat()
+    {
+        // given
+        SslPolicyConfigValidator validator = new SslPolicyConfigValidator();
+        Map<String,String> originalParams = params(
+                "dbms.ssl.policy.default.base_directory", "xyz",
+                "dbms.ssl.policy.default.format", "woot"
+        );
+
+        // when
+        InvalidSettingException exception = assertThrows( InvalidSettingException.class, () -> validator.validate( originalParams, warnings ) );
+        assertThat( exception.getMessage(), containsString( "Unrecognised format" ) );
+    }
+
+    @Test
+    void shouldThrowIfMissingFormat()
+    {
+        // given
+        SslPolicyConfigValidator validator = new SslPolicyConfigValidator();
+        Map<String,String> originalParams = params(
+                "dbms.ssl.policy.default.base_directory", "xyz"
+        );
+
+        // when
+        InvalidSettingException exception = assertThrows( InvalidSettingException.class, () -> validator.validate( originalParams, warnings ) );
+        assertThat( exception.getMessage(), containsString( "Missing format" ) );
+    }
+
+    @Test
+    void shouldAllowCaseInsensitiveFormat()
+    {
+        // given
+        SslPolicyConfigValidator validator = new SslPolicyConfigValidator();
+        Map<String,String> originalParams = params(
+                "dbms.ssl.policy.default.format", "pKcS12",
+                "dbms.ssl.policy.default.base_directory", "xyz",
+                "dbms.ssl.policy.default.revoked_dir", "xyz",
+                "dbms.ssl.policy.default.trust_all", "xyz",
+                "dbms.ssl.policy.default.client_auth", "xyz",
+                "dbms.ssl.policy.default.tls_versions", "xyz",
+                "dbms.ssl.policy.default.ciphers", "xyz",
+                "dbms.ssl.policy.default.verify_hostname", "true",
+
+                "dbms.ssl.policy.default.keystore", "abc",
+                "dbms.ssl.policy.default.keystore_pass", "abc",
+                "dbms.ssl.policy.default.entry_alias", "abc",
+                "dbms.ssl.policy.default.entry_pass", "abc"
+        );
+
+        // when
+        Map<String,String> validated = validator.validate( originalParams, warnings );
+
+        // then
+        assertEquals( validated, originalParams );
     }
 
     private static Map<String,String> params( String... params )

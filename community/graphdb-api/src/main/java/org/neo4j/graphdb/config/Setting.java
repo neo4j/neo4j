@@ -19,49 +19,97 @@
  */
 package org.neo4j.graphdb.config;
 
-import org.neo4j.annotations.api.PublicApi;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.function.Consumer;
+import java.util.function.Function;
+
+import static java.util.Collections.emptyMap;
+import static java.util.Collections.singletonMap;
+import static org.neo4j.internal.helpers.collection.MapUtil.stringMap;
 
 /**
- * Settings that can be provided in configurations are represented by instances of this interface.
+ * Settings that can be provided in configurations are represented by instances of this interface, and are available
+ * as static fields in various *Settings classes.
+ * <p>
+ * This interface is available only for use, not for implementing. Implementing this interface is not expected, and
+ * backwards compatibility is not guaranteed for implementors.
  *
- * @param <T> The type of the values associated with this setting.
+ * @param <T> type of value this setting will parse input string into and return.
+ * @deprecated The settings API will be completely rewritten in 4.0
  */
-@PublicApi
-public interface Setting<T>
+@Deprecated
+public interface Setting<T> extends Function<Function<String,String>,T>, SettingValidator, SettingGroup<T>
 {
     /**
-     * The full (unique) name, identifying a specific setting.
+     * Get the name of the setting. This typically corresponds to a key in a properties file, or similar.
      *
-     * @return the name.
+     * @return the name
      */
     String name();
 
     /**
-     * The default value of this setting
+     * Make this setting bound to a scope
      *
-     * @return the typed default value.
+     * @param scopingRule The scoping rule to be applied to this setting
      */
-    T defaultValue();
+    void withScope( Function<String,String> scopingRule );
 
     /**
-     * A dynamic setting have its value changed in a config at any time
+     * Get the default value of this setting, as a string.
      *
-     * @return true if the setting is dynamic, false otherwise
+     * @return the default value
      */
-    boolean dynamic();
+    String getDefaultValue();
+
+    @Deprecated
+    T from( Configuration config );
+
+    @Override
+    default Map<String,T> values( Map<String,String> validConfig )
+    {
+        return singletonMap( name(), apply( validConfig::get ) );
+    }
+
+    @Override
+    default Map<String,String> validate( Map<String,String> rawConfig, Consumer<String> warningConsumer )
+            throws InvalidSettingException
+    {
+        // Validate setting, if present or default value otherwise
+        try
+        {
+            apply( rawConfig::get );
+            // only return if it was present though
+            if ( rawConfig.containsKey( name() ) )
+            {
+                return stringMap( name(), rawConfig.get( name() ) );
+            }
+            else
+            {
+                return emptyMap();
+            }
+        }
+        catch ( RuntimeException e )
+        {
+            throw new InvalidSettingException( e.getMessage(), e );
+        }
+    }
+
+    @Override
+    default List<Setting<T>> settings( Map<String,String> params )
+    {
+        return Collections.singletonList( this );
+    }
 
     /**
-     * An internal setting should not be accessed nor altered by any user
-     * Internal settings may be changed or removed between versions without notice
+     * Get the function used to parse this setting.
      *
-     * @return true if the setting is internal, false otherwise
+     * @return the parser function
      */
-    boolean internal();
-
-    /**
-     * A textual representation describing the usage if this setting
-     *
-     * @return the description of this setting
-     */
-    String description();
+    default Optional<Function<String,T>> getParser()
+    {
+        return Optional.empty();
+    }
 }

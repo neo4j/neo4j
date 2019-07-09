@@ -59,9 +59,9 @@ class CsvImporterTest
         List<String> lines = Collections.singletonList( "foo\\tbar\\tbaz" );
         Files.write( inputFile.toPath(), lines, Charset.defaultCharset() );
 
-        Config config = Config.newBuilder()
-                .set( additionalConfig() )
-                .set( GraphDatabaseSettings.logs_directory, logDir.getAbsolutePath() ).build();
+        Config config = Config.builder()
+                .withSettings( additionalConfig() )
+                .withSetting( GraphDatabaseSettings.logs_directory, logDir.getAbsolutePath() ).build();
 
         CsvImporter csvImporter = CsvImporter.builder()
             .withDatabaseLayout( databaseLayout )

@@ -19,13 +19,15 @@
  */
 package org.neo4j.kernel.impl.transaction.state;
 
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.Test;
 
 import java.util.HashSet;
 import java.util.Set;
 
 import org.neo4j.configuration.GraphDatabaseSettings;
+import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.internal.id.IdGeneratorFactory;
@@ -49,45 +51,35 @@ import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
 import org.neo4j.kernel.impl.store.record.SchemaRecord;
-import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.lock.AcquireLockTimeoutException;
 import org.neo4j.lock.LockTracer;
 import org.neo4j.lock.ResourceType;
 import org.neo4j.lock.ResourceTypes;
-import org.neo4j.test.TestDatabaseManagementServiceBuilder;
-import org.neo4j.test.extension.ExtensionCallback;
-import org.neo4j.test.extension.ImpermanentDbmsExtension;
-import org.neo4j.test.extension.Inject;
+import org.neo4j.test.rule.DbmsRule;
+import org.neo4j.test.rule.ImpermanentDbmsRule;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 
-@ImpermanentDbmsExtension( configurationCallback = "configure" )
-class RelationshipCreatorTest
+public class RelationshipCreatorTest
 {
+
     private static final int DENSE_NODE_THRESHOLD = 5;
-
-    @Inject
-    private GraphDatabaseAPI db;
-
-    @ExtensionCallback
-    static void configure( TestDatabaseManagementServiceBuilder builder )
-    {
-        builder.setConfig( GraphDatabaseSettings.dense_node_threshold, String.valueOf( DENSE_NODE_THRESHOLD ) );
-    }
-
+    @Rule
+    public final DbmsRule dbRule = new ImpermanentDbmsRule()
+            .withSetting( GraphDatabaseSettings.dense_node_threshold, String.valueOf( DENSE_NODE_THRESHOLD ) );
     private IdGeneratorFactory idGeneratorFactory;
 
-    @BeforeEach
-    void before()
+    @Before
+    public void before()
     {
-        idGeneratorFactory = db.getDependencyResolver().resolveDependency(
+        idGeneratorFactory = dbRule.getGraphDatabaseAPI().getDependencyResolver().resolveDependency(
                 IdGeneratorFactory.class );
     }
 
     @Test
-    void shouldOnlyChangeLockedRecordsWhenUpgradingToDenseNode()
+    public void shouldOnlyChangeLockedRecordsWhenUpgradingToDenseNode()
     {
         // GIVEN
         long nodeId = createNodeWithRelationships( DENSE_NODE_THRESHOLD );
@@ -108,12 +100,13 @@ class RelationshipCreatorTest
 
     private NeoStores flipToNeoStores()
     {
-        return db.getDependencyResolver().resolveDependency(
+        return dbRule.getGraphDatabaseAPI().getDependencyResolver().resolveDependency(
                 RecordStorageEngine.class ).testAccessNeoStores();
     }
 
     private long createNodeWithRelationships( int count )
     {
+        GraphDatabaseService db = dbRule.getGraphDatabaseAPI();
         try ( Transaction tx = db.beginTx() )
         {
             Node node = db.createNode();
@@ -150,10 +143,10 @@ class RelationshipCreatorTest
             }
         }
 
-        void changingRelationship( long relId )
+        protected void changingRelationship( long relId )
         {   // Called by tracking record proxies
-            assertTrue( relationshipLocksAcquired.contains( relId ),
-                    "Tried to change relationship " + relId + " without this transaction having it locked" );
+            assertTrue( "Tried to change relationship " + relId + " without this transaction having it locked",
+                    relationshipLocksAcquired.contains( relId ) );
             changedRelationships.add( relId );
         }
 

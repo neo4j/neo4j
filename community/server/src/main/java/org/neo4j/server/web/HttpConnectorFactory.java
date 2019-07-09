@@ -27,7 +27,7 @@ import org.eclipse.jetty.server.ServerConnector;
 import java.util.Arrays;
 
 import org.neo4j.configuration.Config;
-import org.neo4j.configuration.helpers.SocketAddress;
+import org.neo4j.internal.helpers.ListenSocketAddress;
 import org.neo4j.kernel.api.net.NetworkConnectionTracker;
 import org.neo4j.server.configuration.ServerSettings;
 
@@ -65,13 +65,13 @@ public class HttpConnectorFactory
         return httpConfig;
     }
 
-    public ServerConnector createConnector( Server server, SocketAddress address, JettyThreadCalculator jettyThreadCalculator )
+    public ServerConnector createConnector( Server server, ListenSocketAddress address, JettyThreadCalculator jettyThreadCalculator )
     {
         ConnectionFactory httpFactory = createHttpConnectionFactory();
         return createConnector(server, address, jettyThreadCalculator, httpFactory );
     }
 
-    public ServerConnector createConnector( Server server, SocketAddress address,
+    public ServerConnector createConnector( Server server, ListenSocketAddress address,
             JettyThreadCalculator jettyThreadCalculator, ConnectionFactory... httpFactories )
     {
         int acceptors = jettyThreadCalculator.getAcceptors();

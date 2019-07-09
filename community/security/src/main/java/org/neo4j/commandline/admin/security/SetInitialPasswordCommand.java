@@ -26,8 +26,6 @@ import org.neo4j.cli.AbstractCommand;
 import org.neo4j.cli.CommandFailedException;
 import org.neo4j.cli.ExecutionContext;
 import org.neo4j.configuration.Config;
-import org.neo4j.configuration.ConfigUtils;
-import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.impl.security.User;
 import org.neo4j.kernel.lifecycle.Lifespan;
@@ -152,11 +150,9 @@ public class SetInitialPasswordCommand extends AbstractCommand
     @VisibleForTesting
     Config loadNeo4jConfig()
     {
-        Config cfg = Config.newBuilder()
-                .set( GraphDatabaseSettings.neo4j_home, ctx.confDir().toAbsolutePath().toString() )
-                .fromFileNoThrow( ctx.confDir().resolve( Config.DEFAULT_CONFIG_FILE_NAME ) )
-                .build();
-        ConfigUtils.disableAllConnectors( cfg );
-        return cfg;
+        return Config.fromFile( ctx.confDir().resolve( Config.DEFAULT_CONFIG_FILE_NAME ) )
+                .withHome( ctx.homeDir() )
+                .withNoThrowOnFileLoadFailure()
+                .withConnectorsDisabled().build();
     }
 }

@@ -62,8 +62,8 @@ class SetInitialPasswordCommandIT
     void setup()
     {
         File graphDir = new File( GraphDatabaseSettings.DEFAULT_DATABASE_NAME );
-        confDir = new File( graphDir, "conf" ).getAbsoluteFile();
-        homeDir = new File( graphDir, "home" ).getAbsoluteFile();
+        confDir = new File( graphDir, "conf" );
+        homeDir = new File( graphDir, "home" );
         out = mock( PrintStream.class );
         err = mock( PrintStream.class );
     }

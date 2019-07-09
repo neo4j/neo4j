@@ -57,7 +57,6 @@ import org.neo4j.test.rule.fs.DefaultFileSystemRule;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
-import static org.neo4j.configuration.SettingValueParsers.TRUE;
 import static org.neo4j.consistency.store.StoreAssertions.assertConsistentStore;
 import static org.neo4j.internal.helpers.Exceptions.rootCause;
 import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.checkNeoStoreHasDefaultFormatVersion;
@@ -139,7 +138,7 @@ public class StoreUpgradeOnStartupTest
     private GraphDatabaseService createGraphDatabaseService()
     {
         managementService = new TestDatabaseManagementServiceBuilder( workingStoreDir )
-                .setConfig( GraphDatabaseSettings.allow_upgrade, TRUE )
+                .setConfig( GraphDatabaseSettings.allow_upgrade, "true" )
                 .build();
         return managementService.database( DEFAULT_DATABASE_NAME );
     }

@@ -35,8 +35,6 @@ import org.neo4j.cli.CommandFailedException;
 import org.neo4j.cli.Converters;
 import org.neo4j.cli.ExecutionContext;
 import org.neo4j.configuration.Config;
-import org.neo4j.configuration.ConfigUtils;
-import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.configuration.LayoutConfig;
 import org.neo4j.io.ByteUnit;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -202,7 +200,7 @@ class MemoryRecommendationsCommand extends AbstractCommand
         String pagecache = bytesToString( recommendPageCacheMemory( memory ) );
         File configFile = ctx.confDir().resolve( Config.DEFAULT_CONFIG_FILE_NAME ).toFile();
         Config config = getConfig( configFile );
-        File databasesRoot = config.get( databases_root_path ).toFile();
+        File databasesRoot = config.get( databases_root_path );
         StoreLayout storeLayout = StoreLayout.of( databasesRoot, LayoutConfig.of( config ) );
         Collection<DatabaseLayout> layouts = storeLayout.databaseLayouts();
         long pageCacheSize = pageCacheSize( layouts );
@@ -335,12 +333,7 @@ class MemoryRecommendationsCommand extends AbstractCommand
         }
         try
         {
-            Config config = Config.newBuilder()
-                    .fromFile( configFile )
-                    .set( GraphDatabaseSettings.neo4j_home, ctx.homeDir().toAbsolutePath().toString() )
-                    .build();
-            ConfigUtils.disableAllConnectors( config );
-            return config;
+            return Config.fromFile( configFile ).withHome( ctx.homeDir() ).withConnectorsDisabled().build();
         }
         catch ( Exception e )
         {

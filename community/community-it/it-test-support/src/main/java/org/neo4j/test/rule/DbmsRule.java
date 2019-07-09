@@ -58,6 +58,7 @@ import org.neo4j.monitoring.Monitors;
 import org.neo4j.storageengine.api.StoreId;
 
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
+import static org.neo4j.internal.helpers.collection.MapUtil.stringMap;
 
 public abstract class DbmsRule extends ExternalResource implements GraphDatabaseAPI
 {
@@ -245,7 +246,7 @@ public abstract class DbmsRule extends ExternalResource implements GraphDatabase
             databaseBuilder = newFactory();
             databaseBuilder.setMonitors( monitors );
             configure( databaseBuilder );
-            databaseBuilder.setConfig( globalConfig );
+            globalConfig.forEach( databaseBuilder::setConfig );
         }
         catch ( RuntimeException e )
         {
@@ -356,22 +357,12 @@ public abstract class DbmsRule extends ExternalResource implements GraphDatabase
         };
     }
 
-    public GraphDatabaseAPI restartDatabase() throws IOException
-    {
-        return restartDatabase( RestartAction.EMPTY, Map.of() );
-    }
-
-    public GraphDatabaseAPI restartDatabase( Map<Setting<?>,String> configChanges ) throws IOException
+    public GraphDatabaseAPI restartDatabase( String... configChanges ) throws IOException
     {
         return restartDatabase( RestartAction.EMPTY, configChanges );
     }
 
-    public GraphDatabaseAPI restartDatabase( RestartAction action ) throws IOException
-    {
-        return restartDatabase( action, Map.of() );
-    }
-
-    public GraphDatabaseAPI restartDatabase( RestartAction action, Map<Setting<?>,String> configChanges ) throws IOException
+    public GraphDatabaseAPI restartDatabase( RestartAction action, String... configChanges ) throws IOException
     {
         FileSystemAbstraction fs = resolveDependency( FileSystemAbstraction.class );
         managementService.shutdown();
@@ -379,7 +370,7 @@ public abstract class DbmsRule extends ExternalResource implements GraphDatabase
         database = null;
         // This DatabaseBuilder has already been configured with the global settings as well as any test-specific settings,
         // so just apply these additional settings.
-        databaseBuilder.setConfig( configChanges );
+        databaseBuilder.setConfigRaw( stringMap( configChanges ) );
         return getGraphDatabaseAPI();
     }
 

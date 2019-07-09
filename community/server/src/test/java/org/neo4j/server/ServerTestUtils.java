@@ -29,7 +29,6 @@ import java.io.OutputStream;
 import java.io.PrintWriter;
 import java.net.Socket;
 import java.nio.file.Files;
-import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
@@ -37,6 +36,7 @@ import java.util.Random;
 
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.configuration.connectors.ConnectorPortRegister;
+import org.neo4j.configuration.ssl.LegacySslPolicyConfig;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.internal.helpers.HostnamePort;
@@ -76,9 +76,9 @@ public class ServerTestUtils
         return file;
     }
 
-    public static String getRelativePath( File folder, Setting<Path> setting )
+    public static String getRelativePath( File folder, Setting<File> setting )
     {
-        return folder.toPath().resolve( setting.defaultValue() ).toString();
+        return folder.toPath().resolve( setting.getDefaultValue() ).toString();
     }
 
     public static Map<String,String> getDefaultRelativeProperties()
@@ -93,12 +93,12 @@ public class ServerTestUtils
     {
         addRelativeProperty( temporaryFolder, properties, GraphDatabaseSettings.data_directory );
         addRelativeProperty( temporaryFolder, properties, GraphDatabaseSettings.logs_directory );
-        addRelativeProperty( temporaryFolder, properties, GraphDatabaseSettings.legacy_certificates_directory );
+        addRelativeProperty( temporaryFolder, properties, LegacySslPolicyConfig.certificates_directory );
         properties.put( GraphDatabaseSettings.pagecache_memory.name(), "8m" );
     }
 
     private static void addRelativeProperty( File temporaryFolder, Map<String,String> properties,
-            Setting<Path> setting )
+            Setting<File> setting )
     {
         properties.put( setting.name(), getRelativePath( temporaryFolder, setting ) );
     }

@@ -26,7 +26,7 @@ import java.net.URI;
 import java.net.http.HttpRequest;
 
 import org.neo4j.configuration.connectors.HttpConnector;
-import org.neo4j.configuration.helpers.SocketAddress;
+import org.neo4j.internal.helpers.ListenSocketAddress;
 import org.neo4j.server.configuration.ServerSettings;
 import org.neo4j.test.PortUtils;
 import org.neo4j.test.server.ExclusiveServerTestBase;
@@ -41,8 +41,6 @@ import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertThat;
-import static org.neo4j.configuration.SettingValueParsers.FALSE;
-import static org.neo4j.configuration.SettingValueParsers.TRUE;
 import static org.neo4j.server.helpers.CommunityServerBuilder.server;
 import static org.neo4j.server.helpers.CommunityServerBuilder.serverOnRandomPorts;
 
@@ -59,14 +57,14 @@ public class ServerConfigIT extends ExclusiveServerTestBase
     @Test
     public void shouldPickUpAddressFromConfig() throws Exception
     {
-        var nonDefaultAddress = new SocketAddress( "0.0.0.0", 0 );
+        var nonDefaultAddress = new ListenSocketAddress( "0.0.0.0", 0 );
         server = server().onAddress( nonDefaultAddress )
                 .usingDataDir( folder.directory( name.getMethodName() ).getAbsolutePath() )
                 .build();
         server.start();
 
         var localHttpAddress = PortUtils.getConnectorAddress( server.getDatabaseService().getDatabase(), "http" );
-        assertNotEquals( HttpConnector.DEFAULT_PORT, localHttpAddress.getPort() );
+        assertNotEquals( HttpConnector.Encryption.NONE.defaultPort, localHttpAddress.getPort() );
         assertEquals( nonDefaultAddress.getHostname(), localHttpAddress.getHost() );
 
         var request = HttpRequest.newBuilder( server.baseUri() ).GET().build();
@@ -95,7 +93,7 @@ public class ServerConfigIT extends ExclusiveServerTestBase
     @Test
     public void shouldGenerateWADLWhenExplicitlyEnabledInConfig() throws Exception
     {
-        server = serverOnRandomPorts().withProperty( ServerSettings.wadl_enabled.name(), TRUE )
+        server = serverOnRandomPorts().withProperty( ServerSettings.wadl_enabled.name(), "true" )
                 .usingDataDir( folder.directory( name.getMethodName() ).getAbsolutePath() )
                 .build();
         server.start();
@@ -127,7 +125,7 @@ public class ServerConfigIT extends ExclusiveServerTestBase
     @Test
     public void shouldNotGenerateWADLWhenExplicitlyDisabledInConfig() throws Exception
     {
-        server = serverOnRandomPorts().withProperty( ServerSettings.wadl_enabled.name(), FALSE )
+        server = serverOnRandomPorts().withProperty( ServerSettings.wadl_enabled.name(), "false" )
                 .usingDataDir( folder.directory( name.getMethodName() ).getAbsolutePath() )
                 .build();
         server.start();

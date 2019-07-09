@@ -21,68 +21,78 @@ package org.neo4j.configuration.connectors;
 
 import java.time.Duration;
 
-import org.neo4j.annotations.service.ServiceProvider;
 import org.neo4j.configuration.Description;
-import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.configuration.Internal;
-import org.neo4j.configuration.helpers.SocketAddress;
+import org.neo4j.configuration.ReplacedBy;
+import org.neo4j.configuration.Settings;
 import org.neo4j.graphdb.config.Setting;
+import org.neo4j.internal.helpers.AdvertisedSocketAddress;
+import org.neo4j.internal.helpers.ListenSocketAddress;
 
-import static java.time.Duration.ofMinutes;
-import static org.neo4j.configuration.SettingValueParsers.DURATION;
-import static org.neo4j.configuration.SettingValueParsers.INT;
-import static org.neo4j.configuration.SettingValueParsers.SOCKET_ADDRESS;
-import static org.neo4j.configuration.SettingValueParsers.ofEnum;
+import static org.neo4j.configuration.Settings.DURATION;
+import static org.neo4j.configuration.Settings.INTEGER;
+import static org.neo4j.configuration.Settings.advertisedAddress;
+import static org.neo4j.configuration.Settings.legacyFallback;
+import static org.neo4j.configuration.Settings.listenAddress;
+import static org.neo4j.configuration.Settings.optionsObeyCase;
+import static org.neo4j.configuration.Settings.setting;
+import static org.neo4j.configuration.connectors.BoltConnector.EncryptionLevel.OPTIONAL;
 
-@ServiceProvider
+@Description( "Configuration options for Bolt connectors. " +
+              "\"(bolt-connector-key)\" is a placeholder for a unique name for the connector, for instance " +
+              "\"bolt-public\" or some other name that describes what the connector is for." )
 public class BoltConnector extends Connector
 {
     @Description( "Encryption level to require this connector to use" )
-    public Setting<EncryptionLevel> encryption_level =
-            getBuilder( "encryption_level", ofEnum( EncryptionLevel.class ), EncryptionLevel.OPTIONAL ).build();
+    public final Setting<EncryptionLevel> encryption_level;
+
+    @Description( "Address the connector should bind to. " +
+            "This setting is deprecated and will be replaced by `+listen_address+`" )
+    @Deprecated
+    @ReplacedBy( "dbms.connector.X.listen_address" )
+    public final Setting<ListenSocketAddress> address;
 
     @Description( "Address the connector should bind to" )
-    public final Setting<SocketAddress> listen_address =
-            getBuilder( "listen_address", SOCKET_ADDRESS, new SocketAddress( 7687 ) )
-                    .setDependency( GraphDatabaseSettings.default_listen_address )
-                    .immutable()
-                    .build();
+    public final Setting<ListenSocketAddress> listen_address;
 
     @Description( "Advertised address for this connector" )
-    public final Setting<SocketAddress> advertised_address
-            = getBuilder( "advertised_address", SOCKET_ADDRESS, null ).setDependency( listen_address ).build();
+    public final Setting<AdvertisedSocketAddress> advertised_address;
 
     @Description( "The number of threads to keep in the thread pool bound to this connector, even if they are idle." )
-    public final Setting<Integer> thread_pool_min_size = getBuilder( "thread_pool_min_size", INT, 5 ).build();
+    public final Setting<Integer> thread_pool_min_size;
 
     @Description( "The maximum number of threads allowed in the thread pool bound to this connector." )
-    public final Setting<Integer> thread_pool_max_size = getBuilder( "thread_pool_max_size", INT, 400 ).build();
+    public final Setting<Integer> thread_pool_max_size;
 
     @Description( "The maximum time an idle thread in the thread pool bound to this connector will wait for new tasks." )
-    public final Setting<Duration> thread_pool_keep_alive = getBuilder( "thread_pool_keep_alive", DURATION, ofMinutes( 5 ) ).build() ;
+    public final Setting<Duration> thread_pool_keep_alive;
 
     @Description( "The queue size of the thread pool bound to this connector (-1 for unbounded, 0 for direct handoff, > 0 for bounded)" )
     @Internal
-    public final Setting<Integer> unsupported_thread_pool_queue_size = getBuilder( "unsupported_thread_pool_queue_size", INT, 0 ).build();
+    public final Setting<Integer> unsupported_thread_pool_queue_size;
 
-    public static BoltConnector group( String name )
-    {
-        return new BoltConnector( name );
-    }
-
-    private BoltConnector( String name )
-    {
-        super( name );
-    }
+    // Used by config doc generator
     public BoltConnector()
     {
-        super( null ); // For ServiceLoader
+        this( "(bolt-connector-key)" );
     }
 
-    @Override
-    public String getPrefix()
+    public BoltConnector( String key )
     {
-        return super.getPrefix() + ".bolt";
+        super( key );
+        encryption_level = group.scope(
+                Settings.setting( "tls_level", optionsObeyCase( EncryptionLevel.class ), OPTIONAL.name() ) );
+        Setting<ListenSocketAddress> legacyAddressSetting = listenAddress( "address", 7687 );
+        Setting<ListenSocketAddress> listenAddressSetting = legacyFallback( legacyAddressSetting,
+                listenAddress( "listen_address", 7687 ) );
+
+        this.address = group.scope( legacyAddressSetting );
+        this.listen_address = group.scope( listenAddressSetting );
+        this.advertised_address = group.scope( advertisedAddress( "advertised_address", listenAddressSetting ) );
+        this.thread_pool_min_size = group.scope( setting( "thread_pool_min_size", INTEGER, String.valueOf( 5 ) ) );
+        this.thread_pool_max_size = group.scope( setting( "thread_pool_max_size", INTEGER, String.valueOf( 400 ) ) );
+        this.thread_pool_keep_alive = group.scope( setting( "thread_pool_keep_alive", DURATION, "5m" ) );
+        this.unsupported_thread_pool_queue_size = group.scope( setting( "unsupported_thread_pool_queue_size", INTEGER, String.valueOf( 0 ) ) );
     }
 
     public enum EncryptionLevel

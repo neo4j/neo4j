@@ -34,7 +34,6 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assumptions.assumeFalse;
-import static org.neo4j.configuration.SettingValueParsers.FALSE;
 
 class FileURLAccessRuleTest
 {
@@ -58,7 +57,7 @@ class FileURLAccessRuleTest
     void shouldThrowWhenFileAccessIsDisabled() throws Exception
     {
         final URL url = new URL( "file:///bar/baz.csv" );
-        final Config config = Config.defaults( GraphDatabaseSettings.allow_file_urls, FALSE );
+        final Config config = Config.defaults( GraphDatabaseSettings.allow_file_urls, "false" );
         var error = assertThrows( URLAccessValidationError.class, () ->
             URLAccessRules.fileAccess().validate( config, url ) );
         assertThat( error.getMessage(), equalTo( "configuration property 'dbms.security.allow_csv_import_from_file_urls' is false" ) );

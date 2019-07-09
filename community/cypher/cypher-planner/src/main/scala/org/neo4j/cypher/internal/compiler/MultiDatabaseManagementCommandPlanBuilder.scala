@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler
 
-import org.neo4j.configuration.helpers.{DatabaseNameValidator, NormalizedDatabaseName}
+import org.neo4j.configuration.{DatabaseNameValidator, NormalizedDatabaseName}
 import org.neo4j.cypher.internal.compiler.phases.{LogicalPlanState, PlannerContext}
 import org.neo4j.cypher.internal.logical.plans
 import org.neo4j.cypher.internal.logical.plans.{LogicalPlan, NameValidator, ResolvedCall}

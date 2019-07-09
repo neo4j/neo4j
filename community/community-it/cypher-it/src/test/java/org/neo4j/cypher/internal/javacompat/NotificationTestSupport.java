@@ -23,6 +23,8 @@ import org.hamcrest.Description;
 import org.hamcrest.Matcher;
 import org.hamcrest.Matchers;
 import org.hamcrest.TypeSafeMatcher;
+import org.junit.Rule;
+import org.junit.rules.ExpectedException;
 
 import java.util.Map;
 
@@ -34,52 +36,92 @@ import org.neo4j.graphdb.impl.notification.NotificationCode;
 import org.neo4j.graphdb.impl.notification.NotificationDetail;
 import org.neo4j.internal.helpers.collection.Iterables;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
-import org.neo4j.test.extension.ImpermanentDbmsExtension;
-import org.neo4j.test.extension.Inject;
+import org.neo4j.test.rule.ImpermanentDbmsRule;
 
-import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.any;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.equalTo;
+import static org.junit.Assert.assertThat;
 
-@ImpermanentDbmsExtension
 public class NotificationTestSupport
 {
-    @Inject
-    protected GraphDatabaseAPI db;
+    @Rule
+    public final ImpermanentDbmsRule rule = new ImpermanentDbmsRule();
 
-    void assertNotifications( String query, Matcher<Iterable<Notification>> matchesExpectation )
+    @Rule
+    public ExpectedException thrown = ExpectedException.none();
+
+    protected void assertNotifications( String query, Matcher<Iterable<Notification>> matchesExpectation )
     {
-        try ( Result result = db.execute( query ) )
+        try ( Result result = db().execute( query ) )
         {
             assertThat( result.getNotifications(), matchesExpectation );
         }
     }
 
-    static Matcher<Notification> notification( String code, Matcher<String> description, Matcher<InputPosition> position, SeverityLevel severity )
+    protected Matcher<Notification> notification(
+            String code,
+            Matcher<String> description,
+            Matcher<InputPosition> position,
+            SeverityLevel severity )
     {
-        return new TypeSafeMatcher<>()
+        return new TypeSafeMatcher<Notification>()
         {
             @Override
             protected boolean matchesSafely( Notification item )
             {
-                return code.equals( item.getCode() ) && description.matches( item.getDescription() ) && position.matches( item.getPosition() ) &&
-                        severity.equals( item.getSeverity() );
+                return code.equals( item.getCode() ) &&
+                       description.matches( item.getDescription() ) &&
+                       position.matches( item.getPosition() ) &&
+                       severity.equals( item.getSeverity() );
             }
 
             @Override
             public void describeTo( Description target )
             {
-                target.appendText( "Notification{code=" ).appendValue( code ).appendText( ", description=[" ).appendDescriptionOf( description ).appendText(
-                        "], position=[" ).appendDescriptionOf( position ).appendText( "], severity=" ).appendValue( severity ).appendText( "}" );
+                target.appendText( "Notification{code=" ).appendValue( code )
+                        .appendText( ", description=[" ).appendDescriptionOf( description )
+                        .appendText( "], position=[" ).appendDescriptionOf( position )
+                        .appendText( "], severity=" ).appendValue( severity )
+                        .appendText( "}" );
             }
         };
     }
 
-    static <T> Matcher<Iterable<T>> containsItem( Matcher<T> itemMatcher )
+    protected GraphDatabaseAPI db()
     {
-        return new TypeSafeMatcher<>()
+        return rule.getGraphDatabaseAPI();
+    }
+
+    Matcher<Iterable<Notification>> containsNotification( NotificationCode.Notification expected )
+    {
+        return new TypeSafeMatcher<Iterable<Notification>>()
+        {
+            @Override
+            protected boolean matchesSafely( Iterable<Notification> items )
+            {
+                for ( Notification item : items )
+                {
+                    if ( item.equals( expected ) )
+                    {
+                        return true;
+                    }
+                }
+                return false;
+            }
+
+            @Override
+            public void describeTo( Description description )
+            {
+                description.appendText( "an iterable containing " + expected );
+            }
+        };
+    }
+
+    <T> Matcher<Iterable<T>> containsItem( Matcher<T> itemMatcher )
+    {
+        return new TypeSafeMatcher<Iterable<T>>()
         {
             @Override
             protected boolean matchesSafely( Iterable<T> items )
@@ -102,9 +144,9 @@ public class NotificationTestSupport
         };
     }
 
-    static <T> Matcher<Iterable<T>> containsNoItem( Matcher<T> itemMatcher )
+    <T> Matcher<Iterable<T>> containsNoItem( Matcher<T> itemMatcher )
     {
-        return new TypeSafeMatcher<>()
+        return new TypeSafeMatcher<Iterable<T>>()
         {
             @Override
             protected boolean matchesSafely( Iterable<T> items )
@@ -130,7 +172,7 @@ public class NotificationTestSupport
     void shouldNotifyInStream( String version, String query, InputPosition pos, NotificationCode code )
     {
         //when
-        Result result = db.execute( version + query );
+        Result result = db().execute( version + query );
 
         //then
         NotificationCode.Notification notification = code.notification( pos );
@@ -144,7 +186,7 @@ public class NotificationTestSupport
                                          NotificationDetail detail )
     {
         //when
-        Result result = db.execute( version + query );
+        Result result = db().execute( version + query );
 
         //then
         NotificationCode.Notification notification = code.notification( pos, detail );
@@ -157,7 +199,7 @@ public class NotificationTestSupport
     void shouldNotNotifyInStream( String version, String query )
     {
         // when
-        Result result = db.execute( version + query );
+        Result result = db().execute( version + query );
 
         // then
         assertThat( Iterables.asList( result.getNotifications() ), empty() );
