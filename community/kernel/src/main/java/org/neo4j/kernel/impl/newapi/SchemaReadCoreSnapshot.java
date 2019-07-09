@@ -48,7 +48,8 @@ class SchemaReadCoreSnapshot implements SchemaReadCore
     public IndexDescriptor index( SchemaDescriptor schema )
     {
         ktx.assertOpen();
-        return stores.indexGetForSchema( snapshot, schema );
+        IndexDescriptor index = stores.indexGetForSchema( snapshot, schema );
+        return index == null ? IndexDescriptor.NO_INDEX : index;
     }
 
     @Override
