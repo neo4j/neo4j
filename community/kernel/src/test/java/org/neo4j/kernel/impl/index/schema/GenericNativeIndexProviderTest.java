@@ -51,34 +51,34 @@ import static org.neo4j.kernel.impl.index.schema.SpatialIndexConfig.key;
 class GenericNativeIndexProviderTest
 {
     @Test
-    void mustBlessIndexDescriptorWithSpatialConfig()
+    void mustCompleteIndexDescriptorConfigurationsWithSpatialConfig()
     {
         // Given
         GenericNativeIndexProvider provider = new GenericNativeIndexProvider( IndexDirectoryStructure.NONE, null, null, null, null, false, Config.defaults() );
-        LabelSchemaDescriptor sinfulSchema = SchemaDescriptor.forLabel( 1, 1 );
-        IndexDescriptor sinfulDescriptor = IndexPrototype.forSchema( sinfulSchema, IndexProviderDescriptor.UNDECIDED ).materialise( 1 );
+        LabelSchemaDescriptor incompleteSchema = SchemaDescriptor.forLabel( 1, 1 );
+        IndexDescriptor incompleteDescriptor = IndexPrototype.forSchema( incompleteSchema, IndexProviderDescriptor.UNDECIDED ).materialise( 1 );
 
         // When
-        IndexDescriptor blessesDescriptor = provider.completeConfiguration( sinfulDescriptor );
-        SchemaDescriptor blessedSchema = blessesDescriptor.schema();
+        IndexDescriptor completedDescriptor = provider.completeConfiguration( incompleteDescriptor );
+        SchemaDescriptor completedSchema = completedDescriptor.schema();
 
         // Then
-        IndexConfig sinfulIndexConfig = sinfulSchema.getIndexConfig();
-        IndexConfig blessedIndexConfig = blessedSchema.getIndexConfig();
+        IndexConfig sinfulIndexConfig = incompleteSchema.getIndexConfig();
+        IndexConfig completedIndexConfig = completedSchema.getIndexConfig();
         assertEquals( 0, sinfulIndexConfig.entries().count( p -> true ), "expected sinful index config to have no entries" );
         for ( CoordinateReferenceSystem crs : CoordinateReferenceSystem.all() )
         {
-            assertNotNull( blessedIndexConfig.get( key( crs.getName(), TABLE_ID ) ) );
-            assertNotNull( blessedIndexConfig.get( key( crs.getName(), CODE ) ) );
-            assertNotNull( blessedIndexConfig.get( key( crs.getName(), DIMENSIONS ) ) );
-            assertNotNull( blessedIndexConfig.get( key( crs.getName(), MAX_LEVELS ) ) );
-            assertNotNull( blessedIndexConfig.get( key( crs.getName(), MIN ) ) );
-            assertNotNull( blessedIndexConfig.get( key( crs.getName(), MAX ) ) );
+            assertNotNull( completedIndexConfig.get( key( crs.getName(), TABLE_ID ) ) );
+            assertNotNull( completedIndexConfig.get( key( crs.getName(), CODE ) ) );
+            assertNotNull( completedIndexConfig.get( key( crs.getName(), DIMENSIONS ) ) );
+            assertNotNull( completedIndexConfig.get( key( crs.getName(), MAX_LEVELS ) ) );
+            assertNotNull( completedIndexConfig.get( key( crs.getName(), MIN ) ) );
+            assertNotNull( completedIndexConfig.get( key( crs.getName(), MAX ) ) );
         }
     }
 
     @Test
-    void blessMustNotOverrideExistingSettings()
+    void completeConfigurationMustNotOverrideExistingSettings()
     {
         // Given
         GenericNativeIndexProvider provider = new GenericNativeIndexProvider( IndexDirectoryStructure.NONE, null, null, null, null, false, Config.defaults() );
@@ -97,36 +97,36 @@ class GenericNativeIndexProviderTest
         existingSettings.put( key( existingCrs.getName(), MIN ), min );
         existingSettings.put( key( existingCrs.getName(), MAX ), max );
         IndexConfig existingIndexConfig = IndexConfig.with( existingSettings );
-        LabelSchemaDescriptor sinfulSchema = SchemaDescriptor.forLabel( 1, 1 ).withIndexConfig( existingIndexConfig );
-        IndexDescriptor sinfulDescriptor = IndexPrototype.forSchema( sinfulSchema, IndexProviderDescriptor.UNDECIDED ).materialise( 1 );
+        LabelSchemaDescriptor incompleteSchema = SchemaDescriptor.forLabel( 1, 1 ).withIndexConfig( existingIndexConfig );
+        IndexDescriptor incompleteDescriptor = IndexPrototype.forSchema( incompleteSchema, IndexProviderDescriptor.UNDECIDED ).materialise( 1 );
 
         // When
-        IndexDescriptor blessesPrototype = provider.completeConfiguration( sinfulDescriptor );
-        SchemaDescriptor blessedSchema = blessesPrototype.schema();
+        IndexDescriptor completedDescriptor = provider.completeConfiguration( incompleteDescriptor );
+        SchemaDescriptor completedSchema = completedDescriptor.schema();
 
         // Then
-        IndexConfig blessedIndexConfig = blessedSchema.getIndexConfig();
+        IndexConfig completedIndexConfig = completedSchema.getIndexConfig();
         for ( CoordinateReferenceSystem crs : CoordinateReferenceSystem.all() )
         {
             if ( crs.equals( existingCrs ) )
             {
                 // Assert value
-                assertEquals( tableId, blessedIndexConfig.get( key( crs.getName(), TABLE_ID ) ) );
-                assertEquals( code, blessedIndexConfig.get( key( crs.getName(), CODE ) ) );
-                assertEquals( dimension, blessedIndexConfig.get( key( crs.getName(), DIMENSIONS ) ) );
-                assertEquals( maxLevels, blessedIndexConfig.get( key( crs.getName(), MAX_LEVELS ) ) );
-                assertEquals( min, blessedIndexConfig.get( key( crs.getName(), MIN ) ) );
-                assertEquals( max, blessedIndexConfig.get( key( crs.getName(), MAX ) ) );
+                assertEquals( tableId, completedIndexConfig.get( key( crs.getName(), TABLE_ID ) ) );
+                assertEquals( code, completedIndexConfig.get( key( crs.getName(), CODE ) ) );
+                assertEquals( dimension, completedIndexConfig.get( key( crs.getName(), DIMENSIONS ) ) );
+                assertEquals( maxLevels, completedIndexConfig.get( key( crs.getName(), MAX_LEVELS ) ) );
+                assertEquals( min, completedIndexConfig.get( key( crs.getName(), MIN ) ) );
+                assertEquals( max, completedIndexConfig.get( key( crs.getName(), MAX ) ) );
             }
             else
             {
                 // Simply assert not null
-                assertNotNull( blessedIndexConfig.get( key( crs.getName(), TABLE_ID ) ) );
-                assertNotNull( blessedIndexConfig.get( key( crs.getName(), CODE ) ) );
-                assertNotNull( blessedIndexConfig.get( key( crs.getName(), DIMENSIONS ) ) );
-                assertNotNull( blessedIndexConfig.get( key( crs.getName(), MAX_LEVELS ) ) );
-                assertNotNull( blessedIndexConfig.get( key( crs.getName(), MIN ) ) );
-                assertNotNull( blessedIndexConfig.get( key( crs.getName(), MAX ) ) );
+                assertNotNull( completedIndexConfig.get( key( crs.getName(), TABLE_ID ) ) );
+                assertNotNull( completedIndexConfig.get( key( crs.getName(), CODE ) ) );
+                assertNotNull( completedIndexConfig.get( key( crs.getName(), DIMENSIONS ) ) );
+                assertNotNull( completedIndexConfig.get( key( crs.getName(), MAX_LEVELS ) ) );
+                assertNotNull( completedIndexConfig.get( key( crs.getName(), MIN ) ) );
+                assertNotNull( completedIndexConfig.get( key( crs.getName(), MAX ) ) );
             }
         }
     }

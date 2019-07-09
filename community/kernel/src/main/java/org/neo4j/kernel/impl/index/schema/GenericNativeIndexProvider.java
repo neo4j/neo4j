@@ -135,15 +135,15 @@ public class GenericNativeIndexProvider extends NativeIndexProvider<GenericKey,N
     @Override
     public IndexDescriptor completeConfiguration( IndexDescriptor index )
     {
-        SchemaDescriptor sinfulSchema = index.schema();
-        IndexConfig indexConfig = sinfulSchema.getIndexConfig();
+        SchemaDescriptor incompleteSchema = index.schema();
+        IndexConfig indexConfig = incompleteSchema.getIndexConfig();
         for ( CoordinateReferenceSystem crs : CoordinateReferenceSystem.all() )
         {
             SpaceFillingCurveSettings spaceFillingCurveSettings = configuredSettings.forCRS( crs );
             indexConfig = SpatialIndexConfig.addSpatialConfig( indexConfig, crs, spaceFillingCurveSettings );
         }
-        SchemaDescriptor blessedSchema = sinfulSchema.withIndexConfig( indexConfig );
-        index = index.withSchemaDescriptor( blessedSchema );
+        SchemaDescriptor completedSchema = incompleteSchema.withIndexConfig( indexConfig );
+        index = index.withSchemaDescriptor( completedSchema );
         index = index.withIndexCapability( CAPABILITY );
         return index;
     }

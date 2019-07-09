@@ -27,13 +27,13 @@ public interface IndexConfigCompleter
     /**
      * Since indexes can now have provider-specific settings and configurations, the provider needs to have an opportunity to inspect and validate the index
      * descriptor before an index is created. The provider also uses this opportunity to assign capabilities to the index.
-     * The returned descriptor is a blessed version of the given descriptor, and is what must be used for creating an index.
+     * The returned descriptor is a version of the given descriptor which has a fully fleshed out configuration, and is what must be used for creating an index.
      * <p>
      * Note that this is an additive and idempotent operation. If an index is already configured, then this method must not overwrite the existing
      * configuration.
      *
-     * @param index The descriptor of an index that we are about to create, and we wish to be blessed by its chosen index provider.
-     * @return The blessed index descriptor.
+     * @param index The descriptor of an index that we are about to create, and we wish to its configuration be completed by its chosen index provider.
+     * @return An index descriptor with a completed configuration.
      */
     IndexDescriptor completeConfiguration( IndexDescriptor index );
 }

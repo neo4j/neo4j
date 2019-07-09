@@ -140,7 +140,7 @@ public abstract class IndexProviderCompatibilityTestSuite
         File graphDbDir;
         protected FileSystemAbstraction fs;
         protected IndexProvider indexProvider;
-        private final IndexPrototype unblessedIndexPrototype;
+        private final IndexPrototype incompleteIndexPrototype;
         protected IndexDescriptor descriptor;
         final IndexProviderCompatibilityTestSuite testSuite;
         final List<NodeAndValue> valueSet1;
@@ -153,13 +153,13 @@ public abstract class IndexProviderCompatibilityTestSuite
             graphDbDir = pageCacheAndDependenciesRule.directory().storeDir();
             PageCache pageCache = pageCacheAndDependenciesRule.pageCache();
             indexProvider = testSuite.createIndexProvider( pageCache, fs, graphDbDir );
-            this.descriptor = indexProvider.completeConfiguration( unblessedIndexPrototype.materialise( 17 ) );
+            descriptor = indexProvider.completeConfiguration( incompleteIndexPrototype.materialise( 17 ) );
         }
 
         Compatibility( IndexProviderCompatibilityTestSuite testSuite, IndexPrototype prototype )
         {
             this.testSuite = testSuite;
-            this.unblessedIndexPrototype = prototype;
+            this.incompleteIndexPrototype = prototype;
             this.valueSet1 = allValues(
                     testSuite.supportsSpatial(),
                     Arrays.asList(
