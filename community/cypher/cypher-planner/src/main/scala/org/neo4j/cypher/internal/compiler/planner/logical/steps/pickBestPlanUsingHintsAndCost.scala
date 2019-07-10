@@ -27,7 +27,7 @@ trait CandidateSelectorFactory {
 }
 
 object pickBestPlanUsingHintsAndCost extends CandidateSelectorFactory {
-  private val baseOrdering = implicitly[Ordering[(Int, Double, Int)]]
+  private val baseOrdering = implicitly[Ordering[(Int, Double)]]
 
   override def apply(context: LogicalPlanningContext): CandidateSelector =
     new CandidateSelector {
@@ -50,6 +50,6 @@ object pickBestPlanUsingHintsAndCost extends CandidateSelectorFactory {
   private def score[X](projector: X => LogicalPlan, input: X, context: LogicalPlanningContext) = {
     val costs = context.cost
     val plan = projector(input)
-    (-context.planningAttributes.solveds.get(plan.id).numHints, costs(plan, context.input, context.planningAttributes.cardinalities).gummyBears, -plan.availableSymbols.size)
+    (-context.planningAttributes.solveds.get(plan.id).numHints, costs(plan, context.input, context.planningAttributes.cardinalities).gummyBears)
   }
 }
