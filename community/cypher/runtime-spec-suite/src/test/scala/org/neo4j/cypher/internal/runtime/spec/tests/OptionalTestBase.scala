@@ -19,9 +19,11 @@
  */
 package org.neo4j.cypher.internal.runtime.spec.tests
 
+import org.neo4j.cypher.internal.logical.plans.{Ascending, Descending}
 import org.neo4j.cypher.internal.runtime.spec._
 import org.neo4j.cypher.internal.v4_0.util.ArithmeticException
 import org.neo4j.cypher.internal.{CypherRuntime, RuntimeContext}
+import org.neo4j.graphdb.Node
 import org.neo4j.values.storable.Values
 import org.neo4j.values.virtual.VirtualNodeValue
 
@@ -263,5 +265,39 @@ abstract class OptionalTestBase[CONTEXT <: RuntimeContext](
     intercept[ArithmeticException] {
       consume(execute(logicalQuery, runtime, stream))
     }
+  }
+
+  test("should support optional under nested apply with sort after apply") {
+    // given
+    val n = sizeHint
+
+    val nodes = nodeGraph(n)
+    val nodeConnections = randomlyConnect(nodes, Connectivity(0, 5, "OTHER"), Connectivity(0, 5, "NEXT"))
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x", "y", "z")
+      .sort(Seq(Ascending("z"), Descending("x"), Ascending("y")))
+      .apply()
+      .|.optional("x")
+      .|.expandAll("(x)-[:NEXT]->(z)")
+      .|.expandAll("(x)-[:OTHER]->(y)")
+      .|.argument("x")
+      .allNodeScan("x")
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    def id(node: Node): Long = if (node == null) Long.MaxValue else node.getId
+
+    // then
+    val expected = for {
+      NodeConnections(x, connections) <- nodeConnections
+      y <- if (connections.size == 2) connections("OTHER") else Seq(null)
+      z <- if (connections.size == 2) connections("NEXT") else Seq(null)
+    } yield Array(x, y, z)
+    val expectedInOrder = expected.sortBy(row => (id(row(2)), -id(row(0)), id(row(1))))
+
+    runtimeResult should beColumns("x", "y", "z").withRows(inOrder(expectedInOrder))
   }
 }
