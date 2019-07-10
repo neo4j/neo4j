@@ -76,7 +76,7 @@ public class LuceneFulltextTestSupport
     public RuleChain rules = RuleChain.outerRule( repeatRule ).around( db );
 
     IndexConfig indexConfig;
-    FulltextAdapter fulltextAdapter;
+    FulltextIndexProvider indexProvider;
 
     protected RepeatRule createRepeatRule()
     {
@@ -87,14 +87,14 @@ public class LuceneFulltextTestSupport
     public void setUp()
     {
         indexConfig = IndexConfig.empty();
-        fulltextAdapter = getAccessor();
+        indexProvider = getAdapter();
     }
 
     void applySetting( Setting<String> setting, String value ) throws IOException
     {
         db.restartDatabase( setting.name(), value );
         db.ensureStarted();
-        fulltextAdapter = getAccessor();
+        indexProvider = getAdapter();
     }
 
     KernelTransactionImplementation getKernelTransaction()
@@ -110,9 +110,9 @@ public class LuceneFulltextTestSupport
         }
     }
 
-    private FulltextAdapter getAccessor()
+    private FulltextIndexProvider getAdapter()
     {
-        return (FulltextAdapter) db.resolveDependency( IndexProviderMap.class ).lookup( FulltextIndexProviderFactory.DESCRIPTOR );
+        return (FulltextIndexProvider) db.resolveDependency( IndexProviderMap.class ).lookup( FulltextIndexProviderFactory.DESCRIPTOR );
     }
 
     long createNodeIndexableByPropertyValue( Label label, Object propertyValue )

@@ -144,7 +144,10 @@ public class GenericNativeIndexProvider extends NativeIndexProvider<GenericKey,N
         }
         SchemaDescriptor completedSchema = incompleteSchema.withIndexConfig( indexConfig );
         index = index.withSchemaDescriptor( completedSchema );
-        index = index.withIndexCapability( CAPABILITY );
+        if ( index.getCapability().equals( IndexCapability.NO_CAPABILITY ) )
+        {
+            index = index.withIndexCapability( CAPABILITY );
+        }
         return index;
     }
 

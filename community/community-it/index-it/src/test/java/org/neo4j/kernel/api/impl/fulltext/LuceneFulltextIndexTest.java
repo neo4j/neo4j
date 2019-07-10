@@ -26,15 +26,26 @@ import java.util.Optional;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.internal.schema.FulltextSchemaDescriptor;
+import org.neo4j.internal.schema.IndexCapability;
 import org.neo4j.internal.schema.IndexConfig;
 import org.neo4j.internal.schema.IndexDescriptor;
+import org.neo4j.internal.schema.IndexLimitation;
+import org.neo4j.internal.schema.IndexOrder;
 import org.neo4j.internal.schema.IndexPrototype;
+import org.neo4j.internal.schema.IndexProviderDescriptor;
+import org.neo4j.internal.schema.IndexValueCapability;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
+import org.neo4j.values.storable.ValueCategory;
 import org.neo4j.values.storable.Values;
 
+import static java.util.Arrays.asList;
+import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.is;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotEquals;
+import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertThat;
 import static org.neo4j.common.EntityType.NODE;
 import static org.neo4j.common.EntityType.RELATIONSHIP;
@@ -52,7 +63,7 @@ public class LuceneFulltextIndexTest extends LuceneFulltextTestSupport
         IndexDescriptor index;
         try ( KernelTransactionImplementation tx = getKernelTransaction() )
         {
-            SchemaDescriptor descriptor = fulltextAdapter.schemaFor( NODE, new String[]{LABEL.name()}, indexConfig, PROP );
+            SchemaDescriptor descriptor = indexProvider.schemaFor( NODE, new String[]{LABEL.name()}, indexConfig, PROP );
             index = tx.schemaWrite().indexCreate( descriptor, FulltextIndexProviderFactory.DESCRIPTOR.name(), Optional.of( NODE_INDEX_NAME ) );
             tx.success();
         }
@@ -84,7 +95,7 @@ public class LuceneFulltextIndexTest extends LuceneFulltextTestSupport
         IndexDescriptor index;
         try ( KernelTransactionImplementation tx = getKernelTransaction() )
         {
-            SchemaDescriptor descriptor = fulltextAdapter.schemaFor( NODE, new String[]{LABEL.name()}, indexConfig, PROP );
+            SchemaDescriptor descriptor = indexProvider.schemaFor( NODE, new String[]{LABEL.name()}, indexConfig, PROP );
             index = tx.schemaWrite().indexCreate( descriptor, FulltextIndexProviderFactory.DESCRIPTOR.name(), Optional.of( NODE_INDEX_NAME ) );
             tx.success();
         }
@@ -127,7 +138,7 @@ public class LuceneFulltextIndexTest extends LuceneFulltextTestSupport
         IndexDescriptor index;
         try ( KernelTransactionImplementation tx = getKernelTransaction() )
         {
-            SchemaDescriptor descriptor = fulltextAdapter.schemaFor( NODE, new String[]{LABEL.name()}, indexConfig, PROP );
+            SchemaDescriptor descriptor = indexProvider.schemaFor( NODE, new String[]{LABEL.name()}, indexConfig, PROP );
             index = tx.schemaWrite().indexCreate( descriptor, FulltextIndexProviderFactory.DESCRIPTOR.name(), Optional.of( NODE_INDEX_NAME ) );
             tx.success();
         }
@@ -168,7 +179,7 @@ public class LuceneFulltextIndexTest extends LuceneFulltextTestSupport
         IndexDescriptor index;
         try ( KernelTransactionImplementation tx = getKernelTransaction() )
         {
-            SchemaDescriptor descriptor = fulltextAdapter.schemaFor( NODE, new String[]{LABEL.name()}, indexConfig, "prop", "prop2" );
+            SchemaDescriptor descriptor = indexProvider.schemaFor( NODE, new String[]{LABEL.name()}, indexConfig, "prop", "prop2" );
             index = tx.schemaWrite().indexCreate( descriptor, FulltextIndexProviderFactory.DESCRIPTOR.name(), Optional.of( NODE_INDEX_NAME ) );
             tx.success();
         }
@@ -222,7 +233,7 @@ public class LuceneFulltextIndexTest extends LuceneFulltextTestSupport
         IndexDescriptor index;
         try ( KernelTransactionImplementation tx = getKernelTransaction() )
         {
-            SchemaDescriptor descriptor = fulltextAdapter.schemaFor( NODE, new String[]{LABEL.name()}, indexConfig, PROP );
+            SchemaDescriptor descriptor = indexProvider.schemaFor( NODE, new String[]{LABEL.name()}, indexConfig, PROP );
             index = tx.schemaWrite().indexCreate( descriptor, FulltextIndexProviderFactory.DESCRIPTOR.name(), Optional.of( NODE_INDEX_NAME ) );
             tx.success();
         }
@@ -255,7 +266,7 @@ public class LuceneFulltextIndexTest extends LuceneFulltextTestSupport
         IndexDescriptor index;
         try ( KernelTransactionImplementation tx = getKernelTransaction() )
         {
-            SchemaDescriptor descriptor = fulltextAdapter.schemaFor( NODE, new String[]{LABEL.name()}, indexConfig, "prop", "prop2" );
+            SchemaDescriptor descriptor = indexProvider.schemaFor( NODE, new String[]{LABEL.name()}, indexConfig, "prop", "prop2" );
             index = tx.schemaWrite().indexCreate( descriptor, FulltextIndexProviderFactory.DESCRIPTOR.name(), Optional.of( NODE_INDEX_NAME ) );
             tx.success();
         }
@@ -290,7 +301,7 @@ public class LuceneFulltextIndexTest extends LuceneFulltextTestSupport
         IndexDescriptor index;
         try ( KernelTransactionImplementation tx = getKernelTransaction() )
         {
-            SchemaDescriptor descriptor = fulltextAdapter.schemaFor( NODE, new String[]{LABEL.name()}, indexConfig, "first", "last" );
+            SchemaDescriptor descriptor = indexProvider.schemaFor( NODE, new String[]{LABEL.name()}, indexConfig, "first", "last" );
             index = tx.schemaWrite().indexCreate( descriptor, FulltextIndexProviderFactory.DESCRIPTOR.name(), Optional.of( NODE_INDEX_NAME ) );
             tx.success();
         }
@@ -327,8 +338,8 @@ public class LuceneFulltextIndexTest extends LuceneFulltextTestSupport
     @Test
     public void shouldDifferentiateNodesAndRelationships() throws Exception
     {
-        SchemaDescriptor nodes = fulltextAdapter.schemaFor( NODE, new String[]{LABEL.name()}, indexConfig, PROP );
-        SchemaDescriptor rels = fulltextAdapter.schemaFor( RELATIONSHIP, new String[]{RELTYPE.name()}, indexConfig, PROP );
+        SchemaDescriptor nodes = indexProvider.schemaFor( NODE, new String[]{LABEL.name()}, indexConfig, PROP );
+        SchemaDescriptor rels = indexProvider.schemaFor( RELATIONSHIP, new String[]{RELTYPE.name()}, indexConfig, PROP );
         IndexDescriptor nodesIndex;
         IndexDescriptor relsIndex;
         try ( KernelTransactionImplementation tx = getKernelTransaction() )
@@ -371,8 +382,8 @@ public class LuceneFulltextIndexTest extends LuceneFulltextTestSupport
     @Test
     public void shouldNotReturnNonMatches() throws Exception
     {
-        SchemaDescriptor nodes = fulltextAdapter.schemaFor( NODE, new String[]{LABEL.name()}, indexConfig, PROP );
-        SchemaDescriptor rels = fulltextAdapter.schemaFor( RELATIONSHIP, new String[]{RELTYPE.name()}, indexConfig, PROP );
+        SchemaDescriptor nodes = indexProvider.schemaFor( NODE, new String[]{LABEL.name()}, indexConfig, PROP );
+        SchemaDescriptor rels = indexProvider.schemaFor( RELATIONSHIP, new String[]{RELTYPE.name()}, indexConfig, PROP );
         IndexDescriptor nodesIndex;
         IndexDescriptor relsIndex;
         try ( KernelTransactionImplementation tx = getKernelTransaction() )
@@ -427,8 +438,8 @@ public class LuceneFulltextIndexTest extends LuceneFulltextTestSupport
             tx.success();
         }
 
-        SchemaDescriptor nodes = fulltextAdapter.schemaFor( NODE, new String[]{LABEL.name()}, indexConfig, PROP );
-        SchemaDescriptor rels = fulltextAdapter.schemaFor( RELATIONSHIP, new String[]{RELTYPE.name()}, indexConfig, PROP );
+        SchemaDescriptor nodes = indexProvider.schemaFor( NODE, new String[]{LABEL.name()}, indexConfig, PROP );
+        SchemaDescriptor rels = indexProvider.schemaFor( RELATIONSHIP, new String[]{RELTYPE.name()}, indexConfig, PROP );
         IndexDescriptor nodesIndex;
         IndexDescriptor relsIndex;
         try ( KernelTransactionImplementation tx = getKernelTransaction() )
@@ -460,7 +471,7 @@ public class LuceneFulltextIndexTest extends LuceneFulltextTestSupport
         IndexDescriptor index;
         try ( KernelTransactionImplementation tx = getKernelTransaction() )
         {
-            SchemaDescriptor descriptor = fulltextAdapter.schemaFor( NODE, new String[]{LABEL.name()}, indexConfig, PROP );
+            SchemaDescriptor descriptor = indexProvider.schemaFor( NODE, new String[]{LABEL.name()}, indexConfig, PROP );
             index = tx.schemaWrite().indexCreate( descriptor, FulltextIndexProviderFactory.DESCRIPTOR.name(), Optional.of( NODE_INDEX_NAME ) );
             tx.success();
         }
@@ -489,7 +500,7 @@ public class LuceneFulltextIndexTest extends LuceneFulltextTestSupport
 
         try ( KernelTransactionImplementation tx = getKernelTransaction() )
         {
-            SchemaDescriptor descriptor = fulltextAdapter.schemaFor( NODE, new String[]{LABEL.name()}, indexConfig, "prop2" );
+            SchemaDescriptor descriptor = indexProvider.schemaFor( NODE, new String[]{LABEL.name()}, indexConfig, "prop2" );
             tx.schemaWrite().indexDrop( index );
             index = tx.schemaWrite().indexCreate( descriptor, FulltextIndexProviderFactory.DESCRIPTOR.name(), Optional.of( NODE_INDEX_NAME ) );
             tx.success();
@@ -515,7 +526,7 @@ public class LuceneFulltextIndexTest extends LuceneFulltextTestSupport
     @Test
     public void shouldBeAbleToDropAndReadIndex() throws Exception
     {
-        SchemaDescriptor descriptor = fulltextAdapter.schemaFor( NODE, new String[]{LABEL.name()}, indexConfig, PROP );
+        SchemaDescriptor descriptor = indexProvider.schemaFor( NODE, new String[]{LABEL.name()}, indexConfig, PROP );
         IndexDescriptor index;
         try ( KernelTransactionImplementation tx = getKernelTransaction() )
         {
@@ -571,12 +582,71 @@ public class LuceneFulltextIndexTest extends LuceneFulltextTestSupport
             tx.success();
         }
 
-        FulltextSchemaDescriptor schema = SchemaDescriptor.fulltext( NODE, IndexConfig.empty(), new int[]{label}, new int[]{propertyKey} );
-        FulltextIndexProvider provider = (FulltextIndexProvider) fulltextAdapter;
+        IndexConfig indexConfig = IndexConfig.empty().withIfAbsent( EVENTUALLY_CONSISTENT, Values.booleanValue( true ) );
+        FulltextSchemaDescriptor schema = SchemaDescriptor.fulltext( NODE, indexConfig, new int[]{label}, new int[]{propertyKey} );
 
-        IndexDescriptor descriptor = provider.completeConfiguration( IndexPrototype.forSchema( schema, provider.getProviderDescriptor() ).materialise( 1 ) );
+        IndexProviderDescriptor providerDescriptor = indexProvider.getProviderDescriptor();
+        IndexDescriptor descriptor = indexProvider.completeConfiguration( IndexPrototype.forSchema( schema, providerDescriptor ).materialise( 1 ) );
 
         assertThat( descriptor.schema().getIndexConfig().get( ANALYZER ), is( Values.stringValue( "standard-no-stop-words" ) ) );
-        assertThat( descriptor.schema().getIndexConfig().get( EVENTUALLY_CONSISTENT ), is( Values.booleanValue( false ) ) );
+        assertThat( descriptor.schema().getIndexConfig().get( EVENTUALLY_CONSISTENT ), is( Values.booleanValue( true ) ) );
+        assertThat( asList( descriptor.getCapability().limitations() ), contains( IndexLimitation.EVENTUALLY_CONSISTENT ) );
     }
+
+    @Test
+    public void completeConfigurationMustNotOverwriteExistingConfiguration()
+    {
+        IndexConfig indexConfig = IndexConfig.empty().withIfAbsent( "A", Values.stringValue( "B" ) );
+        FulltextSchemaDescriptor schema = SchemaDescriptor.fulltext( NODE, indexConfig, new int[]{1}, new int[]{1} );
+        IndexProviderDescriptor providerDescriptor = indexProvider.getProviderDescriptor();
+        IndexDescriptor descriptor = indexProvider.completeConfiguration( IndexPrototype.forSchema( schema, providerDescriptor ).materialise( 1 ) );
+        assertEquals( Values.stringValue( "B" ), descriptor.schema().getIndexConfig().get( "A" ) );
+    }
+
+    @Test
+    public void completeConfigurationMustBeIdempotent()
+    {
+        FulltextSchemaDescriptor schema = SchemaDescriptor.fulltext( NODE, IndexConfig.empty(), new int[]{1}, new int[]{1} );
+        IndexProviderDescriptor providerDescriptor = indexProvider.getProviderDescriptor();
+        IndexDescriptor onceCompleted = indexProvider.completeConfiguration( IndexPrototype.forSchema( schema, providerDescriptor ).materialise( 1 ) );
+        IndexDescriptor twiceCompleted = indexProvider.completeConfiguration( onceCompleted );
+        assertEquals( onceCompleted.schema().getIndexConfig(), twiceCompleted.schema().getIndexConfig() );
+    }
+
+    @Test
+    public void mustAssignCapabilitiesToDescriptorsThatHaveNone()
+    {
+        FulltextSchemaDescriptor schema = SchemaDescriptor.fulltext( NODE, IndexConfig.empty(), new int[]{1}, new int[]{1} );
+        IndexProviderDescriptor providerDescriptor = indexProvider.getProviderDescriptor();
+        IndexDescriptor completed = indexProvider.completeConfiguration( IndexPrototype.forSchema( schema, providerDescriptor ).materialise( 1 ) );
+        assertNotEquals( completed.getCapability(), IndexCapability.NO_CAPABILITY );
+        completed = completed.withIndexCapability( IndexCapability.NO_CAPABILITY );
+        completed = indexProvider.completeConfiguration( completed );
+        assertNotEquals( completed.getCapability(), IndexCapability.NO_CAPABILITY );
+    }
+
+    @Test
+    public void mustNotOverwriteExistingCapabilities()
+    {
+        IndexCapability capability = new IndexCapability()
+        {
+            @Override
+            public IndexOrder[] orderCapability( ValueCategory... valueCategories )
+            {
+                return new IndexOrder[0];
+            }
+
+            @Override
+            public IndexValueCapability valueCapability( ValueCategory... valueCategories )
+            {
+                return IndexValueCapability.NO;
+            }
+        };
+        FulltextSchemaDescriptor schema = SchemaDescriptor.fulltext( NODE, IndexConfig.empty(), new int[]{1}, new int[]{1} );
+        IndexProviderDescriptor providerDescriptor = indexProvider.getProviderDescriptor();
+        IndexDescriptor index = IndexPrototype.forSchema( schema, providerDescriptor ).materialise( 1 ).withIndexCapability( capability );
+        IndexDescriptor completed = indexProvider.completeConfiguration( index );
+        assertSame( capability, completed.getCapability() );
+    }
+    // todo must not overwrite existing capabilities
 }

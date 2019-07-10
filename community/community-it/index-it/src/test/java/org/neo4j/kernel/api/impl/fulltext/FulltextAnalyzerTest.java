@@ -43,7 +43,7 @@ public class FulltextAnalyzerTest extends LuceneFulltextTestSupport
     {
         applySetting( FulltextConfig.fulltext_default_analyzer, ENGLISH );
 
-        SchemaDescriptor descriptor = fulltextAdapter.schemaFor( NODE, new String[]{LABEL.name()}, indexConfig, PROP );
+        SchemaDescriptor descriptor = indexProvider.schemaFor( NODE, new String[]{LABEL.name()}, indexConfig, PROP );
         IndexDescriptor nodes;
         try ( KernelTransactionImplementation transaction = getKernelTransaction() )
         {
@@ -78,7 +78,7 @@ public class FulltextAnalyzerTest extends LuceneFulltextTestSupport
     public void shouldBeAbleToSpecifySwedishAnalyzer() throws Exception
     {
         applySetting( FulltextConfig.fulltext_default_analyzer, SWEDISH );
-        SchemaDescriptor descriptor = fulltextAdapter.schemaFor( NODE, new String[]{LABEL.name()}, indexConfig, PROP );
+        SchemaDescriptor descriptor = indexProvider.schemaFor( NODE, new String[]{LABEL.name()}, indexConfig, PROP );
         IndexDescriptor nodes;
         try ( KernelTransactionImplementation transaction = getKernelTransaction() )
         {
@@ -114,7 +114,7 @@ public class FulltextAnalyzerTest extends LuceneFulltextTestSupport
     {
         long secondID;
         applySetting( FulltextConfig.fulltext_default_analyzer, ENGLISH );
-        SchemaDescriptor descriptor = fulltextAdapter.schemaFor( NODE, new String[]{LABEL.name()}, indexConfig, PROP );
+        SchemaDescriptor descriptor = indexProvider.schemaFor( NODE, new String[]{LABEL.name()}, indexConfig, PROP );
         IndexDescriptor nodes;
         try ( KernelTransactionImplementation transaction = getKernelTransaction() )
         {

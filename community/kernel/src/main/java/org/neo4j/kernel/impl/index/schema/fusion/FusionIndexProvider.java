@@ -107,7 +107,10 @@ public class FusionIndexProvider extends IndexProvider
             }
         }
         index = index.withSchemaDescriptor( index.schema().withIndexConfig( config ) );
-        index = index.withIndexCapability( new FusionIndexCapability( slotSelector, new InstanceSelector<>( capabilities ) ) );
+        if ( index.getCapability().equals( IndexCapability.NO_CAPABILITY ) )
+        {
+            index = index.withIndexCapability( new FusionIndexCapability( slotSelector, new InstanceSelector<>( capabilities ) ) );
+        }
         return index;
     }
 
