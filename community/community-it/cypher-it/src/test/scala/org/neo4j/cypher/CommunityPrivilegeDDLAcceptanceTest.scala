@@ -101,9 +101,9 @@ class CommunityPrivilegeDDLAcceptanceTest extends CommunityDDLAcceptanceTestBase
     assertFailure("DENY MATCH (*) ON GRAPH * NODES * (*) TO custom", "Unsupported management command: DENY MATCH (*) ON GRAPH * NODES * (*) TO custom")
   }
 
-  // Tests for revoking privileges
+  // Tests for revoking grant privileges
 
-  test("should fail on revoking traverse privilege from community") {
+  test("should fail on revoking grant traverse privilege from community") {
     // GIVEN
     selectDatabase(SYSTEM_DATABASE_NAME)
 
@@ -111,7 +111,7 @@ class CommunityPrivilegeDDLAcceptanceTest extends CommunityDDLAcceptanceTestBase
     assertFailure("REVOKE GRANT TRAVERSE ON GRAPH * NODES * (*) FROM custom", "Unsupported management command: REVOKE GRANT TRAVERSE ON GRAPH * NODES * (*) FROM custom")
   }
 
-  test("should fail on revoking read privilege from community") {
+  test("should fail on revoking grant read privilege from community") {
     // GIVEN
     selectDatabase(SYSTEM_DATABASE_NAME)
 
@@ -119,11 +119,36 @@ class CommunityPrivilegeDDLAcceptanceTest extends CommunityDDLAcceptanceTestBase
     assertFailure("REVOKE GRANT READ (*) ON GRAPH * NODES * (*) FROM custom", "Unsupported management command: REVOKE GRANT READ (*) ON GRAPH * NODES * (*) FROM custom")
   }
 
-  test("should fail on revoking MATCH privilege from community") {
+  test("should fail on revoking grant MATCH privilege from community") {
     // GIVEN
     selectDatabase(SYSTEM_DATABASE_NAME)
 
     // THEN
     assertFailure("REVOKE GRANT MATCH (*) ON GRAPH * NODES * (*) FROM custom", "Unsupported management command: REVOKE GRANT MATCH (*) ON GRAPH * NODES * (*) FROM custom")
+  }
+  
+  // Tests for revoking deny privileges
+  test("should fail on revoking deny traverse privilege from community") {
+    // GIVEN
+    selectDatabase(SYSTEM_DATABASE_NAME)
+
+    // THEN
+    assertFailure("REVOKE DENY TRAVERSE ON GRAPH * NODES * (*) FROM custom", "Unsupported management command: REVOKE DENY TRAVERSE ON GRAPH * NODES * (*) FROM custom")
+  }
+
+  test("should fail on revoking deny read privilege from community") {
+    // GIVEN
+    selectDatabase(SYSTEM_DATABASE_NAME)
+
+    // THEN
+    assertFailure("REVOKE DENY READ (*) ON GRAPH * NODES * (*) FROM custom", "Unsupported management command: REVOKE DENY READ (*) ON GRAPH * NODES * (*) FROM custom")
+  }
+
+  test("should fail on revoking deny MATCH privilege from community") {
+    // GIVEN
+    selectDatabase(SYSTEM_DATABASE_NAME)
+
+    // THEN
+    assertFailure("REVOKE DENY MATCH (*) ON GRAPH * NODES * (*) FROM custom", "Unsupported management command: REVOKE DENY MATCH (*) ON GRAPH * NODES * (*) FROM custom")
   }
 }

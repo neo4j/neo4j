@@ -160,9 +160,11 @@ final case class MatchPrivilege()(val position: InputPosition) extends Privilege
 
 final case class WritePrivilege()(val position: InputPosition) extends PrivilegeType("WRITE")
 
-abstract class RevokeType(val name: String)
+abstract class RevokeType(val name: String, val relType: String)
 
-final case class RevokeGrantType()(val position: InputPosition) extends RevokeType("GRANT")
+final case class RevokeGrantType()(val position: InputPosition) extends RevokeType("GRANT", "GRANTED")
+
+final case class RevokeDenyType()(val position: InputPosition) extends RevokeType("DENY", "DENIED")
 
 sealed trait ActionResource {
   def simplify: Seq[ActionResource] = Seq(this)
@@ -243,6 +245,7 @@ object DenyPrivilege {
 }
 
 object RevokePrivilege {
+  // Revoke of grant
   def grantedTraverse(scope: GraphScope, qualifier: PrivilegeQualifier, roleNames: Seq[String]): InputPosition => RevokePrivilege =
     RevokePrivilege(TraversePrivilege()(InputPosition.NONE), AllResource()(InputPosition.NONE), scope, qualifier, roleNames, RevokeGrantType()(InputPosition.NONE))
   def grantedRead(resource: ActionResource, scope: GraphScope, qualifier: PrivilegeQualifier, roleNames: Seq[String]): InputPosition => RevokePrivilege =
@@ -251,6 +254,16 @@ object RevokePrivilege {
     RevokePrivilege(MatchPrivilege()(InputPosition.NONE), resource, scope, qualifier, roleNames, RevokeGrantType()(InputPosition.NONE))
   def grantedWrite(resource: ActionResource, scope: GraphScope, qualifier: PrivilegeQualifier, roleNames: Seq[String]): InputPosition => RevokePrivilege =
     RevokePrivilege(WritePrivilege()(InputPosition.NONE), resource, scope, qualifier, roleNames, RevokeGrantType()(InputPosition.NONE))
+
+  // Revoke of deny
+  def deniedTraverse(scope: GraphScope, qualifier: PrivilegeQualifier, roleNames: Seq[String]): InputPosition => RevokePrivilege =
+    RevokePrivilege(TraversePrivilege()(InputPosition.NONE), AllResource()(InputPosition.NONE), scope, qualifier, roleNames, RevokeDenyType()(InputPosition.NONE))
+  def deniedRead(resource: ActionResource, scope: GraphScope, qualifier: PrivilegeQualifier, roleNames: Seq[String]): InputPosition => RevokePrivilege =
+    RevokePrivilege(ReadPrivilege()(InputPosition.NONE), resource, scope, qualifier, roleNames, RevokeDenyType()(InputPosition.NONE))
+  def deniedAsMatch(resource: ActionResource, scope: GraphScope, qualifier: PrivilegeQualifier, roleNames: Seq[String]): InputPosition => RevokePrivilege =
+    RevokePrivilege(MatchPrivilege()(InputPosition.NONE), resource, scope, qualifier, roleNames, RevokeDenyType()(InputPosition.NONE))
+  def deniedWrite(resource: ActionResource, scope: GraphScope, qualifier: PrivilegeQualifier, roleNames: Seq[String]): InputPosition => RevokePrivilege =
+    RevokePrivilege(WritePrivilege()(InputPosition.NONE), resource, scope, qualifier, roleNames, RevokeDenyType()(InputPosition.NONE))
 }
 
 final case class GrantPrivilege(privilege: PrivilegeType, resource: ActionResource, scope: GraphScope, qualifier: PrivilegeQualifier, roleNames: Seq[String])

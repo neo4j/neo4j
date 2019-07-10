@@ -23,7 +23,8 @@ class WritePrivilegeManagementDDLParserTest extends DDLParserTestBase {
   Seq(
     ("GRANT", "TO", grant: privilegeFunc),
     ("DENY", "TO", deny: privilegeFunc),
-    ("REVOKE GRANT", "FROM", revokeGrant: privilegeFunc)
+    ("REVOKE GRANT", "FROM", revokeGrant: privilegeFunc),
+    ("REVOKE DENY", "FROM", revokeDeny: privilegeFunc)
   ).foreach {
     case (command: String, preposition: String, func: privilegeFunc) =>
 

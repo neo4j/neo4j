@@ -90,12 +90,13 @@ class PrivilegeManagementDDLParserTest extends DDLParserTestBase {
     failsToParse
   }
 
-  //  Granting/revoking traverse to/from role
+  //  Granting/denying/revoking traverse to/from role
 
   Seq(
     ("GRANT", "TO", grant: privilegeFunc),
     ("DENY", "TO", deny: privilegeFunc),
-    ("REVOKE GRANT", "FROM", revokeGrant: privilegeFunc)
+    ("REVOKE GRANT", "FROM", revokeGrant: privilegeFunc),
+    ("REVOKE DENY", "FROM", revokeDeny: privilegeFunc)
   ).foreach {
     case (command: String, preposition: String, func: privilegeFunc) =>
 
@@ -435,15 +436,17 @@ class PrivilegeManagementDDLParserTest extends DDLParserTestBase {
       }
   }
 
-  // Granting/revoking read and match to/from role
+  // Granting/denying/revoking read and match to/from role
 
   Seq(
     (ast.ReadPrivilege()(pos), "GRANT", "TO", grant: privilegeFunc),
     (ast.ReadPrivilege()(pos), "DENY", "TO", deny: privilegeFunc),
     (ast.ReadPrivilege()(pos), "REVOKE GRANT", "FROM", revokeGrant: privilegeFunc),
+    (ast.ReadPrivilege()(pos), "REVOKE DENY", "FROM", revokeDeny: privilegeFunc),
     (ast.MatchPrivilege()(pos), "GRANT", "TO", grant: privilegeFunc),
     (ast.MatchPrivilege()(pos), "DENY", "TO", deny: privilegeFunc),
-    (ast.MatchPrivilege()(pos), "REVOKE GRANT", "FROM", revokeGrant: privilegeFunc)
+    (ast.MatchPrivilege()(pos), "REVOKE GRANT", "FROM", revokeGrant: privilegeFunc),
+    (ast.MatchPrivilege()(pos), "REVOKE DENY", "FROM", revokeDeny: privilegeFunc)
   ).foreach {
     case (privilege: ast.PrivilegeType, command: String, preposition: String, func: privilegeFunc) =>
 
