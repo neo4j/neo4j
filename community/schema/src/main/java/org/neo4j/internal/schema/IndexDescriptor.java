@@ -58,7 +58,7 @@ public final class IndexDescriptor implements IndexRef<IndexDescriptor>, SchemaR
         {
             throw new IllegalArgumentException( "The id of an index must not be negative, but it was attempted to assign " + id + "." );
         }
-        SchemaRule.checkName( name );
+        name = SchemaRule.sanitiseName( name );
         Objects.requireNonNull( schema, "The schema of an index cannot be null." );
         Objects.requireNonNull( indexProvider, "The index provider cannot be null." );
         // The 'owningConstraintId' is allowed to be null, which is the case when an index descriptor is initially created.
@@ -79,7 +79,7 @@ public final class IndexDescriptor implements IndexRef<IndexDescriptor>, SchemaR
     private IndexDescriptor()
     {
         this.id = -1;
-        this.name = "No index";
+        this.name = ReservedSchemaRuleNames.NO_INDEX.getReservedName();
         this.schema = SchemaDescriptor.noSchema();
         this.isUnique = false;
         this.indexProvider = IndexProviderDescriptor.UNDECIDED;

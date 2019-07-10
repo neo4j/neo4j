@@ -21,7 +21,7 @@ package org.neo4j.internal.schema;
 
 import org.neo4j.common.TokenNameLookup;
 
-public interface IndexRef<T extends IndexRef<T>> extends SchemaDescriptorSupplier
+interface IndexRef<T extends IndexRef<T>> extends SchemaDescriptorSupplier
 {
     /**
      * Returns true if this index is only meant to allow one value per key.

@@ -63,6 +63,7 @@ public class CompositeUniquenessConstraintValidationIT
     private final int numberOfProps;
     private final Object[] aValues;
     private final Object[] bValues;
+    private ConstraintDescriptor constraintDescriptor;
 
     @Parameterized.Parameters( name = "{index}: {0}" )
     public static Iterable<TestParams> parameterValues()
@@ -112,7 +113,7 @@ public class CompositeUniquenessConstraintValidationIT
         kernel = graphDatabaseAPI.getDependencyResolver().resolveDependency( Kernel.class );
 
         newTransaction();
-        transaction.schemaWrite().uniquePropertyConstraintCreate( forLabel( label, propertyIds() ) );
+        constraintDescriptor = transaction.schemaWrite().uniquePropertyConstraintCreate( forLabel( label, propertyIds() ) );
         commit();
     }
 
@@ -125,8 +126,7 @@ public class CompositeUniquenessConstraintValidationIT
         }
 
         newTransaction();
-        ConstraintDescriptor constraint = single( transaction.schemaRead().constraintsGetForSchema( forLabel( label, propertyIds() ) ) );
-        transaction.schemaWrite().constraintDrop( constraint );
+        transaction.schemaWrite().constraintDrop( constraintDescriptor );
         commit();
 
         try ( Transaction tx = kernel.beginTransaction( Transaction.Type.implicit, LoginContext.AUTH_DISABLED );

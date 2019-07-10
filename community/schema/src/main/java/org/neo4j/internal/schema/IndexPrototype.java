@@ -92,7 +92,15 @@ public class IndexPrototype implements IndexRef<IndexPrototype>
     @Override
     public String userDescription( TokenNameLookup tokenNameLookup )
     {
-        return format( "Index( %s, %s )", isUnique ? "UNIQUE" : "GENERAL", schema().userDescription( tokenNameLookup ) );
+        return "Index( " + (name == null ? "" : name) + (isUnique ? "UNIQUE" : "GENERAL") + ", " +
+                schema().userDescription( tokenNameLookup )  + ", " +
+                getIndexProvider().name() + " )";
+    }
+
+    @Override
+    public String toString()
+    {
+        return userDescription( TokenNameLookup.idTokenNameLookup );
     }
 
     @Override

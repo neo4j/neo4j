@@ -28,32 +28,21 @@ public interface SchemaRule extends SchemaDescriptorSupplier
     {
         if ( name == null )
         {
-            return defaultName;
+            name = defaultName;
         }
-        else if ( name.isEmpty() )
-        {
-            throw new IllegalArgumentException( "Schema rule name cannot be the empty string" );
-        }
-        else
-        {
-            int length = name.length();
-            for ( int i = 0; i < length; i++ )
-            {
-                char ch = name.charAt( i );
-                if ( ch == '\0' )
-                {
-                    throw new IllegalArgumentException( "Illegal schema rule name: '" + name + "'" );
-                }
-            }
-        }
-        return name;
+        return sanitiseName( name );
     }
 
-    static String checkName( String name )
+    static String sanitiseName( String name )
     {
-        if ( name == null || name.isEmpty() )
+        if ( name == null )
         {
-            throw new IllegalArgumentException( "Schema rule name cannot be the empty string" );
+            throw new IllegalArgumentException( "Schema rule name cannot be null." );
+        }
+        name = name.trim();
+        if ( name.isEmpty() )
+        {
+            throw new IllegalArgumentException( "Schema rule name cannot be the empty string." );
         }
         else
         {
@@ -63,9 +52,13 @@ public interface SchemaRule extends SchemaDescriptorSupplier
                 char ch = name.charAt( i );
                 if ( ch == '\0' )
                 {
-                    throw new IllegalArgumentException( "Illegal schema rule name: '" + name + "'" );
+                    throw new IllegalArgumentException( "Schema rule names are not allowed to contain null-bytes: '" + name + "'." );
                 }
             }
+        }
+        if ( ReservedSchemaRuleNames.contains( name ) )
+        {
+            throw new IllegalArgumentException( "The index name '" + name + "' is reserved, and cannot be used." );
         }
         return name;
     }
