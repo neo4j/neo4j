@@ -44,6 +44,6 @@ class CommunityWritePrivilegeDDLAcceptanceTest extends CommunityDDLAcceptanceTes
     selectDatabase(SYSTEM_DATABASE_NAME)
 
     // THEN
-    assertFailure("REVOKE WRITE (*) ON GRAPH * ELEMENTS * (*) FROM custom", "Unsupported management command: REVOKE WRITE (*) ON GRAPH * ELEMENTS * (*) FROM custom")
+    assertFailure("REVOKE GRANT WRITE (*) ON GRAPH * ELEMENTS * (*) FROM custom", "Unsupported management command: REVOKE GRANT WRITE (*) ON GRAPH * ELEMENTS * (*) FROM custom")
   }
 }

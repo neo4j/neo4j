@@ -203,7 +203,7 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean, cardinalities: Cardina
         val (dbName, qualifierText) = Prettifier.extractScope(database, qualifier)
         PlanDescriptionImpl(id, "DenyTraverse", NoChildren, Seq(Database(dbName), Qualifier(qualifierText), Role(roleName)), variables)
 
-      case RevokeTraverse(_, database, qualifier, roleName) =>
+      case RevokeTraverse(_, database, qualifier, roleName, revokeType) =>
         val (dbName, qualifierText) = Prettifier.extractScope(database, qualifier)
         PlanDescriptionImpl(id, "RevokeTraverse", NoChildren, Seq(Database(dbName), Qualifier(qualifierText), Role(roleName)), variables)
 
@@ -215,7 +215,7 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean, cardinalities: Cardina
         val (_, dbName, qualifierText) = Prettifier.extractScope(resource, database, qualifier)
         PlanDescriptionImpl(id, "DenyRead", NoChildren, Seq(Database(dbName), Qualifier(qualifierText), Role(roleName)), variables)
 
-      case RevokeRead(_, resource, database, qualifier, roleName) =>
+      case RevokeRead(_, resource, database, qualifier, roleName, revokeType) =>
         val (_, dbName, qualifierText) = Prettifier.extractScope(resource, database, qualifier)
         PlanDescriptionImpl(id, "RevokeRead", NoChildren, Seq(Database(dbName), Qualifier(qualifierText), Role(roleName)), variables)
 
@@ -227,7 +227,7 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean, cardinalities: Cardina
         val (_, dbName, qualifierText) = Prettifier.extractScope(resource, database, qualifier)
         PlanDescriptionImpl(id, "DenyWrite", NoChildren, Seq(Database(dbName), Qualifier(qualifierText), Role(roleName)), variables)
 
-      case RevokeWrite(_, resource, database, qualifier, roleName) =>
+      case RevokeWrite(_, resource, database, qualifier, roleName, revokeType) =>
         val (_, dbName, qualifierText) = Prettifier.extractScope(resource, database, qualifier)
         PlanDescriptionImpl(id, "RevokeWrite", NoChildren, Seq(Database(dbName), Qualifier(qualifierText), Role(roleName)), variables)
 
@@ -474,7 +474,7 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean, cardinalities: Cardina
         val (dbName, qualifierText) = Prettifier.extractScope(database, qualifier)
         PlanDescriptionImpl(id, "DenyTraverse", NoChildren, Seq(Database(dbName), Qualifier(qualifierText), Role(roleName)), variables)
 
-      case RevokeTraverse(_, database, qualifier, roleName) =>
+      case RevokeTraverse(_, database, qualifier, roleName, revokeType) =>
         val (dbName, qualifierText) = Prettifier.extractScope(database, qualifier)
         PlanDescriptionImpl(id, "RevokeTraverse", children, Seq(Database(dbName), Qualifier(qualifierText), Role(roleName)), variables)
 
@@ -486,7 +486,7 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean, cardinalities: Cardina
         val (_, dbName, qualifierText) = Prettifier.extractScope(resource, database, qualifier)
         PlanDescriptionImpl(id, "DenyRead", NoChildren, Seq(Database(dbName), Qualifier(qualifierText), Role(roleName)), variables)
 
-      case RevokeRead(_, resource, database, qualifier, roleName) =>
+      case RevokeRead(_, resource, database, qualifier, roleName, revokeType) =>
         val (_, dbName, qualifierText) = Prettifier.extractScope(resource, database, qualifier)
         PlanDescriptionImpl(id, "RevokeRead", children, Seq(Database(dbName), Qualifier(qualifierText), Role(roleName)), variables)
 
@@ -498,7 +498,7 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean, cardinalities: Cardina
         val (_, dbName, qualifierText) = Prettifier.extractScope(resource, database, qualifier)
         PlanDescriptionImpl(id, "DenyWrite", NoChildren, Seq(Database(dbName), Qualifier(qualifierText), Role(roleName)), variables)
 
-      case RevokeWrite(_, resource, database, qualifier, roleName) =>
+      case RevokeWrite(_, resource, database, qualifier, roleName, revokeType) =>
         val (_, dbName, qualifierText) = Prettifier.extractScope(resource, database, qualifier)
         PlanDescriptionImpl(id, "RevokeWrite", NoChildren, Seq(Database(dbName), Qualifier(qualifierText), Role(roleName)), variables)
 

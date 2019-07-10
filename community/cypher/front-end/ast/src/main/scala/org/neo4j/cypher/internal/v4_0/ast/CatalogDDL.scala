@@ -160,6 +160,10 @@ final case class MatchPrivilege()(val position: InputPosition) extends Privilege
 
 final case class WritePrivilege()(val position: InputPosition) extends PrivilegeType("WRITE")
 
+abstract class RevokeType(val name: String)
+
+final case class RevokeGrantType()(val position: InputPosition) extends RevokeType("GRANT")
+
 sealed trait ActionResource {
   def simplify: Seq[ActionResource] = Seq(this)
 }
@@ -239,14 +243,14 @@ object DenyPrivilege {
 }
 
 object RevokePrivilege {
-  def traverse(scope: GraphScope, qualifier: PrivilegeQualifier, roleNames: Seq[String]): InputPosition => RevokePrivilege =
-    RevokePrivilege(TraversePrivilege()(InputPosition.NONE), AllResource()(InputPosition.NONE), scope, qualifier, roleNames)
-  def read(resource: ActionResource, scope: GraphScope, qualifier: PrivilegeQualifier, roleNames: Seq[String]): InputPosition => RevokePrivilege =
-    RevokePrivilege(ReadPrivilege()(InputPosition.NONE), resource, scope, qualifier, roleNames)
-  def asMatch(resource: ActionResource, scope: GraphScope, qualifier: PrivilegeQualifier, roleNames: Seq[String]): InputPosition => RevokePrivilege =
-    RevokePrivilege(MatchPrivilege()(InputPosition.NONE), resource, scope, qualifier, roleNames)
-  def write(resource: ActionResource, scope: GraphScope, qualifier: PrivilegeQualifier, roleNames: Seq[String]): InputPosition => RevokePrivilege =
-    RevokePrivilege(WritePrivilege()(InputPosition.NONE), resource, scope, qualifier, roleNames)
+  def grantedTraverse(scope: GraphScope, qualifier: PrivilegeQualifier, roleNames: Seq[String]): InputPosition => RevokePrivilege =
+    RevokePrivilege(TraversePrivilege()(InputPosition.NONE), AllResource()(InputPosition.NONE), scope, qualifier, roleNames, RevokeGrantType()(InputPosition.NONE))
+  def grantedRead(resource: ActionResource, scope: GraphScope, qualifier: PrivilegeQualifier, roleNames: Seq[String]): InputPosition => RevokePrivilege =
+    RevokePrivilege(ReadPrivilege()(InputPosition.NONE), resource, scope, qualifier, roleNames, RevokeGrantType()(InputPosition.NONE))
+  def grantedAsMatch(resource: ActionResource, scope: GraphScope, qualifier: PrivilegeQualifier, roleNames: Seq[String]): InputPosition => RevokePrivilege =
+    RevokePrivilege(MatchPrivilege()(InputPosition.NONE), resource, scope, qualifier, roleNames, RevokeGrantType()(InputPosition.NONE))
+  def grantedWrite(resource: ActionResource, scope: GraphScope, qualifier: PrivilegeQualifier, roleNames: Seq[String]): InputPosition => RevokePrivilege =
+    RevokePrivilege(WritePrivilege()(InputPosition.NONE), resource, scope, qualifier, roleNames, RevokeGrantType()(InputPosition.NONE))
 }
 
 final case class GrantPrivilege(privilege: PrivilegeType, resource: ActionResource, scope: GraphScope, qualifier: PrivilegeQualifier, roleNames: Seq[String])
@@ -269,10 +273,10 @@ final case class DenyPrivilege(privilege: PrivilegeType, resource: ActionResourc
       SemanticState.recordCurrentScope(this)
 }
 
-final case class RevokePrivilege(privilege: PrivilegeType, resource: ActionResource, scope: GraphScope, qualifier: PrivilegeQualifier, roleNames: Seq[String])
-                               (val position: InputPosition) extends MultiDatabaseDDL {
+final case class RevokePrivilege(privilege: PrivilegeType, resource: ActionResource, scope: GraphScope, qualifier: PrivilegeQualifier, roleNames: Seq[String],
+                                 revokeType: RevokeType)(val position: InputPosition) extends MultiDatabaseDDL {
 
-  override def name = s"REVOKE ${privilege.name}"
+  override def name = s"REVOKE ${revokeType.name} ${privilege.name}"
 
   override def semanticCheck: SemanticCheck =
     super.semanticCheck chain

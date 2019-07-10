@@ -134,7 +134,7 @@ case class Prettifier(expr: ExpressionStringifier) {
       val (dbName, segment) = Prettifier.extractScope(dbScope, qualifier)
       s"${x.name} ON GRAPH $dbName $segment (*) TO ${Prettifier.escapeNames(roleNames)}"
 
-    case x @ RevokePrivilege(TraversePrivilege(), _, dbScope, qualifier, roleNames) =>
+    case x @ RevokePrivilege(TraversePrivilege(), _, dbScope, qualifier, roleNames, _) =>
       val (dbName, segment) = Prettifier.extractScope(dbScope, qualifier)
       s"${x.name} ON GRAPH $dbName $segment (*) FROM ${Prettifier.escapeNames(roleNames)}"
 
@@ -146,7 +146,7 @@ case class Prettifier(expr: ExpressionStringifier) {
       val (resourceName, dbName, segment) = Prettifier.extractScope(resource, dbScope, qualifier)
       s"${x.name} ($resourceName) ON GRAPH $dbName $segment (*) TO ${Prettifier.escapeNames(roleNames)}"
 
-    case x @ RevokePrivilege(_, resource, dbScope, qualifier, roleNames) =>
+    case x @ RevokePrivilege(_, resource, dbScope, qualifier, roleNames, _) =>
       val (resourceName, dbName, segment) = Prettifier.extractScope(resource, dbScope, qualifier)
       s"${x.name} ($resourceName) ON GRAPH $dbName $segment (*) FROM ${Prettifier.escapeNames(roleNames)}"
 
