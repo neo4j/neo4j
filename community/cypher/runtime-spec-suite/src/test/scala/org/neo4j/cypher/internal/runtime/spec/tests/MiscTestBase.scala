@@ -169,8 +169,7 @@ abstract class MiscTestBase[CONTEXT <: RuntimeContext](edition: Edition[CONTEXT]
     runtimeResult should beColumns("x").withRows(rowCount(100))
   }
 
-  // TODO  Reduce-Apply-Reduce-Bug: re-enable
-  ignore("should sort on top of apply with all node scan and sort on rhs of apply") {
+  test("should sort on top of apply with all node scan and sort on rhs of apply") {
     // given
     val nodes = nodeGraph(10)
     val inputRows = inputValues(nodes.map(node => Array[Any](node)): _*)
@@ -208,6 +207,26 @@ abstract class MiscTestBase[CONTEXT <: RuntimeContext](edition: Edition[CONTEXT]
 
     // then
     runtimeResult should beColumns("x", "y").withRows(groupedBy("x").desc("y"))
+  }
+
+  test("should sort-apply") {
+    // given
+    circleGraph(1000)
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x", "y")
+      .sort(Seq(Descending("y")))
+      .apply()
+      .|.expandAll("(x)--(y)")
+      .|.argument()
+      .allNodeScan("x")
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    runtimeResult should beColumns("x", "y").withRows(sortedDesc("y"))
   }
 
   test("should apply-apply-sort") {
