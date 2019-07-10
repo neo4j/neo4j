@@ -431,8 +431,6 @@ class CommunityUserManagementDDLAcceptanceTest extends CommunityDDLAcceptanceTes
     execute("CREATE USER foo SET PASSWORD 'bar' CHANGE NOT REQUIRED")
     execute("SHOW USERS").toSet shouldBe Set(user("neo4j"), user("foo", passwordChangeRequired = false))
 
-    // THEN
-    // WHEN
     the[QueryExecutionException] thrownBy { // the InvalidArgumentsException exception gets wrapped in this code path
       // WHEN
       executeOnSystem("foo", "bar", "ALTER CURRENT USER SET PASSWORD FROM 'wrongPassword' TO 'baz'")
@@ -464,7 +462,7 @@ class CommunityUserManagementDDLAcceptanceTest extends CommunityDDLAcceptanceTes
 
     the[QueryExecutionException] thrownBy { // the InvalidArgumentsException exception gets wrapped in this code path
       // WHEN
-      executeOnSystem("foo", "bar", "ALTER CURRENT USER SET PASSWORD FROM 'bar' TO $password", params = parameter)
+      executeOnSystem("foo", "bar", "ALTER CURRENT USER SET PASSWORD FROM 'bar' TO $password", parameter)
       // THEN
     } should have message "Old password and new password cannot be the same."
 
@@ -482,7 +480,7 @@ class CommunityUserManagementDDLAcceptanceTest extends CommunityDDLAcceptanceTes
     parameter.put("password", "baz")
 
     // WHEN
-    executeOnSystem("foo", "bar", "ALTER CURRENT USER SET PASSWORD FROM 'bar' TO $password", params = parameter)
+    executeOnSystem("foo", "bar", "ALTER CURRENT USER SET PASSWORD FROM 'bar' TO $password", parameter)
 
     // THEN
     testUserLogin("foo", "baz", AuthenticationResult.SUCCESS)
@@ -515,7 +513,7 @@ class CommunityUserManagementDDLAcceptanceTest extends CommunityDDLAcceptanceTes
     parameter.put("password", "bar")
 
     // WHEN
-    executeOnSystem("foo", "bar", "ALTER CURRENT USER SET PASSWORD FROM $password TO 'baz'", params = parameter)
+    executeOnSystem("foo", "bar", "ALTER CURRENT USER SET PASSWORD FROM $password TO 'baz'", parameter)
 
     // THEN
     testUserLogin("foo", "baz", AuthenticationResult.SUCCESS)
@@ -533,7 +531,7 @@ class CommunityUserManagementDDLAcceptanceTest extends CommunityDDLAcceptanceTes
 
     the[QueryExecutionException] thrownBy { // the ParameterWrongTypeException exception gets wrapped in this code path
       // WHEN
-      executeOnSystem("foo", "bar", "ALTER CURRENT USER SET PASSWORD FROM $password TO 'bar'", params = parameter)
+      executeOnSystem("foo", "bar", "ALTER CURRENT USER SET PASSWORD FROM $password TO 'bar'", parameter)
       // THEN
     } should have message "Only string values are accepted as password, got: Integer"
 
@@ -552,7 +550,7 @@ class CommunityUserManagementDDLAcceptanceTest extends CommunityDDLAcceptanceTes
     parameter.put("newPassword", "baz")
 
     // WHEN
-    executeOnSystem("foo", "bar", "ALTER CURRENT USER SET PASSWORD FROM $currentPassword TO $newPassword", params = parameter)
+    executeOnSystem("foo", "bar", "ALTER CURRENT USER SET PASSWORD FROM $currentPassword TO $newPassword", parameter)
 
     // THEN
     testUserLogin("foo", "baz", AuthenticationResult.SUCCESS)
@@ -570,7 +568,7 @@ class CommunityUserManagementDDLAcceptanceTest extends CommunityDDLAcceptanceTes
 
     the[QueryExecutionException] thrownBy { // the ParameterNotFoundException exception gets wrapped in this code path
       // WHEN
-      executeOnSystem("foo", "bar", "ALTER CURRENT USER SET PASSWORD FROM $currentPassword TO $newPassword", params = parameter)
+      executeOnSystem("foo", "bar", "ALTER CURRENT USER SET PASSWORD FROM $currentPassword TO $newPassword", parameter)
       // THEN
     } should have message "Expected parameter(s): newPassword"
 
@@ -589,7 +587,7 @@ class CommunityUserManagementDDLAcceptanceTest extends CommunityDDLAcceptanceTes
 
     the[QueryExecutionException] thrownBy { // the ParameterNotFoundException exception gets wrapped in this code path
       // WHEN
-      executeOnSystem("foo", "bar", "ALTER CURRENT USER SET PASSWORD FROM $currentPassword TO $newPassword", params = parameter)
+      executeOnSystem("foo", "bar", "ALTER CURRENT USER SET PASSWORD FROM $currentPassword TO $newPassword", parameter)
       // THEN
     } should have message "Expected parameter(s): currentPassword"
 
@@ -619,11 +617,10 @@ class CommunityUserManagementDDLAcceptanceTest extends CommunityDDLAcceptanceTes
     selectDatabase(SYSTEM_DATABASE_NAME)
     execute("CREATE USER foo SET PASSWORD 'bar' CHANGE NOT REQUIRED")
     execute("SHOW USERS").toSet shouldBe Set(user("neo4j"), user("foo", passwordChangeRequired = false))
-    selectDatabase(DEFAULT_DATABASE_NAME)
 
     the[QueryExecutionException] thrownBy { // the DatabaseManagementException gets wrapped twice in this code path
       // WHEN
-      executeOnDefault("foo", "bar", "ALTER CURRENT USER SET PASSWORD FROM 'bar' TO 'baz'")
+      executeOn(DEFAULT_DATABASE_NAME, "foo", "bar", "ALTER CURRENT USER SET PASSWORD FROM 'bar' TO 'baz'")
       // THEN
     } should have message
       "This is a DDL command and it should be executed against the system database: ALTER CURRENT USER SET PASSWORD"
@@ -648,18 +645,15 @@ class CommunityUserManagementDDLAcceptanceTest extends CommunityDDLAcceptanceTes
     testUserLogin(username, password, AuthenticationResult.PASSWORD_CHANGE_REQUIRED)
   }
 
-  private def executeOnDefault(username: String, password: String, query: String,
-                       resultHandler: (Result.ResultRow, Int) => Unit = (_, _) => {}, params: util.Map[String, Object] = Collections.emptyMap()): Int = {
-    executeOn(DEFAULT_DATABASE_NAME, username, password, query, resultHandler, params)
-  }
-
   private def executeOnSystem(username: String, password: String, query: String,
-                      resultHandler: (Result.ResultRow, Int) => Unit = (_, _) => {}, params: util.Map[String, Object] = Collections.emptyMap()): Int = {
-    executeOn(SYSTEM_DATABASE_NAME, username, password, query, resultHandler, params)
+                              params: util.Map[String, Object] = Collections.emptyMap(),
+                              resultHandler: (Result.ResultRow, Int) => Unit = (_, _) => {}): Int = {
+    executeOn(SYSTEM_DATABASE_NAME, username, password, query, params, resultHandler)
   }
 
   private def executeOn(database: String, username: String, password: String, query: String,
-                        resultHandler: (Result.ResultRow, Int) => Unit, params: util.Map[String, Object]): Int = {
+                        params: util.Map[String, Object] = Collections.emptyMap(),
+                        resultHandler: (Result.ResultRow, Int) => Unit = (_, _) => {}): Int = {
     selectDatabase(database)
     val login = authManager.login(SecurityTestUtils.authToken(username, password))
     val tx = graph.beginTransaction(Transaction.Type.explicit, login)

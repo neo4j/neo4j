@@ -41,7 +41,7 @@ import org.neo4j.values.virtual.MapValue
   * Execution plan for performing system commands, i.e. creating databases or showing roles and users.
   */
 case class SystemCommandExecutionPlan(name: String, normalExecutionEngine: ExecutionEngine, query: String, systemParams: MapValue,
-                                      resultMapper: (QueryContext, QueryExecution) => SystemCommandExecutionResult = (c, q) => new SystemCommandExecutionResult(q.asInstanceOf[InternalExecutionResult]),
+                                      resultMapper: (QueryContext, QueryExecution) => SystemCommandExecutionResult = (_, q) => new SystemCommandExecutionResult(q.asInstanceOf[InternalExecutionResult]),
                                       onError: Throwable => Throwable = identity)
   extends ExecutionPlan {
 
@@ -55,10 +55,10 @@ case class SystemCommandExecutionPlan(name: String, normalExecutionEngine: Execu
     val tc = ctx.asInstanceOf[ExceptionTranslatingQueryContext].inner.asInstanceOf[TransactionBoundQueryContext].transactionalContext.tc
     if (!name.equals("ShowDefaultDatabase") && !name.startsWith("ShowDatabase") && !tc.securityContext().isAdmin) throw new AuthorizationViolationException(PERMISSION_DENIED)
 
-    var revert: KernelTransaction.Revertable = null
+    var revertAccessModeChange: KernelTransaction.Revertable = null
     try {
       val fullReadAccess = tc.securityContext().withMode(AccessMode.Static.READ)
-      revert = tc.kernelTransaction().overrideWith(fullReadAccess)
+      revertAccessModeChange = tc.kernelTransaction().overrideWith(fullReadAccess)
 
       val systemSubscriber = new SystemCommandQuerySubscriber(subscriber, QueryHandler.handleError(onError))
       val execution = normalExecutionEngine.executeSubQuery(query, systemParams, tc, shouldCloseTransaction = false, doProfile, prePopulateResults, systemSubscriber)
@@ -66,7 +66,7 @@ case class SystemCommandExecutionPlan(name: String, normalExecutionEngine: Execu
 
       SystemCommandRuntimeResult(ctx, resultMapper(ctx, execution), systemSubscriber, fullReadAccess, tc.kernelTransaction())
     } finally {
-      if (revert != null) revert
+      if (revertAccessModeChange != null) revertAccessModeChange
     }
   }
 
@@ -118,7 +118,7 @@ class SystemCommandQuerySubscriber(inner: QuerySubscriber, queryHandler: QueryHa
     failed = Some(cypherError)
   }
 
-  def assertNotFailed(onFailure: Throwable => Unit = t => ()): Unit = failed.foreach { exception =>
+  def assertNotFailed(onFailure: Throwable => Unit = _ => ()): Unit = failed.foreach { exception =>
     onFailure(exception) // used to close resources
     throw exception
   }

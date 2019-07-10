@@ -49,16 +49,16 @@ case class SystemCommandRuntimeResult(ctx: QueryContext,
   override def queryProfile(): QueryProfile = SystemCommandProfile(0)
 
   override def request(numberOfRecords: Long): Unit = {
-    var revert: KernelTransaction.Revertable = null
+    var revertSecurityContextChange: KernelTransaction.Revertable = null
     try {
-      revert = kernelTransaction.overrideWith(securityContext)
+      revertSecurityContextChange = kernelTransaction.overrideWith(securityContext)
 
       state = ConsumptionState.HAS_MORE
       execution.inner.request(numberOfRecords)
       // The lower level (execution) is capturing exceptions using the subscriber, but this level is expecting to do the same higher up, so re-throw to trigger that code path
       subscriber.assertNotFailed(e => execution.inner.close(Error(e)))
     } finally {
-      if (revert != null) revert
+      if (revertSecurityContextChange != null) revertSecurityContextChange
     }
   }
 

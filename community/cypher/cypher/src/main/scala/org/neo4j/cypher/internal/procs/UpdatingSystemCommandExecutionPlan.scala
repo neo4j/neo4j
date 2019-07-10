@@ -64,10 +64,10 @@ case class UpdatingSystemCommandExecutionPlan(name: String,
         val tc: TransactionalContext = ctx.asInstanceOf[ExceptionTranslatingQueryContext].inner.asInstanceOf[TransactionBoundQueryContext].transactionalContext.tc
         if (!name.equals("AlterCurrentUserSetPassword") && !tc.securityContext().isAdmin) throw new AuthorizationViolationException(PERMISSION_DENIED)
 
-        var revert: KernelTransaction.Revertable = null
+        var revertAccessModeChange: KernelTransaction.Revertable = null
         try {
           val fullAccess = tc.securityContext().withMode(AccessMode.Static.FULL)
-          revert = tc.kernelTransaction().overrideWith(fullAccess)
+          revertAccessModeChange = tc.kernelTransaction().overrideWith(fullAccess)
 
           val systemSubscriber = new SystemCommandQuerySubscriber(subscriber, queryHandler)
           val execution = normalExecutionEngine.executeSubQuery(query, systemParams, tc, shouldCloseTransaction = false, doProfile, prePopulateResults, systemSubscriber).asInstanceOf[InternalExecutionResult]
@@ -75,7 +75,7 @@ case class UpdatingSystemCommandExecutionPlan(name: String,
 
           SystemCommandRuntimeResult(ctx, new UpdatingSystemCommandExecutionResult(execution), systemSubscriber, fullAccess, tc.kernelTransaction())
         } finally {
-          if(revert != null ) revert
+          if(revertAccessModeChange != null ) revertAccessModeChange
         }
     }
   }
