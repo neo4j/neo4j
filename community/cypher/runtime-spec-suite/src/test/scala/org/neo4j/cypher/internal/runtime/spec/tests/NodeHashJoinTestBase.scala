@@ -236,8 +236,7 @@ abstract class NodeHashJoinTestBase[CONTEXT <: RuntimeContext](edition: Edition[
     runtimeResult should beColumns("x", "y", "z").withRows(expectedResultRows)
   }
 
-  // TODO  Reduce-Apply-Reduce-Bug: re-enable
-  ignore("should join below an apply and sort") {
+  test("should join below an apply and sort") {
     // given
     val (unfilteredNodes, _) = circleGraph(sizeHint)
     val nodes = select(unfilteredNodes, selectivity = 0.5, duplicateProbability = 0.5, nullProbability = 0.1)
