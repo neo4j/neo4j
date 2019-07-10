@@ -42,7 +42,7 @@ trait Statement extends Parser
   }
 
   def PrivilegeManagementCommand: Rule1[CatalogDDL] = rule("Security privilege management statement") {
-    optional(keyword("CATALOG")) ~~ (ShowPrivileges | GrantCommand | DenyCommand | RevokeGrant | RevokeDeny)
+    optional(keyword("CATALOG")) ~~ (ShowPrivileges | GrantCommand | DenyCommand | RevokeGrant | RevokeDeny | Revoke)
   }
 
   def GrantCommand: Rule1[CatalogDDL] = rule("Security privilege grant statement") {
@@ -59,6 +59,10 @@ trait Statement extends Parser
 
   def RevokeDeny: Rule1[CatalogDDL] = rule("Security privilege revoke deny statement") {
     RevokeDenyTraverse | RevokeDenyRead | RevokeDenyMatch | RevokeDenyWrite
+  }
+
+  def Revoke: Rule1[CatalogDDL] = rule("Security privilege revoke statement") {
+    RevokeTraverse | RevokeRead | RevokeMatch | RevokeWrite
   }
 
   def ShowUsers: Rule1[ShowUsers] = rule("CATALOG SHOW USERS") {
@@ -210,6 +214,12 @@ trait Statement extends Parser
       ((scope, qualifier, grantees) => ast.RevokePrivilege.deniedTraverse(scope, qualifier, grantees))
   }
 
+  //`REVOKE TRAVERSE ON GRAPH foo ELEMENTS A (*) FROM role`
+  def RevokeTraverse: Rule1[RevokePrivilege] = rule("CATALOG REVOKE TRAVERSE") {
+    group(keyword("REVOKE TRAVERSE") ~~ Graph ~~ ScopeQualifier ~~ keyword("FROM") ~~ SymbolicNamesList) ~~>>
+      ((scope, qualifier, grantees) => ast.RevokePrivilege.traverse(scope, qualifier, grantees))
+  }
+
   //`GRANT READ (a) ON GRAPH foo ELEMENTS A (*) TO role`
   def GrantRead: Rule1[GrantPrivilege] = rule("CATALOG GRANT READ") {
     group(keyword("GRANT READ") ~~ PrivilegeProperty ~~ Graph ~~ ScopeQualifier ~~ keyword("TO") ~~ SymbolicNamesList) ~~>>
@@ -232,6 +242,12 @@ trait Statement extends Parser
   def RevokeDenyRead: Rule1[RevokePrivilege] = rule("CATALOG REVOKE DENY READ") {
     group(keyword("REVOKE DENY READ") ~~ PrivilegeProperty ~~ Graph ~~ ScopeQualifier ~~ keyword("FROM") ~~ SymbolicNamesList) ~~>>
       ((prop, scope, qualifier, grantees) => ast.RevokePrivilege.deniedRead(prop, scope, qualifier, grantees))
+  }
+
+  //`REVOKE READ (a) ON GRAPH foo ELEMENTS A (*) FROM role`
+  def RevokeRead: Rule1[RevokePrivilege] = rule("CATALOG REVOKE READ") {
+    group(keyword("REVOKE READ") ~~ PrivilegeProperty ~~ Graph ~~ ScopeQualifier ~~ keyword("FROM") ~~ SymbolicNamesList) ~~>>
+      ((prop, scope, qualifier, grantees) => ast.RevokePrivilege.read(prop, scope, qualifier, grantees))
   }
 
   //`GRANT MATCH (a) ON GRAPH foo ELEMENTS A (*) TO role`
@@ -258,6 +274,12 @@ trait Statement extends Parser
       ((prop, scope, qualifier, grantees) => ast.RevokePrivilege.deniedAsMatch(prop, scope, qualifier, grantees))
   }
 
+  //`REVOKE MATCH (a) ON GRAPH foo ELEMENTS A (*) FROM role`
+  def RevokeMatch: Rule1[RevokePrivilege] = rule("CATALOG REVOKE MATCH") {
+    group(keyword("REVOKE MATCH") ~~ PrivilegeProperty ~~ Graph ~~ ScopeQualifier ~~ keyword("FROM") ~~ SymbolicNamesList) ~~>>
+      ((prop, scope, qualifier, grantees) => ast.RevokePrivilege.asMatch(prop, scope, qualifier, grantees))
+  }
+
   //`GRANT WRITE (*) ON GRAPH foo * (*) TO role`
   def GrantWrite: Rule1[GrantPrivilege] = rule("CATALOG GRANT WRITE") {
     group(keyword("GRANT WRITE") ~~ AllPrivilegeProperty ~~ Graph ~~ AllScopeQualifier ~~ keyword("TO") ~~ SymbolicNamesList) ~~>>
@@ -280,6 +302,12 @@ trait Statement extends Parser
   def RevokeDenyWrite: Rule1[RevokePrivilege] = rule("CATALOG REVOKE DENY WRITE") {
     group(keyword("REVOKE DENY WRITE") ~~ AllPrivilegeProperty ~~ Graph ~~ AllScopeQualifier ~~ keyword("FROM") ~~ SymbolicNamesList) ~~>>
       ((prop, scope, qualifier, grantees) => ast.RevokePrivilege.deniedWrite(prop, scope, qualifier, grantees))
+  }
+
+  //`REVOKE WRITE (*) ON GRAPH foo * (*) FROM role`
+  def RevokeWrite: Rule1[RevokePrivilege] = rule("CATALOG REVOKE WRITE") {
+    group(keyword("REVOKE WRITE") ~~ AllPrivilegeProperty ~~ Graph ~~ AllScopeQualifier ~~ keyword("FROM") ~~ SymbolicNamesList) ~~>>
+      ((prop, scope, qualifier, grantees) => ast.RevokePrivilege.write(prop, scope, qualifier, grantees))
   }
 
   def ShowPrivileges: Rule1[ShowPrivileges] = rule("CATALOG SHOW PRIVILEGES") {

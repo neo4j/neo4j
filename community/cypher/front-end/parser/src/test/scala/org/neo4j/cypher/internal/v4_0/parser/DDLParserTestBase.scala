@@ -39,4 +39,7 @@ class DDLParserTestBase
 
   def revokeDeny(p: PrivilegeType, a: ActionResource, s: GraphScope, q: PrivilegeQualifier, r: Seq[String]): InputPosition => ast.Statement =
     ast.RevokePrivilege(p, a, s, q, r, RevokeDenyType()(InputPosition.NONE))
+
+  def revokeBoth(p: PrivilegeType, a: ActionResource, s: GraphScope, q: PrivilegeQualifier, r: Seq[String]): InputPosition => ast.Statement =
+    ast.RevokePrivilege(p, a, s, q, r, RevokeBothType()(InputPosition.NONE))
 }
