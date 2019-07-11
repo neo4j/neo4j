@@ -27,6 +27,7 @@ import org.junit.jupiter.api.condition.OS;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.io.IOException;
+import java.nio.ByteBuffer;
 
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -34,6 +35,7 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.PositionableChannel;
+import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.kernel.impl.transaction.SimpleLogVersionRepository;
 import org.neo4j.kernel.impl.transaction.SimpleTransactionIdStore;
@@ -148,6 +150,12 @@ class VersionAwareLogEntryReaderIT
             writer.prepareForFlush().flush();
             logFiles.getLogFile().rotate();
             fs.truncate( logFiles.getLogFileForVersion( 0 ), checkpointsEndDataOffset );
+
+            try ( StoreChannel storeChannel = fs.write( logFiles.getLogFileForVersion( 1 ) ) )
+            {
+                storeChannel.position( LOG_HEADER_SIZE );
+                storeChannel.write( ByteBuffer.wrap( new byte[]{0} ) );
+            }
 
             try ( ReadableLogChannel logChannel = logFiles.getLogFile().getReader( new LogPosition( 0, initialPosition ) ) )
             {

@@ -202,9 +202,11 @@ class TransactionLogFilesTest
     void fileWithoutEntriesDoesNotHaveThemIndependentlyOfItsSize() throws IOException
     {
         LogFiles logFiles = createLogFiles();
-        PhysicalLogVersionedStoreChannel channel = logFiles.createLogChannelForVersion( 1, () -> 1L );
-        assertThat( channel.size(), greaterThanOrEqualTo( (long) LOG_HEADER_SIZE ) );
-        assertFalse( logFiles.hasAnyEntries( 1 ) );
+        try ( PhysicalLogVersionedStoreChannel channel = logFiles.createLogChannelForVersion( 1, () -> 1L ) )
+        {
+            assertThat( channel.size(), greaterThanOrEqualTo( (long) LOG_HEADER_SIZE ) );
+            assertFalse( logFiles.hasAnyEntries( 1 ) );
+        }
     }
 
     private File createTransactionLogFile( DatabaseLayout databaseLayout, String fileName )

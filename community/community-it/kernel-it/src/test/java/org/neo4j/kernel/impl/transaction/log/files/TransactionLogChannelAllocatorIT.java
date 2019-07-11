@@ -79,8 +79,10 @@ class TransactionLogChannelAllocatorIT
     @DisabledOnOs( OS.LINUX )
     void allocateNewTransactionLogFileOnSystemThatDoesNotSupportPreallocations() throws IOException
     {
-        PhysicalLogVersionedStoreChannel logChannel = fileAllocator.createLogChannel( 10, () -> 1L );
-        assertEquals( ROTATION_THRESHOLD, logChannel.size() );
+        try ( PhysicalLogVersionedStoreChannel logChannel = fileAllocator.createLogChannel( 10, () -> 1L ) )
+        {
+            assertEquals( LOG_HEADER_SIZE, logChannel.size() );
+        }
     }
 
     @Test
@@ -90,9 +92,10 @@ class TransactionLogChannelAllocatorIT
         fileSystem.write( file ).close();
 
         TransactionLogChannelAllocator fileAllocator = createLogFileAllocator();
-        PhysicalLogVersionedStoreChannel channel = fileAllocator.createLogChannel( 11, () -> 1L );
-
-        assertEquals( LOG_HEADER_SIZE, channel.size() );
+        try ( PhysicalLogVersionedStoreChannel channel = fileAllocator.createLogChannel( 11, () -> 1L ) )
+        {
+            assertEquals( LOG_HEADER_SIZE, channel.size() );
+        }
     }
 
     private TransactionLogChannelAllocator createLogFileAllocator()
