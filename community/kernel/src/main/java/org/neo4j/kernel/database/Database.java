@@ -114,6 +114,7 @@ import org.neo4j.kernel.impl.transaction.log.files.LogFileCreationMonitor;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
 import org.neo4j.kernel.impl.transaction.log.files.LogFilesBuilder;
 import org.neo4j.kernel.impl.transaction.log.files.TransactionLogFilesHelper;
+import org.neo4j.kernel.impl.transaction.log.monitor.DefaultLogAppenderMonitor;
 import org.neo4j.kernel.impl.transaction.log.pruning.LogPruneStrategyFactory;
 import org.neo4j.kernel.impl.transaction.log.pruning.LogPruning;
 import org.neo4j.kernel.impl.transaction.log.pruning.LogPruningImpl;
@@ -324,12 +325,15 @@ public class Database extends LifecycleAdapter
             databaseDependencies.satisfyDependency( new DefaultValueMapper( databaseFacade ) );
 
             DefaultLogRotationMonitor logRotationMonitor = new DefaultLogRotationMonitor();
+            DefaultLogAppenderMonitor logAppenderMonitor = new DefaultLogAppenderMonitor();
             DefaultCheckPointMonitor checkPointMonitor = new DefaultCheckPointMonitor();
 
             databaseMonitors.addMonitorListener( logRotationMonitor );
+            databaseMonitors.addMonitorListener( logAppenderMonitor );
             databaseMonitors.addMonitorListener( checkPointMonitor );
 
             databaseDependencies.satisfyDependency( logRotationMonitor );
+            databaseDependencies.satisfyDependency( logAppenderMonitor );
             databaseDependencies.satisfyDependency( checkPointMonitor );
 
             RecoveryCleanupWorkCollector recoveryCleanupWorkCollector = RecoveryCleanupWorkCollector.immediate();
@@ -577,7 +581,7 @@ public class Database extends LifecycleAdapter
                 new LogRotationImpl( logFiles, clock, databaseHealth, monitors.newMonitor( LogRotationMonitor.class ) );
 
         final TransactionAppender appender = life.add( new BatchingTransactionAppender(
-                logFiles, logRotation, transactionMetadataCache, transactionIdStore, databaseHealth ) );
+                logFiles, logRotation, transactionMetadataCache, transactionIdStore, databaseHealth, databaseMonitors ) );
         final LogicalTransactionStore logicalTransactionStore =
                 new PhysicalLogicalTransactionStore( logFiles, transactionMetadataCache, logEntryReader, monitors, true );
 

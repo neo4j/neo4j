@@ -89,7 +89,7 @@ class BatchingTransactionAppenderRotationIT
         TransactionMetadataCache transactionMetadataCache = new TransactionMetadataCache();
 
         BatchingTransactionAppender transactionAppender =
-                new BatchingTransactionAppender( logFiles, logRotation, transactionMetadataCache, transactionIdStore, databaseHealth );
+                new BatchingTransactionAppender( logFiles, logRotation, transactionMetadataCache, transactionIdStore, databaseHealth, monitors );
 
         life.add( transactionAppender );
 

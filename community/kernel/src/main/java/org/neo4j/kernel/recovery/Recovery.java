@@ -328,7 +328,7 @@ public final class Recovery
         PhysicalLogicalTransactionStore transactionStore = new PhysicalLogicalTransactionStore( logFiles, metadataCache, logEntryReader, monitors,
                 failOnCorruptedLogFiles );
         BatchingTransactionAppender transactionAppender = new BatchingTransactionAppender( logFiles, LogRotation.NO_ROTATION, metadataCache,
-                transactionIdStore, databaseHealth );
+                transactionIdStore, databaseHealth, monitors );
 
         LifeSupport schemaLife = new LifeSupport();
         schemaLife.add( storageEngine.schemaAndTokensLifecycle() );

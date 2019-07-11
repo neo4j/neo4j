@@ -33,6 +33,7 @@ import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryWriter;
 import org.neo4j.kernel.impl.transaction.log.files.LogFile;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
+import org.neo4j.kernel.impl.transaction.log.monitor.LogAppenderMonitor;
 import org.neo4j.kernel.impl.transaction.log.rotation.LogRotation;
 import org.neo4j.kernel.impl.transaction.tracing.LogAppendEvent;
 import org.neo4j.kernel.impl.transaction.tracing.LogCheckPointEvent;
@@ -42,6 +43,7 @@ import org.neo4j.kernel.impl.transaction.tracing.LogForceWaitEvent;
 import org.neo4j.kernel.impl.transaction.tracing.SerializeTransactionEvent;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.monitoring.Health;
+import org.neo4j.monitoring.Monitors;
 import org.neo4j.storageengine.api.TransactionIdStore;
 
 import static org.neo4j.kernel.impl.api.TransactionToApply.TRANSACTION_ID_NOT_SPECIFIED;
@@ -55,6 +57,7 @@ public class BatchingTransactionAppender extends LifecycleAdapter implements Tra
 {
     private final AtomicReference<ThreadLink> threadLinkHead = new AtomicReference<>( ThreadLink.END );
     private final TransactionMetadataCache transactionMetadataCache;
+    private final LogAppenderMonitor monitor;
     private final LogFile logFile;
     private final LogRotation logRotation;
     private final TransactionIdStore transactionIdStore;
@@ -65,14 +68,15 @@ public class BatchingTransactionAppender extends LifecycleAdapter implements Tra
     private FlushablePositionAwareChannel writer;
     private TransactionLogWriter transactionLogWriter;
 
-    public BatchingTransactionAppender( LogFiles logFiles, LogRotation logRotation,
-            TransactionMetadataCache transactionMetadataCache, TransactionIdStore transactionIdStore, Health databaseHealth )
+    public BatchingTransactionAppender( LogFiles logFiles, LogRotation logRotation, TransactionMetadataCache transactionMetadataCache,
+            TransactionIdStore transactionIdStore, Health databaseHealth, Monitors databaseMonitors )
     {
         this.logFile = logFiles.getLogFile();
         this.logRotation = logRotation;
         this.transactionIdStore = transactionIdStore;
         this.databaseHealth = databaseHealth;
         this.transactionMetadataCache = transactionMetadataCache;
+        this.monitor = databaseMonitors.newMonitor( LogAppenderMonitor.class );
     }
 
     @Override
@@ -167,7 +171,10 @@ public class BatchingTransactionAppender extends LifecycleAdapter implements Tra
         {
             try
             {
+                LogPosition logPositionBeforeCheckpoint = writer.getCurrentPosition( positionMarker ).newPosition();
                 transactionLogWriter.checkPoint( logPosition );
+                LogPosition logPositionAfterCheckpoint = writer.getCurrentPosition( positionMarker ).newPosition();
+                monitor.appendToLogFile( logPositionBeforeCheckpoint, logPositionAfterCheckpoint );
             }
             catch ( Throwable cause )
             {
@@ -196,6 +203,7 @@ public class BatchingTransactionAppender extends LifecycleAdapter implements Tra
             LogPosition logPositionBeforeCommit = writer.getCurrentPosition( positionMarker ).newPosition();
             transactionLogWriter.append( transaction, transactionId );
             LogPosition logPositionAfterCommit = writer.getCurrentPosition( positionMarker ).newPosition();
+            monitor.appendToLogFile( logPositionBeforeCommit, logPositionAfterCommit );
 
             long transactionChecksum =
                     checksum( transaction.additionalHeader(), transaction.getMasterId(), transaction.getAuthorId() );
