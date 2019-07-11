@@ -43,11 +43,12 @@ public class BoltKernelDatabaseManagementServiceProvider implements BoltGraphDat
     @Override
     public BoltGraphDatabaseServiceSPI database( String databaseName ) throws DatabaseNotFoundException, UnavailableException
     {
-        var databaseFacade = (GraphDatabaseAPI) managementService.database( databaseName );
-        if ( !databaseFacade.isAvailable( 0 ) )
+        var databaseAPI = (GraphDatabaseAPI) managementService.database( databaseName );
+
+        if ( !databaseAPI.isAvailable( 0 ) )
         {
             throw new UnavailableException( format( "Database `%s` is unavailable.", databaseName ) );
         }
-        return new BoltKernelGraphDatabaseServiceProvider( databaseFacade, clock );
+        return new BoltKernelGraphDatabaseServiceProvider( databaseAPI, clock );
     }
 }

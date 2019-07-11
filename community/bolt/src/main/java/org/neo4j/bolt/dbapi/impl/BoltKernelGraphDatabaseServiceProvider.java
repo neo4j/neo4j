@@ -51,20 +51,20 @@ import org.neo4j.time.SystemNanoClock;
 public class BoltKernelGraphDatabaseServiceProvider implements BoltGraphDatabaseServiceSPI
 {
     private final TransactionIdTracker transactionIdTracker;
-    private final GraphDatabaseAPI databaseFacade;
+    private final GraphDatabaseAPI databaseAPI;
     private final QueryExecutionEngine queryExecutionEngine;
     private final ThreadToStatementContextBridge txBridge;
     private final TransactionalContextFactory transactionalContextFactory;
     private final DatabaseId databaseId;
 
-    public BoltKernelGraphDatabaseServiceProvider( GraphDatabaseAPI facade, SystemNanoClock clock )
+    public BoltKernelGraphDatabaseServiceProvider( GraphDatabaseAPI databaseAPI, SystemNanoClock clock )
     {
-        this.databaseFacade = facade;
-        this.txBridge = resolveDependency( facade, ThreadToStatementContextBridge.class );
-        this.queryExecutionEngine = resolveDependency( facade, QueryExecutionEngine.class );
-        this.transactionIdTracker = newTransactionIdTracker( facade, clock );
-        this.transactionalContextFactory = newTransactionalContextFactory( facade );
-        this.databaseId = resolveDependency( facade, Database.class ).getDatabaseId();
+        this.databaseAPI = databaseAPI;
+        this.txBridge = resolveDependency( databaseAPI, ThreadToStatementContextBridge.class );
+        this.queryExecutionEngine = resolveDependency( databaseAPI, QueryExecutionEngine.class );
+        this.transactionIdTracker = newTransactionIdTracker( databaseAPI, clock );
+        this.transactionalContextFactory = newTransactionalContextFactory( databaseAPI );
+        this.databaseId = resolveDependency( databaseAPI, Database.class ).getDatabaseId();
     }
 
     private static <T> T resolveDependency( GraphDatabaseAPI databaseContext, Class<T> clazz )
@@ -136,11 +136,11 @@ public class BoltKernelGraphDatabaseServiceProvider implements BoltGraphDatabase
         InternalTransaction internalTransaction;
         if ( txTimeout == null )
         {
-            internalTransaction = databaseFacade.beginTransaction( type, loginContext, clientInfo );
+            internalTransaction = databaseAPI.beginTransaction( type, loginContext, clientInfo );
         }
         else
         {
-            internalTransaction = databaseFacade.beginTransaction( type, loginContext, clientInfo, txTimeout.toMillis(), TimeUnit.MILLISECONDS );
+            internalTransaction = databaseAPI.beginTransaction( type, loginContext, clientInfo, txTimeout.toMillis(), TimeUnit.MILLISECONDS );
         }
 
         if ( txMetadata != null )

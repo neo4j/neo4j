@@ -173,6 +173,7 @@ public class BookmarkWithDatabaseId implements Bookmark
         }
     }
 
+    @Override
     public void attachTo( BoltResponseHandler state )
     {
         if ( !equals( EMPTY_BOOKMARK ) )
