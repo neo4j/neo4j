@@ -54,27 +54,6 @@ class PickBestPlanUsingHintsAndCostTest extends CypherFunSuite with LogicalPlann
     })
   }
 
-  test("picks the right plan by cost, no matter the size of the covered ids") {
-    val ab = fakeLogicalPlanFor("a", "b")
-    val b = fakeLogicalPlanFor("b")
-
-    val GIVEN = new given {
-      cost = {
-        case (p, _, _) if p == ab => Cost(100)
-        case (p, _, _) if p == b => Cost(50)
-      }
-    }
-
-    assertTopPlan(winner = b, PlanningAttributes(new StubSolveds, new StubCardinalities, new StubProvidedOrders), ab, b)(GIVEN)
-  }
-
-  test("picks the right plan by cost and secondly by the covered ids") {
-    val ab = fakeLogicalPlanFor("a", "b")
-    val c = fakeLogicalPlanFor("c")
-
-    assertTopPlan(winner = ab, PlanningAttributes(new StubSolveds, new StubCardinalities, new StubProvidedOrders), ab, c)(GIVEN_FIXED_COST)
-  }
-
   test("Prefers plans that solves a hint over plan that solves no hint") {
     val solveds = new Solveds
     val a = fakeLogicalPlanFor("a")
