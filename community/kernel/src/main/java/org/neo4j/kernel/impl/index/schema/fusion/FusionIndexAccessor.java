@@ -166,4 +166,10 @@ class FusionIndexAccessor extends FusionIndexBase<IndexAccessor> implements Inde
     {
         instanceSelector.select( slotSelector.selectSlot( tuple, GROUP_OF ) ).validateBeforeCommit( tuple );
     }
+
+    @Override
+    public boolean consistencyCheck()
+    {
+        return FusionIndexBase.consistencyCheck( instanceSelector.instances.values() );
+    }
 }

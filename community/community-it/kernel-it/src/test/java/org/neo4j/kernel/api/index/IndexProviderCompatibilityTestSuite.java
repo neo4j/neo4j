@@ -118,11 +118,6 @@ public abstract class IndexProviderCompatibilityTestSuite
         return ValueType.values();
     }
 
-    public void consistencyCheck( IndexAccessor accessor )
-    {
-        // no-op by default
-    }
-
     public void consistencyCheck( IndexPopulator populator )
     {
         // no-op by default

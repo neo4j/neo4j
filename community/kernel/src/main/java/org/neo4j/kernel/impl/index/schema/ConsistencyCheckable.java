@@ -19,7 +19,7 @@
  */
 package org.neo4j.kernel.impl.index.schema;
 
-public interface ConsistencyCheckableIndexPopulator
+public interface ConsistencyCheckable
 {
-    void consistencyCheck();
+    boolean consistencyCheck();
 }

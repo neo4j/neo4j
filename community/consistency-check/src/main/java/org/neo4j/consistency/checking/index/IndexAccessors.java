@@ -116,6 +116,17 @@ public class IndexAccessors implements Closeable
         return onlineIndexRules;
     }
 
+    public void remove( StoreIndexDescriptor descriptor )
+    {
+        IndexAccessor remove = accessors.remove( descriptor.getId() );
+        if ( remove != null )
+        {
+            remove.close();
+        }
+        onlineIndexRules.remove( descriptor );
+        notOnlineIndexRules.remove( descriptor );
+    }
+
     @Override
     public void close() throws IOException
     {

@@ -31,6 +31,7 @@ import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
 import org.neo4j.kernel.impl.api.index.updater.SwallowingIndexUpdater;
+import org.neo4j.kernel.impl.index.schema.ConsistencyCheckable;
 import org.neo4j.storageengine.api.NodePropertyAccessor;
 import org.neo4j.storageengine.api.schema.IndexReader;
 import org.neo4j.values.storable.Value;
@@ -41,7 +42,7 @@ import static org.neo4j.helpers.collection.Iterators.emptyResourceIterator;
 /**
  * Used for online operation of an index.
  */
-public interface IndexAccessor extends Closeable, IndexConfigProvider
+public interface IndexAccessor extends Closeable, IndexConfigProvider, ConsistencyCheckable
 {
     IndexAccessor EMPTY = new Adapter();
 
@@ -205,6 +206,12 @@ public interface IndexAccessor extends Closeable, IndexConfigProvider
         {
             return false;
         }
+
+        @Override
+        public boolean consistencyCheck()
+        {
+            return true;
+        }
     }
 
     class Delegator implements IndexAccessor
@@ -292,6 +299,12 @@ public interface IndexAccessor extends Closeable, IndexConfigProvider
         public void validateBeforeCommit( Value[] tuple )
         {
             delegate.validateBeforeCommit( tuple );
+        }
+
+        @Override
+        public boolean consistencyCheck()
+        {
+            return delegate.consistencyCheck();
         }
     }
 }

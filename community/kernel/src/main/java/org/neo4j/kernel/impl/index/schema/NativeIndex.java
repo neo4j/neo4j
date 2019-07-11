@@ -35,7 +35,7 @@ import org.neo4j.storageengine.api.schema.StoreIndexDescriptor;
 
 import static org.neo4j.index.internal.gbptree.GBPTree.NO_HEADER_READER;
 
-abstract class NativeIndex<KEY extends NativeIndexKey<KEY>, VALUE extends NativeIndexValue>
+abstract class NativeIndex<KEY extends NativeIndexKey<KEY>, VALUE extends NativeIndexValue> implements ConsistencyCheckable
 {
     final PageCache pageCache;
     final File storeFile;
@@ -100,11 +100,13 @@ abstract class NativeIndex<KEY extends NativeIndexKey<KEY>, VALUE extends Native
         }
     }
 
-    public void consistencyCheck()
+    @Override
+    public boolean consistencyCheck()
     {
         try
         {
-            tree.consistencyCheck();
+            // todo: This can not throw anymore. Only report inconsistencies
+            return tree.consistencyCheck();
         }
         catch ( IOException e )
         {

@@ -50,6 +50,7 @@ import org.neo4j.values.storable.Value;
 
 import static org.hamcrest.CoreMatchers.hasItem;
 import static org.hamcrest.CoreMatchers.is;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
@@ -507,6 +508,43 @@ public class FusionIndexAccessorTest
         {
             // then
             verifyNoMoreInteractions( aliveAccessors[j] );
+        }
+    }
+
+    /* Consistency check */
+
+    @Test
+    public void mustCheckConsistencyOnAllAliveAccessors()
+    {
+        for ( IndexAccessor accessor : aliveAccessors )
+        {
+            when( accessor.consistencyCheck() ).thenReturn( true );
+        }
+        assertTrue( fusionIndexAccessor.consistencyCheck() );
+        for ( IndexAccessor accessor : aliveAccessors )
+        {
+            verify( accessor, times( 1 ) ).consistencyCheck();
+        }
+    }
+
+    @Test
+    public void mustFailConsistencyCheckIfOneAliveAccessorFails()
+    {
+        for ( IndexAccessor failingAccessor : aliveAccessors )
+        {
+            for ( IndexAccessor accessor : aliveAccessors )
+            {
+                if ( accessor == failingAccessor )
+                {
+                    when( failingAccessor.consistencyCheck() ).thenReturn( false );
+                }
+                else
+                {
+                    when( failingAccessor.consistencyCheck() ).thenReturn( true );
+                }
+            }
+            assertFalse( fusionIndexAccessor.consistencyCheck() );
+            resetMocks();
         }
     }
 

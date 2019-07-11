@@ -78,7 +78,7 @@ public abstract class IndexAccessorCompatibility extends IndexProviderCompatibil
     {
         try
         {
-            testSuite.consistencyCheck( accessor );
+            accessor.consistencyCheck();
         }
         finally
         {

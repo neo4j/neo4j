@@ -120,4 +120,10 @@ public class TrackingReadersIndexAccessor implements IndexAccessor
     {
         accessor.validateBeforeCommit( tuple );
     }
+
+    @Override
+    public boolean consistencyCheck()
+    {
+        return accessor.consistencyCheck();
+    }
 }

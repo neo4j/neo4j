@@ -981,6 +981,12 @@ public class RecoveryIT
         {
             return new ArrayList<>( updates );
         }
+
+        @Override
+        public boolean consistencyCheck()
+        {
+            return actual.consistencyCheck();
+        }
     }
 
     public class UpdateCapturingIndexUpdater implements IndexUpdater

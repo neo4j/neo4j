@@ -59,4 +59,18 @@ public class LuceneIndexAccessorTest
         when( schemaIndex.isValid() ).thenReturn( true );
         assertFalse( accessor.isDirty() );
     }
+
+    @Test
+    public void indexIsNotConsistentWhenIndexIsNotValid()
+    {
+        when( schemaIndex.isValid() ).thenReturn( false );
+        assertFalse( accessor.consistencyCheck() );
+    }
+
+    @Test
+    public void indexIsConsistentWhenIndexIsValid()
+    {
+        when( schemaIndex.isValid() ).thenReturn( true );
+        assertTrue( accessor.consistencyCheck() );
+    }
 }
