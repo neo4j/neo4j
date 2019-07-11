@@ -648,5 +648,4 @@ public class LuceneFulltextIndexTest extends LuceneFulltextTestSupport
         IndexDescriptor completed = indexProvider.completeConfiguration( index );
         assertSame( capability, completed.getCapability() );
     }
-    // todo must not overwrite existing capabilities
 }

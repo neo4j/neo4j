@@ -63,6 +63,11 @@ public enum ReservedSchemaRuleNames
         return RESERVED_NAMES.contains( name );
     }
 
+    public static Set<String> getReservedNames()
+    {
+        return RESERVED_NAMES;
+    }
+
     public String getReservedName()
     {
         return reservedName;

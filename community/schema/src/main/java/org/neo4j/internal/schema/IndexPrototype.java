@@ -24,8 +24,6 @@ import java.util.Optional;
 
 import org.neo4j.common.TokenNameLookup;
 
-import static java.lang.String.format;
-
 /**
  * The prototype of an index that may or may not exist.
  */
@@ -92,7 +90,7 @@ public class IndexPrototype implements IndexRef<IndexPrototype>
     @Override
     public String userDescription( TokenNameLookup tokenNameLookup )
     {
-        return "Index( " + (name == null ? "" : name) + (isUnique ? "UNIQUE" : "GENERAL") + ", " +
+        return "Index( " + (name == null ? "" : name + ", ") + (isUnique ? "UNIQUE" : "GENERAL") + ", " +
                 schema().userDescription( tokenNameLookup )  + ", " +
                 getIndexProvider().name() + " )";
     }

@@ -295,8 +295,8 @@ public final class Recovery
         DefaultIndexProviderMap indexProviderMap = new DefaultIndexProviderMap( extensions, config );
 
         StorageEngine storageEngine = storageEngineFactory.instantiate( fs, databaseLayout, config, databasePageCache, tokenHolders, schemaState,
-                getConstraintSemantics(), indexProviderMap, NO_LOCK_SERVICE, new DefaultIdGeneratorFactory( fs, recoveryCleanupCollector ), new DefaultIdController(),
-                databaseHealth, EmptyVersionContextSupplier.EMPTY, logService.getInternalLogProvider(), true );
+                getConstraintSemantics(), indexProviderMap, NO_LOCK_SERVICE, new DefaultIdGeneratorFactory( fs, recoveryCleanupCollector ),
+                new DefaultIdController(), databaseHealth, EmptyVersionContextSupplier.EMPTY, logService.getInternalLogProvider(), true );
 
         // Label index
         NeoStoreIndexStoreView neoStoreIndexStoreView = new NeoStoreIndexStoreView( NO_LOCK_SERVICE, storageEngine::newReader );

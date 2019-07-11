@@ -58,7 +58,8 @@ public interface SchemaRule extends SchemaDescriptorSupplier
         }
         if ( ReservedSchemaRuleNames.contains( name ) )
         {
-            throw new IllegalArgumentException( "The index name '" + name + "' is reserved, and cannot be used." );
+            throw new IllegalArgumentException( "The index name '" + name + "' is reserved, and cannot be used. " +
+                    "The reserved names are " + ReservedSchemaRuleNames.getReservedNames() + "." );
         }
         return name;
     }
