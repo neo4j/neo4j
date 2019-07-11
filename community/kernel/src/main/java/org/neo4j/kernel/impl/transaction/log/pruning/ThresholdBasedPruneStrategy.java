@@ -42,6 +42,12 @@ public class ThresholdBasedPruneStrategy implements LogPruneStrategy
     }
 
     @Override
+    public String toString()
+    {
+        return threshold.toString();
+    }
+
+    @Override
     public synchronized LongStream findLogVersionsToDelete( long upToVersion )
     {
         if ( upToVersion == INITIAL_LOG_VERSION )

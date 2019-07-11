@@ -68,8 +68,9 @@ public class LogPruningImpl implements LogPruning
 
     private void updateConfiguration( String pruningConf )
     {
-        this.pruneStrategy = strategyFactory.strategyFromConfigValue( fs, logFiles, logProvider, clock, pruningConf );
-        log.info( "Retention policy updated, value will take effect during the next evaluation." );
+        LogPruneStrategy strategy = strategyFactory.strategyFromConfigValue( fs, logFiles, logProvider, clock, pruningConf );
+        this.pruneStrategy = strategy;
+        log.info( "Retention policy updated to '" + strategy + "', which will take effect next time a checkpoint completes." );
     }
 
     @Override
@@ -82,8 +83,9 @@ public class LogPruningImpl implements LogPruning
             try
             {
                 CountingDeleter deleter = new CountingDeleter( logFiles, fs, upToVersion );
-                pruneStrategy.findLogVersionsToDelete( upToVersion ).forEachOrdered( deleter );
-                log.info( deleter.describeResult() );
+                LogPruneStrategy strategy = this.pruneStrategy;
+                strategy.findLogVersionsToDelete( upToVersion ).forEachOrdered( deleter );
+                log.info( deleter.describeResult( strategy ) );
             }
             finally
             {
@@ -125,17 +127,12 @@ public class LogPruningImpl implements LogPruning
             fs.deleteFile( logFile );
         }
 
-        String describeResult()
+        String describeResult( LogPruneStrategy strategy )
         {
-            if ( fromVersion == NO_VERSION )
-            {
-                return "No log version pruned, last checkpoint was made in version " + upToVersion;
-            }
-            else
-            {
-                return "Pruned log versions " + fromVersion + "-" + toVersion +
-                        ", last checkpoint was made in version " + upToVersion;
-            }
+            String pruned = fromVersion == NO_VERSION ? "No log version pruned" :
+                            fromVersion == toVersion ? "Pruned log version " + fromVersion :
+                            "Pruned log versions " + fromVersion + " through " + toVersion;
+            return pruned + ". The strategy used was '" + strategy + "'. " + "Last checkpoint was made in log version " + upToVersion + ".";
         }
     }
 }

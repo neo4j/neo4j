@@ -66,4 +66,10 @@ public final class EntryCountThreshold implements Threshold
             return false;
         }
     }
+
+    @Override
+    public String toString()
+    {
+        return maxTransactionCount + " entries";
+    }
 }

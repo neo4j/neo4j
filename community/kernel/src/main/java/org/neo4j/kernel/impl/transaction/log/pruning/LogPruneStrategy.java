@@ -27,6 +27,9 @@ import java.util.stream.LongStream;
  * <p>
  * Implementations of this class must be thread-safe, since they might experience multiple concurrent calls to
  * {@link #findLogVersionsToDelete(long)} from different threads.
+ * <p>
+ * Also note that any product implementations of this interface, should have descriptive {@link #toString()} outputs,
+ * since they will be printed to the debug log.
  */
 @FunctionalInterface
 public interface LogPruneStrategy

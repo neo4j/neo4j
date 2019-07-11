@@ -24,10 +24,12 @@ import org.junit.jupiter.api.Test;
 import java.io.File;
 
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.kernel.impl.transaction.log.LogFileInformation;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
 import org.neo4j.kernel.impl.transaction.log.files.TransactionLogFiles;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
@@ -77,7 +79,7 @@ class ThresholdBasedPruneStrategyTest
 
         when( threshold.reached( any(), anyLong(), any() ) ).thenReturn( false );
 
-        final ThresholdBasedPruneStrategy strategy = new ThresholdBasedPruneStrategy( logFiles, threshold );
+        ThresholdBasedPruneStrategy strategy = new ThresholdBasedPruneStrategy( logFiles, threshold );
 
         // When
         strategy.findLogVersionsToDelete( 7L ).forEachOrdered(
@@ -118,7 +120,7 @@ class ThresholdBasedPruneStrategyTest
 
         when( fileSystem.getFileSize( any() ) ).thenReturn( LOG_HEADER_SIZE + 1L );
 
-        final ThresholdBasedPruneStrategy strategy = new ThresholdBasedPruneStrategy( logFiles, threshold );
+        ThresholdBasedPruneStrategy strategy = new ThresholdBasedPruneStrategy( logFiles, threshold );
 
         // When
         strategy.findLogVersionsToDelete( 7L ).forEachOrdered(
@@ -155,5 +157,31 @@ class ThresholdBasedPruneStrategyTest
         ThresholdBasedPruneStrategy strategy = new ThresholdBasedPruneStrategy( logFiles, threshold );
 
         assertArrayEquals( new long[]{10, 11, 12, 13}, strategy.findLogVersionsToDelete( 15 ).toArray() );
+    }
+
+    @Test
+    void mustHaveToStringOfThreshold()
+    {
+        Threshold threshold = new Threshold()
+        {
+            @Override
+            public void init()
+            {
+            }
+
+            @Override
+            public boolean reached( File file, long version, LogFileInformation source )
+            {
+                return false;
+            }
+
+            @Override
+            public String toString()
+            {
+                return "Super-duper threshold";
+            }
+        };
+        ThresholdBasedPruneStrategy strategy = new ThresholdBasedPruneStrategy( logFiles, threshold );
+        assertEquals( "Super-duper threshold", strategy.toString() );
     }
 }

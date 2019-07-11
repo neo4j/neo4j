@@ -32,6 +32,7 @@ public final class EntryTimespanThreshold implements Threshold
 {
     private final long timeToKeepInMillis;
     private final Clock clock;
+    private final TimeUnit timeUnit;
     private final Log log;
     private long lowerLimit;
 
@@ -39,6 +40,7 @@ public final class EntryTimespanThreshold implements Threshold
     {
         this.log = logProvider.getLog( getClass() );
         this.clock = clock;
+        this.timeUnit = timeUnit;
         this.timeToKeepInMillis = timeUnit.toMillis( timeToKeep );
     }
 
@@ -61,5 +63,11 @@ public final class EntryTimespanThreshold implements Threshold
             log.warn( "Fail to get timestamp info from transaction log file " + version, e );
             return false;
         }
+    }
+
+    @Override
+    public String toString()
+    {
+        return timeUnit.convert( timeToKeepInMillis, TimeUnit.MILLISECONDS ) + " " + timeUnit.name().toLowerCase();
     }
 }

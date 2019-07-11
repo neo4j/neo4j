@@ -46,7 +46,7 @@ public class LogPruneStrategyFactory
         @Override
         public String toString()
         {
-            return "NO_PRUNING";
+            return "keep_all";
         }
     };
 

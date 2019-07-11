@@ -49,6 +49,6 @@ public final class FileCountThreshold implements Threshold
     @Override
     public String toString()
     {
-        return "[max:" + maxNonEmptyLogs + "]";
+        return maxNonEmptyLogs + " files";
     }
 }
