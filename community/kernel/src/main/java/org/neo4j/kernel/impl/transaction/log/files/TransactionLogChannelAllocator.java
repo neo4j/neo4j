@@ -34,7 +34,6 @@ import org.neo4j.kernel.impl.transaction.log.entry.LogHeader;
 import org.neo4j.logging.Log;
 
 import static java.lang.String.format;
-import static org.neo4j.io.fs.FileUtils.getCanonicalFile;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogHeader.LOG_HEADER_SIZE;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogHeaderReader.readLogHeader;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogHeaderWriter.writeLogHeader;
@@ -88,7 +87,7 @@ class TransactionLogChannelAllocator
 
         if ( !fileSystem.fileExists( fileToOpen ) )
         {
-            throw new FileNotFoundException( format( "File does not exist [%s]", getCanonicalFile( fileToOpen ) ) );
+            throw new FileNotFoundException( fileToOpen.getCanonicalPath() );
         }
 
         StoreChannel rawChannel = null;
@@ -107,8 +106,7 @@ class TransactionLogChannelAllocator
         }
         catch ( FileNotFoundException cause )
         {
-            throw (FileNotFoundException) new FileNotFoundException(
-                    format( "File could not be opened [%s]", fileToOpen.getCanonicalPath() ) ).initCause( cause );
+            throw (FileNotFoundException) new FileNotFoundException( fileToOpen.getCanonicalPath() ).initCause( cause );
         }
         catch ( Throwable unexpectedError )
         {

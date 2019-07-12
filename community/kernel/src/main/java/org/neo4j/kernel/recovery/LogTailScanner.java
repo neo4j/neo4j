@@ -198,7 +198,7 @@ public class LogTailScanner
         {
             throw new IllegalStateException( format( "Expected to observe log positions only for log file with version %d but encountered " +
                             "version %d while reading %s.", version, logPosition.getLogVersion(),
-                    getCanonicalFile( logFiles.getLogFileForVersion( version ) ).toPath() ) );
+                    getCanonicalFile( logFiles.getLogFileForVersion( version ) ) ) );
         }
     }
 
