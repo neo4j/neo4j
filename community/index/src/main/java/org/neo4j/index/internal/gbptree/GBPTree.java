@@ -588,7 +588,11 @@ public class GBPTree<KEY,VALUE> implements Closeable
         }
         catch ( NoSuchFileException e )
         {
-            return createNewIndexFile( pageCache, indexFile, pageSizeForCreation );
+            if ( !readOnly )
+            {
+                return createNewIndexFile( pageCache, indexFile, pageSizeForCreation );
+            }
+            throw new TreeFileNotFoundException( "Can not create new tree file in read only mode.", e );
         }
     }
 
@@ -623,7 +627,6 @@ public class GBPTree<KEY,VALUE> implements Closeable
     private PagedFile createNewIndexFile( PageCache pageCache, File indexFile, int pageSizeForCreation ) throws IOException
     {
         // First time
-        assertNotReadOnly( "Create new index file." );
         monitor.noStoreFile();
         int pageSize = pageSizeForCreation == 0 ? pageCache.pageSize() : pageSizeForCreation;
         if ( pageSize > pageCache.pageSize() )
@@ -955,7 +958,10 @@ public class GBPTree<KEY,VALUE> implements Closeable
 
     private void checkpoint( IOLimiter ioLimiter, Header.Writer headerWriter ) throws IOException
     {
-        assertNotReadOnly( "Checkpoint tree." );
+        if ( readOnly )
+        {
+            return;
+        }
         // Flush dirty pages of the tree, do this before acquiring the lock so that writers won't be
         // blocked while we do this
         pagedFile.flushAndForce( ioLimiter );
@@ -1068,7 +1074,11 @@ public class GBPTree<KEY,VALUE> implements Closeable
 
     private void doClose() throws IOException
     {
-        pagedFile.close();
+        if ( pagedFile != null )
+        {
+            // Will be null if exception while mapping file
+            pagedFile.close();
+        }
         closed = true;
     }
 

@@ -1719,6 +1719,8 @@ public class GBPTreeTest
         }
     }
 
+    /* ReadOnly */
+
     @Test
     public void mustNotMakeAnyChangesInReadOnlyMode() throws IOException
     {
@@ -1741,16 +1743,6 @@ public class GBPTreeTest
         {
             try
             {
-                tree.checkpoint( UNLIMITED );
-                fail( "Should have failed" );
-            }
-            catch ( UnsupportedOperationException e )
-            {
-                assertThat( e.getMessage(), containsString( "GBPTree was opened in read only mode and can not finish operation: " ) );
-            }
-
-            try
-            {
                 tree.writer();
                 fail( "Should have failed" );
             }
@@ -1758,9 +1750,32 @@ public class GBPTreeTest
             {
                 assertThat( e.getMessage(), containsString( "GBPTree was opened in read only mode and can not finish operation: " ) );
             }
-        };
+
+            MutableBoolean ioLimitChecked = new MutableBoolean();
+            tree.checkpoint( ( previousStamp, recentlyCompletedIOs, flushable ) -> {
+                ioLimitChecked.setTrue();
+                return 0;
+            } );
+            assertFalse( "Expected checkpoint to be a no-op in read only mode.", ioLimitChecked.getValue() );
+        }
         byte[] after = fileContent( indexFile );
         assertArrayEquals( "Expected file content to be identical before and after opening GBPTree in read only mode.", before, after );
+    }
+
+    @Test
+    public void mustFailGracefullyIfFileNotExistInReadOnlyMode() throws IOException
+    {
+        // given
+        PageCache pageCache = createPageCache( DEFAULT_PAGE_SIZE );
+        try ( GBPTree<MutableLong,MutableLong> ignore = index( pageCache ).withReadOnly( true ).build() )
+        {
+            fail( "Expected constructor to fail when trying to initialize with no index file in readOnly mode." );
+        }
+        catch ( TreeFileNotFoundException e )
+        {
+            assertThat( e.getMessage(), containsString( "Can not create new tree file in read only mode" ) );
+            assertThat( e.getMessage(), containsString( indexFile.getAbsolutePath() ) );
+        }
     }
 
     private byte[] fileContent( File indexFile ) throws IOException
