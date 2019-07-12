@@ -66,7 +66,7 @@ case class VarLengthExpandPipe(source: Pipe,
     new Iterator[(NodeValue, RelationshipContainer)] {
       def next(): (NodeValue, RelationshipContainer) = {
         val (node, rels) = stack.pop()
-        if (rels.size < maxDepth.getOrElse(Int.MaxValue) && filteringStep.filterNode(row,state)(node)) {
+        if (rels.size < maxDepth.getOrElse(Int.MaxValue) && filteringStep.filterNode(row, state)(node)) {
           val relationships: Iterator[RelationshipValue] = state.query.getRelationshipsForIds(node.id(), dir, types.types(state.query))
 
           relationships.filter(filteringStep.filterRelationship(row, state)).foreach { rel =>
@@ -91,10 +91,14 @@ case class VarLengthExpandPipe(source: Pipe,
 
   protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext] = {
     def expand(row: ExecutionContext, n: NodeValue) = {
-      val paths = varLengthExpand(n, state, max, row)
-      paths.collect {
-        case (node, rels) if rels.size >= min && isToNodeValid(row, state, node) =>
-          executionContextFactory.copyWith(row, relName, rels.asList, toName, node)
+      if (filteringStep.filterNode(row, state)(n)) {
+        val paths = varLengthExpand(n, state, max, row)
+        paths.collect {
+          case (node, rels) if rels.size >= min && isToNodeValid(row, state, node) =>
+            executionContextFactory.copyWith(row, relName, rels.asList, toName, node)
+        }
+      } else {
+        Iterator.empty
       }
     }
 
