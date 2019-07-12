@@ -219,6 +219,9 @@ class TransactionLogFile extends LifecycleAdapter implements LogFile
          * transaction complete in the log we're rotating away. Awesome.
          */
         writer.prepareForFlush().flush();
+        currentLog.truncate( currentLog.position() );
+        tryEvictFromSystemCache( currentLog );
+
         /*
          * The log version is now in the store, flushed and persistent. If we crash
          * now, on recovery we'll attempt to open the version we're about to create
@@ -229,8 +232,6 @@ class TransactionLogFile extends LifecycleAdapter implements LogFile
          * into transaction log that was just rotated.
          */
         PhysicalLogVersionedStoreChannel newLog = logFiles.createLogChannelForVersion( newLogVersion, context::committingTransactionId );
-        tryEvictFromSystemCache( currentLog );
-        currentLog.truncate( currentLog.position() );
         currentLog.close();
         return newLog;
     }
