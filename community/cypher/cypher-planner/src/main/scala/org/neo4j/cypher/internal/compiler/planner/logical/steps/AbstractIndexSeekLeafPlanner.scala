@@ -221,6 +221,17 @@ abstract class AbstractIndexSeekLeafPlanner extends LeafPlanner with LeafPlanFro
         val solvedPredicate = if (scannable.solvesPredicate) predicate else scannable.expr
         IndexCompatiblePredicate(scannable.name, scannable.propertyKey, solvedPredicate, ExistenceQueryExpression(), CTAny,
           exactPredicate = false, hints, argumentIds, solvesPredicate = true)
+
+      // n.prop ENDS WITH 'substring'
+      // It is always converted to exists and will need filtering
+      case predicate@EndsWith(prop@Property(variable@Variable(name), keyName), expr) if expr.dependencies.forall(arguments) && !arguments(variable) =>
+        // create a partialPredicate saying it solves exists() but not the ENDS WITH
+        val solvedPredicate = PartialPredicate(
+          FunctionInvocation(FunctionName(functions.Exists.name)(predicate.position), prop)(predicate.position),
+          predicate
+        )
+        IndexCompatiblePredicate(name, keyName, solvedPredicate, ExistenceQueryExpression(), CTAny, exactPredicate = false,
+          hints, argumentIds, solvesPredicate = true)
     }
   }
 
