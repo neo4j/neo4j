@@ -97,7 +97,8 @@ public class GenericAccessorPointsTest
         IndexDirectoryStructure.Factory factory = IndexDirectoryStructure.directoriesByProvider( directory.storeDir() );
         IndexDirectoryStructure structure = factory.forProvider( GenericNativeIndexProvider.DESCRIPTOR );
         IndexDropAction dropAction = new FileSystemIndexDropAction( fs, structure );
-        accessor = new GenericNativeIndexAccessor( pc, fs, file, layout, collector, EMPTY, descriptor, indexSettings, new StandardConfiguration(), dropAction );
+        accessor = new GenericNativeIndexAccessor(
+                pc, fs, file, layout, collector, EMPTY, descriptor, indexSettings, new StandardConfiguration(), dropAction, false );
     }
 
     @After

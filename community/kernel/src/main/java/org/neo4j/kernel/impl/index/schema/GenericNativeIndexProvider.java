@@ -170,10 +170,10 @@ public class GenericNativeIndexProvider extends NativeIndexProvider<GenericKey,N
     }
 
     @Override
-    protected IndexAccessor newIndexAccessor( File storeFile, GenericLayout layout, StoreIndexDescriptor descriptor )
+    protected IndexAccessor newIndexAccessor( File storeFile, GenericLayout layout, StoreIndexDescriptor descriptor, boolean readOnly )
     {
         return new GenericNativeIndexAccessor( pageCache, fs, storeFile, layout, recoveryCleanupWorkCollector, monitor, descriptor,
-                layout.getSpaceFillingCurveSettings(), configuration, dropAction );
+                layout.getSpaceFillingCurveSettings(), configuration, dropAction, readOnly );
     }
 
     @Override

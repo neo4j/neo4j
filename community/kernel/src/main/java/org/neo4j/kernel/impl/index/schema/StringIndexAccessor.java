@@ -42,9 +42,9 @@ public class StringIndexAccessor extends NativeIndexAccessor<StringIndexKey,Nati
     private Validator<Value> validator;
 
     StringIndexAccessor( PageCache pageCache, FileSystemAbstraction fs, File storeFile, IndexLayout<StringIndexKey,NativeIndexValue> layout,
-            RecoveryCleanupWorkCollector recoveryCleanupWorkCollector, IndexProvider.Monitor monitor, StoreIndexDescriptor descriptor )
+            RecoveryCleanupWorkCollector recoveryCleanupWorkCollector, IndexProvider.Monitor monitor, StoreIndexDescriptor descriptor, boolean readOnly )
     {
-        super( pageCache, fs, storeFile, layout, monitor, descriptor, NO_HEADER_WRITER );
+        super( pageCache, fs, storeFile, layout, monitor, descriptor, NO_HEADER_WRITER, readOnly );
         instantiateTree( recoveryCleanupWorkCollector, headerWriter );
     }
 

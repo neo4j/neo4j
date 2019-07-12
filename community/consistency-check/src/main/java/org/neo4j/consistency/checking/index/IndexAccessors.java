@@ -91,8 +91,7 @@ public class IndexAccessors implements Closeable
         for ( StoreIndexDescriptor indexRule : onlineIndexRules )
         {
             long indexId = indexRule.getId();
-            accessors.put( indexId, provider( providers, indexRule )
-                    .getOnlineAccessor( indexRule, samplingConfig ) );
+            accessors.put( indexId, provider( providers, indexRule ).getOnlineAccessor( indexRule, samplingConfig ) );
         }
     }
 

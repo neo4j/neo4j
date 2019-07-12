@@ -43,11 +43,12 @@ abstract class NativeIndex<KEY extends NativeIndexKey<KEY>, VALUE extends Native
     final FileSystemAbstraction fileSystem;
     final StoreIndexDescriptor descriptor;
     private final IndexProvider.Monitor monitor;
+    private final boolean readOnly;
 
     protected GBPTree<KEY,VALUE> tree;
 
     NativeIndex( PageCache pageCache, FileSystemAbstraction fs, File storeFile, IndexLayout<KEY,VALUE> layout, IndexProvider.Monitor monitor,
-            StoreIndexDescriptor descriptor )
+            StoreIndexDescriptor descriptor, boolean readOnly )
     {
         this.pageCache = pageCache;
         this.storeFile = storeFile;
@@ -55,13 +56,14 @@ abstract class NativeIndex<KEY extends NativeIndexKey<KEY>, VALUE extends Native
         this.fileSystem = fs;
         this.descriptor = descriptor;
         this.monitor = monitor;
+        this.readOnly = readOnly;
     }
 
     void instantiateTree( RecoveryCleanupWorkCollector recoveryCleanupWorkCollector, Consumer<PageCursor> headerWriter )
     {
         ensureDirectoryExist();
         GBPTree.Monitor monitor = treeMonitor();
-        tree = new GBPTree<>( pageCache, storeFile, layout, 0, monitor, NO_HEADER_READER, headerWriter, recoveryCleanupWorkCollector, false );
+        tree = new GBPTree<>( pageCache, storeFile, layout, 0, monitor, NO_HEADER_READER, headerWriter, recoveryCleanupWorkCollector, readOnly );
         afterTreeInstantiation( tree );
     }
 

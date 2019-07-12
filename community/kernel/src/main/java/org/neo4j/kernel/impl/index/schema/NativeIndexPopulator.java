@@ -78,7 +78,7 @@ public abstract class NativeIndexPopulator<KEY extends NativeIndexKey<KEY>, VALU
     NativeIndexPopulator( PageCache pageCache, FileSystemAbstraction fs, File storeFile, IndexLayout<KEY,VALUE> layout, IndexProvider.Monitor monitor,
             StoreIndexDescriptor descriptor, Consumer<PageCursor> additionalHeaderWriter )
     {
-        super( pageCache, fs, storeFile, layout, monitor, descriptor );
+        super( pageCache, fs, storeFile, layout, monitor, descriptor, false );
         this.treeKey = layout.newKey();
         this.treeValue = layout.newValue();
         this.additionalHeaderWriter = additionalHeaderWriter;

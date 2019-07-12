@@ -94,10 +94,10 @@ abstract class NativeIndexProvider<KEY extends NativeIndexKey<KEY>,VALUE extends
     public IndexAccessor getOnlineAccessor( StoreIndexDescriptor descriptor, IndexSamplingConfig samplingConfig ) throws IOException
     {
         File storeFile = nativeIndexFileFromIndexId( descriptor.getId() );
-        return newIndexAccessor( storeFile, layout( descriptor, storeFile ), descriptor );
+        return newIndexAccessor( storeFile, layout( descriptor, storeFile ), descriptor, readOnly );
     }
 
-    protected abstract IndexAccessor newIndexAccessor( File storeFile, LAYOUT layout, StoreIndexDescriptor descriptor ) throws IOException;
+    protected abstract IndexAccessor newIndexAccessor( File storeFile, LAYOUT layout, StoreIndexDescriptor descriptor, boolean readOnly ) throws IOException;
 
     @Override
     public String getPopulationFailure( StoreIndexDescriptor descriptor ) throws IllegalStateException

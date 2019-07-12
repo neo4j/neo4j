@@ -65,7 +65,8 @@ class SpatialIndexAccessor extends SpatialIndexCache<SpatialIndexAccessor.PartAc
                           RecoveryCleanupWorkCollector recoveryCleanupWorkCollector,
                           IndexProvider.Monitor monitor,
                           SpatialIndexFiles spatialIndexFiles,
-                          SpaceFillingCurveConfiguration searchConfiguration ) throws IOException
+                          SpaceFillingCurveConfiguration searchConfiguration,
+                          boolean readOnly ) throws IOException
     {
         super( new PartFactory( pageCache,
                                 fs,
@@ -73,7 +74,8 @@ class SpatialIndexAccessor extends SpatialIndexCache<SpatialIndexAccessor.PartAc
                                 monitor,
                                 descriptor,
                                 spatialIndexFiles,
-                                searchConfiguration ) );
+                                searchConfiguration,
+                                readOnly ) );
         this.descriptor = descriptor;
         spatialIndexFiles.loadExistingIndexes( this );
     }
@@ -212,9 +214,9 @@ class SpatialIndexAccessor extends SpatialIndexCache<SpatialIndexAccessor.PartAc
 
         PartAccessor( PageCache pageCache, FileSystemAbstraction fs, SpatialIndexFiles.SpatialFileLayout fileLayout,
                 RecoveryCleanupWorkCollector recoveryCleanupWorkCollector, IndexProvider.Monitor monitor, StoreIndexDescriptor descriptor,
-                SpaceFillingCurveConfiguration searchConfiguration )
+                SpaceFillingCurveConfiguration searchConfiguration, boolean readOnly )
         {
-            super( pageCache, fs, fileLayout.getIndexFile(), fileLayout.layout, monitor, descriptor, NO_HEADER_WRITER );
+            super( pageCache, fs, fileLayout.getIndexFile(), fileLayout.layout, monitor, descriptor, NO_HEADER_WRITER, readOnly );
             this.layout = fileLayout.layout;
             this.descriptor = descriptor;
             this.searchConfiguration = searchConfiguration;
@@ -255,6 +257,7 @@ class SpatialIndexAccessor extends SpatialIndexCache<SpatialIndexAccessor.PartAc
         private final StoreIndexDescriptor descriptor;
         private final SpatialIndexFiles spatialIndexFiles;
         private final SpaceFillingCurveConfiguration searchConfiguration;
+        private final boolean readOnly;
 
         PartFactory( PageCache pageCache,
                      FileSystemAbstraction fs,
@@ -262,7 +265,8 @@ class SpatialIndexAccessor extends SpatialIndexCache<SpatialIndexAccessor.PartAc
                      IndexProvider.Monitor monitor,
                      StoreIndexDescriptor descriptor,
                      SpatialIndexFiles spatialIndexFiles,
-                     SpaceFillingCurveConfiguration searchConfiguration )
+                     SpaceFillingCurveConfiguration searchConfiguration,
+                     boolean readOnly )
         {
             this.pageCache = pageCache;
             this.fs = fs;
@@ -271,6 +275,7 @@ class SpatialIndexAccessor extends SpatialIndexCache<SpatialIndexAccessor.PartAc
             this.descriptor = descriptor;
             this.spatialIndexFiles = spatialIndexFiles;
             this.searchConfiguration = searchConfiguration;
+            this.readOnly = readOnly;
         }
 
         @Override
@@ -297,7 +302,8 @@ class SpatialIndexAccessor extends SpatialIndexCache<SpatialIndexAccessor.PartAc
                                      recoveryCleanupWorkCollector,
                                      monitor,
                                      descriptor,
-                                     searchConfiguration );
+                                     searchConfiguration,
+                                     readOnly );
         }
 
         private void createEmptyIndex( SpatialIndexFiles.SpatialFileLayout fileLayout )

@@ -143,7 +143,7 @@ public class NativeIndexAccessorTest<KEY extends NativeIndexKey<KEY>, VALUE exte
     NativeIndexAccessor<KEY,VALUE> makeAccessor() throws IOException
     {
         return accessorFactory.create( pageCache, fs, getIndexFile(), layout, RecoveryCleanupWorkCollector.immediate(), monitor, indexDescriptor,
-                indexDirectoryStructure );
+                indexDirectoryStructure, false );
     }
 
     @Override
@@ -167,32 +167,32 @@ public class NativeIndexAccessorTest<KEY extends NativeIndexKey<KEY>, VALUE exte
     /* Helpers */
     private static AccessorFactory<NumberIndexKey,NativeIndexValue> numberAccessorFactory()
     {
-        return ( pageCache, fs, storeFile, layout, recoveryCleanupWorkCollector, monitor, descriptor, directory ) ->
-                new NumberIndexAccessor( pageCache, fs, storeFile, layout, recoveryCleanupWorkCollector, monitor, descriptor );
+        return ( pageCache, fs, storeFile, layout, recoveryCleanupWorkCollector, monitor, descriptor, directory, readOnly ) ->
+                new NumberIndexAccessor( pageCache, fs, storeFile, layout, recoveryCleanupWorkCollector, monitor, descriptor, readOnly );
     }
 
     private static AccessorFactory<StringIndexKey,NativeIndexValue> stringAccessorFactory()
     {
-        return ( pageCache, fs, storeFile, layout, recoveryCleanupWorkCollector, monitor, descriptor, directory ) ->
-                new StringIndexAccessor( pageCache, fs, storeFile, layout, recoveryCleanupWorkCollector, monitor, descriptor );
+        return ( pageCache, fs, storeFile, layout, recoveryCleanupWorkCollector, monitor, descriptor, directory, readOnly ) ->
+                new StringIndexAccessor( pageCache, fs, storeFile, layout, recoveryCleanupWorkCollector, monitor, descriptor, readOnly );
     }
 
     private static <TK extends NativeIndexSingleValueKey<TK>> AccessorFactory<TK,NativeIndexValue> temporalAccessorFactory( ValueGroup temporalValueGroup )
     {
-        return ( pageCache, fs, storeFile, layout, cleanup, monitor, descriptor, directory ) ->
+        return ( pageCache, fs, storeFile, layout, cleanup, monitor, descriptor, directory, readOnly ) ->
         {
             TemporalIndexFiles.FileLayout<TK> fileLayout = new TemporalIndexFiles.FileLayout<>( storeFile, layout, temporalValueGroup );
-            return new TemporalIndexAccessor.PartAccessor<>( pageCache, fs, fileLayout, cleanup, monitor, descriptor );
+            return new TemporalIndexAccessor.PartAccessor<>( pageCache, fs, fileLayout, cleanup, monitor, descriptor, readOnly );
         };
     }
 
     private static AccessorFactory<GenericKey,NativeIndexValue> genericAccessorFactory()
     {
-        return ( pageCache, fs, storeFile, layout, cleanup, monitor, descriptor, directory ) ->
+        return ( pageCache, fs, storeFile, layout, cleanup, monitor, descriptor, directory, readOnly ) ->
         {
             IndexDropAction dropAction = new FileSystemIndexDropAction( fs, directory );
             return new GenericNativeIndexAccessor( pageCache, fs, storeFile, layout, cleanup, monitor, descriptor, spaceFillingCurveSettings,
-                    configuration, dropAction );
+                    configuration, dropAction, readOnly );
         };
     }
 
@@ -201,6 +201,6 @@ public class NativeIndexAccessorTest<KEY extends NativeIndexKey<KEY>, VALUE exte
     {
         NativeIndexAccessor<KEY,VALUE> create( PageCache pageCache, FileSystemAbstraction fs, File storeFile, IndexLayout<KEY,VALUE> layout,
                 RecoveryCleanupWorkCollector recoveryCleanupWorkCollector, IndexProvider.Monitor monitor, StoreIndexDescriptor descriptor,
-                IndexDirectoryStructure directory ) throws IOException;
+                IndexDirectoryStructure directory, boolean readOnly ) throws IOException;
     }
 }
