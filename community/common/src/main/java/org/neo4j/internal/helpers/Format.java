@@ -25,6 +25,7 @@ import java.util.Date;
 import java.util.Locale;
 import java.util.TimeZone;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Function;
 
 public class Format
 {
@@ -128,6 +129,11 @@ public class Format
 
     public static String duration( long durationMillis, TimeUnit highestGranularity, TimeUnit lowestGranularity )
     {
+        return duration( durationMillis, highestGranularity, lowestGranularity, Format::shortName );
+    }
+
+    public static String duration( long durationMillis, TimeUnit highestGranularity, TimeUnit lowestGranularity, Function<TimeUnit,String> unitFormat )
+    {
         StringBuilder builder = new StringBuilder();
 
         TimeUnit[] units = TimeUnit.values();
@@ -142,7 +148,7 @@ public class Format
 
             if ( use )
             {
-                durationMillis = extractFromDuration( durationMillis, unit, builder );
+                durationMillis = extractFromDuration( durationMillis, unit, unitFormat, builder );
                 if ( unit == lowestGranularity )
                 {
                     break;
@@ -154,7 +160,7 @@ public class Format
         {
             // The value is too low to extract any meaningful numbers with the given unit brackets.
             // So we append a zero of the lowest unit.
-            builder.append( '0' ).append( shortName( lowestGranularity ) );
+            builder.append( '0' ).append( unitFormat.apply( lowestGranularity ) );
         }
 
         return builder.toString();
@@ -183,7 +189,7 @@ public class Format
         }
     }
 
-    private static long extractFromDuration( long durationMillis, TimeUnit unit, StringBuilder target )
+    private static long extractFromDuration( long durationMillis, TimeUnit unit, Function<TimeUnit,String> unitFormat, StringBuilder target )
     {
         int count = 0;
         long millisPerUnit = unit.toMillis( 1 );
@@ -194,7 +200,7 @@ public class Format
         }
         if ( count > 0 )
         {
-            target.append( target.length() > 0 ? " " : "" ).append( count ).append( shortName( unit ) );
+            target.append( target.length() > 0 ? " " : "" ).append( count ).append( unitFormat.apply( unit ) );
         }
         return durationMillis;
     }

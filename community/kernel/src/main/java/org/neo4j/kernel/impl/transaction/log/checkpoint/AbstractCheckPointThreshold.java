@@ -39,10 +39,15 @@ public abstract class AbstractCheckPointThreshold implements CheckPointThreshold
     {
         if ( thresholdReached( lastCommittedTransactionId ) )
         {
-            consumer.accept( description );
+            consumer.accept( createCheckpointThresholdDescription( description ) );
             return true;
         }
         return false;
+    }
+
+    protected String createCheckpointThresholdDescription( String description )
+    {
+        return description;
     }
 
     protected abstract boolean thresholdReached( long lastCommittedTransactionId );

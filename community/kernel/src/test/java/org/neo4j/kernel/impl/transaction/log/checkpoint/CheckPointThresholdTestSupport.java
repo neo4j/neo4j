@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.transaction.log.checkpoint;
 
+import org.hamcrest.Matcher;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 
@@ -90,7 +91,12 @@ public class CheckPointThresholdTestSupport
 
     protected void verifyTriggered( String reason )
     {
-        assertThat( triggerConsumer.poll(), containsString( reason ) );
+        verifyTriggered( containsString( reason ) );
+    }
+
+    protected void verifyTriggered( Matcher<String> reason )
+    {
+        assertThat( triggerConsumer.poll(), reason );
     }
 
     protected void verifyNoMoreTriggers()

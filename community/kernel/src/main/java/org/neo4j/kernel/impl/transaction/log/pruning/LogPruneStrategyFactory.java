@@ -34,7 +34,7 @@ import static org.neo4j.kernel.impl.transaction.log.pruning.ThresholdConfigParse
 
 public class LogPruneStrategyFactory
 {
-    private static final LogPruneStrategy NO_PRUNING = new LogPruneStrategy()
+    static final LogPruneStrategy NO_PRUNING = new LogPruneStrategy()
     {
         @Override
         public LongStream findLogVersionsToDelete( long upToLogVersion )

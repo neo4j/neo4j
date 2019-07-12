@@ -38,6 +38,11 @@ public interface LogPruning
      */
     boolean mightHaveLogsToPrune();
 
+    /**
+     * @return A textual representation of the current log pruning strategy, for logging and debugging purposes.
+     */
+    String describeCurrentStrategy();
+
     LogPruning NO_PRUNING = new LogPruning()
     {
         @Override
@@ -49,6 +54,12 @@ public interface LogPruning
         public boolean mightHaveLogsToPrune()
         {
             return false;
+        }
+
+        @Override
+        public String describeCurrentStrategy()
+        {
+            return LogPruneStrategyFactory.NO_PRUNING.toString();
         }
     };
 }

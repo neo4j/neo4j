@@ -28,11 +28,13 @@ import java.time.Clock;
 import java.util.stream.LongStream;
 
 import org.neo4j.configuration.Config;
+import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.NullLogProvider;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.anyLong;
@@ -96,5 +98,16 @@ class LogPruningTest
                 .thenReturn(  x -> LongStream.empty() );
         LogPruning pruning = new LogPruningImpl( fs, logFiles, logProvider, factory, clock, config );
         assertFalse( pruning.mightHaveLogsToPrune() );
+    }
+
+    @Test
+    void mustDescribeCurrentStrategy()
+    {
+        factory = new LogPruneStrategyFactory();
+        config.setDynamic( GraphDatabaseSettings.keep_logical_logs, "keep_all", "" );
+        LogPruning pruning = new LogPruningImpl( fs, logFiles, logProvider, factory, clock, config );
+        assertEquals( "keep_all", pruning.describeCurrentStrategy() );
+        config.setDynamic( GraphDatabaseSettings.keep_logical_logs, "10 files", "" );
+        assertEquals( "10 files", pruning.describeCurrentStrategy() );
     }
 }

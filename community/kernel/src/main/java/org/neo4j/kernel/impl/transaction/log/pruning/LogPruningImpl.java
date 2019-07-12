@@ -100,6 +100,12 @@ public class LogPruningImpl implements LogPruning
         return pruneStrategy.findLogVersionsToDelete( logFiles.getHighestLogVersion() ).count() > 0;
     }
 
+    @Override
+    public String describeCurrentStrategy()
+    {
+        return pruneStrategy.toString();
+    }
+
     private static class CountingDeleter implements LongConsumer
     {
         private static final int NO_VERSION = -1;

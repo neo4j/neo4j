@@ -42,7 +42,7 @@ class CheckPointThresholdTest extends CheckPointThresholdTestSupport
         assertFalse( threshold.isCheckPointingNeeded( intervalTx, notTriggered ) );
         // True because new we're at intervalTx + initial offset.
         assertTrue( threshold.isCheckPointingNeeded( intervalTx + 1, triggered ) );
-        verifyTriggered( "count" );
+        verifyTriggered( "every 100000 transactions" );
         verifyNoMoreTriggers();
     }
 
@@ -60,7 +60,7 @@ class CheckPointThresholdTest extends CheckPointThresholdTestSupport
         // True because we now moved forward by an interval.
         clock.forward( intervalTime.toMillis(), MILLISECONDS );
         assertTrue( threshold.isCheckPointingNeeded( 4, triggered ) );
-        verifyTriggered( "time" );
+        verifyTriggered( "every 15 minutes threshold" );
         verifyNoMoreTriggers();
     }
 
@@ -85,7 +85,21 @@ class CheckPointThresholdTest extends CheckPointThresholdTestSupport
         clock.forward( 199, MILLISECONDS );
 
         assertTrue( threshold.isCheckPointingNeeded( 42, triggered ) );
-        verifyTriggered( "time" );
+        verifyTriggered( "every 100 milliseconds" );
+        verifyNoMoreTriggers();
+    }
+
+    @Test
+    void mustTriggerWhenWeirdTimeThresholdIsReachedAndThereAreCommittedTransactions()
+    {
+        withIntervalTime( "1100ms" );
+        CheckPointThreshold threshold = createThreshold();
+        threshold.initialize( 2 );
+
+        clock.forward( 2199, MILLISECONDS );
+
+        assertTrue( threshold.isCheckPointingNeeded( 42, triggered ) );
+        verifyTriggered( "every 1 seconds 100 milliseconds" );
         verifyNoMoreTriggers();
     }
 
@@ -129,7 +143,7 @@ class CheckPointThresholdTest extends CheckPointThresholdTestSupport
         clock.forward( 100, MILLISECONDS );
 
         assertTrue( threshold.isCheckPointingNeeded( 43, triggered ) );
-        verifyTriggered( "time" );
+        verifyTriggered( "every 100 milliseconds" );
         verifyNoMoreTriggers();
     }
 
@@ -161,7 +175,7 @@ class CheckPointThresholdTest extends CheckPointThresholdTestSupport
         threshold.initialize( 2 );
 
         assertTrue( threshold.isCheckPointingNeeded( 4, triggered ) );
-        verifyTriggered( "count" );
+        verifyTriggered( "every 2 transactions" );
         verifyNoMoreTriggers();
     }
 
@@ -196,7 +210,7 @@ class CheckPointThresholdTest extends CheckPointThresholdTestSupport
 
         threshold.checkPointHappened( 4 );
         assertTrue( threshold.isCheckPointingNeeded( 6, triggered ) );
-        verifyTriggered( "count" );
+        verifyTriggered( "2 transactions" );
         verifyNoMoreTriggers();
     }
 
