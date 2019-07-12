@@ -57,6 +57,7 @@ import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PagedFile;
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracerSupplier;
 import org.neo4j.io.pagecache.tracing.cursor.context.VersionContextSupplier;
 import org.neo4j.kernel.api.InwardKernel;
 import org.neo4j.kernel.api.procedure.GlobalProcedures;
@@ -106,7 +107,6 @@ import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointThreshold;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointerImpl;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointerMonitor;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckpointerLifecycle;
-import org.neo4j.kernel.impl.transaction.log.checkpoint.DefaultCheckPointMonitor;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.StoreCopyCheckPointMutex;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReader;
 import org.neo4j.kernel.impl.transaction.log.entry.VersionAwareLogEntryReader;
@@ -114,7 +114,6 @@ import org.neo4j.kernel.impl.transaction.log.files.LogFileCreationMonitor;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
 import org.neo4j.kernel.impl.transaction.log.files.LogFilesBuilder;
 import org.neo4j.kernel.impl.transaction.log.files.TransactionLogFilesHelper;
-import org.neo4j.kernel.impl.transaction.log.monitor.DefaultLogAppenderMonitor;
 import org.neo4j.kernel.impl.transaction.log.pruning.LogPruneStrategyFactory;
 import org.neo4j.kernel.impl.transaction.log.pruning.LogPruning;
 import org.neo4j.kernel.impl.transaction.log.pruning.LogPruningImpl;
@@ -122,13 +121,13 @@ import org.neo4j.kernel.impl.transaction.log.reverse.ReverseTransactionCursorLog
 import org.neo4j.kernel.impl.transaction.log.reverse.ReversedSingleFileTransactionCursor;
 import org.neo4j.kernel.impl.transaction.log.rotation.LogRotation;
 import org.neo4j.kernel.impl.transaction.log.rotation.LogRotationImpl;
-import org.neo4j.kernel.impl.transaction.log.rotation.monitor.DefaultLogRotationMonitor;
 import org.neo4j.kernel.impl.transaction.log.rotation.monitor.LogRotationMonitor;
 import org.neo4j.kernel.impl.transaction.state.DatabaseFileListing;
 import org.neo4j.kernel.impl.transaction.state.DefaultIndexProviderMap;
 import org.neo4j.kernel.impl.transaction.state.storeview.DynamicIndexStoreView;
 import org.neo4j.kernel.impl.transaction.state.storeview.NeoStoreIndexStoreView;
 import org.neo4j.kernel.impl.transaction.stats.DatabaseTransactionStats;
+import org.neo4j.kernel.impl.transaction.tracing.DatabaseTracer;
 import org.neo4j.kernel.impl.util.DefaultValueMapper;
 import org.neo4j.kernel.impl.util.collection.CollectionsFactorySupplier;
 import org.neo4j.kernel.internal.event.DatabaseTransactionEventListeners;
@@ -139,6 +138,7 @@ import org.neo4j.kernel.monitoring.tracing.Tracers;
 import org.neo4j.kernel.recovery.LogTailScanner;
 import org.neo4j.kernel.recovery.LoggingLogTailScannerMonitor;
 import org.neo4j.lock.LockService;
+import org.neo4j.lock.LockTracer;
 import org.neo4j.lock.ReentrantLockService;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
@@ -176,7 +176,6 @@ public class Database extends LifecycleAdapter
     private final Monitors parentMonitors;
     private final DependencyResolver globalDependencies;
     private final PageCache globalPageCache;
-    private final Tracers globalTracers;
     private final Config globalConfig;
 
     private final Log msgLog;
@@ -203,6 +202,9 @@ public class Database extends LifecycleAdapter
     private final Locks locks;
     private final DatabaseEventListeners eventListeners;
     private final DatabaseIdRepository databaseIdRepository;
+    private final DatabaseTracer databaseTracer;
+    private final PageCursorTracerSupplier pageCursorTracerSupplier;
+    private final LockTracer lockTracer;
 
     private Dependencies databaseDependencies;
     private LifeSupport life;
@@ -255,7 +257,6 @@ public class Database extends LifecycleAdapter
         this.transactionHeaderInformationFactory = context.getTransactionHeaderInformationFactory();
         this.constraintSemantics = context.getConstraintSemantics();
         this.parentMonitors = context.getMonitors();
-        this.globalTracers = context.getTracers();
         this.globalConfig = context.getGlobalConfig();
         this.globalProcedures = context.getGlobalProcedures();
         this.ioLimiter = context.getIoLimiter();
@@ -280,6 +281,10 @@ public class Database extends LifecycleAdapter
         long availabilityGuardTimeout = databaseConfig.get( GraphDatabaseSettings.transaction_start_timeout ).toMillis();
         this.databaseAvailabilityGuard = context.getDatabaseAvailabilityGuardFactory().apply( availabilityGuardTimeout );
         this.databaseFacade = new GraphDatabaseFacade( this, context.getContextBridge(), databaseConfig, databaseInfo, databaseAvailabilityGuard );
+        Tracers globalTracers = context.getTracers();
+        this.databaseTracer = globalTracers.getDatabaseTracer();
+        this.pageCursorTracerSupplier = globalTracers.getPageCursorTracerSupplier();
+        this.lockTracer = globalTracers.getLockTracer();
     }
 
     @Override
@@ -323,18 +328,8 @@ public class Database extends LifecycleAdapter
             databaseDependencies.satisfyDependency( lockService );
             databaseDependencies.satisfyDependency( versionContextSupplier );
             databaseDependencies.satisfyDependency( new DefaultValueMapper( databaseFacade ) );
-
-            DefaultLogRotationMonitor logRotationMonitor = new DefaultLogRotationMonitor();
-            DefaultLogAppenderMonitor logAppenderMonitor = new DefaultLogAppenderMonitor();
-            DefaultCheckPointMonitor checkPointMonitor = new DefaultCheckPointMonitor();
-
-            databaseMonitors.addMonitorListener( logRotationMonitor );
-            databaseMonitors.addMonitorListener( logAppenderMonitor );
-            databaseMonitors.addMonitorListener( checkPointMonitor );
-
-            databaseDependencies.satisfyDependency( logRotationMonitor );
-            databaseDependencies.satisfyDependency( logAppenderMonitor );
-            databaseDependencies.satisfyDependency( checkPointMonitor );
+            databaseDependencies.satisfyDependency( databaseTracer );
+            databaseDependencies.satisfyDependency( lockTracer );
 
             RecoveryCleanupWorkCollector recoveryCleanupWorkCollector = RecoveryCleanupWorkCollector.immediate();
             databaseDependencies.satisfyDependency( recoveryCleanupWorkCollector );
@@ -356,6 +351,7 @@ public class Database extends LifecycleAdapter
                                                .withLogFileMonitor( physicalLogMonitor ).withConfig( databaseConfig )
                                                .withDependencies( databaseDependencies )
                                                .withLogProvider( internalLogProvider )
+                                               .withDatabaseTracer( databaseTracer )
                                                .build();
 
             databaseMonitors.addMonitorListener( new LoggingLogFileMonitor( msgLog ) );
@@ -581,15 +577,15 @@ public class Database extends LifecycleAdapter
                 new LogRotationImpl( logFiles, clock, databaseHealth, monitors.newMonitor( LogRotationMonitor.class ) );
 
         final TransactionAppender appender = life.add( new BatchingTransactionAppender(
-                logFiles, logRotation, transactionMetadataCache, transactionIdStore, databaseHealth, databaseMonitors ) );
+                logFiles, logRotation, transactionMetadataCache, transactionIdStore, databaseHealth ) );
         final LogicalTransactionStore logicalTransactionStore =
                 new PhysicalLogicalTransactionStore( logFiles, transactionMetadataCache, logEntryReader, monitors, true );
 
         CheckPointThreshold threshold = CheckPointThreshold.createThreshold( config, clock, logPruning, logProvider );
 
-        final CheckPointerImpl checkPointer = new CheckPointerImpl(
-                transactionIdStore, threshold, forceOperation, logPruning, appender, databaseHealth, logProvider,
-                globalTracers.getCheckPointTracer(), ioLimiter, storeCopyCheckPointMutex, monitors.newMonitor( CheckPointerMonitor.class ) );
+        final CheckPointerImpl checkPointer =
+                new CheckPointerImpl( transactionIdStore, threshold, forceOperation, logPruning, appender, databaseHealth, logProvider, databaseTracer,
+                        ioLimiter, storeCopyCheckPointMutex, monitors.newMonitor( CheckPointerMonitor.class ) );
 
         long recurringPeriod = threshold.checkFrequencyMillis();
         CheckPointScheduler checkPointScheduler = new CheckPointScheduler( checkPointer, ioLimiter, scheduler,
@@ -625,11 +621,11 @@ public class Database extends LifecycleAdapter
         KernelTransactions kernelTransactions = life.add(
                 new KernelTransactions( databaseConfig, statementLocksFactory, constraintIndexCreator,
                         transactionHeaderInformationFactory, transactionCommitProcess, databaseTransactionEventListeners, transactionStats,
-                        databaseAvailabilityGuard, globalTracers,
+                        databaseAvailabilityGuard,
                         storageEngine, globalProcedures, transactionIdStore, clock, cpuClockRef,
                         heapAllocationRef, accessCapability, versionContextSupplier, collectionsFactorySupplier,
                         constraintSemantics, databaseSchemaState, tokenHolders, getDatabaseId(), indexingService, labelScanStore, indexStatisticsStore,
-                        databaseDependencies ) );
+                        databaseDependencies, databaseTracer, pageCursorTracerSupplier, lockTracer ) );
 
         buildTransactionMonitor( kernelTransactions, clock, databaseConfig );
 

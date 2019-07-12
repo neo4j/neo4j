@@ -48,7 +48,6 @@ import org.neo4j.monitoring.DatabaseEventListeners;
 import org.neo4j.monitoring.DatabaseHealth;
 import org.neo4j.monitoring.DatabasePanicEventGenerator;
 import org.neo4j.monitoring.Health;
-import org.neo4j.monitoring.Monitors;
 import org.neo4j.storageengine.api.TransactionIdStore;
 
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
@@ -119,7 +118,7 @@ public class Runner implements Callable<Long>
         Health databaseHealth = new DatabaseHealth( panicEventGenerator, log );
         LogRotationImpl logRotation = new LogRotationImpl( logFiles, Clock.systemUTC(), databaseHealth, LogRotationMonitorAdapter.EMPTY );
         return new BatchingTransactionAppender( logFiles, logRotation,
-                transactionMetadataCache, transactionIdStore, databaseHealth, new Monitors() );
+                transactionMetadataCache, transactionIdStore, databaseHealth );
     }
 
     private LogFiles createLogFiles( TransactionIdStore transactionIdStore,

@@ -31,6 +31,8 @@ import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.kernel.impl.transaction.log.LogHeaderCache;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogVersionedStoreChannel;
 import org.neo4j.kernel.impl.transaction.log.entry.LogHeader;
+import org.neo4j.kernel.impl.transaction.tracing.DatabaseTracer;
+import org.neo4j.kernel.impl.transaction.tracing.LogFileCreateEvent;
 import org.neo4j.logging.Log;
 
 import static java.lang.String.format;
@@ -48,6 +50,7 @@ class TransactionLogChannelAllocator
     private final TransactionLogFilesHelper fileHelper;
     private final LogHeaderCache logHeaderCache;
     private final LogFileCreationMonitor monitor;
+    private final DatabaseTracer databaseTracer;
 
     TransactionLogChannelAllocator( TransactionLogFilesContext logFilesContext, TransactionLogFilesHelper fileHelper, LogHeaderCache logHeaderCache )
     {
@@ -56,6 +59,7 @@ class TransactionLogChannelAllocator
         this.nativeAccess = logFilesContext.getNativeAccess();
         this.log = logFilesContext.getLogProvider().getLog( getClass() );
         this.monitor = logFilesContext.getLogFileCreationMonitor();
+        this.databaseTracer = logFilesContext.getDatabaseTracer();
         this.fileHelper = fileHelper;
         this.logHeaderCache = logHeaderCache;
     }
@@ -69,13 +73,16 @@ class TransactionLogChannelAllocator
         LogHeader header = readLogHeader( headerBuffer, storeChannel, false, logFile );
         if ( header == null )
         {
-            // we always write file header from the beginning of the file
-            storeChannel.position( 0 );
-            long lastTxId = lastCommittedTransactionId.getAsLong();
-            writeLogHeader( headerBuffer, version, lastTxId );
-            logHeaderCache.putHeader( version, lastTxId );
-            storeChannel.writeAll( headerBuffer );
-            monitor.created( logFile, version, lastTxId );
+            try ( LogFileCreateEvent logFileCreateEvent = databaseTracer.createLogFile() )
+            {
+                // we always write file header from the beginning of the file
+                storeChannel.position( 0 );
+                long lastTxId = lastCommittedTransactionId.getAsLong();
+                writeLogHeader( headerBuffer, version, lastTxId );
+                logHeaderCache.putHeader( version, lastTxId );
+                storeChannel.writeAll( headerBuffer );
+                monitor.created( logFile, version, lastTxId );
+            }
         }
         byte formatVersion = header == null ? CURRENT_LOG_VERSION : header.logFormatVersion;
         return new PhysicalLogVersionedStoreChannel( storeChannel, version, formatVersion );

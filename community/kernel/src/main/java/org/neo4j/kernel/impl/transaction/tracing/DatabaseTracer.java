@@ -19,18 +19,10 @@
  */
 package org.neo4j.kernel.impl.transaction.tracing;
 
-import org.neo4j.kernel.impl.transaction.stats.CheckpointCounters;
-
-public interface CheckPointTracer extends CheckpointCounters
+public interface DatabaseTracer extends TransactionTracer, CheckPointTracer
 {
-    CheckPointTracer NULL = new CheckPointTracer()
+    DatabaseTracer NULL = new DatabaseTracer()
     {
-        @Override
-        public LogCheckPointEvent beginCheckPoint()
-        {
-            return LogCheckPointEvent.NULL;
-        }
-
         @Override
         public long numberOfCheckPoints()
         {
@@ -48,10 +40,49 @@ public interface CheckPointTracer extends CheckpointCounters
         {
             return 0;
         }
+
+        @Override
+        public LogFileCreateEvent createLogFile()
+        {
+            return LogFileCreateEvent.NULL;
+        }
+
+        @Override
+        public LogCheckPointEvent beginCheckPoint()
+        {
+            return LogCheckPointEvent.NULL;
+        }
+
+        @Override
+        public TransactionEvent beginTransaction()
+        {
+            return TransactionEvent.NULL;
+        }
+
+        @Override
+        public long getAppendedBytes()
+        {
+            return 0;
+        }
+
+        @Override
+        public long numberOfLogRotations()
+        {
+            return 0;
+        }
+
+        @Override
+        public long logRotationAccumulatedTotalTimeMillis()
+        {
+            return 0;
+        }
+
+        @Override
+        public long lastLogRotationTimeMillis()
+        {
+            return 0;
+        }
     };
 
-    /**
-     * Begin a check point write to the log
-     */
-    LogCheckPointEvent beginCheckPoint();
+    LogFileCreateEvent createLogFile();
 }

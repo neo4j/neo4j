@@ -45,7 +45,6 @@ import org.neo4j.kernel.impl.transaction.tracing.LogCheckPointEvent;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.monitoring.DatabaseHealth;
 import org.neo4j.monitoring.Health;
-import org.neo4j.monitoring.Monitors;
 import org.neo4j.storageengine.api.StorageCommand;
 import org.neo4j.storageengine.api.TransactionIdStore;
 import org.neo4j.test.extension.Inject;
@@ -84,7 +83,6 @@ class BatchingTransactionAppenderTest
             new InMemoryVersionableReadableClosablePositionAwareChannel();
     private final LogAppendEvent logAppendEvent = LogAppendEvent.NULL;
     private final Health databaseHealth = mock( DatabaseHealth.class );
-    private final Monitors monitors = new Monitors();
     private final LogFile logFile = mock( LogFile.class );
     private final LogFiles logFiles = mock( TransactionLogFiles.class );
     private final TransactionIdStore transactionIdStore = mock( TransactionIdStore.class );
@@ -160,7 +158,7 @@ class BatchingTransactionAppenderTest
         long nextTxId = 15;
         when( transactionIdStore.nextCommittingTransactionId() ).thenReturn( nextTxId );
         TransactionAppender appender = life.add( new BatchingTransactionAppender( logFiles, NO_ROTATION, positionCache,
-                transactionIdStore, databaseHealth, monitors ) );
+                transactionIdStore, databaseHealth ) );
 
         // WHEN
         final byte[] additionalHeader = new byte[]{1, 2, 5};
@@ -279,7 +277,7 @@ class BatchingTransactionAppenderTest
         when( transactionIdStore.nextCommittingTransactionId() ).thenReturn( txId );
         Mockito.reset( databaseHealth );
         TransactionAppender appender = life.add( new BatchingTransactionAppender( logFiles, NO_ROTATION,
-                metadataCache, transactionIdStore, databaseHealth, monitors ) );
+                metadataCache, transactionIdStore, databaseHealth ) );
 
         // WHEN
         TransactionRepresentation transaction = mock( TransactionRepresentation.class );
@@ -349,7 +347,7 @@ class BatchingTransactionAppenderTest
 
     private BatchingTransactionAppender createTransactionAppender()
     {
-        return new BatchingTransactionAppender( logFiles, NO_ROTATION, positionCache, transactionIdStore, databaseHealth, monitors );
+        return new BatchingTransactionAppender( logFiles, NO_ROTATION, positionCache, transactionIdStore, databaseHealth );
     }
 
     private TransactionRepresentation transaction( Collection<StorageCommand> commands, byte[] additionalHeader,

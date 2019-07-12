@@ -30,20 +30,8 @@ public class LogRotationMonitorAdapter implements LogRotationMonitor
     }
 
     @Override
-    public void finishLogRotation( long currentLogVersion, long rotationMillis )
+    public void finishLogRotation( long currentLogVersion )
     {
         //empty
-    }
-
-    @Override
-    public long numberOfLogRotations()
-    {
-        return 0;
-    }
-
-    @Override
-    public long logRotationAccumulatedTotalTimeMillis()
-    {
-        return 0;
     }
 }

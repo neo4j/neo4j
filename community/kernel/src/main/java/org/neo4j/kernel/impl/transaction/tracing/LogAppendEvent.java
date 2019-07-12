@@ -19,14 +19,52 @@
  */
 package org.neo4j.kernel.impl.transaction.tracing;
 
+import org.neo4j.kernel.impl.transaction.log.LogPosition;
+
 /**
  * Represents the process of turning the state of a committing transaction into a sequence of commands, and appending
  * them to the transaction log.
  */
 public interface LogAppendEvent extends LogForceEvents, AutoCloseable
 {
+    LogAppendEvent NULL = new Empty();
+
+    /**
+     * Notify about append of data into the current log file.
+     * New data is appended to the end of the log file and located between {@code logPositionBeforeAppend} and {@code logPositionAfterAppend}
+     * @param logPositionBeforeAppend start position
+     * @param logPositionAfterAppend end position
+     */
+    void appendToLogFile( LogPosition logPositionBeforeAppend, LogPosition logPositionAfterAppend );
+
+    /**
+     * Mark the end of the process of appending a transaction to the transaction log.
+     */
+    @Override
+    void close();
+
+    /**
+     * Note whether or not the log was rotated by the appending of this transaction to the log.
+     */
+    void setLogRotated( boolean logRotated );
+
+    /**
+     * Begin a log rotation as part of this appending to the transaction log.
+     */
+    LogRotateEvent beginLogRotate();
+
+    /**
+     * Begin serializing and writing out the commands for this transaction.
+     */
+    SerializeTransactionEvent beginSerializeTransaction();
+
     class Empty implements LogAppendEvent
     {
+        @Override
+        public void appendToLogFile( LogPosition logPositionBeforeAppend, LogPosition logPositionAfterAppend )
+        {
+        }
+
         @Override
         public void close()
         {
@@ -62,27 +100,4 @@ public interface LogAppendEvent extends LogForceEvents, AutoCloseable
             return LogForceEvent.NULL;
         }
     }
-
-    LogAppendEvent NULL = new Empty();
-
-    /**
-     * Mark the end of the process of appending a transaction to the transaction log.
-     */
-    @Override
-    void close();
-
-    /**
-     * Note whether or not the log was rotated by the appending of this transaction to the log.
-     */
-    void setLogRotated( boolean logRotated );
-
-    /**
-     * Begin a log rotation as part of this appending to the transaction log.
-     */
-    LogRotateEvent beginLogRotate();
-
-    /**
-     * Begin serializing and writing out the commands for this transaction.
-     */
-    SerializeTransactionEvent beginSerializeTransaction();
 }

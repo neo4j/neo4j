@@ -17,13 +17,18 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.transaction.log.monitor;
+package org.neo4j.kernel.impl.transaction.tracing;
 
-import org.neo4j.kernel.impl.transaction.log.LogPosition;
-
-public interface LogAppenderMonitor
+/**
+ * Event for new transaction log file creation
+ */
+public interface LogFileCreateEvent extends AutoCloseable
 {
-    void appendToLogFile( LogPosition beforePosition, LogPosition afterPosition );
+    LogFileCreateEvent NULL = () ->
+    {
 
-    long appendedBytes();
+    };
+
+    @Override
+    void close();
 }

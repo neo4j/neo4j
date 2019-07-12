@@ -17,32 +17,44 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.transaction.log.checkpoint;
+package org.neo4j.kernel.impl.api.tracer;
 
 import java.util.concurrent.atomic.AtomicLong;
 
-public class DefaultCheckPointMonitor implements CheckPointerMonitor
+import org.neo4j.kernel.impl.transaction.tracing.LogRotateEvent;
+
+class CountingLogRotateEvent implements LogRotateEvent
 {
-    private final AtomicLong counter = new AtomicLong();
-    private final AtomicLong accumulatedTotalTimeMillis = new AtomicLong();
+    private final AtomicLong rotationCounter = new AtomicLong();
+    private final AtomicLong accumulatedRotationTimeMillis = new AtomicLong();
+    private volatile long lastRotationTimeMillis;
 
     @Override
-    public void checkPointCompleted( long durationMillis )
+    public void rotationCompleted( long rotationMillis )
     {
-        counter.incrementAndGet();
-        accumulatedTotalTimeMillis.addAndGet( durationMillis );
+        rotationCounter.incrementAndGet();
+        accumulatedRotationTimeMillis.addAndGet( rotationMillis );
+        lastRotationTimeMillis = rotationMillis;
     }
 
     @Override
-    public long numberOfCheckPoints()
+    public void close()
     {
-        return counter.get();
+
     }
 
-    @Override
-    public long checkPointAccumulatedTotalTimeMillis()
+    long numberOfLogRotations()
     {
-        return accumulatedTotalTimeMillis.get();
+        return rotationCounter.get();
     }
 
+    long logRotationAccumulatedTotalTimeMillis()
+    {
+        return accumulatedRotationTimeMillis.get();
+    }
+
+    long lastLogRotationTimeMillis()
+    {
+        return lastRotationTimeMillis;
+    }
 }

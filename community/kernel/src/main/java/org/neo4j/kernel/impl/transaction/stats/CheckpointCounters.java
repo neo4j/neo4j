@@ -17,35 +17,25 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.transaction.tracing;
+package org.neo4j.kernel.impl.transaction.stats;
 
-/**
- * Represents the event of a log rotation.
- */
-public interface LogRotateEvent extends AutoCloseable
+public interface CheckpointCounters
 {
-    LogRotateEvent NULL = new LogRotateEvent()
-    {
-        @Override
-        public void rotationCompleted( long rotationMillis )
-        {
-        }
-
-        @Override
-        public void close()
-        {
-        }
-    };
+    /**
+     * Total number of checkpoints occurred
+     * @return number of checkpoints
+     */
+    long numberOfCheckPoints();
 
     /**
-     * Notify about completion of rotation that took {@code rotationMillis} to complete
-     * @param rotationMillis transaction log rotation duration
+     * Accumulated duration in milliseconds of all occured checkpoints
+     * @return accumulated checkpoints duration in milliseconds
      */
-    void rotationCompleted( long rotationMillis );
+    long checkPointAccumulatedTotalTimeMillis();
 
     /**
-     * Marks the end of the log rotation process.
+     * Last checkpoint duration in milliseconds
+     * @return last checkpoint duration in milliseconds
      */
-    @Override
-    void close();
+    long lastCheckpointTimeMillis();
 }

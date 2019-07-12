@@ -54,7 +54,6 @@ import org.neo4j.logging.NullLog;
 import org.neo4j.monitoring.DatabaseHealth;
 import org.neo4j.monitoring.DatabasePanicEventGenerator;
 import org.neo4j.monitoring.Health;
-import org.neo4j.monitoring.Monitors;
 import org.neo4j.storageengine.api.LogVersionRepository;
 import org.neo4j.storageengine.api.StorageCommand;
 import org.neo4j.storageengine.api.TransactionIdStore;
@@ -107,7 +106,7 @@ class TransactionLogAppendAndRotateIT
         Health health = new DatabaseHealth( mock( DatabasePanicEventGenerator.class ), NullLog.getInstance() );
         LogRotation rotation = new LogRotationImpl( logFiles, Clock.systemUTC(), health, monitoring );
         final TransactionAppender appender =
-                life.add( new BatchingTransactionAppender( logFiles, rotation, metadataCache, txIdStore, health, new Monitors() ) );
+                life.add( new BatchingTransactionAppender( logFiles, rotation, metadataCache, txIdStore, health ) );
 
         // WHEN
         Race race = new Race();
@@ -214,7 +213,7 @@ class TransactionLogAppendAndRotateIT
         }
 
         @Override
-        public void finishLogRotation( long currentLogVersion, long rotationMillis )
+        public void finishLogRotation( long currentLogVersion )
         {
             try
             {

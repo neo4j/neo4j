@@ -80,8 +80,7 @@ public interface TransactionEvent extends AutoCloseable
     void close();
 
     /**
-     * Set write state of the transaction, as given by
-     * {@link org.neo4j.kernel.impl.api.KernelTransactionImplementation.TransactionWriteState}.
+     * Set write state of the transaction
      */
     void setTransactionWriteState( String transactionWriteState );
 

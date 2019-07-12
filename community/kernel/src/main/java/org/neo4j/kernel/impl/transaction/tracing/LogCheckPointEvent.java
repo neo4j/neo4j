@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.impl.transaction.tracing;
 
+import org.neo4j.kernel.impl.transaction.log.LogPosition;
+
 /**
  * Represents the process of appending a check point to the transaction log.
  */
@@ -39,14 +41,39 @@ public interface LogCheckPointEvent extends LogForceEvents, AutoCloseable
         }
 
         @Override
+        public void checkpointCompleted( long checkpointMillis )
+        {
+        }
+
+        @Override
         public void close()
         {
         }
+
+        @Override
+        public void appendToLogFile( LogPosition positionBeforeCheckpoint, LogPosition positionAfterCheckpoint )
+        {
+
+        }
     };
+
+    /**
+     * Notify about completion of checkpoint that took {@code checkpointMillis} to complete
+     * @param checkpointMillis checkpoint duration
+     */
+    void checkpointCompleted( long checkpointMillis );
 
     /**
      * Marks the end of the check pointing process.
      */
     @Override
     void close();
+
+    /**
+     * Notify about checkpoint append into the current log file.
+     * New data is appended to the end of the log file and located between {@code positionBeforeCheckpoint} and {@code positionAfterCheckpoint}
+     * @param positionBeforeCheckpoint start position
+     * @param positionAfterCheckpoint end position
+     */
+    void appendToLogFile( LogPosition positionBeforeCheckpoint, LogPosition positionAfterCheckpoint );
 }

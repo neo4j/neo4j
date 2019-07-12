@@ -17,35 +17,31 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.transaction.tracing;
+package org.neo4j.kernel.impl.transaction.stats;
 
-/**
- * Represents the event of a log rotation.
- */
-public interface LogRotateEvent extends AutoCloseable
+public interface TransactionLogCounters
 {
-    LogRotateEvent NULL = new LogRotateEvent()
-    {
-        @Override
-        public void rotationCompleted( long rotationMillis )
-        {
-        }
-
-        @Override
-        public void close()
-        {
-        }
-    };
+    /**
+     * Total number of bytes appended to transaction logs as result of applying transactions
+     * @return total number of appended bytes
+     */
+    long getAppendedBytes();
 
     /**
-     * Notify about completion of rotation that took {@code rotationMillis} to complete
-     * @param rotationMillis transaction log rotation duration
+     * Total number of transaction log file rotations
+     * @return number of rotations
      */
-    void rotationCompleted( long rotationMillis );
+    long numberOfLogRotations();
 
     /**
-     * Marks the end of the log rotation process.
+     * Accumulated log rotation time in milliseconds
+     * @return accumulated log rotations time in milliseconds
      */
-    @Override
-    void close();
+    long logRotationAccumulatedTotalTimeMillis();
+
+    /**
+     * Last log rotation time in milliseconds
+     * @return last log rotation time in milliseconds
+     */
+    long lastLogRotationTimeMillis();
 }

@@ -65,7 +65,9 @@ public class LogRotationImpl implements LogRotation
                 {
                     try ( LogRotateEvent rotateEvent = logAppendEvent.beginLogRotate() )
                     {
+                        long startTimeMillis = clock.millis();
                         doRotate();
+                        rotateEvent.rotationCompleted( clock.millis() - startTimeMillis );
                     }
                     return true;
                 }
@@ -92,10 +94,8 @@ public class LogRotationImpl implements LogRotation
          * at full health. In case of a panic this rotation will be aborted, which is the safest alternative.
          */
         databaseHealth.assertHealthy( IOException.class );
-        long startTimeMillis = clock.millis();
         monitor.startRotation( currentVersion );
-
         logFile.rotate();
-        monitor.finishLogRotation( currentVersion, clock.millis() - startTimeMillis );
+        monitor.finishLogRotation( currentVersion );
     }
 }

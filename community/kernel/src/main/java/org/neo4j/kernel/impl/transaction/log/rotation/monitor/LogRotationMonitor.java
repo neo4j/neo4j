@@ -23,9 +23,6 @@ public interface LogRotationMonitor
 {
     void startRotation( long currentLogVersion );
 
-    void finishLogRotation( long currentLogVersion, long rotationMillis );
+    void finishLogRotation( long currentLogVersion );
 
-    long numberOfLogRotations();
-
-    long logRotationAccumulatedTotalTimeMillis();
 }

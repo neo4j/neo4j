@@ -21,8 +21,7 @@ package org.neo4j.kernel.monitoring.tracing;
 
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracerSupplier;
-import org.neo4j.kernel.impl.transaction.tracing.CheckPointTracer;
-import org.neo4j.kernel.impl.transaction.tracing.TransactionTracer;
+import org.neo4j.kernel.impl.transaction.tracing.DatabaseTracer;
 import org.neo4j.lock.LockTracer;
 import org.neo4j.logging.Log;
 import org.neo4j.monitoring.Monitors;
@@ -104,10 +103,9 @@ import static org.neo4j.kernel.monitoring.tracing.NullTracersFactory.NULL_TRACER
 public class Tracers
 {
     private final PageCacheTracer pageCacheTracer;
-    private final LockTracer lockTracer;
     private final PageCursorTracerSupplier pageCursorTracerSupplier;
-    private final TransactionTracer transactionTracer;
-    private final CheckPointTracer checkPointTracer;
+    private final TracerFactory tracersFactory;
+    private final SystemNanoClock clock;
 
     /**
      * Create a Tracers subsystem with the desired implementation, if it can be found and created.
@@ -122,12 +120,10 @@ public class Tracers
     public Tracers( String desiredImplementationName, Log msgLog, Monitors monitors, JobScheduler jobScheduler,
             SystemNanoClock clock )
     {
-        TracerFactory tracersFactory = createTracersFactory( desiredImplementationName, msgLog );
-        pageCursorTracerSupplier = tracersFactory.createPageCursorTracerSupplier( monitors, jobScheduler );
-        pageCacheTracer = tracersFactory.createPageCacheTracer( monitors, jobScheduler, clock, msgLog );
-        lockTracer = tracersFactory.createLockTracer( clock );
-        transactionTracer = tracersFactory.createTransactionTracer( clock );
-        checkPointTracer = tracersFactory.createCheckPointTracer( clock );
+        this.clock = clock;
+        this.tracersFactory = createTracersFactory( desiredImplementationName, msgLog );
+        this.pageCursorTracerSupplier = tracersFactory.createPageCursorTracerSupplier( monitors, jobScheduler );
+        this.pageCacheTracer = tracersFactory.createPageCacheTracer( monitors, jobScheduler, clock, msgLog );
     }
 
     public PageCacheTracer getPageCacheTracer()
@@ -142,17 +138,12 @@ public class Tracers
 
     public LockTracer getLockTracer()
     {
-        return lockTracer;
+        return tracersFactory.createLockTracer( clock );
     }
 
-    public TransactionTracer getTransactionTracer()
+    public DatabaseTracer getDatabaseTracer()
     {
-        return transactionTracer;
-    }
-
-    public CheckPointTracer getCheckPointTracer()
-    {
-        return checkPointTracer;
+        return tracersFactory.createDatabaseTracer( clock );
     }
 
     private static TracerFactory createTracersFactory( String desiredImplementationName, Log msgLog )

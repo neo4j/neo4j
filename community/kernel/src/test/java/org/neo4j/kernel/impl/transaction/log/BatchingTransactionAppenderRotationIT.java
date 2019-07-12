@@ -89,7 +89,7 @@ class BatchingTransactionAppenderRotationIT
         TransactionMetadataCache transactionMetadataCache = new TransactionMetadataCache();
 
         BatchingTransactionAppender transactionAppender =
-                new BatchingTransactionAppender( logFiles, logRotation, transactionMetadataCache, transactionIdStore, databaseHealth, monitors );
+                new BatchingTransactionAppender( logFiles, logRotation, transactionMetadataCache, transactionIdStore, databaseHealth );
 
         life.add( transactionAppender );
 
@@ -153,6 +153,12 @@ class BatchingTransactionAppenderRotationIT
         public LogForceEvent beginLogForce()
         {
             return null;
+        }
+
+        @Override
+        public void appendToLogFile( LogPosition logPositionBeforeAppend, LogPosition logPositionAfterAppend )
+        {
+
         }
 
         @Override

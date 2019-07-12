@@ -29,6 +29,7 @@ import org.neo4j.internal.nativeimpl.NativeAccessProvider;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReader;
+import org.neo4j.kernel.impl.transaction.tracing.DatabaseTracer;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.storageengine.api.LogVersionRepository;
 
@@ -44,12 +45,12 @@ class TransactionLogFilesContext
     private final LogFileCreationMonitor logFileCreationMonitor;
     private final FileSystemAbstraction fileSystem;
     private final LogProvider logProvider;
+    private final DatabaseTracer databaseTracer;
 
     TransactionLogFilesContext( AtomicLong rotationThreshold, AtomicBoolean tryPreallocateTransactionLogs, LogEntryReader logEntryReader,
-            LongSupplier lastCommittedTransactionIdSupplier, LongSupplier committingTransactionIdSupplier,
-            Supplier<LogPosition>  lastClosedPositionSupplier,
-            LogFileCreationMonitor logFileCreationMonitor, Supplier<LogVersionRepository> logVersionRepositorySupplier,
-            FileSystemAbstraction fileSystem, LogProvider logProvider )
+            LongSupplier lastCommittedTransactionIdSupplier, LongSupplier committingTransactionIdSupplier, Supplier<LogPosition> lastClosedPositionSupplier,
+            LogFileCreationMonitor logFileCreationMonitor, Supplier<LogVersionRepository> logVersionRepositorySupplier, FileSystemAbstraction fileSystem,
+            LogProvider logProvider, DatabaseTracer databaseTracer )
     {
         this.rotationThreshold = rotationThreshold;
         this.tryPreallocateTransactionLogs = tryPreallocateTransactionLogs;
@@ -61,6 +62,7 @@ class TransactionLogFilesContext
         this.logFileCreationMonitor = logFileCreationMonitor;
         this.fileSystem = fileSystem;
         this.logProvider = logProvider;
+        this.databaseTracer = databaseTracer;
     }
 
     AtomicLong getRotationThreshold()
@@ -116,5 +118,10 @@ class TransactionLogFilesContext
     NativeAccess getNativeAccess()
     {
         return NativeAccessProvider.getNativeAccess();
+    }
+
+    DatabaseTracer getDatabaseTracer()
+    {
+        return databaseTracer;
     }
 }

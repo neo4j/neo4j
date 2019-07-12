@@ -34,6 +34,7 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReader;
 import org.neo4j.kernel.impl.transaction.log.entry.VersionAwareLogEntryReader;
+import org.neo4j.kernel.impl.transaction.tracing.DatabaseTracer;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.storageengine.api.LogVersionRepository;
@@ -75,6 +76,7 @@ public class LogFilesBuilder
     private Supplier<LogPosition> lastClosedPositionSupplier;
     private String logFileName = TransactionLogFilesHelper.DEFAULT_NAME;
     private boolean fileBasedOperationsOnly;
+    private DatabaseTracer databaseTracer = DatabaseTracer.NULL;
 
     private LogFilesBuilder()
     {
@@ -192,6 +194,12 @@ public class LogFilesBuilder
         return this;
     }
 
+    public LogFilesBuilder withDatabaseTracer( DatabaseTracer databaseTracer )
+    {
+        this.databaseTracer = databaseTracer;
+        return this;
+    }
+
     public LogFiles build() throws IOException
     {
         TransactionLogFilesContext filesContext = buildContext();
@@ -235,7 +243,7 @@ public class LogFilesBuilder
 
         return new TransactionLogFilesContext( rotationThreshold, tryPreallocateTransactionLogs, logEntryReader, lastCommittedIdSupplier,
                 committingTransactionIdSupplier, lastClosedTransactionPositionSupplier, logFileCreationMonitor, logVersionRepositorySupplier, fileSystem,
-                logProvider );
+                logProvider, databaseTracer );
     }
 
     private AtomicLong getRotationThresholdAndRegisterForUpdates()

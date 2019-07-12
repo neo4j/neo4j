@@ -72,7 +72,6 @@ import org.neo4j.logging.NullLog;
 import org.neo4j.monitoring.DatabaseHealth;
 import org.neo4j.monitoring.DatabasePanicEventGenerator;
 import org.neo4j.monitoring.Health;
-import org.neo4j.monitoring.Monitors;
 import org.neo4j.storageengine.api.TransactionIdStore;
 import org.neo4j.test.Race;
 import org.neo4j.test.extension.EphemeralFileSystemExtension;
@@ -108,7 +107,6 @@ public class BatchingTransactionAppenderConcurrencyTest
     private final LogRotation logRotation = LogRotation.NO_ROTATION;
     private final TransactionMetadataCache transactionMetadataCache = new TransactionMetadataCache();
     private final TransactionIdStore transactionIdStore = new SimpleTransactionIdStore();
-    private final Monitors monitors = new Monitors();
     private final SimpleLogVersionRepository logVersionRepository = new SimpleLogVersionRepository();
     private final Health databaseHealth = mock( DatabaseHealth.class );
     private final Semaphore forceSemaphore = new Semaphore( 0 );
@@ -239,7 +237,7 @@ public class BatchingTransactionAppenderConcurrencyTest
                 .build();
         life.add( logFiles );
         final BatchingTransactionAppender appender = life.add(
-                new BatchingTransactionAppender( logFiles, logRotation, transactionMetadataCache, transactionIdStore, databaseHealth, monitors ) );
+                new BatchingTransactionAppender( logFiles, logRotation, transactionMetadataCache, transactionIdStore, databaseHealth ) );
         life.start();
 
         // WHEN
@@ -298,8 +296,7 @@ public class BatchingTransactionAppenderConcurrencyTest
                 .build();
         life.add( logFiles );
         final BatchingTransactionAppender appender =
-                life.add( new BatchingTransactionAppender( logFiles, logRotation, transactionMetadataCache, transactionIdStore, slowPanicDatabaseHealth,
-                        monitors ) );
+                life.add( new BatchingTransactionAppender( logFiles, logRotation, transactionMetadataCache, transactionIdStore, slowPanicDatabaseHealth ) );
         life.start();
 
         // Commit initial transaction
@@ -448,7 +445,7 @@ public class BatchingTransactionAppenderConcurrencyTest
     private BatchingTransactionAppender createTransactionAppender()
     {
         return new BatchingTransactionAppender( logFiles, logRotation,
-                transactionMetadataCache, transactionIdStore, databaseHealth, monitors );
+                transactionMetadataCache, transactionIdStore, databaseHealth );
     }
 
     private enum ChannelCommand

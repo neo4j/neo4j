@@ -33,7 +33,6 @@ import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryWriter;
 import org.neo4j.kernel.impl.transaction.log.files.LogFile;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
-import org.neo4j.kernel.impl.transaction.log.monitor.LogAppenderMonitor;
 import org.neo4j.kernel.impl.transaction.log.rotation.LogRotation;
 import org.neo4j.kernel.impl.transaction.tracing.LogAppendEvent;
 import org.neo4j.kernel.impl.transaction.tracing.LogCheckPointEvent;
@@ -43,7 +42,6 @@ import org.neo4j.kernel.impl.transaction.tracing.LogForceWaitEvent;
 import org.neo4j.kernel.impl.transaction.tracing.SerializeTransactionEvent;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.monitoring.Health;
-import org.neo4j.monitoring.Monitors;
 import org.neo4j.storageengine.api.TransactionIdStore;
 
 import static org.neo4j.kernel.impl.api.TransactionToApply.TRANSACTION_ID_NOT_SPECIFIED;
@@ -57,7 +55,6 @@ public class BatchingTransactionAppender extends LifecycleAdapter implements Tra
 {
     private final AtomicReference<ThreadLink> threadLinkHead = new AtomicReference<>( ThreadLink.END );
     private final TransactionMetadataCache transactionMetadataCache;
-    private final LogAppenderMonitor monitor;
     private final LogFile logFile;
     private final LogRotation logRotation;
     private final TransactionIdStore transactionIdStore;
@@ -69,14 +66,13 @@ public class BatchingTransactionAppender extends LifecycleAdapter implements Tra
     private TransactionLogWriter transactionLogWriter;
 
     public BatchingTransactionAppender( LogFiles logFiles, LogRotation logRotation, TransactionMetadataCache transactionMetadataCache,
-            TransactionIdStore transactionIdStore, Health databaseHealth, Monitors databaseMonitors )
+            TransactionIdStore transactionIdStore, Health databaseHealth )
     {
         this.logFile = logFiles.getLogFile();
         this.logRotation = logRotation;
         this.transactionIdStore = transactionIdStore;
         this.databaseHealth = databaseHealth;
         this.transactionMetadataCache = transactionMetadataCache;
-        this.monitor = databaseMonitors.newMonitor( LogAppenderMonitor.class );
     }
 
     @Override
@@ -110,7 +106,7 @@ public class BatchingTransactionAppender extends LifecycleAdapter implements Tra
                     // really recover from and would point to a bug somewhere.
                     matchAgainstExpectedTransactionIdIfAny( transactionId, tx );
 
-                    TransactionCommitment commitment = appendToLog( tx.transactionRepresentation(), transactionId );
+                    TransactionCommitment commitment = appendToLog( tx.transactionRepresentation(), transactionId, logAppendEvent );
                     tx.commitment( commitment, transactionId );
                     tx.logPosition( commitment.logPosition() );
                     tx = tx.next();
@@ -174,7 +170,7 @@ public class BatchingTransactionAppender extends LifecycleAdapter implements Tra
                 LogPosition logPositionBeforeCheckpoint = writer.getCurrentPosition( positionMarker ).newPosition();
                 transactionLogWriter.checkPoint( logPosition );
                 LogPosition logPositionAfterCheckpoint = writer.getCurrentPosition( positionMarker ).newPosition();
-                monitor.appendToLogFile( logPositionBeforeCheckpoint, logPositionAfterCheckpoint );
+                logCheckPointEvent.appendToLogFile( logPositionBeforeCheckpoint, logPositionAfterCheckpoint );
             }
             catch ( Throwable cause )
             {
@@ -189,7 +185,7 @@ public class BatchingTransactionAppender extends LifecycleAdapter implements Tra
      * @return A TransactionCommitment instance with metadata about the committed transaction, such as whether or not
      * this transaction contains any explicit index changes.
      */
-    private TransactionCommitment appendToLog( TransactionRepresentation transaction, long transactionId )
+    private TransactionCommitment appendToLog( TransactionRepresentation transaction, long transactionId, LogAppendEvent logAppendEvent )
             throws IOException
     {
         // The outcome of this try block is either of:
@@ -203,7 +199,7 @@ public class BatchingTransactionAppender extends LifecycleAdapter implements Tra
             LogPosition logPositionBeforeCommit = writer.getCurrentPosition( positionMarker ).newPosition();
             transactionLogWriter.append( transaction, transactionId );
             LogPosition logPositionAfterCommit = writer.getCurrentPosition( positionMarker ).newPosition();
-            monitor.appendToLogFile( logPositionBeforeCommit, logPositionAfterCommit );
+            logAppendEvent.appendToLogFile( logPositionBeforeCommit, logPositionAfterCommit );
 
             long transactionChecksum =
                     checksum( transaction.additionalHeader(), transaction.getMasterId(), transaction.getAuthorId() );

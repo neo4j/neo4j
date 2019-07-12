@@ -26,8 +26,7 @@ import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.io.pagecache.tracing.cursor.DefaultPageCursorTracerSupplier;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracerSupplier;
-import org.neo4j.kernel.impl.transaction.tracing.CheckPointTracer;
-import org.neo4j.kernel.impl.transaction.tracing.TransactionTracer;
+import org.neo4j.kernel.impl.transaction.tracing.DatabaseTracer;
 import org.neo4j.lock.LockTracer;
 import org.neo4j.logging.Log;
 import org.neo4j.monitoring.Monitors;
@@ -55,20 +54,12 @@ public interface TracerFactory extends NamedService
     PageCacheTracer createPageCacheTracer( Monitors monitors, JobScheduler jobScheduler, SystemNanoClock clock, Log log );
 
     /**
-     * Create a new TransactionTracer instance.
+     * Create a new DatabaseTracer instance.
      *
      * @param clock system clock
      * @return The created instance.
      */
-    TransactionTracer createTransactionTracer( Clock clock );
-
-    /**
-     * Create a new CheckPointTracer instance.
-     *
-     * @param clock system clock
-     * @return The created instance.
-     */
-    CheckPointTracer createCheckPointTracer( Clock clock );
+    DatabaseTracer createDatabaseTracer( Clock clock );
 
     /**
      * Create a new LockTracer instance.

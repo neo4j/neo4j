@@ -719,12 +719,12 @@ class KernelTransactionsTest
     {
         return new KernelTransactions( config, statementLocksFactory, null,
                 DEFAULT, commitProcess, mock( DatabaseTransactionEventListeners.class ),
-                mock( TransactionMonitor.class ), databaseAvailabilityGuard, tracers, storageEngine, mock( GlobalProcedures.class ), transactionIdStore, clock,
+                mock( TransactionMonitor.class ), databaseAvailabilityGuard, storageEngine, mock( GlobalProcedures.class ), transactionIdStore, clock,
                 new AtomicReference<>( CpuClock.NOT_AVAILABLE ), new AtomicReference<>( HeapAllocation.NOT_AVAILABLE ),
                 new CanWrite(), EmptyVersionContextSupplier.EMPTY, ON_HEAP,
                 mock( ConstraintSemantics.class ), mock( SchemaState.class ),
-                mockedTokenHolders(), DEFAULT_DATABASE_ID, mock( IndexingService.class ), mock( LabelScanStore.class ),
-                mock( IndexStatisticsStore.class ), createDependencies() );
+                mockedTokenHolders(), DEFAULT_DATABASE_ID, mock( IndexingService.class ), mock( LabelScanStore.class ), mock( IndexStatisticsStore.class ),
+                createDependencies(), tracers.getDatabaseTracer(), tracers.getPageCursorTracerSupplier(), tracers.getLockTracer() );
     }
 
     private static TestKernelTransactions createTestTransactions( StorageEngine storageEngine,
@@ -795,12 +795,12 @@ class KernelTransactionsTest
                 VersionContextSupplier versionContextSupplier, TokenHolders tokenHolders, Dependencies databaseDependencies )
         {
             super( Config.defaults(), statementLocksFactory, constraintIndexCreator, txHeaderFactory,
-                    transactionCommitProcess, eventListeners, transactionMonitor, databaseAvailabilityGuard, tracers,
+                    transactionCommitProcess, eventListeners, transactionMonitor, databaseAvailabilityGuard,
                     storageEngine, globalProcedures, transactionIdStore, clock, new AtomicReference<>( CpuClock.NOT_AVAILABLE ),
                     new AtomicReference<>( HeapAllocation.NOT_AVAILABLE ), accessCapability,
                     versionContextSupplier, ON_HEAP, new StandardConstraintSemantics(), mock( SchemaState.class ), tokenHolders,
                     DEFAULT_DATABASE_ID, mock( IndexingService.class ), mock( LabelScanStore.class ), mock( IndexStatisticsStore.class ),
-                    databaseDependencies );
+                    databaseDependencies, tracers.getDatabaseTracer(), tracers.getPageCursorTracerSupplier(), tracers.getLockTracer() );
         }
 
         @Override

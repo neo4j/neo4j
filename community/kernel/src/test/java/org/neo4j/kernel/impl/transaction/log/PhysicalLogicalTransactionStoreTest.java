@@ -142,7 +142,7 @@ class PhysicalLogicalTransactionStoreTest
                 .build();
         life.add( logFiles );
 
-        life.add( new BatchingTransactionAppender( logFiles, NO_ROTATION, positionCache, transactionIdStore, DATABASE_HEALTH, monitors ) );
+        life.add( new BatchingTransactionAppender( logFiles, NO_ROTATION, positionCache, transactionIdStore, DATABASE_HEALTH ) );
 
         try
         {
@@ -196,7 +196,7 @@ class PhysicalLogicalTransactionStoreTest
                 logEntryReader(), monitors, true );
 
         life.add( new BatchingTransactionAppender( logFiles, NO_ROTATION, positionCache,
-                transactionIdStore, DATABASE_HEALTH, monitors ) );
+                transactionIdStore, DATABASE_HEALTH ) );
         CorruptedLogsTruncator logPruner = new CorruptedLogsTruncator( databaseDirectory, logFiles, fileSystem );
         life.add( new TransactionLogsRecovery( new RecoveryService()
         {
@@ -338,7 +338,7 @@ class PhysicalLogicalTransactionStoreTest
                                            long latestCommittedTxWhenStarted, long timeCommitted ) throws IOException
     {
         TransactionAppender appender = life.add( new BatchingTransactionAppender( logFiles, NO_ROTATION, positionCache,
-                transactionIdStore, DATABASE_HEALTH, monitors ) );
+                transactionIdStore, DATABASE_HEALTH ) );
         PhysicalTransactionRepresentation transaction =
                 new PhysicalTransactionRepresentation( singleTestCommand() );
         transaction.setHeader( additionalHeader, masterId, authorId, timeStarted, latestCommittedTxWhenStarted,
