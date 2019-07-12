@@ -61,7 +61,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.internal.helpers.collection.Iterables.count;
-import static org.neo4j.kernel.impl.transaction.log.entry.LogHeader.LOG_HEADER_SIZE;
 import static org.neo4j.test.TestLabels.LABEL_ONE;
 
 /**
@@ -135,7 +134,7 @@ class RecoverIndexDropIT
         LogFiles logFiles = LogFilesBuilder.logFilesBasedOnlyBuilder( transactionLogsDirectory, fs ).build();
         LogFile logFile = logFiles.getLogFile();
 
-        try ( ReadableLogChannel reader = logFile.getReader( new LogPosition( 0, LOG_HEADER_SIZE ) ) )
+        try ( ReadableLogChannel reader = logFile.getReader( LogPosition.start( 0 ) ) )
         {
             LogEntryReader<ReadableClosablePositionAwareChannel> logEntryReader = new VersionAwareLogEntryReader<>();
             while ( logEntryReader.readLogEntry( reader ) != null )

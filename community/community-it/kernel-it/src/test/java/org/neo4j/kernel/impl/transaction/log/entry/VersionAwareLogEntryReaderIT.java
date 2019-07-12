@@ -24,7 +24,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledOnOs;
 import org.junit.jupiter.api.condition.EnabledOnOs;
 import org.junit.jupiter.api.condition.OS;
-import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -51,10 +50,7 @@ import org.neo4j.kernel.impl.transaction.log.files.LogFilesBuilder;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.kernel.lifecycle.Lifespan;
 import org.neo4j.test.extension.DbmsExtension;
-import org.neo4j.test.extension.DefaultFileSystemExtension;
 import org.neo4j.test.extension.Inject;
-import org.neo4j.test.extension.TestDirectoryExtension;
-import org.neo4j.test.rule.TestDirectory;
 
 import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -64,14 +60,13 @@ import static org.neo4j.io.ByteUnit.mebiBytes;
 import static org.neo4j.io.fs.ReadAheadChannel.DEFAULT_READ_AHEAD_SIZE;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogHeader.LOG_HEADER_SIZE;
 
-@ExtendWith( {DefaultFileSystemExtension.class, TestDirectoryExtension.class} )
 @DbmsExtension
 class VersionAwareLogEntryReaderIT
 {
+    // this offset includes log header and transaction that create node on test setup
+    private static final long END_OF_DATA_OFFSET = 151L;
     @Inject
     private FileSystemAbstraction fs;
-    @Inject
-    private TestDirectory testDirectory;
     @Inject
     private DatabaseManagementService managementService;
     private DatabaseLayout databaseLayout;
@@ -100,7 +95,7 @@ class VersionAwareLogEntryReaderIT
             LogPosition logPosition = entryReader.lastPosition();
             assertEquals( 0L, logPosition.getLogVersion() );
             // this position in a log file before 0's are actually starting
-            assertEquals( 151L, logPosition.getByteOffset() );
+            assertEquals( END_OF_DATA_OFFSET, logPosition.getByteOffset() );
         }
     }
 
@@ -116,11 +111,11 @@ class VersionAwareLogEntryReaderIT
             LogPosition logPosition = entryReader.lastPosition();
             assertEquals( 0L, logPosition.getLogVersion() );
             // this position in a log file before 0's are actually starting
-            assertEquals( 151L, logPosition.getByteOffset() );
+            assertEquals( END_OF_DATA_OFFSET, logPosition.getByteOffset() );
 
             for ( int i = 0; i < 10; i++ )
             {
-                assertEquals( 151L, getLastReadablePosition( logFiles ) );
+                assertEquals( END_OF_DATA_OFFSET, getLastReadablePosition( logFiles ) );
             }
         }
     }

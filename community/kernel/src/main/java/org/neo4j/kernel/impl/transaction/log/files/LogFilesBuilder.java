@@ -260,7 +260,12 @@ public class LogFilesBuilder
             return new AtomicBoolean( false );
         }
         AtomicBoolean tryToPreallocate = new AtomicBoolean( config.get( preallocate_logical_logs ) );
-        config.registerDynamicUpdateListener( preallocate_logical_logs, ( prev, update ) -> tryToPreallocate.set( update ) );
+        config.registerDynamicUpdateListener( preallocate_logical_logs, ( prev, update ) ->
+        {
+            String logMessage = "Updating " + preallocate_logical_logs.name() + " from " + prev + " to " + update;
+            logProvider.getLog( LogFiles.class ).debug( logMessage );
+            tryToPreallocate.set( update );
+        } );
         return tryToPreallocate;
     }
 

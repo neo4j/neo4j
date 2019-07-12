@@ -693,6 +693,7 @@ class RecoveryCorruptedTransactionLogIT
 
     private void writeRandomBytesAfterLastCommandInLastLogFile( Supplier<ByteBuffer> source ) throws IOException
     {
+        int someRandomPaddingAfterEndOfDataInLogFile = random.nextInt( 1, 10 );
         try ( Lifespan lifespan = new Lifespan() )
         {
             LogFile transactionLogFile = logFiles.getLogFile();
@@ -702,7 +703,7 @@ class RecoveryCorruptedTransactionLogIT
 
             try ( StoreFileChannel writeChannel = fileSystem.write( logFiles.getHighestLogFile() ) )
             {
-                writeChannel.position( position.getByteOffset() + 10 );
+                writeChannel.position( position.getByteOffset() + someRandomPaddingAfterEndOfDataInLogFile );
                 for ( int i = 0; i < 10; i++ )
                 {
                     writeChannel.write( source.get() );
@@ -720,7 +721,7 @@ class RecoveryCorruptedTransactionLogIT
         {
             while ( entryReader.readLogEntry( reader ) != null )
             {
-                // scroll to the end of redable entries
+                // scroll to the end of readable entries
             }
         }
         return entryReader.lastPosition();
@@ -741,7 +742,7 @@ class RecoveryCorruptedTransactionLogIT
         {
             while ( entryReader.readLogEntry( reader ) != null )
             {
-                // scroll to the end of redable entries
+                // scroll to the end of readable entries
             }
         }
         return entryReader.lastPosition();
