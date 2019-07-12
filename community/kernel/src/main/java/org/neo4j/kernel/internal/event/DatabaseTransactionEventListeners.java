@@ -20,18 +20,17 @@
 package org.neo4j.kernel.internal.event;
 
 import java.util.Collection;
-import java.util.Iterator;
 
 import org.neo4j.graphdb.event.TransactionData;
 import org.neo4j.graphdb.event.TransactionEventListener;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.database.DatabaseId;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
-import org.neo4j.kernel.impl.transaction.events.GlobalTransactionEventListeners;
 import org.neo4j.kernel.internal.event.TransactionListenersState.ListenerState;
 import org.neo4j.storageengine.api.StorageReader;
 import org.neo4j.storageengine.api.txstate.ReadableTransactionState;
 
+import static org.neo4j.configuration.GraphDatabaseSettings.SYSTEM_DATABASE_NAME;
 import static org.neo4j.kernel.internal.event.EmptyTransactionData.EMPTY_DATA;
 
 /**
@@ -56,19 +55,17 @@ public class DatabaseTransactionEventListeners
     {
         // The iterator grabs a snapshot of our list of listenerIterator
         Collection<TransactionEventListener<?>> eventListeners = globalTransactionEventListeners.getDatabaseTransactionEventListeners( databaseName );
-        if ( eventListeners.isEmpty() )
+        if ( !canInvokeBeforeCommitListeners( eventListeners, state ) )
         {
             // Use 'null' as a signal that no event listenerIterator were registered at beforeCommit time
             return null;
         }
 
-        Iterator<TransactionEventListener<?>> listenerIterator = eventListeners.iterator();
         TransactionData txData = state == null ? EMPTY_DATA : new TxStateTransactionDataSnapshot( state, databaseFacade, storageReader, transaction );
-
         TransactionListenersState listenersStates = new TransactionListenersState( txData );
-        while ( listenerIterator.hasNext() )
+
+        for ( TransactionEventListener<?> listener : eventListeners )
         {
-            TransactionEventListener<?> listener = listenerIterator.next();
             Object listenerState = null;
             try
             {
@@ -84,7 +81,7 @@ public class DatabaseTransactionEventListeners
         return listenersStates;
     }
 
-    public void afterCommit( ReadableTransactionState state, KernelTransaction transaction, TransactionListenersState listeners )
+    public void afterCommit( TransactionListenersState listeners )
     {
         if ( listeners == null )
         {
@@ -112,7 +109,7 @@ public class DatabaseTransactionEventListeners
         }
     }
 
-    public void afterRollback( ReadableTransactionState state, KernelTransaction transaction, TransactionListenersState listenersState )
+    public void afterRollback( TransactionListenersState listenersState )
     {
         if ( listenersState == null )
         {
@@ -126,5 +123,27 @@ public class DatabaseTransactionEventListeners
             TransactionEventListener listener = listenerState.getListener();
             listener.afterRollback( txData, listenerState.getState(), databaseFacade );
         }
+    }
+
+    private boolean canInvokeBeforeCommitListeners( Collection<TransactionEventListener<?>> listeners, ReadableTransactionState state )
+    {
+        return !listeners.isEmpty() && canInvokeListenersWithTransactionState( state );
+    }
+
+    private boolean canInvokeListenersWithTransactionState( ReadableTransactionState state )
+    {
+        if ( state == null )
+        {
+            // no need to invoke listeners for transaction without state (read-only transaction)
+            return false;
+        }
+        if ( state.hasDataChanges() )
+        {
+            // transaction has data changes and listeners can be invoked (write transaction that created nodes or relationships)
+            return true;
+        }
+
+        // system database listeners receive events about all transactions, including internal transactions that create tokens and make schema changes
+        return state.hasChanges() && SYSTEM_DATABASE_NAME.equals( databaseName );
     }
 }

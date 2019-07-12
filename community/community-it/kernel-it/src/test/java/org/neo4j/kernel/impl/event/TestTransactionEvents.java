@@ -47,8 +47,11 @@ import org.neo4j.graphdb.event.TransactionData;
 import org.neo4j.graphdb.event.TransactionEventListener;
 import org.neo4j.graphdb.event.TransactionEventListenerAdapter;
 import org.neo4j.internal.helpers.Exceptions;
+import org.neo4j.internal.recordstorage.TestRelType;
 import org.neo4j.kernel.impl.MyRelTypes;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
+import org.neo4j.kernel.internal.event.GlobalTransactionEventListeners;
+import org.neo4j.storageengine.api.TransactionIdStore;
 import org.neo4j.test.TestLabels;
 import org.neo4j.test.extension.ImpermanentDbmsExtension;
 import org.neo4j.test.extension.Inject;
@@ -56,6 +59,7 @@ import org.neo4j.test.extension.Inject;
 import static java.lang.String.format;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -967,6 +971,121 @@ class TestTransactionEvents
         assertEquals( 10, otherWorkingListener.afterRollbackState.intValue() );
     }
 
+    @Test
+    void shouldNotInvokeListenersForInternalTokenTransactions()
+    {
+        var databaseName = DEFAULT_DATABASE_NAME;
+        var listener = new CommitCountingEventListener();
+        dbms.registerTransactionEventListener( databaseName, listener );
+
+        var lastClosedTxIdBefore = lastClosedTxId( databaseName, dbms );
+
+        // commit a transaction that introduces multiple tokens
+        commitTxWithMultipleNewTokens( databaseName, dbms );
+
+        var lastClosedTxIdAfter = lastClosedTxId( databaseName, dbms );
+
+        // more than one transaction should be committed
+        assertThat( lastClosedTxIdAfter, greaterThan( lastClosedTxIdBefore + 1 ) );
+
+        // but listener should be only invoked once
+        assertEquals( 1, listener.beforeCommitInvocations.get() );
+        assertEquals( 1, listener.afterCommitInvocations.get() );
+        assertEquals( 0, listener.afterRollbackInvocations.get() );
+    }
+
+    @Test
+    void shouldInvokeListenersForAllTransactionsOnSystemDatabase()
+    {
+        var databaseName = SYSTEM_DATABASE_NAME;
+        var listener = new CommitCountingEventListener();
+        registerTransactionEventListenerForSystemDb( dbms, listener );
+
+        var lastClosedTxIdBefore = lastClosedTxId( databaseName, dbms );
+
+        // commit a transaction that introduces multiple tokens
+        commitTxWithMultipleNewTokens( databaseName, dbms );
+
+        var lastClosedTxIdAfter = lastClosedTxId( databaseName, dbms );
+
+        // more than one transaction should be committed
+        assertThat( lastClosedTxIdAfter, greaterThan( lastClosedTxIdBefore + 1 ) );
+
+        // listener should be invoked the same number of times as the number of committed transactions
+        var committedTransactions = lastClosedTxIdAfter - lastClosedTxIdBefore;
+        assertEquals( committedTransactions, listener.beforeCommitInvocations.get() );
+        assertEquals( committedTransactions, listener.afterCommitInvocations.get() );
+        assertEquals( 0, listener.afterRollbackInvocations.get() );
+    }
+
+    @Test
+    void shouldNotInvokeListenerForReadOnlyTransaction()
+    {
+        var databaseName = DEFAULT_DATABASE_NAME;
+        var listener = new CommitCountingEventListener();
+        dbms.registerTransactionEventListener( databaseName, listener );
+
+        readAllNodesInTx( databaseName, dbms );
+
+        // listener should never be invoked
+        assertEquals( 0, listener.beforeCommitInvocations.get() );
+        assertEquals( 0, listener.afterCommitInvocations.get() );
+        assertEquals( 0, listener.afterRollbackInvocations.get() );
+    }
+
+    @Test
+    void shouldNotInvokeListenerForReadOnlySystemDatabaseTransaction()
+    {
+        var listener = new CommitCountingEventListener();
+        registerTransactionEventListenerForSystemDb( dbms, listener );
+
+        readAllNodesInTx( SYSTEM_DATABASE_NAME, dbms );
+
+        // listener should never be invoked
+        assertEquals( 0, listener.beforeCommitInvocations.get() );
+        assertEquals( 0, listener.afterCommitInvocations.get() );
+        assertEquals( 0, listener.afterRollbackInvocations.get() );
+    }
+
+    private static void commitTxWithMultipleNewTokens( String databaseName, DatabaseManagementService managementService )
+    {
+        var db = managementService.database( databaseName );
+        try ( var tx = db.beginTx() )
+        {
+            var node = db.createNode( TestLabels.values() );
+            node.createRelationshipTo( node, TestRelType.LOOP );
+            tx.success();
+        }
+    }
+
+    private static void readAllNodesInTx( String databaseName, DatabaseManagementService managementService )
+    {
+        var db = managementService.database( databaseName );
+        try ( var tx = db.beginTx();
+              var nodesIterator = db.getAllNodes().iterator() )
+        {
+            while ( nodesIterator.hasNext() )
+            {
+                assertNotNull( nodesIterator.next() );
+            }
+            tx.success();
+        }
+    }
+
+    private static long lastClosedTxId( String databaseName, DatabaseManagementService managementService )
+    {
+        var db = (GraphDatabaseAPI) managementService.database( databaseName );
+        var txIdStore = db.getDependencyResolver().resolveDependency( TransactionIdStore.class );
+        return txIdStore.getLastClosedTransactionId();
+    }
+
+    private static void registerTransactionEventListenerForSystemDb( DatabaseManagementService managementService, TransactionEventListener<Object> listener )
+    {
+        var db = (GraphDatabaseAPI) managementService.database( SYSTEM_DATABASE_NAME );
+        var globalListeners = db.getDependencyResolver().resolveDependency( GlobalTransactionEventListeners.class );
+        globalListeners.registerTransactionEventListener( SYSTEM_DATABASE_NAME, listener );
+    }
+
     private static class MyTxEventListener implements TransactionEventListener<Object>
     {
         Map<String,Object> nodeProps = new HashMap<>();
@@ -1294,7 +1413,7 @@ class TestTransactionEvents
         }
     }
 
-    static class CapturingEventListener<T> implements TransactionEventListener<T>
+    private static class CapturingEventListener<T> implements TransactionEventListener<T>
     {
         private final Supplier<T> stateSource;
         boolean beforeCommitCalled;
@@ -1327,6 +1446,32 @@ class TestTransactionEvents
         {
             afterRollbackCalled = true;
             afterRollbackState = state;
+        }
+    }
+
+    private static class CommitCountingEventListener extends TransactionEventListenerAdapter<Object>
+    {
+        final AtomicInteger beforeCommitInvocations = new AtomicInteger();
+        final AtomicInteger afterCommitInvocations = new AtomicInteger();
+        final AtomicInteger afterRollbackInvocations = new AtomicInteger();
+
+        @Override
+        public Object beforeCommit( TransactionData data, GraphDatabaseService databaseService )
+        {
+            beforeCommitInvocations.incrementAndGet();
+            return null;
+        }
+
+        @Override
+        public void afterCommit( TransactionData data, Object state, GraphDatabaseService databaseService )
+        {
+            afterCommitInvocations.incrementAndGet();
+        }
+
+        @Override
+        public void afterRollback( TransactionData data, Object state, GraphDatabaseService databaseService )
+        {
+            afterRollbackInvocations.incrementAndGet();
         }
     }
 }

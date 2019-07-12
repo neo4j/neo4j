@@ -165,7 +165,6 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     private SecurityContext securityContext;
     private volatile StatementLocks statementLocks;
     private volatile long userTransactionId;
-    private boolean beforeHookInvoked;
     private volatile boolean closing;
     private volatile boolean closed;
     private boolean failure;
@@ -261,7 +260,6 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         this.terminationReason = null;
         this.closing = false;
         this.closed = false;
-        this.beforeHookInvoked = false;
         this.failure = false;
         this.success = false;
         this.writeState = TransactionWriteState.NONE;
@@ -553,11 +551,6 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         return hasTxStateWithChanges();
     }
 
-    private boolean hasDataChanges()
-    {
-        return hasTxStateWithChanges() && txState.hasDataChanges();
-    }
-
     @Override
     public long closeTransaction() throws TransactionFailureException
     {
@@ -647,22 +640,11 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         TransactionListenersState listenersState = null;
         try ( CommitEvent commitEvent = transactionEvent.beginCommitEvent() )
         {
-            // Trigger transaction "before" event listeners.
-            if ( hasDataChanges() )
+            listenersState = eventListeners.beforeCommit( txState, this, storageReader );
+            if ( listenersState != null && listenersState.isFailed() )
             {
-                try
-                {
-                    listenersState = eventListeners.beforeCommit( txState, this, storageReader );
-                    if ( listenersState != null && listenersState.isFailed() )
-                    {
-                        Throwable cause = listenersState.failure();
-                        throw new TransactionFailureException( Status.Transaction.TransactionHookFailed, cause, "" );
-                    }
-                }
-                finally
-                {
-                    beforeHookInvoked = true;
-                }
+                Throwable cause = listenersState.failure();
+                throw new TransactionFailureException( Status.Transaction.TransactionHookFailed, cause, "" );
             }
 
             // Convert changes into commands and commit
@@ -980,10 +962,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         try
         {
             markAsClosed( txId );
-            if ( beforeHookInvoked )
-            {
-                eventListeners.afterCommit( txState, this, listenersState );
-            }
+            eventListeners.afterCommit( listenersState );
         }
         finally
         {
@@ -996,10 +975,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         try
         {
             markAsClosed( ROLLBACK );
-            if ( beforeHookInvoked )
-            {
-                eventListeners.afterRollback( txState, this, listenersState );
-            }
+            eventListeners.afterRollback( listenersState );
         }
         finally
         {
