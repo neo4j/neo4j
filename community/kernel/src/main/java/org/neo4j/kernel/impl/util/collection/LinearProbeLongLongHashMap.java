@@ -27,6 +27,7 @@ import org.eclipse.collections.api.bag.MutableBag;
 import org.eclipse.collections.api.bag.primitive.MutableLongBag;
 import org.eclipse.collections.api.block.function.primitive.LongFunction;
 import org.eclipse.collections.api.block.function.primitive.LongFunction0;
+import org.eclipse.collections.api.block.function.primitive.LongLongToLongFunction;
 import org.eclipse.collections.api.block.function.primitive.LongToLongFunction;
 import org.eclipse.collections.api.block.function.primitive.LongToObjectFunction;
 import org.eclipse.collections.api.block.function.primitive.ObjectLongToObjectFunction;
@@ -508,6 +509,12 @@ class LinearProbeLongLongHashMap extends AbstractLongIterable implements Mutable
 
     @Override
     public MutableLongSet keySet()
+    {
+        throw new UnsupportedOperationException( "not implemented" );
+    }
+
+    @Override
+    public void updateValues( LongLongToLongFunction function )
     {
         throw new UnsupportedOperationException( "not implemented" );
     }
