@@ -206,6 +206,24 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite with Logica
 
   }
 
+  test("should not use RollupApply for PatternComprehensions in coalesce") {
+    val q =
+      """
+        |MATCH (a)
+        |WHERE coalesce(
+        |     head( [ (a)<--(b) | b.prop4 = true ] ),
+        |     head( [ (a)<--(c) | c.prop5 = '0'] ),
+        |     true)
+        |RETURN a
+      """.stripMargin
+
+    val plan = planFor(q)._2
+    println(plan)
+    plan.treeExists({
+      case _:RollUpApply => true
+    }) should be(false)
+  }
+
   test("should solve pattern comprehension for NodeByIdSeek") {
     val q =
       """

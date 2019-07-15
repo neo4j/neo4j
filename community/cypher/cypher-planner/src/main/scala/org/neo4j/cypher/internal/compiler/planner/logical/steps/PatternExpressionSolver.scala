@@ -23,7 +23,7 @@ import org.neo4j.cypher.internal.compiler.planner.logical.{LogicalPlanningContex
 import org.neo4j.cypher.internal.ir.{HasMappableExpressions, InterestingOrder, QueryGraph}
 import org.neo4j.cypher.internal.logical.plans.{Argument, LogicalPlan}
 import org.neo4j.cypher.internal.v4_0.expressions._
-import org.neo4j.cypher.internal.v4_0.expressions.functions.Exists
+import org.neo4j.cypher.internal.v4_0.expressions.functions.{Coalesce, Exists}
 import org.neo4j.cypher.internal.v4_0.rewriting.rewriters.{PatternExpressionPatternElementNamer, projectNamedPaths}
 import org.neo4j.cypher.internal.v4_0.util.{FreshIdNameGenerator, Rewriter, UnNamedNameGenerator, topDown}
 
@@ -297,8 +297,11 @@ object PatternExpressionSolver {
       }
       topDown(inner, stopper = {
         case _: PatternComprehension => false
-        case _: ScopeExpression | _: CaseExpression => true
-        case f: FunctionInvocation => f.function == Exists
+          // Loops
+        case _: ScopeExpression => true
+          // Conditionals
+        case _: CaseExpression => true
+        case f: FunctionInvocation => f.function == Exists || f.function == Coalesce
         case _ => false
       })
     }
