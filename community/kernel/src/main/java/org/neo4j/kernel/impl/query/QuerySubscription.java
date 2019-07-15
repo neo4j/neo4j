@@ -41,8 +41,8 @@ public interface QuerySubscription
     /**
      * Synchronously await until all the demanded records has been streamed the {@link QuerySubscriber}
      *
-     * @return <tt>true</tt> if there could be more data in the stream (when request exactly equals available data this method may return true),
-     * otherwise <tt>false</tt>
+     * @return <code>true</code> if there could be more data in the stream (when request exactly equals available data this method may return true),
+     * otherwise <code>false</code>
      */
     boolean await() throws Exception;
 
