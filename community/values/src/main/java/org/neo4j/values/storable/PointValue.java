@@ -72,7 +72,7 @@ public class PointValue extends ScalarValue implements Point, Comparable<PointVa
             if ( coordinate[1] > 90 || coordinate[1] < -90 )
             {
                 throw new InvalidValuesArgumentException(
-                        "Cannot create WGS84 point with invalid coordinate for Y: " + Arrays.toString( coordinate ) + ". Valid range is [-90,90]." );
+                        "Cannot create WGS84 point with invalid coordinate for Y: " + Arrays.toString( coordinate ) + ". Valid range is [-90, 90]." );
             }
 
             double x = coordinate[0];

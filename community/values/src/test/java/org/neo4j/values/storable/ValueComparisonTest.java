@@ -91,7 +91,7 @@ public class ValueComparisonTest
             new byte[]{3, -99, -99},
 
             // POINTS
-            pointValue( WGS84, -1000.0, -1000.0 ),
+            pointValue( WGS84, -10.0, -10.0 ),
             pointValue( WGS84, -1.0, -1.0 ),
             pointValue( WGS84, 0.0, 0.0 ),
             pointValue( WGS84, 0.0, 1.0 ),
@@ -99,10 +99,10 @@ public class ValueComparisonTest
             pointValue( WGS84, 1.0, 1.0 ),
             pointValue( WGS84, 1.0, 2.0 ),
             pointValue( WGS84, 2.0, 1.0 ),
-            pointValue( WGS84, 1000.0, 1000.0 ),
-            pointValue( WGS84_3D, -1000.0, -1000.0, -1000.0 ),
+            pointValue( WGS84, 10.0, 10.0 ),
+            pointValue( WGS84_3D, -10.0, -10.0, -10.0 ),
             pointValue( WGS84_3D, 0.0, 0.0, 0.0 ),
-            pointValue( WGS84_3D, 1000.0, 1000.0, 1000.0 ),
+            pointValue( WGS84_3D, 10.0, 10.0, 10.0 ),
             pointValue( Cartesian, -1000.0, -1000.0 ),
             pointValue( Cartesian, -1.0, -1.0 ),
             pointValue( Cartesian, 0.0, 0.0 ),

@@ -108,9 +108,9 @@ class PointTest
 
         // invalid ones for y
         assertThrows( InvalidValuesArgumentException.class, () -> pointValue( WGS84, 0, 91 ),
-                "Cannot create WGS84 point with invalid coordinate for Y: [0.0, 91.0]. Valid range is [-90,90]." );
+                "Cannot create WGS84 point with invalid coordinate for Y: [0.0, 91.0]. Valid range is [-90, 90]." );
         assertThrows( InvalidValuesArgumentException.class, () -> pointValue( WGS84, 0, -91 ),
-                "Cannot create WGS84 point with invalid coordinate for Y: [0.0, -91.0]. Valid range is [-90,90]." );
+                "Cannot create WGS84 point with invalid coordinate for Y: [0.0, -91.0]. Valid range is [-90, 90]." );
     }
 
     @Test
