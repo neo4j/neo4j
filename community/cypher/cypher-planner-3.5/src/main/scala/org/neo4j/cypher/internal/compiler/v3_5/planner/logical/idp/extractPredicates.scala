@@ -59,26 +59,38 @@ object extractPredicates {
       names.contains(originalRelationshipName)
     }
 
+    /**
+      * We do not solve Expressions with sub-queries during the expansion of a VarExpand, because
+      * a) RollUpApply cannot be used inside a loop
+      * b) Slotted does currently not cope with NestedPlanExpressions inside of VarExpand
+      */
+    def containsSubQuery(innerPredicate: Expression) = {
+      innerPredicate.treeExists {
+        case _:PatternComprehension|_:PatternExpression => true
+      }
+    }
+
     availablePredicates.foldLeft(seed) {
 
       //MATCH ()-[r* {prop:1337}]->()
       case (
           (n, e, l, s),
-          p @ AllRelationships(variable, `originalRelationshipName`, innerPredicate)) =>
+          p @ AllRelationships(variable, `originalRelationshipName`, innerPredicate))
+          if !containsSubQuery(innerPredicate) =>
         val rewrittenPredicate = innerPredicate.endoRewrite(replaceVariable(variable, tempRelationship))
         (n, e :+ rewrittenPredicate, l :+ (variable -> innerPredicate), s :+ p)
 
       //MATCH p = (a)-[x*]->(b) WHERE ALL(r in rels(p) WHERE r.prop > 5)
       case ((n, e, l, s),
             p @ AllRelationshipsInPath(`originalNodeName`, `originalRelationshipName`, variable, innerPredicate))
-            if !pathDependent(innerPredicate) =>
+            if !pathDependent(innerPredicate) && !containsSubQuery(innerPredicate) =>
         val rewrittenPredicate = innerPredicate.endoRewrite(replaceVariable(variable, tempRelationship))
         (n, e :+ rewrittenPredicate, l :+ (variable -> innerPredicate), s :+ p)
 
       //MATCH p = ()-[*]->() WHERE NONE(r in rels(p) WHERE <innerPredicate>)
       case ((n, e, l, s),
             p @ NoRelationshipInPath(`originalNodeName`, `originalRelationshipName`, variable, innerPredicate))
-            if !pathDependent(innerPredicate) =>
+            if !pathDependent(innerPredicate) && !containsSubQuery(innerPredicate) =>
         val rewrittenPredicate = innerPredicate.endoRewrite(replaceVariable(variable, tempRelationship))
         val negatedLegacyPredicate = Not(innerPredicate)(innerPredicate.position)
         val negatedPredicate = Not(rewrittenPredicate)(innerPredicate.position)
@@ -87,14 +99,14 @@ object extractPredicates {
       //MATCH p = ()-[*]->() WHERE ALL(r in nodes(p) WHERE <innerPredicate>)
       case ((n, e, l, s),
             p @ AllNodesInPath(`originalNodeName`, `originalRelationshipName`, variable, innerPredicate))
-            if !pathDependent(innerPredicate) =>
+            if !pathDependent(innerPredicate) && !containsSubQuery(innerPredicate) =>
         val rewrittenPredicate = innerPredicate.endoRewrite(replaceVariable(variable, tempNode))
         (n :+ rewrittenPredicate, e, l :+ (variable -> innerPredicate), s :+ p)
 
       //MATCH p = ()-[*]->() WHERE NONE(r in nodes(p) WHERE <innerPredicate>)
       case ((n, e, l, s),
             p @ NoNodeInPath(`originalNodeName`, `originalRelationshipName`, variable, innerPredicate))
-            if !pathDependent(innerPredicate) =>
+            if !pathDependent(innerPredicate) && !containsSubQuery(innerPredicate) =>
         val rewrittenPredicate = innerPredicate.endoRewrite(replaceVariable(variable, tempNode))
         val negatedLegacyPredicate = Not(innerPredicate)(innerPredicate.position)
         val negatedPredicate = Not(rewrittenPredicate)(innerPredicate.position)
