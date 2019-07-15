@@ -193,9 +193,28 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, planningAttri
         .addPatternRelationship(pattern)
         .addPredicates(solvedPredicates: _*)
       )
+
       val solver = PatternExpressionSolver.solverFor(source, interestingOrder, context)
-      val rewrittenRelationshipPredicate = relationshipPredicate.map { case VariablePredicate(variable, exp) => VariablePredicate(variable, solver.solve(exp)) }
-      val rewrittenNodePredicate = nodePredicate.map { case VariablePredicate(variable, exp) => VariablePredicate(variable, solver.solve(exp)) }
+
+      /**
+        * There are multiple considerations about this strange method.
+        * a) If we solve PatternExpressions before `extractPredicates` in `expandStepSolver`, then the `replaceVariable` rewriter
+        *    does not properly recurse into NestedPlanExpressions. It is thus easier to first rewrite the predicates and then
+        *    let the PatternExpressionSolver solve any PatternExpressions in them.
+        * b) `extractPredicates` extracts the Predicates ouf of the FilterScopes they are inside. The PatternExpressionSolver needs
+        *    to know if things are inside a different scope to work correctly. Otherwise it will plan RollupApply when not allowed,
+        *    or plan the wrong `NestedPlanExpression`. Since extracting the scope instead of the inner predicate is not straightforward
+        *    either, the easiest solution is this one: we wrap each predicate in a FilterScope, give it the the PatternExpressionSolver,
+        *    and then extract it from the FilterScope again.
+        */
+      def solveVariablePredicate(variablePredicate: VariablePredicate): VariablePredicate = {
+        val filterScope = FilterScope(variablePredicate.variable, Some(variablePredicate.predicate))(variablePredicate.predicate.position)
+        val rewrittenFilterScope = solver.solve(filterScope).asInstanceOf[FilterScope]
+        VariablePredicate(rewrittenFilterScope.variable, rewrittenFilterScope.innerPredicate.get)
+      }
+
+      val rewrittenRelationshipPredicate = relationshipPredicate.map(solveVariablePredicate)
+      val rewrittenNodePredicate = nodePredicate.map(solveVariablePredicate)
       val rewrittenSource = solver.rewrittenPlan()
       annotate(VarExpand(
               source = rewrittenSource,
