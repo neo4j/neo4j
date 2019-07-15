@@ -122,9 +122,9 @@ class MemoryRecommendationsCommandTest
                 "OPTIONS%n" +
                 "%n" +
                 "      --verbose         Enable verbose output.%n" +
-                "      --memory=<size>   Recommend memory settings with respect to the given amount%n" +
-                "                          of memory, instead of the total memory of the system%n" +
-                "                          running the command."
+                "      --memory=<size>   Recommend memory settings with respect to the given%n" +
+                "                          amount of memory, instead of the total memory of the%n" +
+                "                          system running the command."
         ) ) );
     }
 

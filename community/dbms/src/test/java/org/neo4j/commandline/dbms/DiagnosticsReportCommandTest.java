@@ -143,16 +143,16 @@ public class DiagnosticsReportCommandTest
                 "%n" +
                 "PARAMETERS%n" +
                 "%n" +
-                "      [<classifier>...]     Default: [config, logs, metrics, plugins, ps, sysprop,%n" +
-                "                            threads, tree]%n" +
+                "      [<classifier>...]     Default: [config, logs, metrics, plugins, ps,%n" +
+                "                            sysprop, threads, tree]%n" +
                 "%n" +
                 "OPTIONS%n" +
                 "%n" +
                 "      --verbose           Enable verbose output.%n" +
                 "      --list              List all available classifiers%n" +
                 "      --force             Ignore disk full warning%n" +
-                "      --to=<path>         Destination directory for reports. Defaults to a system%n" +
-                "                            tmp directory.%n" +
+                "      --to=<path>         Destination directory for reports. Defaults to a%n" +
+                "                            system tmp directory.%n" +
                 "      --pid=<pid>         Specify process id of running neo4j instance"
         ) ) );
     }

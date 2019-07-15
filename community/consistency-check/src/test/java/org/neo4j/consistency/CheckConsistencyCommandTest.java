@@ -98,15 +98,16 @@ class CheckConsistencyCommandTest
                 "      --verbose             Enable verbose output.%n" +
                 "      --database=<database> Name of the database.%n" +
                 "                              Default: neo4j%n" +
-                "      --backup=<path>       Path to backup to check consistency of. Cannot be used%n" +
-                "                              together with --database.%n" +
+                "      --backup=<path>       Path to backup to check consistency of. Cannot be%n" +
+                "                              used together with --database.%n" +
                 "      --additional-config=<path>%n" +
-                "                            Configuration file to supply additional configuration in.%n" +
+                "                            Configuration file to supply additional%n" +
+                "                              configuration in.%n" +
                 "      --report-dir=<path>   Directory where consistency report will be written.%n" +
                 "                              Default: .%n" +
                 "      --check-graph=<true/false>%n" +
-                "                            Perform consistency checks between nodes, relationships,%n" +
-                "                              properties, types and tokens.%n" +
+                "                            Perform consistency checks between nodes,%n" +
+                "                              relationships, properties, types and tokens.%n" +
                 "                              Default: true%n" +
                 "      --check-indexes=<true/false>%n" +
                 "                            Perform consistency checks on indexes.%n" +
@@ -116,8 +117,8 @@ class CheckConsistencyCommandTest
                 "                              Default: true%n" +
                 "      --check-property-owners=<true/false>%n" +
                 "                            Perform additional consistency checks on property%n" +
-                "                              ownership. This check is very expensive in time and%n" +
-                "                              memory.%n" +
+                "                              ownership. This check is very expensive in time%n" +
+                "                              and memory.%n" +
                 "                              Default: false"
         ) ) );
     }
