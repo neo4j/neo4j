@@ -27,6 +27,7 @@ import org.neo4j.values.Comparison;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -76,6 +77,40 @@ class PointTest
     void geographicShouldNotEqualCartesian()
     {
         assertNotEqual( pointValue( WGS84, 1.0, 2.0 ), pointValue( Cartesian, 1.0, 2.0 ) );
+    }
+
+    @Test
+    void geometricInvalidPointsShouldBehave()
+    {
+        // we wrap around for x [-180,180]
+        // we fail on going over or under [-90,90] for y
+
+        // valid ones for x
+        assertArrayEquals( pointValue( WGS84, 0, 0 ).coordinate(), new double[]{0, 0} );
+        assertArrayEquals( pointValue( WGS84, 180, 0 ).coordinate(), new double[]{180, 0} );
+        assertArrayEquals( pointValue( WGS84, -180, 0 ).coordinate(), new double[]{-180, 0} );
+
+        // valid ones for x that should wrap around
+        assertArrayEquals( pointValue( WGS84, 190, 0 ).coordinate(), new double[]{-170, 0} );
+        assertArrayEquals( pointValue( WGS84, -190, 0 ).coordinate(), new double[]{170, 0} );
+        assertArrayEquals( pointValue( WGS84, 360, 0 ).coordinate(), new double[]{0, 0} );
+        assertArrayEquals( pointValue( WGS84, -360, 0 ).coordinate(), new double[]{0, 0} );
+        assertArrayEquals( pointValue( WGS84, 350, 0 ).coordinate(), new double[]{-10, 0} );
+        assertArrayEquals( pointValue( WGS84, -350, 0 ).coordinate(), new double[]{10, 0} );
+        assertArrayEquals( pointValue( WGS84, 370, 0 ).coordinate(), new double[]{10, 0} );
+        assertArrayEquals( pointValue( WGS84, -370, 0 ).coordinate(), new double[]{-10, 0} );
+        assertArrayEquals( pointValue( WGS84, 540, 0 ).coordinate(), new double[]{180, 0} );
+        assertArrayEquals( pointValue( WGS84, -540, 0 ).coordinate(), new double[]{-180, 0} );
+
+        // valid ones for y
+        assertArrayEquals( pointValue( WGS84, 0, 90 ).coordinate(), new double[]{0, 90} );
+        assertArrayEquals( pointValue( WGS84, 0, -90 ).coordinate(), new double[]{0, -90} );
+
+        // invalid ones for y
+        assertThrows( InvalidValuesArgumentException.class, () -> pointValue( WGS84, 0, 91 ),
+                "Cannot create WGS84 point with invalid coordinate for Y: [0.0, 91.0]. Valid range is [-90,90]." );
+        assertThrows( InvalidValuesArgumentException.class, () -> pointValue( WGS84, 0, -91 ),
+                "Cannot create WGS84 point with invalid coordinate for Y: [0.0, -91.0]. Valid range is [-90,90]." );
     }
 
     @Test

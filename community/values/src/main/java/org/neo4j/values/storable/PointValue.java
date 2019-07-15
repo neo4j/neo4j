@@ -67,6 +67,26 @@ public class PointValue extends ScalarValue implements Point, Comparable<PointVa
                 throw new InvalidArgumentException( "Cannot create a point with non-finite coordinate values: " + Arrays.toString( coordinate) );
             }
         }
+        if ( crs.isGeographic() )
+        {
+            if ( coordinate[1] > 90 || coordinate[1] < -90 )
+            {
+                throw new InvalidValuesArgumentException(
+                        "Cannot create WGS84 point with invalid coordinate for Y: " + Arrays.toString( coordinate ) + ". Valid range is [-90,90]." );
+            }
+
+            double x = coordinate[0];
+            // Valid range for X is  [-180,180]
+            while ( x > 180 )
+            {
+                x = x - 360;
+            }
+            while ( x < -180 )
+            {
+                x = x + 360;
+            }
+            this.coordinate[0] = x;
+        }
     }
 
     @Override
