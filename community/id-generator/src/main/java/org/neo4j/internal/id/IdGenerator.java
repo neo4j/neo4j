@@ -26,7 +26,6 @@ import org.neo4j.io.pagecache.IOLimiter;
 
 public interface IdGenerator extends IdSequence, Closeable
 {
-
     /**
      * @param id the highest in use + 1
      */
@@ -60,6 +59,11 @@ public interface IdGenerator extends IdSequence, Closeable
      * @param freeIdsForRebuild access to stream of ids from the store to use if this id generator needs to be rebuilt when started
      */
     void start( FreeIds freeIdsForRebuild ) throws IOException;
+
+    /**
+     * Clears internal ID caches. This should only be used in specific scenarios where ID states have changed w/o the cache knowing about it.
+     */
+    void clearCache();
 
     interface CommitMarker extends AutoCloseable
     {
@@ -180,6 +184,12 @@ public interface IdGenerator extends IdSequence, Closeable
         public void start( FreeIds freeIdsForRebuild ) throws IOException
         {
             delegate.start( freeIdsForRebuild );
+        }
+
+        @Override
+        public void clearCache()
+        {
+            delegate.clearCache();
         }
     }
 }

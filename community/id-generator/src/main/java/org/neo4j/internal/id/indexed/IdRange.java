@@ -29,51 +29,136 @@ import static java.util.Arrays.fill;
 
 /**
  * Value in a GB+Tree for indexing id states. Accompanies that with a generation, i.e. which generation this value were written in.
- * ID states is a small bit-set of dibits for a specific ID range. There are a couple of states an ID can be in and {@link #setState(int, IdState)}
- * transitions one of the ids in the {@code long} that carries the IDs to a desired state.
+ * ID states are kept in one or more {@code long}s where each long holds two 32-bits bit-sets, one for commit bits and one for reuse bits.
+ * The combination of commit/reuse bits makes up the state of an ID, like this:
  *
- * Normal operations (not recovery) has more state transition restrictions than recovery. {@link #mergeFrom(IdRange, boolean)} and
- * {@link #verifyTransitions(long, long, int)} has more information on these restrictions.
+ * <pre>
+ *     <--------------- REUSE BITS ---------------> <--------------- COMMIT BITS -------------->
+ *  MSB[    ,    ][    ,    ][    ,    ][   x,    ] [    ,    ][    ,    ][    ,    ][   x,    ]LSB
+ *                                          ▲                                            ▲
+ *                                          │                                            │
+ *                                          └───── BITS THAT MAKE UP ID AT OFFSET 4 ─────┘
+ * </pre>
+ *
+ * Each {@link IdRange} is associated with an {@link IdRangeKey} which specifies the range, e.g. an ID range of 3 in a layout where ids-per-entry is 128
+ * holds IDs between 384-511.
+ *
+ * These are the various states that an ID can have:
+ * <pre>
+ *
+ * </pre>
+ *
+ * <table border="1">
+ *     <tr>
+ *         <th>REUSE</th>
+ *         <th>COMMIT</th>
+ *         <th>STATE</th>
+ *     </tr>
+ *     <tr>
+ *         <td>0</td>
+ *         <td>0</td>
+ *         <td>USED</td>
+ *     </tr>
+ *     <tr>
+ *         <td>0</td>
+ *         <td>1</td>
+ *         <td>DELETED</td>
+ *     </tr>
+ *     <tr>
+ *         <td>1</td>
+ *         <td>1</td>
+ *         <td>FREE</td>
+ *     </tr>
+ *     <tr>
+ *         <td>1</td>
+ *         <td>0</td>
+ *         <td>-</td>
+ *     </tr>
+ * </table>
+ *
+ * <pre>
+ *     R: recovery
+ *     S: single instance
+ *     C: clustering
+ *
+ *     USED    -> USED        R
+ *     USED    -> DELETED     RSC
+ *     USED    -> FREE        C
+ *     DELETED -> USED        RC
+ *     DELETED -> DELETED     R
+ *     DELETED -> FREE        SC
+ *     FREE    -> USED        RC
+ *     FREE    -> DELETED     RSC
+ *     FREE    -> FREE
+ * </pre>
  */
 class IdRange
 {
-    private static final int DIBITS_PER_LONG = Long.SIZE / 2;
-    private static final long R_MASK = 0b01010101_01010101_01010101_01010101_01010101_01010101_01010101_01010101L;
-    private static final long L_MASK = 0b10101010_10101010_10101010_10101010_10101010_10101010_10101010_10101010L;
+    /**
+     * Each {@code long} contains two bit-sets, one for commit bits and one for reuse bits
+     */
+    private static final int BITSET_SIZE = Long.SIZE / 2;
+    private static final long COMMIT_BITS_MASK = 0xFFFFFFFFL;
 
     private long generation;
-    private final long[] octlets;
+    private transient boolean addition;
+    private final long[] longs;
 
-    IdRange( int numOfOctlets )
+    IdRange( int numOfLongs )
     {
-        this.octlets = new long[numOfOctlets];
+        this.longs = new long[numOfLongs];
     }
 
     IdState getState( int n )
     {
-        final int octletIdx = getOctletIdx( n );
-        final int pos = (n % DIBITS_PER_LONG) << 1;
-        final int dibit = (int) (octlets[octletIdx] >> pos) & 0b11;
-        return IdState.valueOf( dibit );
+        int longIndex = n / BITSET_SIZE;
+        int bitIndex = n % BITSET_SIZE;
+        long bits = longs[longIndex];
+        boolean commitBit = (bits & commitBitMask( bitIndex )) != 0;
+        if ( commitBit )
+        {
+            boolean reuseBit = (bits & reuseBitMask( bitIndex )) != 0;
+            return reuseBit ? IdState.FREE : IdState.DELETED;
+        }
+        return IdState.USED;
     }
 
-    void setState( int n, IdState state )
+    private long commitBitMask( int bitIndex )
     {
-        final int octletIdx = getOctletIdx( n );
-        final int dibitPos = (n % DIBITS_PER_LONG) << 1;
-        final long mask = ~(0b11L << dibitPos);
-        octlets[octletIdx] = (octlets[octletIdx] & mask) | (state.code << dibitPos);
+        return 1L << bitIndex;
     }
 
-    int size()
+    private long reuseBitMask( int bitIndex )
     {
-        return DIBITS_PER_LONG * octlets.length;
+        return 1L << (bitIndex + BITSET_SIZE);
     }
 
-    void clear( long generation )
+    void setCommitBit( int n )
+    {
+        int longIndex = n / BITSET_SIZE;
+        int bitIndex = n % BITSET_SIZE;
+        longs[longIndex] |= commitBitMask( bitIndex );
+    }
+
+    void setReuseBit( int n )
+    {
+        int longIndex = n / BITSET_SIZE;
+        int bitIndex = n % BITSET_SIZE;
+        longs[longIndex] |= reuseBitMask( bitIndex );
+    }
+
+    void setCommitAndReuseBit( int n )
+    {
+        int longIndex = n / BITSET_SIZE;
+        int bitIndex = n % BITSET_SIZE;
+        longs[longIndex] |= commitBitMask( bitIndex ) | reuseBitMask( bitIndex );
+    }
+
+    void clear( long generation, boolean addition )
     {
         this.generation = generation;
-        fill( octlets, 0 );
+        this.addition = addition;
+        fill( longs, 0 );
     }
 
     long getGeneration()
@@ -86,147 +171,77 @@ class IdRange
         this.generation = generation;
     }
 
-    long[] getOctlets()
+    long[] getLongs()
     {
-        return octlets;
+        return longs;
     }
 
     void normalize()
     {
-        // Example:
-        // x = 00 10 01 11 -> 00 10 10 10
-        //        │   │ └ reserved
-        //        │   └ deleted
-        //        └─ free
-        // 1. filter deleted bit
-        // d = x & R_MASK -> 00 00 01 01
-        // 2. shift left to copy deleted bits to free bit (d << 1)
-        // f = d << 1 -> 00 00 10 10
-        // 3. reset deleted bits
-        // x = x ^ d -> 00 10 10 10
-        // 4. set free bits from deleted bits
-        // x = x | f -> 00 10 10 10
-        for ( int i = 0; i < octlets.length; i++ )
+        for ( int i = 0; i < longs.length; i++ )
         {
-            final var octlet = octlets[i];
-            final var d = octlet & R_MASK;
-            octlets[i] = (octlet ^ d) | (d << 1);
+            // Set the reuse bits to whatever the commit bits are. This will let USED be USED and DELETED will become FREE
+            long commitBits = longs[i] & COMMIT_BITS_MASK;
+            longs[i] = commitBits | (commitBits << BITSET_SIZE);
         }
     }
 
     boolean mergeFrom( IdRange other, boolean recoveryMode )
     {
-        final StateTransitionVerifier verifier = recoveryMode ? StateTransitionVerifier.NOP : IdRange::verifyTransitions;
-        long dirty = 0;
-        for ( int i = 0; i < octlets.length; i++ )
+        for ( int i = 0; i < longs.length; i++ )
         {
-            final long into = octlets[i];
-            final long from = other.octlets[i];
-            verifier.verify( into, from, i );
+            long from = other.longs[i];
 
-            //              from (CD)
-            //          00   01   11   10
-            //        ╔════╦════╦════╦════╗
-            //     00 ║ 00 ║ 01 ║ 00 ║ 10 ║
-            //   i    ╠════╬════╬════╬════╣
-            //   n 01 ║ 01 ║ 01*║ 00*║ 10 ║
-            //   t    ╠════╬════╬════╬════╣
-            //   o 11 ║ 11 ║ 01*║ 00 ║ 10 ║
-            // (AB)   ╠════╬════╬════╬════╣
-            //     10 ║ 10 ║ 01*║ 11 ║ 10*║
-            //        ╚════╩════╩════╩════╝
-            // NOTES:
-            //  1) unused combinations must be caught by verification and fail the merge
-            //  2) * combinations are only valid during recovery and will fail during normal operation
-            //
-            // X = (A & ~B & C) | (A & ~D) | (C & ~D)
-            // Y = (A & ~B & D) | (B & ~C) | (~C & D)
+            if ( !recoveryMode )
+            {
+                verifyMerge( other, i );
+            }
+            // else anything goes
 
-            final long a = (into & L_MASK) >>> 1;
-            final long b = into & R_MASK;
-            final long bi = ~into & R_MASK;
-            final long c = (from & L_MASK) >>> 1;
-            final long ci = (~from & L_MASK) >>> 1;
-            final long d = from & R_MASK;
-            final long di = ~from & R_MASK;
-
-            final long x = (a & bi & c) | (a & di) | (c & di);
-            final long y = (a & bi & d) | (b & ci) | (ci & d);
-
-            final long result = (x << 1) | y;
-            dirty |= octlets[i] ^ result;
-            octlets[i] = result;
+            longs[i] = other.addition
+                       ? longs[i] | from
+                       : longs[i] & ~from;
         }
-        return dirty != 0;
+
+        return true;
     }
 
-    private static void verifyTransitions( long before, long after, int octletIndex )
+    private void verifyMerge( IdRange other, int i )
     {
-        // Truth table for error detection,
-        // where 1 == forbidden transition
-        //
-        //             after (CD)
-        //          00  01  11  10
-        //         ╔═══╦═══╦═══╦═══╗
-        //  b   00 ║ 0 ║ 0 ║ 0*║ 0*║
-        //  e      ╠═══╬═══╬═══╬═══╣
-        //  f   01 ║ 0 ║ 1 ║ 1 ║ 0 ║
-        //  o      ╠═══╬═══╬═══╬═══╣
-        //  r   11 ║ 0 ║ 1 ║ 0 ║ 0 ║
-        //  e      ╠═══╬═══╬═══╬═══╣
-        // (AB) 10 ║ 0 ║ 1 ║ 0 ║ 1 ║
-        //         ╚═══╩═══╩═══╩═══╝
-        // NOTES:
-        // 00+11 is totally ignored in merge since it happens when ID is initially used and should be marked as USED,
-        //  but obviously its state in the range is not RESERVED(11) yet, but USED(00).
-        // 00+10 is possible when ID generated from HighID is freed as a result of tx rollback, so it won't be RESERVED in the tree
-        //
-        // Using Karnaugh Map we get following function:
-        // E = (A & ~B & C & ~D) | (A & ~C & D) | (~A & B & D)
-
-        final long a = (before & L_MASK) >>> 1;
-        final long ai = (~before & L_MASK) >>> 1;
-        final long b = before & R_MASK;
-        final long bi = ~before & R_MASK;
-        final long c = (after & L_MASK) >>> 1;
-        final long ci = (~after & L_MASK) >>> 1;
-        final long d = after & R_MASK;
-        final long di = ~after & R_MASK;
-
-        final long error = (a & bi & c & di) | (a & ci & d) | (ai & b & d);
-
-        if ( error != 0 )
+        long into = longs[i];
+        long from = other.longs[i];
+        long commitBits = from & COMMIT_BITS_MASK;
+        if ( other.addition )
         {
-            throw new IllegalStateException(  format( "Illegal ID state transition octletIdx: %d%nbefore: %s%nafter:  %s",
-                    octletIndex, toPaddedBinaryString( before ), toPaddedBinaryString( after ) ) );
+            if ( (longs[i] & commitBits ) != 0 )
+            {
+                throw new IllegalStateException( format( "Illegal addition ID state transition longIdx: %d%ninto: %s%nfrom: %s",
+                        i, toPaddedBinaryString( into ), toPaddedBinaryString( from ) ) );
+            }
         }
+        // don't very removal since we can't quite verify transitioning to USED since 0 is the default bit value
     }
 
-    private static String toPaddedBinaryString( long octlet )
+    private static String toPaddedBinaryString( long bitset )
     {
-        char[] padded = StringUtils.leftPad( toBinaryString( octlet ), Long.SIZE, '0' ).toCharArray();
+        char[] padded = StringUtils.leftPad( toBinaryString( bitset ), Long.SIZE, '0' ).toCharArray();
 
-        // Now add a space between each dibit
-        int numberOfSpaces = padded.length / 2 - 1;
+        // Now add a space between each byte
+        int numberOfSpaces = padded.length / Byte.SIZE - 1;
         char[] spaced = new char[padded.length + numberOfSpaces];
         Arrays.fill( spaced, ' ' );
         for ( int i = 0; i < numberOfSpaces + 1; i++ )
         {
-            System.arraycopy( padded, i * 2, spaced, i * 3, 2 );
+            System.arraycopy( padded, i * Byte.SIZE, spaced, i * Byte.SIZE + i, Byte.SIZE );
         }
         return String.valueOf( spaced );
     }
 
-    private int getOctletIdx( int n )
-    {
-        return n / DIBITS_PER_LONG;
-    }
-
     public boolean isEmpty()
     {
-        for ( long octlet : octlets )
+        for ( long bits : longs )
         {
-            if ( octlet != 0 )
+            if ( bits != 0 )
             {
                 return false;
             }
@@ -234,50 +249,10 @@ class IdRange
         return true;
     }
 
-    private interface StateTransitionVerifier
-    {
-        StateTransitionVerifier NOP = ( a, b, c ) ->
-        {
-        };
-        void verify( long into, long from, int octletIndex );
-    }
-
     enum IdState
     {
-        USED( 0b00 ),
-        DELETED( 0b01 ),
-        FREE( 0b10 ),
-        RESERVED( 0b11 );
-
-        final long code;
-
-        IdState( int code )
-        {
-            this.code = code;
-        }
-
-        static IdState valueOf( int code )
-        {
-            if ( code == FREE.code )
-            {
-                return FREE;
-            }
-            else if ( code == DELETED.code )
-            {
-                return DELETED;
-            }
-            else if ( code == USED.code )
-            {
-                return USED;
-            }
-            else if ( code == RESERVED.code )
-            {
-                return RESERVED;
-            }
-            else
-            {
-                throw new IllegalArgumentException( "Illegal state code dibit: " + code );
-            }
-        }
+        USED,
+        DELETED,
+        FREE
     }
 }

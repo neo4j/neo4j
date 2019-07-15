@@ -20,9 +20,7 @@
 
 package org.neo4j.internal.id.indexed;
 
-import org.eclipse.collections.impl.factory.BiMaps;
 import org.junit.jupiter.api.DynamicTest;
-import org.junit.jupiter.api.RepeatedTest;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestFactory;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -35,15 +33,11 @@ import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.RandomExtension;
 import org.neo4j.test.rule.RandomRule;
 
-import static java.util.Arrays.stream;
-import static java.util.stream.IntStream.range;
-import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.DynamicTest.dynamicTest;
 import static org.neo4j.internal.id.indexed.IdRange.IdState.DELETED;
 import static org.neo4j.internal.id.indexed.IdRange.IdState.FREE;
-import static org.neo4j.internal.id.indexed.IdRange.IdState.RESERVED;
 import static org.neo4j.internal.id.indexed.IdRange.IdState.USED;
 
 @ExtendWith( RandomExtension.class )
@@ -62,23 +56,33 @@ class IdRangeTest
     @Test
     void setAndGet()
     {
-        final var idRange = new IdRange( 1 );
-        idRange.setState( 0, DELETED );
+        IdRange idRange = new IdRange( 1 );
+        IdRange merger = new IdRange( 1 );
+        assertEquals( USED, idRange.getState( 0 ) );
+
+        merger.clear( 1, true );
+        merger.setCommitBit( 0 );
+        idRange.mergeFrom( merger, false );
         assertEquals( DELETED, idRange.getState( 0 ) );
-        idRange.setState( 0, FREE );
+
+        merger.clear( 1, true );
+        merger.setReuseBit( 0 );
+        idRange.mergeFrom( merger, false );
         assertEquals( FREE, idRange.getState( 0 ) );
-        idRange.setState( 0, RESERVED );
-        assertEquals( RESERVED, idRange.getState( 0 ) );
+
+        merger.clear( 1, false );
+        merger.setCommitAndReuseBit( 0 );
+        idRange.mergeFrom( merger, false );
+        assertEquals( USED, idRange.getState( 0 ) );
     }
 
     @Test
     void clear()
     {
         final var idRange = new IdRange( 1 );
-        idRange.setState( 0, FREE );
-        idRange.setState( 1, DELETED );
-        idRange.setState( 2, RESERVED );
-        idRange.clear( 1 );
+        idRange.setReuseBit( 0 );
+        idRange.setCommitBit( 1 );
+        idRange.clear( 1, false );
         assertEquals( USED, idRange.getState( 0 ) );
         assertEquals( USED, idRange.getState( 1 ) );
         assertEquals( USED, idRange.getState( 2 ) );
@@ -88,14 +92,16 @@ class IdRangeTest
     Collection<DynamicTest> merge()
     {
         return Arrays.asList(
-                dynamicTest( "USED -> DELETED", () -> testMerge( 0b00, 0b01, 0b01, false ) ),
-                dynamicTest( "USED -> FREE", () -> testMerge( 0b00, 0b10, 0b10, false ) ),
-                dynamicTest( "initial set USED (USED -> RESERVED ignored)", () -> testMerge( 0b00, 0b11, 0b00, false ) ),
-                dynamicTest( "DELETED -> FREE", () -> testMerge( 0b01, 0b10, 0b10, false ) ),
-                dynamicTest( "FREE -> RESERVED", () -> testMerge( 0b10, 0b11, 0b11, false ) ),
-                dynamicTest( "RESERVED -> USED", () -> testMerge( 0b11, 0b11, 0b00, false ) ),
-                dynamicTest( "RESERVED -> FREE", () -> testMerge( 0b11, 0b10, 0b10, false ) ),
-                dynamicTest( "complex", () -> testMerge( 0b00_01_10_10_11_11_00_01_11, 0b00_10_00_11_00_11_01_00_10, 0b00_10_10_11_11_00_01_01_10, false ) )
+                // USED -> USED is special case because 00 is the default initial state for any ID
+                dynamicTest( "USED -> USED", () -> testMerge( USED, USED, USED, false ) ),
+                dynamicTest( "USED -> DELETED", () -> testMerge( USED, DELETED, DELETED, false ) ),
+                dynamicTest( "USED -> FREE", () -> testMerge( USED, FREE, USED, false ) ),
+                dynamicTest( "DELETED -> USED", () -> testMerge( DELETED, USED, USED, false ) ),
+                dynamicTest( "DELETED -> DELETED", () -> testFailMerge( DELETED, DELETED ) ),
+                dynamicTest( "DELETED -> FREE", () -> testMerge( DELETED, FREE, FREE, false ) ),
+                dynamicTest( "FREE -> USED", () -> testMerge( FREE, USED, USED, false ) ),
+                dynamicTest( "FREE -> DELETED", () -> testMerge( FREE, DELETED, DELETED, false ) ),
+                dynamicTest( "FREE -> FREE", () -> testMerge( FREE, FREE, FREE, false ) )
         );
     }
 
@@ -103,167 +109,125 @@ class IdRangeTest
     Collection<DynamicTest> mergeInRecoveryMode()
     {
         return Arrays.asList(
-                dynamicTest( "USED -> DELETED", () -> testMerge( 0b00, 0b01, 0b01, true ) ),
-                dynamicTest( "USED -> FREE", () -> testMerge( 0b00, 0b10, 0b10, true ) ),
-                dynamicTest( "initial set USED (USED -> RESERVED ignored)", () -> testMerge( 0b00, 0b11, 0b00, true ) ),
-                dynamicTest( "DELETED -> FREE", () -> testMerge( 0b01, 0b10, 0b10, true ) ),
-                dynamicTest( "FREE -> RESERVED", () -> testMerge( 0b10, 0b11, 0b11, true ) ),
-                dynamicTest( "RESERVED -> USED", () -> testMerge( 0b11, 0b11, 0b00, true ) ),
-                dynamicTest( "RESERVED -> FREE", () -> testMerge( 0b11, 0b10, 0b10, true ) ),
-                dynamicTest( "complex", () -> testMerge( 0b00_01_10_10_11_11_00_01_11, 0b00_10_00_11_00_11_01_00_10, 0b00_10_10_11_11_00_01_01_10, true ) ),
-                dynamicTest( "DELETED -> DELETED", () -> testMerge( 0b01, 0b01, 0b01, true ) ),
-                dynamicTest( "DELETED -> USED (RESERVED)", () -> testMerge( 0b01, 0b11, 0b00, true ) ),
-                dynamicTest( "RESERVED -> DELETED", () -> testMerge( 0b11, 0b01, 0b01, true ) ),
-                dynamicTest( "FREE -> DELETED", () -> testMerge( 0b10, 0b01, 0b01, true ) ),
-                dynamicTest( "FREE -> FREE", () -> testMerge( 0b10, 0b10, 0b10, true ) )
+                dynamicTest( "USED -> USED", () -> testMerge( USED, USED, USED, true ) ),
+                dynamicTest( "USED -> DELETED", () -> testMerge( USED, DELETED, DELETED, true ) ),
+                dynamicTest( "USED -> FREE", () -> testMerge( USED, FREE, USED, true ) ),
+                dynamicTest( "DELETED -> USED", () -> testMerge( DELETED, USED, USED, true ) ),
+                dynamicTest( "DELETED -> DELETED", () -> testMerge( DELETED, DELETED, DELETED, true ) ),
+                dynamicTest( "DELETED -> FREE", () -> testMerge( DELETED, FREE, FREE, true ) ),
+                dynamicTest( "FREE -> USED", () -> testMerge( FREE, USED, USED, true ) ),
+                dynamicTest( "FREE -> DELETED", () -> testMerge( FREE, DELETED, DELETED, true ) ),
+                dynamicTest( "FREE -> FREE", () -> testMerge( FREE, FREE, FREE, true ) )
         );
     }
 
-    @Test
-    void mergeFailInvalidTransitions()
+    @TestFactory
+    Collection<DynamicTest> normalize()
     {
-        testFailMerge( "DELETED ! DELETED", 0b01, 0b01 );
-        testFailMerge( "DELETED ! RESERVED", 0b01, 0b11 );
-        testFailMerge( "FREE ! DELETED", 0b10, 0b01 );
-        testFailMerge( "RESERVED ! DELETED", 0b11, 0b01 );
-        testFailMerge( "FREE ! FREE", 0b11, 0b01 );
+        return Arrays.asList(
+                dynamicTest( "USED", () -> testNormalize( USED, USED ) ),
+                dynamicTest( "DELETED", () -> testNormalize( DELETED, FREE ) ),
+                dynamicTest( "FREE", () -> testNormalize( FREE, FREE ) ),
+                dynamicTest( "FREE", () -> testNormalize( 0x10, USED ) )
+        );
     }
 
-    private static void testFailMerge( String msg, long into, long from )
+    private void testNormalize( IdState beforeState, IdState afterState )
     {
-        var intoRange = new IdRange( 1 );
-        var fromRange = new IdRange( 1 );
-        intoRange.getOctlets()[0] = into;
-        fromRange.getOctlets()[0] = from;
-        assertThrows( IllegalStateException.class, () -> intoRange.mergeFrom( fromRange, false ), msg );
+        // given
+        var range = initialIdRange( beforeState );
+
+        // when
+        range.normalize();
+
+        // then
+        assertEquals( afterState, range.getState( 0 ) );
     }
 
-    private static void testMerge( long into, long from, long expected, boolean recoveryMode )
+    private void testNormalize( int beforeState, IdState afterState )
     {
-        var intoRange = new IdRange( 1 );
-        var fromRange = new IdRange( 1 );
-        intoRange.getOctlets()[0] = into;
-        fromRange.getOctlets()[0] = from;
-        intoRange.mergeFrom( fromRange, recoveryMode );
-        var actual = intoRange.getOctlets()[0];
+        // given
+        var range = new IdRange( 1 );
+        range.clear( 1, true );
+        if ( (beforeState & 0x01) != 0 )
+        {
+            range.setCommitBit( 0 );
+        }
+        if ( (beforeState & 0x10) != 0 )
+        {
+            range.setReuseBit( 0 );
+        }
+
+        // when
+        range.normalize();
+
+        // then
+        assertEquals( afterState, range.getState( 0 ) );
+    }
+
+    private static void testFailMerge( IdState intoState, IdState fromState )
+    {
+        var into = initialIdRange( intoState );
+        var from = idRange( intoState, fromState );
+        assertThrows( IllegalStateException.class, () -> into.mergeFrom( from, false ), intoState + "!" + fromState );
+    }
+
+    private static void testMerge( IdState intoState, IdState fromState, IdState expected, boolean recoveryMode )
+    {
+        var into = initialIdRange( intoState );
+        var from = idRange( intoState, fromState );
+        into.mergeFrom( from, recoveryMode );
+        var actual = into.getState( 0 );
         assertEquals( expected, actual );
     }
 
-    @RepeatedTest( 10 )
-    void mergeRandom()
-    {
-        var transitions = BiMaps.immutable.with(
-                USED, DELETED,
-                DELETED, FREE,
-                FREE, RESERVED,
-                RESERVED, USED
-        );
-
-        var intoRange = new IdRange( 4 );
-        var fromRange = new IdRange( 4 );
-        var expectRange = new IdRange( 4 );
-
-        for ( int i = 0; i < intoRange.size(); i++ )
-        {
-            var startState = random.among( IdState.values() );
-            intoRange.setState( i, startState );
-            if ( random.nextBoolean() )
-            {
-                var endState = transitions.get( startState );
-                fromRange.setState( i, startState == RESERVED ? RESERVED : endState );
-                expectRange.setState( i, endState );
-            }
-            else
-            {
-                expectRange.setState( i, startState );
-            }
-        }
-
-        intoRange.mergeFrom( fromRange, false );
-
-        for ( int i = 0; i < intoRange.size(); i++ )
-        {
-            assertEquals( expectRange.getState( i ), intoRange.getState( i ) );
-        }
-    }
-
-    @Test
-    void normalize()
-    {
-        final var idRange = idRange( USED, DELETED, FREE, RESERVED );
-        final var expected = states( USED, FREE, FREE, FREE );
-
-        idRange.normalize();
-
-        final var actual = range( 0, 4 ).mapToObj( idRange::getState ).toArray( IdState[]::new );
-        assertArrayEquals( expected, actual );
-    }
-
-    private static IdRange idRange( IdState... states )
+    private static IdRange initialIdRange( IdState state )
     {
         final var idRange = new IdRange( 1 );
-        for ( int i = 0; i < states.length; i++ )
+        switch ( state )
         {
-            idRange.setState( i, states[i] );
+        case FREE:
+            idRange.setReuseBit( 0 );
+        case DELETED:
+            idRange.setCommitBit( 0 );
+        case USED:
+            break;
+        default:
+            throw new UnsupportedOperationException( state.name() );
         }
         return idRange;
     }
 
-    private static IdState[] states( IdState... states )
+    private static IdRange idRange( IdState intoState, IdState state )
     {
-        return states;
-    }
-
-    @RepeatedTest( 10 )
-    void normalizeRandom()
-    {
-        final int OCTLETS_COUNT = 8;
-        final var idRange = new IdRange( OCTLETS_COUNT );
-
-        final var input = new IdState[OCTLETS_COUNT * 32];
-        for ( int i = 0; i < input.length; i++ )
+        final var idRange = new IdRange( 1 );
+        switch ( state )
         {
-            input[i] = random.among( IdState.values() );
+        case USED:
+            idRange.clear( 1, false );
+            idRange.setCommitAndReuseBit( 0 );
+            break;
+        case DELETED:
+            if ( intoState == FREE )
+            {
+                // If we're going from FREE to DELETED, the transition is to remove the reuse bit
+                idRange.clear( 1, false );
+                idRange.setReuseBit( 0 );
+            }
+            else
+            {
+                // If we're going from USED to DELETED, the transition is to add the commit bit
+                idRange.clear( 1, true );
+                idRange.setCommitBit( 0 );
+            }
+            break;
+        case FREE:
+            idRange.clear( 1, true );
+            idRange.setReuseBit( 0 );
+            break;
+        default:
+            throw new UnsupportedOperationException( state.name() );
         }
-
-        for ( int i = 0; i < input.length; i++ )
-        {
-            idRange.setState( i, input[i] );
-        }
-
-        idRange.normalize();
-
-        final var expected = stream( input ).map( s -> s == DELETED ? FREE : s ).map( s -> s == RESERVED ? FREE : s ).toArray( IdState[]::new );
-        final var actual = new IdState[input.length];
-        for ( int i = 0; i < input.length; i++ )
-        {
-            actual[i] = idRange.getState( i );
-        }
-
-        assertArrayEquals( expected, actual );
-    }
-
-    @RepeatedTest( 10 )
-    void setAndGetRandom()
-    {
-        var idRange = new IdRange( 4 );
-        var input = new IdState[idRange.size()];
-        for ( var i = 0; i < input.length; i++ )
-        {
-            input[i] = random.among( IdState.values() );
-        }
-
-        for ( var i = 0; i < input.length; i++ )
-        {
-            idRange.setState( i, input[i] );
-        }
-        var expected = stream( input ).toArray( IdState[]::new );
-        var actual = new IdState[idRange.size()];
-        for ( var i = 0; i < input.length; i++ )
-        {
-            actual[i] = idRange.getState( i );
-        }
-
-        assertArrayEquals( expected, actual );
+        return idRange;
     }
 }

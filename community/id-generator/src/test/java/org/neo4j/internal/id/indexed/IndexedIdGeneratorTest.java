@@ -31,8 +31,6 @@ import java.util.Random;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicLong;
-import java.util.function.LongConsumer;
 
 import org.neo4j.internal.id.FreeIds;
 import org.neo4j.internal.id.IdCapacityExceededException;
@@ -42,6 +40,7 @@ import org.neo4j.internal.id.IdGenerator.ReuseMarker;
 import org.neo4j.internal.id.IdType;
 import org.neo4j.internal.id.IdValidator;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.test.Race;
 import org.neo4j.test.extension.Inject;
@@ -58,6 +57,7 @@ import static org.junit.jupiter.api.Assertions.fail;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
 import static org.neo4j.internal.id.FreeIds.NO_FREE_IDS;
 import static org.neo4j.internal.id.indexed.IndexedIdGenerator.IDS_PER_ENTRY;
+import static org.neo4j.test.Race.throwing;
 
 @PageCacheExtension
 @ExtendWith( RandomExtension.class )
@@ -124,41 +124,46 @@ class IndexedIdGeneratorTest
     }
 
     @Test
-    void shouldStayConsistentAndNotLoseIdsInConcurrentRealWorldSimulation() throws Throwable
+    void shouldStayConsistentAndNotLoseIdsInConcurrent_Allocate_Delete_Free() throws Throwable
     {
         // given
         freelist.start( NO_FREE_IDS );
-        int runTimeSeconds = 1;
-        int maxAllocationsAhead = 500;
-
-        Race race = new Race().withMaxDuration( runTimeSeconds, TimeUnit.SECONDS );
+        Race race = new Race().withMaxDuration( 1, TimeUnit.SECONDS );
         ConcurrentLinkedQueue<Allocation> allocations = new ConcurrentLinkedQueue<>();
         ConcurrentSparseLongBitSet expectedInUse = new ConcurrentSparseLongBitSet( IDS_PER_ENTRY );
-        AtomicLong allocationsMade = new AtomicLong();
-        AtomicLong freesMade = new AtomicLong();
-        AtomicLong totalIdsAllocated = new AtomicLong();
-        race.addContestants( 6, allocator( maxAllocationsAhead, allocations, expectedInUse, allocationsMade, totalIdsAllocated ) );
+        race.addContestants( 6, allocator( 500, allocations, expectedInUse ) );
         race.addContestants( 1, deleter( allocations ) );
-        race.addContestants( 1, freer( allocations, expectedInUse, freesMade ) );
+        race.addContestants( 1, freer( allocations, expectedInUse ) );
 
         // when
         race.go();
 
-        // then after all remaining allocations have been freed, allocating that many ids again should not need to increase highId,
-        // i.e. all such allocations should be allocated from the free-list
-        deleteAndFree( allocations, expectedInUse );
-        long highIdBeforeReallocation = freelist.getHighId();
-        long numberOfIdsOutThere = highIdBeforeReallocation;
-        ConcurrentSparseLongBitSet reallocationIds = new ConcurrentSparseLongBitSet( IDS_PER_ENTRY );
-        while ( numberOfIdsOutThere > 0 )
+        // then
+        verifyReallocationDoesNotIncreaseHighId( allocations, expectedInUse );
+    }
+
+    @Test
+    void shouldStayConsistentAndNotLoseIdsInConcurrentAllocate_Delete_Free_ClearCache() throws Throwable
+    {
+        // given
+        freelist.start( NO_FREE_IDS );
+        Race race = new Race().withMaxDuration( 3, TimeUnit.SECONDS );
+        ConcurrentLinkedQueue<Allocation> allocations = new ConcurrentLinkedQueue<>();
+        ConcurrentSparseLongBitSet expectedInUse = new ConcurrentSparseLongBitSet( IDS_PER_ENTRY );
+        race.addContestants( 6, allocator( 500, allocations, expectedInUse ) );
+        race.addContestants( 1, deleter( allocations ) );
+        race.addContestants( 1, freer( allocations, expectedInUse ) );
+        race.addContestant( throwing( () ->
         {
-            long id = freelist.nextId();
-            Allocation allocation = new Allocation( id );
-            numberOfIdsOutThere -= 1;
-            reallocationIds.set( allocation.id, 1, true );
-        }
-        // TODO really it should be 0, but sometimes it's 1 and haven't figured out why yet
-        assertThat( freelist.getHighId() - highIdBeforeReallocation, Matchers.lessThan( 5L ) );
+            Thread.sleep( 300 );
+            freelist.clearCache();
+        } ) );
+
+        // when
+        race.go();
+
+        // then
+        verifyReallocationDoesNotIncreaseHighId( allocations, expectedInUse );
     }
 
     @Test
@@ -266,6 +271,90 @@ class IndexedIdGeneratorTest
         assertEquals( 1L, freelist.nextId() );
     }
 
+    @Test
+    void shouldHandle_Used_Deleted_Used() throws IOException
+    {
+        // given
+        freelist.start( NO_FREE_IDS );
+        long id = freelist.nextId();
+        freelist.markIdAsUsed( id );
+        freelist.deleteId( id );
+
+        // when
+        freelist.markIdAsUsed( id );
+        restart();
+
+        // then
+        assertNotEquals( id, freelist.nextId() );
+    }
+
+    @Test
+    void shouldHandle_Used_Deleted_Free_Used() throws IOException
+    {
+        // given
+        freelist.start( NO_FREE_IDS );
+        long id = freelist.nextId();
+        freelist.markIdAsUsed( id );
+        freelist.deleteId( id );
+        freelist.freeId( id );
+
+        // when
+        freelist.markIdAsUsed( id );
+        restart();
+
+        // then
+        assertNotEquals( id, freelist.nextId() );
+    }
+
+    @Test
+    void shouldHandle_Used_Deleted_Free_Reserved_Used() throws IOException
+    {
+        // given
+        freelist.start( NO_FREE_IDS );
+        long id = freelist.nextId();
+        freelist.markIdAsUsed( id );
+        freelist.deleteId( id );
+        freelist.freeId( id );
+        try ( ReuseMarker reuseMarker = freelist.reuseMarker() )
+        {
+            reuseMarker.markReserved( id );
+        }
+
+        // when
+        freelist.markIdAsUsed( id );
+        restart();
+
+        // then
+        assertNotEquals( id, freelist.nextId() );
+    }
+
+    private void verifyReallocationDoesNotIncreaseHighId( ConcurrentLinkedQueue<Allocation> allocations, ConcurrentSparseLongBitSet expectedInUse )
+    {
+        // then after all remaining allocations have been freed, allocating that many ids again should not need to increase highId,
+        // i.e. all such allocations should be allocated from the free-list
+        deleteAndFree( allocations, expectedInUse );
+        long highIdBeforeReallocation = freelist.getHighId();
+        long numberOfIdsOutThere = highIdBeforeReallocation;
+        ConcurrentSparseLongBitSet reallocationIds = new ConcurrentSparseLongBitSet( IDS_PER_ENTRY );
+        while ( numberOfIdsOutThere > 0 )
+        {
+            long id = freelist.nextId();
+            Allocation allocation = new Allocation( id );
+            numberOfIdsOutThere -= 1;
+            reallocationIds.set( allocation.id, 1, true );
+        }
+        // TODO really it should be 0, but sometimes it's 1 and haven't figured out why yet
+        assertThat( freelist.getHighId() - highIdBeforeReallocation, Matchers.lessThan( 5L ) );
+    }
+
+    private void restart() throws IOException
+    {
+        freelist.checkpoint( IOLimiter.UNLIMITED );
+        stop();
+        open();
+        freelist.start( NO_FREE_IDS );
+    }
+
     private static FreeIds freeIds( long... freeIds )
     {
         return visitor ->
@@ -278,7 +367,7 @@ class IndexedIdGeneratorTest
         };
     }
 
-    private Runnable freer( ConcurrentLinkedQueue<Allocation> allocations, ConcurrentSparseLongBitSet expectedInUse, AtomicLong freesMade )
+    private Runnable freer( ConcurrentLinkedQueue<Allocation> allocations, ConcurrentSparseLongBitSet expectedInUse )
     {
         return new Runnable()
         {
@@ -303,7 +392,6 @@ class IndexedIdGeneratorTest
                         if ( allocation.free( expectedInUse ) )
                         {
                             iterator.remove();
-                            freesMade.incrementAndGet();
                         }
                         // else someone else got there before us
                     }
@@ -350,8 +438,7 @@ class IndexedIdGeneratorTest
         };
     }
 
-    private Runnable allocator( int maxAllocationsAhead, ConcurrentLinkedQueue<Allocation> allocations,
-            ConcurrentSparseLongBitSet expectedInUse, AtomicLong allocationsMade, AtomicLong totalRecordIdsAllocated )
+    private Runnable allocator( int maxAllocationsAhead, ConcurrentLinkedQueue<Allocation> allocations, ConcurrentSparseLongBitSet expectedInUse )
     {
         return () ->
         {
@@ -364,8 +451,6 @@ class IndexedIdGeneratorTest
                 {
                     allocation.markAsInUse( expectedInUse );
                     allocations.add( allocation );
-                    allocationsMade.incrementAndGet();
-                    totalRecordIdsAllocated.incrementAndGet();
                 }
                 catch ( Exception e )
                 {

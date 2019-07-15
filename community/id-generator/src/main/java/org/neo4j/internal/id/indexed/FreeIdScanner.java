@@ -32,7 +32,6 @@ import org.neo4j.internal.id.IdGenerator.ReuseMarker;
 import static org.neo4j.internal.id.indexed.IdRange.IdState;
 import static org.neo4j.internal.id.indexed.IdRange.IdState.DELETED;
 import static org.neo4j.internal.id.indexed.IdRange.IdState.FREE;
-import static org.neo4j.internal.id.indexed.IdRange.IdState.RESERVED;
 
 /**
  * Responsible for starting and managing scans of a {@link GBPTree}, populating a cache with free ids that gets discovered in the scan.
@@ -87,7 +86,7 @@ class FreeIdScanner implements Closeable
      */
     void scanForMoreFreeIds()
     {
-        if ( lock.lock() )
+        if ( lock.tryLock() )
         {
             try
             {
@@ -117,6 +116,37 @@ class FreeIdScanner implements Closeable
             {
                 lock.unlock();
             }
+        }
+    }
+
+    void clearCache()
+    {
+        lock.lock();
+        try
+        {
+            // Since placing an id into the cache marks it as reserved, here when taking the ids out from the cache revert that by marking them as free again
+            try ( ReuseMarker marker = reuseMarkerSupplier.get() )
+            {
+                long id;
+                do
+                {
+                    id = cache.takeOrDefault( -1 );
+                    if ( id != -1 )
+                    {
+                        marker.markFree( id );
+                    }
+                }
+                while ( id != -1 );
+            }
+            atLeastOneIdOnFreelist.set( true );
+        }
+        catch ( IOException e )
+        {
+            throw new UncheckedIOException( e );
+        }
+        finally
+        {
+            lock.unlock();
         }
     }
 
@@ -194,7 +224,7 @@ class FreeIdScanner implements Closeable
         {
             nextPosInRange = i + 1;
             final IdState state = range.getState( i );
-            if ( state == FREE || (differentGeneration && (state == DELETED || state == RESERVED)) )
+            if ( state == FREE || (differentGeneration && state == DELETED) )
             {
                 pendingItemsToCache[pendingItemsToCacheCursor++] = baseId + i;
             }

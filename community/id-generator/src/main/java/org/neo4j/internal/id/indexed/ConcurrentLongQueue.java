@@ -49,4 +49,9 @@ interface ConcurrentLongQueue
      * @return size of this queue, i.e. how many values are queued right now.
      */
     int size();
+
+    /**
+     * Clears the queue.
+     */
+    void clear();
 }

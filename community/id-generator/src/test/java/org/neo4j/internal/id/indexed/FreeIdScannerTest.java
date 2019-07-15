@@ -27,9 +27,11 @@ import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.Lock;
 import java.util.function.BiConsumer;
@@ -42,6 +44,7 @@ import org.neo4j.index.internal.gbptree.GBPTreeBuilder;
 import org.neo4j.internal.id.IdGenerator.ReuseMarker;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.test.Barrier;
+import org.neo4j.test.OtherThreadExecutor;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.pagecache.PageCacheExtension;
 import org.neo4j.test.rule.TestDirectory;
@@ -55,6 +58,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.neo4j.test.OtherThreadExecutor.command;
 
 @PageCacheExtension
 class FreeIdScannerTest
@@ -406,7 +410,100 @@ class FreeIdScannerTest
         scanner.scanForMoreFreeIds();
 
         // then
-        assertArrayEquals( new long[]{0, 1, 2, 3, 4}, reuser.markedIds.toArray() );
+        assertArrayEquals( new long[]{0, 1, 2, 3, 4}, reuser.reservedIds.toArray() );
+    }
+
+    @Test
+    void shouldClearCache()
+    {
+        // given
+        long generation = 1;
+        ConcurrentLongQueue cache = new SpmcLongQueue( 32 );
+        FreeIdScanner scanner = scanner( IDS_PER_ENTRY, cache, generation );
+        forEachId( generation, range( 0, 5 ) ).accept( ( marker, id ) ->
+        {
+            marker.markDeleted( id );
+            marker.markFree( id );
+        } );
+        scanner.scanForMoreFreeIds();
+
+        // when
+        long cacheSizeBeforeClear = cache.size();
+        scanner.clearCache();
+
+        // then
+        assertEquals( 5, cacheSizeBeforeClear );
+        assertEquals( 0, cache.size() );
+        assertEquals( LongLists.immutable.of( 0, 1, 2, 3, 4 ), reuser.freedIds );
+    }
+
+    @Test
+    void shouldNotScanWhenConcurrentClear() throws ExecutionException, InterruptedException
+    {
+        // given
+        long generation = 1;
+        ConcurrentLongQueue cache = new SpmcLongQueue( 32 );
+        Barrier.Control barrier = new Barrier.Control();
+        FreeIdScanner scanner = scanner( IDS_PER_ENTRY, new ControlledConcurrentLongQueue( cache, QueueMethodControl.TAKE, barrier ), generation );
+        forEachId( generation, range( 0, 5 ) ).accept( ( marker, id ) ->
+        {
+            marker.markDeleted( id );
+            marker.markFree( id );
+        } );
+
+        // when
+        try ( OtherThreadExecutor<Void> clearThread = new OtherThreadExecutor<>( "clear", null ) )
+        {
+            // Wait for the clear call
+            Future<Object> clear = clearThread.executeDontWait( command( scanner::clearCache ) );
+            barrier.awaitUninterruptibly();
+
+            // Attempt trigger a scan
+            scanner.scanForMoreFreeIds();
+
+            // Let clear finish
+            barrier.release();
+            clear.get();
+        }
+
+        // then
+        assertEquals( 0, cache.size() );
+    }
+
+    @Test
+    void shouldLetClearCacheWaitForConcurrentScan() throws ExecutionException, InterruptedException, TimeoutException
+    {
+        // given
+        long generation = 1;
+        ConcurrentLongQueue cache = new SpmcLongQueue( 32 );
+        Barrier.Control barrier = new Barrier.Control();
+        FreeIdScanner scanner = scanner( IDS_PER_ENTRY, new ControlledConcurrentLongQueue( cache, QueueMethodControl.OFFER, barrier ), generation );
+        forEachId( generation, range( 0, 1 ) ).accept( ( marker, id ) ->
+        {
+            marker.markDeleted( id );
+            marker.markFree( id );
+        } );
+
+        // when
+        try ( OtherThreadExecutor<Void> scanThread = new OtherThreadExecutor<>( "scan", null );
+              OtherThreadExecutor<Void> clearThread = new OtherThreadExecutor<>( "clear", null ) )
+        {
+            // Wait for the offer call
+            Future<Object> scan = scanThread.executeDontWait( command( scanner::scanForMoreFreeIds ) );
+            barrier.awaitUninterruptibly();
+
+            // Make sure clear waits for the scan call
+            Future<Object> clear = clearThread.executeDontWait( command( scanner::clearCache ) );
+            clearThread.waitUntilWaiting();
+
+            // Let the threads finish
+            barrier.release();
+            scan.get();
+            clear.get();
+        }
+
+        // then
+        assertEquals( 0, cache.size() );
     }
 
     private void assertCacheHasIds( Range... ranges )
@@ -442,18 +539,19 @@ class FreeIdScannerTest
 
     private static class FoundIdMarker implements ThrowingSupplier<ReuseMarker, IOException>, ReuseMarker
     {
-        private final MutableLongList markedIds = LongLists.mutable.empty();
+        private final MutableLongList reservedIds = LongLists.mutable.empty();
+        private final MutableLongList freedIds = LongLists.mutable.empty();
 
         @Override
         public void markReserved( long id )
         {
-            markedIds.add( id );
+            reservedIds.add( id );
         }
 
         @Override
         public void markFree( long id )
         {
-            throw new UnsupportedOperationException( "Should not have been called" );
+            freedIds.add( id );
         }
 
         @Override
@@ -491,6 +589,64 @@ class FreeIdScannerTest
             {
                 consumer.accept( id );
             }
+        }
+    }
+
+    private enum QueueMethodControl
+    {
+        TAKE,
+        OFFER;
+    }
+
+    private static class ControlledConcurrentLongQueue implements ConcurrentLongQueue
+    {
+        private final ConcurrentLongQueue actual;
+        private final QueueMethodControl method;
+        private final Barrier.Control barrier;
+
+        ControlledConcurrentLongQueue( ConcurrentLongQueue actual, QueueMethodControl method, Barrier.Control barrier )
+        {
+            this.actual = actual;
+            this.method = method;
+            this.barrier = barrier;
+        }
+
+        @Override
+        public boolean offer( long v )
+        {
+            if ( method == QueueMethodControl.OFFER )
+            {
+                barrier.reached();
+            }
+            return actual.offer( v );
+        }
+
+        @Override
+        public long takeOrDefault( long defaultValue )
+        {
+            if ( method == QueueMethodControl.TAKE )
+            {
+                barrier.reached();
+            }
+            return actual.takeOrDefault( defaultValue );
+        }
+
+        @Override
+        public int capacity()
+        {
+            return actual.capacity();
+        }
+
+        @Override
+        public int size()
+        {
+            return actual.size();
+        }
+
+        @Override
+        public void clear()
+        {
+            actual.clear();
         }
     }
 }

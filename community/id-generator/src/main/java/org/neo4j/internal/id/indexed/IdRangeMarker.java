@@ -29,15 +29,9 @@ import org.neo4j.index.internal.gbptree.ValueMerger;
 import org.neo4j.index.internal.gbptree.Writer;
 import org.neo4j.internal.id.IdGenerator.CommitMarker;
 import org.neo4j.internal.id.IdGenerator.ReuseMarker;
-import org.neo4j.internal.id.IdValidator;
-import org.neo4j.internal.id.indexed.IdRange.IdState;
-import org.neo4j.io.IOUtils;
 
 import static java.lang.Math.toIntExact;
-import static org.neo4j.internal.id.indexed.IdRange.IdState.DELETED;
-import static org.neo4j.internal.id.indexed.IdRange.IdState.FREE;
-import static org.neo4j.internal.id.indexed.IdRange.IdState.RESERVED;
-import static org.neo4j.io.IOUtils.closeAllUnchecked;
+import static org.neo4j.internal.id.IdValidator.isReservedId;
 
 /**
  * Contains logic for merging ID state changes into the tree backing an {@link IndexedIdGenerator}.
@@ -87,43 +81,58 @@ class IdRangeMarker implements CommitMarker, ReuseMarker
     @Override
     public void markUsed( long id )
     {
-        // this is by convention: if reserved ID is marked as RESERVED again then it becomes USED
-        prepareMerge( id, RESERVED );
-        writer.mergeIfExists( key, value, merger );
+        if ( !isReservedId( id ) )
+        {
+            // this is by convention: if reserved ID is marked as RESERVED again then it becomes USED
+            prepareRange( id, false );
+            value.setCommitAndReuseBit( idOffset( id ) );
+            writer.mergeIfExists( key, value, merger );
+        }
     }
 
     @Override
     public void markDeleted( long id )
     {
-        setStateAndMerge( id, DELETED );
+        if ( !isReservedId( id ) )
+        {
+            prepareRange( id, true );
+            value.setCommitBit( idOffset( id ) );
+            writer.merge( key, value, merger );
+        }
     }
 
     @Override
     public void markReserved( long id )
     {
-        setStateAndMerge( id, RESERVED );
+        if ( !isReservedId( id ) )
+        {
+            prepareRange( id, false );
+            value.setReuseBit( idOffset( id ) );
+            writer.merge( key, value, merger );
+        }
     }
 
     @Override
     public void markFree( long id )
     {
-        setStateAndMerge( id, FREE );
+        if ( !isReservedId( id ) )
+        {
+            prepareRange( id, true );
+            value.setReuseBit( idOffset( id ) );
+            writer.merge( key, value, merger );
+        }
+
         freeIdsNotifier.set( true );
     }
 
-    private void setStateAndMerge( long id, IdState state )
-    {
-        prepareMerge( id, state );
-        writer.merge( key, value, merger );
-    }
-
-    private void prepareMerge( long id, IdState state )
+    private void prepareRange( long id, boolean addition )
     {
         key.setIdRangeIdx( id / idsPerEntry );
-        value.clear( generation );
-        if ( !IdValidator.isReservedId( id ) )
-        {
-            value.setState( toIntExact( id % idsPerEntry ), state );
-        }
+        value.clear( generation, addition );
+    }
+
+    private int idOffset( long id )
+    {
+        return toIntExact( id % idsPerEntry );
     }
 }

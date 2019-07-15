@@ -46,6 +46,7 @@ import static java.util.stream.LongStream.range;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.internal.id.indexed.IndexedIdGenerator.NO_ID;
 
@@ -133,6 +134,26 @@ class SpmcLongQueueTest
             executor.shutdown();
             executor.awaitTermination( 10, SECONDS );
         }
+    }
+
+    @Test
+    void shouldClearQueue()
+    {
+        // given
+        ConcurrentLongQueue queue = new SpmcLongQueue( 16 );
+        for ( int i = 0; i < 10; i++ )
+        {
+            queue.offer( random.nextLong( 1000 ) );
+        }
+        assertEquals( 10, queue.size() );
+        assertNotEquals( -1, queue.takeOrDefault( -1 ) );
+
+        // when
+        queue.clear();
+
+        // then
+        assertEquals( 0, queue.size() );
+        assertEquals( -1, queue.takeOrDefault( -1 ) );
     }
 
     private Callable<Void> createConsumer( SpmcLongQueue queue, long[] output )

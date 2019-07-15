@@ -325,10 +325,14 @@ public class IndexedIdGenerator implements IdGenerator
         if ( needsRebuild )
         {
             // This id generator was created right now, it needs to be populated with all free ids from its owning store so that it's in sync
-            try ( ReuseMarker marker = reuseMarker() )
+            try ( IdRangeMarker idRangeMarker = lockAndInstantiateMarker() )
             {
                 // We can mark the ids as free right away since this is before started which means we get the very liberal merger
-                long highestFreeId = freeIdsForRebuild.accept( marker::markFree );
+                long highestFreeId = freeIdsForRebuild.accept( id ->
+                {
+                    idRangeMarker.markDeleted( id );
+                    idRangeMarker.markFree( id );
+                } );
                 highId.set( highestFreeId + 1 );
             }
             // We can checkpoint here since the free ids we read are committed
@@ -357,6 +361,13 @@ public class IndexedIdGenerator implements IdGenerator
             // We're just helping other allocation requests and avoiding unwanted sliding of highId here
             scanner.scanForMoreFreeIds();
         }
+    }
+
+    @Override
+    public void clearCache()
+    {
+        // Make the scanner clear it because it needs to coordinate with the scan lock
+        scanner.clearCache();
     }
 
     @Override
@@ -461,7 +472,7 @@ public class IndexedIdGenerator implements IdGenerator
                 @Override
                 public void value( IdRange value )
                 {
-                    System.out.println( format( "%s [%d]", BitsUtil.bitsToString( value.getOctlets() ), key.getIdRangeIdx() ) );
+                    System.out.println( format( "%s [%d]", BitsUtil.bitsToString( value.getLongs() ), key.getIdRangeIdx() ) );
                 }
             } );
         }

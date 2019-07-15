@@ -78,7 +78,7 @@ class IdRangeLayout extends Layout.Adapter<IdRangeKey, IdRange>
     public void writeValue( PageCursor cursor, IdRange value )
     {
         cursor.putLong( value.getGeneration() );
-        writeLongs( cursor, value.getOctlets() );
+        writeLongs( cursor, value.getLongs() );
     }
 
     @Override
@@ -91,7 +91,7 @@ class IdRangeLayout extends Layout.Adapter<IdRangeKey, IdRange>
     public void readValue( PageCursor cursor, IdRange into, int ignore )
     {
         into.setGeneration( cursor.getLong() );
-        readLongs( cursor, into.getOctlets() );
+        readLongs( cursor, into.getLongs() );
     }
 
     private static void writeLongs( PageCursor cursor, long[] octlets )

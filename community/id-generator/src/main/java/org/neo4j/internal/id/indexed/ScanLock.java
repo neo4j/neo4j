@@ -33,10 +33,12 @@ abstract class ScanLock
      * Tries to acquire the lock, returning {@code true} if it succeeds, otherwise {@code false}.
      * @return {@code true} if the lock was acquired. Potentially this call blocks.
      */
-    abstract boolean lock();
+    abstract boolean tryLock();
+
+    abstract void lock();
 
     /**
-     * Releases the lock, if it was previous acquired in {@link #lock()}, i.e. if it returned {@code true}.
+     * Releases the lock, if it was previous acquired in {@link #tryLock()}, i.e. if it returned {@code true}.
      */
     abstract void unlock();
 
@@ -51,9 +53,26 @@ abstract class ScanLock
             private final AtomicBoolean lockState = new AtomicBoolean();
 
             @Override
-            boolean lock()
+            boolean tryLock()
             {
                 return lockState.compareAndSet( false, true );
+            }
+
+            @Override
+            void lock()
+            {
+                while ( !tryLock() )
+                {
+                    try
+                    {
+                        Thread.sleep( 10 );
+                    }
+                    catch ( InterruptedException e )
+                    {
+                        Thread.currentThread().interrupt();
+                        throw new RuntimeException( e );
+                    }
+                }
             }
 
             @Override
@@ -69,7 +88,7 @@ abstract class ScanLock
     }
 
     /**
-     * Implemented with a {@link ReentrantLock}. {@link #lock() Locking} may block if the lock is already acquired by another thread,
+     * Implemented with a {@link ReentrantLock}. {@link #tryLock() Locking} may block if the lock is already acquired by another thread,
      * but will only return {@code true} if the lock could be acquired with {@link Lock#tryLock()}, otherwise block until the lock
      * has been released and return {@code false}.
      * @return a pessimistic and blocking {@link ScanLock}.
@@ -81,7 +100,7 @@ abstract class ScanLock
             private final ReentrantLock lock = new ReentrantLock();
 
             @Override
-            boolean lock()
+            boolean tryLock()
             {
                 // The idea is that either we get the lock right away, and then this is our queue to do scanning
                 if ( lock.tryLock() )
@@ -93,6 +112,12 @@ abstract class ScanLock
                 lock.lock();
                 lock.unlock();
                 return false;
+            }
+
+            @Override
+            void lock()
+            {
+                lock.lock();
             }
 
             @Override

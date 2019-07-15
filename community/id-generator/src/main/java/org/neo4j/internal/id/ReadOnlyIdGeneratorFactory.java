@@ -202,5 +202,11 @@ public class ReadOnlyIdGeneratorFactory implements IdGeneratorFactory
         {
             // Nothing to do
         }
+
+        @Override
+        public void clearCache()
+        {
+            // Nothing to do
+        }
     }
 }

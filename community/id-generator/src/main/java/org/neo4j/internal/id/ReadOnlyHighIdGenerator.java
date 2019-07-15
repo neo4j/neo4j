@@ -129,4 +129,10 @@ class ReadOnlyHighIdGenerator implements IdGenerator
     {
         throw new UnsupportedOperationException( "Should not be required" );
     }
+
+    @Override
+    public void clearCache()
+    {
+        // no-op
+    }
 }

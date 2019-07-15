@@ -95,6 +95,15 @@ class SpmcLongQueue implements ConcurrentLongQueue
         return toIntExact( max( 0, writeSeq.get() - readSeq.get() ) );
     }
 
+    /**
+     * This call is not thread-safe w/ concurrent calls to {@link #offer(long)} so external synchronization is required.
+     */
+    @Override
+    public void clear()
+    {
+        readSeq.set( writeSeq.get() );
+    }
+
     private int idx( long seq )
     {
         return toIntExact( seq & idxMask );
