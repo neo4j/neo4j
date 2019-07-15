@@ -22,11 +22,14 @@ package org.neo4j.internal.schema;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Objects;
 import java.util.OptionalLong;
 import java.util.stream.Stream;
 
 import org.neo4j.common.TokenNameLookup;
+
+import static java.util.Objects.requireNonNull;
+import static org.apache.commons.lang3.StringUtils.EMPTY;
+import static org.neo4j.internal.schema.SchemaRule.nameOrDefault;
 
 public final class IndexDescriptor implements IndexRef<IndexDescriptor>, SchemaRule
 {
@@ -47,7 +50,8 @@ public final class IndexDescriptor implements IndexRef<IndexDescriptor>, SchemaR
     IndexDescriptor( long id, IndexPrototype prototype )
     {
         // TODO we should throw an exception instead of generating a name for unnamed index prototypes. Or generate a name based on the schema tokens.
-        this( id, prototype.getName().orElseGet( () -> "index_" + id ), prototype.schema(), prototype.isUnique(), prototype.getIndexProvider(), null,
+        this( id, nameOrDefault( prototype.getName().orElse( EMPTY ), "index_" + id ), prototype.schema(), prototype.isUnique(),
+                prototype.getIndexProvider(), null,
                 IndexCapability.NO_CAPABILITY );
     }
 
@@ -59,10 +63,10 @@ public final class IndexDescriptor implements IndexRef<IndexDescriptor>, SchemaR
             throw new IllegalArgumentException( "The id of an index must not be negative, but it was attempted to assign " + id + "." );
         }
         name = SchemaRule.sanitiseName( name );
-        Objects.requireNonNull( schema, "The schema of an index cannot be null." );
-        Objects.requireNonNull( indexProvider, "The index provider cannot be null." );
+        requireNonNull( schema, "The schema of an index cannot be null." );
+        requireNonNull( indexProvider, "The index provider cannot be null." );
         // The 'owningConstraintId' is allowed to be null, which is the case when an index descriptor is initially created.
-        Objects.requireNonNull( capability, "The index capability cannot be null." );
+        requireNonNull( capability, "The index capability cannot be null." );
 
         this.id = id;
         this.name = name;

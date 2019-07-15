@@ -19,6 +19,8 @@
  */
 package org.neo4j.internal.schema;
 
+import static org.apache.commons.lang3.StringUtils.isBlank;
+
 /**
  * Represents a stored schema rule.
  */
@@ -26,7 +28,9 @@ public interface SchemaRule extends SchemaDescriptorSupplier
 {
     static String nameOrDefault( String name, String defaultName )
     {
-        if ( name == null )
+        // Because of the difference how blank and trim works (whitespace check is totally different in those) we can't simply use isBlank here
+        // and need to double check invoking trim that as result we do not have empty string there
+        if ( isBlank( name ) || name.trim().isEmpty() )
         {
             name = defaultName;
         }
