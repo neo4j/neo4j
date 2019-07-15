@@ -52,9 +52,9 @@ public class Runnables
         }
         if ( exceptions != null )
         {
-            if ( errors == 1 && exceptions instanceof RuntimeException )
+            if ( errors == 1 )
             {
-                throw (RuntimeException) exceptions;
+                Exceptions.throwIfUnchecked( exceptions );
             }
             throw new RuntimeException( message, exceptions );
         }

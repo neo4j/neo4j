@@ -125,7 +125,7 @@ class FreeIdScannerTest
         } );
 
         // when
-        scanner.doSomeScanning();
+        scanner.scanForMoreFreeIds();
         assertTrue( cache.size() > 0 );
 
         // then
@@ -160,7 +160,7 @@ class FreeIdScannerTest
         } );
 
         // when
-        scanner.doSomeScanning();
+        scanner.scanForMoreFreeIds();
 
         // then
         assertCacheHasIds( range( 0, 1 ) );
@@ -181,7 +181,7 @@ class FreeIdScannerTest
         } );
 
         // when
-        scanner.doSomeScanning();
+        scanner.scanForMoreFreeIds();
 
         // then
         assertCacheHasIds( ranges );
@@ -202,7 +202,7 @@ class FreeIdScannerTest
         } );
 
         // when
-        scanner.doSomeScanning();
+        scanner.scanForMoreFreeIds();
 
         // then
         assertCacheHasIds( ranges );
@@ -227,7 +227,7 @@ class FreeIdScannerTest
         } );
 
         // when
-        scanner.doSomeScanning();
+        scanner.scanForMoreFreeIds();
 
         // then
         assertCacheHasIds( range( 0, 1 ), range( 3, 5 ) );
@@ -248,7 +248,7 @@ class FreeIdScannerTest
         forEachId( generation, range( 1, 3 ) ).accept( IdRangeMarker::markReserved );
 
         // when
-        scanner.doSomeScanning();
+        scanner.scanForMoreFreeIds();
 
         // then
         assertCacheHasIds( range( 0, 1 ), range( 3, 5 ) );
@@ -273,7 +273,7 @@ class FreeIdScannerTest
         // cache has capacity of 8 and there are 8 free ids, however cache isn't completely empty
 
         // when
-        scanner.doSomeScanning();
+        scanner.scanForMoreFreeIds();
 
         // then verify that the cache only got offered 5 ids (capacity:8 - size:3)
         verify( cache, times( 5 ) ).offer( anyLong() );
@@ -293,13 +293,13 @@ class FreeIdScannerTest
         } );
 
         // when
-        scanner.doSomeScanning();
+        scanner.scanForMoreFreeIds();
 
         // then
         assertCacheHasIds( range( 0, 8 ) );
 
         // and further when
-        scanner.doSomeScanning();
+        scanner.scanForMoreFreeIds();
 
         // then
         assertCacheHasIds( range( 64, 72 ) );
@@ -319,13 +319,13 @@ class FreeIdScannerTest
         } );
 
         // when
-        scanner.doSomeScanning();
+        scanner.scanForMoreFreeIds();
 
         // then
         assertCacheHasIds( range( 0, 4 ), range( 64, 68 ) );
 
         // and further when
-        scanner.doSomeScanning();
+        scanner.scanForMoreFreeIds();
 
         // then
         assertCacheHasIds( range( 68, 72 ) );
@@ -354,13 +354,13 @@ class FreeIdScannerTest
 
         // when
         ExecutorService executorService = Executors.newSingleThreadExecutor();
-        Future<?> scanFuture = executorService.submit( scanner::doSomeScanning );
+        Future<?> scanFuture = executorService.submit( scanner::scanForMoreFreeIds );
         barrier.await();
         // now it's stuck in trying to offer to the cache
 
         // then a scan call from another thread should complete but not do anything
         verify( cache, times( 1 ) ).offer( anyLong() ); // <-- the 1 call is from the call which makes the other thread stuck above
-        scanner.doSomeScanning();
+        scanner.scanForMoreFreeIds();
         verify( cache, times( 1 ) ).offer( anyLong() );
 
         // clean up
@@ -383,7 +383,7 @@ class FreeIdScannerTest
         forEachId( oldGeneration, range( 0, 8 ), range( 64, 72 ) ).accept( IdRangeMarker::markDeleted );
 
         // when
-        scanner.doSomeScanning();
+        scanner.scanForMoreFreeIds();
 
         // then
         assertCacheHasIds( range( 0, 8 ), range( 64, 72 ) );
@@ -403,7 +403,7 @@ class FreeIdScannerTest
         } );
 
         // when
-        scanner.doSomeScanning();
+        scanner.scanForMoreFreeIds();
 
         // then
         assertArrayEquals( new long[]{0, 1, 2, 3, 4}, reuser.markedIds.toArray() );

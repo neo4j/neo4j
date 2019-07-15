@@ -43,7 +43,7 @@ public class PrimitiveLongArrayQueue
         this( DEFAULT_CAPACITY );
     }
 
-    public PrimitiveLongArrayQueue( int capacity )
+    PrimitiveLongArrayQueue( int capacity )
     {
         if ( capacity == 0 || (capacity & (capacity - 1)) != 0 )
         {
@@ -55,11 +55,6 @@ public class PrimitiveLongArrayQueue
     public boolean isEmpty()
     {
         return head == tail;
-    }
-
-    public void clear()
-    {
-        initCursors();
     }
 
     public int size()
@@ -104,11 +99,6 @@ public class PrimitiveLongArrayQueue
     private void initValues( int capacity )
     {
         values = new long[capacity];
-        initCursors();
-    }
-
-    private void initCursors()
-    {
         head = 0;
         tail = 0;
     }

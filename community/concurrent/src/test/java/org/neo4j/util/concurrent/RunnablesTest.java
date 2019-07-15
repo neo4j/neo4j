@@ -28,6 +28,7 @@ import java.util.List;
 import org.neo4j.internal.helpers.Exceptions;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -64,12 +65,13 @@ class RunnablesTest
 
         // when
         String failureMessage = "Something wrong, Killroy must be here somewhere.";
-        RuntimeException actual = assertThrows( RuntimeException.class, () -> Runnables.runAll( failureMessage, runnables.toArray( new Runnable[0] ) ) );
+        Throwable actual = assertThrows( Error.class, () -> Runnables.runAll( failureMessage, runnables.toArray( new Runnable[0] ) ) );
 
         // then
         assertRun( task1, task2, task3 );
-        assertTrue( Exceptions.findCauseOrSuppressed( actual, t -> t == expectedError ).isPresent() );
-        assertEquals( failureMessage, actual.getMessage() );
+        assertSame( expectedError, actual );
+        assertEquals( 0, actual.getSuppressed().length );
+        assertEquals( expectedError.getMessage(), actual.getMessage() );
     }
 
     @Test

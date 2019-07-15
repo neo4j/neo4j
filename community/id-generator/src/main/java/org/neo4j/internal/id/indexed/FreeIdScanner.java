@@ -71,7 +71,7 @@ class FreeIdScanner implements Closeable
     }
 
     /**
-     * @return {@code true} if there's a chance calling {@link #doSomeScanning()} may find any free ids.
+     * @return {@code true} if there's a chance calling {@link #scanForMoreFreeIds()} may find any free ids.
      * It may have been that a previous scan was performed where no ids were found and no ids have been freed since.
      */
     boolean scanMightFindFreeIds()
@@ -85,7 +85,7 @@ class FreeIdScanner implements Closeable
      * Do a batch of scanning, either start a new scan from the beginning if none is active, or continue where a previous scan
      * paused. In this call free ids can be discovered and placed into the ID cache. IDs are marked as reserved before placed into cache.
      */
-    void doSomeScanning()
+    void scanForMoreFreeIds()
     {
         if ( lock.lock() )
         {
@@ -138,8 +138,6 @@ class FreeIdScanner implements Closeable
         {
             for ( int i = 0; i < pendingItemsToCacheCursor; i++ )
             {
-                // TODO we could potentially make this a little more batchy where we could do one merge thing per tree entry
-                //  instead of one per entry. Or we could have something like a writable seeker that could update these along the way.
                 marker.markReserved( pendingItemsToCache[i] );
             }
         }

@@ -187,7 +187,7 @@ public class IndexedIdGenerator implements IdGenerator
             // No ID in cache so scan and cache more ids if it looks like there's a chance we can find some more
             if ( scanner.scanMightFindFreeIds() )
             {
-                scanner.doSomeScanning();
+                scanner.scanForMoreFreeIds();
                 id = cache.takeOrDefault( NO_ID );
             }
         }
@@ -355,7 +355,7 @@ public class IndexedIdGenerator implements IdGenerator
         if ( cache.size() < cacheOptimisticRefillThreshold && scanner.scanMightFindFreeIds() )
         {
             // We're just helping other allocation requests and avoiding unwanted sliding of highId here
-            scanner.doSomeScanning();
+            scanner.scanForMoreFreeIds();
         }
     }
 

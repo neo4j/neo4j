@@ -94,20 +94,6 @@ class PrimitiveLongArrayQueueTest
     }
 
     @Test
-    void emptyQueueAfterClear()
-    {
-        PrimitiveLongArrayQueue queue = createQueue();
-        queue.enqueue( 2 );
-        queue.enqueue( 3 );
-        assertFalse( queue.isEmpty() );
-        assertEquals( 2, queue.size() );
-
-        queue.clear();
-
-        assertTrue( queue.isEmpty() );
-    }
-
-    @Test
     void tailBeforeHeadCorrectSize()
     {
         PrimitiveLongArrayQueue queue = createQueue();

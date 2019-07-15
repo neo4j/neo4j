@@ -94,22 +94,19 @@ public class DelayedBuffer<T>
         consumeLock.lock();
         try
         {
-            if ( !chunks.isEmpty() )
+            // Potentially hand over chunks to the consumer
+            while ( !chunks.isEmpty() )
             {
-                // Potentially hand over chunks to the consumer
-                while ( !chunks.isEmpty() )
+                Chunk<T> candidate = chunks.peek();
+                if ( safeThreshold.test( candidate.threshold ) )
                 {
-                    Chunk<T> candidate = chunks.peek();
-                    if ( safeThreshold.test( candidate.threshold ) )
-                    {
-                        chunkConsumer.accept( candidate.values );
-                        chunks.remove();
-                    }
-                    else
-                    {
-                        // The chunks are ordered by chunkThreshold, so we know that no more chunks will qualify anyway
-                        break;
-                    }
+                    chunkConsumer.accept( candidate.values );
+                    chunks.remove();
+                }
+                else
+                {
+                    // The chunks are ordered by chunkThreshold, so we know that no more chunks will qualify anyway
+                    break;
                 }
             }
         }

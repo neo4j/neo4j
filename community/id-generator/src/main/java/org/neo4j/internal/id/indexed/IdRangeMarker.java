@@ -31,11 +31,13 @@ import org.neo4j.internal.id.IdGenerator.CommitMarker;
 import org.neo4j.internal.id.IdGenerator.ReuseMarker;
 import org.neo4j.internal.id.IdValidator;
 import org.neo4j.internal.id.indexed.IdRange.IdState;
+import org.neo4j.io.IOUtils;
 
 import static java.lang.Math.toIntExact;
 import static org.neo4j.internal.id.indexed.IdRange.IdState.DELETED;
 import static org.neo4j.internal.id.indexed.IdRange.IdState.FREE;
 import static org.neo4j.internal.id.indexed.IdRange.IdState.RESERVED;
+import static org.neo4j.io.IOUtils.closeAllUnchecked;
 
 /**
  * Contains logic for merging ID state changes into the tree backing an {@link IndexedIdGenerator}.

@@ -19,6 +19,8 @@
  */
 package org.neo4j.internal.id.indexed;
 
+import org.apache.commons.lang3.StringUtils;
+
 import java.util.Arrays;
 
 import static java.lang.Long.toBinaryString;
@@ -26,7 +28,12 @@ import static java.lang.String.format;
 import static java.util.Arrays.fill;
 
 /**
- * A small bit-set of dibits representing ID states in a specific ID range.
+ * Value in a GB+Tree for indexing id states. Accompanies that with a generation, i.e. which generation this value were written in.
+ * ID states is a small bit-set of dibits for a specific ID range. There are a couple of states an ID can be in and {@link #setState(int, IdState)}
+ * transitions one of the ids in the {@code long} that carries the IDs to a desired state.
+ *
+ * Normal operations (not recovery) has more state transition restrictions than recovery. {@link #mergeFrom(IdRange, boolean)} and
+ * {@link #verifyTransitions(long, long, int)} has more information on these restrictions.
  */
 class IdRange
 {
@@ -197,10 +204,9 @@ class IdRange
 
     private static String toPaddedBinaryString( long octlet )
     {
-        char[] unpadded = toBinaryString( octlet ).toCharArray();
-        char[] padded = new char[Long.SIZE];
-        Arrays.fill( padded, '0' );
-        System.arraycopy( unpadded, 0, padded, padded.length - unpadded.length, unpadded.length );
+        char[] padded = StringUtils.leftPad( toBinaryString( octlet ), Long.SIZE, '0' ).toCharArray();
+
+        // Now add a space between each dibit
         int numberOfSpaces = padded.length / 2 - 1;
         char[] spaced = new char[padded.length + numberOfSpaces];
         Arrays.fill( spaced, ' ' );
