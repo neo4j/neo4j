@@ -288,7 +288,7 @@ trait NodeLockingUniqueIndexSeekTestBase[CONTEXT <: RuntimeContext] {
   }
 }
 
-// Supported by interpreted, slotted, morsel
+// Supported by interpreted, slotted, morsel, parallel
 trait NodeIndexSeekRangeAndCompositeTestBase[CONTEXT <: RuntimeContext] {
   self: NodeIndexSeekTestBase[CONTEXT] =>
 
@@ -507,7 +507,7 @@ trait NodeIndexSeekRangeAndCompositeTestBase[CONTEXT <: RuntimeContext] {
   }
 }
 
-//Buggy in compiled runtime
+// Buggy in compiled runtime
 trait ArrayIndexSupport[CONTEXT <: RuntimeContext] {
   self: NodeIndexSeekTestBase[CONTEXT] =>
 

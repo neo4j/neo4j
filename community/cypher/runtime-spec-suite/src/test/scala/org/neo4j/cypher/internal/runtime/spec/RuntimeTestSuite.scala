@@ -341,13 +341,13 @@ abstract class RuntimeTestSuite[CONTEXT <: RuntimeContext](edition: Edition[CONT
         val relationshipsByType =
           for {
             c <- connectivities
-            numConnections = random.nextInt(c.atMost - c.atLeast)
+            numConnections = random.nextInt(c.atMost - c.atLeast) + c.atLeast
             if numConnections > 0
           } yield {
             val relType = RelationshipType.withName(c.relType)
 
             val endNodes =
-              for (_ <- c.atLeast until numConnections) yield {
+              for (_ <- 0 until numConnections) yield {
                 val to = nodes(random.nextInt(nodes.length))
                 from.createRelationshipTo(to, relType)
                 to

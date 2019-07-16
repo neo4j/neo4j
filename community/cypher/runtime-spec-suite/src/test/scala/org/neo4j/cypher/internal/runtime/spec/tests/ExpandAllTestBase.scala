@@ -360,7 +360,7 @@ abstract class ExpandAllTestBase[CONTEXT <: RuntimeContext](
   }
 }
 
-// Supported by interpreted, slotted, morsel
+// Supported by interpreted, slotted, morsel, parallel
 trait ExpandAllWithOtherOperatorsTestBase[CONTEXT <: RuntimeContext] {
   self: ExpandAllTestBase[CONTEXT] =>
 
