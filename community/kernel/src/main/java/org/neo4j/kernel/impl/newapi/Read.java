@@ -159,8 +159,11 @@ abstract class Read implements TxStateHolder,
             {
                 for ( int label : schema.getEntityTokenIds() )
                 {
-                    if ( !accessMode.allowsTraverseLabel( label ) || !accessMode.allowsReadNodeProperty( () -> Labels.from( label ), prop ) )
+                    if ( !accessMode.allowsTraverseLabel( label ) || accessMode.disallowsReadPropertyForSomeLabel( prop ) ||
+                            !accessMode.allowsReadNodeProperty( () -> Labels.from( label ), prop ) )
                     {
+                        // We need to filter the index result if the property is not allowed on some label
+                        // since the nodes in the index might have both an allowed and a disallowed label for the property
                         return new NodeLabelSecurityFilter( propertyIds, cursor, cursors.allocateNodeCursor(), this, accessMode );
                     }
                 }

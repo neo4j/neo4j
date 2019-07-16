@@ -153,6 +153,12 @@ public interface AccessMode
         }
 
         @Override
+        public boolean disallowsReadPropertyForSomeLabel( int propertyKey )
+        {
+            return false;
+        }
+
+        @Override
         public boolean allowsReadNodeProperty( Supplier<LabelSet> labels, int propertyKey )
         {
             return read;
@@ -208,6 +214,7 @@ public interface AccessMode
     boolean allowsTraverseRelType( int relType );
 
     boolean allowsReadPropertyAllLabels( int propertyKey );
+    boolean disallowsReadPropertyForSomeLabel( int propertyKey );
     boolean allowsReadNodeProperty( Supplier<LabelSet> labels, int propertyKey );
 
     boolean allowsReadPropertyAllRelTypes( int propertyKey );

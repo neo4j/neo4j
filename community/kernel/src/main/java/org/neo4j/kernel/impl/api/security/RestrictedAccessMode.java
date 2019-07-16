@@ -109,6 +109,12 @@ public class RestrictedAccessMode extends WrappedAccessMode
     }
 
     @Override
+    public boolean disallowsReadPropertyForSomeLabel( int propertyKey )
+    {
+        return original.disallowsReadPropertyForSomeLabel( propertyKey ) && wrapping.disallowsReadPropertyForSomeLabel( propertyKey );
+    }
+
+    @Override
     public boolean allowsReadNodeProperty( Supplier<LabelSet> labels, int propertyKey )
     {
         return original.allowsReadNodeProperty( labels, propertyKey ) && wrapping.allowsReadNodeProperty( labels, propertyKey );
