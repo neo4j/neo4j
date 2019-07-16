@@ -43,15 +43,21 @@ import org.neo4j.storageengine.api.ConstraintRule;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 import static org.neo4j.internal.schema.SchemaDescriptor.fulltext;
+import static org.neo4j.internal.schema.constraints.ConstraintDescriptorFactory.existsForLabel;
+import static org.neo4j.internal.schema.constraints.ConstraintDescriptorFactory.nodeKeyForLabel;
+import static org.neo4j.storageengine.api.ConstraintRule.constraintRule;
 import static org.neo4j.test.assertion.Assert.assertException;
 
 class SchemaRuleSerialization35Test
 {
     private static final long RULE_ID = 1;
+    private static final String DEFAULT_INDEX_NAME = "index_" + RULE_ID;
+    private static final String DEFAULT_CONSTRAINT_NAME = "constraint_" + RULE_ID;
     private static final long RULE_ID_2 = 2;
     private static final int LABEL_ID = 10;
     private static final int LABEL_ID_2 = 11;
@@ -129,22 +135,22 @@ class SchemaRuleSerialization35Test
                     fulltext( EntityType.RELATIONSHIP, IndexConfig.empty(), IntStream.range( 1, 200 ).toArray(), IntStream.range( 1, 200 ).toArray() ) ),
             RULE_ID );
 
-    private final ConstraintRule constraintExistsLabel = ConstraintRule.constraintRule( RULE_ID,
-            ConstraintDescriptorFactory.existsForLabel( LABEL_ID, PROPERTY_ID_1 ) );
+    private final ConstraintRule constraintExistsLabel = constraintRule( RULE_ID,
+            existsForLabel( LABEL_ID, PROPERTY_ID_1 ) );
 
-    private final ConstraintRule constraintUniqueLabel = ConstraintRule.constraintRule( RULE_ID_2,
+    private final ConstraintRule constraintUniqueLabel = constraintRule( RULE_ID_2,
             ConstraintDescriptorFactory.uniqueForLabel( LABEL_ID, PROPERTY_ID_1 ), RULE_ID );
 
-    private final ConstraintRule constraintNodeKeyLabel = ConstraintRule.constraintRule( RULE_ID_2,
-            ConstraintDescriptorFactory.nodeKeyForLabel( LABEL_ID, PROPERTY_ID_1 ), RULE_ID );
+    private final ConstraintRule constraintNodeKeyLabel = constraintRule( RULE_ID_2,
+            nodeKeyForLabel( LABEL_ID, PROPERTY_ID_1 ), RULE_ID );
 
-    private final ConstraintRule constraintExistsRelType = ConstraintRule.constraintRule( RULE_ID_2,
+    private final ConstraintRule constraintExistsRelType = constraintRule( RULE_ID_2,
             ConstraintDescriptorFactory.existsForRelType( REL_TYPE_ID, PROPERTY_ID_1 ) );
 
-    private final ConstraintRule constraintCompositeLabel = ConstraintRule.constraintRule( RULE_ID,
-            ConstraintDescriptorFactory.existsForLabel( LABEL_ID, PROPERTY_ID_1, PROPERTY_ID_2 ) );
+    private final ConstraintRule constraintCompositeLabel = constraintRule( RULE_ID,
+            existsForLabel( LABEL_ID, PROPERTY_ID_1, PROPERTY_ID_2 ) );
 
-    private final ConstraintRule constraintCompositeRelType = ConstraintRule.constraintRule( RULE_ID_2,
+    private final ConstraintRule constraintCompositeRelType = constraintRule( RULE_ID_2,
             ConstraintDescriptorFactory.existsForRelType( REL_TYPE_ID, PROPERTY_ID_1, PROPERTY_ID_2 ) );
 
     // INDEX RULES
@@ -192,17 +198,17 @@ class SchemaRuleSerialization35Test
         assertThat( serialiseAndDeserialise( withIds( namedUniqueForLabel( name, LABEL_ID, PROPERTY_ID_1, PROPERTY_ID_2 ), RULE_ID_2, RULE_ID ) ).getName(),
                 is( name ) );
         assertThat( serialiseAndDeserialise( withId( namedForLabel( name, LABEL_ID, IntStream.range(1, 200).toArray() ), RULE_ID ) ).getName(), is( name ) );
-        assertThat( serialiseAndDeserialise( ConstraintRule.constraintRule( RULE_ID,
-                ConstraintDescriptorFactory.existsForLabel( LABEL_ID, PROPERTY_ID_1 ), name ) ).getName(), is( name ) );
-        assertThat( serialiseAndDeserialise( ConstraintRule.constraintRule( RULE_ID_2,
+        assertThat( serialiseAndDeserialise( constraintRule( RULE_ID,
+                existsForLabel( LABEL_ID, PROPERTY_ID_1 ), name ) ).getName(), is( name ) );
+        assertThat( serialiseAndDeserialise( constraintRule( RULE_ID_2,
                 ConstraintDescriptorFactory.uniqueForLabel( LABEL_ID, PROPERTY_ID_1 ), RULE_ID, name ) ).getName(), is( name ) );
-        assertThat( serialiseAndDeserialise( ConstraintRule.constraintRule( RULE_ID_2,
-                ConstraintDescriptorFactory.nodeKeyForLabel( LABEL_ID, PROPERTY_ID_1 ), RULE_ID, name ) ).getName(), is( name ) );
-        assertThat( serialiseAndDeserialise( ConstraintRule.constraintRule( RULE_ID_2,
+        assertThat( serialiseAndDeserialise( constraintRule( RULE_ID_2,
+                nodeKeyForLabel( LABEL_ID, PROPERTY_ID_1 ), RULE_ID, name ) ).getName(), is( name ) );
+        assertThat( serialiseAndDeserialise( constraintRule( RULE_ID_2,
                 ConstraintDescriptorFactory.existsForRelType( REL_TYPE_ID, PROPERTY_ID_1 ), name ) ).getName(), is( name ) );
-        assertThat( serialiseAndDeserialise( ConstraintRule.constraintRule( RULE_ID,
-                ConstraintDescriptorFactory.existsForLabel( LABEL_ID, PROPERTY_ID_1, PROPERTY_ID_2 ), name ) ).getName(), is( name ) );
-        assertThat( serialiseAndDeserialise( ConstraintRule.constraintRule( RULE_ID_2,
+        assertThat( serialiseAndDeserialise( constraintRule( RULE_ID,
+                existsForLabel( LABEL_ID, PROPERTY_ID_1, PROPERTY_ID_2 ), name ) ).getName(), is( name ) );
+        assertThat( serialiseAndDeserialise( constraintRule( RULE_ID_2,
                 ConstraintDescriptorFactory.existsForRelType( REL_TYPE_ID, PROPERTY_ID_1, PROPERTY_ID_2 ),
                 name ) ).getName(), is( name ) );
     }
@@ -218,22 +224,22 @@ class SchemaRuleSerialization35Test
         assertThat( serialiseAndDeserialise( withId( forLabel( LABEL_ID, IntStream.range(1, 200).toArray() ), RULE_ID ) ).getName(), is( "index_1" ) );
 
         String name = null;
-        assertThat( serialiseAndDeserialise( ConstraintRule.constraintRule( RULE_ID,
-                ConstraintDescriptorFactory.existsForLabel( LABEL_ID, PROPERTY_ID_1 ), name ) ).getName(),
+        assertThat( serialiseAndDeserialise( constraintRule( RULE_ID,
+                existsForLabel( LABEL_ID, PROPERTY_ID_1 ), name ) ).getName(),
                 is( "constraint_1" ) );
-        assertThat( serialiseAndDeserialise( ConstraintRule.constraintRule( RULE_ID_2,
+        assertThat( serialiseAndDeserialise( constraintRule( RULE_ID_2,
                 ConstraintDescriptorFactory.uniqueForLabel( LABEL_ID, PROPERTY_ID_1 ), RULE_ID, name ) ).getName(),
                 is( "constraint_2" ) );
-        assertThat( serialiseAndDeserialise( ConstraintRule.constraintRule( RULE_ID_2,
-                ConstraintDescriptorFactory.nodeKeyForLabel( LABEL_ID, PROPERTY_ID_1 ), RULE_ID, name ) ).getName(),
+        assertThat( serialiseAndDeserialise( constraintRule( RULE_ID_2,
+                nodeKeyForLabel( LABEL_ID, PROPERTY_ID_1 ), RULE_ID, name ) ).getName(),
                 is( "constraint_2" ) );
-        assertThat( serialiseAndDeserialise( ConstraintRule.constraintRule( RULE_ID_2,
+        assertThat( serialiseAndDeserialise( constraintRule( RULE_ID_2,
                 ConstraintDescriptorFactory.existsForRelType( REL_TYPE_ID, PROPERTY_ID_1 ), name ) ).getName(),
                 is( "constraint_2" ) );
-        assertThat( serialiseAndDeserialise( ConstraintRule.constraintRule( RULE_ID,
-                ConstraintDescriptorFactory.existsForLabel( LABEL_ID, PROPERTY_ID_1, PROPERTY_ID_2 ), name ) ).getName(),
+        assertThat( serialiseAndDeserialise( constraintRule( RULE_ID,
+                existsForLabel( LABEL_ID, PROPERTY_ID_1, PROPERTY_ID_2 ), name ) ).getName(),
                 is( "constraint_1" ) );
-        assertThat( serialiseAndDeserialise( ConstraintRule.constraintRule( RULE_ID_2,
+        assertThat( serialiseAndDeserialise( constraintRule( RULE_ID_2,
                 ConstraintDescriptorFactory.existsForRelType( REL_TYPE_ID, PROPERTY_ID_1, PROPERTY_ID_2 ), name ) ).getName(),
                 is( "constraint_2" ) );
     }
@@ -248,9 +254,8 @@ class SchemaRuleSerialization35Test
     @Test
     void indexRuleNameMustNotBeTheEmptyString()
     {
-        //noinspection RedundantStringConstructorCall
-        String name = new String( "" );
-        assertThrows( IllegalArgumentException.class, () -> withId( namedForLabel( name, LABEL_ID, PROPERTY_ID_1 ), RULE_ID ) );
+        String name = "";
+        assertEquals( DEFAULT_INDEX_NAME, withId( namedForLabel( name, LABEL_ID, PROPERTY_ID_1 ), RULE_ID ).getName() );
     }
 
     @Test
@@ -263,9 +268,8 @@ class SchemaRuleSerialization35Test
     @Test
     void constraintIndexRuleNameMustNotBeTheEmptyString()
     {
-        //noinspection RedundantStringConstructorCall
-        String name = new String( "" );
-        assertThrows( IllegalArgumentException.class, () -> withIds( namedUniqueForLabel( name, LABEL_ID, PROPERTY_ID_1 ), RULE_ID, RULE_ID_2 ) );
+        String name =  "";
+        assertEquals( DEFAULT_INDEX_NAME, withIds( namedUniqueForLabel( name, LABEL_ID, PROPERTY_ID_1 ), RULE_ID, RULE_ID_2 ).getName() );
     }
 
     @Test
@@ -273,16 +277,14 @@ class SchemaRuleSerialization35Test
     {
         String name = "a\0b";
         assertThrows( IllegalArgumentException.class,
-            () -> ConstraintRule.constraintRule( RULE_ID, ConstraintDescriptorFactory.existsForLabel( LABEL_ID, PROPERTY_ID_1 ), name ) );
+            () -> constraintRule( RULE_ID, existsForLabel( LABEL_ID, PROPERTY_ID_1 ), name ) );
     }
 
     @Test
     void constraintRuleNameMustNotBeTheEmptyString()
     {
-        //noinspection RedundantStringConstructorCall
-        String name = new String( "" );
-        assertThrows( IllegalArgumentException.class,
-            () -> ConstraintRule.constraintRule( RULE_ID, ConstraintDescriptorFactory.existsForLabel( LABEL_ID, PROPERTY_ID_1 ), name ) );
+        String name = "";
+        assertEquals( DEFAULT_CONSTRAINT_NAME, constraintRule( RULE_ID, existsForLabel( LABEL_ID, PROPERTY_ID_1 ), name ).getName() );
     }
 
     @Test
@@ -290,14 +292,14 @@ class SchemaRuleSerialization35Test
     {
         String name = "a\0b";
         assertThrows( IllegalArgumentException.class,
-            () -> ConstraintRule.constraintRule( RULE_ID, ConstraintDescriptorFactory.uniqueForLabel( LABEL_ID, PROPERTY_ID_1 ), RULE_ID_2, name ) );
+            () -> constraintRule( RULE_ID, ConstraintDescriptorFactory.uniqueForLabel( LABEL_ID, PROPERTY_ID_1 ), RULE_ID_2, name ) );
     }
 
     @Test
     void uniquenessConstraintRuleNameMustNotBeTheEmptyString()
     {
-        assertThrows( IllegalArgumentException.class,
-            () -> ConstraintRule.constraintRule( RULE_ID, ConstraintDescriptorFactory.uniqueForLabel( LABEL_ID, PROPERTY_ID_1 ), RULE_ID_2, "" ) );
+        assertEquals( DEFAULT_CONSTRAINT_NAME,
+                constraintRule( RULE_ID, ConstraintDescriptorFactory.uniqueForLabel( LABEL_ID, PROPERTY_ID_1 ), RULE_ID_2, "" ).getName() );
     }
 
     @Test
@@ -305,16 +307,14 @@ class SchemaRuleSerialization35Test
     {
         String name = "a\0b";
         assertThrows( IllegalArgumentException.class,
-            () -> ConstraintRule.constraintRule( RULE_ID, ConstraintDescriptorFactory.nodeKeyForLabel( LABEL_ID, PROPERTY_ID_1 ), RULE_ID_2, name ) );
+            () -> constraintRule( RULE_ID, nodeKeyForLabel( LABEL_ID, PROPERTY_ID_1 ), RULE_ID_2, name ) );
     }
 
     @Test
     void nodeKeyConstraintRuleNameMustNotBeTheEmptyString()
     {
-        //noinspection RedundantStringConstructorCall
-        String name = new String( "" );
-        assertThrows( IllegalArgumentException.class,
-            () -> ConstraintRule.constraintRule( RULE_ID, ConstraintDescriptorFactory.nodeKeyForLabel( LABEL_ID, PROPERTY_ID_1 ), RULE_ID_2, name ) );
+        String name = "";
+        assertEquals( DEFAULT_CONSTRAINT_NAME, constraintRule( RULE_ID, nodeKeyForLabel( LABEL_ID, PROPERTY_ID_1 ), RULE_ID_2, name ).getName() );
     }
 
     @Test
@@ -572,7 +572,7 @@ class SchemaRuleSerialization35Test
         int propertyKey = 3;
         int labelId = 55;
         long ownedIndexId = 2;
-        NodeKeyConstraintDescriptor constraint = ConstraintDescriptorFactory.nodeKeyForLabel( labelId, propertyKey );
+        NodeKeyConstraintDescriptor constraint = nodeKeyForLabel( labelId, propertyKey );
         byte[] bytes = decodeBase64( serialized );
 
         // WHEN
@@ -592,7 +592,7 @@ class SchemaRuleSerialization35Test
         long ruleId = 87;
         int propertyKey = 51;
         int labelId = 45;
-        ConstraintDescriptor constraint = ConstraintDescriptorFactory.existsForLabel( labelId, propertyKey );
+        ConstraintDescriptor constraint = existsForLabel( labelId, propertyKey );
         byte[] bytes = decodeBase64( serialized );
 
         // WHEN
