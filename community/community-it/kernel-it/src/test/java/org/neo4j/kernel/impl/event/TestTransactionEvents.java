@@ -1007,12 +1007,12 @@ class TestTransactionEvents
         commitTxWithMultipleNewTokens( databaseName, dbms );
 
         var lastClosedTxIdAfter = lastClosedTxId( databaseName, dbms );
+        var committedTransactions = lastClosedTxIdAfter - lastClosedTxIdBefore;
 
         // more than one transaction should be committed
-        assertThat( lastClosedTxIdAfter, greaterThan( lastClosedTxIdBefore + 1 ) );
+        assertThat( committedTransactions, greaterThan( 1L ) );
 
         // listener should be invoked the same number of times as the number of committed transactions
-        var committedTransactions = lastClosedTxIdAfter - lastClosedTxIdBefore;
         assertEquals( committedTransactions, listener.beforeCommitInvocations.get() );
         assertEquals( committedTransactions, listener.afterCommitInvocations.get() );
         assertEquals( 0, listener.afterRollbackInvocations.get() );
@@ -1025,7 +1025,7 @@ class TestTransactionEvents
         var listener = new CommitCountingEventListener();
         dbms.registerTransactionEventListener( databaseName, listener );
 
-        readAllNodesInTx( databaseName, dbms );
+        commitReadOnlyTransaction( databaseName, dbms );
 
         // listener should never be invoked
         assertEquals( 0, listener.beforeCommitInvocations.get() );
@@ -1039,7 +1039,7 @@ class TestTransactionEvents
         var listener = new CommitCountingEventListener();
         registerTransactionEventListenerForSystemDb( dbms, listener );
 
-        readAllNodesInTx( SYSTEM_DATABASE_NAME, dbms );
+        commitReadOnlyTransaction( SYSTEM_DATABASE_NAME, dbms );
 
         // listener should never be invoked
         assertEquals( 0, listener.beforeCommitInvocations.get() );
@@ -1058,12 +1058,13 @@ class TestTransactionEvents
         }
     }
 
-    private static void readAllNodesInTx( String databaseName, DatabaseManagementService managementService )
+    private static void commitReadOnlyTransaction( String databaseName, DatabaseManagementService managementService )
     {
         var db = managementService.database( databaseName );
         try ( var tx = db.beginTx();
               var nodesIterator = db.getAllNodes().iterator() )
         {
+            // perform some read-only activity
             while ( nodesIterator.hasNext() )
             {
                 assertNotNull( nodesIterator.next() );
