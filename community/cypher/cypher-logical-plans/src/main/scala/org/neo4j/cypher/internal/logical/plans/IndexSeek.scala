@@ -160,7 +160,6 @@ object IndexSeek {
           NodeIndexScan(node, label, Seq(prop(propStr)), argumentIds, indexOrder)
       }
     } else if (predicates.length > 1) {
-      // TODO ENDS WITH and CONTAINS
       val properties = new ArrayBuffer[IndexedProperty]()
       val valueExprs = new ArrayBuffer[QueryExpression[Expression]]()
 
@@ -201,6 +200,12 @@ object IndexSeek {
           case EXISTS(propStr) =>
             valueExprs += ExistenceQueryExpression()
             properties += prop(propStr)
+          case ENDS_WITH(propStr, _) =>
+            valueExprs += ExistenceQueryExpression()
+            properties += prop(propStr)
+          case CONTAINS(propStr, _) =>
+            valueExprs += ExistenceQueryExpression()
+            properties += prop(propStr)
           case _ => throw new IllegalArgumentException(s"$predicate is not allowed in composite seeks.")
         }
 
@@ -230,11 +235,19 @@ object IndexSeek {
           case EXISTS(propStr) =>
             valueExprs += ExistenceQueryExpression()
             properties += prop(propStr)
+          case ENDS_WITH(propStr, _) =>
+            valueExprs += ExistenceQueryExpression()
+            properties += prop(propStr)
+          case CONTAINS(propStr, _) =>
+            valueExprs += ExistenceQueryExpression()
+            properties += prop(propStr)
           case _ => throw new IllegalArgumentException(s"$predicate is not allowed in composite seeks.")
         }
 
       if (equalityAndNextPred.length == 1 && (equalityAndNextPred.head match {
         case EXISTS(_) => true
+        case ENDS_WITH(_, _) => true
+        case CONTAINS(_, _) => true
         case _ => false
       }))
         NodeIndexScan(node, label, properties, argumentIds, indexOrder)

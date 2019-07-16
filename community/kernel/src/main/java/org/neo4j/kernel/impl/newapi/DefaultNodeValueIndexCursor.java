@@ -121,16 +121,16 @@ final class DefaultNodeValueIndexCursor extends IndexCursor<IndexProgressor>
                 switch ( nextQuery.type() )
                 {
                 case exists:
+                    // This also covers the rewritten suffix/contains for composite index
                     // If composite index all following will be exists as well so no need to consider those
+                    setNeedsValuesIfRequiresOrder();
                     if ( exactQueryValues.isEmpty() )
                     {
                         // First query is exists, use scan
-                        setNeedsValuesIfRequiresOrder();
                         scanQuery( descriptor );
                     }
                     else
                     {
-                        setNeedsValuesIfRequiresOrder();
                         rangeQuery( descriptor, exactValues, null );
                     }
                     break;
@@ -151,9 +151,9 @@ final class DefaultNodeValueIndexCursor extends IndexCursor<IndexProgressor>
 
                 case stringSuffix:
                 case stringContains:
-                    // This case covers first query to be suffix/contains or exact followed by suffix/contains
-                    // TODO Can't handle this case for composite indexes yet but
-                    // if composite index all following should be exists as well so no need to consider those
+                    // This case covers suffix/contains for singular indexes
+                    // for composite index, the suffix/contains should already
+                    // have been rewritten as exists + filter, so no need to consider it here
                     assert query.length == 1;
                     suffixOrContainsQuery( descriptor, nextQuery );
                     break;

@@ -71,17 +71,17 @@ class TxStateIndexChanges
         return indexUpdatesWithValuesScanAndFilter( txState, descriptor, null, indexOrder );
     }
 
-    // SUFFIX
+    // SUFFIX or CONTAINS
 
     static AddedAndRemoved indexUpdatesForSuffixOrContains( ReadableTransactionState txState,
                                                             IndexDescriptor descriptor,
                                                             IndexQuery query,
                                                             IndexOrder indexOrder )
     {
-        // TODO fix this when composite can handle suffix and contains
         if ( descriptor.schema().getPropertyIds().length != 1 )
         {
-            throw new IllegalStateException( "Suffix and contains queries are only supported for single property queries" );
+            throw new IllegalStateException(
+                    "Suffix and contains queries on multiple property queries should have been rewritten as existence and filter before now" );
         }
         return indexUpdatesForScanAndFilter( txState, descriptor, query, indexOrder );
     }
@@ -91,10 +91,10 @@ class TxStateIndexChanges
                                                                                 IndexQuery query,
                                                                                 IndexOrder indexOrder )
     {
-        // TODO fix this when composite can handle suffix and contains
         if ( descriptor.schema().getPropertyIds().length != 1 )
         {
-            throw new IllegalStateException( "Suffix and contains queries are only supported for single property queries" );
+            throw new IllegalStateException(
+                    "Suffix and contains queries on multiple property queries should have been rewritten as existence and filter before now" );
         }
         return indexUpdatesWithValuesScanAndFilter( txState, descriptor, query, indexOrder );
     }

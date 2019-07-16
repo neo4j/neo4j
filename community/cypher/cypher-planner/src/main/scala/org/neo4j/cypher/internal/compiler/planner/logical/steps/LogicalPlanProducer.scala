@@ -319,7 +319,6 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, planningAttri
     val solver = PatternExpressionSolver.solverForLeafPlan(argumentIds, interestingOrder, context)
     val rewrittenValueExpr = solver.solve(valueExpr)
     val newArguments = solver.newArguments
-    // TODO uses .head at the moment
     val plan = annotate(NodeIndexContainsScan(idName, label, properties.head, rewrittenValueExpr, argumentIds ++ newArguments, toIndexOrder(providedOrder)), solved, providedOrder, context)
     solver.rewriteLeafPlan(plan)
   }
@@ -343,7 +342,6 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, planningAttri
     val solver = PatternExpressionSolver.solverForLeafPlan(argumentIds, interestingOrder, context)
     val rewrittenValueExpr = solver.solve(valueExpr)
     val newArguments = solver.newArguments
-    // TODO uses .head at the moment
     val plan = annotate(NodeIndexEndsWithScan(idName, label, properties.head, rewrittenValueExpr, argumentIds ++ newArguments, toIndexOrder(providedOrder)), solved, providedOrder, context)
     solver.rewriteLeafPlan(plan)
   }

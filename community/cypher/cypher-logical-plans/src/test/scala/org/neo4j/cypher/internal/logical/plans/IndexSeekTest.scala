@@ -63,12 +63,15 @@ class IndexSeekTest extends CypherFunSuite {
     (getValue, args, indexOrder) => "b:Y(name STARTS WITH 'hi')" -> createSeek("b", label("Y"), Seq(prop("name", getValue)), startsWith("hi"), args, indexOrder),
     (getValue, args, indexOrder) => "b:Y(name STARTS WITH 'hi', cats)" -> createSeek("b", label("Y"), Seq(prop("name", getValue, 0), prop("cats", getValue, 1)), CompositeQueryExpression(Seq(startsWith("hi"), exists())), args, indexOrder),
     (getValue, args, indexOrder) => "b:Y(name ENDS WITH 'hi')" -> (_ => NodeIndexEndsWithScan("b", label("Y"), prop("name", getValue), string("hi"), args, indexOrder)),
-//    (getValue, args, indexOrder) => "b:Y(dogs = 1, name ENDS WITH 'hi')" -> (_ => NodeIndexEndsWithScan("b", label("Y"), Seq(prop("dogs", getValue, 0), prop("name", getValue, 1)), CompositeQueryExpression(Seq(exactInt(1), string("hi"))), args, indexOrder)),
+    (getValue, args, indexOrder) => "b:Y(dogs = 1, name ENDS WITH 'hi')" -> createSeek("b", label("Y"), Seq(prop("dogs", getValue, 0), prop("name", getValue, 1)), CompositeQueryExpression(Seq(exactInt(1), exists())), args, indexOrder),
+    (getValue, args, indexOrder) => "b:Y(name ENDS WITH 'hi', dogs = 1)" -> (_ => NodeIndexScan("b", label("Y"), Seq(prop("name", getValue, 0), prop("dogs", getValue, 1)), args, indexOrder)),
     (getValue, args, indexOrder) => "b:Y(name CONTAINS 'hi')" -> (_ => NodeIndexContainsScan("b", label("Y"), prop("name", getValue), string("hi"), args, indexOrder)),
-//    (getValue, args, indexOrder) => "b:Y(name CONTAINS 'hi', dogs)" -> (_ => NodeIndexContainsScan("b", label("Y"), Seq(prop("name", getValue, 0), prop("dogs", getValue, 1)), CompositeQueryExpression(Seq(string("hi"), exists()), args, indexOrder)),
+    (getValue, args, indexOrder) => "b:Y(dogs = 1, name CONTAINS 'hi')" -> createSeek("b", label("Y"), Seq(prop("dogs", getValue, 0), prop("name", getValue, 1)), CompositeQueryExpression(Seq(exactInt(1), exists())), args, indexOrder),
+    (getValue, args, indexOrder) => "b:Y(name CONTAINS 'hi', dogs)" -> (_ => NodeIndexScan("b", label("Y"), Seq(prop("name", getValue, 0), prop("dogs", getValue, 1)), args, indexOrder)),
     (getValue, args, indexOrder) => "b:Y(name)" -> (_ => NodeIndexScan("b", label("Y"), Seq(prop("name", getValue)), args, indexOrder)),
-    (getValue, args, indexOrder) => "b:Y(name, dogs)" -> (_ => NodeIndexScan("b", label("Y"), Seq(prop("name", getValue, 0), prop("dogs", getValue, 1)), args, indexOrder))
-  ) //TODO ends with and contains for composite
+    (getValue, args, indexOrder) => "b:Y(name, dogs)" -> (_ => NodeIndexScan("b", label("Y"), Seq(prop("name", getValue, 0), prop("dogs", getValue, 1)), args, indexOrder)),
+    (getValue, args, indexOrder) => "b:Y(name, dogs = 3)" -> (_ => NodeIndexScan("b", label("Y"), Seq(prop("name", getValue, 0), prop("dogs", getValue, 1)), args, indexOrder))
+  )
 
   for {
     getValue <- List(CanGetValue, GetValue, DoNotGetValue)
