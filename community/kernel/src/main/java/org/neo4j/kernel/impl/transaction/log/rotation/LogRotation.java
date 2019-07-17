@@ -40,7 +40,7 @@ public interface LogRotation
         }
 
         @Override
-        public void rotateLogFile()
+        public void rotateLogFile( LogAppendEvent logAppendEvent )
         {
         }
     };
@@ -56,5 +56,5 @@ public interface LogRotation
      *
      * @throws IOException
      */
-    void rotateLogFile() throws IOException;
+    void rotateLogFile( LogAppendEvent logAppendEvent ) throws IOException;
 }

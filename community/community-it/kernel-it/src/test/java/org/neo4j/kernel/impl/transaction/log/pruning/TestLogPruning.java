@@ -42,6 +42,7 @@ import org.neo4j.kernel.impl.transaction.log.checkpoint.TriggerInfo;
 import org.neo4j.kernel.impl.transaction.log.entry.VersionAwareLogEntryReader;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
 import org.neo4j.kernel.impl.transaction.log.rotation.LogRotation;
+import org.neo4j.kernel.impl.transaction.tracing.LogAppendEvent;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 
@@ -162,7 +163,7 @@ class TestLogPruning
             doTransaction();
         }
         // and the log gets rotated, which means we have a new one with no txs in it
-        db.getDependencyResolver().resolveDependency( LogRotation.class ).rotateLogFile();
+        db.getDependencyResolver().resolveDependency( LogRotation.class ).rotateLogFile( LogAppendEvent.NULL );
         /*
          * if we hadn't rotated after the txs went through, we would need to change the assertion to be at least 1 tx
          * instead of exactly one.
@@ -191,7 +192,7 @@ class TestLogPruning
     {
         if ( ++performedTransactions >= rotateEveryNTransactions )
         {
-            db.getDependencyResolver().resolveDependency( LogRotation.class ).rotateLogFile();
+            db.getDependencyResolver().resolveDependency( LogRotation.class ).rotateLogFile( LogAppendEvent.NULL );
             performedTransactions = 0;
         }
 

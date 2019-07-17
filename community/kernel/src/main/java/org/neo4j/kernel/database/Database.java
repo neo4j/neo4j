@@ -105,7 +105,6 @@ import org.neo4j.kernel.impl.transaction.log.TransactionMetadataCache;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointScheduler;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointThreshold;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointerImpl;
-import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointerMonitor;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckpointerLifecycle;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.StoreCopyCheckPointMutex;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReader;
@@ -585,7 +584,7 @@ public class Database extends LifecycleAdapter
 
         final CheckPointerImpl checkPointer =
                 new CheckPointerImpl( transactionIdStore, threshold, forceOperation, logPruning, appender, databaseHealth, logProvider, databaseTracer,
-                        ioLimiter, storeCopyCheckPointMutex, monitors.newMonitor( CheckPointerMonitor.class ) );
+                        ioLimiter, storeCopyCheckPointMutex );
 
         long recurringPeriod = threshold.checkFrequencyMillis();
         CheckPointScheduler checkPointScheduler = new CheckPointScheduler( checkPointer, ioLimiter, scheduler,

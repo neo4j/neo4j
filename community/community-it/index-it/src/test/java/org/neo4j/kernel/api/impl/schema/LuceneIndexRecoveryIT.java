@@ -30,6 +30,7 @@ import java.util.Iterator;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
+import org.neo4j.common.DependencyResolver;
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
@@ -47,6 +48,7 @@ import org.neo4j.kernel.impl.index.schema.AbstractIndexProviderFactory;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointer;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.SimpleTriggerInfo;
 import org.neo4j.kernel.impl.transaction.log.rotation.LogRotation;
+import org.neo4j.kernel.impl.transaction.tracing.LogAppendEvent;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.recovery.RecoveryExtension;
@@ -248,9 +250,9 @@ class LuceneIndexRecoveryIT
 
     private void rotateLogsAndCheckPoint() throws IOException
     {
-        db.getDependencyResolver().resolveDependency( LogRotation.class ).rotateLogFile();
-        db.getDependencyResolver().resolveDependency( CheckPointer.class ).forceCheckPoint(
-                new SimpleTriggerInfo( "test" ) );
+        DependencyResolver resolver = db.getDependencyResolver();
+        resolver.resolveDependency( LogRotation.class ).rotateLogFile( LogAppendEvent.NULL );
+        resolver.resolveDependency( CheckPointer.class ).forceCheckPoint( new SimpleTriggerInfo( "test" ) );
     }
 
     private IndexDefinition createIndex( Label label )

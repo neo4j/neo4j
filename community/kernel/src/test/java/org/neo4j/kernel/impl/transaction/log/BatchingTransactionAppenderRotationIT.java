@@ -185,7 +185,7 @@ class BatchingTransactionAppenderRotationIT
             {
                 try
                 {
-                    logRotation.rotateLogFile();
+                    logRotation.rotateLogFile( LogAppendEvent.NULL );
                 }
                 catch ( IOException e )
                 {

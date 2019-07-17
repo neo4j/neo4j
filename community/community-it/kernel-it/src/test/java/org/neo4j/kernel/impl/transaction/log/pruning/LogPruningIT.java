@@ -33,6 +33,7 @@ import org.neo4j.kernel.impl.transaction.log.checkpoint.SimpleTriggerInfo;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
 import org.neo4j.kernel.impl.transaction.log.files.LogFilesBuilder;
 import org.neo4j.kernel.impl.transaction.log.rotation.LogRotation;
+import org.neo4j.kernel.impl.transaction.tracing.LogAppendEvent;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.extension.DbmsExtension;
 import org.neo4j.test.extension.Inject;
@@ -90,13 +91,13 @@ class LogPruningIT
             db.createNode();
             tx.success();
         }
-        logRotation.rotateLogFile();
+        logRotation.rotateLogFile( LogAppendEvent.NULL );
         try ( Transaction tx = db.beginTx() )
         {
             db.createNode();
             tx.success();
         }
-        logRotation.rotateLogFile();
+        logRotation.rotateLogFile( LogAppendEvent.NULL );
         try ( Transaction tx = db.beginTx() )
         {
             db.createNode();

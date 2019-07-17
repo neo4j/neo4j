@@ -43,6 +43,7 @@ import org.neo4j.internal.recordstorage.Command;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointer;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.SimpleTriggerInfo;
 import org.neo4j.kernel.impl.transaction.log.rotation.LogRotation;
+import org.neo4j.kernel.impl.transaction.tracing.LogAppendEvent;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.Inject;
@@ -167,7 +168,7 @@ class PartialTransactionFailureIT
                 x.createRelationshipTo( y, RelationshipType.withName( "r" ) );
                 tx.success();
                 latch.await();
-                db.getDependencyResolver().resolveDependency( LogRotation.class ).rotateLogFile();
+                db.getDependencyResolver().resolveDependency( LogRotation.class ).rotateLogFile( LogAppendEvent.NULL );
                 db.getDependencyResolver().resolveDependency( CheckPointer.class ).forceCheckPoint(
                         new SimpleTriggerInfo( "test" )
                 );

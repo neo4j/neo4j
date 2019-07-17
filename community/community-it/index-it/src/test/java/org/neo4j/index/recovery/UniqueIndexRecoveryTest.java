@@ -30,6 +30,7 @@ import java.io.File;
 import java.io.IOException;
 import java.util.Random;
 
+import org.neo4j.common.DependencyResolver;
 import org.neo4j.configuration.GraphDatabaseSettings.SchemaIndex;
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -43,6 +44,7 @@ import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointer;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointerImpl;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.SimpleTriggerInfo;
 import org.neo4j.kernel.impl.transaction.log.rotation.LogRotation;
+import org.neo4j.kernel.impl.transaction.tracing.LogAppendEvent;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.rule.TestDirectory;
@@ -230,8 +232,9 @@ public class UniqueIndexRecoveryTest
 
     private void rotateLogAndCheckPoint() throws IOException
     {
-        db.getDependencyResolver().resolveDependency( LogRotation.class ).rotateLogFile();
-        db.getDependencyResolver().resolveDependency( CheckPointer.class ).forceCheckPoint( new SimpleTriggerInfo( "test" ) );
+        DependencyResolver resolver = db.getDependencyResolver();
+        resolver.resolveDependency( LogRotation.class ).rotateLogFile( LogAppendEvent.NULL );
+        resolver.resolveDependency( CheckPointer.class ).forceCheckPoint( new SimpleTriggerInfo( "test" ) );
     }
 
     private void flushAll() throws IOException

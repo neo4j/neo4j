@@ -64,7 +64,6 @@ import org.neo4j.kernel.impl.transaction.log.PhysicalLogicalTransactionStore;
 import org.neo4j.kernel.impl.transaction.log.ReadableClosablePositionAwareChannel;
 import org.neo4j.kernel.impl.transaction.log.TransactionMetadataCache;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointerImpl;
-import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointerMonitor;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.RecoveryThreshold;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.SimpleTriggerInfo;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.StoreCopyCheckPointMutex;
@@ -342,8 +341,7 @@ public final class Recovery
         CheckPointerImpl.ForceOperation forceOperation = new DefaultForceOperation( indexingService, labelScanStore, storageEngine );
         CheckPointerImpl checkPointer =
                 new CheckPointerImpl( transactionIdStore, RecoveryThreshold.INSTANCE, forceOperation, LogPruning.NO_PRUNING, transactionAppender,
-                        databaseHealth, logProvider, CheckPointTracer.NULL, IOLimiter.UNLIMITED, new StoreCopyCheckPointMutex(),
-                        monitors.newMonitor( CheckPointerMonitor.class ) );
+                        databaseHealth, logProvider, CheckPointTracer.NULL, IOLimiter.UNLIMITED, new StoreCopyCheckPointMutex() );
         recoveryLife.add( scheduler );
         recoveryLife.add( recoveryCleanupCollector );
         recoveryLife.add( extensions );

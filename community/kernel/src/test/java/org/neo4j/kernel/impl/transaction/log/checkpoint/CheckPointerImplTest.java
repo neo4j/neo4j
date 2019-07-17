@@ -41,8 +41,8 @@ import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointerImpl.ForceOp
 import org.neo4j.kernel.impl.transaction.log.pruning.LogPruning;
 import org.neo4j.kernel.impl.transaction.tracing.CheckPointTracer;
 import org.neo4j.kernel.impl.transaction.tracing.LogCheckPointEvent;
-import org.neo4j.monitoring.DatabaseHealth;
 import org.neo4j.logging.NullLogProvider;
+import org.neo4j.monitoring.DatabaseHealth;
 import org.neo4j.monitoring.Health;
 import org.neo4j.storageengine.api.TransactionIdStore;
 import org.neo4j.util.concurrent.BinaryLatch;
@@ -520,7 +520,7 @@ class CheckPointerImplTest
     private CheckPointerImpl checkPointer( StoreCopyCheckPointMutex mutex )
     {
         return new CheckPointerImpl( txIdStore, threshold, forceOperation, logPruning, appender, health,
-                NullLogProvider.getInstance(), tracer, limiter, mutex, CheckPointerMonitorAdapter.EMPTY );
+                NullLogProvider.getInstance(), tracer, limiter, mutex );
     }
 
     private CheckPointerImpl checkPointer()

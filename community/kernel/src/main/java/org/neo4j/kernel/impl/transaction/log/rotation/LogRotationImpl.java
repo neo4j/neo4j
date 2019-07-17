@@ -63,12 +63,7 @@ public class LogRotationImpl implements LogRotation
             {
                 if ( logFile.rotationNeeded() )
                 {
-                    try ( LogRotateEvent rotateEvent = logAppendEvent.beginLogRotate() )
-                    {
-                        long startTimeMillis = clock.millis();
-                        doRotate();
-                        rotateEvent.rotationCompleted( clock.millis() - startTimeMillis );
-                    }
+                    doRotate( logAppendEvent );
                     return true;
                 }
             }
@@ -78,24 +73,29 @@ public class LogRotationImpl implements LogRotation
 
     @VisibleForTesting
     @Override
-    public void rotateLogFile() throws IOException
+    public void rotateLogFile( LogAppendEvent logAppendEvent ) throws IOException
     {
         synchronized ( logFile )
         {
-            doRotate();
+            doRotate( logAppendEvent );
         }
     }
 
-    private void doRotate() throws IOException
+    private void doRotate( LogAppendEvent logAppendEvent ) throws IOException
     {
-        long currentVersion = logFiles.getHighestLogVersion();
-        /*
-         * In order to rotate the current log file safely we need to assert that the kernel is still
-         * at full health. In case of a panic this rotation will be aborted, which is the safest alternative.
-         */
-        databaseHealth.assertHealthy( IOException.class );
-        monitor.startRotation( currentVersion );
-        logFile.rotate();
-        monitor.finishLogRotation( currentVersion );
+        try ( LogRotateEvent rotateEvent = logAppendEvent.beginLogRotate() )
+        {
+            long currentVersion = logFiles.getHighestLogVersion();
+            /*
+             * In order to rotate the current log file safely we need to assert that the kernel is still
+             * at full health. In case of a panic this rotation will be aborted, which is the safest alternative.
+             */
+            databaseHealth.assertHealthy( IOException.class );
+            long startTimeMillis = clock.millis();
+            monitor.startRotation( currentVersion );
+            logFile.rotate();
+            rotateEvent.rotationCompleted( clock.millis() - startTimeMillis );
+            monitor.finishLogRotation( currentVersion );
+        }
     }
 }
