@@ -128,9 +128,13 @@ trait GraphDatabaseTestSupport extends CypherTestSupport with GraphIcing {
   }
 
   def tokenReader[T](f: TokenRead => T): T = {
+    f(kernelTransaction().tokenRead())
+  }
+
+  def kernelTransaction(): KernelTransaction = {
     val bridge = graph.getDependencyResolver.resolveDependency(classOf[ThreadToStatementContextBridge])
     val transaction = bridge.getKernelTransactionBoundToThisThread(true)
-    f(transaction.tokenRead())
+    transaction
   }
 
   def nodeId(n: Node) = graph.inTx {
