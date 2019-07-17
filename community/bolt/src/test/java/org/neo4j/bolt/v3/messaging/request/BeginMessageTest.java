@@ -19,20 +19,30 @@
  */
 package org.neo4j.bolt.v3.messaging.request;
 
-import org.neo4j.bolt.messaging.BoltIOException;
+import java.io.IOException;
+
+import org.neo4j.bolt.messaging.Neo4jPack.Unpacker;
+import org.neo4j.bolt.v3.messaging.decoder.BeginMessageDecoder;
 import org.neo4j.values.virtual.MapValue;
+
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
+import static org.neo4j.bolt.testing.NullResponseHandler.nullResponseHandler;
 
 class BeginMessageTest extends AbstractTransactionInitiatingMessage
 {
     @Override
-    protected TransactionInitiatingMessage createMessage() throws BoltIOException
+    protected TransactionInitiatingMessage createMessage()
     {
         return new BeginMessage();
     }
 
     @Override
-    protected TransactionInitiatingMessage createMessage( MapValue meta ) throws BoltIOException
+    protected TransactionInitiatingMessage createMessage( MapValue meta ) throws IOException
     {
-        return new BeginMessage( meta ) ;
+        var unpacker = mock( Unpacker.class );
+        when( unpacker.unpackMap() ).thenReturn( meta );
+        var decoder = new BeginMessageDecoder( nullResponseHandler() );
+        return (TransactionInitiatingMessage) decoder.decode( unpacker );
     }
 }

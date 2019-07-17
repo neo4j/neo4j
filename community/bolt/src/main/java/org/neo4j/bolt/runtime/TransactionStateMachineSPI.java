@@ -20,6 +20,7 @@
 package org.neo4j.bolt.runtime;
 
 import java.time.Duration;
+import java.util.List;
 import java.util.Map;
 
 import org.neo4j.bolt.dbapi.BoltQueryExecutor;
@@ -30,7 +31,7 @@ import org.neo4j.values.virtual.MapValue;
 
 public interface TransactionStateMachineSPI
 {
-    void awaitUpToDate( Bookmark bookmark ) throws TransactionFailureException;
+    void awaitUpToDate( List<Bookmark> bookmarks ) throws TransactionFailureException;
 
     Bookmark newestBookmark();
 

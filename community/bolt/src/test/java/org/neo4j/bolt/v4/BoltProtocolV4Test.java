@@ -27,6 +27,8 @@ import org.neo4j.bolt.runtime.BoltConnection;
 import org.neo4j.bolt.runtime.BoltStateMachineFactory;
 import org.neo4j.bolt.v2.messaging.Neo4jPackV2;
 import org.neo4j.bolt.v4.messaging.BoltRequestMessageReaderV4;
+import org.neo4j.bolt.v4.runtime.bookmarking.BookmarksParserV4;
+import org.neo4j.kernel.database.TestDatabaseIdRepository;
 import org.neo4j.logging.internal.NullLogService;
 
 import static org.hamcrest.CoreMatchers.equalTo;
@@ -36,12 +38,14 @@ import static org.mockito.Mockito.mock;
 
 class BoltProtocolV4Test
 {
+    private final BookmarksParserV4 bookmarksParser = new BookmarksParserV4( new TestDatabaseIdRepository() );
+
     @Test
     void shouldCreatePackForBoltV4() throws Throwable
     {
         BoltProtocolV4 protocolV4 =
                 new BoltProtocolV4( mock( BoltChannel.class ), ( ch, st ) -> mock( BoltConnection.class ), mock( BoltStateMachineFactory.class ),
-                        NullLogService.getInstance() );
+                        bookmarksParser, NullLogService.getInstance() );
 
         assertThat( protocolV4.createPack(), instanceOf( Neo4jPackV2.class ) );
     }
@@ -51,7 +55,7 @@ class BoltProtocolV4Test
     {
         BoltProtocolV4 protocolV4 =
                 new BoltProtocolV4( mock( BoltChannel.class ), ( ch, st ) -> mock( BoltConnection.class ), mock( BoltStateMachineFactory.class ),
-                        NullLogService.getInstance() );
+                        bookmarksParser, NullLogService.getInstance() );
 
         assertThat( protocolV4.version(), equalTo( 4L ) );
     }
@@ -61,9 +65,9 @@ class BoltProtocolV4Test
     {
         BoltProtocolV4 protocolV4 =
                 new BoltProtocolV4( mock( BoltChannel.class ), ( ch, st ) -> mock( BoltConnection.class ), mock( BoltStateMachineFactory.class ),
-                        NullLogService.getInstance() );
+                        bookmarksParser, NullLogService.getInstance() );
 
         assertThat( protocolV4.createMessageReader( mock( BoltChannel.class ), mock( Neo4jPack.class ), mock( BoltConnection.class ),
-                NullLogService.getInstance() ), instanceOf( BoltRequestMessageReaderV4.class ) );
+                bookmarksParser, NullLogService.getInstance() ), instanceOf( BoltRequestMessageReaderV4.class ) );
     }
 }

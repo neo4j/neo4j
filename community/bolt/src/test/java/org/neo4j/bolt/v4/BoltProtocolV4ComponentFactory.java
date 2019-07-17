@@ -34,6 +34,8 @@ import org.neo4j.bolt.v1.packstream.BufferedChannelOutput;
 import org.neo4j.bolt.v1.transport.integration.TransportTestUtil;
 import org.neo4j.bolt.v2.messaging.Neo4jPackV2;
 import org.neo4j.bolt.v4.messaging.BoltRequestMessageReaderV4;
+import org.neo4j.bolt.v4.runtime.bookmarking.BookmarksParserV4;
+import org.neo4j.kernel.database.TestDatabaseIdRepository;
 import org.neo4j.logging.internal.NullLogService;
 
 import static org.mockito.Mockito.mock;
@@ -57,7 +59,7 @@ public class BoltProtocolV4ComponentFactory
     public static BoltRequestMessageReader requestMessageReader( BoltStateMachine stateMachine )
     {
         return new BoltRequestMessageReaderV4( new SynchronousBoltConnection( stateMachine ), mock( BoltResponseMessageWriter.class ),
-                NullLogService.getInstance() );
+                new BookmarksParserV4( new TestDatabaseIdRepository() ), NullLogService.getInstance() );
     }
 
     public static byte[] encode( Neo4jPack neo4jPack, RequestMessage... messages ) throws IOException

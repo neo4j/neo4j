@@ -294,7 +294,7 @@ public class DatabaseManagementServiceFactory
             BoltGraphDatabaseManagementServiceSPI boltGraphDatabaseManagementServiceSPI )
     {
         return new BoltServer( boltGraphDatabaseManagementServiceSPI, platform.getJobScheduler(), platform.getConnectorPortRegister(),
-                edition.getConnectionTracker(), platform.getGlobalConfig(), platform.getGlobalClock(), platform.getGlobalMonitors(), platform.getLogService(),
-                platform.getGlobalDependencies() );
+                edition.getConnectionTracker(), platform.getDatabaseIdRepository(), platform.getGlobalConfig(), platform.getGlobalClock(),
+                platform.getGlobalMonitors(), platform.getLogService(), platform.getGlobalDependencies() );
     }
 }

@@ -20,57 +20,45 @@
 package org.neo4j.bolt.v3.messaging.request;
 
 import java.time.Duration;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
-import org.neo4j.bolt.runtime.Bookmark;
-import org.neo4j.bolt.messaging.BoltIOException;
 import org.neo4j.bolt.messaging.RequestMessage;
 import org.neo4j.bolt.runtime.AccessMode;
-import org.neo4j.bolt.v1.runtime.bookmarking.BookmarkWithPrefix;
+import org.neo4j.bolt.runtime.Bookmark;
 import org.neo4j.values.virtual.MapValue;
-import org.neo4j.values.virtual.VirtualValues;
-
-import static java.util.Objects.requireNonNull;
-import static org.neo4j.bolt.v3.messaging.request.MessageMetadataParser.parseAccessMode;
-import static org.neo4j.bolt.v3.messaging.request.MessageMetadataParser.parseTransactionMetadata;
-import static org.neo4j.bolt.v3.messaging.request.MessageMetadataParser.parseTransactionTimeout;
 
 public abstract class TransactionInitiatingMessage implements RequestMessage
 {
     private final MapValue meta;
-    private final Bookmark bookmark;
+    private final List<Bookmark> bookmarks;
     private final Duration txTimeout;
     private final AccessMode accessMode;
     private final Map<String,Object> txMetadata;
 
-    public TransactionInitiatingMessage() throws BoltIOException
+    TransactionInitiatingMessage()
     {
-        this( VirtualValues.EMPTY_MAP );
+        this( MapValue.EMPTY, List.of(), null, AccessMode.WRITE, Map.of() );
     }
 
-    public TransactionInitiatingMessage( MapValue meta ) throws BoltIOException
+    TransactionInitiatingMessage( MapValue meta, List<Bookmark> bookmarks, Duration txTimeout, AccessMode accessMode, Map<String,Object> txMetadata )
     {
-        this.meta = requireNonNull( meta );
-        this.bookmark = parseBookmark( meta );
-        this.txTimeout = parseTransactionTimeout( meta );
-        this.accessMode = parseAccessMode( meta );
-        this.txMetadata = parseTransactionMetadata( meta );
+        this.meta = meta;
+        this.bookmarks = bookmarks;
+        this.txTimeout = txTimeout;
+        this.accessMode = accessMode;
+        this.txMetadata = txMetadata;
     }
 
-    protected Bookmark parseBookmark( MapValue meta ) throws BoltIOException
+    public List<Bookmark> bookmarks()
     {
-        return BookmarkWithPrefix.fromParamsOrNull( meta );
-    }
-
-    public Bookmark bookmark()
-    {
-        return this.bookmark;
+        return bookmarks;
     }
 
     public Duration transactionTimeout()
     {
-        return this.txTimeout;
+        return txTimeout;
     }
 
     public AccessMode getAccessMode()

@@ -19,34 +19,30 @@
  */
 package org.neo4j.bolt.v4.messaging;
 
-import org.neo4j.bolt.messaging.BoltIOException;
+import java.time.Duration;
+import java.util.List;
+import java.util.Map;
+
+import org.neo4j.bolt.runtime.AccessMode;
 import org.neo4j.bolt.runtime.Bookmark;
-import org.neo4j.bolt.v4.runtime.bookmarking.BookmarkWithDatabaseId;
 import org.neo4j.values.virtual.MapValue;
 
 import static org.neo4j.bolt.v4.messaging.MessageMetadataParser.ABSENT_DB_NAME;
-import static org.neo4j.bolt.v4.messaging.MessageMetadataParser.parseDatabaseName;
 
 public class BeginMessage extends org.neo4j.bolt.v3.messaging.request.BeginMessage
 {
     private final String databaseName;
 
-    public BeginMessage() throws BoltIOException
+    public BeginMessage()
     {
-        super();
         this.databaseName = ABSENT_DB_NAME;
     }
 
-    public BeginMessage( MapValue meta ) throws BoltIOException
+    public BeginMessage( MapValue meta, List<Bookmark> bookmarks, Duration txTimeout,
+            AccessMode accessMode, Map<String,Object> txMetadata, String databaseName )
     {
-        super( meta );
-        this.databaseName = parseDatabaseName( meta );
-    }
-
-    @Override
-    protected Bookmark parseBookmark( MapValue meta ) throws BoltIOException
-    {
-        return BookmarkWithDatabaseId.fromParamsOrNull( meta );
+        super( meta, bookmarks, txTimeout, accessMode, txMetadata );
+        this.databaseName = databaseName;
     }
 
     public String databaseName()

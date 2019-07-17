@@ -20,6 +20,7 @@
 package org.neo4j.bolt.runtime;
 
 import java.time.Duration;
+import java.util.List;
 import java.util.Map;
 
 import org.neo4j.bolt.v4.messaging.ResultConsumer;
@@ -30,14 +31,14 @@ import org.neo4j.values.virtual.MapValue;
 
 public interface StatementProcessor
 {
-    void beginTransaction( Bookmark bookmark ) throws KernelException;
+    void beginTransaction( List<Bookmark> bookmarks ) throws KernelException;
 
-    void beginTransaction( Bookmark bookmark, Duration txTimeout, AccessMode accessMode, Map<String,Object> txMetadata ) throws KernelException;
+    void beginTransaction( List<Bookmark> bookmarks, Duration txTimeout, AccessMode accessMode, Map<String,Object> txMetadata ) throws KernelException;
 
     StatementMetadata run( String statement, MapValue params ) throws KernelException;
 
-    StatementMetadata run( String statement, MapValue params, Bookmark bookmark, Duration txTimeout, AccessMode accessMode, Map<String,Object> txMetaData )
-            throws KernelException;
+    StatementMetadata run( String statement, MapValue params, List<Bookmark> bookmarks, Duration txTimeout, AccessMode accessMode,
+            Map<String,Object> txMetaData ) throws KernelException;
 
     Bookmark streamResult( int statementId, ResultConsumer resultConsumer ) throws Throwable;
 
@@ -60,26 +61,26 @@ public interface StatementProcessor
     StatementProcessor EMPTY = new StatementProcessor()
     {
         @Override
-        public void beginTransaction( Bookmark bookmark ) throws KernelException
+        public void beginTransaction( List<Bookmark> bookmarks )
         {
             throw new UnsupportedOperationException( "Unable to run statements" );
         }
 
         @Override
-        public void beginTransaction( Bookmark bookmark, Duration txTimeout, AccessMode accessMode, Map<String,Object> txMetadata ) throws KernelException
+        public void beginTransaction( List<Bookmark> bookmarks, Duration txTimeout, AccessMode accessMode, Map<String,Object> txMetadata )
         {
             throw new UnsupportedOperationException( "Unable to begin a transaction" );
         }
 
         @Override
-        public StatementMetadata run( String statement, MapValue params ) throws KernelException
+        public StatementMetadata run( String statement, MapValue params )
         {
             throw new UnsupportedOperationException( "Unable to run statements" );
         }
 
         @Override
-        public StatementMetadata run( String statement, MapValue params, Bookmark bookmark, Duration txTimeout, AccessMode accessMode,
-                Map<String,Object> txMetaData ) throws KernelException
+        public StatementMetadata run( String statement, MapValue params, List<Bookmark> bookmarks, Duration txTimeout, AccessMode accessMode,
+                Map<String,Object> txMetaData )
         {
             throw new UnsupportedOperationException( "Unable to run statements" );
         }
@@ -91,19 +92,19 @@ public interface StatementProcessor
         }
 
         @Override
-        public Bookmark commitTransaction() throws KernelException
+        public Bookmark commitTransaction()
         {
             throw new UnsupportedOperationException( "Unable to commit a transaction" );
         }
 
         @Override
-        public void rollbackTransaction() throws KernelException
+        public void rollbackTransaction()
         {
             throw new UnsupportedOperationException( "Unable to rollback a transaction" );
         }
 
         @Override
-        public void reset() throws TransactionFailureException
+        public void reset()
         {
         }
 
@@ -125,7 +126,7 @@ public interface StatementProcessor
         }
 
         @Override
-        public Status validateTransaction() throws KernelException
+        public Status validateTransaction()
         {
             return null;
         }

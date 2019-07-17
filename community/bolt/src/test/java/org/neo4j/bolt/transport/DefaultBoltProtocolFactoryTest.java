@@ -34,6 +34,7 @@ import org.neo4j.bolt.testing.BoltTestUtil;
 import org.neo4j.bolt.v1.BoltProtocolV1;
 import org.neo4j.bolt.v2.BoltProtocolV2;
 import org.neo4j.bolt.v3.BoltProtocolV3;
+import org.neo4j.kernel.database.TestDatabaseIdRepository;
 import org.neo4j.logging.internal.NullLogService;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -54,7 +55,7 @@ class DefaultBoltProtocolFactoryTest
         BoltChannel channel = BoltTestUtil.newTestBoltChannel();
         BoltProtocolFactory factory =
                 new DefaultBoltProtocolFactory( mock( BoltConnectionFactory.class ), mock( BoltStateMachineFactory.class ),
-                        NullLogService.getInstance() );
+                        NullLogService.getInstance(), new TestDatabaseIdRepository() );
 
         BoltProtocol protocol = factory.create( protocolVersion, channel );
 
@@ -78,7 +79,7 @@ class DefaultBoltProtocolFactoryTest
         when( connectionFactory.newConnection( boltChannel, stateMachine ) ).thenReturn( connection );
 
         BoltProtocolFactory factory =
-                new DefaultBoltProtocolFactory( connectionFactory, stateMachineFactory, NullLogService.getInstance() );
+                new DefaultBoltProtocolFactory( connectionFactory, stateMachineFactory, NullLogService.getInstance(), new TestDatabaseIdRepository() );
 
         BoltProtocol protocol = factory.create( protocolVersion, boltChannel );
 

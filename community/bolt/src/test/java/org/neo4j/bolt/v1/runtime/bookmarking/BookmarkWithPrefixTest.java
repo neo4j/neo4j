@@ -21,284 +21,48 @@ package org.neo4j.bolt.v1.runtime.bookmarking;
 
 import org.junit.jupiter.api.Test;
 
-import org.neo4j.kernel.impl.util.ValueUtils;
-import org.neo4j.values.AnyValue;
-import org.neo4j.values.virtual.MapValue;
-import org.neo4j.values.virtual.MapValueBuilder;
-import org.neo4j.values.virtual.VirtualValues;
+import org.neo4j.bolt.runtime.BoltResponseHandler;
 
-import static java.util.Arrays.asList;
-import static java.util.Collections.emptyList;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.neo4j.values.storable.Values.stringValue;
 
 class BookmarkWithPrefixTest
 {
     @Test
-    void shouldFormatAndParseSingleBookmarkContainingTransactionId() throws Exception
+    void shouldHaveTransactionId()
     {
-        // given
-        long txId = 1234;
-        MapValue params = singletonMap( "bookmark", new BookmarkWithPrefix( txId ).toString() );
+        var bookmark = new BookmarkWithPrefix( 42 );
 
-        // when
-        BookmarkWithPrefix bookmark = BookmarkWithPrefix.fromParamsOrNull( params );
-
-        // then
-        assertEquals( txId, bookmark.txId() );
+        assertEquals( 42, bookmark.txId() );
     }
 
     @Test
-    void shouldFormatAndParseMultipleBookmarksContainingTransactionId() throws Exception
+    void shouldNotHaveDatabaseId()
     {
-        // given
-        long txId1 = 1234;
-        long txId2 = 12345;
-        MapValue params = singletonMap( "bookmarks",
-                asList( new BookmarkWithPrefix( txId1 ).toString(), new BookmarkWithPrefix( txId2 ).toString() )
-        );
+        var bookmark = new BookmarkWithPrefix( 42 );
 
-        // when
-        BookmarkWithPrefix bookmark = BookmarkWithPrefix.fromParamsOrNull( params );
-
-        // then
-        assertEquals( txId2, bookmark.txId() );
+        assertThrows( UnsupportedOperationException.class, bookmark::databaseId );
     }
 
     @Test
-    void shouldParseAndFormatSingleBookmarkContainingTransactionId() throws Exception
+    void shouldAttachToMetadata()
     {
-        // given
-        String expected = "neo4j:bookmark:v1:tx1234";
-        MapValue params = singletonMap( "bookmark", expected );
+        var bookmark = new BookmarkWithPrefix( 42 );
+        var responseHandler = mock( BoltResponseHandler.class );
 
-        // when
-        String actual = new BookmarkWithPrefix( BookmarkWithPrefix.fromParamsOrNull( params ).txId() ).toString();
+        bookmark.attachTo( responseHandler );
 
-        // then
-        assertEquals( expected, actual );
+        verify( responseHandler ).onMetadata( "bookmark", stringValue( "neo4j:bookmark:v1:tx42" ) );
     }
 
     @Test
-    void shouldParseAndFormatMultipleBookmarkContainingTransactionId() throws Exception
+    void shouldFormatAsString()
     {
-        // given
-        String txId1 = "neo4j:bookmark:v1:tx1234";
-        String txId2 = "neo4j:bookmark:v1:tx12345";
-        MapValue params = singletonMap( "bookmarks", asList( txId1, txId2 ) );
+        var bookmark = new BookmarkWithPrefix( 424242 );
 
-        // when
-        String actual = new BookmarkWithPrefix( BookmarkWithPrefix.fromParamsOrNull( params ).txId() ).toString();
-
-        // then
-        assertEquals( txId2, actual );
-    }
-
-    @Test
-    void shouldFailWhenParsingBadlyFormattedSingleBookmark()
-    {
-        String bookmarkString = "neo4q:markbook:v9:xt998";
-
-        BookmarkFormatException e = assertThrows( BookmarkFormatException.class,
-                () -> BookmarkWithPrefix.fromParamsOrNull( singletonMap( "bookmark", bookmarkString ) ) );
-
-        assertTrue( e.causesFailureMessage() );
-    }
-
-    @Test
-    void shouldFailWhenParsingBadlyFormattedMultipleBookmarks()
-    {
-        String bookmarkString = "neo4j:bookmark:v1:tx998";
-        String wrongBookmarkString = "neo4q:markbook:v9:xt998";
-
-        BookmarkFormatException e = assertThrows( BookmarkFormatException.class,
-                () -> BookmarkWithPrefix.fromParamsOrNull( singletonMap( "bookmarks", asList( bookmarkString, wrongBookmarkString ) ) ) );
-
-        assertTrue( e.causesFailureMessage() );
-    }
-
-    @Test
-    void shouldFailWhenNoNumberFollowsThePrefixInSingleBookmark()
-    {
-        String bookmarkString = "neo4j:bookmark:v1:tx";
-
-        BookmarkFormatException e = assertThrows( BookmarkFormatException.class,
-                () -> BookmarkWithPrefix.fromParamsOrNull( singletonMap( "bookmark", bookmarkString ) ) );
-
-        assertTrue( e.causesFailureMessage() );
-    }
-
-    @Test
-    void shouldFailWhenNoNumberFollowsThePrefixInMultipleBookmarks()
-    {
-        String bookmarkString = "neo4j:bookmark:v1:tx10";
-        String wrongBookmarkString = "neo4j:bookmark:v1:tx";
-
-        BookmarkFormatException e = assertThrows( BookmarkFormatException.class,
-                () -> BookmarkWithPrefix.fromParamsOrNull( singletonMap( "bookmarks", asList( bookmarkString, wrongBookmarkString ) ) ) );
-
-        assertTrue( e.causesFailureMessage() );
-    }
-
-    @Test
-    void shouldFailWhenSingleBookmarkHasExtraneousTrailingCharacters()
-    {
-        String bookmarkString = "neo4j:bookmark:v1:tx1234supercalifragilisticexpialidocious";
-
-        BookmarkFormatException e = assertThrows( BookmarkFormatException.class,
-                () -> BookmarkWithPrefix.fromParamsOrNull( singletonMap( "bookmark", bookmarkString ) ) );
-
-        assertTrue( e.causesFailureMessage() );
-    }
-
-    @Test
-    void shouldFailWhenMultipleBookmarksHaveExtraneousTrailingCharacters()
-    {
-        String bookmarkString = "neo4j:bookmark:v1:tx1234";
-        String wrongBookmarkString = "neo4j:bookmark:v1:tx1234supercalifragilisticexpialidocious";
-
-        BookmarkFormatException e = assertThrows( BookmarkFormatException.class,
-                () -> BookmarkWithPrefix.fromParamsOrNull( singletonMap( "bookmarks", asList( bookmarkString, wrongBookmarkString ) ) ) );
-
-        assertTrue( e.causesFailureMessage() );
-    }
-
-    @Test
-    void shouldUseMultipleBookmarksWhenGivenBothSingleAndMultiple() throws Exception
-    {
-        MapValue params = params(
-                "neo4j:bookmark:v1:tx42",
-                asList( "neo4j:bookmark:v1:tx10", "neo4j:bookmark:v1:tx99", "neo4j:bookmark:v1:tx3" ) );
-
-        BookmarkWithPrefix bookmark = BookmarkWithPrefix.fromParamsOrNull( params );
-
-        assertEquals( 99, bookmark.txId() );
-    }
-
-    @Test
-    void shouldUseMultipleBookmarksWhenGivenOnlyMultiple() throws Exception
-    {
-        MapValue params = params( null, asList( "neo4j:bookmark:v1:tx85", "neo4j:bookmark:v1:tx47",
-                "neo4j:bookmark:v1:tx15", "neo4j:bookmark:v1:tx6" ) );
-
-        BookmarkWithPrefix bookmark = BookmarkWithPrefix.fromParamsOrNull( params );
-
-        assertEquals( 85, bookmark.txId() );
-    }
-
-    @Test
-    void shouldUseSingleBookmarkWhenGivenOnlySingle() throws Exception
-    {
-        MapValue params = params( "neo4j:bookmark:v1:tx82", null );
-
-        BookmarkWithPrefix bookmark = BookmarkWithPrefix.fromParamsOrNull( params );
-
-        assertEquals( 82, bookmark.txId() );
-    }
-
-    @Test
-    void shouldUseSingleBookmarkWhenGivenBothSingleAndNullAsMultiple() throws Exception
-    {
-        MapValue params = params( "neo4j:bookmark:v1:tx58", null );
-
-        BookmarkWithPrefix bookmark = BookmarkWithPrefix.fromParamsOrNull( params );
-
-        assertEquals( 58, bookmark.txId() );
-    }
-
-    @Test
-    void shouldUseSingleBookmarkWhenGivenBothSingleAndEmptyListAsMultiple() throws Exception
-    {
-        MapValue params = params( "neo4j:bookmark:v1:tx67", emptyList() );
-
-        BookmarkWithPrefix bookmark = BookmarkWithPrefix.fromParamsOrNull( params );
-
-        assertEquals( 67, bookmark.txId() );
-    }
-
-    @Test
-    void shouldThrowWhenMultipleBookmarksIsNotAList()
-    {
-        MapValue params = params( "neo4j:bookmark:v1:tx67", new String[]{"neo4j:bookmark:v1:tx68"} );
-
-        BookmarkFormatException e = assertThrows( BookmarkFormatException.class, () -> BookmarkWithPrefix.fromParamsOrNull( params ) );
-
-        assertTrue( e.causesFailureMessage() );
-    }
-
-    @Test
-    void shouldThrowWhenMultipleBookmarksIsNotAListOfStrings()
-    {
-        MapValue params = params(
-                "neo4j:bookmark:v1:tx67",
-                asList( new String[]{"neo4j:bookmark:v1:tx50"}, new Object[]{"neo4j:bookmark:v1:tx89"} ) );
-
-        BookmarkFormatException e = assertThrows( BookmarkFormatException.class, () -> BookmarkWithPrefix.fromParamsOrNull( params ) );
-
-        assertTrue( e.causesFailureMessage() );
-    }
-
-    @Test
-    void shouldThrowWhenOneOfMultipleBookmarksIsMalformed()
-    {
-        MapValue params = params(
-                "neo4j:bookmark:v1:tx67",
-                asList( "neo4j:bookmark:v1:tx99", "neo4j:bookmark:v1:tx12", "neo4j:bookmark:www:tx99" ) );
-
-        BookmarkFormatException e = assertThrows( BookmarkFormatException.class, () -> BookmarkWithPrefix.fromParamsOrNull( params ) );
-
-        assertTrue( e.causesFailureMessage() );
-    }
-
-    @Test
-    void shouldThrowWhenSingleBookmarkIsMalformed()
-    {
-        MapValue params = params( "neo4j:strange-bookmark:v1:tx6", null );
-
-        BookmarkFormatException e = assertThrows( BookmarkFormatException.class, () -> BookmarkWithPrefix.fromParamsOrNull( params ) );
-
-        assertTrue( e.causesFailureMessage() );
-    }
-
-    @Test
-    void shouldReturnNullWhenNoBookmarks() throws Exception
-    {
-        assertNull( BookmarkWithPrefix.fromParamsOrNull( VirtualValues.EMPTY_MAP ) );
-    }
-
-    @Test
-    void shouldReturnNullWhenGivenEmptyListForMultipleBookmarks() throws Exception
-    {
-        MapValue params = params( null, emptyList() );
-        assertNull( BookmarkWithPrefix.fromParamsOrNull( params ) );
-    }
-
-    @Test
-    void shouldSkipNullsInMultipleBookmarks() throws Exception
-    {
-        MapValue params = params( null,
-                asList( "neo4j:bookmark:v1:tx3", "neo4j:bookmark:v1:tx5", null, "neo4j:bookmark:v1:tx17" ) );
-
-        BookmarkWithPrefix bookmark = BookmarkWithPrefix.fromParamsOrNull( params );
-
-        assertEquals( 17, bookmark.txId() );
-    }
-
-    private static MapValue params( String bookmark, Object bookmarks )
-    {
-        MapValueBuilder builder = new MapValueBuilder();
-        if ( bookmark != null )
-        {
-            builder.add( "bookmark", ValueUtils.of( bookmark ) );
-        }
-        builder.add( "bookmarks", ValueUtils.of( bookmarks ) );
-        return builder.build();
-    }
-
-    private static MapValue singletonMap( String key, Object value )
-    {
-        return VirtualValues.map( new String[]{key}, new AnyValue[]{ValueUtils.of( value )} );
+        assertEquals( "neo4j:bookmark:v1:tx424242", bookmark.toString() );
     }
 }

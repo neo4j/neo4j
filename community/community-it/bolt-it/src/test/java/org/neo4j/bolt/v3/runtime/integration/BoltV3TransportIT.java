@@ -25,10 +25,12 @@ import org.junit.Test;
 
 import java.io.IOException;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
 import org.neo4j.bolt.messaging.Neo4jPack;
+import org.neo4j.bolt.runtime.AccessMode;
 import org.neo4j.bolt.v1.messaging.request.DiscardAllMessage;
 import org.neo4j.bolt.v1.messaging.request.PullAllMessage;
 import org.neo4j.bolt.v1.messaging.request.ResetMessage;
@@ -381,7 +383,7 @@ public class BoltV3TransportIT extends BoltV3TransportBase
         MapValue meta = asMapValue( msgMetadata );
 
         connection.send( util.chunk(
-                new BeginMessage( meta ),
+                new BeginMessage( meta, List.of(), null, AccessMode.WRITE, txMetadata ),
                 new RunMessage( "RETURN 1" ),
                 PullAllMessage.INSTANCE ) );
 

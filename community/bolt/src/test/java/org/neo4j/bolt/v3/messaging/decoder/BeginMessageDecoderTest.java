@@ -21,7 +21,12 @@ package org.neo4j.bolt.v3.messaging.decoder;
 
 import org.junit.jupiter.api.Test;
 
+import java.time.Duration;
+import java.util.List;
+import java.util.Map;
+
 import org.neo4j.bolt.messaging.RequestMessageDecoder;
+import org.neo4j.bolt.runtime.AccessMode;
 import org.neo4j.bolt.runtime.BoltResponseHandler;
 import org.neo4j.bolt.v3.messaging.request.BeginMessage;
 import org.neo4j.values.AnyValue;
@@ -53,8 +58,10 @@ class BeginMessageDecoderTest
     @Test
     void shouldDecodeBeginMessage() throws Exception
     {
-        BeginMessage originalMessage =
-                new BeginMessage( VirtualValues.map( new String[]{"tx_metadata", "tx_timeout"}, new AnyValue[]{EMPTY, longValue( 10000 )} ) );
+        var txTimeout = Duration.ofMillis( 10000 );
+        var txMetadata = Map.<String,Object>of();
+        var meta = VirtualValues.map( new String[]{"tx_metadata", "tx_timeout"}, new AnyValue[]{EMPTY, longValue( txTimeout.toMillis() )} );
+        var originalMessage = new BeginMessage( meta, List.of(), txTimeout, AccessMode.WRITE, txMetadata );
         assertOriginalMessageEqualsToDecoded( originalMessage, decoder );
     }
 }

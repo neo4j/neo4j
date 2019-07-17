@@ -22,6 +22,7 @@ package org.neo4j.bolt.v1.runtime;
 import java.io.IOException;
 import java.time.Clock;
 import java.time.Duration;
+import java.util.List;
 import java.util.Map;
 
 import org.neo4j.bolt.BoltChannel;
@@ -29,10 +30,10 @@ import org.neo4j.bolt.dbapi.BoltGraphDatabaseServiceSPI;
 import org.neo4j.bolt.dbapi.BoltQueryExecution;
 import org.neo4j.bolt.dbapi.BoltQueryExecutor;
 import org.neo4j.bolt.dbapi.BoltTransaction;
-import org.neo4j.bolt.runtime.Bookmark;
 import org.neo4j.bolt.runtime.AccessMode;
 import org.neo4j.bolt.runtime.BoltResult;
 import org.neo4j.bolt.runtime.BoltResultHandle;
+import org.neo4j.bolt.runtime.Bookmark;
 import org.neo4j.bolt.runtime.TransactionStateMachineSPI;
 import org.neo4j.bolt.v1.runtime.bookmarking.BookmarkWithPrefix;
 import org.neo4j.cypher.CypherExecutionException;
@@ -69,9 +70,16 @@ public class TransactionStateMachineV1SPI implements TransactionStateMachineSPI
     }
 
     @Override
-    public void awaitUpToDate( Bookmark bookmark ) throws TransactionFailureException
+    public void awaitUpToDate( List<Bookmark> bookmarks ) throws TransactionFailureException
     {
-        boltGraphDatabaseServiceSPI.awaitUpToDate( bookmark.txId(), txAwaitDuration );
+        if ( !bookmarks.isEmpty() )
+        {
+            if ( bookmarks.size() != 1 )
+            {
+                throw new IllegalArgumentException( "Bolt V1 only allows a single bookmark. Received: " + bookmarks );
+            }
+            awaitUpToDate( bookmarks.get( 0 ) );
+        }
     }
 
     @Override
@@ -141,6 +149,11 @@ public class TransactionStateMachineV1SPI implements TransactionStateMachineSPI
     protected BoltResultHandle newBoltResultHandle( String statement, MapValue params, BoltQueryExecutor boltQueryExecutor )
     {
         return new BoltResultHandleV1( statement, params, boltQueryExecutor );
+    }
+
+    protected final void awaitUpToDate( Bookmark bookmark ) throws TransactionFailureException
+    {
+        boltGraphDatabaseServiceSPI.awaitUpToDate( bookmark.txId(), txAwaitDuration );
     }
 
     public class BoltResultHandleV1 implements BoltResultHandle

@@ -27,6 +27,8 @@ import org.neo4j.bolt.v1.BoltProtocolV1;
 import org.neo4j.bolt.v2.BoltProtocolV2;
 import org.neo4j.bolt.v3.BoltProtocolV3;
 import org.neo4j.bolt.v4.BoltProtocolV4;
+import org.neo4j.bolt.v4.runtime.bookmarking.BookmarksParserV4;
+import org.neo4j.kernel.database.DatabaseIdRepository;
 import org.neo4j.logging.internal.LogService;
 
 public class DefaultBoltProtocolFactory implements BoltProtocolFactory
@@ -34,13 +36,15 @@ public class DefaultBoltProtocolFactory implements BoltProtocolFactory
     private final BoltConnectionFactory connectionFactory;
     private final LogService logService;
     private final BoltStateMachineFactory stateMachineFactory;
+    private final BookmarksParserV4 bookmarksParserV4;
 
     public DefaultBoltProtocolFactory( BoltConnectionFactory connectionFactory, BoltStateMachineFactory stateMachineFactory,
-            LogService logService )
+            LogService logService, DatabaseIdRepository databaseIdRepository )
     {
         this.connectionFactory = connectionFactory;
         this.stateMachineFactory = stateMachineFactory;
         this.logService = logService;
+        this.bookmarksParserV4 = new BookmarksParserV4( databaseIdRepository );
     }
 
     @Override
@@ -60,7 +64,7 @@ public class DefaultBoltProtocolFactory implements BoltProtocolFactory
         }
         else if ( protocolVersion == BoltProtocolV4.VERSION )
         {
-            return new BoltProtocolV4( channel, connectionFactory, stateMachineFactory, logService );
+            return new BoltProtocolV4( channel, connectionFactory, stateMachineFactory, bookmarksParserV4, logService );
         }
         else
         {

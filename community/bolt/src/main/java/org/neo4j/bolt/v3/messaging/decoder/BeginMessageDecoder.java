@@ -20,21 +20,37 @@
 package org.neo4j.bolt.v3.messaging.decoder;
 
 import java.io.IOException;
+import java.time.Duration;
+import java.util.List;
+import java.util.Map;
 
+import org.neo4j.bolt.messaging.BoltIOException;
 import org.neo4j.bolt.messaging.Neo4jPack;
 import org.neo4j.bolt.messaging.RequestMessage;
 import org.neo4j.bolt.messaging.RequestMessageDecoder;
+import org.neo4j.bolt.runtime.AccessMode;
 import org.neo4j.bolt.runtime.BoltResponseHandler;
+import org.neo4j.bolt.runtime.Bookmark;
+import org.neo4j.bolt.runtime.BookmarksParser;
+import org.neo4j.bolt.v1.runtime.bookmarking.BookmarksParserV1;
 import org.neo4j.bolt.v3.messaging.request.BeginMessage;
+import org.neo4j.bolt.v3.messaging.request.MessageMetadataParser;
 import org.neo4j.values.virtual.MapValue;
 
 public class BeginMessageDecoder implements RequestMessageDecoder
 {
     private final BoltResponseHandler responseHandler;
+    private final BookmarksParser bookmarksParser;
 
     public BeginMessageDecoder( BoltResponseHandler responseHandler )
     {
+        this( responseHandler, BookmarksParserV1.INSTANCE );
+    }
+
+    protected BeginMessageDecoder( BoltResponseHandler responseHandler, BookmarksParser bookmarksParser )
+    {
         this.responseHandler = responseHandler;
+        this.bookmarksParser = bookmarksParser;
     }
 
     @Override
@@ -52,8 +68,19 @@ public class BeginMessageDecoder implements RequestMessageDecoder
     @Override
     public RequestMessage decode( Neo4jPack.Unpacker unpacker ) throws IOException
     {
-        MapValue meta = unpacker.unpackMap();
-        return new BeginMessage( meta );
+        var metadata = unpacker.unpackMap();
+        var bookmarks = bookmarksParser.parseBookmarks( metadata );
+        var txTimeout = MessageMetadataParser.parseTransactionTimeout( metadata );
+        var accessMode = MessageMetadataParser.parseAccessMode( metadata );
+        var txMetadata = MessageMetadataParser.parseTransactionMetadata( metadata );
+
+        return newBeginMessage( metadata, bookmarks, txTimeout, accessMode, txMetadata );
+    }
+
+    protected RequestMessage newBeginMessage( MapValue metadata, List<Bookmark> bookmarks, Duration txTimeout, AccessMode accessMode,
+            Map<String,Object> txMetadata ) throws BoltIOException
+    {
+        return new BeginMessage( metadata, bookmarks, txTimeout, accessMode, txMetadata );
     }
 }
 

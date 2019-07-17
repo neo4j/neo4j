@@ -19,13 +19,15 @@
  */
 package org.neo4j.bolt.v3.messaging.request;
 
+import java.time.Duration;
+import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 
-import org.neo4j.bolt.messaging.BoltIOException;
+import org.neo4j.bolt.runtime.AccessMode;
+import org.neo4j.bolt.runtime.Bookmark;
 import org.neo4j.values.virtual.MapValue;
 import org.neo4j.values.virtual.VirtualValues;
-
-import static java.util.Objects.requireNonNull;
 
 public class RunMessage extends TransactionInitiatingMessage
 {
@@ -34,21 +36,22 @@ public class RunMessage extends TransactionInitiatingMessage
     private final String statement;
     private final MapValue params;
 
-    public RunMessage( String statement ) throws BoltIOException
+    public RunMessage( String statement )
     {
         this( statement, VirtualValues.EMPTY_MAP );
     }
 
-    public RunMessage( String statement, MapValue params ) throws BoltIOException
+    public RunMessage( String statement, MapValue params )
     {
-        this( statement, params, VirtualValues.EMPTY_MAP );
+        this( VirtualValues.EMPTY_MAP, List.of(), null, AccessMode.WRITE, Map.of(), statement, params );
     }
 
-    public RunMessage( String statement, MapValue params, MapValue meta ) throws BoltIOException
+    public RunMessage( MapValue meta, List<Bookmark> bookmarks, Duration txTimeout,
+            AccessMode accessMode, Map<String,Object> txMetadata, String statement, MapValue params )
     {
-        super( meta );
-        this.statement = requireNonNull( statement );
-        this.params = requireNonNull( params );
+        super( meta, bookmarks, txTimeout, accessMode, txMetadata );
+        this.statement = statement;
+        this.params = params;
     }
 
     public String statement()

@@ -74,11 +74,10 @@ class BoltRequestMessageReaderV4Test
     @Test
     void shouldDecodeBoltV3RunAndBeginMessageAsBoltV4Message() throws Exception
     {
-        org.neo4j.bolt.v3.messaging.request.RunMessage runMessageV3 =
-                new org.neo4j.bolt.v3.messaging.request.RunMessage( "RETURN 1", EMPTY_MAP, EMPTY_MAP );
+        org.neo4j.bolt.v3.messaging.request.RunMessage runMessageV3 = new org.neo4j.bolt.v3.messaging.request.RunMessage( "RETURN 1", EMPTY_MAP );
         org.neo4j.bolt.v3.messaging.request.BeginMessage beginMessageV3 = new org.neo4j.bolt.v3.messaging.request.BeginMessage();
 
-        RunMessage runMessageV4 = new RunMessage( "RETURN 1", EMPTY_MAP, EMPTY_MAP );
+        RunMessage runMessageV4 = new RunMessage( "RETURN 1", EMPTY_MAP );
         BeginMessage beginMessageV4 = new BeginMessage();
 
         verifyBoltV3MessageIsReadAsBoltV4Message( runMessageV3, runMessageV4 );
@@ -122,7 +121,7 @@ class BoltRequestMessageReaderV4Test
         return Stream.of(
                 new PullMessage( asMapValue( singletonMap( "n",  100L ) ) ),
                 new DiscardMessage( asMapValue( singletonMap( "n", 100L ) ) ),
-                new RunMessage( "RETURN 1", EMPTY_MAP, EMPTY_MAP ),
+                new RunMessage( "RETURN 1", EMPTY_MAP ),
                 new BeginMessage(),
 
                 COMMIT_MESSAGE,

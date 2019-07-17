@@ -21,16 +21,10 @@ package org.neo4j.bolt.v1.runtime.bookmarking;
 
 import java.util.Objects;
 
-import org.neo4j.bolt.runtime.Bookmark;
 import org.neo4j.bolt.runtime.BoltResponseHandler;
-import org.neo4j.values.AnyValue;
-import org.neo4j.values.storable.TextValue;
-import org.neo4j.values.storable.Values;
-import org.neo4j.values.virtual.ListValue;
-import org.neo4j.values.virtual.MapValue;
+import org.neo4j.bolt.runtime.Bookmark;
 
 import static java.lang.String.format;
-import static org.neo4j.bolt.v4.runtime.bookmarking.BookmarkWithDatabaseId.EMPTY_BOOKMARK;
 import static org.neo4j.values.storable.Values.stringValue;
 
 /**
@@ -39,11 +33,8 @@ import static org.neo4j.values.storable.Values.stringValue;
  */
 public class BookmarkWithPrefix implements Bookmark
 {
-    private static final String BOOKMARK_KEY = "bookmark";
-    private static final String BOOKMARKS_KEY = "bookmarks";
+    static final String BOOKMARK_KEY = "bookmark";
     static final String BOOKMARK_TX_PREFIX = "neo4j:bookmark:v1:tx";
-
-    private static final Long ABSENT_BOOKMARK_ID = -1L;
 
     private final long txId;
 
@@ -52,23 +43,18 @@ public class BookmarkWithPrefix implements Bookmark
         this.txId = txId;
     }
 
-    public static BookmarkWithPrefix fromParamsOrNull( MapValue params ) throws BookmarkFormatException
-    {
-        // try to parse multiple bookmarks, if available
-        BookmarkWithPrefix bookmark = parseMultipleBookmarks( params );
-        if ( bookmark == null )
-        {
-            // fallback to parsing single bookmark, if available, for backwards compatibility reasons
-            // some older drivers can only send a single bookmark
-            return parseSingleBookmark( params );
-        }
-        return bookmark;
-    }
-
+    @Override
     public long txId()
     {
         return txId;
     }
+
+    @Override
+    public void attachTo( BoltResponseHandler state )
+    {
+        state.onMetadata( BOOKMARK_KEY, stringValue( toString() ) );
+    }
+
     @Override
     public boolean equals( Object o )
     {
@@ -94,78 +80,5 @@ public class BookmarkWithPrefix implements Bookmark
     public String toString()
     {
         return format( BOOKMARK_TX_PREFIX + "%d", txId );
-    }
-
-    private static BookmarkWithPrefix parseMultipleBookmarks( MapValue params ) throws BookmarkFormatException
-    {
-        AnyValue bookmarksObject = params.get( BOOKMARKS_KEY );
-
-        if ( bookmarksObject == Values.NO_VALUE )
-        {
-            return null;
-        }
-        else if ( bookmarksObject instanceof ListValue )
-        {
-            ListValue bookmarks = (ListValue) bookmarksObject;
-
-            long maxTxId = ABSENT_BOOKMARK_ID;
-            for ( AnyValue bookmark : bookmarks )
-            {
-                if ( bookmark != Values.NO_VALUE )
-                {
-                    long txId = txIdFrom( bookmark );
-                    if ( txId > maxTxId )
-                    {
-                        maxTxId = txId;
-                    }
-                }
-            }
-            return maxTxId == ABSENT_BOOKMARK_ID ? null : new BookmarkWithPrefix( maxTxId );
-        }
-        else
-        {
-            throw new BookmarkFormatException( bookmarksObject );
-        }
-    }
-
-    private static BookmarkWithPrefix parseSingleBookmark( MapValue params ) throws BookmarkFormatException
-    {
-        AnyValue bookmarkObject = params.get( BOOKMARK_KEY );
-        if ( bookmarkObject == Values.NO_VALUE )
-        {
-            return null;
-        }
-
-        return new BookmarkWithPrefix( txIdFrom( bookmarkObject ) );
-    }
-
-    private static long txIdFrom( AnyValue bookmark ) throws BookmarkFormatException
-    {
-        if ( !(bookmark instanceof TextValue) )
-        {
-            throw new BookmarkFormatException( bookmark );
-        }
-        String bookmarkString = ((TextValue) bookmark).stringValue();
-        if ( !bookmarkString.startsWith( BOOKMARK_TX_PREFIX ) )
-        {
-            throw new BookmarkFormatException( bookmarkString );
-        }
-
-        try
-        {
-            return Long.parseLong( bookmarkString.substring( BOOKMARK_TX_PREFIX.length() ) );
-        }
-        catch ( NumberFormatException e )
-        {
-            throw new BookmarkFormatException( bookmarkString, e );
-        }
-    }
-
-    public void attachTo( BoltResponseHandler state )
-    {
-        if ( !equals( EMPTY_BOOKMARK ) )
-        {
-            state.onMetadata( BOOKMARK_KEY, stringValue( toString() ) );
-        }
     }
 }

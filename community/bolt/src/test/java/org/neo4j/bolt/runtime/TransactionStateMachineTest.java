@@ -23,6 +23,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.InOrder;
 
+import java.util.List;
 import java.util.Optional;
 
 import org.neo4j.bolt.dbapi.BoltQueryExecutor;
@@ -30,12 +31,15 @@ import org.neo4j.bolt.dbapi.BoltTransaction;
 import org.neo4j.bolt.runtime.TransactionStateMachine.MutableTransactionState;
 import org.neo4j.bolt.runtime.TransactionStateMachine.StatementOutcome;
 import org.neo4j.bolt.v1.runtime.bookmarking.BookmarkWithPrefix;
+import org.neo4j.bolt.v1.runtime.bookmarking.BookmarksParserV1;
 import org.neo4j.bolt.v4.messaging.ResultConsumer;
 import org.neo4j.bolt.v4.runtime.bookmarking.BookmarkWithDatabaseId;
+import org.neo4j.bolt.v4.runtime.bookmarking.BookmarksParserV4;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.internal.helpers.collection.MapUtil;
 import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.kernel.api.exceptions.Status;
+import org.neo4j.kernel.database.TestDatabaseIdRepository;
 import org.neo4j.kernel.impl.query.QueryExecutionKernelException;
 import org.neo4j.kernel.impl.util.ValueUtils;
 import org.neo4j.time.FakeClock;
@@ -140,18 +144,12 @@ class TransactionStateMachineTest
     }
 
     @Test
-    void shouldNotWaitWhenNoBookmarkSupplied() throws Exception
-    {
-        stateMachine.beginTransaction( null );
-        verify( stateMachineSPI, never() ).awaitUpToDate( any( Bookmark.class ) );
-    }
-
-    @Test
     void shouldAwaitSingleBookmark() throws Exception
     {
         MapValue params = map( "bookmark", "neo4j:bookmark:v1:tx15" );
-        stateMachine.beginTransaction( BookmarkWithPrefix.fromParamsOrNull( params ) );
-        verify( stateMachineSPI ).awaitUpToDate( new BookmarkWithPrefix( 15 ) );
+        var bookmarks = BookmarksParserV1.INSTANCE.parseBookmarks( params );
+        stateMachine.beginTransaction( bookmarks );
+        verify( stateMachineSPI ).awaitUpToDate( List.of( new BookmarkWithPrefix( 15 ) ) );
     }
 
     @Test
@@ -160,16 +158,20 @@ class TransactionStateMachineTest
         MapValue params = map( "bookmarks", asList(
                 "neo4j:bookmark:v1:tx15", "neo4j:bookmark:v1:tx5", "neo4j:bookmark:v1:tx92", "neo4j:bookmark:v1:tx9" )
         );
-        stateMachine.beginTransaction( BookmarkWithPrefix.fromParamsOrNull( params ) );
-        verify( stateMachineSPI ).awaitUpToDate( new BookmarkWithPrefix( 92 ) );
+        var bookmarks = BookmarksParserV1.INSTANCE.parseBookmarks( params );
+        stateMachine.beginTransaction( bookmarks );
+        verify( stateMachineSPI ).awaitUpToDate( List.of( new BookmarkWithPrefix( 92 ) ) );
     }
 
     @Test
     void shouldAwaitMultipleNewBookmarks() throws Exception
     {
         MapValue params = map( "bookmarks", asList( "kittenDB:15", "kittenDB:5", "kittenDB:92", "kittenDB:9" ) );
-        stateMachine.beginTransaction( BookmarkWithDatabaseId.fromParamsOrNull( params ) );
-        verify( stateMachineSPI ).awaitUpToDate( new BookmarkWithDatabaseId( "kittenDB", 92 ) );
+        var databaseIdRepository = new TestDatabaseIdRepository();
+        var bookmarksParser = new BookmarksParserV4( databaseIdRepository );
+        var bookmarks = bookmarksParser.parseBookmarks( params );
+        stateMachine.beginTransaction( bookmarks );
+        verify( stateMachineSPI ).awaitUpToDate( List.of( new BookmarkWithDatabaseId( 92, databaseIdRepository.get( "kittenDB" ) ) ) );
     }
 
     @Test
@@ -179,8 +181,8 @@ class TransactionStateMachineTest
                 "bookmark", "neo4j:bookmark:v1:tx42",
                 "bookmarks", asList( "neo4j:bookmark:v1:tx47", "neo4j:bookmark:v1:tx67", "neo4j:bookmark:v1:tx45" )
         );
-        stateMachine.beginTransaction( BookmarkWithPrefix.fromParamsOrNull( params ) );
-        verify( stateMachineSPI ).awaitUpToDate( new BookmarkWithPrefix( 67 ) );
+        stateMachine.beginTransaction( BookmarksParserV1.INSTANCE.parseBookmarks( params ) );
+        verify( stateMachineSPI ).awaitUpToDate( List.of( new BookmarkWithPrefix( 67 ) ) );
     }
 
     @Test
@@ -231,7 +233,7 @@ class TransactionStateMachineTest
         TransactionStateMachine stateMachine = newTransactionStateMachine( stateMachineSPI );
 
         // We're in explicit-commit state
-        stateMachine.beginTransaction( Bookmark.EMPTY_BOOKMARK );
+        stateMachine.beginTransaction( List.of() );
 
         assertThat( stateMachine.state, is( TransactionStateMachine.State.EXPLICIT_TRANSACTION ) );
         assertNotNull( stateMachine.ctx.currentTransaction );

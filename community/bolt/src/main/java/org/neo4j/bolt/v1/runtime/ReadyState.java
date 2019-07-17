@@ -33,7 +33,7 @@ import org.neo4j.bolt.v1.messaging.request.InterruptSignal;
 import org.neo4j.bolt.v1.messaging.request.PullAllMessage;
 import org.neo4j.bolt.v1.messaging.request.ResetMessage;
 import org.neo4j.bolt.v1.messaging.request.RunMessage;
-import org.neo4j.bolt.v1.runtime.bookmarking.BookmarkWithPrefix;
+import org.neo4j.bolt.v1.runtime.bookmarking.BookmarksParserV1;
 import org.neo4j.bolt.v1.runtime.spi.BookmarkResult;
 import org.neo4j.bolt.v4.messaging.ResultConsumer;
 import org.neo4j.graphdb.security.AuthorizationExpiredException;
@@ -139,8 +139,8 @@ public class ReadyState implements BoltStateMachineState
         StatementMetadata statementMetadata = StatementMetadata.EMPTY;
         if ( isBegin( message ) )
         {
-            BookmarkWithPrefix bookmark = BookmarkWithPrefix.fromParamsOrNull( message.params() );
-            statementProcessor.beginTransaction( bookmark );
+            var bookmarks = BookmarksParserV1.INSTANCE.parseBookmarks( message.params() );
+            statementProcessor.beginTransaction( bookmarks );
             txBeginCommitRollbackResponse = BoltResult.EMPTY;
         }
         else if ( isCommit( message ) )

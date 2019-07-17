@@ -22,36 +22,37 @@ package org.neo4j.bolt.v4.runtime;
 import org.junit.jupiter.api.Test;
 
 import java.time.Duration;
+import java.util.List;
 
 import org.neo4j.bolt.BoltChannel;
 import org.neo4j.bolt.dbapi.BoltGraphDatabaseServiceSPI;
 import org.neo4j.bolt.runtime.Bookmark;
 import org.neo4j.bolt.v1.runtime.StatementProcessorReleaseManager;
 import org.neo4j.bolt.v4.runtime.bookmarking.BookmarkWithDatabaseId;
-import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.database.DatabaseId;
+import org.neo4j.kernel.database.DatabaseIdRepository;
+import org.neo4j.kernel.database.TestDatabaseIdRepository;
 import org.neo4j.time.SystemNanoClock;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.instanceOf;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-import static org.neo4j.kernel.api.exceptions.Status.Transaction.InvalidBookmarkMixture;
 
 class TransactionStateMachineV4SPITest
 {
+    private final DatabaseIdRepository databaseIdRepository = new TestDatabaseIdRepository();
+
     @Test
     void shouldCheckDatabaseIdInBookmark() throws Throwable
     {
         // Given
         var dbSpi = mock( BoltGraphDatabaseServiceSPI.class );
-        var databaseId = mock( DatabaseId.class );
-        when( databaseId.name() ).thenReturn( "molly" );
+        var databaseId = databaseIdRepository.get( "molly" );
         when( dbSpi.getDatabaseId() ).thenReturn( databaseId );
 
         var txDuration = Duration.ofMinutes( 10 );
@@ -60,10 +61,10 @@ class TransactionStateMachineV4SPITest
 
         var bookmark = mock( Bookmark.class );
         when( bookmark.txId() ).thenReturn( 42L );
-        when( bookmark.databaseId() ).thenReturn( "molly" );
+        when( bookmark.databaseId() ).thenReturn( databaseId );
 
         // When
-        spi.awaitUpToDate( bookmark );
+        spi.awaitUpToDate( List.of( bookmark ) );
 
         // Then
         verify( bookmark ).txId();
@@ -72,12 +73,11 @@ class TransactionStateMachineV4SPITest
     }
 
     @Test
-    void shouldErrorIfDatabaseIdMismatch() throws Throwable
+    void shouldDoNothingIfDatabaseIdMismatch() throws Throwable
     {
         // Given
         var dbSpi = mock( BoltGraphDatabaseServiceSPI.class );
-        var databaseId = mock( DatabaseId.class );
-        when( databaseId.name() ).thenReturn( "molly" );
+        var databaseId = databaseIdRepository.get( "molly" );
         when( dbSpi.getDatabaseId() ).thenReturn( databaseId );
 
         var txDuration = Duration.ofMinutes( 10 );
@@ -86,13 +86,12 @@ class TransactionStateMachineV4SPITest
 
         var bookmark = mock( Bookmark.class );
         when( bookmark.txId() ).thenReturn( 42L );
-        when( bookmark.databaseId() ).thenReturn( "bossie" );
+        when( bookmark.databaseId() ).thenReturn( databaseIdRepository.get( "bossie" ) );
 
         // When
-        var e = assertThrows( TransactionFailureException.class, () -> spi.awaitUpToDate( bookmark ) );
+        spi.awaitUpToDate( List.of( bookmark ) );
 
         // Then
-        assertThat( e.status(), equalTo( InvalidBookmarkMixture ) );
         verify( bookmark, never() ).txId();
         verify( bookmark ).databaseId();
         verify( dbSpi, never() ).awaitUpToDate( eq( 42L ), eq( txDuration ) );

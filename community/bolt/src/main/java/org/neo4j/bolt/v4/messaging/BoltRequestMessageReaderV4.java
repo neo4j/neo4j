@@ -27,6 +27,7 @@ import org.neo4j.bolt.messaging.BoltResponseMessageWriter;
 import org.neo4j.bolt.messaging.RequestMessageDecoder;
 import org.neo4j.bolt.runtime.BoltConnection;
 import org.neo4j.bolt.runtime.BoltResponseHandler;
+import org.neo4j.bolt.runtime.BookmarksParser;
 import org.neo4j.bolt.v1.messaging.MessageProcessingHandler;
 import org.neo4j.bolt.v1.messaging.ResultHandler;
 import org.neo4j.bolt.v1.messaging.decoder.ResetMessageDecoder;
@@ -39,25 +40,25 @@ import org.neo4j.logging.internal.LogService;
 
 public class BoltRequestMessageReaderV4 extends BoltRequestMessageReader
 {
-    public BoltRequestMessageReaderV4( BoltConnection connection, BoltResponseMessageWriter responseMessageWriter,
+    public BoltRequestMessageReaderV4( BoltConnection connection, BoltResponseMessageWriter responseMessageWriter, BookmarksParser bookmarksParser,
             LogService logService )
     {
         super( connection, newSimpleResponseHandler( responseMessageWriter, connection, logService ),
-                buildDecoders( connection, responseMessageWriter, logService ) );
+                buildDecoders( connection, responseMessageWriter, bookmarksParser, logService ) );
     }
 
     private static List<RequestMessageDecoder> buildDecoders( BoltConnection connection, BoltResponseMessageWriter responseMessageWriter,
-            LogService logService )
+            BookmarksParser bookmarksParser, LogService logService )
     {
         BoltResponseHandler resultHandler = new ResultHandler( responseMessageWriter, connection, internalLog( logService ) );
         BoltResponseHandler defaultHandler = newSimpleResponseHandler( responseMessageWriter, connection, logService );
 
         return Arrays.asList(
                 new HelloMessageDecoder( defaultHandler ),
-                new RunMessageDecoder( defaultHandler ), // New
+                new RunMessageDecoder( defaultHandler, bookmarksParser ), // New
                 new DiscardMessageDecoder( resultHandler ), // New
                 new PullMessageDecoder( resultHandler ), // New
-                new BeginMessageDecoder( defaultHandler ), // New
+                new BeginMessageDecoder( defaultHandler, bookmarksParser ), // New
                 new CommitMessageDecoder( resultHandler ),
                 new RollbackMessageDecoder( resultHandler ),
                 new ResetMessageDecoder( connection, defaultHandler ),

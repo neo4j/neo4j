@@ -21,6 +21,7 @@ package org.neo4j.bolt.v3.messaging.request;
 
 import org.junit.jupiter.api.Test;
 
+import java.io.IOException;
 import java.time.Duration;
 import java.util.Map;
 
@@ -32,7 +33,7 @@ import org.neo4j.values.virtual.MapValue;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.startsWith;
-import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.neo4j.internal.helpers.collection.MapUtil.map;
 
@@ -45,7 +46,7 @@ public abstract class AbstractTransactionInitiatingMessage
         TransactionInitiatingMessage message = createMessage();
 
         // Then
-        assertNull( message.transactionMetadata() );
+        assertEquals( Map.of(), message.transactionMetadata() );
     }
 
     @Test
@@ -152,18 +153,7 @@ public abstract class AbstractTransactionInitiatingMessage
         assertThat( beginMessage.getAccessMode(), equalTo( AccessMode.WRITE ) );
     }
 
-    @Test
-    void shouldThrowExceptionIfUnexpectedAccessModeIdentifier() throws Throwable
-    {
-        // Given
-        Map<String,Object> msgMetadata = map( "mode", "a" );
-        MapValue meta = ValueUtils.asMapValue( msgMetadata );
-        // When & Then
-        BoltIOException exception = assertThrows( BoltIOException.class, () -> new BeginMessage( meta ) );
-        assertThat( exception.getMessage(), startsWith( "Expecting access mode value to be 'r' or 'w'" ) );
-    }
+    protected abstract TransactionInitiatingMessage createMessage() throws IOException;
 
-    protected abstract TransactionInitiatingMessage createMessage() throws BoltIOException;
-
-    protected abstract TransactionInitiatingMessage createMessage( MapValue meta ) throws BoltIOException;
+    protected abstract TransactionInitiatingMessage createMessage( MapValue meta ) throws IOException;
 }

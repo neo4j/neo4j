@@ -21,18 +21,11 @@ package org.neo4j.bolt.v4.runtime.bookmarking;
 
 import java.util.Objects;
 
-import org.neo4j.bolt.runtime.Bookmark;
 import org.neo4j.bolt.runtime.BoltResponseHandler;
-import org.neo4j.internal.helpers.collection.Pair;
-import org.neo4j.values.AnyValue;
-import org.neo4j.values.storable.TextValue;
-import org.neo4j.values.storable.Values;
-import org.neo4j.values.virtual.ListValue;
-import org.neo4j.values.virtual.MapValue;
+import org.neo4j.bolt.runtime.Bookmark;
+import org.neo4j.kernel.database.DatabaseId;
 
 import static java.lang.String.format;
-import static org.neo4j.bolt.v4.runtime.bookmarking.BookmarkParsingException.newInvalidBookmarkError;
-import static org.neo4j.bolt.v4.runtime.bookmarking.BookmarkParsingException.newInvalidBookmarkMixtureError;
 import static org.neo4j.values.storable.Values.stringValue;
 
 /**
@@ -41,22 +34,14 @@ import static org.neo4j.values.storable.Values.stringValue;
 public class BookmarkWithDatabaseId implements Bookmark
 {
     private static final String BOOKMARK_KEY = "bookmark"; // used in response messages
-    private static final String BOOKMARKS_KEY = "bookmarks"; // used in request messages
-
-    private static final long ABSENT_BOOKMARK_ID = -1L;
 
     private final long txId;
-    private final String dbId; // this is the string representation of database uuid.
+    private final DatabaseId databaseId;
 
-    public BookmarkWithDatabaseId( String dbId, long txId )
+    public BookmarkWithDatabaseId( long txId, DatabaseId databaseId )
     {
-        this.dbId = dbId;
         this.txId = txId;
-    }
-
-    public static BookmarkWithDatabaseId fromParamsOrNull( MapValue params ) throws BookmarkParsingException
-    {
-        return parseMultipleBookmarks( params );
+        this.databaseId = databaseId;
     }
 
     @Override
@@ -66,9 +51,15 @@ public class BookmarkWithDatabaseId implements Bookmark
     }
 
     @Override
-    public String databaseId()
+    public DatabaseId databaseId()
     {
-        return dbId;
+        return databaseId;
+    }
+
+    @Override
+    public void attachTo( BoltResponseHandler state )
+    {
+        state.onMetadata( BOOKMARK_KEY, stringValue( toString() ) );
     }
 
     @Override
@@ -82,103 +73,19 @@ public class BookmarkWithDatabaseId implements Bookmark
         {
             return false;
         }
-        var bookmark = (BookmarkWithDatabaseId) o;
-        return txId == bookmark.txId && Objects.equals( dbId, bookmark.dbId );
+        var that = (BookmarkWithDatabaseId) o;
+        return txId == that.txId && Objects.equals( databaseId, that.databaseId );
     }
 
     @Override
     public int hashCode()
     {
-        return Objects.hash( dbId, txId );
+        return Objects.hash( txId, databaseId );
     }
 
     @Override
     public String toString()
     {
-        return format( "%s:%d", dbId, txId );
-    }
-
-    private static BookmarkWithDatabaseId parseMultipleBookmarks( MapValue params ) throws BookmarkParsingException
-    {
-        var bookmarksObject = params.get( BOOKMARKS_KEY );
-
-        if ( bookmarksObject == Values.NO_VALUE )
-        {
-            return null;
-        }
-        else if ( bookmarksObject instanceof ListValue )
-        {
-            var bookmarks = (ListValue) bookmarksObject;
-
-            String dbId = null;
-            var maxTxId = ABSENT_BOOKMARK_ID;
-
-            for ( var bookmark : bookmarks )
-            {
-                if ( bookmark != Values.NO_VALUE )
-                {
-                    var pair = dbIdAndTxIdFrom( bookmark );
-
-                    if ( dbId == null )
-                    {
-                        dbId = pair.first();
-                    }
-                    else
-                    {
-                        assertSameDbId( dbId, pair.first(), bookmarks );
-                    }
-
-                    if ( pair.other() > maxTxId )
-                    {
-                        maxTxId = pair.other();
-                    }
-                }
-            }
-            return maxTxId == ABSENT_BOOKMARK_ID ? null : new BookmarkWithDatabaseId( dbId, maxTxId );
-        }
-        else
-        {
-            throw newInvalidBookmarkError( bookmarksObject );
-        }
-    }
-
-    private static void assertSameDbId( String id1, String id2, ListValue bookmarks ) throws BookmarkParsingException
-    {
-        if ( !id1.equals( id2 ) )
-        {
-            throw newInvalidBookmarkMixtureError( bookmarks );
-        }
-    }
-
-    private static Pair<String,Long> dbIdAndTxIdFrom( AnyValue bookmark ) throws BookmarkParsingException
-    {
-        if ( !(bookmark instanceof TextValue) )
-        {
-            throw newInvalidBookmarkError( bookmark );
-        }
-        var bookmarkString = ((TextValue) bookmark).stringValue();
-        var split = bookmarkString.split( ":" );
-        if ( split.length != 2 )
-        {
-            throw newInvalidBookmarkError( bookmarkString );
-        }
-
-        try
-        {
-            return Pair.of( split[0], Long.parseLong( split[1] ) );
-        }
-        catch ( NumberFormatException e )
-        {
-            throw newInvalidBookmarkError( bookmarkString, e );
-        }
-    }
-
-    @Override
-    public void attachTo( BoltResponseHandler state )
-    {
-        if ( !equals( EMPTY_BOOKMARK ) )
-        {
-            state.onMetadata( BOOKMARK_KEY, stringValue( toString() ) );
-        }
+        return format( "%s:%d", databaseId.name(), txId );
     }
 }

@@ -19,31 +19,12 @@
  */
 package org.neo4j.bolt.runtime;
 
-import org.neo4j.kernel.database.DatabaseId;
+import java.util.List;
 
-public interface Bookmark
+import org.neo4j.bolt.messaging.BoltIOException;
+import org.neo4j.values.virtual.MapValue;
+
+public interface BookmarksParser
 {
-    long txId();
-
-    default DatabaseId databaseId()
-    {
-        throw new UnsupportedOperationException( "Unable to get database id." );
-    }
-
-    void attachTo( BoltResponseHandler state );
-
-    Bookmark EMPTY_BOOKMARK = new Bookmark()
-    {
-        @Override
-        public long txId()
-        {
-            throw new UnsupportedOperationException( "Unable to get transaction id." );
-        }
-
-        @Override
-        public void attachTo( BoltResponseHandler state )
-        {
-            // doing nothing
-        }
-    };
+    List<Bookmark> parseBookmarks( MapValue metadata ) throws BoltIOException;
 }

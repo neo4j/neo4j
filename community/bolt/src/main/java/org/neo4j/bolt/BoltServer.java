@@ -53,6 +53,7 @@ import org.neo4j.configuration.helpers.SocketAddress;
 import org.neo4j.kernel.api.net.NetworkConnectionTracker;
 import org.neo4j.kernel.api.security.AuthManager;
 import org.neo4j.kernel.api.security.UserManagerSupplier;
+import org.neo4j.kernel.database.DatabaseIdRepository;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.logging.Log;
@@ -73,6 +74,7 @@ public class BoltServer extends LifecycleAdapter
     private final JobScheduler jobScheduler;
     private final ConnectorPortRegister connectorPortRegister;
     private final NetworkConnectionTracker connectionTracker;
+    private final DatabaseIdRepository databaseIdRepository;
     private final Config config;
     private final SystemNanoClock clock;
     private final Monitors monitors;
@@ -84,13 +86,15 @@ public class BoltServer extends LifecycleAdapter
     private final LifeSupport life = new LifeSupport();
 
     public BoltServer( BoltGraphDatabaseManagementServiceSPI boltGraphDatabaseManagementServiceSPI, JobScheduler jobScheduler,
-            ConnectorPortRegister connectorPortRegister, NetworkConnectionTracker connectionTracker, Config config, SystemNanoClock clock,
+            ConnectorPortRegister connectorPortRegister, NetworkConnectionTracker connectionTracker,
+            DatabaseIdRepository databaseIdRepository, Config config, SystemNanoClock clock,
             Monitors monitors, LogService logService, DependencyResolver dependencyResolver )
     {
         this.boltGraphDatabaseManagementServiceSPI = boltGraphDatabaseManagementServiceSPI;
         this.jobScheduler = jobScheduler;
         this.connectorPortRegister = connectorPortRegister;
         this.connectionTracker = connectionTracker;
+        this.databaseIdRepository = databaseIdRepository;
         this.config = config;
         this.clock = clock;
         this.monitors = monitors;
@@ -214,10 +218,9 @@ public class BoltServer extends LifecycleAdapter
                 dependencyResolver.resolveDependency( UserManagerSupplier.class ) );
     }
 
-    private BoltProtocolFactory createBoltProtocolFactory( BoltConnectionFactory connectionFactory,
-            BoltStateMachineFactory stateMachineFactory )
+    private BoltProtocolFactory createBoltProtocolFactory( BoltConnectionFactory connectionFactory, BoltStateMachineFactory stateMachineFactory )
     {
-        return new DefaultBoltProtocolFactory( connectionFactory, stateMachineFactory, logService );
+        return new DefaultBoltProtocolFactory( connectionFactory, stateMachineFactory, logService, databaseIdRepository );
     }
 
     private BoltStateMachineFactory createBoltFactory( Authentication authentication, SystemNanoClock clock )

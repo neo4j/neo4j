@@ -85,7 +85,7 @@ public class ReadyState extends FailSafeBoltStateMachineState
     {
         long start = context.clock().millis();
         StatementProcessor statementProcessor = getStatementProcessor( message, context );
-        StatementMetadata statementMetadata = statementProcessor.run( message.statement(), message.params(), message.bookmark(), message.transactionTimeout(),
+        StatementMetadata statementMetadata = statementProcessor.run( message.statement(), message.params(), message.bookmarks(), message.transactionTimeout(),
                 message.getAccessMode(), message.transactionMetadata() );
         long end = context.clock().millis();
 
@@ -98,7 +98,7 @@ public class ReadyState extends FailSafeBoltStateMachineState
     private BoltStateMachineState processBeginMessage( BeginMessage message, StateMachineContext context ) throws Exception
     {
         StatementProcessor statementProcessor = getStatementProcessor( message, context );
-        statementProcessor.beginTransaction( message.bookmark(), message.transactionTimeout(), message.getAccessMode(), message.transactionMetadata() );
+        statementProcessor.beginTransaction( message.bookmarks(), message.transactionTimeout(), message.getAccessMode(), message.transactionMetadata() );
         return txReadyState;
     }
 

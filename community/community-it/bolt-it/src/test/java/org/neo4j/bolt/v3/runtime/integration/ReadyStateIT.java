@@ -139,7 +139,7 @@ class ReadyStateIT extends BoltStateMachineStateTestBase
         // When
         BoltResponseRecorder recorder = new BoltResponseRecorder();
         BeginMessage beginMessage = mock( BeginMessage.class );
-        when( beginMessage.bookmark() ).thenThrow( new RuntimeException( "Fail" ) );
+        when( beginMessage.bookmarks() ).thenThrow( new RuntimeException( "Fail" ) );
         machine.process( beginMessage, recorder );
 
         // Then

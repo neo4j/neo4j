@@ -25,6 +25,7 @@ import org.neo4j.bolt.messaging.Neo4jPack;
 import org.neo4j.bolt.runtime.BoltConnection;
 import org.neo4j.bolt.runtime.BoltConnectionFactory;
 import org.neo4j.bolt.runtime.BoltStateMachineFactory;
+import org.neo4j.bolt.runtime.BookmarksParser;
 import org.neo4j.bolt.v1.BoltProtocolV1;
 import org.neo4j.bolt.v1.messaging.BoltResponseMessageWriterV1;
 import org.neo4j.bolt.v2.messaging.Neo4jPackV2;
@@ -56,7 +57,8 @@ public class BoltProtocolV3 extends BoltProtocolV1
     }
 
     @Override
-    protected BoltRequestMessageReader createMessageReader( BoltChannel channel, Neo4jPack neo4jPack, BoltConnection connection, LogService logging )
+    protected BoltRequestMessageReader createMessageReader( BoltChannel channel, Neo4jPack neo4jPack, BoltConnection connection,
+            BookmarksParser bookmarksParser, LogService logging )
     {
         BoltResponseMessageWriterV1 responseWriter = new BoltResponseMessageWriterV1( neo4jPack, connection.output(), logging );
         return new BoltRequestMessageReaderV3( connection, responseWriter, logging );

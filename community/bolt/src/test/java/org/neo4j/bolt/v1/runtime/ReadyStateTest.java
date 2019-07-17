@@ -193,7 +193,7 @@ class ReadyStateTest
     {
         BoltStateMachineState newState = state.process( new RunMessage( "BEGIN", EMPTY_MAP ), context );
         assertEquals( state, newState );
-        verify( statementProcessor ).beginTransaction( null );
+        verify( statementProcessor ).beginTransaction( List.of() );
     }
 
     @Test
@@ -203,7 +203,7 @@ class ReadyStateTest
 
         BoltStateMachineState newState = state.process( new RunMessage( "BEGIN", asMapValue( params ) ), context );
         assertEquals( state, newState );
-        verify( statementProcessor ).beginTransaction( new BookmarkWithPrefix( 15 ) );
+        verify( statementProcessor ).beginTransaction( List.of( new BookmarkWithPrefix( 15 ) ) );
     }
 
     @Test
@@ -214,7 +214,7 @@ class ReadyStateTest
 
         BoltStateMachineState newState = state.process( new RunMessage( "BEGIN", asMapValue( params ) ), context );
         assertEquals( state, newState );
-        verify( statementProcessor ).beginTransaction( new BookmarkWithPrefix( 92 ) );
+        verify( statementProcessor ).beginTransaction( List.of( new BookmarkWithPrefix( 92 ) ) );
     }
 
     @ParameterizedTest

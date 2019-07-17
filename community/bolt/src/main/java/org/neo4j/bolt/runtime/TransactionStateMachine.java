@@ -22,6 +22,7 @@ package org.neo4j.bolt.runtime;
 import java.time.Clock;
 import java.time.Duration;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
@@ -37,6 +38,7 @@ import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.impl.query.QueryExecutionKernelException;
 import org.neo4j.values.virtual.MapValue;
 
+import static org.apache.commons.collections.MapUtils.isEmpty;
 import static org.neo4j.bolt.runtime.Bookmark.EMPTY_BOOKMARK;
 import static org.neo4j.util.Preconditions.checkState;
 
@@ -63,18 +65,18 @@ public class TransactionStateMachine implements StatementProcessor
     }
 
     @Override
-    public void beginTransaction( Bookmark bookmark ) throws KernelException
+    public void beginTransaction( List<Bookmark> bookmarks ) throws KernelException
     {
-        beginTransaction( bookmark, null, AccessMode.WRITE, null );
+        beginTransaction( bookmarks, null, AccessMode.WRITE, Map.of() );
     }
 
     @Override
-    public void beginTransaction( Bookmark bookmark, Duration txTimeout, AccessMode accessMode, Map<String,Object> txMetadata ) throws KernelException
+    public void beginTransaction( List<Bookmark> bookmarks, Duration txTimeout, AccessMode accessMode, Map<String,Object> txMetadata ) throws KernelException
     {
         before();
         try
         {
-            state = state.beginTransaction( ctx, spi, bookmark, txTimeout, accessMode, txMetadata );
+            state = state.beginTransaction( ctx, spi, bookmarks, txTimeout, accessMode, txMetadata );
         }
         finally
         {
@@ -85,18 +87,17 @@ public class TransactionStateMachine implements StatementProcessor
     @Override
     public StatementMetadata run( String statement, MapValue params ) throws KernelException
     {
-        return run( statement, params, null, null, AccessMode.WRITE, null );
+        return run( statement, params, List.of(), null, AccessMode.WRITE, Map.of() );
     }
 
     @Override
-    public StatementMetadata run( String statement, MapValue params, Bookmark bookmark, Duration txTimeout, AccessMode accessMode,
-            Map<String,Object> txMetaData )
-            throws KernelException
+    public StatementMetadata run( String statement, MapValue params, List<Bookmark> bookmarks, Duration txTimeout, AccessMode accessMode,
+            Map<String,Object> txMetaData ) throws KernelException
     {
         before();
         try
         {
-            state = state.run( ctx, spi, statement, params, bookmark, txTimeout, accessMode, txMetaData );
+            state = state.run( ctx, spi, statement, params, bookmarks, txTimeout, accessMode, txMetaData );
 
             StatementMetadata metadata = ctx.lastStatementMetadata;
             ctx.lastStatementMetadata = null; // metadata should not be needed more than once
@@ -231,21 +232,20 @@ public class TransactionStateMachine implements StatementProcessor
         AUTO_COMMIT
                 {
                     @Override
-                    State beginTransaction( MutableTransactionState ctx, TransactionStateMachineSPI spi, Bookmark bookmark, Duration txTimeout,
+                    State beginTransaction( MutableTransactionState ctx, TransactionStateMachineSPI spi, List<Bookmark> bookmarks, Duration txTimeout,
                             AccessMode accessMode, Map<String,Object> txMetadata ) throws KernelException
                     {
-                        waitForBookmark( spi, bookmark );
-
+                        spi.awaitUpToDate( bookmarks );
                         beginTransaction( ctx, spi, txTimeout, accessMode, txMetadata );
                         return EXPLICIT_TRANSACTION;
                     }
 
                     @Override
-                    State run( MutableTransactionState ctx, TransactionStateMachineSPI spi, String statement, MapValue params, Bookmark bookmark,
+                    State run( MutableTransactionState ctx, TransactionStateMachineSPI spi, String statement, MapValue params, List<Bookmark> bookmarks,
                             Duration txTimeout, AccessMode accessMode, Map<String,Object> txMetadata )
                             throws KernelException
                     {
-                        waitForBookmark( spi, bookmark );
+                        spi.awaitUpToDate( bookmarks );
                         execute( ctx, spi, statement, params, spi.isPeriodicCommit( statement ), txTimeout, accessMode, txMetadata );
                         return AUTO_COMMIT;
                     }
@@ -364,19 +364,19 @@ public class TransactionStateMachine implements StatementProcessor
         EXPLICIT_TRANSACTION
                 {
                     @Override
-                    State beginTransaction( MutableTransactionState ctx, TransactionStateMachineSPI spi, Bookmark bookmark, Duration txTimeout,
+                    State beginTransaction( MutableTransactionState ctx, TransactionStateMachineSPI spi, List<Bookmark> bookmarks, Duration txTimeout,
                             AccessMode accessMode, Map<String,Object> txMetadata ) throws KernelException
                     {
                         throw new QueryExecutionKernelException( new InvalidSemanticsException( "Nested transactions are not supported." ) );
                     }
 
                     @Override
-                    State run( MutableTransactionState ctx, TransactionStateMachineSPI spi, String statement, MapValue params, Bookmark bookmark,
-                            Duration ignored1, AccessMode accessMode, Map<String,Object> ignored2 )
+                    State run( MutableTransactionState ctx, TransactionStateMachineSPI spi, String statement, MapValue params, List<Bookmark> bookmarks,
+                            Duration txTimeout, AccessMode accessMode, Map<String,Object> txMetadata )
                             throws KernelException
                     {
-                        checkState( ignored1 == null, "Explicit Transaction should not run with tx_timeout" );
-                        checkState( ignored2 == null, "Explicit Transaction should not run with tx_metadata" );
+                        checkState( txTimeout == null, "Explicit Transaction should not run with tx_timeout" );
+                        checkState( isEmpty( txMetadata ), "Explicit Transaction should not run with tx_metadata" );
 
                         if ( spi.isPeriodicCommit( statement ) )
                         {
@@ -434,10 +434,10 @@ public class TransactionStateMachine implements StatementProcessor
                     }
                 };
 
-        abstract State beginTransaction( MutableTransactionState ctx, TransactionStateMachineSPI spi, Bookmark bookmark, Duration txTimeout,
+        abstract State beginTransaction( MutableTransactionState ctx, TransactionStateMachineSPI spi, List<Bookmark> bookmarks, Duration txTimeout,
                 AccessMode accessMode, Map<String,Object> txMetadata ) throws KernelException;
 
-        abstract State run( MutableTransactionState ctx, TransactionStateMachineSPI spi, String statement, MapValue params, Bookmark bookmark,
+        abstract State run( MutableTransactionState ctx, TransactionStateMachineSPI spi, String statement, MapValue params, List<Bookmark> bookmarks,
                 Duration txTimeout, AccessMode accessMode, Map<String,Object> txMetadata )
                 throws KernelException;
 
@@ -603,15 +603,6 @@ public class TransactionStateMachine implements StatementProcessor
             }
         }
 
-    }
-
-    private static void waitForBookmark( TransactionStateMachineSPI spi, Bookmark bookmark )
-            throws TransactionFailureException
-    {
-        if ( bookmark != null )
-        {
-            spi.awaitUpToDate( bookmark );
-        }
     }
 
     private static Bookmark newestBookmark( TransactionStateMachineSPI spi )

@@ -44,9 +44,9 @@ import org.neo4j.bolt.v4.messaging.RunMessage;
 import org.neo4j.bolt.v4.runtime.bookmarking.BookmarkWithDatabaseId;
 import org.neo4j.internal.helpers.HostnamePort;
 import org.neo4j.kernel.database.Database;
+import org.neo4j.kernel.database.DatabaseId;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.storageengine.api.TransactionIdStore;
-import org.neo4j.values.virtual.VirtualValues;
 
 import static java.util.Arrays.asList;
 import static java.util.Collections.singletonMap;
@@ -114,7 +114,7 @@ public class BoltV4TransportIT
 
         // bookmark is expected to advance once the auto-commit transaction is committed
         var lastClosedTransactionId = getLastClosedTransactionId();
-        var expectedBookmark = new BookmarkWithDatabaseId( getDatabaseId(), lastClosedTransactionId + 1 ).toString();
+        var expectedBookmark = new BookmarkWithDatabaseId( lastClosedTransactionId + 1, getDatabaseId() ).toString();
 
         connection.send( util.chunk( new RunMessage( "CREATE ()" ), new PullMessage( asMapValue( map( "n", -1L ) ) ) ) );
 
@@ -130,9 +130,9 @@ public class BoltV4TransportIT
 
         // bookmark is expected to advance once the auto-commit transaction is committed
         var lastClosedTransactionId = getLastClosedTransactionId();
-        var expectedBookmark = new BookmarkWithDatabaseId( getDatabaseId(), lastClosedTransactionId + 1 ).toString();
+        var expectedBookmark = new BookmarkWithDatabaseId( lastClosedTransactionId + 1, getDatabaseId() ).toString();
 
-        connection.send( util.chunk( new BeginMessage( VirtualValues.EMPTY_MAP ) ) );
+        connection.send( util.chunk( new BeginMessage() ) );
         assertThat( connection, util.eventuallyReceives( msgSuccess() ) );
 
         connection.send( util.chunk( new RunMessage( "CREATE ()" ), new PullMessage( asMapValue( map( "n", -1L ) ) ) ) );
@@ -149,7 +149,7 @@ public class BoltV4TransportIT
         negotiateBoltV4();
 
         // begin a transaction
-        connection.send( util.chunk( new BeginMessage( VirtualValues.EMPTY_MAP ) ) );
+        connection.send( util.chunk( new BeginMessage() ) );
         assertThat( connection, util.eventuallyReceives( msgSuccess() ) );
 
         // execute a query
@@ -199,7 +199,7 @@ public class BoltV4TransportIT
         negotiateBoltV4();
 
         // begin a transaction
-        connection.send( util.chunk( new BeginMessage( VirtualValues.EMPTY_MAP ) ) );
+        connection.send( util.chunk( new BeginMessage() ) );
         assertThat( connection, util.eventuallyReceives( msgSuccess() ) );
 
         // execute query #0
@@ -295,10 +295,10 @@ public class BoltV4TransportIT
         return txIdStore.getLastClosedTransactionId();
     }
 
-    private String getDatabaseId()
+    private DatabaseId getDatabaseId()
     {
         var resolver = ((GraphDatabaseAPI) server.graphDatabaseService()).getDependencyResolver();
         var database = resolver.resolveDependency( Database.class );
-        return database.getDatabaseId().name();
+        return database.getDatabaseId();
     }
 }

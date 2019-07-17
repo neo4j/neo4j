@@ -25,6 +25,7 @@ import org.neo4j.bolt.BoltChannel;
 import org.neo4j.bolt.messaging.Neo4jPack;
 import org.neo4j.bolt.runtime.BoltConnection;
 import org.neo4j.bolt.runtime.BoltStateMachineFactory;
+import org.neo4j.bolt.runtime.BookmarksParser;
 import org.neo4j.bolt.v2.messaging.Neo4jPackV2;
 import org.neo4j.bolt.v3.messaging.BoltRequestMessageReaderV3;
 import org.neo4j.logging.internal.NullLogService;
@@ -64,6 +65,6 @@ class BoltProtocolV3Test
                         NullLogService.getInstance() );
 
         assertThat( protocolV3.createMessageReader( mock( BoltChannel.class ), mock( Neo4jPack.class ), mock( BoltConnection.class ),
-                NullLogService.getInstance() ), instanceOf( BoltRequestMessageReaderV3.class ) );
+                mock( BookmarksParser.class ), NullLogService.getInstance() ), instanceOf( BoltRequestMessageReaderV3.class ) );
     }
 }

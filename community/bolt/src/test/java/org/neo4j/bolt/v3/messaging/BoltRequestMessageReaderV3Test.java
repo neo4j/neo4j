@@ -87,7 +87,7 @@ class BoltRequestMessageReaderV3Test
     {
         return Stream.of(
                 new HelloMessage( map( "user_agent", "My driver", "one", 1L, "two", 2L ) ),
-                new RunMessage( "RETURN 1", EMPTY_MAP, EMPTY_MAP ),
+                new RunMessage( "RETURN 1", EMPTY_MAP ),
                 DiscardAllMessage.INSTANCE,
                 PullAllMessage.INSTANCE,
                 new BeginMessage(),

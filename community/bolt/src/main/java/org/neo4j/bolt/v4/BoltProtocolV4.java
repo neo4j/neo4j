@@ -25,10 +25,12 @@ import org.neo4j.bolt.messaging.Neo4jPack;
 import org.neo4j.bolt.runtime.BoltConnection;
 import org.neo4j.bolt.runtime.BoltConnectionFactory;
 import org.neo4j.bolt.runtime.BoltStateMachineFactory;
+import org.neo4j.bolt.runtime.BookmarksParser;
 import org.neo4j.bolt.v1.BoltProtocolV1;
 import org.neo4j.bolt.v1.messaging.BoltResponseMessageWriterV1;
 import org.neo4j.bolt.v2.messaging.Neo4jPackV2;
 import org.neo4j.bolt.v4.messaging.BoltRequestMessageReaderV4;
+import org.neo4j.bolt.v4.runtime.bookmarking.BookmarksParserV4;
 import org.neo4j.logging.internal.LogService;
 
 /**
@@ -38,9 +40,10 @@ public class BoltProtocolV4 extends BoltProtocolV1
 {
     public static final long VERSION = 4;
 
-    public BoltProtocolV4( BoltChannel channel, BoltConnectionFactory connectionFactory, BoltStateMachineFactory stateMachineFactory, LogService logging )
+    public BoltProtocolV4( BoltChannel channel, BoltConnectionFactory connectionFactory, BoltStateMachineFactory stateMachineFactory,
+            BookmarksParserV4 bookmarksParser, LogService logging )
     {
-        super( channel, connectionFactory, stateMachineFactory, logging );
+        super( channel, connectionFactory, stateMachineFactory, bookmarksParser, logging );
     }
 
     @Override
@@ -56,9 +59,10 @@ public class BoltProtocolV4 extends BoltProtocolV1
     }
 
     @Override
-    protected BoltRequestMessageReader createMessageReader( BoltChannel channel, Neo4jPack neo4jPack, BoltConnection connection, LogService logging )
+    protected BoltRequestMessageReader createMessageReader( BoltChannel channel, Neo4jPack neo4jPack, BoltConnection connection,
+            BookmarksParser bookmarksParser, LogService logging )
     {
         BoltResponseMessageWriterV1 responseWriter = new BoltResponseMessageWriterV1( neo4jPack, connection.output(), logging );
-        return new BoltRequestMessageReaderV4( connection, responseWriter, logging );
+        return new BoltRequestMessageReaderV4( connection, responseWriter, bookmarksParser, logging );
     }
 }

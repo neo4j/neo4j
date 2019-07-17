@@ -25,7 +25,6 @@ import org.junit.jupiter.params.provider.MethodSource;
 
 import java.util.stream.Stream;
 
-import org.neo4j.bolt.messaging.BoltIOException;
 import org.neo4j.bolt.messaging.RequestMessage;
 import org.neo4j.bolt.testing.BoltResponseRecorder;
 import org.neo4j.bolt.testing.RecordedBoltResponse;
@@ -100,9 +99,9 @@ class ConnectedStateIT extends BoltStateMachineStateTestBase
         assertNull( machine.state() );
     }
 
-    private static Stream<RequestMessage> illegalV3Messages() throws BoltIOException
+    private static Stream<RequestMessage> illegalV3Messages()
     {
-        return Stream.of( new RunMessage( "RETURN 1", EMPTY_PARAMS, EMPTY_PARAMS ), DiscardAllMessage.INSTANCE, PullAllMessage.INSTANCE, new BeginMessage(),
+        return Stream.of( new RunMessage( "RETURN 1", EMPTY_PARAMS ), DiscardAllMessage.INSTANCE, PullAllMessage.INSTANCE, new BeginMessage(),
                 COMMIT_MESSAGE, ROLLBACK_MESSAGE, InterruptSignal.INSTANCE, ResetMessage.INSTANCE, GOODBYE_MESSAGE );
     }
 

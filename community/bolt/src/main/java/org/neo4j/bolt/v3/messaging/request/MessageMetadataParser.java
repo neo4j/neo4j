@@ -40,7 +40,7 @@ import org.neo4j.values.virtual.MapValue;
 /**
  * The parsing methods in this class returns null if the specified key is not found in the input message metadata map.
  */
-final class MessageMetadataParser
+public final class MessageMetadataParser
 {
     private static final String TX_TIMEOUT_KEY = "tx_timeout";
     private static final String TX_META_DATA_KEY = "tx_metadata";
@@ -50,7 +50,7 @@ final class MessageMetadataParser
     {
     }
 
-    static Duration parseTransactionTimeout( MapValue meta ) throws BoltIOException
+    public static Duration parseTransactionTimeout( MapValue meta ) throws BoltIOException
     {
         AnyValue anyValue = meta.get( TX_TIMEOUT_KEY );
         if ( anyValue == Values.NO_VALUE )
@@ -67,7 +67,7 @@ final class MessageMetadataParser
         }
     }
 
-    static AccessMode parseAccessMode( MapValue meta ) throws BoltIOException
+    public static AccessMode parseAccessMode( MapValue meta ) throws BoltIOException
     {
         AnyValue anyValue = meta.get( ACCESS_MODE_KEY );
         if ( anyValue == Values.NO_VALUE )
@@ -95,7 +95,7 @@ final class MessageMetadataParser
         }
     }
 
-    static Map<String,Object> parseTransactionMetadata( MapValue meta ) throws BoltIOException
+    public static Map<String,Object> parseTransactionMetadata( MapValue meta ) throws BoltIOException
     {
         AnyValue anyValue = meta.get( TX_META_DATA_KEY );
         if ( anyValue == Values.NO_VALUE )

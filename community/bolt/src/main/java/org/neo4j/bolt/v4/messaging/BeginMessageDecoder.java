@@ -19,25 +19,31 @@
  */
 package org.neo4j.bolt.v4.messaging;
 
-import java.io.IOException;
+import java.time.Duration;
+import java.util.List;
+import java.util.Map;
 
-import org.neo4j.bolt.messaging.Neo4jPack;
+import org.neo4j.bolt.messaging.BoltIOException;
 import org.neo4j.bolt.messaging.RequestMessage;
+import org.neo4j.bolt.runtime.AccessMode;
 import org.neo4j.bolt.runtime.BoltResponseHandler;
+import org.neo4j.bolt.runtime.Bookmark;
+import org.neo4j.bolt.runtime.BookmarksParser;
 import org.neo4j.values.virtual.MapValue;
 
 public class BeginMessageDecoder extends org.neo4j.bolt.v3.messaging.decoder.BeginMessageDecoder
 {
-    public BeginMessageDecoder( BoltResponseHandler responseHandler )
+    public BeginMessageDecoder( BoltResponseHandler responseHandler, BookmarksParser bookmarksParser )
     {
-        super( responseHandler );
+        super( responseHandler, bookmarksParser );
     }
 
     @Override
-    public RequestMessage decode( Neo4jPack.Unpacker unpacker ) throws IOException
+    protected RequestMessage newBeginMessage( MapValue metadata, List<Bookmark> bookmarks, Duration txTimeout,
+            AccessMode accessMode, Map<String,Object> txMetadata ) throws BoltIOException
     {
-        MapValue meta = unpacker.unpackMap();
-        return new BeginMessage( meta ); // v4 Begin Message
+        var databaseName = MessageMetadataParser.parseDatabaseName( metadata );
+        return new BeginMessage( metadata, bookmarks, txTimeout, accessMode, txMetadata, databaseName ); // v4 Begin Message
     }
 }
 

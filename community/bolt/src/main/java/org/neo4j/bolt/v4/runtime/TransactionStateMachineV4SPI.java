@@ -21,6 +21,7 @@ package org.neo4j.bolt.v4.runtime;
 
 import java.time.Clock;
 import java.time.Duration;
+import java.util.List;
 
 import org.neo4j.bolt.BoltChannel;
 import org.neo4j.bolt.dbapi.BoltGraphDatabaseServiceSPI;
@@ -32,7 +33,6 @@ import org.neo4j.bolt.v1.runtime.StatementProcessorReleaseManager;
 import org.neo4j.bolt.v1.runtime.TransactionStateMachineV1SPI;
 import org.neo4j.bolt.v4.runtime.bookmarking.BookmarkWithDatabaseId;
 import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
-import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.database.DatabaseId;
 import org.neo4j.kernel.impl.query.QueryExecution;
 import org.neo4j.time.SystemNanoClock;
@@ -50,21 +50,20 @@ public class TransactionStateMachineV4SPI extends TransactionStateMachineV1SPI
     }
 
     @Override
-    public void awaitUpToDate( Bookmark bookmark ) throws TransactionFailureException
+    public void awaitUpToDate( List<Bookmark> bookmarks ) throws TransactionFailureException
     {
-        if ( !bookmark.databaseId().equals( databaseId.name() ) ) // TODO database uuid instead
+        var bookmark = findBookmarkForDatabase( databaseId, bookmarks );
+        if ( bookmark != null )
         {
-            throw new TransactionFailureException( Status.Transaction.InvalidBookmarkMixture,
-                    "The supplied bookmark is from a database that is different from the database of current session." );
+            awaitUpToDate( bookmark );
         }
-        super.awaitUpToDate( bookmark );
     }
 
     @Override
     public Bookmark newestBookmark()
     {
         var txId = super.newestEncounteredTxId();
-        return new BookmarkWithDatabaseId( databaseId.name(), txId ); // TODO database uuid instead
+        return new BookmarkWithDatabaseId( txId, databaseId );
     }
 
     @Override
@@ -92,5 +91,17 @@ public class TransactionStateMachineV4SPI extends TransactionStateMachineV1SPI
         {
             return new CypherAdapterStreamV4( result, subscriber, clock, databaseId.name() );
         }
+    }
+
+    private static Bookmark findBookmarkForDatabase( DatabaseId databaseId, List<Bookmark> bookmarks )
+    {
+        for ( var bookmark : bookmarks )
+        {
+            if ( bookmark.databaseId().equals( databaseId ) )
+            {
+                return bookmark;
+            }
+        }
+        return null;
     }
 }
