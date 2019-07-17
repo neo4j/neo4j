@@ -69,7 +69,7 @@ case class CommunityManagementCommandRuntime(normalExecutionEngine: ExecutionEng
     // CREATE USER foo WITH PASSWORD password
     case CreateUser(userName, Some(initialPassword), None, requirePasswordChange, suspendedOptional) => (_, _, _) =>
       if(suspendedOptional.isDefined)  // Users are always active in community
-        throw new CantCompileQueryException("'SET STATUS' is not available in community edition.")
+        throw new CantCompileQueryException(s"Failed to create the specified user '$userName': 'SET STATUS' is not available in community edition.")
 
       try {
         validatePassword(initialPassword)
@@ -85,8 +85,8 @@ case class CommunityManagementCommandRuntime(normalExecutionEngine: ExecutionEng
               Values.stringValue(authManager.createCredentialForPassword(initialPassword).serialize()),
               Values.booleanValue(requirePasswordChange))),
           QueryHandler
-            .handleNoResult(() => Some(new InvalidArgumentsException(s"Failed to create user '$userName'.")))
-            .handleError(e => new InvalidArgumentsException(s"The specified user '$userName' already exists.", e))
+            .handleNoResult(() => Some(new InvalidArgumentsException(s"Failed to create the specified user '$userName'.")))
+            .handleError(e => new InvalidArgumentsException(s"Failed to create the specified user '$userName': User already exists.", e))
         )
       } finally {
         // Clear password
@@ -94,12 +94,12 @@ case class CommunityManagementCommandRuntime(normalExecutionEngine: ExecutionEng
       }
 
     // CREATE USER foo WITH PASSWORD $password
-    case CreateUser(_, _, Some(_), _, _) =>
-      throw new IllegalStateException("Did not resolve parameters correctly.")
+    case CreateUser(userName, _, Some(_), _, _) =>
+      throw new IllegalStateException(s"Failed to create the specified user '$userName': Did not resolve parameters correctly.")
 
     // CREATE USER foo WITH PASSWORD
-    case CreateUser(_, _, _, _, _) =>
-      throw new IllegalStateException("Password not correctly supplied.")
+    case CreateUser(userName, _, _, _, _) =>
+      throw new IllegalStateException(s"Failed to create the specified user '$userName': Password not correctly supplied.")
 
     // DROP USER foo
     case DropUser(userName) => (_, _, securityContext) =>
@@ -109,7 +109,7 @@ case class CommunityManagementCommandRuntime(normalExecutionEngine: ExecutionEng
           |RETURN user""".stripMargin,
         VirtualValues.map(Array("name"), Array(Values.stringValue(userName))),
         QueryHandler
-          .handleNoResult(() => Some(new InvalidArgumentsException(s"User '$userName' does not exist.")))
+          .handleNoResult(() => Some(new InvalidArgumentsException(s"Failed to delete the specified user '$userName': User does not exist.")))
           .handleError(e => new InvalidArgumentsException(s"Failed to delete the specified user '$userName'.", e))
       )
 
@@ -129,29 +129,32 @@ case class CommunityManagementCommandRuntime(normalExecutionEngine: ExecutionEng
           Array(Values.stringValue(currentUser),
             Values.stringValue(authManager.createCredentialForPassword(validatePassword(newPassword)).serialize()))),
         QueryHandler
-          .handleError(e => new InvalidArgumentsException(s"User '$currentUser' failed to change its own password.", e))
+          .handleError(e => new InvalidArgumentsException(s"User '$currentUser' failed to alter their own password.", e))
           .handleResult((_, value) => {
             val oldCredentials = authManager.deserialize(value.asInstanceOf[TextValue].stringValue())
             if (!oldCredentials.matchesPassword(currentPassword))
-              Some(new InvalidArgumentsException("Invalid principal or credentials."))
+              Some(new InvalidArgumentsException(s"User '$currentUser' failed to alter their own password: Invalid principal or credentials."))
             else if (oldCredentials.matchesPassword(newPassword))
-              Some(new InvalidArgumentsException("Old password and new password cannot be the same."))
+              Some(new InvalidArgumentsException(s"User '$currentUser' failed to alter their own password: Old password and new password cannot be the same."))
             else
               None
           })
       )
 
     // ALTER CURRENT USER SET PASSWORD FROM currentPassword TO $newPassword
-    case SetOwnPassword(_, Some(_), _, _) =>
-      throw new IllegalStateException("Did not resolve parameters correctly.")
+    case SetOwnPassword(_, Some(_), _, _) => (_, _, securityContext) =>
+      val currentUser = securityContext.subject().username()
+      throw new IllegalStateException(s"User '$currentUser' failed to alter their own password: Did not resolve parameters correctly.")
 
     // ALTER CURRENT USER SET PASSWORD FROM $currentPassword TO newPassword
-    case SetOwnPassword(_, _, _, Some(_)) =>
-      throw new IllegalStateException("Did not resolve parameters correctly.")
+    case SetOwnPassword(_, _, _, Some(_)) => (_, _, securityContext) =>
+      val currentUser = securityContext.subject().username()
+      throw new IllegalStateException(s"User '$currentUser' failed to alter their own password: Did not resolve parameters correctly.")
 
     // ALTER CURRENT USER SET PASSWORD FROM currentPassword TO newPassword
-    case SetOwnPassword(_, _, _, _) =>
-      throw new IllegalStateException("Password not correctly supplied.")
+    case SetOwnPassword(_, _, _, _) => (_, _, securityContext) =>
+      val currentUser = securityContext.subject().username()
+      throw new IllegalStateException(s"User '$currentUser' failed to alter their own password: Password not correctly supplied.")
 
     // SHOW DEFAULT DATABASE
     case ShowDefaultDatabase() => (_, _, _) =>

@@ -196,7 +196,7 @@ class CommunityUserManagementDDLAcceptanceTest extends CommunityDDLAcceptanceTes
 
     // WHEN
     assertFailure("CREATE USER foo SET PASSWORD 'password' SET STATUS ACTIVE",
-      "'SET STATUS' is not available in community edition.")
+      "Failed to create the specified user 'foo': 'SET STATUS' is not available in community edition.")
 
     // THEN
     execute("SHOW USERS").toSet shouldBe Set(user("neo4j"))
@@ -209,7 +209,7 @@ class CommunityUserManagementDDLAcceptanceTest extends CommunityDDLAcceptanceTes
 
     // WHEN
     assertFailure("CREATE USER foo SET PASSWORD 'password' SET STATUS SUSPENDED",
-      "'SET STATUS' is not available in community edition.")
+      "Failed to create the specified user 'foo': 'SET STATUS' is not available in community edition.")
 
     // THEN
     execute("SHOW USERS").toSet shouldBe Set(user("neo4j"))
@@ -224,7 +224,7 @@ class CommunityUserManagementDDLAcceptanceTest extends CommunityDDLAcceptanceTes
       // WHEN
       execute("CREATE USER neo4j SET PASSWORD 'password'")
       // THEN
-    } should have message "The specified user 'neo4j' already exists."
+    } should have message "Failed to create the specified user 'neo4j': User already exists."
 
     // THEN
     execute("SHOW USERS").toSet shouldBe Set(user("neo4j"))
@@ -350,7 +350,7 @@ class CommunityUserManagementDDLAcceptanceTest extends CommunityDDLAcceptanceTes
       // WHEN
       execute("DROP USER foo")
       // THEN
-    } should have message "User 'foo' does not exist."
+    } should have message "Failed to delete the specified user 'foo': User does not exist."
 
     // THEN
     execute("SHOW USERS").toSet should be(Set(user("neo4j")))
@@ -360,7 +360,7 @@ class CommunityUserManagementDDLAcceptanceTest extends CommunityDDLAcceptanceTes
       // WHEN
       execute("DROP USER `:foo`")
       // THEN
-    } should have message "User ':foo' does not exist."
+    } should have message "Failed to delete the specified user ':foo': User does not exist."
 
     // THEN
     execute("SHOW USERS").toSet should be(Set(user("neo4j")))
@@ -435,7 +435,7 @@ class CommunityUserManagementDDLAcceptanceTest extends CommunityDDLAcceptanceTes
       // WHEN
       executeOnSystem("foo", "bar", "ALTER CURRENT USER SET PASSWORD FROM 'wrongPassword' TO 'baz'")
       // THEN
-    } should have message "Invalid principal or credentials."
+    } should have message "User 'foo' failed to alter their own password: Invalid principal or credentials."
 
     // THEN
     testUserLogin("foo", "bar", AuthenticationResult.SUCCESS)
@@ -464,7 +464,7 @@ class CommunityUserManagementDDLAcceptanceTest extends CommunityDDLAcceptanceTes
       // WHEN
       executeOnSystem("foo", "bar", "ALTER CURRENT USER SET PASSWORD FROM 'bar' TO $password", parameter)
       // THEN
-    } should have message "Old password and new password cannot be the same."
+    } should have message "User 'foo' failed to alter their own password: Old password and new password cannot be the same."
 
     // THEN
     testUserLogin("foo", "bar", AuthenticationResult.SUCCESS)
