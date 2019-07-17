@@ -61,5 +61,6 @@ class StdevFunction(val value: Expression, val population:Boolean)
       total += number.doubleValue()
       temp = temp :+ number.doubleValue()
     })
+    state.memoryTracker.checkMemoryRequirement(temp.size)
   }
 }

@@ -50,7 +50,9 @@ case class DistinctPipe(source: Pipe, groupingColumns: Array[GroupingCol])
         i += 1
       }
       val groupingValue = VirtualValues.list(keyNames.map(ctx.getByName): _*)
-      seen.add(groupingValue)
+      val added = seen.add(groupingValue)
+      state.memoryTracker.checkMemoryRequirement(seen.size)
+      added
     }
   }
 

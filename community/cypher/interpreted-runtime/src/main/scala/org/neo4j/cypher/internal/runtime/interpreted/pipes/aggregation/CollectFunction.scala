@@ -30,11 +30,12 @@ import scala.collection.mutable.ArrayBuffer
 class CollectFunction(value:Expression) extends AggregationFunction {
   val collection = new ArrayBuffer[AnyValue]()
 
-  override def apply(data: ExecutionContext, state:QueryState) {
+  override def apply(data: ExecutionContext, state:QueryState): Unit = {
     value(data, state) match {
       case IsNoValue() =>
       case v    => collection += v
     }
+    state.memoryTracker.checkMemoryRequirement(collection.size)
   }
 
   override def result(state: QueryState): AnyValue = VirtualValues.list(collection.toArray:_*)

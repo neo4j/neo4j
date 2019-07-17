@@ -19,14 +19,12 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
+import org.neo4j.cypher.internal.runtime._
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.PathValueBuilder
 import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates.{InCheckContainer, SingleThreadedLRUCache}
-import org.neo4j.cypher.internal.runtime.{MutableMaps, _}
 import org.neo4j.internal.kernel.api.IndexReadSession
 import org.neo4j.kernel.impl.query.QuerySubscriber
 import org.neo4j.values.AnyValue
-
-import scala.collection.mutable
 
 class QueryState(val query: QueryContext,
                  val resources: ExternalCSVResource,
@@ -35,6 +33,7 @@ class QueryState(val query: QueryContext,
                  val queryIndexes: Array[IndexReadSession],
                  val expressionVariables: Array[AnyValue],
                  val subscriber: QuerySubscriber,
+                 val memoryTracker: MemoryTracker,
                  val decorator: PipeDecorator = NullPipeDecorator,
                  val initialContext: Option[ExecutionContext] = None,
                  val cachedIn: SingleThreadedLRUCache[Any, InCheckContainer] = new SingleThreadedLRUCache(maxSize = 16),
@@ -62,11 +61,11 @@ class QueryState(val query: QueryContext,
   def getStatistics: QueryStatistics = query.getOptStatistics.getOrElse(QueryState.defaultStatistics)
 
   def withDecorator(decorator: PipeDecorator) =
-    new QueryState(query, resources, params, cursors, queryIndexes, expressionVariables, subscriber, decorator, initialContext,
+    new QueryState(query, resources, params, cursors, queryIndexes, expressionVariables, subscriber, memoryTracker, decorator, initialContext,
                    cachedIn, lenientCreateRelationship, prePopulateResults, input)
 
   def withInitialContext(initialContext: ExecutionContext) =
-    new QueryState(query, resources, params, cursors, queryIndexes, expressionVariables, subscriber, decorator, Some(initialContext),
+    new QueryState(query, resources, params, cursors, queryIndexes, expressionVariables, subscriber, memoryTracker, decorator, Some(initialContext),
                    cachedIn, lenientCreateRelationship, prePopulateResults, input)
 
   /**
@@ -78,7 +77,7 @@ class QueryState(val query: QueryContext,
     .foreach(initData => ctx.copyFrom(initData, nLongs, nRefs))
 
   def withQueryContext(query: QueryContext) =
-    new QueryState(query, resources, params, cursors, queryIndexes, expressionVariables, subscriber, decorator, initialContext,
+    new QueryState(query, resources, params, cursors, queryIndexes, expressionVariables, subscriber, memoryTracker, decorator, initialContext,
                    cachedIn, lenientCreateRelationship, prePopulateResults, input)
 
   def setExecutionContextFactory(exFactory: ExecutionContextFactory): Unit = {

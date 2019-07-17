@@ -26,7 +26,7 @@ case class EagerPipe(src: Pipe)(val id: Id = Id.INVALID_ID)
   extends PipeWithSource(src) {
 
   protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext] = {
-    val buffer = input.toIndexedSeq
+    val buffer = state.memoryTracker.memoryTrackingIterator(input).toIndexedSeq
     buffer.toIterator
   }
 }

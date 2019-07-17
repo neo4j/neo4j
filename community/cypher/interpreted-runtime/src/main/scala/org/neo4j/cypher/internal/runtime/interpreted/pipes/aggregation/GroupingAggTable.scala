@@ -56,6 +56,7 @@ class GroupingAggTable(groupingColumns: Array[GroupingCol],
       }
       functions
     })
+    state.memoryTracker.checkMemoryRequirement(resultMap.size)
     var i = 0
     while (i < aggregationFunctions.length) {
       aggregationFunctions(i)(row, state)

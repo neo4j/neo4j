@@ -22,7 +22,6 @@ package org.neo4j.cypher.internal.runtime.interpreted.pipes
 import org.neo4j.cypher.internal.runtime.{ExecutionContext, IsNoValue}
 import org.neo4j.cypher.internal.v4_0.util.CypherTypeException
 import org.neo4j.cypher.internal.v4_0.util.attribution.Id
-import org.neo4j.values.storable.Values
 import org.neo4j.values.virtual.VirtualNodeValue
 
 import scala.collection.mutable
@@ -40,7 +39,7 @@ case class NodeHashJoinPipe(nodeVariables: Set[String], left: Pipe, right: Pipe)
     if (rhsIterator.isEmpty)
       return Iterator.empty
 
-    val table = buildProbeTable(input)
+    val table = buildProbeTable(state.memoryTracker.memoryTrackingIterator(input))
 
     if (table.isEmpty)
       return Iterator.empty

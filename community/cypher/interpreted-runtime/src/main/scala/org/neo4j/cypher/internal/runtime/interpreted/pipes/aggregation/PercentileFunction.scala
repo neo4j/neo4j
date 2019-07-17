@@ -19,10 +19,10 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.pipes.aggregation
 
-import org.neo4j.cypher.internal.v4_0.util.InvalidArgumentException
 import org.neo4j.cypher.internal.runtime.ExecutionContext
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.{Expression, NumericHelper}
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
+import org.neo4j.cypher.internal.v4_0.util.InvalidArgumentException
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.Values
 
@@ -45,6 +45,7 @@ abstract class PercentileFunction(val value: Expression, val percentile: Express
       count += 1
       temp = temp :+ number
     })
+    state.memoryTracker.checkMemoryRequirement(temp.size)
   }
 }
 

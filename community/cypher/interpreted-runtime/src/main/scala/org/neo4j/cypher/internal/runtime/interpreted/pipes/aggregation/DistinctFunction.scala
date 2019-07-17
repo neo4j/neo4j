@@ -27,12 +27,12 @@ import org.neo4j.values.AnyValue
 class DistinctFunction(value: Expression, inner: AggregationFunction) extends AggregationFunction {
   private val seen = scala.collection.mutable.Set[AnyValue]()
 
-  override def apply(ctx: ExecutionContext, state: QueryState) {
+  override def apply(ctx: ExecutionContext, state: QueryState): Unit = {
     val data = value(ctx, state)
-    if (!seen.contains(data)) {
-      seen += data
+    if (!seen.add(data)) {
       inner(ctx, state)
     }
+    state.memoryTracker.checkMemoryRequirement(seen.size)
   }
 
   override def result(state: QueryState): AnyValue = inner.result(state)
