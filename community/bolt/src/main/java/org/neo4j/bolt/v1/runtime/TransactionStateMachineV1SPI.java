@@ -54,17 +54,17 @@ import static org.neo4j.internal.kernel.api.Transaction.Type.explicit;
 public class TransactionStateMachineV1SPI implements TransactionStateMachineSPI
 {
     private final BoltGraphDatabaseServiceSPI boltGraphDatabaseServiceSPI;
-    private final Duration txAwaitDuration;
+    private final Duration bookmarkAwaitDuration;
     private final Clock clock;
     private final BoltChannel boltChannel;
     private final StatementProcessorReleaseManager resourceReleaseManager;
 
-    public TransactionStateMachineV1SPI( BoltGraphDatabaseServiceSPI boltGraphDatabaseServiceSPI, BoltChannel boltChannel, Duration txAwaitDuration,
+    public TransactionStateMachineV1SPI( BoltGraphDatabaseServiceSPI boltGraphDatabaseServiceSPI, BoltChannel boltChannel, Duration bookmarkAwaitDuration,
             SystemNanoClock clock, StatementProcessorReleaseManager resourceReleaseManger )
     {
         this.boltGraphDatabaseServiceSPI = boltGraphDatabaseServiceSPI;
         this.boltChannel = boltChannel;
-        this.txAwaitDuration = txAwaitDuration;
+        this.bookmarkAwaitDuration = bookmarkAwaitDuration;
         this.clock = clock;
         this.resourceReleaseManager = resourceReleaseManger;
     }
@@ -72,14 +72,11 @@ public class TransactionStateMachineV1SPI implements TransactionStateMachineSPI
     @Override
     public void awaitUpToDate( List<Bookmark> bookmarks ) throws TransactionFailureException
     {
-        if ( !bookmarks.isEmpty() )
+        if ( !bookmarks.isEmpty() && bookmarks.size() != 1 )
         {
-            if ( bookmarks.size() != 1 )
-            {
-                throw new IllegalArgumentException( "Bolt V1 only allows a single bookmark. Received: " + bookmarks );
-            }
-            awaitUpToDate( bookmarks.get( 0 ) );
+            throw new IllegalArgumentException( "Expected zero or one bookmark. Received: " + bookmarks );
         }
+        awaitAllBookmarks( bookmarks );
     }
 
     @Override
@@ -151,9 +148,9 @@ public class TransactionStateMachineV1SPI implements TransactionStateMachineSPI
         return new BoltResultHandleV1( statement, params, boltQueryExecutor );
     }
 
-    protected final void awaitUpToDate( Bookmark bookmark ) throws TransactionFailureException
+    protected final void awaitAllBookmarks( List<Bookmark> bookmarks ) throws TransactionFailureException
     {
-        boltGraphDatabaseServiceSPI.awaitUpToDate( bookmark.txId(), txAwaitDuration );
+        boltGraphDatabaseServiceSPI.awaitUpToDate( bookmarks, bookmarkAwaitDuration );
     }
 
     public class BoltResultHandleV1 implements BoltResultHandle

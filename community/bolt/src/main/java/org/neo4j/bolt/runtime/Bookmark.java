@@ -25,10 +25,7 @@ public interface Bookmark
 {
     long txId();
 
-    default DatabaseId databaseId()
-    {
-        throw new UnsupportedOperationException( "Unable to get database id." );
-    }
+    DatabaseId databaseId();
 
     void attachTo( BoltResponseHandler state );
 
@@ -37,7 +34,13 @@ public interface Bookmark
         @Override
         public long txId()
         {
-            throw new UnsupportedOperationException( "Unable to get transaction id." );
+            throw new UnsupportedOperationException( "Empty bookmark does not have a transaction ID" );
+        }
+
+        @Override
+        public DatabaseId databaseId()
+        {
+            throw new UnsupportedOperationException( "Empty bookmark does not have a database ID" );
         }
 
         @Override

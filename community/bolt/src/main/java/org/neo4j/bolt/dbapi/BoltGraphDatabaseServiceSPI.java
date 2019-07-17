@@ -20,9 +20,11 @@
 package org.neo4j.bolt.dbapi;
 
 import java.time.Duration;
+import java.util.List;
 import java.util.Map;
 
 import org.neo4j.bolt.runtime.AccessMode;
+import org.neo4j.bolt.runtime.Bookmark;
 import org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo;
 import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.internal.kernel.api.security.LoginContext;
@@ -48,7 +50,7 @@ public interface BoltGraphDatabaseServiceSPI
 
     boolean isPeriodicCommit( String query );
 
-    void awaitUpToDate( long oldestAcceptableTxId, Duration timeout ) throws TransactionFailureException;
+    void awaitUpToDate( List<Bookmark> bookmarks, Duration perBookmarkTimeout ) throws TransactionFailureException;
 
     long newestEncounteredTxId();
 

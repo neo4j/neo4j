@@ -23,6 +23,7 @@ import java.util.Objects;
 
 import org.neo4j.bolt.runtime.BoltResponseHandler;
 import org.neo4j.bolt.runtime.Bookmark;
+import org.neo4j.kernel.database.DatabaseId;
 
 import static java.lang.String.format;
 import static org.neo4j.values.storable.Values.stringValue;
@@ -47,6 +48,12 @@ public class BookmarkWithPrefix implements Bookmark
     public long txId()
     {
         return txId;
+    }
+
+    @Override
+    public DatabaseId databaseId()
+    {
+        return null;
     }
 
     @Override

@@ -24,7 +24,7 @@ import org.junit.jupiter.api.Test;
 import org.neo4j.bolt.runtime.BoltResponseHandler;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.neo4j.values.storable.Values.stringValue;
@@ -44,7 +44,7 @@ class BookmarkWithPrefixTest
     {
         var bookmark = new BookmarkWithPrefix( 42 );
 
-        assertThrows( UnsupportedOperationException.class, bookmark::databaseId );
+        assertNull( bookmark.databaseId() );
     }
 
     @Test

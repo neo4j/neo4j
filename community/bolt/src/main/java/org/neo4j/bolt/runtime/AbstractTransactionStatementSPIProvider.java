@@ -23,8 +23,8 @@ import java.time.Duration;
 import java.util.Objects;
 
 import org.neo4j.bolt.BoltChannel;
-import org.neo4j.bolt.dbapi.BoltGraphDatabaseServiceSPI;
 import org.neo4j.bolt.dbapi.BoltGraphDatabaseManagementServiceSPI;
+import org.neo4j.bolt.dbapi.BoltGraphDatabaseServiceSPI;
 import org.neo4j.bolt.messaging.BoltIOException;
 import org.neo4j.bolt.v1.runtime.StatementProcessorReleaseManager;
 import org.neo4j.dbms.api.DatabaseNotFoundException;
@@ -37,19 +37,18 @@ import static org.neo4j.bolt.v4.messaging.MessageMetadataParser.ABSENT_DB_NAME;
 
 public abstract class AbstractTransactionStatementSPIProvider implements TransactionStateMachineSPIProvider
 {
-    final Duration txAwaitDuration;
+    final Duration bookmarkAwaitDuration;
     final SystemNanoClock clock;
     final BoltChannel boltChannel;
     final String defaultDatabaseName;
     private final BoltGraphDatabaseManagementServiceSPI boltGraphDatabaseManagementServiceSPI;
 
     AbstractTransactionStatementSPIProvider( BoltGraphDatabaseManagementServiceSPI boltGraphDatabaseManagementServiceSPI, String defaultDatabaseName,
-            BoltChannel boltChannel,
-            Duration awaitDuration, SystemNanoClock clock )
+            BoltChannel boltChannel, Duration bookmarkAwaitDuration, SystemNanoClock clock )
     {
         this.boltGraphDatabaseManagementServiceSPI = boltGraphDatabaseManagementServiceSPI;
         this.defaultDatabaseName = defaultDatabaseName;
-        this.txAwaitDuration = awaitDuration;
+        this.bookmarkAwaitDuration = bookmarkAwaitDuration;
         this.clock = clock;
         this.boltChannel = boltChannel;
     }

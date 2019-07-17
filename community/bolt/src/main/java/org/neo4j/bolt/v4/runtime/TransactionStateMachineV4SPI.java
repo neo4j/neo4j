@@ -52,11 +52,7 @@ public class TransactionStateMachineV4SPI extends TransactionStateMachineV1SPI
     @Override
     public void awaitUpToDate( List<Bookmark> bookmarks ) throws TransactionFailureException
     {
-        var bookmark = findBookmarkForDatabase( databaseId, bookmarks );
-        if ( bookmark != null )
-        {
-            awaitUpToDate( bookmark );
-        }
+        awaitAllBookmarks( bookmarks );
     }
 
     @Override
@@ -91,17 +87,5 @@ public class TransactionStateMachineV4SPI extends TransactionStateMachineV1SPI
         {
             return new CypherAdapterStreamV4( result, subscriber, clock, databaseId.name() );
         }
-    }
-
-    private static Bookmark findBookmarkForDatabase( DatabaseId databaseId, List<Bookmark> bookmarks )
-    {
-        for ( var bookmark : bookmarks )
-        {
-            if ( bookmark.databaseId().equals( databaseId ) )
-            {
-                return bookmark;
-            }
-        }
-        return null;
     }
 }

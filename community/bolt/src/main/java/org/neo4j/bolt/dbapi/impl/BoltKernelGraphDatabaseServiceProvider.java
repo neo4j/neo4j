@@ -20,6 +20,7 @@
 package org.neo4j.bolt.dbapi.impl;
 
 import java.time.Duration;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
@@ -28,13 +29,14 @@ import org.neo4j.bolt.dbapi.BoltGraphDatabaseServiceSPI;
 import org.neo4j.bolt.dbapi.BoltQueryExecutor;
 import org.neo4j.bolt.dbapi.BoltTransaction;
 import org.neo4j.bolt.runtime.AccessMode;
+import org.neo4j.bolt.runtime.Bookmark;
+import org.neo4j.bolt.txtracking.TransactionIdTracker;
 import org.neo4j.internal.kernel.api.Transaction;
 import org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo;
 import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.kernel.GraphDatabaseQueryService;
 import org.neo4j.kernel.api.KernelTransaction;
-import org.neo4j.kernel.api.txtracking.TransactionIdTracker;
 import org.neo4j.kernel.availability.AvailabilityGuard;
 import org.neo4j.kernel.availability.DatabaseAvailabilityGuard;
 import org.neo4j.kernel.database.Database;
@@ -86,9 +88,15 @@ public class BoltKernelGraphDatabaseServiceProvider implements BoltGraphDatabase
     }
 
     @Override
-    public void awaitUpToDate( long oldestAcceptableTxId, Duration timeout ) throws TransactionFailureException
+    public void awaitUpToDate( List<Bookmark> bookmarks, Duration perBookmarkTimeout ) throws TransactionFailureException
     {
-        transactionIdTracker.awaitUpToDate( oldestAcceptableTxId, timeout );
+        for ( Bookmark bookmark : bookmarks )
+        {
+            if ( bookmark.databaseId() == null || bookmark.databaseId().equals( databaseId ) )
+            {
+                transactionIdTracker.awaitUpToDate( bookmark.txId(), perBookmarkTimeout );
+            }
+        }
     }
 
     @Override

@@ -61,9 +61,7 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.anyLong;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -109,7 +107,7 @@ class TransactionStateMachineV1SPITest
 
         var resultFuture = executor.submit( () ->
         {
-            txSpi.awaitUpToDate( new BookmarkWithPrefix( lastClosedTransactionId + 42 ) );
+            txSpi.awaitUpToDate( List.of( new BookmarkWithPrefix( lastClosedTransactionId + 42 ) ) );
             return null;
         } );
 
@@ -134,7 +132,7 @@ class TransactionStateMachineV1SPITest
 
         var resultFuture = executor.submit( () ->
         {
-            txSpi.awaitUpToDate( new BookmarkWithPrefix( lastClosedTransactionId - 42 ) );
+            txSpi.awaitUpToDate( List.of( new BookmarkWithPrefix( lastClosedTransactionId - 42 ) ) );
             return null;
         } );
 
@@ -146,19 +144,17 @@ class TransactionStateMachineV1SPITest
     {
         // Given
         var dbSpi = mock( BoltGraphDatabaseServiceSPI.class );
-        var txDuration = Duration.ofMinutes( 10 );
-        var spi = new TransactionStateMachineV1SPI( dbSpi, mock( BoltChannel.class ), txDuration, mock( SystemNanoClock.class ),
+        var bookmarkAwaitDuration = Duration.ofMinutes( 10 );
+        var spi = new TransactionStateMachineV1SPI( dbSpi, mock( BoltChannel.class ), bookmarkAwaitDuration, mock( SystemNanoClock.class ),
                 mock( StatementProcessorReleaseManager.class ) );
-        var bookmark = mock( Bookmark.class );
-        when( bookmark.txId() ).thenReturn( 42L );
+
+        var bookmarks = List.<Bookmark>of( new BookmarkWithPrefix( 42 ) );
 
         // When
-        spi.awaitUpToDate( bookmark );
+        spi.awaitUpToDate( bookmarks );
 
         // Then
-        verify( bookmark ).txId();
-        verify( bookmark, never() ).databaseId();
-        verify( dbSpi ).awaitUpToDate( eq( 42L ), eq( txDuration ) );
+        verify( dbSpi ).awaitUpToDate( bookmarks, bookmarkAwaitDuration );
     }
 
     @Test

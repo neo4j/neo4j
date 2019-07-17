@@ -80,31 +80,31 @@ public class BoltStateMachineFactoryImpl implements BoltStateMachineFactory
 
     private BoltStateMachine newStateMachineV1( BoltChannel boltChannel )
     {
-        TransactionStateMachineSPIProvider transactionSpiProvider =
-                new TransactionStateMachineSPIProviderV1( boltGraphDatabaseManagementServiceSPI, defaultDatabaseName, boltChannel, getAwaitDuration(), clock );
-        BoltStateMachineSPI boltSPI = new BoltStateMachineV1SPI( logging, authentication, transactionSpiProvider );
+        var transactionSpiProvider = new TransactionStateMachineSPIProviderV1( boltGraphDatabaseManagementServiceSPI, defaultDatabaseName, boltChannel,
+                getBookmarkAwaitDuration(), clock );
+        var boltSPI = new BoltStateMachineV1SPI( logging, authentication, transactionSpiProvider );
         return new BoltStateMachineV1( boltSPI, boltChannel, clock );
     }
 
     private BoltStateMachine newStateMachineV3( BoltChannel boltChannel )
     {
-        TransactionStateMachineSPIProvider transactionSpiProvider =
-                new TransactionStateMachineSPIProviderV3( boltGraphDatabaseManagementServiceSPI, defaultDatabaseName, boltChannel, getAwaitDuration(), clock );
-        BoltStateMachineSPI boltSPI = new BoltStateMachineV1SPI( logging, authentication, transactionSpiProvider );
+        var transactionSpiProvider = new TransactionStateMachineSPIProviderV3( boltGraphDatabaseManagementServiceSPI, defaultDatabaseName, boltChannel,
+                getBookmarkAwaitDuration(), clock );
+        var boltSPI = new BoltStateMachineV1SPI( logging, authentication, transactionSpiProvider );
         return new BoltStateMachineV3( boltSPI, boltChannel, clock );
     }
 
     private BoltStateMachine newStateMachineV4( BoltChannel boltChannel )
     {
-        TransactionStateMachineSPIProvider transactionSpiProvider =
-                new TransactionStateMachineSPIProviderV4( boltGraphDatabaseManagementServiceSPI, defaultDatabaseName, boltChannel, getAwaitDuration(), clock );
-        BoltStateMachineSPI boltSPI = new BoltStateMachineV1SPI( logging, authentication, transactionSpiProvider );
+        var transactionSpiProvider = new TransactionStateMachineSPIProviderV4( boltGraphDatabaseManagementServiceSPI, defaultDatabaseName, boltChannel,
+                getBookmarkAwaitDuration(), clock );
+        var boltSPI = new BoltStateMachineV1SPI( logging, authentication, transactionSpiProvider );
         return new BoltStateMachineV4( boltSPI, boltChannel, clock );
     }
 
-    private Duration getAwaitDuration()
+    private Duration getBookmarkAwaitDuration()
     {
-        long bookmarkReadyTimeout = config.get( GraphDatabaseSettings.bookmark_ready_timeout ).toMillis();
+        var bookmarkReadyTimeout = config.get( GraphDatabaseSettings.bookmark_ready_timeout ).toMillis();
 
         return Duration.ofMillis( bookmarkReadyTimeout );
     }

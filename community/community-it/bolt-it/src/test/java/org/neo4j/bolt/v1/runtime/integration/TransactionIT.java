@@ -19,18 +19,10 @@
  */
 package org.neo4j.bolt.v1.runtime.integration;
 
-import org.eclipse.jetty.server.Request;
-import org.eclipse.jetty.server.Server;
-import org.eclipse.jetty.server.ServerConnector;
-import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.junit.Rule;
 import org.junit.Test;
 
-import java.io.IOException;
-import java.io.PrintWriter;
 import java.util.regex.Pattern;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 
 import org.neo4j.bolt.BoltChannel;
 import org.neo4j.bolt.runtime.BoltConnectionFatality;
@@ -47,12 +39,9 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.impl.util.ValueUtils;
-import org.neo4j.test.Barrier;
-import org.neo4j.test.DoubleLatch;
 import org.neo4j.test.rule.SuppressOutput;
 import org.neo4j.util.concurrent.BinaryLatch;
 
-import static java.lang.String.format;
 import static java.util.Collections.emptyMap;
 import static java.util.Collections.singletonMap;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -338,47 +327,4 @@ public class TransactionIT
         assertThat( recorder.nextResponse(), succeededWithRecord( 2L ) );
         assertEquals( 0, recorder.responseCount() );
     }
-
-    public static Server createHttpServer(
-            DoubleLatch latch, Barrier.Control innerBarrier, int firstBatchSize, int otherBatchSize )
-    {
-        Server server = new Server( 0 );
-        server.setHandler( new AbstractHandler()
-        {
-            @Override
-            public void handle(
-                    String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response )
-                    throws IOException
-            {
-                response.setContentType( "text/plain; charset=utf-8" );
-                response.setStatus( HttpServletResponse.SC_OK );
-                PrintWriter out = response.getWriter();
-
-                writeBatch( out, firstBatchSize );
-                out.flush();
-                latch.start();
-                innerBarrier.reached();
-
-                latch.finish();
-                writeBatch( out, otherBatchSize );
-                baseRequest.setHandled(true);
-            }
-
-            private void writeBatch( PrintWriter out, int batchSize )
-            {
-                for ( int i = 0; i < batchSize; i++ )
-                {
-                    out.write( format( "%d %d\n", i, i * i ) );
-                    i++;
-                }
-            }
-        } );
-        return server;
-    }
-
-    private int getLocalPort( Server server )
-    {
-        return ((ServerConnector) (server.getConnectors()[0])).getLocalPort();
-    }
-
 }
