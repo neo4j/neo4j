@@ -208,3 +208,11 @@ class ShortestPathCommonEndNodesForbiddenException
   override def mapToPublic[T <: Throwable](mapper: MapToPublicExceptions[T]): T =
     mapper.shortestPathCommonEndNodesForbiddenException(message, this)
 }
+
+object TransactionOutOfMemoryException {
+  val ERROR_MSG: String = "The transaction used more memory than was allowed."
+}
+
+class TransactionOutOfMemoryException() extends CypherExecutionException(TransactionOutOfMemoryException.ERROR_MSG, null) {
+  override def mapToPublic[T <: Throwable](mapper: MapToPublicExceptions[T]): T = mapper.transactionOutOfMemoryException(message, this)
+}

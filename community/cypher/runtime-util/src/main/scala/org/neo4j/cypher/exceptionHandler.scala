@@ -68,6 +68,9 @@ object exceptionHandler extends MapToPublicExceptions[CypherException] {
   override def shortestPathCommonEndNodesForbiddenException(message: String, cause: Throwable): CypherException =
     new ShortestPathCommonEndNodesForbiddenException(message, cause)
 
+  override def transactionOutOfMemoryException(message: String, cause: Throwable): CypherException =
+    new TransactionOutOfMemoryException(message, cause)
+
   override def databaseManagementException(message: String): CypherException =
     new DatabaseManagementException(message)
 

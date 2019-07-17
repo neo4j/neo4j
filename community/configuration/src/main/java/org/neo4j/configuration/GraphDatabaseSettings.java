@@ -753,6 +753,10 @@ public class GraphDatabaseSettings implements SettingsDeclaration
             " This is an auxiliary service but should be left enabled in almost all cases." )
     public static final Setting<Boolean> filewatcher_enabled = newBuilder( "dbms.filewatcher.enabled", BOOL, true ).build();
 
+    // TODO This is currently the number of rows. That still needs to change
+    @Description( "Fill me in please. 0 means no limit." )
+    public static final Setting<Long> transaction_max_memory = newBuilder( "dbms.transaction.memory.max", LONG, 0L ).addConstraint( min( 0L ) ).build();
+
     /**
      * Block size properties values depends from selected record format.
      * We can't figured out record format until it will be selected by corresponding edition.

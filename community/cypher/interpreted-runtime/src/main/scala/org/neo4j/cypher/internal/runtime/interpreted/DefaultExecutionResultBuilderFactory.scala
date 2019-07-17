@@ -83,6 +83,7 @@ case class InterpretedExecutionResultBuilderFactory(pipe: Pipe,
                                                     columns: Seq[String],
                                                     logicalPlan: LogicalPlan,
                                                     lenientCreateRelationship: Boolean,
+                                                    transactionMaxMemory: Long,
                                                     hasLoadCSV: Boolean = false)
   extends BaseExecutionResultBuilderFactory(pipe, readOnly, columns, logicalPlan, hasLoadCSV) {
 
@@ -99,6 +100,7 @@ case class InterpretedExecutionResultBuilderFactory(pipe: Pipe,
                      queryIndexes.indexes.map(index => queryContext.transactionalContext.dataRead.indexReadSession(index)),
                      new Array[AnyValue](nExpressionSlots),
                      subscriber,
+                     MemoryTracker(transactionMaxMemory),
                      pipeDecorator,
                      lenientCreateRelationship = lenientCreateRelationship,
                      prePopulateResults = prePopulateResults,

@@ -37,112 +37,112 @@ class CypherExecutionException(message: String, cause: Throwable) extends Cypher
 }
 
 class UniquePathNotUniqueException(message: String, cause:Throwable) extends CypherException(message, cause) {
-  val status = Status.Statement.ConstraintVerificationFailed
+  override val status: Status = Status.Statement.ConstraintVerificationFailed
 }
 
 class EntityNotFoundException(message: String, cause: Throwable = null) extends CypherException(message, cause) {
-  val status = Status.Statement.EntityNotFound
+  override val status: Status = Status.Statement.EntityNotFound
 }
 
 class CypherTypeException(message: String, cause: Throwable = null) extends CypherException(message, cause) {
-  val status = Status.Statement.TypeError
+  override val status: Status = Status.Statement.TypeError
 }
 
 class ParameterNotFoundException(message: String, cause: Throwable) extends CypherException(message, cause) {
   def this(message: String) = this(message, null)
-  val status = Status.Statement.ParameterMissing
+  override val status: Status = Status.Statement.ParameterMissing
 }
 
 class ParameterWrongTypeException(message: String, cause: Throwable) extends CypherException(message, cause) {
   def this(message: String) = this(message, null)
-  val status = Status.Statement.TypeError
+  override val status: Status = Status.Statement.TypeError
 }
 
 class InvalidArgumentException(message: String, cause: Throwable = null) extends CypherException(message, cause) {
-  val status = Status.Statement.ArgumentError
+  override val status: Status = Status.Statement.ArgumentError
 }
 
 class RuntimeUnsupportedException(message: String, cause: Throwable = null) extends CypherException(message, cause) {
-  val status = Status.Statement.RuntimeUnsupportedError
+  override val status: Status = Status.Statement.RuntimeUnsupportedError
 }
 
 class PatternException(message: String, cause: Throwable) extends CypherException(message, cause) {
-  val status = Status.Statement.SemanticError
+  override val status: Status = Status.Statement.SemanticError
   def this(message: String) = this(message,null)
 }
 
 class InternalException(message: String, inner: Exception = null) extends CypherException(message, inner) {
-  val status = Status.Statement.ExecutionFailed
+  override val status: Status = Status.Statement.ExecutionFailed
 }
 
 class MissingIndexException(indexName: String) extends CypherException("Index `" + indexName + "` does not exist", null) {
-  val status = Status.Schema.IndexNotFound
+  override val status: Status = Status.Schema.IndexNotFound
 }
 
 class FailedIndexException(indexName: String, failureMessage: String, cause: Throwable) extends CypherException(
   s"Index `$indexName` has failed. Drop and recreate it to get it back online." +
     (if (failureMessage != null) s" Actual failure:$EOL==================$EOL$failureMessage$EOL==================" else ""),
   cause) {
-  val status = Status.General.IndexCorruptionDetected
+  override val status: Status = Status.General.IndexCorruptionDetected
 }
 
 class MissingConstraintException(cause: Throwable) extends CypherException("Constraint not found", cause) {
-  val status = Status.Schema.ConstraintNotFound
+  override val status: Status = Status.Schema.ConstraintNotFound
 }
 
 class NodeStillHasRelationshipsException(val nodeId: Long, cause: Throwable)
   extends CypherException("Node with id " + nodeId + " still has relationships, and cannot be deleted.", cause) {
-    val status = Status.Schema.ConstraintValidationFailed
+    override val status: Status = Status.Schema.ConstraintValidationFailed
   }
 
 class ProfilerStatisticsNotReadyException(cause: Throwable) extends CypherException("This result has not been materialised yet. Iterate over it to get profiler stats.", cause) {
-  val status = Status.Statement.ExecutionFailed
+  override val status: Status = Status.Statement.ExecutionFailed
   def this() = this(null)
 }
 
 class UnknownLabelException(labelName: String, cause: Throwable) extends CypherException(s"The provided label :`$labelName` does not exist in the store", cause) {
-  val status = Status.Statement.LabelNotFound
+  override val status: Status = Status.Statement.LabelNotFound
   def this(labelName: String) = this(labelName, null)
 }
 
 class HintException(message: String, cause: Throwable)
   extends CypherException(message, cause) {
-  val status = Status.Statement.ExecutionFailed
+  override val status: Status = Status.Statement.ExecutionFailed
 }
 
 class IndexHintException(variable: String, label: String, properties: Seq[String], message: String, cause: Throwable)
   extends CypherException(s"$message\nLabel: `$label`\nProperty name: ${properties.map(p => s"'$p'").mkString(", ")}", cause) {
-  val status = Status.Schema.IndexNotFound
+  override val status: Status = Status.Schema.IndexNotFound
 }
 
 class JoinHintException(variable: String, message: String, cause: Throwable)
   extends CypherException(message, cause) {
-  val status = Status.Statement.ExecutionFailed
+  override val status: Status = Status.Statement.ExecutionFailed
 }
 
 class LabelScanHintException(variable: String, label: String, message: String, cause: Throwable)
   extends CypherException(s"$message\nLabel: `$label`", cause) {
-  val status = Status.Statement.SemanticError
+  override val status: Status = Status.Statement.SemanticError
   def this(variable: String, label: String, message: String) = this(variable, label, message, null)
 }
 
 class InvalidSemanticsException(message: String, cause: Throwable) extends CypherException(message, cause) {
-  val status = Status.Statement.SemanticError
+  override val status: Status = Status.Statement.SemanticError
   def this(message: String) = this(message,null)
 }
 
 class MergeConstraintConflictException(message: String, cause: Throwable) extends CypherException(message, cause) {
-  val status = Status.Schema.ConstraintValidationFailed
+  override val status: Status = Status.Schema.ConstraintValidationFailed
   def this(message: String) = this(message, null)
 }
 
 class ConstraintValidationException(message: String, cause: Throwable) extends CypherException(message, cause) {
-  val status = Status.Statement.ConstraintVerificationFailed
+  override val status: Status = Status.Statement.ConstraintVerificationFailed
   def this(message: String) = this(message, null)
 }
 
 class ArithmeticException(message: String, cause: Throwable) extends CypherException(message, cause) {
-  val status = Status.Statement.ArithmeticError
+  override val status: Status = Status.Statement.ArithmeticError
 }
 
 class IncomparableValuesException(details: Option[String], lhs: String, rhs: String, cause: Throwable)
@@ -162,7 +162,7 @@ class PeriodicCommitInOpenTransactionException(cause: Throwable)
 }
 
 class LoadExternalResourceException(message: String, cause: Throwable) extends CypherException(message, cause) {
-  val status = Status.Statement.ExternalResourceFailed
+  override val status: Status = Status.Statement.ExternalResourceFailed
 }
 
 object LoadCsvStatusWrapCypherException {
@@ -170,7 +170,7 @@ object LoadCsvStatusWrapCypherException {
 }
 
 class LoadCsvStatusWrapCypherException(extraInfo: String, cause: CypherException) extends CypherException(LoadCsvStatusWrapCypherException.message(extraInfo, cause.getMessage), cause) {
-  val status = cause.status
+  override val status: Status = cause.status
 }
 
 class ExhaustiveShortestPathForbiddenException(message: String, cause: Throwable) extends CypherExecutionException(message, cause)
@@ -178,7 +178,11 @@ class ExhaustiveShortestPathForbiddenException(message: String, cause: Throwable
 class ShortestPathCommonEndNodesForbiddenException(message: String, cause: Throwable) extends CypherExecutionException(message, cause)
 
 class DatabaseManagementException(message: String) extends CypherExecutionException(message, null) {
-  override def status: Status = Status.Statement.NotSystemDatabaseError
+  override val status: Status = Status.Statement.NotSystemDatabaseError
 }
 
 class SecurityManagementException(message: String) extends CypherExecutionException(message, null)
+
+class TransactionOutOfMemoryException(message: String, cause: Throwable) extends CypherExecutionException(message, cause) {
+  override val status: Status = Status.General.TransactionOutOfMemoryError
+}

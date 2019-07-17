@@ -191,7 +191,8 @@ case class CypherRuntimeConfiguration(workers: Int,
                                       schedulerTracing: SchedulerTracingConfiguration,
                                       waitTimeout: Duration,
                                       lenientCreateRelationship: Boolean,
-                                      fuseOperators: Boolean)
+                                      fuseOperators: Boolean,
+                                      transactionMaxMemory: Long)
 
 sealed trait SchedulerTracingConfiguration
 case object NoSchedulerTracing extends SchedulerTracingConfiguration

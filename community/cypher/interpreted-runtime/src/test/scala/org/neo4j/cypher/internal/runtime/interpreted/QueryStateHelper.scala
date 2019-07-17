@@ -24,7 +24,7 @@ import org.mockito.stubbing.Answer
 import org.mockito.{ArgumentMatchers, Mockito}
 import org.neo4j.cypher.internal.runtime.interpreted.TransactionBoundQueryContext.IndexSearchMonitor
 import org.neo4j.cypher.internal.runtime.interpreted.pipes._
-import org.neo4j.cypher.internal.runtime.{ExecutionContext, ExpressionCursors, QueryContext}
+import org.neo4j.cypher.internal.runtime.{ExecutionContext, ExpressionCursors, NoMemoryTracker, QueryContext}
 import org.neo4j.graphdb.spatial.Point
 import org.neo4j.graphdb.{Node, Relationship}
 import org.neo4j.internal.kernel.api.{CursorFactory, IndexReadSession}
@@ -52,7 +52,7 @@ object QueryStateHelper extends MockitoSugar {
                 decorator: PipeDecorator = NullPipeDecorator,
                 initialContext: Option[ExecutionContext] = None
                ):QueryState =
-    new QueryState(query, resources, params, expressionCursors, queryIndexes, expressionVariables, subscriber,
+    new QueryState(query, resources, params, expressionCursors, queryIndexes, expressionVariables, subscriber, NoMemoryTracker,
                    decorator, initialContext = initialContext)
 
   def queryStateFrom(db: GraphDatabaseQueryService,

@@ -463,6 +463,12 @@ public interface Status
                 "The database is not currently available to serve your request, refer to the database logs for more " +
                 "details. Retrying your request at a later time may succeed." ),
 
+        TransactionOutOfMemoryError( TransientError,
+                                     "There transaction used more memory than was allowed. The maximum allowed size for a " +
+                                             "transaction can be configured with 'dbms.transaction.memory.max' in the neo4j configuration " +
+                                             "(normally in 'conf/neo4j.conf' or, if you " +
+                                             "you are using Neo4j Desktop, found through the user interface)." ),
+
         ;
 
         private final Code code;

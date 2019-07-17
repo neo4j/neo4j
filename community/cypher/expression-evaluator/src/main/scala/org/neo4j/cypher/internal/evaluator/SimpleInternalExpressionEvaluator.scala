@@ -23,7 +23,7 @@ import org.neo4j.cypher.internal.planner.spi.TokenContext
 import org.neo4j.cypher.internal.runtime.expressionVariableAllocation.Result
 import org.neo4j.cypher.internal.runtime.interpreted.commands.convert.{CommunityExpressionConverter, ExpressionConverters}
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
-import org.neo4j.cypher.internal.runtime.{ExecutionContext, expressionVariableAllocation}
+import org.neo4j.cypher.internal.runtime.{ExecutionContext, NoMemoryTracker, expressionVariableAllocation}
 import org.neo4j.cypher.internal.v4_0.expressions.Expression
 import org.neo4j.cypher.internal.v4_0.parser.Expressions
 import org.neo4j.cypher.internal.v4_0.util.attribution.Id
@@ -57,7 +57,8 @@ class SimpleInternalExpressionEvaluator extends InternalExpressionEvaluator {
                                          null,
                                          Array.empty[IndexReadSession],
                                          new Array(nExpressionSlots),
-                                         QuerySubscriber.DO_NOTHING_SUBSCRIBER)
+                                         QuerySubscriber.DO_NOTHING_SUBSCRIBER,
+                                         NoMemoryTracker)
 
     commandExpr(ExecutionContext.empty, emptyQueryState)
   }

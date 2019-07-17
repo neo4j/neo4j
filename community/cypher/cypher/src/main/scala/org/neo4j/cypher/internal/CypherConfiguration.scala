@@ -55,7 +55,8 @@ object CypherConfiguration {
       config.get(GraphDatabaseSettings.morsel_scheduler_trace_filename).toFile,
       config.get(GraphDatabaseSettings.cypher_task_wait),
       config.get(GraphDatabaseSettings.cypher_expression_recompilation_limit),
-      config.get(GraphDatabaseSettings.cypher_morsel_fuse_operators)
+      config.get(GraphDatabaseSettings.cypher_morsel_fuse_operators),
+      config.get(GraphDatabaseSettings.transaction_max_memory)
     )
   }
 
@@ -94,7 +95,8 @@ case class CypherConfiguration(version: CypherVersion,
                                schedulerTracingFile: File,
                                waitTimeout: Int,
                                recompilationLimit: Int,
-                               fuseOperators: Boolean) {
+                               fuseOperators: Boolean,
+                               transactionMaxMemory: Long) {
 
   def toCypherRuntimeConfiguration: CypherRuntimeConfiguration =
     CypherRuntimeConfiguration(
@@ -104,7 +106,8 @@ case class CypherConfiguration(version: CypherVersion,
       schedulerTracing = toSchedulerTracingConfiguration(doSchedulerTracing, schedulerTracingFile),
       waitTimeout = Duration(waitTimeout, TimeUnit.MILLISECONDS),
       lenientCreateRelationship = lenientCreateRelationship,
-      fuseOperators = fuseOperators
+      fuseOperators = fuseOperators,
+      transactionMaxMemory = transactionMaxMemory
     )
 
   def toSchedulerTracingConfiguration(doSchedulerTracing: Boolean,
