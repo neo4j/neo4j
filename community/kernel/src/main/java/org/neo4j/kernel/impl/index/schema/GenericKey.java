@@ -92,6 +92,7 @@ public class GenericKey extends NativeIndexKey<GenericKey>
 
     static final long TRUE = 1;
     static final long FALSE = 0;
+    static final int NO_ENTITY_ID = -1;
     private static final int TYPE_ID_SIZE = Byte.BYTES;
     private static final double[] NO_COORDINATES = new double[0];
 
@@ -308,7 +309,15 @@ public class GenericKey extends NativeIndexKey<GenericKey>
     void minimalSplitter( GenericKey left, GenericKey right, GenericKey into )
     {
         into.setCompareId( right.getCompareId() );
-        into.setEntityId( right.getEntityId() );
+        if ( left.compareValueTo( right ) != 0 )
+        {
+            into.setEntityId( NO_ENTITY_ID );
+        }
+        else
+        {
+            // There was no minimal splitter to be found so entity id will serve as divider
+            into.setEntityId( right.getEntityId() );
+        }
         minimalSplitterInternal( left, right, into );
     }
 

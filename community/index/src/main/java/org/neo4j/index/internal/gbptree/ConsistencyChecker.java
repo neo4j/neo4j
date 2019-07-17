@@ -50,7 +50,6 @@ import static org.neo4j.index.internal.gbptree.TreeNode.Type.LEAF;
 class ConsistencyChecker<KEY>
 {
     private final TreeNode<KEY,?> node;
-    private final KEY readKey;
     private final Comparator<KEY> comparator;
     private final Layout<KEY,?> layout;
     private final List<RightmostInChain> rightmostPerLevel = new ArrayList<>();
@@ -61,7 +60,6 @@ class ConsistencyChecker<KEY>
     ConsistencyChecker( TreeNode<KEY,?> node, Layout<KEY,?> layout, long stableGeneration, long unstableGeneration )
     {
         this.node = node;
-        this.readKey = layout.newKey();
         this.comparator = node.keyComparator();
         this.layout = layout;
         this.stableGeneration = stableGeneration;
@@ -368,6 +366,7 @@ class ConsistencyChecker<KEY>
         long pageId = cursor.getCurrentPageId();
         KEY prev = null;
         KeyRange<KEY> childRange;
+        KEY readKey = layout.newKey();
 
         // Check children, all except the last one
         int pos = 0;
@@ -436,6 +435,7 @@ class ConsistencyChecker<KEY>
     private void assertKeyOrder( PageCursor cursor, KeyRange<KEY> range, int keyCount, TreeNode.Type type )
     {
         KEY prev = layout.newKey();
+        KEY readKey = layout.newKey();
         boolean first = true;
         for ( int pos = 0; pos < keyCount; pos++ )
         {

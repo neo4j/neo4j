@@ -35,6 +35,7 @@ import java.time.Period;
 import java.time.ZonedDateTime;
 import java.time.temporal.TemporalAmount;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.stream.Stream;
@@ -68,6 +69,7 @@ import org.neo4j.values.storable.Values;
 import static java.util.Arrays.asList;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.neo4j.kernel.impl.index.schema.GenericKey.NO_ENTITY_ID;
 import static org.neo4j.kernel.impl.index.schema.NativeIndexKey.Inclusion.NEUTRAL;
 import static org.neo4j.values.storable.Values.COMPARATOR;
 import static org.neo4j.values.storable.Values.booleanArray;
@@ -89,7 +91,7 @@ import static org.neo4j.values.storable.Values.shortArray;
 import static org.neo4j.values.storable.Values.timeArray;
 
 @ExtendWith( RandomExtension.class )
-class GenericKeyStateTest
+class GenericKeyTest
 {
     private final IndexSpecificSpaceFillingCurveSettingsCache noSpecificIndexSettings =
             new IndexSpecificSpaceFillingCurveSettingsCache( new ConfiguredSpaceFillingCurveSettingsCache( Config.defaults() ), new HashMap<>() );
@@ -134,6 +136,8 @@ class GenericKeyStateTest
         } );
         random.reset();
     }
+
+    /* TESTS FOR SLOT STATE (not including entityId) */
 
     @ParameterizedTest
     @MethodSource( "validValueGenerators" )
@@ -290,16 +294,11 @@ class GenericKeyStateTest
     {
         // Given
         Value value1 = valueGenerator.next();
-        Value value2;
-        do
-        {
-            value2 = valueGenerator.next();
-        }
-        while ( COMPARATOR.compare( value1, value2 ) == 0 );
+        Value value2 = uniqueSecondValue( valueGenerator, value1 );
 
         // When
         Value left = pickSmaller( value1, value2 );
-        Value right = left == value1 ? value2 : value1;
+        Value right = pickOther( value1, value2, left );
 
         // Then
         assertValidMinimalSplitter( left, right );
@@ -496,6 +495,136 @@ class GenericKeyStateTest
         shouldReadBackToExactOriginalValue( random.randomValues().nextCharArray() );
     }
 
+    /* TESTS FOR KEY STATE (including entityId) */
+
+    @ParameterizedTest
+    @MethodSource( "validValueGenerators" )
+    void minimalSplitterForSameValueShouldDivideLeftAndRight( ValueGenerator valueGenerator )
+    {
+        // Given
+        Value value = valueGenerator.next();
+        GenericLayout layout = newLayout( 1 );
+        GenericKey left = layout.newKey();
+        GenericKey right = layout.newKey();
+        GenericKey minimalSplitter = layout.newKey();
+
+        // keys with same value but different entityId
+        left.initialize( 1 );
+        left.initFromValue( 0, value, NEUTRAL );
+        right.initialize( 2 );
+        right.initFromValue( 0, value, NEUTRAL );
+
+        // When creating minimal splitter
+        layout.minimalSplitter( left, right, minimalSplitter );
+
+        // Then that minimal splitter need to correctly divide left and right
+        assertTrue( layout.compare( left, minimalSplitter ) < 0,
+                "Expected minimal splitter to be strictly greater than left but wasn't for value " + value );
+        assertTrue( layout.compare( minimalSplitter, right ) <= 0,
+                "Expected right to be greater than or equal to minimal splitter but wasn't for value " + value );
+    }
+
+    @ParameterizedTest
+    @MethodSource( "validValueGenerators" )
+    void minimalSplitterShouldRemoveEntityIdIfPossible( ValueGenerator valueGenerator )
+    {
+        // Given
+        Value firstValue = valueGenerator.next();
+        Value secondValue = uniqueSecondValue( valueGenerator, firstValue );
+        Value leftValue = pickSmaller( firstValue, secondValue );
+        Value rightValue = pickOther( firstValue, secondValue, leftValue );
+
+        GenericLayout layout = newLayout( 1 );
+        GenericKey left = layout.newKey();
+        GenericKey right = layout.newKey();
+        GenericKey minimalSplitter = layout.newKey();
+
+        // keys with unique values
+        left.initialize( 1 );
+        left.initFromValue( 0, leftValue, NEUTRAL );
+        right.initialize( 2 );
+        right.initFromValue( 0, rightValue, NEUTRAL );
+
+        // When creating minimal splitter
+        layout.minimalSplitter( left, right, minimalSplitter );
+
+        // Then that minimal splitter should have entity id shaved off
+        assertEquals( NO_ENTITY_ID, minimalSplitter.getEntityId(),
+                "Expected minimal splitter to have entityId removed when constructed from keys with unique values: " +
+                        "left=" + leftValue + ", right=" + rightValue );
+    }
+
+    @ParameterizedTest
+    @MethodSource( "validValueGenerators" )
+    void minimalSplitterForSameValueShouldDivideLeftAndRightCompositeKey( ValueGenerator valueGenerator )
+    {
+        // Given composite keys with same set of values
+        int nbrOfSlots = random.nextInt( 1, 5 );
+        GenericLayout layout = newLayout( nbrOfSlots );
+        GenericKey left = layout.newKey();
+        GenericKey right = layout.newKey();
+        GenericKey minimalSplitter = layout.newKey();
+        left.initialize( 1 );
+        right.initialize( 2 );
+        Value[] values = new Value[nbrOfSlots];
+        for ( int slot = 0; slot < nbrOfSlots; slot++ )
+        {
+            Value value = valueGenerator.next();
+            values[slot] = value;
+            left.initFromValue( slot, value, NEUTRAL );
+            right.initFromValue( slot, value, NEUTRAL );
+        }
+
+        // When creating minimal splitter
+        layout.minimalSplitter( left, right, minimalSplitter );
+
+        // Then that minimal splitter need to correctly divide left and right
+        assertTrue( layout.compare( left, minimalSplitter ) < 0,
+                "Expected minimal splitter to be strictly greater than left but wasn't for value " + Arrays.toString( values ) );
+        assertTrue( layout.compare( minimalSplitter, right ) <= 0,
+                "Expected right to be greater than or equal to minimal splitter but wasn't for value " + Arrays.toString( values ) );
+    }
+
+    @ParameterizedTest
+    @MethodSource( "validValueGenerators" )
+    void minimalSplitterShouldRemoveEntityIdIfPossibleCompositeKey( ValueGenerator valueGenerator )
+    {
+        // Given
+        int nbrOfSlots = random.nextInt( 1, 5 );
+        int differingSlot = random.nextInt( nbrOfSlots );
+        GenericLayout layout = newLayout( nbrOfSlots );
+        GenericKey left = layout.newKey();
+        GenericKey right = layout.newKey();
+        GenericKey minimalSplitter = layout.newKey();
+        left.initialize( 1 );
+        right.initialize( 2 );
+        // Same value on all except one slot
+        for ( int slot = 0; slot < nbrOfSlots; slot++ )
+        {
+            if ( slot == differingSlot )
+            {
+                continue;
+            }
+            Value value = valueGenerator.next();
+            left.initFromValue( slot, value, NEUTRAL );
+            right.initFromValue( slot, value, NEUTRAL );
+        }
+        Value firstValue = valueGenerator.next();
+        Value secondValue = uniqueSecondValue( valueGenerator, firstValue );
+        Value leftValue = pickSmaller( firstValue, secondValue );
+        Value rightValue = pickOther( firstValue, secondValue, leftValue );
+        left.initFromValue( differingSlot, leftValue, NEUTRAL );
+        right.initFromValue( differingSlot, rightValue, NEUTRAL );
+
+        // When creating minimal splitter
+        layout.minimalSplitter( left, right, minimalSplitter );
+
+        // Then that minimal splitter should have entity id shaved off
+        assertEquals( NO_ENTITY_ID, minimalSplitter.getEntityId(),
+                "Expected minimal splitter to have entityId removed when constructed from keys with unique values: " +
+                        "left=" + leftValue + ", right=" + rightValue );
+    }
+
     private void shouldReadBackToExactOriginalValue( Value srcValue )
     {
         // given
@@ -569,6 +698,22 @@ class GenericKeyStateTest
     private Value pickSmaller( Value value1, Value value2 )
     {
         return COMPARATOR.compare( value1, value2 ) < 0 ? value1 : value2;
+    }
+
+    private Value pickOther( Value value1, Value value2, Value currentValue )
+    {
+        return currentValue == value1 ? value2 : value1;
+    }
+
+    private Value uniqueSecondValue( ValueGenerator valueGenerator, Value firstValue )
+    {
+        Value secondValue;
+        do
+        {
+            secondValue = valueGenerator.next();
+        }
+        while ( COMPARATOR.compare( firstValue, secondValue ) == 0 );
+        return secondValue;
     }
 
     private void assertValidMinimalSplitter( Value left, Value right )
@@ -709,6 +854,11 @@ class GenericKeyStateTest
     private GenericKey newKeyState()
     {
         return new GenericKey( noSpecificIndexSettings );
+    }
+
+    private GenericLayout newLayout( int numberOfSlots )
+    {
+        return new GenericLayout( numberOfSlots, noSpecificIndexSettings );
     }
 
     @FunctionalInterface

@@ -19,17 +19,32 @@
  */
 package org.neo4j.kernel.impl.index.schema;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+
+import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.RandomExtension;
+import org.neo4j.test.rule.RandomRule;
+import org.neo4j.values.storable.TextValue;
+import org.neo4j.values.storable.Values;
 
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.junit.Assert.assertNotSame;
 import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.neo4j.kernel.impl.index.schema.GenericKey.NO_ENTITY_ID;
+import static org.neo4j.kernel.impl.index.schema.NativeIndexKey.Inclusion.NEUTRAL;
 
-public class StringIndexKeyTest
+@ExtendWith( RandomExtension.class )
+class StringIndexKeyTest
 {
+    @Inject
+    private RandomRule random;
+
     @Test
-    public void shouldReuseByteArrayForFairlySimilarSizedKeys()
+    void shouldReuseByteArrayForFairlySimilarSizedKeys()
     {
         // given
         StringIndexKey key = new StringIndexKey();
@@ -46,7 +61,7 @@ public class StringIndexKeyTest
     }
 
     @Test
-    public void shouldCreateNewByteArrayForVastlyDifferentKeySizes()
+    void shouldCreateNewByteArrayForVastlyDifferentKeySizes()
     {
         // given
         StringIndexKey key = new StringIndexKey();
@@ -64,7 +79,7 @@ public class StringIndexKeyTest
     }
 
     @Test
-    public void shouldDereferenceByteArrayWhenMaterializingValue()
+    void shouldDereferenceByteArrayWhenMaterializingValue()
     {
         // given
         StringIndexKey key = new StringIndexKey();
@@ -78,5 +93,59 @@ public class StringIndexKeyTest
 
         // then
         assertNotSame( first, second );
+    }
+
+    @Test
+    void minimalSplitterForSameValueShouldDivideLeftAndRight()
+    {
+        // Given
+        StringLayout layout = new StringLayout();
+        StringIndexKey left = layout.newKey();
+        StringIndexKey right = layout.newKey();
+        StringIndexKey minimalSplitter = layout.newKey();
+
+        // keys with same value but different entityId
+        TextValue value = random.randomValues().nextTextValue();
+        left.initialize( 1 );
+        right.initialize( 2 );
+        left.initFromValue( 0, value, NEUTRAL );
+        right.initFromValue( 0, value, NEUTRAL );
+
+        // When creating minimal splitter
+        layout.minimalSplitter( left, right, minimalSplitter );
+
+        // Then that minimal splitter need to correctly divide left and right
+        assertTrue( layout.compare( left, minimalSplitter ) < 0,
+                "Expected minimal splitter to be strictly greater than left but wasn't for value " + value );
+        assertTrue( layout.compare( minimalSplitter, right ) <= 0,
+                "Expected right to be greater than or equal to minimal splitter but wasn't for value " + value );
+    }
+
+    @Test
+    void minimalSplitterShouldRemoveEntityIdIfPossible()
+    {
+        // Given
+        StringLayout layout = new StringLayout();
+        StringIndexKey left = layout.newKey();
+        StringIndexKey right = layout.newKey();
+        StringIndexKey minimalSplitter = layout.newKey();
+
+        String string = random.nextString();
+        TextValue leftValue = Values.stringValue( string );
+        TextValue rightValue = Values.stringValue( string + random.randomValues().nextCharRaw() );
+
+        // keys with unique values
+        left.initialize( 1 );
+        left.initFromValue( 0, leftValue, NEUTRAL );
+        right.initialize( 2 );
+        right.initFromValue( 0, rightValue, NEUTRAL );
+
+        // When creating minimal splitter
+        layout.minimalSplitter( left, right, minimalSplitter );
+
+        // Then that minimal splitter should have entity id shaved off
+        assertEquals( NO_ENTITY_ID, minimalSplitter.getEntityId(),
+                "Expected minimal splitter to have entityId removed when constructed from keys with unique values: " +
+                        "left=" + leftValue + ", right=" + rightValue );
     }
 }

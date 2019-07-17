@@ -202,15 +202,15 @@ class StringIndexKey extends NativeIndexSingleValueKey<StringIndexKey>
 
     void copyFrom( StringIndexKey key )
     {
-        copyFrom( key, key.bytesLength );
+        setEntityId( key.getEntityId() );
+        setCompareId( key.getCompareId() );
+        copyValueFrom( key, key.bytesLength );
     }
 
-    void copyFrom( StringIndexKey key, int targetLength )
+    void copyValueFrom( StringIndexKey key, int targetLength )
     {
         setBytesLength( targetLength );
         System.arraycopy( key.bytes, 0, bytes, 0, targetLength );
-        setEntityId( key.getEntityId() );
-        setCompareId( key.getCompareId() );
     }
 
     /**
