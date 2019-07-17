@@ -49,8 +49,8 @@ class SemanticIndexAcceptanceTest extends ExecutionEngineFunSuite with PropertyC
   //we don't want scala check to shrink strings since it hides the actual error
   implicit val dontShrink: Shrink[String] = Shrink(s => Stream.empty)
 
-  private val allCRS: Map[Int, Array[CoordinateReferenceSystem]] = CoordinateReferenceSystem.all().toArray.groupBy(_.getDimension)
-  private val allCRSDimensions = allCRS.keys.toArray
+  private val allNonGeographicCRS: Map[Int, Array[CoordinateReferenceSystem]] = CoordinateReferenceSystem.all().filterNot(crs => crs.isGeographic).toArray.groupBy(_.getDimension)
+  private val allNonGeographicCRSDimensions = allNonGeographicCRS.keys.toArray
   private val oneDay = DurationValue.duration(0, 1, 0, 0)
   private val oneSecond = DurationValue.duration(0, 0, 1, 0)
   private val timeZones:Seq[ZoneId] = ZoneId.getAvailableZoneIds.toSeq.map(ZoneId.of)
@@ -65,7 +65,9 @@ class SemanticIndexAcceptanceTest extends ExecutionEngineFunSuite with PropertyC
       ValueSetup[LongValue]("longs", longGen, x => x.minus(1L), x => x.plus(1L)),
       ValueSetup[DoubleValue]("doubles", doubleGen, x => x.minus(0.1), x => x.plus(0.1)),
       ValueSetup[TextValue]("strings", textGen, changeLastChar(c => (c - 1).toChar), changeLastChar(c => (c + 1).toChar)),
-      ValueSetup[PointValue]("points", pointGen, modifyPoint(_ - 0.1), modifyPoint(_ + 0.1)),
+      ValueSetup[PointValue]("geometric points", pointGen, modifyPoint(_ - 0.1), modifyPoint(_ + 0.1)),
+      ValueSetup[PointValue]("2d geographic points", wgs84_2D_pointGen, modifyPoint(_ - 0.1), modifyPoint(_ + 0.1)),
+      ValueSetup[PointValue]("3d geographic points", wgs84_3D_pointGen, modifyPoint(_ - 0.1), modifyPoint(_ + 0.1)),
       ValueSetup[DateValue]("dates", dateGen, x => x.sub(oneDay), x => x.add(oneDay)),
       ValueSetup[DateTimeValue]("dateTimes", dateTimeGen, x => x.sub(oneDay), x => x.add(oneDay)),
       ValueSetup[LocalDateTimeValue]("localDateTimes", localDateTimeGen, x => x.sub(oneDay), x => x.add(oneDay)),
@@ -105,10 +107,23 @@ class SemanticIndexAcceptanceTest extends ExecutionEngineFunSuite with PropertyC
 
   def pointGen: Gen[PointValue] =
     for {
-      dimension <- Gen.oneOf(allCRSDimensions)
+      dimension <- Gen.oneOf(allNonGeographicCRSDimensions)
       coordinates <- Gen.listOfN(dimension, arbitrary[Double].retryUntil(java.lang.Double.isFinite(_)))
-      crs <- Gen.oneOf(allCRS(dimension))
+      crs <- Gen.oneOf(allNonGeographicCRS(dimension))
     } yield Values.pointValue(crs, coordinates:_*)
+
+  def wgs84_3D_pointGen: Gen[PointValue] =
+    for {
+      x <- arbitrary[Double].retryUntil(d => java.lang.Double.isFinite(d) && -180 <= d && d <= 180)
+      y <- arbitrary[Double].retryUntil(d => java.lang.Double.isFinite(d) && -90 <= d && d <= 90)
+      z <- arbitrary[Double].retryUntil(java.lang.Double.isFinite(_))
+    } yield Values.pointValue(CoordinateReferenceSystem.WGS84_3D, x, y, z)
+
+  def wgs84_2D_pointGen: Gen[PointValue] =
+    for {
+      x <- arbitrary[Double].retryUntil(d => java.lang.Double.isFinite(d) && -180 <= d && d <= 180)
+      y <- arbitrary[Double].retryUntil(d => java.lang.Double.isFinite(d) && -90 <= d && d <= 90)
+    } yield Values.pointValue(CoordinateReferenceSystem.WGS84, x, y)
 
   def timeGen: Gen[TimeValue] =
     for { // stay one second off min and max time, to allow getting a bigger and smaller value

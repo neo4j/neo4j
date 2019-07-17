@@ -349,15 +349,43 @@ public final class Values
 
     public static PointValue minPointValue( PointValue reference )
     {
-        double[] coordinates = new double[reference.coordinate().length];
-        Arrays.fill( coordinates, -Double.MAX_VALUE );
+        int length = reference.coordinate().length;
+        double[] coordinates = new double[length];
+        if ( reference.getCoordinateReferenceSystem().isGeographic() )
+        {
+            // WGS-84 boundaries
+            coordinates[0] = -180;
+            coordinates[1] = -90;
+            if ( length > 2 )
+            {
+                coordinates[2] = -Double.MAX_VALUE;
+            }
+        }
+        else
+        {
+            Arrays.fill( coordinates, -Double.MAX_VALUE );
+        }
         return pointValue( reference.getCoordinateReferenceSystem(), coordinates );
     }
 
     public static PointValue maxPointValue( PointValue reference )
     {
-        double[] coordinates = new double[reference.coordinate().length];
-        Arrays.fill( coordinates, Double.MAX_VALUE );
+        int length = reference.coordinate().length;
+        double[] coordinates = new double[length];
+        if ( reference.getCoordinateReferenceSystem().isGeographic() )
+        {
+            // WGS-84 boundaries
+            coordinates[0] = 180;
+            coordinates[1] = 90;
+            if ( length > 2 )
+            {
+                coordinates[2] = Double.MAX_VALUE;
+            }
+        }
+        else
+        {
+            Arrays.fill( coordinates, Double.MAX_VALUE );
+        }
         return pointValue( reference.getCoordinateReferenceSystem(), coordinates );
     }
 

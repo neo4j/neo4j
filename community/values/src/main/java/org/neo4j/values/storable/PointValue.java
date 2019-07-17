@@ -67,12 +67,15 @@ public class PointValue extends ScalarValue implements Point, Comparable<PointVa
                 throw new InvalidArgumentException( "Cannot create a point with non-finite coordinate values: " + Arrays.toString( coordinate) );
             }
         }
-        if ( crs.isGeographic() )
+        if ( crs.isGeographic() && (coordinate.length == 2 || coordinate.length == 3) )
         {
+            // anything with less or more coordinates gets a pass as it is and needs to be stopped from other places like bolt does
+            //   (@see org.neo4j.bolt.v2.messaging.Neo4jPackV2Test#shouldFailToPackPointWithIllegalDimensions )
             if ( coordinate[1] > 90 || coordinate[1] < -90 )
             {
                 throw new InvalidValuesArgumentException(
-                        "Cannot create WGS84 point with invalid coordinate for Y: " + Arrays.toString( coordinate ) + ". Valid range is [-90, 90]." );
+                        "Cannot create WGS84 point with invalid coordinate: " + Arrays.toString( coordinate ) +
+                                ". Valid range for Y coordinate is [-90, 90]." );
             }
 
             double x = coordinate[0];

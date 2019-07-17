@@ -246,10 +246,10 @@ class DistanceFunctionTest extends CypherFunSuite {
       val calculator = point.getCoordinateReferenceSystem.getCalculator
       withClue(s"Calculating bounding box with distance $distance of $point\n") {
         val boxes = boundingBox(point, distance)
-        var minLat = Double.MaxValue
-        var maxLat = Double.MinValue
-        var minLong = Double.MaxValue
-        var maxLong = Double.MinValue
+        var minLat = 180.0
+        var maxLat = -180.0
+        var minLong = 90.0
+        var maxLong = -90.0
 
         // Test that points on the circle lie inside the bounding box
         for (brng <- 0.0 to 2.0 * Math.PI by 0.01) {
@@ -274,10 +274,6 @@ class DistanceFunctionTest extends CypherFunSuite {
         }
         if (!northPoleIncluded) {
           makePoint(maxLong, maxLat + delta) shouldNot beInsideOneBoundingBox(boxes)
-        }
-        if (!northPoleIncluded && !southPoleIncluded) {
-          makePoint(minLong - delta, minLat) shouldNot beInsideOneBoundingBox(boxes)
-          makePoint(maxLong + delta, maxLat) shouldNot beInsideOneBoundingBox(boxes)
         }
 
         // Special cases where poles are included

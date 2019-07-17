@@ -110,7 +110,7 @@ public class PointTypeIT extends AbstractRestFunctionalTestBase
         try ( Transaction tx = db.beginTx() )
         {
             Node node = tx.createNode( label( "N" ) );
-            node.setProperty( "coordinates", new Point[]{pointValue( WGS84, 30.655691, 104.081602 )} );
+            node.setProperty( "coordinates", new Point[]{pointValue( WGS84, 30.655691, 74.081602 )} );
             node.setProperty( "location", "Shanghai" );
             node.setProperty( "type", "gps" );
             tx.commit();
@@ -126,7 +126,7 @@ public class PointTypeIT extends AbstractRestFunctionalTestBase
         JsonNode row = response.get( "results" ).get( 0 ).get( "data" ).get( 0 ).get( "row" ).get( 0 )
                 .get( "coordinates" ).get( 0 );
         assertGeometryTypeEqual( GeometryType.GEOMETRY_POINT, row );
-        assertCoordinatesEqual( new double[]{30.655691, 104.081602}, row );
+        assertCoordinatesEqual( new double[]{30.655691, 74.081602}, row );
         assertCrsEqual( WGS84, row );
     }
 
@@ -138,7 +138,7 @@ public class PointTypeIT extends AbstractRestFunctionalTestBase
         try ( Transaction tx = db.beginTx() )
         {
             Node node = tx.createNode( label( "N" ) );
-            node.setProperty( "coordinates", pointValue( WGS84, 30.655691, 104.081602 ) );
+            node.setProperty( "coordinates", pointValue( WGS84, 30.655691, 74.081602 ) );
             node.setProperty( "location", "Shanghai" );
             node.setProperty( "type", "gps" );
             tx.commit();
@@ -154,7 +154,7 @@ public class PointTypeIT extends AbstractRestFunctionalTestBase
         JsonNode row = response.get( "results" ).get( 0 ).get( "data" ).get( 0 ).get( "rest" )
                 .get( 0 ).get( "data" ).get( "coordinates" );
         assertGeometryTypeEqual( GeometryType.GEOMETRY_POINT, row );
-        assertCoordinatesEqual( new double[]{30.655691, 104.081602}, row );
+        assertCoordinatesEqual( new double[]{30.655691, 74.081602}, row );
         assertCrsEqual( WGS84, row );
     }
 
@@ -166,7 +166,7 @@ public class PointTypeIT extends AbstractRestFunctionalTestBase
         try ( Transaction tx = db.beginTx() )
         {
             Node node = tx.createNode( label( "N" ) );
-            node.setProperty( "coordinates", pointValue( WGS84, 30.655691, 104.081602 ) );
+            node.setProperty( "coordinates", pointValue( WGS84, 30.655691, 74.081602 ) );
             tx.commit();
         }
 
@@ -180,7 +180,7 @@ public class PointTypeIT extends AbstractRestFunctionalTestBase
         JsonNode row = response.get( "results" ).get( 0 ).get( "data" ).get( 0 ).get( "graph" )
                 .get("nodes").get( 0 ).get( "properties" ).get( "coordinates" );
         assertGeometryTypeEqual( GeometryType.GEOMETRY_POINT, row );
-        assertCoordinatesEqual( new double[]{30.655691, 104.081602}, row );
+        assertCoordinatesEqual( new double[]{30.655691, 74.081602}, row );
         assertCrsEqual( WGS84, row );
     }
 
@@ -192,7 +192,7 @@ public class PointTypeIT extends AbstractRestFunctionalTestBase
         try ( Transaction tx = db.beginTx() )
         {
             Node node = tx.createNode( label( "N" ) );
-            node.setProperty( "coordinates", new Point[]{pointValue( WGS84, 30.655691, 104.081602 )});
+            node.setProperty( "coordinates", new Point[]{pointValue( WGS84, 30.655691, 74.081602 )});
             tx.commit();
         }
 
@@ -206,7 +206,7 @@ public class PointTypeIT extends AbstractRestFunctionalTestBase
         JsonNode row = response.get( "results" ).get( 0 ).get( "data" ).get( 0 ).get( "rest" )
                 .get( 0 ).get( "data" ).get( "coordinates" ).get( 0 );
         assertGeometryTypeEqual( GeometryType.GEOMETRY_POINT, row );
-        assertCoordinatesEqual( new double[]{30.655691, 104.081602}, row );
+        assertCoordinatesEqual( new double[]{30.655691, 74.081602}, row );
         assertCrsEqual( WGS84, row );
     }
 
@@ -218,7 +218,7 @@ public class PointTypeIT extends AbstractRestFunctionalTestBase
         try ( Transaction tx = db.beginTx() )
         {
             Node node = tx.createNode( label( "N" ) );
-            node.setProperty( "coordinates", new Point[]{pointValue( WGS84, 30.655691, 104.081602 )});
+            node.setProperty( "coordinates", new Point[]{pointValue( WGS84, 30.655691, 74.081602 )});
             tx.commit();
         }
 
@@ -232,7 +232,7 @@ public class PointTypeIT extends AbstractRestFunctionalTestBase
         JsonNode row = response.get( "results" ).get( 0 ).get( "data" ).get( 0 ).get( "graph" )
                 .get("nodes").get( 0 ).get( "properties" ).get( "coordinates" ).get( 0 );
         assertGeometryTypeEqual( GeometryType.GEOMETRY_POINT, row );
-        assertCoordinatesEqual( new double[]{30.655691, 104.081602}, row );
+        assertCoordinatesEqual( new double[]{30.655691, 74.081602}, row );
         assertCrsEqual( WGS84, row );
     }
 

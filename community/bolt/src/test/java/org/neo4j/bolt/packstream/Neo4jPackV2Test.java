@@ -377,7 +377,22 @@ public class Neo4jPackV2Test
         CoordinateReferenceSystem crs;
         if ( index % 2 == 0 )
         {
-            crs = dimension == 2 ? WGS84 : WGS84_3D;
+            double[] coordinates;
+            double x = random.doubles( 1, -180, 180 ).sum();
+            double y = random.doubles( 1, -90, 90 ).sum();
+            crs = WGS84_3D;
+            if ( dimension == 2 )
+            {
+                crs = WGS84;
+                coordinates = new double[]{x, y};
+                return unsafePointValue( crs, coordinates );
+            }
+            if ( dimension == 3 )
+            {
+                double z = random.doubles( 1, Double.MIN_VALUE, Double.MAX_VALUE ).sum();
+                coordinates = new double[]{x, y, z};
+                return unsafePointValue( crs, coordinates );
+            }
         }
         else
         {

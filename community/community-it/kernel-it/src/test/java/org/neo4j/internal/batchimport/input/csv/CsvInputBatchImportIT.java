@@ -182,7 +182,7 @@ class CsvInputBatchImportIT
             InputEntity node = new InputEntity();
             node.id( UUID.randomUUID().toString(), Group.GLOBAL );
             node.property( "name", "Node " + i );
-            node.property( "pointA", "\"   { x : -4.2, y : " + i + ", crs: WGS-84 } \"" );
+            node.property( "pointA", "\"   { x : -4.2, y : " + i % 90 + ", crs: WGS-84 } \"" );
             node.property( "pointB", "\" { x : -8, y : " + i + " } \"" );
             node.property( "date", LocalDate.of( 2018, i % 12 + 1, i % 28 + 1 ) );
             node.property( "time", OffsetTime.of( 1, i % 60, 0, 0, ZoneOffset.ofHours( 9 ) ) );
@@ -531,10 +531,10 @@ class CsvInputBatchImportIT
             // Special verifier for pointA property
             Consumer verifyPointA = actualValue ->
             {
-                // The y-coordinate should match the node number
+                // The y-coordinate should match the node number modulo 90 (so we don't break wgs boundaries)
                 PointValue v = (PointValue) actualValue;
                 double actualY = v.getCoordinates().get( 0 ).getCoordinate().get( 1 );
-                double expectedY = indexOf( node );
+                double expectedY = indexOf( node ) % 90;
                 String message = actualValue.toString() + " does not have y=" + expectedY;
                 assertEquals( expectedY, actualY, 0.1, message );
                 message = actualValue.toString() + " does not have crs=wgs-84";

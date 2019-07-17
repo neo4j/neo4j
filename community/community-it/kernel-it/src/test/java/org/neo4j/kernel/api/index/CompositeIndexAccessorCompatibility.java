@@ -504,7 +504,7 @@ public abstract class CompositeIndexAccessorCompatibility extends IndexAccessorC
     @Test
     public void testIndexSeekExactWithExistsBySpatial() throws Exception
     {
-        testIndexSeekExactWithExists( pointValue( WGS84, 100D, 100D ), pointValue( WGS84, 0D, 0D ) );
+        testIndexSeekExactWithExists( pointValue( WGS84, 100D, 90D ), pointValue( WGS84, 0D, 0D ) );
     }
 
     @Test
