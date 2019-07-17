@@ -290,7 +290,7 @@ public class Config implements Configuration
             }
         }
 
-        boolean strict = true;
+        boolean strict = strict_config_validation.defaultValue();
         if ( keys.remove( strict_config_validation.name() ) ) //evaluate strict_config_validation setting first, as we need it when validating other settings
         {
             evaluateSetting( strict_config_validation, settingValues, fromConfig, overriddenDefaults );
@@ -326,14 +326,7 @@ public class Config implements Configuration
                 else
                 {
                     modified = true;
-                    try
-                    {
-                        evaluateSetting( setting, settingValues, fromConfig, overriddenDefaults );
-                    }
-                    catch ( RuntimeException e )
-                    {
-                        throw new IllegalArgumentException( format( "Error evaluate setting '%s' %s", setting.name(), e.getMessage() ), e );
-                    }
+                    evaluateSetting( setting, settingValues, fromConfig, overriddenDefaults );
                 }
             }
             while ( setting != last );
@@ -437,44 +430,55 @@ public class Config implements Configuration
     {
         SettingImpl<Object> setting = (SettingImpl<Object>) untypedSetting;
         String key = setting.name();
-        Object defaultValue = setting.parse( overriddenDefaults.get( key ) );
-        if ( defaultValue == null )
+
+        try
         {
-            defaultValue = setting.defaultValue();
-            if ( fromConfig != null && fromConfig.settings.containsKey( key ) )
+            Object defaultValue = setting.parse( overriddenDefaults.get( key ) );
+            if ( defaultValue == null ) // Map default value
             {
-                Object fromDefault = fromConfig.settings.get( key ).defaultValue;
-                if ( !Objects.equals( defaultValue, fromDefault) )
+                defaultValue = setting.defaultValue();
+                if ( fromConfig != null && fromConfig.settings.containsKey( key ) )
                 {
-                    defaultValue = fromDefault;
+                    Object fromDefault = fromConfig.settings.get( key ).defaultValue;
+                    if ( !Objects.equals( defaultValue, fromDefault) )
+                    {
+                        defaultValue = fromDefault;
+                    }
                 }
             }
-        }
 
-        // Map value
-        Object value = null;
-        if ( settingValues.containsKey( key ) )
-        {
-            value = setting.parse( settingValues.get( key ) );
-        }
-        else if ( fromConfig != null && fromConfig.settings.containsKey( key ) )
-        {
-            Entry<?> entry = fromConfig.settings.get( key );
-            value = entry.isDefault ? null : entry.value;
-        }
+            Object value = null;
+            if ( settingValues.containsKey( key ) ) // Map value
+            {
+                value = setting.parse( settingValues.get( key ) );
+            }
+            else if ( fromConfig != null && fromConfig.settings.containsKey( key ) )
+            {
+                Entry<?> entry = fromConfig.settings.get( key );
+                value = entry.isDefault ? null : entry.value;
+            }
 
-        value = setting.solveDefault( value, defaultValue );
+            value = setting.solveDefault( value, defaultValue );
+
+            settings.put( key, createEntry( setting, value, defaultValue ) );
+        }
+        catch ( RuntimeException exception )
+        {
+            String msg = format( "Error evaluating value for setting '%s'. %s", setting.name(), exception.getMessage() );
+            throw new IllegalArgumentException( msg, exception );
+        }
+    }
+
+    @SuppressWarnings( "unchecked" )
+    private <T> Entry<T> createEntry( SettingImpl<T> setting, T value, T defaultValue )
+    {
         if ( setting.dependency() != null )
         {
             var dep = settings.get( setting.dependency().name() );
-            Object solvedValue = setting.solveDependency( value != null ? value : defaultValue, dep.getValue() );
-            settings.put( key, new DepEntry<>( setting, value, defaultValue, solvedValue ) );
+            T solvedValue = setting.solveDependency( value != null ? value : defaultValue, (T) dep.getValue() );
+            return new DepEntry<>( setting, value, defaultValue, solvedValue );
         }
-        else
-        {
-            settings.put( key, new Entry<>( setting, value, defaultValue ) );
-        }
-
+        return new Entry<>( setting, value, defaultValue );
     }
 
     @SuppressWarnings( "unchecked" )
