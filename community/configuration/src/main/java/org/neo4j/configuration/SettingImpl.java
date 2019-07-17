@@ -42,6 +42,8 @@ public final class SettingImpl<T> implements Setting<T>
     private final boolean immutable;
     private boolean internal;
     private String description;
+    private boolean deprecated;
+    private String documentedDefaultValue;
 
     private SettingImpl( String name,
             SettingValueParser<T> parser,
@@ -125,7 +127,8 @@ public final class SettingImpl<T> implements Setting<T>
         String desc = format( "%s, %s", name, parser.getDescription() );
         if ( !constraints.isEmpty() )
         {
-            desc = format( "%s satisfying %s", desc, constraints.stream().map( SettingConstraint::getDescription ).collect( Collectors.toList() ) );
+            String constraintDesc = constraints.stream().map( SettingConstraint::getDescription ).collect( Collectors.joining( " and " ) );
+            desc = format( "%s which %s", desc, constraintDesc );
         }
         return desc;
     }
@@ -190,6 +193,16 @@ public final class SettingImpl<T> implements Setting<T>
         return internal;
     }
 
+    public boolean deprecated()
+    {
+        return deprecated;
+    }
+
+    public String documentedDefaultValue()
+    {
+        return documentedDefaultValue;
+    }
+
     void setDescription( String description )
     {
         this.description = description;
@@ -198,6 +211,16 @@ public final class SettingImpl<T> implements Setting<T>
     void setInternal()
     {
         internal = true;
+    }
+
+    void setDeprecated()
+    {
+        deprecated = true;
+    }
+
+    void setDocumentedDefaultValue( String documentedDefaultValue )
+    {
+        this.documentedDefaultValue = documentedDefaultValue;
     }
 
     public static class Builder<T>

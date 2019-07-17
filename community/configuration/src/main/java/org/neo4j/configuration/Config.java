@@ -684,9 +684,17 @@ public class Config implements Configuration
                         {
                             setting.setDescription( field.getAnnotation( Description.class ).value() );
                         }
+                        if ( field.isAnnotationPresent( DocumentedDefaultValue.class ) )
+                        {
+                            setting.setDocumentedDefaultValue( field.getAnnotation( DocumentedDefaultValue.class ).value() );
+                        }
                         if ( field.isAnnotationPresent( Internal.class ) )
                         {
                             setting.setInternal();
+                        }
+                        if ( field.isAnnotationPresent( Deprecated.class ) )
+                        {
+                            setting.setDeprecated();
                         }
                         settings.put( setting.name(), setting );
                     }

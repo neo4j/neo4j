@@ -371,6 +371,22 @@ class SettingTest
         assertThrows( IllegalArgumentException.class, () -> setting.parse( "-1" ) );
     }
 
+    @Test
+    void testDescriptionWithConstraints()
+    {
+        var oneConstraintSetting = (SettingImpl<Long>) settingBuilder( "setting.name", LONG )
+                .addConstraint( POWER_OF_2 )
+                .build();
+
+        var twoConstraintSetting = (SettingImpl<Integer>) settingBuilder( "setting.name", INT )
+                .addConstraint( min( 2 ) )
+                .addConstraint( max( 10 ) )
+                .build();
+
+        assertEquals( "setting.name, a long which is power of 2", oneConstraintSetting.description() );
+        assertEquals( "setting.name, an integer which is minimum `2` and is maximum `10`", twoConstraintSetting.description() );
+    }
+
     private <T> SettingImpl.Builder<T> settingBuilder( String name, SettingValueParser<T> parser )
     {
         return SettingImpl.newBuilder( name, parser, null );

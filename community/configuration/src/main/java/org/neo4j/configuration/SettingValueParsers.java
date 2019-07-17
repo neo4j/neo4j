@@ -101,7 +101,7 @@ public final class SettingValueParsers
             }
             catch ( NumberFormatException e )
             {
-                throw new IllegalArgumentException( "not a valid integer value", e );
+                throw new IllegalArgumentException( format("'%s' is not a valid integer value", value ), e );
             }
         }
 
@@ -123,7 +123,7 @@ public final class SettingValueParsers
             }
             catch ( NumberFormatException e )
             {
-                throw new IllegalArgumentException( "not a valid long value", e );
+                throw new IllegalArgumentException( format("'%s' is not a valid long value", value ), e );
             }
         }
 
@@ -149,7 +149,7 @@ public final class SettingValueParsers
             }
             else
             {
-                throw new IllegalArgumentException( "must be 'true' or 'false'" );
+                throw new IllegalArgumentException( format("'%s' is not a valid boolean value, must be 'true' or 'false'", value ) );
             }
         }
 
@@ -171,7 +171,7 @@ public final class SettingValueParsers
             }
             catch ( NumberFormatException e )
             {
-                throw new IllegalArgumentException( "not a valid double value", e );
+                throw new IllegalArgumentException( format("'%s' is not a valid double value", value ), e );
             }
         }
 
@@ -301,7 +301,7 @@ public final class SettingValueParsers
             }
             catch ( Exception e )
             {
-                throw new IllegalArgumentException( "Not a valid timezone value", e );
+                throw new IllegalArgumentException( format("'%s' is not a valid timezone value", value ), e );
             }
         }
 
@@ -375,11 +375,11 @@ public final class SettingValueParsers
             }
             catch ( IllegalArgumentException e )
             {
-                throw new IllegalArgumentException( format( "%s is not a valid size, must be e.g. 10, 5K, 1M, 11G", value ) );
+                throw new IllegalArgumentException( format( "'%s' is not a valid size, must be e.g. 10, 5K, 1M, 11G", value ) );
             }
             if ( bytes < 0 )
             {
-                throw new IllegalArgumentException( value + " is not a valid number of bytes. Must be positive or zero." );
+                throw new IllegalArgumentException( format("'%s' is not a valid number of bytes. Must be positive or zero.", value ) );
             }
             return bytes;
         }
@@ -402,7 +402,7 @@ public final class SettingValueParsers
             }
             catch ( URISyntaxException e )
             {
-                throw new IllegalArgumentException( "not a valid URI" );
+                throw new IllegalArgumentException( format("'%s' is not a valid URI", value ) );
             }
         }
 
@@ -430,7 +430,7 @@ public final class SettingValueParsers
             }
             catch ( URISyntaxException e )
             {
-                throw new IllegalArgumentException( "not a valid URI" );
+                throw new IllegalArgumentException( format("'%s' is not a valid URI", value ) );
             }
         }
 
@@ -485,7 +485,7 @@ public final class SettingValueParsers
         @Override
         public String getDescription()
         {
-            return "A valid database name";
+            return "A valid database name. " + DatabaseNameValidator.DESCRIPTION;
         }
     };
 
