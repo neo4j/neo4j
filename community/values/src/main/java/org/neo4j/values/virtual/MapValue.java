@@ -77,6 +77,19 @@ public abstract class MapValue extends VirtualValue
         {
             return 0;
         }
+
+        @Override
+        public long estimatedPayloadSize()
+        {
+            return 0L;
+        }
+
+        @Override
+        public long estimatedHeapUsage()
+        {
+            //EMPTY is a singleton and doesn't add to heap usage
+            return 0L;
+        }
     };
 
     static final class MapWrappingMapValue extends MapValue
@@ -727,6 +740,13 @@ public abstract class MapValue extends VirtualValue
         } );
         sb.append( '}' );
         return sb.toString();
+    }
+
+    @Override
+    public long estimatedPayloadSize()
+    {
+        //rough estimate
+        return size() * 150;
     }
 
     public abstract int size();

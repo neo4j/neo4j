@@ -24,7 +24,7 @@ import java.util.Arrays;
 
 import org.neo4j.values.ValueMapper;
 
-public class DateArray extends TemporalArray<LocalDate,DateValue>
+public final class DateArray extends TemporalArray<LocalDate,DateValue>
 {
     private final LocalDate[] value;
 
@@ -80,5 +80,12 @@ public class DateArray extends TemporalArray<LocalDate,DateValue>
     public String getTypeName()
     {
         return "DateArray";
+    }
+
+    @Override
+    long sizePerItem()
+    {
+        //4 bytes for the pointer + the size of the payload
+        return 4 + 24;
     }
 }

@@ -306,6 +306,20 @@ public class PointValue extends ScalarValue implements Point, Comparable<PointVa
         return crs;
     }
 
+    @Override
+    public long estimatedPayloadSize()
+    {
+        //assume the crs is just a static and doesn't use extra space
+        if ( coordinate.length == 2 )
+        {
+            return 40;
+        }
+        else
+        {
+            return 48;
+        }
+    }
+
     /**
      * Checks if this point is greater than (or equal) to lower and smaller than (or equal) to upper.
      *

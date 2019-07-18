@@ -78,4 +78,10 @@ public class MyVirtualValue extends VirtualValue
     public void writeTo( AnyValueWriter writer )
     {
     }
+
+    @Override
+    public long estimatedPayloadSize()
+    {
+        return Integer.BYTES;
+    }
 }

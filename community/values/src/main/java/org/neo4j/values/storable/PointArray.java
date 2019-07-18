@@ -25,7 +25,7 @@ import org.neo4j.graphdb.spatial.Geometry;
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.ValueMapper;
 
-public class PointArray extends NonPrimitiveArray<PointValue>
+public final class PointArray extends NonPrimitiveArray<PointValue>
 {
     private final PointValue[] value;
 
@@ -92,5 +92,12 @@ public class PointArray extends NonPrimitiveArray<PointValue>
     public String getTypeName()
     {
         return "PointArray";
+    }
+
+    @Override
+    long sizePerItem()
+    {
+        //assume 2D
+        return 60;
     }
 }

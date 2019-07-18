@@ -24,7 +24,7 @@ import java.util.Arrays;
 
 import org.neo4j.values.ValueMapper;
 
-public class DateTimeArray extends TemporalArray<ZonedDateTime,DateTimeValue>
+public final class DateTimeArray extends TemporalArray<ZonedDateTime,DateTimeValue>
 {
     private final ZonedDateTime[] value;
 
@@ -80,5 +80,11 @@ public class DateTimeArray extends TemporalArray<ZonedDateTime,DateTimeValue>
     public String getTypeName()
     {
         return "DateTimeArray";
+    }
+
+    @Override
+    long sizePerItem()
+    {
+        return 100;
     }
 }

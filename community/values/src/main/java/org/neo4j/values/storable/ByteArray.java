@@ -26,7 +26,7 @@ import org.neo4j.values.ValueMapper;
 
 import static java.lang.String.format;
 
-public class ByteArray extends IntegralArray
+public final class ByteArray extends IntegralArray
 {
     private final byte[] value;
 
@@ -143,5 +143,11 @@ public class ByteArray extends IntegralArray
     public String getTypeName()
     {
         return "ByteArray";
+    }
+
+    @Override
+    long sizePerItem()
+    {
+        return Byte.BYTES;
     }
 }

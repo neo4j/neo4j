@@ -27,7 +27,7 @@ import org.neo4j.values.ValueMapper;
 
 import static java.lang.String.format;
 
-public class BooleanArray extends ArrayValue
+public final class BooleanArray extends ArrayValue
 {
     private final boolean[] value;
 
@@ -139,5 +139,11 @@ public class BooleanArray extends ArrayValue
     public String toString()
     {
         return format( "%s%s", getTypeName(), Arrays.toString( value ) );
+    }
+
+    @Override
+    long sizePerItem()
+    {
+        return 1L;
     }
 }

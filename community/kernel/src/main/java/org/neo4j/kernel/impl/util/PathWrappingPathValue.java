@@ -83,4 +83,12 @@ public class PathWrappingPathValue extends PathValue
     {
         return path;
     }
+
+    @Override
+    public long estimatedPayloadSize()
+    {
+        int length = path.length();
+        //nodes are assumed to be 32 bytes and relationships 48
+        return 4 + length * 48 + (length + 1) * 32;
+    }
 }

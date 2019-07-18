@@ -26,7 +26,7 @@ import org.neo4j.values.ValueMapper;
 
 import static java.lang.String.format;
 
-public class FloatArray extends FloatingPointArray
+public final class FloatArray extends FloatingPointArray
 {
     private final float[] value;
 
@@ -143,5 +143,11 @@ public class FloatArray extends FloatingPointArray
     public String getTypeName()
     {
         return "FloatArray";
+    }
+
+    @Override
+    long sizePerItem()
+    {
+        return Float.BYTES;
     }
 }

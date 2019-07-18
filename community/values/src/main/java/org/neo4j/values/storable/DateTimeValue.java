@@ -618,6 +618,12 @@ public final class DateTimeValue extends TemporalValue<ZonedDateTime,DateTimeVal
         return value == datetime ? this : new DateTimeValue( datetime );
     }
 
+    @Override
+    public long estimatedPayloadSize()
+    {
+        return 120;
+    }
+
     private static final String ZONE_NAME = "(?<zoneName>[a-zA-Z0-9~._ /+-]+)";
     private static final Pattern PATTERN = Pattern.compile(
             DATE_PATTERN + "(?<time>T" + TIME_PATTERN + "(?:\\[" + ZONE_NAME + "\\])?" + ")?",

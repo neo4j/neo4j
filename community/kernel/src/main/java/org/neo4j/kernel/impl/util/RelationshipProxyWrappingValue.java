@@ -87,6 +87,30 @@ public class RelationshipProxyWrappingValue extends RelationshipValue
         writer.writeRelationship( id(), startNode().id(), endNode().id(), type(), p );
     }
 
+    @Override
+    public long estimatedPayloadSize()
+    {
+        //5 references (20) plus the relationship is assumed to use 48 bytes
+        long size = 68;
+        if ( type != null )
+        {
+            size += type.estimatedHeapUsage();
+        }
+        if ( properties != null )
+        {
+            size += properties.estimatedHeapUsage();
+        }
+        if ( startNode != null )
+        {
+            size += startNode.estimatedHeapUsage();
+        }
+        if ( endNode != null )
+        {
+            size += endNode.estimatedHeapUsage();
+        }
+       return size;
+    }
+
     public void populate()
     {
         try

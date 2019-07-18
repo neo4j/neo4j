@@ -81,4 +81,10 @@ public class TimeArray extends TemporalArray<OffsetTime, TimeValue>
     {
         return "TimeArray";
     }
+
+    @Override
+    long sizePerItem()
+    {
+        return 50;
+    }
 }

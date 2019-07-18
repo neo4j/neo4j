@@ -73,6 +73,19 @@ public abstract class BooleanValue extends ScalarValue
         return "Boolean";
     }
 
+    @Override
+    public long estimatedPayloadSize()
+    {
+        return 0L;
+    }
+
+    @Override
+    public long estimatedHeapUsage()
+    {
+        //BOOLEANS are singletons and doesn't add to heap usage
+        return 0L;
+    }
+
     public static final BooleanValue TRUE = new BooleanValue()
     {
         @Override

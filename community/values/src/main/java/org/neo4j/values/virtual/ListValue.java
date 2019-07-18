@@ -817,6 +817,14 @@ public abstract class ListValue extends VirtualValue implements SequenceValue, I
         }
     }
 
+    @Override
+    public long estimatedPayloadSize()
+    {
+        int size = size();
+        //assume we store a AnyValue[]
+        return size > 0 ?   28 + (4 + head().estimatedHeapUsage() ) * size  : 0L;
+    }
+
     public ListValue dropNoValues()
     {
         return new DropNoValuesListValue( this );

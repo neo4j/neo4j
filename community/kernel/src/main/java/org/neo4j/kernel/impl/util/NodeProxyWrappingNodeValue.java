@@ -136,4 +136,20 @@ public class NodeProxyWrappingNodeValue extends NodeValue
         }
         return m;
     }
+
+    @Override
+    public long estimatedPayloadSize()
+    {
+        //3 reference pointers, and the Node is assumed 32 bytes
+        long size = 44;
+        if ( labels != null )
+        {
+            size += labels.estimatedHeapUsage();
+        }
+        if ( properties != null )
+        {
+            size += properties.estimatedHeapUsage();
+        }
+        return size;
+    }
 }

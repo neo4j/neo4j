@@ -392,6 +392,13 @@ public final class TimeValue extends TemporalValue<OffsetTime,TimeValue>
         return time == value ? this : new TimeValue( time );
     }
 
+    @Override
+    public long estimatedPayloadSize()
+    {
+        //rough estimate
+        return 50;
+    }
+
     private static final String OFFSET_PATTERN = "(?<zone>Z|[+-](?<zoneHour>[0-9]{2})(?::?(?<zoneMinute>[0-9]{2}))?)";
     static final String TIME_PATTERN = LocalTimeValue.TIME_PATTERN + "(?:" + OFFSET_PATTERN + ")?";
     private static final Pattern PATTERN = Pattern.compile( "(?:T)?" + TIME_PATTERN );

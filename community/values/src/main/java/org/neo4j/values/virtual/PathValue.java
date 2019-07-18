@@ -216,5 +216,10 @@ public abstract class PathValue extends VirtualValue
             return edges;
         }
 
+        @Override
+        public long estimatedPayloadSize()
+        {
+            throw new UnsupportedOperationException(  );
+        }
     }
 }

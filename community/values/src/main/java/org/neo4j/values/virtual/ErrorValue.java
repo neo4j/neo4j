@@ -90,4 +90,10 @@ public final class ErrorValue extends VirtualValue
     {
         return "Error";
     }
+
+    @Override
+    public long estimatedPayloadSize()
+    {
+        return 100;
+    }
 }

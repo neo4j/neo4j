@@ -132,4 +132,10 @@ public class StringArray extends TextArray
     {
         return "StringArray";
     }
+
+    @Override
+    long sizePerItem()
+    {
+        return value.length > 0 ? AnyValue.pad( 12 + Character.BYTES * value[0].length() ) : 0;
+    }
 }

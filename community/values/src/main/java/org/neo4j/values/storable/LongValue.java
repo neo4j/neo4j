@@ -78,4 +78,10 @@ public final class LongValue extends IntegralValue
     {
         return "Long";
     }
+
+    @Override
+    public long estimatedPayloadSize()
+    {
+        return Long.BYTES;
+    }
 }

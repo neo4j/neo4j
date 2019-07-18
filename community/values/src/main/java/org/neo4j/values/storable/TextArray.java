@@ -82,4 +82,10 @@ public abstract class TextArray extends ArrayValue
     {
         return NumberType.NO_NUMBER;
     }
+
+    @Override
+    long sizePerItem()
+    {
+        return 500;
+    }
 }

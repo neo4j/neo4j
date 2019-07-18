@@ -60,4 +60,34 @@ public abstract class AnyValue
     public abstract <T> T map( ValueMapper<T> mapper );
 
     public abstract String getTypeName();
+
+    public abstract long estimatedPayloadSize();
+
+    /**
+     * Gives an estimation of the heap usage in bytes for the given value.
+     * <p>
+     * The estimation assumes a 64bit JVM with 32 bit references (-XX:+UseCompressedOops) but is fairly accurate
+     * for simple values even without these assumptions. However for complicated types such as lists and maos these
+     * values
+     * are very crude estimates, typically something like <code>size * NUMBER</code> since we don't want to pay the
+     * price
+     * of (potentially recursively) iterate over the individual elements.
+     *
+     * @return an estimation of how many bytes this value consumes.
+     */
+    public long estimatedHeapUsage()
+    {
+        //Each AnyValue has a 12 bit header and stores a 4 byte int for the hash
+        return pad( 16 + estimatedPayloadSize() );
+    }
+
+    /**
+     * pads the value to nearest next multiple of 8
+     * @param value the value to pad
+     * @return the value padded to the nearest multiple of 8
+     */
+    public static long pad( long value )
+    {
+        return ((value + 7) / 8) * 8;
+    }
 }

@@ -92,4 +92,11 @@ public class DurationArray extends NonPrimitiveArray<DurationValue>
     {
         return "DurationArray";
     }
+
+    @Override
+    long sizePerItem()
+    {
+        //4 bytes for the pointer + the size of the payload
+        return 4 + 48;
+    }
 }

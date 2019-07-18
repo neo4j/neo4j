@@ -251,4 +251,10 @@ public final class CharValue extends TextValue
     {
         return "Char";
     }
+
+    @Override
+    public long estimatedPayloadSize()
+    {
+        return Character.BYTES;
+    }
 }

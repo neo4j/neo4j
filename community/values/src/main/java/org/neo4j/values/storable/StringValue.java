@@ -299,6 +299,18 @@ public abstract class StringValue extends TextValue
         {
             return "";
         }
+
+        @Override
+        public long estimatedPayloadSize()
+        {
+            return 0;
+        }
+
+        @Override
+        public long estimatedHeapUsage()
+        {
+            return 0;
+        }
     };
 }
 

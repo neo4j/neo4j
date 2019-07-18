@@ -78,4 +78,10 @@ public final class FloatValue extends FloatingPointValue
     {
         return "Float";
     }
+
+    @Override
+    public long estimatedPayloadSize()
+    {
+        return Float.BYTES;
+    }
 }

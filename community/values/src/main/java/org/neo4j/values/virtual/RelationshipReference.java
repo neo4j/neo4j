@@ -55,4 +55,10 @@ public class RelationshipReference extends VirtualRelationshipValue
     {
         return id;
     }
+
+    @Override
+    public long estimatedPayloadSize()
+    {
+        return Long.BYTES;
+    }
 }

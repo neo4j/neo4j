@@ -407,6 +407,13 @@ public final class LocalDateTimeValue extends TemporalValue<LocalDateTime,LocalD
         return dateTime == value ? this : new LocalDateTimeValue( dateTime );
     }
 
+    @Override
+    public long estimatedPayloadSize()
+    {
+        //8 bytes (long) + 4 bytes reference to a 72 bytes LocalDateTime
+        return 84;
+    }
+
     private static final Pattern PATTERN = Pattern.compile(
             DATE_PATTERN + "(?<time>T" + TIME_PATTERN + ")?",
             Pattern.CASE_INSENSITIVE );

@@ -116,5 +116,11 @@ public abstract class RelationshipValue extends VirtualRelationshipValue
         {
             return properties;
         }
+
+        @Override
+        public long estimatedPayloadSize()
+        {
+            return 12 + Long.BYTES + startNode().estimatedHeapUsage() + endNode().estimatedHeapUsage() + type.estimatedHeapUsage();
+        }
     }
 }

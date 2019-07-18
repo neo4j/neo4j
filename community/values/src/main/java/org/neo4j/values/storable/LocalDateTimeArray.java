@@ -81,4 +81,11 @@ public class LocalDateTimeArray extends TemporalArray<LocalDateTime, LocalDateTi
     {
         return "LocalDateTimeArray";
     }
+
+    @Override
+    long sizePerItem()
+    {
+        //4 bytes reference + 72 bytes (LocalDateTime)
+        return 76;
+    }
 }
