@@ -84,7 +84,9 @@ class SystemCommandQuerySubscriber(inner: QuerySubscriber, queryHandler: QueryHa
   @volatile private var empty = true
   @volatile private var failed: Option[Throwable] = None
 
-  override def onResult(numberOfFields: Int): Unit = inner.onResult(numberOfFields)
+  override def onResult(numberOfFields: Int): Unit = if (failed.isEmpty) {
+    inner.onResult(numberOfFields)
+  }
 
   override def onResultCompleted(statistics: QueryStatistics): Unit = {
     if (empty) {
@@ -93,15 +95,21 @@ class SystemCommandQuerySubscriber(inner: QuerySubscriber, queryHandler: QueryHa
         failed = Some(error)
       })
     }
-    inner.onResultCompleted(statistics)
+    if (failed.isEmpty) {
+      inner.onResultCompleted(statistics)
+    }
   }
 
   override def onRecord(): Unit = {
-    empty = false
-    inner.onRecord()
+    if (failed.isEmpty) {
+      empty = false
+      inner.onRecord()
+    }
   }
 
-  override def onRecordCompleted(): Unit = inner.onRecordCompleted()
+  override def onRecordCompleted(): Unit = if (failed.isEmpty) {
+    inner.onRecordCompleted()
+  }
 
   override def onField(offset: Int, value: AnyValue): Unit = {
     queryHandler.onResult(offset, value).foreach(error => {
@@ -109,7 +117,9 @@ class SystemCommandQuerySubscriber(inner: QuerySubscriber, queryHandler: QueryHa
       inner.onError(cypherError)
       failed = Some(cypherError)
     })
-    inner.onField(offset, value)
+    if (failed.isEmpty) {
+      inner.onField(offset, value)
+    }
   }
 
   override def onError(throwable: Throwable): Unit = {
