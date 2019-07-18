@@ -41,14 +41,13 @@ public class RunMessage extends org.neo4j.bolt.v3.messaging.request.RunMessage
 
     public RunMessage( String statement, MapValue params )
     {
-        this( VirtualValues.EMPTY_MAP, List.of(), null, AccessMode.WRITE, Map.of(), statement, params, ABSENT_DB_NAME );
+        this( statement, params, VirtualValues.EMPTY_MAP, List.of(), null, AccessMode.WRITE, Map.of(), ABSENT_DB_NAME );
     }
 
-    public RunMessage( MapValue meta, List<Bookmark> bookmarks, Duration txTimeout,
-            AccessMode accessMode, Map<String,Object> txMetadata, String statement, MapValue params,
-            String databaseName )
+    public RunMessage( String statement, MapValue params, MapValue meta, List<Bookmark> bookmarks, Duration txTimeout, AccessMode accessMode,
+            Map<String,Object> txMetadata, String databaseName )
     {
-        super( meta, bookmarks, txTimeout, accessMode, txMetadata, statement, params );
+        super( statement, params, meta, bookmarks, txTimeout, accessMode, txMetadata );
         this.databaseName = databaseName;
     }
 

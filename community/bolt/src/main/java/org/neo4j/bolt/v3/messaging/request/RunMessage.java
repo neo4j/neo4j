@@ -43,11 +43,11 @@ public class RunMessage extends TransactionInitiatingMessage
 
     public RunMessage( String statement, MapValue params )
     {
-        this( VirtualValues.EMPTY_MAP, List.of(), null, AccessMode.WRITE, Map.of(), statement, params );
+        this( statement, params, VirtualValues.EMPTY_MAP, List.of(), null, AccessMode.WRITE, Map.of() );
     }
 
-    public RunMessage( MapValue meta, List<Bookmark> bookmarks, Duration txTimeout,
-            AccessMode accessMode, Map<String,Object> txMetadata, String statement, MapValue params )
+    public RunMessage( String statement, MapValue params, MapValue meta, List<Bookmark> bookmarks, Duration txTimeout, AccessMode accessMode,
+            Map<String,Object> txMetadata )
     {
         super( meta, bookmarks, txTimeout, accessMode, txMetadata );
         this.statement = statement;

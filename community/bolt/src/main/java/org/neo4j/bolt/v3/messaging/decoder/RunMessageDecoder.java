@@ -81,10 +81,10 @@ public class RunMessageDecoder implements RequestMessageDecoder
         return newRunMessage( statement, params, metadata, bookmarks, txTimeout, accessMode, txMetadata );
     }
 
-    protected RequestMessage newRunMessage( String statement, MapValue params, MapValue metadata, List<Bookmark> bookmarks, Duration txTimeout,
+    protected RequestMessage newRunMessage( String statement, MapValue params, MapValue meta, List<Bookmark> bookmarks, Duration txTimeout,
             AccessMode accessMode, Map<String,Object> txMetadata ) throws BoltIOException
     {
-        return new RunMessage( metadata, bookmarks, txTimeout, accessMode, txMetadata, statement, params );
+        return new RunMessage( statement, params, meta, bookmarks, txTimeout, accessMode, txMetadata );
     }
 }
 

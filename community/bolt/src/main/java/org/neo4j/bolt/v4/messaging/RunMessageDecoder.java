@@ -39,11 +39,11 @@ public class RunMessageDecoder extends org.neo4j.bolt.v3.messaging.decoder.RunMe
     }
 
     @Override
-    protected RequestMessage newRunMessage( String statement, MapValue params, MapValue metadata, List<Bookmark> bookmarks, Duration txTimeout,
+    protected RequestMessage newRunMessage( String statement, MapValue params, MapValue meta, List<Bookmark> bookmarks, Duration txTimeout,
             AccessMode accessMode, Map<String,Object> txMetadata ) throws BoltIOException
     {
-        var databaseName = MessageMetadataParser.parseDatabaseName( metadata );
-        return new RunMessage( metadata, bookmarks, txTimeout, accessMode, txMetadata, statement, params, databaseName ); // v4 RUN message
+        var databaseName = MessageMetadataParser.parseDatabaseName( meta );
+        return new RunMessage( statement, params, meta, bookmarks, txTimeout, accessMode, txMetadata, databaseName ); // v4 RUN message
     }
 }
 
