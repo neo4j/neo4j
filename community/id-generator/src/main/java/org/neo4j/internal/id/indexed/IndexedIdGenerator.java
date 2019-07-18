@@ -475,6 +475,7 @@ public class IndexedIdGenerator implements IdGenerator
                     System.out.println( format( "%s [%d]", BitsUtil.bitsToString( value.getLongs() ), key.getIdRangeIdx() ) );
                 }
             } );
+            System.out.println( header );
         }
     }
 }

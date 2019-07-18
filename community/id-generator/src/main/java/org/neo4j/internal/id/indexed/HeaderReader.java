@@ -23,6 +23,8 @@ import java.nio.ByteBuffer;
 
 import org.neo4j.index.internal.gbptree.Header;
 
+import static java.lang.String.format;
+
 /**
  * {@link Header.Reader} capable of reading header of an {@link IndexedIdGenerator}. After read correctly the header data
  * will exist as fields in the instance.
@@ -41,5 +43,11 @@ public class HeaderReader implements Header.Reader
         this.highId = headerBytes.getLong();
         this.generation = headerBytes.getLong();
         this.idsPerEntry = headerBytes.getInt();
+    }
+
+    @Override
+    public String toString()
+    {
+        return format( "High-ID:%d, Generation:%d", highId, generation );
     }
 }
