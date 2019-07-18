@@ -48,8 +48,7 @@ public interface AccessMode
                                 "requires a password change.%n" +
                                 "Changing your password is easy to do via the Neo4j Browser.%n" +
                                 "If you are connecting via a shell or programmatically via a driver, " +
-                                "just issue a `ALTER CURRENT USER SET PASSWORD FROM 'current password' TO 'new password'` " +
-                                "statement against the system database in the current " +
+                                "just issue a `CALL dbms.security.changePassword('new password')` statement in the current " +
                                 "session, and then restart your driver with the new password configured." ),
                                 Status.Security.CredentialsExpired );
                     }

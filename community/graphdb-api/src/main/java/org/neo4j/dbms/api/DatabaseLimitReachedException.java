@@ -27,9 +27,9 @@ import org.neo4j.annotations.api.PublicApi;
 @PublicApi
 public class DatabaseLimitReachedException extends DatabaseManagementException
 {
-    public DatabaseLimitReachedException( String startOfErrorMessage )
+    public DatabaseLimitReachedException()
     {
-        super( startOfErrorMessage + "The total limit of databases is already reached. " +
-                "To create more you need to either drop databases or change the limit via the config setting 'dbms.max_databases'" );
+        super( "The total limit of databases is already reached. To create more you need to either drop databases or change the limit via the " +
+                "config setting 'dbms.max_databases'" );
     }
 }
