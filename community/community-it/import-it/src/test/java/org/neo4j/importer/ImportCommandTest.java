@@ -1878,9 +1878,9 @@ class ImportCommandTest
         String relationshipsEscapedSpaced = relationshipData( true, config, nodeIds, TRUE, true ).getAbsolutePath();
         File dbConfig = prepareDefaultConfigFile();
         String arguments = format(
-                "\"--additional-config=%s\"%n" +
-                "\"--nodes=%s\"%n" +
-                "\"--relationships=%s\"%n",
+                "--additional-config=%s%n" +
+                "--nodes=%s%n" +
+                "--relationships=%s%n",
                 dbConfig.getAbsolutePath(),
                 nodesEscapedSpaces, relationshipsEscapedSpaced );
         writeToFile( argumentFile, arguments, false );
@@ -2539,7 +2539,7 @@ class ImportCommandTest
     {
         final var ctx = new ExecutionContext( homeDir, homeDir.resolve( "conf" ), System.out, System.err, testDirectory.getFileSystem() );
         final var cmd = new ImportCommand( ctx );
-        CommandLine.populateCommand( cmd, arguments );
+        new CommandLine( cmd ).setUseSimplifiedAtFiles( true ).parseArgs( arguments );
         cmd.execute();
     }
 }
