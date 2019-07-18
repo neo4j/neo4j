@@ -192,7 +192,7 @@ class FreeIdScanner implements Closeable
         }
 
         // Then continue looking at additional entries
-        while ( pendingItemsToCacheCursor < pendingItemsToCache.length )
+        while ( pendingItemsToCacheCursor < maxItemsToCache )
         {
             if ( !scanner.next() )
             {
@@ -220,7 +220,7 @@ class FreeIdScanner implements Closeable
         final long baseId = key.getIdRangeIdx() * idsPerEntry;
         final boolean differentGeneration = generation != range.getGeneration();
 
-        for ( int i = startPosInRange; i < range.size() && pendingItemsToCacheCursor < maxItemsToCache; i++ )
+        for ( int i = startPosInRange; i < idsPerEntry && pendingItemsToCacheCursor < maxItemsToCache; i++ )
         {
             nextPosInRange = i + 1;
             final IdState state = range.getState( i );

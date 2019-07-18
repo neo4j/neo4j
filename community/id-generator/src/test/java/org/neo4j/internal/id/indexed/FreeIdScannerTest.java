@@ -506,7 +506,49 @@ class FreeIdScannerTest
         assertEquals( 0, cache.size() );
     }
 
+    @Test
+    void shouldNotSkipRangeThatIsFoundButNoCacheSpaceLeft()
+    {
+        // given
+        long generation = 1;
+        int cacheSize = IDS_PER_ENTRY / 2;
+        int halfCacheSize = cacheSize / 2;
+        FreeIdScanner scanner = scanner( IDS_PER_ENTRY, cacheSize, generation );
+        forEachId( generation, range( 0, IDS_PER_ENTRY * 2 + 4 ) ).accept( ( marker, id ) ->
+        {
+            marker.markDeleted( id );
+            marker.markFree( id );
+        } );
+        scanner.scanForMoreFreeIds();
+        assertCacheHasIdsNonExhaustive( range( 0, halfCacheSize ) );
+        scanner.scanForMoreFreeIds();
+        assertCacheHasIdsNonExhaustive( range( halfCacheSize, cacheSize ) );
+
+        // when
+        scanner.scanForMoreFreeIds();
+
+        // then
+        assertCacheHasIds( range( cacheSize, IDS_PER_ENTRY ) );
+        scanner.scanForMoreFreeIds();
+        assertCacheHasIds( range( IDS_PER_ENTRY, IDS_PER_ENTRY + cacheSize ) );
+        scanner.scanForMoreFreeIds();
+        assertCacheHasIds( range( IDS_PER_ENTRY + cacheSize, IDS_PER_ENTRY * 2 ) );
+        scanner.scanForMoreFreeIds();
+        assertCacheHasIds( range( IDS_PER_ENTRY * 2, IDS_PER_ENTRY * 2 + 4 ) );
+        assertEquals( -1, cache.takeOrDefault( -1 ) );
+    }
+
+    private void assertCacheHasIdsNonExhaustive( Range... ranges )
+    {
+        assertCacheHasIds( false, ranges );
+    }
+
     private void assertCacheHasIds( Range... ranges )
+    {
+        assertCacheHasIds( true, ranges );
+    }
+
+    private void assertCacheHasIds( boolean exhaustive, Range... ranges )
     {
         for ( Range range : ranges )
         {
@@ -515,7 +557,10 @@ class FreeIdScannerTest
                 assertEquals( id, cache.takeOrDefault( -1 ) );
             }
         }
-        assertEquals( -1, cache.takeOrDefault( -1 ) );
+        if ( exhaustive )
+        {
+            assertEquals( -1, cache.takeOrDefault( -1 ) );
+        }
     }
 
     private Consumer<BiConsumer<IdRangeMarker, Long>> forEachId( long generation, Range... ranges )
