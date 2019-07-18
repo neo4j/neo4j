@@ -90,6 +90,8 @@ trait ExecutionContext {
     */
   def invalidateCachedRelationshipProperties(rel: Long): Unit
 
+  def estimatedHeapUsage: Long
+
   def copyWith(key: String, value: AnyValue): ExecutionContext
   def copyWith(key1: String, value1: AnyValue, key2: String, value2: AnyValue): ExecutionContext
   def copyWith(key1: String, value1: AnyValue, key2: String, value2: AnyValue, key3: String, value3: AnyValue): ExecutionContext
@@ -260,6 +262,8 @@ class MapExecutionContext(private val m: MutableMap[String, AnyValue], private v
       }).foreach(cnp => setCachedProperty(cnp, null))
     }
   }
+
+  override def estimatedHeapUsage: Long = m.values.foldLeft(0L)(_ + _.estimatedHeapUsage())
 
   private def cloneFromMap(newMap: MutableMap[String, AnyValue]): ExecutionContext = {
     val newCachedProperties = if (cachedProperties == null) null else cachedProperties.clone()
