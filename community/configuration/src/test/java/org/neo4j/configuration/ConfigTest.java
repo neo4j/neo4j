@@ -388,15 +388,15 @@ class ConfigTest
                 .addSettingsClass( DependencySettings.class )
                 .build();
 
-        assertEquals( Path.of( "/base/" ), config.get( DependencySettings.basePath ) );
-        assertEquals( Path.of( "/base/mid/" ), config.get( DependencySettings.midPath ) );
-        assertEquals( Path.of( "/base/mid/end/file" ), config.get( DependencySettings.endPath ) );
-        assertEquals( Path.of( "/another/path/file" ), config.get( DependencySettings.absolute ) );
+        assertEquals( Path.of( "/base/" ).toAbsolutePath(), config.get( DependencySettings.basePath ) );
+        assertEquals( Path.of( "/base/mid/" ).toAbsolutePath(), config.get( DependencySettings.midPath ) );
+        assertEquals( Path.of( "/base/mid/end/file" ).toAbsolutePath(), config.get( DependencySettings.endPath ) );
+        assertEquals( Path.of( "/another/path/file" ).toAbsolutePath(), config.get( DependencySettings.absolute ) );
 
         config.set( DependencySettings.endPath, Path.of("/path/another_file") );
         config.set( DependencySettings.absolute, Path.of("path/another_file") );
-        assertEquals( Path.of( "/path/another_file" ), config.get( DependencySettings.endPath ) );
-        assertEquals( Path.of( "/base/mid/path/another_file" ), config.get( DependencySettings.absolute ) );
+        assertEquals( Path.of( "/path/another_file" ).toAbsolutePath(), config.get( DependencySettings.endPath ) );
+        assertEquals( Path.of( "/base/mid/path/another_file" ).toAbsolutePath(), config.get( DependencySettings.absolute ) );
     }
 
     private static final class BrokenDependencySettings implements SettingsDeclaration
@@ -751,10 +751,11 @@ class ConfigTest
 
     private static final class DependencySettings implements SettingsDeclaration
     {
-        static Setting<Path> basePath = newBuilder( "test.base.path", PATH, Path.of( "/base/" ) ).immutable().build();
+        static Setting<Path> basePath = newBuilder( "test.base.path", PATH, Path.of( "/base/" ).toAbsolutePath() ).immutable().build();
         static Setting<Path> midPath = newBuilder( "test.mid.path", PATH, Path.of( "mid/" ) ).setDependency( basePath ).immutable().build();
         static Setting<Path> endPath = newBuilder( "test.end.path", PATH, Path.of( "end/file" ) ).setDependency( midPath ).build();
-        static Setting<Path> absolute = newBuilder( "test.absolute.path", PATH, Path.of( "/another/path/file" ) ).setDependency( midPath ).build();
+        static Setting<Path> absolute =
+                newBuilder( "test.absolute.path", PATH, Path.of( "/another/path/file" ).toAbsolutePath() ).setDependency( midPath ).build();
 
         private static SettingValueParser<String> DefaultParser = new SettingValueParser<>()
         {

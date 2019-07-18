@@ -275,11 +275,14 @@ class SettingTest
     void testSolvePath()
     {
         var setting = (SettingImpl<Path>) setting( "setting", PATH );
-        assertEquals( Path.of( "/base/path/to/file" ), setting.solveDependency( setting.parse( "to/file" ), setting.parse( "/base/path" ) ) );
-        assertEquals( Path.of( "/to/file" ), setting.solveDependency( setting.parse( "/to/file" ), setting.parse( "/base/path" ) ) );
-        assertEquals( Path.of( "/base/path/" ), setting.solveDependency( setting.parse( "" ), setting.parse( "/base/path/" ) ) );
-        assertEquals( Path.of( "/base/path" ), setting.solveDependency( setting.parse( "path" ), setting.parse( "/base" ) ) );
-        assertEquals( Path.of( "/base" ), setting.solveDependency( null, setting.parse( "/base" ) ) );
+        assertEquals( Path.of( "/base/path/to/file" ).toAbsolutePath(),
+                setting.solveDependency( setting.parse( "to/file" ), setting.parse( "/base/path" ).toAbsolutePath() ) );
+        assertEquals( Path.of( "/to/file" ).toAbsolutePath(),
+                setting.solveDependency( setting.parse( "/to/file" ), setting.parse( "/base/path" ).toAbsolutePath() ) );
+        assertEquals( Path.of( "/base/path/" ).toAbsolutePath(),
+                setting.solveDependency( setting.parse( "" ), setting.parse( "/base/path/" ).toAbsolutePath() ) );
+        assertEquals( Path.of( "/base/path" ).toAbsolutePath(), setting.solveDependency( setting.parse( "path" ), setting.parse( "/base" ).toAbsolutePath() ) );
+        assertEquals( Path.of( "/base" ).toAbsolutePath(), setting.solveDependency( null, setting.parse( "/base" ).toAbsolutePath() ) );
         assertThrows( IllegalArgumentException.class, () -> setting.solveDependency( setting.parse( "path" ), setting.parse( "base" ) ) );
     }
 
