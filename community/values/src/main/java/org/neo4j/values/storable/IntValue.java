@@ -80,7 +80,7 @@ public final class IntValue extends IntegralValue
     }
 
     @Override
-    public long estimatedPayloadSize()
+    protected long estimatedPayloadSize()
     {
         return Integer.BYTES;
     }

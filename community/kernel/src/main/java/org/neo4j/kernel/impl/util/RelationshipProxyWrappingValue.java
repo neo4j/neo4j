@@ -88,7 +88,7 @@ public class RelationshipProxyWrappingValue extends RelationshipValue
     }
 
     @Override
-    public long estimatedPayloadSize()
+    protected long estimatedPayloadSize()
     {
         //5 references (20) plus the relationship is assumed to use 48 bytes
         long size = 68;

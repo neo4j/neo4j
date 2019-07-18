@@ -80,7 +80,7 @@ public class MyVirtualValue extends VirtualValue
     }
 
     @Override
-    public long estimatedPayloadSize()
+    protected long estimatedPayloadSize()
     {
         return Integer.BYTES;
     }

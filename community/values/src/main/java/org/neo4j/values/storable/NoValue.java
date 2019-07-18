@@ -129,7 +129,7 @@ public final class NoValue extends Value
     }
 
     @Override
-    public long estimatedPayloadSize()
+    protected long estimatedPayloadSize()
     {
         return 0L;
     }

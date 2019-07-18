@@ -79,7 +79,7 @@ public abstract class MapValue extends VirtualValue
         }
 
         @Override
-        public long estimatedPayloadSize()
+        protected long estimatedPayloadSize()
         {
             return 0L;
         }
@@ -743,7 +743,7 @@ public abstract class MapValue extends VirtualValue
     }
 
     @Override
-    public long estimatedPayloadSize()
+    protected long estimatedPayloadSize()
     {
         //rough estimate
         return size() * 150;

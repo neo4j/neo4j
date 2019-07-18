@@ -307,7 +307,7 @@ public class PointValue extends ScalarValue implements Point, Comparable<PointVa
     }
 
     @Override
-    public long estimatedPayloadSize()
+    protected long estimatedPayloadSize()
     {
         //assume the crs is just a static and doesn't use extra space
         if ( coordinate.length == 2 )

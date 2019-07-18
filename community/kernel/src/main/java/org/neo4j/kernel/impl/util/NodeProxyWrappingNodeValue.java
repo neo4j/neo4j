@@ -138,7 +138,7 @@ public class NodeProxyWrappingNodeValue extends NodeValue
     }
 
     @Override
-    public long estimatedPayloadSize()
+    protected long estimatedPayloadSize()
     {
         //3 reference pointers, and the Node is assumed 32 bytes
         long size = 44;

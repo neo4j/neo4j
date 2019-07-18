@@ -217,7 +217,7 @@ public abstract class PathValue extends VirtualValue
         }
 
         @Override
-        public long estimatedPayloadSize()
+        protected long estimatedPayloadSize()
         {
             throw new UnsupportedOperationException(  );
         }

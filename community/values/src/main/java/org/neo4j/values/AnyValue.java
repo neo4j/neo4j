@@ -61,7 +61,7 @@ public abstract class AnyValue
 
     public abstract String getTypeName();
 
-    public abstract long estimatedPayloadSize();
+    protected abstract long estimatedPayloadSize();
 
     /**
      * Gives an estimation of the heap usage in bytes for the given value.

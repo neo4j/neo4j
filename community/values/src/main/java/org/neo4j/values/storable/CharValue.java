@@ -253,7 +253,7 @@ public final class CharValue extends TextValue
     }
 
     @Override
-    public long estimatedPayloadSize()
+    protected long estimatedPayloadSize()
     {
         return Character.BYTES;
     }

@@ -23,7 +23,6 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import org.neo4j.hashing.HashFunction;
-import org.neo4j.values.AnyValue;
 
 /**
  * Implementation of StringValue that wraps a `java.lang.String` and
@@ -167,7 +166,7 @@ final class StringWrappingStringValue extends StringValue
     }
 
     @Override
-    public long estimatedPayloadSize()
+    protected long estimatedPayloadSize()
     {
         return 48 + Character.BYTES * value.length();
     }

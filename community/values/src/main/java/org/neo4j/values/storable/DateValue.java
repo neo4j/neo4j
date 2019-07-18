@@ -571,7 +571,7 @@ public final class DateValue extends TemporalValue<LocalDate,DateValue>
     }
 
     @Override
-    public long estimatedPayloadSize()
+    protected long estimatedPayloadSize()
     {
         //8 bytes for the reference + the size of LocalDate (24)
         return 32L;

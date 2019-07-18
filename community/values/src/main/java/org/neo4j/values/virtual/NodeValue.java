@@ -89,7 +89,7 @@ public abstract class NodeValue extends VirtualNodeValue
         }
 
         @Override
-        public long estimatedPayloadSize()
+        protected long estimatedPayloadSize()
         {
             return 8 + Long.BYTES + labels.estimatedHeapUsage() + properties.estimatedHeapUsage();
         }

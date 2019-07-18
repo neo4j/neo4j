@@ -393,7 +393,7 @@ public final class TimeValue extends TemporalValue<OffsetTime,TimeValue>
     }
 
     @Override
-    public long estimatedPayloadSize()
+    protected long estimatedPayloadSize()
     {
         //rough estimate
         return 50;

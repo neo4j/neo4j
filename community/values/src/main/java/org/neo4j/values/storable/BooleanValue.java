@@ -74,7 +74,7 @@ public abstract class BooleanValue extends ScalarValue
     }
 
     @Override
-    public long estimatedPayloadSize()
+    protected long estimatedPayloadSize()
     {
         return 0L;
     }

@@ -301,7 +301,7 @@ public abstract class StringValue extends TextValue
         }
 
         @Override
-        public long estimatedPayloadSize()
+        protected long estimatedPayloadSize()
         {
             return 0;
         }

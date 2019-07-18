@@ -80,7 +80,7 @@ public final class DoubleValue extends FloatingPointValue
     }
 
     @Override
-    public long estimatedPayloadSize()
+    protected long estimatedPayloadSize()
     {
         return Double.BYTES;
     }

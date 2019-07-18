@@ -247,7 +247,7 @@ public final class DurationValue extends ScalarValue implements TemporalAmount, 
     }
 
     @Override
-    public long estimatedPayloadSize()
+    protected long estimatedPayloadSize()
     {
         //4 longs (months, days, seconds, nanos)
         return 32L;

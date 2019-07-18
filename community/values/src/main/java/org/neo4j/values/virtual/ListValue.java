@@ -818,7 +818,7 @@ public abstract class ListValue extends VirtualValue implements SequenceValue, I
     }
 
     @Override
-    public long estimatedPayloadSize()
+    protected long estimatedPayloadSize()
     {
         int size = size();
         //assume we store a AnyValue[]

@@ -92,7 +92,7 @@ public final class ErrorValue extends VirtualValue
     }
 
     @Override
-    public long estimatedPayloadSize()
+    protected long estimatedPayloadSize()
     {
         return 100;
     }

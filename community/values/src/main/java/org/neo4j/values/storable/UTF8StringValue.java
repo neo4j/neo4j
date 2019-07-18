@@ -24,7 +24,6 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import org.neo4j.hashing.HashFunction;
-import org.neo4j.values.AnyValue;
 
 import static org.neo4j.values.storable.Values.utf8Value;
 
@@ -109,7 +108,7 @@ public final class UTF8StringValue extends StringValue
     }
 
     @Override
-    public long estimatedPayloadSize()
+    protected long estimatedPayloadSize()
     {
         return 28 + Byte.BYTES * bytes.length;
     }
