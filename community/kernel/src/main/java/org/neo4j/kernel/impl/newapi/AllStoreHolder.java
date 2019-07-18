@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.newapi;
 
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.Set;
 import java.util.function.Function;
@@ -438,12 +439,21 @@ public class AllStoreHolder extends Read
 
     Iterator<IndexDescriptor> indexesGetForLabel( StorageSchemaReader reader, int labelId )
     {
-        Iterator<IndexDescriptor> iterator = reader.indexesGetForLabel( labelId );
-        if ( ktx.hasTxStateWithChanges() )
+        if ( ktx.securityContext().mode().allowsTraverseLabel( labelId ) )
         {
-            iterator = ktx.txState().indexDiffSetsByLabel( labelId ).apply( iterator );
+            Iterator<IndexDescriptor> iterator = reader.indexesGetForLabel( labelId );
+
+            if ( ktx.hasTxStateWithChanges() )
+            {
+                iterator = ktx.txState().indexDiffSetsByLabel( labelId ).apply( iterator );
+            }
+
+            return iterator;
         }
-        return iterator;
+        else
+        {
+            return Collections.emptyIterator();
+        }
     }
 
     @Override
