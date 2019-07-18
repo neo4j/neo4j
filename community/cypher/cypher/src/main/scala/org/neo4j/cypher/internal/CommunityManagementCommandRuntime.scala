@@ -129,13 +129,13 @@ case class CommunityManagementCommandRuntime(normalExecutionEngine: ExecutionEng
           Array(Values.stringValue(currentUser),
             Values.stringValue(authManager.createCredentialForPassword(validatePassword(newPassword)).serialize()))),
         QueryHandler
-          .handleError(e => new InvalidArgumentsException(s"User '$currentUser' failed to alter their own password.", e))
+          .handleError(e => new InvalidArgumentsException(s"User '$currentUser' failed to alter its own password.", e))
           .handleResult((_, value) => {
             val oldCredentials = authManager.deserialize(value.asInstanceOf[TextValue].stringValue())
             if (!oldCredentials.matchesPassword(currentPassword))
-              Some(new InvalidArgumentsException(s"User '$currentUser' failed to alter their own password: Invalid principal or credentials."))
+              Some(new InvalidArgumentsException(s"User '$currentUser' failed to alter its own password: Invalid principal or credentials."))
             else if (oldCredentials.matchesPassword(newPassword))
-              Some(new InvalidArgumentsException(s"User '$currentUser' failed to alter their own password: Old password and new password cannot be the same."))
+              Some(new InvalidArgumentsException(s"User '$currentUser' failed to alter its own password: Old password and new password cannot be the same."))
             else
               None
           })
@@ -144,17 +144,17 @@ case class CommunityManagementCommandRuntime(normalExecutionEngine: ExecutionEng
     // ALTER CURRENT USER SET PASSWORD FROM currentPassword TO $newPassword
     case SetOwnPassword(_, Some(_), _, _) => (_, _, securityContext) =>
       val currentUser = securityContext.subject().username()
-      throw new IllegalStateException(s"User '$currentUser' failed to alter their own password: Did not resolve parameters correctly.")
+      throw new IllegalStateException(s"User '$currentUser' failed to alter its own password: Did not resolve parameters correctly.")
 
     // ALTER CURRENT USER SET PASSWORD FROM $currentPassword TO newPassword
     case SetOwnPassword(_, _, _, Some(_)) => (_, _, securityContext) =>
       val currentUser = securityContext.subject().username()
-      throw new IllegalStateException(s"User '$currentUser' failed to alter their own password: Did not resolve parameters correctly.")
+      throw new IllegalStateException(s"User '$currentUser' failed to alter its own password: Did not resolve parameters correctly.")
 
     // ALTER CURRENT USER SET PASSWORD FROM currentPassword TO newPassword
     case SetOwnPassword(_, _, _, _) => (_, _, securityContext) =>
       val currentUser = securityContext.subject().username()
-      throw new IllegalStateException(s"User '$currentUser' failed to alter their own password: Password not correctly supplied.")
+      throw new IllegalStateException(s"User '$currentUser' failed to alter its own password: Password not correctly supplied.")
 
     // SHOW DEFAULT DATABASE
     case ShowDefaultDatabase() => (_, _, _) =>

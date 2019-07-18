@@ -435,7 +435,7 @@ class CommunityUserManagementDDLAcceptanceTest extends CommunityDDLAcceptanceTes
       // WHEN
       executeOnSystem("foo", "bar", "ALTER CURRENT USER SET PASSWORD FROM 'wrongPassword' TO 'baz'")
       // THEN
-    } should have message "User 'foo' failed to alter their own password: Invalid principal or credentials."
+    } should have message "User 'foo' failed to alter its own password: Invalid principal or credentials."
 
     // THEN
     testUserLogin("foo", "bar", AuthenticationResult.SUCCESS)
@@ -464,7 +464,7 @@ class CommunityUserManagementDDLAcceptanceTest extends CommunityDDLAcceptanceTes
       // WHEN
       executeOnSystem("foo", "bar", "ALTER CURRENT USER SET PASSWORD FROM 'bar' TO $password", parameter)
       // THEN
-    } should have message "User 'foo' failed to alter their own password: Old password and new password cannot be the same."
+    } should have message "User 'foo' failed to alter its own password: Old password and new password cannot be the same."
 
     // THEN
     testUserLogin("foo", "bar", AuthenticationResult.SUCCESS)
