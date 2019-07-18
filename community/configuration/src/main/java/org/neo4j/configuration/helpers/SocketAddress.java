@@ -127,7 +127,13 @@ public class SocketAddress
 
     public static String format( String hostname, int port )
     {
-        return String.format( isIPv6( hostname ) ? "[%s]:%s" : "%s:%s", hostname, port );
+        String portStr = port >= 0 ? String.format( ":%s", port ) : "";
+        String hostnameStr = "";
+        if ( hostname != null )
+        {
+            hostnameStr = isIPv6( hostname ) ? String.format( "[%s]", hostname ) : hostname;
+        }
+        return hostnameStr + portStr;
     }
 
     private static boolean isIPv6( String hostname )

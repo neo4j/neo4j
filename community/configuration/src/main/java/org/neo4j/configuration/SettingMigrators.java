@@ -35,7 +35,9 @@ import org.neo4j.values.storable.CoordinateReferenceSystem;
 
 import static java.lang.String.format;
 import static org.apache.commons.lang3.StringUtils.join;
+import static org.neo4j.configuration.GraphDatabaseSettings.default_advertised_address;
 import static org.neo4j.configuration.GraphDatabaseSettings.default_database;
+import static org.neo4j.configuration.GraphDatabaseSettings.default_listen_address;
 import static org.neo4j.configuration.SettingValueParsers.LIST_SEPARATOR;
 
 public final class SettingMigrators
@@ -146,6 +148,28 @@ public final class SettingMigrators
                 }
 
                 log.warn( "Use of deprecated setting %s. %s", setting, msg );
+            } );
+        }
+    }
+
+    @ServiceProvider
+    public static class DefaultAddressMigrator implements SettingMigrator
+    {
+        private static final Map<String,String> SETTINGS_TO_MIGRATE = Map.of(
+                "dbms.connectors.default_listen_address", default_listen_address.name(),
+                "dbms.connectors.default_advertised_address", default_advertised_address.name()
+        );
+
+        @Override
+        public void migrate( Map<String,String> input, Log log )
+        {
+            SETTINGS_TO_MIGRATE.forEach( ( oldSetting, newSetting ) -> {
+                String value = input.remove( oldSetting );
+                if ( !StringUtils.isEmpty( value ) )
+                {
+                    log.warn( "Use of deprecated setting %s. It is replaced by %s", oldSetting, newSetting );
+                    input.putIfAbsent( newSetting, value );
+                }
             } );
         }
     }

@@ -42,6 +42,7 @@ import static java.time.Duration.ofMillis;
 import static java.time.Duration.ofMinutes;
 import static java.time.Duration.ofSeconds;
 import static java.util.Collections.emptyList;
+import static org.neo4j.configuration.SettingConstraints.HOSTNAME_ONLY;
 import static org.neo4j.configuration.SettingConstraints.POWER_OF_2;
 import static org.neo4j.configuration.SettingConstraints.min;
 import static org.neo4j.configuration.SettingConstraints.range;
@@ -953,20 +954,22 @@ public class GraphDatabaseSettings implements SettingsDeclaration
     @Deprecated
     public static final Setting<String> procedure_roles = newBuilder( "dbms.security.procedures.roles", STRING, "" ).build();
 
-    // Bolt Settings
-
     @Description( "Default network interface to listen for incoming connections. " +
-            "To listen for connections on all interfaces, use \"0.0.0.0\". " +
-            "To bind specific connectors to a specific network interfaces, " +
-            "specify the +listen_address+ properties for the specific connector." )
+            "To listen for connections on all interfaces, use \"0.0.0.0\". " )
     public static final Setting<SocketAddress> default_listen_address =
-            newBuilder( "dbms.connectors.default_listen_address", SOCKET_ADDRESS, new SocketAddress( "localhost" ) ).immutable().build();
+            newBuilder( "dbms.default_listen_address", SOCKET_ADDRESS, new SocketAddress( "localhost" ) )
+                    .addConstraint( HOSTNAME_ONLY )
+                    .immutable()
+                    .build();
 
-    @Description( "Default hostname or IP address the server uses to advertise itself to its connectors. " +
-            "To advertise a specific hostname or IP address for a specific connector, " +
-            "specify the +advertised_address+ property for the specific connector." )
+    @Description( "Default hostname or IP address the server uses to advertise itself." )
     public static final Setting<SocketAddress> default_advertised_address =
-            newBuilder( "dbms.connectors.default_advertised_address", SOCKET_ADDRESS, new SocketAddress( "localhost" ) ).immutable().build();
+            newBuilder( "dbms.default_advertised_address", SOCKET_ADDRESS, new SocketAddress( "localhost" ) )
+                    .addConstraint( HOSTNAME_ONLY )
+                    .immutable()
+                    .build();
+
+    // Bolt Settings
 
     @Description( "Whether to apply network level outbound network buffer based throttling" )
     @Internal

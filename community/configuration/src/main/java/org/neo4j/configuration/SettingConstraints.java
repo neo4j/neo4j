@@ -26,6 +26,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.regex.Pattern;
 
+import org.neo4j.configuration.helpers.SocketAddress;
 import org.neo4j.internal.helpers.Numbers;
 
 import static java.lang.String.format;
@@ -232,4 +233,32 @@ public final class SettingConstraints
         };
     }
 
+    public static SettingConstraint<SocketAddress> HOSTNAME_ONLY = new SettingConstraint<>()
+    {
+        @Override
+        public void validate( SocketAddress value )
+        {
+            if ( value == null )
+            {
+                throw new IllegalArgumentException( "can not be null" );
+            }
+
+            if ( value.getPort() >= 0 )
+            {
+                throw new IllegalArgumentException( "can not have a port" );
+            }
+
+            if ( StringUtils.isEmpty( value.getHostname() ) )
+            {
+                throw new IllegalArgumentException( "needs not a hostname" );
+            }
+
+        }
+
+        @Override
+        public String getDescription()
+        {
+            return "has no specified port";
+        }
+    };
 }

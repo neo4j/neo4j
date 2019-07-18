@@ -23,6 +23,7 @@ import org.junit.jupiter.api.Test;
 
 import java.lang.reflect.Field;
 import java.util.HashMap;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.IntStream;
 
@@ -32,22 +33,27 @@ import org.neo4j.configuration.connectors.HttpConnector;
 import org.neo4j.configuration.connectors.HttpsConnector;
 import org.neo4j.configuration.helpers.SocketAddress;
 import org.neo4j.graphdb.config.Setting;
+import org.neo4j.logging.AssertableLogProvider;
 
 import static java.lang.String.format;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.nullValue;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.neo4j.configuration.GraphDatabaseSettings.default_advertised_address;
+import static org.neo4j.configuration.GraphDatabaseSettings.default_listen_address;
 import static org.neo4j.configuration.GraphDatabaseSettings.keep_logical_logs;
 import static org.neo4j.configuration.GraphDatabaseSettings.transaction_sampling_percentage;
 import static org.neo4j.configuration.GraphDatabaseSettings.transaction_tracing_level;
 import static org.neo4j.configuration.SettingValueParsers.FALSE;
 import static org.neo4j.configuration.SettingValueParsers.TRUE;
 import static org.neo4j.internal.helpers.collection.MapUtil.stringMap;
+import static org.neo4j.logging.AssertableLogProvider.inLog;
 
 class GraphDatabaseSettingsTest
 {
@@ -374,5 +380,42 @@ class GraphDatabaseSettingsTest
                 "dbms.connector.bolt.bolt.enabled",
                 "dbms.security.auth_enabled"
         ) );
+    }
+
+    @Test
+    void testDefaultAddressOnlyAllowsHostname()
+    {
+        assertDoesNotThrow( () -> Config.defaults( default_listen_address, "foo" ) );
+        assertDoesNotThrow( () -> Config.defaults( default_advertised_address, "bar" ) );
+
+        assertThrows( IllegalArgumentException.class, () -> Config.defaults( default_listen_address, "foo:123" ) );
+        assertThrows( IllegalArgumentException.class, () -> Config.defaults( default_advertised_address, "bar:456" ) );
+
+        assertThrows( IllegalArgumentException.class, () -> Config.defaults( default_listen_address, ":123" ) );
+        assertThrows( IllegalArgumentException.class, () -> Config.defaults( default_advertised_address, ":456" ) );
+    }
+
+    @Test
+    void testDefaultAddressMigration()
+    {
+        String oldDefaultListen = "dbms.connectors.default_listen_address";
+        String oldDefaultAdvertised = "dbms.connectors.default_advertised_address";
+
+        var config = Config.defaults( Map.of( oldDefaultListen, "foo", oldDefaultAdvertised, "bar" ) );
+
+        var logProvider = new AssertableLogProvider();
+        config.setLogger( logProvider.getLog( Config.class ) );
+
+        assertThrows( IllegalArgumentException.class, () -> config.getSetting( oldDefaultListen ) );
+        assertThrows( IllegalArgumentException.class, () -> config.getSetting( oldDefaultAdvertised ) );
+        assertEquals( new SocketAddress( "foo" ), config.get( default_listen_address ) );
+        assertEquals( new SocketAddress( "bar" ), config.get( default_advertised_address) );
+
+        logProvider.assertAtLeastOnce( inLog( Config.class )
+                .warn( "Use of deprecated setting %s. It is replaced by %s", oldDefaultListen, default_listen_address.name() ) );
+
+        logProvider.assertAtLeastOnce( inLog( Config.class )
+                .warn( "Use of deprecated setting %s. It is replaced by %s", oldDefaultAdvertised, default_advertised_address.name() ) );
+
     }
 }
