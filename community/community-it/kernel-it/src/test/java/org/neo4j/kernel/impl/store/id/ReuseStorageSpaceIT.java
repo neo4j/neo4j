@@ -145,7 +145,7 @@ class ReuseStorageSpaceIT
             Sizes diff = storeFileSizesNow.diffAgainst( initialStoreSizes );
             long storeFilesDiff = diff.sum();
             int round = i;
-            assertEquals( 0, storeFilesDiff, () -> format( "Initial sizes %s%n%nStore sizes after operation (round %d)%s%n%nDiff between the two above %s",
+            assertEquals( 0, storeFilesDiff, () -> format( "Initial sizes %s%n%nStore sizes after operation (round %d)%s%n%nDiff between the two above %s%n",
                     initialStoreSizes, round, storeFileSizesNow, diff ) );
         }
     }
