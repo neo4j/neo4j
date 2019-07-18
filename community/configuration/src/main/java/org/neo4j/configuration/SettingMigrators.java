@@ -30,6 +30,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import org.neo4j.annotations.service.ServiceProvider;
+import org.neo4j.configuration.helpers.SocketAddress;
 import org.neo4j.logging.Log;
 import org.neo4j.values.storable.CoordinateReferenceSystem;
 
@@ -39,6 +40,7 @@ import static org.neo4j.configuration.GraphDatabaseSettings.default_advertised_a
 import static org.neo4j.configuration.GraphDatabaseSettings.default_database;
 import static org.neo4j.configuration.GraphDatabaseSettings.default_listen_address;
 import static org.neo4j.configuration.SettingValueParsers.LIST_SEPARATOR;
+import static org.neo4j.configuration.SettingValueParsers.SOCKET_ADDRESS;
 
 public final class SettingMigrators
 {
@@ -106,8 +108,16 @@ public final class SettingMigrators
         private static final String PREFIX = "dbms.connector";
         private static final Pattern oldConnector = Pattern.compile( "^dbms\\.connector\\.([^.]+)\\.([^.]+)$");
 
+        private static final Pattern connectorListenAddress = Pattern.compile( "^(dbms\\.connector\\.[^.]+\\.[^.]+\\.)listen_address$");
+
         @Override
         public void migrate( Map<String,String> input, Log log )
+        {
+            migrateOldConnectors( input, log );
+            migrateConnectorAddresses( input, log );
+        }
+
+        private static void migrateOldConnectors( Map<String,String> input, Log log )
         {
             Map<String, Matcher> oldConnectors = new HashMap<>();
             Map<String, String> connectorTypes = new HashMap<>();
@@ -150,6 +160,25 @@ public final class SettingMigrators
                 log.warn( "Use of deprecated setting %s. %s", setting, msg );
             } );
         }
+
+        private static void migrateConnectorAddresses( Map<String,String> input, Log log )
+        {
+            Map<String,String> addressesToMigrate = new HashMap<>();
+
+            for ( String setting : input.keySet() )
+            {
+                Matcher matcher = connectorListenAddress.matcher( setting );
+                if ( matcher.find() )
+                {
+                    addressesToMigrate.put( setting, matcher.group( 1 ) + "advertised_address" );
+                }
+            }
+
+            addressesToMigrate.forEach( ( listenAddr, advertisedAddr ) ->
+            {
+                migrateAdvertisedAddressInheritanceChange( input, log, listenAddr, advertisedAddr );
+            } );
+        }
     }
 
     @ServiceProvider
@@ -171,6 +200,47 @@ public final class SettingMigrators
                     input.putIfAbsent( newSetting, value );
                 }
             } );
+        }
+    }
+
+    public static void migrateAdvertisedAddressInheritanceChange( Map<String,String> input, Log log, String listenAddress, String advertisedAddress )
+    {
+        String listenValue = input.get( listenAddress );
+        if ( !StringUtils.isEmpty( listenValue ) )
+        {
+            String advertisedValue = input.get( advertisedAddress );
+            boolean advertisedAlreadyHasPort = false;
+            try
+            {
+                if ( !StringUtils.isEmpty( advertisedValue ) )
+                {
+                    advertisedAlreadyHasPort = SOCKET_ADDRESS.parse( advertisedValue ).getPort() >= 0;
+                }
+            }
+            catch ( RuntimeException e )
+            {
+                // If we cant parse the advertised address we act as if it has no port specified
+                // If invalid hostname config will report the error
+            }
+
+            if ( !advertisedAlreadyHasPort )
+            {
+                try
+                {
+                    int port = SOCKET_ADDRESS.parse( listenValue ).getPort();
+                    if ( port >= 0 ) //valid port on listen, and none on advertised, migrate!
+                    {
+                        SocketAddress newAdvertised = new SocketAddress( advertisedValue, port );
+                        log.warn( "Use of deprecated setting port propagation. port %s is migrated from %s to %s.", port, listenAddress, advertisedAddress );
+                        input.put( advertisedAddress, newAdvertised.toString() );
+                    }
+                }
+                catch ( RuntimeException e )
+                {
+                    //If we cant parse the listen address we have no information on how to proceed with the migration
+                    // The config will handle the error later
+                }
+            }
         }
     }
 }

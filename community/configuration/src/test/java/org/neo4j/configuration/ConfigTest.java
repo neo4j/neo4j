@@ -37,7 +37,9 @@ import java.util.Set;
 import org.neo4j.configuration.connectors.BoltConnector;
 import org.neo4j.configuration.connectors.HttpConnector;
 import org.neo4j.configuration.connectors.HttpsConnector;
+import org.neo4j.configuration.helpers.SocketAddress;
 import org.neo4j.graphdb.config.Setting;
+import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.logging.Log;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.TestDirectoryExtension;
@@ -59,6 +61,7 @@ import static org.neo4j.configuration.SettingValueParsers.INT;
 import static org.neo4j.configuration.SettingValueParsers.PATH;
 import static org.neo4j.configuration.SettingValueParsers.STRING;
 import static org.neo4j.configuration.SettingValueParsers.TRUE;
+import static org.neo4j.logging.AssertableLogProvider.inLog;
 
 @ExtendWith( TestDirectoryExtension.class )
 class ConfigTest
@@ -609,7 +612,7 @@ class ConfigTest
     }
 
     @Test
-    void testConnectorMigration() throws IOException
+    void testConnectorOldFormatMigration() throws IOException
     {
         File confFile = testDirectory.createFile( "test.conf" );
         Files.write( confFile.toPath(), Arrays.asList(
@@ -629,6 +632,60 @@ class ConfigTest
         assertTrue( config.get( HttpsConnector.group( "https" ).enabled ) );
         assertEquals( 1234, config.get( BoltConnector.group( "bolt2" ).listen_address ).getPort() );
         assertTrue( config.get( BoltConnector.group( "bolt3" ).enabled ) );
+    }
+
+    @Test
+    void testConnectorAddressesMigration()
+    {
+        BoltConnector c1 = BoltConnector.group( "c1" );
+        HttpConnector c2 = HttpConnector.group( "c2" );
+        HttpsConnector c3 = HttpsConnector.group( "c3" );
+        BoltConnector c4 = BoltConnector.group( "c4" );
+        HttpConnector c5 = HttpConnector.group( "c5" );
+        HttpsConnector c6 = HttpsConnector.group( "c6" );
+
+        Config config = Config.newBuilder()
+                .set( c1.listen_address, "foo:111" )
+                .set( c2.listen_address, ":222" )
+                .set( c3.listen_address, ":333" ).set( c3.advertised_address, "bar" )
+                .set( c4.listen_address, "foo:444" ).set( c4.advertised_address, ":555" )
+                .set( c5.listen_address, "foo" ).set( c5.advertised_address, "bar" )
+                .set( c6.listen_address, "foo:666" ).set( c6.advertised_address, "bar:777" )
+                .build();
+
+        var logProvider = new AssertableLogProvider();
+        config.setLogger( logProvider.getLog( Config.class ) );
+
+        assertEquals( new SocketAddress( "localhost", 111 ), config.get( c1.advertised_address ) );
+        assertEquals( new SocketAddress( "localhost", 222 ), config.get( c2.advertised_address ) );
+        assertEquals( new SocketAddress( "bar", 333 ), config.get( c3.advertised_address ) );
+        assertEquals( new SocketAddress( "localhost", 555 ), config.get( c4.advertised_address ) );
+        assertEquals( new SocketAddress( "bar", HttpConnector.DEFAULT_PORT ), config.get( c5.advertised_address ) );
+        assertEquals( new SocketAddress( "bar", 777 ), config.get( c6.advertised_address ) );
+
+        logProvider.assertAtLeastOnce( inLog( Config.class )
+                .warn( "Use of deprecated setting port propagation. port %s is migrated from %s to %s.",
+                        111, c1.listen_address.name(), c1.advertised_address.name() ) );
+
+        logProvider.assertAtLeastOnce( inLog( Config.class )
+                .warn( "Use of deprecated setting port propagation. port %s is migrated from %s to %s.",
+                        222, c2.listen_address.name(), c2.advertised_address.name() ) );
+
+        logProvider.assertAtLeastOnce( inLog( Config.class )
+                .warn( "Use of deprecated setting port propagation. port %s is migrated from %s to %s.",
+                        333, c3.listen_address.name(), c3.advertised_address.name() ) );
+
+        logProvider.assertNone( inLog( Config.class )
+                .warn( "Use of deprecated setting port propagation. port %s is migrated from %s to %s.",
+                        444, c4.listen_address.name(), c4.advertised_address.name() ) );
+
+        logProvider.assertNone( inLog( Config.class )
+                .warn( "Use of deprecated setting port propagation. port %s is migrated from %s to %s.",
+                        555, c5.listen_address.name(), c5.advertised_address.name() ) );
+
+        logProvider.assertNone( inLog( Config.class )
+                .warn( "Use of deprecated setting port propagation. port %s is migrated from %s to %s.",
+                        666, c6.listen_address.name(), c6.advertised_address.name() ) );
     }
 
     @Test

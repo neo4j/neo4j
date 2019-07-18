@@ -21,10 +21,11 @@ package org.neo4j.configuration.connectors;
 
 import org.neo4j.annotations.service.ServiceProvider;
 import org.neo4j.configuration.Description;
-import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.configuration.helpers.SocketAddress;
 import org.neo4j.graphdb.config.Setting;
 
+import static org.neo4j.configuration.GraphDatabaseSettings.default_advertised_address;
+import static org.neo4j.configuration.GraphDatabaseSettings.default_listen_address;
 import static org.neo4j.configuration.SettingValueParsers.SOCKET_ADDRESS;
 
 @ServiceProvider
@@ -33,13 +34,12 @@ public class HttpConnector extends Connector
     public static final int DEFAULT_PORT = 7474;
 
     @Description( "Address the connector should bind to" )
-    public final Setting<SocketAddress> listen_address = getBuilder( "listen_address", SOCKET_ADDRESS, new SocketAddress( DEFAULT_PORT ) )
-                    .setDependency( GraphDatabaseSettings.default_listen_address )
-                    .immutable()
-                    .build();
+    public final Setting<SocketAddress> listen_address =
+            getBuilder( "listen_address", SOCKET_ADDRESS, new SocketAddress( DEFAULT_PORT ) ).setDependency( default_listen_address ).build();
 
     @Description( "Advertised address for this connector" )
-    public final Setting<SocketAddress> advertised_address = getBuilder( "advertised_address", SOCKET_ADDRESS, null ).setDependency( listen_address ).build();
+    public final Setting<SocketAddress> advertised_address =
+            getBuilder( "advertised_address", SOCKET_ADDRESS, new SocketAddress( DEFAULT_PORT ) ).setDependency( default_advertised_address ).build();
 
     public static HttpConnector group( String name )
     {

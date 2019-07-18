@@ -267,7 +267,14 @@ public class Config implements Configuration
     {
         this.log = log;
 
-        settingMigrators.forEach( migrator -> migrator.migrate( settingValues, log )  );
+        try
+        {
+            settingMigrators.forEach( migrator -> migrator.migrate( settingValues, log )  );
+        }
+        catch ( RuntimeException e )
+        {
+            throw new IllegalArgumentException( "Error while migrating settings, please see the exception cause", e );
+        }
 
         Map<String,SettingImpl<?>> definedSettings = getDefinedSettings( settingsClasses );
         Map<String,Class<? extends GroupSetting>> definedGroups = getDefinedGroups( groupSettingClasses );
