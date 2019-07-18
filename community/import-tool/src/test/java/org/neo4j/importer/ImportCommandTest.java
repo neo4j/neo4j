@@ -319,7 +319,7 @@ class ImportCommandTest
             final var foo1 = testDir.createFile( "foo-1.csv" );
             final var foo2 = testDir.createFile( "foo-2.csv" );
             final var foo3 = testDir.createFile( "foo-X.csv" );
-            final var g = ImportCommand.parseNodeFilesGroup( "BANANA=" + testDir.absolutePath() + File.separator + "foo\\-\\d\\.csv" );
+            final var g = ImportCommand.parseNodeFilesGroup( "BANANA=" + testDir.absolutePath() + File.separator + "foo-[0-9].csv" );
             assertThat( g.key, equalTo( Set.of( "BANANA" ) ) );
             assertThat( g.files, arrayContaining( foo1, foo2 ) );
         }
@@ -367,7 +367,7 @@ class ImportCommandTest
             final var foo1 = testDir.createFile( "foo-1.csv" );
             final var foo2 = testDir.createFile( "foo-2.csv" );
             final var foo3 = testDir.createFile( "foo-X.csv" );
-            final var g = ImportCommand.parseRelationshipFilesGroup( "BANANA=" + testDir.absolutePath() + File.separator + "foo\\-\\d\\.csv" );
+            final var g = ImportCommand.parseRelationshipFilesGroup( "BANANA=" + testDir.absolutePath() + File.separator + "foo-[0-9].csv" );
             assertThat( g.key, equalTo( "BANANA" ) );
             assertThat( g.files, arrayContaining( foo1, foo2 ) );
         }
