@@ -94,6 +94,7 @@ public final class ErrorValue extends VirtualValue
     @Override
     protected long estimatedPayloadSize()
     {
+        //Rough estimate, or really just guess work.
         return 100;
     }
 }

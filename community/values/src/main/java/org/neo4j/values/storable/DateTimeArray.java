@@ -85,6 +85,9 @@ public final class DateTimeArray extends TemporalArray<ZonedDateTime,DateTimeVal
     @Override
     long sizePerItem()
     {
+        //This is a rough estimate, the wrapped ZoneDateTime can be much larger but it shares a lot of it fields
+        //with other instances, small integers and ZoneId are shared across instances. On average this is roughly the
+        // measured size per item.
         return 100;
     }
 }

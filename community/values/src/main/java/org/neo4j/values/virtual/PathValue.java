@@ -145,6 +145,14 @@ public abstract class PathValue extends VirtualValue
         return "Path";
     }
 
+    @Override
+    protected long estimatedPayloadSize()
+    {
+        int length = size();
+        //nodes are assumed to be 32 bytes and relationships 48
+        return 4 + length * 48 + (length + 1) * 32;
+    }
+
     public ListValue asList()
     {
         NodeValue[] nodes = nodes();
@@ -214,12 +222,6 @@ public abstract class PathValue extends VirtualValue
         public RelationshipValue[] relationships()
         {
             return edges;
-        }
-
-        @Override
-        protected long estimatedPayloadSize()
-        {
-            throw new UnsupportedOperationException(  );
         }
     }
 }

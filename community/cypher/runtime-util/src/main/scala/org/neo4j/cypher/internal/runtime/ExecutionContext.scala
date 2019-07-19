@@ -90,6 +90,9 @@ trait ExecutionContext {
     */
   def invalidateCachedRelationshipProperties(rel: Long): Unit
 
+  /**
+    * Provides an estimation of the number of bytes the currently used by the ExecutionContext
+    */
   def estimatedHeapUsage: Long
 
   def copyWith(key: String, value: AnyValue): ExecutionContext
@@ -263,7 +266,11 @@ class MapExecutionContext(private val m: MutableMap[String, AnyValue], private v
     }
   }
 
-  override def estimatedHeapUsage: Long = m.values.foldLeft(0L)(_ + _.estimatedHeapUsage())
+  override def estimatedHeapUsage: Long = {
+    val usage = m.values.foldLeft(0L)(_ + _.estimatedHeapUsage())
+    if (cachedProperties != null) cachedProperties.values.foldLeft(usage)(_ + _.estimatedHeapUsage())
+    else usage
+  }
 
   private def cloneFromMap(newMap: MutableMap[String, AnyValue]): ExecutionContext = {
     val newCachedProperties = if (cachedProperties == null) null else cachedProperties.clone()

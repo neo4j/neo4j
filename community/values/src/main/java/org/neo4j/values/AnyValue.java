@@ -61,17 +61,21 @@ public abstract class AnyValue
 
     public abstract String getTypeName();
 
+    /**
+     * Estimation of the bytes used for whatever payload the AnyValue is wrapping.
+     *<p>
+     *For example a <code>LongValue</code> wraps a long that consumes 4 bytes.
+     * @return The number of bytes the internal value consumes.
+     */
     protected abstract long estimatedPayloadSize();
 
     /**
      * Gives an estimation of the heap usage in bytes for the given value.
      * <p>
      * The estimation assumes a 64bit JVM with 32 bit references (-XX:+UseCompressedOops) but is fairly accurate
-     * for simple values even without these assumptions. However for complicated types such as lists and maos these
-     * values
-     * are very crude estimates, typically something like <code>size * NUMBER</code> since we don't want to pay the
-     * price
-     * of (potentially recursively) iterate over the individual elements.
+     * for simple values even without these assumptions. However for complicated types such as lists and maps these
+     * values are very crude estimates, typically something like <code>size * NUMBER</code> since we don't want to pay the
+     * price of (potentially recursively) iterate over the individual elements.
      *
      * @return an estimation of how many bytes this value consumes.
      */

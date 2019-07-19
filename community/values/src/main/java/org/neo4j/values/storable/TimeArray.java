@@ -85,6 +85,8 @@ public class TimeArray extends TemporalArray<OffsetTime, TimeValue>
     @Override
     long sizePerItem()
     {
+        //Rough estimate OffsetTime can be a lot bigger but a lot of the internals are cached/reused
+        //on average this is approximately what it was measured to use.
         return 50;
     }
 }
