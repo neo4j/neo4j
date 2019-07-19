@@ -35,7 +35,7 @@ class CollectFunction(value:Expression) extends AggregationFunction {
       case IsNoValue() =>
       case v    => collection += v
     }
-    state.memoryTracker.checkMemoryRequirement(collection.size)
+    state.memoryTracker.checkMemoryRequirement(collection.map(_.estimatedHeapUsage).sum)
   }
 
   override def result(state: QueryState): AnyValue = VirtualValues.list(collection.toArray:_*)

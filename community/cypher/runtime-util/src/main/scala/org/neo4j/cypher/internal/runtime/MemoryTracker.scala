@@ -26,13 +26,13 @@ trait MemoryTracker {
     * Returns an Iterator that, given the memory config settings, might throw an exception if the
     * memory used by the query grows too large.
     */
-  def memoryTrackingIterator[T](input: Iterator[T]): Iterator[T]
+  def memoryTrackingIterator[T<: ExecutionContext](input: Iterator[T]): Iterator[T]
 
   /**
     * Given the size of a collection, this method can throw an Exception if the size exceeds the configured
     * limit for the query.
     */
-  def checkMemoryRequirement(size: => Long): Unit
+  def checkMemoryRequirement(estimatedHeapUsage: => Long): Unit
 }
 
 object MemoryTracker {
@@ -52,7 +52,7 @@ case object NoMemoryTracker extends MemoryTracker {
 }
 
 case class StandardMemoryTracker(transactionMaxMemory: Long) extends MemoryTracker {
-  override def memoryTrackingIterator[T](input: Iterator[T]): Iterator[T] = new MemoryTrackingIterator[T](input, transactionMaxMemory)
+  override def memoryTrackingIterator[T<: ExecutionContext](input: Iterator[T]): Iterator[T] = new MemoryTrackingIterator[T](input, transactionMaxMemory)
 
   override def checkMemoryRequirement(size: => Long): Unit = {
     if (size >= transactionMaxMemory) {
@@ -61,19 +61,20 @@ case class StandardMemoryTracker(transactionMaxMemory: Long) extends MemoryTrack
   }
 
   /**
-    * Iterator that throws a [[TransactionOutOfMemoryException]] when the input returns more than transactionMaxMemory rows.
+    * Iterator that throws a [[TransactionOutOfMemoryException]] when the input uses more memory than transactionMaxMemory allows.
     */
-  private class MemoryTrackingIterator[T](input: Iterator[T], transactionMaxMemory: Long) extends Iterator[T] {
-    private var counter = 0L
+  private class MemoryTrackingIterator[T <: ExecutionContext](input: Iterator[T], transactionMaxMemory: Long) extends Iterator[T] {
+    private var heapUsage = 0L
 
     override def hasNext: Boolean = input.hasNext
 
     override def next(): T = {
-      counter += 1
-      if (counter > transactionMaxMemory) {
+      val t = input.next()
+      heapUsage += t.estimatedHeapUsage
+      if (heapUsage > transactionMaxMemory) {
         throw new TransactionOutOfMemoryException()
       }
-      input.next()
+      t
     }
   }
 }

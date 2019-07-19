@@ -25,6 +25,8 @@ import org.neo4j.cypher.internal.runtime.interpreted.pipes.DistinctPipe.Grouping
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.{AggregationPipe, ExecutionContextFactory, Pipe, QueryState}
 import org.neo4j.values.AnyValue
 
+import scala.collection.JavaConverters._
+
 /**
   * This table must be used when we have grouping columns, and there is no provided order for at least one grouping column.
   *
@@ -56,7 +58,7 @@ class GroupingAggTable(groupingColumns: Array[GroupingCol],
       }
       functions
     })
-    state.memoryTracker.checkMemoryRequirement(resultMap.size)
+    state.memoryTracker.checkMemoryRequirement(resultMap.keySet().asScala.toList.map(_.estimatedHeapUsage).sum)
     var i = 0
     while (i < aggregationFunctions.length) {
       aggregationFunctions(i)(row, state)

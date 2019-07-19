@@ -42,7 +42,14 @@ object ExecutionContext {
 
 case class ResourceLinenumber(filename: String, linenumber: Long, last: Boolean = false)
 
-trait ExecutionContext {
+trait WithHeapUsageEstimation {
+  /**
+    * Provides an estimation of the number of bytes currently used by the ExecutionContext
+    */
+  def estimatedHeapUsage: Long
+}
+
+trait ExecutionContext extends WithHeapUsageEstimation {
 
   def copyTo(target: ExecutionContext, fromLongOffset: Int = 0, fromRefOffset: Int = 0, toLongOffset: Int = 0, toRefOffset: Int = 0): Unit
   def copyFrom(input: ExecutionContext, nLongs: Int, nRefs: Int): Unit
@@ -89,11 +96,6 @@ trait ExecutionContext {
     * Invalidate all cached relationship properties for the given relationship id
     */
   def invalidateCachedRelationshipProperties(rel: Long): Unit
-
-  /**
-    * Provides an estimation of the number of bytes the currently used by the ExecutionContext
-    */
-  def estimatedHeapUsage: Long
 
   def copyWith(key: String, value: AnyValue): ExecutionContext
   def copyWith(key1: String, value1: AnyValue, key2: String, value2: AnyValue): ExecutionContext

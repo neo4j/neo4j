@@ -45,7 +45,7 @@ abstract class PercentileFunction(val value: Expression, val percentile: Express
       count += 1
       temp = temp :+ number
     })
-    state.memoryTracker.checkMemoryRequirement(temp.size)
+    state.memoryTracker.checkMemoryRequirement(temp.map(_.estimatedHeapUsage).sum)
   }
 }
 

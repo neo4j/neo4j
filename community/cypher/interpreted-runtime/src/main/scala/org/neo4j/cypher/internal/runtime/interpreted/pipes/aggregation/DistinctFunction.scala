@@ -32,7 +32,7 @@ class DistinctFunction(value: Expression, inner: AggregationFunction) extends Ag
     if (seen.add(data)) {
       inner(ctx, state)
     }
-    state.memoryTracker.checkMemoryRequirement(seen.size)
+    state.memoryTracker.checkMemoryRequirement(seen.toList.map(_.estimatedHeapUsage).sum)
   }
 
   override def result(state: QueryState): AnyValue = inner.result(state)
