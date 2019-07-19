@@ -67,7 +67,7 @@ case class OptionalExpand(source: LogicalPlan,
 /**
   * For every source row, explore all homogeneous paths starting in 'from', that fulfill the provided
   * criteria. Paths are homogeneous in that all relationships have to fulfill the same relationship
-  * predicate, and all nodes except 'from' have to fulfill the same node predicate. For each explored
+  * predicate, and all nodes have to fulfill the same node predicate. For each explored
   * path that is longer or equal to length.min, and shorter than length.max, a row is produced.
   *
   * The relationships and end node of the corresponding path are added to the produced row.
