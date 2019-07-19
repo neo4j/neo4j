@@ -439,7 +439,7 @@ public class AllStoreHolder extends Read
 
     Iterator<IndexDescriptor> indexesGetForLabel( StorageSchemaReader reader, int labelId )
     {
-        if ( ktx.securityContext().mode().allowsTraverseLabel( labelId ) )
+        if ( ktx.securityContext().mode().allowsTraverseNodeLabels( labelId ) )
         {
             Iterator<IndexDescriptor> iterator = reader.indexesGetForLabel( labelId );
 
