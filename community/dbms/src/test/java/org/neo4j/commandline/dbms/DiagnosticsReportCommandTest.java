@@ -23,6 +23,8 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.api.parallel.ResourceLock;
+import org.junit.jupiter.api.parallel.Resources;
 import picocli.CommandLine;
 
 import java.io.ByteArrayOutputStream;
@@ -61,6 +63,7 @@ import static org.neo4j.commandline.dbms.DiagnosticsReportCommand.DEFAULT_CLASSI
 import static org.neo4j.commandline.dbms.DiagnosticsReportCommand.describeClassifier;
 
 @ExtendWith( {TestDirectoryExtension.class, DefaultFileSystemExtension.class, SuppressOutputExtension.class} )
+@ResourceLock( Resources.SYSTEM_OUT )
 public class DiagnosticsReportCommandTest
 {
     @Inject

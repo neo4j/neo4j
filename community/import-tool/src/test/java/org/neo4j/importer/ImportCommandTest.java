@@ -22,6 +22,8 @@ package org.neo4j.importer;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.api.parallel.ResourceLock;
+import org.junit.jupiter.api.parallel.Resources;
 import picocli.CommandLine;
 
 import java.io.ByteArrayOutputStream;
@@ -49,6 +51,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 @ExtendWith( {TestDirectoryExtension.class, SuppressOutputExtension.class} )
+@ResourceLock( Resources.SYSTEM_OUT )
 class ImportCommandTest
 {
     @Inject

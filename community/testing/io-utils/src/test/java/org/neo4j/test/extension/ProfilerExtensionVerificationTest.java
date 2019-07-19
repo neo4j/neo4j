@@ -24,6 +24,7 @@ import org.junit.jupiter.api.extension.ConditionEvaluationResult;
 import org.junit.jupiter.api.extension.ExecutionCondition;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.extension.ExtensionContext;
+import org.junit.jupiter.api.parallel.ResourceLock;
 
 import java.util.Optional;
 
@@ -36,6 +37,7 @@ import static org.neo4j.test.extension.ExecutionSharedContext.CONTEXT;
 
 @ExtendWith( {TestDirectoryExtension.class, ProfilerExtension.class} )
 @ExtendWith( ProfilerExtensionVerificationTest.ConfigurationParameterCondition.class )
+@ResourceLock( ExecutionSharedContext.SHARED_RESOURCE )
 class ProfilerExtensionVerificationTest
 {
     static final String TEST_DIR = "test dir";

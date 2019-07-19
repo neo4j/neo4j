@@ -122,7 +122,12 @@ public class ThreadLeakageGuardExtension implements AfterAllCallback, BeforeAllC
 
     private static boolean skipThreadLeakageGuard( ExtensionContext context )
     {
-        return AnnotationSupport.isAnnotated( context.getRequiredTestClass(), SkipThreadLeakageGuard.class );
+        return AnnotationSupport.isAnnotated( context.getRequiredTestClass(), SkipThreadLeakageGuard.class ) || isConcurrentExecution();
+    }
+
+    private static boolean isConcurrentExecution()
+    {
+        return "concurrent".equals( System.getProperty( "junit.jupiter.execution.parallel.mode.classes.default" ) );
     }
 
     private static Collection<Thread> getActiveThreads()

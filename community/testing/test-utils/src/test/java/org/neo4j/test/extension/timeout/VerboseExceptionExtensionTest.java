@@ -21,6 +21,8 @@ package org.neo4j.test.extension.timeout;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.api.parallel.ResourceLock;
+import org.junit.jupiter.api.parallel.Resources;
 import org.junit.platform.testkit.engine.EngineTestKit;
 
 import org.neo4j.test.extension.Inject;
@@ -33,6 +35,7 @@ import static org.junit.jupiter.engine.descriptor.JupiterEngineDescriptor.ENGINE
 import static org.junit.platform.engine.discovery.DiscoverySelectors.selectClass;
 
 @ExtendWith( SuppressOutputExtension.class )
+@ResourceLock( Resources.SYSTEM_OUT )
 class VerboseExceptionExtensionTest
 {
     @Inject

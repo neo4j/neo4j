@@ -23,6 +23,7 @@ import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.api.parallel.ResourceLock;
 
 import java.io.File;
 import java.io.IOException;
@@ -40,6 +41,8 @@ import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.TestDirectoryExtension;
 import org.neo4j.test.rule.TestDirectory;
 
+import static org.neo4j.test.extension.ExecutionSharedContext.SHARED_RESOURCE;
+
 /**
  * KernelAPIReadTestBase is the basis of read tests targeting the Kernel API.
  *
@@ -53,6 +56,7 @@ import org.neo4j.test.rule.TestDirectory;
  */
 @SuppressWarnings( "WeakerAccess" )
 @ExtendWith( TestDirectoryExtension.class )
+@ResourceLock( SHARED_RESOURCE )
 public abstract class KernelAPIReadTestBase<ReadSupport extends KernelAPIReadTestSupport>
 {
     protected static File folder;

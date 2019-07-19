@@ -20,6 +20,7 @@
 package org.neo4j.test.extension;
 
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.parallel.ResourceLock;
 import org.junit.platform.launcher.Launcher;
 import org.junit.platform.launcher.LauncherDiscoveryRequest;
 import org.junit.platform.launcher.TestExecutionListener;
@@ -38,6 +39,7 @@ import static org.neo4j.test.extension.DirectoryExtensionLifecycleVerificationTe
 import static org.neo4j.test.extension.ExecutionSharedContext.CONTEXT;
 import static org.neo4j.test.extension.ProfilerExtensionVerificationTest.TEST_DIR;
 
+@ResourceLock( ExecutionSharedContext.SHARED_RESOURCE )
 class ProfilerExtensionTest
 {
     @Test

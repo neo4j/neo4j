@@ -22,6 +22,8 @@ package org.neo4j.logging.internal;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.api.parallel.ResourceLock;
+import org.junit.jupiter.api.parallel.Resources;
 
 import org.neo4j.logging.FormattedLogProvider;
 import org.neo4j.test.extension.Inject;
@@ -37,6 +39,7 @@ import static org.neo4j.logging.Level.ERROR;
 import static org.neo4j.logging.Level.WARN;
 
 @ExtendWith( SuppressOutputExtension.class )
+@ResourceLock( Resources.SYSTEM_OUT )
 class DatabaseLogServiceTest
 {
     private static final String TEST_PREFIX = "prefix";

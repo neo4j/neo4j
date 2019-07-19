@@ -23,6 +23,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledOnOs;
 import org.junit.jupiter.api.condition.OS;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.api.parallel.ResourceLock;
 import org.junit.platform.engine.TestExecutionResult;
 import org.junit.platform.launcher.Launcher;
 import org.junit.platform.launcher.LauncherDiscoveryRequest;
@@ -56,6 +57,7 @@ import static org.neo4j.test.extension.ExecutionSharedContext.LOCKED_TEST_FILE_K
 import static org.neo4j.test.extension.ExecutionSharedContext.SUCCESSFUL_TEST_FILE_KEY;
 
 @ExtendWith( {DefaultFileSystemExtension.class, TestDirectoryExtension.class} )
+@ResourceLock( ExecutionSharedContext.SHARED_RESOURCE )
 class TestDirectoryExtensionTest
 {
     @Inject

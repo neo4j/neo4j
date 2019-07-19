@@ -21,6 +21,8 @@ package org.neo4j.harness;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.api.parallel.ResourceLock;
+import org.junit.jupiter.api.parallel.Resources;
 
 import java.io.File;
 import java.io.IOException;
@@ -89,6 +91,7 @@ import static org.neo4j.internal.helpers.collection.Iterators.single;
 import static org.neo4j.server.ServerTestUtils.verifyConnector;
 
 @ExtendWith( {TestDirectoryExtension.class, SuppressOutputExtension.class} )
+@ResourceLock( Resources.SYSTEM_OUT )
 class InProcessServerBuilderIT
 {
     @Inject

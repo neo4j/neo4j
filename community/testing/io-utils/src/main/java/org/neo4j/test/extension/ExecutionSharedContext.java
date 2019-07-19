@@ -23,6 +23,7 @@ import java.util.concurrent.ConcurrentHashMap;
 
 public class ExecutionSharedContext
 {
+    public static final String SHARED_RESOURCE = "sharedContext";
     static final String FAILED_TEST_FILE_KEY = "failedFileName";
     static final String LOCKED_TEST_FILE_KEY = "lockedFileName";
     static final String SUCCESSFUL_TEST_FILE_KEY = "successfulFileName";

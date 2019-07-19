@@ -80,9 +80,11 @@
       -Djunit.jupiter.extensions.autodetection.enabled=true
       -Djunit.jupiter.execution.parallel.enabled=true
       -Djunit.jupiter.execution.timeout.test.method.default=${default.jupiter.test.timeout}
+      -Djunit.jupiter.execution.parallel.mode.classes.default=${default.jupiter.test.mode}
       -XX:+UnlockExperimentalVMOptions -XX:+TrustFinalNonStaticFields ${test.runner.jvm.settings.additional}
     </test.runner.jvm.settings>
     <default.jupiter.test.timeout>5m</default.jupiter.test.timeout>
+    <default.jupiter.test.mode>same_thread</default.jupiter.test.mode>
     <jetty.version>9.4.17.v20190418</jetty.version>
     <findbugs.version>3.0.1</findbugs.version>
     <git.commit>unknown-commit</git.commit>

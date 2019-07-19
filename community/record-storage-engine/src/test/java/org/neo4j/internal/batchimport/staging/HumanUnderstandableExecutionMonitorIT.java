@@ -22,6 +22,8 @@ package org.neo4j.internal.batchimport.staging;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.api.parallel.ResourceLock;
+import org.junit.jupiter.api.parallel.Resources;
 
 import java.util.EnumMap;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -59,6 +61,7 @@ import static org.neo4j.kernel.impl.store.format.standard.Standard.LATEST_RECORD
 
 @PageCacheExtension
 @ExtendWith( {RandomExtension.class, SuppressOutputExtension.class} )
+@ResourceLock( Resources.SYSTEM_OUT )
 class HumanUnderstandableExecutionMonitorIT
 {
     private static final long NODE_COUNT = 1_000;

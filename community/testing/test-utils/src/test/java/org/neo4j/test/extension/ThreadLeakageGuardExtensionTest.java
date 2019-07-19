@@ -20,6 +20,7 @@
 package org.neo4j.test.extension;
 
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
 import org.junit.jupiter.api.extension.ExtensionContextException;
 import org.junit.platform.testkit.engine.EngineTestKit;
 import org.junit.platform.testkit.engine.Events;
@@ -31,6 +32,7 @@ import static org.junit.platform.testkit.engine.EventConditions.finishedWithFail
 import static org.junit.platform.testkit.engine.TestExecutionResultConditions.instanceOf;
 import static org.junit.platform.testkit.engine.TestExecutionResultConditions.message;
 
+@DisabledIfSystemProperty( named = "junit.jupiter.execution.parallel.mode.classes.default", matches = "concurrent" )
 class ThreadLeakageGuardExtensionTest
 {
     @Test

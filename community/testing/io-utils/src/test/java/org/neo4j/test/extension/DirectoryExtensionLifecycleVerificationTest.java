@@ -24,6 +24,7 @@ import org.junit.jupiter.api.extension.ConditionEvaluationResult;
 import org.junit.jupiter.api.extension.ExecutionCondition;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.extension.ExtensionContext;
+import org.junit.jupiter.api.parallel.ResourceLock;
 
 import java.io.File;
 import java.util.Optional;
@@ -35,6 +36,7 @@ import static org.junit.jupiter.api.extension.ConditionEvaluationResult.disabled
 import static org.neo4j.test.extension.ExecutionSharedContext.CONTEXT;
 import static org.neo4j.test.extension.ExecutionSharedContext.FAILED_TEST_FILE_KEY;
 import static org.neo4j.test.extension.ExecutionSharedContext.LOCKED_TEST_FILE_KEY;
+import static org.neo4j.test.extension.ExecutionSharedContext.SHARED_RESOURCE;
 import static org.neo4j.test.extension.ExecutionSharedContext.SUCCESSFUL_TEST_FILE_KEY;
 
 /**
@@ -44,6 +46,7 @@ import static org.neo4j.test.extension.ExecutionSharedContext.SUCCESSFUL_TEST_FI
  */
 @ExtendWith( {DefaultFileSystemExtension.class, TestDirectoryExtension.class} )
 @ExtendWith( DirectoryExtensionLifecycleVerificationTest.ConfigurationParameterCondition.class )
+@ResourceLock( SHARED_RESOURCE )
 class DirectoryExtensionLifecycleVerificationTest
 {
     @Inject

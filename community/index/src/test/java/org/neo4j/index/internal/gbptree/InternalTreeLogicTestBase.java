@@ -22,6 +22,7 @@ package org.neo4j.index.internal.gbptree;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.api.parallel.ResourceLock;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -62,8 +63,10 @@ import static org.neo4j.index.internal.gbptree.TreeNode.Type.LEAF;
 import static org.neo4j.index.internal.gbptree.ValueMergers.overwrite;
 
 @ExtendWith( RandomExtension.class )
+@ResourceLock( InternalTreeLogicTestBase.INDEX_RESOURCE )
 abstract class InternalTreeLogicTestBase<KEY, VALUE>
 {
+    public static final String INDEX_RESOURCE = "index";
     private static final int PAGE_SIZE = 256;
     private static long stableGeneration = GenerationSafePointer.MIN_GENERATION;
     private static long unstableGeneration = stableGeneration + 1;

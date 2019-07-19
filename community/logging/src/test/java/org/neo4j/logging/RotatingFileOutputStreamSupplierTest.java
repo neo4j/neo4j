@@ -22,6 +22,8 @@ package org.neo4j.logging;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.api.parallel.ResourceLock;
+import org.junit.jupiter.api.parallel.Resources;
 
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -82,6 +84,7 @@ import static org.neo4j.logging.FormattedLog.OUTPUT_STREAM_CONVERTER;
 import static org.neo4j.logging.RotatingFileOutputStreamSupplier.getAllArchives;
 
 @ExtendWith( {SuppressOutputExtension.class, EphemeralFileSystemExtension.class, TestDirectoryExtension.class} )
+@ResourceLock( Resources.SYSTEM_OUT )
 class RotatingFileOutputStreamSupplierTest
 {
     private static final long TEST_TIMEOUT_MILLIS = 10_000;

@@ -21,6 +21,8 @@ package org.neo4j.consistency;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.api.parallel.ResourceLock;
+import org.junit.jupiter.api.parallel.Resources;
 
 import java.util.Arrays;
 import java.util.concurrent.ThreadLocalRandom;
@@ -59,6 +61,7 @@ import static org.neo4j.logging.FormattedLogProvider.toOutputStream;
  */
 @DbmsExtension
 @ExtendWith( SuppressOutputExtension.class )
+@ResourceLock( Resources.SYSTEM_OUT )
 class LabelScanStoreTxApplyRaceIT
 {
     // === CONTROL PANEL ===

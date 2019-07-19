@@ -29,6 +29,7 @@
             leave this disabled until fixed-->
             -Dorg.neo4j.kernel.impl.newapi.DefaultCursors.trackCursors=false
         </test.runner.jvm.settings>
+        <default.jupiter.test.mode>concurrent</default.jupiter.test.mode>
     </properties>
 
     <scm>

@@ -21,6 +21,8 @@ package org.neo4j.importer;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.api.parallel.ResourceLock;
+import org.junit.jupiter.api.parallel.Resources;
 
 import java.io.File;
 import java.nio.charset.Charset;
@@ -41,6 +43,7 @@ import static java.util.Collections.emptySet;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @ExtendWith( {TestDirectoryExtension.class, SuppressOutputExtension.class} )
+@ResourceLock( Resources.SYSTEM_OUT )
 class CsvImporterTest
 {
     @Inject
