@@ -353,6 +353,18 @@ case class OneTime(inner: IntermediateRepresentation)(private var used: Boolean)
 }
 
 /**
+  * Box a primitive value
+  * @param expression the value to box
+  */
+case class Box(expression: IntermediateRepresentation) extends IntermediateRepresentation
+
+/**
+  * Unbox a value to a primitive
+  * @param expression the value to unbox
+  */
+case class Unbox(expression: IntermediateRepresentation) extends IntermediateRepresentation
+
+/**
   * Defines a constructor
   * @param owner the owner of the constructor, or the object to be instantiated
   * @param params the parameter to the constructor
@@ -660,4 +672,8 @@ object IntermediateRepresentation {
 
   def print(value: IntermediateRepresentation): IntermediateRepresentation =
     invokeSideEffect(getStatic[System, PrintStream]("out"), method[PrintStream, Unit, Object]("println"), value )
+
+  def box(expression: IntermediateRepresentation) = Box(expression)
+
+  def unbox(expression: IntermediateRepresentation) = Unbox(expression)
 }

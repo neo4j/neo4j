@@ -252,6 +252,12 @@ object CodeGeneration {
 
     case Noop =>
       codegen.Expression.EMPTY
+
+    case Box(expression) =>
+      codegen.Expression.box(compileExpression(expression, block))
+
+    case Unbox(expression) =>
+      codegen.Expression.unbox(compileExpression(expression, block))
   }
 
   private def compileClassDeclaration(c: ClassDeclaration[_]): codegen.ClassHandle = {
