@@ -62,7 +62,7 @@ public class DefaultTracer implements DatabaseTracer
     }
 
     @Override
-    public long getAppendedBytes()
+    public long appendedBytes()
     {
         return appendedBytes.get();
     }

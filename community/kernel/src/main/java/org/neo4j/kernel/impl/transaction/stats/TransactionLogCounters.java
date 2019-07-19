@@ -25,7 +25,7 @@ public interface TransactionLogCounters
      * Total number of bytes appended to transaction logs as result of applying transactions
      * @return total number of appended bytes
      */
-    long getAppendedBytes();
+    long appendedBytes();
 
     /**
      * Total number of transaction log file rotations

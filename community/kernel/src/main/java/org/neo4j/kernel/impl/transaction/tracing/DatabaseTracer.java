@@ -60,7 +60,7 @@ public interface DatabaseTracer extends TransactionTracer, CheckPointTracer
         }
 
         @Override
-        public long getAppendedBytes()
+        public long appendedBytes()
         {
             return 0;
         }

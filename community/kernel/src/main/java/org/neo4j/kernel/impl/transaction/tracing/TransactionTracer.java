@@ -43,7 +43,7 @@ public interface TransactionTracer extends TransactionLogCounters
         }
 
         @Override
-        public long getAppendedBytes()
+        public long appendedBytes()
         {
             return 0;
         }
