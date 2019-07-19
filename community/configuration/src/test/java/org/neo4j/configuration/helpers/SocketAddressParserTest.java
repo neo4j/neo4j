@@ -230,6 +230,18 @@ class SocketAddressParserTest
         assertTrue( socketAddress.isWildcard() );
     }
 
+    @Test
+    void shouldSupportIPv6SpecialAddresses()
+    {
+        SocketAddress localhost = SocketAddressParser.socketAddress( "::1", SocketAddress::new );
+        SocketAddress unspecified = SocketAddressParser.socketAddress( "::", SocketAddress::new );
+
+        assertEquals( "::1", localhost.getHostname() );
+        assertTrue( localhost.getPort() < 0 );
+        assertEquals( "::", unspecified.getHostname() );
+        assertTrue( unspecified.getPort() < 0 );
+    }
+
     private static String whitespace( int numberOfWhitespaces )
     {
         return StringUtils.repeat( " ", numberOfWhitespaces );

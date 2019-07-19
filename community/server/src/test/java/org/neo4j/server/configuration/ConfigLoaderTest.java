@@ -70,14 +70,14 @@ public class ConfigLoaderTest
     {
         // given
         File configFile =
-                ConfigFileBuilder.builder( folder.getRoot() ).withNameValue( GraphDatabaseSettings.default_advertised_address.name(), "bar:0" ).build();
+                ConfigFileBuilder.builder( folder.getRoot() ).withNameValue( GraphDatabaseSettings.default_advertised_address.name(), "bar" ).build();
 
         // when
         Config testConf =
                 Config.newBuilder().fromFile( configFile ).set( GraphDatabaseSettings.neo4j_home, folder.getRoot().toString() ).build();
 
         // then
-        final String EXPECTED_VALUE = "bar:0";
+        final String EXPECTED_VALUE = "bar";
         assertEquals( EXPECTED_VALUE, testConf.get( GraphDatabaseSettings.default_advertised_address ).toString());
     }
 
@@ -113,8 +113,8 @@ public class ConfigLoaderTest
     {
         // given
         File configFile =
-                ConfigFileBuilder.builder( folder.getRoot() ).withNameValue( GraphDatabaseSettings.default_advertised_address.name(), "bar:0" ).withNameValue(
-                        GraphDatabaseSettings.default_advertised_address.name(), "bar:0" ).build();
+                ConfigFileBuilder.builder( folder.getRoot() ).withNameValue( GraphDatabaseSettings.default_advertised_address.name(), "bar" ).withNameValue(
+                        GraphDatabaseSettings.default_advertised_address.name(), "bar" ).build();
 
         // when
         Config testConf =
@@ -122,7 +122,7 @@ public class ConfigLoaderTest
 
         // then
         assertNotNull( testConf );
-        final String EXPECTED_VALUE = "bar:0";
+        final String EXPECTED_VALUE = "bar";
         assertEquals( EXPECTED_VALUE, testConf.get( GraphDatabaseSettings.default_advertised_address ).toString() );
     }
 

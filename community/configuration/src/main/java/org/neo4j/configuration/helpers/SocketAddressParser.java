@@ -29,7 +29,7 @@ import static java.lang.String.format;
 public class SocketAddressParser
 {
     private static final Pattern hostnamePortPatternExt = Pattern.compile( "\\[(?<hostname>[^\\s]+)]:(?<port>\\d+)" );
-    private static final Pattern hostnamePortPattern = Pattern.compile( "(?<hostname>[^\\s]+):(?<port>\\d+)" );
+    private static final Pattern hostnamePortPattern = Pattern.compile( "(?<hostname>[^\\s]*([^:\\s]|::)):(?<port>\\d+)" );
     private static final Pattern hostnamePattern = Pattern.compile( "(?<hostname>[^\\s]+)" );
     private static final Pattern portPattern = Pattern.compile( ":(?<port>\\d+)" );
 
