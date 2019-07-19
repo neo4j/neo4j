@@ -101,7 +101,7 @@ class SslPolicyConfigValidatorTest
 
         // when
         IllegalArgumentException exception = assertThrows( IllegalArgumentException.class, () -> Config.defaults( originalParams ) );
-        assertThat( exception.getMessage(), containsString( "Error evaluate setting" ) );
+        assertThat( exception.getMessage(), containsString( "Error evaluating value for setting" ) );
     }
 
     @Test
@@ -114,7 +114,7 @@ class SslPolicyConfigValidatorTest
 
         // when
         IllegalArgumentException exception = assertThrows( IllegalArgumentException.class, () -> Config.defaults( originalParams ) );
-        assertThat( exception.getMessage(), containsString( "Error evaluate setting" ) );
+        assertThat( exception.getMessage(), containsString( "Error evaluating value for setting" ) );
     }
 
     @Test
@@ -127,7 +127,7 @@ class SslPolicyConfigValidatorTest
 
         // when
         IllegalArgumentException exception = assertThrows( IllegalArgumentException.class, () -> Config.defaults( originalParams ) );
-        assertThat( exception.getMessage(), containsString( "Error evaluate setting" ) );
+        assertThat( exception.getMessage(), containsString( "Error evaluating value for setting" ) );
     }
 
     @Test
