@@ -71,7 +71,7 @@ class TransactionLogChannelAllocator
         LogHeader header = readLogHeader( headerBuffer, storeChannel, false, logFile );
         if ( header == null )
         {
-            try ( LogFileCreateEvent logFileCreateEvent = databaseTracer.createLogFile() )
+            try ( LogFileCreateEvent ignored = databaseTracer.createLogFile() )
             {
                 // we always write file header from the beginning of the file
                 storeChannel.position( 0 );

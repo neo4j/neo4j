@@ -117,7 +117,7 @@ class ReaderLogVersionBridgeTest
     }
 
     @Test
-    void shouldReturnOldChannelWhenNextChannelHasntGottenCompleteHeaderYet() throws Exception
+    void shouldReturnOldChannelWhenNextChannelHasNotGottenCompleteHeaderYet() throws Exception
     {
         // given
         final ReaderLogVersionBridge bridge = new ReaderLogVersionBridge( logFiles );

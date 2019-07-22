@@ -105,6 +105,7 @@ public class LogTestUtils
         try ( StoreChannel in = fileSystem.read( file ) )
         {
             LogHeader logHeader = readLogHeader( ByteBuffer.allocate( LOG_HEADER_SIZE ), in, true, file );
+            assert logHeader != null : "Looks like we tried to read a log header of an empty pre-allocated file.";
             PhysicalLogVersionedStoreChannel inChannel =
                     new PhysicalLogVersionedStoreChannel( in, logHeader.logVersion, logHeader.logFormatVersion, file );
             ReadableLogChannel inBuffer = new ReadAheadLogChannel( inChannel );

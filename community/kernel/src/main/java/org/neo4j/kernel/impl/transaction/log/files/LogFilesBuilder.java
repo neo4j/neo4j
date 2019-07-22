@@ -317,7 +317,7 @@ public class LogFilesBuilder
         }
         if ( readOnly )
         {
-            requireNonNull( pageCache, "Read only log files require page cache to be able to read commited " +
+            requireNonNull( pageCache, "Read only log files require page cache to be able to read committed " +
                     "transaction info from store store." );
             requireNonNull( databaseLayout, "Store directory is required." );
             TransactionIdStore transactionIdStore = readOnlyTransactionIdStore();
@@ -356,7 +356,7 @@ public class LogFilesBuilder
         }
         if ( readOnly )
         {
-            requireNonNull( pageCache, "Read only log files require page cache to be able to read commited " +
+            requireNonNull( pageCache, "Read only log files require page cache to be able to read committed " +
                     "transaction info from store store." );
             requireNonNull( databaseLayout, "Store directory is required." );
             TransactionIdStore transactionIdStore = readOnlyTransactionIdStore();
@@ -394,7 +394,7 @@ public class LogFilesBuilder
         }
         if ( readOnly )
         {
-            requireNonNull( pageCache, "Read only log files require page cache to be able to read commited " +
+            requireNonNull( pageCache, "Read only log files require page cache to be able to read committed " +
                     "transaction info from store store." );
             requireNonNull( databaseLayout, "Store directory is required." );
             TransactionIdStore transactionIdStore = readOnlyTransactionIdStore();

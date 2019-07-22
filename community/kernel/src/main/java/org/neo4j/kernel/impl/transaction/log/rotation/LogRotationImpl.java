@@ -99,9 +99,9 @@ public class LogRotationImpl implements LogRotation
             long lastTransactionId = logFiles.getLogFileInformation().committingEntryId();
             long millisSinceLastRotation = lastRotationCompleted == 0 ? 0 : startTimeMillis - lastRotationCompleted;
             lastRotationCompleted = clock.millis();
-            long rotationElapsedtime = lastRotationCompleted - startTimeMillis;
-            rotateEvent.rotationCompleted( rotationElapsedtime );
-            monitor.finishLogRotation( newLogFile, currentVersion, lastTransactionId, rotationElapsedtime, millisSinceLastRotation );
+            long rotationElapsedTime = lastRotationCompleted - startTimeMillis;
+            rotateEvent.rotationCompleted( rotationElapsedTime );
+            monitor.finishLogRotation( newLogFile, currentVersion, lastTransactionId, rotationElapsedTime, millisSinceLastRotation );
         }
     }
 }

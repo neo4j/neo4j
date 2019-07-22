@@ -152,9 +152,9 @@ public class PhysicalLogVersionedStoreChannel implements LogVersionedStoreChanne
     }
 
     @Override
-    public long write( ByteBuffer[] srcs, int offset, int length ) throws IOException
+    public long write( ByteBuffer[] sources, int offset, int length ) throws IOException
     {
-        return advance( delegateChannel.write( srcs, offset, length ) );
+        return advance( delegateChannel.write( sources, offset, length ) );
     }
 
     @Override

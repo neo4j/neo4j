@@ -39,6 +39,7 @@ import org.neo4j.kernel.impl.transaction.log.PositionAwarePhysicalFlushableChann
 import org.neo4j.kernel.impl.transaction.log.ReadAheadLogChannel;
 import org.neo4j.kernel.impl.transaction.log.ReadableLogChannel;
 import org.neo4j.kernel.impl.transaction.log.ReaderLogVersionBridge;
+import org.neo4j.kernel.impl.transaction.log.entry.LogEntry;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReader;
 import org.neo4j.kernel.impl.transaction.log.entry.LogHeader;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
@@ -109,10 +110,13 @@ class TransactionLogFile extends LifecycleAdapter implements LogFile
         // scroll all over possible checkpoints
         ReadAheadLogChannel readAheadLogChannel = new ReadAheadLogChannel( channel );
         LogEntryReader logEntryReader = context.getLogEntryReader();
-        while ( logEntryReader.readLogEntry( readAheadLogChannel ) != null )
+        LogEntry entry;
+        do
         {
             // seek to the end the records.
+            entry = logEntryReader.readLogEntry( readAheadLogChannel );
         }
+        while ( entry != null );
         return logEntryReader.lastPosition();
     }
 

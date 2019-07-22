@@ -29,6 +29,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.neo4j.io.ByteUnit;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -196,9 +197,9 @@ class TransactionLogAppendAndRotateIT
     {
         private final AtomicBoolean end;
         private final int maxNumberOfRotations;
+        private final AtomicInteger rotations = new AtomicInteger();
 
         private volatile LogFile logFile;
-        private volatile int rotations;
 
         AllTheMonitoring( AtomicBoolean end, int maxNumberOfRotations )
         {
@@ -224,7 +225,7 @@ class TransactionLogAppendAndRotateIT
             }
             finally
             {
-                if ( rotations++ > maxNumberOfRotations )
+                if ( rotations.getAndIncrement() > maxNumberOfRotations )
                 {
                     end.set( true );
                 }
@@ -233,7 +234,7 @@ class TransactionLogAppendAndRotateIT
 
         int numberOfRotations()
         {
-            return rotations;
+            return rotations.get();
         }
     }
 }
