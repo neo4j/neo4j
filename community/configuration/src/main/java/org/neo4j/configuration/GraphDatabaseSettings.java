@@ -754,9 +754,13 @@ public class GraphDatabaseSettings implements SettingsDeclaration
             " This is an auxiliary service but should be left enabled in almost all cases." )
     public static final Setting<Boolean> filewatcher_enabled = newBuilder( "dbms.filewatcher.enabled", BOOL, true ).build();
 
-    // TODO This is currently the number of rows. That still needs to change
-    @Description( "Fill me in please. 0 means no limit." )
-    public static final Setting<Long> transaction_max_memory = newBuilder( "dbms.transaction.memory.max", LONG, 0L ).addConstraint( min( 0L ) ).build();
+    @Description( "The maximum amount of heap memory to use in a transaction, in bytes (or kilobytes with the 'k' " +
+            "suffix, megabytes with 'm' and gigabytes with 'g'). If a transaction exceeds this limit, it will " +
+            "be terminated. Determining the current heap memory used by a transaction is a rough estimate and not " +
+            "an exact measurement. If no memory limit is configured, transactions will be allowed to use as much heap " +
+            "memory as needed. This could potentially lead to transactions consuming more heap memory than available, " +
+            "which will kill the Neo4j server." )
+    public static final Setting<String> transaction_max_memory = newBuilder( "dbms.transaction.memory.max", STRING, null ).build();
 
     /**
      * Block size properties values depends from selected record format.

@@ -25,6 +25,7 @@ import java.util.concurrent.TimeUnit
 import org.neo4j.configuration.{Config, GraphDatabaseSettings}
 import org.neo4j.cypher._
 import org.neo4j.cypher.internal.compiler.{CypherPlannerConfiguration, StatsDivergenceCalculator}
+import org.neo4j.io.ByteUnit
 
 import scala.concurrent.duration.Duration
 
@@ -56,7 +57,7 @@ object CypherConfiguration {
       config.get(GraphDatabaseSettings.cypher_task_wait),
       config.get(GraphDatabaseSettings.cypher_expression_recompilation_limit),
       config.get(GraphDatabaseSettings.cypher_morsel_fuse_operators),
-      config.get(GraphDatabaseSettings.transaction_max_memory)
+      ByteUnit.parse(config.get(GraphDatabaseSettings.transaction_max_memory))
     )
   }
 
