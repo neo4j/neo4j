@@ -26,7 +26,6 @@ import org.junit.jupiter.params.provider.EnumSource;
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.util.function.IntFunction;
 
 import org.neo4j.io.fs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.fs.ReadAheadChannel;
@@ -46,8 +45,8 @@ class ReadAheadChannelTest
     protected EphemeralFileSystemAbstraction fileSystem;
 
     @ParameterizedTest
-    @EnumSource( BufferFactories.class )
-    void shouldThrowExceptionForReadAfterEOFIfNotEnoughBytesExist( IntFunction<ByteBuffer> bufferFactory ) throws Exception
+    @EnumSource( Constructors.class )
+    void shouldThrowExceptionForReadAfterEOFIfNotEnoughBytesExist( Constructor constructor ) throws Exception
     {
         // Given
         File bytesReadTestFile = new File( "bytesReadTest.txt" );
@@ -61,7 +60,7 @@ class ReadAheadChannelTest
 
         storeChannel = fileSystem.read( bytesReadTestFile );
 
-        ReadAheadChannel<StoreChannel> channel = new ReadAheadChannel<>( storeChannel, bufferFactory.apply( DEFAULT_READ_AHEAD_SIZE ) );
+        ReadAheadChannel<StoreChannel> channel = constructor.apply( storeChannel, DEFAULT_READ_AHEAD_SIZE );
         assertEquals( (byte) 1, channel.get() );
 
         assertThrows( ReadPastEndException.class, channel::get );
@@ -69,8 +68,8 @@ class ReadAheadChannelTest
     }
 
     @ParameterizedTest
-    @EnumSource( BufferFactories.class )
-    void shouldReturnValueIfSufficientBytesAreBufferedEvenIfEOFHasBeenEncountered( IntFunction<ByteBuffer> bufferFactory ) throws Exception
+    @EnumSource( Constructors.class )
+    void shouldReturnValueIfSufficientBytesAreBufferedEvenIfEOFHasBeenEncountered( Constructor constructor ) throws Exception
     {
         // Given
         File shortReadTestFile = new File( "shortReadTest.txt" );
@@ -83,7 +82,7 @@ class ReadAheadChannelTest
         storeChannel.close();
 
         storeChannel = fileSystem.read( shortReadTestFile );
-        ReadAheadChannel<StoreChannel> channel = new ReadAheadChannel<>( storeChannel, bufferFactory.apply( DEFAULT_READ_AHEAD_SIZE ) );
+        ReadAheadChannel<StoreChannel> channel = constructor.apply( storeChannel, DEFAULT_READ_AHEAD_SIZE );
 
         assertThrows( ReadPastEndException.class, channel::getShort );
         assertEquals( (byte) 1, channel.get() );
@@ -91,8 +90,8 @@ class ReadAheadChannelTest
     }
 
     @ParameterizedTest
-    @EnumSource( BufferFactories.class )
-    void shouldHandleRunningOutOfBytesWhenRequestSpansMultipleFiles( IntFunction<ByteBuffer> bufferFactory ) throws Exception
+    @EnumSource( Constructors.class )
+    void shouldHandleRunningOutOfBytesWhenRequestSpansMultipleFiles( Constructor constructor ) throws Exception
     {
         // Given
         StoreChannel storeChannel1 = fileSystem.write( new File( "foo.1" ) );
@@ -117,14 +116,8 @@ class ReadAheadChannelTest
         storeChannel1 = fileSystem.read( new File( "foo.1" ) );
         final StoreChannel storeChannel2Copy = fileSystem.read( new File( "foo.2" ) );
 
-        ReadAheadChannel<StoreChannel> channel = new ReadAheadChannel<>( storeChannel1, bufferFactory.apply( DEFAULT_READ_AHEAD_SIZE ) )
-        {
-            @Override
-            protected StoreChannel next( StoreChannel channel )
-            {
-                return storeChannel2Copy;
-            }
-        };
+        HookedReadAheadChannel channel = constructor.apply( storeChannel1, DEFAULT_READ_AHEAD_SIZE );
+        channel.nextChannelHook = storeChannel2Copy;
 
         assertThrows( ReadPastEndException.class, channel::getLong );
         assertEquals( 1, channel.getInt() );
@@ -132,8 +125,8 @@ class ReadAheadChannelTest
     }
 
     @ParameterizedTest
-    @EnumSource( BufferFactories.class )
-    void shouldReturnPositionWithinBufferedStream( IntFunction<ByteBuffer> bufferFactory ) throws Exception
+    @EnumSource( Constructors.class )
+    void shouldReturnPositionWithinBufferedStream( Constructor constructor ) throws Exception
     {
         // given
         File file = new File( "foo.txt" );
@@ -142,7 +135,7 @@ class ReadAheadChannelTest
         int fileSize = readAheadSize * 8;
 
         createFile( fileSystem, file, fileSize );
-        ReadAheadChannel<StoreChannel> bufferedReader = new ReadAheadChannel<>( fileSystem.read( file ), bufferFactory.apply( readAheadSize ) );
+        ReadAheadChannel<StoreChannel> bufferedReader = constructor.apply( fileSystem.read( file ), readAheadSize );
 
         // when
         for ( int i = 0; i < fileSize / Long.BYTES; i++ )
@@ -169,23 +162,63 @@ class ReadAheadChannelTest
         storeChannel.close();
     }
 
-    enum BufferFactories implements IntFunction<ByteBuffer>
+    private static class HookedReadAheadChannel extends ReadAheadChannel<StoreChannel>
     {
-        HEAP
+        StoreChannel nextChannelHook;
+
+        HookedReadAheadChannel( StoreChannel channel, int readAheadSize )
         {
-            @Override
-            public ByteBuffer apply( int value )
-            {
-                return ByteBuffer.allocate( value );
-            }
-        },
-        DIRECT
-        {
-            @Override
-            public ByteBuffer apply( int value )
-            {
-                return ByteBuffer.allocateDirect( value );
-            }
+            super( channel, readAheadSize );
         }
+
+        HookedReadAheadChannel( StoreChannel channel, ByteBuffer byteBuffer )
+        {
+            super( channel, byteBuffer );
+        }
+
+        @Override
+        protected StoreChannel next( StoreChannel channel ) throws IOException
+        {
+            if ( nextChannelHook != null )
+            {
+                StoreChannel next = nextChannelHook;
+                nextChannelHook = null;
+                return next;
+            }
+            return super.next( channel );
+        }
+    }
+
+    interface Constructor
+    {
+        HookedReadAheadChannel apply( StoreChannel channel, int readAheadSize );
+    }
+
+    enum Constructors implements Constructor
+    {
+        HEAP_BUFFER
+                {
+                    @Override
+                    public HookedReadAheadChannel apply( StoreChannel channel, int readAheadSize )
+                    {
+                        return new HookedReadAheadChannel( channel, ByteBuffer.allocate( readAheadSize ) );
+                    }
+                },
+        DIRECT_BUFFER
+                {
+                    @Override
+                    public HookedReadAheadChannel apply( StoreChannel channel, int readAheadSize )
+                    {
+                        return new HookedReadAheadChannel( channel, ByteBuffer.allocateDirect( readAheadSize ) );
+                    }
+                },
+        INNER_BUFFER
+                {
+                    @Override
+                    public HookedReadAheadChannel apply( StoreChannel channel, int readAheadSize )
+                    {
+                        return new HookedReadAheadChannel( channel, readAheadSize );
+                    }
+                }
     }
 }

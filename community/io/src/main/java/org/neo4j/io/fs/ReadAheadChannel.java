@@ -21,6 +21,10 @@ package org.neo4j.io.fs;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.nio.channels.ClosedChannelException;
+
+import org.neo4j.internal.unsafe.UnsafeUtil;
+import org.neo4j.memory.GlobalMemoryTracker;
 
 import static java.lang.Math.min;
 import static java.lang.Math.toIntExact;
@@ -37,6 +41,7 @@ public class ReadAheadChannel<T extends StoreChannel> implements ReadableClosabl
 
     protected T channel;
     private final ByteBuffer aheadBuffer;
+    private final boolean cleanBufferOnClose;
     private final int readAheadSize;
 
     public ReadAheadChannel( T channel )
@@ -46,14 +51,27 @@ public class ReadAheadChannel<T extends StoreChannel> implements ReadableClosabl
 
     public ReadAheadChannel( T channel, int readAheadSize )
     {
-        this( channel, ByteBuffer.allocateDirect( readAheadSize ) );
+        this( channel, newInnerDirectByteBuffer( readAheadSize ), true );
+    }
+
+    private static ByteBuffer newInnerDirectByteBuffer( int size )
+    {
+        ByteBuffer buffer = ByteBuffer.allocateDirect( size );
+        GlobalMemoryTracker.INSTANCE.allocated( size );
+        return buffer;
     }
 
     public ReadAheadChannel( T channel, ByteBuffer byteBuffer )
     {
+        this( channel, byteBuffer, false );
+    }
+
+    private ReadAheadChannel( T channel, ByteBuffer byteBuffer, boolean cleanBufferOnClose )
+    {
         this.aheadBuffer = byteBuffer;
         this.aheadBuffer.position( aheadBuffer.capacity() );
         this.channel = channel;
+        this.cleanBufferOnClose = cleanBufferOnClose;
         this.readAheadSize = byteBuffer.capacity();
     }
 
@@ -130,10 +148,21 @@ public class ReadAheadChannel<T extends StoreChannel> implements ReadableClosabl
     public void close() throws IOException
     {
         channel.close();
+        if ( cleanBufferOnClose )
+        {
+            aheadBuffer.clear();
+            UnsafeUtil.invokeCleaner( aheadBuffer );
+            GlobalMemoryTracker.INSTANCE.deallocated( readAheadSize );
+        }
     }
 
     private void ensureDataExists( int requestedNumberOfBytes ) throws IOException
     {
+        if ( !channel.isOpen() )
+        {
+            throw new ClosedChannelException();
+        }
+
         int remaining = aheadBuffer.remaining();
         if ( remaining >= requestedNumberOfBytes )
         {
