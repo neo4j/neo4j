@@ -19,8 +19,6 @@
  */
 package org.neo4j.configuration;
 
-import org.apache.commons.lang3.StringUtils;
-
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -35,6 +33,7 @@ import org.neo4j.logging.Log;
 import org.neo4j.values.storable.CoordinateReferenceSystem;
 
 import static java.lang.String.format;
+import static org.apache.commons.lang3.StringUtils.isNotBlank;
 import static org.apache.commons.lang3.StringUtils.join;
 import static org.neo4j.configuration.GraphDatabaseSettings.default_advertised_address;
 import static org.neo4j.configuration.GraphDatabaseSettings.default_database;
@@ -55,7 +54,7 @@ public final class SettingMigrators
         public void migrate( Map<String,String> settings, Map<String,String> defaultValues, Log log )
         {
             String deprecatedValue = settings.remove( "dbms.active_database" );
-            if ( !StringUtils.isEmpty( deprecatedValue ) )
+            if ( isNotBlank( deprecatedValue ) )
             {
                 log.warn( "Use of deprecated setting dbms.active_database. Replaced by %s.", default_database.name() );
                 settings.putIfAbsent( default_database.name(), deprecatedValue );
@@ -202,7 +201,7 @@ public final class SettingMigrators
         {
             SETTINGS_TO_MIGRATE.forEach( ( oldSetting, newSetting ) -> {
                 String value = values.remove( oldSetting );
-                if ( !StringUtils.isEmpty( value ) )
+                if ( isNotBlank( value ) )
                 {
                     log.warn( "Use of deprecated setting %s. It is replaced by %s", oldSetting, newSetting );
                     values.putIfAbsent( newSetting, value );
@@ -215,13 +214,13 @@ public final class SettingMigrators
             Log log, String listenAddress, String advertisedAddress )
     {
         String listenValue = values.get( listenAddress );
-        if ( !StringUtils.isEmpty( listenValue ) )
+        if ( isNotBlank( listenValue ) )
         {
             String advertisedValue = values.get( advertisedAddress );
             boolean advertisedAlreadyHasPort = false;
             try
             {
-                if ( !StringUtils.isEmpty( advertisedValue ) )
+                if ( isNotBlank( advertisedValue ) )
                 {
                     advertisedAlreadyHasPort = SOCKET_ADDRESS.parse( advertisedValue ).getPort() >= 0;
                 }

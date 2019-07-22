@@ -248,7 +248,7 @@ public final class SettingConstraints
                 throw new IllegalArgumentException( "can not have a port" );
             }
 
-            if ( StringUtils.isEmpty( value.getHostname() ) )
+            if ( StringUtils.isBlank( value.getHostname() ) )
             {
                 throw new IllegalArgumentException( "needs not a hostname" );
             }
