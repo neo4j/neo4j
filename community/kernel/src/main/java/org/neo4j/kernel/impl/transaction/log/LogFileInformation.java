@@ -36,19 +36,18 @@ public interface LogFileInformation
     long getFirstEntryId( long version ) throws IOException;
 
     /**
-     * @return the last committed entry id for this Log
+     * @return the last committed entry id for this log.
      */
     long getLastEntryId();
 
     /**
-     * @return the committing entry id for this l
+     * @return the committing entry id for this log.
      */
     long committingEntryId();
 
     /**
      * @param version the log version to get first entry timestamp for.
-     * @return the timestamp for the start record for the first encountered entry
-     * in the log {@code version}.
+     * @return the timestamp for the start record for the first encountered entry in the log {@code version}.
      */
     long getFirstStartRecordTimestamp( long version ) throws IOException;
 }
