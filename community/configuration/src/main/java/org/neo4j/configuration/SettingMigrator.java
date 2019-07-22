@@ -33,11 +33,11 @@ public interface SettingMigrator
 {
     /**
      * This method is called before the String representations of Settings and values are parsed.
-     * Deprecated values should be removed from the input set
-     * Replacing values should be added to the input set
-     *
-     * @param input The map uses the name of settings as keys, and textual representation of values, as values
+     * Deprecated values should be removed from the values set
+     * Replacing values should be added to the values or defaultValues set, depending on desired migration
+     * @param values The map uses the name of settings as keys, and textual representation of values, as values
+     * @param defaultValues The map uses the name of settings as keys, and textual representation of default values, as values
      * @param log The log to relay warnings about the use of deprecated Settings
      */
-    void migrate( Map<String,String> input, Log log );
+    void migrate( Map<String,String> values, Map<String,String> defaultValues, Log log );
 }

@@ -269,7 +269,7 @@ public class Config implements Configuration
 
         try
         {
-            settingMigrators.forEach( migrator -> migrator.migrate( settingValues, log )  );
+            settingMigrators.forEach( migrator -> migrator.migrate( settingValues, overriddenDefaults, log )  );
         }
         catch ( RuntimeException e )
         {

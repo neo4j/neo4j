@@ -52,7 +52,7 @@ public final class SettingMigrators
     public static class ActiveDatabaseMigrator implements SettingMigrator
     {
         @Override
-        public void migrate( Map<String,String> settings, Log log )
+        public void migrate( Map<String,String> settings, Map<String,String> defaultValues, Log log )
         {
             String deprecatedValue = settings.remove( "dbms.active_database" );
             if ( !StringUtils.isEmpty( deprecatedValue ) )
@@ -70,11 +70,11 @@ public final class SettingMigrators
         private static final Pattern oldConnector = Pattern.compile( "^unsupported\\.dbms\\.db\\.spatial\\.crs\\.([^.]+)\\.(min|max)\\.([xyz])$");
 
         @Override
-        public void migrate( Map<String,String> input, Log log )
+        public void migrate( Map<String,String> values, Map<String,String> defaultValues, Log log )
         {
             List<String> oldCrs = new ArrayList<>();
             Map<String, List<String>> crsValues = new HashMap<>();
-            input.forEach( ( setting, value ) ->
+            values.forEach( ( setting, value ) ->
             {
                 Matcher matcher = oldConnector.matcher( setting );
                 if ( matcher.find() )
@@ -82,21 +82,21 @@ public final class SettingMigrators
                     String crsName = matcher.group( 1 );
                     String crsPlusSetting = format( "%s.%s", crsName, matcher.group( 2 ) );
                     CoordinateReferenceSystem crs = CoordinateReferenceSystem.byName( crsName );
-                    List<String> values = crsValues.computeIfAbsent( crsPlusSetting,
+                    List<String> valueList = crsValues.computeIfAbsent( crsPlusSetting,
                             s -> new ArrayList<>( Collections.nCopies( crs.getDimension(), Double.toString( Double.NaN ) ) ) );
-                    values.set( matcher.group( 3 ).charAt( 0 ) - 'x' , value );
+                    valueList.set( matcher.group( 3 ).charAt( 0 ) - 'x' , value );
                     oldCrs.add( setting );
                 }
             } );
 
             oldCrs.forEach( setting -> {
-                input.remove( setting );
+                values.remove( setting );
                 log.warn( "Use of deprecated setting %s.", setting );
             } );
-            crsValues.forEach( ( name, values ) -> {
+            crsValues.forEach( ( name, valueList ) -> {
                 String setting = format( "%s.%s", PREFIX, name );
-                String value = join( values, LIST_SEPARATOR );
-                input.putIfAbsent( setting, value );
+                String value = join( valueList, LIST_SEPARATOR );
+                values.putIfAbsent( setting, value );
                 log.warn( "Settings migrated to %s = %s", setting, value );
             } );
         }
@@ -109,19 +109,20 @@ public final class SettingMigrators
         private static final Pattern oldConnector = Pattern.compile( "^dbms\\.connector\\.([^.]+)\\.([^.]+)$");
 
         private static final Pattern connectorListenAddress = Pattern.compile( "^(dbms\\.connector\\.[^.]+\\.[^.]+\\.)listen_address$");
+        private static String ANY_CONNECTOR = "bolt|http|https";
 
         @Override
-        public void migrate( Map<String,String> input, Log log )
+        public void migrate( Map<String,String> values, Map<String,String> defaultValues, Log log )
         {
-            migrateOldConnectors( input, log );
-            migrateConnectorAddresses( input, log );
+            migrateOldConnectors( values, log );
+            migrateConnectorAddresses( values, defaultValues, log );
         }
 
-        private static void migrateOldConnectors( Map<String,String> input, Log log )
+        private static void migrateOldConnectors( Map<String,String> values, Log log )
         {
             Map<String, Matcher> oldConnectors = new HashMap<>();
             Map<String, String> connectorTypes = new HashMap<>();
-            input.forEach( ( setting, value ) ->
+            values.forEach( ( setting, value ) ->
             {
                 Matcher matcher = oldConnector.matcher( setting );
                 if ( matcher.find() )
@@ -132,11 +133,18 @@ public final class SettingMigrators
                     {
                         if ( settingName.equals( "type" ) )
                         {
-                            connectorTypes.put( id, value );
+                            String lowercaseValue = value.toLowerCase();
+                            if ( lowercaseValue.matches( ANY_CONNECTOR ) )
+                            {
+                                connectorTypes.put( id, lowercaseValue );
+                            }
                         }
-                        else if ( id.matches( "bolt|http|https" ) )
+                        else
                         {
-                            connectorTypes.put( id, id );
+                            if ( id.matches( ANY_CONNECTOR ) )
+                            {
+                                connectorTypes.put( id, id );
+                            }
                         }
                     }
                     oldConnectors.put( setting, matcher );
@@ -144,7 +152,7 @@ public final class SettingMigrators
             } );
 
             oldConnectors.forEach( ( setting, matcher ) -> {
-                String value = input.remove( setting );
+                String value = values.remove( setting );
                 String settingName = matcher.group( 2 );
                 String msg = "Redundant";
                 if ( !settingName.equals( "type" ) )
@@ -152,7 +160,7 @@ public final class SettingMigrators
                     String id = matcher.group( 1 );
                     String type = connectorTypes.get( id );
                     String migrated = String.format( "%s.%s.%s.%s", PREFIX, type, id, settingName );
-                    input.putIfAbsent( migrated, value );
+                    values.putIfAbsent( migrated, value );
 
                     msg = String.format( "Replaced by %s", migrated );
                 }
@@ -161,11 +169,11 @@ public final class SettingMigrators
             } );
         }
 
-        private static void migrateConnectorAddresses( Map<String,String> input, Log log )
+        private static void migrateConnectorAddresses( Map<String,String> values, Map<String,String> defaultValues,  Log log )
         {
             Map<String,String> addressesToMigrate = new HashMap<>();
 
-            for ( String setting : input.keySet() )
+            for ( String setting : values.keySet() )
             {
                 Matcher matcher = connectorListenAddress.matcher( setting );
                 if ( matcher.find() )
@@ -176,7 +184,7 @@ public final class SettingMigrators
 
             addressesToMigrate.forEach( ( listenAddr, advertisedAddr ) ->
             {
-                migrateAdvertisedAddressInheritanceChange( input, log, listenAddr, advertisedAddr );
+                migrateAdvertisedAddressInheritanceChange( values, defaultValues, log, listenAddr, advertisedAddr );
             } );
         }
     }
@@ -190,25 +198,26 @@ public final class SettingMigrators
         );
 
         @Override
-        public void migrate( Map<String,String> input, Log log )
+        public void migrate( Map<String,String> values, Map<String,String> defaultValues, Log log )
         {
             SETTINGS_TO_MIGRATE.forEach( ( oldSetting, newSetting ) -> {
-                String value = input.remove( oldSetting );
+                String value = values.remove( oldSetting );
                 if ( !StringUtils.isEmpty( value ) )
                 {
                     log.warn( "Use of deprecated setting %s. It is replaced by %s", oldSetting, newSetting );
-                    input.putIfAbsent( newSetting, value );
+                    values.putIfAbsent( newSetting, value );
                 }
             } );
         }
     }
 
-    public static void migrateAdvertisedAddressInheritanceChange( Map<String,String> input, Log log, String listenAddress, String advertisedAddress )
+    public static void migrateAdvertisedAddressInheritanceChange( Map<String,String> values, Map<String,String> defaultValues,
+            Log log, String listenAddress, String advertisedAddress )
     {
-        String listenValue = input.get( listenAddress );
+        String listenValue = values.get( listenAddress );
         if ( !StringUtils.isEmpty( listenValue ) )
         {
-            String advertisedValue = input.get( advertisedAddress );
+            String advertisedValue = values.get( advertisedAddress );
             boolean advertisedAlreadyHasPort = false;
             try
             {
@@ -232,7 +241,7 @@ public final class SettingMigrators
                     {
                         SocketAddress newAdvertised = new SocketAddress( advertisedValue, port );
                         log.warn( "Use of deprecated setting port propagation. port %s is migrated from %s to %s.", port, listenAddress, advertisedAddress );
-                        input.put( advertisedAddress, newAdvertised.toString() );
+                        defaultValues.put( advertisedAddress, newAdvertised.toString() );
                     }
                 }
                 catch ( RuntimeException e )
