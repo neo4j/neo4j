@@ -19,45 +19,37 @@
  */
 package org.neo4j.configuration.connectors;
 
+import org.neo4j.annotations.api.PublicApi;
 import org.neo4j.annotations.service.ServiceProvider;
 import org.neo4j.configuration.Description;
+import org.neo4j.configuration.SettingsDeclaration;
 import org.neo4j.configuration.helpers.SocketAddress;
 import org.neo4j.graphdb.config.Setting;
 
 import static org.neo4j.configuration.GraphDatabaseSettings.default_advertised_address;
 import static org.neo4j.configuration.GraphDatabaseSettings.default_listen_address;
+import static org.neo4j.configuration.SettingImpl.newBuilder;
+import static org.neo4j.configuration.SettingValueParsers.BOOL;
 import static org.neo4j.configuration.SettingValueParsers.SOCKET_ADDRESS;
 
 @ServiceProvider
-public class HttpsConnector extends Connector
+@PublicApi
+public final class HttpsConnector implements SettingsDeclaration
 {
     public static final int DEFAULT_PORT = 7473;
+    public static final String NAME = "https";
+
+    public static final Setting<Boolean> enabled = newBuilder( "dbms.connector.https.enabled", BOOL, false ).build();
 
     @Description( "Address the connector should bind to" )
-    public final Setting<SocketAddress> listen_address =
-            getBuilder( "listen_address", SOCKET_ADDRESS, new SocketAddress( DEFAULT_PORT ) ).setDependency( default_listen_address ).build();
+    public static final Setting<SocketAddress> listen_address =
+            newBuilder( "dbms.connector.https.listen_address", SOCKET_ADDRESS, new SocketAddress( DEFAULT_PORT ) )
+                    .setDependency( default_listen_address )
+                    .build();
 
     @Description( "Advertised address for this connector" )
-    public final Setting<SocketAddress> advertised_address =
-            getBuilder( "advertised_address", SOCKET_ADDRESS, new SocketAddress( DEFAULT_PORT ) ).setDependency( default_advertised_address ).build();
-
-    public static HttpsConnector group( String name )
-    {
-        return new HttpsConnector( name );
-    }
-
-    private HttpsConnector( String name )
-    {
-        super( name );
-    }
-    public HttpsConnector()
-    {
-        super( null );  // For ServiceLoader
-    }
-
-    @Override
-    public String getPrefix()
-    {
-        return super.getPrefix() + ".https";
-    }
+    public static final Setting<SocketAddress> advertised_address =
+            newBuilder( "dbms.connector.https.advertised_address", SOCKET_ADDRESS, new SocketAddress( DEFAULT_PORT ) )
+                    .setDependency( default_advertised_address )
+                    .build();
 }

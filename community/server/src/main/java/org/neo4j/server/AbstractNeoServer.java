@@ -32,7 +32,6 @@ import java.util.regex.Pattern;
 
 import org.neo4j.common.DependencyResolver;
 import org.neo4j.configuration.Config;
-import org.neo4j.configuration.ConfigUtils;
 import org.neo4j.configuration.connectors.ConnectorPortRegister;
 import org.neo4j.configuration.connectors.HttpConnector;
 import org.neo4j.configuration.connectors.HttpsConnector;
@@ -99,8 +98,10 @@ public abstract class AbstractNeoServer implements NeoServer
     private final SimpleUriBuilder uriBuilder = new SimpleUriBuilder();
     private final Config config;
     private final LifeSupport life = new LifeSupport();
-    private final SocketAddress httpListenAddress;
-    private final SocketAddress httpsListenAddress;
+    private final boolean httpEnabled;
+    private final boolean httpsEnabled;
+    private SocketAddress httpListenAddress;
+    private SocketAddress httpsListenAddress;
     private SocketAddress httpAdvertisedAddress;
     private SocketAddress httpsAdvertisedAddress;
 
@@ -112,8 +113,6 @@ public abstract class AbstractNeoServer implements NeoServer
     private HttpTransactionManager httpTransactionManager;
 
     private ConnectorPortRegister connectorPortRegister;
-    private HttpConnector httpConnector;
-    private HttpsConnector httpsConnector;
     private RotatingRequestLog requestLog;
 
     protected abstract Iterable<ServerModule> createServerModules();
@@ -129,13 +128,19 @@ public abstract class AbstractNeoServer implements NeoServer
 
         verifyConnectorsConfiguration( config );
 
-        httpConnector = findConnector( config );
-        httpListenAddress = listenAddressFor( config, httpConnector );
-        httpAdvertisedAddress = advertisedAddressFor( config, httpConnector );
+        httpEnabled = config.get( HttpConnector.enabled );
+        if ( httpEnabled )
+        {
+            httpListenAddress = config.get( HttpConnector.listen_address );
+            httpAdvertisedAddress = config.get( HttpConnector.advertised_address );
+        }
 
-        httpsConnector = findSecureConnector( config );
-        httpsListenAddress = listenAddressFor( config, httpsConnector );
-        httpsAdvertisedAddress = advertisedAddressFor( config, httpsConnector );
+        httpsEnabled = config.get( HttpsConnector.enabled );
+        if ( httpsEnabled )
+        {
+            httpsListenAddress = config.get( HttpsConnector.listen_address );
+            httpsAdvertisedAddress = config.get( HttpsConnector.advertised_address );
+        }
 
         databaseService = new LifecycleManagingDatabaseService( config, graphFactory, dependencies );
         life.add( databaseService );
@@ -264,10 +269,10 @@ public abstract class AbstractNeoServer implements NeoServer
 
     private void registerHttpAddressAfterStartup()
     {
-        if ( httpConnector != null )
+        if ( httpEnabled )
         {
             InetSocketAddress localHttpAddress = webServer.getLocalHttpAddress();
-            connectorPortRegister.register( httpConnector.name(), localHttpAddress );
+            connectorPortRegister.register( HttpConnector.NAME, localHttpAddress );
             if ( httpAdvertisedAddress.getPort() == 0 )
             {
                 httpAdvertisedAddress = new SocketAddress( localHttpAddress.getHostString(), localHttpAddress.getPort() );
@@ -277,10 +282,10 @@ public abstract class AbstractNeoServer implements NeoServer
 
     private void registerHttpsAddressAfterStartup()
     {
-        if ( httpsConnector != null )
+        if ( httpsEnabled )
         {
             InetSocketAddress localHttpsAddress = webServer.getLocalHttpsAddress();
-            connectorPortRegister.register( httpsConnector.name(), localHttpsAddress );
+            connectorPortRegister.register( HttpsConnector.NAME, localHttpsAddress );
             if ( httpsAdvertisedAddress.getPort() == 0 )
             {
                 httpsAdvertisedAddress = new SocketAddress( localHttpsAddress.getHostString(), localHttpsAddress.getPort() );
@@ -390,43 +395,11 @@ public abstract class AbstractNeoServer implements NeoServer
 
     private static void verifyConnectorsConfiguration( Config config )
     {
-        HttpConnector httpConnector = findConnector( config );
-        HttpsConnector httpsConnector = findSecureConnector( config );
-
-        if ( httpConnector == null && httpsConnector == null )
+        boolean httpAndHttpsDisabled = !config.get( HttpConnector.enabled ) && !config.get( HttpsConnector.enabled );
+        if ( httpAndHttpsDisabled )
         {
             throw new IllegalArgumentException( "Either HTTP or HTTPS connector must be configured to run the server" );
         }
-    }
-
-    private static HttpConnector findConnector( Config config )
-    {
-        return ConfigUtils.getEnabledHttpConnectors(config).stream().findFirst().orElse( null );
-    }
-
-    private static HttpsConnector findSecureConnector( Config config )
-    {
-        return ConfigUtils.getEnabledHttpsConnectors(config).stream().findFirst().orElse( null );
-    }
-
-    private static SocketAddress listenAddressFor( Config config, HttpConnector connector )
-    {
-        return connector == null ? null : config.get( connector.listen_address );
-    }
-
-    private static SocketAddress advertisedAddressFor( Config config, HttpConnector connector )
-    {
-        return connector == null ? null : config.get( connector.advertised_address );
-    }
-
-    private static SocketAddress listenAddressFor( Config config, HttpsConnector connector )
-    {
-        return connector == null ? null : config.get( connector.listen_address );
-    }
-
-    private static SocketAddress advertisedAddressFor( Config config, HttpsConnector connector )
-    {
-        return connector == null ? null : config.get( connector.advertised_address );
     }
 
     private class ServerDependenciesLifeCycleAdapter extends LifecycleAdapter

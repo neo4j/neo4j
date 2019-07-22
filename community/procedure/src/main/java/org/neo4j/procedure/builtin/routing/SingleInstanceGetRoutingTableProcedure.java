@@ -56,19 +56,11 @@ public class SingleInstanceGetRoutingTableProcedure extends BaseGetRoutingTableP
     @Override
     protected RoutingResult invoke( DatabaseId databaseId, MapValue routingContext )
     {
-        return config.getGroups( BoltConnector.class).values()
-                .stream()
-                .filter( boltConnector -> config.get( boltConnector.enabled ) )
-                .findFirst()
-                .map( this::createRoutingResult )
-                .orElseGet( this::createEmptyRoutingResult );
-    }
-
-    private RoutingResult createRoutingResult( BoltConnector connector )
-    {
-        var advertisedAddress = findAdvertisedAddress( connector );
-        var ttl = configuredRoutingTableTtl();
-        return createRoutingResult( advertisedAddress, ttl );
+        if ( config.get( BoltConnector.enabled ) )
+        {
+            return createRoutingResult( findAdvertisedBoltAddress(), configuredRoutingTableTtl() );
+        }
+        return createEmptyRoutingResult();
     }
 
     protected RoutingResult createRoutingResult( SocketAddress address, long routingTableTtl )
@@ -87,15 +79,15 @@ public class SingleInstanceGetRoutingTableProcedure extends BaseGetRoutingTableP
         return config.get( GraphDatabaseSettings.routing_ttl ).toMillis();
     }
 
-    private SocketAddress findAdvertisedAddress( BoltConnector connector )
+    private SocketAddress findAdvertisedBoltAddress()
     {
-        var advertisedAddress = config.get( connector.advertised_address );
+        var advertisedAddress = config.get( BoltConnector.advertised_address );
         if ( advertisedAddress.getPort() == 0 )
         {
             // advertised address with port zero is not useful for callers of the routing procedure
             // it is most likely inherited from the listen address
             // attempt to resolve the actual port using the port register
-            var localAddress = portRegister.getLocalAddress( connector.name() );
+            var localAddress = portRegister.getLocalAddress( BoltConnector.NAME );
             if ( localAddress != null )
             {
                 advertisedAddress = new SocketAddress( advertisedAddress.getHostname(), localAddress.getPort() );

@@ -36,7 +36,6 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import org.neo4j.bolt.BoltServer;
 import org.neo4j.bolt.testing.Jobs;
-import org.neo4j.configuration.Config;
 import org.neo4j.function.Predicates;
 import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.logging.NullLog;
@@ -71,7 +70,6 @@ public class ExecutorBoltSchedulerTest
 
     private final AssertableLogProvider logProvider = new AssertableLogProvider();
     private final LogService logService = new SimpleLogService( logProvider );
-    private final Config config = Config.defaults();
     private final ExecutorFactory executorFactory = new CachedThreadPoolExecutorFactory( NullLog.getInstance() );
     private final JobScheduler jobScheduler = mock( JobScheduler.class );
     private final ExecutorBoltScheduler boltScheduler =

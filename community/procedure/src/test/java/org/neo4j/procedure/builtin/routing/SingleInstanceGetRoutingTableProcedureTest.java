@@ -179,10 +179,9 @@ public class SingleInstanceGetRoutingTableProcedureTest
         }
         if ( boltAddress != null )
         {
-            var connector = BoltConnector.group( "my_bolt" );
-            builder.set( connector.enabled, TRUE );
-            builder.set( connector.listen_address, boltAddress );
-            builder.set( connector.advertised_address, boltAddress );
+            builder.set( BoltConnector.enabled, TRUE );
+            builder.set( BoltConnector.listen_address, boltAddress );
+            builder.set( BoltConnector.advertised_address, boltAddress );
         }
         return builder.build();
     }

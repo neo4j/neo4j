@@ -26,13 +26,11 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.net.URI;
-import java.util.Collection;
-import java.util.Optional;
 
-import org.neo4j.configuration.ConfigUtils;
 import org.neo4j.configuration.connectors.BoltConnector;
-import org.neo4j.configuration.connectors.Connector;
 import org.neo4j.configuration.connectors.ConnectorPortRegister;
+import org.neo4j.configuration.connectors.HttpConnector;
+import org.neo4j.configuration.connectors.HttpsConnector;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.config.Configuration;
 import org.neo4j.internal.helpers.HostnamePort;
@@ -42,8 +40,6 @@ import org.neo4j.server.NeoServer;
 
 public class InProcessNeo4j implements Neo4j, AutoCloseable
 {
-    private static final String DEFAULT_BOLT_CONNECTOR_KEY = "bolt";
-
     private final File serverFolder;
     private final File userLogFile;
     private final File internalLogFile;
@@ -63,49 +59,31 @@ public class InProcessNeo4j implements Neo4j, AutoCloseable
     @Override
     public URI boltURI()
     {
-        Collection<BoltConnector> connectors = ConfigUtils.getEnabledBoltConnectors( server.getConfig() );
-
-        BoltConnector defaultConnector = null;
-        BoltConnector firstConnector = null;
-
-        for ( BoltConnector connector : connectors )
+        if ( server.getConfig().get( BoltConnector.enabled ) )
         {
-            if ( DEFAULT_BOLT_CONNECTOR_KEY.equals( connector.name() ) )
-            {
-                defaultConnector = connector;
-            }
-            if ( firstConnector == null )
-            {
-                firstConnector = connector;
-            }
+            return connectorUri( "bolt", BoltConnector.NAME );
         }
-
-        if ( defaultConnector != null )
-        {
-            // bolt connector with default key is configured, return its address
-            return connectorUri( DEFAULT_BOLT_CONNECTOR_KEY, defaultConnector );
-        }
-        if ( firstConnector != null )
-        {
-            // some bolt connector is configured, return its address
-            return connectorUri( DEFAULT_BOLT_CONNECTOR_KEY, firstConnector );
-        }
-
         throw new IllegalStateException( "Bolt connector is not configured" );
     }
 
     @Override
     public URI httpURI()
     {
-        return httpConnectorUri( "http" )
-                .orElseThrow( () -> new IllegalStateException( "HTTP connector is not configured" ) );
+        if ( server.getConfig().get( HttpConnector.enabled ) )
+        {
+            return connectorUri( "http", HttpConnector.NAME );
+        }
+        throw new IllegalStateException( "HTTP connector is not configured" );
     }
 
     @Override
     public URI httpsURI()
     {
-        return httpsConnectorUri( "https" )
-                .orElseThrow( () -> new IllegalStateException( "HTTPS connector is not configured" ) );
+        if ( server.getConfig().get( HttpsConnector.enabled ) )
+        {
+            return connectorUri( "https", HttpsConnector.NAME );
+        }
+        throw new IllegalStateException( "HTTPS connector is not configured" );
     }
 
     public void start()
@@ -188,19 +166,9 @@ public class InProcessNeo4j implements Neo4j, AutoCloseable
         return server.getConfig();
     }
 
-    private Optional<URI> httpConnectorUri( String scheme )
+    private URI connectorUri( String scheme, String connectorName )
     {
-        return ConfigUtils.getEnabledHttpConnectors( server.getConfig() ).stream().findFirst().map( connector -> connectorUri( scheme, connector ) );
-    }
-
-    private Optional<URI> httpsConnectorUri( String scheme )
-    {
-        return ConfigUtils.getEnabledHttpsConnectors( server.getConfig() ).stream().findFirst().map( connector -> connectorUri( scheme, connector ) );
-    }
-
-    private URI connectorUri( String scheme, Connector connector )
-    {
-        HostnamePort hostPort = connectorPortRegister.getLocalAddress( connector.name() );
+        HostnamePort hostPort = connectorPortRegister.getLocalAddress( connectorName );
         return URI.create( scheme + "://" + hostPort + "/" );
     }
 

@@ -46,8 +46,8 @@ public class InMemoryGraphFactory implements GraphFactory
                 .setMonitors( dependencies.monitors() )
                 .setExternalDependencies( deps )
                 .impermanent()
-                .setConfig( BoltConnector.group( "bolt" ).listen_address, "localhost:0" )
-                .setConfig( BoltConnector.group( "bolt" ).enabled, TRUE )
+                .setConfig( BoltConnector.listen_address, "localhost:0" )
+                .setConfig( BoltConnector.enabled, TRUE )
                 .setConfig( config )
                 .build();
     }

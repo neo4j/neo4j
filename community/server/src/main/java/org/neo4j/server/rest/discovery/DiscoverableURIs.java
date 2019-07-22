@@ -29,7 +29,7 @@ import java.util.function.BiConsumer;
 import java.util.stream.Collectors;
 
 import org.neo4j.configuration.Config;
-import org.neo4j.configuration.ConfigUtils;
+import org.neo4j.configuration.connectors.BoltConnector;
 import org.neo4j.configuration.connectors.ConnectorPortRegister;
 import org.neo4j.configuration.helpers.SocketAddress;
 import org.neo4j.graphdb.config.Setting;
@@ -142,18 +142,18 @@ public class DiscoverableURIs
                 add( key, config.get( override ), HIGHEST );
             }
 
-            ConfigUtils.getEnabledBoltConnectors( config ).stream().findFirst().ifPresent( c ->
+            if ( config.get( BoltConnector.enabled ) )
             {
-                SocketAddress address = config.get( c.advertised_address );
+                SocketAddress address = config.get( BoltConnector.advertised_address );
                 int port = address.getPort();
                 if ( port == 0 )
                 {
-                    port = portRegister.getLocalAddress( c.name() ).getPort();
+                    port = portRegister.getLocalAddress( BoltConnector.NAME ).getPort();
                 }
 
                 // If advertised address is explicitly set, set the precedence to HIGH - eitherwise set it as LOWEST (default)
-                add( key, scheme, address.getHostname(), port, config.isExplicitlySet( c.advertised_address ) ? HIGH : LOWEST );
-            } );
+                add( key, scheme, address.getHostname(), port, config.isExplicitlySet( BoltConnector.advertised_address ) ? HIGH : LOWEST );
+            }
 
             return this;
         }

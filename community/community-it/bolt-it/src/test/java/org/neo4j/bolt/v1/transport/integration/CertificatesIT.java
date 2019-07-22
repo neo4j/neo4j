@@ -40,7 +40,6 @@ import org.neo4j.ssl.PkiUtils;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
-import static org.neo4j.bolt.v1.transport.integration.Neo4jWithSocket.DEFAULT_CONNECTOR_KEY;
 import static org.neo4j.configuration.GraphDatabaseSettings.tls_certificate_file;
 import static org.neo4j.configuration.GraphDatabaseSettings.tls_key_file;
 import static org.neo4j.configuration.SettingValueParsers.TRUE;
@@ -57,8 +56,8 @@ public class CertificatesIT
     {
         settings.put( tls_certificate_file, certFile.getAbsolutePath() );
         settings.put( tls_key_file, keyFile.getAbsolutePath() );
-        settings.put( BoltConnector.group( DEFAULT_CONNECTOR_KEY ).enabled, TRUE );
-        settings.put( BoltConnector.group( DEFAULT_CONNECTOR_KEY ).listen_address, "localhost:0" );
+        settings.put( BoltConnector.enabled, TRUE );
+        settings.put( BoltConnector.listen_address, "localhost:0" );
     } );
 
     @Test
@@ -69,7 +68,7 @@ public class CertificatesIT
         try
         {
             // WHEN
-            connection.connect( server.lookupConnector( DEFAULT_CONNECTOR_KEY ) )
+            connection.connect( server.lookupConnector( BoltConnector.NAME ) )
                     .send( util.acceptedVersions( 1, 0, 0, 0 ) );
 
             // THEN

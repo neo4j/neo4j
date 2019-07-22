@@ -35,7 +35,6 @@ import java.util.concurrent.ThreadLocalRandom;
 import java.util.function.Function;
 
 import org.neo4j.configuration.Config;
-import org.neo4j.configuration.ConfigUtils;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.configuration.connectors.BoltConnector;
 import org.neo4j.configuration.connectors.HttpConnector;
@@ -127,8 +126,8 @@ public abstract class AbstractInProcessNeo4jBuilder implements Neo4jBuilder
 
             if ( disabledServer )
             {
-                config.put( HttpConnector.group("http").enabled.name(), FALSE );
-                config.put( HttpsConnector.group("https").enabled.name(), FALSE );
+                config.put( HttpConnector.enabled.name(), FALSE );
+                config.put( HttpsConnector.enabled.name(), FALSE );
             }
 
             LogProvider userLogProvider = FormattedLogProvider.withZoneId( logZoneIdFrom( config ) ).toOutputStream( userLogOutputStream );
@@ -137,8 +136,7 @@ public abstract class AbstractInProcessNeo4jBuilder implements Neo4jBuilder
 
             Config dbConfig = Config.defaults( config );
             GraphFactory graphFactory = createGraphFactory( dbConfig );
-            boolean httpAndHttpsDisabled =
-                    ConfigUtils.getEnabledHttpConnectors( dbConfig ).isEmpty() && ConfigUtils.getEnabledHttpsConnectors( dbConfig ).isEmpty();
+            boolean httpAndHttpsDisabled = !dbConfig.get( HttpConnector.enabled ) && !dbConfig.get( HttpsConnector.enabled );
 
             NeoServer server = startNeo4jServer( dependencies, dbConfig, graphFactory, httpAndHttpsDisabled );
 
@@ -265,18 +263,14 @@ public abstract class AbstractInProcessNeo4jBuilder implements Neo4jBuilder
         withConfig( auth_enabled, FALSE );
         withConfig( pagecache_memory, "8m" );
 
-        BoltConnector bolt0 = BoltConnector.group( "bolt" );
-        HttpConnector http1 = HttpConnector.group( "http" );
-        HttpsConnector http2 = HttpsConnector.group( "https");
+        withConfig( HttpConnector.enabled, TRUE );
+        withConfig( HttpConnector.listen_address, "localhost:0" );
 
-        withConfig( http1.enabled, TRUE );
-        withConfig( http1.listen_address, "localhost:0" );
+        withConfig( HttpsConnector.enabled, FALSE );
+        withConfig( HttpsConnector.listen_address, "localhost:0" );
 
-        withConfig( http2.enabled, FALSE );
-        withConfig( http2.listen_address, "localhost:0" );
-
-        withConfig( bolt0.enabled, TRUE );
-        withConfig( bolt0.listen_address, "localhost:0" );
+        withConfig( BoltConnector.enabled, TRUE );
+        withConfig( BoltConnector.listen_address, "localhost:0" );
     }
 
     private Neo4jBuilder setDirectory( File dir )

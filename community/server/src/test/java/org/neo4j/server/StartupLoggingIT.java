@@ -42,7 +42,6 @@ import org.neo4j.test.server.ExclusiveServerTestBase;
 
 import static java.util.Arrays.asList;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.neo4j.bolt.v1.transport.integration.Neo4jWithSocket.DEFAULT_CONNECTOR_KEY;
 import static org.neo4j.configuration.SettingValueParsers.TRUE;
 import static org.neo4j.server.AbstractNeoServer.NEO4J_IS_STARTING_MESSAGE;
 
@@ -85,17 +84,14 @@ public class StartupLoggingIT extends ExclusiveServerTestBase
         properties.put( GraphDatabaseSettings.legacy_certificates_directory.name(), testDir.storeDir().toString() );
         properties.put( GraphDatabaseSettings.allow_upgrade.name(), TRUE );
 
-        HttpConnector http = HttpConnector.group( "http" );
-        properties.put( http.listen_address.name(), "localhost:0" );
-        properties.put( http.enabled.name(), TRUE );
+        properties.put( HttpConnector.listen_address.name(), "localhost:0" );
+        properties.put( HttpConnector.enabled.name(), TRUE );
 
-        HttpsConnector https = HttpsConnector.group( "https" );
-        properties.put( https.listen_address.name(), "localhost:0" );
-        properties.put( https.enabled.name(), TRUE );
+        properties.put( HttpsConnector.listen_address.name(), "localhost:0" );
+        properties.put( HttpsConnector.enabled.name(), TRUE );
 
-        BoltConnector bolt = BoltConnector.group( DEFAULT_CONNECTOR_KEY );
-        properties.put( bolt.enabled.name(), TRUE );
-        properties.put( bolt.listen_address.name(), "localhost:0" );
+        properties.put( BoltConnector.enabled.name(), TRUE );
+        properties.put( BoltConnector.listen_address.name(), "localhost:0" );
 
         properties.put( GraphDatabaseSettings.databases_root_path.name(), testDir.absolutePath().getAbsolutePath() );
         return properties;

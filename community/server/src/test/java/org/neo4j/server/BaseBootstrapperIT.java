@@ -190,23 +190,23 @@ public abstract class BaseBootstrapperIT extends ExclusiveServerTestBase
                 "-c", configOption( data_directory, tempDir.getRoot().getAbsolutePath() ),
                 "-c", configOption( logs_directory, tempDir.getRoot().getAbsolutePath() ),
 
-                "-c", HttpConnector.group("http").enabled.name() + "=" + httpEnabled,
-                "-c", HttpConnector.group("http").listen_address.name() + "=localhost:0",
+                "-c", HttpConnector.enabled.name() + "=" + httpEnabled,
+                "-c", HttpConnector.listen_address.name() + "=localhost:0",
 
-                "-c", HttpsConnector.group("https").enabled.name() + "=" + httpsEnabled,
-                "-c", HttpsConnector.group("https").listen_address.name() + "=localhost:0",
+                "-c", HttpsConnector.enabled.name() + "=" + httpsEnabled,
+                "-c", HttpsConnector.listen_address.name() + "=localhost:0",
 
-                "-c", BoltConnector.group("bolt").enabled.name() + "=" + boltEnabled,
-                "-c", BoltConnector.group("bolt").listen_address.name() + "=localhost:0"
+                "-c", BoltConnector.enabled.name() + "=" + boltEnabled,
+                "-c", BoltConnector.listen_address.name() + "=localhost:0"
         );
 
         assertEquals( ServerBootstrapper.OK, resultCode );
         assertEventually( "Server was not started", bootstrapper::isRunning, is( true ), 1, TimeUnit.MINUTES );
         assertDbAccessibleAsEmbedded();
 
-        verifyConnector( db(), "http", httpEnabled );
-        verifyConnector( db(), "https", httpsEnabled );
-        verifyConnector( db(), "bolt", boltEnabled );
+        verifyConnector( db(), HttpConnector.NAME, httpEnabled );
+        verifyConnector( db(), HttpsConnector.NAME, httpsEnabled );
+        verifyConnector( db(), BoltConnector.NAME, boltEnabled );
     }
 
     protected String configOption( Setting<?> setting, String value )
@@ -229,15 +229,15 @@ public abstract class BaseBootstrapperIT extends ExclusiveServerTestBase
     protected static Map<String,String> connectorsOnRandomPortsConfig()
     {
         return stringMap(
-                HttpConnector.group("default").listen_address.name(), "localhost:0",
-                HttpConnector.group("default").enabled.name(), TRUE,
+                HttpConnector.listen_address.name(), "localhost:0",
+                HttpConnector.enabled.name(), TRUE,
 
-                HttpsConnector.group("default").listen_address.name(), "localhost:0",
-                HttpsConnector.group("default").enabled.name(), TRUE,
+                HttpsConnector.listen_address.name(), "localhost:0",
+                HttpsConnector.enabled.name(), TRUE,
 
-                BoltConnector.group("default").listen_address.name(), "localhost:0",
-                BoltConnector.group("default").encryption_level.name(), "OPTIONAL",
-                BoltConnector.group("default").enabled.name(), TRUE
+                BoltConnector.listen_address.name(), "localhost:0",
+                BoltConnector.encryption_level.name(), "OPTIONAL",
+                BoltConnector.enabled.name(), TRUE
         );
     }
 

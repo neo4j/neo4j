@@ -26,10 +26,8 @@ import org.junit.jupiter.api.Test;
 
 import java.net.InetSocketAddress;
 import java.nio.channels.ServerSocketChannel;
-import java.util.Map;
 
 import org.neo4j.bolt.transport.NettyServer;
-import org.neo4j.configuration.connectors.BoltConnector;
 import org.neo4j.configuration.connectors.ConnectorPortRegister;
 import org.neo4j.configuration.helpers.PortBindException;
 import org.neo4j.configuration.helpers.SocketAddress;
@@ -65,8 +63,7 @@ class NettyServerTest
             var address = new SocketAddress( "localhost", port );
 
             // When
-            var initializersMap = Map.of( BoltConnector.group( "test" ), protocolOnAddress( address ) );
-            server = new NettyServer( newThreadFactory(), initializersMap, new ConnectorPortRegister(), NullLog.getInstance() );
+            server = new NettyServer( newThreadFactory(), protocolOnAddress( address ), new ConnectorPortRegister(), NullLog.getInstance() );
 
             // Then
             assertThrows( PortBindException.class, server::start );
@@ -80,8 +77,7 @@ class NettyServerTest
         var portRegister = new ConnectorPortRegister();
 
         var address = new SocketAddress( "localhost", 0 );
-        var initializersMap = Map.of( BoltConnector.group( connector ), protocolOnAddress( address ) );
-        server = new NettyServer( newThreadFactory(), initializersMap, portRegister, NullLog.getInstance() );
+        server = new NettyServer( newThreadFactory(), protocolOnAddress( address ), portRegister, NullLog.getInstance() );
 
         assertNull( portRegister.getLocalAddress( connector ) );
 

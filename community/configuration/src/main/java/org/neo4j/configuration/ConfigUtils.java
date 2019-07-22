@@ -19,12 +19,7 @@
  */
 package org.neo4j.configuration;
 
-import java.util.Collection;
-import java.util.Map;
-import java.util.stream.Collectors;
-
 import org.neo4j.configuration.connectors.BoltConnector;
-import org.neo4j.configuration.connectors.Connector;
 import org.neo4j.configuration.connectors.HttpConnector;
 import org.neo4j.configuration.connectors.HttpsConnector;
 
@@ -42,30 +37,8 @@ public abstract class ConfigUtils
      */
     public static void disableAllConnectors( Config config )
     {
-        config.getGroupsFromInheritance( Connector.class ).values().stream()
-                .map( Map::values ).flatMap( Collection::stream )
-                .forEach( connector -> config.set( connector.enabled, false ) );
-    }
-
-    public static Collection<HttpConnector> getEnabledHttpConnectors( Config config )
-    {
-        return getEnabledConnectors( HttpConnector.class, config );
-    }
-
-    public static Collection<HttpsConnector> getEnabledHttpsConnectors( Config config )
-    {
-        return getEnabledConnectors( HttpsConnector.class, config );
-    }
-
-    public static Collection<BoltConnector> getEnabledBoltConnectors( Config config )
-    {
-        return getEnabledConnectors( BoltConnector.class, config );
-    }
-
-    private static <T extends Connector> Collection<T> getEnabledConnectors( Class<T> connectorClass, Config config )
-    {
-        return config.getGroups( connectorClass ).values().stream()
-                .filter( connector -> config.get( connector.enabled ) )
-                .collect( Collectors.toList() );
+        config.set( BoltConnector.enabled, false );
+        config.set( HttpConnector.enabled, false );
+        config.set( HttpsConnector.enabled, false );
     }
 }

@@ -1106,9 +1106,9 @@ public class GraphDatabaseSettings implements SettingsDeclaration
      * This map contains default server settings that you can pass to the builders.
      */
     public static final Map<String,String> SERVER_DEFAULTS = Map.of(
-            HttpConnector.group( "http" ).enabled.name(), TRUE,
-            HttpsConnector.group( "https" ).enabled.name(), TRUE,
-            BoltConnector.group( "bolt" ).enabled.name(), TRUE,
+            HttpConnector.enabled.name(), TRUE,
+            HttpsConnector.enabled.name(), TRUE,
+            BoltConnector.enabled.name(), TRUE,
             auth_enabled.name(), TRUE
     );
 }

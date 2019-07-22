@@ -20,14 +20,18 @@
 package org.neo4j.configuration;
 
 import org.apache.commons.lang3.mutable.MutableInt;
+import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestFactory;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
@@ -52,6 +56,7 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
+import static org.junit.jupiter.api.DynamicTest.dynamicTest;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.neo4j.configuration.SettingImpl.newBuilder;
@@ -545,14 +550,16 @@ class ConfigTest
     @Test
     void testDisableAllConnectors()
     {
-        BoltConnector bolt1 = BoltConnector.group( "1" );
-        BoltConnector bolt2 = BoltConnector.group( "2" );
-        Config config = Config.defaults( Map.of( bolt1.enabled.name(), TRUE , bolt2.enabled.name(), TRUE ) );
+        Config config = Config.defaults( Map.of(
+                BoltConnector.enabled.name(), TRUE,
+                HttpConnector.enabled.name(), TRUE,
+                HttpsConnector.enabled.name(), TRUE ) );
 
         ConfigUtils.disableAllConnectors( config );
 
-        assertFalse( config.get( bolt1.enabled ) );
-        assertFalse( config.get( bolt2.enabled ) );
+        assertFalse( config.get( BoltConnector.enabled ) );
+        assertFalse( config.get( HttpConnector.enabled ) );
+        assertFalse( config.get( HttpsConnector.enabled ) );
     }
 
     @Test
@@ -617,75 +624,74 @@ class ConfigTest
         File confFile = testDirectory.createFile( "test.conf" );
         Files.write( confFile.toPath(), Arrays.asList(
                 "dbms.connector.bolt.enabled=true",
+                "dbms.connector.bolt.type=BOLT",
                 "dbms.connector.http.enabled=true",
                 "dbms.connector.https.enabled=true",
                 "dbms.connector.bolt2.type=bolt",
                 "dbms.connector.bolt2.listen_address=:1234" ) );
 
-        Config config = Config.newBuilder()
-                .set( BoltConnector.group( "bolt3" ).enabled, TRUE )
-                .fromFile( confFile )
-                .build();
-
-        assertTrue( config.get( BoltConnector.group( "bolt" ).enabled ) );
-        assertTrue( config.get( HttpConnector.group( "http" ).enabled ) );
-        assertTrue( config.get( HttpsConnector.group( "https" ).enabled ) );
-        assertEquals( 1234, config.get( BoltConnector.group( "bolt2" ).listen_address ).getPort() );
-        assertTrue( config.get( BoltConnector.group( "bolt3" ).enabled ) );
-    }
-
-    @Test
-    void testConnectorAddressesMigration()
-    {
-        BoltConnector c1 = BoltConnector.group( "c1" );
-        HttpConnector c2 = HttpConnector.group( "c2" );
-        HttpsConnector c3 = HttpsConnector.group( "c3" );
-        BoltConnector c4 = BoltConnector.group( "c4" );
-        HttpConnector c5 = HttpConnector.group( "c5" );
-        HttpsConnector c6 = HttpsConnector.group( "c6" );
-
-        Config config = Config.newBuilder()
-                .set( c1.listen_address, "foo:111" )
-                .set( c2.listen_address, ":222" )
-                .set( c3.listen_address, ":333" ).set( c3.advertised_address, "bar" )
-                .set( c4.listen_address, "foo:444" ).set( c4.advertised_address, ":555" )
-                .set( c5.listen_address, "foo" ).set( c5.advertised_address, "bar" )
-                .set( c6.listen_address, "foo:666" ).set( c6.advertised_address, "bar:777" )
-                .build();
-
+        Config config = Config.newBuilder().fromFile( confFile ).build();
         var logProvider = new AssertableLogProvider();
         config.setLogger( logProvider.getLog( Config.class ) );
 
-        assertEquals( new SocketAddress( "localhost", 111 ), config.get( c1.advertised_address ) );
-        assertEquals( new SocketAddress( "localhost", 222 ), config.get( c2.advertised_address ) );
-        assertEquals( new SocketAddress( "bar", 333 ), config.get( c3.advertised_address ) );
-        assertEquals( new SocketAddress( "localhost", 555 ), config.get( c4.advertised_address ) );
-        assertEquals( new SocketAddress( "bar", HttpConnector.DEFAULT_PORT ), config.get( c5.advertised_address ) );
-        assertEquals( new SocketAddress( "bar", 777 ), config.get( c6.advertised_address ) );
+        assertTrue( config.get( BoltConnector.enabled ) );
+        assertTrue( config.get( HttpConnector.enabled ) );
+        assertTrue( config.get( HttpsConnector.enabled ) );
 
-        logProvider.assertAtLeastOnce( inLog( Config.class )
-                .warn( "Use of deprecated setting port propagation. port %s is migrated from %s to %s.",
-                        111, c1.listen_address.name(), c1.advertised_address.name() ) );
+        logProvider.assertAtLeastOnce( inLog( Config.class ).warn( "Use of deprecated setting %s. Type is no longer specified", "dbms.connector.bolt.type" ) );
+        logProvider.assertAtLeastOnce( inLog( Config.class ).warn( "Use of deprecated setting %s. No longer supports multiple connectors. Setting discarded.",
+                "dbms.connector.bolt2.type" ) );
+        logProvider.assertAtLeastOnce( inLog( Config.class ).warn( "Use of deprecated setting %s. No longer supports multiple connectors. Setting discarded.",
+                "dbms.connector.bolt2.listen_address" ) );
 
-        logProvider.assertAtLeastOnce( inLog( Config.class )
-                .warn( "Use of deprecated setting port propagation. port %s is migrated from %s to %s.",
-                        222, c2.listen_address.name(), c2.advertised_address.name() ) );
+    }
 
-        logProvider.assertAtLeastOnce( inLog( Config.class )
-                .warn( "Use of deprecated setting port propagation. port %s is migrated from %s to %s.",
-                        333, c3.listen_address.name(), c3.advertised_address.name() ) );
+    @TestFactory
+    Collection<DynamicTest> testConnectorAddressMigration()
+    {
+        Collection<DynamicTest> tests = new ArrayList<>();
+        tests.add( dynamicTest( "Test bolt connector address migration",
+                () -> testAddrMigration( BoltConnector.listen_address, BoltConnector.advertised_address ) ) );
+        tests.add( dynamicTest( "Test http connector address migration",
+                () -> testAddrMigration( HttpConnector.listen_address, HttpConnector.advertised_address ) ) );
+        tests.add( dynamicTest( "Test https connector address migration",
+                () -> testAddrMigration( HttpsConnector.listen_address, HttpsConnector.advertised_address ) ) );
+        return tests;
+    }
 
-        logProvider.assertNone( inLog( Config.class )
-                .warn( "Use of deprecated setting port propagation. port %s is migrated from %s to %s.",
-                        444, c4.listen_address.name(), c4.advertised_address.name() ) );
+    private static void testAddrMigration( Setting<SocketAddress> listenAddr, Setting<SocketAddress> advertisedAddr )
+    {
+        Config config1 = Config.defaults( listenAddr, "foo:111" );
+        Config config2 = Config.defaults( listenAddr, ":222" );
+        Config config3 = Config.newBuilder().set( listenAddr, ":333" ).set( advertisedAddr, "bar" ).build();
+        Config config4 = Config.newBuilder().set( listenAddr, "foo:444" ).set( advertisedAddr, ":555" ).build();
+        Config config5 = Config.newBuilder().set( listenAddr, "foo" ).set( listenAddr, "bar" ).build();
+        Config config6 = Config.newBuilder().set( listenAddr, "foo:666" ).set( advertisedAddr, "bar:777" ).build();
 
-        logProvider.assertNone( inLog( Config.class )
-                .warn( "Use of deprecated setting port propagation. port %s is migrated from %s to %s.",
-                        555, c5.listen_address.name(), c5.advertised_address.name() ) );
+        var logProvider = new AssertableLogProvider();
+        config1.setLogger( logProvider.getLog( Config.class ) );
+        config2.setLogger( logProvider.getLog( Config.class ) );
+        config3.setLogger( logProvider.getLog( Config.class ) );
+        config4.setLogger( logProvider.getLog( Config.class ) );
+        config5.setLogger( logProvider.getLog( Config.class ) );
+        config6.setLogger( logProvider.getLog( Config.class ) );
 
-        logProvider.assertNone( inLog( Config.class )
-                .warn( "Use of deprecated setting port propagation. port %s is migrated from %s to %s.",
-                        666, c6.listen_address.name(), c6.advertised_address.name() ) );
+        assertEquals( new SocketAddress( "localhost", 111 ), config1.get( advertisedAddr ) );
+        assertEquals( new SocketAddress( "localhost", 222 ), config2.get( advertisedAddr ) );
+        assertEquals( new SocketAddress( "bar", 333 ), config3.get( advertisedAddr ) );
+        assertEquals( new SocketAddress( "localhost", 555 ), config4.get( advertisedAddr ) );
+        assertEquals( new SocketAddress( "bar", advertisedAddr.defaultValue().getPort() ), config5.get( listenAddr ) );
+        assertEquals( new SocketAddress( "bar", 777 ), config6.get( advertisedAddr ) );
+
+        String msg = "Use of deprecated setting port propagation. port %s is migrated from %s to %s.";
+
+        logProvider.assertAtLeastOnce( inLog( Config.class ).warn( msg, 111, listenAddr.name(), advertisedAddr.name() ) );
+        logProvider.assertAtLeastOnce( inLog( Config.class ).warn( msg, 222, listenAddr.name(), advertisedAddr.name() ) );
+        logProvider.assertAtLeastOnce( inLog( Config.class ).warn( msg, 333, listenAddr.name(), advertisedAddr.name() ) );
+
+        logProvider.assertNone( inLog( Config.class ).warn( msg, 444, listenAddr.name(), advertisedAddr.name() ) );
+        logProvider.assertNone( inLog( Config.class ).warn( msg, 555, listenAddr.name(), advertisedAddr.name() ) );
+        logProvider.assertNone( inLog( Config.class ).warn( msg, 666, listenAddr.name(), advertisedAddr.name() ) );
     }
 
     @Test

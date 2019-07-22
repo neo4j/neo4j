@@ -75,9 +75,6 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
@@ -85,12 +82,10 @@ import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_TX_LOGS_ROOT
 import static org.neo4j.configuration.GraphDatabaseSettings.data_directory;
 import static org.neo4j.configuration.GraphDatabaseSettings.databases_root_path;
 import static org.neo4j.configuration.GraphDatabaseSettings.transaction_logs_root_path;
-import static org.neo4j.configuration.SettingValueParsers.FALSE;
 import static org.neo4j.configuration.SettingValueParsers.TRUE;
 import static org.neo4j.harness.internal.TestNeo4jBuilders.newInProcessBuilder;
 import static org.neo4j.internal.helpers.collection.Iterables.asIterable;
 import static org.neo4j.internal.helpers.collection.Iterators.single;
-import static org.neo4j.server.ServerTestUtils.connectorAddress;
 import static org.neo4j.server.ServerTestUtils.verifyConnector;
 
 @ExtendWith( {TestDirectoryExtension.class, SuppressOutputExtension.class} )
@@ -128,15 +123,13 @@ class InProcessServerBuilderIT
         String[] defaultCiphers = ssf.getDefaultCipherSuites();
 
         // When
-        HttpConnector httpConnector = HttpConnector.group( "0" );
-        HttpsConnector httpsConnector = HttpsConnector.group( "1" );
         PemSslPolicyConfig pem = PemSslPolicyConfig.group( "test" );
 
         try ( InProcessNeo4j neo4j = getTestBuilder( directory.directory() )
-                .withConfig( httpConnector.enabled, TRUE )
-                .withConfig( httpConnector.listen_address, "localhost:0" )
-                .withConfig( httpsConnector.enabled, TRUE )
-                .withConfig( httpsConnector.listen_address, "localhost:0" )
+                .withConfig( HttpConnector.enabled, TRUE )
+                .withConfig( HttpConnector.listen_address, "localhost:0" )
+                .withConfig( HttpsConnector.enabled, TRUE )
+                .withConfig( HttpsConnector.listen_address, "localhost:0" )
                 .withConfig( GraphDatabaseSettings.dense_node_threshold, "20" )
                 // override legacy policy
                 .withConfig( ServerSettings.ssl_policy, "test" )
@@ -311,60 +304,6 @@ class InProcessServerBuilderIT
     }
 
     @Test
-    void shouldReturnBoltUriWhenMultipleBoltConnectorsConfigured()
-    {
-        BoltConnector bolt = BoltConnector.group( "bolt" );
-        BoltConnector anotherBolt = BoltConnector.group( "another_bolt" );
-
-        Neo4jBuilder serverBuilder = newInProcessBuilder( directory.directory() )
-                .withConfig( anotherBolt.enabled, TRUE )
-                .withConfig( anotherBolt.listen_address, ":0" )
-                .withConfig( bolt.enabled, TRUE )
-                .withConfig( bolt.listen_address, ":0" );
-
-        try ( InProcessNeo4j neo4j = serverBuilder.build() )
-        {
-            HostnamePort boltHostPort = connectorAddress( neo4j.graph(), "bolt" );
-            HostnamePort anotherBoltHostPort = connectorAddress( neo4j.graph(), "another_bolt" );
-
-            assertNotNull( boltHostPort );
-            assertNotNull( anotherBoltHostPort );
-            assertNotEquals( boltHostPort, anotherBoltHostPort );
-
-            URI boltUri = neo4j.boltURI();
-            assertEquals( "bolt", boltUri.getScheme() );
-            assertEquals( boltHostPort.getHost(), boltUri.getHost() );
-            assertEquals( boltHostPort.getPort(), boltUri.getPort() );
-        }
-    }
-
-    @Test
-    void shouldReturnBoltUriWhenDefaultBoltConnectorOffAndOtherConnectorConfigured()
-    {
-        BoltConnector bolt = BoltConnector.group( "bolt" );
-        BoltConnector anotherBolt = BoltConnector.group( "another_bolt" );
-
-        Neo4jBuilder serverBuilder = newInProcessBuilder( directory.directory() )
-                .withConfig( bolt.enabled, FALSE )
-                .withConfig( anotherBolt.enabled, TRUE )
-                .withConfig( anotherBolt.listen_address, ":0" );
-
-        try ( InProcessNeo4j neo4j = serverBuilder.build() )
-        {
-            HostnamePort boltHostPort = connectorAddress( neo4j.graph(), "bolt" );
-            HostnamePort anotherBoltHostPort = connectorAddress( neo4j.graph(), "another_bolt" );
-
-            assertNull( boltHostPort );
-            assertNotNull( anotherBoltHostPort );
-
-            URI boltUri = neo4j.boltURI();
-            assertEquals( "bolt", boltUri.getScheme() );
-            assertEquals( anotherBoltHostPort.getHost(), boltUri.getHost() );
-            assertEquals( anotherBoltHostPort.getPort(), boltUri.getPort() );
-        }
-    }
-
-    @Test
     void shouldStartServerWithHttpHttpsAndBoltDisabled()
     {
         testStartupWithConnectors( false, false, false );
@@ -408,17 +347,13 @@ class InProcessServerBuilderIT
 
     private void testStartupWithConnectors( boolean httpEnabled, boolean httpsEnabled, boolean boltEnabled )
     {
-        BoltConnector bolt = BoltConnector.group( "bolt" );
-        HttpsConnector https = HttpsConnector.group( "https" );
-        HttpConnector http = HttpConnector.group( "http" );
-
         Neo4jBuilder serverBuilder = newInProcessBuilder( directory.directory() )
-                .withConfig( http.enabled, Boolean.toString( httpEnabled ) )
-                .withConfig( http.listen_address, ":0" )
-                .withConfig( https.enabled, Boolean.toString( httpsEnabled ) )
-                .withConfig( https.listen_address, ":0" )
-                .withConfig( bolt.enabled, Boolean.toString( boltEnabled ) )
-                .withConfig( bolt.listen_address, ":0" );
+                .withConfig( HttpConnector.enabled, Boolean.toString( httpEnabled ) )
+                .withConfig( HttpConnector.listen_address, ":0" )
+                .withConfig( HttpsConnector.enabled, Boolean.toString( httpsEnabled ) )
+                .withConfig( HttpsConnector.listen_address, ":0" )
+                .withConfig( BoltConnector.enabled, Boolean.toString( boltEnabled ) )
+                .withConfig( BoltConnector.listen_address, ":0" );
 
         try ( InProcessNeo4j neo4j = serverBuilder.build() )
         {

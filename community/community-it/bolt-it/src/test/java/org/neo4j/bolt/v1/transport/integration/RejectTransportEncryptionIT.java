@@ -40,7 +40,6 @@ import org.neo4j.function.Factory;
 import static java.util.Arrays.asList;
 import static org.apache.commons.lang3.JavaVersion.JAVA_9;
 import static org.apache.commons.lang3.SystemUtils.isJavaVersionAtLeast;
-import static org.neo4j.bolt.v1.transport.integration.Neo4jWithSocket.DEFAULT_CONNECTOR_KEY;
 import static org.neo4j.configuration.connectors.BoltConnector.EncryptionLevel.DISABLED;
 
 @RunWith( Parameterized.class )
@@ -50,7 +49,7 @@ public class RejectTransportEncryptionIT
     public Neo4jWithSocket server = new Neo4jWithSocket( getClass(),
             settings ->
             {
-                settings.put( BoltConnector.group( DEFAULT_CONNECTOR_KEY ).encryption_level, DISABLED.name() );
+                settings.put( BoltConnector.encryption_level, DISABLED.name() );
             } );
     @Rule
     public ExpectedException exception = ExpectedException.none();

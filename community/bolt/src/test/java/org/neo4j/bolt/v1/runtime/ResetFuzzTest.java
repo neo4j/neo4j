@@ -80,7 +80,6 @@ import static org.neo4j.values.virtual.VirtualValues.EMPTY_MAP;
 
 public class ResetFuzzTest
 {
-    private static final String CONNECTOR = "bolt";
     // Because RESET has a "call ahead" mechanism where it will interrupt
     // the session before RESET arrives in order to purge any statements
     // ahead in the message queue, we use this test to convince ourselves
@@ -119,7 +118,7 @@ public class ResetFuzzTest
     {
         boltChannel = mock( BoltChannel.class, RETURNS_MOCKS );
         when( boltChannel.id() ).thenReturn( UUID.randomUUID().toString() );
-        when( boltChannel.connector() ).thenReturn( CONNECTOR );
+        when( boltChannel.connector() ).thenReturn( BoltConnector.NAME );
     }
 
     @Test
@@ -183,11 +182,10 @@ public class ResetFuzzTest
     private static Config createConfig()
     {
         Map<String, String> configProps = new HashMap<>();
-        BoltConnector bolt = BoltConnector.group( CONNECTOR );
-        configProps.put( bolt.enabled.name(), TRUE );
-        configProps.put( bolt.listen_address.name(), "localhost:0" );
-        configProps.put( bolt.thread_pool_min_size.name(), "5" );
-        configProps.put( bolt.thread_pool_max_size.name(), "10" );
+        configProps.put( BoltConnector.enabled.name(), TRUE );
+        configProps.put( BoltConnector.listen_address.name(), "localhost:0" );
+        configProps.put( BoltConnector.thread_pool_min_size.name(), "5" );
+        configProps.put( BoltConnector.thread_pool_max_size.name(), "10" );
 
         return Config.defaults( configProps );
     }

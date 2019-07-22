@@ -19,13 +19,12 @@
  */
 package org.neo4j.bolt.runtime;
 
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ForkJoinPool;
 
 import org.neo4j.bolt.BoltChannel;
 import org.neo4j.configuration.Config;
-import org.neo4j.configuration.ConfigUtils;
+import org.neo4j.configuration.connectors.BoltConnector;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.internal.LogService;
@@ -39,7 +38,7 @@ public class ExecutorBoltSchedulerProvider extends LifecycleAdapter implements B
     private final JobScheduler scheduler;
     private final LogService logService;
     private final Log internalLog;
-    private final ConcurrentHashMap<String, BoltScheduler> boltSchedulers;
+    private volatile BoltScheduler boltScheduler;
 
     private ExecutorService forkJoinThreadPool;
 
@@ -50,7 +49,6 @@ public class ExecutorBoltSchedulerProvider extends LifecycleAdapter implements B
         this.scheduler = scheduler;
         this.logService = logService;
         this.internalLog = logService.getInternalLog( getClass() );
-        this.boltSchedulers = new ConcurrentHashMap<>();
     }
 
     @Override
@@ -58,43 +56,44 @@ public class ExecutorBoltSchedulerProvider extends LifecycleAdapter implements B
     {
         scheduler.setThreadFactory( Group.BOLT_WORKER, NettyThreadFactory::new );
         forkJoinThreadPool = new ForkJoinPool();
-        ConfigUtils.getEnabledBoltConnectors( config ).forEach( connector ->
+        if ( config.get( BoltConnector.enabled ) )
         {
             BoltScheduler boltScheduler =
-                    new ExecutorBoltScheduler( connector.name(), executorFactory, scheduler, logService, config.get( connector.thread_pool_min_size ),
-                            config.get( connector.thread_pool_max_size ), config.get( connector.thread_pool_keep_alive ),
-                            config.get( connector.unsupported_thread_pool_queue_size ), forkJoinThreadPool );
+                    new ExecutorBoltScheduler( BoltConnector.NAME, executorFactory, scheduler, logService, config.get( BoltConnector.thread_pool_min_size ),
+                            config.get( BoltConnector.thread_pool_max_size ), config.get( BoltConnector.thread_pool_keep_alive ),
+                            config.get( BoltConnector.unsupported_thread_pool_queue_size ), forkJoinThreadPool );
             boltScheduler.start();
-            boltSchedulers.put( connector.name(), boltScheduler );
-        } );
+            this.boltScheduler = boltScheduler;
+        }
     }
 
     @Override
     public void stop()
     {
-        boltSchedulers.values().forEach( this::stopScheduler );
-        boltSchedulers.clear();
-
+        stopScheduler();
         forkJoinThreadPool.shutdown();
         forkJoinThreadPool = null;
     }
 
-    private void stopScheduler( BoltScheduler scheduler )
+    private void stopScheduler()
     {
-        try
+        if ( boltScheduler != null )
         {
-            scheduler.stop();
-        }
-        catch ( Throwable t )
-        {
-            internalLog.warn( String.format( "An unexpected error occurred while stopping BoltScheduler [%s]", scheduler.connector() ), t );
+            try
+            {
+                boltScheduler.stop();
+            }
+            catch ( Throwable t )
+            {
+                internalLog.warn( String.format( "An unexpected error occurred while stopping BoltScheduler [%s]", boltScheduler.connector() ), t );
+            }
+            boltScheduler = null;
         }
     }
 
     @Override
     public BoltScheduler get( BoltChannel channel )
     {
-        BoltScheduler boltScheduler = boltSchedulers.get( channel.connector() );
         if ( boltScheduler == null )
         {
             throw new IllegalArgumentException(

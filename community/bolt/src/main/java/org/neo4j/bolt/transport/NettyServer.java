@@ -29,7 +29,6 @@ import io.netty.channel.epoll.Epoll;
 import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import java.util.concurrent.ThreadFactory;
 
 import org.neo4j.bolt.transport.configuration.EpollConfigurationProvider;
@@ -54,7 +53,7 @@ public class NettyServer extends LifecycleAdapter
 {
     private static final boolean USE_EPOLL = FeatureToggles.flag( NettyServer.class, "useEpoll", true  );
 
-    private final Map<BoltConnector, ProtocolInitializer> bootstrappersMap;
+    private final ProtocolInitializer initializer;
     private final ThreadFactory tf;
     private final ConnectorPortRegister portRegister;
     private final Log log;
@@ -73,13 +72,13 @@ public class NettyServer extends LifecycleAdapter
 
     /**
      * @param tf used to create IO threads to listen and handle network events
-     * @param initializersMap  function per bolt connector map to bootstrap configured protocols
+     * @param initializer  function for bolt connector map to bootstrap configured protocol
      * @param connectorRegister register to keep local address information on all configured connectors
      */
-    public NettyServer( ThreadFactory tf, Map<BoltConnector, ProtocolInitializer> initializersMap,
+    public NettyServer( ThreadFactory tf, ProtocolInitializer initializer,
                         ConnectorPortRegister connectorRegister, Log log )
     {
-        this.bootstrappersMap = initializersMap;
+        this.initializer = initializer;
         this.tf = tf;
         this.portRegister = connectorRegister;
         this.log = log;
@@ -93,20 +92,17 @@ public class NettyServer extends LifecycleAdapter
         eventLoopGroup = configurationProvider.createEventLoopGroup( tf );
         channels = new ArrayList<>();
 
-        for ( var bootstrapEntry : bootstrappersMap.entrySet() )
+        if ( initializer != null )
         {
             try
             {
-                var protocolInitializer = bootstrapEntry.getValue();
-                var boltConnector = bootstrapEntry.getKey();
-
-                var channel = bind( configurationProvider, protocolInitializer );
+                var channel = bind( configurationProvider, initializer );
                 channels.add( channel );
 
                 var localAddress = (InetSocketAddress) channel.localAddress();
-                portRegister.register( boltConnector.name(), localAddress );
+                portRegister.register( BoltConnector.NAME, localAddress );
 
-                var host = protocolInitializer.address().getHostname();
+                var host = initializer.address().getHostname();
                 var port = localAddress.getPort();
                 log.info( "Bolt enabled on %s.", SocketAddress.format( host, port ) );
             }
@@ -115,7 +111,7 @@ public class NettyServer extends LifecycleAdapter
                 // We catch throwable here because netty uses clever tricks to have method signatures that look like they do not
                 // throw checked exceptions, but they actually do. The compiler won't let us catch them explicitly because in theory
                 // they shouldn't be possible, so we have to catch Throwable and do our own checks to grab them
-                throw new PortBindException( bootstrapEntry.getValue().address(), e );
+                throw new PortBindException( initializer.address(), e );
             }
         }
     }
@@ -154,10 +150,7 @@ public class NettyServer extends LifecycleAdapter
 
     private void deregisterListenAddresses()
     {
-        for ( var connector : bootstrappersMap.keySet() )
-        {
-            portRegister.deregister( connector.name() );
-        }
+        portRegister.deregister( BoltConnector.NAME );
     }
 
     private void closeChannels()

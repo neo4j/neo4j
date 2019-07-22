@@ -55,7 +55,6 @@ import static org.hamcrest.CoreMatchers.startsWith;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.neo4j.bolt.v1.messaging.util.MessageMatchers.msgFailure;
 import static org.neo4j.bolt.v1.messaging.util.MessageMatchers.msgSuccess;
-import static org.neo4j.bolt.v1.transport.integration.Neo4jWithSocket.DEFAULT_CONNECTOR_KEY;
 import static org.neo4j.bolt.v1.transport.integration.TransportTestUtil.eventuallyReceives;
 import static org.neo4j.configuration.SettingValueParsers.FALSE;
 import static org.neo4j.configuration.SettingValueParsers.TRUE;
@@ -88,10 +87,10 @@ public class BoltSchedulerBusyIT extends AbstractBoltTransportsTest
         return settings ->
         {
             settings.put( GraphDatabaseSettings.auth_enabled, FALSE );
-            settings.put( BoltConnector.group( DEFAULT_CONNECTOR_KEY ).enabled, TRUE );
-            settings.put( BoltConnector.group( DEFAULT_CONNECTOR_KEY ).listen_address, "localhost:0" );
-            settings.put( BoltConnector.group( DEFAULT_CONNECTOR_KEY ).thread_pool_min_size, "0" );
-            settings.put( BoltConnector.group( DEFAULT_CONNECTOR_KEY ).thread_pool_max_size, "2" );
+            settings.put( BoltConnector.enabled, TRUE );
+            settings.put( BoltConnector.listen_address, "localhost:0" );
+            settings.put( BoltConnector.thread_pool_min_size, "0" );
+            settings.put( BoltConnector.thread_pool_max_size, "2" );
         };
     }
 

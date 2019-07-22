@@ -38,7 +38,6 @@ import org.neo4j.internal.helpers.HostnamePort;
 
 import static java.util.Arrays.asList;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.neo4j.bolt.v1.transport.integration.Neo4jWithSocket.DEFAULT_CONNECTOR_KEY;
 import static org.neo4j.bolt.v1.transport.integration.TransportTestUtil.eventuallyDisconnects;
 import static org.neo4j.configuration.connectors.BoltConnector.EncryptionLevel.REQUIRED;
 
@@ -47,7 +46,7 @@ public class RequiredTransportEncryptionIT
 {
     @Rule
     public Neo4jWithSocket server = new Neo4jWithSocket( getClass(),
-            settings -> settings.put( BoltConnector.group( DEFAULT_CONNECTOR_KEY ).encryption_level, REQUIRED.name() ) );
+            settings -> settings.put( BoltConnector.encryption_level, REQUIRED.name() ) );
 
     @Parameterized.Parameter( 0 )
     public Factory<TransportConnection> cf;

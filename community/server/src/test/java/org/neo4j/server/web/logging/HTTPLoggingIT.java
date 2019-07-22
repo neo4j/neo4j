@@ -75,7 +75,7 @@ public class HTTPLoggingIT extends ExclusiveServerTestBase
         var server = serverOnRandomPorts().withDefaultDatabaseTuning().persistent()
                 .withProperty( ServerSettings.http_logging_enabled.name(), FALSE )
                 .withProperty( GraphDatabaseSettings.logs_directory.name(), logDirectory.toString() )
-                .withProperty( BoltConnector.group( "bolt" ).listen_address.name(), ":0" )
+                .withProperty( BoltConnector.listen_address.name(), ":0" )
                 .usingDataDir( testDirectory.directory( directoryPrefix + "-dbdir" ).getAbsolutePath() )
                 .build();
         try
@@ -109,7 +109,7 @@ public class HTTPLoggingIT extends ExclusiveServerTestBase
         var server = serverOnRandomPorts().withDefaultDatabaseTuning().persistent()
                 .withProperty( ServerSettings.http_logging_enabled.name(), TRUE )
                 .withProperty( GraphDatabaseSettings.logs_directory.name(), logDirectory.getAbsolutePath() )
-                .withProperty( BoltConnector.group( "bolt" ).listen_address.name(), ":0" )
+                .withProperty( BoltConnector.listen_address.name(), ":0" )
                 .usingDataDir( testDirectory.directory( directoryPrefix + "-dbdir" ).getAbsolutePath() )
                 .build();
         try

@@ -21,69 +21,63 @@ package org.neo4j.configuration.connectors;
 
 import java.time.Duration;
 
+import org.neo4j.annotations.api.PublicApi;
 import org.neo4j.annotations.service.ServiceProvider;
 import org.neo4j.configuration.Description;
 import org.neo4j.configuration.Internal;
+import org.neo4j.configuration.SettingsDeclaration;
 import org.neo4j.configuration.helpers.SocketAddress;
 import org.neo4j.graphdb.config.Setting;
 
 import static java.time.Duration.ofMinutes;
 import static org.neo4j.configuration.GraphDatabaseSettings.default_advertised_address;
 import static org.neo4j.configuration.GraphDatabaseSettings.default_listen_address;
+import static org.neo4j.configuration.SettingImpl.newBuilder;
+import static org.neo4j.configuration.SettingValueParsers.BOOL;
 import static org.neo4j.configuration.SettingValueParsers.DURATION;
 import static org.neo4j.configuration.SettingValueParsers.INT;
 import static org.neo4j.configuration.SettingValueParsers.SOCKET_ADDRESS;
 import static org.neo4j.configuration.SettingValueParsers.ofEnum;
 
 @ServiceProvider
-public class BoltConnector extends Connector
+@PublicApi
+public final class BoltConnector implements SettingsDeclaration
 {
     public static final int DEFAULT_PORT = 7687;
+    public static final String NAME = "bolt";
+
+    public static final Setting<Boolean> enabled = newBuilder( "dbms.connector.bolt.enabled", BOOL, false ).build();
 
     @Description( "Encryption level to require this connector to use" )
-    public Setting<EncryptionLevel> encryption_level =
-            getBuilder( "encryption_level", ofEnum( EncryptionLevel.class ), EncryptionLevel.OPTIONAL ).build();
+    public static final Setting<EncryptionLevel> encryption_level =
+            newBuilder( "dbms.connector.bolt.encryption_level", ofEnum( EncryptionLevel.class ), EncryptionLevel.OPTIONAL ).build();
 
     @Description( "Address the connector should bind to" )
-    public final Setting<SocketAddress> listen_address =
-            getBuilder( "listen_address", SOCKET_ADDRESS, new SocketAddress( DEFAULT_PORT ) ).setDependency( default_listen_address ).build();
+    public static final Setting<SocketAddress> listen_address =
+            newBuilder( "dbms.connector.bolt.listen_address", SOCKET_ADDRESS, new SocketAddress( DEFAULT_PORT ) )
+                    .setDependency( default_listen_address )
+                    .build();
 
     @Description( "Advertised address for this connector" )
-    public final Setting<SocketAddress> advertised_address =
-            getBuilder( "advertised_address", SOCKET_ADDRESS, new SocketAddress( DEFAULT_PORT ) ).setDependency( default_advertised_address ).build();
+    public static final Setting<SocketAddress> advertised_address =
+            newBuilder( "dbms.connector.bolt.advertised_address", SOCKET_ADDRESS, new SocketAddress( DEFAULT_PORT ) )
+                    .setDependency( default_advertised_address )
+                    .build();
 
     @Description( "The number of threads to keep in the thread pool bound to this connector, even if they are idle." )
-    public final Setting<Integer> thread_pool_min_size = getBuilder( "thread_pool_min_size", INT, 5 ).build();
+    public static final Setting<Integer> thread_pool_min_size = newBuilder( "dbms.connector.bolt.thread_pool_min_size", INT, 5 ).build();
 
     @Description( "The maximum number of threads allowed in the thread pool bound to this connector." )
-    public final Setting<Integer> thread_pool_max_size = getBuilder( "thread_pool_max_size", INT, 400 ).build();
+    public static final Setting<Integer> thread_pool_max_size = newBuilder( "dbms.connector.bolt.thread_pool_max_size", INT, 400 ).build();
 
     @Description( "The maximum time an idle thread in the thread pool bound to this connector will wait for new tasks." )
-    public final Setting<Duration> thread_pool_keep_alive = getBuilder( "thread_pool_keep_alive", DURATION, ofMinutes( 5 ) ).build() ;
+    public static final Setting<Duration> thread_pool_keep_alive =
+            newBuilder( "dbms.connector.bolt.thread_pool_keep_alive", DURATION, ofMinutes( 5 ) ).build();
 
     @Description( "The queue size of the thread pool bound to this connector (-1 for unbounded, 0 for direct handoff, > 0 for bounded)" )
     @Internal
-    public final Setting<Integer> unsupported_thread_pool_queue_size = getBuilder( "unsupported_thread_pool_queue_size", INT, 0 ).build();
-
-    public static BoltConnector group( String name )
-    {
-        return new BoltConnector( name );
-    }
-
-    private BoltConnector( String name )
-    {
-        super( name );
-    }
-    public BoltConnector()
-    {
-        super( null ); // For ServiceLoader
-    }
-
-    @Override
-    public String getPrefix()
-    {
-        return super.getPrefix() + ".bolt";
-    }
+    public static final Setting<Integer> unsupported_thread_pool_queue_size =
+            newBuilder( "dbms.connector.bolt.unsupported_thread_pool_queue_size", INT, 0 ).build();
 
     public enum EncryptionLevel
     {

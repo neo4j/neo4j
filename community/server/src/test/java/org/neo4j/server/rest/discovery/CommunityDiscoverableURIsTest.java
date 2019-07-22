@@ -58,14 +58,13 @@ public class CommunityDiscoverableURIsTest
     @Test
     public void shouldLookupBoltPortInRegisterIfConfiguredTo0() throws Exception
     {
-        BoltConnector bolt = BoltConnector.group( "honestJakesBoltConnector" );
         ConnectorPortRegister register = new ConnectorPortRegister();
-        register.register( bolt.name(), new InetSocketAddress( 1337 ) );
+        register.register( BoltConnector.NAME, new InetSocketAddress( 1337 ) );
 
         DiscoverableURIs uris = communityDiscoverableURIs(
                 Config.newBuilder()
-                        .set( bolt.advertised_address, "apple.com:0" )
-                        .set( bolt.enabled, TRUE )
+                        .set( BoltConnector.advertised_address, "apple.com:0" )
+                        .set( BoltConnector.enabled, TRUE )
                         .build(), register );
 
         assertEquals( "bolt://apple.com:1337", toMap(uris).get("bolt")  );

@@ -49,8 +49,6 @@ import static org.neo4j.configuration.connectors.BoltConnector.EncryptionLevel.O
 
 public class Neo4jWithSocket extends ExternalResource
 {
-    public static final String DEFAULT_CONNECTOR_KEY = "bolt";
-
     private final Supplier<FileSystemAbstraction> fileSystemProvider;
     private final Consumer<Map<Setting<?>,String>> configure;
     private final TestDirectory testDirectory;
@@ -140,7 +138,7 @@ public class Neo4jWithSocket extends ExternalResource
 
     public HostnamePort lookupDefaultConnector()
     {
-        return connectorRegister.getLocalAddress( DEFAULT_CONNECTOR_KEY );
+        return connectorRegister.getLocalAddress( BoltConnector.NAME );
     }
 
     public void shutdownDatabase()
@@ -180,10 +178,9 @@ public class Neo4jWithSocket extends ExternalResource
     private Map<Setting<?>,String> configure( Consumer<Map<Setting<?>,String>> overrideSettingsFunction )
     {
         Map<Setting<?>,String> settings = new HashMap<>();
-        BoltConnector bolt = BoltConnector.group( DEFAULT_CONNECTOR_KEY );
-        settings.put( bolt.enabled, TRUE );
-        settings.put( bolt.listen_address, "localhost:0" );
-        settings.put( bolt.encryption_level, OPTIONAL.name() );
+        settings.put( BoltConnector.enabled, TRUE );
+        settings.put( BoltConnector.listen_address, "localhost:0" );
+        settings.put( BoltConnector.encryption_level, OPTIONAL.name() );
         configure.accept( settings );
         overrideSettingsFunction.accept( settings );
         return settings;

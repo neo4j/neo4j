@@ -32,10 +32,10 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import org.neo4j.configuration.Config;
-import org.neo4j.configuration.ConfigUtils;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.configuration.GroupSettingValidator;
 import org.neo4j.configuration.connectors.HttpConnector;
+import org.neo4j.configuration.connectors.HttpsConnector;
 import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.graphdb.facade.GraphDatabaseDependencies;
 import org.neo4j.io.IOUtils;
@@ -108,10 +108,7 @@ public abstract class ServerBootstrapper implements Bootstrapper
             log = userLogProvider.getLog( getClass() );
             config.setLogger( log );
 
-            serverAddress =  config.getGroups( HttpConnector.class ).values().stream()
-                    .findFirst()
-                    .map( connector -> config.get( connector.listen_address ).toString() )
-                    .orElse( serverAddress );
+            serverAddress = HttpConnector.listen_address.toString();
 
             server = createNeoServer( config, dependencies );
             server.start();
@@ -181,7 +178,7 @@ public abstract class ServerBootstrapper implements Bootstrapper
     {
         GraphFactory graphFactory = createGraphFactory( config );
 
-        boolean httpAndHttpsDisabled = ConfigUtils.getEnabledHttpConnectors( config ).isEmpty() && ConfigUtils.getEnabledHttpsConnectors( config ).isEmpty();
+        boolean httpAndHttpsDisabled = !config.get( HttpConnector.enabled ) && !config.get( HttpsConnector.enabled );
         if ( httpAndHttpsDisabled )
         {
             return new DisabledNeoServer( graphFactory, dependencies, config );

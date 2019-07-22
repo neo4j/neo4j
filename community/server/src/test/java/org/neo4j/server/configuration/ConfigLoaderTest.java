@@ -130,8 +130,7 @@ public class ConfigLoaderTest
     public void loadOfflineConfigShouldDisableBolt()
     {
         // given
-        BoltConnector defaultBoltConf = BoltConnector.group( "bolt" );
-        File configFile = ConfigFileBuilder.builder( folder.getRoot() ).withNameValue( defaultBoltConf.enabled.name(), TRUE ).build();
+        File configFile = ConfigFileBuilder.builder( folder.getRoot() ).withNameValue( BoltConnector.enabled.name(), TRUE ).build();
 
         // when
         Config testConf =
@@ -140,8 +139,7 @@ public class ConfigLoaderTest
 
         // then
         assertNotNull( testConf );
-        assertEquals( false, testConf.get( defaultBoltConf.enabled ) );
-        assertEquals( true, ConfigUtils.getEnabledBoltConnectors( testConf ).isEmpty() );
+        assertEquals( false, testConf.get( BoltConnector.enabled ) );
     }
 
     @Test
@@ -157,7 +155,7 @@ public class ConfigLoaderTest
 
         // then
         assertNotNull( testConf );
-        assertEquals( true, ConfigUtils.getEnabledBoltConnectors( testConf ).isEmpty() );
+        assertEquals( false, testConf.get( BoltConnector.enabled ) );
     }
 
     @Test

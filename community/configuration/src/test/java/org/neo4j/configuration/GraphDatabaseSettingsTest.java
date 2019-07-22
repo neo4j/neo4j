@@ -28,7 +28,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.stream.IntStream;
 
 import org.neo4j.configuration.connectors.BoltConnector;
-import org.neo4j.configuration.connectors.Connector;
 import org.neo4j.configuration.connectors.HttpConnector;
 import org.neo4j.configuration.connectors.HttpsConnector;
 import org.neo4j.configuration.helpers.SocketAddress;
@@ -50,7 +49,6 @@ import static org.neo4j.configuration.GraphDatabaseSettings.default_listen_addre
 import static org.neo4j.configuration.GraphDatabaseSettings.keep_logical_logs;
 import static org.neo4j.configuration.GraphDatabaseSettings.transaction_sampling_percentage;
 import static org.neo4j.configuration.GraphDatabaseSettings.transaction_tracing_level;
-import static org.neo4j.configuration.SettingValueParsers.FALSE;
 import static org.neo4j.configuration.SettingValueParsers.TRUE;
 import static org.neo4j.internal.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.logging.AssertableLogProvider.inLog;
@@ -97,22 +95,10 @@ class GraphDatabaseSettingsTest
         Config config = Config.defaults( GraphDatabaseSettings.SERVER_DEFAULTS );
 
         // when
-        BoltConnector boltConnector = config.getGroups( BoltConnector.class ).values().stream().findFirst().orElseThrow();
-        SocketAddress listenSocketAddress = config.get( boltConnector.listen_address );
+        SocketAddress listenSocketAddress = config.get( BoltConnector.listen_address );
 
         // then
         assertEquals( new SocketAddress( "localhost", 7687 ), listenSocketAddress );
-    }
-
-    @Test
-    void shouldBeAbleToDisableBoltConnectorWithJustOneParameter()
-    {
-        // given
-        Config config = Config.defaults( BoltConnector.group( "bolt" ).enabled, FALSE );
-
-        // then
-        assertThat( config.getGroups( BoltConnector.class ).size(), is( 1 ) );
-        assertThat( ConfigUtils.getEnabledBoltConnectors( config ).size(), is( 0 ) );
     }
 
     @Test
@@ -120,13 +106,11 @@ class GraphDatabaseSettingsTest
     {
         // given
         Config config = Config.defaults( stringMap(
-                BoltConnector.group( "bolt" ).enabled.name(), TRUE,
-                BoltConnector.group( "bolt" ).listen_address.name(), ":8000" ) );
-
-        BoltConnector boltConnector = config.getGroups( BoltConnector.class ).values().stream().findFirst().orElseThrow();
+                BoltConnector.enabled.name(), TRUE,
+                BoltConnector.listen_address.name(), ":8000" ) );
 
         // then
-        assertEquals( new SocketAddress( "localhost", 8000 ), config.get( boltConnector.listen_address ) );
+        assertEquals( new SocketAddress( "localhost", 8000 ), config.get( BoltConnector.listen_address ) );
     }
 
     @Test
@@ -134,13 +118,11 @@ class GraphDatabaseSettingsTest
     {
         // given
         Config config = Config.defaults( stringMap(
-                BoltConnector.group( "bolt" ).enabled.name(), TRUE,
+                BoltConnector.enabled.name(), TRUE,
                 GraphDatabaseSettings.default_listen_address.name(), "0.0.0.0" ) );
 
-        BoltConnector boltConnector = config.getGroups( BoltConnector.class ).values().stream().findFirst().orElseThrow();
-
         // then
-        assertEquals( new SocketAddress( "0.0.0.0", 7687 ), config.get( boltConnector.listen_address ) );
+        assertEquals( new SocketAddress( "0.0.0.0", 7687 ), config.get( BoltConnector.listen_address ) );
     }
 
     @Test
@@ -149,51 +131,11 @@ class GraphDatabaseSettingsTest
         // given
         Config config = Config.defaults( stringMap(
                 GraphDatabaseSettings.default_listen_address.name(), "0.0.0.0",
-                BoltConnector.group( "bolt" ).enabled.name(), TRUE,
-                BoltConnector.group( "bolt" ).listen_address.name(), ":8000" ) );
-
-        BoltConnector boltConnector = config.getGroups( BoltConnector.class ).values().stream().findFirst().orElseThrow();
+                BoltConnector.enabled.name(), TRUE,
+                BoltConnector.listen_address.name(), ":8000" ) );
 
         // then
-        assertEquals( new SocketAddress( "0.0.0.0", 8000 ), config.get( boltConnector.listen_address ) );
-    }
-
-    @Test
-    void shouldSupportMultipleBoltConnectorsWithCustomNames()
-    {
-        Config config = Config.defaults( stringMap(
-                BoltConnector.group( "1" ).enabled.name(), TRUE,
-                BoltConnector.group( "1" ).listen_address.name(), ":8000",
-                BoltConnector.group( "2" ).enabled.name(), TRUE,
-                BoltConnector.group( "2" ).listen_address.name(), ":9000"
-        ) );
-
-        // when
-        var groups = config.getGroups( BoltConnector.class );
-
-        // then
-        assertEquals( 2, groups.size() );
-        assertEquals( new SocketAddress( "localhost", 8000 ), config.get( groups.get( "1" ).listen_address ) );
-        assertEquals( new SocketAddress( "localhost", 9000 ), config.get( groups.get( "2" ).listen_address ) );
-    }
-
-    @Test
-    void shouldSupportMultipleBoltConnectorsWithDefaultAndCustomName()
-    {
-        Config config = Config.defaults( stringMap(
-                BoltConnector.group( "1" ).enabled.name(), TRUE,
-                BoltConnector.group( "1" ).listen_address.name(), ":8000",
-                BoltConnector.group( "2" ).enabled.name(), TRUE,
-                BoltConnector.group( "2" ).listen_address.name(), ":9000" ) );
-
-        var groups = config.getGroups( BoltConnector.class );
-        // when
-        BoltConnector boltConnector1 = groups.get( "1" );
-        BoltConnector boltConnector2 = groups.get( "2" );
-
-        // then
-        assertEquals( new SocketAddress( "localhost", 8000 ), config.get( boltConnector1.listen_address ) );
-        assertEquals( new SocketAddress( "localhost", 9000 ), config.get( boltConnector2.listen_address ) );
+        assertEquals( new SocketAddress( "0.0.0.0", 8000 ), config.get( BoltConnector.listen_address ) );
     }
 
     @Test
@@ -202,46 +144,14 @@ class GraphDatabaseSettingsTest
         // given
         Config config = Config.defaults( GraphDatabaseSettings.SERVER_DEFAULTS );
 
-        // when
-        HttpConnector httpConnector = config.getGroups( HttpConnector.class ).values().stream().findFirst().orElseThrow();
-        HttpsConnector httpsConnector = config.getGroups( HttpsConnector.class ).values().stream().findFirst().orElseThrow();
-
-        assertEquals( new SocketAddress( "localhost", 7474 ),
-                config.get( httpConnector.listen_address ) );
-        assertEquals( new SocketAddress( "localhost", 7473 ),
-                config.get( httpsConnector.listen_address ) );
-
-    }
-
-    @Test
-    void shouldBeAbleToDisableHttpConnectorWithJustOneParameter()
-    {
-        // given
-        Config disableHttpConfig = Config.defaults(
-                stringMap( HttpConnector.group( "1" ).enabled.name(), FALSE,
-                        HttpsConnector.group( "2" ).enabled.name(), FALSE ) );
-
         // then
-        assertTrue( ConfigUtils.getEnabledHttpConnectors( disableHttpConfig ).isEmpty() );
-        assertTrue( ConfigUtils.getEnabledHttpsConnectors( disableHttpConfig ).isEmpty() );
-        assertEquals( 2, disableHttpConfig.getGroupsFromInheritance( Connector.class ).size() );
-    }
+        assertEquals( new SocketAddress( "localhost", 7474 ), config.get( HttpConnector.listen_address ) );
+        assertEquals( new SocketAddress( "localhost", 7473 ), config.get( HttpsConnector.listen_address ) );
+        assertEquals( new SocketAddress( "localhost", 7687 ), config.get( BoltConnector.listen_address ) );
 
-    @Test
-    void shouldBeAbleToOverrideHttpListenAddressWithJustOneParameter()
-    {
-        // given
-        Config config = Config.defaults( stringMap(
-                HttpConnector.group( "1" ).enabled.name(), TRUE,
-                HttpConnector.group( "1" ).listen_address.name(), ":8000" ) );
-
-        // then
-        assertEquals( 1, ConfigUtils.getEnabledHttpConnectors( config ).size() );
-
-        HttpConnector httpConnector = config.getGroups( HttpConnector.class ).values().stream().findFirst().orElseThrow();
-
-        assertEquals( new SocketAddress( "localhost", 8000 ),
-                config.get( httpConnector.listen_address ) );
+        assertTrue( config.get( HttpConnector.enabled ) );
+        assertTrue( config.get( HttpsConnector.enabled ) );
+        assertTrue( config.get( BoltConnector.enabled ) );
     }
 
     @Test
@@ -250,23 +160,6 @@ class GraphDatabaseSettingsTest
         Config config = Config.defaults();
         long bookmarkReadyTimeoutMs = config.get( GraphDatabaseSettings.bookmark_ready_timeout ).toMillis();
         assertEquals( TimeUnit.SECONDS.toMillis( 30 ), bookmarkReadyTimeoutMs );
-    }
-
-    @Test
-    void shouldBeAbleToOverrideHttpsListenAddressWithJustOneParameter()
-    {
-        // given
-        Config config = Config.defaults( stringMap(
-                HttpsConnector.group( "1" ).enabled.name(), TRUE,
-                HttpsConnector.group( "1" ).listen_address.name(), ":8000" ) );
-
-        // then
-        assertEquals( 1, ConfigUtils.getEnabledHttpsConnectors( config ).size() );
-
-        HttpsConnector httpsConnector = config.getGroups( HttpsConnector.class ).values().stream().findFirst().orElseThrow();
-
-        assertEquals( new SocketAddress( "localhost", 8000 ),
-                config.get( httpsConnector.listen_address ) );
     }
 
     @Test
@@ -293,34 +186,27 @@ class GraphDatabaseSettingsTest
                 .set( GraphDatabaseSettings.SERVER_DEFAULTS )
                 .build();
 
-        HttpConnector httpConnector = config.getGroups( HttpConnector.class ).values().stream().findFirst().orElseThrow();
-        HttpsConnector httpsConnector = config.getGroups( HttpsConnector.class ).values().stream().findFirst().orElseThrow();
-
         // then
-        assertEquals( 2, config.getGroups( HttpConnector.class ).size() + config.getGroups( HttpsConnector.class ).size() );
-
-        assertEquals( "0.0.0.0", config.get( httpConnector.listen_address ).getHostname() );
-        assertEquals( "0.0.0.0", config.get( httpsConnector.listen_address ).getHostname() );
+        assertEquals( "0.0.0.0", config.get( HttpConnector.listen_address ).getHostname() );
+        assertEquals( "0.0.0.0", config.get( HttpsConnector.listen_address ).getHostname() );
+        assertEquals( "0.0.0.0", config.get( BoltConnector.listen_address ).getHostname() );
     }
 
     @Test
     void shouldDeriveListenAddressFromDefaultListenAddressAndSpecifiedPorts()
     {
         // given
-        Config config = Config.defaults( stringMap( HttpsConnector.group( "https" ).enabled.name(), TRUE,
-                HttpsConnector.group( "https" ).listen_address.name(), ":9000" ,
-                HttpConnector.group( "http" ).enabled.name(), TRUE,
-                HttpConnector.group( "http" ).listen_address.name(), ":8000",
+        Config config = Config.defaults( stringMap(
+                HttpsConnector.listen_address.name(), ":9000",
+                HttpConnector.listen_address.name(), ":8000",
+                BoltConnector.listen_address.name(), ":10000",
                 GraphDatabaseSettings.default_listen_address.name(), "0.0.0.0"
         ) );
 
         // then
-        assertEquals( 2, config.getGroupsFromInheritance( Connector.class ).size() );
-        HttpConnector httpConnector = config.getGroups( HttpConnector.class ).values().stream().findFirst().orElseThrow();
-        HttpsConnector httpsConnector = config.getGroups( HttpsConnector.class ).values().stream().findFirst().orElseThrow();
-
-        assertEquals( new SocketAddress( "0.0.0.0", 9000 ), config.get( httpsConnector.listen_address ) );
-        assertEquals( new SocketAddress( "0.0.0.0", 8000 ), config.get( httpConnector.listen_address ) );
+        assertEquals( new SocketAddress( "0.0.0.0", 9000 ), config.get( HttpsConnector.listen_address ) );
+        assertEquals( new SocketAddress( "0.0.0.0", 8000 ), config.get( HttpConnector.listen_address ) );
+        assertEquals( new SocketAddress( "0.0.0.0", 10000 ), config.get( BoltConnector.listen_address ) );
     }
 
     @Test
@@ -375,9 +261,9 @@ class GraphDatabaseSettingsTest
     void configValuesContainsConnectors()
     {
         assertThat( GraphDatabaseSettings.SERVER_DEFAULTS.keySet(), containsInAnyOrder(
-                "dbms.connector.http.http.enabled",
-                "dbms.connector.https.https.enabled",
-                "dbms.connector.bolt.bolt.enabled",
+                "dbms.connector.http.enabled",
+                "dbms.connector.https.enabled",
+                "dbms.connector.bolt.enabled",
                 "dbms.security.auth_enabled"
         ) );
     }

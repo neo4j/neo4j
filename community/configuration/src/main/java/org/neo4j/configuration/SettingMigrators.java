@@ -24,10 +24,14 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import org.neo4j.annotations.service.ServiceProvider;
+import org.neo4j.configuration.connectors.BoltConnector;
+import org.neo4j.configuration.connectors.HttpConnector;
+import org.neo4j.configuration.connectors.HttpsConnector;
 import org.neo4j.configuration.helpers.SocketAddress;
 import org.neo4j.logging.Log;
 import org.neo4j.values.storable.CoordinateReferenceSystem;
@@ -104,11 +108,8 @@ public final class SettingMigrators
     @ServiceProvider
     public static class ConnectorMigrator implements SettingMigrator
     {
-        private static final String PREFIX = "dbms.connector";
         private static final Pattern oldConnector = Pattern.compile( "^dbms\\.connector\\.([^.]+)\\.([^.]+)$");
-
-        private static final Pattern connectorListenAddress = Pattern.compile( "^(dbms\\.connector\\.[^.]+\\.[^.]+\\.)listen_address$");
-        private static String ANY_CONNECTOR = "bolt|http|https";
+        private static final String ANY_CONNECTOR = "bolt|http|https";
 
         @Override
         public void migrate( Map<String,String> values, Map<String,String> defaultValues, Log log )
@@ -120,71 +121,39 @@ public final class SettingMigrators
         private static void migrateOldConnectors( Map<String,String> values, Log log )
         {
             Map<String, Matcher> oldConnectors = new HashMap<>();
-            Map<String, String> connectorTypes = new HashMap<>();
             values.forEach( ( setting, value ) ->
             {
                 Matcher matcher = oldConnector.matcher( setting );
                 if ( matcher.find() )
                 {
-                    String settingName = matcher.group( 2 );
-                    String id = matcher.group( 1 );
-                    if ( !connectorTypes.containsKey( id ) )
-                    {
-                        if ( settingName.equals( "type" ) )
-                        {
-                            String lowercaseValue = value.toLowerCase();
-                            if ( lowercaseValue.matches( ANY_CONNECTOR ) )
-                            {
-                                connectorTypes.put( id, lowercaseValue );
-                            }
-                        }
-                        else
-                        {
-                            if ( id.matches( ANY_CONNECTOR ) )
-                            {
-                                connectorTypes.put( id, id );
-                            }
-                        }
-                    }
                     oldConnectors.put( setting, matcher );
                 }
             } );
 
             oldConnectors.forEach( ( setting, matcher ) -> {
-                String value = values.remove( setting );
                 String settingName = matcher.group( 2 );
-                String msg = "Redundant";
-                if ( !settingName.equals( "type" ) )
+                String id = matcher.group( 1 );
+                if ( id.matches( ANY_CONNECTOR ) )
                 {
-                    String id = matcher.group( 1 );
-                    String type = connectorTypes.get( id );
-                    String migrated = String.format( "%s.%s.%s.%s", PREFIX, type, id, settingName );
-                    values.putIfAbsent( migrated, value );
-
-                    msg = String.format( "Replaced by %s", migrated );
+                    if ( Objects.equals( "type", settingName ) )
+                    {
+                        values.remove( setting );
+                        log.warn( "Use of deprecated setting %s. Type is no longer specified", setting );
+                    }
                 }
-
-                log.warn( "Use of deprecated setting %s. %s", setting, msg );
+                else
+                {
+                    values.remove( setting );
+                    log.warn( "Use of deprecated setting %s. No longer supports multiple connectors. Setting discarded.", setting );
+                }
             } );
         }
 
-        private static void migrateConnectorAddresses( Map<String,String> values, Map<String,String> defaultValues,  Log log )
+        private static void migrateConnectorAddresses( Map<String,String> values, Map<String,String> defValues,  Log log )
         {
-            Map<String,String> addressesToMigrate = new HashMap<>();
-
-            for ( String setting : values.keySet() )
-            {
-                Matcher matcher = connectorListenAddress.matcher( setting );
-                if ( matcher.find() )
-                {
-                    addressesToMigrate.put( setting, matcher.group( 1 ) + "advertised_address" );
-                }
-            }
-
-            addressesToMigrate.forEach( ( listenAddr, advertisedAddr ) ->
-            {
-                migrateAdvertisedAddressInheritanceChange( values, defaultValues, log, listenAddr, advertisedAddr );
-            } );
+            migrateAdvertisedAddressInheritanceChange( values, defValues, log, BoltConnector.listen_address.name(), BoltConnector.advertised_address.name() );
+            migrateAdvertisedAddressInheritanceChange( values, defValues, log, HttpConnector.listen_address.name(), HttpConnector.advertised_address.name() );
+            migrateAdvertisedAddressInheritanceChange( values, defValues, log, HttpsConnector.listen_address.name(), HttpsConnector.advertised_address.name() );
         }
     }
 

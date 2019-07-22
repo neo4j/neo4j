@@ -171,7 +171,7 @@ public class DiscoveryServiceTest
     {
         HashMap<String,String> settings = new HashMap<>();
         settings.put( GraphDatabaseSettings.auth_enabled.name(), FALSE );
-        settings.put( BoltConnector.group( "bolt" ).enabled.name(), TRUE );
+        settings.put( BoltConnector.enabled.name(), TRUE );
         settings.put( ServerSettings.management_api_path.name(), managementUri.toString() );
         settings.put( ServerSettings.rest_api_path.name(), dataUri.toString() );
 
@@ -266,12 +266,12 @@ public class DiscoveryServiceTest
 
     private static Consumer<Config.Builder> overrideWithAdvertisedAddress( String host, int port )
     {
-        return builder -> builder.set( BoltConnector.group( "bolt" ).advertised_address, SocketAddress.format( host, port ) );
+        return builder -> builder.set( BoltConnector.advertised_address, SocketAddress.format( host, port ) );
     }
 
     private static Consumer<Config.Builder> overrideWithListenAddress( String host, int port )
     {
-        return builder -> builder.set( BoltConnector.group( "bolt" ).listen_address, SocketAddress.format( host, port ) );
+        return builder -> builder.set( BoltConnector.listen_address, SocketAddress.format( host, port ) );
     }
 
     private static Consumer<Config.Builder> overrideWithDefaultListenAddress( String host )
