@@ -25,6 +25,7 @@ package org.neo4j.kernel.ha.com;
 import java.util.function.Supplier;
 
 import org.neo4j.com.RequestContext;
+import org.neo4j.graphdb.TransientDatabaseFailureException;
 import org.neo4j.kernel.impl.store.TransactionId;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
@@ -64,6 +65,11 @@ public class RequestContextFactory extends LifecycleAdapter
 
     public RequestContext newRequestContext( long epoch, int machineId, int eventIdentifier )
     {
+        if ( txIdStore == null )
+        {
+            throw new TransientDatabaseFailureException( "RequestContext could not be built, the database seems to be stopped. This can happen" +
+                    " during an HA role switch. Retry this transaction and it should succeed." );
+        }
         TransactionId lastTx = txIdStore.getLastCommittedTransaction();
         // TODO beware, there's a race between getting tx id and checksum, and changes to last tx
         // it must be fixed

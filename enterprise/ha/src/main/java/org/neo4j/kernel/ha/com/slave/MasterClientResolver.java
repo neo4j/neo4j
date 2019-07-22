@@ -105,7 +105,6 @@ public class MasterClientResolver implements MasterClientFactory, ComExceptionHa
         else if ( exception instanceof InvalidEpochException )
         {
             log.info( "Handling " + exception + ", will go to PENDING and ask for election" );
-
             invalidEpochHandler.handle();
         }
         else

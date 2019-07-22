@@ -42,12 +42,13 @@ import org.neo4j.kernel.ha.com.master.Master;
 import org.neo4j.kernel.ha.com.master.MasterImpl;
 import org.neo4j.kernel.ha.com.slave.InvalidEpochExceptionHandler;
 import org.neo4j.kernel.ha.com.slave.MasterClient;
+import org.neo4j.kernel.impl.transaction.log.NoSuchTransactionException;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.impl.util.CappedLogger;
-import org.neo4j.scheduler.JobScheduler;
-import org.neo4j.scheduler.JobScheduler.JobHandle;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
+import org.neo4j.scheduler.JobScheduler;
+import org.neo4j.scheduler.JobScheduler.JobHandle;
 
 import static java.lang.System.currentTimeMillis;
 
@@ -362,6 +363,16 @@ public class SlaveUpdatePuller implements Runnable, UpdatePuller, JobScheduler.C
         catch ( ComException e )
         {
             invalidEpochCappedLogger.warn( "Pull updates by " + this + " failed due to network error.", e );
+            if ( e.getCause() instanceof NoSuchTransactionException )
+            {
+                /*
+                 * This is a special case, where ComException wraps a remote NoSuchTransactionException. This means
+                 * this instance asked for updates to be pulled from a txid and that txid is not present on the master.
+                 * The correct response then is to do a store copy and that happens by switching to PENDING and then
+                 * SLAVE, exactly what the invalid epoch handler does.
+                 */
+                invalidEpochHandler.handle();
+            }
         }
         catch ( Throwable e )
         {

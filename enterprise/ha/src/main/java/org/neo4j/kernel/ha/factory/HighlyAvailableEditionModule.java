@@ -22,8 +22,6 @@
  */
 package org.neo4j.kernel.ha.factory;
 
-import org.jboss.netty.logging.InternalLoggerFactory;
-
 import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.Proxy;
@@ -34,6 +32,8 @@ import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
+
+import org.jboss.netty.logging.InternalLoggerFactory;
 
 import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.cluster.InstanceId;
@@ -58,6 +58,7 @@ import org.neo4j.com.storecopy.TransactionCommittingResponseUnpacker;
 import org.neo4j.function.Factory;
 import org.neo4j.function.Predicates;
 import org.neo4j.graphdb.DependencyResolver;
+import org.neo4j.graphdb.TransientTransactionFailureException;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.HostnamePort;
 import org.neo4j.helpers.NamedThreadFactory;
@@ -637,6 +638,13 @@ public class HighlyAvailableEditionModule
             @Override
             protected TransactionHeaderInformation createUsing( byte[] additionalHeader )
             {
+                if ( memberContext.getElectedMasterId() == null )
+                {
+                    throw new TransientTransactionFailureException(
+                            "Transaction commit failed, this instance cannot reach the master. This can happen if" +
+                                    " the cluster is currently doing elections or this instance is switching roles. Retry" +
+                                    " this transaction and it should succeed." );
+                }
                 return new TransactionHeaderInformation( memberContext.getElectedMasterId().toIntegerIndex(),
                         memberContext.getMyId().toIntegerIndex(), additionalHeader );
             }

@@ -70,6 +70,11 @@ public class TransactionChecksumLookup
             return upgradeTransaction.checksum();
         }
 
+        if ( !logicalTransactionStore.existsOnDisk( txId ) )
+        {
+            throw new NoSuchTransactionException( txId );
+        }
+
         // It wasn't, so go look for it in the transaction store.
         // Intentionally let potentially thrown IOException (and NoSuchTransactionException) be thrown
         // from this call below, it's part of the contract of this method.

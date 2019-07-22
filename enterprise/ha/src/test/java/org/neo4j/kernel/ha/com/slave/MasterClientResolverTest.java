@@ -30,6 +30,7 @@ import org.neo4j.function.Suppliers;
 import org.neo4j.kernel.ha.MasterClient214;
 import org.neo4j.kernel.ha.MasterClient310;
 import org.neo4j.kernel.ha.MasterClient320;
+import org.neo4j.kernel.ha.com.master.InvalidEpochException;
 import org.neo4j.kernel.impl.store.StoreId;
 import org.neo4j.kernel.impl.transaction.log.ReadableClosablePositionAwareChannel;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReader;
@@ -41,6 +42,7 @@ import org.neo4j.logging.NullLogProvider;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.junit.Assert.assertThat;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 
 public class MasterClientResolverTest
 {
@@ -88,5 +90,25 @@ public class MasterClientResolverTest
         {
             life.shutdown();
         }
+    }
+
+    @Test
+    public void invalidEpochExceptionShouldTriggerInstanceReset()
+    {
+        // Given
+        LogEntryReader<ReadableClosablePositionAwareChannel> logEntryReader = new VersionAwareLogEntryReader<>();
+        InvalidEpochExceptionHandler invalidEpochHandler = mock( InvalidEpochExceptionHandler.class );
+        MasterClientResolver resolver = new MasterClientResolver( NullLogProvider.getInstance(),
+                ResponseUnpacker.NO_OP_RESPONSE_UNPACKER, invalidEpochHandler, 1, 1, 1, 1024,
+                Suppliers.singleton( logEntryReader ) );
+        InvalidEpochException exception = new InvalidEpochException( 2, 1 );
+
+        // When
+        // An invalid epoch exception is raised
+        resolver.handle( exception );
+
+        // Then
+        // The invalid epoch handler must be called
+        verify( invalidEpochHandler ).handle();
     }
 }

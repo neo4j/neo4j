@@ -159,6 +159,12 @@ public class PhysicalLogicalTransactionStore implements LogicalTransactionStore
         return transactionMetadata;
     }
 
+    @Override
+    public boolean existsOnDisk( long transactionId ) throws IOException
+    {
+        return logFiles.getLogFileInformation().transactionExistsOnDisk( transactionId );
+    }
+
     public static class TransactionPositionLocator implements LogFile.LogFileVisitor
     {
         private final long startTransactionId;
