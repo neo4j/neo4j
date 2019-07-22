@@ -28,15 +28,17 @@ import java.time.Duration;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
-import java.util.function.Supplier;
 
 import org.neo4j.bolt.BoltChannel;
 import org.neo4j.bolt.dbapi.BoltGraphDatabaseServiceSPI;
 import org.neo4j.bolt.dbapi.impl.BoltKernelGraphDatabaseServiceProvider;
 import org.neo4j.bolt.runtime.Bookmark;
+import org.neo4j.bolt.txtracking.DefaultReconciledTransactionTracker;
+import org.neo4j.bolt.txtracking.TransactionIdTracker;
+import org.neo4j.bolt.txtracking.TransactionIdTrackerException;
 import org.neo4j.bolt.v1.runtime.bookmarking.BookmarkWithPrefix;
 import org.neo4j.collection.Dependencies;
-import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
+import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.kernel.GraphDatabaseQueryService;
 import org.neo4j.kernel.availability.CompositeDatabaseAvailabilityGuard;
 import org.neo4j.kernel.availability.DatabaseAvailabilityGuard;
@@ -47,6 +49,8 @@ import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.query.QueryExecutionEngine;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.logging.NullLog;
+import org.neo4j.logging.internal.NullLogService;
+import org.neo4j.monitoring.Monitors;
 import org.neo4j.storageengine.api.TransactionIdStore;
 import org.neo4j.time.Clocks;
 import org.neo4j.time.FakeClock;
@@ -85,7 +89,7 @@ class TransactionStateMachineV1SPITest
     void throwsWhenTxAwaitDurationExpires()
     {
         long lastClosedTransactionId = 100;
-        Supplier<TransactionIdStore> txIdStore = () -> fixedTxIdStore( lastClosedTransactionId );
+        TransactionIdStore txIdStore = fixedTxIdStore( lastClosedTransactionId );
         var txAwaitDuration = Duration.ofSeconds( 42 );
         var clock = new FakeClock();
 
@@ -96,11 +100,10 @@ class TransactionStateMachineV1SPITest
         var databaseAvailabilityGuard = spy( guard );
         when( databaseAvailabilityGuard.isAvailable() ).then( invocation ->
         {
-            // move clock forward on the first availability check
+            // move clock forward on avery availability check
             // this check is executed on every tx id polling iteration
-            var available = (boolean) invocation.callRealMethod();
-            clock.forward( txAwaitDuration.getSeconds() + 1, SECONDS );
-            return available;
+            clock.forward( 1, SECONDS );
+            return true;
         } );
 
         var txSpi = createTxSpi( txIdStore, txAwaitDuration, databaseAvailabilityGuard, clock );
@@ -118,7 +121,7 @@ class TransactionStateMachineV1SPITest
         catch ( Exception e )
         {
             assertThat( e, instanceOf( ExecutionException.class ) );
-            assertThat( e.getCause(), instanceOf( TransactionFailureException.class ) );
+            assertThat( e.getCause(), instanceOf( TransactionIdTrackerException.class ) );
         }
     }
 
@@ -126,7 +129,7 @@ class TransactionStateMachineV1SPITest
     void doesNotWaitWhenTxIdUpToDate() throws Exception
     {
         long lastClosedTransactionId = 100;
-        Supplier<TransactionIdStore> txIdStore = () -> fixedTxIdStore( lastClosedTransactionId );
+        TransactionIdStore txIdStore = fixedTxIdStore( lastClosedTransactionId );
 
         var txSpi = createTxSpi( txIdStore, Duration.ofSeconds( 1 ), Clocks.fakeClock() );
 
@@ -193,12 +196,11 @@ class TransactionStateMachineV1SPITest
     private static TransactionIdStore fixedTxIdStore( long lastClosedTransactionId )
     {
         var txIdStore = mock( TransactionIdStore.class );
-        when( txIdStore.getLastClosedTransactionId() ).thenReturn( lastClosedTransactionId )
-                .thenThrow( new RuntimeException( "More then one check is an indication of polling" ) );
+        when( txIdStore.getLastClosedTransactionId() ).thenReturn( lastClosedTransactionId );
         return txIdStore;
     }
 
-    private static TransactionStateMachineV1SPI createTxSpi( Supplier<TransactionIdStore> txIdStore, Duration txAwaitDuration, SystemNanoClock clock )
+    private static TransactionStateMachineV1SPI createTxSpi( TransactionIdStore txIdStore, Duration txAwaitDuration, SystemNanoClock clock )
             throws Exception
     {
         var compositeGuard = mock( CompositeDatabaseAvailabilityGuard.class );
@@ -208,9 +210,13 @@ class TransactionStateMachineV1SPITest
         return createTxSpi( txIdStore, txAwaitDuration, databaseAvailabilityGuard, clock );
     }
 
-    private static TransactionStateMachineV1SPI createTxSpi( Supplier<TransactionIdStore> txIdStore, Duration txAwaitDuration,
+    private static TransactionStateMachineV1SPI createTxSpi( TransactionIdStore txIdStore, Duration txAwaitDuration,
             DatabaseAvailabilityGuard availabilityGuard, SystemNanoClock clock )
     {
+        var db = mock( Database.class );
+        when( db.getDatabaseId() ).thenReturn( DATABASE_ID );
+        when( db.getDatabaseAvailabilityGuard() ).thenReturn( availabilityGuard );
+
         var queryExecutionEngine = mock( QueryExecutionEngine.class );
 
         var dependencyResolver = mock( Dependencies.class );
@@ -218,8 +224,10 @@ class TransactionStateMachineV1SPITest
         when( dependencyResolver.resolveDependency( ThreadToStatementContextBridge.class ) ).thenReturn( bridge );
         when( dependencyResolver.resolveDependency( QueryExecutionEngine.class ) ).thenReturn( queryExecutionEngine );
         when( dependencyResolver.resolveDependency( DatabaseAvailabilityGuard.class ) ).thenReturn( availabilityGuard );
-        when( dependencyResolver.provideDependency( TransactionIdStore.class ) ).thenReturn( txIdStore );
-        when( dependencyResolver.resolveDependency( Database.class ) ).thenReturn( mock( Database.class ) );
+        when( dependencyResolver.resolveDependency( TransactionIdStore.class ) ).thenReturn( txIdStore );
+        when( dependencyResolver.resolveDependency( Database.class ) ).thenReturn( db );
+
+        when( db.getDependencyResolver() ).thenReturn( dependencyResolver );
 
         var facade = mock( GraphDatabaseAPI.class );
         when( facade.getDependencyResolver() ).thenReturn( dependencyResolver );
@@ -231,7 +239,12 @@ class TransactionStateMachineV1SPITest
 
         var boltChannel = new BoltChannel( "bolt-42", "bolt", new EmbeddedChannel() );
 
-        var databaseServiceProvider = new BoltKernelGraphDatabaseServiceProvider( facade, clock );
+        var managementService = mock( DatabaseManagementService.class );
+        when( managementService.database( DATABASE_ID.name() ) ).thenReturn( facade );
+
+        var reconciledTxTracker = new DefaultReconciledTransactionTracker( NullLogService.getInstance() );
+        var transactionIdTracker = new TransactionIdTracker( managementService, reconciledTxTracker, new Monitors(), clock );
+        var databaseServiceProvider = new BoltKernelGraphDatabaseServiceProvider( facade, transactionIdTracker );
         return new TransactionStateMachineV1SPI( databaseServiceProvider, boltChannel, txAwaitDuration, clock, mock( StatementProcessorReleaseManager.class ) );
     }
 }

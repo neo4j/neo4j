@@ -39,7 +39,6 @@ import org.neo4j.bolt.v1.runtime.bookmarking.BookmarkWithPrefix;
 import org.neo4j.cypher.CypherExecutionException;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.graphdb.QueryStatistics;
-import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.impl.query.QueryExecution;
@@ -70,7 +69,7 @@ public class TransactionStateMachineV1SPI implements TransactionStateMachineSPI
     }
 
     @Override
-    public void awaitUpToDate( List<Bookmark> bookmarks ) throws TransactionFailureException
+    public void awaitUpToDate( List<Bookmark> bookmarks )
     {
         if ( !bookmarks.isEmpty() && bookmarks.size() != 1 )
         {
@@ -82,7 +81,7 @@ public class TransactionStateMachineV1SPI implements TransactionStateMachineSPI
     @Override
     public Bookmark newestBookmark()
     {
-        var txId = boltGraphDatabaseServiceSPI.newestEncounteredTxId();
+        var txId = newestEncounteredTxId();
         return new BookmarkWithPrefix( txId );
     }
 
@@ -148,7 +147,7 @@ public class TransactionStateMachineV1SPI implements TransactionStateMachineSPI
         return new BoltResultHandleV1( statement, params, boltQueryExecutor );
     }
 
-    protected final void awaitAllBookmarks( List<Bookmark> bookmarks ) throws TransactionFailureException
+    protected final void awaitAllBookmarks( List<Bookmark> bookmarks )
     {
         boltGraphDatabaseServiceSPI.awaitUpToDate( bookmarks, bookmarkAwaitDuration );
     }

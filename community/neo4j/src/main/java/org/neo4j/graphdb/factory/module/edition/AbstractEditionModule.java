@@ -23,7 +23,6 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 
 import org.neo4j.bolt.dbapi.BoltGraphDatabaseManagementServiceSPI;
-import org.neo4j.bolt.dbapi.impl.BoltKernelDatabaseManagementServiceProvider;
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.dbms.database.DatabaseManager;
 import org.neo4j.dbms.database.SystemGraphInitializer;
@@ -51,6 +50,7 @@ import org.neo4j.kernel.impl.transaction.stats.TransactionCounters;
 import org.neo4j.kernel.impl.util.watcher.DefaultFileDeletionListenerFactory;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.internal.LogService;
+import org.neo4j.monitoring.Monitors;
 import org.neo4j.procedure.builtin.BuiltInDbmsProcedures;
 import org.neo4j.procedure.builtin.BuiltInFunctions;
 import org.neo4j.procedure.builtin.BuiltInProcedures;
@@ -201,11 +201,8 @@ public abstract class AbstractEditionModule
         this.securityProvider = securityProvider;
     }
 
-    public BoltGraphDatabaseManagementServiceSPI createBoltDatabaseManagementServiceProvider( DatabaseManagementService managementService,
-            SystemNanoClock clock )
-    {
-        return new BoltKernelDatabaseManagementServiceProvider( managementService, clock );
-    }
-
     public abstract DatabaseIdRepository databaseIdRepository();
+
+    public abstract BoltGraphDatabaseManagementServiceSPI createBoltDatabaseManagementServiceProvider( DatabaseManagementService managementService,
+            Monitors monitors, SystemNanoClock clock, LogService logService );
 }

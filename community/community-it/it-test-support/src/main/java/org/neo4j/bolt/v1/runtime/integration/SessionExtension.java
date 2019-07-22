@@ -34,6 +34,7 @@ import org.neo4j.bolt.runtime.BoltStateMachine;
 import org.neo4j.bolt.runtime.BoltStateMachineFactoryImpl;
 import org.neo4j.bolt.security.auth.Authentication;
 import org.neo4j.bolt.security.auth.BasicAuthentication;
+import org.neo4j.bolt.txtracking.DefaultReconciledTransactionTracker;
 import org.neo4j.common.DependencyResolver;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
@@ -43,6 +44,7 @@ import org.neo4j.kernel.api.security.AuthManager;
 import org.neo4j.kernel.api.security.UserManagerSupplier;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.logging.internal.NullLogService;
+import org.neo4j.monitoring.Monitors;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.time.Clocks;
 import org.neo4j.time.SystemNanoClock;
@@ -97,7 +99,9 @@ public class SessionExtension implements BeforeEachCallback, AfterEachCallback
                 resolver.resolveDependency( UserManagerSupplier.class ) );
         Config config = resolver.resolveDependency( Config.class );
         SystemNanoClock clock = Clocks.nanoClock();
-        BoltGraphDatabaseManagementServiceSPI databaseManagementService = new BoltKernelDatabaseManagementServiceProvider( managementService, clock );
+        var reconciledTxTracker = new DefaultReconciledTransactionTracker( NullLogService.getInstance() );
+        BoltGraphDatabaseManagementServiceSPI databaseManagementService = new BoltKernelDatabaseManagementServiceProvider( managementService,
+                reconciledTxTracker, new Monitors(), clock );
         boltFactory = new BoltStateMachineFactoryImpl(
                 databaseManagementService,
                 authentication,

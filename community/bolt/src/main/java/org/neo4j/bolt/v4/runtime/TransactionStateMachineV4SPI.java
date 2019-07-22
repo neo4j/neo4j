@@ -32,7 +32,6 @@ import org.neo4j.bolt.runtime.Bookmark;
 import org.neo4j.bolt.v1.runtime.StatementProcessorReleaseManager;
 import org.neo4j.bolt.v1.runtime.TransactionStateMachineV1SPI;
 import org.neo4j.bolt.v4.runtime.bookmarking.BookmarkWithDatabaseId;
-import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.database.DatabaseId;
 import org.neo4j.kernel.impl.query.QueryExecution;
 import org.neo4j.time.SystemNanoClock;
@@ -50,7 +49,7 @@ public class TransactionStateMachineV4SPI extends TransactionStateMachineV1SPI
     }
 
     @Override
-    public void awaitUpToDate( List<Bookmark> bookmarks ) throws TransactionFailureException
+    public void awaitUpToDate( List<Bookmark> bookmarks )
     {
         awaitAllBookmarks( bookmarks );
     }

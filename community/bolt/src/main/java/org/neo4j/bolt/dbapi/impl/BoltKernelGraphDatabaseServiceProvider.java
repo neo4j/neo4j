@@ -33,12 +33,9 @@ import org.neo4j.bolt.runtime.Bookmark;
 import org.neo4j.bolt.txtracking.TransactionIdTracker;
 import org.neo4j.internal.kernel.api.Transaction;
 import org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo;
-import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.kernel.GraphDatabaseQueryService;
 import org.neo4j.kernel.api.KernelTransaction;
-import org.neo4j.kernel.availability.AvailabilityGuard;
-import org.neo4j.kernel.availability.DatabaseAvailabilityGuard;
 import org.neo4j.kernel.database.Database;
 import org.neo4j.kernel.database.DatabaseId;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
@@ -47,8 +44,6 @@ import org.neo4j.kernel.impl.query.Neo4jTransactionalContextFactory;
 import org.neo4j.kernel.impl.query.QueryExecutionEngine;
 import org.neo4j.kernel.impl.query.TransactionalContextFactory;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
-import org.neo4j.storageengine.api.TransactionIdStore;
-import org.neo4j.time.SystemNanoClock;
 
 public class BoltKernelGraphDatabaseServiceProvider implements BoltGraphDatabaseServiceSPI
 {
@@ -59,12 +54,12 @@ public class BoltKernelGraphDatabaseServiceProvider implements BoltGraphDatabase
     private final TransactionalContextFactory transactionalContextFactory;
     private final DatabaseId databaseId;
 
-    public BoltKernelGraphDatabaseServiceProvider( GraphDatabaseAPI databaseAPI, SystemNanoClock clock )
+    public BoltKernelGraphDatabaseServiceProvider( GraphDatabaseAPI databaseAPI, TransactionIdTracker transactionIdTracker )
     {
         this.databaseAPI = databaseAPI;
         this.txBridge = resolveDependency( databaseAPI, ThreadToStatementContextBridge.class );
         this.queryExecutionEngine = resolveDependency( databaseAPI, QueryExecutionEngine.class );
-        this.transactionIdTracker = newTransactionIdTracker( databaseAPI, clock );
+        this.transactionIdTracker = transactionIdTracker;
         this.transactionalContextFactory = newTransactionalContextFactory( databaseAPI );
         this.databaseId = resolveDependency( databaseAPI, Database.class ).getDatabaseId();
     }
@@ -74,13 +69,6 @@ public class BoltKernelGraphDatabaseServiceProvider implements BoltGraphDatabase
         return databaseContext.getDependencyResolver().resolveDependency( clazz );
     }
 
-    private static TransactionIdTracker newTransactionIdTracker( GraphDatabaseAPI databaseContext, SystemNanoClock clock )
-    {
-        Supplier<TransactionIdStore> transactionIdStoreSupplier = databaseContext.getDependencyResolver().provideDependency( TransactionIdStore.class );
-        AvailabilityGuard guard = resolveDependency( databaseContext, DatabaseAvailabilityGuard.class );
-        return new TransactionIdTracker( transactionIdStoreSupplier, guard, clock );
-    }
-
     private static TransactionalContextFactory newTransactionalContextFactory( GraphDatabaseAPI databaseContext )
     {
         GraphDatabaseQueryService queryService = resolveDependency( databaseContext, GraphDatabaseQueryService.class );
@@ -88,21 +76,19 @@ public class BoltKernelGraphDatabaseServiceProvider implements BoltGraphDatabase
     }
 
     @Override
-    public void awaitUpToDate( List<Bookmark> bookmarks, Duration perBookmarkTimeout ) throws TransactionFailureException
+    public void awaitUpToDate( List<Bookmark> bookmarks, Duration perBookmarkTimeout )
     {
-        for ( Bookmark bookmark : bookmarks )
+        for ( var bookmark : bookmarks )
         {
-            if ( bookmark.databaseId() == null || bookmark.databaseId().equals( databaseId ) )
-            {
-                transactionIdTracker.awaitUpToDate( bookmark.txId(), perBookmarkTimeout );
-            }
+            var databaseId = databaseIdFromBookmarkOrDefault( bookmark );
+            transactionIdTracker.awaitUpToDate( databaseId, bookmark.txId(), perBookmarkTimeout );
         }
     }
 
     @Override
     public long newestEncounteredTxId()
     {
-        return transactionIdTracker.newestEncounteredTxId();
+        return transactionIdTracker.newestTransactionId( databaseId );
     }
 
     @Override
@@ -157,5 +143,16 @@ public class BoltKernelGraphDatabaseServiceProvider implements BoltGraphDatabase
         }
 
         return internalTransaction;
+    }
+
+    private DatabaseId databaseIdFromBookmarkOrDefault( Bookmark bookmark )
+    {
+        var specifiedDatabaseId = bookmark.databaseId();
+        if ( specifiedDatabaseId == null )
+        {
+            // bookmark does not contain a database ID so it's an old bookmark and the current database ID should be used
+            return databaseId;
+        }
+        return specifiedDatabaseId;
     }
 }

@@ -152,7 +152,7 @@ public class DatabaseManagementServiceFactory
 
         globalLife.add( globalModule.getGlobalExtensions() );
         BoltGraphDatabaseManagementServiceSPI boltGraphDatabaseManagementServiceSPI = edition.createBoltDatabaseManagementServiceProvider( managementService,
-                globalModule.getGlobalClock() );
+                globalModule.getGlobalMonitors(), globalModule.getGlobalClock(), logService );
         globalLife.add( createBoltServer( globalModule, edition, boltGraphDatabaseManagementServiceSPI ) );
         globalDependencies.satisfyDependency( edition.globalTransactionCounter() );
         globalLife.add( new PublishPageCacheTracerMetricsAfterStart( globalModule.getTracers().getPageCursorTracerSupplier() ) );

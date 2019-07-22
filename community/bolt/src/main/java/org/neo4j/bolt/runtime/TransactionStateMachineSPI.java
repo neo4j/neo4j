@@ -25,13 +25,12 @@ import java.util.Map;
 
 import org.neo4j.bolt.dbapi.BoltQueryExecutor;
 import org.neo4j.bolt.dbapi.BoltTransaction;
-import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.values.virtual.MapValue;
 
 public interface TransactionStateMachineSPI
 {
-    void awaitUpToDate( List<Bookmark> bookmarks ) throws TransactionFailureException;
+    void awaitUpToDate( List<Bookmark> bookmarks );
 
     Bookmark newestBookmark();
 

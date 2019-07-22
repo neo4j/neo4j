@@ -27,6 +27,7 @@ import org.neo4j.bolt.BoltChannel;
 import org.neo4j.bolt.dbapi.impl.BoltKernelDatabaseManagementServiceProvider;
 import org.neo4j.bolt.security.auth.Authentication;
 import org.neo4j.bolt.testing.BoltTestUtil;
+import org.neo4j.bolt.txtracking.DefaultReconciledTransactionTracker;
 import org.neo4j.bolt.v1.BoltProtocolV1;
 import org.neo4j.bolt.v1.runtime.BoltStateMachineV1;
 import org.neo4j.bolt.v2.BoltProtocolV2;
@@ -38,6 +39,7 @@ import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.kernel.GraphDatabaseQueryService;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.logging.internal.NullLogService;
+import org.neo4j.monitoring.Monitors;
 import org.neo4j.time.Clocks;
 import org.neo4j.time.SystemNanoClock;
 
@@ -95,9 +97,9 @@ class BoltStateMachineFactoryImplTest
 
     private static BoltStateMachineFactoryImpl newBoltFactory( DatabaseManagementService managementService )
     {
-        Config config = Config.defaults( GraphDatabaseSettings.default_database, CUSTOM_DB_NAME );
-
-        BoltKernelDatabaseManagementServiceProvider dbProvider = new BoltKernelDatabaseManagementServiceProvider( managementService, CLOCK );
+        var config = Config.defaults( GraphDatabaseSettings.default_database, CUSTOM_DB_NAME );
+        var reconciledTxTracker = new DefaultReconciledTransactionTracker( NullLogService.getInstance() );
+        var dbProvider = new BoltKernelDatabaseManagementServiceProvider( managementService, reconciledTxTracker, new Monitors(), CLOCK );
         return new BoltStateMachineFactoryImpl( dbProvider, mock( Authentication.class ), CLOCK, config, NullLogService.getInstance() );
     }
 

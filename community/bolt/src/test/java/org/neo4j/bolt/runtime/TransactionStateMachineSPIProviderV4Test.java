@@ -26,6 +26,7 @@ import java.time.Duration;
 import org.neo4j.bolt.BoltChannel;
 import org.neo4j.bolt.dbapi.impl.BoltKernelDatabaseManagementServiceProvider;
 import org.neo4j.bolt.messaging.BoltIOException;
+import org.neo4j.bolt.txtracking.SimpleReconciledTransactionTracker;
 import org.neo4j.bolt.v1.runtime.StatementProcessorReleaseManager;
 import org.neo4j.bolt.v4.runtime.TransactionStateMachineV4SPI;
 import org.neo4j.common.DependencyResolver;
@@ -35,6 +36,8 @@ import org.neo4j.kernel.GraphDatabaseQueryService;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.database.Database;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
+import org.neo4j.logging.internal.NullLogService;
+import org.neo4j.monitoring.Monitors;
 import org.neo4j.time.SystemNanoClock;
 
 import static org.hamcrest.CoreMatchers.containsString;
@@ -103,8 +106,9 @@ class TransactionStateMachineSPIProviderV4Test
 
     private TransactionStateMachineSPIProvider newSpiProvider( DatabaseManagementService managementService )
     {
-        SystemNanoClock clock = mock( SystemNanoClock.class );
-        BoltKernelDatabaseManagementServiceProvider dbProvider = new BoltKernelDatabaseManagementServiceProvider( managementService, clock );
+        var clock = mock( SystemNanoClock.class );
+        var reconciledTxTracker = new SimpleReconciledTransactionTracker( managementService, NullLogService.getInstance() );
+        var dbProvider = new BoltKernelDatabaseManagementServiceProvider( managementService, reconciledTxTracker, new Monitors(), clock );
         return new TransactionStateMachineSPIProviderV4( dbProvider, "neo4j", mock( BoltChannel.class ), Duration.ZERO, clock );
     }
 }

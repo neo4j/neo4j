@@ -163,6 +163,8 @@ public interface Status
                 "The database was unable to write transaction to log." ),
 
         // transient errors
+        BookmarkTimeout( TransientError,
+                "Bookmark wait timed out. Database has not reached the specified version" ),
         LockSessionExpired( TransientError,
                 "The lock session under which this transaction was started is no longer valid." ),
         DeadlockDetected( TransientError,
