@@ -43,7 +43,6 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.cursor.context.VersionContextSupplier;
 import org.neo4j.kernel.api.InwardKernel;
 import org.neo4j.kernel.api.explicitindex.AutoIndexing;
-import org.neo4j.storageengine.api.NodePropertyAccessor;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.availability.AvailabilityGuard;
 import org.neo4j.kernel.availability.DatabaseAvailability;
@@ -52,6 +51,7 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.extension.DatabaseKernelExtensions;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.impl.api.CommitProcessFactory;
+import org.neo4j.kernel.impl.api.CountsAccessor;
 import org.neo4j.kernel.impl.api.DatabaseSchemaState;
 import org.neo4j.kernel.impl.api.ExplicitIndexProvider;
 import org.neo4j.kernel.impl.api.ExplicitIndexTransactionStateProvider;
@@ -93,7 +93,7 @@ import org.neo4j.kernel.impl.store.format.RecordFormatPropertyConfigurator;
 import org.neo4j.kernel.impl.store.format.RecordFormatSelector;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
-import org.neo4j.kernel.impl.store.stats.IdBasedStoreEntityCounters;
+import org.neo4j.kernel.impl.store.stats.DatabaseEntityCounters;
 import org.neo4j.kernel.impl.storemigration.DatabaseMigrator;
 import org.neo4j.kernel.impl.storemigration.monitoring.VisibleMigrationProgressMonitor;
 import org.neo4j.kernel.impl.storemigration.participant.StoreMigrator;
@@ -156,6 +156,7 @@ import org.neo4j.logging.internal.LogService;
 import org.neo4j.resources.CpuClock;
 import org.neo4j.resources.HeapAllocation;
 import org.neo4j.scheduler.JobScheduler;
+import org.neo4j.storageengine.api.NodePropertyAccessor;
 import org.neo4j.storageengine.api.StorageEngine;
 import org.neo4j.storageengine.api.StoreFileMetadata;
 import org.neo4j.storageengine.api.StoreId;
@@ -306,7 +307,6 @@ public class NeoStoreDataSource extends LifecycleAdapter
         dataSourceDependencies.satisfyDependency( databaseAvailability );
         dataSourceDependencies.satisfyDependency( idGeneratorFactory );
         dataSourceDependencies.satisfyDependency( idController );
-        dataSourceDependencies.satisfyDependency( new IdBasedStoreEntityCounters( this.idGeneratorFactory ) );
         dataSourceDependencies.satisfyDependency( auxTxStateManager );
 
         life = new LifeSupport();
@@ -412,7 +412,8 @@ public class NeoStoreDataSource extends LifecycleAdapter
             dataSourceDependencies.satisfyDependency( databaseSchemaState );
             dataSourceDependencies.satisfyDependency( logEntryReader );
             dataSourceDependencies.satisfyDependency( storageEngine );
-
+            dataSourceDependencies.satisfyDependency( new DatabaseEntityCounters( this.idGeneratorFactory,
+                    dataSourceDependencies.resolveDependency( CountsAccessor.class )  ) );
             executionEngine = QueryEngineProvider.initialize( dataSourceDependencies, facade, engineProviders );
         }
         catch ( Throwable e )
