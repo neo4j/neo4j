@@ -23,6 +23,7 @@ import java.io.IOException;
 import java.util.Collection;
 import java.util.stream.Stream;
 
+import org.neo4j.counts.CountsAccessor;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.internal.diagnostics.DiagnosticsManager;
 import org.neo4j.io.pagecache.IOLimiter;
@@ -152,6 +153,8 @@ public interface StorageEngine extends Lifecycle
     TransactionIdStore transactionIdStore();
 
     LogVersionRepository logVersionRepository();
+
+    CountsAccessor countsAccessor();
 
     /**
      * Creates a new {@link StorageReader} for reading committed data from the underlying storage.
