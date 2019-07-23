@@ -56,6 +56,7 @@ import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
+import static org.neo4j.io.ByteUnit.kibiBytes;
 import static org.neo4j.io.ByteUnit.mebiBytes;
 import static org.neo4j.io.fs.ReadAheadChannel.DEFAULT_READ_AHEAD_SIZE;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogHeader.LOG_HEADER_SIZE;
@@ -91,7 +92,7 @@ class VersionAwareLogEntryReaderIT
                                            .withTransactionIdStore( new SimpleTransactionIdStore() ).build();
         try ( Lifespan lifespan = new Lifespan( logFiles ) )
         {
-            assertEquals( mebiBytes( 250 ), logFiles.getHighestLogFile().length() );
+            assertEquals( kibiBytes( 128 ), logFiles.getHighestLogFile().length() );
             LogPosition logPosition = entryReader.lastPosition();
             assertEquals( 0L, logPosition.getLogVersion() );
             // this position in a log file before 0's are actually starting

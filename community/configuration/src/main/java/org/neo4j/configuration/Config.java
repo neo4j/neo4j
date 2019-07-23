@@ -801,6 +801,12 @@ public class Config implements Configuration
         {
             updateListeners.remove( listener );
         }
+
+        @Override
+        public String toString()
+        {
+            return value + (isDefault ? " (default)" : " (configured)");
+        }
     }
 
 }

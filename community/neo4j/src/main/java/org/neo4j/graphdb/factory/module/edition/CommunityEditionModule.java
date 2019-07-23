@@ -91,7 +91,6 @@ public class CommunityEditionModule extends StandaloneEditionModule
         Dependencies globalDependencies = globalModule.getGlobalDependencies();
         Config globalConfig = globalModule.getGlobalConfig();
         LogService logService = globalModule.getLogService();
-        FileSystemAbstraction fileSystem = globalModule.getFileSystem();
         SystemNanoClock globalClock = globalModule.getGlobalClock();
         DependencyResolver externalDependencies = globalModule.getExternalDependencyResolver();
 
