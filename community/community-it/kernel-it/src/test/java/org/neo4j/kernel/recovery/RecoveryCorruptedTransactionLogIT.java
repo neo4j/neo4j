@@ -102,6 +102,7 @@ import static org.neo4j.configuration.GraphDatabaseSettings.fail_on_corrupted_lo
 import static org.neo4j.configuration.GraphDatabaseSettings.logical_log_rotation_threshold;
 import static org.neo4j.configuration.SettingValueParsers.FALSE;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryByteCodes.TX_START;
+import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryVersion.LATEST_VERSION;
 
 @ExtendWith( {DefaultFileSystemExtension.class, TestDirectoryExtension.class, RandomExtension.class} )
 class RecoveryCorruptedTransactionLogIT
@@ -168,7 +169,7 @@ class RecoveryCorruptedTransactionLogIT
         }
         managementService1.shutdown();
         removeLastCheckpointRecordFromLastLogFile();
-        addRandomBytesToLastLogFile( this::randomPositiveBytes );
+        addRandomBytesToLastLogFile( this::randomInvalidVersionsBytes );
 
         DatabaseManagementService managementService = databaseFactory.build();
         GraphDatabaseAPI db = (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );
@@ -768,9 +769,9 @@ class RecoveryCorruptedTransactionLogIT
         }
     }
 
-    private byte randomPositiveBytes()
+    private byte randomInvalidVersionsBytes()
     {
-        return (byte) random.nextInt( 0, Byte.MAX_VALUE );
+        return (byte) random.nextInt( LATEST_VERSION.version() + 1, Byte.MAX_VALUE );
     }
 
     private byte randomBytes()
