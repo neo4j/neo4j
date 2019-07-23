@@ -19,16 +19,23 @@
  */
 package org.neo4j.kernel.impl.store.stats;
 
+import org.neo4j.counts.CountsAccessor;
 import org.neo4j.internal.id.IdGeneratorFactory;
 import org.neo4j.internal.id.IdType;
 
-public class IdBasedStoreEntityCounters implements StoreEntityCounters
+import static org.neo4j.register.Registers.newDoubleLongRegister;
+import static org.neo4j.token.api.TokenConstants.ANY_LABEL;
+import static org.neo4j.token.api.TokenConstants.ANY_RELATIONSHIP_TYPE;
+
+public class DatabaseEntityCounters implements StoreEntityCounters
 {
     private final IdGeneratorFactory idGeneratorFactory;
+    private final CountsAccessor countsAccessor;
 
-    public IdBasedStoreEntityCounters( IdGeneratorFactory idGeneratorFactory )
+    public DatabaseEntityCounters( IdGeneratorFactory idGeneratorFactory, CountsAccessor countsAccessor )
     {
         this.idGeneratorFactory = idGeneratorFactory;
+        this.countsAccessor = countsAccessor;
     }
 
     @Override
@@ -53,5 +60,17 @@ public class IdBasedStoreEntityCounters implements StoreEntityCounters
     public long relationshipTypes()
     {
         return idGeneratorFactory.get( IdType.RELATIONSHIP_TYPE_TOKEN ).getNumberOfIdsInUse();
+    }
+
+    @Override
+    public long allNodesCountStore()
+    {
+        return countsAccessor.nodeCount( ANY_LABEL, newDoubleLongRegister() ).readSecond();
+    }
+
+    @Override
+    public long allRelationshipsCountStore()
+    {
+        return countsAccessor.relationshipCount( ANY_LABEL, ANY_RELATIONSHIP_TYPE, ANY_LABEL, newDoubleLongRegister() ).readSecond();
     }
 }

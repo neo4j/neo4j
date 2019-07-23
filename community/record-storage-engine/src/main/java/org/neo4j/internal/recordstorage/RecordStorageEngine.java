@@ -442,12 +442,6 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
     }
 
     @VisibleForTesting
-    public CountsTracker testAccessCountsStore()
-    {
-        return countsStore;
-    }
-
-    @VisibleForTesting
     public SchemaRuleAccess testAccessSchemaRules()
     {
         return schemaRuleAccess;
@@ -471,6 +465,12 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
                 loadSchemaCache();
             }
         };
+    }
+
+    @Override
+    public CountsAccessor countsAccessor()
+    {
+        return countsStore;
     }
 
     @Override

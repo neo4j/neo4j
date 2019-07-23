@@ -33,6 +33,7 @@ import org.neo4j.consistency.RecordType;
 import org.neo4j.consistency.report.ConsistencySummaryStatistics;
 import org.neo4j.consistency.statistics.Statistics;
 import org.neo4j.consistency.store.DirectStoreAccess;
+import org.neo4j.counts.CountsAccessor;
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
@@ -114,7 +115,7 @@ public class DetectAllRelationshipInconsistenciesIT
         {
             DependencyResolver resolver = db.getDependencyResolver();
             NeoStores neoStores = resolver.resolveDependency( RecordStorageEngine.class ).testAccessNeoStores();
-            CountsTracker counts = resolver.resolveDependency( RecordStorageEngine.class ).testAccessCountsStore();
+            CountsTracker counts = (CountsTracker) resolver.resolveDependency( CountsAccessor.class );
             StoreAccess storeAccess = new StoreAccess( neoStores ).initialize();
             DirectStoreAccess directStoreAccess = new DirectStoreAccess( storeAccess,
                     db.getDependencyResolver().resolveDependency( LabelScanStore.class ),

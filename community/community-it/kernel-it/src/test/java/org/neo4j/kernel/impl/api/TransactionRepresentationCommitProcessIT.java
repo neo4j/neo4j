@@ -25,9 +25,9 @@ import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.neo4j.configuration.GraphDatabaseSettings;
+import org.neo4j.counts.CountsAccessor;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.internal.batchimport.cache.idmapping.string.Workers;
-import org.neo4j.internal.recordstorage.RecordStorageEngine;
 import org.neo4j.kernel.impl.store.counts.CountsTracker;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointer;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.SimpleTriggerInfo;
@@ -104,7 +104,7 @@ class TransactionRepresentationCommitProcessIT
             done.set( true );
             workers.awaitAndThrowOnError();
 
-            CountsTracker counts = getDependency( RecordStorageEngine.class ).testAccessCountsStore();
+            CountsTracker counts = (CountsTracker) getDependency( CountsAccessor.class );
             assertThat( "Count store should be rotated once at least", counts.txId(), greaterThan( 0L ) );
 
             long lastRotationTx = getDependency( CheckPointer.class ).forceCheckPoint( new SimpleTriggerInfo( "test" ) );
