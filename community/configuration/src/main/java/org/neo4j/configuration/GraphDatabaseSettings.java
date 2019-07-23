@@ -692,9 +692,9 @@ public class GraphDatabaseSettings implements SettingsDeclaration
                                     " or `200k txs` will limiting the number of transactions to keep to 200 000" ) )
                     .build();
 
-    @Description( "Specifies at which file size the logical log will auto-rotate. Minimum accepted value is 1M. " )
+    @Description( "Specifies at which file size the logical log will auto-rotate. Minimum accepted value is 128 KiB. " )
     public static final Setting<Long> logical_log_rotation_threshold =
-            newBuilder( "dbms.tx_log.rotation.size", BYTES, ByteUnit.mebiBytes( 250 ) ).addConstraint( min( mebiBytes( 1 ) ) ).dynamic().build();
+            newBuilder( "dbms.tx_log.rotation.size", BYTES, ByteUnit.mebiBytes( 250 ) ).addConstraint( min( kibiBytes( 128 ) ) ).dynamic().build();
 
     @Description( "Specify if Neo4j should try to preallocate logical log file in advance." )
     public static final Setting<Boolean> preallocate_logical_logs = newBuilder( "dbms.tx_log.preallocate", BOOL, true ).dynamic().build();

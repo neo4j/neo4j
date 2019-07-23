@@ -34,6 +34,7 @@ import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.facade.ExternalDependencies;
 import org.neo4j.graphdb.facade.GraphDatabaseDependencies;
 import org.neo4j.graphdb.security.URLAccessRule;
+import org.neo4j.io.ByteUnit;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.UncloseableDelegatingFileSystemAbstraction;
 import org.neo4j.kernel.extension.ExtensionFactory;
@@ -99,6 +100,7 @@ public class TestDatabaseManagementServiceBuilder extends DatabaseManagementServ
         return Config.newBuilder()
                 .fromConfig( config )
                 .setDefault( GraphDatabaseSettings.pagecache_memory, "8m" )
+                .setDefault( GraphDatabaseSettings.logical_log_rotation_threshold, String.valueOf( ByteUnit.kibiBytes( 128 ) ) )
                 .setDefault( BoltConnector.enabled, FALSE )
                 .build();
     }
