@@ -29,7 +29,7 @@ class DistinctFunction(value: Expression, inner: AggregationFunction) extends Ag
 
   override def apply(ctx: ExecutionContext, state: QueryState): Unit = {
     val data = value(ctx, state)
-    if (!seen.add(data)) {
+    if (seen.add(data)) {
       inner(ctx, state)
     }
     state.memoryTracker.checkMemoryRequirement(seen.size)
