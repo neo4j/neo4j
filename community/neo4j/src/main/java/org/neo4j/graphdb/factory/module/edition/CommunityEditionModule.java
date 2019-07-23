@@ -51,9 +51,7 @@ import org.neo4j.kernel.impl.constraints.StandardConstraintSemantics;
 import org.neo4j.kernel.impl.core.DefaultLabelIdCreator;
 import org.neo4j.kernel.impl.core.DefaultPropertyTokenCreator;
 import org.neo4j.kernel.impl.core.DefaultRelationshipTypeCreator;
-import org.neo4j.kernel.impl.factory.CanWrite;
 import org.neo4j.kernel.impl.factory.CommunityCommitProcessFactory;
-import org.neo4j.kernel.impl.factory.ReadOnly;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.locking.LocksFactory;
 import org.neo4j.kernel.impl.locking.SimpleStatementLocksFactory;
@@ -70,10 +68,12 @@ import org.neo4j.token.DelegatingTokenHolder;
 import org.neo4j.token.ReadOnlyTokenCreator;
 import org.neo4j.token.TokenCreator;
 import org.neo4j.token.TokenHolders;
-import org.neo4j.token.api.TokenHolder;
 
 import static org.neo4j.graphdb.factory.EditionLocksFactories.createLockFactory;
 import static org.neo4j.graphdb.factory.EditionLocksFactories.createLockManager;
+import static org.neo4j.token.api.TokenHolder.TYPE_LABEL;
+import static org.neo4j.token.api.TokenHolder.TYPE_PROPERTY_KEY;
+import static org.neo4j.token.api.TokenHolder.TYPE_RELATIONSHIP_TYPE;
 
 /**
  * This implementation of {@link AbstractEditionModule} creates the implementations of services
@@ -97,8 +97,6 @@ public class CommunityEditionModule extends StandaloneEditionModule
 
         watcherServiceFactory = databaseLayout -> createDatabaseFileSystemWatcher( globalModule.getFileWatcher(), databaseLayout,
                 logService, fileWatcherFileNameFilter() );
-
-        this.accessCapability = globalConfig.get( GraphDatabaseSettings.read_only ) ? new ReadOnly() : new CanWrite();
 
         this.sslPolicyLoader = SslPolicyLoader.create( globalConfig, logService.getInternalLogProvider() );
         globalDependencies.satisfyDependency( sslPolicyLoader ); // for bolt and web server
@@ -136,9 +134,9 @@ public class CommunityEditionModule extends StandaloneEditionModule
                 return databaseContext.dependencies().resolveDependency( Kernel.class );
             };
             return new TokenHolders(
-                    new DelegatingTokenHolder( createPropertyKeyCreator( globalConfig, kernelSupplier ), TokenHolder.TYPE_PROPERTY_KEY ),
-                    new DelegatingTokenHolder( createLabelIdCreator( globalConfig, kernelSupplier ), TokenHolder.TYPE_LABEL ),
-                    new DelegatingTokenHolder( createRelationshipTypeCreator( globalConfig, kernelSupplier ), TokenHolder.TYPE_RELATIONSHIP_TYPE ) );
+                    new DelegatingTokenHolder( createPropertyKeyCreator( globalConfig, databaseId, kernelSupplier ), TYPE_PROPERTY_KEY ),
+                    new DelegatingTokenHolder( createLabelIdCreator( globalConfig, databaseId, kernelSupplier ), TYPE_LABEL ),
+                    new DelegatingTokenHolder( createRelationshipTypeCreator( globalConfig, databaseId, kernelSupplier ), TYPE_RELATIONSHIP_TYPE ) );
         };
     }
 
@@ -168,40 +166,19 @@ public class CommunityEditionModule extends StandaloneEditionModule
         return new SimpleStatementLocksFactory( locks );
     }
 
-    protected static TokenCreator createRelationshipTypeCreator( Config config, Supplier<Kernel> kernelSupplier )
+    protected static TokenCreator createRelationshipTypeCreator( Config config, DatabaseId databaseId, Supplier<Kernel> kernelSupplier )
     {
-        if ( config.get( GraphDatabaseSettings.read_only ) )
-        {
-            return new ReadOnlyTokenCreator();
-        }
-        else
-        {
-            return new DefaultRelationshipTypeCreator( kernelSupplier );
-        }
+        return createReadOnlyTokens( config, databaseId ) ? new ReadOnlyTokenCreator() : new DefaultRelationshipTypeCreator( kernelSupplier );
     }
 
-    protected static TokenCreator createPropertyKeyCreator( Config config, Supplier<Kernel> kernelSupplier )
+    protected static TokenCreator createPropertyKeyCreator( Config config, DatabaseId databaseId, Supplier<Kernel> kernelSupplier )
     {
-        if ( config.get( GraphDatabaseSettings.read_only ) )
-        {
-            return new ReadOnlyTokenCreator();
-        }
-        else
-        {
-            return new DefaultPropertyTokenCreator( kernelSupplier );
-        }
+        return createReadOnlyTokens( config, databaseId ) ? new ReadOnlyTokenCreator() : new DefaultPropertyTokenCreator( kernelSupplier );
     }
 
-    protected static TokenCreator createLabelIdCreator( Config config, Supplier<Kernel> kernelSupplier )
+    protected static TokenCreator createLabelIdCreator( Config config, DatabaseId databaseId, Supplier<Kernel> kernelSupplier )
     {
-        if ( config.get( GraphDatabaseSettings.read_only ) )
-        {
-            return new ReadOnlyTokenCreator();
-        }
-        else
-        {
-            return new DefaultLabelIdCreator( kernelSupplier );
-        }
+        return createReadOnlyTokens( config, databaseId ) ? new ReadOnlyTokenCreator() : new DefaultLabelIdCreator( kernelSupplier );
     }
 
     @Override
@@ -261,5 +238,10 @@ public class CommunityEditionModule extends StandaloneEditionModule
         {
             return newInstanceMethod.get();
         }
+    }
+
+    private static boolean createReadOnlyTokens( Config config, DatabaseId databaseId )
+    {
+        return !databaseId.isSystemDatabase() && config.get( GraphDatabaseSettings.read_only );
     }
 }

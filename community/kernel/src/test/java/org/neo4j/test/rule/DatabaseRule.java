@@ -59,8 +59,6 @@ import org.neo4j.kernel.impl.constraints.ConstraintSemantics;
 import org.neo4j.kernel.impl.constraints.StandardConstraintSemantics;
 import org.neo4j.kernel.impl.context.TransactionVersionContextSupplier;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
-import org.neo4j.kernel.impl.factory.AccessCapability;
-import org.neo4j.kernel.impl.factory.CanWrite;
 import org.neo4j.kernel.impl.factory.CommunityCommitProcessFactory;
 import org.neo4j.kernel.impl.factory.DatabaseInfo;
 import org.neo4j.kernel.impl.locking.Locks;
@@ -161,7 +159,7 @@ public class DatabaseRule extends ExternalResource
                 TransactionHeaderInformationFactory.DEFAULT, new CommunityCommitProcessFactory(),
                 pageCache, new StandardConstraintSemantics(), monitors,
                 new Tracers( "null", NullLog.getInstance(), monitors, jobScheduler, clock ),
-                mock( GlobalProcedures.class ), IOLimiter.UNLIMITED, clock, new CanWrite(), new StoreCopyCheckPointMutex(),
+                mock( GlobalProcedures.class ), IOLimiter.UNLIMITED, clock, new StoreCopyCheckPointMutex(),
                 new BufferedIdController( new BufferingIdGeneratorFactory( idGeneratorFactory ),
                         jobScheduler ), DatabaseInfo.COMMUNITY, new TransactionVersionContextSupplier(), ON_HEAP,
                 Iterables.iterable( new EmptyIndexExtensionFactory() ),
@@ -222,7 +220,6 @@ public class DatabaseRule extends ExternalResource
         private final GlobalProcedures globalProcedures;
         private final IOLimiter ioLimiter;
         private final SystemNanoClock clock;
-        private final AccessCapability accessCapability;
         private final StoreCopyCheckPointMutex storeCopyCheckPointMutex;
         private final IdController idController;
         private final DatabaseInfo databaseInfo;
@@ -242,7 +239,7 @@ public class DatabaseRule extends ExternalResource
                 FileSystemAbstraction fs, DatabaseTransactionStats databaseTransactionStats, DatabaseHealth databaseHealth,
                 TransactionHeaderInformationFactory transactionHeaderInformationFactory,
                 CommitProcessFactory commitProcessFactory, PageCache pageCache, ConstraintSemantics constraintSemantics, Monitors monitors, Tracers tracers,
-                GlobalProcedures globalProcedures, IOLimiter ioLimiter, SystemNanoClock clock, AccessCapability accessCapability,
+                GlobalProcedures globalProcedures, IOLimiter ioLimiter, SystemNanoClock clock,
                 StoreCopyCheckPointMutex storeCopyCheckPointMutex, IdController idController,
                 DatabaseInfo databaseInfo, VersionContextSupplier versionContextSupplier, CollectionsFactorySupplier collectionsFactorySupplier,
                 Iterable<ExtensionFactory<?>> extensionFactories, Function<DatabaseLayout,DatabaseLayoutWatcher> watcherServiceFactory,
@@ -251,7 +248,7 @@ public class DatabaseRule extends ExternalResource
             this.databaseId = databaseId;
             this.databaseLayout = databaseLayout;
             this.config = config;
-            this.databaseConfig = DatabaseConfig.from( config, this.databaseId );
+            this.databaseConfig = new DatabaseConfig( config, databaseId );
             this.idGeneratorFactory = idGeneratorFactory;
             this.logService = new DatabaseLogService( new DatabaseNameLogContext( databaseId ), logService );
             this.scheduler = scheduler;
@@ -272,7 +269,6 @@ public class DatabaseRule extends ExternalResource
             this.globalProcedures = globalProcedures;
             this.ioLimiter = ioLimiter;
             this.clock = clock;
-            this.accessCapability = accessCapability;
             this.storeCopyCheckPointMutex = storeCopyCheckPointMutex;
             this.idController = idController;
             this.databaseInfo = databaseInfo;
@@ -451,12 +447,6 @@ public class DatabaseRule extends ExternalResource
         public SystemNanoClock getClock()
         {
             return clock;
-        }
-
-        @Override
-        public AccessCapability getAccessCapability()
-        {
-            return accessCapability;
         }
 
         @Override

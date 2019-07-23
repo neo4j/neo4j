@@ -85,8 +85,10 @@ import org.neo4j.kernel.impl.api.transaction.monitor.KernelTransactionMonitor;
 import org.neo4j.kernel.impl.api.transaction.monitor.KernelTransactionMonitorScheduler;
 import org.neo4j.kernel.impl.constraints.ConstraintSemantics;
 import org.neo4j.kernel.impl.factory.AccessCapability;
+import org.neo4j.kernel.impl.factory.CanWrite;
 import org.neo4j.kernel.impl.factory.DatabaseInfo;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
+import org.neo4j.kernel.impl.factory.ReadOnly;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.locking.StatementLocksFactory;
 import org.neo4j.kernel.impl.pagecache.PageCacheLifecycle;
@@ -162,6 +164,7 @@ import org.neo4j.util.VisibleForTesting;
 
 import static java.lang.String.format;
 import static org.neo4j.configuration.GraphDatabaseSettings.fail_on_corrupted_log_files;
+import static org.neo4j.configuration.GraphDatabaseSettings.read_only;
 import static org.neo4j.function.Predicates.alwaysTrue;
 import static org.neo4j.function.ThrowingAction.executeAll;
 import static org.neo4j.internal.helpers.collection.Iterators.asList;
@@ -175,7 +178,6 @@ public class Database extends LifecycleAdapter
     private final Monitors parentMonitors;
     private final DependencyResolver globalDependencies;
     private final PageCache globalPageCache;
-    private final Config globalConfig;
 
     private final Log msgLog;
     private final DatabaseLogService databaseLogService;
@@ -217,7 +219,7 @@ public class Database extends LifecycleAdapter
     private final IdController idController;
     private final DatabaseInfo databaseInfo;
     private final VersionContextSupplier versionContextSupplier;
-    private final AccessCapability accessCapability;
+    private AccessCapability accessCapability;
 
     private final StorageEngineFactory storageEngineFactory;
     private StorageEngine storageEngine;
@@ -256,15 +258,13 @@ public class Database extends LifecycleAdapter
         this.transactionHeaderInformationFactory = context.getTransactionHeaderInformationFactory();
         this.constraintSemantics = context.getConstraintSemantics();
         this.parentMonitors = context.getMonitors();
-        this.globalConfig = context.getGlobalConfig();
         this.globalProcedures = context.getGlobalProcedures();
         this.ioLimiter = context.getIoLimiter();
         this.clock = context.getClock();
-        this.accessCapability = context.getAccessCapability();
         this.eventListeners = context.getDatabaseEventListeners();
         this.databaseIdRepository = context.getDatabaseIdRepository();
 
-        this.readOnly = context.getGlobalConfig().get( GraphDatabaseSettings.read_only );
+        this.readOnly = databaseConfig.get( read_only );
         this.idController = context.getIdController();
         this.databaseInfo = context.getDatabaseInfo();
         this.versionContextSupplier = context.getVersionContextSupplier();
@@ -303,6 +303,7 @@ public class Database extends LifecycleAdapter
             life.add( databaseConfig );
 
             databaseHealth = databaseHealthFactory.newInstance();
+            accessCapability = databaseConfig.get( read_only ) ? new ReadOnly() : new CanWrite();
             DatabaseAvailability databaseAvailability =
                     new DatabaseAvailability( databaseAvailabilityGuard, transactionStats, clock, getAwaitActiveTransactionDeadlineMillis() );
 
@@ -430,7 +431,7 @@ public class Database extends LifecycleAdapter
             databaseDependencies.satisfyDependency( new DatabaseEntityCounters( this.idGeneratorFactory,
                     databaseDependencies.resolveDependency( CountsAccessor.class ) ) );
 
-            QueryEngineProvider.SPI providerSpi = QueryEngineProvider.spi( internalLogProvider, databaseMonitors, scheduler, life, getKernel(), globalConfig );
+            var providerSpi = QueryEngineProvider.spi( internalLogProvider, databaseMonitors, scheduler, life, getKernel(), databaseConfig );
             this.executionEngine = QueryEngineProvider.initialize( databaseDependencies, databaseFacade, engineProviders, isSystem(), providerSpi );
 
             this.checkpointerLifecycle = new CheckpointerLifecycle( transactionLogModule.checkPointer(), databaseHealth );
@@ -525,7 +526,7 @@ public class Database extends LifecycleAdapter
 
     public boolean isSystem()
     {
-        return DatabaseId.isSystemDatabase( databaseId );
+        return databaseId.isSystemDatabase();
     }
 
     /**
@@ -878,7 +879,7 @@ public class Database extends LifecycleAdapter
 
     private long getAwaitActiveTransactionDeadlineMillis()
     {
-        return globalConfig.get( GraphDatabaseSettings.shutdown_transaction_end_timeout ).toMillis();
+        return databaseConfig.get( GraphDatabaseSettings.shutdown_transaction_end_timeout ).toMillis();
     }
 
     @VisibleForTesting

@@ -34,24 +34,28 @@ import org.neo4j.kernel.database.DatabaseId;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.logging.Log;
 
+import static java.lang.Boolean.FALSE;
+import static org.neo4j.configuration.GraphDatabaseSettings.read_only;
+
 public class DatabaseConfig extends Config implements Lifecycle
 {
     private final Config globalConfig;
+    private final DatabaseId databaseId;
     private Map<Setting<Object>,Collection<SettingChangeListener<Object>>> registeredListeners = new ConcurrentHashMap<>();
 
-    public static DatabaseConfig from( Config globalConfig, DatabaseId databaseId )
-    {
-        return new DatabaseConfig( globalConfig );
-    }
-
-    private DatabaseConfig( Config globalConfig )
+    public DatabaseConfig( Config globalConfig, DatabaseId databaseId )
     {
         this.globalConfig = globalConfig;
+        this.databaseId = databaseId;
     }
 
     @Override
     public <T> T get( Setting<T> setting )
     {
+        if ( databaseId.isSystemDatabase() && read_only.equals( setting ) )
+        {
+            return (T) FALSE;
+        }
         return globalConfig.get( setting );
     }
 

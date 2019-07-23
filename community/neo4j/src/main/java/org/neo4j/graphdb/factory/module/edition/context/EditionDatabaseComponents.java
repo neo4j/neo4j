@@ -27,7 +27,6 @@ import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.kernel.impl.api.CommitProcessFactory;
 import org.neo4j.kernel.impl.constraints.ConstraintSemantics;
-import org.neo4j.kernel.impl.factory.AccessCapability;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.locking.StatementLocksFactory;
 import org.neo4j.kernel.impl.transaction.TransactionHeaderInformationFactory;
@@ -41,8 +40,6 @@ public interface EditionDatabaseComponents
     TokenHolders getTokenHolders();
 
     Function<DatabaseLayout,DatabaseLayoutWatcher> getWatcherServiceFactory();
-
-    AccessCapability getAccessCapability();
 
     IOLimiter getIoLimiter();
 

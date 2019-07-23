@@ -124,7 +124,7 @@ public abstract class AbstractDatabaseManager<DB extends DatabaseContext> extend
     {
         EditionDatabaseComponents editionDatabaseComponents = edition.createDatabaseComponents( databaseId );
         GlobalProcedures globalProcedures = edition.getGlobalProcedures();
-        var databaseConfig = DatabaseConfig.from( config, databaseId );
+        var databaseConfig = new DatabaseConfig( config, databaseId );
         return new ModularDatabaseCreationContext( databaseId, globalModule, parentDependencies, parentMonitors,
                 editionDatabaseComponents, globalProcedures, createVersionContextSupplier( databaseConfig ), databaseConfig );
     }

@@ -72,7 +72,7 @@ public class BasicSystemGraphRealmTestHelper
         @Override
         public Optional<StandaloneDatabaseContext> getDatabaseContext( DatabaseId databaseId )
         {
-            if ( DatabaseId.isSystemDatabase( databaseId ) )
+            if ( databaseId.isSystemDatabase() )
             {
                 DependencyResolver dependencyResolver = testSystemDb.getDependencyResolver();
                 Database database = dependencyResolver.resolveDependency( Database.class );

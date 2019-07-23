@@ -37,10 +37,10 @@ import org.neo4j.token.TokenHolders;
 public abstract class StandaloneEditionModule extends AbstractEditionModule
 {
     protected CommitProcessFactory commitProcessFactory;
-    protected IdContextFactory idContextFactory;
-    protected Function<DatabaseId,TokenHolders> tokenHoldersProvider;
-    protected Supplier<Locks> locksSupplier;
-    protected Function<Locks,StatementLocksFactory> statementLocksFactoryProvider;
+    IdContextFactory idContextFactory;
+    Function<DatabaseId,TokenHolders> tokenHoldersProvider;
+    Supplier<Locks> locksSupplier;
+    Function<Locks,StatementLocksFactory> statementLocksFactoryProvider;
 
     @Override
     public EditionDatabaseComponents createDatabaseComponents( DatabaseId databaseId )

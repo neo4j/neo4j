@@ -29,7 +29,6 @@ import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.kernel.database.DatabaseId;
 import org.neo4j.kernel.impl.api.CommitProcessFactory;
 import org.neo4j.kernel.impl.constraints.ConstraintSemantics;
-import org.neo4j.kernel.impl.factory.AccessCapability;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.locking.StatementLocksFactory;
 import org.neo4j.kernel.impl.transaction.TransactionHeaderInformationFactory;
@@ -39,7 +38,6 @@ import org.neo4j.token.TokenHolders;
 public class StandaloneDatabaseComponents implements EditionDatabaseComponents
 {
     private final Function<DatabaseLayout,DatabaseLayoutWatcher> watcherServiceFactory;
-    private final AccessCapability accessCapability;
     private final IOLimiter ioLimiter;
     private final ConstraintSemantics constraintSemantics;
     private final CommitProcessFactory commitProcessFactory;
@@ -56,7 +54,6 @@ public class StandaloneDatabaseComponents implements EditionDatabaseComponents
         this.commitProcessFactory = editionModule.getCommitProcessFactory();
         this.constraintSemantics = editionModule.getConstraintSemantics();
         this.ioLimiter = editionModule.getIoLimiter();
-        this.accessCapability = editionModule.getAccessCapability();
         this.watcherServiceFactory = editionModule.getWatcherServiceFactory();
         this.idContext = editionModule.getIdContextFactory().createIdContext( databaseId );
         this.tokenHolders = editionModule.getTokenHoldersProvider().apply( databaseId );
@@ -81,12 +78,6 @@ public class StandaloneDatabaseComponents implements EditionDatabaseComponents
     public Function<DatabaseLayout,DatabaseLayoutWatcher> getWatcherServiceFactory()
     {
         return watcherServiceFactory;
-    }
-
-    @Override
-    public AccessCapability getAccessCapability()
-    {
-        return accessCapability;
     }
 
     @Override

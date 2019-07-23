@@ -70,7 +70,7 @@ public class DatabaseMigratorFactory
             DependencyResolver dependencyResolver )
     {
         final DatabaseId databaseId = databaseIdRepository.get( databaseLayout.getDatabaseName() );
-        final DatabaseConfig dbConfig = DatabaseConfig.from( config, databaseId );
+        final DatabaseConfig dbConfig = new DatabaseConfig( config, databaseId );
         final IndexProviderMap indexProviderMap = dependencyResolver.resolveDependency( IndexProviderMap.class );
         final Monitors monitors = dependencyResolver.resolveDependency( Monitors.class );
         final LogEntryReader<ReadableClosablePositionAwareChannel> logEntryReader = new VersionAwareLogEntryReader<>();

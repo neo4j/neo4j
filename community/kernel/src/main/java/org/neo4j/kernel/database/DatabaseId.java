@@ -76,8 +76,8 @@ public class DatabaseId implements Comparable<DatabaseId>
     @Override
     public int compareTo( DatabaseId that )
     {
-        boolean leftIsSystem = isSystemDatabase( this );
-        boolean rightIsSystem = isSystemDatabase( that );
+        boolean leftIsSystem = this.isSystemDatabase();
+        boolean rightIsSystem = that.isSystemDatabase();
         if ( leftIsSystem || rightIsSystem )
         {
             return Boolean.compare( rightIsSystem, leftIsSystem );
@@ -88,8 +88,8 @@ public class DatabaseId implements Comparable<DatabaseId>
         }
     }
 
-    public static boolean isSystemDatabase( DatabaseId id )
+    public boolean isSystemDatabase()
     {
-        return Objects.equals( id.name(), SYSTEM_DATABASE_NAME );
+        return SYSTEM_DATABASE_NAME.equals( name() );
     }
 }

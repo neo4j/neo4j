@@ -41,7 +41,6 @@ import org.neo4j.kernel.extension.ExtensionFactory;
 import org.neo4j.kernel.impl.api.CommitProcessFactory;
 import org.neo4j.kernel.impl.constraints.ConstraintSemantics;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
-import org.neo4j.kernel.impl.factory.AccessCapability;
 import org.neo4j.kernel.impl.factory.DatabaseInfo;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.locking.StatementLocksFactory;
@@ -114,8 +113,6 @@ public interface DatabaseCreationContext
     LongFunction<DatabaseAvailabilityGuard> getDatabaseAvailabilityGuardFactory();
 
     SystemNanoClock getClock();
-
-    AccessCapability getAccessCapability();
 
     StoreCopyCheckPointMutex getStoreCopyCheckPointMutex();
 

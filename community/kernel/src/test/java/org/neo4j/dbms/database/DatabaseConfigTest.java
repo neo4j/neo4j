@@ -38,7 +38,7 @@ class DatabaseConfigTest
     {
         // given
         DatabaseId databaseId = new TestDatabaseIdRepository().defaultDatabase();
-        DatabaseConfig dbConfig = DatabaseConfig.from( Config.defaults(), databaseId );
+        DatabaseConfig dbConfig = new DatabaseConfig( Config.defaults(), databaseId );
         Setting<GraphDatabaseSettings.TransactionTracingLevel> setting = GraphDatabaseSettings.transaction_tracing_level;
         int threads = 100; // big because we want to exercise what happens when the potentially backing List wants to grow
         Listener[] listeners = new Listener[threads];

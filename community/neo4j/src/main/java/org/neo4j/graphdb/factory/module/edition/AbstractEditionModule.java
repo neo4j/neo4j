@@ -44,7 +44,6 @@ import org.neo4j.kernel.api.security.provider.SecurityProvider;
 import org.neo4j.kernel.database.DatabaseId;
 import org.neo4j.kernel.database.DatabaseIdRepository;
 import org.neo4j.kernel.impl.constraints.ConstraintSemantics;
-import org.neo4j.kernel.impl.factory.AccessCapability;
 import org.neo4j.kernel.impl.transaction.TransactionHeaderInformationFactory;
 import org.neo4j.kernel.impl.transaction.stats.DatabaseTransactionStats;
 import org.neo4j.kernel.impl.transaction.stats.GlobalTransactionStats;
@@ -73,8 +72,6 @@ public abstract class AbstractEditionModule
     protected NetworkConnectionTracker connectionTracker;
     protected TransactionHeaderInformationFactory headerInformationFactory;
     protected ConstraintSemantics constraintSemantics;
-    // TODO: Access capability in edition module should be removed.
-    protected AccessCapability accessCapability;
     protected IOLimiter ioLimiter;
     protected Function<DatabaseLayout,DatabaseLayoutWatcher> watcherServiceFactory;
     protected SecurityProvider securityProvider;
@@ -182,11 +179,6 @@ public abstract class AbstractEditionModule
     public IOLimiter getIoLimiter()
     {
         return ioLimiter;
-    }
-
-    public AccessCapability getAccessCapability()
-    {
-        return accessCapability;
     }
 
     public Function<DatabaseLayout,DatabaseLayoutWatcher> getWatcherServiceFactory()
