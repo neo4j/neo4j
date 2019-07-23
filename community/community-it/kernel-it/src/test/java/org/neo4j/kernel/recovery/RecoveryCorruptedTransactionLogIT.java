@@ -64,6 +64,7 @@ import org.neo4j.kernel.impl.transaction.log.TransactionLogWriter;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointer;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.SimpleTriggerInfo;
 import org.neo4j.kernel.impl.transaction.log.entry.CheckPoint;
+import org.neo4j.kernel.impl.transaction.log.entry.IncompleteLogHeaderException;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntry;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryWriter;
 import org.neo4j.kernel.impl.transaction.log.entry.LogHeader;
@@ -723,6 +724,10 @@ class RecoveryCorruptedTransactionLogIT
             {
                 // scroll to the end of readable entries
             }
+        }
+        catch ( IncompleteLogHeaderException e )
+        {
+            return new LogPosition( logVersion, 0 );
         }
         return entryReader.lastPosition();
     }
