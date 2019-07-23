@@ -38,7 +38,6 @@ import org.neo4j.common.TokenNameLookup;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.configuration.SettingChangeListener;
-import org.neo4j.counts.CountsAccessor;
 import org.neo4j.dbms.database.DatabaseConfig;
 import org.neo4j.dbms.database.DatabasePageCache;
 import org.neo4j.function.Factory;
@@ -92,7 +91,7 @@ import org.neo4j.kernel.impl.locking.StatementLocksFactory;
 import org.neo4j.kernel.impl.pagecache.PageCacheLifecycle;
 import org.neo4j.kernel.impl.query.QueryEngineProvider;
 import org.neo4j.kernel.impl.query.QueryExecutionEngine;
-import org.neo4j.kernel.impl.store.stats.DatabaseEntityCounters;
+import org.neo4j.kernel.impl.store.stats.IdBasedStoreEntityCounters;
 import org.neo4j.kernel.impl.storemigration.DatabaseMigratorFactory;
 import org.neo4j.kernel.impl.transaction.TransactionHeaderInformationFactory;
 import org.neo4j.kernel.impl.transaction.log.BatchingTransactionAppender;
@@ -321,6 +320,7 @@ public class Database extends LifecycleAdapter
             databaseDependencies.satisfyDependency( databaseAvailability );
             databaseDependencies.satisfyDependency( idGeneratorFactory );
             databaseDependencies.satisfyDependency( idController );
+            databaseDependencies.satisfyDependency( new IdBasedStoreEntityCounters( this.idGeneratorFactory ) );
             databaseDependencies.satisfyDependency( lockService );
             databaseDependencies.satisfyDependency( versionContextSupplier );
             databaseDependencies.satisfyDependency( new DefaultValueMapper( databaseFacade ) );
@@ -391,7 +391,6 @@ public class Database extends LifecycleAdapter
             TransactionIdStore transactionIdStore = storageEngine.transactionIdStore();
             databaseDependencies.satisfyDependency( transactionIdStore );
             databaseDependencies.satisfyDependency( storageEngine.logVersionRepository() );
-            databaseDependencies.satisfyDependency( storageEngine.countsAccessor() );
 
             versionContextSupplier.init( transactionIdStore::getLastClosedTransactionId );
 
@@ -427,8 +426,6 @@ public class Database extends LifecycleAdapter
             databaseDependencies.satisfyDependency( indexStatisticsStore );
             databaseDependencies.satisfyDependency( indexProviderMap );
             databaseDependencies.satisfyDependency( forceOperation );
-            databaseDependencies.satisfyDependency( new DatabaseEntityCounters( this.idGeneratorFactory,
-                    databaseDependencies.resolveDependency( CountsAccessor.class ) ) );
 
             QueryEngineProvider.SPI providerSpi = QueryEngineProvider.spi( internalLogProvider, databaseMonitors, scheduler, life, getKernel(), globalConfig );
             this.executionEngine = QueryEngineProvider.initialize( databaseDependencies, databaseFacade, engineProviders, isSystem(), providerSpi );

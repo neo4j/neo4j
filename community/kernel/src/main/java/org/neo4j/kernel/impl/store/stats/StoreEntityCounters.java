@@ -28,8 +28,4 @@ public interface StoreEntityCounters
     long properties();
 
     long relationshipTypes();
-
-    long allNodesCountStore();
-
-    long allRelationshipsCountStore();
 }

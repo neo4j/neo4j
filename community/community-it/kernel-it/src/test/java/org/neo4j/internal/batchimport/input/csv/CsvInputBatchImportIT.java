@@ -57,7 +57,6 @@ import java.util.function.Supplier;
 
 import org.neo4j.batchinsert.internal.TransactionLogsInitializer;
 import org.neo4j.configuration.Config;
-import org.neo4j.counts.CountsAccessor;
 import org.neo4j.csv.reader.Configuration;
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -80,6 +79,7 @@ import org.neo4j.internal.recordstorage.RecordStorageEngine;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.TokenStore;
+import org.neo4j.kernel.impl.store.counts.CountsTracker;
 import org.neo4j.kernel.impl.util.AutoCreatingHashMap;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.logging.LogTimeZone;
@@ -359,9 +359,10 @@ class CsvInputBatchImportIT
             }
             assertEquals( 0, expectedRelationships.size() );
 
+            // Verify counts, TODO how to get counts store other than this way?
             RecordStorageEngine storageEngine = ((GraphDatabaseAPI) db).getDependencyResolver().resolveDependency( RecordStorageEngine.class );
             NeoStores neoStores = storageEngine.testAccessNeoStores();
-            CountsAccessor counts = storageEngine.countsAccessor();
+            CountsTracker counts = storageEngine.testAccessCountsStore();
             Function<String, Integer> labelTranslationTable =
                     translationTable( neoStores.getLabelTokenStore(), ANY_LABEL );
             for ( Pair<Integer,Long> count : allNodeCounts( labelTranslationTable, expectedNodeCounts ) )
