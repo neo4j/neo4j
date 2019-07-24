@@ -36,7 +36,6 @@ import org.neo4j.io.ByteUnit;
 import org.neo4j.server.web.JettyThreadCalculator;
 
 import static java.util.Collections.emptyList;
-import static org.neo4j.configuration.GraphDatabaseSettings.LEGACY_POLICY_NAME;
 import static org.neo4j.configuration.GraphDatabaseSettings.logs_directory;
 import static org.neo4j.configuration.SettingConstraints.range;
 import static org.neo4j.configuration.SettingImpl.newBuilder;
@@ -157,9 +156,6 @@ public class ServerSettings implements SettingsDeclaration
     @Description( "Whitelist of hosts for the Neo4j Browser to be allowed to fetch content from." )
     public static final Setting<String> browser_remoteContentHostnameWhitelist =
             newBuilder( "browser.remote_content_hostname_whitelist", STRING, "guides.neo4j.com,localhost").build();
-
-    @Description( "SSL policy name." )
-    public static final Setting<String> ssl_policy = newBuilder( "https.ssl_policy", STRING, LEGACY_POLICY_NAME ).build();
 
     @Internal
     public static final Setting<URI> rest_api_path =

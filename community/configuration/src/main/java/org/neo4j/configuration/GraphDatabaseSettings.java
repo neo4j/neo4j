@@ -1045,10 +1045,6 @@ public class GraphDatabaseSettings implements SettingsDeclaration
             .immutable()
             .build();
 
-    @Description( "Specify the SSL policy to use for the encrypted bolt connections." )
-    public static final Setting<String> bolt_ssl_policy =
-            newBuilder( "bolt.ssl_policy", STRING, LEGACY_POLICY_NAME ).build();
-
     @Description( "Create an archive of an index before re-creating it if failing to load on startup." )
     @Internal
     public static final Setting<Boolean> archive_failed_index =

@@ -603,7 +603,7 @@ class ConfigTest
             config.setLogger( log );
 
             assertEquals( "foo", config.get( GraphDatabaseSettings.default_database ) );
-            verify( log ).warn( "Use of deprecated setting dbms.active_database. Replaced by %s.", GraphDatabaseSettings.default_database.name() );
+            verify( log ).warn( "Use of deprecated setting %s. It is replaced by %s", "dbms.active_database", GraphDatabaseSettings.default_database.name() );
         }
         {
             Config config = Config.newBuilder()
@@ -614,7 +614,7 @@ class ConfigTest
             config.setLogger( log );
 
             assertEquals( "bar", config.get( GraphDatabaseSettings.default_database ) );
-            verify( log ).warn( "Use of deprecated setting dbms.active_database. Replaced by %s.", GraphDatabaseSettings.default_database.name() );
+            verify( log ).warn( "Use of deprecated setting %s. It is replaced by %s", "dbms.active_database", GraphDatabaseSettings.default_database.name() );
         }
 
     }
@@ -707,6 +707,26 @@ class ConfigTest
 
         builder.set( GraphDatabaseSettings.strict_config_validation, FALSE );
         assertDoesNotThrow( builder::build );
+    }
+
+    @Test
+    void testBoltHttpsSslPolicyMigration() throws IOException
+    {
+
+        File confFile = testDirectory.createFile( "test.conf" );
+        Files.write( confFile.toPath(), List.of( "bolt.ssl_policy=foo", "https.ssl_policy=bar" ) );
+
+        Config config = Config.newBuilder().fromFile( confFile ).build();
+        var logProvider = new AssertableLogProvider();
+        config.setLogger( logProvider.getLog( Config.class ) );
+
+        assertEquals( "foo", config.get( BoltConnector.ssl_policy ) );
+        assertEquals( "bar", config.get( HttpsConnector.ssl_policy ) );
+
+        String msg = "Use of deprecated setting %s. It is replaced by %s";
+        logProvider.assertAtLeastOnce( inLog( Config.class ).warn( msg, "bolt.ssl_policy", BoltConnector.ssl_policy.name() ) );
+        logProvider.assertAtLeastOnce( inLog( Config.class ).warn( msg, "https.ssl_policy", HttpsConnector.ssl_policy.name() ) );
+
     }
 
     private static final class TestSettings implements SettingsDeclaration

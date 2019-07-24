@@ -44,7 +44,6 @@ import org.neo4j.bolt.transport.SocketTransport;
 import org.neo4j.bolt.transport.TransportThrottleGroup;
 import org.neo4j.common.DependencyResolver;
 import org.neo4j.configuration.Config;
-import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.configuration.connectors.BoltConnector;
 import org.neo4j.configuration.connectors.ConnectorPortRegister;
 import org.neo4j.configuration.helpers.SocketAddress;
@@ -186,7 +185,7 @@ public class BoltServer extends LifecycleAdapter
     {
         try
         {
-            String policyName = config.get( GraphDatabaseSettings.bolt_ssl_policy );
+            String policyName = config.get( BoltConnector.ssl_policy );
             if ( policyName == null )
             {
                 throw new IllegalArgumentException( "No SSL policy has been configured for Bolt server" );

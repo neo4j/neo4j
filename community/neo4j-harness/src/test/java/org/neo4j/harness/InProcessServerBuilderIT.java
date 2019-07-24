@@ -61,7 +61,6 @@ import org.neo4j.kernel.extension.context.ExtensionContext;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
-import org.neo4j.server.configuration.ServerSettings;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.SuppressOutputExtension;
@@ -132,7 +131,7 @@ class InProcessServerBuilderIT
                 .withConfig( HttpsConnector.listen_address, "localhost:0" )
                 .withConfig( GraphDatabaseSettings.dense_node_threshold, "20" )
                 // override legacy policy
-                .withConfig( ServerSettings.ssl_policy, "test" )
+                .withConfig( HttpsConnector.ssl_policy, "test" )
                 .withConfig( pem.base_directory, directory.directory( "certificates" ).getAbsolutePath() )
                 .withConfig( pem.allow_key_generation, TRUE )
                 .withConfig( pem.ciphers, String.join( ",", defaultCiphers ) )

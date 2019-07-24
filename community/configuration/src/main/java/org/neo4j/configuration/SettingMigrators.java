@@ -33,6 +33,7 @@ import org.neo4j.configuration.connectors.BoltConnector;
 import org.neo4j.configuration.connectors.HttpConnector;
 import org.neo4j.configuration.connectors.HttpsConnector;
 import org.neo4j.configuration.helpers.SocketAddress;
+import org.neo4j.graphdb.config.Setting;
 import org.neo4j.logging.Log;
 import org.neo4j.values.storable.CoordinateReferenceSystem;
 
@@ -55,14 +56,9 @@ public final class SettingMigrators
     public static class ActiveDatabaseMigrator implements SettingMigrator
     {
         @Override
-        public void migrate( Map<String,String> settings, Map<String,String> defaultValues, Log log )
+        public void migrate( Map<String,String> values, Map<String,String> defaultValues, Log log )
         {
-            String deprecatedValue = settings.remove( "dbms.active_database" );
-            if ( isNotBlank( deprecatedValue ) )
-            {
-                log.warn( "Use of deprecated setting dbms.active_database. Replaced by %s.", default_database.name() );
-                settings.putIfAbsent( default_database.name(), deprecatedValue );
-            }
+            migrateSettingNameChange( values, log, "dbms.active_database", default_database );
         }
     }
 
@@ -160,22 +156,23 @@ public final class SettingMigrators
     @ServiceProvider
     public static class DefaultAddressMigrator implements SettingMigrator
     {
-        private static final Map<String,String> SETTINGS_TO_MIGRATE = Map.of(
-                "dbms.connectors.default_listen_address", default_listen_address.name(),
-                "dbms.connectors.default_advertised_address", default_advertised_address.name()
-        );
-
         @Override
         public void migrate( Map<String,String> values, Map<String,String> defaultValues, Log log )
         {
-            SETTINGS_TO_MIGRATE.forEach( ( oldSetting, newSetting ) -> {
-                String value = values.remove( oldSetting );
-                if ( isNotBlank( value ) )
-                {
-                    log.warn( "Use of deprecated setting %s. It is replaced by %s", oldSetting, newSetting );
-                    values.putIfAbsent( newSetting, value );
-                }
-            } );
+            migrateSettingNameChange( values, log, "dbms.connectors.default_listen_address", default_listen_address );
+            migrateSettingNameChange( values, log, "dbms.connectors.default_advertised_address", default_advertised_address );
+        }
+    }
+
+    @ServiceProvider
+    public static class BoltHttpsSslPolicyMigrator implements SettingMigrator
+    {
+        @Override
+        public void migrate( Map<String,String> values, Map<String,String> defaultValues, Log log )
+        {
+            migrateSettingNameChange( values, log, "bolt.ssl_policy", BoltConnector.ssl_policy );
+            migrateSettingNameChange( values, log, "https.ssl_policy", HttpsConnector.ssl_policy );
+
         }
     }
 
@@ -218,6 +215,16 @@ public final class SettingMigrators
                     // The config will handle the error later
                 }
             }
+        }
+    }
+
+    public static void migrateSettingNameChange( Map<String,String> values, Log log, String oldSetting, Setting<?> newSetting )
+    {
+        String value = values.remove( oldSetting );
+        if ( isNotBlank( value ) )
+        {
+            log.warn( "Use of deprecated setting %s. It is replaced by %s", oldSetting, newSetting.name() );
+            values.putIfAbsent( newSetting.name(), value );
         }
     }
 }
