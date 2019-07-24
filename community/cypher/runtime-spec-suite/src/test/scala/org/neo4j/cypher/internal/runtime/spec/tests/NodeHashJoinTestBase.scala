@@ -385,7 +385,9 @@ abstract class NodeHashJoinTestBase[CONTEXT <: RuntimeContext](edition: Edition[
   test("should join with limit on lhs") {
     // given
     val (unfilteredNodes, _) = circleGraph(sizeHint)
-    val nodes = select(unfilteredNodes, selectivity = 0.5, duplicateProbability = 0.5, nullProbability = 0.1)
+    // We cannot have a nullProbability in this test. Otherwise we would not know if null-rows survive through the limit or not,
+    // and that influences the number of result rows.
+    val nodes = select(unfilteredNodes, selectivity = 0.5, duplicateProbability = 0.5)
     val lhsRows = inputColumns(100000, 3, i => nodes(i % nodes.size)).stream() // setting it high so the last assertion is not flaky
     val limitCount = 10 // setting it low so the last assertion is not flaky
 
