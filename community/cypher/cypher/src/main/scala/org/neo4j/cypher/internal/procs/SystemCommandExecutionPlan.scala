@@ -24,7 +24,7 @@ import org.neo4j.cypher.internal.compatibility.v4_0.ExceptionTranslatingQueryCon
 import org.neo4j.cypher.internal.plandescription.Argument
 import org.neo4j.cypher.internal.result.InternalExecutionResult
 import org.neo4j.cypher.internal.runtime.interpreted.TransactionBoundQueryContext
-import org.neo4j.cypher.internal.runtime.{InputDataStream, QueryContext}
+import org.neo4j.cypher.internal.runtime.{InputDataStream, QueryContext, QueryStatistics => QueryStats}
 import org.neo4j.cypher.internal.v4_0.util.InternalNotification
 import org.neo4j.cypher.internal.{ExecutionEngine, ExecutionPlan, RuntimeName, SystemCommandRuntimeName}
 import org.neo4j.cypher.result.RuntimeResult
@@ -79,6 +79,7 @@ case class SystemCommandExecutionPlan(name: String, normalExecutionEngine: Execu
 
 /**
   * A wrapping QuerySubscriber that overrides the error handling to allow custom error messages for SystemCommands instead of the inner errors.
+  * It also makes sure to return QueryStatistics that don't leak information about the system graph like how many nodes we created for a command etc.
   */
 class SystemCommandQuerySubscriber(inner: QuerySubscriber, queryHandler: QueryHandler) extends QuerySubscriber {
   @volatile private var empty = true
@@ -96,7 +97,7 @@ class SystemCommandQuerySubscriber(inner: QuerySubscriber, queryHandler: QueryHa
       })
     }
     if (failed.isEmpty) {
-      inner.onResultCompleted(statistics)
+      inner.onResultCompleted(QueryStats.empty)  // always say nothing happened
     }
   }
 
