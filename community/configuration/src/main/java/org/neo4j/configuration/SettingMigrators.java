@@ -138,7 +138,7 @@ public final class SettingMigrators
                     if ( Objects.equals( "type", settingName ) )
                     {
                         values.remove( setting );
-                        log.warn( "Use of deprecated setting %s. Type is no longer specified", setting );
+                        log.warn( "Use of deprecated setting %s. Type is no longer required", setting );
                     }
                 }
                 else

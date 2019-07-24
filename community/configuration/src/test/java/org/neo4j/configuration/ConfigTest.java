@@ -638,7 +638,7 @@ class ConfigTest
         assertTrue( config.get( HttpConnector.enabled ) );
         assertTrue( config.get( HttpsConnector.enabled ) );
 
-        logProvider.assertAtLeastOnce( inLog( Config.class ).warn( "Use of deprecated setting %s. Type is no longer specified", "dbms.connector.bolt.type" ) );
+        logProvider.assertAtLeastOnce( inLog( Config.class ).warn( "Use of deprecated setting %s. Type is no longer required", "dbms.connector.bolt.type" ) );
         logProvider.assertAtLeastOnce( inLog( Config.class ).warn( "Use of deprecated setting %s. No longer supports multiple connectors. Setting discarded.",
                 "dbms.connector.bolt2.type" ) );
         logProvider.assertAtLeastOnce( inLog( Config.class ).warn( "Use of deprecated setting %s. No longer supports multiple connectors. Setting discarded.",
