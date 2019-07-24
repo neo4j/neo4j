@@ -97,7 +97,7 @@ class SystemCommandQuerySubscriber(inner: QuerySubscriber, queryHandler: QueryHa
       })
     }
     if (failed.isEmpty) {
-      inner.onResultCompleted(QueryStats.empty)  // always say nothing happened
+      inner.onResultCompleted(QueryStats.systemOperation)
     }
   }
 

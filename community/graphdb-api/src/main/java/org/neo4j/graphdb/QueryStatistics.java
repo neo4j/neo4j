@@ -117,6 +117,13 @@ public interface QueryStatistics
      */
     boolean containsUpdates();
 
+    /**
+     * If the query successfully run on the system graph, this method will return true.
+     *
+     * @return if the query successfully ran on system graph.
+     */
+    boolean ranOnSystemGraph();
+
     QueryStatistics EMPTY = new QueryStatistics()
     {
         @Override
@@ -187,6 +194,12 @@ public interface QueryStatistics
 
         @Override
         public boolean containsUpdates()
+        {
+            return false;
+        }
+
+        @Override
+        public boolean ranOnSystemGraph()
         {
             return false;
         }
