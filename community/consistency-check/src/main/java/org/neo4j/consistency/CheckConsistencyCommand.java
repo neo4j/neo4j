@@ -189,7 +189,7 @@ public class CheckConsistencyCommand extends AbstractCommand
         Config cfg = Config.newBuilder()
                 .fromFileNoThrow( configDir.resolve( Config.DEFAULT_CONFIG_FILE_NAME ) )
                 .fromFileNoThrow( additionalConfig )
-                .set( GraphDatabaseSettings.neo4j_home, homeDir.toString() )
+                .set( GraphDatabaseSettings.neo4j_home, homeDir )
                 .build();
         ConfigUtils.disableAllConnectors( cfg );
         return cfg;

@@ -68,7 +68,7 @@ public class TestBasicSystemGraphRealm
     {
         Config config = Config.newBuilder()
                 .fromConfig( cfg )
-                .set( auth_store_directory, testDirectory.directory( "data/dbms" ).toString() )
+                .set( auth_store_directory, testDirectory.directory( "data/dbms" ).toPath() )
                 .build();
         LogProvider logProvider = mock(LogProvider.class);
         FileSystemAbstraction fileSystem = testDirectory.getFileSystem();

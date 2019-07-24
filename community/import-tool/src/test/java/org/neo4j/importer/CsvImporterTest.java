@@ -60,8 +60,8 @@ class CsvImporterTest
         Files.write( inputFile.toPath(), lines, Charset.defaultCharset() );
 
         Config config = Config.newBuilder()
-                .set( additionalConfig() )
-                .set( GraphDatabaseSettings.logs_directory, logDir.getAbsolutePath() ).build();
+                .setRaw( additionalConfig() )
+                .set( GraphDatabaseSettings.logs_directory, logDir.toPath().toAbsolutePath() ).build();
 
         CsvImporter csvImporter = CsvImporter.builder()
             .withDatabaseLayout( databaseLayout )

@@ -1388,8 +1388,8 @@ class BatchInsertTest
     {
 
         return Config.newBuilder()
-                .set( neo4j_home, testDirectory.absolutePath().getAbsolutePath() )
-                .set( GraphDatabaseSettings.dense_node_threshold, String.valueOf( denseNodeThreshold ) )
+                .set( neo4j_home, testDirectory.absolutePath().toPath() )
+                .set( GraphDatabaseSettings.dense_node_threshold, denseNodeThreshold )
                 .build();
     }
 

@@ -182,8 +182,8 @@ class GraphDatabaseSettingsTest
     {
         // given
         Config config = Config.newBuilder()
-                .set( GraphDatabaseSettings.default_listen_address, "0.0.0.0"  )
-                .set( GraphDatabaseSettings.SERVER_DEFAULTS )
+                .set( GraphDatabaseSettings.default_listen_address, new SocketAddress( "0.0.0.0" )  )
+                .setRaw( GraphDatabaseSettings.SERVER_DEFAULTS )
                 .build();
 
         // then

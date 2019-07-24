@@ -96,7 +96,7 @@ class ConfigTest
     {
         Config config = Config.newBuilder()
                 .addSettingsClass( TestSettings.class )
-                .set( TestSettings.intSetting, "3" )
+                .set( TestSettings.intSetting, 3 )
                 .build();
         assertEquals( 3, config.get( TestSettings.intSetting ) );
         config.setDynamic( TestSettings.intSetting, 2, getClass().getSimpleName() );
@@ -110,9 +110,9 @@ class ConfigTest
     {
         Map<String,String> settings = Map.of( "test.absent.bool", FALSE );
         Config.Builder builder = Config.newBuilder()
-                .set( GraphDatabaseSettings.strict_config_validation, TRUE )
+                .set( GraphDatabaseSettings.strict_config_validation, true )
                 .addSettingsClass( TestSettings.class )
-                .set( settings );
+                .setRaw( settings );
         assertThrows( IllegalArgumentException.class, builder::build );
     }
 
@@ -200,7 +200,7 @@ class ConfigTest
 
         Config config = Config.newBuilder()
                 .addGroupSettingClass( TestConnectionGroupSetting.class )
-                .set( settings )
+                .setRaw( settings )
                 .build();
 
         assertEquals(1111, config.get( TestConnectionGroupSetting.group( "1" ).port) );
@@ -216,7 +216,7 @@ class ConfigTest
     {
         Config config = Config.newBuilder()
                 .addGroupSettingClass( ChildGroup.class )
-                .set( Map.of( "test.inheritance.1.child", "child" ) )
+                .setRaw( Map.of( "test.inheritance.1.child", "child" ) )
                 .build();
 
         ChildGroup group = new ChildGroup( "1" );
@@ -233,7 +233,7 @@ class ConfigTest
                 .addSettingsClass( TestSettings.class )
                 .addGroupSettingClass( TestConnectionGroupSetting.class )
                 .addValidator( TestConnectionGroupSetting.class )
-                .set( settings );
+                .setRaw( settings );
 
         Exception e = assertThrows( IllegalArgumentException.class, builder::build );
         assertEquals( "Need unique ports", e.getMessage() );
@@ -256,9 +256,9 @@ class ConfigTest
         Map<String,String> settings = Map.of( "test.connection.http.1.foo.bar", "1111");
 
         Config.Builder builder = Config.newBuilder()
-                .set( GraphDatabaseSettings.strict_config_validation, TRUE )
+                .set( GraphDatabaseSettings.strict_config_validation, true )
                 .addGroupSettingClass( TestConnectionGroupSetting.class )
-                .set( settings );
+                .setRaw( settings );
 
         assertThrows( IllegalArgumentException.class, builder::build );
     }
@@ -275,7 +275,7 @@ class ConfigTest
                         "test.connection.http.2.hostname", "127.0.0.1" );
         Config config = Config.newBuilder()
                 .addGroupSettingClass( TestConnectionGroupSetting.class )
-                .set( settings )
+                .setRaw( settings )
                 .build();
 
         var groups = config.getGroups( TestConnectionGroupSetting.class );
@@ -291,7 +291,7 @@ class ConfigTest
         Config fromConfig = Config.newBuilder()
                 .addSettingsClass( TestSettings.class )
                 .setDefaults( Map.of( TestSettings.boolSetting.name(), FALSE ) )
-                .set( TestSettings.intSetting, "3" ).build();
+                .set( TestSettings.intSetting, 3 ).build();
 
         Config config1 = Config.newBuilder().fromConfig( fromConfig ).build();
         assertEquals( 3, config1.get( TestSettings.intSetting ) );
@@ -299,7 +299,7 @@ class ConfigTest
 
         Config config2 = Config.newBuilder()
                 .fromConfig( fromConfig )
-                .set( TestSettings.intSetting, "5" )
+                .set( TestSettings.intSetting, 5 )
                 .build();
 
         assertEquals( 5, config2.get( TestSettings.intSetting ) );
@@ -307,7 +307,7 @@ class ConfigTest
         Config config3 = Config.newBuilder()
                 .addSettingsClass( TestSettings.class )
                 .fromConfig( fromConfig )
-                .set( TestSettings.intSetting, "7" )
+                .set( TestSettings.intSetting, 7 )
                 .build();
 
         assertEquals( 7, config3.get( TestSettings.intSetting ) );
@@ -321,7 +321,7 @@ class ConfigTest
         Config fromConfig = Config.newBuilder()
                 .addSettingsClass( TestSettings.class )
                 .setDefaults( Map.of( TestSettings.boolSetting.name(), FALSE ) )
-                .set( TestSettings.intSetting, "3" ).build();
+                .set( TestSettings.intSetting, 3 ).build();
 
         assertThrows( IllegalArgumentException.class, () -> Config.newBuilder().fromConfig( fromConfig ).fromConfig( fromConfig ).build() );
     }
@@ -336,7 +336,7 @@ class ConfigTest
                         "test.connection.http.1.secure", FALSE );
         Config fromConfig = Config.newBuilder()
                 .addGroupSettingClass( TestConnectionGroupSetting.class )
-                .set( fromSettings )
+                .setRaw( fromSettings )
                 .build();
 
         Config config1 = Config.newBuilder()
@@ -354,7 +354,7 @@ class ConfigTest
         Config config2 = Config.newBuilder()
                 .fromConfig( fromConfig )
                 .addGroupSettingClass( TestConnectionGroupSetting.class )
-                .set( settings )
+                .setRaw( settings )
                 .build();
 
         var groups2 = config2.getGroups( TestConnectionGroupSetting.class );
@@ -450,7 +450,7 @@ class ConfigTest
                         "test.single_setting.bar", "bar" );
         Config config = Config.newBuilder()
                 .addGroupSettingClass( SingleSettingGroup.class )
-                .set( fromSettings )
+                .setRaw( fromSettings )
                 .build();
 
         assertEquals( 3, config.getGroups( SingleSettingGroup.class ).size() );
@@ -570,7 +570,7 @@ class ConfigTest
         config.setIfNotSet( TestSettings.intSetting, 77 );
         assertEquals( 77, config.get( TestSettings.intSetting ) );
 
-        Config configWithSetting = Config.newBuilder().addSettingsClass( TestSettings.class ).set( TestSettings.intSetting, "66" ).build();
+        Config configWithSetting = Config.newBuilder().addSettingsClass( TestSettings.class ).set( TestSettings.intSetting, 66 ).build();
         configWithSetting.setIfNotSet( TestSettings.intSetting, 77 );
         assertEquals( 66, configWithSetting.get( TestSettings.intSetting ) );
     }
@@ -583,7 +583,7 @@ class ConfigTest
         config.set( TestSettings.intSetting, 77 );
         assertTrue( config.isExplicitlySet( TestSettings.intSetting ) );
 
-        Config configWithSetting = Config.emptyBuilder().addSettingsClass( TestSettings.class ).set( TestSettings.intSetting, "66" ).build();
+        Config configWithSetting = Config.emptyBuilder().addSettingsClass( TestSettings.class ).set( TestSettings.intSetting, 66 ).build();
         assertTrue( configWithSetting.isExplicitlySet( TestSettings.intSetting ) );
         configWithSetting.set( TestSettings.intSetting, null );
         assertFalse( configWithSetting.isExplicitlySet( TestSettings.intSetting ) );
@@ -664,10 +664,10 @@ class ConfigTest
     {
         Config config1 = Config.defaults( listenAddr, "foo:111" );
         Config config2 = Config.defaults( listenAddr, ":222" );
-        Config config3 = Config.newBuilder().set( listenAddr, ":333" ).set( advertisedAddr, "bar" ).build();
-        Config config4 = Config.newBuilder().set( listenAddr, "foo:444" ).set( advertisedAddr, ":555" ).build();
-        Config config5 = Config.newBuilder().set( listenAddr, "foo" ).set( listenAddr, "bar" ).build();
-        Config config6 = Config.newBuilder().set( listenAddr, "foo:666" ).set( advertisedAddr, "bar:777" ).build();
+        Config config3 = Config.newBuilder().set( listenAddr, new SocketAddress( 333 ) ).set( advertisedAddr, new SocketAddress( "bar" ) ).build();
+        Config config4 = Config.newBuilder().set( listenAddr, new SocketAddress( "foo", 444 ) ).set( advertisedAddr, new SocketAddress( 555 ) ).build();
+        Config config5 = Config.newBuilder().set( listenAddr, new SocketAddress( "foo" ) ).set( listenAddr, new SocketAddress( "bar" ) ).build();
+        Config config6 = Config.newBuilder().set( listenAddr, new SocketAddress( "foo", 666 ) ).set( advertisedAddr, new SocketAddress( "bar", 777 ) ).build();
 
         var logProvider = new AssertableLogProvider();
         config1.setLogger( logProvider.getLog( Config.class ) );
@@ -702,10 +702,10 @@ class ConfigTest
         Files.write( confFile.toPath(), Collections.singletonList( "some_unrecognized_garbage=true" ) );
 
         Config.Builder builder = Config.newBuilder().fromFile( confFile );
-        builder.set( GraphDatabaseSettings.strict_config_validation, TRUE );
+        builder.set( GraphDatabaseSettings.strict_config_validation, true );
         assertThrows( IllegalArgumentException.class, builder::build );
 
-        builder.set( GraphDatabaseSettings.strict_config_validation, FALSE );
+        builder.set( GraphDatabaseSettings.strict_config_validation, false );
         assertDoesNotThrow( builder::build );
     }
 

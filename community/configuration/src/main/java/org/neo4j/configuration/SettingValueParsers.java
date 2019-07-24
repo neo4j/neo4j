@@ -246,6 +246,15 @@ public final class SettingValueParsers
             }
 
             @Override
+            public void validate( T value )
+            {
+                if ( !values.contains( value ) )
+                {
+                    throw new IllegalArgumentException( format( "%s not one of %s", value, values.toString() ) );
+                }
+            }
+
+            @Override
             public String getDescription()
             {
                 return "one of " + values.toString();
@@ -377,11 +386,17 @@ public final class SettingValueParsers
             {
                 throw new IllegalArgumentException( format( "'%s' is not a valid size, must be e.g. 10, 5K, 1M, 11G", value ) );
             }
-            if ( bytes < 0 )
+            validate(bytes);
+            return bytes;
+        }
+
+        @Override
+        public void validate( Long value )
+        {
+            if ( value < 0 )
             {
                 throw new IllegalArgumentException( format("'%s' is not a valid number of bytes. Must be positive or zero.", value ) );
             }
-            return bytes;
         }
 
         @Override
@@ -478,8 +493,14 @@ public final class SettingValueParsers
         @Override
         public String parse( String name )
         {
-            DatabaseNameValidator.assertValidDatabaseName( new NormalizedDatabaseName( name ) );
+            validate( name );
             return name;
+        }
+
+        @Override
+        public void validate( String value )
+        {
+            DatabaseNameValidator.assertValidDatabaseName( new NormalizedDatabaseName( value ) );
         }
 
         @Override

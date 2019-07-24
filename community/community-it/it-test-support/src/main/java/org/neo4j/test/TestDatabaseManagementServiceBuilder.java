@@ -79,9 +79,9 @@ public class TestDatabaseManagementServiceBuilder extends DatabaseManagementServ
     public DatabaseManagementService build()
     {
         Config cfg = Config.newBuilder()
-                .set( GraphDatabaseSettings.neo4j_home, homeDirectory.getAbsolutePath() )
+                .set( GraphDatabaseSettings.neo4j_home, homeDirectory.toPath().toAbsolutePath() )
                 .fromConfig( fromConfig )
-                .set( config )
+                .setRaw( config )
                 .build();
         return newDatabaseManagementService( homeDirectory, cfg, databaseDependencies() );
     }

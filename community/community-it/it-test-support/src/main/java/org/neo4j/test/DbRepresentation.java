@@ -134,7 +134,7 @@ public class DbRepresentation
     {
         return of( databaseLayout.databaseDirectory(),
                 Config.newBuilder()
-                        .set( transaction_logs_root_path, databaseLayout.getTransactionLogsDirectory().getParentFile().getAbsolutePath() )
+                        .set( transaction_logs_root_path, databaseLayout.getTransactionLogsDirectory().getParentFile().toPath().toAbsolutePath() )
                         .set( default_database, databaseLayout.getDatabaseName() )
                         .build());
     }
@@ -142,7 +142,7 @@ public class DbRepresentation
     public static DbRepresentation of( DatabaseLayout databaseLayout, Config config )
     {
         Config cfg = Config.newBuilder().fromConfig( config )
-                .set( transaction_logs_root_path, databaseLayout.getTransactionLogsDirectory().getParentFile().toPath().toString() )
+                .set( transaction_logs_root_path, databaseLayout.getTransactionLogsDirectory().getParentFile().toPath().toAbsolutePath() )
                 .set( default_database, databaseLayout.getDatabaseName() )
                 .build();
         return of( databaseLayout.databaseDirectory(), cfg );

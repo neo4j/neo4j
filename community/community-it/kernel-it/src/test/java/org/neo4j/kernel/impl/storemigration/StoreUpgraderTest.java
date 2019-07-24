@@ -92,7 +92,6 @@ import static org.junit.jupiter.params.provider.Arguments.arguments;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
-import static org.neo4j.configuration.SettingValueParsers.FALSE;
 import static org.neo4j.configuration.SettingValueParsers.TRUE;
 import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.verifyFilesHaveSameContent;
 import static org.neo4j.storageengine.migration.StoreMigrationParticipant.NOT_PARTICIPATING;
@@ -146,7 +145,7 @@ public class StoreUpgraderTest
     {
         init( formats );
         Config deniedMigrationConfig = Config.newBuilder()
-                .set( GraphDatabaseSettings.allow_upgrade, FALSE )
+                .set( GraphDatabaseSettings.allow_upgrade, false )
                 .set( GraphDatabaseSettings.record_format, Standard.LATEST_NAME )
                 .build();
         StoreVersionCheck check = getVersionCheck( pageCache );
@@ -340,7 +339,7 @@ public class StoreUpgraderTest
         StoreVersionCheck check = getVersionCheck( pageCache );
 
         Config config = Config.newBuilder().fromConfig( allowMigrateConfig )
-            .set( GraphDatabaseSettings.transaction_logs_root_path, txRoot.getAbsolutePath() ).build();
+            .set( GraphDatabaseSettings.transaction_logs_root_path, txRoot.toPath().toAbsolutePath() ).build();
         DatabaseLayout migrationLayout = DatabaseLayout.of( databaseLayout.databaseDirectory(), LayoutConfig.of( config ) );
         newUpgrader( check, pageCache, config, new VisibleMigrationProgressMonitor( logProvider.getLog( "test" ) ) )
             .migrateIfNeeded( migrationLayout );
@@ -367,7 +366,7 @@ public class StoreUpgraderTest
         StoreVersionCheck check = getVersionCheck( pageCache );
 
         Config config = Config.newBuilder().fromConfig( allowMigrateConfig )
-            .set( GraphDatabaseSettings.transaction_logs_root_path, txRoot.getAbsolutePath() ).build();
+            .set( GraphDatabaseSettings.transaction_logs_root_path, txRoot.toPath().toAbsolutePath() ).build();
         DatabaseLayout migrationLayout = DatabaseLayout.of( databaseLayout.databaseDirectory(), LayoutConfig.of( config ) );
 
         File databaseTransactionLogsHome = new File( txRoot, migrationLayout.getDatabaseName() );

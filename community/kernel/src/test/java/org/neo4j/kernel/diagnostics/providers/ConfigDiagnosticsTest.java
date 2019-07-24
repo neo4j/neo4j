@@ -38,7 +38,7 @@ class ConfigDiagnosticsTest
     {
         Config config = Config.newBuilder()
                 .set( default_database, "testDb" )
-                .set( max_concurrent_transactions, "400" )
+                .set( max_concurrent_transactions, 400 )
                 .build();
 
         ConfigDiagnostics configDiagnostics = new ConfigDiagnostics( config );

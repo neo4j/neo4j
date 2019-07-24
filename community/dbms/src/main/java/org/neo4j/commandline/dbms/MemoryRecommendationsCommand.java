@@ -337,7 +337,7 @@ class MemoryRecommendationsCommand extends AbstractCommand
         {
             Config config = Config.newBuilder()
                     .fromFile( configFile )
-                    .set( GraphDatabaseSettings.neo4j_home, ctx.homeDir().toAbsolutePath().toString() )
+                    .set( GraphDatabaseSettings.neo4j_home, ctx.homeDir().toAbsolutePath() )
                     .build();
             ConfigUtils.disableAllConnectors( config );
             return config;

@@ -49,7 +49,6 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
-import static org.neo4j.configuration.SettingValueParsers.TRUE;
 import static org.neo4j.internal.kernel.api.procs.DefaultParameterValue.nullValue;
 import static org.neo4j.internal.kernel.api.procs.FieldSignature.inputField;
 import static org.neo4j.internal.kernel.api.procs.FieldSignature.outputField;
@@ -97,7 +96,7 @@ public class SingleInstanceGetRoutingTableProcedureTest
     void shouldReturnEmptyRoutingTableWhenNoBoltConnectors() throws Exception
     {
         var portRegister = mock( ConnectorPortRegister.class );
-        var config = newConfig( "123s", null );
+        var config = newConfig( Duration.ofSeconds( 123 ), null );
 
         var proc = newProcedure( portRegister, config );
 
@@ -113,7 +112,7 @@ public class SingleInstanceGetRoutingTableProcedureTest
     void shouldReturnRoutingTable() throws Exception
     {
         var portRegister = mock( ConnectorPortRegister.class );
-        var config = newConfig( "42m", "neo4j.com:7687" );
+        var config = newConfig( Duration.ofMinutes( 42 ), new SocketAddress( "neo4j.com", 7687 ) );
 
         var proc = newProcedure( portRegister, config );
 
@@ -170,7 +169,7 @@ public class SingleInstanceGetRoutingTableProcedureTest
         return newProcedure( databaseManager, portRegister, config );
     }
 
-    private static Config newConfig( String routingTtl, String boltAddress )
+    private static Config newConfig( Duration routingTtl, SocketAddress boltAddress )
     {
         var builder = Config.newBuilder();
         if ( routingTtl != null )
@@ -179,7 +178,7 @@ public class SingleInstanceGetRoutingTableProcedureTest
         }
         if ( boltAddress != null )
         {
-            builder.set( BoltConnector.enabled, TRUE );
+            builder.set( BoltConnector.enabled, true );
             builder.set( BoltConnector.listen_address, boltAddress );
             builder.set( BoltConnector.advertised_address, boltAddress );
         }

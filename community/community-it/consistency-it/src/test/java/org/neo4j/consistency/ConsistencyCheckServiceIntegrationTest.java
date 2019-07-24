@@ -27,6 +27,7 @@ import org.junit.rules.RuleChain;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.HashMap;
@@ -76,7 +77,6 @@ import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAM
 import static org.neo4j.configuration.GraphDatabaseSettings.SchemaIndex.NATIVE30;
 import static org.neo4j.configuration.GraphDatabaseSettings.SchemaIndex.NATIVE_BTREE10;
 import static org.neo4j.configuration.GraphDatabaseSettings.record_format;
-import static org.neo4j.configuration.SettingValueParsers.FALSE;
 import static org.neo4j.internal.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.test.Property.property;
 import static org.neo4j.test.Property.set;
@@ -184,9 +184,9 @@ public class ConsistencyCheckServiceIntegrationTest
         breakNodeStore();
         Date timestamp = new Date();
         ConsistencyCheckService service = new ConsistencyCheckService( timestamp );
-        String logsDir = testDirectory.directory().getPath();
+        Path logsDir = testDirectory.directory().toPath();
         Config configuration = Config.newBuilder()
-                .set( stringSettings() )
+                .setRaw( stringSettings() )
                 .set( GraphDatabaseSettings.logs_directory, logsDir )
                 .build();
 
@@ -197,7 +197,7 @@ public class ConsistencyCheckServiceIntegrationTest
         assertFalse( result.isSuccessful() );
         String reportFile = format( "inconsistencies-%s.report",
                 new SimpleDateFormat( "yyyy-MM-dd.HH.mm.ss" ).format( timestamp ) );
-        assertEquals( new File( logsDir, reportFile ), result.reportFile() );
+        assertEquals( new File( logsDir.toString(), reportFile ), result.reportFile() );
         assertTrue( "Inconsistency report file not generated", result.reportFile().exists() );
     }
 
@@ -286,7 +286,7 @@ public class ConsistencyCheckServiceIntegrationTest
 
         ConsistencyCheckService service = new ConsistencyCheckService();
         Config configuration = Config.newBuilder()
-                .set( stringSettings() )
+                .setRaw( stringSettings() )
                 .set( GraphDatabaseSettings.default_schema_provider, NATIVE_BTREE10.providerName() )
                 .build();
         Result result = runFullConsistencyCheck( service, configuration, databaseLayout );

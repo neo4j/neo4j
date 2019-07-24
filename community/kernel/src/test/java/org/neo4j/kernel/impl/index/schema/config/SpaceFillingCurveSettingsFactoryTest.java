@@ -135,11 +135,10 @@ class SpaceFillingCurveSettingsFactoryTest
     private void shouldGetCustomSettingsFor( CoordinateReferenceSystem crs, int maxBits, double[] min, double[] max )
     {
         CrsConfig crsConf = CrsConfig.group( crs );
-
         Config config = Config.newBuilder()
-                .set( SpatialIndexSettings.space_filling_curve_max_bits , Integer.toString( maxBits ) )
-                .set( crsConf.min, Arrays.stream( min ).boxed().map( String::valueOf ).collect( Collectors.joining(",") ) )
-                .set( crsConf.max, Arrays.stream( max ).boxed().map( String::valueOf ).collect( Collectors.joining(",") ) )
+                .set( SpatialIndexSettings.space_filling_curve_max_bits , maxBits )
+                .set( crsConf.min, Arrays.stream( min ).boxed().collect( Collectors.toList() ) )
+                .set( crsConf.max, Arrays.stream( max ).boxed().collect( Collectors.toList() ) )
                 .build();
         shouldGetSettingsFor( config, crs, min.length, maxBits, new Envelope( min, max ) );
     }

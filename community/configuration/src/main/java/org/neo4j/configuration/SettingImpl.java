@@ -113,11 +113,12 @@ public final class SettingImpl<T> implements Setting<T>
         return solved;
     }
 
-    private void validate( T solved )
+    public void validate( T value )
     {
+        parser.validate( value );
         for ( SettingConstraint<T> constraint : constraints )
         {
-            constraint.validate( solved );
+            constraint.validate( value );
         }
     }
 

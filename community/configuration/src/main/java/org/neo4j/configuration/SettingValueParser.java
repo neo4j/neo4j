@@ -38,6 +38,14 @@ public interface SettingValueParser<T>
     T parse( String value );
 
     /**
+     * Validates if an object is accepted by the parser
+     * @param value The object to be validated
+     * @throws IllegalArgumentException if the object is not accepted by the parser
+     */
+    default void validate( T value )
+    {
+    }
+    /**
      * The description describing the parser
      *
      * @return the description

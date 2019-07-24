@@ -25,6 +25,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.io.File;
 import java.io.FileNotFoundException;
+import java.nio.file.Path;
 
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.ssl.PemSslPolicyConfig;
@@ -77,8 +78,8 @@ class PemSslPolicyLoaderTest
         PemSslPolicyConfig policyConfig = PemSslPolicyConfig.group( "default" );
 
         Config config = newBuilder()
-                .set( neo4j_home, home.getAbsolutePath() )
-                .set( policyConfig.base_directory, "certificates/default" )
+                .set( neo4j_home, home.toPath().toAbsolutePath() )
+                .set( policyConfig.base_directory, Path.of("certificates/default" ) )
                 .build();
 
         // when
@@ -113,8 +114,8 @@ class PemSslPolicyLoaderTest
         PemSslPolicyConfig policyConfig = PemSslPolicyConfig.group( "default" );
 
         Config config = newBuilder()
-                .set( neo4j_home, home.getAbsolutePath() )
-                .set( policyConfig.base_directory, "certificates/default" )
+                .set( neo4j_home, home.toPath().toAbsolutePath() )
+                .set( policyConfig.base_directory, Path.of( "certificates/default" ) )
                 .build();
 
         // when
@@ -129,8 +130,8 @@ class PemSslPolicyLoaderTest
         PemSslPolicyConfig policyConfig = PemSslPolicyConfig.group( "default" );
 
         Config config = newBuilder()
-                .set( neo4j_home, home.getAbsolutePath() )
-                .set( policyConfig.base_directory, "certificates/default" )
+                .set( neo4j_home, home.toPath().toAbsolutePath() )
+                .set( policyConfig.base_directory, Path.of( "certificates/default" ) )
                 .build();
 
         SslPolicyLoader sslPolicyLoader = SslPolicyLoader.create( config, NullLogProvider.getInstance() );

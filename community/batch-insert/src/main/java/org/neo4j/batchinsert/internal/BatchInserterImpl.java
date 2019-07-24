@@ -22,6 +22,7 @@ package org.neo4j.batchinsert.internal;
 import java.io.File;
 import java.io.IOException;
 import java.io.PrintStream;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -247,8 +248,8 @@ public class BatchInserterImpl implements BatchInserter
         rejectAutoUpgrade( fromConfig );
         this.config = Config.newBuilder()
                 .setDefaults( getDefaultParams() )
-                .set( neo4j_home, databaseLayout.databaseDirectory().getAbsolutePath() )
-                .set( logs_directory, "" )
+                .set( neo4j_home, databaseLayout.databaseDirectory().toPath().toAbsolutePath() )
+                .set( logs_directory, Path.of("" ) )
                 .fromConfig( fromConfig )
                 .build();
         this.fileSystem = fileSystem;

@@ -77,8 +77,8 @@ public class DatabaseManagementServiceBuilder
     public DatabaseManagementService build()
     {
         Config cfg = Config.newBuilder()
-                .set( GraphDatabaseSettings.neo4j_home, homeDirectory.getAbsolutePath() )
-                .set( config )
+                .set( GraphDatabaseSettings.neo4j_home, homeDirectory.toPath().toAbsolutePath() )
+                .setRaw( config )
                 .build();
         return newDatabaseManagementService( homeDirectory, cfg, databaseDependencies() );
     }

@@ -79,7 +79,6 @@ import static org.neo4j.configuration.GraphDatabaseSettings.databases_root_path;
 import static org.neo4j.configuration.GraphDatabaseSettings.default_schema_provider;
 import static org.neo4j.configuration.GraphDatabaseSettings.pagecache_memory;
 import static org.neo4j.configuration.SettingValueParsers.BYTES;
-
 import static org.neo4j.internal.helpers.collection.MapUtil.store;
 import static org.neo4j.internal.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.io.ByteUnit.exbiBytes;
@@ -235,7 +234,7 @@ class MemoryRecommendationsCommandTest
         store( stringMap( data_directory.name(), homeDir.toString() ), configFile.toFile() );
         Config config = Config.newBuilder()
                 .fromFile( configFile.toFile() )
-                .set( GraphDatabaseSettings.neo4j_home, homeDir.toString() ).build();
+                .set( GraphDatabaseSettings.neo4j_home, homeDir ).build();
         File rootPath = config.get( databases_root_path ).toFile();
         DatabaseLayout databaseLayout = DatabaseLayout.of( rootPath, databaseName );
         DatabaseLayout systemLayout = DatabaseLayout.of( rootPath, SYSTEM_DATABASE_NAME );
@@ -279,7 +278,7 @@ class MemoryRecommendationsCommandTest
         long totalLuceneIndexesSize = 0;
         Config config = Config.newBuilder()
                 .fromFile( configFile.toFile() )
-                .set( GraphDatabaseSettings.neo4j_home, homeDir.toString() ).build();
+                .set( GraphDatabaseSettings.neo4j_home, homeDir ).build();
         File rootDirectory = config.get( databases_root_path ).toFile();
         for ( int i = 0; i < 5; i++ )
         {

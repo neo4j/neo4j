@@ -28,11 +28,11 @@ import java.util.Map;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.connectors.BoltConnector;
 import org.neo4j.configuration.connectors.ConnectorPortRegister;
+import org.neo4j.configuration.helpers.SocketAddress;
 import org.neo4j.server.configuration.ServerSettings;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
-import static org.neo4j.configuration.SettingValueParsers.TRUE;
 import static org.neo4j.internal.helpers.collection.MapUtil.map;
 import static org.neo4j.server.rest.discovery.CommunityDiscoverableURIs.communityDiscoverableURIs;
 
@@ -63,8 +63,8 @@ public class CommunityDiscoverableURIsTest
 
         DiscoverableURIs uris = communityDiscoverableURIs(
                 Config.newBuilder()
-                        .set( BoltConnector.advertised_address, "apple.com:0" )
-                        .set( BoltConnector.enabled, TRUE )
+                        .set( BoltConnector.advertised_address, new SocketAddress( "apple.com", 0 ) )
+                        .set( BoltConnector.enabled, true )
                         .build(), register );
 
         assertEquals( "bolt://apple.com:1337", toMap(uris).get("bolt")  );

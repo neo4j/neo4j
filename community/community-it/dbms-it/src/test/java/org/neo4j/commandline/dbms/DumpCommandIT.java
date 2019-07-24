@@ -111,7 +111,7 @@ class DumpCommandIT
     {
         Config config = Config.newBuilder()
                 .fromFileNoThrow( configDir.resolve( Config.DEFAULT_CONFIG_FILE_NAME ) )
-                .set( GraphDatabaseSettings.neo4j_home, homeDir.toAbsolutePath().toString() )
+                .set( GraphDatabaseSettings.neo4j_home, homeDir.toAbsolutePath() )
                 .build();
         ConfigUtils.disableAllConnectors( config );
         return config;

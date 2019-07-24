@@ -175,7 +175,7 @@ public class DiscoveryServiceTest
         settings.put( ServerSettings.management_api_path.name(), managementUri.toString() );
         settings.put( ServerSettings.rest_api_path.name(), dataUri.toString() );
 
-        Config.Builder builder = Config.newBuilder().set( settings );
+        Config.Builder builder = Config.newBuilder().setRaw( settings );
 
         if ( configOverrider != null )
         {
@@ -266,22 +266,22 @@ public class DiscoveryServiceTest
 
     private static Consumer<Config.Builder> overrideWithAdvertisedAddress( String host, int port )
     {
-        return builder -> builder.set( BoltConnector.advertised_address, SocketAddress.format( host, port ) );
+        return builder -> builder.set( BoltConnector.advertised_address, new SocketAddress( host, port ) );
     }
 
     private static Consumer<Config.Builder> overrideWithListenAddress( String host, int port )
     {
-        return builder -> builder.set( BoltConnector.listen_address, SocketAddress.format( host, port ) );
+        return builder -> builder.set( BoltConnector.listen_address, new SocketAddress( host, port ) );
     }
 
     private static Consumer<Config.Builder> overrideWithDefaultListenAddress( String host )
     {
-        return builder -> builder.set( GraphDatabaseSettings.default_listen_address, host );
+        return builder -> builder.set( GraphDatabaseSettings.default_listen_address, new SocketAddress( host ) );
     }
 
     private static Consumer<Config.Builder> overrideWithDiscoverable( String uri )
     {
-        return builder -> builder.set( ServerSettings.bolt_discoverable_address, uri );
+        return builder -> builder.set( ServerSettings.bolt_discoverable_address, URI.create( uri ) );
     }
 
     @SafeVarargs
