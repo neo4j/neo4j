@@ -475,7 +475,8 @@ class ConfigTest
     @Test
     void shouldLogIfConfigFileCouldNotBeRead() throws IOException
     {
-        Log log = mock( Log.class );
+        AssertableLogProvider logProvider = new AssertableLogProvider( true );
+        Log log = logProvider.getLog( Config.class );
         File confFile = testDirectory.file( "test.conf" );
         assertTrue( confFile.createNewFile() );
         assumeTrue( confFile.setReadable( false ) );
@@ -484,7 +485,7 @@ class ConfigTest
 
         config.setLogger( log );
 
-        verify( log ).error( "Unable to load config file [%s]: %s", confFile, confFile + " (Permission denied)" );
+        logProvider.rawMessageMatcher().assertContains( "Unable to load config file [%s]" );
     }
 
     @Test
