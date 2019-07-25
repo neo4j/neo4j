@@ -19,10 +19,8 @@
  */
 package org.neo4j.cypher.internal.procs
 
-import org.neo4j.cypher.internal.compatibility.v4_0.ExceptionTranslatingQueryContext
 import org.neo4j.cypher.internal.plandescription.Argument
 import org.neo4j.cypher.internal.result.InternalExecutionResult
-import org.neo4j.cypher.internal.runtime.interpreted.TransactionBoundQueryContext
 import org.neo4j.cypher.internal.runtime.{InputDataStream, QueryContext}
 import org.neo4j.cypher.internal.v4_0.util.InternalNotification
 import org.neo4j.cypher.internal.{ExecutionEngine, ExecutionPlan, RuntimeName, SystemCommandRuntimeName}
@@ -31,7 +29,7 @@ import org.neo4j.graphdb.security.AuthorizationViolationException
 import org.neo4j.graphdb.security.AuthorizationViolationException.PERMISSION_DENIED
 import org.neo4j.internal.kernel.api.security.AccessMode
 import org.neo4j.kernel.api.KernelTransaction
-import org.neo4j.kernel.impl.query.{QuerySubscriber, TransactionalContext}
+import org.neo4j.kernel.impl.query.QuerySubscriber
 import org.neo4j.values.AnyValue
 import org.neo4j.values.virtual.MapValue
 
@@ -46,13 +44,15 @@ case class UpdatingSystemCommandExecutionPlan(name: String,
                                               source: Option[ExecutionPlan] = None)
   extends ExecutionPlan {
 
-  override def run(ctx: QueryContext,
+  override def run(originalCtx: QueryContext,
                    doProfile: Boolean,
                    params: MapValue,
                    prePopulateResults: Boolean,
                    ignore: InputDataStream,
                    subscriber: QuerySubscriber): RuntimeResult = {
 
+    val ctx = SystemUpdateCountingQueryContext.from(originalCtx)
+    ctx.systemUpdates.increase()
     // Only the outermost query should be tied into the reactive results stream. The source queries should use an empty subscriber
     val sourceResult = source.map(_.run(ctx, doProfile, params, prePopulateResults, ignore, QuerySubscriber.DO_NOTHING_SUBSCRIBER))
     sourceResult match {
@@ -61,7 +61,7 @@ case class UpdatingSystemCommandExecutionPlan(name: String,
         // Only the outermost query should be tied into the reactive results stream. The source queries should be exhausted eagerly
         sourceResult.foreach(_.consumeAll())
 
-        val tc: TransactionalContext = ctx.asInstanceOf[ExceptionTranslatingQueryContext].inner.asInstanceOf[TransactionBoundQueryContext].transactionalContext.tc
+        val tc = ctx.kernelTransactionalContext
         if (!name.equals("AlterCurrentUserSetPassword") && !tc.securityContext().isAdmin) throw new AuthorizationViolationException(PERMISSION_DENIED)
 
         var revertAccessModeChange: KernelTransaction.Revertable = null
@@ -69,7 +69,7 @@ case class UpdatingSystemCommandExecutionPlan(name: String,
           val fullAccess = tc.securityContext().withMode(AccessMode.Static.FULL)
           revertAccessModeChange = tc.kernelTransaction().overrideWith(fullAccess)
 
-          val systemSubscriber = new SystemCommandQuerySubscriber(subscriber, queryHandler)
+          val systemSubscriber = new SystemCommandQuerySubscriber(ctx, subscriber, queryHandler)
           val execution = normalExecutionEngine.executeSubQuery(query, systemParams, tc, shouldCloseTransaction = false, doProfile, prePopulateResults, systemSubscriber).asInstanceOf[InternalExecutionResult]
           systemSubscriber.assertNotFailed()
 

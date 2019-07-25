@@ -111,6 +111,13 @@ public interface QueryStatistics
     int getConstraintsRemoved();
 
     /**
+     * Returns the number of system updates performed by this query.
+     *
+     * @return the number of system updates performed by this query.
+     */
+    int getSystemUpdates();
+
+    /**
      * If the query updated the graph in any way, this method will return true.
      *
      * @return if the graph has been updated.
@@ -118,11 +125,11 @@ public interface QueryStatistics
     boolean containsUpdates();
 
     /**
-     * If the query successfully run on the system graph, this method will return true.
+     * If the query updated the system graph in any way, this method will return true,
      *
-     * @return if the query successfully ran on system graph.
+     * @return if the system graph has been updated.
      */
-    boolean ranOnSystemGraph();
+    boolean containsSystemUpdates();
 
     QueryStatistics EMPTY = new QueryStatistics()
     {
@@ -193,13 +200,19 @@ public interface QueryStatistics
         }
 
         @Override
+        public int getSystemUpdates()
+        {
+            return 0;
+        }
+
+        @Override
         public boolean containsUpdates()
         {
             return false;
         }
 
         @Override
-        public boolean ranOnSystemGraph()
+        public boolean containsSystemUpdates()
         {
             return false;
         }

@@ -20,10 +20,8 @@
 package org.neo4j.cypher.internal.procs
 
 import org.neo4j.cypher.exceptionHandler
-import org.neo4j.cypher.internal.compatibility.v4_0.ExceptionTranslatingQueryContext
 import org.neo4j.cypher.internal.plandescription.Argument
 import org.neo4j.cypher.internal.result.InternalExecutionResult
-import org.neo4j.cypher.internal.runtime.interpreted.TransactionBoundQueryContext
 import org.neo4j.cypher.internal.runtime.{InputDataStream, QueryContext, QueryStatistics => QueryStats}
 import org.neo4j.cypher.internal.v4_0.util.InternalNotification
 import org.neo4j.cypher.internal.{ExecutionEngine, ExecutionPlan, RuntimeName, SystemCommandRuntimeName}
@@ -41,18 +39,19 @@ import org.neo4j.values.virtual.MapValue
   * Execution plan for performing system commands, i.e. creating databases or showing roles and users.
   */
 case class SystemCommandExecutionPlan(name: String, normalExecutionEngine: ExecutionEngine, query: String, systemParams: MapValue,
-                                      resultMapper: (QueryContext, QueryExecution) => SystemCommandExecutionResult = (_, q) => new SystemCommandExecutionResult(q.asInstanceOf[InternalExecutionResult]),
-                                      onError: Throwable => Throwable = identity)
+                                      queryHandler: QueryHandler = QueryHandler.handleError(identity),
+                                      resultMapper: (QueryContext, QueryExecution) => SystemCommandExecutionResult = (_, q) => new SystemCommandExecutionResult(q.asInstanceOf[InternalExecutionResult]))
   extends ExecutionPlan {
 
-  override def run(ctx: QueryContext,
+  override def run(originalCtx: QueryContext,
                    doProfile: Boolean,
                    params: MapValue,
                    prePopulateResults: Boolean,
                    ignore: InputDataStream,
                    subscriber: QuerySubscriber): RuntimeResult = {
 
-    val tc = ctx.asInstanceOf[ExceptionTranslatingQueryContext].inner.asInstanceOf[TransactionBoundQueryContext].transactionalContext.tc
+    val ctx = SystemUpdateCountingQueryContext.from(originalCtx)
+    val tc = ctx.kernelTransactionalContext
     if (!name.equals("ShowDefaultDatabase") && !name.startsWith("ShowDatabase") && !tc.securityContext().isAdmin) throw new AuthorizationViolationException(PERMISSION_DENIED)
 
     var revertAccessModeChange: KernelTransaction.Revertable = null
@@ -60,7 +59,7 @@ case class SystemCommandExecutionPlan(name: String, normalExecutionEngine: Execu
       val fullReadAccess = tc.securityContext().withMode(AccessMode.Static.READ)
       revertAccessModeChange = tc.kernelTransaction().overrideWith(fullReadAccess)
 
-      val systemSubscriber = new SystemCommandQuerySubscriber(subscriber, QueryHandler.handleError(onError))
+      val systemSubscriber = new SystemCommandQuerySubscriber(ctx, subscriber, queryHandler)
       val execution = normalExecutionEngine.executeSubQuery(query, systemParams, tc, shouldCloseTransaction = false, doProfile, prePopulateResults, systemSubscriber)
       systemSubscriber.assertNotFailed()
 
@@ -81,7 +80,7 @@ case class SystemCommandExecutionPlan(name: String, normalExecutionEngine: Execu
   * A wrapping QuerySubscriber that overrides the error handling to allow custom error messages for SystemCommands instead of the inner errors.
   * It also makes sure to return QueryStatistics that don't leak information about the system graph like how many nodes we created for a command etc.
   */
-class SystemCommandQuerySubscriber(inner: QuerySubscriber, queryHandler: QueryHandler) extends QuerySubscriber {
+class SystemCommandQuerySubscriber(ctx: SystemUpdateCountingQueryContext, inner: QuerySubscriber, queryHandler: QueryHandler) extends QuerySubscriber {
   @volatile private var empty = true
   @volatile private var failed: Option[Throwable] = None
 
@@ -97,7 +96,7 @@ class SystemCommandQuerySubscriber(inner: QuerySubscriber, queryHandler: QueryHa
       })
     }
     if (failed.isEmpty) {
-      inner.onResultCompleted(QueryStats.systemOperation)
+      inner.onResultCompleted(if (statistics.containsUpdates()) ctx.getStatistics else QueryStats.empty)
     }
   }
 

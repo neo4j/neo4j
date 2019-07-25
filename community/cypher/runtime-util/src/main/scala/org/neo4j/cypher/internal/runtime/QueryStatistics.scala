@@ -44,7 +44,7 @@ case class QueryStatistics(@BeanProperty nodesCreated: Int = 0,
                            existenceConstraintsRemoved: Int = 0,
                            nodekeyConstraintsAdded: Int = 0,
                            nodekeyConstraintsRemoved: Int = 0,
-                           systemOperationHappened: Boolean = false
+                           @BeanProperty systemUpdates: Int = 0
                           ) extends org.neo4j.graphdb.QueryStatistics {
 
   @BeanProperty
@@ -66,13 +66,13 @@ case class QueryStatistics(@BeanProperty nodesCreated: Int = 0,
       constraintsAdded > 0 ||
       constraintsRemoved > 0
 
-  override def ranOnSystemGraph(): Boolean = systemOperationHappened
+  override def containsSystemUpdates: Boolean = systemUpdates > 0
 
   override def toString: String = {
     val builder = new StringBuilder
 
-    if (systemOperationHappened) {
-      builder.append("Operation on system graph successfully executed") // we don't yet tell how many those were
+    if (containsSystemUpdates) {
+      includeIfNonZero(builder, "System updates: ", systemUpdates)
     } else {
       includeIfNonZero(builder, "Nodes created: ", nodesCreated)
       includeIfNonZero(builder, "Relationships created: ", relationshipsCreated)
@@ -102,5 +102,4 @@ case class QueryStatistics(@BeanProperty nodesCreated: Int = 0,
 
 object QueryStatistics {
   val empty: QueryStatistics = QueryStatistics()
-  val systemOperation: QueryStatistics = QueryStatistics(systemOperationHappened = true)
 }

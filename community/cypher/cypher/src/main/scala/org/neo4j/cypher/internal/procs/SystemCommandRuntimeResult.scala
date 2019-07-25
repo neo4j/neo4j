@@ -31,7 +31,7 @@ import org.neo4j.kernel.api.KernelTransaction
 /**
   * Results, as produced by a system command.
   */
-case class SystemCommandRuntimeResult(ctx: QueryContext,
+case class SystemCommandRuntimeResult(ctx: SystemUpdateCountingQueryContext,
                                       execution: SystemCommandExecutionResult,
                                       subscriber: SystemCommandQuerySubscriber,
                                       securityContext: SecurityContext,
