@@ -21,9 +21,11 @@ package org.neo4j.cypher.internal.evaluator
 
 import java.lang.Math.{PI, sin}
 
+import org.neo4j.cypher.internal.runtime.ExecutionContext
 import org.neo4j.values.storable.CoordinateReferenceSystem.WGS84_3D
 import org.neo4j.values.storable.Values
 import org.neo4j.values.storable.Values.{intValue, pointValue, stringValue}
+import org.neo4j.values.virtual.VirtualValues
 import org.neo4j.values.virtual.VirtualValues.{list, map}
 import org.scalatest._
 
@@ -52,5 +54,27 @@ class SimpleInternalExpressionEvaluatorTest extends FunSuiteLike with Matchers {
     evaluator.evaluate("point({ latitude: 12, longitude: 56, height: 1000 })") should
       equal(pointValue(WGS84_3D, 56, 12, 1000))
     evaluator.evaluate("sin(pi())") should equal(Values.doubleValue(sin(PI)))
+  }
+
+  test("params") {
+    val evaluator = new SimpleInternalExpressionEvaluator
+
+    evaluator
+      .evaluate(
+        expression = SimpleInternalExpressionEvaluator.ExpressionParser.parse("$p + 1"),
+        params = VirtualValues.map(Array("p"), Array(Values.of(2)))
+      )
+      .shouldEqual(Values.of(3))
+  }
+
+  test("context") {
+    val evaluator = new SimpleInternalExpressionEvaluator
+
+    evaluator
+      .evaluate(
+        expression = SimpleInternalExpressionEvaluator.ExpressionParser.parse("v + 1"),
+        context = ExecutionContext.from("v" -> Values.of(3))
+      )
+      .shouldEqual(Values.of(4))
   }
 }
