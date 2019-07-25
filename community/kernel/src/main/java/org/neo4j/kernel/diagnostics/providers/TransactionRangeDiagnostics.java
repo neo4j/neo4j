@@ -20,6 +20,7 @@
 package org.neo4j.kernel.diagnostics.providers;
 
 import java.io.IOException;
+import java.nio.file.Files;
 
 import org.neo4j.internal.diagnostics.NamedDiagnosticsProvider;
 import org.neo4j.kernel.database.Database;
@@ -43,6 +44,7 @@ public class TransactionRangeDiagnostics extends NamedDiagnosticsProvider
         LogFiles logFiles = database.getDependencyResolver().resolveDependency( LogFiles.class );
         try
         {
+            logger.log( "Transaction log files stored on file store: " + getFileStoreType( logFiles ) );
             for ( long logVersion = logFiles.getLowestLogVersion(); logFiles.versionExists( logVersion ); logVersion++ )
             {
                 if ( logFiles.hasAnyEntries( logVersion ) )
@@ -57,7 +59,12 @@ public class TransactionRangeDiagnostics extends NamedDiagnosticsProvider
         }
         catch ( IOException e )
         {
-            logger.log( "Error trying to figure out oldest transaction in log" );
+            logger.log( "Error trying to dump transaction log files info." );
         }
+    }
+
+    private String getFileStoreType( LogFiles logFiles ) throws IOException
+    {
+        return Files.getFileStore( logFiles.logFilesDirectory().toPath() ).type();
     }
 }

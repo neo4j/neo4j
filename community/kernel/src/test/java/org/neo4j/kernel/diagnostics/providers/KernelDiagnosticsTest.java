@@ -77,6 +77,18 @@ class KernelDiagnosticsTest
     }
 
     @Test
+    void printDatabaseFileStoreType()
+    {
+        StorageEngineFactory storageEngineFactory = mock( StorageEngineFactory.class );
+
+        AssertableLogProvider logProvider = new AssertableLogProvider();
+        StoreFilesDiagnostics storeFiles = new StoreFilesDiagnostics( storageEngineFactory, fs, directory.databaseLayout() );
+        storeFiles.dump( logProvider.getLog( getClass() ).debugLogger() );
+
+        logProvider.rawMessageMatcher().assertContains( "Storage files stored on file store: " );
+    }
+
+    @Test
     void shouldCountFileSizeRecursively() throws IOException
     {
         // file structure:

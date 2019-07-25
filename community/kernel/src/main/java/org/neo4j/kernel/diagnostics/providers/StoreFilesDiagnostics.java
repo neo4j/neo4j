@@ -22,6 +22,7 @@ package org.neo4j.kernel.diagnostics.providers;
 import java.io.File;
 import java.io.FileFilter;
 import java.io.IOException;
+import java.nio.file.Files;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -60,13 +61,26 @@ public class StoreFilesDiagnostics extends NamedDiagnosticsProvider
     @Override
     public void dump( Logger logger )
     {
-        logger.log( getDiskSpace( databaseLayout ) );
-        logger.log( "Storage files: (filename : modification date - size)" );
-        MappedFileCounter mappedCounter = new MappedFileCounter();
-        long totalSize = logStoreFiles( logger, "  ", databaseLayout.databaseDirectory(), mappedCounter );
-        logger.log( "Storage summary: " );
-        logger.log( "  Total size of store: " + bytesToString( totalSize ) );
-        logger.log( "  Total size of mapped files: " + bytesToString( mappedCounter.getSize() ) );
+        try
+        {
+            logger.log( getDiskSpace( databaseLayout ) );
+            logger.log( "Storage files stored on file store: " + getFileStoreType() );
+            logger.log( "Storage files: (filename : modification date - size)" );
+            MappedFileCounter mappedCounter = new MappedFileCounter();
+            long totalSize = logStoreFiles( logger, "  ", databaseLayout.databaseDirectory(), mappedCounter );
+            logger.log( "Storage summary: " );
+            logger.log( "  Total size of store: " + bytesToString( totalSize ) );
+            logger.log( "  Total size of mapped files: " + bytesToString( mappedCounter.getSize() ) );
+        }
+        catch ( IOException e )
+        {
+            logger.log( "Error trying to figure out oldest transaction in log" );
+        }
+    }
+
+    private String getFileStoreType() throws IOException
+    {
+        return Files.getFileStore( databaseLayout.databaseDirectory().toPath() ).type();
     }
 
     private long logStoreFiles( Logger logger, String prefix, File dir, MappedFileCounter mappedCounter )
