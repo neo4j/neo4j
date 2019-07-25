@@ -605,6 +605,7 @@ public class GraphDatabaseSettings implements SettingsDeclaration
     public static final Setting<Boolean> rebuild_id_files_on_startup = newBuilder( "dbms.rebuild_id_files", BOOL, false ).build();
 
     // Lucene settings
+    @Deprecated( since = "4.0.0", forRemoval = true )
     @Description( "The maximum number of open Lucene index searchers." )
     public static final Setting<Integer> lucene_searcher_cache_size =
             newBuilder( "dbms.index_searcher_cache_size", INT, Integer.MAX_VALUE ).addConstraint( min( 1 ) ).build();
