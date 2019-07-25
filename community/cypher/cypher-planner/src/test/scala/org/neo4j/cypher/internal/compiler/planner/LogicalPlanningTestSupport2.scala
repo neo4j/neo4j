@@ -19,7 +19,6 @@
  */
 package org.neo4j.cypher.internal.compiler.planner
 
-import org.neo4j.csv.reader.Configuration
 import org.neo4j.cypher.internal.compiler.phases.CompilationPhases._
 import org.neo4j.cypher.internal.compiler.phases._
 import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.{CardinalityModel, QueryGraphCardinalityModel, QueryGraphSolverInput}
@@ -80,6 +79,14 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
 
   def createQueryGraphSolver(solverConfig: IDPSolverConfig = DefaultIDPSolverConfig): QueryGraphSolver = {
     new IDPQueryGraphSolver(SingleComponentPlanner(mock[IDPQueryGraphSolverMonitor], solverConfig), cartesianProductsOrValueJoins, mock[IDPQueryGraphSolverMonitor])
+  }
+
+  def createInitState(queryString: String): BaseState = InitialState(queryString, None, IDPPlannerName)
+
+  def pipeLine(): Transformer[PlannerContext, BaseState, LogicalPlanState] = {
+    parsing(newPlain, innerVariableNamer, literalExtraction = Never) andThen
+      prepareForCaching andThen
+      planPipeLine(newPlain)
   }
 
   implicit class LogicalPlanningEnvironment[C <: LogicalPlanningConfiguration](config: C) {
@@ -163,12 +170,6 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
         semanticTable.resolvedRelTypeNames.get(relType).map(_.id)
     }
 
-    def pipeLine(): Transformer[PlannerContext, BaseState, LogicalPlanState] = {
-      parsing(newPlain, innerVariableNamer, literalExtraction = Never) andThen
-      prepareForCaching andThen
-      planPipeLine(newPlain)
-    }
-
     private def removeApply(input: LogicalPlanState, context: PlannerContext, solveds: Solveds, attributes: Attributes[LogicalPlan]): LogicalPlanState = {
       val newPlan = input.logicalPlan.endoRewrite(fixedPoint(unnestApply(solveds, attributes)))
       input.copy(maybeLogicalPlan = Some(newPlan))
@@ -185,7 +186,7 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
         logicalPlanIdGen = idGen
       )
 
-      val state = InitialState(queryString, None, IDPPlannerName)
+      val state = createInitState(queryString)
       val output = pipeLine().transform(state, context)
       val logicalPlan = output.logicalPlan match {
         case p:ProduceResult => p.source

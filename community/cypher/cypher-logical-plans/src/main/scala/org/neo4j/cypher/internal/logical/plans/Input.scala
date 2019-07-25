@@ -27,7 +27,12 @@ import org.neo4j.cypher.internal.v4_0.util.attribution.IdGen
  *
  * @param nullable if there can be null values among the nodes or variables
  */
-case class Input(nodes: Array[String], variables: Array[String], nullable: Boolean)(implicit idGen: IdGen) extends LogicalLeafPlan(idGen) {
+case class Input(nodes: Seq[String], variables: Seq[String], nullable: Boolean)(implicit idGen: IdGen) extends LogicalLeafPlan(idGen) {
   val availableSymbols: Set[String] = nodes.toSet ++ variables.toSet
   override def argumentIds: Set[String] = Set.empty
+}
+
+object Input {
+
+  def apply(variables: Seq[String])(implicit idGen: IdGen): Input = new Input(Seq.empty, variables, true)(idGen)
 }

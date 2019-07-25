@@ -47,6 +47,7 @@ object ClauseConverters {
     case c: Merge => addMergeToLogicalPlanInput(acc, c)
     case c: LoadCSV => addLoadCSVToLogicalPlanInput(acc, c)
     case c: Foreach => addForeachToLogicalPlanInput(acc, c)
+    case c: InputDataStream => addInputDataStreamToLogicalPlanInput(acc, c)
 
     case x: UnresolvedCall => throw new IllegalArgumentException(s"$x is not expected here")
     case x => throw new InternalException(s"Received an AST-clause that has no representation the QG: $x")
@@ -60,6 +61,9 @@ object ClauseConverters {
         format = if (clause.withHeaders) HasHeaders else NoHeaders,
         clause.fieldTerminator)
     ).withTail(PlannerQuery.empty)
+
+  private def addInputDataStreamToLogicalPlanInput(acc: PlannerQueryBuilder, clause: InputDataStream): PlannerQueryBuilder =
+    acc.withQueryInput(clause.variables.map(_.name).toSet)
 
   private def asSelections(optWhere: Option[Where]) = Selections(optWhere.
     map(_.expression.asPredicates).

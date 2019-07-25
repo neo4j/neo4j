@@ -291,8 +291,8 @@ class IndexWithProvidedOrderPlanningIntegrationTest extends CypherFunSuite with 
         indexOn("A", "prop").providesOrder(orderCapability)
         cardinality = mapCardinality {
           // Force the planner to start at a
-          case RegularPlannerQuery(queryGraph, _, _, _) if queryGraph.patternNodes == Set("a") => 100.0
-          case RegularPlannerQuery(queryGraph, _, _, _) if queryGraph.patternNodes == Set("b") => 2000.0
+          case RegularPlannerQuery(queryGraph, _, _, _, _) if queryGraph.patternNodes == Set("a") => 100.0
+          case RegularPlannerQuery(queryGraph, _, _, _, _) if queryGraph.patternNodes == Set("b") => 2000.0
         }
       } getLogicalPlanFor s"MATCH (a:A)-[r]->(b) WHERE a.prop > 'foo' RETURN a.prop, count(b) ORDER BY a.prop $cypherToken"
 
@@ -311,8 +311,8 @@ class IndexWithProvidedOrderPlanningIntegrationTest extends CypherFunSuite with 
         indexOn("A", "prop").providesOrder(orderCapability)
         cardinality = mapCardinality {
           // Force the planner to start at a
-          case RegularPlannerQuery(queryGraph, _, _, _) if queryGraph.patternNodes == Set("a") => 100.0
-          case RegularPlannerQuery(queryGraph, _, _, _) if queryGraph.patternNodes == Set("b") => 2000.0
+          case RegularPlannerQuery(queryGraph, _, _, _, _) if queryGraph.patternNodes == Set("a") => 100.0
+          case RegularPlannerQuery(queryGraph, _, _, _, _) if queryGraph.patternNodes == Set("b") => 2000.0
         }
       } getLogicalPlanFor s"MATCH (a:A)-[r]->(b) WHERE a.prop > 'foo' RETURN a.prop ORDER BY a.prop $cypherToken, b.prop"
 
@@ -335,12 +335,12 @@ class IndexWithProvidedOrderPlanningIntegrationTest extends CypherFunSuite with 
         indexOn("A", "prop").providesOrder(orderCapability)
         cardinality = mapCardinality {
           // Force the planner to start at a
-          case RegularPlannerQuery(queryGraph, _, _, _) if queryGraph.patternNodes == Set("a") => 100.0
-          case RegularPlannerQuery(queryGraph, _, _, _) if queryGraph.patternNodes == Set("b") => 2000.0
-          case RegularPlannerQuery(queryGraph, _, _, _) if queryGraph.patternNodes == Set("c") => 2000.0
-          case RegularPlannerQuery(queryGraph, _, _, _) if queryGraph.patternNodes == Set("a", "b") => 50.0
-          case RegularPlannerQuery(queryGraph, _, _, _) if queryGraph.patternNodes == Set("b", "c") => 500.0
-          case RegularPlannerQuery(queryGraph, _, _, _) if queryGraph.patternNodes == Set("a", "b", "c") => 1000.0
+          case RegularPlannerQuery(queryGraph, _, _, _, _) if queryGraph.patternNodes == Set("a") => 100.0
+          case RegularPlannerQuery(queryGraph, _, _, _, _) if queryGraph.patternNodes == Set("b") => 2000.0
+          case RegularPlannerQuery(queryGraph, _, _, _, _) if queryGraph.patternNodes == Set("c") => 2000.0
+          case RegularPlannerQuery(queryGraph, _, _, _, _) if queryGraph.patternNodes == Set("a", "b") => 50.0
+          case RegularPlannerQuery(queryGraph, _, _, _, _) if queryGraph.patternNodes == Set("b", "c") => 500.0
+          case RegularPlannerQuery(queryGraph, _, _, _, _) if queryGraph.patternNodes == Set("a", "b", "c") => 1000.0
         }
       } getLogicalPlanFor s"MATCH (a:A)-[r]->(b)-[q]->(c) WHERE a.prop > 'foo' RETURN a.prop ORDER BY a.prop $cypherToken, b.prop"
 
@@ -366,8 +366,8 @@ class IndexWithProvidedOrderPlanningIntegrationTest extends CypherFunSuite with 
         indexOn("A", "prop").providesOrder(orderCapability)
         cardinality = mapCardinality {
           // Force the planner to start at a
-          case RegularPlannerQuery(queryGraph, _, _, _) if queryGraph.patternNodes == Set("a") => 100.0
-          case RegularPlannerQuery(queryGraph, _, _, _) if queryGraph.patternNodes == Set("b") => 2000.0
+          case RegularPlannerQuery(queryGraph, _, _, _, _) if queryGraph.patternNodes == Set("a") => 100.0
+          case RegularPlannerQuery(queryGraph, _, _, _, _) if queryGraph.patternNodes == Set("b") => 2000.0
         }
       } getLogicalPlanFor s"MATCH (a:A)-[r]->(b) WHERE a.prop > 'foo' RETURN DISTINCT a.prop ORDER BY a.prop $cypherToken"
 
@@ -387,8 +387,8 @@ class IndexWithProvidedOrderPlanningIntegrationTest extends CypherFunSuite with 
         indexOn("A", "prop").providesOrder(orderCapability)
         cardinality = mapCardinality {
           // Force the planner to start at b
-          case RegularPlannerQuery(queryGraph, _, _, _) if queryGraph.patternNodes == Set("a", "b") => 100.0
-          case RegularPlannerQuery(queryGraph, _, _, _) if queryGraph.patternNodes == Set("b") => 20.0
+          case RegularPlannerQuery(queryGraph, _, _, _, _) if queryGraph.patternNodes == Set("a", "b") => 100.0
+          case RegularPlannerQuery(queryGraph, _, _, _, _) if queryGraph.patternNodes == Set("b") => 20.0
         }
       } getLogicalPlanFor s"MATCH (b) OPTIONAL MATCH (a:A)-[r]->(b) USING JOIN ON b WHERE a.prop > 'foo' RETURN a.prop ORDER BY a.prop $cypherToken"
 

@@ -97,7 +97,7 @@ class StubbedLogicalPlanningConfiguration(val parent: LogicalPlanningConfigurati
             semanticTable.resolvedLabelNames(name) -> cardinality
         }
         val labelScanCardinality: PartialFunction[PlannerQuery, Cardinality] = {
-          case RegularPlannerQuery(queryGraph, _, _, _) if queryGraph.patternNodes.size == 1 &&
+          case RegularPlannerQuery(queryGraph, _, _, _, _) if queryGraph.patternNodes.size == 1 &&
             computeOptionCardinality(queryGraph, semanticTable, labelIdCardinality).isDefined =>
             computeOptionCardinality(queryGraph, semanticTable, labelIdCardinality).get
         }

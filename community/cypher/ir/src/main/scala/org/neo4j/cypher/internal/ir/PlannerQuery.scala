@@ -31,6 +31,11 @@ import scala.util.hashing.MurmurHash3
   * A linked list of queries, each made up of, a query graph (MATCH ... WHERE ...), a required order, a horizon (WITH ...) and a pointer to the next query.
   */
 trait PlannerQuery {
+
+  /**
+    * Optionally, an input to the query provided using INPUT DATA STREAM. These are the column names provided by IDS.
+    */
+  val queryInput: Option[Set[String]]
   /**
     * The part of query from a MATCH/MERGE/CREATE until (excluding) the next WITH/RETURN.
     */
@@ -64,6 +69,9 @@ trait PlannerQuery {
     case None => copy(tail = Some(newTail))
     case Some(_) => throw new InternalException("Attempt to set a second tail on a query graph")
   }
+  
+  def withInput(queryInput: Set[String]) =
+    copy(input = Some(queryInput), queryGraph = queryGraph.copy(argumentIds = queryGraph.argumentIds ++ queryInput))
 
   def withoutHints(hintsToIgnore: GenSeq[Hint]): PlannerQuery = {
     copy(queryGraph = queryGraph.withoutHints(hintsToIgnore), tail = tail.map(x => x.withoutHints(hintsToIgnore)))
@@ -140,7 +148,8 @@ trait PlannerQuery {
           horizon = a ++ b,
           interestingOrder = interestingOrder,
           queryGraph = queryGraph ++ other.queryGraph,
-          tail = either(tail, other.tail)
+          tail = either(tail, other.tail),
+          queryInput = either(queryInput, other.queryInput)
         )
 
       case _ =>
@@ -158,7 +167,8 @@ trait PlannerQuery {
   protected def copy(queryGraph: QueryGraph = queryGraph,
                      interestingOrder: InterestingOrder = interestingOrder,
                      horizon: QueryHorizon = horizon,
-                     tail: Option[PlannerQuery] = tail): PlannerQuery
+                     tail: Option[PlannerQuery] = tail,
+                     input: Option[Set[String]] = None): PlannerQuery
 
   def foldMap(f: (PlannerQuery, PlannerQuery) => PlannerQuery): PlannerQuery = tail match {
     case None => this
@@ -222,14 +232,16 @@ object PlannerQuery {
 case class RegularPlannerQuery(queryGraph: QueryGraph = QueryGraph.empty,
                                interestingOrder: InterestingOrder = InterestingOrder.empty,
                                horizon: QueryHorizon = QueryProjection.empty,
-                               tail: Option[PlannerQuery] = None) extends PlannerQuery {
+                               tail: Option[PlannerQuery] = None,
+                               queryInput: Option[Set[String]] = None) extends PlannerQuery {
 
   // This is here to stop usage of copy from the outside
   override protected def copy(queryGraph: QueryGraph = queryGraph,
                               interestingOrder: InterestingOrder = interestingOrder,
                               horizon: QueryHorizon = horizon,
-                              tail: Option[PlannerQuery] = tail) =
-    RegularPlannerQuery(queryGraph, interestingOrder, horizon, tail)
+                              tail: Option[PlannerQuery] = tail,
+                              queryInput: Option[Set[String]] = queryInput) =
+    RegularPlannerQuery(queryGraph, interestingOrder, horizon, tail, queryInput)
 
   override def dependencies: Set[String] = horizon.dependencies ++ queryGraph.dependencies ++ tail.map(_.dependencies).getOrElse(Set.empty)
 
@@ -238,6 +250,7 @@ case class RegularPlannerQuery(queryGraph: QueryGraph = QueryGraph.empty,
   override def equals(other: Any): Boolean = other match {
     case that: RegularPlannerQuery =>
       (that canEqual this) &&
+        queryInput == that.queryInput &&
         queryGraph == that.queryGraph &&
         horizon == that.horizon &&
         tail == that.tail &&
@@ -249,7 +262,7 @@ case class RegularPlannerQuery(queryGraph: QueryGraph = QueryGraph.empty,
 
   override def hashCode(): Int = {
     if (theHashCode == -1) {
-      val state = Seq(queryGraph, horizon, tail, interestingOrder.requiredOrderCandidate.order)
+      val state = Seq(queryInput, queryGraph, horizon, tail, interestingOrder.requiredOrderCandidate.order)
       theHashCode = MurmurHash3.seqHash(state)
     }
     theHashCode

@@ -106,7 +106,7 @@ case class InterpretedPipeMapper(readOnly: Boolean,
                                   buildExpression(valueExpr), indexOrder)(id = id)
 
       case Input(nodes, variables, _) =>
-        InputPipe(nodes ++ variables)(id = id)
+        InputPipe(nodes.toArray ++ variables)(id = id)
     }
   }
 

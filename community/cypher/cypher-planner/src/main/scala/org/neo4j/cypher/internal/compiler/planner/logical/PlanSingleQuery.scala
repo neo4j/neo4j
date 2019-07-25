@@ -52,7 +52,15 @@ case class PlanSingleQuery(planPart: PartPlanner = planPart,
           val (planWithUpdates, contextAfterUpdates) = planUpdates(in, partPlan, firstPlannerQuery = true, updatedContext)
           val projectedPlan = planEventHorizon(in, planWithUpdates, contextAfterUpdates)
           val projectedContext = contextAfterUpdates.withUpdatedCardinalityInformation(projectedPlan)
-          (projectedPlan, projectedContext)
+
+          in.queryInput match {
+            case Some(variables) =>
+              val planWithInput = context.logicalPlanProducer.planInput(variables, projectedContext)
+              val finalPlan = projectedContext.logicalPlanProducer.planInputApply(planWithInput, projectedPlan, variables, projectedContext)
+              (finalPlan, projectedContext)
+            case None =>
+              (projectedPlan, projectedContext)
+          }
       }
 
     val (finalPlan, finalContext) = planWithTail(completePlan, in, ctx, idGen)

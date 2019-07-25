@@ -113,6 +113,13 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, planningAttri
     annotate(Apply(left, right), solved, providedOrder, context)
   }
 
+  def planInputApply(left: LogicalPlan, right: LogicalPlan, symbols: Set[String], context: LogicalPlanningContext): LogicalPlan = {
+    val solved = solveds.get(right.id).withInput(symbols)
+    // If the LHS has duplicate values, we cannot guarantee any added order from the RHS
+    val providedOrder = providedOrders.get(left.id)
+    annotate(Apply(left, right), solved, providedOrder, context)
+  }
+
   def planCartesianProduct(left: LogicalPlan, right: LogicalPlan, context: LogicalPlanningContext): LogicalPlan = {
     val solved: PlannerQuery = solveds.get(left.id) ++ solveds.get(right.id)
     // If the LHS has duplicate values, we cannot guarantee any added order from the RHS
@@ -612,6 +619,11 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, planningAttri
                          context.csvBufferSize), solved, providedOrders.get(rewrittenInner.id), context)
   }
 
+  def planInput(symbols: Set[String], context: LogicalPlanningContext): LogicalPlan = {
+    val solved = RegularPlannerQuery(queryInput = Some(symbols))
+    annotate(Input(symbols.toSeq), solved, ProvidedOrder.empty, context)
+  }
+  
   def planUnwind(inner: LogicalPlan, name: String, expression: Expression, interestingOrder: InterestingOrder, context: LogicalPlanningContext): LogicalPlan = {
     val solved = solveds.get(inner.id).updateTailOrSelf(_.withHorizon(UnwindProjection(name, expression)))
     val (rewrittenExpression, rewrittenInner) = PatternExpressionSolver.ForSingle.solve(inner, expression, interestingOrder, context)

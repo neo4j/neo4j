@@ -360,7 +360,7 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
       throw new IllegalArgumentException("Input must create unique variables")
     }
     nodes.foreach(node => newNode(varFor(node)))
-    appendAtCurrentIndent(LeafOperator(Input(nodes.toArray, variables.toArray, nullable)(_)))
+    appendAtCurrentIndent(LeafOperator(Input(nodes, variables, nullable)(_)))
   }
 
   def filter(predicateStrings: String*): IMPL = {

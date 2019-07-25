@@ -218,9 +218,9 @@ class CartesianProductsOrValueJoinsTest extends CypherFunSuite with LogicalPlann
     new given {
       qg = graph
       cardinality = mapCardinality {
-        case RegularPlannerQuery(queryGraph, _, _, _) if queryGraph.patternNodes == Set("a") => 1000.0
-        case RegularPlannerQuery(queryGraph, _, _, _) if queryGraph.patternNodes == Set("b") => 2000.0
-        case RegularPlannerQuery(queryGraph, _, _, _) if queryGraph.patternNodes == Set("c") => 3000.0
+        case RegularPlannerQuery(queryGraph, _, _, _, _) if queryGraph.patternNodes == Set("a") => 1000.0
+        case RegularPlannerQuery(queryGraph, _, _, _, _) if queryGraph.patternNodes == Set("b") => 2000.0
+        case RegularPlannerQuery(queryGraph, _, _, _, _) if queryGraph.patternNodes == Set("c") => 3000.0
         case _ => 100.0
       }
     }.withLogicalPlanningContext { (cfg, context) =>

@@ -60,7 +60,8 @@ case class SingleQuery(clauses: Seq[Clause])(val position: InputPosition) extend
     checkStandaloneCall chain
     checkOrder chain
     checkClauses chain
-    checkIndexHints
+    checkIndexHints chain
+    checkInputDataStream
 
   private def checkIndexHints: SemanticCheck = s => {
     val hints = clauses.collect { case m: Match => m.hints }.flatten
@@ -141,6 +142,21 @@ case class SingleQuery(clauses: Seq[Clause])(val position: InputPosition) extend
     val continuationResult = clause.semanticCheckContinuation(closingResult.state.currentScope.scope)(nextState)
     semantics.SemanticCheckResult(continuationResult.state, prevErrors ++ closingResult.errors ++ continuationResult.errors)
   }
+  
+  private def checkInputDataStream: SemanticCheck = (state: SemanticState) => {
+    val idsClauses = clauses.filter(_.isInstanceOf[InputDataStream])
+
+    idsClauses.size match {
+      case c if c > 1 => SemanticCheckResult.error(state, SemanticError("There can be only one INPUT DATA STREAM in a query", idsClauses(1).position))
+      case c if c == 1 =>
+        if (clauses.head.isInstanceOf[InputDataStream]) {
+          SemanticCheckResult.success(state)
+        } else {
+          SemanticCheckResult.error(state, SemanticError("INPUT DATA STREAM must be the first clause in a query", idsClauses.head.position))
+        }
+      case _ => SemanticCheckResult.success(state)
+    }
+  }
 
   def finalScope(scope: Scope): Scope =
     scope.children.last
@@ -165,8 +181,9 @@ sealed trait Union extends QueryPart with SemanticAnalysisTooling {
   def semanticCheck: SemanticCheck =
     checkUnionAggregation chain
     withScopedState(part.semanticCheck) chain
-    withScopedState(query.semanticCheck) chain
-    checkColumnNamesAgree
+    withScopedState(query.semanticCheck) chain 
+    checkColumnNamesAgree chain
+    checkInputDataStream
 
   def finalScope(scope: Scope): Scope =
     query.finalScope(scope.children.last)
@@ -182,6 +199,26 @@ sealed trait Union extends QueryPart with SemanticAnalysisTooling {
       Seq(SemanticError("All sub queries in an UNION must have the same column names", position))
     }
     semantics.SemanticCheckResult(state, errors)
+  }
+
+  private def checkInputDataStream: SemanticCheck = (state: SemanticState) => {
+    
+    def checkSingleQuery(query : SingleQuery, state: SemanticState) = {
+      val idsClause = query.clauses.find(_.isInstanceOf[InputDataStream])
+      if (idsClause.isEmpty) {
+        SemanticCheckResult.success(state)
+      } else {
+        SemanticCheckResult.error(state, SemanticError("INPUT DATA STREAM is not supported in UNION queries", idsClause.get.position))
+      }
+    }
+    
+    val partResult = part match {
+      case q : SingleQuery => checkSingleQuery(q, state)
+      case _ => SemanticCheckResult.success(state)
+    }
+    
+    val queryResult = checkSingleQuery(query, state)
+    SemanticCheckResult(state, partResult.errors ++ queryResult.errors)
   }
 
   private def checkUnionAggregation: SemanticCheck = (part, this) match {

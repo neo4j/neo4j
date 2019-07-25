@@ -91,6 +91,7 @@ class DefaultQueryPlannerTest extends CypherFunSuite with LogicalPlanningTestSup
     when(plannerQuery.tail).thenReturn(None)
     when(plannerQuery.allHints).thenReturn(Seq[Hint]())
     when(plannerQuery.interestingOrder).thenReturn(InterestingOrder.empty)
+    when(plannerQuery.queryInput).thenReturn(None)
 
     val lp = {
       val plan = Argument()

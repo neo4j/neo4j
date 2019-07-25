@@ -69,6 +69,14 @@ case class LoadCSV(
   }
 }
 
+case class InputDataStream(variables: Seq[Variable])(val position: InputPosition) extends Clause with SemanticAnalysisTooling {
+
+  override def name: String = "INPUT DATA STREAM"
+
+  override def semanticCheck: SemanticCheck =
+    variables.foldSemanticCheck(v => declareVariable(v, types(v)))
+}
+
 sealed trait MultipleGraphClause extends Clause with SemanticAnalysisTooling {
 
   override def semanticCheck: SemanticCheck =

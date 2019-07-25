@@ -380,12 +380,12 @@ class OrderPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTe
 
   private val idpGiven = new given {
     cardinality = mapCardinality {
-      case RegularPlannerQuery(queryGraph, _, _, _) if queryGraph.patternNodes == Set("u") => 2.0
-      case RegularPlannerQuery(queryGraph, _, _, _) if queryGraph.patternNodes == Set("p") => 10.0
-      case RegularPlannerQuery(queryGraph, _, _, _) if queryGraph.patternNodes == Set("b") => 10.0
-      case RegularPlannerQuery(queryGraph, _, _, _) if queryGraph.patternNodes == Set("u", "p") => 20.0
-      case RegularPlannerQuery(queryGraph, _, _, _) if queryGraph.patternNodes == Set("p", "b") => 100.0
-      case RegularPlannerQuery(queryGraph, _, _, _) if queryGraph.patternNodes == Set("u", "p", "b") => 200.0
+      case RegularPlannerQuery(queryGraph, _, _, _, _) if queryGraph.patternNodes == Set("u") => 2.0
+      case RegularPlannerQuery(queryGraph, _, _, _, _) if queryGraph.patternNodes == Set("p") => 10.0
+      case RegularPlannerQuery(queryGraph, _, _, _, _) if queryGraph.patternNodes == Set("b") => 10.0
+      case RegularPlannerQuery(queryGraph, _, _, _, _) if queryGraph.patternNodes == Set("u", "p") => 20.0
+      case RegularPlannerQuery(queryGraph, _, _, _, _) if queryGraph.patternNodes == Set("p", "b") => 100.0
+      case RegularPlannerQuery(queryGraph, _, _, _, _) if queryGraph.patternNodes == Set("u", "p", "b") => 200.0
       case _ => throw new IllegalStateException("Unexpected PlannerQuery")
     }
   }
@@ -513,12 +513,12 @@ class OrderPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTe
         |ORDER BY u.name""".stripMargin
     val plan = new given {
       cardinality = mapCardinality {
-        case RegularPlannerQuery(queryGraph, _, _, _) if queryGraph.patternNodes == Set("u") => 10.0
-        case RegularPlannerQuery(queryGraph, _, _, _) if queryGraph.patternNodes == Set("p") => 10.0
-        case RegularPlannerQuery(queryGraph, _, _, _) if queryGraph.patternNodes == Set("b") => 10.0
-        case RegularPlannerQuery(queryGraph, _, _, _) if queryGraph.patternNodes == Set("u", "p") => 5.0
-        case RegularPlannerQuery(queryGraph, _, _, _) if queryGraph.patternNodes == Set("p", "b") => 100.0
-        case RegularPlannerQuery(queryGraph, _, _, _) if queryGraph.patternNodes == Set("u", "p", "b") => 50.0
+        case RegularPlannerQuery(queryGraph, _, _, _, _) if queryGraph.patternNodes == Set("u") => 10.0
+        case RegularPlannerQuery(queryGraph, _, _, _, _) if queryGraph.patternNodes == Set("p") => 10.0
+        case RegularPlannerQuery(queryGraph, _, _, _, _) if queryGraph.patternNodes == Set("b") => 10.0
+        case RegularPlannerQuery(queryGraph, _, _, _, _) if queryGraph.patternNodes == Set("u", "p") => 5.0
+        case RegularPlannerQuery(queryGraph, _, _, _, _) if queryGraph.patternNodes == Set("p", "b") => 100.0
+        case RegularPlannerQuery(queryGraph, _, _, _, _) if queryGraph.patternNodes == Set("u", "p", "b") => 50.0
         case _ => throw new IllegalStateException("Unexpected PlannerQuery")
       }
     }.getLogicalPlanFor(query)._2
