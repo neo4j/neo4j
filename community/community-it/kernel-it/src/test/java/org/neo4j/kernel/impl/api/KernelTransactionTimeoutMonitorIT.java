@@ -19,11 +19,10 @@
  */
 package org.neo4j.kernel.impl.api;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Timeout;
 
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
@@ -32,7 +31,6 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.internal.kernel.api.security.LoginContext;
@@ -40,66 +38,54 @@ import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.KernelTransactionHandle;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
-import org.neo4j.test.rule.DbmsRule;
-import org.neo4j.test.rule.EmbeddedDbmsRule;
+import org.neo4j.kernel.internal.GraphDatabaseAPI;
+import org.neo4j.test.TestDatabaseManagementServiceBuilder;
+import org.neo4j.test.extension.DbmsExtension;
+import org.neo4j.test.extension.ExtensionCallback;
+import org.neo4j.test.extension.Inject;
 import org.neo4j.util.concurrent.BinaryLatch;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.hasSize;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.neo4j.configuration.GraphDatabaseSettings.lock_manager;
+import static org.neo4j.configuration.GraphDatabaseSettings.transaction_monitor_check_interval;
 import static org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo.EMBEDDED_CONNECTION;
 
+@DbmsExtension( configurationCallback = "configure" )
 public class KernelTransactionTimeoutMonitorIT
 {
-    @Rule
-    public DbmsRule database = createDatabaseRule();
-
-    @Rule
-    public ExpectedException expectedException = ExpectedException.none();
+    @Inject
+    private GraphDatabaseAPI database;
 
     private static final int NODE_ID = 0;
     private ExecutorService executor;
 
-    protected DbmsRule createDatabaseRule()
+    @ExtensionCallback
+    protected void configure( TestDatabaseManagementServiceBuilder builder )
     {
-        return new EmbeddedDbmsRule()
-                .withSetting( GraphDatabaseSettings.transaction_monitor_check_interval, "100ms" );
+        builder.setConfig( lock_manager, "community" );
+        builder.setConfig( transaction_monitor_check_interval, "100ms" );
     }
 
-    @Before
-    public void setUp()
+    @BeforeEach
+    void setUp()
     {
         executor = Executors.newSingleThreadExecutor();
     }
 
-    @After
-    public void tearDown()
+    @AfterEach
+    void tearDown()
     {
         executor.shutdown();
     }
 
-    @Test( timeout = 30_000 )
-    public void terminateExpiredTransaction() throws Exception
-    {
-        try ( Transaction transaction = database.beginTx() )
-        {
-            database.createNode();
-            transaction.success();
-        }
-
-        expectedException.expectMessage( "The transaction has been terminated." );
-
-        try ( Transaction transaction = database.beginTx() )
-        {
-            Node nodeById = database.getNodeById( NODE_ID );
-            nodeById.setProperty( "a", "b" );
-            executor.submit( startAnotherTransaction() ).get();
-        }
-    }
-
-    @Test( timeout = 30_000 )
-    public void terminatingTransactionMustEagerlyReleaseTheirLocks() throws Exception
+    @Test
+    @Timeout( 30 )
+    void terminatingTransactionMustEagerlyReleaseTheirLocks() throws Exception
     {
         AtomicBoolean nodeLockAcquired = new AtomicBoolean();
         AtomicBoolean lockerDone = new AtomicBoolean();
@@ -145,10 +131,32 @@ public class KernelTransactionTimeoutMonitorIT
         assertTrue( lockerDone.get() );
     }
 
+    @Timeout( 30 )
+    @Test
+    void terminateExpiredTransaction() throws Exception
+    {
+        try ( Transaction transaction = database.beginTx() )
+        {
+            database.createNode();
+            transaction.success();
+        }
+
+        Exception exception = assertThrows( Exception.class, () ->
+        {
+            try ( Transaction transaction = database.beginTx() )
+            {
+                Node nodeById = database.getNodeById( NODE_ID );
+                nodeById.setProperty( "a", "b" );
+                executor.submit( startAnotherTransaction() ).get();
+            }
+        } );
+        assertThat( exception.getMessage(), containsString( "The transaction has been terminated." ) );
+    }
+
     private void terminateOngoingTransaction()
     {
         Set<KernelTransactionHandle> kernelTransactionHandles =
-                database.resolveDependency( KernelTransactions.class ).activeTransactions();
+                database.getDependencyResolver().resolveDependency( KernelTransactions.class ).activeTransactions();
         assertThat( kernelTransactionHandles, hasSize( 1 ) );
         for ( KernelTransactionHandle kernelTransactionHandle : kernelTransactionHandles )
         {
