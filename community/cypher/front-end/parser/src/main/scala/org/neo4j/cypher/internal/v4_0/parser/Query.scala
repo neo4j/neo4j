@@ -21,6 +21,7 @@ import org.parboiled.scala._
 
 trait Query extends Parser
   with Clauses
+  with SubQueries
   with Base {
 
   def Query: Rule1[ast.Query] = (
@@ -61,7 +62,8 @@ trait Query extends Parser
       | With
       | Call
       | Return
-    )
+      | SubQuery
+  )
 
   def Union: ReductionRule1[ast.QueryPart, ast.QueryPart] = rule("UNION")(
     keyword("UNION ALL") ~>> position ~~ SingleQuery ~~> ((q: ast.QueryPart, p, sq) => ast.UnionAll(q, sq)(p))

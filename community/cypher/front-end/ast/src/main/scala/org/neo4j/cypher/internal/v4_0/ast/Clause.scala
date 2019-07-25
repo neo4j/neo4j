@@ -794,6 +794,10 @@ case class Return(distinct: Boolean,
   override def withReturnItems(items: Seq[ReturnItem]): Return =
     this.copy(returnItems = ReturnItems(returnItems.includeExisting, items)(returnItems.position))(this.position)
 
+  def withReturnItems(returnItems: ReturnItemsDef): Return =
+    this.copy(returnItems = returnItems)(this.position)
+
+
   private def checkVariableScope: SemanticState => Seq[SemanticError] = s =>
     returnItems match {
       case ReturnItems(star, _) if star && s.currentScope.isEmpty =>
@@ -801,4 +805,38 @@ case class Return(distinct: Boolean,
       case _ =>
         Seq.empty
     }
+}
+
+trait SubQueryClause extends HorizonClause with SemanticAnalysisTooling {
+  override def semanticCheck: SemanticCheck =
+    super.semanticCheck chain
+      requireFeatureSupport(s"The `$name {...}` clause", SemanticFeature.SubQueries, position)
+}
+
+case class SubQuery(sq: SingleQuery)(val position: InputPosition) extends SubQueryClause with SemanticAnalysisTooling {
+
+  override def name: String = "CALL"
+
+  override def semanticCheck: SemanticCheck =
+    super.semanticCheck chain
+      checkSubquery
+
+  def checkSubquery: SemanticCheck = { s: SemanticState =>
+    // Uncorrelated subquery
+    // - The subquery should not see the outer scope
+    // - Returned variables are added to outer scope
+    val input: Scope = s.currentScope.scope
+    val branch: SemanticState = s.newSiblingScope
+    val result: SemanticCheckResult = sq.semanticCheck(branch)
+    val output: Scope = sq.finalScope(result.state.currentScope.scope)
+    val merged: SemanticState =
+      result.state.newSiblingScope
+        .importValuesFromScope(input)
+        .importValuesFromScope(output)
+    result.copy(state = merged)
+  }
+
+  override def semanticCheckContinuation(previousScope: Scope): SemanticCheck = { s =>
+    SemanticCheckResult(s.importValuesFromScope(previousScope), Vector())
+  }
 }

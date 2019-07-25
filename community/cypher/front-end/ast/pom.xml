@@ -84,6 +84,13 @@
         <!-- scala -->
 
         <dependency>
+            <groupId>com.lihaoyi</groupId>
+            <artifactId>sourcecode_${scala.binary.version}</artifactId>
+            <version>0.1.5</version>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
             <groupId>org.scalacheck</groupId>
             <artifactId>scalacheck_${scala.binary.version}</artifactId>
         </dependency>

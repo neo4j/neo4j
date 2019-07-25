@@ -101,6 +101,13 @@
 
     <!-- scala -->
 
+        <dependency>
+            <groupId>com.lihaoyi</groupId>
+            <artifactId>sourcecode_${scala.binary.version}</artifactId>
+            <version>0.1.5</version>
+            <scope>test</scope>
+        </dependency>
+
     </dependencies>
 
 </project>
