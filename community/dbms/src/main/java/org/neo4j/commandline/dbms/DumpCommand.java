@@ -87,7 +87,7 @@ class DumpCommand extends AbstractCommand
         }
         catch ( IllegalArgumentException e )
         {
-            throw new CommandFailedException( "database does not exist: " + database, e );
+            throw new CommandFailedException( "Database does not exist: " + database, e );
         }
 
         try ( Closeable ignored = StoreLockChecker.check( databaseLayout.getStoreLayout() ) )
@@ -97,7 +97,7 @@ class DumpCommand extends AbstractCommand
         }
         catch ( StoreLockException e )
         {
-            throw new CommandFailedException( "the database is in use -- stop Neo4j and try again", e );
+            throw new CommandFailedException( "The database is in use. Stop Neo4j and try again.", e );
         }
         catch ( IOException e )
         {
@@ -105,7 +105,7 @@ class DumpCommand extends AbstractCommand
         }
         catch ( CannotWriteException e )
         {
-            throw new CommandFailedException( "you do not have permission to dump the database -- is Neo4j running as a different user?", e );
+            throw new CommandFailedException( "You do not have permission to dump the database. Is Neo4j running as a different user?", e );
         }
     }
 
@@ -140,13 +140,13 @@ class DumpCommand extends AbstractCommand
         }
         catch ( FileAlreadyExistsException e )
         {
-            throw new CommandFailedException( "archive already exists: " + e.getMessage(), e );
+            throw new CommandFailedException( "Archive already exists: " + e.getMessage(), e );
         }
         catch ( NoSuchFileException e )
         {
             if ( Paths.get( e.getMessage() ).toAbsolutePath().equals( databasePath ) )
             {
-                throw new CommandFailedException( "database does not exist: " + database, e );
+                throw new CommandFailedException( "Database does not exist: " + database, e );
             }
             wrapIOException( e );
         }
@@ -181,6 +181,6 @@ class DumpCommand extends AbstractCommand
     private static void wrapIOException( IOException e )
     {
         throw new CommandFailedException(
-                format( "unable to dump database: %s: %s", e.getClass().getSimpleName(), e.getMessage() ), e );
+                format( "Unable to dump database: %s: %s", e.getClass().getSimpleName(), e.getMessage() ), e );
     }
 }

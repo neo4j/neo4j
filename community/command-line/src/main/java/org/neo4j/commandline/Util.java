@@ -83,7 +83,7 @@ public class Util
         }
         catch ( StoreLockException e )
         {
-            throw new CommandFailedException( "the database is in use -- stop Neo4j and try again", e );
+            throw new CommandFailedException( "The database is in use. Stop Neo4j and try again.", e );
         }
         catch ( IOException e )
         {
@@ -94,7 +94,7 @@ public class Util
     public static void wrapIOException( IOException e ) throws CommandFailedException
     {
         throw new CommandFailedException(
-                format( "unable to load database: %s: %s", e.getClass().getSimpleName(), e.getMessage() ), e );
+                format( "Unable to load database: %s: %s", e.getClass().getSimpleName(), e.getMessage() ), e );
     }
 
     /**

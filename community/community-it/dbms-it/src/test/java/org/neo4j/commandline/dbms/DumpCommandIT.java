@@ -202,7 +202,7 @@ class DumpCommandIT
             storeLocker.checkLock();
 
             CommandFailedException commandFailed = assertThrows( CommandFailedException.class, () -> execute( "foo" ) );
-            assertEquals( "the database is in use -- stop Neo4j and try again", commandFailed.getMessage() );
+            assertEquals( "The database is in use. Stop Neo4j and try again", commandFailed.getMessage() );
         }
     }
 

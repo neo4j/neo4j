@@ -232,7 +232,7 @@ class LoadCommandTest
         {
             locker.checkLock();
             CommandFailedException commandFailed = assertThrows( CommandFailedException.class, () -> executeForce( "foo" ) );
-            assertEquals( "the database is in use -- stop Neo4j and try again", commandFailed.getMessage() );
+            assertEquals( "The database is in use. Stop Neo4j and try again.", commandFailed.getMessage() );
         }
     }
 
@@ -267,7 +267,7 @@ class LoadCommandTest
     {
         doThrow( new FileSystemException( "the-message" ) ).when( loader ).load( any(), any() );
         CommandFailedException commandFailed = assertThrows( CommandFailedException.class, () -> execute( "foo", archive ) );
-        assertEquals( "unable to load database: FileSystemException: the-message", commandFailed.getMessage() );
+        assertEquals( "Unable to load database: FileSystemException: the-message", commandFailed.getMessage() );
     }
 
     @Test
