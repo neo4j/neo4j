@@ -83,32 +83,12 @@ sealed trait MultipleGraphClause extends Clause with SemanticAnalysisTooling {
     requireFeatureSupport(s"The `$name` clause", SemanticFeature.MultipleGraphs, position)
 }
 
-trait FromGraph extends MultipleGraphClause {
+final case class FromGraph(expression: Expression)(val position: InputPosition) extends MultipleGraphClause {
 
   override def name = "FROM GRAPH"
 
-}
-
-final case class GraphByParameter(parameter: Parameter)(val position: InputPosition) extends FromGraph {
-
   override def semanticCheck: SemanticCheck =
     super.semanticCheck chain
-      SemanticState.recordCurrentScope(this)
-
-}
-
-final case class GraphLookup(graphName: CatalogName)(val position: InputPosition) extends FromGraph {
-
-  override def semanticCheck: SemanticCheck =
-    super.semanticCheck chain SemanticState.recordCurrentScope(this)
-}
-
-final case class ViewInvocation(graphName: CatalogName, params: Seq[FromGraph])
-  (val position: InputPosition) extends FromGraph {
-
-  override def semanticCheck: SemanticCheck =
-    super.semanticCheck chain
-      params.semanticCheck chain
       SemanticState.recordCurrentScope(this)
 }
 

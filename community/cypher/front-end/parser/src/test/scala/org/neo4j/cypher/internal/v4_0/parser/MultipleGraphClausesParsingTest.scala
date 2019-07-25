@@ -17,6 +17,7 @@
 package org.neo4j.cypher.internal.v4_0.parser
 
 import org.neo4j.cypher.internal.v4_0.ast.{AstConstructionTestSupport, Clause}
+import org.neo4j.cypher.internal.v4_0.util.{symbols => sym}
 import org.neo4j.cypher.internal.v4_0.{ast, expressions => exp}
 import org.parboiled.scala._
 
@@ -24,14 +25,14 @@ import scala.language.implicitConversions
 
 class MultipleGraphClausesParsingTest
   extends ParserAstTest[ast.Clause]
-  with Query
-  with Expressions
-  with AstConstructionTestSupport {
+    with Query
+    with Expressions
+    with AstConstructionTestSupport {
 
   implicit val parser: Rule1[Clause] = Clause
 
-  val fooBarGraph = ast.CatalogName(List("foo", "bar"))
-  val fooDiffGraph = ast.CatalogName(List("foo", "diff"))
+  val fooBarGraph = exp.Property(exp.Variable("foo")(pos), exp.PropertyKeyName("bar")(pos))(pos)
+  val fooDiffGraph = exp.Property(exp.Variable("foo")(pos), exp.PropertyKeyName("diff")(pos))(pos)
 
   test("CONSTRUCT CREATE ()") {
     val pattern = nodePattern(None, List(), None)
@@ -201,86 +202,119 @@ class MultipleGraphClausesParsingTest
 
   // TODO: Causes parser to fail with its unhelpful error message
   ignore("FROM graph") {
-    yields(ast.GraphLookup(ast.CatalogName(List("graph"))))
+    yields(ast.FromGraph(exp.Variable("graph")(pos)))
   }
 
   test("FROM GRAPH foo.bar") {
-    yields(ast.GraphLookup(fooBarGraph))
+    yields(ast.FromGraph(fooBarGraph))
   }
 
   test("FROM GRAPH foo()") {
-    yields(ast.ViewInvocation(ast.CatalogName("foo"), Seq.empty))
+    yields(ast.FromGraph(exp.FunctionInvocation(exp.Namespace()(pos), exp.FunctionName("foo")(pos), false, IndexedSeq())(pos)))
   }
 
   test("FROM GRAPH foo   (    )") {
-    yields(ast.ViewInvocation(ast.CatalogName("foo"), Seq.empty))
+    yields(ast.FromGraph(exp.FunctionInvocation(exp.Namespace()(pos), exp.FunctionName("foo")(pos), false, IndexedSeq())(pos)))
   }
 
   test("FROM GRAPH foo.bar(baz(grok))") {
-    yields(ast.ViewInvocation(fooBarGraph,
-      Seq(ast.ViewInvocation(ast.CatalogName("baz"), Seq(ast.GraphLookup(ast.CatalogName("grok"))(pos)))(pos))))
+    yields(ast.FromGraph(
+      exp.FunctionInvocation(exp.Namespace(List("foo"))(pos), exp.FunctionName("bar")(pos), false, IndexedSeq(
+        exp.FunctionInvocation(exp.Namespace()(pos), exp.FunctionName("baz")(pos), false, IndexedSeq(
+          exp.Variable("grok")(pos)
+        ))(pos)
+      ))(pos)
+    ))
   }
 
   test("FROM GRAPH foo. bar   (baz  (grok   )  )") {
-    yields(ast.ViewInvocation(fooBarGraph,
-      Seq(ast.ViewInvocation(ast.CatalogName("baz"), Seq(ast.GraphLookup(ast.CatalogName("grok"))(pos)))(pos))))
+    yields(ast.FromGraph(
+      exp.FunctionInvocation(exp.Namespace(List("foo"))(pos), exp.FunctionName("bar")(pos), false, IndexedSeq(
+        exp.FunctionInvocation(exp.Namespace()(pos), exp.FunctionName("baz")(pos), false, IndexedSeq(
+          exp.Variable("grok")(pos)
+        ))(pos)
+      ))(pos)
+    ))
   }
 
   test("FROM GRAPH foo.bar(baz(grok), another.name)") {
-    yields(ast.ViewInvocation(fooBarGraph, Seq(ast.ViewInvocation(ast.CatalogName("baz"),
-        Seq(ast.GraphLookup(ast.CatalogName("grok"))(pos)))(pos), ast.GraphLookup(ast.CatalogName("another", "name"))(pos))))
+    yields(ast.FromGraph(
+      exp.FunctionInvocation(exp.Namespace(List("foo"))(pos), exp.FunctionName("bar")(pos), false, IndexedSeq(
+        exp.FunctionInvocation(exp.Namespace()(pos), exp.FunctionName("baz")(pos), false, IndexedSeq(
+          exp.Variable("grok")(pos)
+        ))(pos),
+        exp.Property(exp.Variable("another")(pos), exp.PropertyKeyName("name")(pos))(pos)
+      ))(pos)
+    ))
   }
 
   test("FROM foo.bar(baz(grok), another.name)") {
-    yields(ast.ViewInvocation(fooBarGraph, Seq(ast.ViewInvocation(ast.CatalogName("baz"),
-      Seq(ast.GraphLookup(ast.CatalogName("grok"))(pos)))(pos), ast.GraphLookup(ast.CatalogName("another", "name"))(pos))))
+    yields(ast.FromGraph(
+      exp.FunctionInvocation(exp.Namespace(List("foo"))(pos), exp.FunctionName("bar")(pos), false, IndexedSeq(
+        exp.FunctionInvocation(exp.Namespace()(pos), exp.FunctionName("baz")(pos), false, IndexedSeq(
+          exp.Variable("grok")(pos)
+        ))(pos),
+        exp.Property(exp.Variable("another")(pos), exp.PropertyKeyName("name")(pos))(pos)
+      ))(pos)
+    ))
+  }
+
+  test("FROM foo.bar(1, $par)") {
+    yields(ast.FromGraph(
+      exp.FunctionInvocation(exp.Namespace(List("foo"))(pos), exp.FunctionName("bar")(pos), false, IndexedSeq(
+        exp.SignedDecimalIntegerLiteral("1")(pos),
+        exp.Parameter("par", sym.CTAny)(pos)
+      ))(pos)
+    ))
+  }
+
+  test("FROM a + b") {
+    yields(ast.FromGraph(
+      exp.Add(exp.Variable("a")(pos), exp.Variable("b")(pos))(pos)
+    ))
   }
 
   test("FROM GRAPH graph") {
-    yields(ast.GraphLookup(ast.CatalogName(List("graph"))))
+    yields(ast.FromGraph(exp.Variable("graph")(pos)))
   }
 
   test("FROM `graph`") {
-    yields(ast.GraphLookup(ast.CatalogName(List("graph"))))
+    yields(ast.FromGraph(exp.Variable("graph")(pos)))
   }
 
-  test("FROM GRAPH `foo.bar.baz.baz`"){
-    yields(ast.GraphLookup(ast.CatalogName(List("foo.bar.baz.baz"))))
+  test("FROM graph1") {
+    yields(ast.FromGraph(exp.Variable("graph1")(pos)))
   }
 
-  test("FROM graph1"){
-    yields(ast.GraphLookup(ast.CatalogName(List("graph1"))))
+  test("FROM `foo.bar.baz.baz`") {
+    yields(ast.FromGraph(exp.Variable("foo.bar.baz.baz")(pos)))
   }
 
-  test("FROM `foo.bar.baz.baz`"){
-    yields(ast.GraphLookup(ast.CatalogName(List("foo.bar.baz.baz"))))
+  test("FROM GRAPH `foo.bar`.baz") {
+    yields(ast.FromGraph(exp.Property(exp.Variable("foo.bar")(pos), exp.PropertyKeyName("baz")(pos))(pos)))
   }
 
-  test("FROM GRAPH `foo.bar`.baz"){
-    yields(ast.GraphLookup(ast.CatalogName(List("foo.bar", "baz"))))
+  test("FROM GRAPH foo.`bar.baz`") {
+    yields(ast.FromGraph(exp.Property(exp.Variable("foo")(pos), exp.PropertyKeyName("bar.baz")(pos))(pos)))
   }
 
-  test("FROM GRAPH foo.`bar.baz`"){
-    yields(ast.GraphLookup(ast.CatalogName(List("foo", "bar.baz"))))
+  test("FROM GRAPH `foo.bar`.`baz.baz`") {
+    yields(ast.FromGraph(exp.Property(exp.Variable("foo.bar")(pos), exp.PropertyKeyName("baz.baz")(pos))(pos)))
   }
 
-  test("FROM GRAPH `foo.bar`.`baz.baz`"){
-    yields(ast.GraphLookup(ast.CatalogName(List("foo.bar", "baz.baz"))))
-  }
-
-  test("CONSTRUCT ON `foo.bar.baz.baz`"){
+  test("CONSTRUCT ON `foo.bar.baz.baz`") {
     yields(ast.ConstructGraph(List.empty, List.empty, List(ast.CatalogName(List("foo.bar.baz.baz")))))
   }
 
-  test("CONSTRUCT ON `foo.bar`.baz"){
+  test("CONSTRUCT ON `foo.bar`.baz") {
     yields(ast.ConstructGraph(List.empty, List.empty, List(ast.CatalogName(List("foo.bar", "baz")))))
   }
 
-  test("CONSTRUCT ON foo.`bar.baz`"){
+  test("CONSTRUCT ON foo.`bar.baz`") {
     yields(ast.ConstructGraph(List.empty, List.empty, List(ast.CatalogName(List("foo", "bar.baz")))))
   }
 
-  test("CONSTRUCT ON `foo.bar`.`baz.baz`"){
+  test("CONSTRUCT ON `foo.bar`.`baz.baz`") {
     yields(ast.ConstructGraph(List.empty, List.empty, List(ast.CatalogName(List("foo.bar", "baz.baz")))))
   }
 
