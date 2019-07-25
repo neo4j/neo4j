@@ -805,7 +805,7 @@ public class Config implements Configuration
         @Override
         public String toString()
         {
-            return value + (isDefault ? " (default)" : " (configured)");
+            return setting.valueToString( value ) + (isDefault ? " (default)" : " (configured)");
         }
     }
 
