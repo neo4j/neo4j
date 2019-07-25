@@ -105,7 +105,7 @@ public class FulltextIndexProviderFactory extends KernelExtensionFactory<Fulltex
             String message = "Fulltext indexes failed to register as transaction state providers. This means that, if queried, they will not be able to " +
                     "uncommitted transactional changes into account. This is fine if the indexes are opened for non-transactional work, such as for " +
                     "consistency checking. The reason given is: " + e.getMessage();
-            logDependencyException( context, log.debugLogger(), log.errorLogger(), message );
+            logDependencyException( context, log.errorLogger(), message );
             auxiliaryTransactionStateManager = new NullAuxiliaryTransactionStateManager();
         }
 
@@ -125,25 +125,23 @@ public class FulltextIndexProviderFactory extends KernelExtensionFactory<Fulltex
             String message = procedureRegistrationFailureMessage + e.getUserMessage( new NonTransactionalTokenNameLookup( tokenHolders ) );
             // We use the 'warn' logger in this case, because it can occur due to multi-database shenanigans, or due to internal restarts in HA.
             // These scenarios are less serious, and will _probably_ not prevent FTS from working. Hence we only warn about this.
-            logDependencyException( context, log.debugLogger(), log.warnLogger(), message );
+            logDependencyException( context, log.warnLogger(), message );
         }
         catch ( UnsatisfiedDependencyException e )
         {
             String message = procedureRegistrationFailureMessage + e.getMessage();
-            logDependencyException( context, log.debugLogger(), log.errorLogger(), message );
+            logDependencyException( context, log.errorLogger(), message );
         }
 
         return provider;
     }
 
-    private void logDependencyException( KernelContext context, Logger toolLog, Logger dbmsLog, String message )
+    private void logDependencyException( KernelContext context, Logger dbmsLog, String message )
     {
         // We can for instance get unsatisfied dependency exceptions when the kernel extension is created as part of a consistency check run.
-        if ( context.databaseInfo() == DatabaseInfo.TOOL )
-        {
-            toolLog.log( message );
-        }
-        else
+        // In such cases, we will be running in a TOOL context, and we ignore such exceptions since they are harmless.
+        // Tools only read, and don't run queries, so there is no need for these advanced pieces of infrastructure.
+        if ( context.databaseInfo() != DatabaseInfo.TOOL )
         {
             // If we are not in a "TOOL" context, then we log this at the "DBMS" level, since it might be important for correctness.
             dbmsLog.log( message );
