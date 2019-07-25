@@ -20,15 +20,13 @@
 package org.neo4j.dbms.api;
 
 import java.io.File;
-import java.io.InputStream;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Properties;
-import java.util.Set;
 import java.util.function.Function;
 
 import org.neo4j.annotations.api.PublicApi;
@@ -66,7 +64,7 @@ public class DatabaseManagementServiceBuilder
     protected DependencyResolver dependencies = new Dependencies();
     protected final Map<String,URLAccessRule> urlAccessRules = new HashMap<>();
     protected File homeDirectory;
-    protected Map<String,String> config = new HashMap<>();
+    protected Config.Builder config = Config.newBuilder();
 
     public DatabaseManagementServiceBuilder( File homeDirectory )
     {
@@ -76,11 +74,8 @@ public class DatabaseManagementServiceBuilder
 
     public DatabaseManagementService build()
     {
-        Config cfg = Config.newBuilder()
-                .set( GraphDatabaseSettings.neo4j_home, homeDirectory.toPath().toAbsolutePath() )
-                .setRaw( config )
-                .build();
-        return newDatabaseManagementService( homeDirectory, cfg, databaseDependencies() );
+        config.set( GraphDatabaseSettings.neo4j_home, homeDirectory.toPath().toAbsolutePath() );
+        return newDatabaseManagementService( homeDirectory, config.build(), databaseDependencies() );
     }
 
     protected DatabaseManagementService newDatabaseManagementService( File storeDir, Config config, ExternalDependencies dependencies )
@@ -155,25 +150,28 @@ public class DatabaseManagementServiceBuilder
                 .databaseEventListeners( databaseEventListeners );
     }
 
-    public DatabaseManagementServiceBuilder setConfig( Setting<?> setting, String value )
+    public <T> DatabaseManagementServiceBuilder setConfig( Setting<T> setting, T value )
     {
         if ( value == null )
         {
-            config.remove( setting.name() );
+            config.remove( setting );
         }
         else
         {
-            config.put( setting.name(), value );
+            config.set( setting, value );
         }
         return this;
     }
 
-    public DatabaseManagementServiceBuilder setConfig( Map<Setting<?>,String> config )
+    public DatabaseManagementServiceBuilder setConfig( Map<Setting<?>, Object> config )
     {
-        for ( var stringStringEntry : config.entrySet() )
-        {
-            setConfig( stringStringEntry.getKey(), stringStringEntry.getValue() );
-        }
+        this.config.set( config );
+        return this;
+    }
+
+    public DatabaseManagementServiceBuilder setConfigRaw( Map<String, String> raw )
+    {
+        config.setRaw( raw );
         return this;
     }
 
@@ -191,26 +189,14 @@ public class DatabaseManagementServiceBuilder
 
     private DatabaseManagementServiceBuilder loadPropertiesFromURL( URL url ) throws IllegalArgumentException
     {
-        Properties props = new Properties();
         try
         {
-            try ( InputStream stream = url.openStream() )
-            {
-                props.load( stream );
-            }
+            config.fromFileNoThrow( Path.of( url.toURI() ) );
         }
         catch ( Exception e )
         {
             throw new IllegalArgumentException( "Unable to load " + url, e );
         }
-        Set<Map.Entry<Object,Object>> entries = props.entrySet();
-        for ( Map.Entry<Object,Object> entry : entries )
-        {
-            String key = (String) entry.getKey();
-            String value = (String) entry.getValue();
-            config.put( key, value );
-        }
-
         return this;
     }
 }

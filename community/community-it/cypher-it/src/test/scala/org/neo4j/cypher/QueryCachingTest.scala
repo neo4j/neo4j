@@ -20,6 +20,7 @@
 package org.neo4j.cypher
 
 import org.neo4j.configuration.GraphDatabaseSettings
+import org.neo4j.configuration.GraphDatabaseSettings.CypherExpressionEngine.ONLY_WHEN_HOT
 import org.neo4j.cypher.internal.QueryCache.ParameterTypeMap
 import org.neo4j.cypher.internal.StringCacheMonitor
 import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
@@ -34,8 +35,8 @@ import scala.collection.{Map, mutable}
 
 class QueryCachingTest extends CypherFunSuite with GraphDatabaseTestSupport with TableDrivenPropertyChecks {
 
-  override def databaseConfig(): Map[Setting[_], String] = Map(GraphDatabaseSettings.cypher_expression_engine -> "ONLY_WHEN_HOT",
-                                                               GraphDatabaseSettings.cypher_expression_recompilation_limit -> "1")
+  override def databaseConfig(): Map[Setting[_], Object] = Map(GraphDatabaseSettings.cypher_expression_engine -> ONLY_WHEN_HOT,
+                                                               GraphDatabaseSettings.cypher_expression_recompilation_limit -> Integer.valueOf(1))
 
   test("re-uses cached plan across different execution modes") {
     // ensure label exists

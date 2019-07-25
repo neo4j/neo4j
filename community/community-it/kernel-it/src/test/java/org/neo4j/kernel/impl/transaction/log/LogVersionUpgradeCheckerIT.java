@@ -50,8 +50,6 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.configuration.GraphDatabaseSettings.allow_upgrade;
-import static org.neo4j.configuration.SettingValueParsers.FALSE;
-import static org.neo4j.configuration.SettingValueParsers.TRUE;
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryByteCodes.CHECK_POINT;
 
@@ -74,7 +72,7 @@ class LogVersionUpgradeCheckerIT
         DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder( testDirectory.storeDir() )
                 .setFileSystem( fileSystem )
                 .impermanent()
-                .setConfig( allow_upgrade, FALSE )
+                .setConfig( allow_upgrade, false )
                 .build();
         final GraphDatabaseService db = managementService.database( DEFAULT_DATABASE_NAME );
         managementService.shutdown();
@@ -89,7 +87,7 @@ class LogVersionUpgradeCheckerIT
         DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder( testDirectory.storeDir() )
                 .setFileSystem( fileSystem )
                 .impermanent()
-                .setConfig( allow_upgrade, FALSE )
+                .setConfig( allow_upgrade, false )
                 .build();
         GraphDatabaseService db = managementService.database( DEFAULT_DATABASE_NAME );
         var databaseIdRepository = new TestDatabaseIdRepository();
@@ -115,7 +113,7 @@ class LogVersionUpgradeCheckerIT
         DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder( testDirectory.storeDir() )
                 .setFileSystem( fileSystem )
                 .impermanent()
-                .setConfig( allow_upgrade, TRUE )
+                .setConfig( allow_upgrade, true )
                 .build();
         final GraphDatabaseService db = managementService.database( DEFAULT_DATABASE_NAME );
         managementService.shutdown();

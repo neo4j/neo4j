@@ -80,7 +80,7 @@ class RecoveryCleanupIT
     private final ExecutorService executor = Executors.newFixedThreadPool( 2 );
     private final Label label = Label.label( "label" );
     private final String propKey = "propKey";
-    private Map<Setting<?>,String> testSpecificConfig = new HashMap<>();
+    private Map<Setting<?>,Object> testSpecificConfig = new HashMap<>();
     private DatabaseManagementService managementService;
 
     @BeforeEach
@@ -227,7 +227,7 @@ class RecoveryCleanupIT
         db = null;
     }
 
-    private void setTestConfig( Setting<?> setting, String value )
+    private <T> void setTestConfig( Setting<T> setting, T value )
     {
         testSpecificConfig.put( setting, value );
     }
@@ -278,7 +278,7 @@ class RecoveryCleanupIT
 
     private GraphDatabaseService startDatabase()
     {
-        testSpecificConfig.forEach( factory::setConfig );
+        factory.setConfig( testSpecificConfig );
         managementService = factory.build();
         return managementService.database( DEFAULT_DATABASE_NAME );
     }

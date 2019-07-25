@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.api;
 
 import org.junit.jupiter.api.Test;
 
+import java.time.Duration;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -56,7 +57,7 @@ class TransactionRepresentationCommitProcessIT
     @ExtensionCallback
     static void configure( TestDatabaseManagementServiceBuilder builder )
     {
-        builder.setConfig( GraphDatabaseSettings.check_point_interval_time, "10ms" );
+        builder.setConfig( GraphDatabaseSettings.check_point_interval_time, Duration.ofMillis( 10 ) );
     }
 
     @Test

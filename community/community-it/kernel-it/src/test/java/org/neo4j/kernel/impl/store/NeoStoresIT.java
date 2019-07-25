@@ -42,7 +42,7 @@ public class NeoStoresIT
 {
     @ClassRule
     public static final DbmsRule db = new EmbeddedDbmsRule()
-            .withSetting(  GraphDatabaseSettings.dense_node_threshold, "1");
+            .withSetting(  GraphDatabaseSettings.dense_node_threshold, 1 );
 
     private static final RelationshipType FRIEND = RelationshipType.withName( "FRIEND" );
 

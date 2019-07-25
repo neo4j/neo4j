@@ -75,7 +75,6 @@ import static org.neo4j.bolt.v1.messaging.util.MessageMatchers.msgSuccess;
 import static org.neo4j.bolt.v1.transport.integration.TransportTestUtil.ResponseMatcherOptionality.OPTIONAL;
 import static org.neo4j.bolt.v1.transport.integration.TransportTestUtil.ResponseMatcherOptionality.REQUIRED;
 import static org.neo4j.bolt.v1.transport.integration.TransportTestUtil.eventuallyDisconnects;
-import static org.neo4j.configuration.SettingValueParsers.TRUE;
 import static org.neo4j.internal.helpers.collection.MapUtil.map;
 import static org.neo4j.logging.AssertableLogProvider.inLog;
 import static org.neo4j.test.assertion.Assert.assertEventually;
@@ -96,9 +95,9 @@ public class AuthenticationIT extends AbstractBoltTransportsTest
         return new TestDatabaseManagementServiceBuilder().setUserLogProvider( logProvider );
     }
 
-    protected Consumer<Map<Setting<?>,String>> getSettingsFunction()
+    protected Consumer<Map<Setting<?>,Object>> getSettingsFunction()
     {
-        return settings -> settings.put( GraphDatabaseSettings.auth_enabled, TRUE );
+        return settings -> settings.put( GraphDatabaseSettings.auth_enabled, true );
     }
 
     private HostnamePort address;

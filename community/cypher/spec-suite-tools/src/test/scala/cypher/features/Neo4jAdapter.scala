@@ -19,9 +19,10 @@
  */
 package cypher.features
 
+import java.lang.Boolean.TRUE
+
 import cypher.features.Neo4jExceptionToExecutionFailed._
 import org.neo4j.configuration.GraphDatabaseSettings.{DEFAULT_DATABASE_NAME, cypher_hints_error}
-import org.neo4j.configuration.SettingValueParsers.TRUE
 import org.neo4j.cypher.internal.javacompat.GraphDatabaseCypherService
 import org.neo4j.dbms.api.DatabaseManagementService
 import org.neo4j.graphdb.Result.ResultVisitor
@@ -38,7 +39,7 @@ import scala.util.{Failure, Success, Try}
 
 object Neo4jAdapter {
   def apply(executionPrefix: String, graphDatabaseFactory: TestDatabaseManagementServiceBuilder,
-            dbConfig: collection.Map[Setting[_], String] = Map[Setting[_], String](cypher_hints_error -> TRUE)): Neo4jAdapter = {
+            dbConfig: collection.Map[Setting[_], Object] = Map[Setting[_], Object](cypher_hints_error -> TRUE)): Neo4jAdapter = {
     val managementService = createManagementService(dbConfig, graphDatabaseFactory)
     val service = createGraphDatabase(managementService)
     new Neo4jAdapter(managementService, service, executionPrefix)
@@ -48,7 +49,7 @@ object Neo4jAdapter {
     new GraphDatabaseCypherService(managementService.database(DEFAULT_DATABASE_NAME))
   }
 
-  private def createManagementService(config: collection.Map[Setting[_], String], graphDatabaseFactory: TestDatabaseManagementServiceBuilder) = {
+  private def createManagementService(config: collection.Map[Setting[_], Object], graphDatabaseFactory: TestDatabaseManagementServiceBuilder) = {
     graphDatabaseFactory.impermanent().setConfig(config.asJava).build()
   }
 }

@@ -71,8 +71,10 @@ public class SessionRule implements TestRule
             public void evaluate() throws Throwable
             {
                 Map<Setting<?>,String> configMap = new HashMap<>();
-                configMap.put( GraphDatabaseSettings.auth_enabled, Boolean.toString( authEnabled ) );
-                managementService = new TestDatabaseManagementServiceBuilder().impermanent().setConfig( configMap ).build();
+                managementService = new TestDatabaseManagementServiceBuilder()
+                        .impermanent()
+                        .setConfig( GraphDatabaseSettings.auth_enabled, authEnabled )
+                        .build();
                 gdb = (GraphDatabaseAPI) managementService.database( GraphDatabaseSettings.DEFAULT_DATABASE_NAME );
                 DependencyResolver resolver = gdb.getDependencyResolver();
                 Config config = gdb.getDependencyResolver().resolveDependency( Config.class );

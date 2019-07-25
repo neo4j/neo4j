@@ -75,7 +75,6 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
-import static org.neo4j.configuration.SettingValueParsers.TRUE;
 import static org.neo4j.configuration.GraphDatabaseSettings.allow_upgrade;
 import static org.neo4j.consistency.store.StoreAssertions.assertConsistentStore;
 import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.checkNeoStoreHasDefaultFormatVersion;
@@ -223,7 +222,7 @@ public class StoreUpgraderInterruptionTestIT
     private StoreUpgrader newUpgrader( StoreVersionCheck versionCheck, MigrationProgressMonitor progressMonitor, StoreMigrationParticipant... participants )
             throws IOException
     {
-        Config allowUpgrade = Config.defaults( allow_upgrade, TRUE );
+        Config allowUpgrade = Config.defaults( allow_upgrade, true );
 
         VersionAwareLogEntryReader<ReadableClosablePositionAwareChannel> logEntryReader = new VersionAwareLogEntryReader<>();
         LogFiles logFiles = LogFilesBuilder.logFilesBasedOnlyBuilder( workingDatabaseLayout.databaseDirectory(), fs ).build();
@@ -239,7 +238,7 @@ public class StoreUpgraderInterruptionTestIT
 
     private static void startStopDatabase( File storeDir )
     {
-        DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder( storeDir ).setConfig( allow_upgrade, TRUE ).build();
+        DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder( storeDir ).setConfig( allow_upgrade, true ).build();
         managementService.database( DEFAULT_DATABASE_NAME );
         managementService.shutdown();
     }

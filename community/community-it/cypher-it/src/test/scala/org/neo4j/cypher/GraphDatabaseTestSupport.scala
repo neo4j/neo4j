@@ -52,7 +52,7 @@ trait GraphDatabaseTestSupport extends CypherTestSupport with GraphIcing {
   var managementService: DatabaseManagementService = _
   var nodes: List[Node] = _
 
-  def databaseConfig(): Map[Setting[_],String] = Map()
+  def databaseConfig(): Map[Setting[_],Object] = Map()
 
   def logProvider: LogProvider = NullLogProvider.getInstance()
 
@@ -61,7 +61,7 @@ trait GraphDatabaseTestSupport extends CypherTestSupport with GraphIcing {
     startGraphDatabase()
   }
 
-  protected def startGraphDatabase(config: Map[Setting[_], String] = databaseConfig()): Unit = {
+  protected def startGraphDatabase(config: Map[Setting[_], Object] = databaseConfig()): Unit = {
     managementService = graphDatabaseFactory(Files.createTempDirectory("test").getParent.toFile).impermanent().setConfig(config.asJava).setInternalLogProvider(logProvider).build()
     graphOps = managementService.database(DEFAULT_DATABASE_NAME)
     graph = new GraphDatabaseCypherService(graphOps)
@@ -88,7 +88,7 @@ trait GraphDatabaseTestSupport extends CypherTestSupport with GraphIcing {
 
   protected def createDatabaseFactory(databaseRootDir: File): TestDatabaseManagementServiceBuilder = new TestDatabaseManagementServiceBuilder(databaseRootDir)
 
-  protected def restartWithConfig(config: Map[Setting[_], String] = databaseConfig()): Unit = {
+  protected def restartWithConfig(config: Map[Setting[_], Object] = databaseConfig()): Unit = {
     managementService.shutdown()
     startGraphDatabase(config)
   }

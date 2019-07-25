@@ -23,8 +23,8 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.io.File;
+import java.nio.file.Path;
 import java.util.List;
-import java.util.Map;
 
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
@@ -39,8 +39,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.neo4j.configuration.SettingValueParsers.TRUE;
-import static org.neo4j.internal.helpers.collection.MapUtil.stringMap;
 
 @ExtendWith( TestDirectoryExtension.class )
 class PemSslPolicyConfigTest
@@ -52,16 +50,14 @@ class PemSslPolicyConfigTest
     void shouldFindPolicyDefaults()
     {
         // given
-        Map<String,String> params = stringMap();
-
         String policyName = "XYZ";
         PemSslPolicyConfig policyConfig = PemSslPolicyConfig.group( policyName );
 
         File homeDir = testDirectory.directory( "home" );
-
-        params.put( GraphDatabaseSettings.neo4j_home.name(), homeDir.getAbsolutePath() );
-        params.put( policyConfig.base_directory.name(), "certificates/XYZ" );
-        Config config = Config.defaults( params );
+        Config config = Config.newBuilder()
+                .set( GraphDatabaseSettings.neo4j_home, homeDir.toPath().toAbsolutePath() )
+                .set( policyConfig.base_directory, Path.of( "certificates/XYZ" ) )
+                .build();
 
         // derived defaults
         File privateKey = new File( homeDir, "certificates/XYZ/private.key" );
@@ -98,35 +94,35 @@ class PemSslPolicyConfigTest
     void shouldFindPolicyOverrides()
     {
         // given
-        Map<String,String> params = stringMap();
+        Config.Builder builder = Config.newBuilder();
 
         String policyName = "XYZ";
         PemSslPolicyConfig policyConfig = PemSslPolicyConfig.group( policyName );
 
         File homeDir = testDirectory.directory( "home" );
 
-        params.put( GraphDatabaseSettings.neo4j_home.name(), homeDir.getAbsolutePath() );
-        params.put( policyConfig.base_directory.name(), "certificates/XYZ" );
+        builder.set( GraphDatabaseSettings.neo4j_home, homeDir.toPath().toAbsolutePath() );
+        builder.set( policyConfig.base_directory, Path.of( "certificates/XYZ" ) );
 
         File privateKey = testDirectory.directory( "/path/to/my.key" );
         File publicCertificate = testDirectory.directory( "/path/to/my.crt" );
         File trustedDir = testDirectory.directory( "/some/other/path/to/trusted" );
         File revokedDir = testDirectory.directory( "/some/other/path/to/revoked" );
 
-        params.put( policyConfig.private_key.name(), privateKey.getAbsolutePath() );
-        params.put( policyConfig.public_certificate.name(), publicCertificate.getAbsolutePath() );
-        params.put( policyConfig.trusted_dir.name(), trustedDir.getAbsolutePath() );
-        params.put( policyConfig.revoked_dir.name(), revokedDir.getAbsolutePath() );
+        builder.set( policyConfig.private_key, privateKey.toPath().toAbsolutePath() );
+        builder.set( policyConfig.public_certificate, publicCertificate.toPath().toAbsolutePath() );
+        builder.set( policyConfig.trusted_dir, trustedDir.toPath().toAbsolutePath() );
+        builder.set( policyConfig.revoked_dir, revokedDir.toPath().toAbsolutePath() );
 
-        params.put( policyConfig.allow_key_generation.name(), TRUE );
-        params.put( policyConfig.trust_all.name(), TRUE );
+        builder.set( policyConfig.allow_key_generation, true );
+        builder.set( policyConfig.trust_all, true );
 
-        params.put( policyConfig.private_key_password.name(), "setecastronomy" );
-        params.put( policyConfig.tls_versions.name(), "TLSv1.1,TLSv1.2" );
-        params.put( policyConfig.ciphers.name(), "TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA384,TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384" );
-        params.put( policyConfig.client_auth.name(), "optional" );
+        builder.set( policyConfig.private_key_password, new SecureString( "setecastronomy" ) );
+        builder.set( policyConfig.tls_versions, List.of( "TLSv1.1", "TLSv1.2" ) );
+        builder.set( policyConfig.ciphers, List.of( "TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA384", "TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384" ) );
+        builder.set( policyConfig.client_auth, ClientAuth.OPTIONAL );
 
-        Config config = Config.defaults( params );
+        Config config = builder.build();
 
         // when
         File privateKeyFromConfig = config.get( policyConfig.private_key ).toFile();

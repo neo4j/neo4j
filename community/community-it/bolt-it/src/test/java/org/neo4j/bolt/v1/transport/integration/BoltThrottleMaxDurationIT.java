@@ -30,6 +30,7 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
 import java.net.SocketException;
+import java.time.Duration;
 import java.util.Collection;
 import java.util.Map;
 import java.util.concurrent.ExecutionException;
@@ -67,7 +68,6 @@ import static org.hamcrest.Matchers.instanceOf;
 import static org.junit.Assert.fail;
 import static org.neo4j.bolt.v1.messaging.util.MessageMatchers.msgSuccess;
 import static org.neo4j.bolt.v1.transport.integration.TransportTestUtil.eventuallyReceives;
-import static org.neo4j.configuration.SettingValueParsers.FALSE;
 import static org.neo4j.logging.AssertableLogProvider.inLog;
 import static org.neo4j.test.matchers.CommonMatchers.matchesExceptionMessage;
 
@@ -107,12 +107,12 @@ public class BoltThrottleMaxDurationIT
         return factory;
     }
 
-    protected Consumer<Map<Setting<?>, String>> getSettingsFunction()
+    protected Consumer<Map<Setting<?>, Object>> getSettingsFunction()
     {
         return settings ->
         {
-            settings.put( GraphDatabaseSettings.auth_enabled, FALSE );
-            settings.put( GraphDatabaseSettings.bolt_outbound_buffer_throttle_max_duration, "30s" );
+            settings.put( GraphDatabaseSettings.auth_enabled, false );
+            settings.put( GraphDatabaseSettings.bolt_outbound_buffer_throttle_max_duration, Duration.ofSeconds( 30 ) );
         };
     }
 

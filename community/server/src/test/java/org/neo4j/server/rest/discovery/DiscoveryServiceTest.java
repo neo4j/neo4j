@@ -27,7 +27,6 @@ import org.mockito.Answers;
 
 import java.net.URI;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.function.Consumer;
 import javax.ws.rs.core.Response;
@@ -53,8 +52,6 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
-import static org.neo4j.configuration.SettingValueParsers.FALSE;
-import static org.neo4j.configuration.SettingValueParsers.TRUE;
 import static org.neo4j.server.rest.discovery.CommunityDiscoverableURIs.communityDiscoverableURIs;
 
 @RunWith( Parameterized.class )
@@ -169,13 +166,12 @@ public class DiscoveryServiceTest
 
     private Config mockConfig()
     {
-        HashMap<String,String> settings = new HashMap<>();
-        settings.put( GraphDatabaseSettings.auth_enabled.name(), FALSE );
-        settings.put( BoltConnector.enabled.name(), TRUE );
-        settings.put( ServerSettings.management_api_path.name(), managementUri.toString() );
-        settings.put( ServerSettings.rest_api_path.name(), dataUri.toString() );
 
-        Config.Builder builder = Config.newBuilder().setRaw( settings );
+        Config.Builder builder = Config.newBuilder()
+            .set( GraphDatabaseSettings.auth_enabled, false )
+            .set( BoltConnector.enabled, true )
+            .set( ServerSettings.management_api_path, managementUri )
+            .set( ServerSettings.rest_api_path, dataUri );
 
         if ( configOverrider != null )
         {
@@ -237,7 +233,7 @@ public class DiscoveryServiceTest
     @Test
     public void shouldReturnRedirectToAbsoluteAPIUsingOutputFormat() throws Exception
     {
-        Config config = Config.defaults( ServerSettings.browser_path, "/browser/" );
+        Config config = Config.defaults( ServerSettings.browser_path, URI.create( "/browser/" ) );
 
         String baseUri = "http://www.example.com:5435";
         DiscoveryService ds =

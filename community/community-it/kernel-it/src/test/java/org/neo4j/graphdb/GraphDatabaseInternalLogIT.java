@@ -26,6 +26,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.StringWriter;
 import java.nio.file.Files;
+import java.util.List;
 import java.util.stream.Stream;
 
 import org.neo4j.configuration.GraphDatabaseSettings;
@@ -55,7 +56,7 @@ class GraphDatabaseInternalLogIT
     {
         // Given
         DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder( testDir.storeDir() )
-                .setConfig( GraphDatabaseSettings.logs_directory, testDir.directory("logs").getAbsolutePath() )
+                .setConfig( GraphDatabaseSettings.logs_directory, testDir.directory("logs").toPath().toAbsolutePath() )
                 .build();
         managementService.shutdown();
         File internalLog = new File( testDir.directory( "logs" ), INTERNAL_LOG_FILE );
@@ -73,7 +74,7 @@ class GraphDatabaseInternalLogIT
     {
         // Given
         DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder( testDir.storeDir() )
-                .setConfig( GraphDatabaseSettings.logs_directory, testDir.directory("logs").getAbsolutePath() )
+                .setConfig( GraphDatabaseSettings.logs_directory, testDir.directory("logs").toPath().toAbsolutePath() )
                 .build();
         GraphDatabaseService db = managementService.database( DEFAULT_DATABASE_NAME );
 
@@ -96,8 +97,8 @@ class GraphDatabaseInternalLogIT
     {
         // Given
         DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder( testDir.storeDir() )
-                .setConfig( GraphDatabaseSettings.store_internal_debug_contexts, getClass().getName() + ",java.io" )
-                .setConfig( GraphDatabaseSettings.logs_directory, testDir.directory("logs").getAbsolutePath() )
+                .setConfig( GraphDatabaseSettings.store_internal_debug_contexts, List.of( getClass().getName(), "java.io" ) )
+                .setConfig( GraphDatabaseSettings.logs_directory, testDir.directory("logs").toPath().toAbsolutePath() )
                 .build();
         GraphDatabaseService db = managementService.database( DEFAULT_DATABASE_NAME );
 

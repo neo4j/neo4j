@@ -92,7 +92,7 @@ public class TestRelationshipCount
                 managementService.shutdown();
             }
             managementService = new TestDatabaseManagementServiceBuilder().impermanent()
-                        .setConfig( GraphDatabaseSettings.dense_node_threshold, String.valueOf( denseNodeThreshold ) ).build();
+                        .setConfig( GraphDatabaseSettings.dense_node_threshold, denseNodeThreshold ).build();
             db = (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );
         }
     }

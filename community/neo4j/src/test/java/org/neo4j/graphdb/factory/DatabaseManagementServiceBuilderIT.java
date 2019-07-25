@@ -83,7 +83,7 @@ class DatabaseManagementServiceBuilderIT
         File databasesDir = testDirectory.directory( "my_databases" );
 
         DatabaseManagementService managementService =
-                new DatabaseManagementServiceBuilder( factoryDir ).setConfig( databases_root_path, databasesDir.toString() ).build();
+                new DatabaseManagementServiceBuilder( factoryDir ).setConfig( databases_root_path, databasesDir.toPath() ).build();
         try
         {
             assertTrue( isEmptyOrNonExistingDirectory( fs, new File( factoryDir, DEFAULT_DATABASE_NAME ) ) );

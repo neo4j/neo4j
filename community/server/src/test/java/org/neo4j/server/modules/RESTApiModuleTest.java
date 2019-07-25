@@ -22,9 +22,8 @@ package org.neo4j.server.modules;
 import org.junit.Test;
 import org.mockito.ArgumentCaptor;
 
-import java.util.HashMap;
+import java.net.URI;
 import java.util.List;
-import java.util.Map;
 
 import org.neo4j.configuration.Config;
 import org.neo4j.logging.NullLogProvider;
@@ -48,10 +47,7 @@ public class RESTApiModuleTest
         // Given
         WebServer webServer = mock( WebServer.class );
 
-        Map<String, String> params = new HashMap<>();
-        String path = "/db/data";
-        params.put( ServerSettings.rest_api_path.name(), path );
-        Config config = Config.defaults( params );
+        Config config = Config.defaults( ServerSettings.rest_api_path, URI.create( "/db/data" ) );
 
         // When
         RESTApiModule module = new RESTApiModule( webServer, config, NullLogProvider.getInstance() );

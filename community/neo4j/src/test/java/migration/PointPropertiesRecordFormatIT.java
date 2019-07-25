@@ -43,7 +43,6 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.configuration.GraphDatabaseSettings.allow_upgrade;
 import static org.neo4j.configuration.GraphDatabaseSettings.record_format;
-import static org.neo4j.configuration.SettingValueParsers.TRUE;
 import static org.neo4j.values.storable.CoordinateReferenceSystem.Cartesian;
 import static org.neo4j.values.storable.Values.pointValue;
 
@@ -115,7 +114,7 @@ class PointPropertiesRecordFormatIT
     private static DatabaseManagementService startDatabaseServiceWithUpgrade( File storeDir, String formatName )
     {
         return new DatabaseManagementServiceBuilder( storeDir ).setConfig( record_format, formatName )
-                .setConfig( allow_upgrade, TRUE ).build();
+                .setConfig( allow_upgrade, true ).build();
     }
 
     private static GraphDatabaseService getDefaultDatabase( DatabaseManagementService managementService )

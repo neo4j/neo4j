@@ -23,6 +23,7 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import java.time.Duration;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
@@ -54,7 +55,7 @@ abstract class AcquisitionTimeoutCompatibility extends LockCompatibilityTestSupp
     @BeforeEach
     void setUp()
     {
-        Config customConfig = Config.defaults( GraphDatabaseSettings.lock_acquisition_timeout, "100ms" );
+        Config customConfig = Config.defaults( GraphDatabaseSettings.lock_acquisition_timeout, Duration.ofMillis( 100 ) );
         clock = Clocks.fakeClock(100000, TimeUnit.MINUTES);
         lockManager = suite.createLockManager( customConfig, clock );
         client = lockManager.newClient();

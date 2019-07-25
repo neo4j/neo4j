@@ -68,7 +68,6 @@ import static org.neo4j.configuration.Config.defaults;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.configuration.GraphDatabaseSettings.fail_on_missing_files;
 import static org.neo4j.configuration.GraphDatabaseSettings.logical_log_rotation_threshold;
-import static org.neo4j.configuration.SettingValueParsers.FALSE;
 import static org.neo4j.graphdb.RelationshipType.withName;
 import static org.neo4j.internal.helpers.collection.Iterables.count;
 import static org.neo4j.kernel.impl.store.MetaDataStore.Position.LAST_MISSING_STORE_FILES_RECOVERY_TIMESTAMP;
@@ -348,7 +347,7 @@ class RecoveryIT
     {
         DatabaseManagementService managementService =
                 new TestDatabaseManagementServiceBuilder( directory.storeDir() )
-                        .setConfig( logical_log_rotation_threshold, "1M" )
+                        .setConfig( logical_log_rotation_threshold, ByteUnit.mebiBytes( 1 ) )
                         .build();
         GraphDatabaseService database = managementService.database( DEFAULT_DATABASE_NAME );
         while ( countTransactionLogFiles() < 5 )
@@ -371,7 +370,7 @@ class RecoveryIT
     {
         DatabaseManagementService managementService =
                 new TestDatabaseManagementServiceBuilder( directory.storeDir() )
-                        .setConfig( logical_log_rotation_threshold, "1M" )
+                        .setConfig( logical_log_rotation_threshold, ByteUnit.mebiBytes( 1 ) )
                         .build();
         GraphDatabaseService database = managementService.database( DEFAULT_DATABASE_NAME );
         while ( countTransactionLogFiles() < 5 )
@@ -405,7 +404,7 @@ class RecoveryIT
     {
         DatabaseManagementService managementService =
                 new TestDatabaseManagementServiceBuilder( directory.storeDir() )
-                        .setConfig( logical_log_rotation_threshold, "1M" )
+                        .setConfig( logical_log_rotation_threshold, ByteUnit.mebiBytes( 1 ) )
                         .build();
         GraphDatabaseService database = managementService.database( DEFAULT_DATABASE_NAME );
         while ( countTransactionLogFiles() < 5 )
@@ -437,7 +436,7 @@ class RecoveryIT
     {
         DatabaseManagementService managementService =
                 new TestDatabaseManagementServiceBuilder( directory.storeDir() )
-                        .setConfig( logical_log_rotation_threshold, "1M" )
+                        .setConfig( logical_log_rotation_threshold, ByteUnit.mebiBytes( 1 ) )
                         .build();
         GraphDatabaseService database = managementService.database( DEFAULT_DATABASE_NAME );
         while ( countTransactionLogFiles() < 5 )
@@ -644,7 +643,7 @@ class RecoveryIT
     private GraphDatabaseAPI createDatabase()
     {
         managementService = new TestDatabaseManagementServiceBuilder( directory.storeDir() )
-                .setConfig( logical_log_rotation_threshold, logical_log_rotation_threshold.defaultValue().toString() )
+                .setConfig( logical_log_rotation_threshold, logical_log_rotation_threshold.defaultValue() )
                 .build();
         return (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );
     }
@@ -657,7 +656,7 @@ class RecoveryIT
 
     private DatabaseManagementService forcedRecoveryManagement()
     {
-        return new TestDatabaseManagementServiceBuilder( directory.storeDir() ).setConfig( fail_on_missing_files, FALSE ).build();
+        return new TestDatabaseManagementServiceBuilder( directory.storeDir() ).setConfig( fail_on_missing_files, false ).build();
     }
 
     private PageCache getDatabasePageCache( GraphDatabaseAPI databaseAPI )

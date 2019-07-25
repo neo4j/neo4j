@@ -125,7 +125,6 @@ import static java.util.Arrays.asList;
 import static java.util.Collections.singletonList;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
-import static org.neo4j.configuration.SettingValueParsers.TRUE;
 import static org.neo4j.consistency.ConsistencyCheckService.defaultConsistencyCheckThreadsNumber;
 import static org.neo4j.consistency.checking.RecordCheckTestBase.inUse;
 import static org.neo4j.consistency.checking.RecordCheckTestBase.notInUse;
@@ -137,7 +136,6 @@ import static org.neo4j.consistency.checking.SchemaRuleUtil.uniquenessConstraint
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.graphdb.RelationshipType.withName;
 import static org.neo4j.internal.helpers.collection.Iterables.asIterable;
-import static org.neo4j.internal.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.internal.kernel.api.TokenRead.ANY_LABEL;
 import static org.neo4j.internal.kernel.api.TokenRead.ANY_RELATIONSHIP_TYPE;
 import static org.neo4j.internal.schema.IndexPrototype.forSchema;
@@ -289,13 +287,13 @@ public class FullCheckIntegrationTest
         }
 
         @Override
-        protected Map<Setting<?>,String> getConfig()
+        protected Map<Setting<?>,Object> getConfig()
         {
             return getSettings();
         }
     };
 
-    protected Map<Setting<?>,String> getSettings()
+    protected Map<Setting<?>,Object> getSettings()
     {
         return new HashMap<>();
     }
@@ -2261,10 +2259,7 @@ public class FullCheckIntegrationTest
 
     private Config config()
     {
-        Map<String,String> params = stringMap(
-                // Enable property owners check by default in tests:
-                GraphDatabaseSettings.record_format.name(), getRecordFormatName());
-        return Config.defaults( params );
+        return Config.defaults( GraphDatabaseSettings.record_format, getRecordFormatName() );
     }
 
     private static RelationshipGroupRecord withRelationships( RelationshipGroupRecord group, long out,

@@ -24,7 +24,6 @@ import org.junit.Before;
 import org.junit.Test;
 
 import java.time.Clock;
-import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -55,6 +54,7 @@ import org.neo4j.bolt.v1.messaging.request.ResetMessage;
 import org.neo4j.bolt.v1.messaging.request.RunMessage;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.connectors.BoltConnector;
+import org.neo4j.configuration.helpers.SocketAddress;
 import org.neo4j.internal.helpers.collection.Iterables;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.logging.NullLog;
@@ -74,7 +74,6 @@ import static org.mockito.Mockito.when;
 import static org.neo4j.bolt.testing.BoltTestUtil.newTestBoltChannel;
 import static org.neo4j.bolt.testing.NullResponseHandler.nullResponseHandler;
 import static org.neo4j.bolt.v1.messaging.BoltResponseMessage.SUCCESS;
-import static org.neo4j.configuration.SettingValueParsers.TRUE;
 import static org.neo4j.kernel.impl.scheduler.JobSchedulerFactory.createScheduler;
 import static org.neo4j.values.virtual.VirtualValues.EMPTY_MAP;
 
@@ -181,13 +180,11 @@ public class ResetFuzzTest
 
     private static Config createConfig()
     {
-        Map<String, String> configProps = new HashMap<>();
-        configProps.put( BoltConnector.enabled.name(), TRUE );
-        configProps.put( BoltConnector.listen_address.name(), "localhost:0" );
-        configProps.put( BoltConnector.thread_pool_min_size.name(), "5" );
-        configProps.put( BoltConnector.thread_pool_max_size.name(), "10" );
-
-        return Config.defaults( configProps );
+        return Config.newBuilder()
+            .set( BoltConnector.enabled, true )
+            .set( BoltConnector.listen_address, new SocketAddress( "localhost", 0 ) )
+            .set( BoltConnector.thread_pool_min_size, 5 )
+            .set( BoltConnector.thread_pool_max_size, 10 ).build();
     }
 
     /**

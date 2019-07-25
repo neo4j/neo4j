@@ -37,11 +37,11 @@ import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAM
 
 public class ReadTestSupport implements KernelAPIReadTestSupport
 {
-    private final Map<Setting<?>,String> settings = new HashMap<>();
+    private final Map<Setting<?>,Object> settings = new HashMap<>();
     private GraphDatabaseService db;
     private DatabaseManagementService managementService;
 
-    void addSetting( Setting<?> setting, String value )
+    <T> void addSetting( Setting<T> setting, T value )
     {
         settings.put( setting, value );
     }

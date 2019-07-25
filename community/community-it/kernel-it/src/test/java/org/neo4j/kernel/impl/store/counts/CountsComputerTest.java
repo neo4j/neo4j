@@ -259,7 +259,7 @@ class CountsComputerTest
     void shouldCreateACountStoreWhenDBContainsDenseNodes()
     {
         DatabaseManagementService managementService = dbBuilder.
-                setConfig( GraphDatabaseSettings.dense_node_threshold, "2" ).build();
+                setConfig( GraphDatabaseSettings.dense_node_threshold, 2 ).build();
         final GraphDatabaseAPI db = (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );
         try ( Transaction tx = db.beginTx() )
         {

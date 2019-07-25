@@ -61,7 +61,6 @@ import static org.hamcrest.CoreMatchers.anything;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.neo4j.bolt.v1.messaging.util.MessageMatchers.msgSuccess;
-import static org.neo4j.configuration.SettingValueParsers.FALSE;
 import static org.neo4j.internal.kernel.api.procs.ProcedureSignature.procedureSignature;
 
 public class BoltChannelAutoReadLimiterIT
@@ -89,9 +88,9 @@ public class BoltChannelAutoReadLimiterIT
 
     }
 
-    protected Consumer<Map<Setting<?>,String>> getSettingsFunction()
+    protected Consumer<Map<Setting<?>,Object>> getSettingsFunction()
     {
-        return settings -> settings.put( GraphDatabaseSettings.auth_enabled, FALSE );
+        return settings -> settings.put( GraphDatabaseSettings.auth_enabled, false );
     }
 
     @Before

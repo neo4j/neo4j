@@ -61,7 +61,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
-import static org.neo4j.configuration.SettingValueParsers.TRUE;
 import static org.neo4j.internal.helpers.Exceptions.findCauseOrSuppressed;
 import static org.neo4j.io.pagecache.impl.muninn.StandalonePageCacheFactory.createPageCache;
 
@@ -144,7 +143,7 @@ class DatabaseStartupTest
         }
 
         managementService = new TestDatabaseManagementServiceBuilder( storeDirectory )
-                .setConfig( GraphDatabaseSettings.allow_upgrade, TRUE )
+                .setConfig( GraphDatabaseSettings.allow_upgrade, true )
                 .build();
         GraphDatabaseService databaseService = managementService.database( DEFAULT_DATABASE_NAME );
         try

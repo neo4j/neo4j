@@ -84,7 +84,6 @@ import static org.neo4j.consistency.ConsistencyCheckService.defaultConsistencyCh
 import static org.neo4j.consistency.checking.cache.PackedMultiFieldCache.defaultArray;
 import static org.neo4j.consistency.report.ConsistencyReporter.NO_MONITOR;
 import static org.neo4j.graphdb.Label.label;
-import static org.neo4j.internal.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.test.Property.property;
 import static org.neo4j.test.Property.set;
 
@@ -107,7 +106,7 @@ public class ExecutionOrderIntegrationTest
         }
 
         @Override
-        protected Map<Setting<?>,String> getConfig()
+        protected Map<Setting<?>,Object> getConfig()
         {
             return getSettings();
         }
@@ -140,8 +139,8 @@ public class ExecutionOrderIntegrationTest
 
     private Config getTuningConfiguration()
     {
-        return Config.defaults( stringMap( GraphDatabaseSettings.pagecache_memory.name(), "8m",
-                GraphDatabaseSettings.record_format.name(), getRecordFormatName() ) );
+        return Config.defaults( Map.of( GraphDatabaseSettings.pagecache_memory, "8m",
+                GraphDatabaseSettings.record_format, getRecordFormatName() ) );
     }
 
     protected String getRecordFormatName()
@@ -341,7 +340,7 @@ public class ExecutionOrderIntegrationTest
         }
     }
 
-    protected Map<Setting<?>,String> getSettings()
+    protected Map<Setting<?>,Object> getSettings()
     {
         return new HashMap<>();
     }

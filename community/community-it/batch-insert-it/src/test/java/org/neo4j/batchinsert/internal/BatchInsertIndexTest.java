@@ -64,7 +64,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.configuration.GraphDatabaseSettings.default_schema_provider;
 import static org.neo4j.configuration.GraphDatabaseSettings.neo4j_home;
-import static org.neo4j.internal.helpers.collection.MapUtil.stringMap;
 
 @ExtendWith( {DefaultFileSystemExtension.class, TestDirectoryExtension.class} )
 class BatchInsertIndexTest
@@ -80,8 +79,9 @@ class BatchInsertIndexTest
     @EnumSource( SchemaIndex.class )
     void batchInserterShouldUseConfiguredIndexProvider( SchemaIndex schemaIndex ) throws Exception
     {
-        Config config = Config.defaults(
-                stringMap( default_schema_provider.name(), schemaIndex.providerName(), neo4j_home.name(), testDirectory.absolutePath().toString() ) );
+        Config config = Config.newBuilder()
+                .set( default_schema_provider, schemaIndex.providerName() )
+                .set( neo4j_home, testDirectory.absolutePath().toPath() ).build();
         BatchInserter inserter = newBatchInserter( config );
         inserter.createDeferredSchemaIndex( TestLabels.LABEL_ONE ).on( "key" ).create();
         inserter.shutdown();
@@ -111,8 +111,9 @@ class BatchInsertIndexTest
     @EnumSource( SchemaIndex.class )
     void shouldPopulateIndexWithUniquePointsThatCollideOnSpaceFillingCurve( SchemaIndex schemaIndex ) throws Exception
     {
-        Config config = Config.defaults(
-                stringMap( default_schema_provider.name(), schemaIndex.providerName(), neo4j_home.name(), testDirectory.absolutePath().toString() ) );
+        Config config = Config.newBuilder()
+                .set( default_schema_provider, schemaIndex.providerName() )
+                .set( neo4j_home, testDirectory.absolutePath().toPath() ).build();
         BatchInserter inserter = newBatchInserter( config );
         Pair<PointValue,PointValue> collidingPoints = SpatialIndexValueTestUtil.pointsWithSameValueOnSpaceFillingCurve( config );
         inserter.createNode( MapUtil.map( "prop", collidingPoints.first() ), TestLabels.LABEL_ONE );
@@ -141,8 +142,9 @@ class BatchInsertIndexTest
     @EnumSource( SchemaIndex.class )
     void shouldThrowWhenPopulatingWithNonUniquePoints( SchemaIndex schemaIndex ) throws Exception
     {
-        Config config = Config.defaults(
-                stringMap( default_schema_provider.name(), schemaIndex.providerName(), neo4j_home.name(), testDirectory.absolutePath().toString() ) );
+        Config config = Config.newBuilder()
+                .set( default_schema_provider, schemaIndex.providerName() )
+                .set( neo4j_home, testDirectory.absolutePath().toPath() ).build();
         BatchInserter inserter = newBatchInserter( config );
         PointValue point = Values.pointValue( CoordinateReferenceSystem.WGS84, 0.0, 0.0 );
         inserter.createNode( MapUtil.map( "prop", point ), TestLabels.LABEL_ONE );

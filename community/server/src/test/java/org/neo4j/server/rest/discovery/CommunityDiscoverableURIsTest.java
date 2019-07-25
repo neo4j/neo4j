@@ -22,6 +22,7 @@ package org.neo4j.server.rest.discovery;
 import org.junit.Test;
 
 import java.net.InetSocketAddress;
+import java.net.URI;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -50,7 +51,7 @@ public class CommunityDiscoverableURIsTest
     public void shouldAdvertiseBoltIfExplicitlyConfigured() throws Exception
     {
         DiscoverableURIs uris = communityDiscoverableURIs(
-                Config.defaults( ServerSettings.bolt_discoverable_address, "bolt://banana.com:1234" ), null );
+                Config.defaults( ServerSettings.bolt_discoverable_address, URI.create( "bolt://banana.com:1234" ) ), null );
 
         assertEquals( "bolt://banana.com:1234", toMap(uris).get("bolt") );
     }

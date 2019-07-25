@@ -25,6 +25,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
 import org.junit.jupiter.api.extension.ExtendWith;
 
+import java.time.Duration;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Predicate;
@@ -78,7 +79,7 @@ public class CommunityLockAcquisitionTimeoutIT
     {
         managementService = getDbmsb( testDirectory )
                 .setClock( fakeClock )
-                .setConfig( GraphDatabaseSettings.lock_acquisition_timeout, "2s" )
+                .setConfig( GraphDatabaseSettings.lock_acquisition_timeout, Duration.ofSeconds( 2 ) )
                 .build();
         database = managementService.database( DEFAULT_DATABASE_NAME );
 

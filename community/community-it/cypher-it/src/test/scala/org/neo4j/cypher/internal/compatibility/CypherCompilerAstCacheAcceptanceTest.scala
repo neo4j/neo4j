@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.compatibility
 
-import java.time.{Clock, Instant, ZoneOffset}
+import java.time.{Clock, Duration, Instant, ZoneOffset}
 
 import org.neo4j.configuration.{Config, GraphDatabaseSettings}
 import org.neo4j.cypher
@@ -109,7 +109,7 @@ class CypherCompilerAstCacheAcceptanceTest extends CypherFunSuite with GraphData
     }
   }
 
-  override def databaseConfig(): Map[Setting[_], String] = Map(GraphDatabaseSettings.cypher_min_replan_interval -> "0")
+  override def databaseConfig(): Map[Setting[_], Object] = Map(GraphDatabaseSettings.cypher_min_replan_interval -> Duration.ZERO)
 
   var counter: CacheCounter = _
   var compiler: CypherCurrentCompiler[RuntimeContext] = _

@@ -38,7 +38,6 @@ import org.neo4j.test.rule.TestDirectory;
 
 import static org.junit.Assert.fail;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
-import static org.neo4j.configuration.SettingValueParsers.TRUE;
 
 public class TestExceptionTypeOnInvalidIds
 {
@@ -70,7 +69,7 @@ public class TestExceptionTypeOnInvalidIds
                 new TestDatabaseManagementServiceBuilder( readOnlyLayout.databaseDirectory() ).build();
         managementService1.shutdown();
         readOnlyService = new TestDatabaseManagementServiceBuilder( readOnlyLayout.databaseDirectory() ).
-                setConfig( GraphDatabaseSettings.read_only, TRUE ).build();
+                setConfig( GraphDatabaseSettings.read_only, true ).build();
         graphDbReadOnly = readOnlyService.database( DEFAULT_DATABASE_NAME );
     }
 

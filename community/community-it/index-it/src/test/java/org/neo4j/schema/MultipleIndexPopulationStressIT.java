@@ -179,7 +179,7 @@ public class MultipleIndexPopulationStressIT
     {
         DatabaseManagementService managementService =
                 new TestDatabaseManagementServiceBuilder( directory.storeDir() )
-                        .setConfig( multi_threaded_schema_index_population_enabled, multiThreaded + "" )
+                        .setConfig( multi_threaded_schema_index_population_enabled, multiThreaded )
                         .build();
         final GraphDatabaseService db = managementService.database( DEFAULT_DATABASE_NAME );
         try

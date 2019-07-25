@@ -132,7 +132,7 @@ class CheckConsistencyCommandTest
         File databasesFolder = getDatabasesFolder( homeDir );
         CheckConsistencyCommand checkConsistencyCommand =
                 new CheckConsistencyCommand( new ExecutionContext( homeDir, testDir.directory( "conf" ).toPath() ), consistencyCheckService );
-        Config config = Config.defaults( GraphDatabaseSettings.neo4j_home, homeDir.toString() );
+        Config config = Config.defaults( GraphDatabaseSettings.neo4j_home, homeDir );
 
         DatabaseLayout databaseLayout = DatabaseLayout.of( databasesFolder, LayoutConfig.of( config ), "mydb" );
 
@@ -160,7 +160,7 @@ class CheckConsistencyCommandTest
         File databasesFolder = getDatabasesFolder( homeDir );
         CheckConsistencyCommand checkConsistencyCommand =
                 new CheckConsistencyCommand( new ExecutionContext( homeDir, testDir.directory( "conf" ).toPath() ), consistencyCheckService );
-        Config config = Config.defaults( GraphDatabaseSettings.neo4j_home, homeDir.toString() );
+        Config config = Config.defaults( GraphDatabaseSettings.neo4j_home, homeDir );
 
         DatabaseLayout databaseLayout = DatabaseLayout.of( databasesFolder, LayoutConfig.of( config ), "mydb" );
 
@@ -188,7 +188,7 @@ class CheckConsistencyCommandTest
         File databasesFolder = getDatabasesFolder( homeDir );
         CheckConsistencyCommand checkConsistencyCommand =
                 new CheckConsistencyCommand( new ExecutionContext( homeDir, testDir.directory( "conf" ).toPath() ), consistencyCheckService );
-        Config config = Config.defaults( GraphDatabaseSettings.neo4j_home, homeDir.toString() );
+        Config config = Config.defaults( GraphDatabaseSettings.neo4j_home, homeDir );
         DatabaseLayout databaseLayout = DatabaseLayout.of( databasesFolder, LayoutConfig.of( config ), "mydb" );
 
         when( consistencyCheckService
@@ -368,7 +368,7 @@ class CheckConsistencyCommandTest
 
     private static File getDatabasesFolder( Path homeDir )
     {
-        return Config.defaults( GraphDatabaseSettings.neo4j_home, homeDir.toAbsolutePath().toString() ).get(
+        return Config.defaults( GraphDatabaseSettings.neo4j_home, homeDir.toAbsolutePath() ).get(
                 GraphDatabaseSettings.databases_root_path ).toFile();
     }
 }

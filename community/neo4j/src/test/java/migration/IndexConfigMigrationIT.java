@@ -73,7 +73,6 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.configuration.GraphDatabaseSettings.SchemaIndex.NATIVE_BTREE10;
-import static org.neo4j.configuration.SettingValueParsers.TRUE;
 import static org.neo4j.kernel.impl.index.schema.FulltextIndexSettingsKeys.ANALYZER;
 import static org.neo4j.kernel.impl.index.schema.FulltextIndexSettingsKeys.EVENTUALLY_CONSISTENT;
 import static org.neo4j.kernel.impl.index.schema.config.SpatialIndexSettings.space_filling_curve_max_bits;
@@ -94,29 +93,29 @@ class IndexConfigMigrationIT
     private static CrsConfig wgs84 = CrsConfig.group( WGS84 );
     private enum MinMaxSetting
     {
-        wgs84Min( CrsConfig.group( WGS84 ).min, "-1,-2" ),
-        wgs84Max( CrsConfig.group( WGS84 ).max, "3,4" ),
+        wgs84Min( CrsConfig.group( WGS84 ).min, List.of( -1.0, -2.0 ) ),
+        wgs84Max( CrsConfig.group( WGS84 ).max, List.of( 3.0, 4.0 ) ),
 
-        wgs84_3DMin( CrsConfig.group( WGS84_3D ).min, "-5,-6,-7" ),
-        wgs84_3DMax( CrsConfig.group( WGS84_3D ).max, "8,9,10" ),
+        wgs84_3DMin( CrsConfig.group( WGS84_3D ).min, List.of( -5.0, -6.0, -7.0 ) ),
+        wgs84_3DMax( CrsConfig.group( WGS84_3D ).max, List.of( 8.0, 9.0, 10.0 ) ),
 
-        cartesianMin( CrsConfig.group( Cartesian ).min, "-11,-12" ),
-        cartesianMax( CrsConfig.group( Cartesian ).max, "13,14" ),
+        cartesianMin( CrsConfig.group( Cartesian ).min, List.of( -11.0, -12.0 ) ),
+        cartesianMax( CrsConfig.group( Cartesian ).max, List.of( 13.0, 14.0 ) ),
 
-        cartesian_3DMin( CrsConfig.group( Cartesian_3D ).min, "-15,-16,-17" ),
-        cartesian_3DMax( CrsConfig.group( Cartesian_3D ).max, "18,19,20" );
+        cartesian_3DMin( CrsConfig.group( Cartesian_3D ).min, List.of( -15.0, -16.0, -17.0 ) ),
+        cartesian_3DMax( CrsConfig.group( Cartesian_3D ).max, List.of( 18.0, 19.0, 20.0 ) );
 
         private final Setting<List<Double>> setting;
-        private final String settingValue;
+        private final List<Double> settingValue;
 
-        MinMaxSetting( Setting<List<Double>> setting, String settingValue )
+        MinMaxSetting( Setting<List<Double>> setting, List<Double> settingValue )
         {
             this.setting = setting;
             this.settingValue = settingValue;
         }
     }
 
-    private static final String space_filling_curve_max_bits_value = "30";
+    private static final int space_filling_curve_max_bits_value = 30;
     private static final Map<String,Value> staticExpectedIndexConfig = new HashMap<>();
 
     static
@@ -225,7 +224,7 @@ class IndexConfigMigrationIT
         unzip( getClass(), ZIP_FILE_3_5, databaseDir );
         // when
         DatabaseManagementServiceBuilder builder = new DatabaseManagementServiceBuilder( directory.storeDir() )
-                .setConfig( GraphDatabaseSettings.allow_upgrade, TRUE );
+                .setConfig( GraphDatabaseSettings.allow_upgrade, true );
         DatabaseManagementService dbms = builder.build();
         try
         {

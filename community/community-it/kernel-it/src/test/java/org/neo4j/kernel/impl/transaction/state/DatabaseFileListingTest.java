@@ -24,7 +24,7 @@ import org.junit.jupiter.api.Test;
 
 import java.io.File;
 import java.io.IOException;
-import java.nio.file.Paths;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Set;
@@ -165,7 +165,7 @@ class DatabaseFileListingTest
     void shouldListTransactionLogsFromCustomAbsoluteLocationWhenConfigured() throws IOException
     {
         File customLogLocation = testDirectory.directory( "customLogLocation" );
-        verifyLogFilesWithCustomPathListing( customLogLocation.getAbsolutePath() );
+        verifyLogFilesWithCustomPathListing( customLogLocation.toPath().toAbsolutePath() );
     }
 
     @Test
@@ -209,7 +209,7 @@ class DatabaseFileListingTest
         assertEquals( 1, metadataResourceIterator.stream().filter( metadata -> "marker".equals( metadata.file().getName() ) ).count() );
     }
 
-    private void verifyLogFilesWithCustomPathListing( String path ) throws IOException
+    private void verifyLogFilesWithCustomPathListing( Path path ) throws IOException
     {
         DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder( testDirectory.databaseDir( "customDb" ) )
                 .setConfig( GraphDatabaseSettings.transaction_logs_root_path, path )
@@ -219,7 +219,7 @@ class DatabaseFileListingTest
         LogFiles logFiles = graphDatabase.getDependencyResolver().resolveDependency( LogFiles.class );
         assertTrue( database.listStoreFiles( true ).stream()
                 .anyMatch( metadata -> metadata.isLogFile() && logFiles.isLogFile( metadata.file() ) ) );
-        assertEquals( Paths.get( path ).getFileName().toString(), logFiles.logFilesDirectory().getParentFile().getName() );
+        assertEquals( path.getFileName().toString(), logFiles.logFilesDirectory().getParentFile().getName() );
         managementService.shutdown();
     }
 

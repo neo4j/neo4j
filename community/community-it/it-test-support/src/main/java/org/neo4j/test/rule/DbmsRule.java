@@ -66,7 +66,7 @@ public abstract class DbmsRule extends ExternalResource implements GraphDatabase
     private DatabaseLayout databaseLayout;
     private Supplier<Statement> statementSupplier;
     private boolean startEagerly = true;
-    private final Map<Setting<?>, String> globalConfig = new HashMap<>();
+    private final Map<Setting<?>, Object> globalConfig = new HashMap<>();
     private final Monitors monitors = new Monitors();
     private DatabaseManagementService managementService;
 
@@ -315,7 +315,7 @@ public abstract class DbmsRule extends ExternalResource implements GraphDatabase
      * If this method is called when a database is already started an {@link IllegalStateException} will be thrown since the setting
      * will have no effect, instead letting the developer notice that and change the test code.
      */
-    public DbmsRule withSetting( Setting<?> key, String value )
+    public <T> DbmsRule withSetting( Setting<T> key, T value )
     {
         if ( database != null )
         {
@@ -338,11 +338,25 @@ public abstract class DbmsRule extends ExternalResource implements GraphDatabase
     /**
      * Applies all settings in the settings map.
      *
-     * @see #withSetting(Setting, String)
+     * @see #withSetting(Setting, Object)
      */
-    public DbmsRule withSettings( Map<Setting<?>,String> configuration )
+    public DbmsRule withSettings( Map<Setting<?>,Object> configuration )
     {
-        configuration.forEach( this::withSetting );
+        if ( database != null )
+        {
+            // Database already started
+            throw new IllegalStateException( "Wanted to set " + configuration + ", but database has already been started" );
+        }
+        if ( databaseBuilder != null )
+        {
+            // Test already started, but db not yet started
+            databaseBuilder.setConfig( configuration );
+        }
+        else
+        {
+            // Test haven't started, we're still in phase of constructing this rule
+            globalConfig.putAll( configuration );
+        }
         return this;
     }
 
@@ -361,7 +375,7 @@ public abstract class DbmsRule extends ExternalResource implements GraphDatabase
         return restartDatabase( RestartAction.EMPTY, Map.of() );
     }
 
-    public GraphDatabaseAPI restartDatabase( Map<Setting<?>,String> configChanges ) throws IOException
+    public GraphDatabaseAPI restartDatabase( Map<Setting<?>,Object> configChanges ) throws IOException
     {
         return restartDatabase( RestartAction.EMPTY, configChanges );
     }
@@ -371,7 +385,7 @@ public abstract class DbmsRule extends ExternalResource implements GraphDatabase
         return restartDatabase( action, Map.of() );
     }
 
-    public GraphDatabaseAPI restartDatabase( RestartAction action, Map<Setting<?>,String> configChanges ) throws IOException
+    public GraphDatabaseAPI restartDatabase( RestartAction action, Map<Setting<?>,Object> configChanges ) throws IOException
     {
         FileSystemAbstraction fs = resolveDependency( FileSystemAbstraction.class );
         managementService.shutdown();

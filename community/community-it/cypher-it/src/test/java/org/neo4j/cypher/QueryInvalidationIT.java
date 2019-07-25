@@ -22,6 +22,7 @@ package org.neo4j.cypher;
 import org.junit.Rule;
 import org.junit.Test;
 
+import java.time.Duration;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ThreadLocalRandom;
@@ -53,8 +54,8 @@ public class QueryInvalidationIT
 
     @Rule
     public final DbmsRule db = new ImpermanentDbmsRule()
-            .withSetting( GraphDatabaseSettings.query_statistics_divergence_threshold, "0.1" )
-            .withSetting( GraphDatabaseSettings.cypher_min_replan_interval, "1s" );
+            .withSetting( GraphDatabaseSettings.query_statistics_divergence_threshold, 0.1 )
+            .withSetting( GraphDatabaseSettings.cypher_min_replan_interval, Duration.ofSeconds( 1 ) );
 
     @Test
     public void shouldRePlanAfterDataChangesFromAnEmptyDatabase() throws Exception

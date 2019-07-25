@@ -19,8 +19,6 @@
  */
 package org.neo4j.cypher.internal.runtime.spec.tests
 
-import java.util
-
 import org.neo4j.configuration.GraphDatabaseSettings
 import org.neo4j.cypher.internal.logical.plans.Ascending
 import org.neo4j.cypher.internal.runtime.InputDataStream
@@ -158,7 +156,7 @@ abstract class MemoryManagementTestBase[CONTEXT <: RuntimeContext](
                                                                     runtime: CypherRuntime[CONTEXT]
                                                                   )
   extends RuntimeTestSuite[CONTEXT](edition.copyWith(
-    GraphDatabaseSettings.transaction_max_memory -> MemoryManagementTestBase.maxMemory.toString), runtime) with InputStreams[CONTEXT] {
+    GraphDatabaseSettings.transaction_max_memory -> Long.valueOf(MemoryManagementTestBase.maxMemory)), runtime) with InputStreams[CONTEXT] {
 
   test("should kill sort query before it runs out of memory") {
     // given

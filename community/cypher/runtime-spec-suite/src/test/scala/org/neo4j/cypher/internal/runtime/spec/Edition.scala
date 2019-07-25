@@ -19,10 +19,9 @@
  */
 package org.neo4j.cypher.internal.runtime.spec
 
-import java.util
+import java.lang.Boolean.TRUE
 
 import org.neo4j.common.DependencyResolver
-import org.neo4j.configuration.SettingValueParsers.TRUE
 import org.neo4j.configuration.{Config, GraphDatabaseSettings}
 import org.neo4j.cypher.internal._
 import org.neo4j.dbms.api.DatabaseManagementService
@@ -33,7 +32,7 @@ import org.neo4j.test.TestDatabaseManagementServiceBuilder
 
 class Edition[CONTEXT <: RuntimeContext](graphBuilderFactory: () => TestDatabaseManagementServiceBuilder,
                                          newRuntimeContextManager: (CypherRuntimeConfiguration, DependencyResolver, LifeSupport) => RuntimeContextManager[CONTEXT],
-                                         configs: (Setting[_], String)*) {
+                                         configs: (Setting[_], Object)*) {
 
   import scala.collection.JavaConverters._
 
@@ -46,30 +45,29 @@ class Edition[CONTEXT <: RuntimeContext](graphBuilderFactory: () => TestDatabase
             // This is intentionally telling the regular Neo4j RuntimeEnvironment not to launch it's own
             // QueryExecutor or Scheduler, because those only busy-consume threads for no benefit except
             // making test execution slower, and debugging more confusing.
-            case GraphDatabaseSettings.cypher_morsel_runtime_scheduler => "single_threaded"
-            case GraphDatabaseSettings.cypher_worker_count => "1"
+            case GraphDatabaseSettings.cypher_morsel_runtime_scheduler => GraphDatabaseSettings.CypherMorselRuntimeScheduler.SINGLE_THREADED
+            case GraphDatabaseSettings.cypher_worker_count => 1
             case _ => value
           }
-        graphBuilder.setConfig(setting, valueInGraph)
+        graphBuilder.setConfig(setting.asInstanceOf[Setting[Object]], valueInGraph.asInstanceOf[Object])
     }
     graphBuilder.build()
   }
 
-  def copyWith(additionalConfigs: (Setting[_], String)*): Edition[CONTEXT] = {
+  def copyWith(additionalConfigs: (Setting[_], Object)*): Edition[CONTEXT] = {
     val newConfigs = configs ++ additionalConfigs
     new Edition(graphBuilderFactory, newRuntimeContextManager, newConfigs: _*)
   }
 
-  def getSetting(setting: Setting[_]): Option[String] = {
-    configs.collectFirst { case (key, value) if key == setting => value }
+  def getSetting[T](setting: Setting[T]): Option[T] = {
+    configs.collectFirst { case (key, value) if key == setting => value.asInstanceOf[T] }
   }
 
   def newRuntimeContextManager(resolver: DependencyResolver, lifeSupport: LifeSupport): RuntimeContextManager[CONTEXT] =
     newRuntimeContextManager(runtimeConfig(), resolver, lifeSupport)
 
   private def runtimeConfig() = {
-    val javaConfigMap: util.Map[String, String] = configs.map { case (setting, value) => (setting.name(), value) }.toMap.asJava
-    val config = Config.defaults(javaConfigMap)
+    val config = Config.defaults(configs.toMap.asJava)
     CypherConfiguration.fromConfig(config).toCypherRuntimeConfiguration
   }
 }

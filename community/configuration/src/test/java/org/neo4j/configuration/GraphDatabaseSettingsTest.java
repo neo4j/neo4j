@@ -25,6 +25,7 @@ import java.lang.reflect.Field;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 import org.neo4j.configuration.connectors.BoltConnector;
@@ -49,8 +50,7 @@ import static org.neo4j.configuration.GraphDatabaseSettings.default_listen_addre
 import static org.neo4j.configuration.GraphDatabaseSettings.keep_logical_logs;
 import static org.neo4j.configuration.GraphDatabaseSettings.transaction_sampling_percentage;
 import static org.neo4j.configuration.GraphDatabaseSettings.transaction_tracing_level;
-import static org.neo4j.configuration.SettingValueParsers.TRUE;
-import static org.neo4j.internal.helpers.collection.MapUtil.stringMap;
+import static org.neo4j.configuration.SettingValueParsers.DURATION;
 import static org.neo4j.logging.AssertableLogProvider.inLog;
 
 class GraphDatabaseSettingsTest
@@ -105,9 +105,10 @@ class GraphDatabaseSettingsTest
     void shouldBeAbleToOverrideBoltListenAddressesWithJustOneParameter()
     {
         // given
-        Config config = Config.defaults( stringMap(
-                BoltConnector.enabled.name(), TRUE,
-                BoltConnector.listen_address.name(), ":8000" ) );
+        Config config = Config.newBuilder()
+                .set( BoltConnector.enabled, true )
+                .set( BoltConnector.listen_address, new SocketAddress( 8000 ) )
+                .build();
 
         // then
         assertEquals( new SocketAddress( "localhost", 8000 ), config.get( BoltConnector.listen_address ) );
@@ -117,9 +118,10 @@ class GraphDatabaseSettingsTest
     void shouldDeriveBoltListenAddressFromDefaultListenAddress()
     {
         // given
-        Config config = Config.defaults( stringMap(
-                BoltConnector.enabled.name(), TRUE,
-                GraphDatabaseSettings.default_listen_address.name(), "0.0.0.0" ) );
+        Config config = Config.newBuilder()
+                .set( BoltConnector.enabled, true )
+                .set( GraphDatabaseSettings.default_listen_address, new SocketAddress( "0.0.0.0" ) )
+                .build();
 
         // then
         assertEquals( new SocketAddress( "0.0.0.0", 7687 ), config.get( BoltConnector.listen_address ) );
@@ -129,10 +131,11 @@ class GraphDatabaseSettingsTest
     void shouldDeriveBoltListenAddressFromDefaultListenAddressAndSpecifiedPort()
     {
         // given
-        Config config = Config.defaults( stringMap(
-                GraphDatabaseSettings.default_listen_address.name(), "0.0.0.0",
-                BoltConnector.enabled.name(), TRUE,
-                BoltConnector.listen_address.name(), ":8000" ) );
+        Config config = Config.newBuilder()
+                .set( GraphDatabaseSettings.default_listen_address, new SocketAddress( "0.0.0.0" ) )
+                .set( BoltConnector.enabled, true )
+                .set( BoltConnector.listen_address, new SocketAddress( 8000 ) )
+                .build();
 
         // then
         assertEquals( new SocketAddress( "0.0.0.0", 8000 ), config.get( BoltConnector.listen_address ) );
@@ -171,7 +174,7 @@ class GraphDatabaseSettingsTest
         {
             assertThrows( IllegalArgumentException.class, () ->
             {
-                Config config = Config.defaults( stringMap( GraphDatabaseSettings.bookmark_ready_timeout.name(), value ) );
+                Config config = Config.defaults( GraphDatabaseSettings.bookmark_ready_timeout, DURATION.parse( value ) );
                 config.get( GraphDatabaseSettings.bookmark_ready_timeout );
             }, "Exception expected for value '" + value + "'" );
         }
@@ -183,7 +186,7 @@ class GraphDatabaseSettingsTest
         // given
         Config config = Config.newBuilder()
                 .set( GraphDatabaseSettings.default_listen_address, new SocketAddress( "0.0.0.0" )  )
-                .setRaw( GraphDatabaseSettings.SERVER_DEFAULTS )
+                .set( GraphDatabaseSettings.SERVER_DEFAULTS )
                 .build();
 
         // then
@@ -196,12 +199,12 @@ class GraphDatabaseSettingsTest
     void shouldDeriveListenAddressFromDefaultListenAddressAndSpecifiedPorts()
     {
         // given
-        Config config = Config.defaults( stringMap(
-                HttpsConnector.listen_address.name(), ":9000",
-                HttpConnector.listen_address.name(), ":8000",
-                BoltConnector.listen_address.name(), ":10000",
-                GraphDatabaseSettings.default_listen_address.name(), "0.0.0.0"
-        ) );
+        Config config = Config.newBuilder()
+                .set( GraphDatabaseSettings.default_listen_address, new SocketAddress( "0.0.0.0" ) )
+                .set( HttpConnector.listen_address, new SocketAddress( 8000 ) )
+                .set( HttpsConnector.listen_address, new SocketAddress( 9000 ) )
+                .set( BoltConnector.listen_address, new SocketAddress( 10000 ) )
+                .build();
 
         // then
         assertEquals( new SocketAddress( "0.0.0.0", 9000 ), config.get( HttpsConnector.listen_address ) );
@@ -237,13 +240,13 @@ class GraphDatabaseSettingsTest
         IntStream range = IntStream.range( 1, 101 );
         range.forEach( percentage ->
         {
-            Config config = Config.defaults( transaction_sampling_percentage, String.valueOf( percentage ) );
+            Config config = Config.defaults( transaction_sampling_percentage, percentage );
             int configuredSampling = config.get( transaction_sampling_percentage );
             assertEquals( percentage, configuredSampling );
         } );
-        assertThrows( IllegalArgumentException.class, () -> Config.defaults( transaction_sampling_percentage, "0" ) );
-        assertThrows( IllegalArgumentException.class, () -> Config.defaults( transaction_sampling_percentage, "101" ) );
-        assertThrows( IllegalArgumentException.class, () -> Config.defaults( transaction_sampling_percentage, "10101" ) );
+        assertThrows( IllegalArgumentException.class, () -> Config.defaults( transaction_sampling_percentage, 0 ) );
+        assertThrows( IllegalArgumentException.class, () -> Config.defaults( transaction_sampling_percentage, 101 ) );
+        assertThrows( IllegalArgumentException.class, () -> Config.defaults( transaction_sampling_percentage, 10101 ) );
     }
 
     @Test
@@ -252,15 +255,15 @@ class GraphDatabaseSettingsTest
         GraphDatabaseSettings.TransactionTracingLevel[] values = GraphDatabaseSettings.TransactionTracingLevel.values();
         for ( GraphDatabaseSettings.TransactionTracingLevel level : values )
         {
-            assertEquals( level, Config.defaults( transaction_tracing_level, level.name() ).get( transaction_tracing_level ) );
+            assertEquals( level, Config.defaults( transaction_tracing_level, level ).get( transaction_tracing_level ) );
         }
-        assertThrows( IllegalArgumentException.class, () -> Config.defaults( transaction_tracing_level, "TRACE" ) );
+        assertThrows( IllegalArgumentException.class, () -> Config.newBuilder().setRaw( Map.of( transaction_tracing_level.name(), "TRACE" ) ).build() );
     }
 
     @Test
     void configValuesContainsConnectors()
     {
-        assertThat( GraphDatabaseSettings.SERVER_DEFAULTS.keySet(), containsInAnyOrder(
+        assertThat( GraphDatabaseSettings.SERVER_DEFAULTS.keySet().stream().map( Setting::name ).collect( Collectors.toList() ), containsInAnyOrder(
                 "dbms.connector.http.enabled",
                 "dbms.connector.https.enabled",
                 "dbms.connector.bolt.enabled",
@@ -271,14 +274,14 @@ class GraphDatabaseSettingsTest
     @Test
     void testDefaultAddressOnlyAllowsHostname()
     {
-        assertDoesNotThrow( () -> Config.defaults( default_listen_address, "foo" ) );
-        assertDoesNotThrow( () -> Config.defaults( default_advertised_address, "bar" ) );
+        assertDoesNotThrow( () -> Config.defaults( default_listen_address, new SocketAddress( "foo" ) ) );
+        assertDoesNotThrow( () -> Config.defaults( default_advertised_address, new SocketAddress( "bar" ) ) );
 
-        assertThrows( IllegalArgumentException.class, () -> Config.defaults( default_listen_address, "foo:123" ) );
-        assertThrows( IllegalArgumentException.class, () -> Config.defaults( default_advertised_address, "bar:456" ) );
+        assertThrows( IllegalArgumentException.class, () -> Config.defaults( default_listen_address, new SocketAddress( "foo", 123 ) ) );
+        assertThrows( IllegalArgumentException.class, () -> Config.defaults( default_advertised_address, new SocketAddress( "bar", 456 ) ) );
 
-        assertThrows( IllegalArgumentException.class, () -> Config.defaults( default_listen_address, ":123" ) );
-        assertThrows( IllegalArgumentException.class, () -> Config.defaults( default_advertised_address, ":456" ) );
+        assertThrows( IllegalArgumentException.class, () -> Config.defaults( default_listen_address, new SocketAddress( 123 ) ) );
+        assertThrows( IllegalArgumentException.class, () -> Config.defaults( default_advertised_address, new SocketAddress( 456 ) ) );
     }
 
     @Test
@@ -287,7 +290,7 @@ class GraphDatabaseSettingsTest
         String oldDefaultListen = "dbms.connectors.default_listen_address";
         String oldDefaultAdvertised = "dbms.connectors.default_advertised_address";
 
-        var config = Config.defaults( Map.of( oldDefaultListen, "foo", oldDefaultAdvertised, "bar" ) );
+        var config = Config.newBuilder().setRaw( Map.of( oldDefaultListen, "foo", oldDefaultAdvertised, "bar" ) ).build();
 
         var logProvider = new AssertableLogProvider();
         config.setLogger( logProvider.getLog( Config.class ) );

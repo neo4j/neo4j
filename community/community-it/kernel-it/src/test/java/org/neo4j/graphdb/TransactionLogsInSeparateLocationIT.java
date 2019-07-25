@@ -24,6 +24,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Path;
 
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.dbms.api.DatabaseManagementService;
@@ -58,11 +59,11 @@ class TransactionLogsInSeparateLocationIT
     {
         File txDirectory = testDirectory.directory( "transaction-logs" );
         DatabaseLayout layout = testDirectory.databaseLayout( () -> of( txDirectory ) );
-        performTransactions( txDirectory.getAbsolutePath(), layout.databaseDirectory() );
+        performTransactions( txDirectory.toPath().toAbsolutePath(), layout.databaseDirectory() );
         verifyTransactionLogs( layout.getTransactionLogsDirectory(), layout.databaseDirectory() );
     }
 
-    private static void performTransactions( String txPath, File storeDir )
+    private static void performTransactions( Path txPath, File storeDir )
     {
         DatabaseManagementService managementService =
                 new TestDatabaseManagementServiceBuilder( storeDir )

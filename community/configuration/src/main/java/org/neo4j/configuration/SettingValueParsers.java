@@ -275,7 +275,7 @@ public final class SettingValueParsers
         return new SettingValueParser<>()
         {
             @SuppressWarnings( "unchecked" )
-            private final Class<T> type = (Class<T>) values.iterator().next().getClass(); //should never be empty
+            private final Class<T> type = (Class) Enum.class; //should never be empty
 
             @Override
             public T parse( String value )

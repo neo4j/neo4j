@@ -582,7 +582,7 @@ class BatchInsertTest
     {
         DatabaseLayout databaseLayout = testDirectory.databaseLayout();
         BatchInserter inserter = BatchInserters.inserter( databaseLayout, fs,
-                Config.defaults( neo4j_home, databaseLayout.databaseDirectory().getAbsolutePath() ) );
+                Config.defaults( neo4j_home, databaseLayout.databaseDirectory().toPath().toAbsolutePath() ) );
         inserter.shutdown();
         assertTrue( new File( databaseLayout.databaseDirectory(), INTERNAL_LOG_FILE ).delete() );
     }

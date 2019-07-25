@@ -23,9 +23,7 @@ import org.junit.Test;
 import org.mockito.ArgumentCaptor;
 
 import java.net.URI;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 import org.neo4j.configuration.Config;
 import org.neo4j.server.CommunityNeoServer;
@@ -53,10 +51,7 @@ public class ManagementApiModuleTest
         when( neoServer.baseUri() ).thenReturn( new URI( "http://localhost:7575" ) );
         when( neoServer.getWebServer() ).thenReturn( webServer );
 
-        Map<String, String> params = new HashMap<>();
-        String managementPath = "/db/manage";
-        params.put( ServerSettings.management_api_path.name(), managementPath );
-        Config config = Config.defaults( params );
+        Config config = Config.defaults( ServerSettings.management_api_path, URI.create( "/db/manage" ) );
 
         when( neoServer.getConfig() ).thenReturn( config );
 

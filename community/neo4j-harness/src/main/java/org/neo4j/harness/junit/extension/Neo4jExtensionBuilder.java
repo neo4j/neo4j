@@ -71,16 +71,7 @@ public class Neo4jExtensionBuilder
      * @param value the config value
      * @return this configurator instance
      */
-    public Neo4jExtensionBuilder withConfig( Setting<?> key, String value )
-    {
-        builder = builder.withConfig( key, value );
-        return this;
-    }
-
-    /**
-     * @see #withConfig(org.neo4j.graphdb.config.Setting, String)
-     */
-    public Neo4jExtensionBuilder withConfig( String key, String value )
+    public <T> Neo4jExtensionBuilder withConfig( Setting<T> key, T value )
     {
         builder = builder.withConfig( key, value );
         return this;

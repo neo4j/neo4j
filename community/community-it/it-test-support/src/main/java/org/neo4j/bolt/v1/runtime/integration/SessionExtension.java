@@ -24,9 +24,7 @@ import org.junit.jupiter.api.extension.BeforeEachCallback;
 import org.junit.jupiter.api.extension.ExtensionContext;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.function.Supplier;
 
 import org.neo4j.bolt.BoltChannel;
@@ -40,8 +38,6 @@ import org.neo4j.common.DependencyResolver;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.dbms.api.DatabaseManagementService;
-import org.neo4j.dbms.database.DatabaseManager;
-import org.neo4j.graphdb.config.Setting;
 import org.neo4j.io.IOUtils;
 import org.neo4j.kernel.api.security.AuthManager;
 import org.neo4j.kernel.api.security.UserManagerSupplier;
@@ -50,8 +46,6 @@ import org.neo4j.logging.internal.NullLogService;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.time.Clocks;
 import org.neo4j.time.SystemNanoClock;
-
-import static org.neo4j.configuration.SettingValueParsers.FALSE;
 
 public class SessionExtension implements BeforeEachCallback, AfterEachCallback
 {
@@ -96,9 +90,7 @@ public class SessionExtension implements BeforeEachCallback, AfterEachCallback
     @Override
     public void beforeEach( ExtensionContext extensionContext )
     {
-        Map<Setting<?>,String> configMap = new HashMap<>();
-        configMap.put( GraphDatabaseSettings.auth_enabled, FALSE );
-        managementService = builderFactory.get().impermanent().setConfig( configMap ).build();
+        managementService = builderFactory.get().impermanent().setConfig( GraphDatabaseSettings.auth_enabled, false ).build();
         gdb = (GraphDatabaseAPI) managementService.database( GraphDatabaseSettings.DEFAULT_DATABASE_NAME );
         DependencyResolver resolver = gdb.getDependencyResolver();
         Authentication authentication = authentication( resolver.resolveDependency( AuthManager.class ),

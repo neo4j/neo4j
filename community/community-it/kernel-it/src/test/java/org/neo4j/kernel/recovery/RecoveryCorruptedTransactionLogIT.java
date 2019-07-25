@@ -43,6 +43,7 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.internal.recordstorage.Command;
+import org.neo4j.io.ByteUnit;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FlushableChannel;
 import org.neo4j.io.fs.StoreChannel;
@@ -100,7 +101,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.configuration.GraphDatabaseSettings.fail_on_corrupted_log_files;
 import static org.neo4j.configuration.GraphDatabaseSettings.logical_log_rotation_threshold;
-import static org.neo4j.configuration.SettingValueParsers.FALSE;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryByteCodes.TX_START;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryVersion.LATEST_VERSION;
 
@@ -257,7 +257,7 @@ class RecoveryCorruptedTransactionLogIT
 
         writeRandomBytesAfterLastCommandInLastLogFile( () -> ByteBuffer.wrap( new byte[]{1, 2, 3, 4, 5} ) );
 
-        managementService = databaseFactory.setConfig( fail_on_corrupted_log_files, FALSE ).build();
+        managementService = databaseFactory.setConfig( fail_on_corrupted_log_files, false ).build();
         try
         {
             logProvider.rawMessageMatcher().assertContains( "Fail to read transaction log version 0." );
@@ -619,7 +619,7 @@ class RecoveryCorruptedTransactionLogIT
     @Test
     void repetitiveRecoveryIfCorruptedLogsSmallTailsWithCheckpoints() throws IOException
     {
-        DatabaseManagementService managementService1 = databaseFactory.setConfig( logical_log_rotation_threshold, "1m" ).build();
+        DatabaseManagementService managementService1 = databaseFactory.setConfig( logical_log_rotation_threshold, ByteUnit.mebiBytes( 1 ) ).build();
         GraphDatabaseAPI database = (GraphDatabaseAPI) managementService1.database( DEFAULT_DATABASE_NAME );
         generateTransactionsAndRotate( database, 4, true );
         managementService1.shutdown();
@@ -630,7 +630,7 @@ class RecoveryCorruptedTransactionLogIT
         {
             byte bytesToTrim = (byte) (trimSizes[trimSize++ % trimSizes.length] + CHECKPOINT_COMMAND_SIZE);
             truncateBytesFromLastLogFile( bytesToTrim );
-            DatabaseManagementService managementService = databaseFactory.setConfig( fail_on_corrupted_log_files, FALSE ).build();
+            DatabaseManagementService managementService = databaseFactory.setConfig( fail_on_corrupted_log_files, false ).build();
             managementService.shutdown();
             int numberOfRecoveredTransactions = recoveryMonitor.getNumberOfRecoveredTransactions();
             assertThat( numberOfRecoveredTransactions, greaterThanOrEqualTo( 0 ) );
@@ -877,7 +877,7 @@ class RecoveryCorruptedTransactionLogIT
     private void startStopDbRecoveryOfCorruptedLogs()
     {
         DatabaseManagementService managementService = databaseFactory
-                .setConfig( fail_on_corrupted_log_files, FALSE ).build();
+                .setConfig( fail_on_corrupted_log_files, false ).build();
         managementService.shutdown();
     }
 

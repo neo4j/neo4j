@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted
 
+import java.lang.Boolean.FALSE
 import java.net.URL
 import java.util.concurrent.atomic.AtomicReference
 
@@ -27,7 +28,6 @@ import org.junit.Assert.assertThat
 import org.mockito.Mockito._
 import org.neo4j.configuration.GraphDatabaseSettings
 import org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME
-import org.neo4j.configuration.SettingValueParsers.FALSE
 import org.neo4j.cypher.internal.javacompat
 import org.neo4j.cypher.internal.javacompat.GraphDatabaseCypherService
 import org.neo4j.cypher.internal.runtime.interpreted.TransactionBoundQueryContext.IndexSearchMonitor
@@ -302,8 +302,8 @@ class TransactionBoundQueryContextTest extends CypherFunSuite {
     tx.close()
   }
 
-  private def startGraph(config:(Setting[_], String)) = {
-    val configs = Map[Setting[_], String](config)
+  private def startGraph(config:(Setting[_], Object)) = {
+    val configs = Map[Setting[_], Object](config)
     managementService = new TestDatabaseManagementServiceBuilder().impermanent().setConfig(configs.asJava).build()
     graphOps = managementService.database(DEFAULT_DATABASE_NAME)
     graph = new GraphDatabaseCypherService(graphOps)

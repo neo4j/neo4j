@@ -45,7 +45,6 @@ import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.neo4j.configuration.GraphDatabaseSettings.pagecache_memory;
 import static org.neo4j.configuration.GraphDatabaseSettings.pagecache_swapper;
-import static org.neo4j.internal.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.kernel.impl.pagecache.PageSwapperFactoryForTesting.TEST_PAGESWAPPER_NAME;
 
 @ExtendWith( EphemeralFileSystemExtension.class )
@@ -96,9 +95,9 @@ class ConfiguringPageCacheFactoryTest
     void mustUseAndLogConfiguredPageSwapper()
     {
         // Given
-        Config config = Config.defaults( stringMap(
-                pagecache_memory.name(), "8m",
-                pagecache_swapper.name(), TEST_PAGESWAPPER_NAME ) );
+        Config config = Config.newBuilder()
+                .set( pagecache_memory, "8m" )
+                .set( pagecache_swapper, TEST_PAGESWAPPER_NAME ).build();
         AssertableLogProvider logProvider = new AssertableLogProvider();
         Log log = logProvider.getLog( PageCache.class );
 
@@ -117,10 +116,9 @@ class ConfiguringPageCacheFactoryTest
     void mustThrowIfConfiguredPageSwapperCannotBeFound()
     {
         // Given
-        Config config = Config.defaults( stringMap(
-                pagecache_memory.name(), "8m",
-                pagecache_swapper.name(), "non-existing" ) );
-
+        Config config = Config.newBuilder()
+                .set( pagecache_memory, "8m" )
+                .set( pagecache_swapper, "non-existing" ).build();
         // When
         assertThrows( IllegalArgumentException.class, () -> new ConfiguringPageCacheFactory( fs, config, PageCacheTracer.NULL, PageCursorTracerSupplier.NULL,
                 NullLog.getInstance(), EmptyVersionContextSupplier.EMPTY, jobScheduler ).getOrCreatePageCache().close() );

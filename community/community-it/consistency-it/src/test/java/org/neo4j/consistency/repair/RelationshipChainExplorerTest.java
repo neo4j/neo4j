@@ -158,7 +158,7 @@ public class RelationshipChainExplorerTest
         return storeAccess.initialize();
     }
 
-    protected Map<Setting<?>,String> getConfig()
+    protected Map<Setting<?>,Object> getConfig()
     {
         return Map.of( GraphDatabaseSettings.record_format, getRecordFormatName() );
     }

@@ -43,7 +43,7 @@ class ExecutionEngineIT extends CypherFunSuite with GraphIcing {
   test("by default when using cypher 3.5 some queries should default to COST") {
     //given
     managementService = new TestDatabaseManagementServiceBuilder().impermanent()
-      .setConfig(GraphDatabaseSettings.cypher_parser_version, "3.5").build()
+      .setConfig(GraphDatabaseSettings.cypher_parser_version, GraphDatabaseSettings.CypherParserVersion.V_35).build()
     db = managementService.database(DEFAULT_DATABASE_NAME)
     val service = new GraphDatabaseCypherService(db)
 
@@ -62,7 +62,7 @@ class ExecutionEngineIT extends CypherFunSuite with GraphIcing {
     //given
     val managementService = new TestDatabaseManagementServiceBuilder()
       .impermanent()
-      .setConfig(GraphDatabaseSettings.cypher_parser_version, "4.0").build()
+      .setConfig(GraphDatabaseSettings.cypher_parser_version, GraphDatabaseSettings.CypherParserVersion.V_40).build()
     db = managementService.database(DEFAULT_DATABASE_NAME)
     val service = new GraphDatabaseCypherService(db)
 
@@ -81,8 +81,8 @@ class ExecutionEngineIT extends CypherFunSuite with GraphIcing {
     //given
     val managementService = new TestDatabaseManagementServiceBuilder()
       .impermanent()
-      .setConfig(GraphDatabaseSettings.cypher_planner, "COST")
-      .setConfig(GraphDatabaseSettings.cypher_parser_version, "4.0").build
+      .setConfig(GraphDatabaseSettings.cypher_planner, GraphDatabaseSettings.CypherPlanner.COST)
+      .setConfig(GraphDatabaseSettings.cypher_parser_version, GraphDatabaseSettings.CypherParserVersion.V_40).build
     db = managementService.database(DEFAULT_DATABASE_NAME)
     val service = new GraphDatabaseCypherService(db)
 
@@ -98,7 +98,7 @@ class ExecutionEngineIT extends CypherFunSuite with GraphIcing {
     //given
     val managementService = new TestDatabaseManagementServiceBuilder()
       .impermanent()
-      .setConfig(GraphDatabaseSettings.query_cache_size, "0").build()
+      .setConfig(GraphDatabaseSettings.query_cache_size, Integer.valueOf(1)).build()
     db = managementService.database(DEFAULT_DATABASE_NAME)
 
     // when

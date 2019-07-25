@@ -27,8 +27,6 @@ import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 
-import static org.neo4j.configuration.SettingValueParsers.TRUE;
-
 class DiagnosticsLoggingTest
 {
 
@@ -39,7 +37,7 @@ class DiagnosticsLoggingTest
         DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder()
                 .setInternalLogProvider( logProvider )
                 .impermanent()
-                .setConfig( GraphDatabaseSettings.dump_configuration, TRUE )
+                .setConfig( GraphDatabaseSettings.dump_configuration, true )
                 .setConfig( GraphDatabaseSettings.pagecache_memory, "4M" )
                 .build();
         try

@@ -170,7 +170,7 @@ public class ParallelBatchImporterTest
         long relationshipRandomSeed = random.nextLong();
         JobScheduler jobScheduler = new ThreadPoolJobScheduler();
         // This will have statistically half the nodes be considered dense
-        Config dbConfig = Config.defaults( GraphDatabaseSettings.dense_node_threshold, String.valueOf( RELATIONSHIPS_PER_NODE * 2 ) );
+        Config dbConfig = Config.defaults( GraphDatabaseSettings.dense_node_threshold, RELATIONSHIPS_PER_NODE * 2 );
         final BatchImporter inserter = new ParallelBatchImporter( databaseLayout,
             fs, null, config, NullLogService.getInstance(),
             processorAssigner, EMPTY, dbConfig, getFormat(), ImportLogic.NO_MONITOR, jobScheduler, Collector.EMPTY, TransactionLogsInitializer.INSTANCE );

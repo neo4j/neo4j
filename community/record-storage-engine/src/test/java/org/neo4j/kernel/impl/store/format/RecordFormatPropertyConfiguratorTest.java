@@ -53,7 +53,7 @@ class RecordFormatPropertyConfiguratorTest
     @Test
     void keepUserDefinedFormatConfig()
     {
-        Config config = Config.defaults( string_block_size, "36" );
+        Config config = Config.defaults( string_block_size, 36 );
         RecordFormats recordFormats = Standard.LATEST_RECORD_FORMATS;
         configureRecordFormat( recordFormats, config );
         assertEquals( 36, config.get( string_block_size ).intValue(), "Should keep used specified value" );

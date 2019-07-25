@@ -192,22 +192,21 @@ class ConfigTest
     @Test
     void testGroup()
     {
-        Map<String,String> settings =
-                Map.of( "test.connection.http.1.port", "1111",
-                        "test.connection.http.1.hostname", "0.0.0.0",
-                        "test.connection.http.1.secure", FALSE,
-                        "test.connection.http.2.port", "2222",
-                        "test.connection.http.2.hostname", "127.0.0.1" );
-
+        var g1 = TestConnectionGroupSetting.group( "1" );
+        var g2 = TestConnectionGroupSetting.group( "2" );
         Config config = Config.newBuilder()
                 .addGroupSettingClass( TestConnectionGroupSetting.class )
-                .setRaw( settings )
+                .set( g1.port, 1111 )
+                .set( g1.hostname, "0.0.0.0" )
+                .set( g1.secure, false )
+                .set( g2.port, 2222 )
+                .set( g2.hostname, "127.0.0.1" )
                 .build();
 
-        assertEquals(1111, config.get( TestConnectionGroupSetting.group( "1" ).port) );
-        assertEquals(2222, config.get( TestConnectionGroupSetting.group( "2" ).port) );
-        assertEquals(false, config.get( TestConnectionGroupSetting.group( "1" ).secure) );
-        assertEquals(true, config.get( TestConnectionGroupSetting.group( "2" ).secure) );
+        assertEquals(1111, config.get( g1.port ) );
+        assertEquals(2222, config.get( g2.port ) );
+        assertEquals(false, config.get( g1.secure ) );
+        assertEquals(true, config.get( g2.secure ) );
 
         assertThrows( IllegalArgumentException.class, () -> config.get( TestConnectionGroupSetting.group( "not_specified_id" ).port ) );
     }
@@ -215,12 +214,12 @@ class ConfigTest
     @Test
     void testGroupInheritance()
     {
+        ChildGroup group = new ChildGroup( "1" );
         Config config = Config.newBuilder()
                 .addGroupSettingClass( ChildGroup.class )
-                .setRaw( Map.of( "test.inheritance.1.child", "child" ) )
+                .set( group.childSetting, "child" )
                 .build();
 
-        ChildGroup group = new ChildGroup( "1" );
         assertEquals( "child", config.get( group.childSetting ) );
         assertEquals( "parent", config.get( group.parentSetting ) );
     }
@@ -228,13 +227,12 @@ class ConfigTest
     @Test
     void testValidator()
     {
-        Map<String,String> settings = Map.of( "test.connection.http.1.port", "1111","test.connection.http.2.port", "1111" );
-
         Config.Builder builder = Config.newBuilder()
                 .addSettingsClass( TestSettings.class )
                 .addGroupSettingClass( TestConnectionGroupSetting.class )
                 .addValidator( TestConnectionGroupSetting.class )
-                .setRaw( settings );
+                .set( TestConnectionGroupSetting.group( "1" ).port, 1111 )
+                .set( TestConnectionGroupSetting.group( "2" ).port, 1111 );
 
         Exception e = assertThrows( IllegalArgumentException.class, builder::build );
         assertEquals( "Need unique ports", e.getMessage() );
@@ -267,16 +265,14 @@ class ConfigTest
     @Test
     void testGetGroups()
     {
-        Map<String,String> settings =
-                Map.of( "test.connection.http.default.port", "7474",
-                        "test.connection.http.1.port", "1111",
-                        "test.connection.http.1.hostname", "0.0.0.0",
-                        "test.connection.http.1.secure", FALSE,
-                        "test.connection.http.2.port", "2222",
-                        "test.connection.http.2.hostname", "127.0.0.1" );
         Config config = Config.newBuilder()
                 .addGroupSettingClass( TestConnectionGroupSetting.class )
-                .setRaw( settings )
+                .set( TestConnectionGroupSetting.group( "default" ).port, 7474 )
+                .set( TestConnectionGroupSetting.group( "1" ).port, 1111 )
+                .set( TestConnectionGroupSetting.group( "1" ).hostname, "0.0.0.0" )
+                .set( TestConnectionGroupSetting.group( "1" ).secure, false )
+                .set( TestConnectionGroupSetting.group( "2" ).port, 2222 )
+                .set( TestConnectionGroupSetting.group( "2" ).hostname, "127.0.0.1" )
                 .build();
 
         var groups = config.getGroups( TestConnectionGroupSetting.class );
@@ -330,14 +326,12 @@ class ConfigTest
     @Test
     void testGroupFromConfig()
     {
-        Map<String,String> fromSettings =
-                Map.of( "test.connection.http.default.port", "7474",
-                        "test.connection.http.1.port", "1111",
-                        "test.connection.http.1.hostname", "0.0.0.0",
-                        "test.connection.http.1.secure", FALSE );
         Config fromConfig = Config.newBuilder()
                 .addGroupSettingClass( TestConnectionGroupSetting.class )
-                .setRaw( fromSettings )
+                .set( TestConnectionGroupSetting.group( "default" ).port, 7474 )
+                .set( TestConnectionGroupSetting.group( "1" ).port, 1111 )
+                .set( TestConnectionGroupSetting.group( "1" ).hostname, "0.0.0.0" )
+                .set( TestConnectionGroupSetting.group( "1" ).secure, false  )
                 .build();
 
         Config config1 = Config.newBuilder()
@@ -349,13 +343,13 @@ class ConfigTest
         assertEquals( 7474, config1.get( groups1.get( "default" ).port ) );
 
         Map<String,String> settings =
-                Map.of( "test.connection.http.1.port", "3333",
-                        "test.connection.http.2.port", "2222",
-                        "test.connection.http.2.hostname", "127.0.0.1" );
+                Map.of(  );
         Config config2 = Config.newBuilder()
                 .fromConfig( fromConfig )
                 .addGroupSettingClass( TestConnectionGroupSetting.class )
-                .setRaw( settings )
+                .set( TestConnectionGroupSetting.group( "1" ).port, 3333 )
+                .set( TestConnectionGroupSetting.group( "2" ).port, 2222 )
+                .set( TestConnectionGroupSetting.group( "2" ).hostname, "127.0.0.1" )
                 .build();
 
         var groups2 = config2.getGroups( TestConnectionGroupSetting.class );
@@ -552,10 +546,10 @@ class ConfigTest
     @Test
     void testDisableAllConnectors()
     {
-        Config config = Config.defaults( Map.of(
-                BoltConnector.enabled.name(), TRUE,
-                HttpConnector.enabled.name(), TRUE,
-                HttpsConnector.enabled.name(), TRUE ) );
+        Config config = Config.newBuilder()
+                .set( BoltConnector.enabled, true )
+                .set( HttpConnector.enabled, true )
+                .set( HttpsConnector.enabled, true ).build();
 
         ConfigUtils.disableAllConnectors( config );
 
@@ -663,12 +657,12 @@ class ConfigTest
 
     private static void testAddrMigration( Setting<SocketAddress> listenAddr, Setting<SocketAddress> advertisedAddr )
     {
-        Config config1 = Config.defaults( listenAddr, "foo:111" );
-        Config config2 = Config.defaults( listenAddr, ":222" );
-        Config config3 = Config.newBuilder().set( listenAddr, new SocketAddress( 333 ) ).set( advertisedAddr, new SocketAddress( "bar" ) ).build();
-        Config config4 = Config.newBuilder().set( listenAddr, new SocketAddress( "foo", 444 ) ).set( advertisedAddr, new SocketAddress( 555 ) ).build();
-        Config config5 = Config.newBuilder().set( listenAddr, new SocketAddress( "foo" ) ).set( listenAddr, new SocketAddress( "bar" ) ).build();
-        Config config6 = Config.newBuilder().set( listenAddr, new SocketAddress( "foo", 666 ) ).set( advertisedAddr, new SocketAddress( "bar", 777 ) ).build();
+        Config config1 = Config.newBuilder().setRaw( Map.of( listenAddr.name(), "foo:111" ) ).build();
+        Config config2 = Config.newBuilder().setRaw( Map.of( listenAddr.name(), ":222" ) ).build();
+        Config config3 = Config.newBuilder().setRaw( Map.of( listenAddr.name(), ":333", advertisedAddr.name(), "bar" ) ).build();
+        Config config4 = Config.newBuilder().setRaw( Map.of( listenAddr.name(), "foo:444", advertisedAddr.name(), ":555" ) ).build();
+        Config config5 = Config.newBuilder().setRaw( Map.of( listenAddr.name(), "foo", advertisedAddr.name(), "bar" ) ).build();
+        Config config6 = Config.newBuilder().setRaw( Map.of( listenAddr.name(), "foo:666", advertisedAddr.name(), "bar:777" ) ).build();
 
         var logProvider = new AssertableLogProvider();
         config1.setLogger( logProvider.getLog( Config.class ) );
@@ -682,7 +676,7 @@ class ConfigTest
         assertEquals( new SocketAddress( "localhost", 222 ), config2.get( advertisedAddr ) );
         assertEquals( new SocketAddress( "bar", 333 ), config3.get( advertisedAddr ) );
         assertEquals( new SocketAddress( "localhost", 555 ), config4.get( advertisedAddr ) );
-        assertEquals( new SocketAddress( "bar", advertisedAddr.defaultValue().getPort() ), config5.get( listenAddr ) );
+        assertEquals( new SocketAddress( "bar", advertisedAddr.defaultValue().getPort() ), config5.get( advertisedAddr ) );
         assertEquals( new SocketAddress( "bar", 777 ), config6.get( advertisedAddr ) );
 
         String msg = "Use of deprecated setting port propagation. port %s is migrated from %s to %s.";

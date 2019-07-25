@@ -74,7 +74,7 @@ class RelationshipCreatorTest
     @ExtensionCallback
     static void configure( TestDatabaseManagementServiceBuilder builder )
     {
-        builder.setConfig( GraphDatabaseSettings.dense_node_threshold, String.valueOf( DENSE_NODE_THRESHOLD ) );
+        builder.setConfig( GraphDatabaseSettings.dense_node_threshold, DENSE_NODE_THRESHOLD );
     }
 
     private IdGeneratorFactory idGeneratorFactory;

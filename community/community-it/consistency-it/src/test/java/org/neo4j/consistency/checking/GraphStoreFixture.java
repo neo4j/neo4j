@@ -108,8 +108,6 @@ import org.neo4j.token.api.TokenHolder;
 
 import static java.lang.System.currentTimeMillis;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
-import static org.neo4j.configuration.SettingValueParsers.FALSE;
-import static org.neo4j.configuration.SettingValueParsers.TRUE;
 import static org.neo4j.consistency.ConsistencyCheckService.defaultConsistencyCheckThreadsNumber;
 import static org.neo4j.consistency.internal.SchemaIndexExtensionLoader.instantiateExtensions;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
@@ -199,7 +197,7 @@ public abstract class GraphStoreFixture extends ConfigurablePageCacheRule implem
             fileSystem = new DefaultFileSystemAbstraction();
             PageCache pageCache = getPageCache( fileSystem );
             LogProvider logProvider = NullLogProvider.getInstance();
-            Config config = Config.defaults( GraphDatabaseSettings.read_only, readOnly ? TRUE : FALSE );
+            Config config = Config.defaults( GraphDatabaseSettings.read_only, readOnly ? true : false );
             DefaultIdGeneratorFactory idGeneratorFactory = new DefaultIdGeneratorFactory( fileSystem, immediate() );
             StoreFactory storeFactory = new StoreFactory(
                     directory.databaseLayout(), config, idGeneratorFactory, pageCache, fileSystem, logProvider );
@@ -237,7 +235,7 @@ public abstract class GraphStoreFixture extends ConfigurablePageCacheRule implem
     {
         if ( counts == null )
         {
-            Config config = Config.defaults( GraphDatabaseSettings.read_only, TRUE );
+            Config config = Config.defaults( GraphDatabaseSettings.read_only, true );
             counts = new ReadOnlyCountsTracker( NullLogProvider.getInstance(), fileSystem, pageCache, config, databaseLayout() );
             try
             {
@@ -718,7 +716,7 @@ public abstract class GraphStoreFixture extends ConfigurablePageCacheRule implem
                 // Some tests using this fixture were written when the label_block_size was 60 and so hardcoded
                 // tests and records around that. Those tests could change, but the simpler option is to just
                 // keep the block size to 60 and let them be.
-                .setConfig( GraphDatabaseSettings.label_block_size, "60" )
+                .setConfig( GraphDatabaseSettings.label_block_size, 60 )
                 .setConfig( getConfig() ).build();
         // Some tests using this fixture were written when the label_block_size was 60 and so hardcoded
         // tests and records around that. Those tests could change, but the simpler option is to just
@@ -747,7 +745,7 @@ public abstract class GraphStoreFixture extends ConfigurablePageCacheRule implem
         }
     }
 
-    protected abstract Map<Setting<?>, String> getConfig();
+    protected abstract Map<Setting<?>, Object> getConfig();
 
     @Override
     public Statement apply( final Statement base, Description description )

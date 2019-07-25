@@ -131,7 +131,7 @@ class LogFilesBuilderTest
     void buildContextWithCustomAbsoluteLogFilesLocations() throws Throwable
     {
         File customLogDirectory = testDirectory.directory( "absoluteCustomLogDirectory" );
-        Config customLogLocationConfig = Config.defaults( transaction_logs_root_path, customLogDirectory.getAbsolutePath() );
+        Config customLogLocationConfig = Config.defaults( transaction_logs_root_path, customLogDirectory.toPath().toAbsolutePath() );
         LogFiles logFiles = builder( testDirectory.databaseLayout( of( customLogLocationConfig ) ), fileSystem )
                 .withLogVersionRepository( new SimpleLogVersionRepository() )
                 .withTransactionIdStore( new SimpleTransactionIdStore() )

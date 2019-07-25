@@ -69,6 +69,7 @@ import org.neo4j.graphdb.Result;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.impl.index.schema.FulltextIndexSettingsKeys;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
+import org.neo4j.logging.Level;
 import org.neo4j.scheduler.Group;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.test.ThreadTestUtils;
@@ -98,7 +99,6 @@ import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
-import static org.neo4j.configuration.SettingValueParsers.TRUE;
 import static org.neo4j.internal.helpers.collection.Iterables.single;
 import static org.neo4j.kernel.impl.index.schema.FulltextIndexSettingsKeys.ANALYZER;
 import static org.neo4j.kernel.impl.index.schema.FulltextIndexSettingsKeys.PROCEDURE_ANALYZER;
@@ -144,7 +144,7 @@ public class FulltextProceduresTest
     public void before()
     {
         builder = new DatabaseManagementServiceBuilder( testDirectory.storeDir() );
-        builder.setConfig( GraphDatabaseSettings.store_internal_log_level, "DEBUG" );
+        builder.setConfig( GraphDatabaseSettings.store_internal_log_level, Level.DEBUG );
     }
 
     @After
@@ -657,7 +657,7 @@ public class FulltextProceduresTest
     @Test
     public void fulltextIndexesMustBeEventuallyConsistentByDefaultWhenThisIsConfigured() throws InterruptedException
     {
-        builder.setConfig( FulltextSettings.eventually_consistent, TRUE );
+        builder.setConfig( FulltextSettings.eventually_consistent, true );
         db = createDatabase();
 
         try ( Transaction tx = db.beginTx() )

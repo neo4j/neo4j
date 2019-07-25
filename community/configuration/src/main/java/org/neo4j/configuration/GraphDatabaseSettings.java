@@ -58,7 +58,6 @@ import static org.neo4j.configuration.SettingValueParsers.PATH;
 import static org.neo4j.configuration.SettingValueParsers.SOCKET_ADDRESS;
 import static org.neo4j.configuration.SettingValueParsers.STRING;
 import static org.neo4j.configuration.SettingValueParsers.TIMEZONE;
-import static org.neo4j.configuration.SettingValueParsers.TRUE;
 import static org.neo4j.configuration.SettingValueParsers.listOf;
 import static org.neo4j.configuration.SettingValueParsers.ofEnum;
 import static org.neo4j.io.ByteUnit.kibiBytes;
@@ -397,7 +396,7 @@ public class GraphDatabaseSettings implements SettingsDeclaration
     @Internal
     public static final Setting<Integer> cypher_worker_count = newBuilder( "unsupported.cypher.number_of_workers", INT, 0 ).build();
 
-    enum CypherMorselRuntimeScheduler
+    public enum CypherMorselRuntimeScheduler
     {
         SIMPLE, SINGLE_THREADED, LOCK_FREE
     }
@@ -1106,10 +1105,10 @@ public class GraphDatabaseSettings implements SettingsDeclaration
      * Default settings for server. The default values are assumes to be default for embedded deployments through the code.
      * This map contains default server settings that you can pass to the builders.
      */
-    public static final Map<String,String> SERVER_DEFAULTS = Map.of(
-            HttpConnector.enabled.name(), TRUE,
-            HttpsConnector.enabled.name(), TRUE,
-            BoltConnector.enabled.name(), TRUE,
-            auth_enabled.name(), TRUE
+    public static final Map<Setting<?>, Object> SERVER_DEFAULTS = Map.of(
+            HttpConnector.enabled, true,
+            HttpsConnector.enabled, true,
+            BoltConnector.enabled, true,
+            auth_enabled, true
     );
 }

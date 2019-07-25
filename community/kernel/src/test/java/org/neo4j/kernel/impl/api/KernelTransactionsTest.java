@@ -520,7 +520,7 @@ class KernelTransactionsTest
     @Test
     void doNotAllowToCreateMoreThenMaxActiveTransactions() throws Throwable
     {
-        Config config = Config.defaults( GraphDatabaseSettings.max_concurrent_transactions, "2" );
+        Config config = Config.defaults( GraphDatabaseSettings.max_concurrent_transactions, 2 );
         KernelTransactions kernelTransactions = newKernelTransactions( config );
         KernelTransaction ignore = kernelTransactions.newInstance( explicit, none(), EMBEDDED_CONNECTION, 0L );
         KernelTransaction ignore2 = kernelTransactions.newInstance( explicit, none(), EMBEDDED_CONNECTION, 0L );
@@ -532,7 +532,7 @@ class KernelTransactionsTest
     @Test
     void allowToBeginTransactionsWhenSlotsAvailableAgain() throws Throwable
     {
-        Config config = Config.defaults( GraphDatabaseSettings.max_concurrent_transactions, "2" );
+        Config config = Config.defaults( GraphDatabaseSettings.max_concurrent_transactions, 2 );
         KernelTransactions kernelTransactions = newKernelTransactions( config );
         KernelTransaction ignore = kernelTransactions.newInstance( explicit, none(), EMBEDDED_CONNECTION, 0L );
         KernelTransaction ignore2 = kernelTransactions.newInstance( explicit, none(), EMBEDDED_CONNECTION, 0L );
@@ -547,7 +547,7 @@ class KernelTransactionsTest
     @Test
     void allowToBeginTransactionsWhenConfigChanges() throws Throwable
     {
-        Config config = Config.defaults( GraphDatabaseSettings.max_concurrent_transactions, "2" );
+        Config config = Config.defaults( GraphDatabaseSettings.max_concurrent_transactions, 2 );
         KernelTransactions kernelTransactions = newKernelTransactions( config );
         KernelTransaction ignore = kernelTransactions.newInstance( explicit, none(), EMBEDDED_CONNECTION, 0L );
         KernelTransaction ignore2 = kernelTransactions.newInstance( explicit, none(), EMBEDDED_CONNECTION, 0L );

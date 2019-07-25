@@ -33,6 +33,7 @@ import java.util.function.Supplier;
 
 import org.neo4j.configuration.connectors.BoltConnector;
 import org.neo4j.configuration.connectors.ConnectorPortRegister;
+import org.neo4j.configuration.helpers.SocketAddress;
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.config.Setting;
@@ -44,13 +45,12 @@ import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.rule.TestDirectory;
 
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
-import static org.neo4j.configuration.SettingValueParsers.TRUE;
 import static org.neo4j.configuration.connectors.BoltConnector.EncryptionLevel.OPTIONAL;
 
 public class Neo4jWithSocket extends ExternalResource
 {
     private final Supplier<FileSystemAbstraction> fileSystemProvider;
-    private final Consumer<Map<Setting<?>,String>> configure;
+    private final Consumer<Map<Setting<?>,Object>> configure;
     private final TestDirectory testDirectory;
     private final TestDatabaseManagementServiceBuilder graphDatabaseFactory;
     private GraphDatabaseService gdb;
@@ -65,19 +65,19 @@ public class Neo4jWithSocket extends ExternalResource
         } );
     }
 
-    public Neo4jWithSocket( Class<?> testClass, Consumer<Map<Setting<?>,String>> configure )
+    public Neo4jWithSocket( Class<?> testClass, Consumer<Map<Setting<?>,Object>> configure )
     {
         this( testClass, new TestDatabaseManagementServiceBuilder(), configure );
     }
 
     public Neo4jWithSocket( Class<?> testClass, TestDatabaseManagementServiceBuilder graphDatabaseFactory,
-            Consumer<Map<Setting<?>,String>> configure )
+            Consumer<Map<Setting<?>,Object>> configure )
     {
         this( testClass, graphDatabaseFactory, EphemeralFileSystemAbstraction::new, configure );
     }
 
     public Neo4jWithSocket( Class<?> testClass, TestDatabaseManagementServiceBuilder graphDatabaseFactory,
-            Supplier<FileSystemAbstraction> fileSystemProvider, Consumer<Map<Setting<?>,String>> configure )
+            Supplier<FileSystemAbstraction> fileSystemProvider, Consumer<Map<Setting<?>,Object>> configure )
     {
         this.testDirectory = TestDirectory.testDirectory( testClass, fileSystemProvider.get() );
         this.graphDatabaseFactory = graphDatabaseFactory;
@@ -158,14 +158,14 @@ public class Neo4jWithSocket extends ExternalResource
         }
     }
 
-    public void ensureDatabase( Consumer<Map<Setting<?>,String>> overrideSettingsFunction )
+    public void ensureDatabase( Consumer<Map<Setting<?>,Object>> overrideSettingsFunction )
     {
         if ( gdb != null )
         {
             return;
         }
 
-        Map<Setting<?>,String> settings = configure( overrideSettingsFunction );
+        Map<Setting<?>,Object> settings = configure( overrideSettingsFunction );
         File storeDir = new File( workingDirectory, "storeDir" );
         graphDatabaseFactory.setFileSystem( fileSystemProvider.get() );
         managementService = graphDatabaseFactory.setDatabaseRootDirectory( storeDir ).impermanent().
@@ -175,12 +175,12 @@ public class Neo4jWithSocket extends ExternalResource
                 ((GraphDatabaseAPI) gdb).getDependencyResolver().resolveDependency( ConnectorPortRegister.class );
     }
 
-    private Map<Setting<?>,String> configure( Consumer<Map<Setting<?>,String>> overrideSettingsFunction )
+    private Map<Setting<?>,Object> configure( Consumer<Map<Setting<?>,Object>> overrideSettingsFunction )
     {
-        Map<Setting<?>,String> settings = new HashMap<>();
-        settings.put( BoltConnector.enabled, TRUE );
-        settings.put( BoltConnector.listen_address, "localhost:0" );
-        settings.put( BoltConnector.encryption_level, OPTIONAL.name() );
+        Map<Setting<?>,Object> settings = new HashMap<>();
+        settings.put( BoltConnector.enabled, true );
+        settings.put( BoltConnector.listen_address, new SocketAddress( "localhost", 0 ) );
+        settings.put( BoltConnector.encryption_level, OPTIONAL );
         configure.accept( settings );
         overrideSettingsFunction.accept( settings );
         return settings;

@@ -107,7 +107,7 @@ public class DbRepresentation
 
     public static DbRepresentation of( File storeDirectory, String databaseName )
     {
-        Config config = Config.defaults( transaction_logs_root_path, storeDirectory.getAbsolutePath() );
+        Config config = Config.defaults( transaction_logs_root_path, storeDirectory.toPath().toAbsolutePath() );
         return of( storeDirectory, databaseName, config );
     }
 

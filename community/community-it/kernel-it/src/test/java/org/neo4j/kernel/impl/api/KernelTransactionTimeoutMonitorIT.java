@@ -24,6 +24,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
 
+import java.time.Duration;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -67,8 +68,8 @@ public class KernelTransactionTimeoutMonitorIT
     @ExtensionCallback
     protected void configure( TestDatabaseManagementServiceBuilder builder )
     {
-        builder.setConfig( lock_manager, "community" );
-        builder.setConfig( transaction_monitor_check_interval, "100ms" );
+        builder.setConfig( lock_manager, "community");
+        builder.setConfig( transaction_monitor_check_interval, Duration.ofMillis( 100 ) );
     }
 
     @BeforeEach

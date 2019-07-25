@@ -92,7 +92,6 @@ import static org.junit.jupiter.params.provider.Arguments.arguments;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
-import static org.neo4j.configuration.SettingValueParsers.TRUE;
 import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.verifyFilesHaveSameContent;
 import static org.neo4j.storageengine.migration.StoreMigrationParticipant.NOT_PARTICIPATING;
 
@@ -111,7 +110,7 @@ public class StoreUpgraderTest
     private DatabaseLayout databaseLayout;
     private JobScheduler jobScheduler;
 
-    private final Config allowMigrateConfig = Config.defaults( GraphDatabaseSettings.allow_upgrade, TRUE );
+    private final Config allowMigrateConfig = Config.defaults( GraphDatabaseSettings.allow_upgrade, true );
     private File prepareDatabaseDirectory;
 
     private static Collection<Arguments> versions()

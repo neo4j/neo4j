@@ -62,7 +62,6 @@ import org.neo4j.token.TokenHolders;
 import static org.junit.Assert.assertTrue;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.graphdb.Label.label;
-import static org.neo4j.internal.helpers.collection.MapUtil.stringMap;
 
 public class DetectAllRelationshipInconsistenciesIT
 {
@@ -142,8 +141,10 @@ public class DetectAllRelationshipInconsistenciesIT
 
     private Config getTuningConfiguration()
     {
-        return Config.defaults( stringMap( GraphDatabaseSettings.pagecache_memory.name(), "8m",
-                          GraphDatabaseSettings.record_format.name(), getRecordFormatName() ) );
+        return Config.newBuilder()
+                .set( GraphDatabaseSettings.pagecache_memory, "8m" )
+                .set( GraphDatabaseSettings.record_format, getRecordFormatName() )
+                .build();
     }
 
     private GraphDatabaseAPI getGraphDatabaseAPI()
@@ -159,7 +160,7 @@ public class DetectAllRelationshipInconsistenciesIT
         return StringUtils.EMPTY;
     }
 
-    protected Map<Setting<?>,String> getConfig()
+    protected Map<Setting<?>,Object> getConfig()
     {
         return Map.of( GraphDatabaseSettings.record_format, getRecordFormatName() );
     }

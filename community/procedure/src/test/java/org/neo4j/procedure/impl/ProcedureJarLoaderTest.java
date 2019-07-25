@@ -453,7 +453,7 @@ public class ProcedureJarLoaderTest
 
     private ProcedureConfig procedureConfig()
     {
-        Config config = Config.defaults( procedure_unrestricted, "org.neo4j.kernel.impl.proc.unsafeFullAccess*" );
+        Config config = Config.defaults( procedure_unrestricted, List.of( "org.neo4j.kernel.impl.proc.unsafeFullAccess*" ) );
         return new ProcedureConfig( config );
     }
 }

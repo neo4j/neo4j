@@ -46,7 +46,7 @@ public class RequiredTransportEncryptionIT
 {
     @Rule
     public Neo4jWithSocket server = new Neo4jWithSocket( getClass(),
-            settings -> settings.put( BoltConnector.encryption_level, REQUIRED.name() ) );
+            settings -> settings.put( BoltConnector.encryption_level, REQUIRED ) );
 
     @Parameterized.Parameter( 0 )
     public Factory<TransportConnection> cf;

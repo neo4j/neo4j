@@ -117,7 +117,7 @@ class RecoveryRequiredCheckerTest
     void shouldBeAbleToRecoverBrokenStoreWithLogsInSeparateAbsoluteLocation() throws Exception
     {
         File customTransactionLogsLocation = testDirectory.directory( DEFAULT_TX_LOGS_ROOT_DIR_NAME );
-        Config config = Config.defaults( transaction_logs_root_path, customTransactionLogsLocation.getAbsolutePath() );
+        Config config = Config.defaults( transaction_logs_root_path, customTransactionLogsLocation.toPath().toAbsolutePath() );
         recoverBrokenStoreWithConfig( config );
     }
 

@@ -80,7 +80,6 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.junit.runners.Parameterized.Parameter;
 import static org.junit.runners.Parameterized.Parameters;
-import static org.neo4j.configuration.SettingValueParsers.FALSE;
 import static org.neo4j.internal.helpers.ArrayUtil.single;
 import static org.neo4j.internal.helpers.collection.Iterables.filter;
 import static org.neo4j.internal.schema.SchemaDescriptor.forLabel;
@@ -115,7 +114,7 @@ public class IndexStatisticsTest
 
     @Rule
     public final DbmsRule dbRule = new EmbeddedDbmsRule()
-            .withSetting( GraphDatabaseSettings.index_background_sampling_enabled, FALSE )
+            .withSetting( GraphDatabaseSettings.index_background_sampling_enabled, false )
             .startLazily();
     @Rule
     public final RandomRule random = new RandomRule();
@@ -133,7 +132,7 @@ public class IndexStatisticsTest
     @Before
     public void before()
     {
-        dbRule.withSetting( GraphDatabaseSettings.multi_threaded_schema_index_population_enabled, multiThreadedPopulationEnabled + "" );
+        dbRule.withSetting( GraphDatabaseSettings.multi_threaded_schema_index_population_enabled, multiThreadedPopulationEnabled );
 
         int batchSize = random.nextInt( 1, 5 );
         FeatureToggles.set( MultipleIndexPopulator.class, MultipleIndexPopulator.QUEUE_THRESHOLD_NAME, batchSize );

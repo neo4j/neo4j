@@ -241,5 +241,5 @@ class CommunityMultiDatabaseDDLAcceptanceTest extends CommunityDDLAcceptanceTest
   }
 
   // Use the default value instead of the new value in CommunityDDLAcceptanceTestBase
-  override def databaseConfig(): Map[Setting[_], String] = Map()
+  override def databaseConfig(): Map[Setting[_], Object] = Map()
 }

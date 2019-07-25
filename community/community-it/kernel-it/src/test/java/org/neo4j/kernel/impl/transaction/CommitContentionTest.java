@@ -127,7 +127,7 @@ class CommitContentionTest
     {
         Dependencies dependencies = new Dependencies();
         dependencies.satisfyDependencies( SystemGraphInitializer.NO_OP );   // disable system graph construction because it will interfere with some tests
-        Config cfg = Config.defaults( neo4j_home, testDirectory.absolutePath().getAbsolutePath() );
+        Config cfg = Config.defaults( neo4j_home, testDirectory.absolutePath().toPath() );
         managementService = new DatabaseManagementServiceFactory( DatabaseInfo.COMMUNITY, globalModule -> new CommunityEditionModule( globalModule )
         {
             @Override

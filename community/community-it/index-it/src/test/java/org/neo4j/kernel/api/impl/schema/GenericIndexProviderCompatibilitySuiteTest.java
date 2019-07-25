@@ -36,7 +36,6 @@ import org.neo4j.kernel.impl.index.schema.NativeIndexAccessor;
 
 import static org.neo4j.configuration.GraphDatabaseSettings.SchemaIndex.NATIVE_BTREE10;
 import static org.neo4j.configuration.GraphDatabaseSettings.default_schema_provider;
-import static org.neo4j.internal.helpers.collection.MapUtil.stringMap;
 
 public class GenericIndexProviderCompatibilitySuiteTest extends IndexProviderCompatibilityTestSuite
 {
@@ -44,7 +43,7 @@ public class GenericIndexProviderCompatibilitySuiteTest extends IndexProviderCom
     protected IndexProvider createIndexProvider( PageCache pageCache, FileSystemAbstraction fs, File graphDbDir )
     {
         IndexProvider.Monitor monitor = IndexProvider.Monitor.EMPTY;
-        Config config = Config.defaults( stringMap( default_schema_provider.name(), NATIVE_BTREE10.providerName() ) );
+        Config config = Config.defaults( default_schema_provider, NATIVE_BTREE10.providerName() );
         OperationalMode mode = OperationalMode.SINGLE;
         RecoveryCleanupWorkCollector recoveryCleanupWorkCollector = RecoveryCleanupWorkCollector.immediate();
         return GenericNativeIndexProviderFactory.create( pageCache, graphDbDir, fs, monitor, config, mode, recoveryCleanupWorkCollector );

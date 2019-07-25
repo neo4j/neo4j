@@ -35,8 +35,8 @@ abstract class ReactiveResultStressTestBase[CONTEXT <: RuntimeContext](edition: 
                                                                        runtime: CypherRuntime[CONTEXT],
                                                                        sizeHint: Int)
   extends RuntimeTestSuite[CONTEXT](edition.copyWith(
-    cypher_morsel_size -> MORSEL_SIZE.toString,
-    cypher_worker_count -> WORKERS.toString), runtime) with Eventually {
+    cypher_morsel_size -> Integer.valueOf(MORSEL_SIZE),
+    cypher_worker_count -> Integer.valueOf(WORKERS)), runtime) with Eventually {
   private val random = new Random(seed = 31)
 
   test("should handle allNodeScan") {

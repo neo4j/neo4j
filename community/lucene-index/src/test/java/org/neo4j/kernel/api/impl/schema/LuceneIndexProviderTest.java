@@ -44,7 +44,6 @@ import org.neo4j.test.extension.TestDirectoryExtension;
 import org.neo4j.test.rule.TestDirectory;
 
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.neo4j.configuration.SettingValueParsers.TRUE;
 import static org.neo4j.internal.schema.IndexPrototype.forSchema;
 import static org.neo4j.internal.schema.SchemaDescriptor.forLabel;
 import static org.neo4j.kernel.api.index.IndexDirectoryStructure.directoriesByProvider;
@@ -71,7 +70,7 @@ class LuceneIndexProviderTest
     @Test
     void shouldFailToInvokePopulatorInReadOnlyMode()
     {
-        Config readOnlyConfig = Config.defaults( GraphDatabaseSettings.read_only, TRUE );
+        Config readOnlyConfig = Config.defaults( GraphDatabaseSettings.read_only, true );
         LuceneIndexProvider readOnlyIndexProvider =
                 getLuceneIndexProvider( readOnlyConfig, new DirectoryFactory.InMemoryDirectoryFactory(), fileSystem, graphDbDir );
         assertThrows( UnsupportedOperationException.class,
@@ -84,7 +83,7 @@ class LuceneIndexProviderTest
         DirectoryFactory directoryFactory = DirectoryFactory.PERSISTENT;
         createEmptySchemaIndex( directoryFactory );
 
-        Config readOnlyConfig = Config.defaults( GraphDatabaseSettings.read_only, TRUE );
+        Config readOnlyConfig = Config.defaults( GraphDatabaseSettings.read_only, true );
         LuceneIndexProvider readOnlyIndexProvider = getLuceneIndexProvider( readOnlyConfig,
                 directoryFactory, fileSystem, graphDbDir );
         IndexAccessor onlineAccessor = getIndexAccessor( readOnlyConfig, readOnlyIndexProvider );
@@ -95,7 +94,7 @@ class LuceneIndexProviderTest
     @Test
     void indexUpdateNotAllowedInReadOnlyMode() throws Exception
     {
-        Config readOnlyConfig = Config.defaults( GraphDatabaseSettings.read_only, TRUE );
+        Config readOnlyConfig = Config.defaults( GraphDatabaseSettings.read_only, true );
         LuceneIndexProvider readOnlyIndexProvider = getLuceneIndexProvider( readOnlyConfig,
                 new DirectoryFactory.InMemoryDirectoryFactory(), fileSystem, graphDbDir );
 
@@ -108,7 +107,7 @@ class LuceneIndexProviderTest
     {
         // IndexAccessor.force is used in check-pointing, and must be allowed in read-only mode as it would otherwise
         // prevent backups from working.
-        Config readOnlyConfig = Config.defaults( GraphDatabaseSettings.read_only, TRUE );
+        Config readOnlyConfig = Config.defaults( GraphDatabaseSettings.read_only, true );
         LuceneIndexProvider readOnlyIndexProvider = getLuceneIndexProvider( readOnlyConfig,
                 new DirectoryFactory.InMemoryDirectoryFactory(), fileSystem, graphDbDir );
 

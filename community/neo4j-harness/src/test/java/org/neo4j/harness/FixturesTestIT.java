@@ -23,6 +23,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.io.File;
+import java.nio.file.Path;
 
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.graphdb.Label;
@@ -217,9 +218,8 @@ class FixturesTestIT
 
     private Neo4jBuilder getServerBuilder( File targetFolder )
     {
-        String relativePath = ServerTestUtils.getRelativePath( testDir.directory(), GraphDatabaseSettings.legacy_certificates_directory);
-        return newInProcessBuilder( targetFolder )
-                .withConfig( GraphDatabaseSettings.legacy_certificates_directory.name(), relativePath );
+        Path relativePath = ServerTestUtils.getRelativePath( testDir.directory(), GraphDatabaseSettings.legacy_certificates_directory);
+        return newInProcessBuilder( targetFolder ).withConfig( GraphDatabaseSettings.legacy_certificates_directory, relativePath );
     }
 
 }

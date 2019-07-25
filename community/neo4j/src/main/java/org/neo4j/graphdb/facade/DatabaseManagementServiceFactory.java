@@ -41,6 +41,7 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.Relationship;
+import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.factory.module.GlobalModule;
 import org.neo4j.graphdb.factory.module.edition.AbstractEditionModule;
 import org.neo4j.graphdb.spatial.Geometry;
@@ -110,7 +111,7 @@ public class DatabaseManagementServiceFactory
      * @param dependencies the dependencies required to construct the {@link GraphDatabaseFacade}
      * @return the initialised {@link GraphDatabaseFacade}
      */
-    public DatabaseManagementService build( File storeDir, Map<String,String> params, final ExternalDependencies dependencies )
+    public DatabaseManagementService build( File storeDir, Map<Setting<?>,Object> params, final ExternalDependencies dependencies )
     {
         return build( storeDir, Config.defaults( params ), dependencies );
     }

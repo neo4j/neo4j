@@ -78,10 +78,8 @@ public class TestDatabaseManagementServiceBuilder extends DatabaseManagementServ
     @Override
     public DatabaseManagementService build()
     {
-        Config cfg = Config.newBuilder()
-                .set( GraphDatabaseSettings.neo4j_home, homeDirectory.toPath().toAbsolutePath() )
+        Config cfg = config.set( GraphDatabaseSettings.neo4j_home, homeDirectory.toPath().toAbsolutePath() )
                 .fromConfig( fromConfig )
-                .setRaw( config )
                 .build();
         return newDatabaseManagementService( homeDirectory, cfg, databaseDependencies() );
     }
@@ -181,22 +179,9 @@ public class TestDatabaseManagementServiceBuilder extends DatabaseManagementServ
         return this;
     }
 
-    public DatabaseManagementServiceBuilder setConfig( String name, String value )
-    {
-        if ( value == null )
-        {
-            config.remove( name );
-        }
-        else
-        {
-            config.put( name, value );
-        }
-        return this;
-    }
-
     public DatabaseManagementServiceBuilder setConfigRaw( Map<String, String> raw )
     {
-        raw.forEach( this::setConfig );
+        config.setRaw( raw );
         return this;
     }
 
@@ -227,14 +212,15 @@ public class TestDatabaseManagementServiceBuilder extends DatabaseManagementServ
     }
 
     @Override
-    public TestDatabaseManagementServiceBuilder setConfig( Setting<?> setting, String value )
+    public <T> TestDatabaseManagementServiceBuilder setConfig( Setting<T> setting, T value )
     {
         return (TestDatabaseManagementServiceBuilder) super.setConfig( setting, value );
     }
 
     @Override
-    public TestDatabaseManagementServiceBuilder setConfig( Map<Setting<?>,String> config )
+    public TestDatabaseManagementServiceBuilder setConfig( Map<Setting<?>,Object> config )
     {
         return (TestDatabaseManagementServiceBuilder) super.setConfig( config );
     }
+
 }

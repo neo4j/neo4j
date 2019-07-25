@@ -26,6 +26,7 @@ import org.junit.rules.RuleChain;
 
 import java.io.File;
 import java.io.IOException;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.concurrent.CountDownLatch;
@@ -161,7 +162,7 @@ public class CountsRotationTest
         DatabaseManagementService managementService = dbBuilder.build();
         managementService.shutdown();
         CountsTracker store = createCountsTracker( pageCache,
-                Config.defaults( GraphDatabaseSettings.counts_store_rotation_timeout, "100ms" ) );
+                Config.defaults( GraphDatabaseSettings.counts_store_rotation_timeout, Duration.ofMillis( 100 ) ) );
         try ( Lifespan lifespan = new Lifespan( store ) )
         {
             try ( CountsAccessor.Updater updater = store.apply( 2 ).get() )

@@ -34,7 +34,7 @@ class DatabaseManagementSystemSettingsTest
     @Test
     void shouldPutDatabasesDirectoriesIntoData()
     {
-        Config config = Config.defaults( GraphDatabaseSettings.data_directory, "the-data-directory" );
+        Config config = Config.defaults( GraphDatabaseSettings.data_directory, Path.of( "the-data-directory" ) );
         assertThat( config.get( GraphDatabaseSettings.databases_root_path ), equalTo( Path.of( "the-data-directory/databases/" ).toAbsolutePath() ) );
     }
 }

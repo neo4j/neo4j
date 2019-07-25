@@ -352,7 +352,7 @@ public class ProcedureTest
     {
         // Given
         ProcedureConfig config = new ProcedureConfig(
-                Config.defaults( procedure_whitelist, "org.neo4j.procedure.impl.listCoolPeople" ) );
+                Config.defaults( procedure_whitelist, List.of( "org.neo4j.procedure.impl.listCoolPeople" ) ) );
 
         Log log = mock(Log.class);
         ProcedureCompiler procedureCompiler = new ProcedureCompiler( new TypeCheckers(), components,
@@ -373,7 +373,7 @@ public class ProcedureTest
     {
         // Given
         ProcedureConfig config = new ProcedureConfig(
-                Config.defaults( procedure_whitelist, "org.neo4j.procedure.impl.NOTlistCoolPeople" ) );
+                Config.defaults( procedure_whitelist, List.of( "org.neo4j.procedure.impl.NOTlistCoolPeople" ) ) );
 
         Log log = mock(Log.class);
         ProcedureCompiler procedureCompiler = new ProcedureCompiler( new TypeCheckers(), components,
@@ -392,7 +392,7 @@ public class ProcedureTest
     void shouldIgnoreWhiteListingIfFullAccess() throws Throwable
     {
         // Given
-        ProcedureConfig config = new ProcedureConfig( Config.defaults( procedure_whitelist, "empty" ) );
+        ProcedureConfig config = new ProcedureConfig( Config.defaults( procedure_whitelist, List.of( "empty" ) ) );
         Log log = mock(Log.class);
         ProcedureCompiler procedureCompiler = new ProcedureCompiler( new TypeCheckers(), components,
                 components, log, config );
@@ -409,7 +409,7 @@ public class ProcedureTest
     void shouldNotLoadAnyProcedureIfConfigIsEmpty() throws Throwable
     {
         // Given
-        ProcedureConfig config = new ProcedureConfig( Config.defaults( procedure_whitelist, "" ) );
+        ProcedureConfig config = new ProcedureConfig( Config.defaults( procedure_whitelist, List.of( "" ) ) );
         Log log = mock(Log.class);
         ProcedureCompiler procedureCompiler = new ProcedureCompiler( new TypeCheckers(), components,
                 components, log, config );

@@ -26,11 +26,8 @@ import org.apache.commons.lang3.StringUtils;
 import java.io.File;
 import java.io.IOException;
 import java.io.OutputStream;
-import java.time.ZoneId;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.function.Function;
 
@@ -39,6 +36,7 @@ import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.configuration.connectors.BoltConnector;
 import org.neo4j.configuration.connectors.HttpConnector;
 import org.neo4j.configuration.connectors.HttpsConnector;
+import org.neo4j.configuration.helpers.SocketAddress;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.facade.ExternalDependencies;
@@ -52,7 +50,6 @@ import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.logging.FormattedLogProvider;
 import org.neo4j.logging.LogProvider;
-import org.neo4j.logging.LogTimeZone;
 import org.neo4j.server.AbstractNeoServer;
 import org.neo4j.server.DisabledNeoServer;
 import org.neo4j.server.NeoServer;
@@ -64,8 +61,6 @@ import static org.neo4j.configuration.GraphDatabaseSettings.auth_enabled;
 import static org.neo4j.configuration.GraphDatabaseSettings.data_directory;
 import static org.neo4j.configuration.GraphDatabaseSettings.db_timezone;
 import static org.neo4j.configuration.GraphDatabaseSettings.pagecache_memory;
-import static org.neo4j.configuration.SettingValueParsers.FALSE;
-import static org.neo4j.configuration.SettingValueParsers.TRUE;
 import static org.neo4j.internal.helpers.collection.Iterables.addAll;
 import static org.neo4j.internal.helpers.collection.Iterables.append;
 import static org.neo4j.io.fs.FileSystemUtils.createOrOpenAsOutputStream;
@@ -78,7 +73,7 @@ public abstract class AbstractInProcessNeo4jBuilder implements Neo4jBuilder
     private final Fixtures fixtures = new Fixtures();
     private final List<ExtensionFactory<?>> extensionFactories = new ArrayList<>();
     private boolean disabledServer;
-    private final Map<String,String> config = new HashMap<>();
+    private final Config.Builder config = Config.newBuilder();
 
     public AbstractInProcessNeo4jBuilder()
     {
@@ -121,20 +116,20 @@ public abstract class AbstractInProcessNeo4jBuilder implements Neo4jBuilder
         try ( FileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction();
               OutputStream userLogOutputStream = openStream( fileSystem, userLogFile ) )
         {
-            config.put( ServerSettings.third_party_packages.name(), toStringForThirdPartyPackageProperty( unmanagedExtentions.toList() ) );
-            config.put( GraphDatabaseSettings.store_internal_log_path.name(), internalLogFile.getAbsolutePath() );
+            config.set( ServerSettings.third_party_packages, unmanagedExtentions.toList() );
+            config.set( GraphDatabaseSettings.store_internal_log_path, internalLogFile.toPath().toAbsolutePath() );
 
             if ( disabledServer )
             {
-                config.put( HttpConnector.enabled.name(), FALSE );
-                config.put( HttpsConnector.enabled.name(), FALSE );
+                config.set( HttpConnector.enabled, false );
+                config.set( HttpsConnector.enabled, false );
             }
 
-            LogProvider userLogProvider = FormattedLogProvider.withZoneId( logZoneIdFrom( config ) ).toOutputStream( userLogOutputStream );
+            Config dbConfig = config.build();
+            LogProvider userLogProvider = FormattedLogProvider.withZoneId( dbConfig.get( db_timezone ).getZoneId() ).toOutputStream( userLogOutputStream );
             GraphDatabaseDependencies dependencies = GraphDatabaseDependencies.newDependencies().userLogProvider( userLogProvider );
             dependencies = dependencies.extensions( buildExtensionList( dependencies ) );
 
-            Config dbConfig = Config.defaults( config );
             GraphFactory graphFactory = createGraphFactory( dbConfig );
             boolean httpAndHttpsDisabled = !dbConfig.get( HttpConnector.enabled ) && !dbConfig.get( HttpsConnector.enabled );
 
@@ -165,15 +160,9 @@ public abstract class AbstractInProcessNeo4jBuilder implements Neo4jBuilder
     protected abstract AbstractNeoServer createNeoServer( GraphFactory graphFactory, Config config, ExternalDependencies dependencies );
 
     @Override
-    public Neo4jBuilder withConfig( Setting<?> key, String value )
+    public <T> Neo4jBuilder withConfig( Setting<T> setting, T value )
     {
-        return withConfig( key.name(), value );
-    }
-
-    @Override
-    public Neo4jBuilder withConfig( String key, String value )
-    {
-        config.put( key, value );
+        config.set( setting, value );
         return this;
     }
 
@@ -260,23 +249,23 @@ public abstract class AbstractInProcessNeo4jBuilder implements Neo4jBuilder
     private void setWorkingDirectory( File workingDir )
     {
         setDirectory( workingDir );
-        withConfig( auth_enabled, FALSE );
+        withConfig( auth_enabled, false );
         withConfig( pagecache_memory, "8m" );
 
-        withConfig( HttpConnector.enabled, TRUE );
-        withConfig( HttpConnector.listen_address, "localhost:0" );
+        withConfig( HttpConnector.enabled, true );
+        withConfig( HttpConnector.listen_address, new SocketAddress( "localhost", 0 ) );
 
-        withConfig( HttpsConnector.enabled, FALSE );
-        withConfig( HttpsConnector.listen_address, "localhost:0" );
+        withConfig( HttpsConnector.enabled, false );
+        withConfig( HttpsConnector.listen_address, new SocketAddress( "localhost", 0 ) );
 
-        withConfig( BoltConnector.enabled, TRUE );
-        withConfig( BoltConnector.listen_address, "localhost:0" );
+        withConfig( BoltConnector.enabled, true );
+        withConfig( BoltConnector.listen_address, new SocketAddress( "localhost", 0 ) );
     }
 
     private Neo4jBuilder setDirectory( File dir )
     {
         this.serverFolder = dir;
-        config.put( data_directory.name(), serverFolder.getAbsolutePath() );
+        config.set( data_directory, serverFolder.toPath().toAbsolutePath() );
         return this;
     }
 
@@ -307,12 +296,6 @@ public abstract class AbstractInProcessNeo4jBuilder implements Neo4jBuilder
     private static StringBuilder describeJaxRsPackage( StringBuilder builder, ThirdPartyJaxRsPackage jaxRsPackage )
     {
         return builder.append( jaxRsPackage.getPackageName() ).append( "=" ).append( jaxRsPackage.getMountPoint() );
-    }
-
-    private static ZoneId logZoneIdFrom( Map<String,String> config )
-    {
-        String dbTimeZone = config.getOrDefault( db_timezone.name(), db_timezone.defaultValue().toString() );
-        return LogTimeZone.valueOf( dbTimeZone ).getZoneId();
     }
 
     private static OutputStream openStream( FileSystemAbstraction fs, File file )

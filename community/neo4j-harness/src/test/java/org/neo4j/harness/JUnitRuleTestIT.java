@@ -57,6 +57,7 @@ import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAM
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_TX_LOGS_ROOT_DIR_NAME;
 import static org.neo4j.configuration.GraphDatabaseSettings.data_directory;
 import static org.neo4j.configuration.GraphDatabaseSettings.databases_root_path;
+import static org.neo4j.configuration.GraphDatabaseSettings.legacy_certificates_directory;
 import static org.neo4j.configuration.GraphDatabaseSettings.transaction_logs_root_path;
 import static org.neo4j.server.ServerTestUtils.getRelativePath;
 import static org.neo4j.test.server.HTTP.RawPayload.quotedJson;
@@ -70,9 +71,8 @@ public class JUnitRuleTestIT
     @Rule
     public Neo4jRule neo4j = new Neo4jRule()
             .withFixture( "CREATE (u:User)" )
-            .withConfig( GraphDatabaseSettings.db_timezone.name(), LogTimeZone.SYSTEM.toString() )
-            .withConfig( GraphDatabaseSettings.legacy_certificates_directory.name(),
-                    getRelativePath( testDirectory.storeDir(), GraphDatabaseSettings.legacy_certificates_directory ) )
+            .withConfig( GraphDatabaseSettings.db_timezone, LogTimeZone.SYSTEM )
+            .withConfig( legacy_certificates_directory, getRelativePath( testDirectory.storeDir(), legacy_certificates_directory ) )
             .withFixture( graphDatabaseService ->
             {
                 try ( Transaction tx = graphDatabaseService.beginTx() )
@@ -127,10 +127,10 @@ public class JUnitRuleTestIT
     {
         // given a root folder, create /databases/neo4j folders.
         File oldDir = testDirectory.directory( "old" );
-        Config config = Config.defaults( data_directory, oldDir.toPath().toString() );
+        Config config = Config.defaults( data_directory, oldDir.toPath() );
         File rootDirectory = config.get( databases_root_path ).toFile();
         DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder( rootDirectory )
-                .setConfig( transaction_logs_root_path, new File( oldDir, DEFAULT_TX_LOGS_ROOT_DIR_NAME ).getAbsolutePath() )
+                .setConfig( transaction_logs_root_path, new File( oldDir, DEFAULT_TX_LOGS_ROOT_DIR_NAME ).toPath().toAbsolutePath() )
                 .build();
         GraphDatabaseService db = managementService.database( DEFAULT_DATABASE_NAME );
 

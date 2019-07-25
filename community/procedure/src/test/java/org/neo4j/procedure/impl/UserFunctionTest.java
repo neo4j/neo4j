@@ -243,8 +243,8 @@ public class UserFunctionTest
     {
         // Given
         procedureCompiler = new ProcedureCompiler( new TypeCheckers(), components, new ComponentRegistry(),
-                NullLog.getInstance(), new ProcedureConfig( Config.defaults( GraphDatabaseSettings.procedure_whitelist,
-                "org.neo4j.procedure.impl.listCoolPeople" ) ) );
+                NullLog.getInstance(), new ProcedureConfig( Config.defaults( GraphDatabaseSettings.procedure_whitelist, List.of(
+                "org.neo4j.procedure.impl.listCoolPeople" ) ) ) );
 
         CallableUserFunction method = compile( SingleReadOnlyFunction.class ).get( 0 );
 
@@ -259,7 +259,7 @@ public class UserFunctionTest
         // Given
         Log log = spy(Log.class);
         procedureCompiler = new ProcedureCompiler( new TypeCheckers(), components, new ComponentRegistry(),
-                log, new ProcedureConfig( Config.defaults( GraphDatabaseSettings.procedure_whitelist, "WrongName" ) ) );
+                log, new ProcedureConfig( Config.defaults( GraphDatabaseSettings.procedure_whitelist, List.of( "WrongName" ) ) ) );
 
         List<CallableUserFunction> method = compile( SingleReadOnlyFunction.class );
         verify( log ).warn( "The function 'org.neo4j.procedure.impl.listCoolPeople' is not on the whitelist and won't be loaded." );
@@ -272,7 +272,7 @@ public class UserFunctionTest
         // Given
         Log log = spy(Log.class);
         procedureCompiler = new ProcedureCompiler( new TypeCheckers(), components, new ComponentRegistry(),
-                log, new ProcedureConfig( Config.defaults( GraphDatabaseSettings.procedure_whitelist, "" ) ) );
+                log, new ProcedureConfig( Config.defaults( GraphDatabaseSettings.procedure_whitelist, List.of( "" ) ) ) );
 
         List<CallableUserFunction> method = compile( SingleReadOnlyFunction.class );
         verify( log ).warn( "The function 'org.neo4j.procedure.impl.listCoolPeople' is not on the whitelist and won't be loaded." );

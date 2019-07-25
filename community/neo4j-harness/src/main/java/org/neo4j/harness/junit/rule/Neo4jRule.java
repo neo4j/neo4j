@@ -109,16 +109,7 @@ public class Neo4jRule implements TestRule
      * @param value the config value
      * @return this configurator instance
      */
-    public Neo4jRule withConfig( Setting<?> key, String value )
-    {
-        builder = builder.withConfig( key, value );
-        return this;
-    }
-
-    /**
-     * @see #withConfig(org.neo4j.graphdb.config.Setting, String)
-     */
-    public Neo4jRule withConfig( String key, String value )
+    public <T> Neo4jRule withConfig( Setting<T> key, T value )
     {
         builder = builder.withConfig( key, value );
         return this;

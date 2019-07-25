@@ -29,6 +29,7 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.file.OpenOption;
+import java.time.Duration;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
@@ -43,6 +44,7 @@ import org.neo4j.exceptions.UnderlyingStorageException;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
+import org.neo4j.graphdb.config.Setting;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.internal.helpers.collection.Pair;
 import org.neo4j.internal.id.DefaultIdGeneratorFactory;
@@ -110,7 +112,6 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.neo4j.configuration.GraphDatabaseSettings.counts_store_rotation_timeout;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
-import static org.neo4j.internal.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.internal.kernel.api.security.LoginContext.AUTH_DISABLED;
 import static org.neo4j.kernel.impl.store.format.standard.MetaDataRecordFormat.FIELD_NOT_PRESENT;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.NORMAL;
@@ -207,7 +208,7 @@ public class NeoStoresTest
     @Test
     public void testCreateStore() throws Exception
     {
-        initializeStores( databaseLayout, stringMap() );
+        initializeStores( databaseLayout, Map.of() );
         startTx();
         // setup test population
         long node1 = nextId( Node.class );
@@ -243,7 +244,7 @@ public class NeoStoresTest
         commitTx();
         ds.stop();
 
-        initializeStores( databaseLayout, stringMap() );
+        initializeStores( databaseLayout, Map.of() );
         startTx();
         // validate node
         validateNodeRel1( node1, n1prop1, n1prop2, n1prop3, rel1, rel2, relType1, relType2 );
@@ -257,7 +258,7 @@ public class NeoStoresTest
         commitTx();
         ds.stop();
 
-        initializeStores( databaseLayout, stringMap() );
+        initializeStores( databaseLayout, Map.of() );
         startTx();
         // validate and delete rels
         deleteRel1( rel1, r1prop1, r1prop2, r1prop3, node1, node2, relType1 );
@@ -268,7 +269,7 @@ public class NeoStoresTest
         commitTx();
         ds.stop();
 
-        initializeStores( databaseLayout, stringMap() );
+        initializeStores( databaseLayout, Map.of() );
         startTx();
         assertFalse( nodeExists( node1 ) );
         assertFalse( nodeExists( node2 ) );
@@ -363,7 +364,7 @@ public class NeoStoresTest
     @Test
     public void testRels1() throws Exception
     {
-        initializeStores( databaseLayout, stringMap() );
+        initializeStores( databaseLayout, Map.of() );
         startTx();
         int relType1 = (int) nextId( RelationshipType.class );
         String typeName = "relationshiptype1";
@@ -412,7 +413,7 @@ public class NeoStoresTest
     @Test
     public void testRels2() throws Exception
     {
-        initializeStores( databaseLayout, stringMap() );
+        initializeStores( databaseLayout, Map.of() );
         startTx();
         int relType1 = (int) nextId( RelationshipType.class );
         String typeName = "relationshiptype1";
@@ -446,7 +447,7 @@ public class NeoStoresTest
     public void testRels3() throws Exception
     {
         // test linked list stuff during relationship delete
-        initializeStores( databaseLayout, stringMap() );
+        initializeStores( databaseLayout, Map.of() );
         startTx();
         int relType1 = (int) nextId( RelationshipType.class );
         transaction.relationshipTypeDoCreateForName( "relationshiptype1", false, relType1 );
@@ -491,7 +492,7 @@ public class NeoStoresTest
     @Test
     public void testProps1() throws Exception
     {
-        initializeStores( databaseLayout, stringMap() );
+        initializeStores( databaseLayout, Map.of() );
         startTx();
         long nodeId = nextId( Node.class );
         transaction.nodeDoCreate( nodeId );
@@ -499,7 +500,7 @@ public class NeoStoresTest
         StorageProperty prop = nodeAddProperty( nodeId, index( "nisse" ), 10 );
         commitTx();
         ds.stop();
-        initializeStores( databaseLayout, stringMap() );
+        initializeStores( databaseLayout, Map.of() );
         startTx();
         StorageProperty prop2 = nodeAddProperty( nodeId, prop.propertyKeyId(), 5 );
         transaction.nodeDoRemoveProperty( nodeId, prop2.propertyKeyId() );
@@ -512,9 +513,7 @@ public class NeoStoresTest
     public void testSetBlockSize()
     {
         DatabaseLayout databaseLayout = dir.databaseLayout( "small_store" );
-        initializeStores( databaseLayout, stringMap(
-                "unsupported.dbms.block_size.strings", "62",
-                "unsupported.dbms.block_size.array_properties", "302" ) );
+        initializeStores( databaseLayout, Map.of( GraphDatabaseSettings.string_block_size, 62, GraphDatabaseSettings.array_block_size, 302) );
         assertEquals( 62 + DynamicRecordFormat.RECORD_HEADER_SIZE,
                 pStore.getStringStore().getRecordSize() );
         assertEquals( 302 + DynamicRecordFormat.RECORD_HEADER_SIZE,
@@ -756,7 +755,7 @@ public class NeoStoresTest
     public void shouldCloseAllTheStoreEvenIfExceptionsAreThrown()
     {
         // given
-        Config defaults = Config.defaults( counts_store_rotation_timeout, "60m" );
+        Config defaults = Config.defaults( counts_store_rotation_timeout, Duration.ofMinutes( 60 ) );
         String errorMessage = "Failing for the heck of it";
         StoreFactory factory = new StoreFactory( databaseLayout, defaults, new CloseFailingDefaultIdGeneratorFactory( fs, pageCache, errorMessage ), pageCache,
                 fs, NullLogProvider.getInstance() );
@@ -829,7 +828,7 @@ public class NeoStoresTest
         return new StoreFactory( databaseLayout, config, idGeneratorFactory, pageCache, fs, recordFormats, LOG_PROVIDER );
     }
 
-    private void initializeStores( DatabaseLayout databaseLayout, Map<String, String> additionalConfig )
+    private void initializeStores( DatabaseLayout databaseLayout, Map<Setting<?>, Object> additionalConfig )
     {
         Dependencies dependencies = new Dependencies();
         Config config = Config.defaults( additionalConfig );

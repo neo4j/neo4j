@@ -41,6 +41,7 @@ import org.neo4j.bolt.v1.transport.integration.Neo4jWithSocket;
 import org.neo4j.bolt.v1.transport.socket.client.TransportConnection;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.configuration.connectors.BoltConnector;
+import org.neo4j.configuration.helpers.SocketAddress;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.logging.AssertableLogProvider;
@@ -56,8 +57,6 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.neo4j.bolt.v1.messaging.util.MessageMatchers.msgFailure;
 import static org.neo4j.bolt.v1.messaging.util.MessageMatchers.msgSuccess;
 import static org.neo4j.bolt.v1.transport.integration.TransportTestUtil.eventuallyReceives;
-import static org.neo4j.configuration.SettingValueParsers.FALSE;
-import static org.neo4j.configuration.SettingValueParsers.TRUE;
 
 @RunWith( Parameterized.class )
 public class BoltSchedulerBusyIT extends AbstractBoltTransportsTest
@@ -82,15 +81,15 @@ public class BoltSchedulerBusyIT extends AbstractBoltTransportsTest
         return factory;
     }
 
-    private static Consumer<Map<Setting<?>,String>> getSettingsFunction()
+    private static Consumer<Map<Setting<?>,Object>> getSettingsFunction()
     {
         return settings ->
         {
-            settings.put( GraphDatabaseSettings.auth_enabled, FALSE );
-            settings.put( BoltConnector.enabled, TRUE );
-            settings.put( BoltConnector.listen_address, "localhost:0" );
-            settings.put( BoltConnector.thread_pool_min_size, "0" );
-            settings.put( BoltConnector.thread_pool_max_size, "2" );
+            settings.put( GraphDatabaseSettings.auth_enabled, false );
+            settings.put( BoltConnector.enabled, true );
+            settings.put( BoltConnector.listen_address, new SocketAddress( "localhost", 0 ) );
+            settings.put( BoltConnector.thread_pool_min_size, 0 );
+            settings.put( BoltConnector.thread_pool_max_size, 2 );
         };
     }
 

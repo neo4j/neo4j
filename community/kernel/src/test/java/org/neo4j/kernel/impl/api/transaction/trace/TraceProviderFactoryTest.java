@@ -42,7 +42,7 @@ class TraceProviderFactoryTest
     @Test
     void disabledTracerCreation()
     {
-        Config config = Config.defaults( GraphDatabaseSettings.transaction_tracing_level, DISABLED.name() );
+        Config config = Config.defaults( GraphDatabaseSettings.transaction_tracing_level, DISABLED );
         TraceProvider traceProvider = getTraceProvider( config );
         for ( int i = 0; i < 100; i++ )
         {
@@ -53,7 +53,7 @@ class TraceProviderFactoryTest
     @Test
     void samplingTracerCreation()
     {
-        Config config = Config.defaults( GraphDatabaseSettings.transaction_tracing_level, SAMPLE.name() );
+        Config config = Config.defaults( GraphDatabaseSettings.transaction_tracing_level, SAMPLE );
         config.set( GraphDatabaseSettings.transaction_sampling_percentage, 50 );
         TraceProvider traceProvider = getTraceProvider( config );
         Set<TransactionInitializationTrace> traces = new HashSet<>();
@@ -69,7 +69,7 @@ class TraceProviderFactoryTest
     @Test
     void allTransactionsTracerCreation()
     {
-        Config config = Config.defaults( GraphDatabaseSettings.transaction_tracing_level, ALL.name() );
+        Config config = Config.defaults( GraphDatabaseSettings.transaction_tracing_level, ALL );
         TraceProvider traceProvider = getTraceProvider( config );
         for ( int i = 0; i < 100; i++ )
         {

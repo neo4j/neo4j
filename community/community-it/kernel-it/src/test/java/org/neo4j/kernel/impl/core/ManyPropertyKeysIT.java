@@ -56,7 +56,6 @@ import org.neo4j.test.rule.TestDirectory;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
-import static org.neo4j.configuration.SettingValueParsers.FALSE;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
 
 /**
@@ -120,7 +119,7 @@ class ManyPropertyKeysIT
     private GraphDatabaseAPI database()
     {
         managementService = new TestDatabaseManagementServiceBuilder( testDirectory.storeDir() )
-                .setConfig( GraphDatabaseSettings.fail_on_missing_files, FALSE )
+                .setConfig( GraphDatabaseSettings.fail_on_missing_files, false )
                 .build();
         return (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );
     }

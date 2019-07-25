@@ -64,9 +64,9 @@ public class ServerTestUtils
         return file;
     }
 
-    public static String getRelativePath( File folder, Setting<Path> setting )
+    public static Path getRelativePath( File folder, Setting<Path> setting )
     {
-        return folder.toPath().resolve( setting.defaultValue() ).toString();
+        return folder.toPath().resolve( setting.defaultValue() );
     }
 
     public static Map<String,String> getDefaultRelativeProperties( File folder )
@@ -87,7 +87,7 @@ public class ServerTestUtils
     private static void addRelativeProperty( File temporaryFolder, Map<String,String> properties,
             Setting<Path> setting )
     {
-        properties.put( setting.name(), getRelativePath( temporaryFolder, setting ) );
+        properties.put( setting.name(), getRelativePath( temporaryFolder, setting ).toString() );
     }
 
     public static void writeConfigToFile( Map<String, String> properties, File file )

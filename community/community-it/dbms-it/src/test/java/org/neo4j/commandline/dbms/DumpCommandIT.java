@@ -209,7 +209,7 @@ class DumpCommandIT
     @Test
     void databaseThatRequireRecoveryIsNotDumpable() throws IOException
     {
-        Config config = Config.defaults( GraphDatabaseSettings.neo4j_home, homeDir.toString() );
+        Config config = Config.defaults( GraphDatabaseSettings.neo4j_home, homeDir );
         DatabaseLayout databaseLayout = testDirectory.databaseLayout( "foo", LayoutConfig.of( config ) );
         testDirectory.getFileSystem().mkdirs( databaseLayout.getTransactionLogsDirectory() );
         File logFile = new File( databaseLayout.getTransactionLogsDirectory(), TransactionLogFilesHelper.DEFAULT_NAME + ".0" );
@@ -364,7 +364,7 @@ class DumpCommandIT
         DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder( databaseDirectory.getParent().getParent().getParent().toFile() )
                 .setConfig( config )
                 .setConfig( default_database, databaseName )
-                .setConfig( databases_root_path, databases_root_path.defaultValue().toString() )
+                .setConfig( databases_root_path, databases_root_path.defaultValue() )
                 .build();
         managementService.shutdown();
     }

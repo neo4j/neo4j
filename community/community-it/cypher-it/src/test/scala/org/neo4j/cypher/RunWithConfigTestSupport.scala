@@ -30,8 +30,8 @@ import org.neo4j.test.TestDatabaseManagementServiceBuilder
 import scala.collection.JavaConverters._
 
 trait RunWithConfigTestSupport {
-  def runWithConfig(m: (Setting[_], String)*)(run: GraphDatabaseCypherService => Unit) = {
-    val config: util.Map[Setting[_], String] = m.toMap.asJava
+  def runWithConfig(m: (Setting[_], Object)*)(run: GraphDatabaseCypherService => Unit) = {
+    val config: util.Map[Setting[_], Object] = m.toMap.asJava
     val storeDir = new File("target/test-data/neo4j")
     val managementService = new TestDatabaseManagementServiceBuilder(storeDir)
       .impermanent()

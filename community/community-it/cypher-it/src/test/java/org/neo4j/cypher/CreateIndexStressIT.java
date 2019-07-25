@@ -50,7 +50,7 @@ class CreateIndexStressIT
     @ExtensionCallback
     static void configure( TestDatabaseManagementServiceBuilder builder )
     {
-        builder.setConfig( GraphDatabaseSettings.query_cache_size, "0" );
+        builder.setConfig( GraphDatabaseSettings.query_cache_size, 0 );
     }
 
     private final ExecutorService executorService = Executors.newFixedThreadPool( 10 );

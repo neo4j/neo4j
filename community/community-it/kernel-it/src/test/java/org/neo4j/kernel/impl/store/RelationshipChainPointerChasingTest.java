@@ -62,7 +62,7 @@ class RelationshipChainPointerChasingTest
     @ExtensionCallback
     static void configure( TestDatabaseManagementServiceBuilder builder )
     {
-        builder.setConfig( GraphDatabaseSettings.dense_node_threshold, String.valueOf( THRESHOLD ) );
+        builder.setConfig( GraphDatabaseSettings.dense_node_threshold, THRESHOLD );
     }
 
     @Test

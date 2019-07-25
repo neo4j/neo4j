@@ -37,7 +37,6 @@ import static java.util.Collections.emptyMap;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.IsInstanceOf.instanceOf;
 import static org.junit.jupiter.api.Assertions.fail;
-import static org.neo4j.configuration.SettingValueParsers.TRUE;
 
 @ExtendWith( TestDirectoryExtension.class )
 class StoreLockerLifecycleAdapterTest
@@ -63,10 +62,10 @@ class StoreLockerLifecycleAdapterTest
     @Test
     void shouldNotAllowDatabasesToUseFilesetsConcurrentlyEvenIfTheyAreInReadOnlyMode()
     {
-        shouldNotAllowDatabasesToUseFilesetsConcurrently( Map.of( GraphDatabaseSettings.read_only, TRUE ) );
+        shouldNotAllowDatabasesToUseFilesetsConcurrently( Map.of( GraphDatabaseSettings.read_only, true ) );
     }
 
-    private void shouldNotAllowDatabasesToUseFilesetsConcurrently( Map<Setting<?>,String> config )
+    private void shouldNotAllowDatabasesToUseFilesetsConcurrently( Map<Setting<?>,Object> config )
     {
         DatabaseManagementService managementService = newDb();
         DatabaseManagementService embeddedService = null;

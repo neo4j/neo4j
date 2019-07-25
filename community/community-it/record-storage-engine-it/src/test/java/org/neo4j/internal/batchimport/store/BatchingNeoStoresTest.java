@@ -96,7 +96,6 @@ import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.imme
 import static org.neo4j.internal.batchimport.AdditionalInitialIds.EMPTY;
 import static org.neo4j.internal.batchimport.store.BatchingNeoStores.DOUBLE_RELATIONSHIP_RECORD_UNIT_THRESHOLD;
 import static org.neo4j.internal.batchimport.store.BatchingNeoStores.batchingNeoStores;
-import static org.neo4j.internal.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.kernel.impl.store.format.RecordFormatSelector.selectForConfig;
 import static org.neo4j.kernel.impl.store.format.standard.Standard.LATEST_RECORD_FORMATS;
 import static org.neo4j.storageengine.api.TransactionIdStore.BASE_TX_ID;
@@ -140,9 +139,10 @@ class BatchingNeoStoresTest
     {
         // GIVEN
         int size = 10;
-        Config config = Config.defaults( stringMap(
-                GraphDatabaseSettings.array_block_size.name(), String.valueOf( size ),
-                GraphDatabaseSettings.string_block_size.name(), String.valueOf( size ) ) );
+        Config config = Config.newBuilder()
+                .set( GraphDatabaseSettings.array_block_size, size )
+                .set( GraphDatabaseSettings.string_block_size, size )
+                .build();
 
         // WHEN
         RecordFormats recordFormats = LATEST_RECORD_FORMATS;

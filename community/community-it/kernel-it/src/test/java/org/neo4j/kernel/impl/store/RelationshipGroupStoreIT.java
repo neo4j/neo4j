@@ -46,7 +46,7 @@ class RelationshipGroupStoreIT
     @ExtensionCallback
     static void configure( TestDatabaseManagementServiceBuilder builder )
     {
-        builder.setConfig( GraphDatabaseSettings.dense_node_threshold, "1" );
+        builder.setConfig( GraphDatabaseSettings.dense_node_threshold, 1 );
     }
 
     @Test

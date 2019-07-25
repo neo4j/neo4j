@@ -76,7 +76,7 @@ class GlobalModuleTest
         assertThat( counter.get(), equalTo( 0 ) );
 
         // When I construct a GlobalModule...
-        Config cfg = Config.defaults( GraphDatabaseSettings.neo4j_home, testDirectory.absolutePath().getAbsolutePath() );
+        Config cfg = Config.defaults( GraphDatabaseSettings.neo4j_home, testDirectory.absolutePath().toPath() );
         GlobalModule pm = new GlobalModule( testDirectory.storeDir(), cfg, DatabaseInfo.UNKNOWN, externalDependencies );
 
         // then the tasks that I queued up earlier should be run...

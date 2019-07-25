@@ -26,6 +26,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Path;
 
 import org.neo4j.common.ProgressReporter;
 import org.neo4j.configuration.Config;
@@ -159,7 +160,7 @@ class StoreMigratorTest
     void extractTransactionInformationFromLogsInCustomAbsoluteLocation() throws Exception
     {
         File customLogLocation = testDirectory.directory( "customLogLocation" );
-        extractTransactionalInformationFromLogs( customLogLocation.getAbsolutePath() );
+        extractTransactionalInformationFromLogs( customLogLocation.toPath().toAbsolutePath() );
     }
 
     @Test
@@ -233,7 +234,7 @@ class StoreMigratorTest
         assertFalse( progressReporter.started );
     }
 
-    private void extractTransactionalInformationFromLogs( String customLogsLocation ) throws IOException
+    private void extractTransactionalInformationFromLogs( Path customLogsLocation ) throws IOException
     {
         Config config = Config.defaults( transaction_logs_root_path, customLogsLocation );
         LogService logService = new SimpleLogService( NullLogProvider.getInstance(), NullLogProvider.getInstance() );

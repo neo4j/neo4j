@@ -107,11 +107,6 @@ public class Config implements Configuration
             return this;
         }
 
-        /*public <T> Builder set( Setting<T> setting, String value )
-        {
-            return setRaw( setting.name(), value );
-        }*/
-
         public <T> Builder set( Setting<T> setting, T value )
         {
             return set( setting.name(), value );
@@ -128,7 +123,7 @@ public class Config implements Configuration
             if ( overriddenDefaults.containsKey( setting ) && allowedToLogOverriddenValues( setting ) )
             {
                 log.warn( "The overridden default value of '%s' setting is overridden. Setting value changed from '%s' to '%s'.", setting,
-                        settingValueStrings.get( setting ), value );
+                        overriddenDefaults.get( setting ), value );
             }
             overriddenDefaults.put( setting, value );
             return this;
@@ -143,6 +138,19 @@ public class Config implements Configuration
         public <T> Builder setDefault( Setting<T> setting, String value )
         {
             return setDefault( setting.name(), value );
+        }
+
+        public Builder remove( Setting<?> setting )
+        {
+            settingValueStrings.remove( setting.name() );
+            settingValueObjects.remove( setting.name() );
+            return this;
+        }
+
+        public Builder removeDefault( Setting<?> setting )
+        {
+            overriddenDefaults.remove( setting.name() );
+            return this;
         }
 
         Builder addSettingsClass( Class<? extends SettingsDeclaration> settingsClass )
@@ -259,14 +267,14 @@ public class Config implements Configuration
         return defaults( Map.of() );
     }
 
-    public static Config defaults( Setting<?> setting, String value )
+    public static <T> Config defaults( Setting<T> setting, T value )
     {
-        return defaults( Map.of( setting.name(), value ) );
+        return defaults( Map.of( setting, value ) );
     }
 
-    public static Config defaults( Map<String,String> settingValues )
+    public static Config defaults( Map<Setting<?>,Object> settingValues )
     {
-        return Config.newBuilder().setRaw( settingValues ).build();
+        return Config.newBuilder().set( settingValues ).build();
     }
 
     public static Builder newBuilder()
@@ -317,6 +325,7 @@ public class Config implements Configuration
         Map<String,Class<? extends GroupSetting>> definedGroups = getDefinedGroups( groupSettingClasses );
         HashSet<String> keys = new HashSet<>( definedSettings.keySet() );
         keys.addAll( settingValueStrings.keySet() );
+        keys.addAll( settingValueObjects.keySet() );
 
         List<SettingImpl<?>> newSettings = new ArrayList<>();
 
@@ -485,7 +494,7 @@ public class Config implements Configuration
                 if ( fromConfig != null && fromConfig.settings.containsKey( key ) )
                 {
                     Object fromDefault = fromConfig.settings.get( key ).defaultValue;
-                    if ( !Objects.equals( defaultValue, fromDefault) )
+                    if ( !Objects.equals( defaultValue, fromDefault ) )
                     {
                         defaultValue = fromDefault;
                     }
@@ -494,11 +503,11 @@ public class Config implements Configuration
 
             Object value = null;
             if ( settingValueObjects.containsKey( key ) )
-        {
-            value = settingValueObjects.get( key );
-            setting.validate( value );
-        }
-        else if ( settingValueStrings.containsKey( key ) ) // Map value
+            {
+                value = settingValueObjects.get( key );
+                setting.validate( value );
+            }
+            else if ( settingValueStrings.containsKey( key ) ) // Map value
             {
                 value = setting.parse( settingValueStrings.get( key ) );
             }

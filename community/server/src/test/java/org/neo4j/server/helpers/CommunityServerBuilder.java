@@ -99,7 +99,7 @@ public class CommunityServerBuilder
 
         Log log = logProvider.getLog( getClass() );
         Config config = Config.newBuilder()
-                .setRaw( GraphDatabaseSettings.SERVER_DEFAULTS )
+                .set( GraphDatabaseSettings.SERVER_DEFAULTS )
                 .fromFile( configFile )
                 .build();
         config.setLogger( log );

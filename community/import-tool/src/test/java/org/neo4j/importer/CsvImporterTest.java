@@ -27,7 +27,6 @@ import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.util.Collections;
 import java.util.List;
-import java.util.Map;
 
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
@@ -40,7 +39,6 @@ import org.neo4j.test.rule.TestDirectory;
 
 import static java.util.Collections.emptySet;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.neo4j.internal.helpers.collection.MapUtil.stringMap;
 
 @ExtendWith( {TestDirectoryExtension.class, SuppressOutputExtension.class} )
 class CsvImporterTest
@@ -59,9 +57,7 @@ class CsvImporterTest
         List<String> lines = Collections.singletonList( "foo\\tbar\\tbaz" );
         Files.write( inputFile.toPath(), lines, Charset.defaultCharset() );
 
-        Config config = Config.newBuilder()
-                .setRaw( additionalConfig() )
-                .set( GraphDatabaseSettings.logs_directory, logDir.toPath().toAbsolutePath() ).build();
+        Config config = Config.defaults( GraphDatabaseSettings.logs_directory, logDir.toPath().toAbsolutePath() );
 
         CsvImporter csvImporter = CsvImporter.builder()
             .withDatabaseLayout( databaseLayout )
@@ -75,15 +71,5 @@ class CsvImporterTest
         csvImporter.doImport();
 
         assertTrue( reportLocation.exists() );
-    }
-
-    private Map<String,String> additionalConfig()
-    {
-        return stringMap( GraphDatabaseSettings.logs_directory.name(), getLogsDirectory() );
-    }
-
-    private String getLogsDirectory()
-    {
-        return testDir.directory( "logs" ).getAbsolutePath();
     }
 }

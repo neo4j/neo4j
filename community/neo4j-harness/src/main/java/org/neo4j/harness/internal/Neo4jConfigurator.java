@@ -35,16 +35,11 @@ public interface Neo4jConfigurator<T extends Neo4jConfigurator>
      * Configure the Neo4j instance. Configuration here can be both configuration aimed at the server as well as the
      * database tuning options. Please refer to the Neo4j Manual for details on available configuration options.
      *
-     * @param key the config key
+     * @param key the config setting
      * @param value the config value
      * @return this configurator instance
      */
-    T withConfig( Setting<?> key, String value );
-
-    /**
-     * @see #withConfig(org.neo4j.graphdb.config.Setting, String)
-     */
-    T withConfig( String key, String value );
+    <U> T withConfig( Setting<U> key, U value );
 
     /**
      * Shortcut for configuring the server to use an unmanaged extension. Please refer to the Neo4j Manual on how to

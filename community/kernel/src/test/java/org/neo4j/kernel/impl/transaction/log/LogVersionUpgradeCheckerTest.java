@@ -30,8 +30,6 @@ import org.neo4j.storageengine.migration.UpgradeNotAllowedException;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
-import static org.neo4j.configuration.SettingValueParsers.FALSE;
-import static org.neo4j.configuration.SettingValueParsers.TRUE;
 import static org.neo4j.kernel.impl.transaction.log.LogVersionUpgradeChecker.check;
 
 class LogVersionUpgradeCheckerTest
@@ -43,7 +41,7 @@ class LogVersionUpgradeCheckerTest
     {
         when( tailScanner.getTailInformation() ).thenReturn( new OnlyVersionTailInformation( LogEntryVersion.LATEST_VERSION ) );
 
-        check( tailScanner, Config.defaults( GraphDatabaseSettings.allow_upgrade, FALSE) );
+        check( tailScanner, Config.defaults( GraphDatabaseSettings.allow_upgrade, false ) );
     }
 
     @Test
@@ -51,7 +49,7 @@ class LogVersionUpgradeCheckerTest
     {
         when( tailScanner.getTailInformation() ).thenReturn( new OnlyVersionTailInformation( LogEntryVersion.V3_0_10 ) );
 
-        assertThrows( UpgradeNotAllowedException.class, () -> check( tailScanner, Config.defaults( GraphDatabaseSettings.allow_upgrade, FALSE ) ) );
+        assertThrows( UpgradeNotAllowedException.class, () -> check( tailScanner, Config.defaults( GraphDatabaseSettings.allow_upgrade, false ) ) );
     }
 
     @Test
@@ -59,7 +57,7 @@ class LogVersionUpgradeCheckerTest
     {
         when( tailScanner.getTailInformation() ).thenReturn( new OnlyVersionTailInformation( LogEntryVersion.LATEST_VERSION ) );
 
-        check( tailScanner, Config.defaults( GraphDatabaseSettings.allow_upgrade, TRUE) );
+        check( tailScanner, Config.defaults( GraphDatabaseSettings.allow_upgrade, true ) );
     }
 
     @Test
@@ -67,7 +65,7 @@ class LogVersionUpgradeCheckerTest
     {
         when( tailScanner.getTailInformation() ).thenReturn( new OnlyVersionTailInformation( LogEntryVersion.V3_0_10 ) );
 
-        check( tailScanner, Config.defaults( GraphDatabaseSettings.allow_upgrade, TRUE) );
+        check( tailScanner, Config.defaults( GraphDatabaseSettings.allow_upgrade, true ) );
     }
 
     private static class OnlyVersionTailInformation extends LogTailScanner.LogTailInformation

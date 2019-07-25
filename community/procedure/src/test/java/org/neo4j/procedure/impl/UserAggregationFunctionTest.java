@@ -306,8 +306,8 @@ public class UserAggregationFunctionTest
     {
         // Given
         procedureCompiler = new ProcedureCompiler( new TypeCheckers(), components, new ComponentRegistry(),
-                NullLog.getInstance(), new ProcedureConfig( Config.defaults( GraphDatabaseSettings.procedure_whitelist,
-                "org.neo4j.procedure.impl.collectCool" ) ) );
+                NullLog.getInstance(), new ProcedureConfig( Config.defaults( GraphDatabaseSettings.procedure_whitelist, List.of(
+                "org.neo4j.procedure.impl.collectCool" ) ) ) );
 
         CallableUserAggregationFunction method = compile( SingleAggregationFunction.class ).get( 0 );
 
@@ -323,7 +323,7 @@ public class UserAggregationFunctionTest
         // Given
         Log log = spy(Log.class);
         procedureCompiler = new ProcedureCompiler( new TypeCheckers(), components, new ComponentRegistry(),
-                log, new ProcedureConfig( Config.defaults( GraphDatabaseSettings.procedure_whitelist, "WrongName" ) ) );
+                log, new ProcedureConfig( Config.defaults( GraphDatabaseSettings.procedure_whitelist, List.of( "WrongName" ) ) ) );
 
         List<CallableUserAggregationFunction> method = compile( SingleAggregationFunction.class );
         verify( log ).warn( "The function 'org.neo4j.procedure.impl.collectCool' is not on the whitelist and won't be loaded." );
@@ -336,7 +336,7 @@ public class UserAggregationFunctionTest
         // Given
         Log log = spy(Log.class);
         procedureCompiler = new ProcedureCompiler( new TypeCheckers(), components, new ComponentRegistry(),
-                log, new ProcedureConfig( Config.defaults( GraphDatabaseSettings.procedure_whitelist, "" ) ) );
+                log, new ProcedureConfig( Config.defaults( GraphDatabaseSettings.procedure_whitelist, List.of( "" ) ) ) );
 
         List<CallableUserAggregationFunction> method = compile( SingleAggregationFunction.class );
         verify( log ).warn( "The function 'org.neo4j.procedure.impl.collectCool' is not on the whitelist and won't be loaded." );

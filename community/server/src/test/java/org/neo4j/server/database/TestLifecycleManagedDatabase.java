@@ -72,7 +72,7 @@ class TestLifecycleManagedDatabase
         dataDirectory = createTempDir();
 
         dbFactory = new SimpleGraphFactory( dbms );
-        dbConfig = Config.defaults( GraphDatabaseSettings.data_directory, dataDirectory.getAbsolutePath() );
+        dbConfig = Config.defaults( GraphDatabaseSettings.data_directory, dataDirectory.toPath().toAbsolutePath() );
         theDatabase = newDatabase();
     }
 

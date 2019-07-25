@@ -27,6 +27,7 @@ import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.junit.rules.RuleChain;
 
+import java.time.Duration;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
@@ -56,7 +57,7 @@ public class GraphDatabaseServiceTest
 {
     @ClassRule
     public static final DbmsRule globalDb = new ImpermanentDbmsRule()
-                                            .withSetting( GraphDatabaseSettings.shutdown_transaction_end_timeout, "10s" );
+                                            .withSetting( GraphDatabaseSettings.shutdown_transaction_end_timeout, Duration.ofSeconds( 10 ) );
 
     private final ExpectedException exception = ExpectedException.none();
     private final TestDirectory testDirectory = TestDirectory.testDirectory();
@@ -454,7 +455,7 @@ public class GraphDatabaseServiceTest
     private GraphDatabaseService getTemporaryDatabase()
     {
         managementService = new TestDatabaseManagementServiceBuilder( testDirectory.directory( "impermanent" ) ).impermanent()
-                .setConfig( GraphDatabaseSettings.shutdown_transaction_end_timeout, "10s" ).build();
+                .setConfig( GraphDatabaseSettings.shutdown_transaction_end_timeout, Duration.ofSeconds( 10 ) ).build();
         return managementService.database( DEFAULT_DATABASE_NAME );
     }
 }

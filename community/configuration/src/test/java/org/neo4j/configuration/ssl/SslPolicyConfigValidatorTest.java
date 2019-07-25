@@ -20,44 +20,56 @@
 package org.neo4j.configuration.ssl;
 
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
+import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.Arrays;
+import java.util.List;
 import java.util.Map;
 
 import org.neo4j.configuration.Config;
-import org.neo4j.configuration.GraphDatabaseSettings;
+import org.neo4j.string.SecureString;
+import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.TestDirectoryExtension;
+import org.neo4j.test.rule.TestDirectory;
 
 import static java.util.Collections.unmodifiableMap;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.neo4j.configuration.SettingValueParsers.FALSE;
-import static org.neo4j.configuration.SettingValueParsers.TRUE;
+import static org.neo4j.configuration.GraphDatabaseSettings.strict_config_validation;
 import static org.neo4j.internal.helpers.collection.MapUtil.stringMap;
 
+@ExtendWith( TestDirectoryExtension.class )
 class SslPolicyConfigValidatorTest
 {
+    @Inject
+    private TestDirectory testDirectory;
+
     @Test
     void shouldAcceptAllValidPemPolicyKeys()
     {
         PemSslPolicyConfig sslPolicy = PemSslPolicyConfig.group( "default" );
-        Map<String,String> originalParams = params(
-                sslPolicy.base_directory.name(), "xyz",
-                sslPolicy.revoked_dir.name(), "xyz",
-                sslPolicy.trust_all.name(), FALSE,
-                sslPolicy.client_auth.name(), "NONE",
-                sslPolicy.tls_versions.name(), "xyz",
-                sslPolicy.ciphers.name(), "xyz",
-                sslPolicy.verify_hostname.name(), TRUE,
+        var builder = Config.newBuilder()
+                .set( sslPolicy.base_directory, Path.of( "xyz" ) )
+                .set( sslPolicy.revoked_dir, Path.of( "xyz" ) )
+                .set( sslPolicy.trust_all, false )
+                .set( sslPolicy.client_auth, ClientAuth.NONE )
+                .set( sslPolicy.tls_versions, List.of( "xyz" ) )
+                .set( sslPolicy.ciphers, List.of( "xyz" ) )
+                .set( sslPolicy.verify_hostname, true )
 
-                sslPolicy.allow_key_generation.name(), TRUE,
-                sslPolicy.private_key.name(), "xyz",
-                sslPolicy.private_key_password.name(), "xyz",
-                sslPolicy.public_certificate.name(), "xyz",
-                sslPolicy.trusted_dir.name(), "xyz"
-        );
+                .set( sslPolicy.allow_key_generation, true )
+                .set( sslPolicy.private_key, Path.of("xyz" ) )
+                .set( sslPolicy.public_certificate, Path.of("xyz" ) )
+                .set( sslPolicy.trusted_dir, Path.of("xyz" ) )
+                .set( sslPolicy.private_key_password, new SecureString( "xyz" ) );
 
-        assertDoesNotThrow( () -> Config.defaults( originalParams ) );
+        assertDoesNotThrow( builder::build );
     }
 
     @Test
@@ -65,84 +77,90 @@ class SslPolicyConfigValidatorTest
     {
         JksSslPolicyConfig sslPolicy = JksSslPolicyConfig.group( "default" );
 
-        Map<String,String> originalParams = params(
-                sslPolicy.base_directory.name(), "xyz",
-                sslPolicy.revoked_dir.name(), "xyz",
-                sslPolicy.trust_all.name(), TRUE,
-                sslPolicy.client_auth.name(), "none",
-                sslPolicy.tls_versions.name(), "xyz",
-                sslPolicy.ciphers.name(), "xyz",
-                sslPolicy.verify_hostname.name(), TRUE,
+        var builder = Config.newBuilder()
+                .set( sslPolicy.base_directory, Path.of( "xyz" ) )
+                .set( sslPolicy.revoked_dir, Path.of( "xyz" ) )
+                .set( sslPolicy.trust_all, true )
+                .set( sslPolicy.client_auth, ClientAuth.NONE )
+                .set( sslPolicy.tls_versions, List.of( "xyz" ) )
+                .set( sslPolicy.ciphers, List.of( "xyz" ) )
+                .set( sslPolicy.verify_hostname, true )
+                .set( sslPolicy.keystore, Path.of( "abc" ) )
+                .set( sslPolicy.keystore_pass, new SecureString( "abc" ) )
+                .set( sslPolicy.entry_alias, "abc" )
+                .set( sslPolicy.entry_pass, new SecureString( "abc" ) );
 
-                sslPolicy.keystore.name(), "abc",
-                sslPolicy.keystore_pass.name(), "abc",
-                sslPolicy.entry_alias.name(), "abc",
-                sslPolicy.entry_pass.name(), "abc"
-        );
-        assertDoesNotThrow( () -> Config.defaults( originalParams ) );
-
+        assertDoesNotThrow( builder::build );
     }
 
     @Test()
-    void shouldThrowIfCombinationOfPemAndJks()
+    void shouldThrowIfCombinationOfPemAndJks() throws IOException
     {
         // given
-        Map<String,String> originalParams = params(
-                "dbms.ssl.policy.pem.default.base_directory", "xyz",
-                "dbms.ssl.policy.pem.default.allow_key_generation", "xyz",
-                "dbms.ssl.policy.pem.default.trust_all", "xyz",
-                "dbms.ssl.policy.pem.default.keystore", "xyz",
-                "dbms.ssl.policy.pem.default.private_key_password", "xyz",
-                "dbms.ssl.policy.pem.default.public_certificate", "xyz",
-                "dbms.ssl.policy.pem.default.client_auth", "xyz",
-                "dbms.ssl.policy.pem.default.tls_versions", "xyz",
-                "dbms.ssl.policy.pem.default.ciphers", "xyz"
-        );
-
+        File confFile = testDirectory.createFile( "test.conf" );
+        Files.write( confFile.toPath(), Arrays.asList(
+                "dbms.ssl.policy.pem.default.base_directory=xyz",
+                "dbms.ssl.policy.pem.default.allow_key_generation=xyz",
+                "dbms.ssl.policy.pem.default.trust_all=xyz",
+                "dbms.ssl.policy.pem.default.keystore=xyz",
+                "dbms.ssl.policy.pem.default.private_key_password=xyz",
+                "dbms.ssl.policy.pem.default.public_certificate=xyz",
+                "dbms.ssl.policy.pem.default.client_auth=xyz",
+                "dbms.ssl.policy.pem.default.tls_versions=xyz",
+                "dbms.ssl.policy.pem.default.ciphers=xyz"
+        ) );
         // when
-        IllegalArgumentException exception = assertThrows( IllegalArgumentException.class, () -> Config.defaults( originalParams ) );
+        IllegalArgumentException exception = assertThrows( IllegalArgumentException.class, () -> Config.newBuilder().fromFile( confFile ).build() );
         assertThat( exception.getMessage(), containsString( "Error evaluating value for setting" ) );
     }
 
     @Test
-    void shouldThrowOnUnknownPolicySetting()
+    void shouldThrowOnUnknownPolicySetting() throws IOException
     {
         // given
-        Map<String,String> originalParams = params(
-                "dbms.ssl.policy.pem.default.trust_all", "xyz",
-                "dbms.ssl.policy.pem.default.color", "blue" );
+        File confFile = testDirectory.createFile( "test.conf" );
+        Files.write( confFile.toPath(), Arrays.asList(
+                "dbms.ssl.policy.pem.default.trust_all=xyz",
+                "dbms.ssl.policy.pem.default.color=blue"
+        ) );
 
         // when
-        IllegalArgumentException exception = assertThrows( IllegalArgumentException.class, () -> Config.defaults( originalParams ) );
+        IllegalArgumentException exception = assertThrows( IllegalArgumentException.class, () -> Config.newBuilder().fromFile( confFile ).build() );
+
         assertThat( exception.getMessage(), containsString( "Error evaluating value for setting" ) );
     }
 
     @Test
-    void shouldThrowOnDirectPolicySetting()
+    void shouldThrowOnDirectPolicySetting() throws IOException
     {
         // given
-        Map<String,String> originalParams = params(
-                "dbms.ssl.policy.pem.base_directory.trust_all", "xyz",
-                "dbms.ssl.policy.pem.base_directory", "path" );
+        File confFile = testDirectory.createFile( "test.conf" );
+        Files.write( confFile.toPath(), Arrays.asList(
+                "dbms.ssl.policy.pem.base_directory.trust_all=xyz",
+                "dbms.ssl.policy.pem.base_directory=path"
+        ) );
 
         // when
-        IllegalArgumentException exception = assertThrows( IllegalArgumentException.class, () -> Config.defaults( originalParams ) );
+        IllegalArgumentException exception = assertThrows( IllegalArgumentException.class, () -> Config.newBuilder().fromFile( confFile ).build() );
+
         assertThat( exception.getMessage(), containsString( "Error evaluating value for setting" ) );
     }
 
     @Test
-    void shouldIgnoreUnknownNonPolicySettings()
+    void shouldIgnoreUnknownNonPolicySettings() throws IOException
     {
         // given
-        Map<String,String> originalParams = params(
-                GraphDatabaseSettings.strict_config_validation.name(), TRUE,
-                "dbms.ssl.unknown", "xyz",
-                "dbms.ssl.something", "xyz",
-                "dbms.unrelated.totally", "xyz"
-        );
+        File confFile = testDirectory.createFile( "test.conf" );
+        Files.write( confFile.toPath(), Arrays.asList(
+                "dbms.ssl.unknown=xyz",
+                "dbms.ssl.something=xyz",
+                "dbms.unrelated.totally=xyz"
+        ) );
 
         // when
-        IllegalArgumentException exception = assertThrows( IllegalArgumentException.class, () -> Config.defaults( originalParams ) );
+        IllegalArgumentException exception =
+                assertThrows( IllegalArgumentException.class, () -> Config.newBuilder().set( strict_config_validation, true ).fromFile( confFile ).build() );
+
         assertThat( exception.getMessage(), containsString( "Unrecognized setting" ) );
     }
 

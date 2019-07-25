@@ -58,7 +58,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
-import static org.neo4j.configuration.SettingValueParsers.TRUE;
 import static org.neo4j.internal.helpers.collection.MapUtil.map;
 import static org.neo4j.internal.kernel.api.security.AuthenticationResult.PASSWORD_CHANGE_REQUIRED;
 import static org.neo4j.kernel.api.security.AuthToken.newBasicAuthToken;
@@ -247,7 +246,7 @@ public class AuthProceduresIT
         removePreviousAuthFile();
 
         DatabaseManagementServiceBuilder graphDatabaseFactory = new TestDatabaseManagementServiceBuilder().setFileSystem( fs ).impermanent()
-                .setConfig( GraphDatabaseSettings.auth_enabled, TRUE );
+                .setConfig( GraphDatabaseSettings.auth_enabled, true );
 
         managementService = graphDatabaseFactory.build();
         return managementService.database( DEFAULT_DATABASE_NAME );

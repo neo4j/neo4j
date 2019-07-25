@@ -211,7 +211,7 @@ public class BasicAuthenticationTest
 
     private static Authentication createAuthentication( int maxFailedAttempts ) throws Exception
     {
-        Config config = Config.defaults( GraphDatabaseSettings.auth_max_failed_attempts, String.valueOf( maxFailedAttempts ) );
+        Config config = Config.defaults( GraphDatabaseSettings.auth_max_failed_attempts, maxFailedAttempts );
         BasicSystemGraphRealm manager = simpleBasicSystemGraphRealm( config );
         Authentication authentication = new BasicAuthentication( manager, manager );
         manager.newUser( "bob", password( "secret" ), true );

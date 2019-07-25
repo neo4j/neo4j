@@ -74,7 +74,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
-import static org.neo4j.configuration.SettingValueParsers.TRUE;
 import static org.neo4j.internal.helpers.ArrayUtil.concat;
 import static org.neo4j.internal.helpers.collection.Iterables.asList;
 import static org.neo4j.test.Unzip.unzip;
@@ -330,8 +329,8 @@ class StartOldDbOnCurrentVersionAndCreateFusionIndexIT
         monitors.addMonitorListener( indexRecoveryTracker );
         return new DatabaseManagementServiceBuilder( storeDir )
                 .setMonitors( monitors )
-                .setConfig( GraphDatabaseSettings.allow_upgrade, TRUE )
-                .setConfig( GraphDatabaseSettings.rebuild_id_files_on_startup, TRUE )
+                .setConfig( GraphDatabaseSettings.allow_upgrade, true )
+                .setConfig( GraphDatabaseSettings.rebuild_id_files_on_startup, true )
                 .build();
     }
 

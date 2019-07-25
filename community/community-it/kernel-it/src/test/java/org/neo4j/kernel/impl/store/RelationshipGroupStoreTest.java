@@ -26,9 +26,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -135,7 +133,7 @@ class RelationshipGroupStoreTest
     private void newDb( int denseNodeThreshold )
     {
         managementService = new TestDatabaseManagementServiceBuilder().impermanent()
-                .setConfig( dense_node_threshold, "" + denseNodeThreshold ).build();
+                .setConfig( dense_node_threshold, denseNodeThreshold ).build();
         db = (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );
         fs = db.getDependencyResolver().resolveDependency( FileSystemAbstraction.class );
     }
@@ -167,12 +165,12 @@ class RelationshipGroupStoreTest
 
     private StoreFactory factory( Integer customThreshold, PageCache pageCache )
     {
-        Map<String, String> customConfig = new HashMap<>();
+        Config.Builder config = Config.newBuilder();
         if ( customThreshold != null )
         {
-            customConfig.put( dense_node_threshold.name(), "" + customThreshold );
+            config.set( dense_node_threshold, customThreshold );
         }
-        return new StoreFactory( testDirectory.databaseLayout(), Config.defaults( customConfig ), new DefaultIdGeneratorFactory( fs, immediate() ),
+        return new StoreFactory( testDirectory.databaseLayout(), config.build(), new DefaultIdGeneratorFactory( fs, immediate() ),
                 pageCache, fs, NullLogProvider.getInstance() );
     }
 

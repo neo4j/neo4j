@@ -593,7 +593,7 @@ class TransactionRecordStateTest
     @Test
     void shouldExtractCreatedCommandsInCorrectOrder() throws Throwable
     {
-        neoStores = createStores( Config.defaults( Map.of( dense_node_threshold.name(), "1" ) ) );
+        neoStores = createStores( Config.defaults( dense_node_threshold, 1 ) );
         TransactionRecordState recordState = newTransactionRecordState();
         long nodeId = 0;
         long relId = 1;
@@ -620,7 +620,7 @@ class TransactionRecordStateTest
     @Test
     void shouldExtractUpdateCommandsInCorrectOrder() throws Throwable
     {
-        neoStores = createStores( Config.defaults( Map.of( dense_node_threshold.name(), "1" ) ) );
+        neoStores = createStores( Config.defaults( dense_node_threshold, 1 ) );
         TransactionRecordState recordState = newTransactionRecordState();
         long nodeId = 0;
         long relId1 = 1;
@@ -673,7 +673,7 @@ class TransactionRecordStateTest
         // Given:
         // - dense node threshold of 5
         // - node with 4 rels of type relationshipB and 1 rel of type relationshipB
-        neoStores = createStores( Config.defaults( Map.of( dense_node_threshold.name(), "5" ) ) );
+        neoStores = createStores( Config.defaults( dense_node_threshold, 5 ) );
         int relationshipA = 0;
         int relationshipB = 1;
         TransactionRecordState state = newTransactionRecordState();
@@ -700,7 +700,7 @@ class TransactionRecordStateTest
     @Test
     void shouldExtractDeleteCommandsInCorrectOrder() throws Exception
     {
-        neoStores = createStores( Config.defaults( Map.of( dense_node_threshold.name(), "1" ) ) );
+        neoStores = createStores( Config.defaults( dense_node_threshold, 1 ) );
         TransactionRecordState recordState = newTransactionRecordState();
         long nodeId1 = 0;
         long nodeId2 = 1;
@@ -885,7 +885,7 @@ class TransactionRecordStateTest
     @Test
     void movingBilaterallyOfTheDenseNodeThresholdIsConsistent() throws Exception
     {
-        neoStores = createStores( Config.defaults( Map.of( dense_node_threshold.name(), "10" ) ) );
+        neoStores = createStores( Config.defaults( dense_node_threshold, 10 ) );
         TransactionRecordState tx = newTransactionRecordState();
         long nodeId = neoStores.getNodeStore().nextId();
 
@@ -944,7 +944,7 @@ class TransactionRecordStateTest
     void shouldConvertToDenseNodeRepresentationWhenHittingThresholdWithDifferentTypes()
     {
         // GIVEN a node with a total of denseNodeThreshold-1 relationships
-        neoStores = createStores( Config.defaults( Map.of( dense_node_threshold.name(), "50" ) ) );
+        neoStores = createStores( Config.defaults( dense_node_threshold, 50 ) );
         TransactionRecordState tx = newTransactionRecordState();
         long nodeId = neoStores.getNodeStore().nextId();
         int typeA = 0;
@@ -979,7 +979,7 @@ class TransactionRecordStateTest
     void shouldConvertToDenseNodeRepresentationWhenHittingThresholdWithTheSameTypeDifferentDirection()
     {
         // GIVEN a node with a total of denseNodeThreshold-1 relationships
-        neoStores = createStores( Config.defaults( Map.of( dense_node_threshold.name(), "49" ) ) );
+        neoStores = createStores( Config.defaults( dense_node_threshold, 49 ) );
         TransactionRecordState tx = newTransactionRecordState();
         long nodeId = neoStores.getNodeStore().nextId();
         int typeA = 0;
@@ -1003,7 +1003,7 @@ class TransactionRecordStateTest
     void shouldConvertToDenseNodeRepresentationWhenHittingThresholdWithTheSameTypeSameDirection()
     {
         // GIVEN a node with a total of denseNodeThreshold-1 relationships
-        neoStores = createStores( Config.defaults( Map.of( dense_node_threshold.name(), "8" ) ) );
+        neoStores = createStores( Config.defaults( dense_node_threshold, 8 ) );
         TransactionRecordState tx = newTransactionRecordState();
         long nodeId = neoStores.getNodeStore().nextId();
         int typeA = 0;
@@ -1026,7 +1026,7 @@ class TransactionRecordStateTest
     void shouldMaintainCorrectDataWhenDeletingFromDenseNodeWithOneType()
     {
         // GIVEN a node with a total of denseNodeThreshold-1 relationships
-        neoStores = createStores( Config.defaults( Map.of( dense_node_threshold.name(), "13" ) ) );
+        neoStores = createStores( Config.defaults( dense_node_threshold, 13 ) );
         TransactionRecordState tx = newTransactionRecordState();
         int nodeId = (int) neoStores.getNodeStore().nextId();
         int typeA = 0;
@@ -1045,7 +1045,7 @@ class TransactionRecordStateTest
     void shouldMaintainCorrectDataWhenDeletingFromDenseNodeWithManyTypes()
     {
         // GIVEN a node with a total of denseNodeThreshold-1 relationships
-        neoStores = createStores( Config.defaults( Map.of( dense_node_threshold.name(), "1" ) ) );
+        neoStores = createStores( Config.defaults( dense_node_threshold, 1 ) );
         TransactionRecordState tx = newTransactionRecordState();
         long nodeId = neoStores.getNodeStore().nextId();
         int typeA = 0;
@@ -1119,7 +1119,7 @@ class TransactionRecordStateTest
         int type5 = 5;
         int type10 = 10;
         int type15 = 15;
-        neoStores = createStores( Config.defaults( Map.of( dense_node_threshold.name(), "1" ) ) );
+        neoStores = createStores( Config.defaults( dense_node_threshold, 1 ) );
         {
             TransactionRecordState recordState = newTransactionRecordState();
             neoStores.getRelationshipTypeTokenStore().setHighId( 16 );
@@ -1177,7 +1177,7 @@ class TransactionRecordStateTest
     void shouldPrepareRelevantRecords() throws Exception
     {
         PrepareTrackingRecordFormats format = new PrepareTrackingRecordFormats( Standard.LATEST_RECORD_FORMATS );
-        neoStores = createStores( Config.defaults( Map.of( dense_node_threshold.name(), "1" ) ), format );
+        neoStores = createStores( Config.defaults( dense_node_threshold, 1 ), format );
         // WHEN
         TransactionRecordState state = newTransactionRecordState();
         state.nodeCreate( 0 );

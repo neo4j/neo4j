@@ -56,7 +56,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.configuration.GraphDatabaseSettings.index_background_sampling_enabled;
-import static org.neo4j.configuration.SettingValueParsers.FALSE;
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.internal.kernel.api.Transaction.Type.explicit;
 import static org.neo4j.internal.kernel.api.security.LoginContext.AUTH_DISABLED;
@@ -227,7 +226,7 @@ class RebuildCountsTest
                 .setInternalLogProvider( internalLogProvider )
                 .setFileSystem( new UncloseableDelegatingFileSystemAbstraction( fs ) )
                 .impermanent()
-                .setConfig( index_background_sampling_enabled, FALSE )
+                .setConfig( index_background_sampling_enabled, false )
                 .build();
         db = managementService.database( DEFAULT_DATABASE_NAME );
     }

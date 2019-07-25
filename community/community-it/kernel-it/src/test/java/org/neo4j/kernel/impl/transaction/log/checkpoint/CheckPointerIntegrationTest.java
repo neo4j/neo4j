@@ -25,14 +25,15 @@ import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.io.File;
 import java.io.IOException;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.dbms.api.DatabaseManagementServiceBuilder;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.io.ByteUnit;
 import org.neo4j.io.fs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.UncloseableDelegatingFileSystemAbstraction;
@@ -62,6 +63,9 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
+import static org.neo4j.configuration.GraphDatabaseSettings.check_point_interval_time;
+import static org.neo4j.configuration.GraphDatabaseSettings.check_point_interval_tx;
+import static org.neo4j.configuration.GraphDatabaseSettings.logical_log_rotation_threshold;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogHeader.LOG_HEADER_SIZE;
 import static org.neo4j.storageengine.api.LogVersionRepository.INITIAL_LOG_VERSION;
 
@@ -88,9 +92,9 @@ class CheckPointerIntegrationTest
             InterruptedException
     {
         DatabaseManagementService managementService = builder
-                .setConfig( GraphDatabaseSettings.check_point_interval_time, 0 + "ms" )
-                .setConfig( GraphDatabaseSettings.check_point_interval_tx, "1" )
-                .setConfig( GraphDatabaseSettings.logical_log_rotation_threshold, "1g" ).build();
+                .setConfig( check_point_interval_time, Duration.ofMillis( 0 ) )
+                .setConfig( check_point_interval_tx, 1 )
+                .setConfig( logical_log_rotation_threshold, ByteUnit.gibiBytes( 1 ) ).build();
         GraphDatabaseService db = managementService.database( DEFAULT_DATABASE_NAME );
         try ( Transaction tx = db.beginTx() )
         {
@@ -107,9 +111,9 @@ class CheckPointerIntegrationTest
         // given
         long millis = 200;
         DatabaseManagementService managementService = builder
-                .setConfig( GraphDatabaseSettings.check_point_interval_time, millis + "ms" )
-                .setConfig( GraphDatabaseSettings.check_point_interval_tx, "10000" )
-                .setConfig( GraphDatabaseSettings.logical_log_rotation_threshold, "1g" ).build();
+                .setConfig( check_point_interval_time, Duration.ofMillis( millis ) )
+                .setConfig( check_point_interval_tx, 10000 )
+                .setConfig( logical_log_rotation_threshold, ByteUnit.gibiBytes( 1 ) ).build();
         GraphDatabaseService db = managementService.database( DEFAULT_DATABASE_NAME );
 
         // when
@@ -161,9 +165,9 @@ class CheckPointerIntegrationTest
     {
         // given
         DatabaseManagementService managementService = builder
-                .setConfig( GraphDatabaseSettings.check_point_interval_time, "300m" )
-                .setConfig( GraphDatabaseSettings.check_point_interval_tx, "1" )
-                .setConfig( GraphDatabaseSettings.logical_log_rotation_threshold, "1g" ).build();
+                .setConfig( check_point_interval_time, Duration.ofMillis( 300 ) )
+                .setConfig( check_point_interval_tx, 1 )
+                .setConfig( logical_log_rotation_threshold, ByteUnit.gibiBytes( 1 ) ).build();
         GraphDatabaseService db = managementService.database( DEFAULT_DATABASE_NAME );
 
         // when
@@ -191,9 +195,9 @@ class CheckPointerIntegrationTest
     {
         // given
         DatabaseManagementService managementService = builder
-                .setConfig( GraphDatabaseSettings.check_point_interval_time, "1s" )
-                .setConfig( GraphDatabaseSettings.check_point_interval_tx, "10000" )
-                .setConfig( GraphDatabaseSettings.logical_log_rotation_threshold, "1g" ).build();
+                .setConfig( check_point_interval_time, Duration.ofSeconds( 1 ) )
+                .setConfig( check_point_interval_tx, 10000 )
+                .setConfig( logical_log_rotation_threshold, ByteUnit.gibiBytes( 1 ) ).build();
         GraphDatabaseService db = managementService.database( DEFAULT_DATABASE_NAME );
 
         // when
@@ -215,10 +219,9 @@ class CheckPointerIntegrationTest
     void shouldBeAbleToStartAndShutdownMultipleTimesTheDBWithoutCommittingTransactions() throws Throwable
     {
         // given
-        DatabaseManagementServiceBuilder databaseManagementServiceBuilder = builder.setConfig( GraphDatabaseSettings
-                .check_point_interval_time, "300m" )
-                .setConfig( GraphDatabaseSettings.check_point_interval_tx, "10000" )
-                .setConfig( GraphDatabaseSettings.logical_log_rotation_threshold, "1g" );
+        DatabaseManagementServiceBuilder databaseManagementServiceBuilder = builder.setConfig( check_point_interval_time, Duration.ofMinutes( 300 ) )
+                .setConfig( check_point_interval_tx, 10000 )
+                .setConfig( logical_log_rotation_threshold, ByteUnit.gibiBytes( 1 ) );
 
         // when
         DatabaseManagementService managementService1 = databaseManagementServiceBuilder.build();

@@ -55,7 +55,7 @@ class CompiledExpandUtilsTest
     @ExtensionCallback
     void config( TestDatabaseManagementServiceBuilder builder )
     {
-        builder.setConfig( GraphDatabaseSettings.dense_node_threshold, "1" );
+        builder.setConfig( GraphDatabaseSettings.dense_node_threshold, 1 );
     }
 
     private Transaction transaction() throws TransactionFailureException

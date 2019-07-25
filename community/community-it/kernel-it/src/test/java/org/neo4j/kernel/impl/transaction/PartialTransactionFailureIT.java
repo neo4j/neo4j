@@ -84,7 +84,7 @@ class PartialTransactionFailureIT
         adversary.disable();
 
         File storeDir = testDirectory.storeDir();
-        final Map<Setting<?>,String> params = Map.of( GraphDatabaseSettings.pagecache_memory, "8m" );
+        final Map<Setting<?>,Object> params = Map.of( GraphDatabaseSettings.pagecache_memory, "8m" );
         managementService = new TestDatabaseManagementServiceBuilder( storeDir )
                 .setFileSystem( new AdversarialFileSystemAbstraction( adversary ) )
                 .setConfig( params )

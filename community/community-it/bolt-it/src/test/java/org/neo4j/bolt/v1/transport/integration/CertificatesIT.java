@@ -35,6 +35,7 @@ import java.util.Set;
 import org.neo4j.bolt.v1.messaging.Neo4jPackV1;
 import org.neo4j.bolt.v1.transport.socket.client.SecureSocketConnection;
 import org.neo4j.configuration.connectors.BoltConnector;
+import org.neo4j.configuration.helpers.SocketAddress;
 import org.neo4j.ssl.PkiUtils;
 
 import static org.hamcrest.CoreMatchers.equalTo;
@@ -42,7 +43,6 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
 import static org.neo4j.configuration.GraphDatabaseSettings.tls_certificate_file;
 import static org.neo4j.configuration.GraphDatabaseSettings.tls_key_file;
-import static org.neo4j.configuration.SettingValueParsers.TRUE;
 
 public class CertificatesIT
 {
@@ -54,10 +54,10 @@ public class CertificatesIT
     @Rule
     public Neo4jWithSocket server = new Neo4jWithSocket( getClass(), settings ->
     {
-        settings.put( tls_certificate_file, certFile.getAbsolutePath() );
-        settings.put( tls_key_file, keyFile.getAbsolutePath() );
-        settings.put( BoltConnector.enabled, TRUE );
-        settings.put( BoltConnector.listen_address, "localhost:0" );
+        settings.put( tls_certificate_file, certFile.toPath().toAbsolutePath() );
+        settings.put( tls_key_file, keyFile.toPath().toAbsolutePath() );
+        settings.put( BoltConnector.enabled, true );
+        settings.put( BoltConnector.listen_address, new SocketAddress( "localhost", 0 ) );
     } );
 
     @Test

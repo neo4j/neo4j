@@ -31,7 +31,6 @@ import org.neo4j.kernel.impl.factory.OperationalMode;
 
 import static org.neo4j.configuration.GraphDatabaseSettings.SchemaIndex.NATIVE30;
 import static org.neo4j.configuration.GraphDatabaseSettings.default_schema_provider;
-import static org.neo4j.internal.helpers.collection.MapUtil.stringMap;
 
 public class FusionIndexProvider30CompatibilitySuiteTest extends IndexProviderCompatibilityTestSuite
 {
@@ -39,7 +38,7 @@ public class FusionIndexProvider30CompatibilitySuiteTest extends IndexProviderCo
     protected IndexProvider createIndexProvider( PageCache pageCache, FileSystemAbstraction fs, File graphDbDir )
     {
         IndexProvider.Monitor monitor = IndexProvider.Monitor.EMPTY;
-        Config config = Config.defaults( stringMap( default_schema_provider.name(), NATIVE30.providerName() ) );
+        Config config = Config.defaults( default_schema_provider, NATIVE30.providerName() );
         OperationalMode mode = OperationalMode.SINGLE;
         RecoveryCleanupWorkCollector recoveryCleanupWorkCollector = RecoveryCleanupWorkCollector.immediate();
         return NativeLuceneFusionIndexProviderFactory30.create( pageCache, graphDbDir, fs, monitor, config, mode, recoveryCleanupWorkCollector );

@@ -69,7 +69,7 @@ class SystemTimeZoneLoggingIT
         File storeDir = testDirectory.storeDir( String.valueOf( hoursShift ) );
         DatabaseManagementService managementService =
                 new TestDatabaseManagementServiceBuilder( storeDir )
-                        .setConfig( GraphDatabaseSettings.db_timezone, LogTimeZone.SYSTEM.name() )
+                        .setConfig( GraphDatabaseSettings.db_timezone, LogTimeZone.SYSTEM )
                         .build();
         GraphDatabaseService database = managementService.database( DEFAULT_DATABASE_NAME );
         managementService.shutdown();
