@@ -29,11 +29,15 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.neo4j.configuration.Config;
+import org.neo4j.configuration.connectors.BoltConnector;
+import org.neo4j.configuration.connectors.HttpConnector;
+import org.neo4j.configuration.connectors.HttpsConnector;
 import org.neo4j.graphdb.facade.GraphDatabaseDependencies;
 import org.neo4j.logging.Log;
 import org.neo4j.server.database.CommunityGraphFactory;
@@ -84,7 +88,7 @@ class ServerUserLogTest
         // when
         try
         {
-            int returnCode = serverBootstrapper.start( dir, Optional.empty(), stringMap() );
+            int returnCode = serverBootstrapper.start( dir, Optional.empty(), connectorsConfig() );
 
             // then no exceptions are thrown and
             assertThat( getStdOut(), not( empty() ) );
@@ -117,7 +121,9 @@ class ServerUserLogTest
         // when
         try
         {
-            int returnCode = serverBootstrapper.start( dir, Optional.empty(), stringMap( store_user_log_to_stdout.name(), FALSE ) );
+            Map<String,String> configOverrides = stringMap( store_user_log_to_stdout.name(), FALSE );
+            configOverrides.putAll( connectorsConfig() );
+            int returnCode = serverBootstrapper.start( dir, Optional.empty(), configOverrides );
             // then no exceptions are thrown and
             assertEquals( OK, returnCode );
             assertTrue( serverBootstrapper.getServer().getDatabaseService().isRunning() );
@@ -147,13 +153,13 @@ class ServerUserLogTest
         // when
         try
         {
-            int returnCode = serverBootstrapper.start( dir, Optional.empty(),
-                    stringMap(
-                            store_user_log_to_stdout.name(), FALSE,
+            Map<String,String> configOverrides = stringMap( store_user_log_to_stdout.name(), FALSE,
                             store_user_log_rotation_delay.name(), "0",
                             store_user_log_rotation_threshold.name(), "16",
-                            store_user_log_max_archives.name(), Integer.toString( maxArchives )
-                    )
+                            store_user_log_max_archives.name(), Integer.toString( maxArchives ) );
+            configOverrides.putAll( connectorsConfig() );
+            int returnCode = serverBootstrapper.start( dir, Optional.empty(),
+                    configOverrides
             );
 
             // then
@@ -182,6 +188,13 @@ class ServerUserLogTest
         List<String> userLogFiles = allUserLogFiles( dir );
         assertThat( userLogFiles, containsInAnyOrder( "neo4j.log", "neo4j.log.1", "neo4j.log.2", "neo4j.log.3", "neo4j.log.4" ) );
         assertEquals( maxArchives + 1, userLogFiles.size() );
+    }
+
+    private static Map<String,String> connectorsConfig()
+    {
+        return Map.of( HttpConnector.listen_address.name(), "localhost:0" ,
+                BoltConnector.listen_address.name(), "localhost:0",
+                HttpsConnector.listen_address.name(), "localhost:0" );
     }
 
     private List<String> getStdOut()

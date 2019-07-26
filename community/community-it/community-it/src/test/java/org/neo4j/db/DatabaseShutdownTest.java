@@ -68,13 +68,15 @@ class DatabaseShutdownTest
 {
     @Inject
     private TestDirectory testDirectory;
+    @Inject
+    private FileSystemAbstraction fs;
 
     @Test
     void shouldShutdownCorrectlyWhenCheckPointingOnShutdownFails()
     {
         DatabaseLayout databaseLayout = testDirectory.databaseLayout();
         TestDatabaseManagementServiceBuilderWithFailingPageCacheFlush factory =
-                new TestDatabaseManagementServiceBuilderWithFailingPageCacheFlush( databaseLayout.databaseDirectory() );
+                new TestDatabaseManagementServiceBuilderWithFailingPageCacheFlush( databaseLayout.databaseDirectory(), fs );
         DatabaseManagementService managementService = factory.build();
         GraphDatabaseService databaseService = managementService.database( DEFAULT_DATABASE_NAME );
         DatabaseManager<?> databaseManager = ((GraphDatabaseAPI) databaseService).getDependencyResolver().resolveDependency( DatabaseManager.class );
@@ -90,7 +92,7 @@ class DatabaseShutdownTest
     @Test
     void invokeDatabaseShutdownListenersOnShutdown()
     {
-        DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder( testDirectory.storeDir() ).build();
+        DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder( testDirectory.storeDir() ).setFileSystem( fs ).build();
         ShutdownListenerDatabaseEventListener shutdownHandler = new ShutdownListenerDatabaseEventListener();
         managementService.registerDatabaseEventListener( shutdownHandler );
         managementService.shutdown();
@@ -100,12 +102,14 @@ class DatabaseShutdownTest
 
     private static class TestDatabaseManagementServiceBuilderWithFailingPageCacheFlush extends TestDatabaseManagementServiceBuilder
     {
+        private final FileSystemAbstraction fs;
         private LifeSupport globalLife;
         private volatile boolean failFlush;
 
-        TestDatabaseManagementServiceBuilderWithFailingPageCacheFlush( File databaseRootDir )
+        TestDatabaseManagementServiceBuilderWithFailingPageCacheFlush( File databaseRootDir, FileSystemAbstraction fs )
         {
             super( databaseRootDir );
+            this.fs = fs;
         }
 
         @Override
@@ -146,6 +150,12 @@ class DatabaseShutdownTest
                                     };
                                 }
                             };
+                        }
+
+                        @Override
+                        protected FileSystemAbstraction createFileSystemAbstraction()
+                        {
+                            return fs;
                         }
                     };
                     globalLife = globalModule.getGlobalLife();

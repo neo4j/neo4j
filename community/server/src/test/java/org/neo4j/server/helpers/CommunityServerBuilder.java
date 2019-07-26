@@ -115,12 +115,17 @@ public class CommunityServerBuilder
 
     public File createConfigFiles() throws IOException
     {
-        File temporaryConfigFile = ServerTestUtils.createTempConfigFile();
-        File temporaryFolder = ServerTestUtils.createTempDir();
+        File testFolder = persistent ? new File( dataDir ) : ServerTestUtils.createTempDir();
+        File temporaryConfigFile = ServerTestUtils.createTempConfigFile( testFolder );
 
-        ServerTestUtils.writeConfigToFile( createConfiguration( temporaryFolder ), temporaryConfigFile );
+        ServerTestUtils.writeConfigToFile( createConfiguration( testFolder ), temporaryConfigFile );
 
         return temporaryConfigFile;
+    }
+
+    public boolean isPersistent()
+    {
+        return persistent;
     }
 
     public Map<String, String> createConfiguration( File temporaryFolder )

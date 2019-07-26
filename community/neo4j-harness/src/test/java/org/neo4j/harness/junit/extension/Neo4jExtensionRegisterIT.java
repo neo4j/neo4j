@@ -40,7 +40,6 @@ import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.logging.LogTimeZone;
 import org.neo4j.test.server.HTTP;
 
-import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.time.ZoneOffset.UTC;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.equalTo;
@@ -49,7 +48,6 @@ import static org.hamcrest.Matchers.startsWith;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.neo4j.server.ServerTestUtils.getRelativePath;
-import static org.neo4j.server.ServerTestUtils.getSharedTestTemporaryFolder;
 import static org.neo4j.test.server.HTTP.RawPayload.quotedJson;
 
 class Neo4jExtensionRegisterIT
@@ -61,7 +59,7 @@ class Neo4jExtensionRegisterIT
                     .withFixture( "CREATE (u:User)" )
                     .withConfig( GraphDatabaseSettings.db_timezone.name(), LogTimeZone.SYSTEM.toString() )
                     .withConfig( GraphDatabaseSettings.legacy_certificates_directory.name(),
-                    getRelativePath( getSharedTestTemporaryFolder(), GraphDatabaseSettings.legacy_certificates_directory ) )
+                    getRelativePath( createTempDirectory(), GraphDatabaseSettings.legacy_certificates_directory ) )
                     .withFixture( graphDatabaseService ->
                         {
                             try ( Transaction tx = graphDatabaseService.beginTx() )
@@ -137,7 +135,7 @@ class Neo4jExtensionRegisterIT
         GraphDatabaseAPI api = (GraphDatabaseAPI) databaseService;
         Config config = api.getDependencyResolver().resolveDependency( Config.class );
         File dataDirectory = config.get( GraphDatabaseSettings.data_directory ).toFile();
-        return new String( Files.readAllBytes( new File( dataDirectory, file ).toPath() ), UTF_8 );
+        return Files.readString( new File( dataDirectory, file ).toPath() );
     }
 
     private static File createTempDirectory()

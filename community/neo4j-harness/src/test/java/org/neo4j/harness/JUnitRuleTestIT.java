@@ -19,6 +19,7 @@
  */
 package org.neo4j.harness;
 
+import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runners.model.Statement;
@@ -58,13 +59,12 @@ import static org.neo4j.configuration.GraphDatabaseSettings.data_directory;
 import static org.neo4j.configuration.GraphDatabaseSettings.databases_root_path;
 import static org.neo4j.configuration.GraphDatabaseSettings.transaction_logs_root_path;
 import static org.neo4j.server.ServerTestUtils.getRelativePath;
-import static org.neo4j.server.ServerTestUtils.getSharedTestTemporaryFolder;
 import static org.neo4j.test.server.HTTP.RawPayload.quotedJson;
 
 public class JUnitRuleTestIT
 {
-    @Rule
-    public TestDirectory testDirectory = TestDirectory.testDirectory();
+    @ClassRule
+    public static TestDirectory testDirectory = TestDirectory.testDirectory();
     @Rule
     public SuppressOutput suppressOutput = SuppressOutput.suppressAll();
     @Rule
@@ -72,7 +72,7 @@ public class JUnitRuleTestIT
             .withFixture( "CREATE (u:User)" )
             .withConfig( GraphDatabaseSettings.db_timezone.name(), LogTimeZone.SYSTEM.toString() )
             .withConfig( GraphDatabaseSettings.legacy_certificates_directory.name(),
-                    getRelativePath( getSharedTestTemporaryFolder(), GraphDatabaseSettings.legacy_certificates_directory ) )
+                    getRelativePath( testDirectory.storeDir(), GraphDatabaseSettings.legacy_certificates_directory ) )
             .withFixture( graphDatabaseService ->
             {
                 try ( Transaction tx = graphDatabaseService.beginTx() )

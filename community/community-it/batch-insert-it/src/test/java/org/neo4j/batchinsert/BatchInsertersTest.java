@@ -31,7 +31,6 @@ import org.neo4j.internal.helpers.collection.Iterables;
 import org.neo4j.io.fs.EphemeralFileSystemAbstraction;
 import org.neo4j.kernel.extension.ExtensionFactory;
 import org.neo4j.kernel.impl.index.schema.GenericNativeIndexProviderFactory;
-import org.neo4j.test.extension.EphemeralFileSystemExtension;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.TestDirectoryExtension;
 import org.neo4j.test.rule.TestDirectory;
@@ -43,13 +42,11 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.neo4j.batchinsert.BatchInserters.inserter;
 import static org.neo4j.configuration.GraphDatabaseSettings.default_schema_provider;
 
-@ExtendWith( {EphemeralFileSystemExtension.class, TestDirectoryExtension.class} )
+@ExtendWith( TestDirectoryExtension.class )
 class BatchInsertersTest
 {
     @Inject
     private TestDirectory testDirectory;
-    @Inject
-    private EphemeralFileSystemAbstraction fs;
 
     @Test
     void automaticallyCloseCreatedFileSystemOnShutdown() throws Exception
@@ -62,9 +59,12 @@ class BatchInsertersTest
     @Test
     void providedFileSystemNotClosedAfterShutdown() throws IOException
     {
-        verifyProvidedFileSystemOpenAfterShutdown( inserter( testDirectory.databaseLayout(), fs ), fs );
-        verifyProvidedFileSystemOpenAfterShutdown( inserter( testDirectory.databaseLayout(), fs, getConfig() ), fs );
-        verifyProvidedFileSystemOpenAfterShutdown( inserter( testDirectory.databaseLayout(), fs, getConfig(), getExtensions() ), fs );
+        try ( EphemeralFileSystemAbstraction fs = new EphemeralFileSystemAbstraction() )
+        {
+            verifyProvidedFileSystemOpenAfterShutdown( inserter( testDirectory.databaseLayout(), fs ), fs );
+            verifyProvidedFileSystemOpenAfterShutdown( inserter( testDirectory.databaseLayout(), fs, getConfig() ), fs );
+            verifyProvidedFileSystemOpenAfterShutdown( inserter( testDirectory.databaseLayout(), fs, getConfig(), getExtensions() ), fs );
+        }
     }
 
     private static Iterable<ExtensionFactory<?>> getExtensions()

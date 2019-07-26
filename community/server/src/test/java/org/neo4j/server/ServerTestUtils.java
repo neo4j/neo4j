@@ -57,18 +57,6 @@ public class ServerTestUtils
         return Files.createTempDirectory( "neo4j-test" ).toFile();
     }
 
-    public static File getSharedTestTemporaryFolder()
-    {
-        try
-        {
-            return createTempConfigFile().getParentFile();
-        }
-        catch ( Exception e )
-        {
-            throw new RuntimeException( e );
-        }
-    }
-
     public static File createTempConfigFile() throws IOException
     {
         File file = File.createTempFile( "neo4j", "conf" );
@@ -81,11 +69,10 @@ public class ServerTestUtils
         return folder.toPath().resolve( setting.defaultValue() ).toString();
     }
 
-    public static Map<String,String> getDefaultRelativeProperties()
+    public static Map<String,String> getDefaultRelativeProperties( File folder )
     {
-        File testFolder = getSharedTestTemporaryFolder();
         Map<String,String> settings = new HashMap<>();
-        addDefaultRelativeProperties( settings, testFolder );
+        addDefaultRelativeProperties( settings, folder );
         return settings;
     }
 

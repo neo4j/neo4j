@@ -23,7 +23,6 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.TemporaryFolder;
 
 import java.io.File;
 import java.io.IOException;
@@ -40,6 +39,7 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
+import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.server.ExclusiveServerTestBase;
 
 import static org.hamcrest.Matchers.equalTo;
@@ -53,13 +53,14 @@ import static org.neo4j.configuration.SettingValueParsers.TRUE;
 import static org.neo4j.internal.helpers.collection.Iterators.single;
 import static org.neo4j.internal.helpers.collection.MapUtil.store;
 import static org.neo4j.internal.helpers.collection.MapUtil.stringMap;
+import static org.neo4j.server.ServerTestUtils.getDefaultRelativeProperties;
 import static org.neo4j.server.ServerTestUtils.verifyConnector;
 import static org.neo4j.test.assertion.Assert.assertEventually;
 
 public abstract class BaseBootstrapperIT extends ExclusiveServerTestBase
 {
     @Rule
-    public TemporaryFolder tempDir = new TemporaryFolder();
+    public TestDirectory testDirectory = TestDirectory.testDirectory();
 
     protected ServerBootstrapper bootstrapper;
 
@@ -93,26 +94,26 @@ public abstract class BaseBootstrapperIT extends ExclusiveServerTestBase
 
     protected String[] getAdditionalArguments() throws IOException
     {
-        return new String[]{"--home-dir", tempDir.newFolder( "home-dir" ).getAbsolutePath(),
-                "-c", configOption( data_directory, tempDir.getRoot().getAbsolutePath() ),
-                "-c", configOption( logs_directory, tempDir.getRoot().getAbsolutePath() )};
+        return new String[]{"--home-dir", testDirectory.directory( "home-dir" ).getAbsolutePath(),
+                "-c", configOption( data_directory, testDirectory.storeDir().getAbsolutePath() ),
+                "-c", configOption( logs_directory, testDirectory.storeDir().getAbsolutePath() )};
     }
 
     @Test
     public void canSpecifyConfigFile() throws Throwable
     {
         // Given
-        File configFile = tempDir.newFile( Config.DEFAULT_CONFIG_FILE_NAME );
+        File configFile = testDirectory.file( Config.DEFAULT_CONFIG_FILE_NAME );
 
         Map<String,String> properties = stringMap( forced_kernel_id.name(), "ourcustomvalue" );
-        properties.putAll( ServerTestUtils.getDefaultRelativeProperties() );
+        properties.putAll( getDefaultRelativeProperties( testDirectory.storeDir() ) );
         properties.putAll( connectorsOnRandomPortsConfig() );
 
         store( properties, configFile );
 
         // When
         ServerBootstrapper.start( bootstrapper,
-                "--home-dir", tempDir.newFolder( "home-dir" ).getAbsolutePath(),
+                "--home-dir", testDirectory.directory( "home-dir" ).getAbsolutePath(),
                 "--config-dir", configFile.getParentFile().getAbsolutePath() );
 
         // Then
@@ -123,17 +124,17 @@ public abstract class BaseBootstrapperIT extends ExclusiveServerTestBase
     public void canOverrideConfigValues() throws Throwable
     {
         // Given
-        File configFile = tempDir.newFile( Config.DEFAULT_CONFIG_FILE_NAME );
+        File configFile = testDirectory.file( Config.DEFAULT_CONFIG_FILE_NAME );
 
         Map<String,String> properties = stringMap( forced_kernel_id.name(), "thisshouldnotshowup" );
-        properties.putAll( ServerTestUtils.getDefaultRelativeProperties() );
+        properties.putAll( getDefaultRelativeProperties( testDirectory.storeDir() ) );
         properties.putAll( connectorsOnRandomPortsConfig() );
 
         store( properties, configFile );
 
         // When
         ServerBootstrapper.start( bootstrapper,
-                "--home-dir", tempDir.newFolder( "home-dir" ).getAbsolutePath(),
+                "--home-dir", testDirectory.directory( "home-dir" ).getAbsolutePath(),
                 "--config-dir", configFile.getParentFile().getAbsolutePath(),
                 "-c", configOption( forced_kernel_id, "mycustomvalue" ) );
 
@@ -186,9 +187,9 @@ public abstract class BaseBootstrapperIT extends ExclusiveServerTestBase
     private void testStartupWithConnectors( boolean httpEnabled, boolean httpsEnabled, boolean boltEnabled ) throws Exception
     {
         int resultCode = ServerBootstrapper.start( bootstrapper,
-                "--home-dir", tempDir.newFolder( "home-dir" ).getAbsolutePath(),
-                "-c", configOption( data_directory, tempDir.getRoot().getAbsolutePath() ),
-                "-c", configOption( logs_directory, tempDir.getRoot().getAbsolutePath() ),
+                "--home-dir", testDirectory.directory( "home-dir" ).getAbsolutePath(),
+                "-c", configOption( data_directory, testDirectory.storeDir().getAbsolutePath() ),
+                "-c", configOption( logs_directory, testDirectory.storeDir().getAbsolutePath() ),
 
                 "-c", HttpConnector.enabled.name() + "=" + httpEnabled,
                 "-c", HttpConnector.listen_address.name() + "=localhost:0",
