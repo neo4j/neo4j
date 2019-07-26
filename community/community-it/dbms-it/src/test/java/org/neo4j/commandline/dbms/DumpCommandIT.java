@@ -202,7 +202,7 @@ class DumpCommandIT
             storeLocker.checkLock();
 
             CommandFailedException commandFailed = assertThrows( CommandFailedException.class, () -> execute( "foo" ) );
-            assertEquals( "The database is in use. Stop Neo4j and try again", commandFailed.getMessage() );
+            assertEquals( "The database is in use. Stop Neo4j and try again.", commandFailed.getMessage() );
         }
     }
 
@@ -265,7 +265,7 @@ class DumpCommandIT
             try ( Closeable ignored = withPermissions( storeLayout.storeLockFile().toPath(), emptySet() ) )
             {
                 CommandFailedException commandFailed = assertThrows( CommandFailedException.class, () -> execute( "foo" ) );
-                assertEquals( "you do not have permission to dump the database -- is Neo4j running as a different user?", commandFailed.getMessage() );
+                assertEquals( "You do not have permission to dump the database. Is Neo4j running as a different user?", commandFailed.getMessage() );
             }
         }
     }
@@ -304,14 +304,14 @@ class DumpCommandIT
     {
         doThrow( new FileAlreadyExistsException( "the-archive-path" ) ).when( dumper ).dump( any(), any(), any(), any(), any() );
         CommandFailedException commandFailed = assertThrows( CommandFailedException.class, () -> execute( "foo" ) );
-        assertEquals( "archive already exists: the-archive-path", commandFailed.getMessage() );
+        assertEquals( "Archive already exists: the-archive-path", commandFailed.getMessage() );
     }
 
     @Test
     void shouldGiveAClearMessageIfTheDatabaseDoesntExist()
     {
         CommandFailedException commandFailed = assertThrows( CommandFailedException.class, () -> execute( "bobo" ) );
-        assertEquals( "database does not exist: bobo", commandFailed.getMessage() );
+        assertEquals( "Database does not exist: bobo", commandFailed.getMessage() );
     }
 
     @Test
@@ -319,7 +319,7 @@ class DumpCommandIT
     {
         doThrow( new NoSuchFileException( archive.getParent().toString() ) ).when( dumper ).dump(any(), any(), any(), any(), any() );
         CommandFailedException commandFailed = assertThrows( CommandFailedException.class, () -> execute( "foo" ) );
-        assertEquals( "unable to dump database: NoSuchFileException: " + archive.getParent(), commandFailed.getMessage() );
+        assertEquals( "Unable to dump database: NoSuchFileException: " + archive.getParent(), commandFailed.getMessage() );
     }
 
     @Test
@@ -328,7 +328,7 @@ class DumpCommandIT
     {
         doThrow( new IOException( "the-message" ) ).when( dumper ).dump(any(), any(), any(), any(), any() );
         CommandFailedException commandFailed = assertThrows( CommandFailedException.class, () -> execute( "foo" ) );
-        assertEquals( "unable to dump database: IOException: the-message", commandFailed.getMessage() );
+        assertEquals( "Unable to dump database: IOException: the-message", commandFailed.getMessage() );
     }
 
     private void execute( String database )
