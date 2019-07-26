@@ -723,4 +723,23 @@ public class FileUtils
         }
         return Files.newOutputStream( path, options );
     }
+
+    /**
+     * Get type of file store where provided file is located.
+     * @param file file to get file store type for.
+     * @return name of file store or "Unknown file store type: " + exception message,
+     *         in case if exception occur during file store type retrieval.
+     */
+    public static String getFileStoreType( File file )
+    {
+        try
+        {
+            return Files.getFileStore( file.toPath() ).type();
+        }
+        catch ( IOException e )
+        {
+            return "Unknown file store type: " + e.getMessage();
+        }
+    }
+
 }

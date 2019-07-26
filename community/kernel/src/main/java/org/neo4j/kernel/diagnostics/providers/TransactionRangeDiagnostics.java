@@ -20,9 +20,9 @@
 package org.neo4j.kernel.diagnostics.providers;
 
 import java.io.IOException;
-import java.nio.file.Files;
 
 import org.neo4j.internal.diagnostics.NamedDiagnosticsProvider;
+import org.neo4j.io.fs.FileUtils;
 import org.neo4j.kernel.database.Database;
 import org.neo4j.kernel.impl.transaction.log.entry.LogHeader;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
@@ -44,7 +44,7 @@ public class TransactionRangeDiagnostics extends NamedDiagnosticsProvider
         LogFiles logFiles = database.getDependencyResolver().resolveDependency( LogFiles.class );
         try
         {
-            logger.log( "Transaction log files stored on file store: " + getFileStoreType( logFiles ) );
+            logger.log( "Transaction log files stored on file store: " + FileUtils.getFileStoreType( logFiles.logFilesDirectory() ) );
             for ( long logVersion = logFiles.getLowestLogVersion(); logFiles.versionExists( logVersion ); logVersion++ )
             {
                 if ( logFiles.hasAnyEntries( logVersion ) )
@@ -59,12 +59,7 @@ public class TransactionRangeDiagnostics extends NamedDiagnosticsProvider
         }
         catch ( IOException e )
         {
-            logger.log( "Error trying to dump transaction log files info." );
+            logger.log( "Error trying to dump transaction log files info.", e );
         }
-    }
-
-    private String getFileStoreType( LogFiles logFiles ) throws IOException
-    {
-        return Files.getFileStore( logFiles.logFilesDirectory().toPath() ).type();
     }
 }
