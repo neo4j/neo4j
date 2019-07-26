@@ -79,7 +79,7 @@ class SimpleInternalExpressionEvaluator extends InternalExpressionEvaluator {
     )
 
   private def withSlottedParams(input: Expression, params: MapValue): (Expression, Array[AnyValue]) = {
-    val mapping = input.treeFold(ParameterMapping.empty) {
+    val mapping: ParameterMapping = input.treeFold(ParameterMapping.empty) {
       case Parameter(name, _) => acc => (acc.updated(name), Some(identity))
     }
 

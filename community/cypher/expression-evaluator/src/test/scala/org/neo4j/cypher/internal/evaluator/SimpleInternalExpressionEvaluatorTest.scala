@@ -23,7 +23,7 @@ import java.lang.Math.{PI, sin}
 
 import org.neo4j.cypher.internal.runtime.ExecutionContext
 import org.neo4j.values.storable.CoordinateReferenceSystem.WGS84_3D
-import org.neo4j.values.storable.Values
+import org.neo4j.values.storable.{CoordinateReferenceSystem, Values}
 import org.neo4j.values.storable.Values.{intValue, pointValue, stringValue}
 import org.neo4j.values.virtual.VirtualValues
 import org.neo4j.values.virtual.VirtualValues.{list, map}
@@ -67,6 +67,17 @@ class SimpleInternalExpressionEvaluatorTest extends FunSuiteLike with Matchers {
       .shouldEqual(Values.of(3))
   }
 
+  test("params in functions") {
+    val evaluator = new SimpleInternalExpressionEvaluator
+
+    evaluator
+      .evaluate(
+        expression = SimpleInternalExpressionEvaluator.ExpressionParser.parse("sin(pi()*$p/180) + cos(pi()*$q/180)"),
+        params = VirtualValues.map(Array("p", "q"), Array(Values.of(90), Values.of(0)))
+      )
+      .shouldEqual(Values.of(2))
+  }
+
   test("context") {
     val evaluator = new SimpleInternalExpressionEvaluator
 
@@ -76,5 +87,16 @@ class SimpleInternalExpressionEvaluatorTest extends FunSuiteLike with Matchers {
         context = ExecutionContext.from("v" -> Values.of(3))
       )
       .shouldEqual(Values.of(4))
+  }
+
+  test("context in functions") {
+    val evaluator = new SimpleInternalExpressionEvaluator
+
+    evaluator
+      .evaluate(
+        expression = SimpleInternalExpressionEvaluator.ExpressionParser.parse("point({ latitude: p.y, longitude: p.x, height: 1000 })"),
+        context = ExecutionContext.from("p" -> Values.pointValue(CoordinateReferenceSystem.Cartesian, 56, 12))
+      )
+      .shouldEqual(pointValue(WGS84_3D, 56, 12, 1000))
   }
 }
