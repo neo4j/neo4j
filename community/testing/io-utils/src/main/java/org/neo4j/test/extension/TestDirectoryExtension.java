@@ -19,40 +19,82 @@
  */
 package org.neo4j.test.extension;
 
+import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.api.extension.AfterAllCallback;
 import org.junit.jupiter.api.extension.AfterEachCallback;
+import org.junit.jupiter.api.extension.BeforeAllCallback;
 import org.junit.jupiter.api.extension.BeforeEachCallback;
 import org.junit.jupiter.api.extension.ExtensionContext;
 import org.junit.jupiter.api.extension.ExtensionContext.Namespace;
 import org.junit.platform.commons.JUnitException;
 
 import java.io.IOException;
+import java.lang.reflect.Method;
 
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.test.rule.TestDirectory;
 
 import static java.lang.String.format;
+import static org.junit.jupiter.api.TestInstance.Lifecycle.PER_CLASS;
+import static org.junit.jupiter.api.TestInstance.Lifecycle.PER_METHOD;
 import static org.neo4j.test.rule.TestDirectory.testDirectory;
 
-public class TestDirectoryExtension extends StatefullFieldExtension<TestDirectory> implements BeforeEachCallback, AfterEachCallback, AfterAllCallback
+public class TestDirectoryExtension extends StatefullFieldExtension<TestDirectory>
+        implements BeforeEachCallback, BeforeAllCallback, AfterEachCallback, AfterAllCallback
 {
     public static final String TEST_DIRECTORY = "testDirectory";
     public static final Namespace TEST_DIRECTORY_NAMESPACE = Namespace.create( TEST_DIRECTORY );
 
     @Override
-    public void beforeEach( ExtensionContext context ) throws IOException
+    public void beforeAll( ExtensionContext context ) throws IOException
     {
-        prepare( context, context.getRequiredTestMethod().getName() );
+        if ( getLifecycle( context ) == PER_CLASS )
+        {
+            prepare( context );
+        }
     }
 
-    public void prepare( ExtensionContext context, String name ) throws IOException
+    @Override
+    public void beforeEach( ExtensionContext context ) throws IOException
     {
-        TestDirectory testDirectory = getStoredValue( context );
-        testDirectory.prepareDirectory( context.getRequiredTestClass(), name );
+        if ( getLifecycle( context ) == PER_METHOD )
+        {
+            prepare( context );
+        }
     }
 
     @Override
     public void afterEach( ExtensionContext context )
+    {
+        if ( getLifecycle( context ) == PER_METHOD )
+        {
+            cleanUp( context );
+        }
+    }
+
+    @Override
+    public void afterAll( ExtensionContext context )
+    {
+        if ( getLifecycle( context ) == PER_CLASS )
+        {
+            cleanUp( context );
+        }
+    }
+
+    private TestInstance.Lifecycle getLifecycle( ExtensionContext context )
+    {
+        return context.getTestInstanceLifecycle().orElse( PER_METHOD );
+    }
+
+    public void prepare( ExtensionContext context ) throws IOException
+    {
+        String name = context.getTestMethod().map( Method::getName )
+                .orElseGet( () -> context.getRequiredTestClass().getSimpleName() );
+        TestDirectory testDirectory = getStoredValue( context );
+        testDirectory.prepareDirectory( context.getRequiredTestClass(), name );
+    }
+
+    private void cleanUp( ExtensionContext context )
     {
         TestDirectory testDirectory = getStoredValue( context );
         try
