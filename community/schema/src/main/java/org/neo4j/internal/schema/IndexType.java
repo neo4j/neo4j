@@ -19,6 +19,10 @@
  */
 package org.neo4j.internal.schema;
 
+import java.util.function.Function;
+
+import org.neo4j.internal.helpers.EnumNameLookup;
+
 /**
  * The type of index defined by this schema.
  */
@@ -47,6 +51,8 @@ public enum IndexType
      */
     INVERTED( IndexKind.GENERAL ),
     ;
+
+    public static final Function<String,IndexType> LOOKUP = EnumNameLookup.fromString( IndexType.class );
 
     private final IndexKind kind;
 

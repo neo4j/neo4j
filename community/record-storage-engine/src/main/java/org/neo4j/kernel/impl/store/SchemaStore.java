@@ -27,10 +27,10 @@ import org.eclipse.collections.impl.map.mutable.primitive.IntObjectHashMap;
 
 import java.io.File;
 import java.nio.file.OpenOption;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
+import java.util.OptionalLong;
 
 import org.neo4j.common.EntityType;
 import org.neo4j.configuration.Config;
@@ -43,8 +43,10 @@ import org.neo4j.internal.schema.IndexConfig;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.IndexProviderDescriptor;
+import org.neo4j.internal.schema.IndexType;
 import org.neo4j.internal.schema.PropertySchemaType;
 import org.neo4j.internal.schema.SchemaDescriptor;
+import org.neo4j.internal.schema.SchemaDescriptorImplementation;
 import org.neo4j.internal.schema.SchemaRule;
 import org.neo4j.internal.schema.constraints.ConstraintDescriptorFactory;
 import org.neo4j.internal.schema.constraints.NodeKeyConstraintDescriptor;
@@ -161,8 +163,8 @@ public class SchemaStore extends CommonAbstractStore<SchemaRecord,IntStoreHeader
     private static final String PROP_SCHEMA_RULE_NAME = PROP_SCHEMA_RULE_PREFIX + "name";
     private static final String PROP_OWNED_INDEX = PROP_SCHEMA_RULE_PREFIX + "ownedIndex";
     private static final String PROP_OWNING_CONSTRAINT = PROP_SCHEMA_RULE_PREFIX + "owningConstraint";
-    public static final String PROP_INDEX_PROVIDER_NAME = PROP_SCHEMA_RULE_PREFIX + "indexProviderName";
-    public static final String PROP_INDEX_PROVIDER_VERSION = PROP_SCHEMA_RULE_PREFIX + "indexProviderVersion";
+    private static final String PROP_INDEX_PROVIDER_NAME = PROP_SCHEMA_RULE_PREFIX + "indexProviderName";
+    private static final String PROP_INDEX_PROVIDER_VERSION = PROP_SCHEMA_RULE_PREFIX + "indexProviderVersion";
     private static final String PROP_SCHEMA_DESCRIPTOR_ENTITY_TYPE = PROP_SCHEMA_RULE_PREFIX + "schemaEntityType";
     private static final String PROP_SCHEMA_DESCRIPTOR_ENTITY_IDS = PROP_SCHEMA_RULE_PREFIX + "schemaEntityIds";
     private static final String PROP_SCHEMA_DESCRIPTOR_PROPERTY_IDS = PROP_SCHEMA_RULE_PREFIX + "schemaPropertyIds";
@@ -233,14 +235,15 @@ public class SchemaStore extends CommonAbstractStore<SchemaRecord,IntStoreHeader
         return tokenisedMap;
     }
 
-    // todo Add IndexType to SchemaDescriptor
     private static void schemaDescriptorToMap( SchemaDescriptor schemaDescriptor, Map<String,Value> map )
     {
+        IndexType indexType = schemaDescriptor.getIndexType();
         EntityType entityType = schemaDescriptor.entityType();
         PropertySchemaType propertySchemaType = schemaDescriptor.propertySchemaType();
         int[] entityTokenIds = schemaDescriptor.getEntityTokenIds();
         int[] propertyIds = schemaDescriptor.getPropertyIds();
         IndexConfig indexConfig = schemaDescriptor.getIndexConfig();
+        putStringProperty( map, PROP_INDEX_TYPE, indexType.name() );
         putStringProperty( map, PROP_SCHEMA_DESCRIPTOR_ENTITY_TYPE, entityType.name() );
         putStringProperty( map, PROP_SCHEMA_DESCRIPTOR_PROPERTY_SCHEMA_TYPE, propertySchemaType.name() );
         putIntArrayProperty( map, PROP_SCHEMA_DESCRIPTOR_ENTITY_IDS, entityTokenIds );
@@ -296,14 +299,20 @@ public class SchemaStore extends CommonAbstractStore<SchemaRecord,IntStoreHeader
         {
         case UNIQUE:
             putStringProperty( map, PROP_CONSTRAINT_RULE_TYPE, "UNIQUE" );
-            putLongProperty( map, PROP_OWNED_INDEX, rule.ownedIndexReference() );
+            if ( rule.hasOwnedIndexReference() )
+            {
+                putLongProperty( map, PROP_OWNED_INDEX, rule.ownedIndexReference() );
+            }
             break;
         case EXISTS:
             putStringProperty( map, PROP_CONSTRAINT_RULE_TYPE, "EXISTS" );
             break;
         case UNIQUE_EXISTS:
             putStringProperty( map, PROP_CONSTRAINT_RULE_TYPE, "UNIQUE_EXISTS" );
-            putLongProperty( map, PROP_OWNED_INDEX, rule.ownedIndexReference() );
+            if ( rule.hasOwnedIndexReference() )
+            {
+                putLongProperty( map, PROP_OWNED_INDEX, rule.ownedIndexReference() );
+            }
             break;
         default:
             throw new UnsupportedOperationException( "Unrecognized constraint type: " + type );
@@ -382,17 +391,26 @@ public class SchemaStore extends CommonAbstractStore<SchemaRecord,IntStoreHeader
         SchemaDescriptor schema = buildSchemaDescriptor( props );
         String constraintRuleType = getString( PROP_CONSTRAINT_RULE_TYPE, props );
         String name = getString( PROP_SCHEMA_RULE_NAME, props );
+        OptionalLong ownedIndex = getOptionalLong( PROP_OWNED_INDEX, props );
         switch ( constraintRuleType )
         {
         case "UNIQUE":
             UniquenessConstraintDescriptor uniquenessDescriptor = ConstraintDescriptorFactory.uniqueForSchema( schema );
-            return ConstraintRule.constraintRule( id, uniquenessDescriptor, getLong( PROP_OWNED_INDEX, props ), name );
+            if ( ownedIndex.isPresent() )
+            {
+                return ConstraintRule.constraintRule( id, uniquenessDescriptor, ownedIndex.getAsLong(), name );
+            }
+            return ConstraintRule.constraintRule( id, uniquenessDescriptor, name );
         case "EXISTS":
             ConstraintDescriptor existsDescriptor = ConstraintDescriptorFactory.existsForSchema( schema );
             return ConstraintRule.constraintRule( id, existsDescriptor, name );
         case "UNIQUE_EXISTS":
             NodeKeyConstraintDescriptor nodeKeyDescriptor = ConstraintDescriptorFactory.nodeKeyForSchema( schema );
-            return ConstraintRule.constraintRule( id, nodeKeyDescriptor, getLong( PROP_OWNED_INDEX, props ), name );
+            if ( ownedIndex.isPresent() )
+            {
+                return ConstraintRule.constraintRule( id, nodeKeyDescriptor, ownedIndex.getAsLong(), name );
+            }
+            return ConstraintRule.constraintRule( id, nodeKeyDescriptor, name );
         default:
             throw new MalformedSchemaRuleException( "Did not recognize constraint rule type: " + constraintRuleType );
         }
@@ -441,32 +459,16 @@ public class SchemaStore extends CommonAbstractStore<SchemaRecord,IntStoreHeader
         }
     }
 
-    // todo Add IndexType to SchemaDescriptor
     private static SchemaDescriptor buildSchemaDescriptor( Map<String,Value> props ) throws MalformedSchemaRuleException
     {
-        String propertySchemaType = getString( PROP_SCHEMA_DESCRIPTOR_PROPERTY_SCHEMA_TYPE, props );
+        IndexType indexType = getIndexType( getString( PROP_INDEX_TYPE, props ) );
         EntityType entityType = getEntityType( getString( PROP_SCHEMA_DESCRIPTOR_ENTITY_TYPE, props ) );
+        PropertySchemaType propertySchemaType = getPropertySchemaType( getString( PROP_SCHEMA_DESCRIPTOR_PROPERTY_SCHEMA_TYPE, props ) );
         int[] entityIds = getIntArray( PROP_SCHEMA_DESCRIPTOR_ENTITY_IDS, props );
         int[] propertyIds = getIntArray( PROP_SCHEMA_DESCRIPTOR_PROPERTY_IDS, props );
         IndexConfig indexConfig = extractIndexConfig( props );
 
-        switch ( propertySchemaType )
-        {
-        case "COMPLETE_ALL_TOKENS": // "normal" index
-            switch ( entityType )
-            {
-            case NODE:
-                return SchemaDescriptor.forLabel( singleEntityId( entityIds ), propertyIds ).withIndexConfig( indexConfig );
-            case RELATIONSHIP:
-                return SchemaDescriptor.forRelType( singleEntityId( entityIds ), propertyIds ).withIndexConfig( indexConfig );
-            default:
-                throw new MalformedSchemaRuleException( "Unrecognised entity type: " + entityType );
-            }
-        case "PARTIAL_ANY_TOKEN": // fulltext index, presumably
-            return SchemaDescriptor.fulltext( entityType, indexConfig, entityIds, propertyIds );
-        default:
-            throw new MalformedSchemaRuleException( "Did not recognize property schema type: " + propertySchemaType );
-        }
+        return new SchemaDescriptorImplementation( indexType, entityType, propertySchemaType, indexConfig, entityIds, propertyIds );
     }
 
     private static IndexConfig extractIndexConfig( Map<String,Value> props )
@@ -482,25 +484,39 @@ public class SchemaStore extends CommonAbstractStore<SchemaRecord,IntStoreHeader
         return IndexConfig.with( configMap );
     }
 
-    private static int singleEntityId( int[] entityIds ) throws MalformedSchemaRuleException
+    private static IndexType getIndexType( String indexType ) throws MalformedSchemaRuleException
     {
-        if ( entityIds.length != 1 )
+        try
         {
-            throw new MalformedSchemaRuleException( "Expected to only have a single entity id, but was: " + Arrays.toString( entityIds ) );
+            return IndexType.LOOKUP.apply( indexType );
         }
-        return entityIds[0];
+        catch ( Exception e )
+        {
+            throw new MalformedSchemaRuleException( "Did not recognize index type: " + indexType, e );
+        }
+    }
+
+    private static PropertySchemaType getPropertySchemaType( String propertySchemaType ) throws MalformedSchemaRuleException
+    {
+        try
+        {
+            return PropertySchemaType.LOOKUP.apply( propertySchemaType );
+        }
+        catch ( Exception e )
+        {
+            throw new MalformedSchemaRuleException( "Did not recognize property schema type: " + propertySchemaType, e );
+        }
     }
 
     private static EntityType getEntityType( String entityType ) throws MalformedSchemaRuleException
     {
-        switch ( entityType )
+        try
         {
-        case "NODE":
-            return EntityType.NODE;
-        case "RELATIONSHIP":
-            return EntityType.RELATIONSHIP;
-        default:
-            throw new MalformedSchemaRuleException( "Did not recognize entity type: " + entityType );
+            return EntityType.LOOKUP.apply( entityType );
+        }
+        catch ( Exception e )
+        {
+            throw new MalformedSchemaRuleException( "Did not recognize entity type: " + entityType, e );
         }
     }
 
@@ -522,6 +538,16 @@ public class SchemaStore extends CommonAbstractStore<SchemaRecord,IntStoreHeader
             return ((LongValue) value).value();
         }
         throw new MalformedSchemaRuleException( "Expected property " + property + " to be a LongValue but was " + value );
+    }
+
+    private static OptionalLong getOptionalLong( String property, Map<String,Value> props )
+    {
+        Value value = props.get( property );
+        if ( value instanceof LongValue )
+        {
+            return OptionalLong.of( ((LongValue) value).value() );
+        }
+        return OptionalLong.empty();
     }
 
     private static String getString( String property, Map<String,Value> map ) throws MalformedSchemaRuleException

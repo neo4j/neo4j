@@ -60,7 +60,11 @@ public final class SchemaDescriptorImplementation implements SchemaDescriptor, L
      */
     private final boolean archetypalFulltextSchema;
 
-    SchemaDescriptorImplementation( IndexType indexType, EntityType entityType, PropertySchemaType propertySchemaType, IndexConfig indexConfig,
+    /**
+     * This constructor is only public so that it can be called directly from the SchemaStore.
+     * Use the static methods on {@link SchemaDescriptor} to create the usual kinds of schemas.
+     */
+    public SchemaDescriptorImplementation( IndexType indexType, EntityType entityType, PropertySchemaType propertySchemaType, IndexConfig indexConfig,
             int[] entityTokens, int[] propertyKeyIds )
     {
         this.indexType = requireNonNull( indexType, "IndexType cannot be null." );

@@ -19,6 +19,7 @@
  */
 package org.neo4j.internal.recordstorage;
 
+import java.util.Arrays;
 import java.util.SplittableRandom;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
@@ -300,5 +301,55 @@ public class RandomSchema implements Supplier<SchemaRule>
     {
         int propCount = rng.nextInt( 1, maxLength + 1 );
         return rng.ints( propCount, 1, maxPropId ).toArray();
+    }
+
+    public static boolean schemaDeepEquals( SchemaRule a, SchemaRule b )
+    {
+        if ( !a.equals( b ) )
+        {
+            return false;
+        }
+        if ( a.getId() != b.getId() )
+        {
+            return false;
+        }
+        if ( !a.getName().equals( b.getName() ) )
+        {
+            return false;
+        }
+        if ( a.getClass() != b.getClass() )
+        {
+            return false;
+        }
+        if ( a instanceof IndexDescriptor )
+        {
+            IndexDescriptor indexA = (IndexDescriptor) a;
+            IndexDescriptor indexB = (IndexDescriptor) b;
+            return indexA.getCapability().equals( indexB.getCapability() ) &&
+                    indexA.isUnique() == indexB.isUnique() &&
+                    indexA.getIndexProvider().equals( indexB.getIndexProvider() ) &&
+                    indexA.getIndexType() == indexB.getIndexType() &&
+                    indexA.getOwningConstraintId().equals( indexB.getOwningConstraintId() ) &&
+                    schemaDeepEquals( indexA.schema(), indexB.schema() );
+        }
+        else
+        {
+            ConstraintRule constraintA = (ConstraintRule) a;
+            ConstraintRule constraintB = (ConstraintRule) b;
+            return constraintA.hasOwnedIndexReference() == constraintB.hasOwnedIndexReference() &&
+                    (!constraintA.hasOwnedIndexReference() || constraintA.ownedIndexReference() == constraintB.ownedIndexReference()) &&
+                    constraintA.getConstraintDescriptor().equals( constraintB.getConstraintDescriptor() ) &&
+                    schemaDeepEquals( constraintA.schema(), constraintB.schema() );
+        }
+    }
+
+    public static boolean schemaDeepEquals( SchemaDescriptor a, SchemaDescriptor b )
+    {
+        return a.entityType() == b.entityType() &&
+                a.getIndexType() == b.getIndexType() &&
+                a.propertySchemaType() == b.propertySchemaType() &&
+                Arrays.equals( a.getEntityTokenIds(), b.getEntityTokenIds() ) &&
+                Arrays.equals( a.getPropertyIds(), b.getPropertyIds() ) &&
+                a.getIndexConfig().equals( b.getIndexConfig() );
     }
 }

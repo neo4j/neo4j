@@ -19,6 +19,10 @@
  */
 package org.neo4j.internal.schema;
 
+import java.util.function.Function;
+
+import org.neo4j.internal.helpers.EnumNameLookup;
+
 /**
  * This enum signifies how this schema should behave in regards to updates.
  * {@link PropertySchemaType#COMPLETE_ALL_TOKENS} signifies that this schema unit only should be affected by updates that match the entire schema,
@@ -30,4 +34,7 @@ public enum PropertySchemaType
 {
     COMPLETE_ALL_TOKENS,
     PARTIAL_ANY_TOKEN
+    ;
+
+    public static final Function<String,PropertySchemaType> LOOKUP = EnumNameLookup.fromString( PropertySchemaType.class );
 }
