@@ -128,7 +128,8 @@ class CypherCompilerAstCacheAcceptanceTest extends CypherFunSuite with GraphData
     graph.withTx { tx =>
       val noTracing = CompilationPhaseTracer.NO_TRACING
       val context = graph.transactionalContext(tx, query = query -> params)
-      cypherCompiler.compile(PreParsedQuery(query, DummyPosition(0), query,
+      cypherCompiler.compile(PreParsedQuery(query, query, QueryOptions(
+        DummyPosition(0),
         isPeriodicCommit = false,
         CypherVersion.default,
         CypherExecutionMode.default,
@@ -136,8 +137,8 @@ class CypherCompilerAstCacheAcceptanceTest extends CypherFunSuite with GraphData
         CypherRuntimeOption.default,
         CypherUpdateStrategy.default,
         CypherExpressionEngineOption.default,
-        debugOptions),
-        noTracing, Set.empty, context, ValueUtils.asParameterMapValue(params.asJava))
+        debugOptions
+      )), noTracing, Set.empty, context, ValueUtils.asParameterMapValue(params.asJava))
       context.close()
     }
   }

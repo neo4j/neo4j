@@ -72,12 +72,34 @@ case class Cypher4_0Planner(config: CypherPlannerConfiguration,
                             params: MapValue,
                             runtime: CypherRuntime[_]
                            ): LogicalPlanResult = {
-    val notificationLogger = new RecordingNotificationLogger(Some(preParsedQuery.offset))
+    val notificationLogger = new RecordingNotificationLogger(Some(preParsedQuery.options.offset))
     val innerVariableNamer = new GeneratingNamer
 
     val syntacticQuery =
-      getOrParse(preParsedQuery, params, new Parser4_0(planner, notificationLogger, preParsedQuery.offset, tracer, innerVariableNamer))
+      getOrParse(preParsedQuery, params, new Parser4_0(planner, notificationLogger, preParsedQuery.options.offset, tracer, innerVariableNamer))
 
+    doPlan(syntacticQuery, preParsedQuery.options, tracer, transactionalContext, params, runtime, notificationLogger, innerVariableNamer)
+  }
+
+  override def plan(fullyParsedQuery: FullyParsedQuery,
+                    tracer: CompilationPhaseTracer,
+                    transactionalContext: TransactionalContext,
+                    params: MapValue,
+                    runtime: CypherRuntime[_]
+                   ): LogicalPlanResult = {
+    val notificationLogger = new RecordingNotificationLogger(Some(fullyParsedQuery.options.offset))
+    doPlan(fullyParsedQuery.state, fullyParsedQuery.options, tracer, transactionalContext, params, runtime, notificationLogger, new GeneratingNamer)
+  }
+
+  private def doPlan(syntacticQuery: BaseState,
+                     options: QueryOptions,
+                     tracer: CompilationPhaseTracer,
+                     transactionalContext: TransactionalContext,
+                     params: MapValue,
+                     runtime: CypherRuntime[_],
+                     notificationLogger: InternalNotificationLogger,
+                     innerVariableNamer: InnerVariableNamer
+                    ): LogicalPlanResult = {
     val transactionalContextWrapper = TransactionalContextWrapper(transactionalContext)
     // Context used for db communication during planning
     val createPlanContext = Cypher4_0Planner.customPlanContextCreator.getOrElse(TransactionBoundPlanContext.apply _)
@@ -92,8 +114,8 @@ case class Cypher4_0Planner(config: CypherPlannerConfiguration,
       notificationLogger,
       planContext,
       syntacticQuery.queryText,
-      preParsedQuery.debugOptions,
-      Some(preParsedQuery.offset),
+      options.debugOptions,
+      Some(options.offset),
       monitors,
       CachedMetricsFactory(SimpleMetricsFactory),
       createQueryGraphSolver(),
@@ -126,7 +148,7 @@ case class Cypher4_0Planner(config: CypherPlannerConfiguration,
         notificationLogger.log(MissingParametersNotification(missingParameterNames))
       }
       val reusabilityState = runtime match {
-        case m: AdministrationCommandRuntime =>
+        case m: AdministrationCommandRuntime                          =>
           if (m.isApplicableAdministrationCommand(logicalPlanState)) {
             shouldCache = false
             FineToReuse
@@ -142,7 +164,7 @@ case class Cypher4_0Planner(config: CypherPlannerConfiguration,
             }
           }
         case _ if SchemaCommandRuntime.isApplicable(logicalPlanState) => FineToReuse
-        case _ =>
+        case _                                                        =>
           val fingerprint = PlanFingerprint.take(clock, planContext.txIdProvider, planContext.statistics)
           val fingerprintReference = new PlanFingerprintReference(fingerprint)
           MaybeReusable(fingerprintReference)
@@ -161,7 +183,7 @@ case class Cypher4_0Planner(config: CypherPlannerConfiguration,
 
     val cacheableLogicalPlan =
     // We don't want to cache any query without enough given parameters (although EXPLAIN queries will succeed)
-      if (preParsedQuery.debugOptions.isEmpty && (queryParamNames.isEmpty || enoughParametersSupplied)) {
+      if (options.debugOptions.isEmpty && (queryParamNames.isEmpty || enoughParametersSupplied)) {
         planCache.computeIfAbsentOrStale(Pair.of(syntacticQuery.statement(), QueryCache.extractParameterTypeMap(filteredParams)),
           transactionalContext,
           () => createPlan(shouldBeCached = true),
@@ -196,8 +218,8 @@ private[v4_0] class Parser4_0(planner: compiler.CypherPlanner[PlannerContext],
     planner.parseQuery(preParsedQuery.statement,
                        preParsedQuery.rawStatement,
                        notificationLogger,
-                       preParsedQuery.planner.name,
-                       preParsedQuery.debugOptions,
+                       preParsedQuery.options.planner.name,
+                       preParsedQuery.options.debugOptions,
                        Some(offset),
                        tracer,
                        innerVariableNamer,

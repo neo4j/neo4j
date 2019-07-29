@@ -59,33 +59,33 @@ class MasterCompiler(config: CypherConfiguration,
   }
 
   /**
-    * Compile pre-parsed query into executable query. TODO where is this used from?
+    * Compile submitted query into executable query. TODO where is this used from?
     *
-    * @param preParsedQuery          pre-parsed query to convert
+    * @param query                   query to convert
     * @param tracer                  compilation tracer to which events of the compilation process are reported
     * @param transactionalContext    transactional context to use during compilation (in logical and physical planning)
     * @return a compiled and executable query
     */
-  def compile(preParsedQuery: PreParsedQuery,
+  def compile(query: InputQuery,
               tracer: CompilationPhaseTracer,
               transactionalContext: TransactionalContext,
               params: MapValue
              ): ExecutableQuery = {
 
-    val logger = new RecordingNotificationLogger(Some(preParsedQuery.offset))
+    val logger = new RecordingNotificationLogger(Some(query.options.offset))
 
     def notificationsSoFar(): Set[Notification] = logger.notifications.map(asKernelNotification(None))
 
-    if (preParsedQuery.runtime == CypherRuntimeOption.compiled)
+    if (query.options.runtime == CypherRuntimeOption.compiled)
       logger.log(DeprecatedCompiledRuntimeNotification)
 
     // Do the compilation
     val compiler = compilerLibrary.selectCompiler(
-      preParsedQuery.version,
-      preParsedQuery.planner,
-      preParsedQuery.runtime,
-      preParsedQuery.updateStrategy)
+      query.options.version,
+      query.options.planner,
+      query.options.runtime,
+      query.options.updateStrategy)
 
-    compiler.compile(preParsedQuery, tracer, notificationsSoFar(), transactionalContext, params)
+    compiler.compile(query, tracer, notificationsSoFar(), transactionalContext, params)
   }
 }

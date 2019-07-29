@@ -58,7 +58,7 @@ class PreParserTest extends CypherFunSuite {
 
     for (x <- variants) {
       val query = " LOAD CSV file://input.csv AS row CREATE (n)"
-      preParser.preParseQuery(x+query).isPeriodicCommit should be(true)
+      preParser.preParseQuery(x+query).options.isPeriodicCommit should be(true)
     }
   }
 
@@ -75,7 +75,7 @@ class PreParserTest extends CypherFunSuite {
       )
 
     for (query <- queries) {
-      preParser.preParseQuery(query).isPeriodicCommit should be(false)
+      preParser.preParseQuery(query).options.isPeriodicCommit should be(false)
     }
   }
 }

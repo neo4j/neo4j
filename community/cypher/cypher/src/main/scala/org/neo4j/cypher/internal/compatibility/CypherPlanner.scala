@@ -23,13 +23,13 @@ import org.neo4j.cypher.internal.compiler.phases.{LogicalPlanState, PlannerConte
 import org.neo4j.cypher.internal.v4_0.frontend.PlannerName
 import org.neo4j.cypher.internal.v4_0.frontend.phases.CompilationPhaseTracer
 import org.neo4j.cypher.internal.v4_0.util.InternalNotification
-import org.neo4j.cypher.internal.{CypherRuntime, PreParsedQuery, ReusabilityState}
+import org.neo4j.cypher.internal.{CypherRuntime, FullyParsedQuery, PreParsedQuery, ReusabilityState}
 import org.neo4j.exceptions.Neo4jException
 import org.neo4j.kernel.impl.query.TransactionalContext
 import org.neo4j.values.virtual.MapValue
 
 /**
-  * Cypher planner, which parses and plans a [[PreParsedQuery]] into a [[LogicalPlanResult]].
+  * Cypher planner, which either parses and plans a [[PreParsedQuery]] into a [[LogicalPlanResult]] or just plans [[FullyParsedQuery]].
   */
 trait CypherPlanner {
 
@@ -49,6 +49,23 @@ trait CypherPlanner {
                    params: MapValue,
                    runtime: CypherRuntime[_]
                   ): LogicalPlanResult
+
+  /**
+    * Plan fully-parsed query into a logical plan.
+    *
+    * @param fullyParsedQuery     a fully-parsed query to plan
+    * @param tracer               tracer to which events of the parsing and planning are reported
+    * @param transactionalContext transactional context to use during parsing and planning
+    * @throws Neo4jException public cypher exceptions on compilation problems
+    * @return a logical plan result
+    */
+  @throws[Neo4jException]
+  def plan(fullyParsedQuery: FullyParsedQuery,
+           tracer: CompilationPhaseTracer,
+           transactionalContext: TransactionalContext,
+           params: MapValue,
+           runtime: CypherRuntime[_]
+          ): LogicalPlanResult
 
   def name: PlannerName
 }

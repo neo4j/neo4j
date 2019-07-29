@@ -34,11 +34,13 @@ import scala.util.matching.Regex
   *
   * into
   *
-  * PreParsedQuery(
-  *   planner: 'cost'
-  *   runtime: 'slotted'
-  *   version: '3.3'
+  * StringInputQuery(
   *   statement: 'MATCH (n) RETURN n'
+  *   options: QueryOptions(
+  *     planner: 'cost'
+  *     runtime: 'slotted'
+  *     version: '3.3'
+  *   )
   * )
   */
 class PreParser(configuredVersion: CypherVersion,
@@ -73,9 +75,9 @@ class PreParser(configuredVersion: CypherVersion,
     */
   @throws(classOf[SyntaxException])
   def preParseQuery(queryText: String, profile: Boolean = false): PreParsedQuery = {
-    val preParsedQuery = preParsedQueries.computeIfAbsent(queryText, actuallyPreParse(queryText))
-    if (profile) preParsedQuery.copy(executionMode = CypherExecutionMode.profile)
-    else preParsedQuery
+    val query = preParsedQueries.computeIfAbsent(queryText, actuallyPreParse(queryText))
+    if (profile) query.copy(options = query.options.copy(executionMode = CypherExecutionMode.profile))
+    else query
   }
 
   private def actuallyPreParse(queryText: String): PreParsedQuery = {
@@ -131,16 +133,16 @@ class PreParser(configuredVersion: CypherVersion,
     val isPeriodicCommit = PeriodicCommitHint.r.findFirstIn(preParsedStatement.statement.toUpperCase).nonEmpty
 
     PreParsedQuery(preParsedStatement.statement,
-                   preParsedStatement.offset,
                    queryText,
-                   isPeriodicCommit,
-                   version.pick,
-                   executionMode.pick,
-                   planner.pick,
-                   runtime.pick,
-                   updateStrategy.pick,
-                   expressionEngine.pick,
-                   debugOptions)
+                   QueryOptions(preParsedStatement.offset,
+                                isPeriodicCommit,
+                                version.pick,
+                                executionMode.pick,
+                                planner.pick,
+                                runtime.pick,
+                                updateStrategy.pick,
+                                expressionEngine.pick,
+                                debugOptions))
   }
 
   private class PPOption[T](val default: T) {

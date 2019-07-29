@@ -25,11 +25,13 @@ import java.util.List;
 import org.neo4j.common.DependencyResolver;
 import org.neo4j.configuration.Config;
 import org.neo4j.exceptions.Neo4jException;
+import org.neo4j.cypher.internal.FullyParsedQuery;
 import org.neo4j.cypher.internal.CacheTracer;
 import org.neo4j.cypher.internal.CompilerFactory;
 import org.neo4j.cypher.internal.CompilerLibrary;
 import org.neo4j.cypher.internal.CypherConfiguration;
 import org.neo4j.cypher.internal.StringCacheMonitor;
+import org.neo4j.cypher.internal.runtime.InputDataStream;
 import org.neo4j.cypher.internal.tracing.CompilationTracer;
 import org.neo4j.cypher.internal.tracing.TimingCompilationTracer;
 import org.neo4j.graphdb.Result;
@@ -117,6 +119,19 @@ public class ExecutionEngine implements QueryExecutionEngine
         try
         {
             return cypherExecutionEngine.execute( query, parameters, context, false, prePopulate, subscriber );
+        }
+        catch ( Neo4jException e )
+        {
+            throw new QueryExecutionKernelException( e );
+        }
+    }
+
+    public QueryExecution executeQuery( FullyParsedQuery query, MapValue parameters, TransactionalContext context,
+            boolean prePopulate, InputDataStream input, QuerySubscriber subscriber ) throws QueryExecutionKernelException
+    {
+        try
+        {
+            return cypherExecutionEngine.execute( query, parameters, context, false, prePopulate, input, subscriber );
         }
         catch ( Neo4jException e )
         {

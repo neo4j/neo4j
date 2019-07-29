@@ -26,14 +26,14 @@ import org.neo4j.cypher.internal.v4_0.frontend.phases.CompilationPhaseTracer
 import org.neo4j.exceptions.Neo4jException
 
 /**
-  * Cypher compiler, which compiles pre-parsed queries into executable queries.
+  * Cypher compiler, which compiles either pre-parsed or fully-parsed queries into executable queries.
   */
 trait Compiler {
 
   /**
-    * Compile [[PreParsedQuery]] into [[ExecutableQuery]].
+    * Compile [[InputQuery]] into [[ExecutableQuery]].
     *
-    * @param preParsedQuery          pre-parsed query to convert
+    * @param query                   query to convert
     * @param tracer                  compilation tracer to which events of the compilation process are reported
     * @param preParsingNotifications notifications from pre-parsing
     * @param transactionalContext    transactional context to use during compilation (in logical and physical planning)
@@ -41,7 +41,7 @@ trait Compiler {
     * @return a compiled and executable query
     */
   @throws[Neo4jException]
-  def compile(preParsedQuery: PreParsedQuery,
+  def compile(query: InputQuery,
               tracer: CompilationPhaseTracer,
               preParsingNotifications: Set[Notification],
               transactionalContext: TransactionalContext,
