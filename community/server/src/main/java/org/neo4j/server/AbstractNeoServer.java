@@ -85,10 +85,7 @@ public abstract class AbstractNeoServer implements NeoServer
      */
     private static final long ROUNDING_SECOND = 1000L;
 
-    private static final Pattern[] DEFAULT_URI_WHITELIST = new Pattern[]{
-            Pattern.compile( "/browser.*" ),
-            Pattern.compile( "/" )
-    };
+    private final Pattern[] authWhitelist;
     public static final String NEO4J_IS_STARTING_MESSAGE = "======== Neo4j " + Version.getNeo4jVersion() + " ========";
 
     protected final LogProvider userLogProvider;
@@ -141,6 +138,8 @@ public abstract class AbstractNeoServer implements NeoServer
             httpsListenAddress = config.get( HttpsConnector.listen_address );
             httpsAdvertisedAddress = config.get( HttpsConnector.advertised_address );
         }
+
+        this.authWhitelist = parseAuthWhitelist( config );
 
         databaseService = new LifecycleManagingDatabaseService( config, graphFactory, dependencies );
         life.add( databaseService );
@@ -321,7 +320,7 @@ public abstract class AbstractNeoServer implements NeoServer
 
     protected Pattern[] getUriWhitelist()
     {
-        return DEFAULT_URI_WHITELIST;
+        return authWhitelist;
     }
 
     @Override
@@ -403,6 +402,17 @@ public abstract class AbstractNeoServer implements NeoServer
         {
             throw new IllegalArgumentException( "Either HTTP or HTTPS connector must be configured to run the server" );
         }
+    }
+
+    private static Pattern[] parseAuthWhitelist( Config config )
+    {
+        var whitelist = config.get( ServerSettings.http_auth_whitelist );
+        var patterns = new Pattern[whitelist.size()];
+        for ( int i = 0; i < whitelist.size(); i++ )
+        {
+            patterns[i] = Pattern.compile( whitelist.get( i ) );
+        }
+        return patterns;
     }
 
     private class ServerDependenciesLifeCycleAdapter extends LifecycleAdapter
