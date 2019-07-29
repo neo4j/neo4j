@@ -191,6 +191,10 @@ class IdRange
         for ( int i = 0; i < longs.length; i++ )
         {
             long from = other.longs[i];
+            if ( from == 0 )
+            {
+                continue;
+            }
 
             if ( !recoveryMode )
             {
