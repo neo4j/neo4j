@@ -34,7 +34,6 @@ import org.neo4j.server.modules.DBMSModule;
 import org.neo4j.server.modules.ManagementApiModule;
 import org.neo4j.server.modules.Neo4jBrowserModule;
 import org.neo4j.server.modules.RESTApiModule;
-import org.neo4j.server.modules.SecurityRulesModule;
 import org.neo4j.server.modules.ServerModule;
 import org.neo4j.server.modules.ThirdPartyJAXRSModule;
 import org.neo4j.server.rest.discovery.DiscoverableURIs;
@@ -65,8 +64,7 @@ public class CommunityNeoServer extends AbstractNeoServer
                 new ManagementApiModule( webServer, getConfig() ),
                 new ThirdPartyJAXRSModule( webServer, getConfig(), userLogProvider, this ),
                 new Neo4jBrowserModule( webServer ),
-                createAuthorizationModule(),
-                new SecurityRulesModule( webServer, getConfig(), userLogProvider ) );
+                createAuthorizationModule() );
     }
 
     @Override

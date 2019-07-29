@@ -47,12 +47,10 @@ import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.SortedSet;
 import java.util.TreeSet;
 import java.util.concurrent.BlockingQueue;
 import java.util.function.Consumer;
-import java.util.stream.Stream;
 import javax.servlet.DispatcherType;
 import javax.servlet.Filter;
 import javax.servlet.ServletException;
@@ -70,7 +68,6 @@ import org.neo4j.server.security.ssl.SslSocketConnectorFactory;
 import org.neo4j.ssl.SslPolicy;
 
 import static java.lang.String.format;
-import static java.util.stream.Collectors.joining;
 
 /**
  * This class handles the configuration and runtime management of a Jetty web server. The server is restartable.
@@ -497,14 +494,6 @@ public class Jetty9WebServer implements WebServer
         {
             throw new IllegalStateException( "Either HTTP or HTTPS address must be configured to run the server" );
         }
-    }
-
-    private String addressConfigurationDescription()
-    {
-        return Stream.of( httpAddress, httpsAddress )
-                .filter( Objects::nonNull )
-                .map( Object::toString )
-                .collect( joining( ", " ) );
     }
 
     private static class FilterDefinition
