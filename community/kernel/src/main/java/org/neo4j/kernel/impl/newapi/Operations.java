@@ -869,25 +869,6 @@ public class Operations implements Write, SchemaWrite
         indexProviders.validateIndexPrototype( prototype );
         TransactionState transactionState = ktx.txState();
 
-        // If an index just like the given prototype was previously removed in the transaction, then we should bring it back instead of allocating a new
-        // schema record and creating a new index. This is important for two reasons: 1) it saves us useless work for dropping an re-creating the index,
-        // and 2) if we then also reverses *this* index create, then we must still do so on the *original* index descriptor, which has the original schema
-        // record id. If we didn't, then the following delete would end up trying to delete a schema record (the one that would be allocated below) that is
-        // not in use, and that would blow up during transaction commit.
-        Set<IndexDescriptor> removed = transactionState.indexChanges().getRemoved();
-        IndexDescriptor toUnRemove = prototype.materialise( 0 );
-        if ( removed.contains( toUnRemove ) )
-        {
-            for ( IndexDescriptor candidate : removed )
-            {
-                if ( candidate.equals( toUnRemove ) )
-                {
-                    transactionState.indexDoAdd( candidate );
-                    return candidate;
-                }
-            }
-        }
-
         long schemaRecordId = commandCreationContext.reserveSchema();
         IndexDescriptor index = prototype.materialise( schemaRecordId );
         index = indexProviders.completeConfiguration( index );
