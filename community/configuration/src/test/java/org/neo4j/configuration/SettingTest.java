@@ -302,6 +302,12 @@ class SettingTest
             {
                 return "default solver";
             }
+
+            @Override
+            public Class<String> getType()
+            {
+                return String.class;
+            }
         };
 
         var setting = (SettingImpl<String>) setting( "setting", defaultSolver );

@@ -73,6 +73,12 @@ public final class SettingValueParsers
         {
             return "a string";
         }
+
+        @Override
+        public Class<String> getType()
+        {
+            return String.class;
+        }
     };
 
     public static SettingValueParser<SecureString> SECURE_STRING = new SettingValueParser<>()
@@ -87,6 +93,12 @@ public final class SettingValueParsers
         public String getDescription()
         {
             return "a secure string";
+        }
+
+        @Override
+        public Class<SecureString> getType()
+        {
+            return SecureString.class;
         }
     };
 
@@ -103,6 +115,12 @@ public final class SettingValueParsers
             {
                 throw new IllegalArgumentException( format("'%s' is not a valid integer value", value ), e );
             }
+        }
+
+        @Override
+        public Class<Integer> getType()
+        {
+            return Integer.class;
         }
 
         @Override
@@ -132,6 +150,12 @@ public final class SettingValueParsers
         {
             return "a long";
         }
+
+        @Override
+        public Class<Long> getType()
+        {
+            return Long.class;
+        }
     };
 
     public static SettingValueParser<Boolean> BOOL = new SettingValueParser<>()
@@ -158,6 +182,12 @@ public final class SettingValueParsers
         {
             return "a boolean";
         }
+
+        @Override
+        public Class<Boolean> getType()
+        {
+            return Boolean.class;
+        }
     };
 
     public static SettingValueParser<Double> DOUBLE = new SettingValueParser<>()
@@ -180,6 +210,12 @@ public final class SettingValueParsers
         {
             return "a double";
         }
+
+        @Override
+        public Class<Double> getType()
+        {
+            return Double.class;
+        }
     };
 
     public static <T> SettingValueParser<List<T>> listOf( SettingValueParser<T> parser )
@@ -194,6 +230,13 @@ public final class SettingValueParsers
                         .filter( StringUtils::isNotEmpty )
                         .map( parser::parse )
                         .collect( Collectors.toList() );
+            }
+
+            @Override
+            public Class<List<T>> getType()
+            {
+                //noinspection unchecked
+                return (Class<List<T>>) (Class) List.class;
             }
 
             @Override
@@ -231,6 +274,9 @@ public final class SettingValueParsers
     {
         return new SettingValueParser<>()
         {
+            @SuppressWarnings( "unchecked" )
+            private final Class<T> type = (Class<T>) values.iterator().next().getClass(); //should never be empty
+
             @Override
             public T parse( String value )
             {
@@ -259,6 +305,12 @@ public final class SettingValueParsers
             {
                 return "one of " + values.toString();
             }
+
+            @Override
+            public Class<T> getType()
+            {
+                return type;
+            }
         };
     }
 
@@ -275,6 +327,12 @@ public final class SettingValueParsers
         {
             return "a hostname and port";
         }
+
+        @Override
+        public Class<HostnamePort> getType()
+        {
+            return HostnamePort.class;
+        }
     };
 
     public static SettingValueParser<Duration> DURATION = new SettingValueParser<>()
@@ -289,6 +347,12 @@ public final class SettingValueParsers
         public String getDescription()
         {
             return "a duration (" + TimeUtil.VALID_TIME_DESCRIPTION + ")";
+        }
+
+        @Override
+        public Class<Duration> getType()
+        {
+            return Duration.class;
         }
 
         @Override
@@ -319,6 +383,12 @@ public final class SettingValueParsers
         {
             return "a string describing a timezone, either described by offset (e.g. '+02:00') or by name (e.g. 'Europe/Stockholm')";
         }
+
+        @Override
+        public Class<ZoneId> getType()
+        {
+            return ZoneId.class;
+        }
     };
 
     public static SettingValueParser<SocketAddress> SOCKET_ADDRESS = new SettingValueParser<>()
@@ -333,6 +403,12 @@ public final class SettingValueParsers
         public String getDescription()
         {
             return "a socket address";
+        }
+
+        @Override
+        public Class<SocketAddress> getType()
+        {
+            return SocketAddress.class;
         }
 
         @Override
@@ -404,6 +480,12 @@ public final class SettingValueParsers
         {
             return format("a byte size (valid multipliers are %s)", VALID_MULTIPLIERS );
         }
+
+        @Override
+        public Class<Long> getType()
+        {
+            return Long.class;
+        }
     };
 
     public static SettingValueParser<URI> URI = new SettingValueParser<>()
@@ -425,6 +507,12 @@ public final class SettingValueParsers
         public String getDescription()
         {
             return "a URI";
+        }
+
+        @Override
+        public Class<java.net.URI> getType()
+        {
+            return URI.class;
         }
     };
 
@@ -454,6 +542,12 @@ public final class SettingValueParsers
         {
             return "a normalized relative URI";
         }
+
+        @Override
+        public Class<URI> getType()
+        {
+            return URI.class;
+        }
     };
 
     public static SettingValueParser<Path> PATH = new SettingValueParser<>()
@@ -468,6 +562,12 @@ public final class SettingValueParsers
         public String getDescription()
         {
             return "a path";
+        }
+
+        @Override
+        public Class<Path> getType()
+        {
+            return Path.class;
         }
 
         @Override
@@ -507,6 +607,12 @@ public final class SettingValueParsers
         public String getDescription()
         {
             return "A valid database name. " + DatabaseNameValidator.DESCRIPTION;
+        }
+
+        @Override
+        public Class<String> getType()
+        {
+            return String.class;
         }
     };
 

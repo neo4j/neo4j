@@ -66,6 +66,7 @@ import static org.neo4j.configuration.SettingValueParsers.INT;
 import static org.neo4j.configuration.SettingValueParsers.PATH;
 import static org.neo4j.configuration.SettingValueParsers.STRING;
 import static org.neo4j.configuration.SettingValueParsers.TRUE;
+import static org.neo4j.configuration.SettingValueParsers.listOf;
 import static org.neo4j.logging.AssertableLogProvider.inLog;
 
 @ExtendWith( TestDirectoryExtension.class )
@@ -710,6 +711,18 @@ class ConfigTest
     }
 
     @Test
+    void testIncorrectType()
+    {
+        Map<Setting<?>, Object> cfgMap = Map.of( TestSettings.intSetting, "not an int" );
+        Config.Builder builder = Config.newBuilder().addSettingsClass( TestSettings.class ).set( cfgMap );
+
+        IllegalArgumentException exception = assertThrows( IllegalArgumentException.class, builder::build );
+        assertEquals( "Error evaluating value for setting 'test.setting.integer'." +
+                " Setting 'test.setting.integer' can not have value 'not an int'." +
+                " Should be of type 'Integer', but is 'String'", exception.getMessage() );
+    }
+
+    @Test
     void testBoltHttpsSslPolicyMigration() throws IOException
     {
 
@@ -747,6 +760,7 @@ class ConfigTest
     {
         static Setting<String> stringSetting = newBuilder( "test.setting.string", STRING, "hello" ).build();
         static Setting<Integer> intSetting = newBuilder( "test.setting.integer", INT, 1 ).dynamic().build();
+        static Setting<List<Integer>> intListSetting = newBuilder( "test.setting.integerlist", listOf( INT ), List.of( 1 ) ).build();
         static Setting<Boolean> boolSetting = newBuilder( "test.setting.bool", BOOL, null ).immutable().build();
     }
 
@@ -867,6 +881,12 @@ class ConfigTest
             public String getDescription()
             {
                 return "";
+            }
+
+            @Override
+            public Class<String> getType()
+            {
+                return String.class;
             }
         };
 

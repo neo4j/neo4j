@@ -115,10 +115,18 @@ public final class SettingImpl<T> implements Setting<T>
 
     public void validate( T value )
     {
-        parser.validate( value );
-        for ( SettingConstraint<T> constraint : constraints )
+        if ( value != null )
         {
-            constraint.validate( value );
+            if ( !parser.getType().isAssignableFrom( value.getClass() ) ) //Does only check outer class if generic types.
+            {
+                throw new IllegalArgumentException( format( "Setting '%s' can not have value '%s'. Should be of type '%s', but is '%s'",
+                                name, value, parser.getType().getSimpleName(), value.getClass().getSimpleName() ) );
+            }
+            parser.validate( value );
+            for ( SettingConstraint<T> constraint : constraints )
+            {
+                constraint.validate( value );
+            }
         }
     }
 

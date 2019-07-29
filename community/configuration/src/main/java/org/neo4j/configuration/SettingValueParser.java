@@ -53,6 +53,12 @@ public interface SettingValueParser<T>
     String getDescription();
 
     /**
+     *  The type of the object this parser is working on.
+     * @return the type of T
+     */
+    Class<T> getType();
+
+    /**
      * Solving a value against the default value
      *
      * @param value the value associated with the Setting using this parser

@@ -102,6 +102,12 @@ public class ServerSettings implements SettingsDeclaration
         {
             return "<classname>=<mount point> string";
         }
+
+        @Override
+        public Class<ThirdPartyJaxRsPackage> getType()
+        {
+            return ThirdPartyJaxRsPackage.class;
+        }
     };
 
     @Description( "Comma-separated list of <classname>=<mount point> for unmanaged extensions." )
