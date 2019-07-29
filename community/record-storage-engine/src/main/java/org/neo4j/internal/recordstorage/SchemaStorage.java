@@ -184,6 +184,7 @@ public class SchemaStorage implements SchemaRuleAccess
         SchemaRecord schemaRecord = schemaStore.newRecord();
         schemaRecord.initialize( true, nextPropId );
         schemaRecord.setId( rule.getId() );
+        schemaRecord.setCreated();
         schemaStore.updateRecord( schemaRecord );
         schemaStore.setHighestPossibleIdInUse( rule.getId() );
     }
@@ -193,6 +194,7 @@ public class SchemaStorage implements SchemaRuleAccess
         PropertyRecord record = propertyStore.newRecord();
         record.setId( propertyStore.nextId() );
         record.setSchemaRuleId( rule.getId() );
+        record.setCreated();
         return record;
     }
 
