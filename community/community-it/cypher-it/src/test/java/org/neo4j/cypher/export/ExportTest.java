@@ -19,9 +19,9 @@
  */
 package org.neo4j.cypher.export;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
 import java.io.PrintWriter;
@@ -45,46 +45,46 @@ import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import static java.lang.System.lineSeparator;
 import static java.util.Arrays.asList;
 import static java.util.Collections.singletonMap;
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 
-public class ExportTest
+class ExportTest
 {
 
     private GraphDatabaseService gdb;
     private Transaction tx;
     private DatabaseManagementService managementService;
 
-    @Before
-    public void setUp()
+    @BeforeEach
+    void setUp()
     {
         managementService = new TestDatabaseManagementServiceBuilder().impermanent().build();
         gdb = managementService.database( DEFAULT_DATABASE_NAME );
         tx = gdb.beginTx();
     }
 
-    @After
-    public void tearDown()
+    @AfterEach
+    void tearDown()
     {
         tx.close();
         managementService.shutdown();
     }
 
     @Test
-    public void testEmptyGraph()
+    void testEmptyGraph()
     {
         assertEquals( "", doExportGraph( gdb ) );
     }
 
     @Test
-    public void testNodeWithProperties()
+    void testNodeWithProperties()
     {
         gdb.createNode().setProperty( "name", "Andres" );
         assertEquals( "create (_0 {`name`:\"Andres\"})" + lineSeparator() + ";" + lineSeparator(), doExportGraph( gdb ) );
     }
 
     @Test
-    public void testNodeWithFloatProperty()
+    void testNodeWithFloatProperty()
     {
         final float floatValue = 10.1f;
         final String expected = "10.100000";
@@ -93,7 +93,7 @@ public class ExportTest
     }
 
     @Test
-    public void testNodeWithDoubleProperty()
+    void testNodeWithDoubleProperty()
     {
         final double doubleValue = 123456.123456;
         final String expected = "123456.123456";
@@ -115,7 +115,7 @@ public class ExportTest
     }
 
     @Test
-    public void testFromSimpleCypherResult()
+    void testFromSimpleCypherResult()
     {
         Node n = gdb.createNode();
         final Result result = result( "node", n );
@@ -124,7 +124,7 @@ public class ExportTest
     }
 
     @Test
-    public void testSingleNode()
+    void testSingleNode()
     {
         Node n = gdb.createNode();
         final Result result = result( "node", n );
@@ -133,7 +133,7 @@ public class ExportTest
     }
 
     @Test
-    public void testSingleNodeWithProperties()
+    void testSingleNodeWithProperties()
     {
         Node n = gdb.createNode();
         n.setProperty( "name", "Node1" );
@@ -145,7 +145,7 @@ public class ExportTest
     }
 
     @Test
-    public void testEscapingOfNodeStringPropertyValue()
+    void testEscapingOfNodeStringPropertyValue()
     {
         Node n = gdb.createNode();
         n.setProperty( "name", "Brutus \"Brutal\" Howell" );
@@ -157,7 +157,7 @@ public class ExportTest
     }
 
     @Test
-    public void testEscapingOfNodeStringArrayPropertyValue()
+    void testEscapingOfNodeStringArrayPropertyValue()
     {
         Node n = gdb.createNode();
         n.setProperty( "name", new String[]{"Brutus \"Brutal\" Howell", "Dr."} );
@@ -169,7 +169,7 @@ public class ExportTest
     }
 
     @Test
-    public void testEscapingOfRelationshipStringPropertyValue()
+    void testEscapingOfRelationshipStringPropertyValue()
     {
         Node n = gdb.createNode();
         final Relationship rel = n.createRelationshipTo( n, RelationshipType.withName( "REL" ) );
@@ -182,7 +182,7 @@ public class ExportTest
     }
 
     @Test
-    public void testEscapingOfRelationshipStringArrayPropertyValue()
+    void testEscapingOfRelationshipStringArrayPropertyValue()
     {
         Node n = gdb.createNode();
         final Relationship rel = n.createRelationshipTo( n, RelationshipType.withName( "REL" ) );
@@ -196,7 +196,7 @@ public class ExportTest
     }
 
     @Test
-    public void testEscapingStringPropertyWithBackslash()
+    void testEscapingStringPropertyWithBackslash()
     {
         Node n = gdb.createNode();
         n.setProperty( "name", "Some\\thing" );
@@ -208,7 +208,7 @@ public class ExportTest
     }
 
     @Test
-    public void testEscapingStringPropertyWithBackslashAndDoubleQuote()
+    void testEscapingStringPropertyWithBackslashAndDoubleQuote()
     {
         Node n = gdb.createNode();
         n.setProperty( "name", "Some\\\"thing" );
@@ -220,7 +220,7 @@ public class ExportTest
     }
 
     @Test
-    public void testSingleNodeWithArrayProperties()
+    void testSingleNodeWithArrayProperties()
     {
         Node n = gdb.createNode();
         n.setProperty( "name", new String[]{"a", "b"} );
@@ -232,7 +232,7 @@ public class ExportTest
     }
 
     @Test
-    public void testSingleNodeLabels()
+    void testSingleNodeLabels()
     {
         Node n = gdb.createNode();
         n.addLabel( Label.label( "Foo" ) );
@@ -244,14 +244,14 @@ public class ExportTest
     }
 
     @Test
-    public void testExportIndex()
+    void testExportIndex()
     {
         gdb.schema().indexFor( Label.label( "Foo" ) ).on( "bar" ).create();
         assertEquals( "create index on :`Foo`(`bar`);" + lineSeparator() , doExportGraph( gdb ) );
     }
 
     @Test
-    public void testExportUniquenessConstraint()
+    void testExportUniquenessConstraint()
     {
         gdb.schema().constraintFor( Label.label( "Foo" ) ).assertPropertyIsUnique( "bar" ).create();
         assertEquals( "create constraint on (n:`Foo`) assert n.`bar` is unique;" + lineSeparator(),
@@ -259,7 +259,7 @@ public class ExportTest
     }
 
     @Test
-    public void testExportIndexesViaCypherResult()
+    void testExportIndexesViaCypherResult()
     {
         final Label label = Label.label( "Foo" );
         gdb.schema().indexFor( label ).on( "bar" ).create();
@@ -274,7 +274,7 @@ public class ExportTest
     }
 
     @Test
-    public void testExportConstraintsViaCypherResult()
+    void testExportConstraintsViaCypherResult()
     {
         final Label label = Label.label( "Foo" );
         gdb.schema().constraintFor( label ).assertPropertyIsUnique( "bar" ).create();
@@ -296,7 +296,7 @@ public class ExportTest
     }
 
     @Test
-    public void testFromRelCypherResult()
+    void testFromRelCypherResult()
     {
         Node n = gdb.createNode();
         final Relationship rel = n.createRelationshipTo( n, RelationshipType.withName( "REL" ) );
@@ -307,7 +307,7 @@ public class ExportTest
     }
 
     @Test
-    public void testFromPathCypherResult()
+    void testFromPathCypherResult()
     {
         Node n1 = gdb.createNode();
         Node n2 = gdb.createNode();
@@ -359,7 +359,7 @@ public class ExportTest
     }
 
     @Test
-    public void testFromSimpleGraph()
+    void testFromSimpleGraph()
     {
         final Node n0 = gdb.createNode();
 

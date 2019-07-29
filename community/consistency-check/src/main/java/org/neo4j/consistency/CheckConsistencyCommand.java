@@ -22,6 +22,7 @@ package org.neo4j.consistency;
 import picocli.CommandLine.Mixin;
 import picocli.CommandLine.Option;
 
+import java.io.Closeable;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -31,6 +32,8 @@ import java.util.Optional;
 import org.neo4j.cli.AbstractCommand;
 import org.neo4j.cli.CommandFailedException;
 import org.neo4j.cli.ExecutionContext;
+import org.neo4j.commandline.dbms.CannotWriteException;
+import org.neo4j.commandline.dbms.DatabaseLockChecker;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.ConfigUtils;
 import org.neo4j.configuration.GraphDatabaseSettings;
@@ -41,11 +44,12 @@ import org.neo4j.internal.helpers.progress.ProgressMonitorFactory;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
+import org.neo4j.kernel.impl.util.Validators;
+import org.neo4j.kernel.internal.locker.FileLockException;
 import org.neo4j.logging.FormattedLogProvider;
 import org.neo4j.util.VisibleForTesting;
 
 import static java.lang.String.format;
-import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.configuration.GraphDatabaseSettings.databases_root_path;
 import static org.neo4j.internal.helpers.Strings.joinAsLines;
 import static org.neo4j.kernel.recovery.Recovery.isRecoveryRequired;
@@ -71,7 +75,7 @@ public class CheckConsistencyCommand extends AbstractCommand
     private static class TargetOption
     {
         @Option( names = "--database", description = "Name of the database." )
-        private String database = DEFAULT_DATABASE_NAME;
+        private String database;
 
         @Option( names = "--backup", paramLabel = "<path>", description = "Path to backup to check consistency of. Cannot be used together with --database." )
         private Path backup;
@@ -85,13 +89,13 @@ public class CheckConsistencyCommand extends AbstractCommand
 
     private final ConsistencyCheckService consistencyCheckService;
 
-    CheckConsistencyCommand( ExecutionContext ctx )
+    public CheckConsistencyCommand( ExecutionContext ctx )
     {
         this( ctx, new ConsistencyCheckService() );
     }
 
     @VisibleForTesting
-    CheckConsistencyCommand( ExecutionContext ctx, ConsistencyCheckService consistencyCheckService )
+    public CheckConsistencyCommand( ExecutionContext ctx, ConsistencyCheckService consistencyCheckService )
     {
         super( ctx );
         this.consistencyCheckService = consistencyCheckService;
@@ -115,32 +119,56 @@ public class CheckConsistencyCommand extends AbstractCommand
         {
             DatabaseLayout databaseLayout = Optional.ofNullable( target.backup )
                     .map( Path::toFile ).map( DatabaseLayout::of )
-                    .orElse( DatabaseLayout.of( config.get( databases_root_path ).toFile(), LayoutConfig.of( config ), target.database ) );
-            checkDbState( databaseLayout, config );
-            ZoneId logTimeZone = config.get( GraphDatabaseSettings.db_timezone ).getZoneId();
-            // Only output progress indicator if a console receives the output
-            ProgressMonitorFactory progressMonitorFactory = ProgressMonitorFactory.NONE;
-            if ( System.console() != null )
+                    .orElseGet( () -> DatabaseLayout.of( config.get( databases_root_path ).toFile(), LayoutConfig.of( config ), target.database ) );
+            checkDatabaseExistence( databaseLayout );
+            try ( Closeable lock = DatabaseLockChecker.check( databaseLayout ) )
             {
-                progressMonitorFactory = ProgressMonitorFactory.textual( System.out );
+                checkDbState( databaseLayout, config );
+                ZoneId logTimeZone = config.get( GraphDatabaseSettings.db_timezone ).getZoneId();
+                // Only output progress indicator if a console receives the output
+                ProgressMonitorFactory progressMonitorFactory = ProgressMonitorFactory.NONE;
+                if ( System.console() != null )
+                {
+                    progressMonitorFactory = ProgressMonitorFactory.textual( System.out );
+                }
+
+                ConsistencyCheckService.Result consistencyCheckResult = consistencyCheckService
+                        .runFullConsistencyCheck( databaseLayout, config, progressMonitorFactory,
+                                FormattedLogProvider.withZoneId( logTimeZone ).toOutputStream( System.out ), fileSystem,
+                            verbose, options.getReportDir().toFile().getCanonicalFile(),
+                                new ConsistencyFlags( options.isCheckGraph(), options.isCheckIndexes(), options.isCheckLabelScanStore(),
+                                        options.isCheckPropertyOwners() ) );
+
+                if ( !consistencyCheckResult.isSuccessful() )
+                {
+                    throw new CommandFailedException( format( "Inconsistencies found. See '%s' for details.",
+                            consistencyCheckResult.reportFile() ) );
+                }
             }
-
-            ConsistencyCheckService.Result consistencyCheckResult = consistencyCheckService
-                    .runFullConsistencyCheck( databaseLayout, config, progressMonitorFactory,
-                            FormattedLogProvider.withZoneId( logTimeZone ).toOutputStream( System.out ), fileSystem,
-                        verbose, options.getReportDir().toFile().getCanonicalFile(),
-                            new ConsistencyFlags( options.isCheckGraph(), options.isCheckIndexes(), options.isCheckLabelScanStore(),
-                                    options.isCheckPropertyOwners() ) );
-
-            if ( !consistencyCheckResult.isSuccessful() )
+            catch ( FileLockException e )
             {
-                throw new CommandFailedException( format( "Inconsistencies found. See '%s' for details.",
-                        consistencyCheckResult.reportFile() ) );
+                throw new CommandFailedException( "The database is in use. Stop database '" + databaseLayout.getDatabaseName() + "' and try again.", e );
+            }
+            catch ( CannotWriteException e )
+            {
+                throw new CommandFailedException( "You do not have permission to check database consistency.", e );
             }
         }
         catch ( ConsistencyCheckIncompleteException | IOException e )
         {
             throw new CommandFailedException( "Consistency checking failed." + e.getMessage(), e );
+        }
+    }
+
+    private void checkDatabaseExistence( DatabaseLayout databaseLayout )
+    {
+        try
+        {
+            Validators.CONTAINS_EXISTING_DATABASE.validate( databaseLayout.databaseDirectory() );
+        }
+        catch ( IllegalArgumentException e )
+        {
+            throw new CommandFailedException( "Database does not exist: " + databaseLayout.getDatabaseName(), e );
         }
     }
 

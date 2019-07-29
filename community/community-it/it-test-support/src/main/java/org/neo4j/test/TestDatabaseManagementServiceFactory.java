@@ -31,8 +31,11 @@ import org.neo4j.graphdb.factory.module.GlobalModule;
 import org.neo4j.graphdb.factory.module.edition.AbstractEditionModule;
 import org.neo4j.io.fs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.layout.DatabaseLayout;
+import org.neo4j.io.layout.StoreLayout;
 import org.neo4j.kernel.impl.factory.DatabaseInfo;
-import org.neo4j.kernel.internal.locker.StoreLocker;
+import org.neo4j.kernel.internal.locker.FileLockerService;
+import org.neo4j.kernel.internal.locker.Locker;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.logging.internal.LogService;
@@ -132,9 +135,28 @@ public class TestDatabaseManagementServiceFactory extends DatabaseManagementServ
         }
 
         @Override
-        protected StoreLocker createStoreLocker()
+        protected FileLockerService createFileLockerService()
         {
-            return new StoreLocker( getFileSystem(), getStoreLayout() );
+            return new ImpermanentLockerService();
+        }
+    }
+
+    /**
+     * Locker service implementation that provide dbms and database level locks that are not registered globally
+     * anywhere and only holds underlying file channel locks.
+     */
+    private static class ImpermanentLockerService implements FileLockerService
+    {
+        @Override
+        public Locker createStoreLocker( FileSystemAbstraction fileSystem, StoreLayout storeLayout )
+        {
+            return new Locker( fileSystem, storeLayout.storeLockFile() );
+        }
+
+        @Override
+        public Locker createDatabaseLocker( FileSystemAbstraction fileSystem, DatabaseLayout databaseLayout )
+        {
+            return new Locker( fileSystem, databaseLayout.databaseLockFile() );
         }
     }
 }

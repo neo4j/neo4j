@@ -19,9 +19,9 @@
  */
 package org.neo4j.cypher.internal.javacompat;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import java.util.List;
 import java.util.Map;
@@ -35,33 +35,33 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.isA;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 
-public class JavaValueCompatibilityTest
+class JavaValueCompatibilityTest
 {
     private GraphDatabaseService  db;
     private DatabaseManagementService managementService;
 
-    @Before
-    public void setUp()
+    @BeforeEach
+    void setUp()
     {
         managementService = new TestDatabaseManagementServiceBuilder().impermanent().build();
         db = managementService.database( DEFAULT_DATABASE_NAME );
     }
 
-    @After
-    public void tearDown()
+    @AfterEach
+    void tearDown()
     {
         managementService.shutdown();
     }
 
     @Test
-    public void collections_in_collections_look_alright()
+    void collectionsInCollectionsLookAlright()
     {
         Result result = db.execute( "CREATE (n:TheNode) RETURN [[ [1,2],[3,4] ],[[5,6]]] as x" );
-        Map<String, Object> next = result.next();
+        Map<String,Object> next = result.next();
         @SuppressWarnings( "unchecked" ) //We know it's a collection.
-        List<List<Object>> x = (List<List<Object>>)next.get( "x" );
+        List<List<Object>> x = (List<List<Object>>) next.get( "x" );
         Iterable objects = x.get( 0 );
 
-        assertThat(objects, isA(Iterable.class));
+        assertThat( objects, isA( Iterable.class ) );
     }
 }

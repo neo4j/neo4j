@@ -27,7 +27,7 @@ import java.util.Map;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.graphdb.config.Setting;
-import org.neo4j.kernel.StoreLockException;
+import org.neo4j.kernel.internal.locker.FileLockException;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.TestDirectoryExtension;
@@ -39,7 +39,7 @@ import static org.hamcrest.core.IsInstanceOf.instanceOf;
 import static org.junit.jupiter.api.Assertions.fail;
 
 @ExtendWith( TestDirectoryExtension.class )
-class StoreLockerLifecycleAdapterTest
+class LockerLifecycleAdapterTest
 {
     @Inject
     private TestDirectory directory;
@@ -76,7 +76,7 @@ class StoreLockerLifecycleAdapterTest
         }
         catch ( RuntimeException e )
         {
-            assertThat( e.getCause().getCause(), instanceOf( StoreLockException.class ) );
+            assertThat( e.getCause().getCause(), instanceOf( FileLockException.class ) );
         }
         finally
         {

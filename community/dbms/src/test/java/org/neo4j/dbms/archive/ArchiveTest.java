@@ -235,7 +235,7 @@ class ArchiveTest
     {
     }
 
-    private class DirectoryDescription implements Description
+    private static class DirectoryDescription implements Description
     {
         @Override
         public boolean equals( Object o )
@@ -250,7 +250,7 @@ class ArchiveTest
         }
     }
 
-    private class FileDescription implements Description
+    private static class FileDescription implements Description
     {
         private final byte[] bytes;
 

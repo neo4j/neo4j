@@ -28,6 +28,7 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Paths;
 
+import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.FileUtils;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.TestDirectoryExtension;
@@ -84,6 +85,48 @@ class FileUtilsTest
         File[] files = targetDir.listFiles();
         assertNotNull( files );
         assertEquals( newLocationOfFile, files[0] );
+    }
+
+    @Test
+    void deletePathRecursively() throws IOException
+    {
+        FileSystemAbstraction fileSystem = testDirectory.getFileSystem();
+        File root = testDirectory.directory( "a" );
+        File child = new File( root, "b" );
+        File file = new File( child, "c" );
+
+        assertTrue( child.mkdirs() );
+        assertTrue( file.createNewFile() );
+
+        FileUtils.deletePathRecursively( root.toPath() );
+
+        assertFalse( file.exists() );
+        assertFalse( child.exists() );
+    }
+
+    @Test
+    void deletePathRecursivelyWithFilter() throws IOException
+    {
+        FileSystemAbstraction fileSystem = testDirectory.getFileSystem();
+        File root = testDirectory.directory( "a" );
+        File child = new File( root, "b" );
+        File file = new File( child, "c" );
+
+        File toKeepDir = new File( root, "d" );
+        File toKeepFile = new File( toKeepDir, "e" );
+
+        assertTrue( child.mkdirs() );
+        assertTrue( file.createNewFile() );
+        assertTrue( toKeepDir.mkdirs() );
+        assertTrue( toKeepFile.createNewFile() );
+
+        FileUtils.deletePathRecursively( root.toPath(), path -> !path.equals( toKeepFile.toPath() ) );
+
+        assertFalse( file.exists() );
+        assertFalse( child.exists() );
+
+        assertTrue( toKeepFile.exists() );
+        assertTrue( toKeepDir.exists() );
     }
 
     @Test

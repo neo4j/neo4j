@@ -59,6 +59,7 @@ import java.nio.file.StandardCopyOption;
 import java.nio.file.StandardOpenOption;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.Set;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -68,6 +69,7 @@ import static java.nio.file.StandardOpenOption.READ;
 import static java.nio.file.StandardOpenOption.WRITE;
 import static java.util.Objects.requireNonNull;
 import static org.apache.commons.lang3.reflect.FieldUtils.getDeclaredField;
+import static org.neo4j.function.Predicates.alwaysTrue;
 import static org.neo4j.io.fs.FileSystemAbstraction.INVALID_FILE_DESCRIPTOR;
 import static org.neo4j.util.FeatureToggles.flag;
 
@@ -142,12 +144,27 @@ public class FileUtils
 
     public static void deletePathRecursively( Path path ) throws IOException
     {
+        deletePathRecursively( path, alwaysTrue() );
+    }
+
+    public static void deletePathRecursively( Path path, Predicate<Path> removeFilePredicate ) throws IOException
+    {
+
         Files.walkFileTree( path, new SimpleFileVisitor<>()
         {
+            private int skippedFiles;
+
             @Override
             public FileVisitResult visitFile( Path file, BasicFileAttributes attrs ) throws IOException
             {
-                deleteFile( file );
+                if ( removeFilePredicate.test( file ) )
+                {
+                    deleteFile( file );
+                }
+                else
+                {
+                    skippedFiles++;
+                }
                 return FileVisitResult.CONTINUE;
             }
 
@@ -160,14 +177,22 @@ public class FileUtils
                 }
                 try
                 {
-                    Files.delete( dir );
+                    if ( skippedFiles == 0 )
+                    {
+                        Files.delete( dir );
+                        return FileVisitResult.CONTINUE;
+                    }
+                    if ( Files.list( dir ).noneMatch( alwaysTrue() ) )
+                    {
+                        Files.delete( dir );
+                    }
+                    return FileVisitResult.CONTINUE;
                 }
                 catch ( DirectoryNotEmptyException notEmpty )
                 {
                     String reason = notEmptyReason( dir, notEmpty );
                     throw new IOException( notEmpty.getMessage() + ": " + reason, notEmpty );
                 }
-                return FileVisitResult.CONTINUE;
             }
 
             private String notEmptyReason( Path dir, DirectoryNotEmptyException notEmpty )

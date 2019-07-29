@@ -44,6 +44,8 @@ import static org.neo4j.io.layout.StoreLayoutConfig.NOT_CONFIGURED;
  */
 public class DatabaseLayout
 {
+    private static final String DATABASE_LOCK_FILENAME = "database_lock";
+
     private static final File[] EMPTY_FILES_ARRAY = new File[0];
     private final File databaseDirectory;
     private final StoreLayout storeLayout;
@@ -87,6 +89,11 @@ public class DatabaseLayout
         return storeLayout.getLayoutConfig().getTransactionLogsRootDirectory()
                 .map( root -> new File( root, getDatabaseName() ) )
                 .orElse( databaseDirectory() );
+    }
+
+    public File databaseLockFile()
+    {
+        return new File( databaseDirectory(), DATABASE_LOCK_FILENAME );
     }
 
     public String getDatabaseName()

@@ -27,38 +27,36 @@ import java.nio.channels.OverlappingFileLockException;
 
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
-import org.neo4j.io.layout.StoreLayout;
-import org.neo4j.kernel.StoreLockException;
 
 /**
- * The class takes a lock on store described by provided instance of {@link StoreLayout}. The lock is valid after a successful call to
+ * The class takes a lock on provided file. The lock is valid after a successful call to
  * {@link #checkLock()} until a call to {@link #close()}.
  */
-public class StoreLocker implements Closeable
+public class Locker implements Closeable
 {
     private final FileSystemAbstraction fileSystemAbstraction;
-    final File storeLockFile;
+    final File lockFile;
 
-    FileLock storeLockFileLock;
-    private StoreChannel storeLockFileChannel;
+    FileLock lockFileLock;
+    private StoreChannel lockFileChannel;
 
-    public StoreLocker( FileSystemAbstraction fileSystemAbstraction, StoreLayout storeLayout )
+    public Locker( FileSystemAbstraction fileSystemAbstraction, File lockFile )
     {
         this.fileSystemAbstraction = fileSystemAbstraction;
-        storeLockFile = storeLayout.storeLockFile();
+        this.lockFile = lockFile;
     }
 
     /**
-     * Obtains lock on store file so that we can ensure the store is not shared between database instances
+     * Obtains lock on file so that we can ensure the store is not shared between different database instances
      * <p>
-     * Creates store dir if necessary, creates store lock file if necessary
+     * Creates dir if necessary, creates lock file if necessary
      * <p>
-     * Please note that this lock is only valid for as long the {@link #storeLockFileChannel} lives, so make sure the
+     * Please note that this lock is only valid for as long the {@link #lockFileChannel} lives, so make sure the
      * lock cannot be garbage collected as long as the lock should be valid.
      *
-     * @throws StoreLockException if lock could not be acquired
+     * @throws FileLockException if lock could not be acquired
      */
-    public void checkLock() throws StoreLockException
+    public void checkLock() throws FileLockException
     {
         if ( haveLockAlready() )
         {
@@ -67,27 +65,27 @@ public class StoreLocker implements Closeable
 
         try
         {
-            if ( !fileSystemAbstraction.fileExists( storeLockFile ) )
+            if ( !fileSystemAbstraction.fileExists( lockFile ) )
             {
-                fileSystemAbstraction.mkdirs( storeLockFile.getParentFile() );
+                fileSystemAbstraction.mkdirs( lockFile.getParentFile() );
             }
         }
         catch ( IOException e )
         {
-            String message = "Unable to create path for store dir: " + storeLockFile.getParent();
+            String message = "Unable to create path for dir: " + lockFile.getParent();
             throw storeLockException( message, e );
         }
 
         try
         {
-            if ( storeLockFileChannel == null )
+            if ( lockFileChannel == null )
             {
-                storeLockFileChannel = fileSystemAbstraction.write( storeLockFile );
+                lockFileChannel = fileSystemAbstraction.write( lockFile );
             }
-            storeLockFileLock = storeLockFileChannel.tryLock();
-            if ( storeLockFileLock == null )
+            lockFileLock = lockFileChannel.tryLock();
+            if ( lockFileLock == null )
             {
-                String message = "Store and its lock file has been locked by another process: " + storeLockFile;
+                String message = "Lock file has been locked by another process: " + lockFile;
                 throw storeLockException( message, null );
             }
         }
@@ -99,30 +97,30 @@ public class StoreLocker implements Closeable
 
     protected boolean haveLockAlready()
     {
-        return storeLockFileLock != null && storeLockFileChannel != null;
+        return lockFileLock != null && lockFileChannel != null;
     }
 
-    StoreLockException unableToObtainLockException()
+    FileLockException unableToObtainLockException()
     {
-        String message = "Unable to obtain lock on store lock file: " + storeLockFile;
+        String message = "Unable to obtain lock on file: " + lockFile;
         return storeLockException( message, null );
     }
 
-    private static StoreLockException storeLockException( String message, Exception e )
+    private static FileLockException storeLockException( String message, Exception e )
     {
         String help = "Please ensure no other process is using this database, and that the directory is writable " +
                 "(required even for read-only access)";
-        return new StoreLockException( message + ". " + help, e );
+        return new FileLockException( message + ". " + help, e );
     }
 
     @Override
     public void close() throws IOException
     {
-        if ( storeLockFileLock != null )
+        if ( lockFileLock != null )
         {
             releaseLock();
         }
-        if ( storeLockFileChannel != null )
+        if ( lockFileChannel != null )
         {
             releaseChannel();
         }
@@ -130,13 +128,13 @@ public class StoreLocker implements Closeable
 
     private void releaseChannel() throws IOException
     {
-        storeLockFileChannel.close();
-        storeLockFileChannel = null;
+        lockFileChannel.close();
+        lockFileChannel = null;
     }
 
     protected void releaseLock() throws IOException
     {
-        storeLockFileLock.release();
-        storeLockFileLock = null;
+        lockFileLock.release();
+        lockFileLock = null;
     }
 }

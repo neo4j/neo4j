@@ -58,6 +58,7 @@ import org.neo4j.kernel.impl.transaction.log.checkpoint.StoreCopyCheckPointMutex
 import org.neo4j.kernel.impl.transaction.stats.DatabaseTransactionStats;
 import org.neo4j.kernel.impl.util.collection.CollectionsFactorySupplier;
 import org.neo4j.kernel.internal.event.GlobalTransactionEventListeners;
+import org.neo4j.kernel.internal.locker.FileLockerService;
 import org.neo4j.kernel.monitoring.tracing.Tracers;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.internal.DatabaseLogService;
@@ -110,6 +111,7 @@ public class ModularDatabaseCreationContext implements DatabaseCreationContext
     private final GlobalTransactionEventListeners transactionEventListeners;
     private final StorageEngineFactory storageEngineFactory;
     private final ThreadToStatementContextBridge contextBridge;
+    private final FileLockerService fileLockerService;
 
     public ModularDatabaseCreationContext( DatabaseId databaseId, GlobalModule globalModule, Dependencies globalDependencies,
             Monitors parentMonitors, EditionDatabaseComponents editionComponents, GlobalProcedures globalProcedures,
@@ -156,6 +158,7 @@ public class ModularDatabaseCreationContext implements DatabaseCreationContext
         this.databaseAvailabilityGuardFactory = databaseTimeoutMillis -> databaseAvailabilityGuardFactory( databaseId, globalModule, databaseTimeoutMillis );
         this.storageEngineFactory = globalModule.getStorageEngineFactory();
         this.contextBridge = globalModule.getThreadToTransactionBridge();
+        this.fileLockerService = globalModule.getFileLockerService();
     }
 
     @Override
@@ -378,6 +381,12 @@ public class ModularDatabaseCreationContext implements DatabaseCreationContext
     public ThreadToStatementContextBridge getContextBridge()
     {
         return contextBridge;
+    }
+
+    @Override
+    public FileLockerService getFileLockerService()
+    {
+        return fileLockerService;
     }
 
     @Override

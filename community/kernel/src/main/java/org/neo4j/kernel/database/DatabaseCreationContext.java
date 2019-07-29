@@ -50,6 +50,7 @@ import org.neo4j.kernel.impl.transaction.log.checkpoint.StoreCopyCheckPointMutex
 import org.neo4j.kernel.impl.transaction.stats.DatabaseTransactionStats;
 import org.neo4j.kernel.impl.util.collection.CollectionsFactorySupplier;
 import org.neo4j.kernel.internal.event.GlobalTransactionEventListeners;
+import org.neo4j.kernel.internal.locker.FileLockerService;
 import org.neo4j.kernel.monitoring.tracing.Tracers;
 import org.neo4j.logging.internal.DatabaseLogService;
 import org.neo4j.monitoring.DatabaseEventListeners;
@@ -135,6 +136,8 @@ public interface DatabaseCreationContext
     StorageEngineFactory getStorageEngineFactory();
 
     ThreadToStatementContextBridge getContextBridge();
+
+    FileLockerService getFileLockerService();
 
     DatabaseIdRepository getDatabaseIdRepository();
 }

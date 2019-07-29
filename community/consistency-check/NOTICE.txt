@@ -26,10 +26,25 @@ Third-party licenses
 --------------------
 
 Apache Software License, Version 2.0
+  Apache Commons Compress
+  Apache Commons IO
   Apache Commons Lang
   Apache Commons Text
+  jPowerShell
+  jProcesses
+  Lucene codecs
+  Lucene Common Analyzers
+  Lucene Core
+  Lucene QueryParsers
   Netty/All-in-One
   picocli - a mighty tiny Command Line Interface
+  WMI4Java
+
+BSD License
+  Zstandard
+
+BSD License 2-clause
+  zstd-jni
 
 Bouncy Castle License
   Bouncy Castle PKIX, CMS, EAC, TSP, PKCS, OCSP, CMP, and CRMF APIs

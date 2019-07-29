@@ -19,26 +19,16 @@
  */
 package org.neo4j.kernel.internal.locker;
 
-import org.neo4j.kernel.lifecycle.LifecycleAdapter;
+import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.layout.StoreLayout;
 
-public class StoreLockerLifecycleAdapter extends LifecycleAdapter
+/**
+ * Global DBMS level lock to prevent multiple DBMS to be started on top of single {@link StoreLayout}
+ */
+class GlobalLocker extends GlobalFileLocker
 {
-    private final StoreLocker storeLocker;
-
-    public StoreLockerLifecycleAdapter( StoreLocker storeLocker )
+    GlobalLocker( FileSystemAbstraction fileSystemAbstraction, StoreLayout storeLayout )
     {
-        this.storeLocker = storeLocker;
-    }
-
-    @Override
-    public synchronized void start()
-    {
-        storeLocker.checkLock();
-    }
-
-    @Override
-    public synchronized void stop() throws Exception
-    {
-        storeLocker.close();
+        super( fileSystemAbstraction, storeLayout.storeLockFile() );
     }
 }

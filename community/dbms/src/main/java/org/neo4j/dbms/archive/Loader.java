@@ -63,11 +63,13 @@ public class Loader
         Path databaseDestination = databaseLayout.databaseDirectory().toPath();
         Path transactionLogsDirectory = databaseLayout.getTransactionLogsDirectory().toPath();
 
-        validatePath( databaseDestination );
-        validatePath( transactionLogsDirectory );
+        validatePath( databaseDestination, false );
+        validatePath( transactionLogsDirectory, true );
 
         createDestination( databaseDestination );
         createDestination( transactionLogsDirectory );
+
+        checkDatabasePresence( databaseLayout );
 
         try ( ArchiveInputStream stream = openArchiveIn( archive );
               Resource ignore = progressPrinter.startPrinting() )
@@ -81,6 +83,14 @@ public class Loader
         }
     }
 
+    private void checkDatabasePresence( DatabaseLayout databaseLayout ) throws FileAlreadyExistsException
+    {
+        if ( databaseLayout.metadataStore().exists() )
+        {
+            throw new FileAlreadyExistsException( databaseLayout.metadataStore().getAbsolutePath() );
+        }
+    }
+
     private void createDestination( Path destination ) throws IOException
     {
         if ( !destination.toFile().exists() )
@@ -89,9 +99,9 @@ public class Loader
         }
     }
 
-    private void validatePath( Path path ) throws FileSystemException
+    private void validatePath( Path path, boolean validateExistence ) throws FileSystemException
     {
-        if ( exists( path ) )
+        if ( validateExistence && exists( path ) )
         {
             throw new FileAlreadyExistsException( path.toString() );
         }

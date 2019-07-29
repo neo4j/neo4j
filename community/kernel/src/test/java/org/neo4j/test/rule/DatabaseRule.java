@@ -70,6 +70,8 @@ import org.neo4j.kernel.impl.transaction.log.checkpoint.StoreCopyCheckPointMutex
 import org.neo4j.kernel.impl.transaction.stats.DatabaseTransactionStats;
 import org.neo4j.kernel.impl.util.collection.CollectionsFactorySupplier;
 import org.neo4j.kernel.internal.event.GlobalTransactionEventListeners;
+import org.neo4j.kernel.internal.locker.FileLockerService;
+import org.neo4j.kernel.internal.locker.GlobalLockerService;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.monitoring.tracing.Tracers;
 import org.neo4j.kernel.recovery.RecoveryExtension;
@@ -164,7 +166,7 @@ public class DatabaseRule extends ExternalResource
                         jobScheduler ), DatabaseInfo.COMMUNITY, new TransactionVersionContextSupplier(), ON_HEAP,
                 Iterables.iterable( new EmptyIndexExtensionFactory() ),
                 file -> mock( DatabaseLayoutWatcher.class ), Iterables.empty(),
-                storageEngineFactory, new ThreadToStatementContextBridge() ) );
+                storageEngineFactory, new ThreadToStatementContextBridge(), new GlobalLockerService() ) );
         return database;
     }
 
@@ -231,6 +233,7 @@ public class DatabaseRule extends ExternalResource
         private final DatabaseEventListeners eventListeners;
         private final StorageEngineFactory storageEngineFactory;
         private final ThreadToStatementContextBridge contextBridge;
+        private final FileLockerService fileLockerService;
         private final DatabaseIdRepository databaseIdRepository;
 
         TestDatabaseCreationContext( DatabaseId databaseId, DatabaseLayout databaseLayout, Config config, IdGeneratorFactory idGeneratorFactory,
@@ -243,7 +246,8 @@ public class DatabaseRule extends ExternalResource
                 StoreCopyCheckPointMutex storeCopyCheckPointMutex, IdController idController,
                 DatabaseInfo databaseInfo, VersionContextSupplier versionContextSupplier, CollectionsFactorySupplier collectionsFactorySupplier,
                 Iterable<ExtensionFactory<?>> extensionFactories, Function<DatabaseLayout,DatabaseLayoutWatcher> watcherServiceFactory,
-                Iterable<QueryEngineProvider> engineProviders, StorageEngineFactory storageEngineFactory, ThreadToStatementContextBridge contextBridge )
+                Iterable<QueryEngineProvider> engineProviders, StorageEngineFactory storageEngineFactory, ThreadToStatementContextBridge contextBridge,
+                FileLockerService fileLockerService )
         {
             this.databaseId = databaseId;
             this.databaseLayout = databaseLayout;
@@ -281,6 +285,7 @@ public class DatabaseRule extends ExternalResource
             this.storageEngineFactory = storageEngineFactory;
             this.contextBridge = contextBridge;
             this.databaseIdRepository = new PlaceholderDatabaseIdRepository( config );
+            this.fileLockerService = fileLockerService;
         }
 
         @Override
@@ -519,6 +524,12 @@ public class DatabaseRule extends ExternalResource
         public DatabaseIdRepository getDatabaseIdRepository()
         {
             return databaseIdRepository;
+        }
+
+        @Override
+        public FileLockerService getFileLockerService()
+        {
+            return fileLockerService;
         }
     }
 

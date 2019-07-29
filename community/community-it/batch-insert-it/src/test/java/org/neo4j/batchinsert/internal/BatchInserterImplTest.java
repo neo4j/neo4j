@@ -28,12 +28,12 @@ import org.neo4j.batchinsert.BatchInserter;
 import org.neo4j.batchinsert.BatchInserters;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
-import org.neo4j.io.layout.StoreLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.impl.muninn.MuninnPageCache;
-import org.neo4j.kernel.StoreLockException;
 import org.neo4j.kernel.impl.store.NeoStores;
-import org.neo4j.kernel.internal.locker.StoreLocker;
+import org.neo4j.kernel.internal.locker.DatabaseLocker;
+import org.neo4j.kernel.internal.locker.FileLockException;
+import org.neo4j.kernel.internal.locker.Locker;
 import org.neo4j.test.ReflectionUtil;
 import org.neo4j.test.extension.DefaultFileSystemExtension;
 import org.neo4j.test.extension.Inject;
@@ -74,31 +74,33 @@ class BatchInserterImplTest
     }
 
     @Test
-    void testCreatesStoreLockFile() throws Exception
+    void testCreatesLockFile() throws Exception
     {
-        // Given
         DatabaseLayout databaseLayout = testDirectory.databaseLayout();
 
-        // When
         BatchInserter inserter = BatchInserters.inserter( databaseLayout, fileSystem );
-
-        // Then
-        assertThat( databaseLayout.getStoreLayout().storeLockFile().exists(), equalTo( true ) );
-        inserter.shutdown();
+        try
+        {
+            assertThat( databaseLayout.databaseLockFile().exists(), equalTo( true ) );
+        }
+        finally
+        {
+            inserter.shutdown();
+        }
     }
 
     @Test
     void testFailsOnExistingStoreLockFile() throws IOException
     {
         // Given
-        StoreLayout storeLayout = testDirectory.storeLayout();
-        try ( StoreLocker lock = new StoreLocker( fileSystem, storeLayout ) )
+        DatabaseLayout databaseLayout = testDirectory.databaseLayout( "any" );
+        try ( Locker lock = new DatabaseLocker( fileSystem, databaseLayout ) )
         {
             lock.checkLock();
 
-            var e = assertThrows( StoreLockException.class,
-                () -> BatchInserters.inserter( storeLayout.databaseLayout( "any" ), fileSystem ) );
-            assertThat( e.getMessage(), startsWith( "Unable to obtain lock on store lock file" ) );
+            var e = assertThrows( FileLockException.class,
+                () -> BatchInserters.inserter( databaseLayout, fileSystem ) );
+            assertThat( e.getMessage(), startsWith( "Unable to obtain lock on file" ) );
         }
     }
 }

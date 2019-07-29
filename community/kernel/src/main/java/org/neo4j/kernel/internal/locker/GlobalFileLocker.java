@@ -26,11 +26,9 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.io.layout.StoreLayout;
-import org.neo4j.kernel.StoreLockException;
 
 /**
- * Store locker that guarantee that only single channel ever will be opened and then closed for store locker
+ * File locker that guarantee that only single channel ever will be opened and then closed
  * file to prevent cases where lock will be released when any of the opened channels for file will be released as
  * described in {@link FileLock} javadoc:
  * <p>
@@ -41,32 +39,32 @@ import org.neo4j.kernel.StoreLockException;
  * </b>
  * </p>
  *
- * The guarantee is achieved by tracking all locked files over all instances of {@link GlobalStoreLocker}.
+ * The guarantee is achieved by tracking all locked files over all instances of {@link GlobalFileLocker}.
  *
  * Class guarantee visibility of locked files over multiple thread but do not guarantee atomicity of operations.
  */
-public class GlobalStoreLocker extends StoreLocker
+class GlobalFileLocker extends Locker
 {
     private static final Set<File> lockedFiles = ConcurrentHashMap.newKeySet();
 
-    public GlobalStoreLocker( FileSystemAbstraction fileSystemAbstraction, StoreLayout storeLayout )
+    GlobalFileLocker( FileSystemAbstraction fileSystemAbstraction, File lockFile )
     {
-        super( fileSystemAbstraction, storeLayout );
+        super( fileSystemAbstraction, lockFile );
     }
 
     @Override
-    public void checkLock() throws StoreLockException
+    public void checkLock() throws FileLockException
     {
         super.checkLock();
-        lockedFiles.add( storeLockFile );
+        lockedFiles.add( lockFile );
     }
 
     @Override
     protected boolean haveLockAlready()
     {
-        if ( lockedFiles.contains( storeLockFile ) )
+        if ( lockedFiles.contains( lockFile ) )
         {
-            if ( storeLockFileLock != null )
+            if ( lockFileLock != null )
             {
                 return true;
             }
@@ -78,7 +76,7 @@ public class GlobalStoreLocker extends StoreLocker
     @Override
     protected void releaseLock() throws IOException
     {
-        lockedFiles.remove( storeLockFile );
+        lockedFiles.remove( lockFile );
         super.releaseLock();
     }
 }

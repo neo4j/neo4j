@@ -133,6 +133,8 @@ import org.neo4j.kernel.impl.util.DefaultValueMapper;
 import org.neo4j.kernel.impl.util.collection.CollectionsFactorySupplier;
 import org.neo4j.kernel.internal.event.DatabaseTransactionEventListeners;
 import org.neo4j.kernel.internal.event.GlobalTransactionEventListeners;
+import org.neo4j.kernel.internal.locker.FileLockerService;
+import org.neo4j.kernel.internal.locker.LockerLifecycleAdapter;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.kernel.monitoring.tracing.Tracers;
@@ -234,6 +236,7 @@ public class Database extends LifecycleAdapter
     private DatabasePageCache databasePageCache;
     private CheckpointerLifecycle checkpointerLifecycle;
     private final GraphDatabaseFacade databaseFacade;
+    private final FileLockerService fileLockerService;
 
     public Database( DatabaseCreationContext context )
     {
@@ -284,6 +287,7 @@ public class Database extends LifecycleAdapter
         this.databaseTracer = globalTracers.getDatabaseTracer();
         this.pageCursorTracerSupplier = globalTracers.getPageCursorTracerSupplier();
         this.lockTracer = globalTracers.getLockTracer();
+        this.fileLockerService = context.getFileLockerService();
     }
 
     @Override
@@ -300,6 +304,7 @@ public class Database extends LifecycleAdapter
             databaseMonitors = new Monitors( parentMonitors );
 
             life = new LifeSupport();
+            life.add( new LockerLifecycleAdapter( fileLockerService.createDatabaseLocker( fs, databaseLayout ) ) );
             life.add( databaseConfig );
 
             databaseHealth = databaseHealthFactory.newInstance();

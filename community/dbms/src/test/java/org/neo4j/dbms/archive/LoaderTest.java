@@ -103,16 +103,6 @@ class LoaderTest
     }
 
     @Test
-    void shouldGiveAClearErrorIfTheDestinationAlreadyExists()
-    {
-        Path archive = testDirectory.file( "the-archive.dump" ).toPath();
-        DatabaseLayout databaseLayout = testDirectory.databaseLayout();
-
-        FileAlreadyExistsException exception = assertThrows( FileAlreadyExistsException.class, () -> new Loader().load( archive, databaseLayout ) );
-        assertEquals( databaseLayout.databaseDirectory().toString(), exception.getMessage() );
-    }
-
-    @Test
     void shouldGiveAClearErrorIfTheDestinationTxLogAlreadyExists()
     {
         Path archive = testDirectory.file( "the-archive.dump" ).toPath();

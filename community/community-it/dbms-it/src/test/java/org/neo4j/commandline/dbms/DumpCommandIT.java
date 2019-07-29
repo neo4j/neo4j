@@ -52,9 +52,9 @@ import org.neo4j.graphdb.config.Setting;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
-import org.neo4j.io.layout.StoreLayout;
 import org.neo4j.kernel.impl.transaction.log.files.TransactionLogFilesHelper;
-import org.neo4j.kernel.internal.locker.StoreLocker;
+import org.neo4j.kernel.internal.locker.DatabaseLocker;
+import org.neo4j.kernel.internal.locker.Locker;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.TestDirectoryExtension;
@@ -97,7 +97,7 @@ class DumpCommandIT
     private Path databaseDirectory;
 
     @BeforeEach
-    void setUp() throws Exception
+    void setUp()
     {
         homeDir = testDirectory.directory( "home-dir" ).toPath();
         configDir = testDirectory.directory( "config-dir" ).toPath();
@@ -192,17 +192,17 @@ class DumpCommandIT
     }
 
     @Test
-    void shouldRespectTheStoreLock() throws Exception
+    void shouldRespectTheDatabaseLock() throws Exception
     {
         Path databaseDirectory = homeDir.resolve( "data/databases/foo" );
-        StoreLayout storeLayout = DatabaseLayout.of( databaseDirectory.toFile() ).getStoreLayout();
+        DatabaseLayout databaseLayout = DatabaseLayout.of( databaseDirectory.toFile() );
         try ( FileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction();
-              StoreLocker storeLocker = new StoreLocker( fileSystem, storeLayout ) )
+              Locker locker = new DatabaseLocker( fileSystem, databaseLayout ) )
         {
-            storeLocker.checkLock();
+            locker.checkLock();
 
             CommandFailedException commandFailed = assertThrows( CommandFailedException.class, () -> execute( "foo" ) );
-            assertEquals( "The database is in use. Stop Neo4j and try again.", commandFailed.getMessage() );
+            assertEquals( "The database is in use. Stop database 'foo' and try again.", commandFailed.getMessage() );
         }
     }
 
@@ -223,22 +223,22 @@ class DumpCommandIT
     }
 
     @Test
-    void shouldReleaseTheStoreLockAfterDumping() throws Exception
+    void shouldReleaseTheDatabaseLockAfterDumping() throws Exception
     {
         execute( "foo" );
-        assertCanLockStore( databaseDirectory );
+        assertCanLockDatabase( databaseDirectory );
     }
 
     @Test
-    void shouldReleaseTheStoreLockEvenIfThereIsAnError() throws Exception
+    void shouldReleaseTheDatabaseLockEvenIfThereIsAnError() throws Exception
     {
         doThrow( IOException.class ).when( dumper ).dump( any(), any(), any(), any(), any() );
         assertThrows( CommandFailedException.class, () -> execute( "foo" ) );
-        assertCanLockStore( databaseDirectory );
+        assertCanLockDatabase( databaseDirectory );
     }
 
     @Test
-    void shouldNotAccidentallyCreateTheDatabaseDirectoryAsASideEffectOfStoreLocking()
+    void shouldNotAccidentallyCreateTheDatabaseDirectoryAsASideEffectOfDatabaseLocking()
             throws Exception
     {
         Path databaseDirectory = homeDir.resolve( "data/databases/accident" );
@@ -256,16 +256,13 @@ class DumpCommandIT
     @DisabledOnOs( OS.WINDOWS )
     void shouldReportAHelpfulErrorIfWeDontHaveWritePermissionsForLock() throws Exception
     {
-        StoreLayout storeLayout = DatabaseLayout.of( databaseDirectory.toFile() ).getStoreLayout();
-        try ( FileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction();
-              StoreLocker storeLocker = new StoreLocker( fileSystem, storeLayout ) )
+        DatabaseLayout databaseLayout = DatabaseLayout.of( databaseDirectory.toFile() );
+        try ( FileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction() )
         {
-            storeLocker.checkLock();
-
-            try ( Closeable ignored = withPermissions( storeLayout.storeLockFile().toPath(), emptySet() ) )
+            try ( Closeable ignored = withPermissions( databaseLayout.databaseLockFile().toPath(), emptySet() ) )
             {
                 CommandFailedException commandFailed = assertThrows( CommandFailedException.class, () -> execute( "foo" ) );
-                assertEquals( "You do not have permission to dump the database. Is Neo4j running as a different user?", commandFailed.getMessage() );
+                assertEquals( "The database is in use. Stop database 'foo' and try again.", commandFailed.getMessage() );
             }
         }
     }
@@ -274,7 +271,7 @@ class DumpCommandIT
     void shouldExcludeTheStoreLockFromTheArchiveToAvoidProblemsWithReadingLockedFilesOnWindows()
             throws Exception
     {
-        File lockFile = StoreLayout.of( new File( "." ) ).storeLockFile();
+        File lockFile = DatabaseLayout.of( new File( "." ) ).databaseLockFile();
         doAnswer( invocation ->
         {
             Predicate<Path> exclude = invocation.getArgument( 4 );
@@ -349,12 +346,12 @@ class DumpCommandIT
         command.execute();
     }
 
-    private static void assertCanLockStore( Path databaseDirectory ) throws IOException
+    private static void assertCanLockDatabase( Path databaseDirectory ) throws IOException
     {
         try ( FileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction();
-              StoreLocker storeLocker = new StoreLocker( fileSystem, DatabaseLayout.of( databaseDirectory.toFile() ).getStoreLayout() ) )
+              Locker locker = new DatabaseLocker( fileSystem, DatabaseLayout.of( databaseDirectory.toFile() ) ) )
         {
-            storeLocker.checkLock();
+            locker.checkLock();
         }
     }
 

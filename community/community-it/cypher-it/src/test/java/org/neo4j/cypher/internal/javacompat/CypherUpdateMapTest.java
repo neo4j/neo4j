@@ -20,9 +20,9 @@
 package org.neo4j.cypher.internal.javacompat;
 
 import org.hamcrest.Matcher;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -30,20 +30,33 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.not;
-import static org.junit.Assert.assertThat;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.internal.helpers.collection.MapUtil.map;
 import static org.neo4j.test.mockito.matcher.Neo4jMatchers.hasProperty;
 import static org.neo4j.test.mockito.matcher.Neo4jMatchers.inTx;
 
-public class CypherUpdateMapTest
+class CypherUpdateMapTest
 {
     private GraphDatabaseService db;
     private DatabaseManagementService managementService;
 
+    @BeforeEach
+    void setup()
+    {
+        managementService = new TestDatabaseManagementServiceBuilder().impermanent().build();
+        db = managementService.database( DEFAULT_DATABASE_NAME );
+    }
+
+    @AfterEach
+    void cleanup()
+    {
+        managementService.shutdown();
+    }
+
     @Test
-    public void updateNodeByMapParameter()
+    void updateNodeByMapParameter()
     {
         db.execute(
                 "CREATE (n:Reference) SET n = {data} RETURN n" ,
@@ -71,7 +84,7 @@ public class CypherUpdateMapTest
         assertThat( node2, inTxS( hasProperty( "key3" ).withValue(5678) ) );
     }
 
-    public <T> Matcher<? super T> inTxS( final Matcher<T> inner )
+    <T> Matcher<? super T> inTxS( final Matcher<T> inner )
     {
         return inTx( db, inner, false );
     }
@@ -82,18 +95,5 @@ public class CypherUpdateMapTest
         {
             return db.getNodeById( nodeId );
         }
-    }
-
-    @Before
-    public void setup()
-    {
-        managementService = new TestDatabaseManagementServiceBuilder().impermanent().build();
-        db = managementService.database( DEFAULT_DATABASE_NAME );
-    }
-
-    @After
-    public void cleanup()
-    {
-        managementService.shutdown();
     }
 }

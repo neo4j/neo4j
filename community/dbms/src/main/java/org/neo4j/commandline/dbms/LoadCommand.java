@@ -19,6 +19,7 @@
  */
 package org.neo4j.commandline.dbms;
 
+import java.io.Closeable;
 import java.io.IOException;
 import java.nio.file.AccessDeniedException;
 import java.nio.file.FileAlreadyExistsException;
@@ -36,11 +37,12 @@ import org.neo4j.configuration.LayoutConfig;
 import org.neo4j.dbms.archive.IncorrectFormat;
 import org.neo4j.dbms.archive.Loader;
 import org.neo4j.io.layout.DatabaseLayout;
+import org.neo4j.kernel.internal.locker.FileLockException;
 
 import static java.util.Objects.requireNonNull;
-import static org.neo4j.commandline.Util.checkLock;
 import static org.neo4j.commandline.Util.wrapIOException;
 import static org.neo4j.configuration.GraphDatabaseSettings.databases_root_path;
+import static org.neo4j.io.fs.FileUtils.deletePathRecursively;
 import static org.neo4j.io.fs.FileUtils.deleteRecursively;
 import static picocli.CommandLine.Command;
 import static picocli.CommandLine.Option;
@@ -54,7 +56,7 @@ import static picocli.CommandLine.Option;
                 "Neo4j server."
 
 )
-class LoadCommand extends AbstractCommand
+public class LoadCommand extends AbstractCommand
 {
     @Option( names = "--from", required = true, paramLabel = "<path>", description = "Path to archive created with the dump command." )
     private Path from;
@@ -65,21 +67,36 @@ class LoadCommand extends AbstractCommand
 
     private final Loader loader;
 
-    LoadCommand( ExecutionContext ctx, Loader loader )
+    public LoadCommand( ExecutionContext ctx, Loader loader )
     {
         super( ctx );
         this.loader = requireNonNull( loader );
     }
 
     @Override
-    protected void execute()
+    public void execute()
     {
         Config config = buildConfig();
 
         DatabaseLayout databaseLayout = DatabaseLayout.of( config.get( databases_root_path ).toFile(), LayoutConfig.of( config ), database );
-
-        deleteIfNecessary( databaseLayout, force );
-        load( from, databaseLayout );
+        databaseLayout.databaseDirectory().mkdirs();
+        try ( Closeable check = DatabaseLockChecker.check( databaseLayout ) )
+        {
+            deleteIfNecessary( databaseLayout, force );
+            load( from, databaseLayout );
+        }
+        catch ( FileLockException e )
+        {
+            throw new CommandFailedException( "The database is in use. Stop database '" + database + "' and try again.", e );
+        }
+        catch ( IOException e )
+        {
+            wrapIOException( e );
+        }
+        catch ( CannotWriteException e )
+        {
+            throw new CommandFailedException( "You do not have permission to load the database.", e );
+        }
     }
 
     private Config buildConfig()
@@ -97,8 +114,8 @@ class LoadCommand extends AbstractCommand
         {
             if ( force )
             {
-                checkLock( databaseLayout.getStoreLayout() );
-                deleteRecursively( databaseLayout.databaseDirectory() );
+                // we remove everything except our database lock
+                deletePathRecursively( databaseLayout.databaseDirectory().toPath(), path -> !path.equals( databaseLayout.databaseLockFile().toPath() ) );
                 deleteRecursively( databaseLayout.getTransactionLogsDirectory() );
             }
         }
@@ -118,18 +135,17 @@ class LoadCommand extends AbstractCommand
         {
             if ( Paths.get( e.getMessage() ).toAbsolutePath().equals( archive.toAbsolutePath() ) )
             {
-                throw new CommandFailedException( "archive does not exist: " + archive, e );
+                throw new CommandFailedException( "Archive does not exist: " + archive, e );
             }
             wrapIOException( e );
         }
         catch ( FileAlreadyExistsException e )
         {
-            throw new CommandFailedException( "database already exists: " + databaseLayout.getDatabaseName(), e );
+            throw new CommandFailedException( "Database already exists: " + databaseLayout.getDatabaseName(), e );
         }
         catch ( AccessDeniedException e )
         {
-            throw new CommandFailedException(
-                    "you do not have permission to load a database -- is Neo4j running as a " + "different user?", e );
+            throw new CommandFailedException( "You do not have permission to load the database.", e );
         }
         catch ( IOException e )
         {

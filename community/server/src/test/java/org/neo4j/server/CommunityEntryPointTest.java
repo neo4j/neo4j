@@ -24,12 +24,12 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.parallel.ResourceLock;
 import org.junit.jupiter.api.parallel.Resources;
 
+import org.neo4j.kernel.internal.Version;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.SuppressOutputExtension;
 import org.neo4j.test.rule.SuppressOutput;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.neo4j.commandline.Util.neo4jVersion;
 
 @ExtendWith( SuppressOutputExtension.class )
 @ResourceLock( Resources.SYSTEM_OUT )
@@ -45,6 +45,6 @@ class CommunityEntryPointTest
         CommunityEntryPoint.main( new String[]{ "--version" } );
 
         // then
-        assertTrue( suppressOutput.getOutputVoice().containsMessage( "neo4j " + neo4jVersion() ) );
+        assertTrue( suppressOutput.getOutputVoice().containsMessage( "neo4j " + Version.getNeo4jVersion() ) );
     }
 }

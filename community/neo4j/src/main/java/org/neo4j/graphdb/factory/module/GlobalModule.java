@@ -70,9 +70,10 @@ import org.neo4j.kernel.impl.util.watcher.FileSystemWatcherService;
 import org.neo4j.kernel.info.JvmChecker;
 import org.neo4j.kernel.info.JvmMetadataRepository;
 import org.neo4j.kernel.internal.event.GlobalTransactionEventListeners;
-import org.neo4j.kernel.internal.locker.GlobalStoreLocker;
-import org.neo4j.kernel.internal.locker.StoreLocker;
-import org.neo4j.kernel.internal.locker.StoreLockerLifecycleAdapter;
+import org.neo4j.kernel.internal.locker.FileLockerService;
+import org.neo4j.kernel.internal.locker.GlobalLockerService;
+import org.neo4j.kernel.internal.locker.Locker;
+import org.neo4j.kernel.internal.locker.LockerLifecycleAdapter;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.monitoring.tracing.Tracers;
 import org.neo4j.logging.Level;
@@ -133,6 +134,7 @@ public class GlobalModule
     // In the future this may not be a global decision, but for now this is a good central place to make the decision about which storage engine to use
     private final StorageEngineFactory storageEngineFactory;
     private final DependencyResolver externalDependencyResolver;
+    private final FileLockerService fileLockerService;
 
     public GlobalModule( File providedStoreDir, Config globalConfig, DatabaseInfo databaseInfo,
             ExternalDependencies externalDependencies )
@@ -169,8 +171,9 @@ public class GlobalModule
 
         globalConfig.setLogger( logService.getInternalLog( Config.class ) );
 
-        globalLife.add( globalDependencies
-                .satisfyDependency( new StoreLockerLifecycleAdapter( createStoreLocker() ) ) );
+        fileLockerService = createFileLockerService();
+        Locker storeLocker = fileLockerService.createStoreLocker( fileSystem, storeLayout );
+        globalLife.add( globalDependencies.satisfyDependency( new LockerLifecycleAdapter( storeLocker ) ) );
 
         new JvmChecker( logService.getInternalLog( JvmChecker.class ),
                 new JvmMetadataRepository() ).checkJvmCompatibilityAndIssueWarning();
@@ -282,9 +285,9 @@ public class GlobalModule
         }
     }
 
-    protected StoreLocker createStoreLocker()
+    protected FileLockerService createFileLockerService()
     {
-        return new GlobalStoreLocker( fileSystem, storeLayout );
+        return new GlobalLockerService();
     }
 
     protected SystemNanoClock createClock()
@@ -550,5 +553,10 @@ public class GlobalModule
     public DatabaseIdRepository getDatabaseIdRepository()
     {
         return databaseIdRepository;
+    }
+
+    FileLockerService getFileLockerService()
+    {
+        return fileLockerService;
     }
 }

@@ -85,7 +85,6 @@ import org.neo4j.internal.schema.constraints.ConstraintDescriptorFactory;
 import org.neo4j.internal.schema.constraints.IndexBackedConstraintDescriptor;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
-import org.neo4j.io.layout.StoreLayout;
 import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
@@ -150,8 +149,8 @@ import org.neo4j.kernel.impl.transaction.state.DefaultIndexProviderMap;
 import org.neo4j.kernel.impl.transaction.state.storeview.DynamicIndexStoreView;
 import org.neo4j.kernel.impl.transaction.state.storeview.NeoStoreIndexStoreView;
 import org.neo4j.kernel.impl.util.ValueUtils;
-import org.neo4j.kernel.internal.locker.GlobalStoreLocker;
-import org.neo4j.kernel.internal.locker.StoreLocker;
+import org.neo4j.kernel.internal.locker.DatabaseLocker;
+import org.neo4j.kernel.internal.locker.Locker;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
@@ -195,7 +194,7 @@ public class BatchInserterImpl implements BatchInserter
     private final SchemaCache schemaCache;
     private final Config config;
     private final BatchInserterImpl.BatchSchemaActions actions;
-    private final StoreLocker storeLocker;
+    private final Locker locker;
     private final PageCache pageCache;
     private final RecordStorageReader storageReader;
     private final StoreLogService logService;
@@ -263,7 +262,7 @@ public class BatchInserterImpl implements BatchInserter
 
             life.add( jobScheduler );
 
-            storeLocker = tryLockStore( fileSystem, this.databaseLayout.getStoreLayout() );
+            locker = tryLockStore( fileSystem, databaseLayout );
             ConfiguringPageCacheFactory pageCacheFactory = new ConfiguringPageCacheFactory(
                 fileSystem, config, PageCacheTracer.NULL, PageCursorTracerSupplier.NULL, NullLog.getInstance(),
                 EmptyVersionContextSupplier.EMPTY, jobScheduler );
@@ -360,18 +359,18 @@ public class BatchInserterImpl implements BatchInserter
         }
     }
 
-    private static StoreLocker tryLockStore( FileSystemAbstraction fileSystem, StoreLayout storeLayout )
+    private static Locker tryLockStore( FileSystemAbstraction fileSystem, DatabaseLayout databaseLayout )
     {
-        StoreLocker storeLocker = new GlobalStoreLocker( fileSystem, storeLayout );
+        Locker locker = new DatabaseLocker( fileSystem, databaseLayout );
         try
         {
-            storeLocker.checkLock();
+            locker.checkLock();
         }
         catch ( Exception e )
         {
             try
             {
-                storeLocker.close();
+                locker.close();
             }
             catch ( IOException ce )
             {
@@ -379,7 +378,7 @@ public class BatchInserterImpl implements BatchInserter
             }
             throw e;
         }
-        return storeLocker;
+        return locker;
     }
 
     private static Map<Setting<?>, Object> getDefaultParams()
@@ -1014,7 +1013,7 @@ public class BatchInserterImpl implements BatchInserter
             neoStores.close();
             try
             {
-                storeLocker.close();
+                locker.close();
             }
             catch ( IOException e )
             {

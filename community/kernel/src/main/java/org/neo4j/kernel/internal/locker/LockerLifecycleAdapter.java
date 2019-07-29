@@ -17,15 +17,28 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel;
+package org.neo4j.kernel.internal.locker;
 
-/**
- * Signals a failure to lock the store
- */
-public class StoreLockException extends RuntimeException
+import org.neo4j.kernel.lifecycle.LifecycleAdapter;
+
+public class LockerLifecycleAdapter extends LifecycleAdapter
 {
-    public StoreLockException( String msg, Throwable t )
+    private final Locker locker;
+
+    public LockerLifecycleAdapter( Locker locker )
     {
-        super( msg, t );
+        this.locker = locker;
+    }
+
+    @Override
+    public synchronized void start()
+    {
+        locker.checkLock();
+    }
+
+    @Override
+    public synchronized void stop() throws Exception
+    {
+        locker.close();
     }
 }

@@ -27,6 +27,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import picocli.CommandLine;
 
 import java.io.ByteArrayOutputStream;
+import java.io.File;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.nio.file.AccessDeniedException;
@@ -40,14 +41,15 @@ import java.util.Optional;
 import org.neo4j.cli.CommandFailedException;
 import org.neo4j.cli.ExecutionContext;
 import org.neo4j.configuration.Config;
+import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.dbms.archive.IncorrectFormat;
 import org.neo4j.dbms.archive.Loader;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
-import org.neo4j.io.layout.StoreLayout;
-import org.neo4j.kernel.internal.locker.StoreLocker;
+import org.neo4j.kernel.internal.locker.DatabaseLocker;
+import org.neo4j.kernel.internal.locker.Locker;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.TestDirectoryExtension;
 import org.neo4j.test.rule.TestDirectory;
@@ -68,6 +70,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_TX_LOGS_ROOT_DIR_NAME;
 import static org.neo4j.configuration.GraphDatabaseSettings.data_directory;
+import static org.neo4j.configuration.GraphDatabaseSettings.databases_root_path;
 import static org.neo4j.configuration.GraphDatabaseSettings.transaction_logs_root_path;
 
 @ExtendWith( TestDirectoryExtension.class )
@@ -81,12 +84,20 @@ class LoadCommandTest
     private Loader loader;
 
     @BeforeEach
-    void setUp()
+    void setUp() throws IOException
     {
         homeDir = testDirectory.directory( "home-dir" ).toPath();
+        prepareFooDatabaseDirectory();
         configDir = testDirectory.directory( "config-dir" ).toPath();
         archive = testDirectory.directory( "some-archive.dump" ).toPath();
         loader = mock( Loader.class );
+    }
+
+    private void prepareFooDatabaseDirectory() throws IOException
+    {
+        Config config = Config.newBuilder().set( GraphDatabaseSettings.neo4j_home, homeDir.toAbsolutePath() ).build();
+        File databaseDirectory = DatabaseLayout.of( config.get( databases_root_path ).toFile(), "foo" ).databaseDirectory();
+        testDirectory.getFileSystem().mkdirs( databaseDirectory );
     }
 
     @Test
@@ -191,13 +202,14 @@ class LoadCommandTest
             throws CommandFailedException, IOException, IncorrectFormat
     {
         Path databaseDirectory = homeDir.resolve( "data/databases/foo" );
+        Path marker = databaseDirectory.resolve( "marker" );
         Path txDirectory = homeDir.resolve( "data/" + DEFAULT_TX_LOGS_ROOT_DIR_NAME );
         Files.createDirectories( databaseDirectory );
         Files.createDirectories( txDirectory );
 
         doAnswer( ignored ->
         {
-            assertThat( Files.exists( databaseDirectory ), equalTo( false ) );
+            assertThat( Files.exists( marker ), equalTo( false ) );
             return null;
         } ).when( loader ).load( any(), any() );
 
@@ -221,18 +233,18 @@ class LoadCommandTest
     }
 
     @Test
-    void shouldRespectTheStoreLock() throws IOException
+    void shouldRespectTheDatabaseLock() throws IOException
     {
         Path databaseDirectory = homeDir.resolve( "data/databases/foo" );
         Files.createDirectories( databaseDirectory );
-        StoreLayout storeLayout = DatabaseLayout.of( databaseDirectory.toFile() ).getStoreLayout();
+        DatabaseLayout databaseLayout = DatabaseLayout.of( databaseDirectory.toFile() );
 
         try ( FileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction();
-              StoreLocker locker = new StoreLocker( fileSystem, storeLayout ) )
+              Locker locker = new DatabaseLocker( fileSystem, databaseLayout ) )
         {
             locker.checkLock();
             CommandFailedException commandFailed = assertThrows( CommandFailedException.class, () -> executeForce( "foo" ) );
-            assertEquals( "The database is in use. Stop Neo4j and try again.", commandFailed.getMessage() );
+            assertEquals( "The database is in use. Stop database 'foo' and try again.", commandFailed.getMessage() );
         }
     }
 
@@ -241,7 +253,7 @@ class LoadCommandTest
     {
         doThrow( new NoSuchFileException( archive.toString() ) ).when( loader ).load( any(), any() );
         CommandFailedException commandFailed = assertThrows( CommandFailedException.class, () -> execute( "foo", archive ) );
-        assertEquals( "archive does not exist: " + archive, commandFailed.getMessage() );
+        assertEquals( "Archive does not exist: " + archive, commandFailed.getMessage() );
     }
 
     @Test
@@ -249,7 +261,7 @@ class LoadCommandTest
     {
         doThrow( FileAlreadyExistsException.class ).when( loader ).load( any(), any() );
         CommandFailedException commandFailed = assertThrows( CommandFailedException.class, () -> execute( "foo", archive ) );
-        assertEquals( "database already exists: foo", commandFailed.getMessage() );
+        assertEquals( "Database already exists: foo", commandFailed.getMessage() );
     }
 
     @Test
@@ -258,7 +270,7 @@ class LoadCommandTest
     {
         doThrow( AccessDeniedException.class ).when( loader ).load( any(), any() );
         CommandFailedException commandFailed = assertThrows( CommandFailedException.class, () -> execute( "foo", archive ) );
-        assertEquals( "you do not have permission to load a database -- is Neo4j running as a different user?", commandFailed.getMessage() );
+        assertEquals( "You do not have permission to load the database.", commandFailed.getMessage() );
     }
 
     @Test
