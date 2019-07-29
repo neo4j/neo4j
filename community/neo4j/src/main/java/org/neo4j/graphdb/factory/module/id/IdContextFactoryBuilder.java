@@ -21,13 +21,9 @@ package org.neo4j.graphdb.factory.module.id;
 
 import java.util.function.Function;
 
-import org.neo4j.configuration.Config;
-import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.internal.id.DefaultIdGeneratorFactory;
 import org.neo4j.internal.id.IdGeneratorFactory;
-import org.neo4j.internal.id.ScanOnOpenOverwritingIdGeneratorFactory;
 import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.database.DatabaseId;
 import org.neo4j.scheduler.JobScheduler;
 
@@ -38,11 +34,9 @@ import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.imme
 public class IdContextFactoryBuilder
 {
     private FileSystemAbstraction fileSystemAbstraction;
-    private PageCache pageCache;
     private JobScheduler jobScheduler;
     private Function<DatabaseId,IdGeneratorFactory> idGeneratorFactoryProvider;
     private Function<IdGeneratorFactory,IdGeneratorFactory> factoryWrapper;
-    private Config config;
 
     private IdContextFactoryBuilder()
     {
@@ -55,13 +49,11 @@ public class IdContextFactoryBuilder
         return builder;
     }
 
-    public static IdContextFactoryBuilder of( FileSystemAbstraction fileSystemAbstraction, PageCache pageCache, JobScheduler jobScheduler, Config config )
+    public static IdContextFactoryBuilder of( FileSystemAbstraction fileSystemAbstraction, JobScheduler jobScheduler )
     {
         IdContextFactoryBuilder builder = new IdContextFactoryBuilder();
         builder.fileSystemAbstraction = fileSystemAbstraction;
-        builder.pageCache = pageCache;
         builder.jobScheduler = jobScheduler;
-        builder.config = config;
         return builder;
     }
 
@@ -84,9 +76,7 @@ public class IdContextFactoryBuilder
             requireNonNull( fileSystemAbstraction, "File system is required to build id generator factory." );
             // Note on the RecoveryCleanupWorkCollector: this is just using the immediate() because we aren't
             // expecting any cleanup to be performed on main startup (this is after recovery).
-            idGeneratorFactoryProvider = databaseId -> config.get( GraphDatabaseSettings.rebuild_id_files_on_startup )
-                                                       ? new ScanOnOpenOverwritingIdGeneratorFactory( fileSystemAbstraction, pageCache )
-                                                       : new DefaultIdGeneratorFactory( fileSystemAbstraction, immediate() );
+            idGeneratorFactoryProvider = databaseId -> new DefaultIdGeneratorFactory( fileSystemAbstraction, immediate() );
         }
         if ( factoryWrapper == null )
         {

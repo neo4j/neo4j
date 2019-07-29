@@ -144,8 +144,7 @@ public class CommunityEditionModule extends StandaloneEditionModule
 
     private IdContextFactory createIdContextFactory( GlobalModule globalModule )
     {
-        return IdContextFactoryBuilder.of( globalModule.getFileSystem(), globalModule.getPageCache(),
-                globalModule.getJobScheduler(), globalModule.getGlobalConfig() ).build();
+        return IdContextFactoryBuilder.of( globalModule.getFileSystem(), globalModule.getJobScheduler() ).build();
     }
 
     protected Predicate<String> fileWatcherFileNameFilter()

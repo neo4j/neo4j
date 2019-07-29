@@ -330,7 +330,6 @@ class StartOldDbOnCurrentVersionAndCreateFusionIndexIT
         return new DatabaseManagementServiceBuilder( storeDir )
                 .setMonitors( monitors )
                 .setConfig( GraphDatabaseSettings.allow_upgrade, true )
-                .setConfig( GraphDatabaseSettings.rebuild_id_files_on_startup, true )
                 .build();
     }
 

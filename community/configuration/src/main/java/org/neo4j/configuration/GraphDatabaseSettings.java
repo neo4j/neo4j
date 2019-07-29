@@ -608,10 +608,6 @@ public class GraphDatabaseSettings implements SettingsDeclaration
     public static final Setting<Integer> index_sampling_update_percentage =
             newBuilder( "dbms.index_sampling.update_percentage", INT, 5 ).addConstraint( min( 0 ) ).build();
 
-    @Description( "Temporary setting for allowing already created 4.0 dbs with legacy id files to have them rebuilt to new format. " +
-            "Very useful during development where there are dbs in existence, e.g. benchmark dbs and what-not" )
-    public static final Setting<Boolean> rebuild_id_files_on_startup = newBuilder( "dbms.rebuild_id_files", BOOL, false ).build();
-
     // Lucene settings
     @Deprecated( since = "4.0.0", forRemoval = true )
     @Description( "The maximum number of open Lucene index searchers." )
