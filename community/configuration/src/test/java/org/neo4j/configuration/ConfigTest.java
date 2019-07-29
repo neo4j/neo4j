@@ -729,6 +729,20 @@ class ConfigTest
 
     }
 
+    @Test
+    void testDoesNotLogChangedJvmArgs() throws IOException
+    {
+        File confFile = testDirectory.createFile( "test.conf" );
+        Files.write( confFile.toPath(), List.of( "dbms.jvm.additional=-XX:+UseG1GC", "dbms.jvm.additional=-XX:+AlwaysPreTouch",
+                "dbms.jvm.additional=-XX:+UnlockExperimentalVMOptions", "dbms.jvm.additional=-XX:+TrustFinalNonStaticFields" ) );
+
+        Config config = Config.newBuilder().fromFile( confFile ).build();
+        var logProvider = new AssertableLogProvider();
+        config.setLogger( logProvider.getLog( Config.class ) );
+
+        logProvider.assertNoLoggingOccurred();
+    }
+
     private static final class TestSettings implements SettingsDeclaration
     {
         static Setting<String> stringSetting = newBuilder( "test.setting.string", STRING, "hello" ).build();

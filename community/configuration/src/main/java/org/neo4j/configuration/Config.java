@@ -67,9 +67,14 @@ public class Config implements Configuration
         private Config fromConfig;
         private Log log = new BufferingLog();
 
+        private static boolean allowedToLogOverriddenValues( String setting )
+        {
+            return !Objects.equals( setting, ExternalSettings.additionalJvm.name() );
+        }
+
         private Builder set( String setting, String value )
         {
-            if ( settingValues.containsKey( setting ) )
+            if ( settingValues.containsKey( setting ) && allowedToLogOverriddenValues( setting ) )
             {
                 log.warn( "The '%s' setting is overridden. Setting value changed from '%s' to '%s'.", setting, settingValues.get( setting ), value );
             }
@@ -90,7 +95,7 @@ public class Config implements Configuration
 
         private Builder setDefault( String setting, String value )
         {
-            if ( overriddenDefaults.containsKey( setting ) )
+            if ( overriddenDefaults.containsKey( setting ) && allowedToLogOverriddenValues( setting ) )
             {
                 log.warn( "The overridden default value of '%s' setting is overridden. Setting value changed from '%s' to '%s'.", setting,
                         settingValues.get( setting ), value );
