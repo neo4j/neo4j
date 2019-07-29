@@ -131,7 +131,7 @@ class IdRangeLayout extends Layout.Adapter<IdRangeKey, IdRange>
     @Override
     public int minorVersion()
     {
-        return 0;
+        return 1;
     }
 
     @Override
