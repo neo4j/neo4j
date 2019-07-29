@@ -113,6 +113,7 @@ public abstract class AbstractNeoServer implements NeoServer
             Pattern.compile( "/browser.*" ),
             Pattern.compile( "/" )
     };
+    private final Pattern[] authWhitelist;
     public static final String NEO4J_IS_STARTING_MESSAGE = "======== Neo4j " + Version.getNeo4jVersion() + " ========";
 
     protected final LogProvider userLogProvider;
@@ -164,6 +165,8 @@ public abstract class AbstractNeoServer implements NeoServer
         httpsConnector = findConnector( config, Encryption.TLS );
         httpsListenAddress = listenAddressFor( config, httpsConnector );
         httpsAdvertisedAddress = advertisedAddressFor( config, httpsConnector );
+
+        this.authWhitelist = parseAuthWhitelist( DEFAULT_URI_WHITELIST, config );
 
         database = new LifecycleManagingDatabase( config, graphFactory, dependencies );
         this.availabilityGuardSupplier = ((LifecycleManagingDatabase) database)::getAvailabilityGuard;
@@ -344,7 +347,7 @@ public abstract class AbstractNeoServer implements NeoServer
 
     protected Pattern[] getUriWhitelist()
     {
-        return DEFAULT_URI_WHITELIST;
+        return authWhitelist;
     }
 
     @Override
@@ -498,6 +501,18 @@ public abstract class AbstractNeoServer implements NeoServer
     private static AdvertisedSocketAddress advertisedAddressFor( Config config, HttpConnector connector )
     {
         return connector == null ? null : config.get( connector.advertised_address );
+    }
+
+    private static Pattern[] parseAuthWhitelist( Pattern[] defaultWhitelist, Config config )
+    {
+        List<String> whitelist = config.get( ServerSettings.http_auth_whitelist );
+        Pattern[] patterns = new Pattern[defaultWhitelist.length + whitelist.size()];
+        System.arraycopy( defaultWhitelist, 0, patterns, 0, defaultWhitelist.length );
+        for ( int i = 0; i < whitelist.size(); i++ )
+        {
+            patterns[defaultWhitelist.length + i] = Pattern.compile( whitelist.get( i ) );
+        }
+        return patterns;
     }
 
     private class ServerDependenciesLifeCycleAdapter extends LifecycleAdapter

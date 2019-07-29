@@ -19,6 +19,7 @@
  */
 package org.neo4j.server.security.auth;
 
+import com.sun.deploy.config.SecuritySettings;
 import org.junit.After;
 import org.junit.Test;
 
@@ -26,6 +27,7 @@ import java.io.IOException;
 
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.server.CommunityNeoServer;
+import org.neo4j.server.configuration.ServerSettings;
 import org.neo4j.server.helpers.CommunityServerBuilder;
 import org.neo4j.test.server.ExclusiveServerTestBase;
 import org.neo4j.test.server.HTTP;
@@ -74,7 +76,7 @@ public class AuthorizationWhitelistIT extends ExclusiveServerTestBase
     {
         // Given
         server = CommunityServerBuilder.serverOnRandomPorts()
-                .withProperty( GraphDatabaseSettings.auth_enabled.name(), "true" ).build();
+                                       .withProperty( GraphDatabaseSettings.auth_enabled.name(), "true" ).build();
 
         // When
         server.start();
@@ -82,6 +84,23 @@ public class AuthorizationWhitelistIT extends ExclusiveServerTestBase
         // Then I should get a unauthorized response for access to the DB
         HTTP.Response response = HTTP.GET(HTTP.GET( server.baseUri().resolve( "db/data" ).toString()).location() );
         assertThat( response.status(), equalTo( 401 ) );
+    }
+
+    @Test
+    public void shouldWhitelistDBIfConfigured() throws Exception
+    {
+        // NOTE: this feature is intended for use with unmanaged extensions, but it is very convenient to test on a regular end-point.
+        // Given
+        server = CommunityServerBuilder.serverOnRandomPorts()
+                                       .withProperty( GraphDatabaseSettings.auth_enabled.name(), "true" )
+                                       .withProperty( ServerSettings.http_auth_whitelist.name(), "/db/data.*" ).build();
+
+        // When
+        server.start();
+
+        // Then I should get a unauthorized response for access to the DB
+        HTTP.Response response = HTTP.GET(HTTP.GET( server.baseUri().resolve( "db/data" ).toString()).location() );
+        assertThat( response.status(), equalTo( 200 ) );
     }
 
     @After

@@ -19,12 +19,16 @@
  */
 package org.neo4j.server.configuration;
 
+import org.apache.commons.lang3.StringUtils;
+
 import java.io.File;
 import java.net.URI;
 import java.time.Duration;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 
 import org.neo4j.configuration.Description;
 import org.neo4j.configuration.DocumentedDefaultValue;
@@ -194,6 +198,15 @@ public class ServerSettings implements LoadableConfig
                   "Setting is not set by default so 'Strict-Transport-Security' header is not sent. " +
                   "Value is expected to contain directives like 'max-age', 'includeSubDomains' and 'preload'." )
     public static final Setting<String> http_strict_transport_security = setting( "dbms.security.http_strict_transport_security", STRING, NO_DEFAULT );
+
+    @Description( "Defines a list of patterns of http endpoints where Neo4j authentication is not required to fetch content." )
+    public static final Setting<List<String>> http_auth_whitelist =
+            setting( "dbms.security.http_auth_whitelist",
+                     rawString -> Arrays.stream( rawString.split( Settings.SEPARATOR ) )
+                                        .map( String::trim )
+                                        .filter( StringUtils::isNotEmpty )
+                                        .collect( Collectors.toList() ),
+                     EMPTY );
 
     @Internal
     @Description( "Publicly discoverable bolt:// URI to use for Neo4j Drivers wanting to access the data in this " +
