@@ -760,7 +760,7 @@ public class GraphDatabaseSettings implements SettingsDeclaration
             "an exact measurement. If no memory limit is configured, transactions will be allowed to use as much heap " +
             "memory as needed. This could potentially lead to transactions consuming more heap memory than available, " +
             "which will kill the Neo4j server." )
-    public static final Setting<String> transaction_max_memory = newBuilder( "dbms.transaction.memory.max", STRING, null ).build();
+    public static final Setting<String> transaction_max_memory = newBuilder( "unsupported.dbms.transaction.memory.max", STRING, null ).build();
 
     /**
      * Block size properties values depends from selected record format.

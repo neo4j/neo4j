@@ -76,9 +76,13 @@ trait InputStreams[CONTEXT <: RuntimeContext] {
   }
 
   sealed trait ValueToEstimate
+  // a single int column
   case object E_INT extends ValueToEstimate
-  case object E_LIST_IN_DISTINCT extends ValueToEstimate
+  // a single int column used in DISTINCT
+  case object E_INT_IN_DISTINCT extends ValueToEstimate
+  // a single node column, which can be stored in a long-slot in slotted
   case object E_NODE_PRIMITIVE extends ValueToEstimate
+  // a single node column, which cannot be stored in a long-slot in slotted
   case object E_NODE_VALUE extends ValueToEstimate
 
 
@@ -88,7 +92,7 @@ trait InputStreams[CONTEXT <: RuntimeContext] {
   protected def estimateSize(data: ValueToEstimate): Long = {
     data match {
       case E_INT => ValueUtils.of(0).estimatedHeapUsage()
-      case E_LIST_IN_DISTINCT => ValueUtils.of(util.Arrays.asList(0)).estimatedHeapUsage() // We wrap the columns in a list
+      case E_INT_IN_DISTINCT => ValueUtils.of(util.Arrays.asList(0)).estimatedHeapUsage() // We wrap the columns in a list
       case E_NODE_PRIMITIVE => 64  // Size of a NodeValue
       case E_NODE_VALUE => 64  // Size of a NodeValue
     }
@@ -175,7 +179,7 @@ abstract class MemoryManagementTestBase[CONTEXT <: RuntimeContext](
 
   test("should kill distinct query before it runs out of memory") {
     // given
-    val input = infiniteInput(estimateSize(E_LIST_IN_DISTINCT))
+    val input = infiniteInput(estimateSize(E_INT_IN_DISTINCT))
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
