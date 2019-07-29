@@ -26,7 +26,6 @@ import java.util.Optional;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.internal.kernel.api.SchemaWrite;
-import org.neo4j.internal.kernel.api.exceptions.schema.SchemaKernelException;
 import org.neo4j.internal.schema.LabelSchemaDescriptor;
 import org.neo4j.kernel.impl.api.index.IndexProviderNotFoundException;
 import org.neo4j.kernel.impl.api.integrationtest.KernelIntegrationTest;
@@ -96,6 +95,6 @@ public class IndexCreateIT extends KernelIntegrationTest
 
     protected interface IndexCreator
     {
-        void create( SchemaWrite schemaWrite, LabelSchemaDescriptor descriptor, String providerName ) throws SchemaKernelException;
+        void create( SchemaWrite schemaWrite, LabelSchemaDescriptor descriptor, String providerName ) throws KernelException;
     }
 }

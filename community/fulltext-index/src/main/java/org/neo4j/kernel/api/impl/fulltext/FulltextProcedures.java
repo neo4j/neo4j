@@ -33,6 +33,7 @@ import java.util.stream.StreamSupport;
 
 import org.neo4j.common.DependencyResolver;
 import org.neo4j.common.EntityType;
+import org.neo4j.exceptions.KernelException;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.NotFoundException;
@@ -132,7 +133,7 @@ public class FulltextProcedures
             @Name( "labels" ) List<String> labels,
             @Name( "propertyNames" ) List<String> properties,
             @Name( value = "config", defaultValue = "{}" ) Map<String,String> config )
-            throws InvalidTransactionTypeKernelException, SchemaKernelException
+            throws KernelException
     {
         IndexConfig indexConfig = createIndexConfig( config );
         SchemaDescriptor schemaDescriptor = accessor.schemaFor( EntityType.NODE, stringArray( labels ), indexConfig, stringArray( properties ) );
@@ -157,7 +158,7 @@ public class FulltextProcedures
             @Name( "relationshipTypes" ) List<String> relTypes,
             @Name( "propertyNames" ) List<String> properties,
             @Name( value = "config", defaultValue = "{}" ) Map<String,String> config )
-            throws InvalidTransactionTypeKernelException, SchemaKernelException
+            throws KernelException
     {
         IndexConfig indexConfig = createIndexConfig( config );
         SchemaDescriptor schemaDescriptor = accessor.schemaFor( EntityType.RELATIONSHIP, stringArray( relTypes ), indexConfig, stringArray( properties ) );

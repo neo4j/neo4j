@@ -971,9 +971,9 @@ class OperationsTest
         assertThat( indexDescriptors[0].toString(), indexDescriptors[0].getId(), is( 1L ) );
         assertThat( indexDescriptors[1].toString(), indexDescriptors[1].getId(), is( 2L ) );
         assertThat( indexDescriptors[2].toString(), indexDescriptors[2].getId(), is( 3L ) );
-        assertThat( indexDescriptors[0].toString(), indexDescriptors[0].getName(), is( "LabelA/PropA" ) );
-        assertThat( indexDescriptors[1].toString(), indexDescriptors[1].getName(), is( "LabelB,LabelC/PropA,PropB" ) );
-        assertThat( indexDescriptors[2].toString(), indexDescriptors[2].getName(), is( "LabelC/PropA" ) );
+        assertThat( indexDescriptors[0].toString(), indexDescriptors[0].getName(), is( "Index on :LabelA (PropA)" ) );
+        assertThat( indexDescriptors[1].toString(), indexDescriptors[1].getName(), is( "Full-Text Index on :LabelB,:LabelC (PropA,PropB)" ) );
+        assertThat( indexDescriptors[2].toString(), indexDescriptors[2].getName(), is( "Index on :LabelC (PropA)" ) );
     }
 
     @Test
@@ -984,7 +984,7 @@ class OperationsTest
         when( tokenHolders.propertyKeyTokens().getTokenById( 1 ) ).thenReturn( new NamedToken( "PropA", 1 ) );
         operations.indexUniqueCreate( SchemaDescriptor.forLabel( 1, 1 ), "provider-1.0" );
         IndexDescriptor indexDescriptor = single( txState.indexChanges().getAdded() );
-        assertThat( indexDescriptor.toString(), indexDescriptor.getName(), is( "LabelA/PropA" ) );
+        assertThat( indexDescriptor.toString(), indexDescriptor.getName(), is( "Unique Index on :LabelA (PropA)" ) );
     }
 
     private void setStoreRelationship( long relationshipId, long sourceNode, long targetNode, int relationshipLabel )

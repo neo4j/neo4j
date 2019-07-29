@@ -19,8 +19,10 @@
  */
 package org.neo4j.internal.schema;
 
+import java.util.Arrays;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 import org.neo4j.common.TokenNameLookup;
 
@@ -147,12 +149,22 @@ public class IndexPrototype implements IndexRef<IndexPrototype>
      */
     public IndexPrototype withGeneratedName( String[] entityTokenNames, String[] propertyNames )
     {
-        return withName( generateName( entityTokenNames, propertyNames ) );
-    }
+        String indexType = schema.getIndexType() == IndexType.FULLTEXT ? "Full-Text Index" : isUnique ? "Unique Index" : "Index";
+        String entityPart;
+        switch ( schema.entityType() )
+        {
+        case NODE:
+            entityPart = Arrays.stream( entityTokenNames ).collect( Collectors.joining( ",:", ":", "" ) );
+            break;
+        case RELATIONSHIP:
+            entityPart = Arrays.stream( entityTokenNames ).collect( Collectors.joining( "|:", "()-[:", "]-()" ) );
+            break;
+        default:
+            throw new IllegalArgumentException( "Unknown EntityType: " + schema.entityType() + "." );
+        }
 
-    private static String generateName( String[] entityTokenNames, String[] propertyNames )
-    {
-        return String.join( ",", entityTokenNames ) + "/" + String.join( ",", propertyNames );
+        String name = indexType + " on " + entityPart + " (" + String.join( ",", propertyNames ) + ")";
+        return withName( name );
     }
 
     /**

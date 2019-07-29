@@ -36,6 +36,7 @@ import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 
 import org.neo4j.common.EntityType;
+import org.neo4j.exceptions.KernelException;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
@@ -49,10 +50,8 @@ import org.neo4j.internal.kernel.api.NodeValueIndexCursor;
 import org.neo4j.internal.kernel.api.Read;
 import org.neo4j.internal.kernel.api.RelationshipIndexCursor;
 import org.neo4j.internal.kernel.api.TokenRead;
-import org.neo4j.internal.kernel.api.exceptions.InvalidTransactionTypeKernelException;
 import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
-import org.neo4j.internal.kernel.api.exceptions.schema.SchemaKernelException;
 import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.internal.schema.IndexConfig;
 import org.neo4j.internal.schema.IndexDescriptor;
@@ -487,9 +486,7 @@ public class FulltextIndexProviderTest
         }
     }
 
-    private IndexDescriptor createIndex( int[] entityTokens, int[] propertyIds )
-            throws TransactionFailureException, InvalidTransactionTypeKernelException, SchemaKernelException
-
+    private IndexDescriptor createIndex( int[] entityTokens, int[] propertyIds ) throws KernelException
     {
         IndexDescriptor fulltext;
         try ( KernelTransactionImplementation transaction = getKernelTransaction() )

@@ -29,10 +29,8 @@ import org.neo4j.function.Predicates;
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.kernel.api.SchemaWrite;
 import org.neo4j.internal.kernel.api.TokenRead;
-import org.neo4j.internal.kernel.api.exceptions.InvalidTransactionTypeKernelException;
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
-import org.neo4j.internal.kernel.api.exceptions.schema.SchemaKernelException;
 import org.neo4j.internal.kernel.api.helpers.Indexes;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.LabelSchemaDescriptor;
@@ -131,7 +129,7 @@ public class IndexProcedures implements AutoCloseable
             indexCreator.create( schemaWrite, labelSchemaDescriptor, providerName );
             return Stream.of( new BuiltInProcedures.SchemaIndexInfo( indexSpecification, providerName, statusMessage ) );
         }
-        catch ( InvalidTransactionTypeKernelException | SchemaKernelException e )
+        catch ( KernelException e )
         {
             throw new ProcedureException( e.status(), e, e.getMessage() );
         }
@@ -302,6 +300,6 @@ public class IndexProcedures implements AutoCloseable
     @FunctionalInterface
     private interface IndexCreator
     {
-        void create( SchemaWrite schemaWrite, LabelSchemaDescriptor descriptor, String providerName ) throws SchemaKernelException;
+        void create( SchemaWrite schemaWrite, LabelSchemaDescriptor descriptor, String providerName ) throws KernelException;
     }
 }

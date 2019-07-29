@@ -32,6 +32,7 @@ import java.util.concurrent.TimeUnit;
 
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
+import org.neo4j.exceptions.KernelException;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
@@ -51,7 +52,6 @@ import org.neo4j.internal.kernel.api.Write;
 import org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo;
 import org.neo4j.internal.kernel.api.exceptions.InvalidTransactionTypeKernelException;
 import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
-import org.neo4j.internal.kernel.api.exceptions.schema.SchemaKernelException;
 import org.neo4j.internal.kernel.api.security.AuthSubject;
 import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.internal.kernel.api.security.SecurityContext;
@@ -621,7 +621,7 @@ class QueryExecutionLocksIT
         }
 
         @Override
-        public IndexDescriptor indexUniqueCreate( SchemaDescriptor schema, String provider ) throws SchemaKernelException
+        public IndexDescriptor indexUniqueCreate( SchemaDescriptor schema, String provider ) throws KernelException
         {
             String defaultProvider = Config.defaults().get( GraphDatabaseSettings.default_schema_provider );
             return internal.indexUniqueCreate( schema, defaultProvider );
