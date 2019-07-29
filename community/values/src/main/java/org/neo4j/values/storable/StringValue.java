@@ -25,6 +25,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import org.neo4j.hashing.HashFunction;
+import org.neo4j.internal.helpers.collection.Pair;
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.ValueMapper;
 import org.neo4j.values.virtual.ListValue;
@@ -86,15 +87,47 @@ public abstract class StringValue extends TextValue
         }
         else if ( separator.isEmpty() )
         {
-            return VirtualValues.fromArray( Values.charArray( asString.toCharArray() ) );
+            return VirtualValues.fromArray( splitToStringArray( asString ) );
         }
 
         List<AnyValue> split = splitNonRegex( asString, separator );
         return VirtualValues.fromList( split );
     }
 
+    @Override
+    public ListValue split( List<String> separators )
+    {
+        assert separators != null;
+        String asString = value();
+        //Cypher has different semantics for the case where the separator
+        //is exactly the value, in cypher we expect two empty arrays
+        //where as java returns an empty array
+        if ( separators.stream().anyMatch( sep -> sep.equals( asString ) ) )
+        {
+            return EMPTY_SPLIT;
+        }
+        else if ( separators.stream().anyMatch( String::isEmpty ) )
+        {
+            return VirtualValues.fromArray( splitToStringArray( asString ) );
+        }
+
+        List<AnyValue> split = splitNonRegex( asString, separators );
+        return VirtualValues.fromList( split );
+    }
+
+    private TextArray splitToStringArray( String input )
+    {
+        var chars = input.toCharArray();
+        var strings = new String[chars.length];
+        for ( int i = 0; i < chars.length; i++ )
+        {
+            strings[i] = String.valueOf( chars[i] );
+        }
+        return Values.stringArray( strings );
+    }
+
     /**
-     * Splits a string.
+     * Splits a string based on a single delimiter string
      *
      * @param input String to be split
      * @param delim delimiter, must not be not empty
@@ -102,25 +135,82 @@ public abstract class StringValue extends TextValue
      */
     private static List<AnyValue> splitNonRegex( String input, String delim )
     {
-        List<AnyValue> l = new ArrayList<>();
+        List<AnyValue> substrings = new ArrayList<>();
         int offset = 0;
+        int index;
 
-        while ( true )
+        do
+        {
+            index = input.indexOf( delim, offset );
+            offset = updateSubstringsAndOffset( substrings, offset, input, index, delim );
+        }
+        while ( index != -1 );
+        return substrings;
+    }
+
+    /**
+     * Splits a string with multiple separator strings
+     *
+     * @param input String to be split
+     * @param delims delimiters, must not be not empty
+     * @return the split string as a List of TextValues
+     */
+    private static List<AnyValue> splitNonRegex( String input, List<String> delims )
+    {
+        List<AnyValue> substrings = new ArrayList<>();
+        int offset = 0;
+        Pair<Integer,String> nextSubstring;
+
+        do
+        {
+            nextSubstring = firstIndexOf( input, offset, delims );
+            offset = updateSubstringsAndOffset( substrings, offset, input, nextSubstring.first(), nextSubstring.other() );
+        }
+        while ( nextSubstring.first() != -1 );
+        return substrings;
+    }
+
+    /**
+     * Make decisions based on whether the specified delimiter had been found or not.
+     * If found, add a new substring to the collection, and return a new offset after the delimiter.
+     */
+    private static int updateSubstringsAndOffset( List<AnyValue> substrings, int offset, String input, int index, String delim )
+    {
+        if ( index == -1 )
+        {
+            String substring = input.substring( offset );
+            substrings.add( Values.stringValue( substring ) );
+        }
+        else
+        {
+            String substring = input.substring( offset, index );
+            substrings.add( Values.stringValue( substring ) );
+            offset = index + delim.length();
+        }
+        return offset;
+    }
+
+    /**
+     * Search the input string, starting at the specified offset, for any of the the specified delimiter strings.
+     * The first delimiter found will be returned with it's starting index position.
+     */
+    private static Pair<Integer,String> firstIndexOf( String input, int offset, List<String> delims )
+    {
+        int firstIndex = -1;
+        String first = null;
+        for ( var delim : delims )
         {
             int index = input.indexOf( delim, offset );
-            if ( index == -1 )
+            if ( index != -1 )
             {
-                String substring = input.substring( offset );
-                l.add( Values.stringValue( substring ) );
-                return l;
-            }
-            else
-            {
-                String substring = input.substring( offset, index );
-                l.add( Values.stringValue( substring ) );
-                offset = index + delim.length();
+                if ( first == null || index < firstIndex )
+                {
+                    first = delim;
+                    firstIndex = index;
+                }
             }
         }
+        return Pair.of( firstIndex, first );
     }
 
     @Override

@@ -169,6 +169,8 @@ class StringFunctionsTest extends CypherFunSuite {
     split("hello", null) should equal(expectedNull)
     split(null, "hello") should equal(expectedNull)
     split(null, null) should equal(expectedNull)
+    split("Hello", "") should equal(stringArray("H", "e", "l", "l", "o"))
+    split("joe@soap.com", Seq("@", ".")) should equal(stringArray("joe", "soap", "com"))
     intercept[CypherTypeException](split(1024, 10))
   }
 }

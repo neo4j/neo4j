@@ -61,10 +61,50 @@ class SplitFunctionTest extends CypherFunSuite {
     split("", "") should be(seq(""))
   }
 
+  test("splitting non-empty string with multiple separator characters") {
+    split("first,second;third", List(",", ";")) should be(seq("first", "second", "third"))
+  }
+
+  test("splitting non-empty string with multiple separator strings") {
+    split("(a)-->(b)<--(c)-->(d)--(e)", List("-->", "<--", "--")) should be(seq("(a)", "(b)", "(c)", "(d)", "(e)"))
+  }
+
+  test("splitting non-empty string with multiple separator strings where one is empty should return all one-char substrings") {
+    val expected = list("this is a sentence".split("").map(stringValue): _*)
+    split("this is a sentence", List(",", ";", "")) should be(expected)
+  }
+
+  test("splitting char with separator set to same char should return empty") {
+    split('a', "a") should be(seq("", ""))
+  }
+
+  test("splitting char with separator set to different char should return original") {
+    split('a', "b") should be(seq("a"))
+  }
+
+  test("splitting char with multiple separator characters where one is the same should return empty") {
+    split('a', List("a", "b")) should be(seq("", ""))
+  }
+
   private def seq(vals: String*) = list(vals.map(stringValue):_*)
 
   private def split(orig: String, splitPattern: String) = {
     val expr = SplitFunction(Literal(orig), Literal(splitPattern))
+    expr(ExecutionContext.empty, QueryStateHelper.empty)
+  }
+
+  private def split(orig: Char, splitPattern: String) = {
+    val expr = SplitFunction(Literal(orig), Literal(splitPattern))
+    expr(ExecutionContext.empty, QueryStateHelper.empty)
+  }
+
+  private def split(orig: String, splitDelimiters: List[String]) = {
+    val expr = SplitFunction(Literal(orig), Literal(splitDelimiters))
+    expr(ExecutionContext.empty, QueryStateHelper.empty)
+  }
+
+  private def split(orig: Char, splitDelimiters: List[String]) = {
+    val expr = SplitFunction(Literal(orig), Literal(splitDelimiters))
     expr(ExecutionContext.empty, QueryStateHelper.empty)
   }
 }

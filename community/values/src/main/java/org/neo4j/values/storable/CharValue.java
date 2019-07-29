@@ -19,6 +19,7 @@
  */
 package org.neo4j.values.storable;
 
+import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -163,6 +164,19 @@ public final class CharValue extends TextValue
     public ListValue split( String separator )
     {
         if ( separator.equals( stringValue() ) )
+        {
+            return EMPTY_SPLIT;
+        }
+        else
+        {
+            return list( Values.stringValue( stringValue() ) );
+        }
+    }
+
+    @Override
+    public ListValue split( List<String> separators )
+    {
+        if ( separators.stream().anyMatch( sep -> sep.equals( stringValue() ) ) )
         {
             return EMPTY_SPLIT;
         }

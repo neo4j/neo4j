@@ -20,6 +20,7 @@
 package org.neo4j.cypher.operations;
 
 import java.math.BigDecimal;
+import java.util.ArrayList;
 import java.util.concurrent.ThreadLocalRandom;
 
 import org.neo4j.cypher.internal.runtime.DbAccess;
@@ -759,7 +760,19 @@ public final class CypherFunctions
             {
                 return VirtualValues.list( EMPTY_STRING );
             }
-            return asText.split( asString( separator ) );
+            if ( separator instanceof ListValue )
+            {
+                var separators = new ArrayList<String>();
+                for ( var s : (ListValue) separator )
+                {
+                    separators.add( asString( s ) );
+                }
+                return asText.split( separators );
+            }
+            else
+            {
+                return asText.split( asString( separator ) );
+            }
         }
         else
         {

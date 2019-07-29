@@ -19,6 +19,7 @@
  */
 package org.neo4j.values.storable;
 
+import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -63,6 +64,8 @@ public abstract class TextValue extends ScalarValue
     public abstract TextValue toUpper();
 
     public abstract ListValue split( String separator );
+
+    public abstract ListValue split( List<String> separators );
 
     public abstract TextValue replace( String find, String replace );
 
