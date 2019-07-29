@@ -138,6 +138,24 @@ public class IndexPrototype implements IndexRef<IndexPrototype>
     }
 
     /**
+     * Produce a new index prototype that is the same as this index prototype in every way, except it has a name that is generated based on the given
+     * entity token names and property key names.
+     *
+     * @param entityTokenNames The entity token names, like label names or relationship type names.
+     * @param propertyNames The property key names.
+     * @return A new index prototype with the generated name.
+     */
+    public IndexPrototype withGeneratedName( String[] entityTokenNames, String[] propertyNames )
+    {
+        return withName( generateName( entityTokenNames, propertyNames ) );
+    }
+
+    private static String generateName( String[] entityTokenNames, String[] propertyNames )
+    {
+        return String.join( ",", entityTokenNames ) + "/" + String.join( ",", propertyNames );
+    }
+
+    /**
      * Materialise this index prototype into a real index descriptor with the given index id.
      *
      * @param id The real, final, id of the index.

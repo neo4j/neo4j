@@ -26,6 +26,7 @@ import java.util.List;
 
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
+import org.neo4j.exceptions.KernelException;
 import org.neo4j.internal.kernel.api.CursorFactory;
 import org.neo4j.internal.kernel.api.Kernel;
 import org.neo4j.internal.kernel.api.SchemaRead;
@@ -373,7 +374,7 @@ class ConstraintIndexCreatorTest
         {
             fail( "Expected write transaction" );
         }
-        catch ( SchemaKernelException e )
+        catch ( KernelException e )
         {
             throw new RuntimeException( e );
         }

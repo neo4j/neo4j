@@ -23,6 +23,7 @@ import java.io.IOException;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 
+import org.neo4j.exceptions.KernelException;
 import org.neo4j.graphdb.TransactionTerminatedException;
 import org.neo4j.internal.kernel.api.Kernel;
 import org.neo4j.internal.kernel.api.SchemaRead;
@@ -264,7 +265,7 @@ public class ConstraintIndexCreator
             transaction.commit();
             return index;
         }
-        catch ( TransactionFailureException | SchemaKernelException e )
+        catch ( KernelException e )
         {
             throw new RuntimeException( e );
         }

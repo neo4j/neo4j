@@ -33,6 +33,7 @@ import java.util.Iterator;
 import java.util.Optional;
 
 import org.neo4j.collection.Dependencies;
+import org.neo4j.common.EntityType;
 import org.neo4j.configuration.Config;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.internal.helpers.collection.Iterators;
@@ -40,11 +41,11 @@ import org.neo4j.internal.index.label.LabelScanStore;
 import org.neo4j.internal.kernel.api.LabelSet;
 import org.neo4j.internal.kernel.api.Write;
 import org.neo4j.internal.kernel.api.exceptions.EntityNotFoundException;
-import org.neo4j.internal.kernel.api.exceptions.schema.SchemaKernelException;
 import org.neo4j.internal.kernel.api.helpers.StubNodeCursor;
 import org.neo4j.internal.kernel.api.helpers.TestRelationshipChain;
 import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.internal.schema.ConstraintDescriptor;
+import org.neo4j.internal.schema.IndexConfig;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.IndexProviderDescriptor;
@@ -951,29 +952,39 @@ class OperationsTest
     }
 
     @Test
-    void mustAssignNameToIndexesThatDoNotHaveUserSuppliedName() throws SchemaKernelException
+    void mustAssignNameToIndexesThatDoNotHaveUserSuppliedName() throws Exception
     {
         when( creationContext.reserveSchema() ).thenReturn( 1L, 2L, 3L );
+        when( tokenHolders.labelTokens().getTokenById( 1 ) ).thenReturn( new NamedToken( "LabelA", 1 ) );
+        when( tokenHolders.labelTokens().getTokenById( 2 ) ).thenReturn( new NamedToken( "LabelB", 1 ) );
+        when( tokenHolders.labelTokens().getTokenById( 3 ) ).thenReturn( new NamedToken( "LabelC", 1 ) );
+        when( tokenHolders.propertyKeyTokens().getTokenById( 1 ) ).thenReturn( new NamedToken( "PropA", 1 ) );
+        when( tokenHolders.propertyKeyTokens().getTokenById( 2 ) ).thenReturn( new NamedToken( "PropB", 2 ) );
         operations.indexCreate( SchemaDescriptor.forLabel( 1, 1 ) );
-        operations.indexCreate( SchemaDescriptor.forLabel( 2, 1 ), Optional.empty() );
+        operations.indexCreate( SchemaDescriptor.fulltext( EntityType.NODE, IndexConfig.empty(), new int[] {2, 3}, new int[] {1, 2} ), Optional.empty() );
         operations.indexCreate( SchemaDescriptor.forLabel( 3, 1 ), "provider-1.0", Optional.empty() );
         IndexDescriptor[] indexDescriptors = txState.indexChanges().getAdded()
                 .stream()
-                .sorted( Comparator.comparing( d -> d.schema().getLabelId() ) )
+                .sorted( Comparator.comparing( d -> d.schema().getEntityTokenIds()[0] ) )
                 .toArray( IndexDescriptor[]::new );
         assertThat( Arrays.toString( indexDescriptors ), indexDescriptors.length, is( 3 ) );
-        assertThat( indexDescriptors[0].toString(), indexDescriptors[0].getName(), is( "index_1" ) );
-        assertThat( indexDescriptors[1].toString(), indexDescriptors[1].getName(), is( "index_2" ) );
-        assertThat( indexDescriptors[2].toString(), indexDescriptors[2].getName(), is( "index_3" ) );
+        assertThat( indexDescriptors[0].toString(), indexDescriptors[0].getId(), is( 1L ) );
+        assertThat( indexDescriptors[1].toString(), indexDescriptors[1].getId(), is( 2L ) );
+        assertThat( indexDescriptors[2].toString(), indexDescriptors[2].getId(), is( 3L ) );
+        assertThat( indexDescriptors[0].toString(), indexDescriptors[0].getName(), is( "LabelA/PropA" ) );
+        assertThat( indexDescriptors[1].toString(), indexDescriptors[1].getName(), is( "LabelB,LabelC/PropA,PropB" ) );
+        assertThat( indexDescriptors[2].toString(), indexDescriptors[2].getName(), is( "LabelC/PropA" ) );
     }
 
     @Test
-    void mustAssignNameToUniqueIndexesThatDoNotHaveUserSuppliedName() throws SchemaKernelException
+    void mustAssignNameToUniqueIndexesThatDoNotHaveUserSuppliedName() throws Exception
     {
         when( creationContext.reserveSchema() ).thenReturn( 1L, 2L, 3L );
+        when( tokenHolders.labelTokens().getTokenById( 1 ) ).thenReturn( new NamedToken( "LabelA", 1 ) );
+        when( tokenHolders.propertyKeyTokens().getTokenById( 1 ) ).thenReturn( new NamedToken( "PropA", 1 ) );
         operations.indexUniqueCreate( SchemaDescriptor.forLabel( 1, 1 ), "provider-1.0" );
         IndexDescriptor indexDescriptor = single( txState.indexChanges().getAdded() );
-        assertThat( indexDescriptor.toString(), indexDescriptor.getName(), is( "index_1" ) );
+        assertThat( indexDescriptor.toString(), indexDescriptor.getName(), is( "LabelA/PropA" ) );
     }
 
     private void setStoreRelationship( long relationshipId, long sourceNode, long targetNode, int relationshipLabel )

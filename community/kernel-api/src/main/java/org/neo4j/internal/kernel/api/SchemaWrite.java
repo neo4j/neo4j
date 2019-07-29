@@ -21,6 +21,7 @@ package org.neo4j.internal.kernel.api;
 
 import java.util.Optional;
 
+import org.neo4j.exceptions.KernelException;
 import org.neo4j.internal.kernel.api.exceptions.schema.SchemaKernelException;
 import org.neo4j.internal.schema.ConstraintDescriptor;
 import org.neo4j.internal.schema.IndexDescriptor;
@@ -35,7 +36,7 @@ import org.neo4j.internal.schema.SchemaDescriptorSupplier;
  */
 public interface SchemaWrite
 {
-    IndexDescriptor indexCreate( IndexPrototype prototype ) throws SchemaKernelException;
+    IndexDescriptor indexCreate( IndexPrototype prototype ) throws KernelException;
 
     /**
      * Create index from schema descriptor
@@ -43,7 +44,7 @@ public interface SchemaWrite
      * @param descriptor description of the index
      * @return the newly created index
      */
-    IndexDescriptor indexCreate( SchemaDescriptor descriptor ) throws SchemaKernelException;
+    IndexDescriptor indexCreate( SchemaDescriptor descriptor ) throws KernelException;
 
     /**
      * Create index from schema descriptor
@@ -52,7 +53,7 @@ public interface SchemaWrite
      * @param name name of the index
      * @return the newly created index
      */
-    IndexDescriptor indexCreate( SchemaDescriptor descriptor, Optional<String> name ) throws SchemaKernelException;
+    IndexDescriptor indexCreate( SchemaDescriptor descriptor, Optional<String> name ) throws KernelException;
 
     /**
      * Create index from schema descriptor
@@ -62,7 +63,7 @@ public interface SchemaWrite
      * @param name name of the index
      * @return the newly created index
      */
-    IndexDescriptor indexCreate( SchemaDescriptor descriptor, String provider, Optional<String> name ) throws SchemaKernelException;
+    IndexDescriptor indexCreate( SchemaDescriptor descriptor, String provider, Optional<String> name ) throws KernelException;
 
     /**
      * Drop the given index
@@ -83,7 +84,7 @@ public interface SchemaWrite
      *
      * @param descriptor description of the constraint
      */
-    ConstraintDescriptor uniquePropertyConstraintCreate( SchemaDescriptor descriptor ) throws SchemaKernelException;
+    ConstraintDescriptor uniquePropertyConstraintCreate( SchemaDescriptor descriptor ) throws KernelException;
 
     /**
      * Create unique property constraint
@@ -91,14 +92,14 @@ public interface SchemaWrite
      * @param descriptor description of the constraint
      * @param provider name of the desired index provider implementation
      */
-    ConstraintDescriptor uniquePropertyConstraintCreate( SchemaDescriptor descriptor, String provider ) throws SchemaKernelException;
+    ConstraintDescriptor uniquePropertyConstraintCreate( SchemaDescriptor descriptor, String provider ) throws KernelException;
 
     /**
      * Create node key constraint
      *
      * @param descriptor description of the constraint
      */
-    ConstraintDescriptor nodeKeyConstraintCreate( LabelSchemaDescriptor descriptor ) throws SchemaKernelException;
+    ConstraintDescriptor nodeKeyConstraintCreate( LabelSchemaDescriptor descriptor ) throws KernelException;
 
     /**
      * Create node key constraint
@@ -106,22 +107,21 @@ public interface SchemaWrite
      * @param descriptor description of the constraint
      * @param provider name of the desired index provider implementation
      */
-    ConstraintDescriptor nodeKeyConstraintCreate( LabelSchemaDescriptor descriptor, String provider ) throws SchemaKernelException;
+    ConstraintDescriptor nodeKeyConstraintCreate( LabelSchemaDescriptor descriptor, String provider ) throws KernelException;
 
     /**
      * Create node property existence constraint
      *
      * @param descriptor description of the constraint
      */
-    ConstraintDescriptor nodePropertyExistenceConstraintCreate( LabelSchemaDescriptor descriptor ) throws SchemaKernelException;
+    ConstraintDescriptor nodePropertyExistenceConstraintCreate( LabelSchemaDescriptor descriptor ) throws KernelException;
 
     /**
      * Create relationship property existence constraint
      *
      * @param descriptor description of the constraint
      */
-    ConstraintDescriptor relationshipPropertyExistenceConstraintCreate( RelationTypeSchemaDescriptor descriptor )
-            throws SchemaKernelException;
+    ConstraintDescriptor relationshipPropertyExistenceConstraintCreate( RelationTypeSchemaDescriptor descriptor ) throws KernelException;
 
     /**
      * Drop constraint

@@ -26,12 +26,14 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.Optional;
-import java.util.Set;
+import java.util.function.IntFunction;
 
 import org.neo4j.common.EntityType;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.exceptions.KernelException;
+import org.neo4j.exceptions.UnspecifiedKernelException;
+import org.neo4j.function.ThrowingIntFunction;
 import org.neo4j.internal.kernel.api.CursorFactory;
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.internal.kernel.api.InternalIndexState;
@@ -64,6 +66,7 @@ import org.neo4j.internal.schema.constraints.NodeKeyConstraintDescriptor;
 import org.neo4j.internal.schema.constraints.UniquenessConstraintDescriptor;
 import org.neo4j.kernel.api.SilentTokenNameLookup;
 import org.neo4j.kernel.api.StatementConstants;
+import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.exceptions.schema.AlreadyConstrainedException;
 import org.neo4j.kernel.api.exceptions.schema.AlreadyIndexedException;
@@ -573,12 +576,8 @@ public class Operations implements Write, SchemaWrite
         {
             // The value changed and there may be relevant constraints to check so let's check those now.
             Collection<IndexBackedConstraintDescriptor> uniquenessConstraints = storageReader.uniquenessConstraintsGetRelated( labels, propertyKey, NODE );
-            NodeSchemaMatcher.onMatchingSchema( uniquenessConstraints.iterator(), propertyKey, existingPropertyKeyIds,
-                    uniquenessConstraint ->
-                    {
-                        validateNoExistingNodeWithExactValues( uniquenessConstraint, getAllPropertyValues( uniquenessConstraint.schema(), propertyKey, value ),
-                                node );
-                    });
+            NodeSchemaMatcher.onMatchingSchema( uniquenessConstraints.iterator(), propertyKey, existingPropertyKeyIds, constraint ->
+                    validateNoExistingNodeWithExactValues( constraint, getAllPropertyValues( constraint.schema(), propertyKey, value ), node ) );
         }
 
         if ( existingValue == NO_VALUE )
@@ -822,7 +821,7 @@ public class Operations implements Write, SchemaWrite
     }
 
     @Override
-    public IndexDescriptor indexCreate( IndexPrototype prototype ) throws SchemaKernelException
+    public IndexDescriptor indexCreate( IndexPrototype prototype ) throws KernelException
     {
         exclusiveSchemaLock( prototype.schema() );
         ktx.assertOpen();
@@ -833,19 +832,19 @@ public class Operations implements Write, SchemaWrite
     }
 
     @Override
-    public IndexDescriptor indexCreate( SchemaDescriptor descriptor ) throws SchemaKernelException
+    public IndexDescriptor indexCreate( SchemaDescriptor descriptor ) throws KernelException
     {
         return indexCreate( descriptor, config.get( GraphDatabaseSettings.default_schema_provider ), Optional.empty() );
     }
 
     @Override
-    public IndexDescriptor indexCreate( SchemaDescriptor descriptor, Optional<String> indexName ) throws SchemaKernelException
+    public IndexDescriptor indexCreate( SchemaDescriptor descriptor, Optional<String> indexName ) throws KernelException
     {
         return indexCreate( descriptor, config.get( GraphDatabaseSettings.default_schema_provider ), indexName );
     }
 
     @Override
-    public IndexDescriptor indexCreate( SchemaDescriptor descriptor, String provider, Optional<String> name ) throws SchemaKernelException
+    public IndexDescriptor indexCreate( SchemaDescriptor descriptor, String provider, Optional<String> name ) throws KernelException
     {
         IndexProviderDescriptor providerDescriptor = indexProviders.indexProviderByName( provider );
         IndexPrototype prototype = IndexPrototype.forSchema( descriptor, providerDescriptor );
@@ -857,23 +856,57 @@ public class Operations implements Write, SchemaWrite
     }
 
     // Note: this will be sneakily executed by an internal transaction, so no additional locking is required.
-    public IndexDescriptor indexUniqueCreate( SchemaDescriptor schema, String provider ) throws SchemaKernelException
+    public IndexDescriptor indexUniqueCreate( SchemaDescriptor schema, String provider ) throws KernelException
     {
         IndexProviderDescriptor providerDescriptor = indexProviders.indexProviderByName( provider );
         IndexPrototype prototype = IndexPrototype.uniqueForSchema( schema, providerDescriptor );
         return indexDoCreate( prototype );
     }
 
-    private IndexDescriptor indexDoCreate( IndexPrototype prototype )
+    private IndexDescriptor indexDoCreate( IndexPrototype prototype ) throws KernelException
     {
         indexProviders.validateIndexPrototype( prototype );
         TransactionState transactionState = ktx.txState();
+
+        if ( prototype.getName().isEmpty() )
+        {
+            SchemaDescriptor schema = prototype.schema();
+
+            int[] entityTokenIds = schema.getEntityTokenIds();
+            String[] entityTokenNames;
+            switch ( schema.entityType() )
+            {
+            case NODE:
+                entityTokenNames = resolveTokenNames( token::nodeLabelName, entityTokenIds );
+                break;
+            case RELATIONSHIP:
+                entityTokenNames = resolveTokenNames( token::relationshipTypeName, entityTokenIds );
+                break;
+            default:
+                throw new UnspecifiedKernelException( Status.General.UnknownError, "Cannot create index for entity type %s in the schema %s.",
+                        schema.entityType(), schema );
+            }
+            int[] propertyIds = schema.getPropertyIds();
+            String[] propertyNames = resolveTokenNames( token::propertyKeyName, propertyIds );
+
+            prototype = prototype.withGeneratedName( entityTokenNames, propertyNames );
+        }
 
         long schemaRecordId = commandCreationContext.reserveSchema();
         IndexDescriptor index = prototype.materialise( schemaRecordId );
         index = indexProviders.completeConfiguration( index );
         transactionState.indexDoAdd( index );
         return index;
+    }
+
+    private <E extends Exception> String[] resolveTokenNames( ThrowingIntFunction<String, E> resolver, int[] tokenIds ) throws E
+    {
+        String[] names = new String[tokenIds.length];
+        for ( int i = 0; i < tokenIds.length; i++ )
+        {
+            names[i] = resolver.apply( tokenIds[i] );
+        }
+        return names;
     }
 
     @Override
