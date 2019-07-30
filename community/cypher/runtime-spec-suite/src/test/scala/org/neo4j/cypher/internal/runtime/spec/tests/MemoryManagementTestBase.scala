@@ -136,7 +136,7 @@ abstract class MemoryManagementDisabledTestBase[CONTEXT <: RuntimeContext](
                                                                             runtime: CypherRuntime[CONTEXT]
                                                                           )
   extends RuntimeTestSuite[CONTEXT](edition.copyWith(
-    GraphDatabaseSettings.transaction_max_memory -> "0"), runtime) with InputStreams[CONTEXT] {
+    GraphDatabaseSettings.transaction_max_memory -> null), runtime) with InputStreams[CONTEXT] {
   test("should not kill memory eating query") {
     // given
     val input = finiteInput(10000)

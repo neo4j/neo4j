@@ -465,7 +465,7 @@ public interface Status
 
         TransactionOutOfMemoryError( TransientError,
                                      "There transaction used more memory than was allowed. The maximum allowed size for a " +
-                                             "transaction can be configured with 'dbms.transaction.memory.max' in the neo4j configuration " +
+                                             "transaction can be configured with 'unsupported.dbms.transaction.memory.max' in the neo4j configuration " +
                                              "(normally in 'conf/neo4j.conf' or, if you " +
                                              "you are using Neo4j Desktop, found through the user interface)." ),
 
