@@ -25,6 +25,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.Lock;
 
+import org.neo4j.index.internal.gbptree.GBPTree;
 import org.neo4j.index.internal.gbptree.Layout;
 import org.neo4j.index.internal.gbptree.ValueMerger;
 import org.neo4j.index.internal.gbptree.Writer;
@@ -40,16 +41,63 @@ import static org.neo4j.internal.id.IdValidator.isReservedId;
  */
 class IdRangeMarker implements CommitMarker, ReuseMarker
 {
+    /**
+     * Number of ids that is contained in one {@link IdRange}
+     */
     private final int idsPerEntry;
+
+    /**
+     * {@link GBPTree} writer of id state updates.
+     */
     private final Writer<IdRangeKey, IdRange> writer;
+
+    /**
+     * Lock for making this marker have exclusive access to updates. Unlocked on {@link #close()}.
+     */
     private final Lock lock;
+
+    /**
+     * Which {@link GBPTree} {@link ValueMerger} to use, may be different depending on whether or not the id generator has been fully started,
+     * i.e. different whether it's recovery mode or normal operations mode.
+     */
     private final ValueMerger<IdRangeKey, IdRange> merger;
+
+    /**
+     * Whether or not the id generator has been started.
+     */
     private final boolean started;
+
+    /**
+     * Set to true as soon as this marker marks any id as "free", so that the {@link FreeIdScanner} will go through the effort of even starting
+     * a scan for free ids.
+     */
     private final AtomicBoolean freeIdsNotifier;
+
+    /**
+     * Generation that this marker was instantiated at. It cannot change as long as this marker is unclosed.
+     * All {@link IdRange ranges} written by this marker will get updated with this generation.
+     */
     private final long generation;
+
+    /**
+     * Highest written id that this id generator has ever done. Used by this marker to fill gaps between previously highest written id
+     * and the id being written with deleted ids.
+     */
     private final AtomicLong highestWrittenId;
+
+    /**
+     * Whether or not to bridge gaps between previously highest written id and id being written as updates comes in.
+     */
     private final boolean bridgeIdGaps;
+
+    /**
+     * {@link IdRangeKey} instance to populate with data as ids are being written.
+     */
     private final IdRangeKey key;
+
+    /**
+     * {@link IdRange} instance to populate with data as ids are being written.
+     */
     private final IdRange value;
 
     IdRangeMarker( int idsPerEntry, Layout<IdRangeKey,IdRange> layout, Writer<IdRangeKey,IdRange> writer, Lock lock, ValueMerger<IdRangeKey,IdRange> merger,
@@ -146,6 +194,12 @@ class IdRangeMarker implements CommitMarker, ReuseMarker
         return toIntExact( id % idsPerEntry );
     }
 
+    /**
+     * Fills the space between the previously highest ever written id and the id currently being updated. The ids between those two points
+     * will be marked as deleted, or in the recovery case (where {@link #started} is {@code false} marked as deleted AND free.
+     * This solves a problem of not losing track of ids that have been allocated off of high id, but either not committed or failed to be committed.
+     * @param id the id being updated.
+     */
     private void bridgeGapBetweenHighestWrittenIdAndThisId( long id )
     {
         long highestWrittenId = this.highestWrittenId.get();

@@ -35,6 +35,7 @@ import java.util.concurrent.locks.ReentrantLock;
 
 import org.neo4j.index.internal.gbptree.GBPTree;
 import org.neo4j.index.internal.gbptree.GBPTreeVisitor;
+import org.neo4j.index.internal.gbptree.Layout;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.internal.id.FreeIds;
 import org.neo4j.internal.id.IdGenerator;
@@ -103,10 +104,29 @@ public class IndexedIdGenerator implements IdGenerator
      */
     private static final long STARTING_GENERATION = 1;
 
+    /**
+     * {@link GBPTree} for storing and accessing the id states.
+     */
     private final GBPTree<IdRangeKey,IdRange> tree;
+
+    /**
+     * Cache of free ids to be handed out from {@link #nextId()}. Populated by {@link FreeIdScanner}.
+     */
     private final ConcurrentLongQueue cache;
+
+    /**
+     * {@link IdType} that this id generator covers.
+     */
     private final IdType idType;
+
+    /**
+     * Number of ids per {@link IdRange} in the {@link GBPTree}.
+     */
     private final int idsPerEntry;
+
+    /**
+     * Cache low-watermark when to trigger {@link FreeIdScanner} for refill.
+     */
     private final int cacheOptimisticRefillThreshold;
 
     /**
@@ -114,13 +134,48 @@ public class IndexedIdGenerator implements IdGenerator
      * This lock is about guarding for calls to reuseMarker(), which comes in at arbitrary times outside transactions.
      */
     private final Lock commitAndReuseLock = new ReentrantLock();
+
+    /**
+     * {@link GBPTree} {@link Layout} for this id generator.
+     */
     private final IdRangeLayout layout;
+
+    /**
+     * Scans the stored ids and places into cache for quick access in {@link #nextId()}.
+     */
     private final FreeIdScanner scanner;
+
+    /**
+     * High id of this id generator (and to some extent the store this covers).
+     */
     private final AtomicLong highId;
+
+    /**
+     * Maximum id that this id generator can allocate.
+     */
     private final long maxId;
+
+    /**
+     * Means of communicating whether or not there are stored free ids that {@link FreeIdScanner} could pick up. Is also cleared by
+     * {@link FreeIdScanner} as soon as it notices that it has run out of stored free ids.
+     */
     private final AtomicBoolean atLeastOneIdOnFreelist = new AtomicBoolean();
+
+    /**
+     * Current generation of this id generator. Generation is used to normalize id states so that a deleted id of a previous generation
+     * can be seen as free in the current generation. Generation is bumped on restart.
+     */
     private final long generation;
+
+    /**
+     * Internal state kept between constructor and {@link #start(FreeIds)}, whether or not to rebuild the id generator from the supplied {@link FreeIds}.
+     */
     private final boolean needsRebuild;
+
+    /**
+     * Highest ever written id in this id generator. This is used to not lose track of ids allocated off of high id that are not committed.
+     * See more in {@link IdRangeMarker}.
+     */
     private final AtomicLong highestWrittenId;
 
     /**
