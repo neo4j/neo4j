@@ -45,7 +45,6 @@ import org.neo4j.logging.Log;
 import org.neo4j.server.database.CommunityGraphFactory;
 import org.neo4j.server.database.GraphFactory;
 import org.neo4j.server.modules.ServerModule;
-import org.neo4j.server.rest.management.AdvertisableService;
 import org.neo4j.server.web.WebServer;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.SuppressOutputExtension;
@@ -243,12 +242,6 @@ class ServerUserLogTest
                     protected WebServer createWebServer()
                     {
                         return null;
-                    }
-
-                    @Override
-                    public Iterable<AdvertisableService> getServices()
-                    {
-                        return new ArrayList<>( 0 );
                     }
                 };
             }

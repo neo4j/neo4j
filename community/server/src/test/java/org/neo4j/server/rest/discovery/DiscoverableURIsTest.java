@@ -21,30 +21,28 @@ package org.neo4j.server.rest.discovery;
 
 import org.junit.Test;
 
+import java.net.InetSocketAddress;
 import java.net.URI;
-import java.net.URISyntaxException;
+import java.util.Map;
 import java.util.function.BiConsumer;
 
-import static org.hamcrest.CoreMatchers.instanceOf;
-import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.CoreMatchers.startsWith;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.fail;
+import org.neo4j.configuration.Config;
+import org.neo4j.configuration.GraphDatabaseSettings;
+import org.neo4j.configuration.connectors.BoltConnector;
+import org.neo4j.configuration.connectors.ConnectorPortRegister;
+import org.neo4j.configuration.helpers.SocketAddress;
+import org.neo4j.server.configuration.ServerSettings;
+
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.only;
 import static org.mockito.Mockito.verify;
-import static org.neo4j.server.rest.discovery.DiscoverableURIs.Precedence.HIGH;
-import static org.neo4j.server.rest.discovery.DiscoverableURIs.Precedence.HIGHEST;
-import static org.neo4j.server.rest.discovery.DiscoverableURIs.Precedence.LOW;
-import static org.neo4j.server.rest.discovery.DiscoverableURIs.Precedence.LOWEST;
-import static org.neo4j.server.rest.discovery.DiscoverableURIs.Precedence.NORMAL;
 
 public class DiscoverableURIsTest
 {
-    private BiConsumer<String,URI> consumer = mock( BiConsumer.class );
+    private BiConsumer<String,String> consumer = mock( BiConsumer.class );
+    private ConnectorPortRegister portRegister = mock( ConnectorPortRegister.class );
 
     @Test
     public void shouldNotInvokeConsumerWhenEmpty()
@@ -57,148 +55,170 @@ public class DiscoverableURIsTest
     }
 
     @Test
-    public void shouldInvokeConsumerForEachKey() throws URISyntaxException
+    public void shouldInvokeConsumerForEachKey()
     {
-        DiscoverableURIs discoverables =
-                new DiscoverableURIs.Builder()
-                        .add( "a", "/test", NORMAL )
-                        .add( "b", "/data", NORMAL )
-                        .add( "c", "http://www.example.com", LOW )
-                        .build();
+        var discoverables = new DiscoverableURIs.Builder()
+                .addEndpoint( "a", "/test" )
+                .addEndpoint( "b", "/data" )
+                .addEndpoint( "c", "/{name}/data" )
+                .build();
 
         discoverables.forEach( consumer );
 
-        verify( consumer ).accept( "a", new URI( "/test" ) );
-        verify( consumer ).accept( "b", new URI( "/data" ) );
-        verify( consumer ).accept( "c", new URI( "http://www.example.com" ) );
+        verify( consumer ).accept( "a", "/test" );
+        verify( consumer ).accept( "b", "/data" );
+        verify( consumer ).accept( "c", "/{name}/data" );
     }
 
     @Test
-    public void shouldThrowWhenAddingTwoEntriesWithSamePrecedence()
+    public void shouldSetBoltPort()
     {
-        try
-        {
-            DiscoverableURIs discoverables =
-                    new DiscoverableURIs.Builder()
-                            .add( "a", "/test", NORMAL )
-                            .add( "a", "/data", NORMAL )
-                            .build();
-
-            fail( "exception expected" );
-        }
-        catch ( Throwable t )
-        {
-            assertThat( t, is( instanceOf( IllegalArgumentException.class ) ) );
-            assertThat( t.getMessage(), startsWith( "Unable to add two entries with the same precedence using key " ) );
-        }
-    }
-
-    @Test
-    public void shouldInvokeConsumerForEachKeyWithHighestPrecedence() throws URISyntaxException
-    {
-        DiscoverableURIs discoverables =
-                new DiscoverableURIs.Builder()
-                        .add( "c", "bolt://localhost:7687", HIGHEST )
-                        .add( "a", "/test", NORMAL )
-                        .add( "b", "/data", NORMAL )
-                        .add( "b", "/data2", LOWEST )
-                        .add( "a", "/test2", HIGHEST )
-                        .add( "c", "bolt://localhost:7688", LOW )
-                        .build();
+        var config = configWithBoltEnabled();
+        var discoverables = new DiscoverableURIs.Builder()
+                .addBoltEndpoint( config, portRegister )
+                .build();
 
         discoverables.forEach( consumer );
 
-        verify( consumer ).accept( "a", new URI( "/test2" ) );
-        verify( consumer ).accept( "b", new URI( "/data" ) );
-        verify( consumer ).accept( "c", new URI( "bolt://localhost:7687" ) );
+        verify( consumer ).accept( "bolt_direct", "bolt://localhost:7687" );
+        verify( consumer ).accept( "bolt_routing", "neo4j://localhost:7687" );
     }
 
     @Test
-    public void shouldInvokeConsumerForEachKeyWithHighestPrecedenceOnce() throws URISyntaxException
+    public void shouldLookupBoltPort()
     {
-        DiscoverableURIs discoverables =
-                new DiscoverableURIs.Builder()
-                        .add( "a", "/test1", LOWEST )
-                        .add( "a", "/test2", LOW )
-                        .add( "a", "/data3", NORMAL )
-                        .add( "a", "/test4", HIGH )
-                        .add( "a", "/test5", HIGHEST )
-                        .build();
+        var config = Config.newBuilder().set(
+                Map.of( BoltConnector.enabled, true,
+                        BoltConnector.advertised_address,new SocketAddress( 0 ) ) )
+                .build();
+        var register = new ConnectorPortRegister();
+        register.register( BoltConnector.NAME, new InetSocketAddress( 1337 ) );
+
+        var discoverables = new DiscoverableURIs.Builder()
+                .addBoltEndpoint( config, register )
+                .build();
 
         discoverables.forEach( consumer );
 
-        verify( consumer, only() ).accept( "a", new URI( "/test5" ) );
+        verify( consumer ).accept( "bolt_direct", "bolt://localhost:1337" );
+        verify( consumer ).accept( "bolt_routing", "neo4j://localhost:1337" );
     }
 
     @Test
-    public void shouldConvertStringIntoURI() throws URISyntaxException
+    public void shouldSetBoltHostAndPortWithDefaultAdvertisedAddress()
     {
-        DiscoverableURIs empty = new DiscoverableURIs.Builder()
-                .add( "a", "bolt://localhost:7687", NORMAL )
+        var config = Config.newBuilder().set(
+                Map.of( BoltConnector.enabled, true,
+                        GraphDatabaseSettings.default_advertised_address, new SocketAddress( "myCat.com" ) ) )
+                .build();
+        var discoverables = new DiscoverableURIs.Builder()
+                .addBoltEndpoint( config, portRegister )
                 .build();
 
-        empty.forEach( consumer );
+        discoverables.forEach( consumer );
 
-        verify( consumer ).accept( "a", new URI( "bolt://localhost:7687" ) );
+        verify( consumer ).accept( "bolt_direct", "bolt://myCat.com:7687" );
+        verify( consumer ).accept( "bolt_routing", "neo4j://myCat.com:7687" );
     }
 
     @Test
-    public void shouldConvertSchemeHostPortIntoURI() throws URISyntaxException
+    public void shouldNotSetBoltHostWhenHostIsNotExplicitlySet()
     {
-        DiscoverableURIs empty = new DiscoverableURIs.Builder()
-                .add( "a", "bolt", "www.example.com", 8888, NORMAL )
+        var config = Config.newBuilder().set(
+                Map.of( BoltConnector.enabled, true,
+                        BoltConnector.advertised_address, new SocketAddress( 1234 ) ) )
+                .build();
+        var discoverables = new DiscoverableURIs.Builder()
+                .addBoltEndpoint( config, portRegister )
                 .build();
 
-        empty.forEach( consumer );
+        discoverables.forEach( consumer );
 
-        verify( consumer ).accept( "a", new URI( "bolt://www.example.com:8888" ) );
+        verify( consumer ).accept( "bolt_direct", "bolt://localhost:1234" );
+        verify( consumer ).accept( "bolt_routing", "neo4j://localhost:1234" );
     }
 
     @Test
-    public void shouldUsePassedURI() throws URISyntaxException
+    public void shouldSetBoltHostWhenHostIsExplicitlySet()
     {
-        URI uri = new URI( "bolt://www.example.com:9999" );
-
-        DiscoverableURIs empty = new DiscoverableURIs.Builder()
-                .add( "a", uri, NORMAL )
+        var config = Config.newBuilder().set(
+                Map.of( BoltConnector.enabled, true,
+                        BoltConnector.advertised_address, new SocketAddress( "myCat.com", 1234 ) ) )
+                .build();
+        var discoverables = new DiscoverableURIs.Builder()
+                .addBoltEndpoint( config, portRegister )
                 .build();
 
-        empty.forEach( consumer );
+        discoverables.forEach( consumer );
 
-        verify( consumer ).accept( "a", uri );
+        verify( consumer ).accept( "bolt_direct", "bolt://myCat.com:1234" );
+        verify( consumer ).accept( "bolt_routing", "neo4j://myCat.com:1234" );
     }
 
     @Test
-    public void shouldOverrideLowestForAbsolute() throws URISyntaxException
+    public void shouldOverrideBoltHostWhenHostIsExplicitlySet()
     {
-        URI override = new URI( "http://www.example.com:9999" );
-        DiscoverableURIs empty = new DiscoverableURIs.Builder()
-                .add( "a", "bolt://localhost:8989", LOWEST )
-                .overrideAbsolutesFromRequest( override )
+        var config = Config.newBuilder().set(
+                Map.of( BoltConnector.enabled, true,
+                        GraphDatabaseSettings.default_advertised_address, new SocketAddress( "myDog.com" ),
+                        BoltConnector.advertised_address, new SocketAddress( "myCat.com", 1234 ) ) )
+                .build();
+        var discoverables = new DiscoverableURIs.Builder()
+                .addBoltEndpoint( config, portRegister )
                 .build();
 
-        empty.forEach( consumer );
+        discoverables.forEach( consumer );
 
-        verify( consumer ).accept( "a", new URI( "bolt://www.example.com:8989" ) );
+        verify( consumer ).accept( "bolt_direct", "bolt://myCat.com:1234" );
+        verify( consumer ).accept( "bolt_routing", "neo4j://myCat.com:1234" );
     }
 
     @Test
-    public void shouldNotOverrideOtherThanLowestForAbsolute() throws URISyntaxException
+    public void shouldOverrideBoltEndpoints()
     {
-        URI override = new URI( "http://www.example.com:9999" );
-        DiscoverableURIs empty = new DiscoverableURIs.Builder()
-                .add( "a", "bolt://localhost:8989", LOW )
-                .add( "b", "bolt://localhost:8990", NORMAL )
-                .add( "c", "bolt://localhost:8991", HIGH )
-                .add( "d", "bolt://localhost:8992", HIGHEST )
-                .overrideAbsolutesFromRequest( override )
+        var config = Config.newBuilder().set(
+                Map.of( BoltConnector.enabled, true,
+                        GraphDatabaseSettings.default_advertised_address, new SocketAddress( "myDog.com" ), // ignored
+                        BoltConnector.advertised_address, new SocketAddress( "myCat.com", 1234 ), // ignored
+                        ServerSettings.bolt_discoverable_address, URI.create( "dog://myDog.com"  ),
+                        ServerSettings.bolt_routing_discoverable_address, URI.create( "cat://myCat.com" ) ) )
                 .build();
 
-        empty.forEach( consumer );
+        var discoverables = new DiscoverableURIs.Builder()
+                .addBoltEndpoint( config, portRegister )
+                .build();
 
-        verify( consumer ).accept( "a", new URI( "bolt://localhost:8989" ) );
-        verify( consumer ).accept( "b", new URI( "bolt://localhost:8990" ) );
-        verify( consumer ).accept( "c", new URI( "bolt://localhost:8991" ) );
-        verify( consumer ).accept( "d", new URI( "bolt://localhost:8992" ) );
+        discoverables.forEach( consumer );
+
+        verify( consumer ).accept( "bolt_direct", "dog://myDog.com" );
+        verify( consumer ).accept( "bolt_routing", "cat://myCat.com" );
+    }
+
+    @Test
+    public void shouldUpdateAllUnsetFields()
+    {
+        var config = Config.newBuilder().set(
+                Map.of( BoltConnector.enabled, true,
+                        ServerSettings.bolt_discoverable_address, URI.create( "dog://myDog.com" ) ) )
+                .build();
+        var discoverables = new DiscoverableURIs.Builder()
+                .addEndpoint( "a", "/test" )
+                .addEndpoint( "b", "/{name}/data" )
+                .addBoltEndpoint( config, portRegister )
+                .build();
+
+        discoverables.update( URI.create( "cat://myCat.com:1234" ) );
+
+        discoverables.forEach( consumer );
+
+        verify( consumer ).accept( "a", "cat://myCat.com:1234/test" );
+        verify( consumer ).accept( "b", "cat://myCat.com:1234/{name}/data" );
+        verify( consumer ).accept( "bolt_direct", "dog://myDog.com" );
+        verify( consumer ).accept( "bolt_routing", "neo4j://myCat.com:7687" );
+    }
+
+    private Config configWithBoltEnabled()
+    {
+        return Config.newBuilder().set( BoltConnector.enabled, true ).build();
     }
 }

@@ -98,7 +98,7 @@ public class BoltIT extends ExclusiveServerTestBase
 
         // Then
         Map<String,Object> map = JsonHelper.jsonToMap( response.body() );
-        assertThat( String.valueOf( map.get( "bolt" ) ), containsString( "bolt://" + host + ":" + 9999 ) );
+        assertThat( String.valueOf( map.get( "bolt_direct" ) ), containsString( "bolt://" + host + ":" + 9999 ) );
     }
 
     private void startServerWithBoltEnabled() throws IOException

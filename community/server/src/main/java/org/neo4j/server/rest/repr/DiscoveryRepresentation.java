@@ -20,34 +20,29 @@
 package org.neo4j.server.rest.repr;
 
 import org.neo4j.server.rest.discovery.DiscoverableURIs;
+import org.neo4j.server.rest.discovery.ServerVersionAndEdition;
 
 public class DiscoveryRepresentation extends MappingRepresentation
 {
     private static final String DISCOVERY_REPRESENTATION_TYPE = "discovery";
     private final DiscoverableURIs uris;
+    private final ServerVersionAndEdition serverInfo;
 
     /**
      * @param uris URIs that we want to make publicly discoverable.
+     * @param serverInfo server version and edition information
      */
-    public DiscoveryRepresentation( DiscoverableURIs uris )
+    public DiscoveryRepresentation( DiscoverableURIs uris, ServerVersionAndEdition serverInfo )
     {
         super( DISCOVERY_REPRESENTATION_TYPE );
         this.uris = uris;
+        this.serverInfo = serverInfo;
     }
 
     @Override
     protected void serialize( MappingSerializer serializer )
     {
-        uris.forEach( ( key, uri ) ->
-        {
-            if ( uri.isAbsolute() )
-            {
-                serializer.putAbsoluteUri( key, uri );
-            }
-            else
-            {
-                serializer.putRelativeUri( key, uri.toString() );
-            }
-        } );
+        uris.forEach( serializer::putString );
+        serverInfo.forEach( serializer::putString );
     }
 }

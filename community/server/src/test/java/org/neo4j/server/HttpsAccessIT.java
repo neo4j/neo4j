@@ -23,7 +23,6 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
-import java.net.URI;
 import java.security.SecureRandom;
 import javax.net.ssl.HttpsURLConnection;
 import javax.net.ssl.SSLContext;
@@ -89,26 +88,33 @@ public class HttpsAccessIT extends ExclusiveServerTestBase
     public void shouldExposeBaseUriWhenHttpEnabledAndHttpsDisabled() throws Exception
     {
         startServer( true, false );
-
-        URI uri = server.baseUri();
-
-        assertEquals( "http", uri.getScheme() );
-        HostnamePort expectedHostPort = addressForConnector( "http" );
-        assertEquals( expectedHostPort.getHost(), uri.getHost() );
-        assertEquals( expectedHostPort.getPort(), uri.getPort() );
+        shouldInstallConnector( "http" );
+        shouldExposeCorrectSchemeInDiscoveryService( "http" );
     }
 
     @Test
     public void shouldExposeBaseUriWhenHttpDisabledAndHttpsEnabled() throws Exception
     {
         startServer( false, true );
+        shouldInstallConnector( "https" );
+        shouldExposeCorrectSchemeInDiscoveryService( "https" );
+    }
 
-        URI uri = server.baseUri();
-
-        assertEquals( "https", uri.getScheme() );
-        HostnamePort expectedHostPort = addressForConnector( "https" );
+    private void shouldInstallConnector( String scheme )
+    {
+        var uri = server.baseUri();
+        assertEquals( scheme, uri.getScheme() );
+        HostnamePort expectedHostPort = PortUtils.getConnectorAddress( server.databaseService.getDatabase(), scheme );
         assertEquals( expectedHostPort.getHost(), uri.getHost() );
         assertEquals( expectedHostPort.getPort(), uri.getPort() );
+    }
+
+    private void shouldExposeCorrectSchemeInDiscoveryService( String scheme ) throws Exception
+    {
+        var response = GET( server.baseUri().toString() );
+
+        assertThat( response.status(), is( 200 ) );
+        assertThat( response.stringFromContent( "transaction" ), startsWith( scheme + "://" ) );
     }
 
     private void startServer() throws Exception
@@ -139,10 +145,5 @@ public class HttpsAccessIT extends ExclusiveServerTestBase
         SSLContext sc = SSLContext.getInstance( "TLS" );
         sc.init( null, trustAllCerts, new SecureRandom() );
         HttpsURLConnection.setDefaultSSLSocketFactory( sc.getSocketFactory() );
-    }
-
-    private HostnamePort addressForConnector( String name )
-    {
-        return PortUtils.getConnectorAddress( server.databaseService.getDatabase(), name );
     }
 }

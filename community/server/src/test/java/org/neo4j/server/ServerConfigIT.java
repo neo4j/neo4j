@@ -25,6 +25,7 @@ import org.junit.Test;
 import java.net.URI;
 import java.net.http.HttpRequest;
 
+import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.configuration.connectors.HttpConnector;
 import org.neo4j.configuration.helpers.SocketAddress;
 import org.neo4j.server.configuration.ServerSettings;
@@ -34,7 +35,9 @@ import org.neo4j.test.server.ExclusiveServerTestBase;
 import static java.net.http.HttpClient.newHttpClient;
 import static java.net.http.HttpResponse.BodyHandlers.discarding;
 import static java.net.http.HttpResponse.BodyHandlers.ofString;
+import static javax.ws.rs.core.HttpHeaders.ACCEPT;
 import static javax.ws.rs.core.HttpHeaders.CONTENT_TYPE;
+import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
 import static javax.ws.rs.core.MediaType.WILDCARD;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.is;
@@ -57,6 +60,38 @@ public class ServerConfigIT extends ExclusiveServerTestBase
     }
 
     @Test
+    public void shouldRequireAuth() throws Exception
+    {
+        server = serverOnRandomPorts()
+                .usingDataDir( folder.directory( name.getMethodName() ).getAbsolutePath() )
+                .withProperty( ServerSettings.http_auth_whitelist.name(), "" )
+                .withProperty( GraphDatabaseSettings.auth_enabled.name(), TRUE )
+                .build();
+        server.start();
+
+        var request = HttpRequest.newBuilder( server.baseUri() ).GET().build();
+        var response = newHttpClient().send( request, discarding() );
+
+        assertThat( response.statusCode(), is( 401 ) );
+    }
+
+    @Test
+    public void shouldWhitelist() throws Exception
+    {
+        server = serverOnRandomPorts()
+                .usingDataDir( folder.directory( name.getMethodName() ).getAbsolutePath() )
+                .withProperty( ServerSettings.http_auth_whitelist.name(), "/" )
+                .withProperty( GraphDatabaseSettings.auth_enabled.name(), TRUE )
+                .build();
+        server.start();
+
+        var request = HttpRequest.newBuilder( server.baseUri() ).GET().build();
+        var response = newHttpClient().send( request, discarding() );
+
+        assertThat( response.statusCode(), is( 200 ) );
+    }
+
+    @Test
     public void shouldPickUpAddressFromConfig() throws Exception
     {
         var nonDefaultAddress = new SocketAddress( "0.0.0.0", 0 );
@@ -76,20 +111,29 @@ public class ServerConfigIT extends ExclusiveServerTestBase
     }
 
     @Test
-    public void shouldPickupRelativeUrisForManagementApiAndRestApi() throws Exception
+    public void shouldPickupRelativeUrisForDatabaseApi() throws Exception
     {
-        var managementUri = "a/different/management/uri/";
+        var dbUri = "a/different/db/uri";
 
         server = serverOnRandomPorts()
                 .usingDataDir( folder.directory( name.getMethodName() ).getAbsolutePath() )
-                .withRelativeManagementApiUriPath( "/" + managementUri )
+                .withRelativeDatabaseApiUriPath( "/" + dbUri )
                 .build();
         server.start();
 
-        var request = HttpRequest.newBuilder( URI.create( server.baseUri() + managementUri ) ).GET().build();
-        var response = newHttpClient().send( request, discarding() );
+        var uri = server.baseUri() + dbUri + "/data/transaction/commit";
+        var txRequest = HttpRequest.newBuilder( URI.create( uri ) )
+                .header( ACCEPT, APPLICATION_JSON )
+                .header( CONTENT_TYPE, APPLICATION_JSON )
+                .POST( HttpRequest.BodyPublishers.ofString( "{ 'statements': [ { 'statement': 'CREATE ()' } ] }" ) )
+                .build();
+        var txResponse = newHttpClient().send( txRequest, discarding() );
+        assertEquals( 200, txResponse.statusCode() );
 
-        assertEquals( 200, response.statusCode() );
+        var discoveryRequest = HttpRequest.newBuilder( server.baseUri() ).GET().build();
+        var discoveryResponse = newHttpClient().send( discoveryRequest, ofString() );
+        assertEquals( 200, txResponse.statusCode() );
+        assertThat( discoveryResponse.body(), containsString( dbUri ) );
     }
 
     @Test

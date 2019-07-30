@@ -26,7 +26,7 @@ import java.net.URI;
 import java.util.List;
 
 import org.neo4j.configuration.Config;
-import org.neo4j.server.CommunityNeoServer;
+import org.neo4j.logging.NullLogProvider;
 import org.neo4j.server.configuration.ServerSettings;
 import org.neo4j.server.web.WebServer;
 
@@ -37,27 +37,23 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
 
-public class ManagementApiModuleTest
+public class DatabaseModuleTest
 {
     @SuppressWarnings( "unchecked" )
     @Test
-    public void shouldRegisterASingleUri() throws Exception
+    public void shouldRegisterASingleUri()
     {
+        // Given
         WebServer webServer = mock( WebServer.class );
 
-        CommunityNeoServer neoServer = mock( CommunityNeoServer.class );
-        when( neoServer.baseUri() ).thenReturn( new URI( "http://localhost:7575" ) );
-        when( neoServer.getWebServer() ).thenReturn( webServer );
+        Config config = Config.defaults( ServerSettings.db_api_path, URI.create( "/db/data" ) );
 
-        Config config = Config.defaults( ServerSettings.management_api_path, URI.create( "/db/manage" ) );
-
-        when( neoServer.getConfig() ).thenReturn( config );
-
-        ManagementApiModule module = new ManagementApiModule( webServer, config );
+        // When
+        DatabaseModule module = new DatabaseModule( webServer, config, NullLogProvider.getInstance() );
         module.start();
 
+        // Then
         ArgumentCaptor<List<Class<?>>> captor = ArgumentCaptor.forClass( List.class );
         verify( webServer ).addJAXRSClasses( captor.capture(), anyString(), any() );
         assertThat( captor.getValue(), not( empty() ) );

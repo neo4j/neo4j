@@ -20,7 +20,6 @@
 package org.neo4j.server;
 
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.function.Supplier;
 
 import org.neo4j.configuration.Config;
@@ -31,13 +30,11 @@ import org.neo4j.server.database.CommunityGraphFactory;
 import org.neo4j.server.database.GraphFactory;
 import org.neo4j.server.modules.AuthorizationModule;
 import org.neo4j.server.modules.DBMSModule;
-import org.neo4j.server.modules.ManagementApiModule;
+import org.neo4j.server.modules.DatabaseModule;
 import org.neo4j.server.modules.Neo4jBrowserModule;
-import org.neo4j.server.modules.RESTApiModule;
 import org.neo4j.server.modules.ServerModule;
 import org.neo4j.server.modules.ThirdPartyJAXRSModule;
 import org.neo4j.server.rest.discovery.DiscoverableURIs;
-import org.neo4j.server.rest.management.AdvertisableService;
 import org.neo4j.server.web.Jetty9WebServer;
 import org.neo4j.server.web.WebServer;
 
@@ -60,8 +57,7 @@ public class CommunityNeoServer extends AbstractNeoServer
     {
         return Arrays.asList(
                 createDBMSModule(),
-                new RESTApiModule( webServer, getConfig(), userLogProvider ),
-                new ManagementApiModule( webServer, getConfig() ),
+                new DatabaseModule( webServer, getConfig(), userLogProvider ),
                 new ThirdPartyJAXRSModule( webServer, getConfig(), userLogProvider, this ),
                 new Neo4jBrowserModule( webServer ),
                 createAuthorizationModule() );
@@ -72,12 +68,6 @@ public class CommunityNeoServer extends AbstractNeoServer
     {
         NetworkConnectionTracker connectionTracker = getSystemDatabaseDependencyResolver().resolveDependency( NetworkConnectionTracker.class );
         return new Jetty9WebServer( userLogProvider, getConfig(), connectionTracker );
-    }
-
-    @Override
-    public Iterable<AdvertisableService> getServices()
-    {
-        return Collections.emptyList();
     }
 
     protected DBMSModule createDBMSModule()

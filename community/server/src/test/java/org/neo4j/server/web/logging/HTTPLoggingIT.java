@@ -85,7 +85,7 @@ public class HTTPLoggingIT extends ExclusiveServerTestBase
 
             // when
             var query = "?implicitlyDisabled" + randomString();
-            var response = queryManagementUri( query, functionalTestHelper );
+            var response = queryBaseUri( query, functionalTestHelper );
             assertThat( response.statusCode(), is( OK_200 ) );
 
             // then
@@ -119,7 +119,7 @@ public class HTTPLoggingIT extends ExclusiveServerTestBase
             var functionalTestHelper = new FunctionalTestHelper( server );
 
             // when
-            var response = queryManagementUri( query, functionalTestHelper );
+            var response = queryBaseUri( query, functionalTestHelper );
             assertThat( response.statusCode(), is( OK_200 ) );
 
             // then
@@ -142,9 +142,9 @@ public class HTTPLoggingIT extends ExclusiveServerTestBase
         return UUID.randomUUID().toString();
     }
 
-    private static HttpResponse<Void> queryManagementUri( String query, FunctionalTestHelper functionalTestHelper ) throws IOException, InterruptedException
+    private static HttpResponse<Void> queryBaseUri( String query, FunctionalTestHelper functionalTestHelper ) throws IOException, InterruptedException
     {
-        var request = HttpRequest.newBuilder( URI.create( functionalTestHelper.managementUri() + query ) ).GET().build();
+        var request = HttpRequest.newBuilder( URI.create( functionalTestHelper.baseUri() + query ) ).GET().build();
         var httpClient = HttpClient.newBuilder().followRedirects( NORMAL ).build();
         return httpClient.send( request, discarding() );
     }

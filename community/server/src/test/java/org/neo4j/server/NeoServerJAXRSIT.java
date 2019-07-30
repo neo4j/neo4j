@@ -68,7 +68,7 @@ public class NeoServerJAXRSIT extends ExclusiveServerTestBase
         server = ServerHelper.createNonPersistentServer( serverBuilder );
         var functionalTestHelper = new FunctionalTestHelper( server );
 
-        var request = HttpRequest.newBuilder( functionalTestHelper.managementUri() ).GET().build();
+        var request = HttpRequest.newBuilder( functionalTestHelper.baseUri() ).GET().build();
         var httpClient = HttpClient.newBuilder().followRedirects( NORMAL ).build();
         var response = httpClient.send( request, discarding() );
         assertEquals( 200, response.statusCode() );

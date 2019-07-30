@@ -20,50 +20,59 @@
 package org.neo4j.server.modules;
 
 import java.net.URI;
+import java.util.Arrays;
 import java.util.List;
 
 import org.neo4j.configuration.Config;
+import org.neo4j.logging.LogProvider;
 import org.neo4j.server.configuration.ServerSettings;
-import org.neo4j.server.rest.management.RootService;
-import org.neo4j.server.rest.management.VersionAndEditionService;
+import org.neo4j.server.http.cypher.CypherResource;
+import org.neo4j.server.http.cypher.format.input.json.JsonMessageBodyReader;
+import org.neo4j.server.http.cypher.format.output.json.JsonMessageBodyWriter;
+import org.neo4j.server.rest.web.CorsFilter;
 import org.neo4j.server.web.WebServer;
 
-import static java.util.Arrays.asList;
+import static org.neo4j.server.configuration.ServerSettings.http_access_control_allow_origin;
 
-public class ManagementApiModule implements ServerModule
+/**
+ * Mounts the database REST API.
+ */
+public class DatabaseModule implements ServerModule
 {
     private final Config config;
     private final WebServer webServer;
+    private final LogProvider logProvider;
 
-    public ManagementApiModule( WebServer webServer, Config config )
+    public DatabaseModule( WebServer webServer, Config config, LogProvider logProvider )
     {
         this.webServer = webServer;
         this.config = config;
+        this.logProvider = logProvider;
     }
 
     @Override
     public void start()
     {
-        String serverMountPoint = managementApiUri().toString();
-        webServer.addJAXRSClasses( getClassNames(), serverMountPoint, null );
+        URI restApiUri = restApiUri();
+
+        webServer.addFilter( new CorsFilter( logProvider, config.get( http_access_control_allow_origin ) ), "/*" );
+        webServer.addJAXRSClasses( getClassNames(), restApiUri.toString(), null );
     }
 
     private List<Class<?>> getClassNames()
     {
-        return asList(
-                RootService.class,
-                VersionAndEditionService.class );
+        return Arrays.asList( CypherResource.class, JsonMessageBodyReader.class, JsonMessageBodyWriter.class );
     }
 
     @Override
     public void stop()
     {
-        webServer.removeJAXRSClasses( getClassNames(),
-                managementApiUri(  ).toString() );
+        webServer.removeJAXRSClasses( getClassNames(), restApiUri().toString() );
     }
 
-    private URI managementApiUri( )
+    private URI restApiUri()
     {
-        return config.get( ServerSettings.management_api_path );
+        return config.get( ServerSettings.db_api_path );
     }
+
 }

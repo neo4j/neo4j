@@ -20,153 +20,133 @@
 package org.neo4j.server.rest.discovery;
 
 import java.net.URI;
-import java.net.URISyntaxException;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Comparator;
-import java.util.List;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.function.BiConsumer;
-import java.util.stream.Collectors;
 
 import org.neo4j.configuration.Config;
+import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.configuration.connectors.BoltConnector;
 import org.neo4j.configuration.connectors.ConnectorPortRegister;
-import org.neo4j.configuration.helpers.SocketAddress;
 import org.neo4j.graphdb.config.Setting;
+import org.neo4j.server.configuration.ServerSettings;
 
-import static org.neo4j.server.rest.discovery.DiscoverableURIs.Precedence.HIGH;
-import static org.neo4j.server.rest.discovery.DiscoverableURIs.Precedence.HIGHEST;
-import static org.neo4j.server.rest.discovery.DiscoverableURIs.Precedence.LOW;
-import static org.neo4j.server.rest.discovery.DiscoverableURIs.Precedence.LOWEST;
+import static org.neo4j.server.rest.repr.Serializer.joinBaseWithRelativePath;
 
 /**
  * Repository of URIs that the REST API publicly advertises at the root endpoint.
  */
 public class DiscoverableURIs
 {
-    public enum Precedence
-    {
-        LOWEST,
-        LOW,
-        NORMAL,
-        HIGH,
-        HIGHEST
-    }
+    private final Map<String,URITemplate> entries;
 
-    private final Collection<URIEntry> entries;
-
-    private DiscoverableURIs( Collection<URIEntry> entries )
+    private DiscoverableURIs( Map<String,URITemplate> entries )
     {
         this.entries = entries;
     }
 
-    public void forEach( BiConsumer<String,URI> consumer )
+    public void forEach( BiConsumer<String,String> consumer )
     {
-        entries.stream().collect( Collectors.groupingBy( e -> e.key ) )
-                .forEach( ( key, list ) -> list.stream()
-                        .max( Comparator.comparing( e -> e.precedence ) )
-                        .ifPresent( e -> consumer.accept( key, e.uri ) ) );
+        entries.forEach( ( key, value ) -> consumer.accept( key, value.uriString() ) );
     }
 
-    private static class URIEntry
+    /**
+     * Update http/https by adding the scheme, host, port
+     * Update bolt if host is not explicitly set.
+     */
+    public DiscoverableURIs update( URI baseUri )
     {
-        private String key;
-        private Precedence precedence;
-        private URI uri;
+        entries.forEach( ( key, value ) -> value.update( baseUri ) );
+        return this;
+    }
 
-        private URIEntry( String key, URI uri, Precedence precedence )
+    private interface URITemplate
+    {
+        String uriString();
+
+        void update( URI baseUri );
+    }
+
+    private static class RelativePathBasedURITemplate implements URITemplate
+    {
+        private final String relativePath;
+        private String fullPath;
+
+        private RelativePathBasedURITemplate( String relativePath )
         {
-            this.key = key;
+            this.relativePath = relativePath;
+        }
+
+        @Override
+        public String uriString()
+        {
+            return fullPath == null ? relativePath : fullPath;
+        }
+
+        @Override
+        public void update( URI baseUri )
+        {
+            fullPath = joinBaseWithRelativePath( baseUri, relativePath );
+        }
+    }
+
+    private static class URIBasedURITemplate implements URITemplate
+    {
+        private URI uri;
+        private final boolean isHostOverridable;
+
+        private URIBasedURITemplate( URI uri, boolean isHostOverridable )
+        {
             this.uri = uri;
-            this.precedence = precedence;
+            this.isHostOverridable = isHostOverridable;
+        }
+
+        @Override
+        public String uriString()
+        {
+            return uri.toASCIIString();
+        }
+
+        @Override
+        public void update( URI baseUri )
+        {
+            if ( isHostOverridable )
+            {
+                uri = URI.create( String.format( "%s://%s:%s", uri.getScheme(), baseUri.getHost(), uri.getPort() ) );
+            }
         }
     }
 
     public static class Builder
     {
-        private final Collection<URIEntry> entries;
+        private Map<String,URITemplate> entries;
 
         public Builder()
         {
-            entries = new ArrayList<>();
+            entries = new HashMap<>();
         }
 
-        public Builder( DiscoverableURIs copy )
+        /**
+         * http and/or https endpoints are always relative.
+         * The full path will be completed with users' request base uri with {@link DiscoverableURIs#update} method.
+         */
+        public Builder addEndpoint( String key, String endpoint )
         {
-            entries = new ArrayList<>( copy.entries );
-        }
-
-        public Builder add( String key, URI uri, Precedence precedence )
-        {
-            if ( entries.stream().anyMatch( e -> e.key.equals( key ) && e.precedence == precedence ) )
-            {
-                throw new IllegalArgumentException(
-                        String.format( "Unable to add two entries with the same precedence using key '%s' and precedence '%s'", key, precedence ) );
-            }
-
-            entries.add( new URIEntry( key, uri, precedence ) );
+            var path = new RelativePathBasedURITemplate( endpoint );
+            entries.put( key, path );
             return this;
         }
 
-        public Builder add( String key, String uri, Precedence precedence )
+        public Builder addBoltEndpoint( Config config, ConnectorPortRegister portRegister )
         {
-            try
+            if ( !config.get( BoltConnector.enabled ) )
             {
-                return add( key, new URI( uri ), precedence );
-            }
-            catch ( URISyntaxException e )
-            {
-                throw new IllegalArgumentException(
-                        String.format( "Unable to construct bolt discoverable URI using '%s' as uri: " + "%s", uri, e.getMessage() ), e );
-            }
-        }
-
-        public Builder add( String key, String scheme, String hostname, int port, Precedence precedence )
-        {
-            try
-            {
-                return add( key, new URI( scheme, null, hostname, port, null, null, null ), precedence );
-            }
-            catch ( URISyntaxException e )
-            {
-                throw new IllegalArgumentException(
-                        String.format( "Unable to construct bolt discoverable URI using '%s' as hostname: " + "%s", hostname, e.getMessage() ), e );
-            }
-        }
-
-        public Builder addBoltConnectorFromConfig( String key, String scheme, Config config, Setting<URI> override, ConnectorPortRegister portRegister )
-        {
-            // If an override is configured, add it with the HIGHEST precedence
-            if ( config.isExplicitlySet( override ) )
-            {
-                add( key, config.get( override ), HIGHEST );
+                // if bolt is not enabled, then no bolt connector entry is discoverable
+                return this;
             }
 
-            if ( config.get( BoltConnector.enabled ) )
-            {
-                SocketAddress address = config.get( BoltConnector.advertised_address );
-                int port = address.getPort();
-                if ( port == 0 )
-                {
-                    port = portRegister.getLocalAddress( BoltConnector.NAME ).getPort();
-                }
-
-                // If advertised address is explicitly set, set the precedence to HIGH - eitherwise set it as LOWEST (default)
-                add( key, scheme, address.getHostname(), port, config.isExplicitlySet( BoltConnector.advertised_address ) ? HIGH : LOWEST );
-            }
-
-            return this;
-        }
-
-        public Builder overrideAbsolutesFromRequest( URI requestUri )
-        {
-            // Find all default entries with absolute URIs and replace the corresponding host name entries with the one from the request uri.
-            List<URIEntry> defaultEntries = entries.stream().filter( e -> e.uri.isAbsolute() && e.precedence == LOWEST ).collect( Collectors.toList() );
-
-            for ( URIEntry entry : defaultEntries )
-            {
-                add( entry.key, entry.uri.getScheme(), requestUri.getHost(), entry.uri.getPort(), LOW );
-            }
+            addBoltEndpoint( "bolt_direct", "bolt", ServerSettings.bolt_discoverable_address, config, portRegister );
+            addBoltEndpoint( "bolt_routing", "neo4j", ServerSettings.bolt_routing_discoverable_address, config, portRegister );
 
             return this;
         }
@@ -174,6 +154,44 @@ public class DiscoverableURIs
         public DiscoverableURIs build()
         {
             return new DiscoverableURIs( entries );
+        }
+
+        private void addBoltEndpoint( String key, String scheme, Setting<URI> override, Config config, ConnectorPortRegister portRegister )
+        {
+            URITemplate path;
+
+            if ( config.isExplicitlySet( override ) )
+            {
+                var uri = config.get( override );
+                path = new URIBasedURITemplate( uri, false );
+            }
+            else
+            {
+                var address = config.get( BoltConnector.advertised_address );
+                var port = address.getPort() == 0 ? portRegister.getLocalAddress( BoltConnector.NAME ).getPort() : address.getPort();
+                var host = address.getHostname();
+
+                path = new URIBasedURITemplate( URI.create( String.format( "%s://%s:%s", scheme, host, port ) ), !isBoltHostNameExplicitlySet( config ) );
+            }
+
+            entries.put( key, path );
+        }
+
+        private boolean isBoltHostNameExplicitlySet( Config config )
+        {
+            if ( config.isExplicitlySet( GraphDatabaseSettings.default_advertised_address ) )
+            {
+                return true;
+            }
+            else if ( config.isExplicitlySet( BoltConnector.advertised_address ) )
+            {
+                var defaultAddress = config.get( GraphDatabaseSettings.default_advertised_address );
+                var boltAddress = config.get( BoltConnector.advertised_address );
+                // It is possible that we only set the bolt port without setting the host name
+                return !boltAddress.getHostname().equals( defaultAddress.getHostname() );
+            }
+
+            return false;
         }
     }
 

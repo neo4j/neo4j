@@ -24,9 +24,6 @@ import java.net.URI;
 import org.neo4j.server.NeoServer;
 import org.neo4j.server.rest.domain.GraphDbHelper;
 
-import static org.hamcrest.Matchers.containsString;
-import static org.junit.Assert.assertThat;
-
 public final class FunctionalTestHelper
 {
     private final NeoServer server;
@@ -47,24 +44,14 @@ public final class FunctionalTestHelper
         return helper;
     }
 
-    public String dataUri()
+    private String databaseUri()
     {
         return databaseUri( "data" );
     }
 
-    public String databaseUri( String databaseName )
+    private String databaseUri( String databaseName )
     {
         return String.format( "%sdb/%s/", server.baseUri(), databaseName );
-    }
-
-    public URI managementUri()
-    {
-        return server.baseUri().resolve( "db/manage" );
-    }
-
-    public String extensionUri()
-    {
-        return dataUri() + "ext";
     }
 
     public URI baseUri()
@@ -74,22 +61,11 @@ public final class FunctionalTestHelper
 
     public String txCommitUri()
     {
-        return dataUri() + "transaction/commit";
+        return databaseUri() + "transaction/commit";
     }
 
     public String txCommitUri( String databaseName )
     {
         return databaseUri( databaseName ) + "transaction/commit";
-    }
-
-    public String simpleCypherRequestBody()
-    {
-        return "{\"statements\": [{\"statement\": \"CREATE (n:MyLabel) RETURN n\"}]}";
-    }
-
-    public void verifyCypherResponse( String responseBody )
-    {
-        // if at least one node is returned, there will be "node" in the metadata part od the the row
-        assertThat( responseBody, containsString( "node" ) );
     }
 }

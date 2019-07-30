@@ -23,7 +23,6 @@ import java.net.URI;
 
 import org.neo4j.configuration.Config;
 import org.neo4j.server.database.DatabaseService;
-import org.neo4j.server.rest.management.AdvertisableService;
 import org.neo4j.server.http.cypher.TransactionRegistry;
 
 public interface NeoServer
@@ -39,6 +38,4 @@ public interface NeoServer
     TransactionRegistry getTransactionRegistry();
 
     URI baseUri();
-
-    Iterable<AdvertisableService> getServices();
 }

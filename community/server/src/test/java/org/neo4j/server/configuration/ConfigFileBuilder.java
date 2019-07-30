@@ -46,7 +46,7 @@ public class ConfigFileBuilder
         this.config = MapUtil.stringMap(
                 GraphDatabaseSettings.data_directory.name(), directory.getAbsolutePath() + "/data",
                 ServerSettings.management_api_path.name(), "http://localhost:7474/db/manage/",
-                ServerSettings.rest_api_path.name(), "http://localhost:7474/db/data/" );
+                ServerSettings.db_api_path.name(), "http://localhost:7474/db/data/" );
     }
 
     public File build()

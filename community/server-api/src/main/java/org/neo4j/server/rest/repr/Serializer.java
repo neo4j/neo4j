@@ -21,7 +21,7 @@ package org.neo4j.server.rest.repr;
 
 import java.net.URI;
 
-abstract class Serializer
+public abstract class Serializer
 {
     private final URI baseUri;
 
@@ -52,7 +52,7 @@ abstract class Serializer
         return joinBaseWithRelativePath( baseUri, path );
     }
 
-    static String joinBaseWithRelativePath( URI baseUri, String path )
+    public static String joinBaseWithRelativePath( URI baseUri, String path )
     {
         String base = baseUri.toString();
         final StringBuilder result = new StringBuilder( base.length() + path.length() + 1 ).append( base );

@@ -59,8 +59,7 @@ public class CommunityServerBuilder
     private SocketAddress httpsAddress = new SocketAddress( "localhost", HttpsConnector.DEFAULT_PORT );
     private String maxThreads;
     private String dataDir;
-    private String managementUri = "/db/manage/";
-    private String restUri = "/db";
+    private String dbUri = "/db";
     private PreFlightTasks preflightTasks;
     private final HashMap<String, String> thirdPartyPackages = new HashMap<>();
     private final Properties arbitraryProperties = new Properties();
@@ -131,9 +130,7 @@ public class CommunityServerBuilder
 
     public Map<String, String> createConfiguration( File temporaryFolder )
     {
-        Map<String, String> properties = stringMap(
-                ServerSettings.management_api_path.name(), managementUri,
-                ServerSettings.rest_api_path.name(), restUri );
+        Map<String, String> properties = stringMap( ServerSettings.db_api_path.name(), dbUri );
 
         ServerTestUtils.addDefaultRelativeProperties( properties, temporaryFolder );
 
@@ -212,39 +209,18 @@ public class CommunityServerBuilder
         return this;
     }
 
-    public CommunityServerBuilder withRelativeManagementApiUriPath( String uri )
+    public CommunityServerBuilder withRelativeDatabaseApiUriPath( String uri )
     {
         try
         {
             URI theUri = new URI( uri );
             if ( theUri.isAbsolute() )
             {
-                this.managementUri = theUri.getPath();
+                this.dbUri = theUri.getPath();
             }
             else
             {
-                this.managementUri = theUri.toString();
-            }
-        }
-        catch ( URISyntaxException e )
-        {
-            throw new RuntimeException( e );
-        }
-        return this;
-    }
-
-    public CommunityServerBuilder withRelativeRestApiUriPath( String uri )
-    {
-        try
-        {
-            URI theUri = new URI( uri );
-            if ( theUri.isAbsolute() )
-            {
-                this.restUri = theUri.getPath();
-            }
-            else
-            {
-                this.restUri = theUri.toString();
+                this.dbUri = theUri.toString();
             }
         }
         catch ( URISyntaxException e )

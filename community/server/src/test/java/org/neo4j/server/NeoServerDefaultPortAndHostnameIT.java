@@ -39,7 +39,7 @@ public class NeoServerDefaultPortAndHostnameIT extends AbstractRestFunctionalTes
     {
         var functionalTestHelper = new FunctionalTestHelper( server() );
 
-        var request = HttpRequest.newBuilder( functionalTestHelper.managementUri() ).GET().build();
+        var request = HttpRequest.newBuilder( functionalTestHelper.baseUri() ).GET().build();
         var httpClient = HttpClient.newBuilder().followRedirects( NORMAL ).build();
         var response = httpClient.send( request, discarding() );
 

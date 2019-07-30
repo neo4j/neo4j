@@ -39,9 +39,11 @@ import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
 import static javax.ws.rs.core.MediaType.TEXT_HTML;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.equalTo;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 
 public class DiscoveryServiceIT extends AbstractRestFunctionalTestBase
 {
@@ -74,12 +76,27 @@ public class DiscoveryServiceIT extends AbstractRestFunctionalTestBase
         var responseBodyMap = JsonHelper.jsonToMap( response.body() );
 
         var managementKey = "management";
-        assertTrue( responseBodyMap.containsKey( managementKey ) );
-        assertNotNull( responseBodyMap.get( managementKey ) );
+        assertFalse( responseBodyMap.containsKey( managementKey ) );
 
-        var dataKey = "data";
-        assertTrue( responseBodyMap.containsKey( dataKey ) );
-        assertNotNull( responseBodyMap.get( dataKey ) );
+        var transactionKey = "transaction";
+        assertTrue( responseBodyMap.containsKey( transactionKey ) );
+        assertNotNull( responseBodyMap.get( transactionKey ) );
+
+        var boltDirectKey = "bolt_direct";
+        assertTrue( responseBodyMap.containsKey( boltDirectKey ) );
+        assertNotNull( responseBodyMap.get( boltDirectKey ) );
+
+        var boltRoutingKey = "bolt_routing";
+        assertTrue( responseBodyMap.containsKey( boltRoutingKey ) );
+        assertNotNull( responseBodyMap.get( boltRoutingKey ) );
+
+        var serverVersionKey = "neo4j_version";
+        assertTrue( responseBodyMap.containsKey( serverVersionKey ) );
+        assertNotNull( responseBodyMap.get( serverVersionKey ) );
+
+        var serverEditionKey = "neo4j_edition";
+        assertTrue( responseBodyMap.containsKey( serverEditionKey ) );
+        assertThat( responseBodyMap.get( serverEditionKey ), equalTo( "community" ) );
     }
 
     @Test

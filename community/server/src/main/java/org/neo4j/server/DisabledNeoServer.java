@@ -28,7 +28,6 @@ import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.server.database.DatabaseService;
 import org.neo4j.server.database.GraphFactory;
 import org.neo4j.server.database.LifecycleManagingDatabaseService;
-import org.neo4j.server.rest.management.AdvertisableService;
 import org.neo4j.server.http.cypher.DisabledTransactionRegistry;
 import org.neo4j.server.http.cypher.TransactionRegistry;
 
@@ -95,9 +94,4 @@ public class DisabledNeoServer implements NeoServer
         throw new UnsupportedOperationException( "Neo4j server is disabled" );
     }
 
-    @Override
-    public Iterable<AdvertisableService> getServices()
-    {
-        return Collections.emptyList();
-    }
 }

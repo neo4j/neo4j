@@ -153,9 +153,16 @@ public class ServerSettings implements SettingsDeclaration
     @Description( "Publicly discoverable bolt:// URI to use for Neo4j Drivers wanting to access the data in this " +
             "particular database instance. Normally this is the same as the advertised address configured for the " +
             "connector, but this allows manually overriding that default." )
-    @DocumentedDefaultValue( "Defaults to a bolt://-schemed version of the advertised address " + "of the first found bolt connector." )
+    @DocumentedDefaultValue( "Defaults to a bolt://-schemed version of the advertised address of the first found bolt connector." )
     public static final Setting<URI> bolt_discoverable_address =
             newBuilder( "unsupported.dbms.discoverable_bolt_address", SettingValueParsers.URI, SettingValueParsers.URI.parse( "" ) ).build();
+
+    @Internal
+    @Description( "Publicly discoverable neo4j:// URI to use for Neo4j Drivers wanting to access a cluster or a single instance." )
+    @DocumentedDefaultValue( "Defaults to empty on any deployment that is not a causal cluster core, and a " +
+            "neo4j://-schemed URI of the advertised address of the bolt connector." )
+    public static final Setting<URI> bolt_routing_discoverable_address =
+            newBuilder( "unsupported.dbms.discoverable_bolt_routing_address", SettingValueParsers.URI, SettingValueParsers.URI.parse( "" ) ).build();
 
     @SuppressWarnings( "unused" ) // accessed from the browser
     @Description( "Commands to be run when Neo4j Browser successfully connects to this server. Separate multiple " +
@@ -168,11 +175,13 @@ public class ServerSettings implements SettingsDeclaration
             newBuilder( "browser.remote_content_hostname_whitelist", STRING, "guides.neo4j.com,localhost").build();
 
     @Internal
-    public static final Setting<URI> rest_api_path =
-            newBuilder( "unsupported.dbms.uris.rest", NORMALIZED_RELATIVE_URI, NORMALIZED_RELATIVE_URI.parse( "/db" ) ).build();
+    @Description( "The start endpoint of database api." )
+    public static final Setting<URI> db_api_path =
+            newBuilder( "unsupported.dbms.uris.db", NORMALIZED_RELATIVE_URI, NORMALIZED_RELATIVE_URI.parse( "/db" ) ).build();
 
     @Internal
     public static final Setting<URI> management_api_path =
+            // TODO change it to a string such as /{name}/manage and hock it under /db
             newBuilder( "unsupported.dbms.uris.management", NORMALIZED_RELATIVE_URI, NORMALIZED_RELATIVE_URI.parse( "/db/manage" ) ).build();
 
     @Internal
