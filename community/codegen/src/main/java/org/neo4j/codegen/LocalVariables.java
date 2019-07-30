@@ -53,7 +53,7 @@ public class LocalVariables
         LocalVariable localVariable = localVariables.get( name );
         if ( localVariable == null )
         {
-            throw new NoSuchElementException( "No variable " + name + " in scope" );
+            throw new NoSuchElementException( "No variable '" + name + "' in scope" );
         }
         return localVariable;
     }
