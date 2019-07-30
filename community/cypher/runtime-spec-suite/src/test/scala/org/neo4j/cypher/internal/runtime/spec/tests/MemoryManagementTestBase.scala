@@ -90,7 +90,7 @@ trait InputStreams[CONTEXT <: RuntimeContext] {
   protected def estimateSize(data: ValueToEstimate): Long = {
     data match {
       case E_INT => ValueUtils.of(0).estimatedHeapUsage()
-      case E_INT_IN_DISTINCT => ValueUtils.of(util.Arrays.asList(0)).estimatedHeapUsage() // We wrap the columns in a list
+      case E_INT_IN_DISTINCT => ValueUtils.of(java.util.Arrays.asList(0)).estimatedHeapUsage() // We wrap the columns in a list
       case E_NODE_PRIMITIVE => 64  // Size of a NodeValue
       case E_NODE_VALUE => 64  // Size of a NodeValue
     }
@@ -156,7 +156,7 @@ abstract class MemoryManagementTestBase[CONTEXT <: RuntimeContext](
                                                                     runtime: CypherRuntime[CONTEXT]
                                                                   )
   extends RuntimeTestSuite[CONTEXT](edition.copyWith(
-    GraphDatabaseSettings.transaction_max_memory -> Long.valueOf(MemoryManagementTestBase.maxMemory)), runtime) with InputStreams[CONTEXT] {
+    GraphDatabaseSettings.transaction_max_memory -> java.lang.Long.valueOf(MemoryManagementTestBase.maxMemory)), runtime) with InputStreams[CONTEXT] {
 
   test("should kill sort query before it runs out of memory") {
     // given
