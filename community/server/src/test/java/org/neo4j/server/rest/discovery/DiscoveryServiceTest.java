@@ -267,7 +267,11 @@ public class DiscoveryServiceTest
 
     private static Consumer<Config.Builder> overrideWithListenAddress( String host, int port )
     {
-        return builder -> builder.set( BoltConnector.listen_address, new SocketAddress( host, port ) );
+        return builder ->
+        {
+            builder.set( BoltConnector.listen_address, new SocketAddress( host, port ) );
+            builder.setDefault( BoltConnector.advertised_address, ":" + port );
+        };
     }
 
     private static Consumer<Config.Builder> overrideWithDefaultListenAddress( String host )
