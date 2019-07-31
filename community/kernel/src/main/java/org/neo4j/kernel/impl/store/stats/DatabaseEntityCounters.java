@@ -23,7 +23,6 @@ import org.neo4j.counts.CountsAccessor;
 import org.neo4j.internal.id.IdGeneratorFactory;
 import org.neo4j.internal.id.IdType;
 
-import static org.neo4j.register.Registers.newDoubleLongRegister;
 import static org.neo4j.token.api.TokenConstants.ANY_LABEL;
 import static org.neo4j.token.api.TokenConstants.ANY_RELATIONSHIP_TYPE;
 
@@ -65,12 +64,12 @@ public class DatabaseEntityCounters implements StoreEntityCounters
     @Override
     public long allNodesCountStore()
     {
-        return countsAccessor.nodeCount( ANY_LABEL, newDoubleLongRegister() ).readSecond();
+        return countsAccessor.nodeCount( ANY_LABEL );
     }
 
     @Override
     public long allRelationshipsCountStore()
     {
-        return countsAccessor.relationshipCount( ANY_LABEL, ANY_RELATIONSHIP_TYPE, ANY_LABEL, newDoubleLongRegister() ).readSecond();
+        return countsAccessor.relationshipCount( ANY_LABEL, ANY_RELATIONSHIP_TYPE, ANY_LABEL );
     }
 }
