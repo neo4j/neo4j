@@ -30,16 +30,16 @@ import scala.util.matching.Regex
   *
   * The PreParser converts queries like
   *
-  *   'CYPHER 3.3 planner=cost,runtime=slotted MATCH (n) RETURN n'
+  *   'CYPHER 3.5 planner=cost,runtime=slotted MATCH (n) RETURN n'
   *
   * into
   *
-  * StringInputQuery(
+  * PreParsedQuery(
   *   statement: 'MATCH (n) RETURN n'
   *   options: QueryOptions(
   *     planner: 'cost'
   *     runtime: 'slotted'
-  *     version: '3.3'
+  *     version: '3.5'
   *   )
   * )
   */
@@ -75,9 +75,9 @@ class PreParser(configuredVersion: CypherVersion,
     */
   @throws(classOf[SyntaxException])
   def preParseQuery(queryText: String, profile: Boolean = false): PreParsedQuery = {
-    val query = preParsedQueries.computeIfAbsent(queryText, actuallyPreParse(queryText))
-    if (profile) query.copy(options = query.options.copy(executionMode = CypherExecutionMode.profile))
-    else query
+    val preParsedQuery = preParsedQueries.computeIfAbsent(queryText, actuallyPreParse(queryText))
+    if (profile) preParsedQuery.copy(options = preParsedQuery.options.copy(executionMode = CypherExecutionMode.profile))
+    else preParsedQuery
   }
 
   private def actuallyPreParse(queryText: String): PreParsedQuery = {
