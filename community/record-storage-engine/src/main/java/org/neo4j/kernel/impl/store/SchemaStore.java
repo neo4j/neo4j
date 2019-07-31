@@ -488,7 +488,7 @@ public class SchemaStore extends CommonAbstractStore<SchemaRecord,IntStoreHeader
     {
         try
         {
-            return IndexType.LOOKUP.apply( indexType );
+            return IndexType.valueOf( indexType );
         }
         catch ( Exception e )
         {
@@ -500,7 +500,7 @@ public class SchemaStore extends CommonAbstractStore<SchemaRecord,IntStoreHeader
     {
         try
         {
-            return PropertySchemaType.LOOKUP.apply( propertySchemaType );
+            return PropertySchemaType.valueOf( propertySchemaType );
         }
         catch ( Exception e )
         {
@@ -512,7 +512,7 @@ public class SchemaStore extends CommonAbstractStore<SchemaRecord,IntStoreHeader
     {
         try
         {
-            return EntityType.LOOKUP.apply( entityType );
+            return EntityType.valueOf( entityType );
         }
         catch ( Exception e )
         {

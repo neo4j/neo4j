@@ -19,10 +19,6 @@
  */
 package org.neo4j.common;
 
-import java.util.function.Function;
-
-import org.neo4j.internal.helpers.EnumNameLookup;
-
 /**
  * Type of graph entity. The two types, Nodes and Relationships, represent objects that can have properties
  * associated with them, as well as labeled with additional type information. Nodes have labels, and relationships
@@ -32,7 +28,4 @@ public enum EntityType
 {
     NODE,
     RELATIONSHIP
-    ;
-
-    public static final Function<String,EntityType> LOOKUP = EnumNameLookup.fromString( EntityType.class );
 }
