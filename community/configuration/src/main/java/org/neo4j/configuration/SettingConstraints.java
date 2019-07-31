@@ -22,9 +22,12 @@ package org.neo4j.configuration;
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.StringUtils;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Objects;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 import org.neo4j.configuration.helpers.SocketAddress;
 import org.neo4j.internal.helpers.Numbers;
@@ -168,6 +171,65 @@ public final class SettingConstraints
             public String getDescription()
             {
                 return format( "is in the range `%s` to `%s`", minValue, maxValue );
+            }
+        };
+    }
+
+    public static <T> SettingConstraint<T> is( final T expected )
+    {
+        return new SettingConstraint<>()
+        {
+            @Override
+            public void validate( T value )
+            {
+                if ( !Objects.equals( value, expected  ) )
+                {
+                    throw new IllegalArgumentException( format( "is not '%s'", expected ) );
+                }
+            }
+
+            @Override
+            public String getDescription()
+            {
+                return format( "is `%s`", expected );
+            }
+        };
+    }
+
+    @SafeVarargs
+    public static <T> SettingConstraint<T> or( SettingConstraint<T> first, SettingConstraint<T> second, SettingConstraint<T>... rest )
+    {
+        List<SettingConstraint<T>> constraints = new ArrayList<>( Arrays.asList( first, second ) );
+        constraints.addAll( Arrays.asList( rest ) );
+        return new SettingConstraint<>()
+        {
+            @Override
+            public void validate( T value )
+            {
+                boolean anyValid = false;
+                for ( SettingConstraint<T> constraint : constraints )
+                {
+                    try
+                    {
+                        constraint.validate( value );
+                        anyValid = true;
+                        break;
+                    }
+                    catch ( RuntimeException e )
+                    {
+                        // Ignore, as only one constraint needs to pass for this to pass.
+                    }
+                }
+                if ( !anyValid )
+                {
+                    throw new IllegalArgumentException( format( "does not fullfill any of %s", getDescription() ) );
+                }
+            }
+
+            @Override
+            public String getDescription()
+            {
+                return constraints.stream().map( SettingConstraint::getDescription ).collect( Collectors.joining( " or " ));
             }
         };
     }

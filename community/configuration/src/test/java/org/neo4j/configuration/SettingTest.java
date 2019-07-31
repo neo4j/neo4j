@@ -44,9 +44,11 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.configuration.SettingConstraints.PORT;
 import static org.neo4j.configuration.SettingConstraints.POWER_OF_2;
 import static org.neo4j.configuration.SettingConstraints.except;
+import static org.neo4j.configuration.SettingConstraints.is;
 import static org.neo4j.configuration.SettingConstraints.matches;
 import static org.neo4j.configuration.SettingConstraints.max;
 import static org.neo4j.configuration.SettingConstraints.min;
+import static org.neo4j.configuration.SettingConstraints.or;
 import static org.neo4j.configuration.SettingConstraints.range;
 import static org.neo4j.configuration.SettingValueParsers.BOOL;
 import static org.neo4j.configuration.SettingValueParsers.BYTES;
@@ -394,6 +396,40 @@ class SettingTest
 
         assertEquals( "setting.name, a long which is power of 2", oneConstraintSetting.description() );
         assertEquals( "setting.name, an integer which is minimum `2` and is maximum `10`", twoConstraintSetting.description() );
+    }
+
+    @Test
+    void testIsConstraint()
+    {
+        var setting = (SettingImpl<Integer>) settingBuilder( "setting", INT ).addConstraint( is( 10 ) ).build();
+        assertDoesNotThrow( () -> setting.validate( 10 ) );
+        assertThrows( IllegalArgumentException.class, () -> setting.validate( 9 ) );
+    }
+
+    @Test
+    void testOrConstraint()
+    {
+        var intSetting = (SettingImpl<Integer>) settingBuilder( "setting", INT )
+                .addConstraint( or( min( 30 ), is( 0 ), is( -10 ) )  ).build();
+        assertDoesNotThrow( () -> intSetting.validate( 30 ) );
+        assertDoesNotThrow( () -> intSetting.validate( 100 ) );
+        assertDoesNotThrow( () -> intSetting.validate( 0 ) );
+        assertDoesNotThrow( () -> intSetting.validate( -10 ) );
+        assertThrows( IllegalArgumentException.class, () -> intSetting.validate( 29 ) );
+        assertThrows( IllegalArgumentException.class, () -> intSetting.validate( 1 ) );
+        assertThrows( IllegalArgumentException.class, () -> intSetting.validate( -9 ) );
+
+        var durationSetting = (SettingImpl<Duration>) settingBuilder( "setting", DURATION )
+                .addConstraint( or( min( Duration.ofMinutes( 30 ) ), is( Duration.ZERO ) )  ).build();
+        assertDoesNotThrow( () -> durationSetting.parse( "30m" ) );
+        assertDoesNotThrow( () -> durationSetting.validate( Duration.ofHours( 1 ) ) );
+        assertDoesNotThrow( () -> durationSetting.parse( "0" ) );
+        assertDoesNotThrow( () -> durationSetting.parse( "0s" ) );
+        assertDoesNotThrow( () -> durationSetting.validate( Duration.ZERO ) );
+        assertThrows( IllegalArgumentException.class, () -> durationSetting.parse( "29m" ) );
+        assertThrows( IllegalArgumentException.class, () -> durationSetting.parse( "1ms" ) );
+        assertThrows( IllegalArgumentException.class, () -> durationSetting.validate( Duration.ofMillis( 1 ) ) );
+
     }
 
     private <T> SettingImpl.Builder<T> settingBuilder( String name, SettingValueParser<T> parser )
