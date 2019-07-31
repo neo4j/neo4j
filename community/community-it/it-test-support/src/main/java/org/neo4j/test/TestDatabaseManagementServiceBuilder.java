@@ -45,8 +45,6 @@ import org.neo4j.monitoring.Monitors;
 import org.neo4j.time.SystemNanoClock;
 import org.neo4j.util.Preconditions;
 
-import static org.neo4j.configuration.SettingValueParsers.FALSE;
-
 /**
  * Test factory for graph databases.
  * Please be aware that since it's a database it will close filesystem as part of its lifecycle.
@@ -98,8 +96,8 @@ public class TestDatabaseManagementServiceBuilder extends DatabaseManagementServ
         return Config.newBuilder()
                 .fromConfig( config )
                 .setDefault( GraphDatabaseSettings.pagecache_memory, "8m" )
-                .setDefault( GraphDatabaseSettings.logical_log_rotation_threshold, String.valueOf( ByteUnit.kibiBytes( 128 ) ) )
-                .setDefault( BoltConnector.enabled, FALSE )
+                .setDefault( GraphDatabaseSettings.logical_log_rotation_threshold, ByteUnit.kibiBytes( 128 ) )
+                .setDefault( BoltConnector.enabled, false )
                 .build();
     }
 

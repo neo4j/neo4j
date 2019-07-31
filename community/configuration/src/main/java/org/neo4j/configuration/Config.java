@@ -64,7 +64,7 @@ public class Config implements Configuration
         private final List<Class<? extends GroupSettingValidator>> validators = new ArrayList<>();
         private final Map<String,String> settingValueStrings = new HashMap<>();
         private final Map<String,Object> settingValueObjects = new HashMap<>();
-        private final Map<String,String> overriddenDefaults = new HashMap<>();
+        private final Map<String,Object> overriddenDefaults = new HashMap<>();
         private Config fromConfig;
         private Log log = new BufferingLog();
 
@@ -118,7 +118,7 @@ public class Config implements Configuration
             return this;
         }
 
-        private Builder setDefault( String setting, String value )
+        private Builder setDefault( String setting, Object value )
         {
             if ( overriddenDefaults.containsKey( setting ) && allowedToLogOverriddenValues( setting ) )
             {
@@ -129,13 +129,13 @@ public class Config implements Configuration
             return this;
         }
 
-        public Builder setDefaults( Map<String,String> overriddenDefaults )
+        public Builder setDefaults( Map<Setting<?>, Object> overriddenDefaults )
         {
-            overriddenDefaults.forEach( this::setDefault );
+            overriddenDefaults.forEach( ( setting, value ) -> setDefault( setting.name(), value )  );
             return this;
         }
 
-        public <T> Builder setDefault( Setting<T> setting, String value )
+        public <T> Builder setDefault( Setting<T> setting, T value )
         {
             return setDefault( setting.name(), value );
         }
@@ -306,15 +306,16 @@ public class Config implements Configuration
             Collection<SettingMigrator> settingMigrators,
             Map<String,String> settingValueStrings,
             Map<String,Object> settingValueObjects,
-            Map<String,String> overriddenDefaults,
+            Map<String,Object> overriddenDefaultObjects,
             Config fromConfig,
             Log log )
     {
         this.log = log;
 
+        Map<String,String> overriddenDefaultStrings = new HashMap<>();
         try
         {
-            settingMigrators.forEach( migrator -> migrator.migrate( settingValueStrings, overriddenDefaults, log )  );
+            settingMigrators.forEach( migrator -> migrator.migrate( settingValueStrings, overriddenDefaultStrings, log )  );
         }
         catch ( RuntimeException e )
         {
@@ -346,20 +347,21 @@ public class Config implements Configuration
         boolean strict = strict_config_validation.defaultValue();
         if ( keys.remove( strict_config_validation.name() ) ) //evaluate strict_config_validation setting first, as we need it when validating other settings
         {
-            evaluateSetting( strict_config_validation, settingValueStrings, settingValueObjects, fromConfig, overriddenDefaults );
+            evaluateSetting( strict_config_validation, settingValueStrings, settingValueObjects,
+                    fromConfig, overriddenDefaultStrings, overriddenDefaultObjects );
             strict = get( strict_config_validation );
         }
 
         newSettings.addAll( getActiveSettings( keys, definedGroups, definedSettings, strict ) );
 
-        evaluateSettingValues( newSettings, settingValueStrings, settingValueObjects, overriddenDefaults, fromConfig );
+        evaluateSettingValues( newSettings, settingValueStrings, settingValueObjects, overriddenDefaultStrings, overriddenDefaultObjects, fromConfig );
 
         validateGroupsettings( validatorClasses );
     }
 
     @SuppressWarnings( "unchecked" )
     private void evaluateSettingValues( Collection<SettingImpl<?>> settingsToEvaluate, Map<String,String> settingValueStrings,
-            Map<String,Object> settingValueObjects, Map<String,String> overriddenDefaults, Config fromConfig )
+            Map<String,Object> settingValueObjects,Map<String,String> overriddenDefaultStrings, Map<String,Object> overriddenDefaultObjects, Config fromConfig )
     {
         Deque<SettingImpl<?>> newSettings = new LinkedList<>( settingsToEvaluate );
         while ( !newSettings.isEmpty() )
@@ -379,7 +381,7 @@ public class Config implements Configuration
                 else
                 {
                     modified = true;
-                    evaluateSetting( setting, settingValueStrings, settingValueObjects, fromConfig, overriddenDefaults );
+                    evaluateSetting( setting, settingValueStrings, settingValueObjects, fromConfig, overriddenDefaultStrings, overriddenDefaultObjects );
                 }
             }
             while ( setting != last );
@@ -480,15 +482,24 @@ public class Config implements Configuration
 
     @SuppressWarnings( "unchecked" )
     private void evaluateSetting( Setting<?> untypedSetting, Map<String,String> settingValueStrings, Map<String,Object> settingValueObjects, Config fromConfig,
-            Map<String,String> overriddenDefaults )
+            Map<String,String> overriddenDefaultStrings, Map<String,Object> overriddenDefaultObjects )
     {
         SettingImpl<Object> setting = (SettingImpl<Object>) untypedSetting;
         String key = setting.name();
 
         try
         {
-            Object defaultValue = setting.parse( overriddenDefaults.get( key ) );
-            if ( defaultValue == null ) // Map default value
+            Object defaultValue = null;
+            if ( overriddenDefaultObjects.containsKey( key ) ) // Map default value
+            {
+                defaultValue = overriddenDefaultObjects.get( key );
+                setting.validate( defaultValue );
+            }
+            else if ( overriddenDefaultStrings.containsKey( key ) )
+            {
+                defaultValue = setting.parse( overriddenDefaultStrings.get( key ) );
+            }
+            else
             {
                 defaultValue = setting.defaultValue();
                 if ( fromConfig != null && fromConfig.settings.containsKey( key ) )

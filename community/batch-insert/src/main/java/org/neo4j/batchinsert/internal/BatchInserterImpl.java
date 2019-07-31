@@ -48,6 +48,7 @@ import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.TransactionFailureException;
+import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.schema.ConstraintCreator;
 import org.neo4j.graphdb.schema.ConstraintDefinition;
 import org.neo4j.graphdb.schema.IndexCreator;
@@ -381,10 +382,10 @@ public class BatchInserterImpl implements BatchInserter
         return storeLocker;
     }
 
-    private static Map<String, String> getDefaultParams()
+    private static Map<Setting<?>, Object> getDefaultParams()
     {
-        Map<String, String> params = new HashMap<>();
-        params.put( GraphDatabaseSettings.pagecache_memory.name(), "32m" );
+        Map<Setting<?>, Object> params = new HashMap<>();
+        params.put( GraphDatabaseSettings.pagecache_memory, "32m" );
         return params;
     }
 

@@ -270,7 +270,7 @@ public class DiscoveryServiceTest
         return builder ->
         {
             builder.set( BoltConnector.listen_address, new SocketAddress( host, port ) );
-            builder.setDefault( BoltConnector.advertised_address, ":" + port );
+            builder.setDefault( BoltConnector.advertised_address, new SocketAddress( port ) );
         };
     }
 

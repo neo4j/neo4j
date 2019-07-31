@@ -65,7 +65,6 @@ import static org.neo4j.configuration.SettingValueParsers.FALSE;
 import static org.neo4j.configuration.SettingValueParsers.INT;
 import static org.neo4j.configuration.SettingValueParsers.PATH;
 import static org.neo4j.configuration.SettingValueParsers.STRING;
-import static org.neo4j.configuration.SettingValueParsers.TRUE;
 import static org.neo4j.configuration.SettingValueParsers.listOf;
 import static org.neo4j.logging.AssertableLogProvider.inLog;
 
@@ -121,10 +120,10 @@ class ConfigTest
     void testOverrideDefault()
     {
 
-        Map<String,String> overriddenDefaults =
-                Map.of( TestSettings.stringSetting.name(), "foo",
-                        TestSettings.intSetting.name(), "11",
-                        TestSettings.boolSetting.name(), TRUE );
+        Map<Setting<?>,Object> overriddenDefaults =
+                Map.of( TestSettings.stringSetting, "foo",
+                        TestSettings.intSetting, 11,
+                        TestSettings.boolSetting, true );
 
         Config config = Config.newBuilder()
                 .addSettingsClass( TestSettings.class )
@@ -287,7 +286,7 @@ class ConfigTest
     {
         Config fromConfig = Config.newBuilder()
                 .addSettingsClass( TestSettings.class )
-                .setDefaults( Map.of( TestSettings.boolSetting.name(), FALSE ) )
+                .setDefault( TestSettings.boolSetting, false )
                 .set( TestSettings.intSetting, 3 ).build();
 
         Config config1 = Config.newBuilder().fromConfig( fromConfig ).build();
@@ -317,7 +316,7 @@ class ConfigTest
     {
         Config fromConfig = Config.newBuilder()
                 .addSettingsClass( TestSettings.class )
-                .setDefaults( Map.of( TestSettings.boolSetting.name(), FALSE ) )
+                .setDefault( TestSettings.boolSetting, false )
                 .set( TestSettings.intSetting, 3 ).build();
 
         assertThrows( IllegalArgumentException.class, () -> Config.newBuilder().fromConfig( fromConfig ).fromConfig( fromConfig ).build() );
@@ -371,7 +370,7 @@ class ConfigTest
         }
         {
             String value = "default overrides dependency";
-            builder.setDefaults( Map.of(DependencySettings.dependingString.name(), value) );
+            builder.setDefault( DependencySettings.dependingString, value );
             Config config = builder.build();
             assertEquals( value, config.get( DependencySettings.dependingString ) );
         }
