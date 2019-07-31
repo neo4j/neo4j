@@ -23,6 +23,7 @@ import java.util.Set;
 
 import org.neo4j.collection.RawIterator;
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
+import org.neo4j.internal.kernel.api.procs.ProcedureCallContext;
 import org.neo4j.internal.kernel.api.procs.ProcedureHandle;
 import org.neo4j.internal.kernel.api.procs.ProcedureSignature;
 import org.neo4j.internal.kernel.api.procs.QualifiedName;
@@ -66,10 +67,11 @@ public interface Procedures
      * Invoke a read-only procedure by id.
      * @param id the id of the procedure.
      * @param arguments the procedure arguments.
+     * @param context the procedure call context.
      * @return an iterator containing the procedure results.
      * @throws ProcedureException if there was an exception thrown during procedure execution.
      */
-    RawIterator<AnyValue[], ProcedureException> procedureCallRead( int id, AnyValue[] arguments )
+    RawIterator<AnyValue[], ProcedureException> procedureCallRead( int id, AnyValue[] arguments, ProcedureCallContext context )
             throws ProcedureException;
 
     /**
@@ -77,50 +79,55 @@ public interface Procedures
      * {@link AccessMode.Static#READ READ} for the duration of the procedure execution.
      * @param id the id of the procedure.
      * @param arguments the procedure arguments.
+     * @param context the procedure call context.
      * @return an iterator containing the procedure results.
      * @throws ProcedureException if there was an exception thrown during procedure execution.
      */
-    RawIterator<AnyValue[], ProcedureException> procedureCallReadOverride( int id, AnyValue[] arguments )
+    RawIterator<AnyValue[], ProcedureException> procedureCallReadOverride( int id, AnyValue[] arguments, ProcedureCallContext context )
             throws ProcedureException;
 
     /**
      * Invoke a read/write procedure by id.
      * @param id the id of the procedure.
      * @param arguments the procedure arguments.
+     * @param context the procedure call context.
      * @return an iterator containing the procedure results.
      * @throws ProcedureException if there was an exception thrown during procedure execution.
      */
-    RawIterator<AnyValue[], ProcedureException> procedureCallWrite( int id, AnyValue[] arguments )
+    RawIterator<AnyValue[], ProcedureException> procedureCallWrite( int id, AnyValue[] arguments, ProcedureCallContext context )
             throws ProcedureException;
     /**
      * Invoke a read/write procedure by id, and set the transaction's access mode to
      * {@link AccessMode.Static#WRITE WRITE} for the duration of the procedure execution.
      * @param id the id of the procedure.
      * @param arguments the procedure arguments.
+     * @param context the procedure call context.
      * @return an iterator containing the procedure results.
      * @throws ProcedureException if there was an exception thrown during procedure execution.
      */
-    RawIterator<AnyValue[], ProcedureException> procedureCallWriteOverride( int id, AnyValue[] arguments )
+    RawIterator<AnyValue[], ProcedureException> procedureCallWriteOverride( int id, AnyValue[] arguments, ProcedureCallContext context )
             throws ProcedureException;
 
     /**
      * Invoke a schema write procedure by id.
      * @param id the id of the procedure.
      * @param arguments the procedure arguments.
+     * @param context the procedure call context.
      * @return an iterator containing the procedure results.
      * @throws ProcedureException if there was an exception thrown during procedure execution.
      */
-    RawIterator<AnyValue[], ProcedureException> procedureCallSchema( int id, AnyValue[] arguments )
+    RawIterator<AnyValue[], ProcedureException> procedureCallSchema( int id, AnyValue[] arguments, ProcedureCallContext context )
             throws ProcedureException;
     /**
      * Invoke a schema write procedure by id, and set the transaction's access mode to
      * {@link AccessMode.Static#FULL FULL} for the duration of the procedure execution.
      * @param id the id of the procedure.
      * @param arguments the procedure arguments.
+     * @param context the procedure call context.
      * @return an iterator containing the procedure results.
      * @throws ProcedureException if there was an exception thrown during procedure execution.
      */
-    RawIterator<AnyValue[], ProcedureException> procedureCallSchemaOverride( int id, AnyValue[] arguments )
+    RawIterator<AnyValue[], ProcedureException> procedureCallSchemaOverride( int id, AnyValue[] arguments, ProcedureCallContext context )
             throws ProcedureException;
 
     /** Invoke a read-only function by id

@@ -38,6 +38,7 @@ import org.neo4j.internal.kernel.api.SchemaReadCore;
 import org.neo4j.internal.kernel.api.TokenRead;
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
+import org.neo4j.internal.kernel.api.procs.ProcedureCallContext;
 import org.neo4j.internal.kernel.api.procs.ProcedureHandle;
 import org.neo4j.internal.kernel.api.procs.ProcedureSignature;
 import org.neo4j.internal.kernel.api.procs.QualifiedName;
@@ -795,7 +796,7 @@ public class AllStoreHolder extends Read
     }
 
     @Override
-    public RawIterator<AnyValue[],ProcedureException> procedureCallRead( int id, AnyValue[] arguments )
+    public RawIterator<AnyValue[],ProcedureException> procedureCallRead( int id, AnyValue[] arguments, ProcedureCallContext context )
             throws ProcedureException
     {
         AccessMode accessMode = ktx.securityContext().mode();
@@ -804,19 +805,19 @@ public class AllStoreHolder extends Read
             throw accessMode.onViolation( format( "Read operations are not allowed for %s.",
                     ktx.securityContext().description() ) );
         }
-        return callProcedure( id, arguments, new RestrictedAccessMode( ktx.securityContext().mode(), AccessMode.Static.READ ) );
+        return callProcedure( id, arguments, new RestrictedAccessMode( ktx.securityContext().mode(), AccessMode.Static.READ ), context );
     }
 
     @Override
-    public RawIterator<AnyValue[],ProcedureException> procedureCallReadOverride( int id, AnyValue[] arguments )
+    public RawIterator<AnyValue[],ProcedureException> procedureCallReadOverride( int id, AnyValue[] arguments, ProcedureCallContext context )
             throws ProcedureException
     {
         return callProcedure( id, arguments,
-                new OverriddenAccessMode( ktx.securityContext().mode(), AccessMode.Static.READ ) );
+                new OverriddenAccessMode( ktx.securityContext().mode(), AccessMode.Static.READ ), context );
     }
 
     @Override
-    public RawIterator<AnyValue[],ProcedureException> procedureCallWrite( int id, AnyValue[] arguments )
+    public RawIterator<AnyValue[],ProcedureException> procedureCallWrite( int id, AnyValue[] arguments, ProcedureCallContext context )
             throws ProcedureException
     {
         AccessMode accessMode = ktx.securityContext().mode();
@@ -826,19 +827,19 @@ public class AllStoreHolder extends Read
                     ktx.securityContext().description() ) );
         }
         return callProcedure( id, arguments,
-                new RestrictedAccessMode( ktx.securityContext().mode(), AccessMode.Static.TOKEN_WRITE ) );
+                new RestrictedAccessMode( ktx.securityContext().mode(), AccessMode.Static.TOKEN_WRITE ), context );
     }
 
     @Override
-    public RawIterator<AnyValue[],ProcedureException> procedureCallWriteOverride( int id, AnyValue[] arguments )
+    public RawIterator<AnyValue[],ProcedureException> procedureCallWriteOverride( int id, AnyValue[] arguments, ProcedureCallContext context )
             throws ProcedureException
     {
         return callProcedure( id, arguments,
-                new OverriddenAccessMode( ktx.securityContext().mode(), AccessMode.Static.TOKEN_WRITE ) );
+                new OverriddenAccessMode( ktx.securityContext().mode(), AccessMode.Static.TOKEN_WRITE ), context );
     }
 
     @Override
-    public RawIterator<AnyValue[],ProcedureException> procedureCallSchema( int id, AnyValue[] arguments )
+    public RawIterator<AnyValue[],ProcedureException> procedureCallSchema( int id, AnyValue[] arguments, ProcedureCallContext context )
             throws ProcedureException
     {
         AccessMode accessMode = ktx.securityContext().mode();
@@ -848,15 +849,15 @@ public class AllStoreHolder extends Read
                     ktx.securityContext().description() ) );
         }
         return callProcedure( id, arguments,
-                new RestrictedAccessMode( ktx.securityContext().mode(), AccessMode.Static.FULL ) );
+                new RestrictedAccessMode( ktx.securityContext().mode(), AccessMode.Static.FULL ), context );
     }
 
     @Override
-    public RawIterator<AnyValue[],ProcedureException> procedureCallSchemaOverride( int id, AnyValue[] arguments )
+    public RawIterator<AnyValue[],ProcedureException> procedureCallSchemaOverride( int id, AnyValue[] arguments, ProcedureCallContext context )
             throws ProcedureException
     {
         return callProcedure( id, arguments,
-                new OverriddenAccessMode( ktx.securityContext().mode(), AccessMode.Static.FULL ) );
+                new OverriddenAccessMode( ktx.securityContext().mode(), AccessMode.Static.FULL ), context );
     }
 
     @Override
@@ -910,7 +911,7 @@ public class AllStoreHolder extends Read
     }
 
     private RawIterator<AnyValue[],ProcedureException> callProcedure(
-            int id, AnyValue[] input, final AccessMode override )
+            int id, AnyValue[] input, final AccessMode override, ProcedureCallContext procedureCallContext )
             throws ProcedureException
     {
         ktx.assertOpen();
@@ -921,7 +922,7 @@ public class AllStoreHolder extends Read
               Statement statement = ktx.acquireStatement() )
         {
             procedureCall = globalProcedures
-                    .callProcedure( prepareContext( procedureSecurityContext ), id, input, statement );
+                    .callProcedure( prepareContext( procedureSecurityContext, procedureCallContext ), id, input, statement );
         }
         return createIterator( procedureSecurityContext, procedureCall );
     }
@@ -958,7 +959,7 @@ public class AllStoreHolder extends Read
         SecurityContext securityContext = ktx.securityContext().withMode( mode );
         try ( KernelTransaction.Revertable ignore = ktx.overrideWith( securityContext ) )
         {
-            return globalProcedures.callFunction( prepareContext( securityContext ), id, input );
+            return globalProcedures.callFunction( prepareContext( securityContext, ProcedureCallContext.EMPTY ), id, input );
         }
     }
 
@@ -970,15 +971,16 @@ public class AllStoreHolder extends Read
         SecurityContext securityContext = ktx.securityContext().withMode( mode );
         try ( KernelTransaction.Revertable ignore = ktx.overrideWith( securityContext ) )
         {
-            return globalProcedures.createAggregationFunction( prepareContext( securityContext ), id );
+            return globalProcedures.createAggregationFunction( prepareContext( securityContext, ProcedureCallContext.EMPTY ), id );
         }
     }
 
-    private Context prepareContext( SecurityContext securityContext )
+    private Context prepareContext( SecurityContext securityContext, ProcedureCallContext procedureContext )
     {
         return buildContext( databaseDependencies, valueMapper )
                 .withKernelTransaction( ktx )
                 .withSecurityContext( securityContext )
+                .withProcedureCallContext( procedureContext )
                 .context();
     }
 

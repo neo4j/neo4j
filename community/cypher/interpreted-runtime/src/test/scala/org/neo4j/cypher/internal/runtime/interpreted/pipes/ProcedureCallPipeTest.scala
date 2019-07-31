@@ -23,13 +23,14 @@ import org.mockito.ArgumentMatchers.any
 import org.mockito.Mockito
 import org.mockito.invocation.InvocationOnMock
 import org.mockito.stubbing.Answer
-import org.neo4j.cypher.internal.runtime.ImplicitValueConversion._
-import org.neo4j.cypher.internal.runtime.{EagerReadWriteCallMode, ExecutionContext, LazyReadOnlyCallMode, QueryContext}
-import org.neo4j.cypher.internal.runtime.interpreted.{ImplicitDummyPos, QueryStateHelper}
-import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Variable
 import org.neo4j.cypher.internal.logical.plans._
+import org.neo4j.cypher.internal.runtime.ImplicitValueConversion._
+import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Variable
+import org.neo4j.cypher.internal.runtime.interpreted.{ImplicitDummyPos, QueryStateHelper}
+import org.neo4j.cypher.internal.runtime.{EagerReadWriteCallMode, ExecutionContext, LazyReadOnlyCallMode, QueryContext}
 import org.neo4j.cypher.internal.v4_0.util.symbols._
 import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
+import org.neo4j.internal.kernel.api.procs.ProcedureCallContext
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.{IntValue, LongValue, NumberValue, Values}
 import org.scalatest.mock.MockitoSugar
@@ -131,7 +132,7 @@ class ProcedureCallPipeTest
     }
 
     val queryContext = mock[QueryContext]
-    Mockito.when(queryContext.callReadOnlyProcedure(any[Int](), any[Seq[AnyValue]](), any[Array[String]]())).thenAnswer(
+    Mockito.when(queryContext.callReadOnlyProcedure(any[Int](), any[Seq[AnyValue]](), any[Array[String]](), ProcedureCallContext.EMPTY)).thenAnswer(
       new Answer[Iterator[Array[AnyValue]]] {
         override def answer(invocationOnMock: InvocationOnMock): Iterator[Array[AnyValue]] = {
           expectedAccessMode should equal(ProcedureReadOnlyAccess(emptyStringArray))
@@ -140,7 +141,7 @@ class ProcedureCallPipeTest
       }
     )
 
-    Mockito.when(queryContext.callReadWriteProcedure(any[Int](), any[Seq[AnyValue]](), any[Array[String]]())).thenAnswer(
+    Mockito.when(queryContext.callReadWriteProcedure(any[Int](), any[Seq[AnyValue]](), any[Array[String]](), ProcedureCallContext.EMPTY)).thenAnswer(
       new Answer[Iterator[Array[AnyValue]]] {
         override def answer(invocationOnMock: InvocationOnMock): Iterator[Array[AnyValue]] = {
           expectedAccessMode should equal(ProcedureReadWriteAccess(emptyStringArray))

@@ -29,6 +29,7 @@ import org.neo4j.cypher.internal.runtime.interpreted.DelegatingQueryTransactiona
 import org.neo4j.cypher.internal.v4_0.expressions.SemanticDirection
 import org.neo4j.graphdb.{Path, PropertyContainer}
 import org.neo4j.internal.kernel.api.helpers.RelationshipSelectionCursor
+import org.neo4j.internal.kernel.api.procs.ProcedureCallContext
 import org.neo4j.internal.kernel.api.{QueryContext => _, _}
 import org.neo4j.internal.schema.IndexDescriptor
 import org.neo4j.kernel.impl.core.EmbeddedProxySPI
@@ -168,17 +169,17 @@ class ExceptionTranslatingQueryContext(val inner: QueryContext) extends QueryCon
   override def dropRelationshipPropertyExistenceConstraint(relTypeId: Int, propertyKeyId: Int): Unit =
     translateException(inner.dropRelationshipPropertyExistenceConstraint(relTypeId, propertyKeyId))
 
-  override def callReadOnlyProcedure(id: Int, args: Seq[AnyValue], allowed: Array[String]): Iterator[Array[AnyValue]] =
-    translateIterator(inner.callReadOnlyProcedure(id, args, allowed))
+  override def callReadOnlyProcedure(id: Int, args: Seq[AnyValue], allowed: Array[String], context: ProcedureCallContext): Iterator[Array[AnyValue]] =
+    translateIterator(inner.callReadOnlyProcedure(id, args, allowed, context))
 
-  override def callReadWriteProcedure(id: Int, args: Seq[AnyValue], allowed: Array[String]): Iterator[Array[AnyValue]] =
-    translateIterator(inner.callReadWriteProcedure(id, args, allowed))
+  override def callReadWriteProcedure(id: Int, args: Seq[AnyValue], allowed: Array[String], context: ProcedureCallContext): Iterator[Array[AnyValue]] =
+    translateIterator(inner.callReadWriteProcedure(id, args, allowed, context))
 
-  override def callSchemaWriteProcedure(id: Int, args: Seq[AnyValue], allowed: Array[String]): Iterator[Array[AnyValue]] =
-    translateIterator(inner.callSchemaWriteProcedure(id, args, allowed))
+  override def callSchemaWriteProcedure(id: Int, args: Seq[AnyValue], allowed: Array[String], context: ProcedureCallContext): Iterator[Array[AnyValue]] =
+    translateIterator(inner.callSchemaWriteProcedure(id, args, allowed, context))
 
-  override def callDbmsProcedure(id: Int, args: Seq[AnyValue], allowed: Array[String]): Iterator[Array[AnyValue]] =
-    translateIterator(inner.callDbmsProcedure(id, args, allowed))
+  override def callDbmsProcedure(id: Int, args: Seq[AnyValue], allowed: Array[String], context: ProcedureCallContext): Iterator[Array[AnyValue]] =
+    translateIterator(inner.callDbmsProcedure(id, args, allowed, context))
 
   override def callFunction(id: Int, args: Array[AnyValue], allowed: Array[String]): AnyValue =
     translateException(inner.callFunction(id, args, allowed))

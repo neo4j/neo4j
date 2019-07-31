@@ -27,6 +27,7 @@ import java.util.List;
 import org.neo4j.collection.RawIterator;
 import org.neo4j.internal.kernel.api.Transaction;
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
+import org.neo4j.internal.kernel.api.procs.ProcedureCallContext;
 import org.neo4j.kernel.api.security.AnonymousContext;
 import org.neo4j.kernel.impl.api.integrationtest.KernelIntegrationTest;
 import org.neo4j.kernel.impl.util.ValueUtils;
@@ -62,7 +63,7 @@ class BuiltInSchemaProceduresIT extends KernelIntegrationTest
 
         // When
         RawIterator<AnyValue[],ProcedureException> stream =
-                procs().procedureCallRead( procs().procedureGet( procedureName( nodesProcedureName ) ).id(), new AnyValue[0] );
+                procs().procedureCallRead( procs().procedureGet( procedureName( nodesProcedureName ) ).id(), new AnyValue[0], ProcedureCallContext.EMPTY );
 
         // Then
         assertThat( asList( stream ), containsInAnyOrder(
@@ -84,7 +85,8 @@ class BuiltInSchemaProceduresIT extends KernelIntegrationTest
 
         // When
         RawIterator<AnyValue[],ProcedureException> stream =
-                procs().procedureCallRead( procs().procedureGet( procedureName( nodesProcedureName ) ).id(), new AnyValue[0] );
+                procs().procedureCallRead( procs().procedureGet( procedureName( nodesProcedureName ) ).id(), new AnyValue[0],
+                        ProcedureCallContext.EMPTY );
 
         // Then
         assertThat( asList( stream ), containsInAnyOrder(
@@ -107,7 +109,8 @@ class BuiltInSchemaProceduresIT extends KernelIntegrationTest
 
         // When
         RawIterator<AnyValue[],ProcedureException> stream =
-                procs().procedureCallRead( procs().procedureGet( procedureName( nodesProcedureName ) ).id(), new AnyValue[0] );
+                procs().procedureCallRead( procs().procedureGet( procedureName( nodesProcedureName ) ).id(), new AnyValue[0],
+                        ProcedureCallContext.EMPTY );
 
         // Then
         assertThat( asList( stream ), containsInAnyOrder(
@@ -131,7 +134,8 @@ class BuiltInSchemaProceduresIT extends KernelIntegrationTest
 
         // When
         RawIterator<AnyValue[],ProcedureException> stream =
-                procs().procedureCallRead( procs().procedureGet( procedureName( nodesProcedureName ) ).id(), new AnyValue[0] );
+                procs().procedureCallRead( procs().procedureGet( procedureName( nodesProcedureName ) ).id(), new AnyValue[0],
+                        ProcedureCallContext.EMPTY );
 
         // Then
              assertThat( asList( stream ), containsInAnyOrder(
@@ -159,7 +163,8 @@ class BuiltInSchemaProceduresIT extends KernelIntegrationTest
 
         // When
         RawIterator<AnyValue[],ProcedureException> stream =
-                procs().procedureCallRead( procs().procedureGet( procedureName( relsProcedureName ) ).id(), new AnyValue[0] );
+                procs().procedureCallRead( procs().procedureGet( procedureName( relsProcedureName ) ).id(), new AnyValue[0],
+                        ProcedureCallContext.EMPTY );
 
         // Then
         assertThat( asList( stream ), containsInAnyOrder(
@@ -185,7 +190,8 @@ class BuiltInSchemaProceduresIT extends KernelIntegrationTest
 
         // When
         RawIterator<AnyValue[],ProcedureException> stream =
-                procs().procedureCallRead( procs().procedureGet( procedureName( relsProcedureName ) ).id(), new AnyValue[0] );
+                procs().procedureCallRead( procs().procedureGet( procedureName( relsProcedureName ) ).id(), new AnyValue[0],
+                        ProcedureCallContext.EMPTY );
 
         // Then
         assertThat( asList( stream ), containsInAnyOrder(
@@ -213,7 +219,8 @@ class BuiltInSchemaProceduresIT extends KernelIntegrationTest
 
         // When
         RawIterator<AnyValue[],ProcedureException> stream =
-                procs().procedureCallRead( procs().procedureGet( procedureName( relsProcedureName ) ).id(), new AnyValue[0] );
+                procs().procedureCallRead( procs().procedureGet( procedureName( relsProcedureName ) ).id(), new AnyValue[0],
+                        ProcedureCallContext.EMPTY );
 
         // Then
         assertThat( asList( stream ), containsInAnyOrder(
@@ -238,7 +245,8 @@ class BuiltInSchemaProceduresIT extends KernelIntegrationTest
 
         // When
         RawIterator<AnyValue[],ProcedureException> stream =
-                procs().procedureCallRead( procs().procedureGet( procedureName( nodesProcedureName ) ).id(), new AnyValue[0] );
+                procs().procedureCallRead( procs().procedureGet( procedureName( nodesProcedureName ) ).id(), new AnyValue[0],
+                        ProcedureCallContext.EMPTY );
 
         // Then
         assertThat( asList( stream ), containsInAnyOrder(
@@ -261,7 +269,8 @@ class BuiltInSchemaProceduresIT extends KernelIntegrationTest
 
         // When
         RawIterator<AnyValue[],ProcedureException> stream =
-                procs().procedureCallRead( procs().procedureGet( procedureName( nodesProcedureName ) ).id(), new AnyValue[0] );
+                procs().procedureCallRead( procs().procedureGet( procedureName( nodesProcedureName ) ).id(), new AnyValue[0],
+                        ProcedureCallContext.EMPTY );
 
         // Then
         assertThat( asList( stream ), containsInAnyOrder(
@@ -286,7 +295,8 @@ class BuiltInSchemaProceduresIT extends KernelIntegrationTest
 
         // When
         RawIterator<AnyValue[],ProcedureException> stream =
-                procs().procedureCallRead( procs().procedureGet( procedureName( relsProcedureName ) ).id(), new AnyValue[0] );
+                procs().procedureCallRead( procs().procedureGet( procedureName( relsProcedureName ) ).id(), new AnyValue[0],
+                        ProcedureCallContext.EMPTY );
 
         // Then
         assertThat( asList( stream ), containsInAnyOrder(
@@ -311,7 +321,8 @@ class BuiltInSchemaProceduresIT extends KernelIntegrationTest
 
         // When
         RawIterator<AnyValue[],ProcedureException> stream =
-                procs().procedureCallRead( procs().procedureGet( procedureName( relsProcedureName ) ).id(), new AnyValue[0] );
+                procs().procedureCallRead( procs().procedureGet( procedureName( relsProcedureName ) ).id(), new AnyValue[0],
+                        ProcedureCallContext.EMPTY );
 
         // Then
         assertThat( asList( stream ), containsInAnyOrder(
@@ -338,7 +349,8 @@ class BuiltInSchemaProceduresIT extends KernelIntegrationTest
 
         // When
         RawIterator<AnyValue[],ProcedureException> stream =
-                procs().procedureCallRead( procs().procedureGet( procedureName( nodesProcedureName ) ).id(), new AnyValue[0] );
+                procs().procedureCallRead( procs().procedureGet( procedureName( nodesProcedureName ) ).id(), new AnyValue[0],
+                        ProcedureCallContext.EMPTY );
 
         // Then
         assertThat( asList( stream ), containsInAnyOrder(
@@ -364,7 +376,8 @@ class BuiltInSchemaProceduresIT extends KernelIntegrationTest
 
         // When
         RawIterator<AnyValue[],ProcedureException> stream =
-                procs().procedureCallRead( procs().procedureGet( procedureName( nodesProcedureName ) ).id(), new AnyValue[0] );
+                procs().procedureCallRead( procs().procedureGet( procedureName( nodesProcedureName ) ).id(), new AnyValue[0],
+                        ProcedureCallContext.EMPTY );
 
         // Then
         assertThat( asList( stream ), contains(
@@ -390,7 +403,8 @@ class BuiltInSchemaProceduresIT extends KernelIntegrationTest
 
         // When
         RawIterator<AnyValue[],ProcedureException> stream =
-                procs().procedureCallRead( procs().procedureGet( procedureName( nodesProcedureName ) ).id(), new AnyValue[0] );
+                procs().procedureCallRead( procs().procedureGet( procedureName( nodesProcedureName ) ).id(), new AnyValue[0],
+                        ProcedureCallContext.EMPTY );
 
         // Then
         assertThat( asList( stream ), containsInAnyOrder(
@@ -418,7 +432,8 @@ class BuiltInSchemaProceduresIT extends KernelIntegrationTest
 
         // When
         RawIterator<AnyValue[],ProcedureException> stream =
-                procs().procedureCallRead( procs().procedureGet( procedureName( nodesProcedureName ) ).id(), new AnyValue[0] );
+                procs().procedureCallRead( procs().procedureGet( procedureName( nodesProcedureName ) ).id(), new AnyValue[0],
+                        ProcedureCallContext.EMPTY );
 
         // Then
         assertThat( asList( stream ), containsInAnyOrder(
@@ -446,7 +461,8 @@ class BuiltInSchemaProceduresIT extends KernelIntegrationTest
 
         // When
         RawIterator<AnyValue[],ProcedureException> stream =
-                procs().procedureCallRead( procs().procedureGet( procedureName( relsProcedureName ) ).id(), new AnyValue[0] );
+                procs().procedureCallRead( procs().procedureGet( procedureName( relsProcedureName ) ).id(), new AnyValue[0],
+                        ProcedureCallContext.EMPTY );
 
         // Then
         assertThat( asList( stream ),
@@ -474,7 +490,8 @@ class BuiltInSchemaProceduresIT extends KernelIntegrationTest
 
         // When
         RawIterator<AnyValue[],ProcedureException> stream =
-                procs().procedureCallRead( procs().procedureGet( procedureName( relsProcedureName ) ).id(), new AnyValue[0] );
+                procs().procedureCallRead( procs().procedureGet( procedureName( relsProcedureName ) ).id(), new AnyValue[0],
+                        ProcedureCallContext.EMPTY );
 
         // Then
         assertThat( asList( stream ),
@@ -500,7 +517,8 @@ class BuiltInSchemaProceduresIT extends KernelIntegrationTest
 
         // When
         RawIterator<AnyValue[],ProcedureException> stream =
-                procs().procedureCallRead( procs().procedureGet( procedureName( relsProcedureName ) ).id(), new AnyValue[0] );
+                procs().procedureCallRead( procs().procedureGet( procedureName( relsProcedureName ) ).id(), new AnyValue[0],
+                        ProcedureCallContext.EMPTY );
 
         // Then
         assertThat( asList( stream ), containsInAnyOrder(
@@ -530,7 +548,8 @@ class BuiltInSchemaProceduresIT extends KernelIntegrationTest
 
         // When
         RawIterator<AnyValue[],ProcedureException> stream =
-                procs().procedureCallRead( procs().procedureGet( procedureName( relsProcedureName ) ).id(), new AnyValue[0] );
+                procs().procedureCallRead( procs().procedureGet( procedureName( relsProcedureName ) ).id(), new AnyValue[0],
+                        ProcedureCallContext.EMPTY );
 
         // Then
         assertThat( asList( stream ), containsInAnyOrder(
@@ -561,7 +580,8 @@ class BuiltInSchemaProceduresIT extends KernelIntegrationTest
 
         // When
         RawIterator<AnyValue[],ProcedureException> stream =
-                procs().procedureCallRead( procs().procedureGet( procedureName( relsProcedureName ) ).id(), new AnyValue[0] );
+                procs().procedureCallRead( procs().procedureGet( procedureName( relsProcedureName ) ).id(), new AnyValue[0],
+                        ProcedureCallContext.EMPTY );
 
         // Then
         assertThat( asList( stream ), containsInAnyOrder(
@@ -592,7 +612,8 @@ class BuiltInSchemaProceduresIT extends KernelIntegrationTest
 
         // When
         RawIterator<AnyValue[],ProcedureException> stream =
-                procs().procedureCallRead( procs().procedureGet( procedureName( nodesProcedureName ) ).id(), new AnyValue[0] );
+                procs().procedureCallRead( procs().procedureGet( procedureName( nodesProcedureName ) ).id(), new AnyValue[0],
+                        ProcedureCallContext.EMPTY );
 
         // Then
         assertThat( asList( stream ), containsInAnyOrder(

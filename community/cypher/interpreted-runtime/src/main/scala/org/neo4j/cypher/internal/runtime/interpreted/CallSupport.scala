@@ -22,10 +22,9 @@ package org.neo4j.cypher.internal.runtime.interpreted
 import org.neo4j.collection.RawIterator
 import org.neo4j.cypher.internal.runtime.UserDefinedAggregator
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException
-import org.neo4j.internal.kernel.api.procs.UserAggregator
+import org.neo4j.internal.kernel.api.procs.{ProcedureCallContext, UserAggregator}
 import org.neo4j.kernel.impl.query.TransactionalContext
 import org.neo4j.values.AnyValue
-
 
 /**
   * This class contains helpers for calling procedures, user-defined functions and user-defined aggregations.
@@ -43,37 +42,38 @@ object CallSupport {
   }
 
   def callReadOnlyProcedure(transactionalContext: TransactionalContext, id: Int, args: Seq[AnyValue],
-                            allowed: Array[String]): Iterator[Array[AnyValue]] = {
+                            allowed: Array[String], context: ProcedureCallContext): Iterator[Array[AnyValue]] = {
     val call: KernelProcedureCall =
       if (shouldElevate(transactionalContext, allowed))
-        transactionalContext.kernelTransaction.procedures().procedureCallReadOverride(id, _)
+        transactionalContext.kernelTransaction.procedures().procedureCallReadOverride(id, _, context)
       else
-        transactionalContext.kernelTransaction.procedures().procedureCallRead(id, _)
+        transactionalContext.kernelTransaction.procedures().procedureCallRead(id, _, context)
 
     callProcedure(args, call)
   }
 
   def callReadWriteProcedure(transactionalContext: TransactionalContext, id: Int, args: Seq[AnyValue],
-                             allowed: Array[String]): Iterator[Array[AnyValue]] = {
+                             allowed: Array[String], context: ProcedureCallContext): Iterator[Array[AnyValue]] = {
     val call: KernelProcedureCall =
       if (shouldElevate(transactionalContext, allowed))
-        transactionalContext.kernelTransaction().procedures().procedureCallWriteOverride(id, _)
+        transactionalContext.kernelTransaction().procedures().procedureCallWriteOverride(id, _, context)
       else
-        transactionalContext.kernelTransaction().procedures().procedureCallWrite(id, _)
+        transactionalContext.kernelTransaction().procedures().procedureCallWrite(id, _, context)
     callProcedure(args, call)
   }
 
   def callSchemaWriteProcedure(transactionalContext: TransactionalContext, id: Int, args: Seq[AnyValue],
-                               allowed: Array[String]): Iterator[Array[AnyValue]] = {
+                               allowed: Array[String], context: ProcedureCallContext): Iterator[Array[AnyValue]] = {
     val call: KernelProcedureCall =
       if (shouldElevate(transactionalContext, allowed))
-        transactionalContext.kernelTransaction().procedures().procedureCallSchemaOverride(id, _)
+        transactionalContext.kernelTransaction().procedures().procedureCallSchemaOverride(id, _, context)
       else
-        transactionalContext.kernelTransaction().procedures().procedureCallSchema(id, _)
+        transactionalContext.kernelTransaction().procedures().procedureCallSchema(id, _, context)
     callProcedure(args, call)
   }
 
-  def callDbmsProcedure(transactionalContext: TransactionalContext, id: Int, args: Seq[AnyValue], allowed: Array[String]): Iterator[Array[AnyValue]] =
+  def callDbmsProcedure(transactionalContext: TransactionalContext, id: Int, args: Seq[AnyValue],
+                        allowed: Array[String], context: ProcedureCallContext): Iterator[Array[AnyValue]] =
     callProcedure(args,
                   transactionalContext.dbmsOperations.procedureCallDbms(id,
                                                                         _,

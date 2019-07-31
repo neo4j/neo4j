@@ -44,9 +44,10 @@ import org.neo4j.internal.kernel.api
 import org.neo4j.internal.kernel.api.IndexQuery.ExactPredicate
 import org.neo4j.internal.kernel.api.helpers.RelationshipSelections.{allCursor, incomingCursor, outgoingCursor}
 import org.neo4j.internal.kernel.api.helpers._
-import org.neo4j.internal.kernel.api.{IndexQuery, IndexReadSession, InternalIndexState, KernelReadTracer, NodeCursor, NodeValueIndexCursor, PropertyCursor, Read, RelationshipScanCursor, TokenRead}
-import org.neo4j.internal.schema.{IndexDescriptor, SchemaDescriptor, IndexOrder => KernelIndexOrder}
+import org.neo4j.internal.kernel.api.procs.ProcedureCallContext
+import org.neo4j.internal.kernel.api.{QueryContext => _, _}
 import org.neo4j.internal.schema.constraints.ConstraintDescriptorFactory
+import org.neo4j.internal.schema.{IndexDescriptor, SchemaDescriptor, IndexOrder => KernelIndexOrder}
 import org.neo4j.kernel.GraphDatabaseQueryService
 import org.neo4j.kernel.api.exceptions.schema.{AlreadyConstrainedException, AlreadyIndexedException}
 import org.neo4j.kernel.api.{ResourceManager => _, _}
@@ -54,7 +55,7 @@ import org.neo4j.kernel.impl.core.EmbeddedProxySPI
 import org.neo4j.kernel.impl.util.ValueUtils.{fromNodeProxy, fromRelationshipProxy}
 import org.neo4j.kernel.impl.util.{DefaultValueMapper, ValueUtils}
 import org.neo4j.storageengine.api.RelationshipVisitor
-import org.neo4j.values.storable.{TextValue, Value, Values, _}
+import org.neo4j.values.storable.{TextValue, Value, Values}
 import org.neo4j.values.virtual._
 import org.neo4j.values.{AnyValue, ValueMapper}
 
@@ -859,17 +860,17 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
       .asScala
   }
 
-  override def callReadOnlyProcedure(id: Int, args: Seq[AnyValue], allowed: Array[String]): Iterator[Array[AnyValue]] =
-    CallSupport.callReadOnlyProcedure(transactionalContext.tc, id, args, allowed)
+  override def callReadOnlyProcedure(id: Int, args: Seq[AnyValue], allowed: Array[String], context: ProcedureCallContext): Iterator[Array[AnyValue]] =
+    CallSupport.callReadOnlyProcedure(transactionalContext.tc, id, args, allowed, context)
 
-  override def callReadWriteProcedure(id: Int, args: Seq[AnyValue], allowed: Array[String]): Iterator[Array[AnyValue]] =
-    CallSupport.callReadWriteProcedure(transactionalContext.tc, id, args, allowed)
+  override def callReadWriteProcedure(id: Int, args: Seq[AnyValue], allowed: Array[String], context: ProcedureCallContext): Iterator[Array[AnyValue]] =
+    CallSupport.callReadWriteProcedure(transactionalContext.tc, id, args, allowed, context)
 
-  override def callSchemaWriteProcedure(id: Int, args: Seq[AnyValue], allowed: Array[String]): Iterator[Array[AnyValue]] =
-  CallSupport.callSchemaWriteProcedure(transactionalContext.tc, id, args, allowed)
+  override def callSchemaWriteProcedure(id: Int, args: Seq[AnyValue], allowed: Array[String], context: ProcedureCallContext): Iterator[Array[AnyValue]] =
+  CallSupport.callSchemaWriteProcedure(transactionalContext.tc, id, args, allowed, context)
 
-  override def callDbmsProcedure(id: Int, args: Seq[AnyValue], allowed: Array[String]): Iterator[Array[AnyValue]] =
-    CallSupport.callDbmsProcedure(transactionalContext.tc, id, args, allowed)
+  override def callDbmsProcedure(id: Int, args: Seq[AnyValue], allowed: Array[String], context: ProcedureCallContext): Iterator[Array[AnyValue]] =
+    CallSupport.callDbmsProcedure(transactionalContext.tc, id, args, allowed, context)
 
   override def callFunction(id: Int, args: Array[AnyValue], allowed: Array[String]): AnyValue =
     CallSupport.callFunction(transactionalContext.tc, id, args, allowed)

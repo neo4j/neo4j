@@ -24,6 +24,7 @@ import java.util.function.Function;
 
 import org.neo4j.common.DependencyResolver;
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
+import org.neo4j.internal.kernel.api.procs.ProcedureCallContext;
 import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.exceptions.Status;
@@ -39,17 +40,19 @@ public class BasicContext implements Context
     private final SecurityContext securityContext;
     private final ValueMapper<Object> valueMapper;
     private final Thread thread;
+    private final ProcedureCallContext procedureCallContext;
 
     private BasicContext( DependencyResolver resolver,
             KernelTransaction kernelTransaction,
             SecurityContext securityContext, ValueMapper<Object> valueMapper,
-            Thread thread )
+            Thread thread, ProcedureCallContext procedureCallContext )
     {
         this.resolver = resolver;
         this.kernelTransaction = kernelTransaction;
         this.securityContext = securityContext;
         this.valueMapper = valueMapper;
         this.thread = thread;
+        this.procedureCallContext = procedureCallContext;
     }
 
     @Override
@@ -112,6 +115,12 @@ public class BasicContext implements Context
         return throwIfNull( "TransactionClock", kernelTransaction, t -> t.clocks().transactionClock() );
     }
 
+    @Override
+    public ProcedureCallContext procedureCallContext()
+    {
+        return procedureCallContext;
+    }
+
     public static ContextBuilder buildContext( DependencyResolver dependencyResolver, ValueMapper<Object> valueMapper )
     {
         return new ContextBuilder( dependencyResolver, valueMapper );
@@ -140,6 +149,7 @@ public class BasicContext implements Context
         private SecurityContext securityContext = SecurityContext.AUTH_DISABLED;
         private Thread thread = Thread.currentThread();
         private ValueMapper<Object> valueMapper;
+        private ProcedureCallContext procedureCallContext;
 
         private ContextBuilder( DependencyResolver resolver, ValueMapper<Object> valueMapper )
         {
@@ -159,13 +169,19 @@ public class BasicContext implements Context
             return this;
         }
 
+        public ContextBuilder withProcedureCallContext( ProcedureCallContext procedureContext )
+        {
+            this.procedureCallContext = procedureContext;
+            return this;
+        }
+
         public Context context()
         {
             requireNonNull( resolver );
             requireNonNull( securityContext );
             requireNonNull( valueMapper );
             requireNonNull( thread );
-            return new BasicContext( resolver, kernelTransaction, securityContext, valueMapper, thread );
+            return new BasicContext( resolver, kernelTransaction, securityContext, valueMapper, thread, procedureCallContext );
         }
     }
 }

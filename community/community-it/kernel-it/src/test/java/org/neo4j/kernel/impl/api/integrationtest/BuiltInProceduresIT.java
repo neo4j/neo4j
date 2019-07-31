@@ -41,6 +41,7 @@ import org.neo4j.internal.kernel.api.SchemaWrite;
 import org.neo4j.internal.kernel.api.TokenWrite;
 import org.neo4j.internal.kernel.api.Transaction;
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
+import org.neo4j.internal.kernel.api.procs.ProcedureCallContext;
 import org.neo4j.internal.kernel.api.procs.ProcedureHandle;
 import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.internal.schema.IndexDescriptor;
@@ -91,7 +92,8 @@ class BuiltInProceduresIT extends KernelIntegrationTest
 
         // When
         RawIterator<AnyValue[],ProcedureException> stream =
-                procs().procedureCallRead( procs().procedureGet( procedureName( "db", "labels" ) ).id(), new AnyValue[0] );
+                procs().procedureCallRead( procs().procedureGet( procedureName( "db", "labels" ) ).id(), new AnyValue[0],
+                        ProcedureCallContext.EMPTY );
 
         // Then
         assertThat( asList( stream ), contains( equalTo( new AnyValue[]{stringValue("MyLabel"), longValue(1L)} ) ) );
@@ -130,7 +132,8 @@ class BuiltInProceduresIT extends KernelIntegrationTest
         // When
         constraintLatch.await();
         RawIterator<AnyValue[],ProcedureException> stream =
-                procs().procedureCallRead( procs().procedureGet( procedureName( "db", "labels" ) ).id(), new AnyValue[0] );
+                procs().procedureCallRead( procs().procedureGet( procedureName( "db", "labels" ) ).id(), new AnyValue[0],
+                        ProcedureCallContext.EMPTY );
 
         // Then
         try
@@ -155,7 +158,8 @@ class BuiltInProceduresIT extends KernelIntegrationTest
 
         // When
         RawIterator<AnyValue[],ProcedureException> stream =
-                procs().procedureCallRead( procs().procedureGet( procedureName( "db", "propertyKeys" ) ).id(), new AnyValue[0] );
+                procs().procedureCallRead( procs().procedureGet( procedureName( "db", "propertyKeys" ) ).id(), new AnyValue[0],
+                        ProcedureCallContext.EMPTY );
 
         // Then
         assertThat( asList( stream ), contains( equalTo( new AnyValue[]{stringValue( "MyProp" )} ) ) );
@@ -174,7 +178,8 @@ class BuiltInProceduresIT extends KernelIntegrationTest
 
         // When
         RawIterator<AnyValue[],ProcedureException> stream =
-                procs().procedureCallRead( procs().procedureGet( procedureName( "db", "relationshipTypes" ) ).id(), new AnyValue[0] );
+                procs().procedureCallRead( procs().procedureGet( procedureName( "db", "relationshipTypes" ) ).id(), new AnyValue[0],
+                        ProcedureCallContext.EMPTY);
 
         // Then
         assertThat( asList( stream ), contains( equalTo( new AnyValue[]{stringValue( "MyRelType" ), longValue( 1L ) } ) ) );
@@ -185,7 +190,8 @@ class BuiltInProceduresIT extends KernelIntegrationTest
     {
         // When
         ProcedureHandle procedures = procs().procedureGet( procedureName( "dbms", "procedures" ) );
-        RawIterator<AnyValue[],ProcedureException> stream = procs().procedureCallRead( procedures.id(), new AnyValue[0] );
+        RawIterator<AnyValue[],ProcedureException> stream = procs().procedureCallRead( procedures.id(), new AnyValue[0],
+                ProcedureCallContext.EMPTY );
 
         // Then
         assertThat( asList( stream ), containsInAnyOrder(
@@ -294,7 +300,8 @@ class BuiltInProceduresIT extends KernelIntegrationTest
 
         // When
         RawIterator<AnyValue[],ProcedureException> stream =
-                procs().procedureCallRead( procs().procedureGet( procedureName( "dbms", "components" ) ).id(), new AnyValue[0] );
+                procs().procedureCallRead( procs().procedureGet( procedureName( "dbms", "components" ) ).id(), new AnyValue[0],
+                        ProcedureCallContext.EMPTY );
 
         // Then
         assertThat( asList( stream ), contains( equalTo( new AnyValue[]{stringValue( "Neo4j Kernel" ),
@@ -334,7 +341,8 @@ class BuiltInProceduresIT extends KernelIntegrationTest
 
         // When
         RawIterator<AnyValue[],ProcedureException> stream =
-                procs().procedureCallRead( procs().procedureGet( procedureName( "db", "indexes" ) ).id(), new AnyValue[0] );
+                procs().procedureCallRead( procs().procedureGet( procedureName( "db", "indexes" ) ).id(), new AnyValue[0],
+                        ProcedureCallContext.EMPTY );
 
         Set<AnyValue[]> result = new HashSet<>();
         while ( stream.hasNext() )
@@ -424,7 +432,8 @@ class BuiltInProceduresIT extends KernelIntegrationTest
         // When
         constraintLatch.await();
         RawIterator<AnyValue[],ProcedureException> stream =
-                procs().procedureCallRead( procs().procedureGet( procedureName( "db", "indexes" ) ).id(), new AnyValue[0] );
+                procs().procedureCallRead( procs().procedureGet( procedureName( "db", "indexes" ) ).id(), new AnyValue[0],
+                        ProcedureCallContext.EMPTY );
 
         Set<Object[]> result = new HashSet<>();
         while ( stream.hasNext() )

@@ -185,7 +185,10 @@ public class KernelToken implements Token
     public Iterator<NamedToken> labelsGetAllTokens()
     {
         ktx.assertOpen();
-        return tokenHolders.labelTokens().getAllTokens().iterator();
+        AccessMode mode = ktx.securityContext().mode();
+        return Iterators.stream( tokenHolders.labelTokens().getAllTokens().iterator() )
+                .filter( label -> !mode.disallowsTraverseLabel( label.id() ) )
+                .iterator();
     }
 
     @Override
@@ -202,7 +205,10 @@ public class KernelToken implements Token
     public Iterator<NamedToken> relationshipTypesGetAllTokens()
     {
         ktx.assertOpen();
-        return tokenHolders.relationshipTypeTokens().getAllTokens().iterator();
+        AccessMode mode = ktx.securityContext().mode();
+        return Iterators.stream( tokenHolders.relationshipTypeTokens().getAllTokens().iterator() )
+                .filter( relType -> !mode.disallowsTraverseLabel( relType.id() ) )
+                .iterator();
     }
 
     @Override

@@ -23,6 +23,7 @@ import java.time.Clock;
 
 import org.neo4j.common.DependencyResolver;
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
+import org.neo4j.internal.kernel.api.procs.ProcedureCallContext;
 import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
@@ -128,4 +129,13 @@ public interface Context
      * @throws ProcedureException if no clock has been associated with the context
      */
     Clock transactionClock() throws ProcedureException;
+
+    /**
+     * Returns the procedure call context of this context.
+     * <p>
+     * This method is always safe to call, there should always be a procedure call context associated with the context.
+     *
+     * @return the procedure call context of this context
+     */
+    ProcedureCallContext procedureCallContext();
 }

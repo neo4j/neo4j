@@ -87,7 +87,7 @@ public class BuiltInProcedures
     public Stream<LabelResult> listLabels()
     {
         List<LabelResult> labelResults =
-                TokenAccess.LABELS.inUse( tx ).stream().map( label ->
+                TokenAccess.LABELS.all( tx ).stream().map( label ->
                 {
                     int labelId = tx.tokenRead().nodeLabel( label.name() );
                     return new LabelResult( label, tx.dataRead().countsForNode( labelId ) );
@@ -100,7 +100,7 @@ public class BuiltInProcedures
     public Stream<PropertyKeyResult> listPropertyKeys()
     {
         List<PropertyKeyResult> propertyKeys =
-                TokenAccess.PROPERTY_KEYS.inUse( tx ).stream().map( PropertyKeyResult::new ).collect( Collectors.toList() );
+                TokenAccess.PROPERTY_KEYS.all( tx ).stream().map( PropertyKeyResult::new ).collect( Collectors.toList() );
         return propertyKeys.stream();
     }
 
@@ -109,7 +109,7 @@ public class BuiltInProcedures
     public Stream<RelationshipTypeResult> listRelationshipTypes()
     {
         List<RelationshipTypeResult> relationshipTypes =
-                TokenAccess.RELATIONSHIP_TYPES.inUse( tx ).stream().map( type ->
+                TokenAccess.RELATIONSHIP_TYPES.all( tx ).stream().map( type ->
                 {
                     int typeId = tx.tokenRead().relationshipType( type.name() );
                     return new RelationshipTypeResult( type, tx.dataRead().countsForRelationship( TokenRead.ANY_LABEL, typeId, TokenRead.ANY_LABEL ) );

@@ -47,6 +47,7 @@ import org.neo4j.graphdb.factory.module.edition.AbstractEditionModule;
 import org.neo4j.graphdb.spatial.Geometry;
 import org.neo4j.graphdb.spatial.Point;
 import org.neo4j.internal.collector.DataCollector;
+import org.neo4j.internal.kernel.api.procs.ProcedureCallContext;
 import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.impl.fulltext.FulltextAdapter;
@@ -270,6 +271,7 @@ public class DatabaseManagementServiceFactory
         globalProcedures.registerComponent( ProcedureTransaction.class, new ProcedureTransactionProvider(), true );
         globalProcedures.registerComponent( org.neo4j.procedure.TerminationGuard.class, new TerminationGuardProvider(), true );
         globalProcedures.registerComponent( SecurityContext.class, Context::securityContext, true );
+        globalProcedures.registerComponent( ProcedureCallContext.class, Context::procedureCallContext, true );
         globalProcedures.registerComponent( FulltextAdapter.class, ctx -> ctx.dependencyResolver().resolveDependency( FulltextAdapter.class ), true );
         globalProcedures.registerComponent( GraphDatabaseService.class,
                 ctx -> new GraphDatabaseFacade( (GraphDatabaseFacade) ctx.graphDatabaseAPI(), new ProcedureLoginContextTransformer( ctx ) ), true );
