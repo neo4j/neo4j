@@ -21,23 +21,37 @@ package org.neo4j.internal.kernel.api.procs;
 
 import java.util.stream.Stream;
 
+/**
+ * Has information about the context in which the procedure has been called in.
+ * Can for instance be used by procedures to save calculating fields that are not yielded afterwards
+ */
 public class ProcedureCallContext
 {
     private final String[] yieldFieldNames;
     private final boolean isUsedFromCypher;
 
-    public static ProcedureCallContext EMPTY = new ProcedureCallContext( new String[]{}, false );
-
-    public ProcedureCallContext(String[] fieldNames, boolean isUsedFromCypher) {
+    public ProcedureCallContext( String[] fieldNames, boolean isUsedFromCypher )
+    {
         yieldFieldNames = fieldNames;
         this.isUsedFromCypher = isUsedFromCypher;
     }
 
-    public Stream<String> getStreamOfYieldFieldNames(){
-        return Stream.of(yieldFieldNames);
+    /*
+     * Get a stream of all the field names the procedure was requested to yield
+     */
+    public Stream<String> getStreamOfYieldFieldNames()
+    {
+        return Stream.of( yieldFieldNames );
     }
 
-    public boolean isUsed() {
+    /*
+     * Indicates whether the procedure was called via a complete Cypher stack. Check this to make sure you are not in a testing environment
+     */
+    public boolean isUsed()
+    {
         return isUsedFromCypher;
     }
+
+    /* Can be used for testing purposes */
+    public static ProcedureCallContext EMPTY = new ProcedureCallContext( new String[]{}, false );
 }
