@@ -87,7 +87,7 @@ public abstract class StringValue extends TextValue
         }
         else if ( separator.isEmpty() )
         {
-            return VirtualValues.fromArray( splitToStringArray( asString ) );
+            return VirtualValues.fromArray( Values.charArray( asString.toCharArray() ) );
         }
 
         List<AnyValue> split = splitNonRegex( asString, separator );
@@ -108,22 +108,20 @@ public abstract class StringValue extends TextValue
         }
         else if ( separators.stream().anyMatch( String::isEmpty ) )
         {
-            return VirtualValues.fromArray( splitToStringArray( asString ) );
+            String reduced = asString;
+            for ( var sep : separators )
+            {
+                if ( sep.isEmpty() )
+                {
+                    continue;
+                }
+                reduced = reduced.replace( sep, "" );
+            }
+            return VirtualValues.fromArray( Values.charArray( reduced.toCharArray() ) );
         }
 
         List<AnyValue> split = splitNonRegex( asString, separators );
         return VirtualValues.fromList( split );
-    }
-
-    private TextArray splitToStringArray( String input )
-    {
-        var chars = input.toCharArray();
-        var strings = new String[chars.length];
-        for ( int i = 0; i < chars.length; i++ )
-        {
-            strings[i] = String.valueOf( chars[i] );
-        }
-        return Values.stringArray( strings );
     }
 
     /**

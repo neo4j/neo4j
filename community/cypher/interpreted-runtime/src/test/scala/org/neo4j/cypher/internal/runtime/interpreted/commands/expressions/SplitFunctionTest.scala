@@ -74,6 +74,12 @@ class SplitFunctionTest extends CypherFunSuite {
     split("this is a sentence", List(",", ";", "")) should be(expected)
   }
 
+  test("splitting non-empty string with multiple separator strings where one is empty and others match valid characters should return all one-char substrings without the other matching characters") {
+    val sentence = ";This is a sentence;, with punctuation..."
+    val expected = list(sentence.replaceAll("[,.;]", "").split("").map(stringValue): _*)
+    split(sentence, List(",", ".", ";", "")) should be(expected)
+  }
+
   test("splitting char with separator set to same char should return empty") {
     split('a', "a") should be(seq("", ""))
   }

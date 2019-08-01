@@ -169,7 +169,7 @@ public final class CharValue extends TextValue
         }
         else
         {
-            return list( Values.stringValue( stringValue() ) );
+            return list( this );
         }
     }
 
@@ -182,7 +182,7 @@ public final class CharValue extends TextValue
         }
         else
         {
-            return list( Values.stringValue( stringValue() ) );
+            return list( this );
         }
     }
 
