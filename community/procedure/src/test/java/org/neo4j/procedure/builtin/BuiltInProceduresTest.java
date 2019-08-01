@@ -32,6 +32,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.function.IntSupplier;
+import java.util.stream.Stream;
 
 import org.neo4j.common.DependencyResolver;
 import org.neo4j.common.Edition;
@@ -48,6 +49,7 @@ import org.neo4j.internal.kernel.api.SchemaReadCore;
 import org.neo4j.internal.kernel.api.TokenRead;
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
+import org.neo4j.internal.kernel.api.procs.ProcedureCallContext;
 import org.neo4j.internal.kernel.api.procs.ProcedureSignature;
 import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.internal.schema.IndexDescriptor;
@@ -105,6 +107,7 @@ class BuiltInProceduresTest
     private final SchemaReadCore schemaReadCore = mock( SchemaReadCore.class );
     private final Statement statement = mock( Statement.class );
     private final KernelTransaction tx = mock( KernelTransaction.class );
+    private final ProcedureCallContext callContext = mock( ProcedureCallContext.class );
     private final DependencyResolver resolver = mock( DependencyResolver.class );
     private final GraphDatabaseAPI graphDatabaseAPI = mock( GraphDatabaseAPI.class );
     private final IndexingService indexingService = mock( IndexingService.class );
@@ -119,6 +122,7 @@ class BuiltInProceduresTest
         procs.registerComponent( DependencyResolver.class, Context::dependencyResolver, false );
         procs.registerComponent( GraphDatabaseAPI.class, Context::graphDatabaseAPI, false );
         procs.registerComponent( SecurityContext.class, Context::securityContext, true );
+        procs.registerComponent( ProcedureCallContext.class, Context::procedureCallContext, true );
 
         procs.registerComponent( Log.class, ctx -> log, false );
         procs.registerType( Node.class, NTNode );
@@ -133,6 +137,7 @@ class BuiltInProceduresTest
         when( tx.tokenRead() ).thenReturn( tokens );
         when( tx.dataRead() ).thenReturn( read );
         when( tx.schemaRead() ).thenReturn( schemaRead );
+        when( callContext.isCalledFromCypher() ).thenReturn( false );
         when( schemaRead.snapshot() ).thenReturn( schemaReadCore );
 
         when( tokens.propertyKeyGetAllTokens() ).thenAnswer( asTokens( propKeys ) );
@@ -225,6 +230,21 @@ class BuiltInProceduresTest
     }
 
     @Test
+    void shouldListLabelsWithoutCounts() throws Throwable
+    {
+        // Given
+        when( callContext.isCalledFromCypher() ).thenReturn( true );
+        when( callContext.outputFields() ).thenReturn( Stream.of( "label" ) );
+        givenLabels( "Banana", "Fruit" );
+
+        // When/Then
+        assertThat( call( "db.labels" ),
+                containsInAnyOrder(
+                        record( "Banana", BuiltInProcedures.LONG_FIELD_NOT_CALCULATED ),
+                        record( "Fruit", BuiltInProcedures.LONG_FIELD_NOT_CALCULATED ) ) );
+    }
+
+    @Test
     void shouldListRelTypes() throws Throwable
     {
         // Given
@@ -235,6 +255,21 @@ class BuiltInProceduresTest
                 containsInAnyOrder(
                         record( "EATS", 1L ),
                         record( "SPROUTS", 1L ) ) );
+    }
+
+    @Test
+    void shouldListRelTypesWithoutCounts() throws Throwable
+    {
+        // Given
+        when( callContext.isCalledFromCypher() ).thenReturn( true );
+        when( callContext.outputFields() ).thenReturn( Stream.of( "relationshipTypes" ) );
+        givenRelationshipTypes( "EATS", "SPROUTS" );
+
+        // When/Then
+        assertThat( call( "db.relationshipTypes" ),
+                containsInAnyOrder(
+                        record( "EATS", BuiltInProcedures.LONG_FIELD_NOT_CALCULATED ),
+                        record( "SPROUTS", BuiltInProcedures.LONG_FIELD_NOT_CALCULATED ) ) );
     }
 
     @Test
@@ -435,6 +470,7 @@ class BuiltInProceduresTest
         DefaultValueMapper valueMapper = new DefaultValueMapper( mock( EmbeddedProxySPI.class ) );
         Context ctx = buildContext(resolver, valueMapper )
                         .withKernelTransaction( tx )
+                        .withProcedureCallContext( callContext )
                         .context();
 
         when( graphDatabaseAPI.getDependencyResolver() ).thenReturn( resolver );

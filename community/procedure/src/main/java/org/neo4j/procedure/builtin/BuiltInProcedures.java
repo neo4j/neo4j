@@ -66,6 +66,7 @@ import org.neo4j.procedure.Name;
 import org.neo4j.procedure.Procedure;
 
 import static org.neo4j.internal.helpers.collection.Iterators.asList;
+import static org.neo4j.internal.kernel.api.TokenRead.ANY_LABEL;
 import static org.neo4j.procedure.Mode.READ;
 import static org.neo4j.procedure.Mode.SCHEMA;
 
@@ -73,7 +74,7 @@ import static org.neo4j.procedure.Mode.SCHEMA;
 public class BuiltInProcedures
 {
     private static final int NOT_EXISTING_INDEX_ID = -1;
-    private static final long LONG_FIELD_NOT_CALCULATED = -1;  // the user should not even see this because that column should be filtered away (not yielded)
+    static final long LONG_FIELD_NOT_CALCULATED = -1;  // the user should not even see this because that column should be filtered away (not yielded)
 
     @Context
     public KernelTransaction tx;
@@ -85,20 +86,19 @@ public class BuiltInProcedures
     public GraphDatabaseAPI graphDatabaseAPI;
 
     @Context
-    public ProcedureCallContext procedureCallContext;
+    public ProcedureCallContext callContext;
 
     @Description( "List all labels in the database and their total count." )
     @Procedure( name = "db.labels", mode = READ )
     public Stream<LabelResult> listLabels()
     {
-        boolean shouldCountNodes =
-                !procedureCallContext.isCalledFromCypher() || procedureCallContext.outputFields().anyMatch( name -> name.equals( "nodeCount" ) );
+        boolean shouldCount = !callContext.isCalledFromCypher() || callContext.outputFields().anyMatch( name -> name.equals( "nodeCount" ) );
         List<LabelResult> labelResults =
                 TokenAccess.LABELS.all( tx ).stream().map( label ->
                 {
                     int labelId = tx.tokenRead().nodeLabel( label.name() );
-                    long nodeCount = shouldCountNodes ? tx.dataRead().countsForNode( labelId ) : LONG_FIELD_NOT_CALCULATED;
-                    return new LabelResult( label, nodeCount );
+                    long count = shouldCount ? tx.dataRead().countsForNode( labelId ) : LONG_FIELD_NOT_CALCULATED;
+                    return new LabelResult( label, count );
                 } ).collect( Collectors.toList() );
         return labelResults.stream();
     }
@@ -116,15 +116,13 @@ public class BuiltInProcedures
     @Procedure( name = "db.relationshipTypes", mode = READ )
     public Stream<RelationshipTypeResult> listRelationshipTypes()
     {
-        boolean shouldCountNodes =
-                !procedureCallContext.isCalledFromCypher() || procedureCallContext.outputFields().anyMatch( name -> name.equals( "relationshipCount" ) );
+        boolean shouldCount = !callContext.isCalledFromCypher() || callContext.outputFields().anyMatch( name -> name.equals( "relationshipCount" ) );
         List<RelationshipTypeResult> relationshipTypes =
                 TokenAccess.RELATIONSHIP_TYPES.all( tx ).stream().map( type ->
                 {
                     int typeId = tx.tokenRead().relationshipType( type.name() );
-                    long nodeCount = shouldCountNodes ? tx.dataRead().countsForRelationship( TokenRead.ANY_LABEL, typeId, TokenRead.ANY_LABEL )
-                                                      : LONG_FIELD_NOT_CALCULATED;
-                    return new RelationshipTypeResult( type, nodeCount );
+                    long count = shouldCount ? tx.dataRead().countsForRelationship( ANY_LABEL, typeId, ANY_LABEL ) : LONG_FIELD_NOT_CALCULATED;
+                    return new RelationshipTypeResult( type, count );
                 } ).collect( Collectors.toList() );
         return relationshipTypes.stream();
     }
