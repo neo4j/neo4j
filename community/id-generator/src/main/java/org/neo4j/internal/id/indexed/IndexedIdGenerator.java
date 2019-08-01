@@ -305,6 +305,7 @@ public class IndexedIdGenerator implements IdGenerator
                 {
                     prev = id;
                     startOfRange = id;
+                    rangeLength = 1;
                 }
                 else
                 {
