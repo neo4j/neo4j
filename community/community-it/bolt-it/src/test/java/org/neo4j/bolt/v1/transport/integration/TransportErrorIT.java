@@ -38,7 +38,7 @@ import static org.neo4j.bolt.v1.transport.integration.TransportTestUtil.eventual
 public class TransportErrorIT extends AbstractBoltTransportsTest
 {
     @Rule
-    public Neo4jWithSocket server = new Neo4jWithSocket( getClass() );
+    public Neo4jWithSocket server = new Neo4jWithSocket( getClass(), getSettingsFunction() );
 
     @Before
     public void setup()

@@ -38,6 +38,10 @@ BSD License
   asm
   Hamcrest
 
+Bouncy Castle License
+  Bouncy Castle PKIX, CMS, EAC, TSP, PKCS, OCSP, CMP, and CRMF APIs
+  Bouncy Castle Provider
+
 Eclipse Public License v2.0
   JUnit Jupiter (Aggregator)
   JUnit Jupiter API

@@ -38,7 +38,6 @@ import org.neo4j.bolt.v1.messaging.request.InitMessage;
 import org.neo4j.bolt.v1.messaging.request.PullAllMessage;
 import org.neo4j.bolt.v1.messaging.request.RunMessage;
 import org.neo4j.bolt.v1.transport.socket.client.TransportConnection;
-import org.neo4j.configuration.GraphDatabaseSettings;
 
 import static java.util.Collections.emptyList;
 import static java.util.Collections.emptyMap;
@@ -57,8 +56,7 @@ import static org.neo4j.bolt.v1.messaging.util.MessageMatchers.msgSuccess;
 public class ConcurrentAccessIT extends AbstractBoltTransportsTest
 {
     @Rule
-    public Neo4jWithSocket server = new Neo4jWithSocket( getClass(), settings ->
-            settings.put( GraphDatabaseSettings.auth_enabled, false ) );
+    public Neo4jWithSocket server = new Neo4jWithSocket( getClass(), getSettingsFunction() );
 
     @Test
     public void shouldRunSimpleStatement() throws Throwable

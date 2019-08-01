@@ -41,10 +41,10 @@ import org.neo4j.internal.helpers.collection.MapUtil;
 import static java.util.Arrays.asList;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.neo4j.bolt.v1.messaging.util.MessageMatchers.msgSuccess;
+import static org.neo4j.bolt.v1.transport.integration.Neo4jWithSocket.withOptionalBoltEncryption;
 import static org.neo4j.bolt.v1.transport.integration.TransportTestUtil.eventuallyReceives;
 import static org.neo4j.bolt.v3.messaging.BoltProtocolV3ComponentFactory.newMessageEncoder;
 import static org.neo4j.bolt.v3.messaging.BoltProtocolV3ComponentFactory.newNeo4jPack;
-import static org.neo4j.configuration.GraphDatabaseSettings.auth_enabled;
 
 @RunWith( Parameterized.class )
 public abstract class BoltV3TransportBase
@@ -52,7 +52,7 @@ public abstract class BoltV3TransportBase
     protected static final String USER_AGENT = "TestClient/3.0";
 
     @Rule
-    public Neo4jWithSocket server = new Neo4jWithSocket( getClass(), settings -> settings.put( auth_enabled, false ) );
+    public Neo4jWithSocket server = new Neo4jWithSocket( getClass(), withOptionalBoltEncryption() );
 
     @Parameterized.Parameter
     public Class<? extends TransportConnection> connectionClass;

@@ -40,6 +40,7 @@ import static org.neo4j.configuration.SettingValueParsers.INT;
 import static org.neo4j.configuration.SettingValueParsers.SOCKET_ADDRESS;
 import static org.neo4j.configuration.SettingValueParsers.STRING;
 import static org.neo4j.configuration.SettingValueParsers.ofEnum;
+import static org.neo4j.configuration.connectors.BoltConnector.EncryptionLevel.DISABLED;
 
 @ServiceProvider
 @PublicApi
@@ -52,7 +53,7 @@ public final class BoltConnector implements SettingsDeclaration
 
     @Description( "Encryption level to require this connector to use" )
     public static final Setting<EncryptionLevel> encryption_level =
-            newBuilder( "dbms.connector.bolt.encryption_level", ofEnum( EncryptionLevel.class ), EncryptionLevel.OPTIONAL ).build();
+            newBuilder( "dbms.connector.bolt.encryption_level", ofEnum( EncryptionLevel.class ), DISABLED ).build();
 
     @Description( "Address the connector should bind to" )
     public static final Setting<SocketAddress> listen_address =

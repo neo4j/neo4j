@@ -63,7 +63,6 @@ class SslPolicyConfigValidatorTest
                 .set( sslPolicy.ciphers, List.of( "xyz" ) )
                 .set( sslPolicy.verify_hostname, true )
 
-                .set( sslPolicy.allow_key_generation, true )
                 .set( sslPolicy.private_key, Path.of("xyz" ) )
                 .set( sslPolicy.public_certificate, Path.of("xyz" ) )
                 .set( sslPolicy.trusted_dir, Path.of("xyz" ) )

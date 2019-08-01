@@ -24,7 +24,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.nio.file.Path;
 
 import org.neo4j.configuration.Config;
@@ -35,6 +34,7 @@ import org.neo4j.ssl.config.SslPolicyLoader;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.TestDirectoryExtension;
 import org.neo4j.test.rule.TestDirectory;
+import org.neo4j.test.ssl.SelfSignedCertificateFactory;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.instanceOf;
@@ -62,7 +62,7 @@ class PemSslPolicyLoaderTest
         publicCertificateFile = new File( baseDir, "public.crt" );
         privateKeyFile = new File( baseDir, "private.key" );
 
-        new PkiUtils().createSelfSignedCertificate(
+        new SelfSignedCertificateFactory().createSelfSignedCertificate(
                 publicCertificateFile, privateKeyFile, "localhost" );
 
         File trustedDir = new File( baseDir, "trusted" );
@@ -120,7 +120,7 @@ class PemSslPolicyLoaderTest
 
         // when
         Exception exception = assertThrows( Exception.class, () -> SslPolicyLoader.create( config, NullLogProvider.getInstance() ) );
-        assertThat( exception.getCause(), instanceOf( FileNotFoundException.class ) );
+        assertThat( exception, instanceOf( RuntimeException.class ) );
     }
 
     @Test

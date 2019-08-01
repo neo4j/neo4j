@@ -241,11 +241,14 @@ public abstract class AbstractNeoServer implements NeoServer
         webServer.setWadlEnabled( config.get( ServerSettings.wadl_enabled ) );
         webServer.setComponentsBinder( createComponentsBinder() );
 
-        String sslPolicyName = config.get( HttpsConnector.ssl_policy );
-        if ( sslPolicyName != null )
+        if ( httpsEnabled ) // only load sslPolicy when encryption is enabled
         {
-            SslPolicy sslPolicy = sslPolicyFactorySupplier.get().getPolicy( sslPolicyName );
-            webServer.setSslPolicy( sslPolicy );
+            String sslPolicyName = config.get( HttpsConnector.ssl_policy );
+            if ( sslPolicyName != null )
+            {
+                SslPolicy sslPolicy = sslPolicyFactorySupplier.get().getPolicy( sslPolicyName );
+                webServer.setSslPolicy( sslPolicy );
+            }
         }
     }
 

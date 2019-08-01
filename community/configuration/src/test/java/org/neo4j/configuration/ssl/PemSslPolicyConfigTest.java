@@ -71,7 +71,6 @@ class PemSslPolicyConfigTest
         File trustedDirFromConfig = config.get( policyConfig.trusted_dir ).toFile();
         File revokedDirFromConfig = config.get( policyConfig.revoked_dir ).toFile();
         SecureString privateKeyPassword = config.get( policyConfig.private_key_password );
-        boolean allowKeyGeneration = config.get( policyConfig.allow_key_generation );
         boolean trustAll = config.get( policyConfig.trust_all );
         List<String> tlsVersions = config.get( policyConfig.tls_versions );
         List<String> ciphers = config.get( policyConfig.ciphers );
@@ -83,7 +82,6 @@ class PemSslPolicyConfigTest
         assertEquals( trustedDir, trustedDirFromConfig );
         assertEquals( revokedDir, revokedDirFromConfig );
         assertNull( privateKeyPassword );
-        assertFalse( allowKeyGeneration );
         assertFalse( trustAll );
         assertEquals( singletonList( "TLSv1.2" ), tlsVersions );
         assertNull( ciphers );
@@ -114,7 +112,6 @@ class PemSslPolicyConfigTest
         builder.set( policyConfig.trusted_dir, trustedDir.toPath().toAbsolutePath() );
         builder.set( policyConfig.revoked_dir, revokedDir.toPath().toAbsolutePath() );
 
-        builder.set( policyConfig.allow_key_generation, true );
         builder.set( policyConfig.trust_all, true );
 
         builder.set( policyConfig.private_key_password, new SecureString( "setecastronomy" ) );
@@ -131,7 +128,6 @@ class PemSslPolicyConfigTest
         File revokedDirFromConfig = config.get( policyConfig.revoked_dir ).toFile();
 
         SecureString privateKeyPassword = config.get( policyConfig.private_key_password );
-        boolean allowKeyGeneration = config.get( policyConfig.allow_key_generation );
         boolean trustAll = config.get( policyConfig.trust_all );
         List<String> tlsVersions = config.get( policyConfig.tls_versions );
         List<String> ciphers = config.get( policyConfig.ciphers );
@@ -143,7 +139,6 @@ class PemSslPolicyConfigTest
         assertEquals( trustedDir, trustedDirFromConfig );
         assertEquals( revokedDir, revokedDirFromConfig );
 
-        assertTrue( allowKeyGeneration );
         assertTrue( trustAll );
         assertEquals( "setecastronomy", privateKeyPassword.getString() );
         assertEquals( asList( "TLSv1.1", "TLSv1.2" ), tlsVersions );

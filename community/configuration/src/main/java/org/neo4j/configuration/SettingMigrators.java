@@ -22,6 +22,7 @@ package org.neo4j.configuration;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -36,6 +37,7 @@ import org.neo4j.configuration.helpers.SocketAddress;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.logging.Log;
 import org.neo4j.values.storable.CoordinateReferenceSystem;
+import org.neo4j.values.storable.Value;
 
 import static java.lang.String.format;
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
@@ -173,6 +175,31 @@ public final class SettingMigrators
             migrateSettingNameChange( values, log, "bolt.ssl_policy", BoltConnector.ssl_policy );
             migrateSettingNameChange( values, log, "https.ssl_policy", HttpsConnector.ssl_policy );
 
+        }
+    }
+
+    @ServiceProvider
+    public static class AllowKeyGenerationMigrator implements SettingMigrator
+    {
+        private static final Pattern pattern = Pattern.compile( "^dbms\\.ssl\\.policy(\\.pem)?\\.([^.]+)\\.allow_key_generation$" );
+
+        @Override
+        public void migrate( Map<String,String> values, Map<String,String> defaultValues, Log log )
+        {
+            var toRemove = new HashSet<String>();
+
+            for ( var setting : values.keySet() )
+            {
+                var matcher = pattern.matcher( setting );
+                if ( matcher.find() )
+                {
+                    log.warn( "Setting %s is removed. A valid key and certificate are required" +
+                            " to be present in the key and certificate path configured in this ssl policy.", setting );
+                    toRemove.add( setting );
+                }
+            }
+
+            values.keySet().removeAll( toRemove );
         }
     }
 

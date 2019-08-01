@@ -95,9 +95,13 @@ public class AuthenticationIT extends AbstractBoltTransportsTest
         return new TestDatabaseManagementServiceBuilder().setUserLogProvider( logProvider );
     }
 
+    @Override
     protected Consumer<Map<Setting<?>,Object>> getSettingsFunction()
     {
-        return settings -> settings.put( GraphDatabaseSettings.auth_enabled, true );
+        return settings -> {
+            super.getSettingsFunction().accept( settings );
+            settings.put( GraphDatabaseSettings.auth_enabled, true );
+        };
     }
 
     private HostnamePort address;

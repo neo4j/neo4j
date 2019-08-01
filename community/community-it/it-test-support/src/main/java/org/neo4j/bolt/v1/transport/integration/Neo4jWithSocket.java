@@ -31,6 +31,7 @@ import java.util.Map;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 
+import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.configuration.connectors.BoltConnector;
 import org.neo4j.configuration.connectors.ConnectorPortRegister;
 import org.neo4j.configuration.helpers.SocketAddress;
@@ -43,8 +44,10 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.rule.TestDirectory;
+import org.neo4j.test.ssl.SelfSignedCertificateFactory;
 
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
+import static org.neo4j.configuration.connectors.BoltConnector.EncryptionLevel.DISABLED;
 import static org.neo4j.configuration.connectors.BoltConnector.EncryptionLevel.OPTIONAL;
 
 public class Neo4jWithSocket extends ExternalResource
@@ -167,23 +170,43 @@ public class Neo4jWithSocket extends ExternalResource
 
         Map<Setting<?>,Object> settings = configure( overrideSettingsFunction );
         File storeDir = new File( workingDirectory, "storeDir" );
+
+        installSelfSignedCertificateIfEncryptionEnabled( settings );
+
         graphDatabaseFactory.setFileSystem( fileSystemProvider.get() );
-        managementService = graphDatabaseFactory.setDatabaseRootDirectory( storeDir ).impermanent().
-                setConfig( settings ).build();
+        managementService = graphDatabaseFactory.setDatabaseRootDirectory( storeDir ).impermanent().setConfig( settings ).build();
         gdb = managementService.database( DEFAULT_DATABASE_NAME );
         connectorRegister =
                 ((GraphDatabaseAPI) gdb).getDependencyResolver().resolveDependency( ConnectorPortRegister.class );
     }
 
+    private void installSelfSignedCertificateIfEncryptionEnabled( Map<Setting<?>,Object> settings )
+    {
+        var encryptionLevel = settings.get( BoltConnector.encryption_level );
+        if ( encryptionLevel != DISABLED )
+        {
+            // Install self-signed certs if ssl is enabled
+            var certificates = new File( workingDirectory, "certificates" );
+            SelfSignedCertificateFactory.create( certificates );
+            settings.put( GraphDatabaseSettings.legacy_certificates_directory, certificates.toPath() );
+        }
+    }
+
     private Map<Setting<?>,Object> configure( Consumer<Map<Setting<?>,Object>> overrideSettingsFunction )
     {
         Map<Setting<?>,Object> settings = new HashMap<>();
+        settings.put( GraphDatabaseSettings.auth_enabled, false );
         settings.put( BoltConnector.enabled, true );
         settings.put( BoltConnector.listen_address, new SocketAddress( "localhost", 0 ) );
-        settings.put( BoltConnector.encryption_level, OPTIONAL );
+        settings.put( BoltConnector.encryption_level, DISABLED );
         configure.accept( settings );
         overrideSettingsFunction.accept( settings );
         return settings;
+    }
+
+    public static Consumer<Map<Setting<?>,Object>> withOptionalBoltEncryption()
+    {
+        return settings -> settings.put( BoltConnector.encryption_level, OPTIONAL );
     }
 
     public GraphDatabaseService graphDatabaseService()

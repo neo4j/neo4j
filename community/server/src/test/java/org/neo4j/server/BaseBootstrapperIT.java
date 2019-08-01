@@ -41,6 +41,7 @@ import org.neo4j.graphdb.config.Setting;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.server.ExclusiveServerTestBase;
+import org.neo4j.test.ssl.SelfSignedCertificateFactory;
 
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
@@ -48,7 +49,9 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.neo4j.configuration.GraphDatabaseSettings.data_directory;
 import static org.neo4j.configuration.GraphDatabaseSettings.forced_kernel_id;
+import static org.neo4j.configuration.GraphDatabaseSettings.legacy_certificates_directory;
 import static org.neo4j.configuration.GraphDatabaseSettings.logs_directory;
+import static org.neo4j.configuration.SettingValueParsers.FALSE;
 import static org.neo4j.configuration.SettingValueParsers.TRUE;
 import static org.neo4j.internal.helpers.collection.Iterators.single;
 import static org.neo4j.internal.helpers.collection.MapUtil.store;
@@ -65,9 +68,10 @@ public abstract class BaseBootstrapperIT extends ExclusiveServerTestBase
     protected ServerBootstrapper bootstrapper;
 
     @Before
-    public void before()
+    public void before() throws IOException
     {
         bootstrapper = newBootstrapper();
+        SelfSignedCertificateFactory.create( testDirectory.storeDir() );
     }
 
     @After
@@ -190,6 +194,7 @@ public abstract class BaseBootstrapperIT extends ExclusiveServerTestBase
                 "--home-dir", testDirectory.directory( "home-dir" ).getAbsolutePath(),
                 "-c", configOption( data_directory, testDirectory.storeDir().getAbsolutePath() ),
                 "-c", configOption( logs_directory, testDirectory.storeDir().getAbsolutePath() ),
+                "-c", configOption( legacy_certificates_directory, testDirectory.storeDir().getAbsolutePath() ),
 
                 "-c", HttpConnector.enabled.name() + "=" + httpEnabled,
                 "-c", HttpConnector.listen_address.name() + "=localhost:0",
@@ -234,10 +239,10 @@ public abstract class BaseBootstrapperIT extends ExclusiveServerTestBase
                 HttpConnector.enabled.name(), TRUE,
 
                 HttpsConnector.listen_address.name(), "localhost:0",
-                HttpsConnector.enabled.name(), TRUE,
+                HttpsConnector.enabled.name(), FALSE,
 
                 BoltConnector.listen_address.name(), "localhost:0",
-                BoltConnector.encryption_level.name(), "OPTIONAL",
+                BoltConnector.encryption_level.name(), "DISABLED",
                 BoltConnector.enabled.name(), TRUE
         );
     }

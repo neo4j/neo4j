@@ -36,7 +36,6 @@ import org.neo4j.bolt.v1.messaging.request.DiscardAllMessage;
 import org.neo4j.bolt.v1.messaging.request.InitMessage;
 import org.neo4j.bolt.v1.messaging.request.PullAllMessage;
 import org.neo4j.bolt.v1.messaging.request.RunMessage;
-import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.graphdb.InputPosition;
 import org.neo4j.graphdb.SeverityLevel;
 import org.neo4j.internal.helpers.HostnamePort;
@@ -65,8 +64,7 @@ import static org.neo4j.values.storable.Values.stringValue;
 public class TransportSessionIT extends AbstractBoltTransportsTest
 {
     @Rule
-    public Neo4jWithSocket server = new Neo4jWithSocket( getClass(), settings ->
-            settings.put( GraphDatabaseSettings.auth_enabled, false ) );
+    public Neo4jWithSocket server = new Neo4jWithSocket( getClass(), getSettingsFunction() );
 
     private HostnamePort address;
 

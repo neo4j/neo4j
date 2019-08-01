@@ -56,11 +56,13 @@ import org.neo4j.server.NeoServer;
 import org.neo4j.server.configuration.ServerSettings;
 import org.neo4j.server.configuration.ThirdPartyJaxRsPackage;
 import org.neo4j.server.database.GraphFactory;
+import org.neo4j.test.ssl.SelfSignedCertificateFactory;
 
 import static org.neo4j.configuration.GraphDatabaseSettings.auth_enabled;
 import static org.neo4j.configuration.GraphDatabaseSettings.data_directory;
 import static org.neo4j.configuration.GraphDatabaseSettings.db_timezone;
 import static org.neo4j.configuration.GraphDatabaseSettings.pagecache_memory;
+import static org.neo4j.configuration.connectors.BoltConnector.EncryptionLevel.DISABLED;
 import static org.neo4j.internal.helpers.collection.Iterables.addAll;
 import static org.neo4j.internal.helpers.collection.Iterables.append;
 import static org.neo4j.io.fs.FileSystemUtils.createOrOpenAsOutputStream;
@@ -125,7 +127,15 @@ public abstract class AbstractInProcessNeo4jBuilder implements Neo4jBuilder
                 config.set( HttpsConnector.enabled, false );
             }
 
+            var certificates = new File( serverFolder, "certificates" );
+            config.set( GraphDatabaseSettings.legacy_certificates_directory, certificates.toPath() );
+
             Config dbConfig = config.build();
+            if ( dbConfig.get( HttpsConnector.enabled ) )
+            {
+                SelfSignedCertificateFactory.create( certificates );
+            }
+
             LogProvider userLogProvider = FormattedLogProvider.withZoneId( dbConfig.get( db_timezone ).getZoneId() ).toOutputStream( userLogOutputStream );
             GraphDatabaseDependencies dependencies = GraphDatabaseDependencies.newDependencies().userLogProvider( userLogProvider );
             dependencies = dependencies.extensions( buildExtensionList( dependencies ) );

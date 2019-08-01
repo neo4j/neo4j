@@ -21,14 +21,12 @@ package org.neo4j.ssl.config;
 
 import io.netty.handler.ssl.SslProvider;
 import io.netty.handler.ssl.util.InsecureTrustManagerFactory;
-import org.bouncycastle.operator.OperatorCreationException;
 
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
-import java.security.GeneralSecurityException;
 import java.security.KeyStore;
 import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
@@ -82,7 +80,6 @@ import static org.neo4j.configuration.GraphDatabaseSettings.LEGACY_POLICY_NAME;
 public class SslPolicyLoader
 {
     private final Map<String,SslPolicy> policies = new ConcurrentHashMap<>();
-    private final PkiUtils pkiUtils = new PkiUtils();
     private final Config config;
     private final SslProvider sslProvider;
     private final LogProvider logProvider;
@@ -154,18 +151,13 @@ public class SslPolicyLoader
         File privateKeyFile = config.get( GraphDatabaseSettings.tls_key_file ).toFile().getAbsoluteFile();
         File certificateFile = config.get( GraphDatabaseSettings.tls_certificate_file ).toFile().getAbsoluteFile();
 
-        if ( !privateKeyFile.exists() && !certificateFile.exists() )
+        if ( !privateKeyFile.exists()  )
         {
-            String hostname = config.get( GraphDatabaseSettings.default_advertised_address ).getHostname();
-
-            try
-            {
-                pkiUtils.createSelfSignedCertificate( certificateFile, privateKeyFile, hostname );
-            }
-            catch ( Exception e )
-            {
-                throw new RuntimeException( "Failed to generate private key and certificate", e );
-            }
+            throw new RuntimeException( "Missing private key in path: " + privateKeyFile.getAbsolutePath() );
+        }
+        if ( !certificateFile.exists() )
+        {
+            throw new RuntimeException( "Missing public certificate in path: " + certificateFile.getAbsolutePath() );
         }
 
         PrivateKey privateKey = loadPrivateKey( privateKeyFile, null );
@@ -178,7 +170,7 @@ public class SslPolicyLoader
     private void load( Config config, Log log )
     {
         config.getGroups( PemSslPolicyConfig.class ).forEach(
-                ( policyName, policyConfig ) -> policies.put( policyName, pemSslPolicy( config, log, policyName ) ) );
+                ( policyName, policyConfig ) -> policies.put( policyName, pemSslPolicy( config, policyName ) ) );
         config.getGroups( JksSslPolicyConfig.class ).forEach(
                 ( policyName, policyConfig ) -> policies.put( policyName, jksKeyStoreSslPolicy( config, log, policyName ) ) );
         config.getGroups( Pkcs12SslPolicyConfig.class ).forEach(
@@ -187,7 +179,7 @@ public class SslPolicyLoader
         policies.forEach( ( policyName, sslPolicy ) -> log.info( format( "Loaded SSL policy '%s' = %s", policyName, sslPolicy ) ) );
     }
 
-    private SslPolicy pemSslPolicy( Config config, Log log, String policyName )
+    private SslPolicy pemSslPolicy( Config config, String policyName )
     {
         PemSslPolicyConfig policyConfig = PemSslPolicyConfig.group( policyName );
         File baseDirectory = config.get( policyConfig.base_directory ).toFile();
@@ -199,15 +191,13 @@ public class SslPolicyLoader
                     format( "Base directory '%s' for SSL policy with name '%s' does not exist.", baseDirectory, policyName ) );
         }
 
-        KeyAndChain keyAndChain = pemKeyAndChain( config, log, policyName, policyConfig, revokedCertificatesDir );
+        KeyAndChain keyAndChain = pemKeyAndChain( config, policyConfig );
 
         return sslPolicy( config, policyConfig, revokedCertificatesDir, keyAndChain );
     }
 
-    private KeyAndChain pemKeyAndChain( Config config, Log log, String policyName, PemSslPolicyConfig policyConfig, File revokedCertificatesDir )
+    private KeyAndChain pemKeyAndChain( Config config, PemSslPolicyConfig policyConfig )
     {
-        boolean allowKeyGeneration = config.get( policyConfig.allow_key_generation );
-
         File privateKeyFile = config.get( policyConfig.private_key ).toFile();
         SecureString privateKeyPassword = config.get( policyConfig.private_key_password );
         File trustedCertificatesDir = config.get( policyConfig.trusted_dir ).toFile();
@@ -217,9 +207,13 @@ public class SslPolicyLoader
         X509Certificate[] keyCertChain;
         File keyCertChainFile = config.get( policyConfig.public_certificate ).toFile();
 
-        if ( allowKeyGeneration && !privateKeyFile.exists() && !keyCertChainFile.exists() )
+        if ( !privateKeyFile.exists()  )
         {
-            generatePrivateKeyAndCertificate( log, policyName, keyCertChainFile, privateKeyFile, trustedCertificatesDir, revokedCertificatesDir );
+            throw new RuntimeException( "Missing private key in path: " + privateKeyFile.getAbsolutePath() );
+        }
+        if ( !keyCertChainFile.exists() )
+        {
+            throw new RuntimeException( "Missing public certificate in path: " + keyCertChainFile.getAbsolutePath() );
         }
 
         privateKey = loadPrivateKey( privateKeyFile, privateKeyPassword );
@@ -382,25 +376,6 @@ public class SslPolicyLoader
                 logProvider );
     }
 
-    private void generatePrivateKeyAndCertificate( Log log, String policyName, File keyCertChainFile, File privateKeyFile, File trustedCertificatesDir,
-            File revokedCertificatesDir )
-    {
-        log.info( format( "Generating key and self-signed certificate for SSL policy '%s'", policyName ) );
-        String hostname = config.get( GraphDatabaseSettings.default_advertised_address ).getHostname();
-
-        try
-        {
-            pkiUtils.createSelfSignedCertificate( keyCertChainFile, privateKeyFile, hostname );
-
-            trustedCertificatesDir.mkdir();
-            revokedCertificatesDir.mkdir();
-        }
-        catch ( GeneralSecurityException | IOException | OperatorCreationException e )
-        {
-            throw new RuntimeException( "Failed to generate private key and certificate", e );
-        }
-    }
-
     private Collection<X509CRL> getCRLs( File revokedCertificatesDir )
     {
         Collection<X509CRL> crls = new ArrayList<>();
@@ -446,7 +421,7 @@ public class SslPolicyLoader
     {
         try
         {
-            return pkiUtils.loadCertificates( keyCertChainFile );
+            return PkiUtils.loadCertificates( keyCertChainFile );
         }
         catch ( Exception e )
         {
@@ -464,7 +439,7 @@ public class SslPolicyLoader
 
         try
         {
-            return pkiUtils.loadPrivateKey( privateKeyFile );
+            return PkiUtils.loadPrivateKey( privateKeyFile );
         }
         catch ( Exception e )
         {

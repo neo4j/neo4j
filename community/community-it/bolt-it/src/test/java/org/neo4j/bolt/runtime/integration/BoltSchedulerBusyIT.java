@@ -39,7 +39,6 @@ import org.neo4j.bolt.v1.messaging.request.InitMessage;
 import org.neo4j.bolt.v1.messaging.request.RunMessage;
 import org.neo4j.bolt.v1.transport.integration.Neo4jWithSocket;
 import org.neo4j.bolt.v1.transport.socket.client.TransportConnection;
-import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.configuration.connectors.BoltConnector;
 import org.neo4j.configuration.helpers.SocketAddress;
 import org.neo4j.graphdb.config.Setting;
@@ -81,12 +80,11 @@ public class BoltSchedulerBusyIT extends AbstractBoltTransportsTest
         return factory;
     }
 
-    private static Consumer<Map<Setting<?>,Object>> getSettingsFunction()
+    protected Consumer<Map<Setting<?>,Object>> getSettingsFunction()
     {
         return settings ->
         {
-            settings.put( GraphDatabaseSettings.auth_enabled, false );
-            settings.put( BoltConnector.enabled, true );
+            super.getSettingsFunction().accept( settings );
             settings.put( BoltConnector.listen_address, new SocketAddress( "localhost", 0 ) );
             settings.put( BoltConnector.thread_pool_min_size, 0 );
             settings.put( BoltConnector.thread_pool_max_size, 2 );

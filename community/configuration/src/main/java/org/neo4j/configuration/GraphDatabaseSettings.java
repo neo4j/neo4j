@@ -55,6 +55,7 @@ import static org.neo4j.configuration.SettingValueParsers.BYTES;
 import static org.neo4j.configuration.SettingValueParsers.DATABASENAME;
 import static org.neo4j.configuration.SettingValueParsers.DOUBLE;
 import static org.neo4j.configuration.SettingValueParsers.DURATION;
+import static org.neo4j.configuration.SettingValueParsers.FALSE;
 import static org.neo4j.configuration.SettingValueParsers.INT;
 import static org.neo4j.configuration.SettingValueParsers.LONG;
 import static org.neo4j.configuration.SettingValueParsers.PATH;
@@ -1111,7 +1112,7 @@ public class GraphDatabaseSettings implements SettingsDeclaration
      */
     public static final Map<Setting<?>, Object> SERVER_DEFAULTS = Map.of(
             HttpConnector.enabled, true,
-            HttpsConnector.enabled, true,
+            HttpsConnector.enabled, false,
             BoltConnector.enabled, true,
             auth_enabled, true
     );

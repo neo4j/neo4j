@@ -55,10 +55,6 @@ public class PemSslPolicyConfig extends SslPolicyConfig
     @Description( "The password for the private key." )
     public final Setting<SecureString> private_key_password = getBuilder( "private_key_password", SECURE_STRING, null ).build();
 
-    @Description( "Allows the generation of a private key and associated self-signed certificate." +
-            " Only performed when both objects cannot be found." )
-    public final Setting<Boolean> allow_key_generation = getBuilder( "allow_key_generation", BOOL, false ).build();
-
     public static PemSslPolicyConfig group( String name )
     {
         return new PemSslPolicyConfig( name );

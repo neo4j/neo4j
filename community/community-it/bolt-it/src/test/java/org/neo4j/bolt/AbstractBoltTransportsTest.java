@@ -27,6 +27,8 @@ import org.junit.runners.Parameterized;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
+import java.util.function.Consumer;
 
 import org.neo4j.bolt.messaging.Neo4jPack;
 import org.neo4j.bolt.v1.messaging.Neo4jPackV1;
@@ -37,10 +39,12 @@ import org.neo4j.bolt.v1.transport.socket.client.SocketConnection;
 import org.neo4j.bolt.v1.transport.socket.client.TransportConnection;
 import org.neo4j.bolt.v1.transport.socket.client.WebSocketConnection;
 import org.neo4j.bolt.v2.messaging.Neo4jPackV2;
+import org.neo4j.graphdb.config.Setting;
 import org.neo4j.internal.helpers.HostnamePort;
 
 import static org.junit.runners.Parameterized.Parameter;
 import static org.junit.runners.Parameterized.Parameters;
+import static org.neo4j.bolt.v1.transport.integration.Neo4jWithSocket.withOptionalBoltEncryption;
 
 @RunWith( Parameterized.class )
 public abstract class AbstractBoltTransportsTest
@@ -110,6 +114,11 @@ public abstract class AbstractBoltTransportsTest
             connection.disconnect();
         }
         connection = newConnection();
+    }
+
+    protected Consumer<Map<Setting<?>,Object>> getSettingsFunction()
+    {
+        return withOptionalBoltEncryption();
     }
 
     private static String newName( Class<? extends TransportConnection> connectionClass, Neo4jPack neo4jPack )

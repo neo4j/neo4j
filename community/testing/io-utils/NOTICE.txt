@@ -39,6 +39,10 @@ BSD License
   asm
   Hamcrest
 
+Bouncy Castle License
+  Bouncy Castle PKIX, CMS, EAC, TSP, PKCS, OCSP, CMP, and CRMF APIs
+  Bouncy Castle Provider
+
 Eclipse Distribution License - v 1.0
   Eclipse Collections API
   Eclipse Collections Main Library

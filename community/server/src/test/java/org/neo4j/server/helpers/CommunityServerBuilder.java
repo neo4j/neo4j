@@ -44,6 +44,7 @@ import org.neo4j.server.configuration.ServerSettings;
 import org.neo4j.server.database.CommunityGraphFactory;
 import org.neo4j.server.database.InMemoryGraphFactory;
 import org.neo4j.server.preflight.PreFlightTasks;
+import org.neo4j.test.ssl.SelfSignedCertificateFactory;
 
 import static org.neo4j.configuration.SettingValueParsers.FALSE;
 import static org.neo4j.internal.helpers.collection.MapUtil.stringMap;
@@ -166,6 +167,14 @@ public class CommunityServerBuilder
         properties.put( GraphDatabaseSettings.neo4j_home.name(), temporaryFolder.getAbsolutePath() );
 
         properties.put( GraphDatabaseSettings.auth_enabled.name(), FALSE );
+
+        if ( httpsEnabled )
+        {
+            var certificates = new File( temporaryFolder, "certificates" );
+            SelfSignedCertificateFactory.create( certificates );
+            properties.put( GraphDatabaseSettings.legacy_certificates_directory.name(), certificates.getAbsolutePath() );
+        }
+
         properties.put( GraphDatabaseSettings.logs_directory.name(),
                 new File( temporaryFolder, "logs" ).getAbsolutePath() );
         properties.put( GraphDatabaseSettings.transaction_logs_root_path.name(),

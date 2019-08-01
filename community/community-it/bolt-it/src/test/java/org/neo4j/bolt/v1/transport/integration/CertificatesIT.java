@@ -37,18 +37,20 @@ import org.neo4j.bolt.v1.transport.socket.client.SecureSocketConnection;
 import org.neo4j.configuration.connectors.BoltConnector;
 import org.neo4j.configuration.helpers.SocketAddress;
 import org.neo4j.ssl.PkiUtils;
+import org.neo4j.test.ssl.SelfSignedCertificateFactory;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
 import static org.neo4j.configuration.GraphDatabaseSettings.tls_certificate_file;
 import static org.neo4j.configuration.GraphDatabaseSettings.tls_key_file;
+import static org.neo4j.configuration.connectors.BoltConnector.EncryptionLevel.OPTIONAL;
 
 public class CertificatesIT
 {
     private static File keyFile;
     private static File certFile;
-    private static PkiUtils certFactory;
+    private static SelfSignedCertificateFactory certFactory;
     private static TransportTestUtil util;
 
     @Rule
@@ -57,6 +59,7 @@ public class CertificatesIT
         settings.put( tls_certificate_file, certFile.toPath().toAbsolutePath() );
         settings.put( tls_key_file, keyFile.toPath().toAbsolutePath() );
         settings.put( BoltConnector.enabled, true );
+        settings.put( BoltConnector.encryption_level, OPTIONAL );
         settings.put( BoltConnector.listen_address, new SocketAddress( "localhost", 0 ) );
     } );
 
@@ -83,7 +86,7 @@ public class CertificatesIT
 
     private X509Certificate loadCertificateFromDisk() throws CertificateException, IOException
     {
-        Certificate[] certificates = certFactory.loadCertificates( certFile );
+        Certificate[] certificates = PkiUtils.loadCertificates( certFile );
         assertThat( certificates.length, equalTo( 1 ) );
 
         return (X509Certificate) certificates[0];
@@ -92,7 +95,7 @@ public class CertificatesIT
     @BeforeClass
     public static void setUp() throws IOException, GeneralSecurityException, OperatorCreationException
     {
-        certFactory = new PkiUtils();
+        certFactory = new SelfSignedCertificateFactory();
         keyFile = File.createTempFile( "key", "pem" );
         certFile = File.createTempFile( "key", "pem" );
         keyFile.deleteOnExit();

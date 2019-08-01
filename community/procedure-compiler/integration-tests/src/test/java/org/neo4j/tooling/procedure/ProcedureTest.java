@@ -27,6 +27,7 @@ import java.util.concurrent.TimeUnit;
 import org.neo4j.driver.Config;
 import org.neo4j.driver.Driver;
 import org.neo4j.driver.GraphDatabase;
+import org.neo4j.driver.Logging;
 import org.neo4j.driver.Session;
 import org.neo4j.driver.StatementResult;
 import org.neo4j.harness.junit.rule.Neo4jRule;
@@ -118,7 +119,8 @@ public class ProcedureTest
 
     private Config configuration()
     {
-        return Config.build().withEncryptionLevel( Config.EncryptionLevel.NONE )
+        return Config.builder().withoutEncryption()
+                .withLogging( Logging.none() )
                 .withConnectionTimeout( 10, TimeUnit.SECONDS )
                 .toConfig();
     }

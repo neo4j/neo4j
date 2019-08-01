@@ -153,7 +153,7 @@ class GraphDatabaseSettingsTest
         assertEquals( new SocketAddress( "localhost", 7687 ), config.get( BoltConnector.listen_address ) );
 
         assertTrue( config.get( HttpConnector.enabled ) );
-        assertTrue( config.get( HttpsConnector.enabled ) );
+        assertFalse( config.get( HttpsConnector.enabled ) );
         assertTrue( config.get( BoltConnector.enabled ) );
     }
 

@@ -33,6 +33,7 @@ import org.neo4j.io.fs.FileUtils;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.TestDirectoryExtension;
 import org.neo4j.test.rule.TestDirectory;
+import org.neo4j.test.ssl.SelfSignedCertificateFactory;
 
 import static java.nio.file.StandardOpenOption.WRITE;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -44,9 +45,8 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @ExtendWith( TestDirectoryExtension.class )
-class TestSslCertificateFactory
+class PkiUtilsTest
 {
-
     @Inject
     private TestDirectory testDirectory;
 
@@ -54,20 +54,20 @@ class TestSslCertificateFactory
     void shouldCreateASelfSignedCertificate() throws Exception
     {
         // Given
-        PkiUtils sslFactory = new PkiUtils();
-        File cPath = new File( testDirectory.directory(), "certificate" );
-        File pkPath = new File( testDirectory.directory(), "key" );
+        var sslFactory = new SelfSignedCertificateFactory();
+        var cPath = new File( testDirectory.directory(), "certificate" );
+        var pkPath = new File( testDirectory.directory(), "key" );
 
         // When
         sslFactory.createSelfSignedCertificate( cPath, pkPath, "myhost" );
 
         // Then
         // Attempt to load certificate
-        Certificate[] certificates = sslFactory.loadCertificates( cPath );
+        var certificates = PkiUtils.loadCertificates( cPath );
         assertThat( certificates.length, is( greaterThan( 0 ) ) );
 
         // Attempt to load private key
-        PrivateKey pk = sslFactory.loadPrivateKey( pkPath );
+        PrivateKey pk = PkiUtils.loadPrivateKey( pkPath );
         assertThat( pk, notNullValue() );
     }
 
@@ -75,29 +75,27 @@ class TestSslCertificateFactory
     void shouldLoadPEMCertificates() throws Throwable
     {
         // Given
-        SelfSignedCertificate cert = new SelfSignedCertificate( "example.com" );
-        PkiUtils certs = new PkiUtils();
+        var cert = new SelfSignedCertificate( "example.com" );
 
-        File pemCertificate = cert.certificate();
+        var pemCertificate = cert.certificate();
 
         // When
-        Certificate[] certificates = certs.loadCertificates( pemCertificate );
+        var certificates = PkiUtils.loadCertificates( pemCertificate );
 
         // Then
-        assertThat(certificates.length, equalTo(1));
+        assertThat( certificates.length, equalTo( 1 ) );
     }
 
     @Test
     void shouldLoadPEMPrivateKey() throws Throwable
     {
         // Given
-        SelfSignedCertificate cert = new SelfSignedCertificate( "example.com" );
-        PkiUtils certs = new PkiUtils();
+        var cert = new SelfSignedCertificate( "example.com" );
 
-        File privateKey = cert.privateKey();
+        var privateKey = cert.privateKey();
 
         // When
-        PrivateKey pk = certs.loadPrivateKey( privateKey );
+        var pk = PkiUtils.loadPrivateKey( privateKey );
 
         // Then
         assertNotNull( pk );
@@ -111,12 +109,11 @@ class TestSslCertificateFactory
     void shouldLoadBinaryCertificates() throws Throwable
     {
         // Given
-        SelfSignedCertificate cert = new SelfSignedCertificate( "example.com" );
-        PkiUtils certs = new PkiUtils();
+        var cert = new SelfSignedCertificate( "example.com" );
 
-        File cPath = testDirectory.file( "certificate" );
+        var cPath = testDirectory.file( "certificate" );
         assertTrue( cPath.createNewFile() );
-        byte[] raw = certs.loadCertificates(cert.certificate())[0].getEncoded();
+        var raw = PkiUtils.loadCertificates( cert.certificate() )[0].getEncoded();
 
         try ( FileChannel ch = FileChannel.open( cPath.toPath(), WRITE ) )
         {
@@ -124,7 +121,7 @@ class TestSslCertificateFactory
         }
 
         // When
-        Certificate[] certificates = certs.loadCertificates( cPath );
+        Certificate[] certificates = PkiUtils.loadCertificates( cPath );
 
         // Then
         assertThat( certificates.length, equalTo( 1 ) );
@@ -138,12 +135,11 @@ class TestSslCertificateFactory
     void shouldLoadBinaryPrivateKey() throws Throwable
     {
         // Given
-        SelfSignedCertificate cert = new SelfSignedCertificate( "example.com" );
-        PkiUtils certs = new PkiUtils();
+        var cert = new SelfSignedCertificate( "example.com" );
 
-        File keyFile = testDirectory.file( "certificate" );
+        var keyFile = testDirectory.file( "certificate" );
         assertTrue( keyFile.createNewFile() );
-        byte[] raw = certs.loadPrivateKey( cert.privateKey() ).getEncoded();
+        var raw = PkiUtils.loadPrivateKey( cert.privateKey() ).getEncoded();
 
         try ( FileChannel ch = FileChannel.open( keyFile.toPath(), WRITE ) )
         {
@@ -151,7 +147,7 @@ class TestSslCertificateFactory
         }
 
         // When
-        PrivateKey pk = certs.loadPrivateKey( keyFile );
+        var pk = PkiUtils.loadPrivateKey( keyFile );
 
         // Then
         assertNotNull( pk );

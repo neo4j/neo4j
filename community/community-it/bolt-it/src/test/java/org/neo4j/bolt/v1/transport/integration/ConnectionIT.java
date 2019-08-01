@@ -38,6 +38,7 @@ import org.neo4j.bolt.v1.transport.socket.client.WebSocketConnection;
 import org.neo4j.internal.helpers.HostnamePort;
 
 import static java.util.Arrays.asList;
+import static org.neo4j.bolt.v1.transport.integration.Neo4jWithSocket.withOptionalBoltEncryption;
 
 @RunWith( Parameterized.class )
 public class ConnectionIT
@@ -46,7 +47,7 @@ public class ConnectionIT
     public ExpectedException exception = ExpectedException.none();
 
     @Rule
-    public Neo4jWithSocket server = new Neo4jWithSocket(  getClass() );
+    public Neo4jWithSocket server = new Neo4jWithSocket( getClass(), withOptionalBoltEncryption() );
 
     @Parameterized.Parameter
     public TransportConnection connection;

@@ -29,7 +29,7 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.util.Map;
 
-import org.neo4j.bolt.v1.transport.socket.client.SecureSocketConnection;
+import org.neo4j.bolt.v1.transport.socket.client.SocketConnection;
 import org.neo4j.configuration.connectors.BoltConnector;
 import org.neo4j.configuration.connectors.ConnectorPortRegister;
 import org.neo4j.internal.helpers.HostnamePort;
@@ -64,12 +64,8 @@ public class BoltIT extends ExclusiveServerTestBase
     public void shouldLaunchBolt() throws Throwable
     {
         // When I run Neo4j with Bolt enabled
-        server = serverOnRandomPorts()
-                .withProperty( BoltConnector.enabled.name(), TRUE )
-                .withProperty( BoltConnector.encryption_level.name(), "REQUIRED" )
-                .withProperty( BoltConnector.listen_address.name(), "localhost:0" )
-                .usingDataDir( tmpDir.getRoot().getAbsolutePath() ).build();
-        server.start();
+        startServerWithBoltEnabled();
+
         ConnectorPortRegister connectorPortRegister = getDependency( ConnectorPortRegister.class );
 
         // Then
@@ -110,14 +106,12 @@ public class BoltIT extends ExclusiveServerTestBase
         startServerWithBoltEnabled( "localhost", 7687, "localhost", 7687 );
     }
 
-    private void startServerWithBoltEnabled( String advertisedHost, int advertisedPort, String listenHost,
-            int listenPort ) throws IOException
+    private void startServerWithBoltEnabled( String advertisedHost, int advertisedPort, String listenHost, int listenPort ) throws IOException
     {
         server = serverOnRandomPorts()
                 .withProperty( BoltConnector.enabled.name(), TRUE )
-                .withProperty( BoltConnector.encryption_level.name(), "REQUIRED" )
-                .withProperty( BoltConnector.advertised_address.name(), advertisedHost + ":" +
-                        advertisedPort )
+                .withProperty( BoltConnector.encryption_level.name(), "DISABLED" )
+                .withProperty( BoltConnector.advertised_address.name(), advertisedHost + ":" + advertisedPort )
                 .withProperty( BoltConnector.listen_address.name(), listenHost + ":" + listenPort )
                 .usingDataDir( tmpDir.getRoot().getAbsolutePath() ).build();
         server.start();
@@ -125,7 +119,7 @@ public class BoltIT extends ExclusiveServerTestBase
 
     private void assertEventuallyServerResponds( String host, int port ) throws Exception
     {
-        SecureSocketConnection conn = new SecureSocketConnection();
+        SocketConnection conn = new SocketConnection();
         conn.connect( new HostnamePort( host, port ) );
         conn.send(
                 new byte[]{(byte) 0x60, (byte) 0x60, (byte) 0xB0, (byte) 0x17, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,

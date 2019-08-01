@@ -52,8 +52,8 @@ import static org.junit.runners.Parameterized.Parameters;
 import static org.neo4j.bolt.v1.messaging.util.MessageMatchers.msgRecord;
 import static org.neo4j.bolt.v1.messaging.util.MessageMatchers.msgSuccess;
 import static org.neo4j.bolt.v1.runtime.spi.StreamMatchers.eqRecord;
+import static org.neo4j.bolt.v1.transport.integration.Neo4jWithSocket.withOptionalBoltEncryption;
 import static org.neo4j.bolt.v1.transport.integration.TransportTestUtil.eventuallyReceives;
-import static org.neo4j.configuration.GraphDatabaseSettings.auth_enabled;
 import static org.neo4j.values.storable.CoordinateReferenceSystem.Cartesian;
 import static org.neo4j.values.storable.CoordinateReferenceSystem.WGS84;
 import static org.neo4j.values.storable.DateTimeValue.datetime;
@@ -72,7 +72,7 @@ public class BoltV2TransportIT
     private static final String USER_AGENT = "TestClient/2.0";
 
     @Rule
-    public Neo4jWithSocket server = new Neo4jWithSocket( getClass(), settings -> settings.put( auth_enabled, false ) );
+    public Neo4jWithSocket server = new Neo4jWithSocket( getClass(), withOptionalBoltEncryption() );
 
     @Parameter
     public Class<? extends TransportConnection> connectionClass;

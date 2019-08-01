@@ -71,6 +71,7 @@ import org.neo4j.test.extension.SuppressOutputExtension;
 import org.neo4j.test.extension.TestDirectoryExtension;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.server.HTTP;
+import org.neo4j.test.ssl.SelfSignedCertificateFactory;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.not;
@@ -128,6 +129,11 @@ class InProcessServerBuilderIT
         // When
         PemSslPolicyConfig pem = PemSslPolicyConfig.group( "test" );
 
+        var certificates = directory.directory( "certificates" );
+        SelfSignedCertificateFactory.create( certificates, "private.key", "public.crt" );
+        new File( certificates, "trusted" ).mkdir();
+        new File( certificates, "revoked" ).mkdir();
+
         try ( InProcessNeo4j neo4j = getTestBuilder( directory.directory() )
                 .withConfig( HttpConnector.enabled, true )
                 .withConfig( HttpConnector.listen_address, new SocketAddress( "localhost", 0 ) )
@@ -136,8 +142,7 @@ class InProcessServerBuilderIT
                 .withConfig( GraphDatabaseSettings.dense_node_threshold, 20 )
                 // override legacy policy
                 .withConfig( HttpsConnector.ssl_policy, "test" )
-                .withConfig( pem.base_directory, directory.directory( "certificates" ).toPath().toAbsolutePath() )
-                .withConfig( pem.allow_key_generation, true )
+                .withConfig( pem.base_directory, certificates.toPath() )
                 .withConfig( pem.ciphers, defaultCiphers )
                 .withConfig( pem.tls_versions, List.of( "TLSv1.2", "TLSv1.1", "TLSv1" ) )
                 .withConfig( pem.client_auth, ClientAuth.NONE )
@@ -350,13 +355,20 @@ class InProcessServerBuilderIT
 
     private void testStartupWithConnectors( boolean httpEnabled, boolean httpsEnabled, boolean boltEnabled )
     {
+        var certificates = directory.directory( "certificates" );
         Neo4jBuilder serverBuilder = newInProcessBuilder( directory.directory() )
+                .withConfig( GraphDatabaseSettings.legacy_certificates_directory, certificates.toPath() )
                 .withConfig( HttpConnector.enabled, httpEnabled )
                 .withConfig( HttpConnector.listen_address, new SocketAddress( 0 ) )
                 .withConfig( HttpsConnector.enabled, httpsEnabled )
                 .withConfig( HttpsConnector.listen_address, new SocketAddress( 0 ) )
                 .withConfig( BoltConnector.enabled, boltEnabled )
                 .withConfig( BoltConnector.listen_address, new SocketAddress( 0 ) );
+
+        if ( httpsEnabled )
+        {
+            SelfSignedCertificateFactory.create( certificates );
+        }
 
         try ( InProcessNeo4j neo4j = serverBuilder.build() )
         {
