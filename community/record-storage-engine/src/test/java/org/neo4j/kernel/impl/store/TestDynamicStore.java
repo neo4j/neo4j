@@ -80,14 +80,15 @@ class TestDynamicStore
         }
     }
 
-    private DynamicArrayStore createDynamicArrayStore()
+    private DynamicArrayStore createDynamicArrayStore() throws IOException
     {
         neoStores = storeFactory.openAllNeoStores( true );
+        neoStores.makeStoreOk();
         return neoStores.getPropertyStore().getArrayStore();
     }
 
     @Test
-    void testClose()
+    void testClose() throws IOException
     {
         DynamicArrayStore store = createDynamicArrayStore();
         Collection<DynamicRecord> records = new ArrayList<>();
@@ -105,7 +106,7 @@ class TestDynamicStore
     }
 
     @Test
-    void testStoreGetCharsFromString()
+    void testStoreGetCharsFromString() throws IOException
     {
         final String STR = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
         DynamicArrayStore store = createDynamicArrayStore();
@@ -206,7 +207,7 @@ class TestDynamicStore
     }
 
     @Test
-    void testAddDeleteSequenceEmptyNumberArray()
+    void testAddDeleteSequenceEmptyNumberArray() throws IOException
     {
         DynamicArrayStore store = createDynamicArrayStore();
         byte[] emptyToWrite = createBytes( 0 );
@@ -224,7 +225,7 @@ class TestDynamicStore
     }
 
     @Test
-    void testAddDeleteSequenceEmptyStringArray()
+    void testAddDeleteSequenceEmptyStringArray() throws IOException
     {
         DynamicArrayStore store = createDynamicArrayStore();
         long blockId = create( store, new String[0] );
@@ -241,7 +242,7 @@ class TestDynamicStore
     }
 
     @Test
-    void mustThrowOnRecordChainCycle()
+    void mustThrowOnRecordChainCycle() throws IOException
     {
         DynamicArrayStore store = createDynamicArrayStore();
         ArrayList<DynamicRecord> records = new ArrayList<>();
