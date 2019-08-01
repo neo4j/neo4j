@@ -93,7 +93,7 @@ class BuiltInProceduresIT extends KernelIntegrationTest
         // When
         RawIterator<AnyValue[],ProcedureException> stream =
                 procs().procedureCallRead( procs().procedureGet( procedureName( "db", "labels" ) ).id(), new AnyValue[0],
-                        ProcedureCallContext.EMPTY );
+                        new ProcedureCallContext( new String[]{"label", "nodeCount"}, true ) );
 
         // Then
         assertThat( asList( stream ), contains( equalTo( new AnyValue[]{stringValue("MyLabel"), longValue(1L)} ) ) );
@@ -133,7 +133,7 @@ class BuiltInProceduresIT extends KernelIntegrationTest
         constraintLatch.await();
         RawIterator<AnyValue[],ProcedureException> stream =
                 procs().procedureCallRead( procs().procedureGet( procedureName( "db", "labels" ) ).id(), new AnyValue[0],
-                        ProcedureCallContext.EMPTY );
+                        new ProcedureCallContext( new String[]{"label", "nodeCount"}, true ) );
 
         // Then
         try
@@ -179,7 +179,7 @@ class BuiltInProceduresIT extends KernelIntegrationTest
         // When
         RawIterator<AnyValue[],ProcedureException> stream =
                 procs().procedureCallRead( procs().procedureGet( procedureName( "db", "relationshipTypes" ) ).id(), new AnyValue[0],
-                        ProcedureCallContext.EMPTY);
+                        new ProcedureCallContext( new String[]{"relationshipType", "relationshipCount"}, true ) );
 
         // Then
         assertThat( asList( stream ), contains( equalTo( new AnyValue[]{stringValue( "MyRelType" ), longValue( 1L ) } ) ) );
