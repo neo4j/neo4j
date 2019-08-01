@@ -73,7 +73,7 @@ import static org.neo4j.procedure.Mode.SCHEMA;
 public class BuiltInProcedures
 {
     private static final int NOT_EXISTING_INDEX_ID = -1;
-    private static final int NOT_REQUESTED_INT_FIELD = -1;  // the user should not even see this because that column should be filtered away (not yielded)
+    private static final long LONG_FIELD_NOT_CALCULATED = -1;  // the user should not even see this because that column should be filtered away (not yielded)
 
     @Context
     public KernelTransaction tx;
@@ -91,17 +91,14 @@ public class BuiltInProcedures
     @Procedure( name = "db.labels", mode = READ )
     public Stream<LabelResult> listLabels()
     {
-        boolean isRequestingNodeCount = procedureCallContext.isUsed() &&
-                procedureCallContext.getStreamOfYieldFieldNames().anyMatch( name -> name.equals( "nodeCount" ));
+        boolean shouldCountNodes =
+                !procedureCallContext.isCalledFromCypher() || procedureCallContext.outputFields().anyMatch( name -> name.equals( "nodeCount" ) );
         List<LabelResult> labelResults =
                 TokenAccess.LABELS.all( tx ).stream().map( label ->
                 {
                     int labelId = tx.tokenRead().nodeLabel( label.name() );
-                    if ( isRequestingNodeCount )
-                    {
-                        return new LabelResult( label, tx.dataRead().countsForNode( labelId ) );
-                    }
-                    return new LabelResult( label, NOT_REQUESTED_INT_FIELD );
+                    long nodeCount = shouldCountNodes ? tx.dataRead().countsForNode( labelId ) : LONG_FIELD_NOT_CALCULATED;
+                    return new LabelResult( label, nodeCount );
                 } ).collect( Collectors.toList() );
         return labelResults.stream();
     }
@@ -119,17 +116,15 @@ public class BuiltInProcedures
     @Procedure( name = "db.relationshipTypes", mode = READ )
     public Stream<RelationshipTypeResult> listRelationshipTypes()
     {
-        boolean isRequestingRelCount = procedureCallContext.isUsed() &&
-                procedureCallContext.getStreamOfYieldFieldNames().anyMatch( name -> name.equals( "relationshipCount" ));
+        boolean shouldCountNodes =
+                !procedureCallContext.isCalledFromCypher() || procedureCallContext.outputFields().anyMatch( name -> name.equals( "relationshipCount" ) );
         List<RelationshipTypeResult> relationshipTypes =
                 TokenAccess.RELATIONSHIP_TYPES.all( tx ).stream().map( type ->
                 {
                     int typeId = tx.tokenRead().relationshipType( type.name() );
-                    if ( isRequestingRelCount )
-                    {
-                        return new RelationshipTypeResult( type, tx.dataRead().countsForRelationship( TokenRead.ANY_LABEL, typeId, TokenRead.ANY_LABEL ) );
-                    }
-                    return new RelationshipTypeResult( type, NOT_REQUESTED_INT_FIELD );
+                    long nodeCount = shouldCountNodes ? tx.dataRead().countsForRelationship( TokenRead.ANY_LABEL, typeId, TokenRead.ANY_LABEL )
+                                                      : LONG_FIELD_NOT_CALCULATED;
+                    return new RelationshipTypeResult( type, nodeCount );
                 } ).collect( Collectors.toList() );
         return relationshipTypes.stream();
     }

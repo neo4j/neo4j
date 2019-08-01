@@ -22,34 +22,37 @@ package org.neo4j.internal.kernel.api.procs;
 import java.util.stream.Stream;
 
 /**
- * Has information about the context in which the procedure has been called in.
- * Can for instance be used by procedures to save calculating fields that are not yielded afterwards
+ * This class captures information about the context in which a procedure was called. For example if it was called within Cypher it might
+ * have a YIELD clause with only a few of the available fields requested, in which case procedure authors can optimize their procedures to
+ * skip calculating and returning the unused fields.
  */
 public class ProcedureCallContext
 {
-    private final String[] yieldFieldNames;
-    private final boolean isUsedFromCypher;
+    private final String[] outputFieldNames;
+    private final boolean calledFromCypher;
 
-    public ProcedureCallContext( String[] fieldNames, boolean isUsedFromCypher )
+    public ProcedureCallContext( String[] outputFieldNames, boolean calledFromCypher )
     {
-        yieldFieldNames = fieldNames;
-        this.isUsedFromCypher = isUsedFromCypher;
+        this.outputFieldNames = outputFieldNames;
+        this.calledFromCypher = calledFromCypher;
     }
 
     /*
      * Get a stream of all the field names the procedure was requested to yield
      */
-    public Stream<String> getStreamOfYieldFieldNames()
+    public Stream<String> outputFields()
     {
-        return Stream.of( yieldFieldNames );
+        return Stream.of( outputFieldNames );
     }
 
     /*
-     * Indicates whether the procedure was called via a complete Cypher stack. Check this to make sure you are not in a testing environment
+     * Indicates whether the procedure was called via a complete Cypher stack.
+     * Check this to make sure you are not in a testing environment.
+     * When this is false, we cannot make use of the information in outputFields().
      */
-    public boolean isUsed()
+    public boolean isCalledFromCypher()
     {
-        return isUsedFromCypher;
+        return calledFromCypher;
     }
 
     /* Can be used for testing purposes */

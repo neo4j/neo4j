@@ -92,8 +92,7 @@ class BuiltInProceduresIT extends KernelIntegrationTest
 
         // When
         RawIterator<AnyValue[],ProcedureException> stream =
-                procs().procedureCallRead( procs().procedureGet( procedureName( "db", "labels" ) ).id(), new AnyValue[0],
-                        new ProcedureCallContext( new String[]{"label", "nodeCount"}, true ) );
+                procs().procedureCallRead( procs().procedureGet( procedureName( "db", "labels" ) ).id(), new AnyValue[0], ProcedureCallContext.EMPTY );
 
         // Then
         assertThat( asList( stream ), contains( equalTo( new AnyValue[]{stringValue("MyLabel"), longValue(1L)} ) ) );
@@ -132,8 +131,7 @@ class BuiltInProceduresIT extends KernelIntegrationTest
         // When
         constraintLatch.await();
         RawIterator<AnyValue[],ProcedureException> stream =
-                procs().procedureCallRead( procs().procedureGet( procedureName( "db", "labels" ) ).id(), new AnyValue[0],
-                        new ProcedureCallContext( new String[]{"label", "nodeCount"}, true ) );
+                procs().procedureCallRead( procs().procedureGet( procedureName( "db", "labels" ) ).id(), new AnyValue[0], ProcedureCallContext.EMPTY );
 
         // Then
         try
@@ -158,8 +156,7 @@ class BuiltInProceduresIT extends KernelIntegrationTest
 
         // When
         RawIterator<AnyValue[],ProcedureException> stream =
-                procs().procedureCallRead( procs().procedureGet( procedureName( "db", "propertyKeys" ) ).id(), new AnyValue[0],
-                        ProcedureCallContext.EMPTY );
+                procs().procedureCallRead( procs().procedureGet( procedureName( "db", "propertyKeys" ) ).id(), new AnyValue[0], ProcedureCallContext.EMPTY );
 
         // Then
         assertThat( asList( stream ), contains( equalTo( new AnyValue[]{stringValue( "MyProp" )} ) ) );
@@ -179,7 +176,7 @@ class BuiltInProceduresIT extends KernelIntegrationTest
         // When
         RawIterator<AnyValue[],ProcedureException> stream =
                 procs().procedureCallRead( procs().procedureGet( procedureName( "db", "relationshipTypes" ) ).id(), new AnyValue[0],
-                        new ProcedureCallContext( new String[]{"relationshipType", "relationshipCount"}, true ) );
+                        ProcedureCallContext.EMPTY );
 
         // Then
         assertThat( asList( stream ), contains( equalTo( new AnyValue[]{stringValue( "MyRelType" ), longValue( 1L ) } ) ) );
