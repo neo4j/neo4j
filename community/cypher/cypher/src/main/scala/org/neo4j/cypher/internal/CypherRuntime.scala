@@ -119,7 +119,7 @@ trait RuntimeContextManager[+CONTEXT <: RuntimeContext] {
 }
 
 /**
-  * Exception throws by [[RuntimeContextManager.assertAllReleased()]] if some resource is
+  * Exception thrown by [[RuntimeContextManager.assertAllReleased()]] if some resource is
   * found not to be released.
   */
 class RuntimeResourceLeakException(msg: String) extends IllegalStateException(msg)

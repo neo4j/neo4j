@@ -38,18 +38,8 @@ class Edition[CONTEXT <: RuntimeContext](graphBuilderFactory: () => TestDatabase
 
   def newGraphManagementService(): DatabaseManagementService = {
     val graphBuilder = graphBuilderFactory().impermanent
-    configs.foreach{
-      case (setting, value) =>
-        val valueInGraph =
-          setting match {
-            // This is intentionally telling the regular Neo4j RuntimeEnvironment not to launch it's own
-            // QueryExecutor or Scheduler, because those only busy-consume threads for no benefit except
-            // making test execution slower, and debugging more confusing.
-            case GraphDatabaseSettings.cypher_morsel_runtime_scheduler => GraphDatabaseSettings.CypherMorselRuntimeScheduler.SINGLE_THREADED
-            case GraphDatabaseSettings.cypher_worker_count => 1
-            case _ => value
-          }
-        graphBuilder.setConfig(setting.asInstanceOf[Setting[Object]], valueInGraph.asInstanceOf[Object])
+    configs.foreach {
+      case (setting, value) => graphBuilder.setConfig(setting.asInstanceOf[Setting[Object]], value.asInstanceOf[Object])
     }
     graphBuilder.build()
   }
