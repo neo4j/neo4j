@@ -135,7 +135,7 @@ class RollbackIdLeakIT
     }
 
     @Test
-    void shouldNotLeakHighIdsOnCreateDeleteInSameTxAfterCrashAndRestart() throws IOException
+    void shouldNotLeakHighIdsOnCreateDeleteInSameTxAfterCrashAndRecovery() throws IOException
     {
         shouldNotLeakHighIdsOnCreateDeleteInSameTx( this::nonClean );
     }

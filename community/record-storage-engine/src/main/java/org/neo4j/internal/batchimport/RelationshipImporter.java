@@ -37,7 +37,7 @@ import org.neo4j.kernel.impl.store.record.Record;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 
 import static java.lang.String.format;
-import static org.neo4j.kernel.impl.store.IdUpdateListener.NOTE_HIGH_ID;
+import static org.neo4j.kernel.impl.store.IdUpdateListener.IGNORE;
 
 /**
  * Imports relationships using data from {@link InputChunk}.
@@ -171,7 +171,7 @@ public class RelationshipImporter extends EntityImporter
             relationshipRecord.setFirstPrevRel( Record.NO_NEXT_RELATIONSHIP.intValue() );
             relationshipRecord.setSecondPrevRel( Record.NO_NEXT_RELATIONSHIP.intValue() );
             relationshipStore.prepareForCommit( relationshipRecord, prepareIdSequence.apply( relationshipRecord.getId() ) );
-            relationshipStore.updateRecord( relationshipRecord, NOTE_HIGH_ID );
+            relationshipStore.updateRecord( relationshipRecord, IGNORE );
             relationshipCount++;
             typeCounts.increment( relationshipRecord.getType() );
         }

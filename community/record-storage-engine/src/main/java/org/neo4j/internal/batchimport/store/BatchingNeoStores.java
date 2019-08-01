@@ -24,6 +24,7 @@ import java.io.IOException;
 import java.nio.file.OpenOption;
 import java.nio.file.StandardOpenOption;
 import java.util.function.Predicate;
+import java.util.stream.Stream;
 
 import org.neo4j.configuration.Config;
 import org.neo4j.internal.batchimport.AdditionalInitialIds;
@@ -36,6 +37,8 @@ import org.neo4j.internal.batchimport.store.BatchingTokenRepository.BatchingRela
 import org.neo4j.internal.batchimport.store.io.IoTracer;
 import org.neo4j.internal.id.DefaultIdGeneratorFactory;
 import org.neo4j.internal.id.IdGeneratorFactory;
+import org.neo4j.internal.id.IdType;
+import org.neo4j.internal.id.indexed.IndexedIdGenerator;
 import org.neo4j.internal.index.label.FullStoreChangeStream;
 import org.neo4j.internal.index.label.LabelScanStore;
 import org.neo4j.internal.index.label.NativeLabelScanStore;
@@ -361,6 +364,7 @@ public class BatchingNeoStores implements AutoCloseable, MemoryStatsVisitor.Visi
     public void close() throws IOException
     {
         // Here as a safety mechanism when e.g. panicking.
+        markHighIds();
         if ( flusher != null )
         {
             stopFlushingPageCache();
@@ -382,6 +386,14 @@ public class BatchingNeoStores implements AutoCloseable, MemoryStatsVisitor.Visi
         if ( successful )
         {
             cleanup();
+        }
+    }
+
+    public void markHighIds()
+    {
+        if ( neoStores != null )
+        {
+            Stream.of( IdType.values() ).forEach( idType -> ((IndexedIdGenerator) idGeneratorFactory.get( idType )).markHighestWrittenAtHighId() );
         }
     }
 

@@ -55,18 +55,4 @@ public interface IdUpdateListener
         {   // no-op
         }
     };
-
-    IdUpdateListener NOTE_HIGH_ID = new IdUpdateListener()
-    {
-        @Override
-        public void markIdAsUsed( IdType idType, IdGenerator idGenerator, long id )
-        {
-            idGenerator.setHighId( id - 1 );
-        }
-
-        @Override
-        public void markIdAsUnused( IdType idType, IdGenerator idGenerator, long id )
-        {   // no-op
-        }
-    };
 }

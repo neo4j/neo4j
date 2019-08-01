@@ -36,7 +36,7 @@ import org.neo4j.internal.id.IdValidator;
 import org.neo4j.kernel.impl.store.RecordStore;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 
-import static org.neo4j.kernel.impl.store.IdUpdateListener.NOTE_HIGH_ID;
+import static org.neo4j.kernel.impl.store.IdUpdateListener.IGNORE;
 
 /**
  * Updates a batch of records to a store.
@@ -71,7 +71,7 @@ public class UpdateRecordsStep<RECORD extends AbstractBaseRecord>
                 store.prepareForCommit( record, idSequence.apply( record.getId() ) );
                 // Don't update id generators because at the time of writing this they require special handling for multi-threaded updates
                 // instead just note the highId. It will be mostly correct in the end.
-                store.updateRecord( record, NOTE_HIGH_ID );
+                store.updateRecord( record, IGNORE );
                 recordsUpdatedInThisBatch++;
             }
         }

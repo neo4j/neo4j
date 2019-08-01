@@ -480,6 +480,17 @@ public class IndexedIdGenerator implements IdGenerator
     }
 
     /**
+     * A peculiar being this one. It's for the import case where all records are written w/o even touching the id generator.
+     * When all have been written the id generator is told that it should consider highest written where it's at right now
+     * So that it won't mark all ids as deleted on the first write (the id bridging).
+     */
+    @Override
+    public void markHighestWrittenAtHighId()
+    {
+        this.highestWrittenId.set( highId.get() - 1 );
+    }
+
+    /**
      * Reads contents of a header in an existing {@link IndexedIdGenerator}.
      *
      * @param pageCache {@link PageCache} to map id generator in.

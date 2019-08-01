@@ -30,6 +30,7 @@ public interface IdGenerator extends IdSequence, Closeable
      * @param id the highest in use + 1
      */
     void setHighId( long id );
+    void markHighestWrittenAtHighId();
     long getHighId();
     long getHighestPossibleIdInUse();
     void freeId( long id );
@@ -106,6 +107,12 @@ public interface IdGenerator extends IdSequence, Closeable
         public void setHighId( long id )
         {
             delegate.setHighId( id );
+        }
+
+        @Override
+        public void markHighestWrittenAtHighId()
+        {
+            delegate.markHighestWrittenAtHighId();
         }
 
         @Override

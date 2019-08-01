@@ -39,6 +39,7 @@ import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.internal.helpers.collection.Iterables;
+import org.neo4j.internal.id.IdGenerator;
 import org.neo4j.internal.id.IdGeneratorFactory;
 import org.neo4j.internal.id.IdType;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
@@ -303,6 +304,9 @@ class BigStoreIT
 
     private void setHighId( IdType type, long highId )
     {
-        ((GraphDatabaseAPI) db).getDependencyResolver().resolveDependency( IdGeneratorFactory.class ).get( type ).setHighId( highId );
+        IdGeneratorFactory idGeneratorFactory = ((GraphDatabaseAPI) db).getDependencyResolver().resolveDependency( IdGeneratorFactory.class );
+        IdGenerator idGenerator = idGeneratorFactory.get( type );
+        idGenerator.setHighId( highId );
+        idGenerator.markHighestWrittenAtHighId();
     }
 }

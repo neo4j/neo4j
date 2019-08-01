@@ -38,7 +38,7 @@ import org.neo4j.kernel.impl.store.record.Record;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 
-import static org.neo4j.kernel.impl.store.IdUpdateListener.NOTE_HIGH_ID;
+import static org.neo4j.kernel.impl.store.IdUpdateListener.IGNORE;
 
 /**
  * Abstract class containing logic for importing properties for an entity (node/relationship).
@@ -151,7 +151,7 @@ abstract class EntityImporter extends InputEntityVisitor.Adapter
                 long nextPropertyId = propertyIds.next();
                 long prevId = currentRecord.getId();
                 currentRecord.setNextProp( nextPropertyId );
-                propertyStore.updateRecord( currentRecord, NOTE_HIGH_ID );
+                propertyStore.updateRecord( currentRecord, IGNORE );
                 currentRecord = propertyRecord( nextPropertyId );
                 currentRecord.setPrevProp( prevId );
             }
@@ -162,7 +162,7 @@ abstract class EntityImporter extends InputEntityVisitor.Adapter
 
         if ( currentRecord.size() > 0 )
         {
-            propertyStore.updateRecord( currentRecord, NOTE_HIGH_ID );
+            propertyStore.updateRecord( currentRecord, IGNORE );
         }
 
         return firstRecordId;
@@ -196,9 +196,9 @@ abstract class EntityImporter extends InputEntityVisitor.Adapter
     void freeUnusedIds( CommonAbstractStore<?,?> store, BatchingIdGetter idBatch )
     {
         // Free unused property ids still in the last pre-allocated batch
-        try ( IdGenerator.ReuseMarker marker = store.getIdGenerator().reuseMarker() )
+        try ( IdGenerator.CommitMarker marker = store.getIdGenerator().commitMarker() )
         {
-            idBatch.visitUnused( marker::markFree );
+            idBatch.visitUnused( marker::markDeleted );
         }
     }
 }

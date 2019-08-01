@@ -128,6 +128,11 @@ public class ReadOnlyIdGeneratorFactory implements IdGeneratorFactory
         }
 
         @Override
+        public void markHighestWrittenAtHighId()
+        {   // OK
+        }
+
+        @Override
         public long getHighId()
         {
             return actual.getHighId();

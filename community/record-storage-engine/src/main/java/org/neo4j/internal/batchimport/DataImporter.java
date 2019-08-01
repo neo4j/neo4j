@@ -161,6 +161,7 @@ public class DataImporter
         }
 
         execution.assertHealthy();
+        stores.markHighIds();
         importers.forEach( EntityImporter::freeUnusedIds );
         step.markAsCompleted();
         writeMonitor.stop();

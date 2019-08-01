@@ -40,6 +40,12 @@ class ReadOnlyHighIdGenerator implements IdGenerator
     }
 
     @Override
+    public void markHighestWrittenAtHighId()
+    {
+        throw new UnsupportedOperationException( "Should not be required" );
+    }
+
+    @Override
     public long getHighId()
     {
         return highId;
