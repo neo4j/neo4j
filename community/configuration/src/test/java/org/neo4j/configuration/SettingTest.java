@@ -323,18 +323,18 @@ class SettingTest
     void testMinConstraint()
     {
         var setting = (SettingImpl<Integer>) settingBuilder( "setting", INT ).addConstraint( min( 10 ) ).build();
-        assertDoesNotThrow( () -> setting.parse( "100" ) );
-        assertDoesNotThrow( () -> setting.parse( "10" ) );
-        assertThrows( IllegalArgumentException.class, () -> setting.parse( "9" ) );
+        assertDoesNotThrow( () -> setting.validate( 100 ) );
+        assertDoesNotThrow( () -> setting.validate( 10 ) );
+        assertThrows( IllegalArgumentException.class, () -> setting.validate( 9 ) );
     }
 
     @Test
     void testMaxConstraint()
     {
         var setting = (SettingImpl<Integer>) settingBuilder( "setting", INT ).addConstraint( max( 10 ) ).build();
-        assertDoesNotThrow( () -> setting.parse( "-100" ) );
-        assertDoesNotThrow( () -> setting.parse( "10" ) );
-        assertThrows( IllegalArgumentException.class, () -> setting.parse( "11" ) );
+        assertDoesNotThrow( () -> setting.validate( -100 ) );
+        assertDoesNotThrow( () -> setting.validate( 10 ) );
+        assertThrows( IllegalArgumentException.class, () -> setting.validate( 11 ) );
     }
 
     @Test
@@ -342,44 +342,44 @@ class SettingTest
     {
         var setting = (SettingImpl<Double>) settingBuilder( "setting", DOUBLE ).addConstraint( range( 10.0, 20.0 ) ).build();
 
-        assertThrows( IllegalArgumentException.class, () -> setting.parse( "9.9" ) );
-        assertThrows( IllegalArgumentException.class, () -> setting.parse( "20.01" ) );
-        assertDoesNotThrow( () -> setting.parse( "10.1" ) );
-        assertDoesNotThrow( () -> setting.parse( "19.9999" ) );
+        assertThrows( IllegalArgumentException.class, () -> setting.validate( 9.9 ) );
+        assertThrows( IllegalArgumentException.class, () -> setting.validate( 20.01 ) );
+        assertDoesNotThrow( () -> setting.validate( 10.1 ) );
+        assertDoesNotThrow( () -> setting.validate( 19.9999 ) );
     }
 
     @Test
     void testExceptConstraint()
     {
         var setting = (SettingImpl<String>) settingBuilder( "setting", STRING ).addConstraint( except( "foo" ) ).build();
-        assertThrows( IllegalArgumentException.class, () -> setting.parse( "foo" ) );
-        assertDoesNotThrow( () -> setting.parse( "bar" ) );
+        assertThrows( IllegalArgumentException.class, () -> setting.validate( "foo" ) );
+        assertDoesNotThrow( () -> setting.validate( "bar" ) );
     }
 
     @Test
     void testMatchesConstraint()
     {
         var setting = (SettingImpl<String>) settingBuilder( "setting", STRING ).addConstraint( matches( "^[^.]+\\.[^.]+$" ) ).build();
-        assertDoesNotThrow( () -> setting.parse( "foo.bar" ) );
-        assertThrows( IllegalArgumentException.class, () -> setting.parse( "foo" ) );
+        assertDoesNotThrow( () -> setting.validate( "foo.bar" ) );
+        assertThrows( IllegalArgumentException.class, () -> setting.validate( "foo" ) );
     }
 
     @Test
     void testPowerOf2Constraint()
     {
         var setting = (SettingImpl<Long>) settingBuilder( "setting", LONG ).addConstraint( POWER_OF_2 ).build();
-        assertDoesNotThrow( () -> setting.parse( "8" ) );
-        assertDoesNotThrow( () -> setting.parse( "4294967296" ) );
-        assertThrows( IllegalArgumentException.class, () -> setting.parse( "1023" ) );
+        assertDoesNotThrow( () -> setting.validate( 8L ) );
+        assertDoesNotThrow( () -> setting.validate( 4294967296L ) );
+        assertThrows( IllegalArgumentException.class, () -> setting.validate( 1023L ) );
     }
 
     @Test
     void testPortConstraint()
     {
         var setting = (SettingImpl<Integer>) settingBuilder( "setting", INT ).addConstraint( PORT ).build();
-        assertDoesNotThrow( () -> setting.parse( "7474" ) );
-        assertThrows( IllegalArgumentException.class, () -> setting.parse( "200000" ) );
-        assertThrows( IllegalArgumentException.class, () -> setting.parse( "-1" ) );
+        assertDoesNotThrow( () -> setting.validate( 7474 ) );
+        assertThrows( IllegalArgumentException.class, () -> setting.validate( 200000 ) );
+        assertThrows( IllegalArgumentException.class, () -> setting.validate( -1 ) );
     }
 
     @Test
