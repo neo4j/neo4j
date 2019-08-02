@@ -130,6 +130,12 @@ public interface AccessMode
         }
 
         @Override
+        public boolean disallowsTraverseType( long type )
+        {
+            return false;
+        }
+
+        @Override
         public boolean allowsTraverseNodeLabels( long... labels )
         {
             return read;
@@ -208,6 +214,10 @@ public interface AccessMode
     boolean allowsTraverseLabel( long label );
     /** true if this label is blacklisted for traversal */
     boolean disallowsTraverseLabel( long label );
+
+    /** true if this type is blacklisted for traversal */
+    boolean disallowsTraverseType( long type );
+
     /** true if a particular node with exactly these labels can be traversed */
     boolean allowsTraverseNodeLabels( long... labels );
 

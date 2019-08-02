@@ -58,7 +58,7 @@ class ProcedureCallPipeTest
       argExprs = Seq(Variable("a")),
       rowProcessing = FlatMapAndAppendToRow,
       resultSymbols = Seq("r" -> CTString),
-      resultIndices = Seq(0 -> "r")
+      resultIndices = Seq(0 -> ("r", "r"))
     )()
 
     val qtx = fakeQueryContext(ID, resultsTransformer, ProcedureReadOnlyAccess(emptyStringArray))
@@ -81,7 +81,7 @@ class ProcedureCallPipeTest
       argExprs = Seq(Variable("a")),
       rowProcessing = FlatMapAndAppendToRow,
       resultSymbols = Seq("r" -> CTString),
-      resultIndices = Seq(0 -> "r")
+      resultIndices = Seq(0 -> ("r", "r"))
     )()
 
     val qtx = fakeQueryContext(ID, resultsTransformer, ProcedureReadWriteAccess(emptyStringArray))
@@ -132,7 +132,7 @@ class ProcedureCallPipeTest
     }
 
     val queryContext = mock[QueryContext]
-    Mockito.when(queryContext.callReadOnlyProcedure(any[Int](), any[Seq[AnyValue]](), any[Array[String]](), ProcedureCallContext.EMPTY)).thenAnswer(
+    Mockito.when(queryContext.callReadOnlyProcedure(any[Int](), any[Seq[AnyValue]](), any[Array[String]](), any[ProcedureCallContext])).thenAnswer(
       new Answer[Iterator[Array[AnyValue]]] {
         override def answer(invocationOnMock: InvocationOnMock): Iterator[Array[AnyValue]] = {
           expectedAccessMode should equal(ProcedureReadOnlyAccess(emptyStringArray))
@@ -141,7 +141,7 @@ class ProcedureCallPipeTest
       }
     )
 
-    Mockito.when(queryContext.callReadWriteProcedure(any[Int](), any[Seq[AnyValue]](), any[Array[String]](), ProcedureCallContext.EMPTY)).thenAnswer(
+    Mockito.when(queryContext.callReadWriteProcedure(any[Int](), any[Seq[AnyValue]](), any[Array[String]](), any[ProcedureCallContext])).thenAnswer(
       new Answer[Iterator[Array[AnyValue]]] {
         override def answer(invocationOnMock: InvocationOnMock): Iterator[Array[AnyValue]] = {
           expectedAccessMode should equal(ProcedureReadWriteAccess(emptyStringArray))

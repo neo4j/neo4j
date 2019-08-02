@@ -85,6 +85,12 @@ public class OverriddenAccessMode extends WrappedAccessMode
     }
 
     @Override
+    public boolean disallowsTraverseType( long type )
+    {
+        return wrapping.disallowsTraverseType( type );
+    }
+
+    @Override
     public boolean allowsTraverseNodeLabels( long... labels )
     {
         return wrapping.allowsTraverseNodeLabels( labels );

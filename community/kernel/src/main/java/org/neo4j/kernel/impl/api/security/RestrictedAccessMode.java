@@ -85,6 +85,12 @@ public class RestrictedAccessMode extends WrappedAccessMode
     }
 
     @Override
+    public boolean disallowsTraverseType( long type )
+    {
+        return original.disallowsTraverseType( type ) || wrapping.disallowsTraverseType( type );
+    }
+
+    @Override
     public boolean allowsTraverseNodeLabels( long... labels )
     {
         return original.allowsTraverseNodeLabels( labels ) && wrapping.allowsTraverseNodeLabels( labels );

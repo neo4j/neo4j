@@ -43,7 +43,7 @@ case class ProcedureCallPipe(source: Pipe,
                              argExprs: Seq[Expression],
                              rowProcessing: ProcedureCallRowProcessing,
                              resultSymbols: Seq[(String, CypherType)],
-                             resultIndices: Seq[(Int, String)])
+                             resultIndices: Seq[(Int, (String, String))])
                             (val id: Id = Id.INVALID_ID)
 
   extends PipeWithSource(source) {
@@ -56,7 +56,8 @@ case class ProcedureCallPipe(source: Pipe,
   }
 
   private def createProcedureCallContext(): ProcedureCallContext ={
-    new ProcedureCallContext( resultIndices.map(_._2).toArray, true )
+    // getting the original name of the yielded variable
+    new ProcedureCallContext( resultIndices.map(_._2._2).toArray, true )
   }
 
   override protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext] = rowProcessor(input, state)
@@ -69,7 +70,7 @@ case class ProcedureCallPipe(source: Pipe,
       val argValues = argExprs.map(arg => arg(input, state))
       val results: Iterator[Array[AnyValue]] = call(qtx, argValues, createProcedureCallContext()) // always returns all items from the procedure
       results map { resultValues =>
-        resultIndices foreach { case (k, v) =>
+        resultIndices foreach { case (k, (v, _)) =>
           builder += v -> resultValues(k) // get the output from correct position and add store variable -> value
         }
         val rowEntries = builder.result()
