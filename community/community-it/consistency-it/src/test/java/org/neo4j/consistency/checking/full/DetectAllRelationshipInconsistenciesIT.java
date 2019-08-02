@@ -20,9 +20,8 @@
 package org.neo4j.consistency.checking.full;
 
 import org.apache.commons.lang3.StringUtils;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.RuleChain;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.util.Map;
 
@@ -43,6 +42,7 @@ import org.neo4j.graphdb.config.Setting;
 import org.neo4j.internal.helpers.progress.ProgressMonitorFactory;
 import org.neo4j.internal.index.label.LabelScanStore;
 import org.neo4j.internal.recordstorage.RecordStorageEngine;
+import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.impl.MyRelTypes;
 import org.neo4j.kernel.impl.api.index.IndexProviderMap;
 import org.neo4j.kernel.impl.store.NeoStores;
@@ -54,26 +54,32 @@ import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
+import org.neo4j.test.extension.DefaultFileSystemExtension;
+import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.RandomExtension;
+import org.neo4j.test.extension.TestDirectoryExtension;
 import org.neo4j.test.rule.RandomRule;
 import org.neo4j.test.rule.TestDirectory;
-import org.neo4j.test.rule.fs.DefaultFileSystemRule;
 import org.neo4j.token.TokenHolders;
 
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.graphdb.Label.label;
 
+@ExtendWith( {DefaultFileSystemExtension.class, TestDirectoryExtension.class, RandomExtension.class} )
 public class DetectAllRelationshipInconsistenciesIT
 {
-    private final TestDirectory directory = TestDirectory.testDirectory();
-    private final RandomRule random = new RandomRule();
-    private final DefaultFileSystemRule fileSystemRule = new DefaultFileSystemRule();
-    @Rule
-    public final RuleChain rules = RuleChain.outerRule( random ).around( directory ).around( fileSystemRule );
+    @Inject
+    private TestDirectory directory;
+    @Inject
+    private RandomRule random;
+    @Inject
+    private DefaultFileSystemAbstraction fileSystem;
+
     private DatabaseManagementService managementService;
 
     @Test
-    public void shouldDetectSabotagedRelationshipWhereEverItIs() throws Exception
+    void shouldDetectSabotagedRelationshipWhereEverItIs() throws Exception
     {
         // GIVEN a database which lots of relationships
         GraphDatabaseAPI db = getGraphDatabaseAPI();
@@ -130,7 +136,7 @@ public class DetectAllRelationshipInconsistenciesIT
             int relationshipInconsistencies = summary.getInconsistencyCountForRecordType(
                     RecordType.RELATIONSHIP );
 
-            assertTrue( "Couldn't detect sabotaged relationship " + sabotage, relationshipInconsistencies > 0 );
+            assertTrue( relationshipInconsistencies > 0, "Couldn't detect sabotaged relationship " + sabotage );
             logProvider.rawMessageMatcher().assertContains( sabotage.after.toString() );
         }
         finally

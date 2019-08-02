@@ -19,10 +19,10 @@
  */
 package org.neo4j.kernel.impl.api.index;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.util.concurrent.TimeUnit;
 
@@ -47,11 +47,12 @@ import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.register.Register.DoubleLongRegister;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
-import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
+import org.neo4j.test.extension.EphemeralFileSystemExtension;
+import org.neo4j.test.extension.Inject;
 import org.neo4j.token.TokenHolders;
 
 import static org.hamcrest.Matchers.containsString;
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.configuration.GraphDatabaseSettings.index_background_sampling_enabled;
 import static org.neo4j.graphdb.Label.label;
@@ -59,27 +60,26 @@ import static org.neo4j.internal.helpers.ArrayUtil.single;
 import static org.neo4j.logging.AssertableLogProvider.inLog;
 import static org.neo4j.register.Registers.newDoubleLongRegister;
 
-public class IndexStatisticsIT
+@ExtendWith( EphemeralFileSystemExtension.class )
+class IndexStatisticsIT
 {
     private static final Label ALIEN = label( "Alien" );
     private static final String SPECIMEN = "specimen";
 
-    @Rule
-    public final EphemeralFileSystemRule fsRule = new EphemeralFileSystemRule();
+    @Inject
+    private EphemeralFileSystemAbstraction fs;
     private final AssertableLogProvider logProvider = new AssertableLogProvider( true );
     private GraphDatabaseService db;
-    private EphemeralFileSystemAbstraction fileSystem;
     private DatabaseManagementService managementService;
 
-    @Before
-    public void before()
+    @BeforeEach
+    void before()
     {
-        fileSystem = fsRule.get();
         startDb();
     }
 
-    @After
-    public void after()
+    @AfterEach
+    void after()
     {
         try
         {
@@ -92,7 +92,7 @@ public class IndexStatisticsIT
     }
 
     @Test
-    public void shouldRecoverIndexCountsBySamplingThemOnStartup()
+    void shouldRecoverIndexCountsBySamplingThemOnStartup()
     {
         // given some aliens in a database
         createAliens();
@@ -130,8 +130,8 @@ public class IndexStatisticsIT
 
     private void assertEqualRegisters( String message, DoubleLongRegister expected, DoubleLongRegister actual )
     {
-        assertEquals( message + " (first part of register)", expected.readFirst(), actual.readFirst() );
-        assertEquals( message + " (second part of register)", expected.readSecond(), actual.readSecond() );
+        assertEquals( expected.readFirst(), actual.readFirst(), message + " (first part of register)" );
+        assertEquals( expected.readSecond(), actual.readSecond(), message + " (second part of register)" );
     }
 
     private void assertLogExistsForRecoveryOn( String labelAndProperty )
@@ -218,7 +218,7 @@ public class IndexStatisticsIT
     {
         managementService = new TestDatabaseManagementServiceBuilder()
                 .setInternalLogProvider( logProvider )
-                .setFileSystem( new UncloseableDelegatingFileSystemAbstraction( fileSystem ) )
+                .setFileSystem( new UncloseableDelegatingFileSystemAbstraction( fs ) )
                 .impermanent()
                 .setConfig( index_background_sampling_enabled, false )
                 .build();

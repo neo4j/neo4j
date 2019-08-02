@@ -21,8 +21,7 @@ package org.neo4j.kernel.impl.api;
 
 import org.hamcrest.BaseMatcher;
 import org.hamcrest.Description;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.concurrent.TimeUnit;
 
@@ -34,25 +33,33 @@ import org.neo4j.kernel.impl.api.index.IndexProviderMap;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.logging.AssertableLogProvider.LogMatcherBuilder;
-import org.neo4j.test.rule.ImpermanentDbmsRule;
+import org.neo4j.test.TestDatabaseManagementServiceBuilder;
+import org.neo4j.test.extension.ExtensionCallback;
+import org.neo4j.test.extension.ImpermanentDbmsExtension;
+import org.neo4j.test.extension.Inject;
 
 import static org.hamcrest.Matchers.containsString;
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.logging.AssertableLogProvider.inLog;
 import static org.neo4j.test.assertion.Assert.assertEventually;
 
-public class SchemaLoggingIT
+@ImpermanentDbmsExtension( configurationCallback = "configure" )
+class SchemaLoggingIT
 {
     private final AssertableLogProvider logProvider = new AssertableLogProvider();
 
-    @Rule
-    public final ImpermanentDbmsRule dbRule = new ImpermanentDbmsRule( logProvider );
+    @Inject
+    private GraphDatabaseAPI db;
+
+    @ExtensionCallback
+    void configure( TestDatabaseManagementServiceBuilder builder )
+    {
+        builder.setInternalLogProvider( logProvider );
+    }
 
     @Test
-    public void shouldLogUserReadableLabelAndPropertyNames() throws Exception
+    void shouldLogUserReadableLabelAndPropertyNames() throws Exception
     {
-        GraphDatabaseAPI db = dbRule.getGraphDatabaseAPI();
-
         String labelName = "User";
         String property = "name";
 

@@ -19,12 +19,8 @@
  */
 package org.neo4j.kernel.impl.store;
 
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.ClassRule;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import java.util.Arrays;
 import java.util.HashSet;
@@ -54,19 +50,20 @@ import org.neo4j.internal.schema.constraints.ConstraintDescriptorFactory;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.schema.index.TestIndexDescriptorFactory;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
+import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.storageengine.api.ConstraintRule;
 import org.neo4j.test.GraphDatabaseServiceCleaner;
-import org.neo4j.test.rule.DbmsRule;
-import org.neo4j.test.rule.ImpermanentDbmsRule;
+import org.neo4j.test.extension.ImpermanentDbmsExtension;
+import org.neo4j.test.extension.Inject;
 import org.neo4j.token.TokenHolders;
 import org.neo4j.values.storable.Values;
 
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.internal.helpers.ArrayUtil.single;
 import static org.neo4j.internal.helpers.collection.Iterators.asSet;
 import static org.neo4j.internal.schema.IndexPrototype.forSchema;
@@ -74,7 +71,8 @@ import static org.neo4j.internal.schema.IndexPrototype.uniqueForSchema;
 import static org.neo4j.internal.schema.SchemaDescriptor.forLabel;
 import static org.neo4j.kernel.api.index.IndexProvider.EMPTY;
 
-public class SchemaStorageIT
+@ImpermanentDbmsExtension
+class SchemaStorageIT
 {
     private static final String LABEL1 = "Label1";
     private static final String LABEL2 = "Label2";
@@ -82,16 +80,14 @@ public class SchemaStorageIT
     private static final String PROP1 = "prop1";
     private static final String PROP2 = "prop2";
 
-    @ClassRule
-    public static final DbmsRule db = new ImpermanentDbmsRule();
-    @Rule
-    public ExpectedException expectedException = ExpectedException.none();
+    @Inject
+    private GraphDatabaseAPI db;
 
     private static SchemaStore schemaStore;
     private static SchemaStorage storage;
 
-    @BeforeClass
-    public static void initStorage() throws Exception
+    @BeforeEach
+    void initStorage() throws Exception
     {
         try ( Transaction transaction = db.beginTx() )
         {
@@ -107,14 +103,14 @@ public class SchemaStorageIT
         storage = new SchemaStorage( schemaStore, resolveDependency( TokenHolders.class ) );
     }
 
-    @Before
-    public void clearSchema()
+    @BeforeEach
+    void clearSchema()
     {
         GraphDatabaseServiceCleaner.cleanupSchema( db );
     }
 
     @Test
-    public void shouldReturnIndexRuleForLabelAndProperty()
+    void shouldReturnIndexRuleForLabelAndProperty()
     {
         // Given
         createSchema(
@@ -131,7 +127,7 @@ public class SchemaStorageIT
     }
 
     @Test
-    public void shouldReturnIndexRuleForLabelAndPropertyComposite()
+    void shouldReturnIndexRuleForLabelAndPropertyComposite()
     {
         String a = "a";
         String b = "b";
@@ -157,7 +153,7 @@ public class SchemaStorageIT
     }
 
     @Test
-    public void shouldReturnIndexRuleForLabelAndVeryManyPropertiesComposite()
+    void shouldReturnIndexRuleForLabelAndVeryManyPropertiesComposite()
     {
         String[] props = "abcdefghijklmnopqrstuvwxyzABCDEFGHJILKMNOPQRSTUVWXYZ".split( "\\B" );
         createSchema( db ->
@@ -183,7 +179,7 @@ public class SchemaStorageIT
     }
 
     @Test
-    public void shouldReturnEmptyArrayIfIndexRuleForLabelAndPropertyDoesNotExist()
+    void shouldReturnEmptyArrayIfIndexRuleForLabelAndPropertyDoesNotExist()
     {
         // Given
         createSchema(
@@ -197,7 +193,7 @@ public class SchemaStorageIT
     }
 
     @Test
-    public void shouldListIndexRulesForLabelPropertyAndKind()
+    void shouldListIndexRulesForLabelPropertyAndKind()
     {
         // Given
         createSchema(
@@ -213,7 +209,7 @@ public class SchemaStorageIT
     }
 
     @Test
-    public void shouldListAllIndexRules()
+    void shouldListAllIndexRules()
     {
         // Given
         createSchema(
@@ -234,7 +230,7 @@ public class SchemaStorageIT
     }
 
     @Test
-    public void shouldReturnCorrectUniquenessRuleForLabelAndProperty()
+    void shouldReturnCorrectUniquenessRuleForLabelAndProperty()
             throws SchemaRuleNotFoundException, DuplicateSchemaRuleException
     {
         // Given
@@ -252,7 +248,7 @@ public class SchemaStorageIT
     }
 
     @Test
-    public void shouldWriteAndReadIndexConfig() throws KernelException
+    void shouldWriteAndReadIndexConfig() throws KernelException
     {
         // given
         IndexConfig expected = IndexConfig.with( MapUtil.genericMap(
@@ -272,7 +268,7 @@ public class SchemaStorageIT
 
         // then
         IndexConfig actual = schemaRule.schema().getIndexConfig();
-        assertEquals( "Read index config not same as written, expected " + expected + ", actual " + actual, expected, actual );
+        assertEquals( expected, actual, "Read index config not same as written, expected " + expected + ", actual " + actual );
     }
 
     private void assertRule( IndexDescriptor rule, String label, String propertyKey, boolean isUnique )
@@ -311,7 +307,7 @@ public class SchemaStorageIT
         return prototype.materialise( ruleId ).withOwningConstraintId( constraintId );
     }
 
-    private static int labelId( String labelName )
+    private int labelId( String labelName )
     {
         try ( Transaction ignore = db.beginTx() )
         {
@@ -327,14 +323,14 @@ public class SchemaStorageIT
         }
     }
 
-    private static KernelTransaction getTransaction()
+    private KernelTransaction getTransaction()
     {
         return resolveDependency( ThreadToStatementContextBridge.class ).getKernelTransactionBoundToThisThread( true );
     }
 
-    private static <T> T resolveDependency( Class<T> clazz )
+    private <T> T resolveDependency( Class<T> clazz )
     {
-        return db.getGraphDatabaseAPI().getDependencyResolver().resolveDependency( clazz );
+        return db.getDependencyResolver().resolveDependency( clazz );
     }
 
     private static Consumer<GraphDatabaseService> index( String label, String prop )
@@ -348,7 +344,7 @@ public class SchemaStorageIT
     }
 
     @SafeVarargs
-    private static void createSchema( Consumer<GraphDatabaseService>... creators )
+    private void createSchema( Consumer<GraphDatabaseService>... creators )
     {
         try ( Transaction tx = db.beginTx() )
         {
@@ -361,7 +357,7 @@ public class SchemaStorageIT
         awaitIndexes();
     }
 
-    private static void awaitIndexes()
+    private void awaitIndexes()
     {
         try ( Transaction tx = db.beginTx() )
         {

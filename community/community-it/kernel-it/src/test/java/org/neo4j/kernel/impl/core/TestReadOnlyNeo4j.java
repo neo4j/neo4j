@@ -19,9 +19,9 @@
  */
 package org.neo4j.kernel.impl.core;
 
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.RuleChain;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.dbms.api.DatabaseManagementService;
@@ -33,57 +33,105 @@ import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.security.WriteOperationsNotAllowedException;
+import org.neo4j.io.fs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.fs.UncloseableDelegatingFileSystemAbstraction;
 import org.neo4j.test.DbRepresentation;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
+import org.neo4j.test.extension.EphemeralFileSystemExtension;
+import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.TestDirectoryExtension;
 import org.neo4j.test.rule.TestDirectory;
-import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.fail;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.graphdb.RelationshipType.withName;
 import static org.neo4j.test.mockito.matcher.Neo4jMatchers.hasProperty;
 import static org.neo4j.test.mockito.matcher.Neo4jMatchers.inTx;
 
-public class TestReadOnlyNeo4j
+@ExtendWith( {EphemeralFileSystemExtension.class, TestDirectoryExtension.class} )
+class TestReadOnlyNeo4j
 {
-    private final EphemeralFileSystemRule fs = new EphemeralFileSystemRule();
-    private final TestDirectory testDirectory = TestDirectory.testDirectory();
-    @Rule
-    public final RuleChain ruleChain = RuleChain.outerRule( fs ).around( testDirectory );
+    @Inject
+    private EphemeralFileSystemAbstraction fs;
+    @Inject
+    private TestDirectory testDirectory;
+    private DatabaseManagementService managementService;
+
+    @AfterEach
+    void tearDown()
+    {
+        if ( managementService != null )
+        {
+            managementService.shutdown();
+        }
+    }
 
     @Test
-    public void testSimple()
+    void testSimple()
     {
         DbRepresentation someData = createSomeData();
-        DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder( testDirectory.storeDir() )
-                .setFileSystem( new UncloseableDelegatingFileSystemAbstraction( fs.get() ) )
+        managementService = new TestDatabaseManagementServiceBuilder( testDirectory.storeDir() )
+                .setFileSystem( new UncloseableDelegatingFileSystemAbstraction( fs ) )
                 .impermanent()
                 .setConfig( GraphDatabaseSettings.read_only, true )
                 .build();
         GraphDatabaseService readGraphDb = managementService.database( DEFAULT_DATABASE_NAME );
         assertEquals( someData, DbRepresentation.of( readGraphDb ) );
 
-        try ( Transaction tx = readGraphDb.beginTx() )
+        assertThrows( WriteOperationsNotAllowedException.class, () ->
         {
-            readGraphDb.createNode();
+            try ( Transaction tx = readGraphDb.beginTx() )
+            {
+                readGraphDb.createNode();
 
-            tx.success();
-        }
-        catch ( WriteOperationsNotAllowedException e )
-        {
-            // good
-        }
-        managementService.shutdown();
+                tx.success();
+            }
+        } );
+    }
+
+    @Test
+    void testReadOnlyOperationsAndNoTransaction()
+    {
+        managementService = new TestDatabaseManagementServiceBuilder( testDirectory.storeDir() )
+                .setFileSystem( fs )
+                .impermanent()
+                .build();
+        GraphDatabaseService db = managementService.database( DEFAULT_DATABASE_NAME );
+
+        Transaction tx = db.beginTx();
+        Node node1 = db.createNode();
+        Node node2 = db.createNode();
+        Relationship rel = node1.createRelationshipTo( node2, withName( "TEST" ) );
+        node1.setProperty( "key1", "value1" );
+        rel.setProperty( "key1", "value1" );
+        tx.success();
+        tx.close();
+
+        // make sure write operations still throw exception
+        assertThrows( NotInTransactionException.class, db::createNode );
+        assertThrows( NotInTransactionException.class, () -> node1.createRelationshipTo( node2, withName( "TEST2" ) ) );
+        assertThrows( NotInTransactionException.class, () -> node1.setProperty( "key1", "value2" ) );
+        assertThrows( NotInTransactionException.class, () -> rel.removeProperty( "key1" ) );
+
+        Transaction transaction = db.beginTx();
+        assertEquals( node1, db.getNodeById( node1.getId() ) );
+        assertEquals( node2, db.getNodeById( node2.getId() ) );
+        assertEquals( rel, db.getRelationshipById( rel.getId() ) );
+
+        assertThat( node1, inTx( db, hasProperty( "key1" ).withValue( "value1" ) ) );
+        Relationship loadedRel = node1.getSingleRelationship( withName( "TEST" ), Direction.OUTGOING );
+        assertEquals( rel, loadedRel );
+        assertThat(loadedRel, inTx(db, hasProperty( "key1" ).withValue( "value1" )));
+        transaction.close();
     }
 
     private DbRepresentation createSomeData()
     {
         RelationshipType type = withName( "KNOWS" );
         DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder( testDirectory.storeDir() )
-                .setFileSystem( new UncloseableDelegatingFileSystemAbstraction( fs.get() ) )
+                .setFileSystem( new UncloseableDelegatingFileSystemAbstraction( fs ) )
                 .impermanent()
                 .build();
         GraphDatabaseService db = managementService.database( DEFAULT_DATABASE_NAME );
@@ -102,71 +150,5 @@ public class TestReadOnlyNeo4j
         DbRepresentation result = DbRepresentation.of( db );
         managementService.shutdown();
         return result;
-    }
-
-    @Test
-    public void testReadOnlyOperationsAndNoTransaction()
-    {
-        DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder( testDirectory.storeDir() )
-                .setFileSystem( fs.get() )
-                .impermanent()
-                .build();
-        GraphDatabaseService db = managementService.database( DEFAULT_DATABASE_NAME );
-
-        Transaction tx = db.beginTx();
-        Node node1 = db.createNode();
-        Node node2 = db.createNode();
-        Relationship rel = node1.createRelationshipTo( node2, withName( "TEST" ) );
-        node1.setProperty( "key1", "value1" );
-        rel.setProperty( "key1", "value1" );
-        tx.success();
-        tx.close();
-
-        // make sure write operations still throw exception
-        try
-        {
-            db.createNode();
-            fail( "Write operation and no transaction should throw exception" );
-        }
-        catch ( NotInTransactionException e )
-        { // good
-        }
-        try
-        {
-            node1.createRelationshipTo( node2, withName( "TEST2" ) );
-            fail( "Write operation and no transaction should throw exception" );
-        }
-        catch ( NotInTransactionException e )
-        { // good
-        }
-        try
-        {
-            node1.setProperty( "key1", "value2" );
-            fail( "Write operation and no transaction should throw exception" );
-        }
-        catch ( NotInTransactionException e )
-        { // good
-        }
-
-        try
-        {
-            rel.removeProperty( "key1" );
-            fail( "Write operation and no transaction should throw exception" );
-        }
-        catch ( NotInTransactionException e )
-        { // good
-        }
-
-        Transaction transaction = db.beginTx();
-        assertEquals( node1, db.getNodeById( node1.getId() ) );
-        assertEquals( node2, db.getNodeById( node2.getId() ) );
-        assertEquals( rel, db.getRelationshipById( rel.getId() ) );
-
-        assertThat( node1, inTx( db, hasProperty( "key1" ).withValue( "value1" ) ) );
-        Relationship loadedRel = node1.getSingleRelationship( withName( "TEST" ), Direction.OUTGOING );
-        assertEquals( rel, loadedRel );
-        assertThat(loadedRel, inTx(db, hasProperty( "key1" ).withValue( "value1" )));
-        transaction.close();
-        managementService.shutdown();
     }
 }

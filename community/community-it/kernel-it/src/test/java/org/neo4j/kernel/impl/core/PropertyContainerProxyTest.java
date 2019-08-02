@@ -19,42 +19,40 @@
  */
 package org.neo4j.kernel.impl.core;
 
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.HashMap;
 import java.util.Map;
 
 import org.neo4j.exceptions.KernelException;
+import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.internal.kernel.api.TokenWrite;
 import org.neo4j.internal.kernel.api.exceptions.schema.TokenCapacityExceededKernelException;
 import org.neo4j.kernel.api.KernelTransaction;
-import org.neo4j.test.rule.CleanupRule;
-import org.neo4j.test.rule.DbmsRule;
-import org.neo4j.test.rule.ImpermanentDbmsRule;
+import org.neo4j.test.extension.ImpermanentDbmsExtension;
+import org.neo4j.test.extension.Inject;
 import org.neo4j.token.api.TokenHolder;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.neo4j.test.assertion.Assert.assertObjectOrArrayEquals;
 
+@ImpermanentDbmsExtension
 public abstract class PropertyContainerProxyTest
 {
-    @Rule
-    public final DbmsRule db = new ImpermanentDbmsRule();
-    @Rule
-    public final CleanupRule cleanup = new CleanupRule();
+    @Inject
+    GraphDatabaseService db;
 
     protected abstract long createPropertyContainer();
 
     protected abstract PropertyContainer lookupPropertyContainer( long id );
 
     @Test
-    public void shouldListAllProperties()
+    void shouldListAllProperties()
     {
         // Given
         Map<String,Object> properties = new HashMap<>();

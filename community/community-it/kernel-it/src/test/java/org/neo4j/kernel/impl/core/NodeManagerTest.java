@@ -19,9 +19,9 @@
  */
 package org.neo4j.kernel.impl.core;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
 import java.util.Iterator;
@@ -37,31 +37,31 @@ import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.not;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.IsInstanceOf.instanceOf;
-import static org.junit.Assert.assertThat;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.internal.helpers.collection.Iterators.addToCollection;
 
-public class NodeManagerTest
+class NodeManagerTest
 {
     private GraphDatabaseAPI db;
     private DatabaseManagementService managementService;
 
-    @Before
-    public void init()
+    @BeforeEach
+    void init()
     {
         managementService = new TestDatabaseManagementServiceBuilder().impermanent().build();
         db = (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );
     }
 
-    @After
-    public void stop()
+    @AfterEach
+    void stop()
     {
         managementService.shutdown();
     }
 
     @Test
-    public void getAllNodesIteratorShouldPickUpHigherIdsThanHighIdWhenStarted() throws Exception
+    void getAllNodesIteratorShouldPickUpHigherIdsThanHighIdWhenStarted() throws Exception
     {
         // GIVEN
         {
@@ -95,7 +95,7 @@ public class NodeManagerTest
     }
 
     @Test
-    public void getAllRelationshipsIteratorShouldPickUpHigherIdsThanHighIdWhenStarted() throws Exception
+    void getAllRelationshipsIteratorShouldPickUpHigherIdsThanHighIdWhenStarted() throws Exception
     {
         // GIVEN
         Transaction tx = db.beginTx();
@@ -125,12 +125,11 @@ public class NodeManagerTest
         tx.close();
     }
 
-    private Relationship createRelationshipAssumingTxWith( String key, Object value )
+    private void createRelationshipAssumingTxWith( String key, Object value )
     {
         Node a = db.createNode();
         Node b = db.createNode();
         Relationship relationship = a.createRelationshipTo( b, RelationshipType.withName( "FOO" ) );
         relationship.setProperty( key, value );
-        return relationship;
     }
 }

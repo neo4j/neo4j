@@ -19,10 +19,7 @@
  */
 package org.neo4j.kernel.impl.core;
 
-import org.junit.ClassRule;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
+import org.junit.jupiter.api.Test;
 
 import java.util.Iterator;
 import java.util.Map;
@@ -33,24 +30,25 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.test.rule.DbmsRule;
-import org.neo4j.test.rule.ImpermanentDbmsRule;
+import org.neo4j.test.extension.ImpermanentDbmsExtension;
+import org.neo4j.test.extension.Inject;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
-public class NodeTest
+@ImpermanentDbmsExtension
+class NodeTest
 {
-    @ClassRule
-    public static DbmsRule db = new ImpermanentDbmsRule();
-
-    @Rule
-    public ExpectedException exception = ExpectedException.none();
+    @Inject
+    private GraphDatabaseService db;
 
     @Test
-    public void shouldGiveHelpfulExceptionWhenDeletingNodeWithRels()
+    void shouldGiveHelpfulExceptionWhenDeletingNodeWithRels()
     {
         // Given
         Node node;
@@ -64,103 +62,79 @@ public class NodeTest
         }
 
         // And given a transaction deleting just the node
-        try ( Transaction transaction = db.beginTx() )
+
+        ConstraintViolationException exception = assertThrows( ConstraintViolationException.class, () ->
         {
-            node.delete();
-
-            // Expect
-            exception.expect( ConstraintViolationException.class );
-            exception.expectMessage( "Cannot delete node<" + node.getId() + ">, because it still has relationships. " +
-                    "To delete this node, you must first delete its relationships." );
-
-            // When I commit
-            transaction.success();
-        }
+            try ( Transaction transaction = db.beginTx() )
+            {
+                node.delete();
+                transaction.success();
+            }
+        } );
+        assertThat( exception.getMessage(), containsString( "Cannot delete node<" + node.getId() + ">, because it still has relationships. " +
+                "To delete this node, you must first delete its relationships." ) );
     }
 
     @Test
-    public void testNodeCreateAndDelete()
+    void testNodeCreateAndDelete()
     {
         long nodeId;
         try ( Transaction transaction = db.beginTx() )
         {
-            Node node = getGraphDb().createNode();
+            Node node = db.createNode();
             nodeId = node.getId();
-            getGraphDb().getNodeById( nodeId );
+            db.getNodeById( nodeId );
             node.delete();
             transaction.success();
         }
-        try ( Transaction transaction = db.beginTx() )
-        {
-            getGraphDb().getNodeById( nodeId );
-            fail( "Node[" + nodeId + "] should be deleted." );
-        }
-        catch ( NotFoundException ignored )
-        {
-        }
+        assertThrows( NotFoundException.class, () -> {
+            try ( Transaction transaction = db.beginTx() )
+            {
+                db.getNodeById( nodeId );
+            }
+        } );
     }
 
     @Test
-    public void testDeletedNode()
+    void testDeletedNode()
     {
         // do some evil stuff
         try ( Transaction transaction = db.beginTx() )
         {
-            Node node = getGraphDb().createNode();
+            Node node = db.createNode();
             node.delete();
-            try
-            {
-                node.setProperty( "key1", 1 );
-                fail( "Adding stuff to deleted node should throw exception" );
-            }
-            catch ( Exception e )
-            { // good
-            }
+            assertThrows( Exception.class, () -> node.setProperty( "key1", 1 ) );
         }
     }
 
     @Test
-    public void testNodeAddPropertyWithNullKey()
+    void testNodeAddPropertyWithNullKey()
     {
         try ( Transaction transaction = db.beginTx() )
         {
-            Node node1 = getGraphDb().createNode();
-            try
-            {
-                node1.setProperty( null, "bar" );
-                fail( "Null key should result in exception." );
-            }
-            catch ( IllegalArgumentException ignored )
-            {
-            }
+            Node node1 = db.createNode();
+            assertThrows( IllegalArgumentException.class, () -> node1.setProperty( null, "bar" ) );
         }
     }
 
     @Test
-    public void testNodeAddPropertyWithNullValue()
+    void testNodeAddPropertyWithNullValue()
     {
         try ( Transaction transaction = db.beginTx() )
         {
-            Node node1 = getGraphDb().createNode();
-            try
-            {
-                node1.setProperty( "foo", null );
-                fail( "Null value should result in exception." );
-            }
-            catch ( IllegalArgumentException ignored )
-            {
-            }
+            Node node1 = db.createNode();
+            assertThrows( IllegalArgumentException.class, () -> node1.setProperty( "foo", null ) );
             transaction.failure();
         }
     }
 
     @Test
-    public void testNodeAddProperty()
+    void testNodeAddProperty()
     {
         try ( Transaction transaction = db.beginTx() )
         {
-            Node node1 = getGraphDb().createNode();
-            Node node2 = getGraphDb().createNode();
+            Node node1 = db.createNode();
+            Node node2 = db.createNode();
 
             String key1 = "key1";
             String key2 = "key2";
@@ -179,8 +153,8 @@ public class NodeTest
             assertTrue( node2.hasProperty( key1 ) );
             assertTrue( node1.hasProperty( key2 ) );
             assertTrue( node2.hasProperty( key2 ) );
-            assertTrue( !node1.hasProperty( key3 ) );
-            assertTrue( !node2.hasProperty( key3 ) );
+            assertFalse( node1.hasProperty( key3 ) );
+            assertFalse( node2.hasProperty( key3 ) );
             assertEquals( int1, node1.getProperty( key1 ) );
             assertEquals( string1, node2.getProperty( key1 ) );
             assertEquals( string2, node1.getProperty( key2 ) );
@@ -189,7 +163,7 @@ public class NodeTest
     }
 
     @Test
-    public void testNodeRemoveProperty()
+    void testNodeRemoveProperty()
     {
         try ( Transaction transaction = db.beginTx() )
         {
@@ -200,61 +174,35 @@ public class NodeTest
             String string1 = "1";
             String string2 = "2";
 
-            Node node1 = getGraphDb().createNode();
-            Node node2 = getGraphDb().createNode();
+            Node node1 = db.createNode();
+            Node node2 = db.createNode();
 
-            try
+            if ( node1.removeProperty( key1 ) != null )
             {
-                if ( node1.removeProperty( key1 ) != null )
-                {
-                    fail( "Remove of non existing property should return null" );
-                }
+                fail( "Remove of non existing property should return null" );
             }
-            catch ( NotFoundException ignored )
-            {
-            }
-            try
-            {
-                node1.removeProperty( null );
-                fail( "Remove null property should throw exception." );
-            }
-            catch ( IllegalArgumentException ignored )
-            {
-            }
+            assertThrows( IllegalArgumentException.class, () -> node1.removeProperty( null ) );
 
             node1.setProperty( key1, int1 );
             node2.setProperty( key1, string1 );
             node1.setProperty( key2, string2 );
             node2.setProperty( key2, int2 );
-            try
-            {
-                node1.removeProperty( null );
-                fail( "Null argument should result in exception." );
-            }
-            catch ( IllegalArgumentException ignored )
-            {
-            }
+            assertThrows( IllegalArgumentException.class, () -> node1.removeProperty( null ) );
 
             // test remove property
             assertEquals( int1, node1.removeProperty( key1 ) );
             assertEquals( string1, node2.removeProperty( key1 ) );
             // test remove of non existing property
-            try
+
+            if ( node2.removeProperty( key1 ) != null )
             {
-                if ( node2.removeProperty( key1 ) != null )
-                {
-                    fail( "Remove of non existing property return null." );
-                }
-            }
-            catch ( NotFoundException e )
-            {
-                // must mark as rollback only
+                fail( "Remove of non existing property return null." );
             }
         }
     }
 
     @Test
-    public void testNodeChangeProperty()
+    void testNodeChangeProperty()
     {
         try ( Transaction transaction = db.beginTx() )
         {
@@ -268,25 +216,14 @@ public class NodeTest
             Boolean bool1 = Boolean.TRUE;
             Boolean bool2 = Boolean.FALSE;
 
-            Node node1 = getGraphDb().createNode();
-            Node node2 = getGraphDb().createNode();
+            Node node1 = db.createNode();
+            Node node2 = db.createNode();
             node1.setProperty( key1, int1 );
             node2.setProperty( key1, string1 );
             node1.setProperty( key2, string2 );
             node2.setProperty( key2, int2 );
 
-            try
-            {
-                node1.setProperty( null, null );
-                fail( "Null argument should result in exception." );
-            }
-            catch ( IllegalArgumentException ignored )
-            {
-            }
-            catch ( NotFoundException e )
-            {
-                fail( "wrong exception" );
-            }
+            assertThrows( IllegalArgumentException.class, () -> node1.setProperty( null, null ) );
 
             // test change property
             node1.setProperty( key1, int2 );
@@ -301,7 +238,7 @@ public class NodeTest
     }
 
     @Test
-    public void testNodeChangeProperty2()
+    void testNodeChangeProperty2()
     {
         try ( Transaction transaction = db.beginTx() )
         {
@@ -312,7 +249,7 @@ public class NodeTest
             String string2 = "2";
             Boolean bool1 = Boolean.TRUE;
             Boolean bool2 = Boolean.FALSE;
-            Node node1 = getGraphDb().createNode();
+            Node node1 = db.createNode();
             node1.setProperty( key1, int1 );
             node1.setProperty( key1, int2 );
             assertEquals( int2, node1.getProperty( key1 ) );
@@ -330,7 +267,7 @@ public class NodeTest
     }
 
     @Test
-    public void testNodeGetProperties()
+    void testNodeGetProperties()
     {
         try ( Transaction transaction = db.beginTx() )
         {
@@ -341,25 +278,11 @@ public class NodeTest
             Integer int2 = 2;
             String string = "3";
 
-            Node node1 = getGraphDb().createNode();
-            try
-            {
-                node1.getProperty( key1 );
-                fail( "get non existing property didn't throw exception" );
-            }
-            catch ( NotFoundException ignored )
-            {
-            }
-            try
-            {
-                node1.getProperty( null );
-                fail( "get of null key didn't throw exception" );
-            }
-            catch ( IllegalArgumentException ignored )
-            {
-            }
-            assertTrue( !node1.hasProperty( key1 ) );
-            assertTrue( !node1.hasProperty( null ) );
+            Node node1 = db.createNode();
+            assertThrows( NotFoundException.class, () -> node1.getProperty( key1 ) );
+            assertThrows( IllegalArgumentException.class, () -> node1.getProperty( null ) );
+            assertFalse( node1.hasProperty( key1 ) );
+            assertFalse( node1.hasProperty( null ) );
             node1.setProperty( key1, int1 );
             node1.setProperty( key2, int2 );
             node1.setProperty( key3, string );
@@ -379,49 +302,33 @@ public class NodeTest
             properties = node1.getProperties();
             assertTrue( properties.isEmpty() );
 
-            try
+            assertThrows( NullPointerException.class, () ->
             {
                 String[] names = null;
                 node1.getProperties( names );
                 fail();
-            }
-            catch ( NullPointerException e )
-            {
-                // Ok
-            }
+            } );
 
-            try
+            assertThrows( NullPointerException.class, () ->
             {
                 String[] names = new String[]{null};
                 node1.getProperties( names );
-                fail();
-            }
-            catch ( NullPointerException e )
-            {
-                // Ok
-            }
+            } );
 
-            try
-            {
-                node1.removeProperty( key3 );
-            }
-            catch ( NotFoundException e )
-            {
-                fail( "Remove of property failed." );
-            }
-            assertTrue( !node1.hasProperty( key3 ) );
-            assertTrue( !node1.hasProperty( null ) );
+            node1.removeProperty( key3 );
+            assertFalse( node1.hasProperty( key3 ) );
+            assertFalse( node1.hasProperty( null ) );
             node1.delete();
         }
     }
 
     @Test
-    public void testAddPropertyThenDelete()
+    void testAddPropertyThenDelete()
     {
         Node node;
         try ( Transaction transaction = db.beginTx() )
         {
-            node = getGraphDb().createNode();
+            node = db.createNode();
             node.setProperty( "test", "test" );
             transaction.success();
         }
@@ -434,12 +341,12 @@ public class NodeTest
     }
 
     @Test
-    public void testChangeProperty()
+    void testChangeProperty()
     {
         Node node;
         try ( Transaction transaction = db.beginTx() )
         {
-            node = getGraphDb().createNode();
+            node = db.createNode();
             node.setProperty( "test", "test1" );
             transaction.success();
         }
@@ -460,12 +367,12 @@ public class NodeTest
     }
 
     @Test
-    public void testChangeProperty2()
+    void testChangeProperty2()
     {
         Node node;
         try ( Transaction transaction = db.beginTx() )
         {
-            node = getGraphDb().createNode();
+            node = db.createNode();
             node.setProperty( "test", "test1" );
             transaction.success();
         }
@@ -487,10 +394,5 @@ public class NodeTest
         {
             assertEquals( "test4", node.getProperty( "test" ) );
         }
-    }
-
-    private GraphDatabaseService getGraphDb()
-    {
-        return db.getGraphDatabaseAPI();
     }
 }

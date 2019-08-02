@@ -19,12 +19,12 @@
  */
 package org.neo4j.kernel.impl.store;
 
-import org.junit.ClassRule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.neo4j.configuration.GraphDatabaseSettings;
+import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.Relationship;
@@ -32,17 +32,19 @@ import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.internal.helpers.Exceptions;
 import org.neo4j.test.Race;
-import org.neo4j.test.rule.DbmsRule;
-import org.neo4j.test.rule.EmbeddedDbmsRule;
+import org.neo4j.test.TestDatabaseManagementServiceBuilder;
+import org.neo4j.test.extension.DbmsExtension;
+import org.neo4j.test.extension.ExtensionCallback;
+import org.neo4j.test.extension.Inject;
 
 import static java.lang.System.currentTimeMillis;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
-public class NeoStoresIT
+@DbmsExtension( configurationCallback = "configure" )
+class NeoStoresIT
 {
-    @ClassRule
-    public static final DbmsRule db = new EmbeddedDbmsRule()
-            .withSetting(  GraphDatabaseSettings.dense_node_threshold, 1 );
+    @Inject
+    private GraphDatabaseService db;
 
     private static final RelationshipType FRIEND = RelationshipType.withName( "FRIEND" );
 
@@ -63,8 +65,14 @@ public class NeoStoresIT
             "ALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALA" +
             "ALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALONG!!";
 
+    @ExtensionCallback
+    void configure( TestDatabaseManagementServiceBuilder builder )
+    {
+        builder.setConfig( GraphDatabaseSettings.dense_node_threshold, 1 );
+    }
+
     @Test
-    public void shouldWriteOutTheDynamicChainBeforeUpdatingThePropertyRecord()
+    void shouldWriteOutTheDynamicChainBeforeUpdatingThePropertyRecord()
             throws Throwable
     {
         Race race = new Race();
@@ -86,9 +94,9 @@ public class NeoStoresIT
         } );
         race.addContestant( () ->
         {
-            try ( Transaction tx = db.getGraphDatabaseAPI().beginTx() )
+            try ( Transaction tx = db.beginTx() )
             {
-                Node node = db.getGraphDatabaseAPI().getNodeById( latestNodeId[0] );
+                Node node = db.getNodeById( latestNodeId[0] );
                 for ( String propertyKey : node.getPropertyKeys() )
                 {
                     node.getProperty( propertyKey );
@@ -106,7 +114,7 @@ public class NeoStoresIT
     }
 
     @Test
-    public void shouldWriteOutThePropertyRecordBeforeReferencingItFromANodeRecord()
+    void shouldWriteOutThePropertyRecordBeforeReferencingItFromANodeRecord()
             throws Throwable
     {
         Race race = new Race();
@@ -128,9 +136,9 @@ public class NeoStoresIT
         } );
         race.addContestant( () ->
         {
-            try ( Transaction tx = db.getGraphDatabaseAPI().beginTx() )
+            try ( Transaction tx = db.beginTx() )
             {
-                Node node = db.getGraphDatabaseAPI().getNodeById( latestNodeId[0] );
+                Node node = db.getNodeById( latestNodeId[0] );
 
                 for ( String propertyKey : node.getPropertyKeys() )
                 {
@@ -151,7 +159,7 @@ public class NeoStoresIT
     }
 
     @Test
-    public void shouldWriteOutThePropertyRecordBeforeReferencingItFromARelationshipRecord()
+    void shouldWriteOutThePropertyRecordBeforeReferencingItFromARelationshipRecord()
             throws Throwable
     {
         final long node1Id;
@@ -177,8 +185,8 @@ public class NeoStoresIT
         {
             try ( Transaction tx = db.beginTx() )
             {
-                Node node1 = db.getGraphDatabaseAPI().getNodeById( node1Id );
-                Node node2 = db.getGraphDatabaseAPI().getNodeById( node2Id );
+                Node node1 = db.getNodeById( node1Id );
+                Node node2 = db.getNodeById( node2Id );
 
                 Relationship rel = node1.createRelationshipTo( node2, FRIEND );
                 latestRelationshipId[0] = rel.getId();
@@ -190,9 +198,9 @@ public class NeoStoresIT
         } );
         race.addContestant( () ->
         {
-            try ( Transaction tx = db.getGraphDatabaseAPI().beginTx() )
+            try ( Transaction tx = db.beginTx() )
             {
-                Relationship rel = db.getGraphDatabaseAPI().getRelationshipById( latestRelationshipId[0] );
+                Relationship rel = db.getRelationshipById( latestRelationshipId[0] );
 
                 for ( String propertyKey : rel.getPropertyKeys() )
                 {

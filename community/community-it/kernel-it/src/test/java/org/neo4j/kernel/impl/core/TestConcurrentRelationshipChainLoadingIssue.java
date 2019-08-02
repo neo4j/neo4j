@@ -19,7 +19,8 @@
  */
 package org.neo4j.kernel.impl.core;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
 
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.graphdb.Node;
@@ -32,7 +33,6 @@ import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 
 import static java.lang.System.currentTimeMillis;
 import static java.util.concurrent.TimeUnit.SECONDS;
-import static org.junit.Assert.assertEquals;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.configuration.GraphDatabaseSettings.dense_node_threshold;
 import static org.neo4j.internal.helpers.collection.Iterables.count;
@@ -42,18 +42,18 @@ import static org.neo4j.internal.helpers.collection.Iterables.count;
  * for a couple of seconds. The original issues is mostly seen immediately, but after
  * a fix is in this test will take the full amount of seconds unfortunately.
  */
-public class TestConcurrentRelationshipChainLoadingIssue
+class TestConcurrentRelationshipChainLoadingIssue
 {
     private final int relCount = 2;
 
     @Test
-    public void tryToTriggerRelationshipLoadingStoppingMidWay() throws Throwable
+    void tryToTriggerRelationshipLoadingStoppingMidWay() throws Throwable
     {
         tryToTriggerRelationshipLoadingStoppingMidWay( 50 );
     }
 
     @Test
-    public void tryToTriggerRelationshipLoadingStoppingMidWayForDenseNodeRepresentation() throws Throwable
+    void tryToTriggerRelationshipLoadingStoppingMidWayForDenseNodeRepresentation() throws Throwable
     {
         tryToTriggerRelationshipLoadingStoppingMidWay( 1 );
     }
@@ -99,7 +99,7 @@ public class TestConcurrentRelationshipChainLoadingIssue
         {
             try ( Transaction ignored = db.beginTx() )
             {
-                assertEquals( relCount, count( node.getRelationships() ) );
+                Assertions.assertEquals( relCount, count( node.getRelationships() ) );
             }
         } );
         race.go();

@@ -21,7 +21,7 @@ package org.neo4j.kernel.impl.core;
 
 import org.apache.commons.lang3.RandomStringUtils;
 import org.apache.commons.lang3.RandomUtils;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.graphdb.ConstraintViolationException;
@@ -35,10 +35,10 @@ import org.neo4j.token.api.NamedToken;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.instanceOf;
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.mock;
@@ -60,7 +60,7 @@ public class RelationshipProxyTest extends PropertyContainerProxyTest
     }
 
     @Test
-    public void shouldBeAbleToReferToIdsBeyondMaxInt()
+    void shouldBeAbleToReferToIdsBeyondMaxInt()
     {
         // GIVEN
         EmbeddedProxySPI actions = mock( EmbeddedProxySPI.class );
@@ -101,7 +101,7 @@ public class RelationshipProxyTest extends PropertyContainerProxyTest
     }
 
     @Test
-    public void shouldPrintCypherEsqueRelationshipToString()
+    void shouldPrintCypherEsqueRelationshipToString()
     {
         // GIVEN
         Node start;
@@ -120,13 +120,12 @@ public class RelationshipProxyTest extends PropertyContainerProxyTest
             String toString = relationship.toString();
 
             // THEN
-            assertEquals( "(" + start.getId() + ")-[" + type + "," + relationship.getId() + "]->(" + end.getId() + ")",
-                    toString );
+            assertEquals( "(" + start.getId() + ")-[" + type + "," + relationship.getId() + "]->(" + end.getId() + ")", toString );
         }
     }
 
     @Test
-    public void createDropRelationshipLongStringProperty()
+    void createDropRelationshipLongStringProperty()
     {
         Label markerLabel = Label.label( "marker" );
         String testPropertyKey = "testProperty";
@@ -164,7 +163,7 @@ public class RelationshipProxyTest extends PropertyContainerProxyTest
     }
 
     @Test
-    public void createDropRelationshipLongArrayProperty()
+    void createDropRelationshipLongArrayProperty()
     {
         Label markerLabel = Label.label( "marker" );
         String testPropertyKey = "testProperty";
@@ -202,7 +201,7 @@ public class RelationshipProxyTest extends PropertyContainerProxyTest
     }
 
     @Test
-    public void shouldBeAbleToForceTypeChangeOfProperty()
+    void shouldBeAbleToForceTypeChangeOfProperty()
     {
         // Given
         Relationship relationship;
@@ -228,22 +227,14 @@ public class RelationshipProxyTest extends PropertyContainerProxyTest
     }
 
     @Test
-    public void shouldThrowCorrectExceptionOnPropertyKeyTokensExceeded() throws KernelException
+    void shouldThrowCorrectExceptionOnPropertyKeyTokensExceeded() throws KernelException
     {
         // given
         EmbeddedProxySPI spi = mockedProxySPIWithDepletedTokens();
         RelationshipProxy relationshipProxy = new RelationshipProxy( spi, 5 );
 
         // when
-        try
-        {
-            relationshipProxy.setProperty( "key", "value" );
-            fail( "Should have failed" );
-        }
-        catch ( ConstraintViolationException e )
-        {
-            // then good
-        }
+        assertThrows( ConstraintViolationException.class, () -> relationshipProxy.setProperty( "key", "value" ) );
     }
 
     private void verifyIds( EmbeddedProxySPI actions, long relationshipId, long nodeId1, int typeId, long nodeId2 )

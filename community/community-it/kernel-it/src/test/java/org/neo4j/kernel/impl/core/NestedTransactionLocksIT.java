@@ -19,11 +19,10 @@
  */
 package org.neo4j.kernel.impl.core;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeoutException;
 
@@ -37,9 +36,9 @@ import org.neo4j.test.OtherThreadExecutor.WorkerCommand;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNotSame;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNotSame;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 
 /**
@@ -47,20 +46,20 @@ import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAM
  * explicit methods: {@link Transaction#acquireReadLock(org.neo4j.graphdb.PropertyContainer) acquireReadLock}
  * and {@link Transaction#acquireWriteLock(org.neo4j.graphdb.PropertyContainer) acquireWriteLock}.
  */
-public class NestedTransactionLocksIT
+class NestedTransactionLocksIT
 {
     private GraphDatabaseService db;
     private DatabaseManagementService managementService;
 
-    @Before
-    public void before()
+    @BeforeEach
+    void before()
     {
         managementService = new TestDatabaseManagementServiceBuilder().impermanent().build();
         db = managementService.database( DEFAULT_DATABASE_NAME );
     }
 
-    @After
-    public void after()
+    @AfterEach
+    void after()
     {
         managementService.shutdown();
     }
@@ -77,7 +76,7 @@ public class NestedTransactionLocksIT
     }
 
     @Test
-    public void nestedTransactionCanAcquireLocksFromTransactionObject() throws Exception
+    void nestedTransactionCanAcquireLocksFromTransactionObject() throws Exception
     {
         // given
         Node resource = createNode();
@@ -105,16 +104,9 @@ public class NestedTransactionLocksIT
         }
     }
 
-    private void acquireOnOtherThreadTimesOut( Future<Lock> future ) throws InterruptedException, ExecutionException
+    private void acquireOnOtherThreadTimesOut( Future<Lock> future )
     {
-        try
-        {
-            future.get( 1, SECONDS );
-            fail( "The nested transaction seems to not have acquired the lock" );
-        }
-        catch ( TimeoutException e )
-        {   // Good
-        }
+        assertThrows( TimeoutException.class, () -> future.get( 1, SECONDS ) );
     }
 
     private Future<Lock> tryToAcquireSameLockOnAnotherThread( Node resource, OtherThreadExecutor<Void> otherThread ) throws Exception

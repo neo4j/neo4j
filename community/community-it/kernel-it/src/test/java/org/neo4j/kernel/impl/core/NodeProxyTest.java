@@ -21,7 +21,7 @@ package org.neo4j.kernel.impl.core;
 
 import org.apache.commons.lang3.RandomStringUtils;
 import org.apache.commons.lang3.RandomUtils;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
@@ -42,15 +42,15 @@ import org.neo4j.internal.helpers.collection.Iterables;
 import org.neo4j.internal.helpers.collection.Iterators;
 
 import static java.util.Collections.singletonList;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.instanceOf;
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.neo4j.internal.helpers.NamedThreadFactory.named;
 import static org.neo4j.test.DoubleLatch.awaitLatch;
 
@@ -71,27 +71,25 @@ public class NodeProxyTest extends PropertyContainerProxyTest
     }
 
     @Test
-    public void shouldThrowHumaneExceptionsWhenPropertyDoesNotExistOnNode()
+    void shouldThrowHumaneExceptionsWhenPropertyDoesNotExistOnNode()
     {
         // Given a database with PROPERTY_KEY in it
         createNodeWith( PROPERTY_KEY );
 
         // When trying to get property from node without it
-        try ( Transaction ignored = db.beginTx() )
+        NotFoundException exception = assertThrows( NotFoundException.class, () ->
         {
-            Node node = db.createNode();
-            node.getProperty( PROPERTY_KEY );
-            fail( "Expected exception to have been thrown" );
-        }
-        // Then
-        catch ( NotFoundException exception )
-        {
-            assertThat( exception.getMessage(), containsString( PROPERTY_KEY ) );
-        }
+            try ( Transaction ignored = db.beginTx() )
+            {
+                Node node = db.createNode();
+                node.getProperty( PROPERTY_KEY );
+            }
+        } );
+        assertThat( exception.getMessage(), containsString( PROPERTY_KEY ) );
     }
 
     @Test
-    public void createDropNodeLongStringProperty()
+    void createDropNodeLongStringProperty()
     {
         Label markerLabel = Label.label( "marker" );
         String testPropertyKey = "testProperty";
@@ -127,7 +125,7 @@ public class NodeProxyTest extends PropertyContainerProxyTest
     }
 
     @Test
-    public void createDropNodeLongArrayProperty()
+    void createDropNodeLongArrayProperty()
     {
         Label markerLabel = Label.label( "marker" );
         String testPropertyKey = "testProperty";
@@ -163,7 +161,7 @@ public class NodeProxyTest extends PropertyContainerProxyTest
     }
 
     @Test
-    public void shouldThrowHumaneExceptionsWhenPropertyDoesNotExist()
+    void shouldThrowHumaneExceptionsWhenPropertyDoesNotExist()
     {
         // Given a database without PROPERTY_KEY in it
 
@@ -180,8 +178,8 @@ public class NodeProxyTest extends PropertyContainerProxyTest
         }
     }
 
-    @Test( expected = NotFoundException.class )
-    public void deletionOfSameNodeTwiceInOneTransactionShouldNotRollbackIt()
+    @Test
+    void deletionOfSameNodeTwiceInOneTransactionShouldNotRollbackIt()
     {
         // Given
         Node node;
@@ -211,15 +209,18 @@ public class NodeProxyTest extends PropertyContainerProxyTest
         // Then
         assertThat( exceptionThrownBySecondDelete, instanceOf( NotFoundException.class ) );
 
-        try ( Transaction tx = db.beginTx() )
+        assertThrows( NotFoundException.class, () ->
         {
-            db.getNodeById( node.getId() ); // should throw NotFoundException
-            tx.success();
-        }
+            try ( Transaction tx = db.beginTx() )
+            {
+                db.getNodeById( node.getId() ); // should throw NotFoundException
+                tx.success();
+            }
+        } );
     }
 
-    @Test( expected = NotFoundException.class )
-    public void deletionOfAlreadyDeletedNodeShouldThrow()
+    @Test
+    void deletionOfAlreadyDeletedNodeShouldThrow()
     {
         // Given
         Node node;
@@ -235,94 +236,103 @@ public class NodeProxyTest extends PropertyContainerProxyTest
         }
 
         // When
-        try ( Transaction tx = db.beginTx() )
-        {
-            node.delete(); // should throw NotFoundException as this node is already deleted
-            tx.success();
-        }
-    }
-
-    @Test
-    public void getAllPropertiesShouldWorkFineWithConcurrentPropertyModifications() throws Exception
-    {
-        // Given
-        ExecutorService executor = cleanup.add( Executors.newFixedThreadPool( 2, named( "Test-executor-thread" ) ) );
-
-        final int propertiesCount = 100;
-
-        final long nodeId;
-        try ( Transaction tx = db.beginTx() )
-        {
-            Node node = db.createNode();
-            nodeId = node.getId();
-            for ( int i = 0; i < propertiesCount; i++ )
-            {
-                node.setProperty( "property-" + i, i );
-            }
-            tx.success();
-        }
-
-        final CountDownLatch start = new CountDownLatch( 1 );
-        final AtomicBoolean writerDone = new AtomicBoolean();
-
-        Runnable writer = () ->
-        {
-            try
-            {
-                awaitLatch( start );
-                int propertyKey = 0;
-                while ( propertyKey < propertiesCount )
-                {
-                    try ( Transaction tx = db.beginTx() )
-                    {
-                        Node node = db.getNodeById( nodeId );
-                        for ( int i = 0; i < 10 && propertyKey < propertiesCount; i++, propertyKey++ )
-                        {
-                            node.setProperty( "property-" + propertyKey, UUID.randomUUID().toString() );
-                        }
-                        tx.success();
-                    }
-                }
-            }
-            finally
-            {
-                writerDone.set( true );
-            }
-        };
-        Runnable reader = () ->
+        assertThrows( NotFoundException.class, () ->
         {
             try ( Transaction tx = db.beginTx() )
             {
-                Node node = db.getNodeById( nodeId );
-                awaitLatch( start );
-                while ( !writerDone.get() )
+                node.delete(); // should throw NotFoundException as this node is already deleted
+                tx.success();
+            }
+        } );
+    }
+
+    @Test
+    void getAllPropertiesShouldWorkFineWithConcurrentPropertyModifications() throws Exception
+    {
+        // Given
+        ExecutorService executor = Executors.newFixedThreadPool( 2, named( "Test-executor-thread" ) );
+        try
+        {
+            final int propertiesCount = 100;
+
+            final long nodeId;
+            try ( Transaction tx = db.beginTx() )
+            {
+                Node node = db.createNode();
+                nodeId = node.getId();
+                for ( int i = 0; i < propertiesCount; i++ )
                 {
-                    int size = node.getAllProperties().size();
-                    assertThat( size, greaterThan( 0 ) );
+                    node.setProperty( "property-" + i, i );
                 }
                 tx.success();
             }
-        };
 
-        Future<?> readerFuture = executor.submit( reader );
-        Future<?> writerFuture = executor.submit( writer );
+            final CountDownLatch start = new CountDownLatch( 1 );
+            final AtomicBoolean writerDone = new AtomicBoolean();
 
-        start.countDown();
+            Runnable writer = () ->
+            {
+                try
+                {
+                    awaitLatch( start );
+                    int propertyKey = 0;
+                    while ( propertyKey < propertiesCount )
+                    {
+                        try ( Transaction tx = db.beginTx() )
+                        {
+                            Node node = db.getNodeById( nodeId );
+                            for ( int i = 0; i < 10 && propertyKey < propertiesCount; i++, propertyKey++ )
+                            {
+                                node.setProperty( "property-" + propertyKey, UUID.randomUUID().toString() );
+                            }
+                            tx.success();
+                        }
+                    }
+                }
+                finally
+                {
+                    writerDone.set( true );
+                }
+            };
+            Runnable reader = () ->
+            {
+                try ( Transaction tx = db.beginTx() )
+                {
+                    Node node = db.getNodeById( nodeId );
+                    awaitLatch( start );
+                    while ( !writerDone.get() )
+                    {
+                        int size = node.getAllProperties().size();
+                        assertThat( size, greaterThan( 0 ) );
+                    }
+                    tx.success();
+                }
+            };
 
-        // When
-        writerFuture.get();
-        readerFuture.get();
+            Future<?> readerFuture = executor.submit( reader );
+            Future<?> writerFuture = executor.submit( writer );
 
-        // Then
-        try ( Transaction tx = db.beginTx() )
+            start.countDown();
+
+            // When
+            writerFuture.get();
+            readerFuture.get();
+
+            // Then
+            try ( Transaction tx = db.beginTx() )
+            {
+                assertEquals( propertiesCount, db.getNodeById( nodeId ).getAllProperties().size() );
+                tx.success();
+            }
+        }
+        finally
         {
-            assertEquals( propertiesCount, db.getNodeById( nodeId ).getAllProperties().size() );
-            tx.success();
+            executor.shutdown();
         }
     }
 
     @Test
-    public void shouldBeAbleToForceTypeChangeOfProperty()
+    void shouldBeAbleToForceTypeChangeOfProperty()
     {
         // Given
         Node node;
@@ -348,7 +358,7 @@ public class NodeProxyTest extends PropertyContainerProxyTest
     }
 
     @Test
-    public void shouldOnlyReturnTypeOnce()
+    void shouldOnlyReturnTypeOnce()
     {
         // Given
         Node node;
@@ -370,60 +380,36 @@ public class NodeProxyTest extends PropertyContainerProxyTest
     }
 
     @Test
-    public void shouldThrowCorrectExceptionOnLabelTokensExceeded() throws KernelException
+    void shouldThrowCorrectExceptionOnLabelTokensExceeded() throws KernelException
     {
         // given
         EmbeddedProxySPI spi = mockedProxySPIWithDepletedTokens();
         NodeProxy nodeProxy = new NodeProxy( spi, 5 );
 
         // when
-        try
-        {
-            nodeProxy.addLabel( Label.label( "Label" ) );
-            fail( "Should have failed" );
-        }
-        catch ( ConstraintViolationException e )
-        {
-            // then good
-        }
+        assertThrows( ConstraintViolationException.class, () -> nodeProxy.addLabel( Label.label( "Label" ) ) );
     }
 
     @Test
-    public void shouldThrowCorrectExceptionOnPropertyKeyTokensExceeded() throws KernelException
+    void shouldThrowCorrectExceptionOnPropertyKeyTokensExceeded() throws KernelException
     {
         // given
         EmbeddedProxySPI spi = mockedProxySPIWithDepletedTokens();
         NodeProxy nodeProxy = new NodeProxy( spi, 5 );
 
         // when
-        try
-        {
-            nodeProxy.setProperty( "key", "value" );
-            fail( "Should have failed" );
-        }
-        catch ( ConstraintViolationException e )
-        {
-            // then good
-        }
+        assertThrows( ConstraintViolationException.class, () -> nodeProxy.setProperty( "key", "value" ) );
     }
 
     @Test
-    public void shouldThrowCorrectExceptionOnRelationshipTypeTokensExceeded() throws KernelException
+    void shouldThrowCorrectExceptionOnRelationshipTypeTokensExceeded() throws KernelException
     {
         // given
         EmbeddedProxySPI spi = mockedProxySPIWithDepletedTokens();
         NodeProxy nodeProxy = new NodeProxy( spi, 5 );
 
         // when
-        try
-        {
-            nodeProxy.setProperty( "key", "value" );
-            fail( "Should have failed" );
-        }
-        catch ( ConstraintViolationException e )
-        {
-            // then good
-        }
+        assertThrows( ConstraintViolationException.class, () -> nodeProxy.setProperty( "key", "value" ) );
     }
 
     private void createNodeWith( String key )

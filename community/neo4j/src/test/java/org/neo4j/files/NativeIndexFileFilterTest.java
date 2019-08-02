@@ -19,34 +19,38 @@
  */
 package org.neo4j.files;
 
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.io.File;
 import java.io.IOException;
 
 import org.neo4j.internal.schema.IndexProviderDescriptor;
+import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.api.impl.schema.LuceneIndexProvider;
 import org.neo4j.kernel.api.impl.schema.NativeLuceneFusionIndexProviderFactory30;
 import org.neo4j.kernel.impl.index.schema.GenericNativeIndexProvider;
 import org.neo4j.kernel.internal.NativeIndexFileFilter;
+import org.neo4j.test.extension.DefaultFileSystemExtension;
+import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.TestDirectoryExtension;
 import org.neo4j.test.rule.TestDirectory;
-import org.neo4j.test.rule.fs.DefaultFileSystemRule;
 
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.kernel.api.impl.schema.NativeLuceneFusionIndexProviderFactory30.subProviderDirectoryStructure;
 import static org.neo4j.kernel.api.index.IndexDirectoryStructure.directoriesByProvider;
 
-public class NativeIndexFileFilterTest
+@ExtendWith( {DefaultFileSystemExtension.class, TestDirectoryExtension.class} )
+class NativeIndexFileFilterTest
 {
     private static final IndexProviderDescriptor LUCENE_DESCRTIPTOR = LuceneIndexProvider.DESCRIPTOR;
 
-    @Rule
-    public DefaultFileSystemRule fs = new DefaultFileSystemRule();
-    @Rule
-    public TestDirectory directory = TestDirectory.testDirectory();
+    @Inject
+    private DefaultFileSystemAbstraction fs;
+    @Inject
+    private TestDirectory directory;
 
     private File storeDir;
     private NativeIndexFileFilter filter;
@@ -63,15 +67,15 @@ public class NativeIndexFileFilterTest
     private static final IndexProviderDescriptor fusion30 = NativeLuceneFusionIndexProviderFactory30.DESCRIPTOR;
     private static final IndexProviderDescriptor nativeBtree10 = GenericNativeIndexProvider.DESCRIPTOR;
 
-    @Before
-    public void before()
+    @BeforeEach
+    void before()
     {
         storeDir = directory.directory();
         filter = new NativeIndexFileFilter( storeDir );
     }
 
     @Test
-    public void shouldNotAcceptLuceneFileFromFusionProvider() throws IOException
+    void shouldNotAcceptLuceneFileFromFusionProvider() throws IOException
     {
         // given
         File dir = subProviderDirectoryStructure( storeDir, LUCENE_DESCRTIPTOR ).forProvider( LUCENE_DESCRTIPTOR ).directoryForIndex( 1 );
@@ -79,7 +83,7 @@ public class NativeIndexFileFilterTest
     }
 
     @Test
-    public void shouldNotAcceptRemoveIndexProviderFilesUnderFusion() throws IOException
+    void shouldNotAcceptRemoveIndexProviderFilesUnderFusion() throws IOException
     {
         for ( IndexProviderDescriptor fusionProvider : REMOVE_FUSION_PROVIDERS )
         {
@@ -91,13 +95,13 @@ public class NativeIndexFileFilterTest
     }
 
     @Test
-    public void shouldAcceptNativeBtreeIndexFileFromFusionProvider() throws IOException
+    void shouldAcceptNativeBtreeIndexFileFromFusionProvider() throws IOException
     {
         shouldAcceptNativeIndexFileFromFusionProvider( fusion30, nativeBtree10 );
     }
 
     @Test
-    public void shouldAcceptPureNativeBtreeIndexFile() throws IOException
+    void shouldAcceptPureNativeBtreeIndexFile() throws IOException
     {
         shouldAcceptNativeIndexFilePure( nativeBtree10 );
     }
@@ -133,7 +137,7 @@ public class NativeIndexFileFilterTest
         boolean accepted = filter.accept( file );
 
         // then
-        assertTrue( "Expected to accept file " + file, accepted );
+        assertTrue( accepted, "Expected to accept file " + file );
     }
 
     private void shouldNotAcceptFileInDirectory( File dir ) throws IOException
@@ -145,7 +149,7 @@ public class NativeIndexFileFilterTest
         boolean accepted = filter.accept( file );
 
         // then
-        assertFalse( "Did not expect to accept file " + file, accepted );
+        assertFalse( accepted, "Did not expect to accept file " + file );
     }
 
     private void createFile( File file ) throws IOException

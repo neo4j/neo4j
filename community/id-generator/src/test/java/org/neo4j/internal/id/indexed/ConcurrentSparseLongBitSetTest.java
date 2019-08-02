@@ -19,8 +19,8 @@
  */
 package org.neo4j.internal.id.indexed;
 
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.util.Arrays;
 import java.util.BitSet;
@@ -28,19 +28,22 @@ import java.util.Random;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.neo4j.test.Race;
+import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.RandomExtension;
 import org.neo4j.test.rule.RandomRule;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public class ConcurrentSparseLongBitSetTest
+@ExtendWith( RandomExtension.class )
+class ConcurrentSparseLongBitSetTest
 {
-    @Rule
-    public final RandomRule random = new RandomRule();
+    @Inject
+    private RandomRule random;
 
     @Test
-    public void shouldSetSomeBits()
+    void shouldSetSomeBits()
     {
         // given
         ConcurrentSparseLongBitSet set = new ConcurrentSparseLongBitSet( 128 );
@@ -63,7 +66,7 @@ public class ConcurrentSparseLongBitSetTest
     }
 
     @Test
-    public void shouldSetRemoveSet()
+    void shouldSetRemoveSet()
     {
         // given
         ConcurrentSparseLongBitSet set = new ConcurrentSparseLongBitSet( 128 );
@@ -78,7 +81,7 @@ public class ConcurrentSparseLongBitSetTest
     }
 
     @Test
-    public void shouldSetNonConflictingBitsConcurrently() throws Throwable
+    void shouldSetNonConflictingBitsConcurrently() throws Throwable
     {
         // given
         ConcurrentSparseLongBitSet set = new ConcurrentSparseLongBitSet( 128 );
@@ -97,7 +100,7 @@ public class ConcurrentSparseLongBitSetTest
     }
 
     @Test
-    public void shouldSetConflictingBitsConcurrently() throws Throwable
+    void shouldSetConflictingBitsConcurrently() throws Throwable
     {
         // given
         ConcurrentSparseLongBitSet set = new ConcurrentSparseLongBitSet( 128 );
@@ -120,7 +123,7 @@ public class ConcurrentSparseLongBitSetTest
     }
 
     @Test
-    public void shouldRemoveEmptyRanges()
+    void shouldRemoveEmptyRanges()
     {
         // given
         ConcurrentSparseLongBitSet set = new ConcurrentSparseLongBitSet( 128 );

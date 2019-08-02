@@ -442,7 +442,7 @@ public class DatabaseTest
         }
     }
 
-    private class FilesCollectionPageCache extends DelegatingPageCache
+    private static class FilesCollectionPageCache extends DelegatingPageCache
     {
         private final List<PagedFile> pagedFiles = new ArrayList<>();
 
