@@ -43,12 +43,12 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.configuration.SettingConstraints.PORT;
 import static org.neo4j.configuration.SettingConstraints.POWER_OF_2;
+import static org.neo4j.configuration.SettingConstraints.any;
 import static org.neo4j.configuration.SettingConstraints.except;
 import static org.neo4j.configuration.SettingConstraints.is;
 import static org.neo4j.configuration.SettingConstraints.matches;
 import static org.neo4j.configuration.SettingConstraints.max;
 import static org.neo4j.configuration.SettingConstraints.min;
-import static org.neo4j.configuration.SettingConstraints.or;
 import static org.neo4j.configuration.SettingConstraints.range;
 import static org.neo4j.configuration.SettingValueParsers.BOOL;
 import static org.neo4j.configuration.SettingValueParsers.BYTES;
@@ -407,10 +407,10 @@ class SettingTest
     }
 
     @Test
-    void testOrConstraint()
+    void testAnyConstraint()
     {
         var intSetting = (SettingImpl<Integer>) settingBuilder( "setting", INT )
-                .addConstraint( or( min( 30 ), is( 0 ), is( -10 ) )  ).build();
+                .addConstraint( any( min( 30 ), is( 0 ), is( -10 ) )  ).build();
         assertDoesNotThrow( () -> intSetting.validate( 30 ) );
         assertDoesNotThrow( () -> intSetting.validate( 100 ) );
         assertDoesNotThrow( () -> intSetting.validate( 0 ) );
@@ -420,7 +420,7 @@ class SettingTest
         assertThrows( IllegalArgumentException.class, () -> intSetting.validate( -9 ) );
 
         var durationSetting = (SettingImpl<Duration>) settingBuilder( "setting", DURATION )
-                .addConstraint( or( min( Duration.ofMinutes( 30 ) ), is( Duration.ZERO ) )  ).build();
+                .addConstraint( any( min( Duration.ofMinutes( 30 ) ), is( Duration.ZERO ) )  ).build();
         assertDoesNotThrow( () -> durationSetting.parse( "30m" ) );
         assertDoesNotThrow( () -> durationSetting.validate( Duration.ofHours( 1 ) ) );
         assertDoesNotThrow( () -> durationSetting.parse( "0" ) );

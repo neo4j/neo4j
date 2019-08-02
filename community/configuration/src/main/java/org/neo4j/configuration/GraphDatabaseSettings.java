@@ -44,9 +44,9 @@ import static java.time.Duration.ofSeconds;
 import static java.util.Collections.emptyList;
 import static org.neo4j.configuration.SettingConstraints.HOSTNAME_ONLY;
 import static org.neo4j.configuration.SettingConstraints.POWER_OF_2;
+import static org.neo4j.configuration.SettingConstraints.any;
 import static org.neo4j.configuration.SettingConstraints.is;
 import static org.neo4j.configuration.SettingConstraints.min;
-import static org.neo4j.configuration.SettingConstraints.or;
 import static org.neo4j.configuration.SettingConstraints.range;
 import static org.neo4j.configuration.SettingImpl.newBuilder;
 import static org.neo4j.configuration.SettingValueParsers.BOOL;
@@ -1009,7 +1009,7 @@ public class GraphDatabaseSettings implements SettingsDeclaration
     @Internal
     public static final Setting<Duration> bolt_outbound_buffer_throttle_max_duration =
             newBuilder( "unsupported.dbms.bolt.outbound_buffer_throttle.max_duration", DURATION, ofMinutes( 15 )  )
-                    .addConstraint( or( min( ofSeconds( 30 ) ), is( Duration.ZERO )  ) )
+                    .addConstraint( any( min( ofSeconds( 30 ) ), is( Duration.ZERO )  ) )
                     .build();
 
     @Description( "When the number of queued inbound messages grows beyond this value, reading from underlying " +
