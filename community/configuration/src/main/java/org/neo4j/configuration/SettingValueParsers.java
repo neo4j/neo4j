@@ -586,6 +586,19 @@ public final class SettingValueParsers
             }
             return dependencyValue;
         }
+
+        @Override
+        public void validate( Path value )
+        {
+            if ( !value.isAbsolute() )
+            {
+                throw new IllegalArgumentException( format("'%s' is not an absolute path.", value ) );
+            }
+            if ( !value.equals( value.normalize() ) )
+            {
+                throw new IllegalArgumentException( format("'%s' is not a normalized path.", value ) );
+            }
+        }
     };
 
     public static SettingValueParser<String> DATABASENAME = new SettingValueParser<>()

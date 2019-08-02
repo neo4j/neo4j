@@ -493,7 +493,6 @@ public class Config implements Configuration
             if ( overriddenDefaultObjects.containsKey( key ) ) // Map default value
             {
                 defaultValue = overriddenDefaultObjects.get( key );
-                setting.validate( defaultValue );
             }
             else if ( overriddenDefaultStrings.containsKey( key ) )
             {
@@ -516,7 +515,7 @@ public class Config implements Configuration
             if ( settingValueObjects.containsKey( key ) )
             {
                 value = settingValueObjects.get( key );
-                setting.validate( value );
+
             }
             else if ( settingValueStrings.containsKey( key ) ) // Map value
             {
@@ -546,8 +545,12 @@ public class Config implements Configuration
         {
             var dep = settings.get( setting.dependency().name() );
             T solvedValue = setting.solveDependency( value != null ? value : defaultValue, (T) dep.getValue() );
+            //can not validate default value when we have dependency, as it is not solved itself, but included in the solved value
+            setting.validate( solvedValue );
             return new DepEntry<>( setting, value, defaultValue, solvedValue );
         }
+        setting.validate( defaultValue );
+        setting.validate( value );
         return new Entry<>( setting, value, defaultValue );
     }
 

@@ -42,6 +42,7 @@ import static java.time.Duration.ofMillis;
 import static java.time.Duration.ofMinutes;
 import static java.time.Duration.ofSeconds;
 import static java.util.Collections.emptyList;
+import static org.neo4j.configuration.SettingConstraints.ABSOLUTE_PATH;
 import static org.neo4j.configuration.SettingConstraints.HOSTNAME_ONLY;
 import static org.neo4j.configuration.SettingConstraints.POWER_OF_2;
 import static org.neo4j.configuration.SettingConstraints.any;
@@ -91,6 +92,7 @@ public class GraphDatabaseSettings implements SettingsDeclaration
             "configured explicitly." )
     @DocumentedDefaultValue( "Defaults to current working directory" )
     public static final Setting<Path> neo4j_home = newBuilder( "unsupported.dbms.directories.neo4j_home", PATH, Path.of( "" ).toAbsolutePath() )
+            .addConstraint( ABSOLUTE_PATH )
             .immutable()
             .build();
 

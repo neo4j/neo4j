@@ -82,9 +82,7 @@ public final class SettingImpl<T> implements Setting<T>
            return null;
         }
 
-        T parsedValue = parser.parse( value );
-        validate( parsedValue );
-        return parsedValue;
+        return parser.parse( value );
     }
 
     public String valueToString( T value )
@@ -98,19 +96,12 @@ public final class SettingImpl<T> implements Setting<T>
 
     T solveDefault( T value, T defaultValue )
     {
-        T solved = parser.solveDefault(value, defaultValue);
-        if ( solved != null )
-        {
-            validate( solved );
-        }
-        return solved;
+        return parser.solveDefault(value, defaultValue);
     }
 
     T solveDependency( T value, T dependencyValue )
     {
-        T solved = parser.solveDependency( value, dependencyValue );
-        validate( solved );
-        return solved;
+        return parser.solveDependency( value, dependencyValue );
     }
 
     public void validate( T value )

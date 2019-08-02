@@ -22,6 +22,7 @@ package org.neo4j.configuration;
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.StringUtils;
 
+import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
@@ -315,6 +316,24 @@ public final class SettingConstraints
         public String getDescription()
         {
             return "has no specified port";
+        }
+    };
+
+    public static SettingConstraint<Path> ABSOLUTE_PATH = new SettingConstraint<Path>()
+    {
+        @Override
+        public void validate( Path value )
+        {
+            if ( !value.isAbsolute() )
+            {
+                throw new IllegalArgumentException( format("'%s' is not an absolute path.", value ) );
+            }
+        }
+
+        @Override
+        public String getDescription()
+        {
+            return "is absolute";
         }
     };
 }
