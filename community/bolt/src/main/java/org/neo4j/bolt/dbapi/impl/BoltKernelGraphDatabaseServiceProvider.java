@@ -80,7 +80,7 @@ public class BoltKernelGraphDatabaseServiceProvider implements BoltGraphDatabase
     {
         for ( var bookmark : bookmarks )
         {
-            var databaseId = databaseIdFromBookmarkOrDefault( bookmark );
+            var databaseId = databaseIdFromBookmarkOrCurrent( bookmark );
             transactionIdTracker.awaitUpToDate( databaseId, bookmark.txId(), perBookmarkTimeout );
         }
     }
@@ -145,7 +145,7 @@ public class BoltKernelGraphDatabaseServiceProvider implements BoltGraphDatabase
         return internalTransaction;
     }
 
-    private DatabaseId databaseIdFromBookmarkOrDefault( Bookmark bookmark )
+    private DatabaseId databaseIdFromBookmarkOrCurrent( Bookmark bookmark )
     {
         var specifiedDatabaseId = bookmark.databaseId();
         if ( specifiedDatabaseId == null )
