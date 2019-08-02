@@ -423,6 +423,12 @@ public final class SettingValueParsers
             return value != null ? solve( value, defaultValue ) : null;
         }
 
+        @Override
+        public String getSolverDescription()
+        {
+            return "If missing port or hostname it is acquired";
+        }
+
         private SocketAddress solve( SocketAddress value, SocketAddress dependencyValue )
         {
             if ( value == null )
@@ -598,6 +604,12 @@ public final class SettingValueParsers
             {
                 throw new IllegalArgumentException( format("'%s' is not a normalized path.", value ) );
             }
+        }
+
+        @Override
+        public String getSolverDescription()
+        {
+            return "If relative it is resolved";
         }
     };
 

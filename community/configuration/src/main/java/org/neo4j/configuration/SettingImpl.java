@@ -125,11 +125,18 @@ public final class SettingImpl<T> implements Setting<T>
     public String toString()
     {
         String desc = format( "%s, %s", name, parser.getDescription() );
+
         if ( !constraints.isEmpty() )
         {
             String constraintDesc = constraints.stream().map( SettingConstraint::getDescription ).collect( Collectors.joining( " and " ) );
             desc = format( "%s which %s", desc, constraintDesc );
         }
+
+        if ( dependency != null )
+        {
+            desc = format( "%s. %s from %s", desc, parser.getSolverDescription(), dependency.name() );
+        }
+
         return desc;
     }
 

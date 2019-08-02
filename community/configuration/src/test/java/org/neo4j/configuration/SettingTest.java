@@ -19,14 +19,18 @@
  */
 package org.neo4j.configuration;
 
+import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestFactory;
 
 import java.net.URI;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.time.ZoneId;
 import java.time.ZoneOffset;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.List;
 import java.util.function.BiFunction;
 
@@ -41,6 +45,7 @@ import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.DynamicTest.dynamicTest;
 import static org.neo4j.configuration.SettingConstraints.PORT;
 import static org.neo4j.configuration.SettingConstraints.POWER_OF_2;
 import static org.neo4j.configuration.SettingConstraints.any;
@@ -383,22 +388,6 @@ class SettingTest
     }
 
     @Test
-    void testDescriptionWithConstraints()
-    {
-        var oneConstraintSetting = (SettingImpl<Long>) settingBuilder( "setting.name", LONG )
-                .addConstraint( POWER_OF_2 )
-                .build();
-
-        var twoConstraintSetting = (SettingImpl<Integer>) settingBuilder( "setting.name", INT )
-                .addConstraint( min( 2 ) )
-                .addConstraint( max( 10 ) )
-                .build();
-
-        assertEquals( "setting.name, a long which is power of 2", oneConstraintSetting.description() );
-        assertEquals( "setting.name, an integer which is minimum `2` and is maximum `10`", twoConstraintSetting.description() );
-    }
-
-    @Test
     void testIsConstraint()
     {
         var setting = (SettingImpl<Integer>) settingBuilder( "setting", INT ).addConstraint( is( 10 ) ).build();
@@ -429,12 +418,49 @@ class SettingTest
 
     }
 
-    private <T> SettingImpl.Builder<T> settingBuilder( String name, SettingValueParser<T> parser )
+    @Test
+    void testDescriptionWithConstraints()
+    {
+        var oneConstraintSetting = (SettingImpl<Long>) settingBuilder( "setting.name", LONG )
+                .addConstraint( POWER_OF_2 )
+                .build();
+
+        var twoConstraintSetting = (SettingImpl<Integer>) settingBuilder( "setting.name", INT )
+                .addConstraint( min( 2 ) )
+                .addConstraint( max( 10 ) )
+                .build();
+
+        assertEquals( "setting.name, a long which is power of 2", oneConstraintSetting.description() );
+        assertEquals( "setting.name, an integer which is minimum `2` and is maximum `10`", twoConstraintSetting.description() );
+    }
+
+    @TestFactory
+    Collection<DynamicTest> testDescriptionDependency()
+    {
+        Collection<DynamicTest> tests = new ArrayList<>();
+        tests.add( dynamicTest( "Test int dependency description",
+                () -> testDescDependency( INT, "setting.child, an integer. If unset the value is inherited from setting.parent" ) ) );
+        tests.add( dynamicTest( "Test socket dependency description", () -> testDescDependency( SOCKET_ADDRESS,
+                "setting.child, a socket address. If missing port or hostname it is acquired from setting.parent" ) ) );
+        tests.add( dynamicTest( "Test path dependency description",
+                () -> testDescDependency( PATH, "setting.child, a path. If relative it is resolved from setting.parent" ) ) );
+        return tests;
+    }
+
+    private static <T> void testDescDependency( SettingValueParser<T> parser, String expectedDescription )
+    {
+        var parent = settingBuilder( "setting.parent", parser ).immutable().build();
+        var child = settingBuilder( "setting.child", parser ).setDependency( parent ).build();
+
+        assertEquals( expectedDescription, child.description() );
+    }
+
+    private static <T> SettingImpl.Builder<T> settingBuilder( String name, SettingValueParser<T> parser )
     {
         return SettingImpl.newBuilder( name, parser, null );
     }
 
-    private <T> SettingImpl<T> setting( String name, SettingValueParser<T> parser )
+    private static <T> SettingImpl<T> setting( String name, SettingValueParser<T> parser )
     {
         return (SettingImpl<T>) SettingImpl.newBuilder( name, parser, null ).build();
     }

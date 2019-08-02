@@ -87,6 +87,11 @@ public interface SettingValueParser<T>
         return dependencyValue;
     }
 
+    default String getSolverDescription()
+    {
+        return "If unset the value is inherited";
+    }
+
     /**
      * Converting an object to a textual representation of that object.
      * @param value the object to be turned in to an textual representation
