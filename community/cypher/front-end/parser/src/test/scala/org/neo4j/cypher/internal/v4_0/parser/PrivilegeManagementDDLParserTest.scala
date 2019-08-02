@@ -90,355 +90,7 @@ class PrivilegeManagementDDLParserTest extends DDLParserTestBase {
     failsToParse
   }
 
-  //  Granting/denying/revoking traverse to/from role
-
-  Seq(
-    ("GRANT", "TO", grant: privilegeFunc),
-    ("DENY", "TO", deny: privilegeFunc),
-    ("REVOKE GRANT", "FROM", revokeGrant: privilegeFunc),
-    ("REVOKE DENY", "FROM", revokeDeny: privilegeFunc),
-    ("REVOKE", "FROM", revokeBoth: privilegeFunc)
-  ).foreach {
-    case (command: String, preposition: String, func: privilegeFunc) =>
-
-      Seq("GRAPH", "GRAPHS").foreach {
-        graphKeyword =>
-          test(s"$command TRAVERSE ON $graphKeyword * $preposition role") {
-            yields(func(ast.TraversePrivilege()(pos), ast.AllResource()(pos), ast.AllGraphsScope() _, ast.AllQualifier() _, Seq("role")))
-          }
-
-          test(s"$command TRAVERSE ON $graphKeyword foo $preposition role") {
-            yields(func(ast.TraversePrivilege()(pos), ast.AllResource()(pos), ast.NamedGraphScope("foo") _, ast.AllQualifier() _, Seq("role")))
-          }
-
-          Seq("NODE", "NODES").foreach {
-            nodeKeyword =>
-
-              test(s"$command TRAVERSE ON $graphKeyword * $nodeKeyword * $preposition role") {
-                yields(func(ast.TraversePrivilege()(pos), ast.AllResource()(pos), ast.AllGraphsScope() _, ast.LabelAllQualifier() _, Seq("role")))
-              }
-
-              test(s"$command TRAVERSE ON $graphKeyword * $nodeKeyword * (*) $preposition role") {
-                yields(func(ast.TraversePrivilege()(pos), ast.AllResource()(pos), ast.AllGraphsScope() _, ast.LabelAllQualifier() _, Seq("role")))
-              }
-
-              test(s"$command TRAVERSE ON $graphKeyword * $nodeKeyword A $preposition role") {
-                yields(func(ast.TraversePrivilege()(pos), ast.AllResource()(pos), ast.AllGraphsScope() _, ast.LabelsQualifier(Seq("A")) _, Seq("role")))
-              }
-
-              test(s"$command TRAVERSE ON $graphKeyword * $nodeKeyword A (*) $preposition role") {
-                yields(func(ast.TraversePrivilege()(pos), ast.AllResource()(pos), ast.AllGraphsScope() _, ast.LabelsQualifier(Seq("A")) _, Seq("role")))
-              }
-
-              test(s"$command TRAVERSE ON $graphKeyword `*` $nodeKeyword A $preposition role") {
-                yields(func(ast.TraversePrivilege()(pos), ast.AllResource()(pos), ast.NamedGraphScope("*") _, ast.LabelsQualifier(Seq("A")) _, Seq("role")))
-              }
-
-              test(s"$command TRAVERSE ON $graphKeyword foo $nodeKeyword * $preposition role") {
-                yields(func(ast.TraversePrivilege()(pos), ast.AllResource()(pos), ast.NamedGraphScope("foo") _, ast.LabelAllQualifier() _, Seq("role")))
-              }
-
-              test(s"$command TRAVERSE ON $graphKeyword foo $nodeKeyword * (*) $preposition role") {
-                yields(func(ast.TraversePrivilege()(pos), ast.AllResource()(pos), ast.NamedGraphScope("foo") _, ast.LabelAllQualifier() _, Seq("role")))
-              }
-
-              test(s"$command TRAVERSE ON $graphKeyword foo $nodeKeyword A $preposition role") {
-                yields(func(ast.TraversePrivilege()(pos), ast.AllResource()(pos), ast.NamedGraphScope("foo") _, ast.LabelsQualifier(Seq("A")) _, Seq("role")))
-              }
-
-              test(s"$command TRAVERSE ON $graphKeyword foo $nodeKeyword A (*) $preposition role") {
-                yields(func(ast.TraversePrivilege()(pos), ast.AllResource()(pos), ast.NamedGraphScope("foo") _, ast.LabelsQualifier(Seq("A")) _, Seq("role")))
-              }
-
-              test(s"$command TRAVERSE ON $graphKeyword foo $nodeKeyword A (*) $preposition role1, role2") {
-                yields(func(ast.TraversePrivilege()(pos), ast.AllResource()(pos), ast.NamedGraphScope("foo") _, ast.LabelsQualifier(Seq("A")) _, Seq("role1", "role2")))
-              }
-
-              test(s"$command TRAVERSE ON $graphKeyword `2foo` $nodeKeyword A (*) $preposition role") {
-                yields(func(ast.TraversePrivilege()(pos), ast.AllResource()(pos), ast.NamedGraphScope("2foo") _, ast.LabelsQualifier(Seq("A")) _, Seq("role")))
-              }
-
-              test(s"$command TRAVERSE ON $graphKeyword foo $nodeKeyword A (*) $preposition `r:ole`") {
-                yields(func(ast.TraversePrivilege()(pos), ast.AllResource()(pos), ast.NamedGraphScope("foo") _, ast.LabelsQualifier(Seq("A")) _, Seq("r:ole")))
-              }
-
-              test(s"$command TRAVERSE ON $graphKeyword foo $nodeKeyword `A B` (*) $preposition role") {
-                yields(func(ast.TraversePrivilege()(pos), ast.AllResource()(pos), ast.NamedGraphScope("foo") _, ast.LabelsQualifier(Seq("A B")) _, Seq("role")))
-              }
-
-              test(s"$command TRAVERSE ON $graphKeyword foo $nodeKeyword A, B (*) $preposition role") {
-                yields(func(ast.TraversePrivilege()(pos), ast.AllResource()(pos), ast.NamedGraphScope("foo") _, ast.LabelsQualifier(Seq("A", "B")) _, Seq("role")))
-              }
-
-              test(s"$command TRAVERSE ON $graphKeyword foo $nodeKeyword A, B (*) $preposition role1, role2") {
-                yields(func(ast.TraversePrivilege()(pos), ast.AllResource()(pos), ast.NamedGraphScope("foo") _, ast.LabelsQualifier(Seq("A", "B")) _, Seq("role1", "role2")))
-              }
-
-              test(s"$command TRAVERSE $graphKeyword * $nodeKeyword * (*) $preposition role") {
-                failsToParse
-              }
-
-              test(s"$command TRAVERSE ON $graphKeyword foo $nodeKeyword A B (*) $preposition role") {
-                failsToParse
-              }
-
-              test(s"$command TRAVERSE ON $graphKeyword foo $nodeKeyword A (foo) $preposition role") {
-                failsToParse
-              }
-
-              test(s"$command TRAVERSE ON $graphKeyword $nodeKeyword * $preposition role") {
-                failsToParse
-              }
-
-              test(s"$command TRAVERSE ON $graphKeyword $nodeKeyword A $preposition role") {
-                failsToParse
-              }
-
-              test(s"$command TRAVERSE ON $graphKeyword $nodeKeyword * (*) $preposition role") {
-                failsToParse
-              }
-
-              test(s"$command TRAVERSE ON $graphKeyword $nodeKeyword A (*) $preposition role") {
-                failsToParse
-              }
-
-              test(s"$command TRAVERSE ON $graphKeyword foo $nodeKeyword A (*) $preposition r:ole") {
-                failsToParse
-              }
-
-              test(s"$command TRAVERSE ON $graphKeyword 2foo $nodeKeyword A (*) $preposition role") {
-                failsToParse
-              }
-
-              test(s"$command TRAVERSE ON $graphKeyword foo, baz $nodeKeyword A (*) $preposition role") {
-                failsToParse
-              }
-
-              test(s"$command TRAVERSE ON $graphKeyword * $nodeKeyword * (*)") {
-                failsToParse
-              }
-          }
-
-          Seq("RELATIONSHIP", "RELATIONSHIPS").foreach {
-            relTypeKeyword =>
-
-              test(s"$command TRAVERSE ON $graphKeyword * $relTypeKeyword * $preposition role") {
-                yields(func(ast.TraversePrivilege()(pos), ast.AllResource()(pos), ast.AllGraphsScope() _, ast.RelationshipAllQualifier() _, Seq("role")))
-              }
-
-              test(s"$command TRAVERSE ON $graphKeyword * $relTypeKeyword * (*) $preposition role") {
-                yields(func(ast.TraversePrivilege()(pos), ast.AllResource()(pos), ast.AllGraphsScope() _, ast.RelationshipAllQualifier() _, Seq("role")))
-              }
-
-              test(s"$command TRAVERSE ON $graphKeyword * $relTypeKeyword A $preposition role") {
-                yields(func(ast.TraversePrivilege()(pos), ast.AllResource()(pos), ast.AllGraphsScope() _, ast.RelationshipsQualifier(Seq("A")) _, Seq("role")))
-              }
-
-              test(s"$command TRAVERSE ON $graphKeyword * $relTypeKeyword A (*) $preposition role") {
-                yields(func(ast.TraversePrivilege()(pos), ast.AllResource()(pos), ast.AllGraphsScope() _, ast.RelationshipsQualifier(Seq("A")) _, Seq("role")))
-              }
-
-              test(s"$command TRAVERSE ON $graphKeyword `*` $relTypeKeyword A $preposition role") {
-                yields(func(ast.TraversePrivilege()(pos), ast.AllResource()(pos), ast.NamedGraphScope("*") _, ast.RelationshipsQualifier(Seq("A")) _, Seq("role")))
-              }
-
-              test(s"$command TRAVERSE ON $graphKeyword foo $relTypeKeyword * $preposition role") {
-                yields(func(ast.TraversePrivilege()(pos), ast.AllResource()(pos), ast.NamedGraphScope("foo") _, ast.RelationshipAllQualifier() _, Seq("role")))
-              }
-
-              test(s"$command TRAVERSE ON $graphKeyword foo $relTypeKeyword * (*) $preposition role") {
-                yields(func(ast.TraversePrivilege()(pos), ast.AllResource()(pos), ast.NamedGraphScope("foo") _, ast.RelationshipAllQualifier() _, Seq("role")))
-              }
-
-              test(s"$command TRAVERSE ON $graphKeyword foo $relTypeKeyword A $preposition role") {
-                yields(func(ast.TraversePrivilege()(pos), ast.AllResource()(pos), ast.NamedGraphScope("foo") _, ast.RelationshipsQualifier(Seq("A")) _, Seq("role")))
-              }
-
-              test(s"$command TRAVERSE ON $graphKeyword foo $relTypeKeyword A (*) $preposition role") {
-                yields(func(ast.TraversePrivilege()(pos), ast.AllResource()(pos), ast.NamedGraphScope("foo") _, ast.RelationshipsQualifier(Seq("A")) _, Seq("role")))
-              }
-
-              test(s"$command TRAVERSE ON $graphKeyword foo $relTypeKeyword A (*) $preposition role1, role2") {
-                yields(func(ast.TraversePrivilege()(pos), ast.AllResource()(pos), ast.NamedGraphScope("foo") _, ast.RelationshipsQualifier(Seq("A")) _, Seq("role1", "role2")))
-              }
-
-              test(s"$command TRAVERSE ON $graphKeyword `2foo` $relTypeKeyword A (*) $preposition role") {
-                yields(func(ast.TraversePrivilege()(pos), ast.AllResource()(pos), ast.NamedGraphScope("2foo") _, ast.RelationshipsQualifier(Seq("A")) _, Seq("role")))
-              }
-
-              test(s"$command TRAVERSE ON $graphKeyword foo $relTypeKeyword A (*) $preposition `r:ole`") {
-                yields(func(ast.TraversePrivilege()(pos), ast.AllResource()(pos), ast.NamedGraphScope("foo") _, ast.RelationshipsQualifier(Seq("A")) _, Seq("r:ole")))
-              }
-
-              test(s"$command TRAVERSE ON $graphKeyword foo $relTypeKeyword `A B` (*) $preposition role") {
-                yields(func(ast.TraversePrivilege()(pos), ast.AllResource()(pos), ast.NamedGraphScope("foo") _, ast.RelationshipsQualifier(Seq("A B")) _, Seq("role")))
-              }
-
-              test(s"$command TRAVERSE ON $graphKeyword foo $relTypeKeyword A, B (*) $preposition role") {
-                yields(func(ast.TraversePrivilege()(pos), ast.AllResource()(pos), ast.NamedGraphScope("foo") _, ast.RelationshipsQualifier(Seq("A", "B")) _, Seq("role")))
-              }
-
-              test(s"$command TRAVERSE ON $graphKeyword foo $relTypeKeyword A, B (*) $preposition role1, role2") {
-                yields(func(ast.TraversePrivilege()(pos), ast.AllResource()(pos), ast.NamedGraphScope("foo") _, ast.RelationshipsQualifier(Seq("A", "B")) _, Seq("role1", "role2")))
-              }
-
-              test(s"$command TRAVERSE $graphKeyword * $relTypeKeyword * (*) $preposition role") {
-                failsToParse
-              }
-
-              test(s"$command TRAVERSE ON $graphKeyword foo $relTypeKeyword A B (*) $preposition role") {
-                failsToParse
-              }
-
-              test(s"$command TRAVERSE ON $graphKeyword foo $relTypeKeyword A (foo) $preposition role") {
-                failsToParse
-              }
-
-              test(s"$command TRAVERSE ON $graphKeyword $relTypeKeyword * $preposition role") {
-                failsToParse
-              }
-
-              test(s"$command TRAVERSE ON $graphKeyword $relTypeKeyword A $preposition role") {
-                failsToParse
-              }
-
-              test(s"$command TRAVERSE ON $graphKeyword $relTypeKeyword * (*) $preposition role") {
-                failsToParse
-              }
-
-              test(s"$command TRAVERSE ON $graphKeyword $relTypeKeyword A (*) $preposition role") {
-                failsToParse
-              }
-
-              test(s"$command TRAVERSE ON $graphKeyword foo $relTypeKeyword A (*) $preposition r:ole") {
-                failsToParse
-              }
-
-              test(s"$command TRAVERSE ON $graphKeyword 2foo $relTypeKeyword A (*) $preposition role") {
-                failsToParse
-              }
-
-              test(s"$command TRAVERSE ON $graphKeyword foo, baz $relTypeKeyword A (*) $preposition role") {
-                failsToParse
-              }
-
-              test(s"$command TRAVERSE ON $graphKeyword * $relTypeKeyword * (*)") {
-                failsToParse
-              }
-          }
-
-          Seq("ELEMENT", "ELEMENTS").foreach {
-            elementKeyword =>
-
-              test(s"$command TRAVERSE ON $graphKeyword * $elementKeyword * $preposition role") {
-                yields(func(ast.TraversePrivilege()(pos), ast.AllResource()(pos), ast.AllGraphsScope() _, ast.AllQualifier() _, Seq("role")))
-              }
-
-              test(s"$command TRAVERSE ON $graphKeyword * $elementKeyword * (*) $preposition role") {
-                yields(func(ast.TraversePrivilege()(pos), ast.AllResource()(pos), ast.AllGraphsScope() _, ast.AllQualifier() _, Seq("role")))
-              }
-
-              test(s"$command TRAVERSE ON $graphKeyword * $elementKeyword A $preposition role") {
-                yields(func(ast.TraversePrivilege()(pos), ast.AllResource()(pos), ast.AllGraphsScope() _, ast.ElementsQualifier(Seq("A")) _, Seq("role")))
-              }
-
-              test(s"$command TRAVERSE ON $graphKeyword * $elementKeyword A (*) $preposition role") {
-                yields(func(ast.TraversePrivilege()(pos), ast.AllResource()(pos), ast.AllGraphsScope() _, ast.ElementsQualifier(Seq("A")) _, Seq("role")))
-              }
-
-              test(s"$command TRAVERSE ON $graphKeyword `*` $elementKeyword A $preposition role") {
-                yields(func(ast.TraversePrivilege()(pos), ast.AllResource()(pos), ast.NamedGraphScope("*") _, ast.ElementsQualifier(Seq("A")) _, Seq("role")))
-              }
-
-              test(s"$command TRAVERSE ON $graphKeyword foo $elementKeyword * $preposition role") {
-                yields(func(ast.TraversePrivilege()(pos), ast.AllResource()(pos), ast.NamedGraphScope("foo") _, ast.AllQualifier() _, Seq("role")))
-              }
-
-              test(s"$command TRAVERSE ON $graphKeyword foo $elementKeyword * (*) $preposition role") {
-                yields(func(ast.TraversePrivilege()(pos), ast.AllResource()(pos), ast.NamedGraphScope("foo") _, ast.AllQualifier() _, Seq("role")))
-              }
-
-              test(s"$command TRAVERSE ON $graphKeyword foo $elementKeyword A $preposition role") {
-                yields(func(ast.TraversePrivilege()(pos), ast.AllResource()(pos), ast.NamedGraphScope("foo") _, ast.ElementsQualifier(Seq("A")) _, Seq("role")))
-              }
-
-              test(s"$command TRAVERSE ON $graphKeyword foo $elementKeyword A (*) $preposition role") {
-                yields(func(ast.TraversePrivilege()(pos), ast.AllResource()(pos), ast.NamedGraphScope("foo") _, ast.ElementsQualifier(Seq("A")) _, Seq("role")))
-              }
-
-              test(s"$command TRAVERSE ON $graphKeyword foo $elementKeyword A (*) $preposition role1, role2") {
-                yields(func(ast.TraversePrivilege()(pos), ast.AllResource()(pos), ast.NamedGraphScope("foo") _, ast.ElementsQualifier(Seq("A")) _, Seq("role1", "role2")))
-              }
-
-              test(s"$command TRAVERSE ON $graphKeyword `2foo` $elementKeyword A (*) $preposition role") {
-                yields(func(ast.TraversePrivilege()(pos), ast.AllResource()(pos), ast.NamedGraphScope("2foo") _, ast.ElementsQualifier(Seq("A")) _, Seq("role")))
-              }
-
-              test(s"$command TRAVERSE ON $graphKeyword foo $elementKeyword A (*) $preposition `r:ole`") {
-                yields(func(ast.TraversePrivilege()(pos), ast.AllResource()(pos), ast.NamedGraphScope("foo") _, ast.ElementsQualifier(Seq("A")) _, Seq("r:ole")))
-              }
-
-              test(s"$command TRAVERSE ON $graphKeyword foo $elementKeyword `A B` (*) $preposition role") {
-                yields(func(ast.TraversePrivilege()(pos), ast.AllResource()(pos), ast.NamedGraphScope("foo") _, ast.ElementsQualifier(Seq("A B")) _, Seq("role")))
-              }
-
-              test(s"$command TRAVERSE ON $graphKeyword foo $elementKeyword A, B (*) $preposition role") {
-                yields(func(ast.TraversePrivilege()(pos), ast.AllResource()(pos), ast.NamedGraphScope("foo") _, ast.ElementsQualifier(Seq("A", "B")) _, Seq("role")))
-              }
-
-              test(s"$command TRAVERSE ON $graphKeyword foo $elementKeyword A, B (*) $preposition role1, role2") {
-                yields(func(ast.TraversePrivilege()(pos), ast.AllResource()(pos), ast.NamedGraphScope("foo") _, ast.ElementsQualifier(Seq("A", "B")) _, Seq("role1", "role2")))
-              }
-
-              test(s"$command TRAVERSE $graphKeyword * $elementKeyword * (*) $preposition role") {
-                failsToParse
-              }
-
-              test(s"$command TRAVERSE ON $graphKeyword foo $elementKeyword A B (*) $preposition role") {
-                failsToParse
-              }
-
-              test(s"$command TRAVERSE ON $graphKeyword foo $elementKeyword A (foo) $preposition role") {
-                failsToParse
-              }
-
-              test(s"$command TRAVERSE ON $graphKeyword $elementKeyword * $preposition role") {
-                failsToParse
-              }
-
-              test(s"$command TRAVERSE ON $graphKeyword $elementKeyword A $preposition role") {
-                failsToParse
-              }
-
-              test(s"$command TRAVERSE ON $graphKeyword $elementKeyword * (*) $preposition role") {
-                failsToParse
-              }
-
-              test(s"$command TRAVERSE ON $graphKeyword $elementKeyword A (*) $preposition role") {
-                failsToParse
-              }
-
-              test(s"$command TRAVERSE ON $graphKeyword foo $elementKeyword A (*) $preposition r:ole") {
-                failsToParse
-              }
-
-              test(s"$command TRAVERSE ON $graphKeyword 2foo $elementKeyword A (*) $preposition role") {
-                failsToParse
-              }
-
-              test(s"$command TRAVERSE ON $graphKeyword foo, baz $elementKeyword A (*) $preposition role") {
-                failsToParse
-              }
-
-              test(s"$command TRAVERSE ON $graphKeyword * $elementKeyword * (*)") {
-                failsToParse
-              }
-          }
-      }
-  }
-
   // Granting/denying/revoking read and match to/from role
-
   Seq(
     (ast.ReadPrivilege()(pos), "GRANT", "TO", grant: privilegeFunc),
     (ast.ReadPrivilege()(pos), "DENY", "TO", deny: privilegeFunc),
@@ -469,167 +121,71 @@ class PrivilegeManagementDDLParserTest extends DDLParserTestBase {
               ).foreach {
                 case (properties: String, resource: ast.ActionResource, dbName: String, graphScope: ast.GraphScope) =>
 
-                  test(s"$command ${privilege.name} ($properties) ON $graphKeyword $dbName $nodeKeyword * $preposition role") {
-                    yields(func(privilege, resource, graphScope, ast.LabelAllQualifier() _, Seq("role")))
+                  test( s"validExpressions $command ${privilege.name} ($properties) $graphKeyword $dbName $nodeKeyword $preposition") {
+                    parsing(s"$command ${privilege.name} ($properties) ON $graphKeyword $dbName $nodeKeyword * $preposition role") shouldGive
+                      func(privilege, resource, graphScope, ast.LabelAllQualifier() _, Seq("role"))
+                    parsing(s"$command ${privilege.name} ($properties) ON $graphKeyword $dbName $nodeKeyword * (*) $preposition role") shouldGive
+                      func(privilege, resource, graphScope, ast.LabelAllQualifier() _, Seq("role"))
+                    parsing(s"$command ${privilege.name} ($properties) ON $graphKeyword $dbName $nodeKeyword A $preposition role") shouldGive
+                      func(privilege, resource, graphScope, ast.LabelsQualifier(Seq("A")) _, Seq("role"))
+                    parsing(s"$command ${privilege.name} ($properties) ON $graphKeyword $dbName $nodeKeyword A (*) $preposition role") shouldGive
+                      func(privilege, resource, graphScope, ast.LabelsQualifier(Seq("A")) _, Seq("role"))
+                    parsing(s"$command ${privilege.name} ($properties) ON $graphKeyword $dbName $nodeKeyword `A B` (*) $preposition role") shouldGive
+                      func(privilege, resource, graphScope, ast.LabelsQualifier(Seq("A B")) _, Seq("role"))
+                    parsing(s"$command ${privilege.name} ($properties) ON $graphKeyword $dbName $nodeKeyword A, B (*) $preposition role1, role2") shouldGive
+                      func(privilege, resource, graphScope, ast.LabelsQualifier(Seq("A", "B")) _, Seq("role1", "role2"))
+                    parsing(s"$command ${privilege.name} ($properties) ON $graphKeyword $dbName $nodeKeyword * $preposition `r:ole`") shouldGive
+                      func(privilege, resource, graphScope, ast.LabelAllQualifier() _, Seq("r:ole"))
+                    parsing(s"$command ${privilege.name} ($properties) ON $graphKeyword $dbName $nodeKeyword `:A` (*) $preposition role") shouldGive
+                      func(privilege, resource, graphScope, ast.LabelsQualifier(Seq(":A")) _, Seq("role"))
                   }
 
-                  test(s"$command ${privilege.name} ($properties) ON $graphKeyword $dbName $nodeKeyword * (*) $preposition role") {
-                    yields(func(privilege, resource, graphScope, ast.LabelAllQualifier() _, Seq("role")))
-                  }
-
-                  test(s"$command ${privilege.name} ($properties) ON $graphKeyword $dbName $nodeKeyword A $preposition role") {
-                    yields(func(privilege, resource, graphScope, ast.LabelsQualifier(Seq("A")) _, Seq("role")))
-                  }
-
-                  test(s"$command ${privilege.name} ($properties) ON $graphKeyword $dbName $nodeKeyword A (*) $preposition role") {
-                    yields(func(privilege, resource, graphScope, ast.LabelsQualifier(Seq("A")) _, Seq("role")))
-                  }
-
-                  test(s"$command ${privilege.name} ($properties) ON $graphKeyword $dbName $nodeKeyword `A B` (*) $preposition role") {
-                    yields(func(privilege, resource, graphScope, ast.LabelsQualifier(Seq("A B")) _, Seq("role")))
-                  }
-
-                  test(s"$command ${privilege.name} ($properties) ON $graphKeyword $dbName $nodeKeyword A, B (*) $preposition role1, role2") {
-                    yields(func(privilege, resource, graphScope, ast.LabelsQualifier(Seq("A", "B")) _, Seq("role1", "role2")))
-                  }
-
-                  test(s"$command ${privilege.name} ($properties) ON $graphKeyword $dbName $nodeKeyword * $preposition `r:ole`") {
-                    yields(func(privilege, resource, graphScope, ast.LabelAllQualifier() _, Seq("r:ole")))
-                  }
-
-                  test(s"$command ${privilege.name} ($properties) ON $graphKeyword $dbName $nodeKeyword `:A` (*) $preposition role") {
-                    yields(func(privilege, resource, graphScope, ast.LabelsQualifier(Seq(":A")) _, Seq("role")))
-                  }
-
-                  test(s"$command ${privilege.name} ($properties) $graphKeyword $dbName $nodeKeyword * (*) $preposition role") {
-                    failsToParse
-                  }
-
-                  test(s"$command ${privilege.name} ($properties) $graphKeyword $dbName $nodeKeyword A $preposition role") {
-                    failsToParse
-                  }
-
-                  test(s"$command ${privilege.name} ($properties) ON $graphKeyword $dbName $nodeKeyword * (*)") {
-                    failsToParse
-                  }
-
-                  test(s"$command ${privilege.name} ($properties) ON $graphKeyword $dbName $nodeKeyword A B (*) $preposition role") {
-                    failsToParse
-                  }
-
-                  test(s"$command ${privilege.name} ($properties) ON $graphKeyword $dbName $nodeKeyword A (foo) $preposition role") {
-                    failsToParse
-                  }
-
-                  test(s"$command ${privilege.name} ($properties) ON $graphKeyword $dbName $nodeKeyword * $preposition r:ole") {
-                    failsToParse
+                  test( s"failToParse $command ${privilege.name} ($properties) $graphKeyword $dbName $nodeKeyword $preposition") {
+                    assertFails(s"$command ${privilege.name} ($properties) $graphKeyword $dbName $nodeKeyword * (*) $preposition role")
+                    assertFails(s"$command ${privilege.name} ($properties) $graphKeyword $dbName $nodeKeyword A $preposition role")
+                    assertFails(s"$command ${privilege.name} ($properties) ON $graphKeyword $dbName $nodeKeyword * (*)")
+                    assertFails(s"$command ${privilege.name} ($properties) ON $graphKeyword $dbName $nodeKeyword A B (*) $preposition role")
+                    assertFails(s"$command ${privilege.name} ($properties) ON $graphKeyword $dbName $nodeKeyword A (foo) $preposition role")
+                    assertFails(s"$command ${privilege.name} ($properties) ON $graphKeyword $dbName $nodeKeyword * $preposition r:ole")
                   }
               }
 
-              test(s"$command ${privilege.name} (*) ON $graphKeyword `f:oo` $nodeKeyword * $preposition role") {
-                yields(func(privilege, ast.AllResource() _, ast.NamedGraphScope("f:oo") _, ast.LabelAllQualifier() _, Seq("role")))
+              test( s"validExpressions $command ${privilege.name} $graphKeyword $nodeKeyword $preposition") {
+                parsing(s"$command ${privilege.name} (*) ON $graphKeyword `f:oo` $nodeKeyword * $preposition role") shouldGive
+                  func(privilege, ast.AllResource() _, ast.NamedGraphScope("f:oo") _, ast.LabelAllQualifier() _, Seq("role"))
+                parsing(s"$command ${privilege.name} (bar) ON $graphKeyword `f:oo` $nodeKeyword * $preposition role") shouldGive
+                  func(privilege, ast.PropertiesResource(Seq("bar")) _, ast.NamedGraphScope("f:oo") _, ast.LabelAllQualifier() _, Seq("role"))
+                parsing(s"$command ${privilege.name} (`b:ar`) ON $graphKeyword foo $nodeKeyword * $preposition role") shouldGive
+                  func(privilege, ast.PropertiesResource(Seq("b:ar")) _, ast.NamedGraphScope("foo") _, ast.LabelAllQualifier() _, Seq("role"))
               }
 
-              test(s"$command ${privilege.name} (bar) ON $graphKeyword `f:oo` $nodeKeyword * $preposition role") {
-                yields(func(privilege, ast.PropertiesResource(Seq("bar")) _, ast.NamedGraphScope("f:oo") _, ast.LabelAllQualifier() _, Seq("role")))
-              }
-
-              test(s"$command ${privilege.name} (`b:ar`) ON $graphKeyword foo $nodeKeyword * $preposition role") {
-                yields(func(privilege, ast.PropertiesResource(Seq("b:ar")) _, ast.NamedGraphScope("foo") _, ast.LabelAllQualifier() _, Seq("role")))
-              }
-
-              // Invalid graph name
-
-              test(s"$command ${privilege.name} (*) ON $graphKeyword f:oo $nodeKeyword * $preposition role") {
-                failsToParse
-              }
-
-              test(s"$command ${privilege.name} (bar) ON $graphKeyword f:oo $nodeKeyword * $preposition role") {
-                failsToParse
-              }
-
-              // multiple graphs not allowed
-
-              test(s"$command ${privilege.name} (*) ON $graphKeyword foo, baz $nodeKeyword A (*) $preposition role") {
-                failsToParse
-              }
-
-              test(s"$command ${privilege.name} (bar) ON $graphKeyword foo, baz $nodeKeyword A (*) $preposition role") {
-                failsToParse
-              }
-
-              // invalid property definition
-
-              test(s"$command ${privilege.name} (b:ar) ON $graphKeyword foo $nodeKeyword * $preposition role") {
-                failsToParse
-              }
-
-              // missing graph name
-
-              test(s"$command ${privilege.name} (*) ON $graphKeyword $nodeKeyword * $preposition role") {
-                failsToParse
-              }
-
-              test(s"$command ${privilege.name} (*) ON $graphKeyword $nodeKeyword * (*) $preposition role") {
-                failsToParse
-              }
-
-              test(s"$command ${privilege.name} (*) ON $graphKeyword $nodeKeyword A $preposition role") {
-                failsToParse
-              }
-
-              test(s"$command ${privilege.name} (*) ON $graphKeyword $nodeKeyword A (*) $preposition role") {
-                failsToParse
-              }
-
-              test(s"$command ${privilege.name} (bar) ON $graphKeyword $nodeKeyword * $preposition role") {
-                failsToParse
-              }
-
-              test(s"$command ${privilege.name} (bar) ON $graphKeyword $nodeKeyword * (*) $preposition role") {
-                failsToParse
-              }
-
-              test(s"$command ${privilege.name} (bar) ON $graphKeyword $nodeKeyword A $preposition role") {
-                failsToParse
-              }
-
-              test(s"$command ${privilege.name} (bar) ON $graphKeyword $nodeKeyword A (*) $preposition role") {
-                failsToParse
-              }
-
-              // missing property definition
-
-              test(s"$command ${privilege.name} ON $graphKeyword * $nodeKeyword * $preposition role") {
-                failsToParse
-              }
-
-              test(s"$command ${privilege.name} ON $graphKeyword * $nodeKeyword * (*) $preposition role") {
-                failsToParse
-              }
-
-              test(s"$command ${privilege.name} ON $graphKeyword * $nodeKeyword A $preposition role") {
-                failsToParse
-              }
-
-              test(s"$command ${privilege.name} ON $graphKeyword * $nodeKeyword A (*) $preposition role") {
-                failsToParse
-              }
-
-              test(s"$command ${privilege.name} ON $graphKeyword foo $nodeKeyword * $preposition role") {
-                failsToParse
-              }
-
-              test(s"$command ${privilege.name} ON $graphKeyword foo $nodeKeyword * (*) $preposition role") {
-                failsToParse
-              }
-
-              test(s"$command ${privilege.name} ON $graphKeyword foo $nodeKeyword A $preposition role") {
-                failsToParse
-              }
-
-              test(s"$command ${privilege.name} ON $graphKeyword foo $nodeKeyword A (*) $preposition role") {
-                failsToParse
+              test( s"parsingFailures $command ${privilege.name} $graphKeyword $nodeKeyword $preposition") {
+                // Invalid graph name
+                assertFails(s"$command ${privilege.name} (*) ON $graphKeyword f:oo $nodeKeyword * $preposition role")
+                assertFails(s"$command ${privilege.name} (bar) ON $graphKeyword f:oo $nodeKeyword * $preposition role")
+                // multiple graphs not allowed
+                assertFails(s"$command ${privilege.name} (*) ON $graphKeyword foo, baz $nodeKeyword A (*) $preposition role")
+                assertFails(s"$command ${privilege.name} (bar) ON $graphKeyword foo, baz $nodeKeyword A (*) $preposition role")
+                // invalid property definition
+                assertFails(s"$command ${privilege.name} (b:ar) ON $graphKeyword foo $nodeKeyword * $preposition role")
+                // missing graph name
+                assertFails(s"$command ${privilege.name} (*) ON $graphKeyword $nodeKeyword * $preposition role")
+                assertFails(s"$command ${privilege.name} (*) ON $graphKeyword $nodeKeyword * (*) $preposition role")
+                assertFails(s"$command ${privilege.name} (*) ON $graphKeyword $nodeKeyword A $preposition role")
+                assertFails(s"$command ${privilege.name} (*) ON $graphKeyword $nodeKeyword A (*) $preposition role")
+                assertFails(s"$command ${privilege.name} (bar) ON $graphKeyword $nodeKeyword * $preposition role")
+                assertFails(s"$command ${privilege.name} (bar) ON $graphKeyword $nodeKeyword * (*) $preposition role")
+                assertFails(s"$command ${privilege.name} (bar) ON $graphKeyword $nodeKeyword A $preposition role")
+                assertFails(s"$command ${privilege.name} (bar) ON $graphKeyword $nodeKeyword A (*) $preposition role")
+                // missing property definition
+                assertFails(s"$command ${privilege.name} ON $graphKeyword * $nodeKeyword * $preposition role")
+                assertFails(s"$command ${privilege.name} ON $graphKeyword * $nodeKeyword * (*) $preposition role")
+                assertFails(s"$command ${privilege.name} ON $graphKeyword * $nodeKeyword A $preposition role")
+                assertFails(s"$command ${privilege.name} ON $graphKeyword * $nodeKeyword A (*) $preposition role")
+                assertFails(s"$command ${privilege.name} ON $graphKeyword foo $nodeKeyword * $preposition role")
+                assertFails(s"$command ${privilege.name} ON $graphKeyword foo $nodeKeyword * (*) $preposition role")
+                assertFails(s"$command ${privilege.name} ON $graphKeyword foo $nodeKeyword A $preposition role")
+                assertFails(s"$command ${privilege.name} ON $graphKeyword foo $nodeKeyword A (*) $preposition role")
               }
           }
 
@@ -646,167 +202,71 @@ class PrivilegeManagementDDLParserTest extends DDLParserTestBase {
               ).foreach {
                 case (properties: String, resource: ast.ActionResource, dbName: String, graphScope: ast.GraphScope) =>
 
-                  test(s"$command ${privilege.name} ($properties) ON $graphKeyword $dbName $relTypeKeyword * $preposition role") {
-                    yields(func(privilege, resource, graphScope, ast.RelationshipAllQualifier() _, Seq("role")))
+                  test( s"validExpressions $command ${privilege.name} ($properties) $graphKeyword $dbName $relTypeKeyword $preposition") {
+                    parsing(s"$command ${privilege.name} ($properties) ON $graphKeyword $dbName $relTypeKeyword * $preposition role") shouldGive
+                      func(privilege, resource, graphScope, ast.RelationshipAllQualifier() _, Seq("role"))
+                    parsing(s"$command ${privilege.name} ($properties) ON $graphKeyword $dbName $relTypeKeyword * (*) $preposition role") shouldGive
+                      func(privilege, resource, graphScope, ast.RelationshipAllQualifier() _, Seq("role"))
+                    parsing(s"$command ${privilege.name} ($properties) ON $graphKeyword $dbName $relTypeKeyword A $preposition role") shouldGive
+                      func(privilege, resource, graphScope, ast.RelationshipsQualifier(Seq("A")) _, Seq("role"))
+                    parsing(s"$command ${privilege.name} ($properties) ON $graphKeyword $dbName $relTypeKeyword A (*) $preposition role") shouldGive
+                      func(privilege, resource, graphScope, ast.RelationshipsQualifier(Seq("A")) _, Seq("role"))
+                    parsing(s"$command ${privilege.name} ($properties) ON $graphKeyword $dbName $relTypeKeyword `A B` (*) $preposition role") shouldGive
+                      func(privilege, resource, graphScope, ast.RelationshipsQualifier(Seq("A B")) _, Seq("role"))
+                    parsing(s"$command ${privilege.name} ($properties) ON $graphKeyword $dbName $relTypeKeyword A, B (*) $preposition role1, role2") shouldGive
+                      func(privilege, resource, graphScope, ast.RelationshipsQualifier(Seq("A", "B")) _, Seq("role1", "role2"))
+                    parsing(s"$command ${privilege.name} ($properties) ON $graphKeyword $dbName $relTypeKeyword * $preposition `r:ole`") shouldGive
+                      func(privilege, resource, graphScope, ast.RelationshipAllQualifier() _, Seq("r:ole"))
+                    parsing(s"$command ${privilege.name} ($properties) ON $graphKeyword $dbName $relTypeKeyword `:A` (*) $preposition role") shouldGive
+                      func(privilege, resource, graphScope, ast.RelationshipsQualifier(Seq(":A")) _, Seq("role"))
                   }
 
-                  test(s"$command ${privilege.name} ($properties) ON $graphKeyword $dbName $relTypeKeyword * (*) $preposition role") {
-                    yields(func(privilege, resource, graphScope, ast.RelationshipAllQualifier() _, Seq("role")))
-                  }
-
-                  test(s"$command ${privilege.name} ($properties) ON $graphKeyword $dbName $relTypeKeyword A $preposition role") {
-                    yields(func(privilege, resource, graphScope, ast.RelationshipsQualifier(Seq("A")) _, Seq("role")))
-                  }
-
-                  test(s"$command ${privilege.name} ($properties) ON $graphKeyword $dbName $relTypeKeyword A (*) $preposition role") {
-                    yields(func(privilege, resource, graphScope, ast.RelationshipsQualifier(Seq("A")) _, Seq("role")))
-                  }
-
-                  test(s"$command ${privilege.name} ($properties) ON $graphKeyword $dbName $relTypeKeyword `A B` (*) $preposition role") {
-                    yields(func(privilege, resource, graphScope, ast.RelationshipsQualifier(Seq("A B")) _, Seq("role")))
-                  }
-
-                  test(s"$command ${privilege.name} ($properties) ON $graphKeyword $dbName $relTypeKeyword A, B (*) $preposition role1, role2") {
-                    yields(func(privilege, resource, graphScope, ast.RelationshipsQualifier(Seq("A", "B")) _, Seq("role1", "role2")))
-                  }
-
-                  test(s"$command ${privilege.name} ($properties) ON $graphKeyword $dbName $relTypeKeyword * $preposition `r:ole`") {
-                    yields(func(privilege, resource, graphScope, ast.RelationshipAllQualifier() _, Seq("r:ole")))
-                  }
-
-                  test(s"$command ${privilege.name} ($properties) ON $graphKeyword $dbName $relTypeKeyword `:A` (*) $preposition role") {
-                    yields(func(privilege, resource, graphScope, ast.RelationshipsQualifier(Seq(":A")) _, Seq("role")))
-                  }
-
-                  test(s"$command ${privilege.name} ($properties) $graphKeyword $dbName $relTypeKeyword * (*) $preposition role") {
-                    failsToParse
-                  }
-
-                  test(s"$command ${privilege.name} ($properties) $graphKeyword $dbName $relTypeKeyword A $preposition role") {
-                    failsToParse
-                  }
-
-                  test(s"$command ${privilege.name} ($properties) ON $graphKeyword $dbName $relTypeKeyword * (*)") {
-                    failsToParse
-                  }
-
-                  test(s"$command ${privilege.name} ($properties) ON $graphKeyword $dbName $relTypeKeyword A B (*) $preposition role") {
-                    failsToParse
-                  }
-
-                  test(s"$command ${privilege.name} ($properties) ON $graphKeyword $dbName $relTypeKeyword A (foo) $preposition role") {
-                    failsToParse
-                  }
-
-                  test(s"$command ${privilege.name} ($properties) ON $graphKeyword $dbName $relTypeKeyword * $preposition r:ole") {
-                    failsToParse
+                  test( s"parsingFailures $command ${privilege.name} ($properties) $graphKeyword $dbName $relTypeKeyword $preposition") {
+                    assertFails(s"$command ${privilege.name} ($properties) $graphKeyword $dbName $relTypeKeyword * (*) $preposition role")
+                    assertFails(s"$command ${privilege.name} ($properties) $graphKeyword $dbName $relTypeKeyword A $preposition role")
+                    assertFails(s"$command ${privilege.name} ($properties) ON $graphKeyword $dbName $relTypeKeyword * (*)")
+                    assertFails(s"$command ${privilege.name} ($properties) ON $graphKeyword $dbName $relTypeKeyword A B (*) $preposition role")
+                    assertFails(s"$command ${privilege.name} ($properties) ON $graphKeyword $dbName $relTypeKeyword A (foo) $preposition role")
+                    assertFails(s"$command ${privilege.name} ($properties) ON $graphKeyword $dbName $relTypeKeyword * $preposition r:ole")
                   }
               }
 
-              test(s"$command ${privilege.name} (*) ON $graphKeyword `f:oo` $relTypeKeyword * $preposition role") {
-                yields(func(privilege, ast.AllResource() _, ast.NamedGraphScope("f:oo") _, ast.RelationshipAllQualifier() _, Seq("role")))
+              test( s"validExpressions $command ${privilege.name} $graphKeyword $relTypeKeyword $preposition") {
+                parsing(s"$command ${privilege.name} (*) ON $graphKeyword `f:oo` $relTypeKeyword * $preposition role") shouldGive
+                  func(privilege, ast.AllResource() _, ast.NamedGraphScope("f:oo") _, ast.RelationshipAllQualifier() _, Seq("role"))
+                parsing(s"$command ${privilege.name} (bar) ON $graphKeyword `f:oo` $relTypeKeyword * $preposition role") shouldGive
+                  func(privilege, ast.PropertiesResource(Seq("bar")) _, ast.NamedGraphScope("f:oo") _, ast.RelationshipAllQualifier() _, Seq("role"))
+                parsing(s"$command ${privilege.name} (`b:ar`) ON $graphKeyword foo $relTypeKeyword * $preposition role") shouldGive
+                  func(privilege, ast.PropertiesResource(Seq("b:ar")) _, ast.NamedGraphScope("foo") _, ast.RelationshipAllQualifier() _, Seq("role"))
               }
 
-              test(s"$command ${privilege.name} (bar) ON $graphKeyword `f:oo` $relTypeKeyword * $preposition role") {
-                yields(func(privilege, ast.PropertiesResource(Seq("bar")) _, ast.NamedGraphScope("f:oo") _, ast.RelationshipAllQualifier() _, Seq("role")))
-              }
-
-              test(s"$command ${privilege.name} (`b:ar`) ON $graphKeyword foo $relTypeKeyword * $preposition role") {
-                yields(func(privilege, ast.PropertiesResource(Seq("b:ar")) _, ast.NamedGraphScope("foo") _, ast.RelationshipAllQualifier() _, Seq("role")))
-              }
-
-              // Invalid graph name
-
-              test(s"$command ${privilege.name} (*) ON $graphKeyword f:oo $relTypeKeyword * $preposition role") {
-                failsToParse
-              }
-
-              test(s"$command ${privilege.name} (bar) ON $graphKeyword f:oo $relTypeKeyword * $preposition role") {
-                failsToParse
-              }
-
-              // multiple graphs not allowed
-
-              test(s"$command ${privilege.name} (*) ON $graphKeyword foo, baz $relTypeKeyword A (*) $preposition role") {
-                failsToParse
-              }
-
-              test(s"$command ${privilege.name} (bar) ON $graphKeyword foo, baz $relTypeKeyword A (*) $preposition role") {
-                failsToParse
-              }
-
-              // invalid property definition
-
-              test(s"$command ${privilege.name} (b:ar) ON $graphKeyword foo $relTypeKeyword * $preposition role") {
-                failsToParse
-              }
-
-              // missing graph name
-
-              test(s"$command ${privilege.name} (*) ON $graphKeyword $relTypeKeyword * $preposition role") {
-                failsToParse
-              }
-
-              test(s"$command ${privilege.name} (*) ON $graphKeyword $relTypeKeyword * (*) $preposition role") {
-                failsToParse
-              }
-
-              test(s"$command ${privilege.name} (*) ON $graphKeyword $relTypeKeyword A $preposition role") {
-                failsToParse
-              }
-
-              test(s"$command ${privilege.name} (*) ON $graphKeyword $relTypeKeyword A (*) $preposition role") {
-                failsToParse
-              }
-
-              test(s"$command ${privilege.name} (bar) ON $graphKeyword $relTypeKeyword * $preposition role") {
-                failsToParse
-              }
-
-              test(s"$command ${privilege.name} (bar) ON $graphKeyword $relTypeKeyword * (*) $preposition role") {
-                failsToParse
-              }
-
-              test(s"$command ${privilege.name} (bar) ON $graphKeyword $relTypeKeyword A $preposition role") {
-                failsToParse
-              }
-
-              test(s"$command ${privilege.name} (bar) ON $graphKeyword $relTypeKeyword A (*) $preposition role") {
-                failsToParse
-              }
-
-              // missing property definition
-
-              test(s"$command ${privilege.name} ON $graphKeyword * $relTypeKeyword * $preposition role") {
-                failsToParse
-              }
-
-              test(s"$command ${privilege.name} ON $graphKeyword * $relTypeKeyword * (*) $preposition role") {
-                failsToParse
-              }
-
-              test(s"$command ${privilege.name} ON $graphKeyword * $relTypeKeyword A $preposition role") {
-                failsToParse
-              }
-
-              test(s"$command ${privilege.name} ON $graphKeyword * $relTypeKeyword A (*) $preposition role") {
-                failsToParse
-              }
-
-              test(s"$command ${privilege.name} ON $graphKeyword foo $relTypeKeyword * $preposition role") {
-                failsToParse
-              }
-
-              test(s"$command ${privilege.name} ON $graphKeyword foo $relTypeKeyword * (*) $preposition role") {
-                failsToParse
-              }
-
-              test(s"$command ${privilege.name} ON $graphKeyword foo $relTypeKeyword A $preposition role") {
-                failsToParse
-              }
-
-              test(s"$command ${privilege.name} ON $graphKeyword foo $relTypeKeyword A (*) $preposition role") {
-                failsToParse
+              test( s"parsingFailures$command ${privilege.name} $graphKeyword $relTypeKeyword $preposition") {
+                // Invalid graph name
+                assertFails(s"$command ${privilege.name} (*) ON $graphKeyword f:oo $relTypeKeyword * $preposition role")
+                assertFails(s"$command ${privilege.name} (bar) ON $graphKeyword f:oo $relTypeKeyword * $preposition role")
+                // multiple graphs not allowed
+                assertFails(s"$command ${privilege.name} (*) ON $graphKeyword foo, baz $relTypeKeyword A (*) $preposition role")
+                assertFails(s"$command ${privilege.name} (bar) ON $graphKeyword foo, baz $relTypeKeyword A (*) $preposition role")
+                // invalid property definition
+                assertFails(s"$command ${privilege.name} (b:ar) ON $graphKeyword foo $relTypeKeyword * $preposition role")
+                // missing graph name
+                assertFails(s"$command ${privilege.name} (*) ON $graphKeyword $relTypeKeyword * $preposition role")
+                assertFails(s"$command ${privilege.name} (*) ON $graphKeyword $relTypeKeyword * (*) $preposition role")
+                assertFails(s"$command ${privilege.name} (*) ON $graphKeyword $relTypeKeyword A $preposition role")
+                assertFails(s"$command ${privilege.name} (*) ON $graphKeyword $relTypeKeyword A (*) $preposition role")
+                assertFails(s"$command ${privilege.name} (bar) ON $graphKeyword $relTypeKeyword * $preposition role")
+                assertFails(s"$command ${privilege.name} (bar) ON $graphKeyword $relTypeKeyword * (*) $preposition role")
+                assertFails(s"$command ${privilege.name} (bar) ON $graphKeyword $relTypeKeyword A $preposition role")
+                assertFails(s"$command ${privilege.name} (bar) ON $graphKeyword $relTypeKeyword A (*) $preposition role")
+                // missing property definition
+                assertFails(s"$command ${privilege.name} ON $graphKeyword * $relTypeKeyword * $preposition role")
+                assertFails(s"$command ${privilege.name} ON $graphKeyword * $relTypeKeyword * (*) $preposition role")
+                assertFails(s"$command ${privilege.name} ON $graphKeyword * $relTypeKeyword A $preposition role")
+                assertFails(s"$command ${privilege.name} ON $graphKeyword * $relTypeKeyword A (*) $preposition role")
+                assertFails(s"$command ${privilege.name} ON $graphKeyword foo $relTypeKeyword * $preposition role")
+                assertFails(s"$command ${privilege.name} ON $graphKeyword foo $relTypeKeyword * (*) $preposition role")
+                assertFails(s"$command ${privilege.name} ON $graphKeyword foo $relTypeKeyword A $preposition role")
+                assertFails(s"$command ${privilege.name} ON $graphKeyword foo $relTypeKeyword A (*) $preposition role")
               }
           }
 
@@ -823,167 +283,71 @@ class PrivilegeManagementDDLParserTest extends DDLParserTestBase {
               ).foreach {
                 case (properties: String, resource: ast.ActionResource, dbName: String, graphScope: ast.GraphScope) =>
 
-                  test(s"$command ${privilege.name} ($properties) ON $graphKeyword $dbName $elementKeyword * $preposition role") {
-                    yields(func(privilege, resource, graphScope, ast.AllQualifier() _, Seq("role")))
+                  test( s"validExpressions $command ${privilege.name} ($properties) $graphKeyword $dbName $elementKeyword $preposition") {
+                    parsing(s"$command ${privilege.name} ($properties) ON $graphKeyword $dbName $elementKeyword * $preposition role") shouldGive
+                      func(privilege, resource, graphScope, ast.AllQualifier() _, Seq("role"))
+                    parsing(s"$command ${privilege.name} ($properties) ON $graphKeyword $dbName $elementKeyword * (*) $preposition role") shouldGive
+                      func(privilege, resource, graphScope, ast.AllQualifier() _, Seq("role"))
+                    parsing(s"$command ${privilege.name} ($properties) ON $graphKeyword $dbName $elementKeyword A $preposition role") shouldGive
+                      func(privilege, resource, graphScope, ast.ElementsQualifier(Seq("A")) _, Seq("role"))
+                    parsing(s"$command ${privilege.name} ($properties) ON $graphKeyword $dbName $elementKeyword A (*) $preposition role") shouldGive
+                      func(privilege, resource, graphScope, ast.ElementsQualifier(Seq("A")) _, Seq("role"))
+                    parsing(s"$command ${privilege.name} ($properties) ON $graphKeyword $dbName $elementKeyword `A B` (*) $preposition role") shouldGive
+                      func(privilege, resource, graphScope, ast.ElementsQualifier(Seq("A B")) _, Seq("role"))
+                    parsing(s"$command ${privilege.name} ($properties) ON $graphKeyword $dbName $elementKeyword A, B (*) $preposition role1, role2") shouldGive
+                      func(privilege, resource, graphScope, ast.ElementsQualifier(Seq("A", "B")) _, Seq("role1", "role2"))
+                    parsing(s"$command ${privilege.name} ($properties) ON $graphKeyword $dbName $elementKeyword * $preposition `r:ole`") shouldGive
+                      func(privilege, resource, graphScope, ast.AllQualifier() _, Seq("r:ole"))
+                    parsing(s"$command ${privilege.name} ($properties) ON $graphKeyword $dbName $elementKeyword `:A` (*) $preposition role") shouldGive
+                      func(privilege, resource, graphScope, ast.ElementsQualifier(Seq(":A")) _, Seq("role"))
                   }
 
-                  test(s"$command ${privilege.name} ($properties) ON $graphKeyword $dbName $elementKeyword * (*) $preposition role") {
-                    yields(func(privilege, resource, graphScope, ast.AllQualifier() _, Seq("role")))
-                  }
-
-                  test(s"$command ${privilege.name} ($properties) ON $graphKeyword $dbName $elementKeyword A $preposition role") {
-                    yields(func(privilege, resource, graphScope, ast.ElementsQualifier(Seq("A")) _, Seq("role")))
-                  }
-
-                  test(s"$command ${privilege.name} ($properties) ON $graphKeyword $dbName $elementKeyword A (*) $preposition role") {
-                    yields(func(privilege, resource, graphScope, ast.ElementsQualifier(Seq("A")) _, Seq("role")))
-                  }
-
-                  test(s"$command ${privilege.name} ($properties) ON $graphKeyword $dbName $elementKeyword `A B` (*) $preposition role") {
-                    yields(func(privilege, resource, graphScope, ast.ElementsQualifier(Seq("A B")) _, Seq("role")))
-                  }
-
-                  test(s"$command ${privilege.name} ($properties) ON $graphKeyword $dbName $elementKeyword A, B (*) $preposition role1, role2") {
-                    yields(func(privilege, resource, graphScope, ast.ElementsQualifier(Seq("A", "B")) _, Seq("role1", "role2")))
-                  }
-
-                  test(s"$command ${privilege.name} ($properties) ON $graphKeyword $dbName $elementKeyword * $preposition `r:ole`") {
-                    yields(func(privilege, resource, graphScope, ast.AllQualifier() _, Seq("r:ole")))
-                  }
-
-                  test(s"$command ${privilege.name} ($properties) ON $graphKeyword $dbName $elementKeyword `:A` (*) $preposition role") {
-                    yields(func(privilege, resource, graphScope, ast.ElementsQualifier(Seq(":A")) _, Seq("role")))
-                  }
-
-                  test(s"$command ${privilege.name} ($properties) $graphKeyword $dbName $elementKeyword * (*) $preposition role") {
-                    failsToParse
-                  }
-
-                  test(s"$command ${privilege.name} ($properties) $graphKeyword $dbName $elementKeyword A $preposition role") {
-                    failsToParse
-                  }
-
-                  test(s"$command ${privilege.name} ($properties) ON $graphKeyword $dbName $elementKeyword * (*)") {
-                    failsToParse
-                  }
-
-                  test(s"$command ${privilege.name} ($properties) ON $graphKeyword $dbName $elementKeyword A B (*) $preposition role") {
-                    failsToParse
-                  }
-
-                  test(s"$command ${privilege.name} ($properties) ON $graphKeyword $dbName $elementKeyword A (foo) $preposition role") {
-                    failsToParse
-                  }
-
-                  test(s"$command ${privilege.name} ($properties) ON $graphKeyword $dbName $elementKeyword * $preposition r:ole") {
-                    failsToParse
+                  test( s"parsingFailures$command ${privilege.name} ($properties) $graphKeyword $dbName $elementKeyword $preposition") {
+                    assertFails(s"$command ${privilege.name} ($properties) $graphKeyword $dbName $elementKeyword * (*) $preposition role")
+                    assertFails(s"$command ${privilege.name} ($properties) $graphKeyword $dbName $elementKeyword A $preposition role")
+                    assertFails(s"$command ${privilege.name} ($properties) ON $graphKeyword $dbName $elementKeyword * (*)")
+                    assertFails(s"$command ${privilege.name} ($properties) ON $graphKeyword $dbName $elementKeyword A B (*) $preposition role")
+                    assertFails(s"$command ${privilege.name} ($properties) ON $graphKeyword $dbName $elementKeyword A (foo) $preposition role")
+                    assertFails(s"$command ${privilege.name} ($properties) ON $graphKeyword $dbName $elementKeyword * $preposition r:ole")
                   }
               }
 
-              test(s"$command ${privilege.name} (*) ON $graphKeyword `f:oo` $elementKeyword * $preposition role") {
-                yields(func(privilege, ast.AllResource() _, ast.NamedGraphScope("f:oo") _, ast.AllQualifier() _, Seq("role")))
+              test( s"validExpressions $command ${privilege.name} $graphKeyword $elementKeyword $preposition") {
+                parsing(s"$command ${privilege.name} (*) ON $graphKeyword `f:oo` $elementKeyword * $preposition role") shouldGive
+                  func(privilege, ast.AllResource() _, ast.NamedGraphScope("f:oo") _, ast.AllQualifier() _, Seq("role"))
+                parsing(s"$command ${privilege.name} (bar) ON $graphKeyword `f:oo` $elementKeyword * $preposition role") shouldGive
+                  func(privilege, ast.PropertiesResource(Seq("bar")) _, ast.NamedGraphScope("f:oo") _, ast.AllQualifier() _, Seq("role"))
+                parsing(s"$command ${privilege.name} (`b:ar`) ON $graphKeyword foo $elementKeyword * $preposition role") shouldGive
+                  func(privilege, ast.PropertiesResource(Seq("b:ar")) _, ast.NamedGraphScope("foo") _, ast.AllQualifier() _, Seq("role"))
               }
 
-              test(s"$command ${privilege.name} (bar) ON $graphKeyword `f:oo` $elementKeyword * $preposition role") {
-                yields(func(privilege, ast.PropertiesResource(Seq("bar")) _, ast.NamedGraphScope("f:oo") _, ast.AllQualifier() _, Seq("role")))
-              }
-
-              test(s"$command ${privilege.name} (`b:ar`) ON $graphKeyword foo $elementKeyword * $preposition role") {
-                yields(func(privilege, ast.PropertiesResource(Seq("b:ar")) _, ast.NamedGraphScope("foo") _, ast.AllQualifier() _, Seq("role")))
-              }
-
-              // Invalid graph name
-
-              test(s"$command ${privilege.name} (*) ON $graphKeyword f:oo $elementKeyword * $preposition role") {
-                failsToParse
-              }
-
-              test(s"$command ${privilege.name} (bar) ON $graphKeyword f:oo $elementKeyword * $preposition role") {
-                failsToParse
-              }
-
-              // multiple graphs not allowed
-
-              test(s"$command ${privilege.name} (*) ON $graphKeyword foo, baz $elementKeyword A (*) $preposition role") {
-                failsToParse
-              }
-
-              test(s"$command ${privilege.name} (bar) ON $graphKeyword foo, baz $elementKeyword A (*) $preposition role") {
-                failsToParse
-              }
-
-              // invalid property definition
-
-              test(s"$command ${privilege.name} (b:ar) ON $graphKeyword foo $elementKeyword * $preposition role") {
-                failsToParse
-              }
-
-              // missing graph name
-
-              test(s"$command ${privilege.name} (*) ON $graphKeyword $elementKeyword * $preposition role") {
-                failsToParse
-              }
-
-              test(s"$command ${privilege.name} (*) ON $graphKeyword $elementKeyword * (*) $preposition role") {
-                failsToParse
-              }
-
-              test(s"$command ${privilege.name} (*) ON $graphKeyword $elementKeyword A $preposition role") {
-                failsToParse
-              }
-
-              test(s"$command ${privilege.name} (*) ON $graphKeyword $elementKeyword A (*) $preposition role") {
-                failsToParse
-              }
-
-              test(s"$command ${privilege.name} (bar) ON $graphKeyword $elementKeyword * $preposition role") {
-                failsToParse
-              }
-
-              test(s"$command ${privilege.name} (bar) ON $graphKeyword $elementKeyword * (*) $preposition role") {
-                failsToParse
-              }
-
-              test(s"$command ${privilege.name} (bar) ON $graphKeyword $elementKeyword A $preposition role") {
-                failsToParse
-              }
-
-              test(s"$command ${privilege.name} (bar) ON $graphKeyword $elementKeyword A (*) $preposition role") {
-                failsToParse
-              }
-
-              // missing property definition
-
-              test(s"$command ${privilege.name} ON $graphKeyword * $elementKeyword * $preposition role") {
-                failsToParse
-              }
-
-              test(s"$command ${privilege.name} ON $graphKeyword * $elementKeyword * (*) $preposition role") {
-                failsToParse
-              }
-
-              test(s"$command ${privilege.name} ON $graphKeyword * $elementKeyword A $preposition role") {
-                failsToParse
-              }
-
-              test(s"$command ${privilege.name} ON $graphKeyword * $elementKeyword A (*) $preposition role") {
-                failsToParse
-              }
-
-              test(s"$command ${privilege.name} ON $graphKeyword foo $elementKeyword * $preposition role") {
-                failsToParse
-              }
-
-              test(s"$command ${privilege.name} ON $graphKeyword foo $elementKeyword * (*) $preposition role") {
-                failsToParse
-              }
-
-              test(s"$command ${privilege.name} ON $graphKeyword foo $elementKeyword A $preposition role") {
-                failsToParse
-              }
-
-              test(s"$command ${privilege.name} ON $graphKeyword foo $elementKeyword A (*) $preposition role") {
-                failsToParse
+              test( s"parsingFailures $command ${privilege.name} $graphKeyword $elementKeyword $preposition") {
+                // Invalid graph name
+                assertFails(s"$command ${privilege.name} (*) ON $graphKeyword f:oo $elementKeyword * $preposition role")
+                assertFails(s"$command ${privilege.name} (bar) ON $graphKeyword f:oo $elementKeyword * $preposition role")
+                // multiple graphs not allowed
+                assertFails(s"$command ${privilege.name} (*) ON $graphKeyword foo, baz $elementKeyword A (*) $preposition role")
+                assertFails(s"$command ${privilege.name} (bar) ON $graphKeyword foo, baz $elementKeyword A (*) $preposition role")
+                // invalid property definition
+                assertFails(s"$command ${privilege.name} (b:ar) ON $graphKeyword foo $elementKeyword * $preposition role")
+                // missing graph name
+                assertFails(s"$command ${privilege.name} (*) ON $graphKeyword $elementKeyword * $preposition role")
+                assertFails(s"$command ${privilege.name} (*) ON $graphKeyword $elementKeyword * (*) $preposition role")
+                assertFails(s"$command ${privilege.name} (*) ON $graphKeyword $elementKeyword A $preposition role")
+                assertFails(s"$command ${privilege.name} (*) ON $graphKeyword $elementKeyword A (*) $preposition role")
+                assertFails(s"$command ${privilege.name} (bar) ON $graphKeyword $elementKeyword * $preposition role")
+                assertFails(s"$command ${privilege.name} (bar) ON $graphKeyword $elementKeyword * (*) $preposition role")
+                assertFails(s"$command ${privilege.name} (bar) ON $graphKeyword $elementKeyword A $preposition role")
+                assertFails(s"$command ${privilege.name} (bar) ON $graphKeyword $elementKeyword A (*) $preposition role")
+                // missing property definition
+                assertFails(s"$command ${privilege.name} ON $graphKeyword * $elementKeyword * $preposition role")
+                assertFails(s"$command ${privilege.name} ON $graphKeyword * $elementKeyword * (*) $preposition role")
+                assertFails(s"$command ${privilege.name} ON $graphKeyword * $elementKeyword A $preposition role")
+                assertFails(s"$command ${privilege.name} ON $graphKeyword * $elementKeyword A (*) $preposition role")
+                assertFails(s"$command ${privilege.name} ON $graphKeyword foo $elementKeyword * $preposition role")
+                assertFails(s"$command ${privilege.name} ON $graphKeyword foo $elementKeyword * (*) $preposition role")
+                assertFails(s"$command ${privilege.name} ON $graphKeyword foo $elementKeyword A $preposition role")
+                assertFails(s"$command ${privilege.name} ON $graphKeyword foo $elementKeyword A (*) $preposition role")
               }
           }
 
