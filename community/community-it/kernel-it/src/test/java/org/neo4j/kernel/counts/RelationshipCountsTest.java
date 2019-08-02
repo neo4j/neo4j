@@ -60,7 +60,7 @@ class RelationshipCountsTest
     {
         ktxSupplier = () -> db.getDependencyResolver()
             .resolveDependency( ThreadToStatementContextBridge.class )
-            .getKernelTransactionBoundToThisThread( true );
+            .getKernelTransactionBoundToThisThread( true, db.databaseId() );
     }
 
     @AfterEach

@@ -46,7 +46,7 @@ public class MyCoreAPI
         long result;
         try ( Transaction tx = graph.beginTransaction( KernelTransaction.Type.explicit, AnonymousContext.write() ) )
         {
-            KernelTransaction ktx = txBridge.getKernelTransactionBoundToThisThread( true );
+            KernelTransaction ktx = txBridge.getKernelTransactionBoundToThisThread( true, graph.databaseId() );
             long nodeId = ktx.dataWrite().nodeCreate();
             int labelId = ktx.tokenWrite().labelGetOrCreateForName( label );
             ktx.dataWrite().nodeAddLabel( nodeId, labelId );
@@ -67,7 +67,7 @@ public class MyCoreAPI
         long result;
         try ( Transaction tx = graph.beginTransaction( KernelTransaction.Type.explicit, AnonymousContext.read() ) )
         {
-            KernelTransaction kernelTransaction = this.txBridge.getKernelTransactionBoundToThisThread(true );
+            KernelTransaction kernelTransaction = this.txBridge.getKernelTransactionBoundToThisThread(true, graph.databaseId() );
             result = kernelTransaction.dataRead().countsForNode( -1 );
             tx.success();
         }

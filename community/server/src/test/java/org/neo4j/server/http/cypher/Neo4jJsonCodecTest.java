@@ -67,7 +67,7 @@ public class Neo4jJsonCodecTest extends TxStateCheckerTestSupport
     @Before
     public void init()
     {
-        jsonCodec = new Neo4jJsonCodec( TPTPMC );
+        jsonCodec = new Neo4jJsonCodec( CONTAINER );
         jsonGenerator = mock( JsonGenerator.class );
     }
 

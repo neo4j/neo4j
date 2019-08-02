@@ -682,7 +682,7 @@ class LabelsAcceptanceTest
         {
             DependencyResolver resolver = db.getDependencyResolver();
             ThreadToStatementContextBridge bridge = resolver.resolveDependency( ThreadToStatementContextBridge.class );
-            KernelTransaction ktx = bridge.getKernelTransactionBoundToThisThread( true );
+            KernelTransaction ktx = bridge.getKernelTransactionBoundToThisThread( true, db.databaseId() );
             try ( NodeCursor nodes = ktx.cursors().allocateNodeCursor();
                   PropertyCursor propertyCursor = ktx.cursors().allocatePropertyCursor() )
             {

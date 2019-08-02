@@ -49,8 +49,8 @@ class NodeCountsTest
     @BeforeEach
     void setUp()
     {
-        kernelTransactionSupplier = () -> db.getDependencyResolver()
-                .resolveDependency( ThreadToStatementContextBridge.class ).getKernelTransactionBoundToThisThread( true );
+        kernelTransactionSupplier = () -> db.getDependencyResolver().resolveDependency( ThreadToStatementContextBridge.class )
+                .getKernelTransactionBoundToThisThread( true, db.databaseId() );
     }
 
     @Test

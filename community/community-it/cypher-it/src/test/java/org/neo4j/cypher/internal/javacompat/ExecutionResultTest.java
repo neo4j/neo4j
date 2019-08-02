@@ -165,7 +165,7 @@ class ExecutionResultTest
     {
         ThreadToStatementContextBridge bridge = db.getDependencyResolver().resolveDependency(
                 ThreadToStatementContextBridge.class );
-        KernelTransaction kernelTransaction = bridge.getKernelTransactionBoundToThisThread( false );
+        KernelTransaction kernelTransaction = bridge.getKernelTransactionBoundToThisThread( false, db.databaseId() );
         return kernelTransaction == null ? null : new TopLevelTransaction( kernelTransaction );
     }
 }

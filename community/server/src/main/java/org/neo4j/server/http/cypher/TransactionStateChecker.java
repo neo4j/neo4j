@@ -22,6 +22,7 @@ package org.neo4j.server.http.cypher;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.impl.api.KernelStatement;
+import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 
 public class TransactionStateChecker implements AutoCloseable
 {
@@ -39,8 +40,9 @@ public class TransactionStateChecker implements AutoCloseable
 
     public static TransactionStateChecker create( TransitionalPeriodTransactionMessContainer container )
     {
+        ThreadToStatementContextBridge txBridge = container.getBridge();
         KernelTransaction topLevelTransactionBoundToThisThread =
-                container.getBridge().getKernelTransactionBoundToThisThread( true );
+                txBridge.getKernelTransactionBoundToThisThread( true, container.getDb().databaseId() );
         KernelStatement kernelStatement = (KernelStatement) topLevelTransactionBoundToThisThread.acquireStatement();
 
         return new TransactionStateChecker(

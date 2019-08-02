@@ -105,8 +105,7 @@ class IndexCRUDIT
         // Then, for now, this should trigger two NodePropertyUpdates
         try ( Transaction tx = db.beginTx() )
         {
-            KernelTransaction ktx =
-                    ctxSupplier.getKernelTransactionBoundToThisThread( true );
+            KernelTransaction ktx = ctxSupplier.getKernelTransactionBoundToThisThread( true, db.databaseId() );
             TokenRead tokenRead = ktx.tokenRead();
             int propertyKey1 = tokenRead.propertyKey( indexProperty );
             int label = tokenRead.nodeLabel( myLabel.name() );
@@ -147,8 +146,7 @@ class IndexCRUDIT
         // THEN
         try ( Transaction tx = db.beginTx() )
         {
-            KernelTransaction ktx =
-                    ctxSupplier.getKernelTransactionBoundToThisThread( true );
+            KernelTransaction ktx = ctxSupplier.getKernelTransactionBoundToThisThread( true, db.databaseId() );
             TokenRead tokenRead = ktx.tokenRead();
             int propertyKey1 = tokenRead.propertyKey( indexProperty );
             int label = tokenRead.nodeLabel( myLabel.name() );

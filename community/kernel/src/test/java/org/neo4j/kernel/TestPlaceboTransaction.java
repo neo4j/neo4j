@@ -30,12 +30,14 @@ import org.neo4j.internal.kernel.api.Locks;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.exceptions.Status;
+import org.neo4j.kernel.database.DatabaseId;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.coreapi.PlaceboTransaction;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.spy;
@@ -55,7 +57,7 @@ class TestPlaceboTransaction
     {
         ThreadToStatementContextBridge bridge = mock( ThreadToStatementContextBridge.class );
         Statement statement = mock( Statement.class );
-        when( bridge.get() ).thenReturn( statement );
+        when( bridge.get( any( DatabaseId.class ) ) ).thenReturn( statement );
         kernelTransaction = spy( KernelTransaction.class );
         locks = mock( Locks.class );
         when(kernelTransaction.locks()).thenReturn( locks );

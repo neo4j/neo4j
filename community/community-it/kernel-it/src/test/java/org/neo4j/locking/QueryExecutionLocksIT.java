@@ -65,6 +65,7 @@ import org.neo4j.kernel.api.dbms.DbmsOperations;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.query.ExecutingQuery;
 import org.neo4j.kernel.availability.AvailabilityGuard;
+import org.neo4j.kernel.database.DatabaseId;
 import org.neo4j.kernel.impl.api.ClockContext;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
@@ -505,7 +506,7 @@ class QueryExecutionLocksIT
                 ThreadToStatementContextBridge bridge =
                         db.getDependencyResolver().resolveDependency( ThreadToStatementContextBridge.class );
                 KernelTransaction ktx =
-                        bridge.getKernelTransactionBoundToThisThread( true );
+                        bridge.getKernelTransactionBoundToThisThread( true, db.databaseId() );
                 ktx.schemaRead().schemaStateFlush();
             }
             executed = true;
@@ -786,6 +787,12 @@ class QueryExecutionLocksIT
         public boolean isSchemaTransaction()
         {
             return internal.isSchemaTransaction();
+        }
+
+        @Override
+        public DatabaseId getDatabaseId()
+        {
+            return internal.getDatabaseId();
         }
     }
 }

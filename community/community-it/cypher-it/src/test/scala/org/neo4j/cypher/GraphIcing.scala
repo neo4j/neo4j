@@ -115,7 +115,7 @@ trait GraphIcing {
       }
     }
 
-    def statement: Statement = txBridge.get()
+    def statement: Statement = txBridge.get(graph.databaseId())
 
     // Runs code inside of a transaction. Will mark the transaction as successful if no exception is thrown
     def inTx[T](f: => T, txType: Type = Type.`implicit`): T = withTx(_ => f, txType)

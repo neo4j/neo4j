@@ -367,7 +367,7 @@ class IndexRecoveryIT
         {
             ThreadToStatementContextBridge ctxSupplier = db.getDependencyResolver().resolveDependency(
                     ThreadToStatementContextBridge.class );
-            KernelTransaction ktx = ctxSupplier.getKernelTransactionBoundToThisThread( true );
+            KernelTransaction ktx = ctxSupplier.getKernelTransactionBoundToThisThread( true, db.databaseId() );
 
             int labelId = ktx.tokenRead().nodeLabel( label.name() );
             int propertyKeyId = ktx.tokenRead().propertyKey( key );

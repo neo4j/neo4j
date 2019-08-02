@@ -20,20 +20,25 @@
 package org.neo4j.server.http.cypher;
 
 import org.neo4j.kernel.api.KernelTransaction;
+import org.neo4j.kernel.database.DatabaseId;
 import org.neo4j.kernel.impl.api.KernelStatement;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
+import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 public class TxStateCheckerTestSupport
 {
-    public static final TransitionalPeriodTransactionMessContainer TPTPMC = mock( TransitionalPeriodTransactionMessContainer.class );
+    public static final TransitionalPeriodTransactionMessContainer CONTAINER = mock( TransitionalPeriodTransactionMessContainer.class );
     private static FakeBridge fakeBridge = new FakeBridge();
 
     static
     {
-        when( TPTPMC.getBridge() ).thenReturn( fakeBridge );
+        when( CONTAINER.getBridge() ).thenReturn( fakeBridge );
+        GraphDatabaseFacade facade = mock( GraphDatabaseFacade.class );
+        when( CONTAINER.getDb() ).thenReturn( facade );
+        when( facade.databaseId() ).thenReturn( new DatabaseId( "test" ) );
     }
 
     public static class FakeBridge extends ThreadToStatementContextBridge
@@ -48,7 +53,7 @@ public class TxStateCheckerTestSupport
         }
 
         @Override
-        public KernelTransaction getKernelTransactionBoundToThisThread( boolean strict )
+        public KernelTransaction getKernelTransactionBoundToThisThread( boolean strict, DatabaseId databaseId )
         {
             return tx;
         }

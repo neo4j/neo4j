@@ -339,7 +339,7 @@ class TransactionEventsIT
         {
             KernelTransaction kernelTransaction =
                     db.getDependencyResolver().resolveDependency( ThreadToStatementContextBridge.class )
-                            .getKernelTransactionBoundToThisThread( true );
+                            .getKernelTransactionBoundToThisThread( true, db.databaseId() );
             kernelTransaction.setMetaData( metaData );
             db.createNode();
             transaction.success();

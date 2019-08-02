@@ -93,7 +93,7 @@ class NonUniqueIndexTest
             try ( Transaction tx = db.beginTx() )
             {
                 KernelTransaction ktx = ((GraphDatabaseAPI) db).getDependencyResolver().resolveDependency(
-                        ThreadToStatementContextBridge.class ).getKernelTransactionBoundToThisThread( true );
+                        ThreadToStatementContextBridge.class ).getKernelTransactionBoundToThisThread( true, ((GraphDatabaseAPI) db).databaseId() );
                 IndexDescriptor index = ktx.schemaRead().index( ktx.tokenRead().nodeLabel( LABEL ), ktx.tokenRead().propertyKey( KEY ) );
                 IndexReadSession indexSession = ktx.dataRead().indexReadSession( index );
                 try ( NodeValueIndexCursor cursor = ktx.cursors().allocateNodeValueIndexCursor() )

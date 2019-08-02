@@ -55,6 +55,11 @@ public class TransitionalPeriodTransactionMessContainer
         return txBridge;
     }
 
+    public GraphDatabaseFacade getDb()
+    {
+        return db;
+    }
+
     public TransactionalContext create(
             GraphDatabaseQueryService service,
             Type type,

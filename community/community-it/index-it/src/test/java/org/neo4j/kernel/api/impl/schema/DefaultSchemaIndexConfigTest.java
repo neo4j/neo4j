@@ -185,7 +185,8 @@ public class DefaultSchemaIndexConfigTest
 
     private static TokenRead tokenRead( GraphDatabaseAPI db )
     {
-        return db.getDependencyResolver().resolveDependency( ThreadToStatementContextBridge.class ).getKernelTransactionBoundToThisThread( false ).tokenRead();
+        ThreadToStatementContextBridge bridge = db.getDependencyResolver().resolveDependency( ThreadToStatementContextBridge.class );
+        return bridge.getKernelTransactionBoundToThisThread( false, db.databaseId() ).tokenRead();
     }
 
     private void assertIndexProvider( GraphDatabaseService db, String expectedProviderIdentifier ) throws IndexNotFoundKernelException
@@ -195,7 +196,7 @@ public class DefaultSchemaIndexConfigTest
         {
             KernelTransaction ktx = graphDatabaseAPI.getDependencyResolver()
                     .resolveDependency( ThreadToStatementContextBridge.class )
-                    .getKernelTransactionBoundToThisThread( true );
+                    .getKernelTransactionBoundToThisThread( true, graphDatabaseAPI.databaseId() );
             TokenRead tokenRead = ktx.tokenRead();
             int labelId = tokenRead.nodeLabel( LABEL.name() );
             int propertyId = tokenRead.propertyKey( KEY );

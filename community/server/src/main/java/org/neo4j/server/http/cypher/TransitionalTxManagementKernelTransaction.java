@@ -58,7 +58,7 @@ public class TransitionalTxManagementKernelTransaction
     void suspendSinceTransactionsAreStillThreadBound()
     {
         assert suspendedTransaction == null : "Can't suspend the transaction if it already is suspended.";
-        suspendedTransaction = bridge.getKernelTransactionBoundToThisThread( true );
+        suspendedTransaction = bridge.getKernelTransactionBoundToThisThread( true, db.databaseId() );
         bridge.unbindTransactionFromCurrentThread();
     }
 
@@ -78,7 +78,7 @@ public class TransitionalTxManagementKernelTransaction
     {
         try
         {
-            KernelTransaction kernelTransactionBoundToThisThread = bridge.getKernelTransactionBoundToThisThread( false );
+            KernelTransaction kernelTransactionBoundToThisThread = bridge.getKernelTransactionBoundToThisThread( false, db.databaseId() );
             kernelTransactionBoundToThisThread.failure();
             kernelTransactionBoundToThisThread.close();
         }
@@ -96,7 +96,7 @@ public class TransitionalTxManagementKernelTransaction
     {
         try
         {
-            KernelTransaction kernelTransactionBoundToThisThread = bridge.getKernelTransactionBoundToThisThread( true );
+            KernelTransaction kernelTransactionBoundToThisThread = bridge.getKernelTransactionBoundToThisThread( true, db.databaseId() );
             kernelTransactionBoundToThisThread.success();
             kernelTransactionBoundToThisThread.close();
         }

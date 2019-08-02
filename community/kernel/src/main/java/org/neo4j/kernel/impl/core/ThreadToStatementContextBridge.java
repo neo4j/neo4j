@@ -19,26 +19,28 @@
  */
 package org.neo4j.kernel.impl.core;
 
-import java.util.function.Supplier;
-
 import org.neo4j.graphdb.DatabaseShutdownException;
 import org.neo4j.graphdb.NotInTransactionException;
+import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.graphdb.TransactionTerminatedException;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.exceptions.Status;
+import org.neo4j.kernel.database.DatabaseId;
+
+import static java.lang.String.format;
 
 /**
  * This is meant to serve as the bridge that tie transactions to threads.
  * APIs will use this to get the appropriate {@link Statement} when it performs operations.
  */
-public class ThreadToStatementContextBridge implements Supplier<Statement>
+public class ThreadToStatementContextBridge
 {
-    private final ThreadLocal<KernelTransaction> threadToTransactionMap = new ThreadLocal<>();
+    private final ThreadLocal<KernelTransaction> threadLocalTransaction = new ThreadLocal<>();
 
     public boolean hasTransaction()
     {
-        KernelTransaction kernelTransaction = threadToTransactionMap.get();
+        KernelTransaction kernelTransaction = threadLocalTransaction.get();
         if ( kernelTransaction != null )
         {
             assertInUnterminatedTransaction( kernelTransaction );
@@ -53,28 +55,38 @@ public class ThreadToStatementContextBridge implements Supplier<Statement>
         {
             throw new IllegalStateException( Thread.currentThread() + " already has a transaction bound" );
         }
-        threadToTransactionMap.set( transaction );
+        threadLocalTransaction.set( transaction );
+    }
+
+    public KernelTransaction getAndUnbindAnyTransaction()
+    {
+        KernelTransaction kernelTransaction = threadLocalTransaction.get();
+        if ( kernelTransaction != null )
+        {
+            threadLocalTransaction.remove();
+        }
+        return kernelTransaction;
     }
 
     public void unbindTransactionFromCurrentThread()
     {
-        threadToTransactionMap.remove();
+        threadLocalTransaction.remove();
     }
 
-    @Override
-    public Statement get()
+    public Statement get( DatabaseId databaseId )
     {
-        return getKernelTransactionBoundToThisThread( true ).acquireStatement();
+        return getKernelTransactionBoundToThisThread( true, databaseId ).acquireStatement();
     }
 
     public void assertInUnterminatedTransaction()
     {
-        assertInUnterminatedTransaction( threadToTransactionMap.get() );
+        assertInUnterminatedTransaction( threadLocalTransaction.get() );
     }
 
-    public KernelTransaction getKernelTransactionBoundToThisThread( boolean strict )
+    public KernelTransaction getKernelTransactionBoundToThisThread( boolean strict, DatabaseId databaseId )
     {
-        KernelTransaction transaction = threadToTransactionMap.get();
+        KernelTransaction transaction = threadLocalTransaction.get();
+        validateTransactionDatabaseIs( transaction, databaseId );
         if ( strict )
         {
             assertInUnterminatedTransaction( transaction );
@@ -95,6 +107,21 @@ public class ThreadToStatementContextBridge implements Supplier<Statement>
         if ( transaction.isTerminated() )
         {
             throw new TransactionTerminatedException( transaction.getReasonIfTerminated().orElse( Status.Transaction.Terminated ) );
+        }
+    }
+
+    private void validateTransactionDatabaseIs( KernelTransaction contextTransaction, DatabaseId requestedDatabaseId )
+    {
+        if ( contextTransaction == null )
+        {
+            return;
+        }
+        DatabaseId boundTransactionDbId = contextTransaction.getDatabaseId();
+        if ( !boundTransactionDbId.equals( requestedDatabaseId ) )
+        {
+            throw new TransactionFailureException(
+                    format( "Fail to get transaction for database '%s', since '%s' database transaction already bound to this thread.",
+                            requestedDatabaseId.name(), boundTransactionDbId.name() ) );
         }
     }
 }

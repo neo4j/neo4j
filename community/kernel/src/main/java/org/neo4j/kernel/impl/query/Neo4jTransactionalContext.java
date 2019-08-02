@@ -30,6 +30,7 @@ import org.neo4j.kernel.api.ResourceTracker;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.dbms.DbmsOperations;
 import org.neo4j.kernel.api.query.ExecutingQuery;
+import org.neo4j.kernel.database.DatabaseId;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.impl.query.statistic.StatisticProvider;
@@ -44,6 +45,7 @@ public class Neo4jTransactionalContext implements TransactionalContext
     public final SecurityContext securityContext;
     private final ExecutingQuery executingQuery;
     private final ClientConnectionInfo clientInfo;
+    private final DatabaseId databaseId;
 
     /**
      * Current transaction.
@@ -75,7 +77,8 @@ public class Neo4jTransactionalContext implements TransactionalContext
         this.executingQuery = executingQuery;
 
         this.transaction = initialTransaction;
-        this.kernelTransaction = txBridge.getKernelTransactionBoundToThisThread( true );
+        this.databaseId = executingQuery.databaseId();
+        this.kernelTransaction = txBridge.getKernelTransactionBoundToThisThread( true, databaseId );
         this.statement = initialStatement;
         this.valueMapper = valueMapper;
     }
@@ -172,12 +175,12 @@ public class Neo4jTransactionalContext implements TransactionalContext
         QueryRegistry oldQueryRegistry = statement.queryRegistration();
         Statement oldStatement = statement;
         InternalTransaction oldTransaction = transaction;
-        KernelTransaction oldKernelTx = txBridge.getKernelTransactionBoundToThisThread( true );
+        KernelTransaction oldKernelTx = txBridge.getKernelTransactionBoundToThisThread( true, databaseId );
         txBridge.unbindTransactionFromCurrentThread();
 
         // (2) Create, bind, register, and unbind new transaction
         transaction = graph.beginTransaction( transactionType, securityContext, clientInfo );
-        kernelTransaction = txBridge.getKernelTransactionBoundToThisThread( true );
+        kernelTransaction = txBridge.getKernelTransactionBoundToThisThread( true, databaseId );
         statement = kernelTransaction.acquireStatement();
         statement.queryRegistration().registerExecutingQuery( executingQuery );
         txBridge.unbindTransactionFromCurrentThread();
@@ -214,7 +217,7 @@ public class Neo4jTransactionalContext implements TransactionalContext
         // to either a schema data or a schema statement, so that the locks are "handed over".
         statement.queryRegistration().unregisterExecutingQuery( executingQuery );
         statement.close();
-        statement = txBridge.get();
+        statement = txBridge.get( databaseId );
         statement.queryRegistration().registerExecutingQuery( executingQuery );
     }
 
@@ -226,7 +229,7 @@ public class Neo4jTransactionalContext implements TransactionalContext
         if ( !isOpen )
         {
             transaction = graph.beginTransaction( transactionType, securityContext, clientInfo );
-            kernelTransaction = txBridge.getKernelTransactionBoundToThisThread( true );
+            kernelTransaction = txBridge.getKernelTransactionBoundToThisThread( true, databaseId );
             statement = kernelTransaction.acquireStatement();
             statement.queryRegistration().registerExecutingQuery( executingQuery );
             isOpen = true;

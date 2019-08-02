@@ -129,7 +129,7 @@ class NativeLabelScanStoreStartupIT
             node = databaseAPI.createNode( LABEL);
              KernelTransaction ktx = databaseAPI.getDependencyResolver()
                     .resolveDependency( ThreadToStatementContextBridge.class )
-                    .getKernelTransactionBoundToThisThread( true );
+                    .getKernelTransactionBoundToThisThread( true, databaseAPI.databaseId() );
                 labelId = ktx.tokenRead().nodeLabel( LABEL.name() );
             transaction.success();
         }

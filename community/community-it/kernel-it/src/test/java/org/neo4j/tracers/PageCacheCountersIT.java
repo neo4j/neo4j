@@ -263,9 +263,8 @@ class PageCacheCountersIT
 
         private static KernelStatement getKernelStatement( GraphDatabaseAPI db )
         {
-            ThreadToStatementContextBridge statementBridge =
-                    db.getDependencyResolver().resolveDependency( ThreadToStatementContextBridge.class );
-            return (KernelStatement) statementBridge.get();
+            ThreadToStatementContextBridge statementBridge = db.getDependencyResolver().resolveDependency( ThreadToStatementContextBridge.class );
+            return (KernelStatement) statementBridge.get( db.databaseId() );
         }
     }
 }

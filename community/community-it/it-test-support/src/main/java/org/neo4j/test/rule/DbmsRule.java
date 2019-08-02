@@ -51,6 +51,7 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.Statement;
+import org.neo4j.kernel.database.DatabaseId;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
@@ -299,7 +300,7 @@ public abstract class DbmsRule extends ExternalResource implements GraphDatabase
             managementService = databaseBuilder.build();
             database = (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );
             databaseLayout = database.databaseLayout();
-            statementSupplier = resolveDependency( ThreadToStatementContextBridge.class );
+            statementSupplier = () -> resolveDependency( ThreadToStatementContextBridge.class ).get( database.databaseId() );
         }
     }
 
@@ -443,7 +444,13 @@ public abstract class DbmsRule extends ExternalResource implements GraphDatabase
     {
         ensureStarted();
         return database.getDependencyResolver().resolveDependency( ThreadToStatementContextBridge.class )
-                .getKernelTransactionBoundToThisThread( true );
+                .getKernelTransactionBoundToThisThread( true, database.databaseId() );
+    }
+
+    @Override
+    public DatabaseId databaseId()
+    {
+        return database.databaseId();
     }
 
     @Override

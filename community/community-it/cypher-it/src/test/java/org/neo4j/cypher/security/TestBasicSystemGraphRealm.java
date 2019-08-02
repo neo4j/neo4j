@@ -28,6 +28,7 @@ import org.neo4j.configuration.Config;
 import org.neo4j.dbms.database.DefaultSystemGraphInitializer;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.api.KernelTransaction;
+import org.neo4j.kernel.database.DatabaseId;
 import org.neo4j.kernel.database.DatabaseIdRepository;
 import org.neo4j.kernel.database.TestDatabaseIdRepository;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
@@ -129,7 +130,7 @@ public class TestBasicSystemGraphRealm
         }
 
         @Override
-        public KernelTransaction getKernelTransactionBoundToThisThread( boolean strict )
+        public KernelTransaction getKernelTransactionBoundToThisThread( boolean strict, DatabaseId databaseId )
         {
             return null;
         }

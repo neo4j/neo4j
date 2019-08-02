@@ -41,28 +41,24 @@ import static org.neo4j.configuration.GraphDatabaseSettings.SYSTEM_DATABASE_NAME
 public class ContextSwitchingSystemGraphQueryExecutor implements QueryExecutor
 {
     private final DatabaseManager<?> databaseManager;
-    private final ThreadToStatementContextBridge threadToStatementContextBridge;
+    private final ThreadToStatementContextBridge txBridge;
     private final DatabaseIdRepository databaseIdRepository;
 
-    public ContextSwitchingSystemGraphQueryExecutor( DatabaseManager<?> databaseManager, ThreadToStatementContextBridge threadToStatementContextBridge,
+    public ContextSwitchingSystemGraphQueryExecutor( DatabaseManager<?> databaseManager, ThreadToStatementContextBridge txBridge,
             DatabaseIdRepository databaseIdRepository )
     {
         this.databaseManager = databaseManager;
-        this.threadToStatementContextBridge = threadToStatementContextBridge;
+        this.txBridge = txBridge;
         this.databaseIdRepository = databaseIdRepository;
     }
 
     @Override
     public void executeQuery( String query, Map<String,Object> params, ErrorPreservingQuerySubscriber subscriber )
     {
-        final ThreadToStatementContextBridge statementContext = threadToStatementContextBridge;
-
         // pause outer transaction if there is one
-        if ( statementContext.hasTransaction() )
+        if ( txBridge.hasTransaction() )
         {
-            final KernelTransaction outerTx = statementContext.getKernelTransactionBoundToThisThread( true );
-
-            statementContext.unbindTransactionFromCurrentThread();
+            final KernelTransaction outerTx = txBridge.getAndUnbindAnyTransaction();
 
             try
             {
@@ -70,8 +66,8 @@ public class ContextSwitchingSystemGraphQueryExecutor implements QueryExecutor
             }
             finally
             {
-                statementContext.unbindTransactionFromCurrentThread();
-                statementContext.bindTransactionToCurrentThread( outerTx );
+                txBridge.unbindTransactionFromCurrentThread();
+                txBridge.bindTransactionToCurrentThread( outerTx );
             }
         }
         else
@@ -111,19 +107,17 @@ public class ContextSwitchingSystemGraphQueryExecutor implements QueryExecutor
     @Override
     public Transaction beginTx()
     {
-        final ThreadToStatementContextBridge statementContext = threadToStatementContextBridge;
         final Runnable onClose;
 
         // pause outer transaction if there is one
-        if ( statementContext.hasTransaction() )
+        if ( txBridge.hasTransaction() )
         {
-            final KernelTransaction outerTx = statementContext.getKernelTransactionBoundToThisThread( true );
-            statementContext.unbindTransactionFromCurrentThread();
+            final KernelTransaction outerTx = txBridge.getAndUnbindAnyTransaction();
 
             onClose = () ->
             {
                 // Restore the outer transaction
-                statementContext.bindTransactionToCurrentThread( outerTx );
+                txBridge.bindTransactionToCurrentThread( outerTx );
             };
         }
         else
@@ -162,7 +156,7 @@ public class ContextSwitchingSystemGraphQueryExecutor implements QueryExecutor
                 }
                 finally
                 {
-                    statementContext.unbindTransactionFromCurrentThread();
+                    txBridge.unbindTransactionFromCurrentThread();
                     onClose.run();
                 }
             }

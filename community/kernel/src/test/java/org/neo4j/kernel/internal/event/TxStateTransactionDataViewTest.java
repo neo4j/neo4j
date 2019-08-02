@@ -40,6 +40,7 @@ import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.security.AnonymousContext;
 import org.neo4j.kernel.api.txstate.TransactionState;
+import org.neo4j.kernel.database.DatabaseId;
 import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
 import org.neo4j.kernel.impl.api.state.TxState;
 import org.neo4j.kernel.impl.core.EmbeddedProxySPI;
@@ -54,6 +55,7 @@ import static java.util.Arrays.asList;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.mock;
@@ -76,7 +78,7 @@ class TxStateTransactionDataViewTest
     void setup() throws PropertyKeyIdNotFoundKernelException
     {
         when( transaction.tokenRead() ).thenReturn( tokenRead );
-        when( bridge.get() ).thenReturn( stmt );
+        when( bridge.get( any( DatabaseId.class ) ) ).thenReturn( stmt );
         when( tokenRead.propertyKeyName( anyInt() ) ).thenAnswer( invocationOnMock ->
         {
             int id = invocationOnMock.getArgument( 0 );

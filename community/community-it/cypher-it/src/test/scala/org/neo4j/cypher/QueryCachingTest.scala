@@ -28,6 +28,7 @@ import org.neo4j.graphdb.config.Setting
 import org.neo4j.graphdb.{Label, QueryExecutionException}
 import org.neo4j.internal.helpers.collection.Pair
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge
+import org.neo4j.kernel.internal.GraphDatabaseAPI
 import org.scalatest.prop.TableDrivenPropertyChecks
 
 import scala.collection.JavaConversions._
@@ -71,7 +72,8 @@ class QueryCachingTest extends CypherFunSuite with GraphDatabaseTestSupport with
         cacheListener.clear()
 
         graph.inTx {
-          val statement = graph.getDependencyResolver.resolveDependency(classOf[ThreadToStatementContextBridge]).getKernelTransactionBoundToThisThread(true)
+          val bridge = graph.getDependencyResolver.resolveDependency(classOf[ThreadToStatementContextBridge])
+          val statement = bridge.getKernelTransactionBoundToThisThread(true, graphOps.asInstanceOf[GraphDatabaseAPI].databaseId())
           statement.schemaRead().schemaStateFlush()
         }
 

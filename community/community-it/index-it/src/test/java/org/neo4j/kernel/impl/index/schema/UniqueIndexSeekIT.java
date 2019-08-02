@@ -130,7 +130,7 @@ class UniqueIndexSeekIT
         try ( Transaction transaction = database.beginTx() )
         {
             ThreadToStatementContextBridge contextBridge = database.getDependencyResolver().resolveDependency( ThreadToStatementContextBridge.class );
-            KernelTransaction kernelTransaction = contextBridge.getKernelTransactionBoundToThisThread( true );
+            KernelTransaction kernelTransaction = contextBridge.getKernelTransactionBoundToThisThread( true, database.databaseId() );
             TokenRead tokenRead = kernelTransaction.tokenRead();
             Read dataRead = kernelTransaction.dataRead();
 

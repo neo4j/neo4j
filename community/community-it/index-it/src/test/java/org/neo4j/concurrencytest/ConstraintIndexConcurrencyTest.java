@@ -27,11 +27,11 @@ import java.util.function.Supplier;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.internal.helpers.collection.Iterators;
-import org.neo4j.internal.schema.IndexOrder;
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.internal.kernel.api.IndexReadSession;
 import org.neo4j.internal.kernel.api.NodeValueIndexCursor;
 import org.neo4j.internal.kernel.api.Read;
+import org.neo4j.internal.schema.IndexOrder;
 import org.neo4j.internal.schema.constraints.ConstraintDescriptorFactory;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
@@ -61,7 +61,7 @@ public class ConstraintIndexConcurrencyTest
         GraphDatabaseAPI graphDb = db.getGraphDatabaseAPI();
 
         Supplier<KernelTransaction> ktxSupplier = () -> graphDb.getDependencyResolver()
-                .resolveDependency( ThreadToStatementContextBridge.class ).getKernelTransactionBoundToThisThread( true );
+                .resolveDependency( ThreadToStatementContextBridge.class ).getKernelTransactionBoundToThisThread( true, db.databaseId() );
 
         Label label = label( "Foo" );
         String propertyKey = "bar";

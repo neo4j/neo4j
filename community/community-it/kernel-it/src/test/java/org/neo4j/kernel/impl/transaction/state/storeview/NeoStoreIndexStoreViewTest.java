@@ -371,7 +371,7 @@ class NeoStoreIndexStoreViewTest
             ThreadToStatementContextBridge bridge =
                     graphDb.getDependencyResolver().resolveDependency( ThreadToStatementContextBridge.class );
 
-            TokenWrite tokenWrite = bridge.getKernelTransactionBoundToThisThread( true ).tokenWrite();
+            TokenWrite tokenWrite = bridge.getKernelTransactionBoundToThisThread( true, graphDb.databaseId() ).tokenWrite();
             labelId = tokenWrite.labelGetOrCreateForName( "Person" );
             relTypeId = tokenWrite.relationshipTypeGetOrCreateForName( "Knows" );
             propertyKeyId = tokenWrite.propertyKeyGetOrCreateForName( "name" );

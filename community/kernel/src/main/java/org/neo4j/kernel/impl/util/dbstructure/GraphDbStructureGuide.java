@@ -53,12 +53,12 @@ public class GraphDbStructureGuide implements Visitable<DbStructureVisitor>
 {
     private static RelationshipType WILDCARD_REL_TYPE = () -> "";
 
-    private final GraphDatabaseService db;
+    private final GraphDatabaseAPI db;
     private final ThreadToStatementContextBridge bridge;
 
     public GraphDbStructureGuide( GraphDatabaseService graph )
     {
-        this.db = graph;
+        this.db = (GraphDatabaseAPI) graph;
         DependencyResolver dependencies = ((GraphDatabaseAPI) graph).getDependencyResolver();
         this.bridge = dependencies.resolveDependency( ThreadToStatementContextBridge.class );
     }
@@ -68,7 +68,7 @@ public class GraphDbStructureGuide implements Visitable<DbStructureVisitor>
     {
         try ( Transaction tx = db.beginTx() )
         {
-            showStructure( bridge.getKernelTransactionBoundToThisThread( true ), visitor );
+            showStructure( bridge.getKernelTransactionBoundToThisThread( true, db.databaseId() ) , visitor );
             tx.success();
         }
     }

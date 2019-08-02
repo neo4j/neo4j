@@ -32,7 +32,6 @@ import java.util.stream.Stream;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.internal.helpers.collection.Iterators;
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.internal.kernel.api.IndexReadSession;
 import org.neo4j.internal.kernel.api.InternalIndexState;
@@ -359,6 +358,7 @@ class CompositeIndexingIT
 
     private KernelTransaction ktx()
     {
-        return graphDatabaseAPI.getDependencyResolver().resolveDependency( ThreadToStatementContextBridge.class ).getKernelTransactionBoundToThisThread( true );
+        ThreadToStatementContextBridge bridge = graphDatabaseAPI.getDependencyResolver().resolveDependency( ThreadToStatementContextBridge.class );
+        return bridge.getKernelTransactionBoundToThisThread( true, graphDatabaseAPI.databaseId() );
     }
 }

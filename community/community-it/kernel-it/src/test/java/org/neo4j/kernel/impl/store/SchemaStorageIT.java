@@ -318,7 +318,7 @@ class SchemaStorageIT
 
     private KernelTransaction getTransaction()
     {
-        return resolveDependency( ThreadToStatementContextBridge.class ).getKernelTransactionBoundToThisThread( true );
+        return resolveDependency( ThreadToStatementContextBridge.class ).getKernelTransactionBoundToThisThread( true, db.databaseId() );
     }
 
     private <T> T resolveDependency( Class<T> clazz )

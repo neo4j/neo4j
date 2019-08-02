@@ -27,6 +27,7 @@ import org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo;
 import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.kernel.api.KernelTransaction;
+import org.neo4j.kernel.database.DatabaseId;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.storageengine.api.StoreId;
 
@@ -48,6 +49,11 @@ public interface GraphDatabaseAPI extends GraphDatabaseService
      * @return underlying database directory
      */
     DatabaseLayout databaseLayout();
+
+    /**
+     * @return underlying database id
+     */
+    DatabaseId databaseId();
 
     /**
      * Begin internal transaction with specified type and access mode

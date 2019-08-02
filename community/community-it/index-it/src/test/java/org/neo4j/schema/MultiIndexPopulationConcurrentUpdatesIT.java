@@ -311,7 +311,7 @@ public class MultiIndexPopulationConcurrentUpdatesIT
         ThreadToStatementContextBridge transactionStatementContextBridge = getTransactionStatementContextBridge();
 
         try ( Transaction transaction = embeddedDatabase.beginTx();
-              KernelTransaction ktx = transactionStatementContextBridge.getKernelTransactionBoundToThisThread( true ) )
+              KernelTransaction ktx = transactionStatementContextBridge.getKernelTransactionBoundToThisThread( true, embeddedDatabase.databaseId() ) )
         {
             DynamicIndexStoreView storeView = dynamicIndexStoreViewWrapper( customAction, storageEngine::newReader, labelScanStore );
 
@@ -399,7 +399,7 @@ public class MultiIndexPopulationConcurrentUpdatesIT
         ThreadToStatementContextBridge transactionStatementContextBridge = getTransactionStatementContextBridge();
         Map<String,Integer> labelNameIdMap = new HashMap<>();
         KernelTransaction ktx =
-                transactionStatementContextBridge.getKernelTransactionBoundToThisThread( true );
+                transactionStatementContextBridge.getKernelTransactionBoundToThisThread( true, embeddedDatabase.databaseId() );
         try ( Statement ignore = ktx.acquireStatement() )
         {
             TokenRead tokenRead = ktx.tokenRead();
@@ -415,7 +415,7 @@ public class MultiIndexPopulationConcurrentUpdatesIT
     {
         ThreadToStatementContextBridge transactionStatementContextBridge = getTransactionStatementContextBridge();
         KernelTransaction ktx =
-                transactionStatementContextBridge.getKernelTransactionBoundToThisThread( true );
+                transactionStatementContextBridge.getKernelTransactionBoundToThisThread( true, embeddedDatabase.databaseId() );
         try ( Statement ignore = ktx.acquireStatement() )
         {
             return ktx.tokenRead().propertyKey( name );

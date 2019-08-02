@@ -55,7 +55,7 @@ class KernelIT extends KernelIntegrationTest
         Transaction transaction = db.beginTx();
 
         // 2: Get a hold of a KernelAPI transaction this way:
-        KernelTransaction ktx = statementContextSupplier.getKernelTransactionBoundToThisThread( true );
+        KernelTransaction ktx = statementContextSupplier.getKernelTransactionBoundToThisThread( true, db.databaseId() );
 
         // 3: Now you can interact through both the statement context and the kernel API to manipulate the
         //    same transaction.
@@ -219,7 +219,7 @@ class KernelIT extends KernelIntegrationTest
         try ( Transaction tx = db.beginTx() )
         {
             KernelTransaction ktx =
-                    statementContextSupplier.getKernelTransactionBoundToThisThread( true );
+                    statementContextSupplier.getKernelTransactionBoundToThisThread( true, db.databaseId() );
             String state = ktx.schemaRead().schemaStateGetOrCreate( key, s -> maybeSetThisState );
             tx.success();
             return state;
@@ -230,7 +230,7 @@ class KernelIT extends KernelIntegrationTest
     {
         try ( Transaction tx = db.beginTx() )
         {
-            KernelTransaction ktx = statementContextSupplier.getKernelTransactionBoundToThisThread( true );
+            KernelTransaction ktx = statementContextSupplier.getKernelTransactionBoundToThisThread( true, db.databaseId() );
             final AtomicBoolean result = new AtomicBoolean( true );
             ktx.schemaRead().schemaStateGetOrCreate( key, s ->
             {

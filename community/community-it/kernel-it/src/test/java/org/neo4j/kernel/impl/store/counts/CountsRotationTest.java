@@ -316,8 +316,8 @@ public class CountsRotationTest
         int labelId;
         try ( Transaction tx = db.beginTx() )
         {
-            KernelTransaction transaction =
-                    db.getDependencyResolver().resolveDependency( ThreadToStatementContextBridge.class ).getKernelTransactionBoundToThisThread( true );
+            ThreadToStatementContextBridge bridge = db.getDependencyResolver().resolveDependency( ThreadToStatementContextBridge.class );
+            KernelTransaction transaction = bridge.getKernelTransactionBoundToThisThread( true, db.databaseId() );
             labelId = transaction.tokenRead().nodeLabel( C.name() );
         }
         assertEquals( 1, tracker.nodeCount( labelId, newDoubleLongRegister() ).readSecond() );

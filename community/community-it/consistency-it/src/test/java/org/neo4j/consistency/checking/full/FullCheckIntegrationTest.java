@@ -2462,7 +2462,7 @@ public class FullCheckIntegrationTest
     {
         DependencyResolver resolver = ((GraphDatabaseAPI) db).getDependencyResolver();
         ThreadToStatementContextBridge bridge = resolver.resolveDependency( ThreadToStatementContextBridge.class );
-        return bridge.getKernelTransactionBoundToThisThread( true );
+        return bridge.getKernelTransactionBoundToThisThread( true, ((GraphDatabaseAPI) db).databaseId() );
     }
 
     private static class Reference<T>

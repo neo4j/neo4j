@@ -133,7 +133,7 @@ trait GraphDatabaseTestSupport extends CypherTestSupport with GraphIcing {
 
   def kernelTransaction(): KernelTransaction = {
     val bridge = graph.getDependencyResolver.resolveDependency(classOf[ThreadToStatementContextBridge])
-    val transaction = bridge.getKernelTransactionBoundToThisThread(true)
+    val transaction = bridge.getKernelTransactionBoundToThisThread(true, graph.getGraphDatabaseService.databaseId())
     transaction
   }
 

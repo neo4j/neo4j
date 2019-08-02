@@ -45,8 +45,8 @@ public class Neo4jTransactionalContextFactory implements TransactionalContextFac
         Neo4jTransactionalContext.Creator contextCreator =
                 ( tx, initialStatement, executingQuery ) -> new Neo4jTransactionalContext( queryService.get(), txBridge, tx, initialStatement, executingQuery,
                         new DefaultValueMapper( proxySpi ) );
-
-        return new Neo4jTransactionalContextFactory( txBridge, contextCreator );
+        Supplier<Statement> statementSupplier = () -> proxySpi.kernelTransaction().acquireStatement();
+        return new Neo4jTransactionalContextFactory( statementSupplier, contextCreator );
     }
 
     @Deprecated
@@ -65,8 +65,8 @@ public class Neo4jTransactionalContextFactory implements TransactionalContextFac
                                 executingQuery,
                                 new DefaultValueMapper( proxySpi )
                         );
-
-        return new Neo4jTransactionalContextFactory( txBridge, contextCreator );
+        Supplier<Statement> statementSupplier = () -> proxySpi.kernelTransaction().acquireStatement();
+        return new Neo4jTransactionalContextFactory( statementSupplier, contextCreator );
     }
 
     // Please use the factory methods above to actually construct an instance

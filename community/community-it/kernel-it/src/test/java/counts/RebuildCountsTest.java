@@ -182,7 +182,7 @@ class RebuildCountsTest
                 .resolveDependency( ThreadToStatementContextBridge.class );
         try ( Transaction tx = db.beginTx() )
         {
-            return contextBridge.getKernelTransactionBoundToThisThread( true )
+            return contextBridge.getKernelTransactionBoundToThisThread( true, ((GraphDatabaseAPI) db).databaseId() )
                     .tokenRead().nodeLabel( alien.name() );
         }
     }

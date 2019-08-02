@@ -892,7 +892,7 @@ public class ExecutionResultSerializerTest extends TxStateCheckerTestSupport
 
     private ExecutionResultSerializer getSerializerWith( OutputStream output, String uri )
     {
-        return new ExecutionResultSerializer( output, uri == null ? null : URI.create( uri ), TPTPMC );
+        return new ExecutionResultSerializer( output, uri == null ? null : URI.create( uri ), CONTAINER );
     }
 
     private void writeStatementStart( String... columns )

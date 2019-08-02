@@ -35,11 +35,14 @@ import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.availability.DatabaseAvailabilityGuard;
 import org.neo4j.kernel.database.Database;
+import org.neo4j.kernel.database.DatabaseId;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.impl.coreapi.TopLevelTransaction;
 
 import static java.util.concurrent.TimeUnit.MINUTES;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.RETURNS_DEEP_STUBS;
 import static org.mockito.Mockito.RETURNS_MOCKS;
 import static org.mockito.Mockito.mock;
@@ -54,6 +57,9 @@ class GraphDatabaseFacadeTest
     private GraphDatabaseFacade graphDatabaseFacade;
     private GraphDatabaseQueryService queryService;
     private InwardKernel inwardKernel;
+    private ThreadToStatementContextBridge contextBridge;
+    private KernelTransaction kernelTransaction;
+    private Statement statement;
 
     @BeforeEach
     void setUp()
@@ -64,14 +70,18 @@ class GraphDatabaseFacadeTest
         inwardKernel = mock( InwardKernel.class, RETURNS_MOCKS );
         when( database.getKernel() ).thenReturn( inwardKernel );
         when( database.getDependencyResolver() ).thenReturn( resolver );
-        Statement statement = mock( Statement.class, RETURNS_DEEP_STUBS );
-        ThreadToStatementContextBridge contextBridge = mock( ThreadToStatementContextBridge.class );
+        contextBridge = mock( ThreadToStatementContextBridge.class );
 
         when( resolver.resolveDependency( ThreadToStatementContextBridge.class ) ).thenReturn( contextBridge );
         when( resolver.resolveDependency( GraphDatabaseQueryService.class ) ).thenReturn( queryService );
-        when( contextBridge.get() ).thenReturn( statement );
         Config config = Config.defaults();
         when( resolver.resolveDependency( Config.class ) ).thenReturn( config );
+
+        kernelTransaction = mock( KernelTransaction.class );
+        when( kernelTransaction.getDatabaseId() ).thenReturn( new DatabaseId( "any" ) );
+        statement = mock( Statement.class, RETURNS_DEEP_STUBS );
+        when( kernelTransaction.acquireStatement() ).thenReturn( statement );
+        when( contextBridge.getKernelTransactionBoundToThisThread( eq( true ), any( DatabaseId.class ) ) ).thenReturn( kernelTransaction );
 
         graphDatabaseFacade = new GraphDatabaseFacade( database, contextBridge, config, DatabaseInfo.COMMUNITY, mock( DatabaseAvailabilityGuard.class ) );
     }
@@ -108,7 +118,6 @@ class GraphDatabaseFacadeTest
     @Test
     void executeQueryStartDefaultTransaction() throws TransactionFailureException
     {
-        KernelTransaction kernelTransaction = mock( KernelTransaction.class );
         InternalTransaction transaction = new TopLevelTransaction( kernelTransaction );
 
         when( queryService.beginTransaction( KernelTransaction.Type.implicit, AUTH_DISABLED, EMBEDDED_CONNECTION) )

@@ -255,7 +255,7 @@ public class IndexingServiceIntegrationTest
         try ( Transaction ignored = database.beginTx() )
         {
             KernelTransaction transaction = ((GraphDatabaseAPI) database).getDependencyResolver().resolveDependency(
-                    ThreadToStatementContextBridge.class ).getKernelTransactionBoundToThisThread( true );
+                    ThreadToStatementContextBridge.class ).getKernelTransactionBoundToThisThread( true, ((GraphDatabaseAPI) database).databaseId() );
             return transaction.tokenRead().propertyKey( name );
         }
     }
@@ -265,7 +265,7 @@ public class IndexingServiceIntegrationTest
         try ( Transaction ignored = database.beginTx() )
         {
             KernelTransaction transaction = ((GraphDatabaseAPI) database).getDependencyResolver().resolveDependency(
-                    ThreadToStatementContextBridge.class ).getKernelTransactionBoundToThisThread( true );
+                    ThreadToStatementContextBridge.class ).getKernelTransactionBoundToThisThread( true, ((GraphDatabaseAPI) database).databaseId() );
             return transaction.tokenRead().nodeLabel( name );
         }
     }

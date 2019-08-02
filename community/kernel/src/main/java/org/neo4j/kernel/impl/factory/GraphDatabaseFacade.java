@@ -82,6 +82,7 @@ import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.availability.DatabaseAvailabilityGuard;
 import org.neo4j.kernel.availability.UnavailableException;
 import org.neo4j.kernel.database.Database;
+import org.neo4j.kernel.database.DatabaseId;
 import org.neo4j.kernel.impl.api.TokenAccess;
 import org.neo4j.kernel.impl.core.EmbeddedProxySPI;
 import org.neo4j.kernel.impl.core.GraphPropertiesProxy;
@@ -144,7 +145,7 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI, EmbeddedProxySPI
         this.statementContext = requireNonNull( txBridge );
         this.availabilityGuard = requireNonNull( availabilityGuard );
         this.databaseInfo = requireNonNull( databaseInfo );
-        this.schema = new SchemaImpl( () -> txBridge.getKernelTransactionBoundToThisThread( true ) );
+        this.schema = new SchemaImpl( () -> txBridge.getKernelTransactionBoundToThisThread( true, databaseId() ) );
         this.tokenHolders = database.getTokenHolders();
         this.contextFactory = Neo4jTransactionalContextFactory.create( this,
                 () -> getDependencyResolver().resolveDependency( GraphDatabaseQueryService.class ), txBridge );
@@ -153,7 +154,7 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI, EmbeddedProxySPI
     @Override
     public Node createNode()
     {
-        KernelTransaction transaction = statementContext.getKernelTransactionBoundToThisThread( true );
+        KernelTransaction transaction = statementContext.getKernelTransactionBoundToThisThread( true, databaseId() );
         try ( Statement ignore = transaction.acquireStatement() )
         {
             return newNodeProxy( transaction.dataWrite().nodeCreate() );
@@ -167,7 +168,7 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI, EmbeddedProxySPI
     @Override
     public Node createNode( Label... labels )
     {
-        KernelTransaction transaction = statementContext.getKernelTransactionBoundToThisThread( true );
+        KernelTransaction transaction = statementContext.getKernelTransactionBoundToThisThread( true, databaseId() );
         try ( Statement ignore = transaction.acquireStatement() )
         {
             TokenWrite tokenWrite = transaction.tokenWrite();
@@ -206,7 +207,7 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI, EmbeddedProxySPI
                     new EntityNotFoundException( EntityType.NODE, id ) );
         }
 
-        KernelTransaction ktx = statementContext.getKernelTransactionBoundToThisThread( true );
+        KernelTransaction ktx = statementContext.getKernelTransactionBoundToThisThread( true, databaseId() );
         assertTransactionOpen( ktx );
         try ( Statement ignore = ktx.acquireStatement() )
         {
@@ -228,7 +229,7 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI, EmbeddedProxySPI
                     new EntityNotFoundException( EntityType.RELATIONSHIP, id ) );
         }
 
-        KernelTransaction ktx = statementContext.getKernelTransactionBoundToThisThread( true );
+        KernelTransaction ktx = statementContext.getKernelTransactionBoundToThisThread( true, databaseId() );
         assertTransactionOpen( ktx );
         try ( Statement ignore = ktx.acquireStatement() )
         {
@@ -342,7 +343,7 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI, EmbeddedProxySPI
     @Override
     public ResourceIterable<Node> getAllNodes()
     {
-        KernelTransaction ktx = statementContext.getKernelTransactionBoundToThisThread( true );
+        KernelTransaction ktx = statementContext.getKernelTransactionBoundToThisThread( true, databaseId() );
         assertTransactionOpen( ktx );
         return () ->
         {
@@ -378,7 +379,7 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI, EmbeddedProxySPI
     @Override
     public ResourceIterable<Relationship> getAllRelationships()
     {
-        KernelTransaction ktx = statementContext.getKernelTransactionBoundToThisThread( true );
+        KernelTransaction ktx = statementContext.getKernelTransactionBoundToThisThread( true, databaseId() );
         assertTransactionOpen( ktx );
         return () ->
         {
@@ -427,7 +428,7 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI, EmbeddedProxySPI
     private <T> ResourceIterable<T> allInUse( final TokenAccess<T> tokens )
     {
         assertTransactionOpen();
-        return () -> tokens.inUse( statementContext.getKernelTransactionBoundToThisThread( true ) );
+        return () -> tokens.inUse( statementContext.getKernelTransactionBoundToThisThread( true, databaseId() ) );
     }
 
     @Override
@@ -454,7 +455,7 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI, EmbeddedProxySPI
         return () ->
         {
             KernelTransaction transaction =
-                    statementContext.getKernelTransactionBoundToThisThread( true );
+                    statementContext.getKernelTransactionBoundToThisThread( true, databaseId() );
             return tokens.all( transaction );
         };
     }
@@ -462,7 +463,7 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI, EmbeddedProxySPI
     @Override
     public ResourceIterator<Node> findNodes( final Label myLabel, final String key, final Object value )
     {
-        KernelTransaction transaction = statementContext.getKernelTransactionBoundToThisThread( true );
+        KernelTransaction transaction = statementContext.getKernelTransactionBoundToThisThread( true, databaseId() );
         TokenRead tokenRead = transaction.tokenRead();
         int labelId = tokenRead.nodeLabel( myLabel.name() );
         int propertyId = tokenRead.propertyKey( key );
@@ -472,7 +473,7 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI, EmbeddedProxySPI
     @Override
     public ResourceIterator<Node> findNodes( Label label, String key1, Object value1, String key2, Object value2 )
     {
-        KernelTransaction transaction = statementContext.getKernelTransactionBoundToThisThread( true );
+        KernelTransaction transaction = statementContext.getKernelTransactionBoundToThisThread( true, databaseId() );
         TokenRead tokenRead = transaction.tokenRead();
         int labelId = tokenRead.nodeLabel( label.name() );
         return nodesByLabelAndProperties( transaction, labelId,
@@ -484,7 +485,7 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI, EmbeddedProxySPI
     public ResourceIterator<Node> findNodes( Label label, String key1, Object value1, String key2, Object value2,
             String key3, Object value3 )
     {
-        KernelTransaction transaction = statementContext.getKernelTransactionBoundToThisThread( true );
+        KernelTransaction transaction = statementContext.getKernelTransactionBoundToThisThread( true, databaseId() );
         TokenRead tokenRead = transaction.tokenRead();
         int labelId = tokenRead.nodeLabel( label.name() );
         return nodesByLabelAndProperties( transaction, labelId,
@@ -496,7 +497,7 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI, EmbeddedProxySPI
     @Override
     public ResourceIterator<Node> findNodes( Label label, Map<String,Object> propertyValues )
     {
-        KernelTransaction transaction = statementContext.getKernelTransactionBoundToThisThread( true );
+        KernelTransaction transaction = statementContext.getKernelTransactionBoundToThisThread( true, databaseId() );
         TokenRead tokenRead = transaction.tokenRead();
         int labelId = tokenRead.nodeLabel( label.name() );
         IndexQuery.ExactPredicate[] queries = new IndexQuery.ExactPredicate[propertyValues.size()];
@@ -512,7 +513,7 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI, EmbeddedProxySPI
     public ResourceIterator<Node> findNodes(
             final Label myLabel, final String key, final String value, final StringSearchMode searchMode )
     {
-        KernelTransaction transaction = statementContext.getKernelTransactionBoundToThisThread( true );
+        KernelTransaction transaction = statementContext.getKernelTransactionBoundToThisThread( true, databaseId() );
         TokenRead tokenRead = transaction.tokenRead();
         int labelId = tokenRead.nodeLabel( myLabel.name() );
         int propertyId = tokenRead.propertyKey( key );
@@ -568,10 +569,17 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI, EmbeddedProxySPI
     {
         if ( statementContext.hasTransaction() )
         {
+            KernelTransaction contextTransaction = statementContext.getKernelTransactionBoundToThisThread( true, databaseId() );
             // FIXME: perhaps we should check that the new type and access mode are compatible with the current tx
-            return new PlaceboTransaction( statementContext.getKernelTransactionBoundToThisThread( true ) );
+            return new PlaceboTransaction( contextTransaction );
         }
         return new TopLevelTransaction( beginKernelTransaction( type, loginContext, connectionInfo, timeoutMillis ) );
+    }
+
+    @Override
+    public DatabaseId databaseId()
+    {
+        return database.getDatabaseId();
     }
 
     private KernelTransaction beginKernelTransaction( KernelTransaction.Type type, LoginContext loginContext, ClientConnectionInfo connectionInfo,
@@ -755,7 +763,7 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI, EmbeddedProxySPI
     private ResourceIterator<Node> getNodesByLabelAndPropertyWithoutIndex(
             Statement statement, int labelId, IndexQuery... queries )
     {
-        KernelTransaction transaction = statementContext.getKernelTransactionBoundToThisThread( true );
+        KernelTransaction transaction = statementContext.getKernelTransactionBoundToThisThread( true, databaseId() );
 
         NodeLabelIndexCursor nodeLabelCursor = transaction.cursors().allocateNodeLabelIndexCursor();
         NodeCursor nodeCursor = transaction.cursors().allocateNodeCursor();
@@ -774,7 +782,7 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI, EmbeddedProxySPI
 
     private ResourceIterator<Node> allNodesWithLabel( final Label myLabel )
     {
-        KernelTransaction ktx = statementContext.getKernelTransactionBoundToThisThread( true );
+        KernelTransaction ktx = statementContext.getKernelTransactionBoundToThisThread( true, databaseId() );
         Statement statement = ktx.acquireStatement();
 
         int labelId = ktx.tokenRead().nodeLabel( myLabel.name() );
@@ -792,19 +800,19 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI, EmbeddedProxySPI
     @Override
     public TraversalDescription traversalDescription()
     {
-        return new MonoDirectionalTraversalDescription( statementContext );
+        return new MonoDirectionalTraversalDescription( () -> statementContext.get( databaseId() ) );
     }
 
     @Override
     public BidirectionalTraversalDescription bidirectionalTraversalDescription()
     {
-        return new BidirectionalTraversalDescriptionImpl( statementContext );
+        return new BidirectionalTraversalDescriptionImpl( () -> statementContext.get( databaseId() ) );
     }
 
     @Override
     public String databaseName()
     {
-        return database.getDatabaseId().name();
+        return databaseId().name();
     }
 
     // GraphDatabaseAPI
@@ -835,7 +843,7 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI, EmbeddedProxySPI
     @Override
     public KernelTransaction kernelTransaction()
     {
-        return statementContext.getKernelTransactionBoundToThisThread( true );
+        return statementContext.getKernelTransactionBoundToThisThread( true, databaseId() );
     }
 
     @Override
@@ -853,7 +861,7 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI, EmbeddedProxySPI
     @Override
     public void failTransaction()
     {
-        statementContext.getKernelTransactionBoundToThisThread( true ).failure();
+        statementContext.getKernelTransactionBoundToThisThread( true, databaseId() ).failure();
     }
 
     @Override
@@ -981,7 +989,7 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI, EmbeddedProxySPI
 
     private void assertTransactionOpen()
     {
-        assertTransactionOpen( statementContext.getKernelTransactionBoundToThisThread( true ) );
+        assertTransactionOpen( statementContext.getKernelTransactionBoundToThisThread( true, databaseId() ) );
     }
 
     private static void assertTransactionOpen( KernelTransaction transaction )

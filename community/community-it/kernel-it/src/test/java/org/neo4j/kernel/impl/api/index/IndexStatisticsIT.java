@@ -201,7 +201,8 @@ class IndexStatisticsIT
 
     private KernelTransaction ktx()
     {
-        return resolveDependency( ThreadToStatementContextBridge.class ).getKernelTransactionBoundToThisThread( true );
+        ThreadToStatementContextBridge bridge = resolveDependency( ThreadToStatementContextBridge.class );
+        return bridge.getKernelTransactionBoundToThisThread( true, ((GraphDatabaseAPI) db).databaseId() );
     }
 
     private NeoStores neoStores()

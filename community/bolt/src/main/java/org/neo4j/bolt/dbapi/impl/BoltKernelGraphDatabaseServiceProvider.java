@@ -112,7 +112,7 @@ public class BoltKernelGraphDatabaseServiceProvider implements BoltGraphDatabase
 
         Supplier<InternalTransaction> internalTransactionSupplier = () -> beginInternalTransaction( type, loginContext, clientInfo, txTimeout, txMetadata );
         InternalTransaction topLevelInternalTransaction = internalTransactionSupplier.get();
-        KernelTransaction kernelTransaction = txBridge.getKernelTransactionBoundToThisThread( false );
+        KernelTransaction kernelTransaction = txBridge.getKernelTransactionBoundToThisThread( false, databaseAPI.databaseId() );
         return new BoltKernelTransaction( queryExecutionEngine, txBridge, transactionalContextFactory, kernelTransaction, topLevelInternalTransaction,
                 internalTransactionSupplier );
     }

@@ -448,6 +448,6 @@ class CompositeCountsTest
     void exposeGuts()
     {
         transactionSupplier = () -> db.getDependencyResolver()
-                              .resolveDependency( ThreadToStatementContextBridge.class ).getKernelTransactionBoundToThisThread( true );
+                .resolveDependency( ThreadToStatementContextBridge.class ).getKernelTransactionBoundToThisThread( true, db.databaseId() );
     }
 }

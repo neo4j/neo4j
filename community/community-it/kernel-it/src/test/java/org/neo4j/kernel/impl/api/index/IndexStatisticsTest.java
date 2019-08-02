@@ -42,7 +42,6 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.neo4j.common.DependencyResolver;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.exceptions.KernelException;
-import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.NotFoundException;
@@ -119,7 +118,7 @@ public class IndexStatisticsTest
     @Rule
     public final RandomRule random = new RandomRule();
 
-    private GraphDatabaseService db;
+    private GraphDatabaseAPI db;
     private ThreadToStatementContextBridge bridge;
     private final IndexOnlineMonitor indexOnlineMonitor = new IndexOnlineMonitor();
 
@@ -397,7 +396,7 @@ public class IndexStatisticsTest
         Label label = Label.label( PERSON_LABEL );
         try ( Transaction ignore = db.beginTx() )
         {
-            KernelTransaction ktx = resolveDependency( ThreadToStatementContextBridge.class ).getKernelTransactionBoundToThisThread( true );
+            KernelTransaction ktx = resolveDependency( ThreadToStatementContextBridge.class ).getKernelTransactionBoundToThisThread( true, db.databaseId() );
             List<String> mismatches = new ArrayList<>();
             int labelId = ktx.tokenRead().nodeLabel( PERSON_LABEL );
             int propertyKeyId = ktx.tokenRead().propertyKey( NAME_PROPERTY );
@@ -475,7 +474,7 @@ public class IndexStatisticsTest
     {
         try ( Transaction tx = db.beginTx() )
         {
-            KernelTransaction ktx = bridge.getKernelTransactionBoundToThisThread( true );
+            KernelTransaction ktx = bridge.getKernelTransactionBoundToThisThread( true, db.databaseId() );
             for ( String name : NAMES )
             {
                 long nodeId = createPersonNode( ktx, name );
@@ -546,7 +545,7 @@ public class IndexStatisticsTest
     {
         try ( Transaction tx = db.beginTx() )
         {
-            KernelTransaction ktx = bridge.getKernelTransactionBoundToThisThread( true );
+            KernelTransaction ktx = bridge.getKernelTransactionBoundToThisThread( true, db.databaseId() );
             try ( Statement ignore = ktx.acquireStatement() )
             {
                 ktx.schemaWrite().indexDrop( index );
@@ -577,7 +576,7 @@ public class IndexStatisticsTest
 
     private double getSelectivity( IndexDescriptor reference ) throws IndexNotFoundKernelException
     {
-        return bridge.getKernelTransactionBoundToThisThread( true ).schemaRead().indexUniqueValuesSelectivity( reference );
+        return bridge.getKernelTransactionBoundToThisThread( true, db.databaseId() ).schemaRead().indexUniqueValuesSelectivity( reference );
     }
 
     private IndexStatisticsStore getIndexingStatisticsStore()
@@ -589,7 +588,7 @@ public class IndexStatisticsTest
     {
         try ( Transaction tx = db.beginTx() )
         {
-            KernelTransaction ktx = bridge.getKernelTransactionBoundToThisThread( true );
+            KernelTransaction ktx = bridge.getKernelTransactionBoundToThisThread( true, db.databaseId() );
             createPersonNode( ktx, "Davide" );
             createPersonNode( ktx, "Stefan" );
             createPersonNode( ktx, "John" );
@@ -614,7 +613,7 @@ public class IndexStatisticsTest
         try ( Transaction tx = db.beginTx() )
         {
             IndexDescriptor index;
-            KernelTransaction ktx = bridge.getKernelTransactionBoundToThisThread( true );
+            KernelTransaction ktx = bridge.getKernelTransactionBoundToThisThread( true, db.databaseId() );
             try ( Statement ignore = ktx.acquireStatement() )
             {
                 int labelId = ktx.tokenWrite().labelGetOrCreateForName( PERSON_LABEL );
@@ -634,7 +633,7 @@ public class IndexStatisticsTest
 
     private <T> T resolveDependency( Class<T> clazz )
     {
-        return ( (GraphDatabaseAPI) db ).getDependencyResolver().resolveDependency( clazz );
+        return db.getDependencyResolver().resolveDependency( clazz );
     }
 
     private void awaitIndexesOnline()

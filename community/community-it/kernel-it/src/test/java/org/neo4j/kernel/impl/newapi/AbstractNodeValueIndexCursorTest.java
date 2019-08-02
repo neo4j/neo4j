@@ -44,7 +44,7 @@ abstract class AbstractNodeValueIndexCursorTest extends NodeValueIndexCursorTest
         GraphDatabaseAPI internal = (GraphDatabaseAPI) graphDb;
         KernelTransaction ktx = internal.getDependencyResolver()
                 .resolveDependency( ThreadToStatementContextBridge.class )
-                .getKernelTransactionBoundToThisThread( true );
+                .getKernelTransactionBoundToThisThread( true, internal.databaseId() );
         SchemaWrite schemaWrite = ktx.schemaWrite();
         TokenWrite token = ktx.tokenWrite();
         schemaWrite.indexCreate(

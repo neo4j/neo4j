@@ -435,11 +435,13 @@ class IndexConfigMigrationIT
 
     private static TokenRead tokenRead( GraphDatabaseAPI db )
     {
-        return db.getDependencyResolver().resolveDependency( ThreadToStatementContextBridge.class ).getKernelTransactionBoundToThisThread( false ).tokenRead();
+        ThreadToStatementContextBridge txBridge = db.getDependencyResolver().resolveDependency( ThreadToStatementContextBridge.class );
+        return txBridge.getKernelTransactionBoundToThisThread( false, db.databaseId() ).tokenRead();
     }
 
     private static SchemaRead schemaRead( GraphDatabaseAPI db )
     {
-        return db.getDependencyResolver().resolveDependency( ThreadToStatementContextBridge.class ).getKernelTransactionBoundToThisThread( false ).schemaRead();
+        ThreadToStatementContextBridge txBridge = db.getDependencyResolver().resolveDependency( ThreadToStatementContextBridge.class );
+        return txBridge.getKernelTransactionBoundToThisThread( false, db.databaseId() ).schemaRead();
     }
 }

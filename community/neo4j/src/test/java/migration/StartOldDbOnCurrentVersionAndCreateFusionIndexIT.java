@@ -351,9 +351,9 @@ class StartOldDbOnCurrentVersionAndCreateFusionIndexIT
     private static void verifyExpectedProvider( GraphDatabaseAPI db, Label label, IndexProviderDescriptor expectedDescriptor )
             throws TransactionFailureException
     {
+        ThreadToStatementContextBridge txBridge = db.getDependencyResolver().resolveDependency( ThreadToStatementContextBridge.class );
         try ( Transaction tx = db.beginTx();
-              KernelTransaction kernelTransaction =
-                      db.getDependencyResolver().resolveDependency( ThreadToStatementContextBridge.class ).getKernelTransactionBoundToThisThread( true ) )
+              KernelTransaction kernelTransaction = txBridge.getKernelTransactionBoundToThisThread( true, db.databaseId() ) )
         {
             TokenRead tokenRead = kernelTransaction.tokenRead();
             SchemaRead schemaRead = kernelTransaction.schemaRead();
@@ -494,9 +494,8 @@ class StartOldDbOnCurrentVersionAndCreateFusionIndexIT
     {
         try ( Transaction tx = db.beginTx() )
         {
-            KernelTransaction ktx = db.getDependencyResolver()
-                    .resolveDependency( ThreadToStatementContextBridge.class )
-                    .getKernelTransactionBoundToThisThread( true );
+            ThreadToStatementContextBridge txBridge = db.getDependencyResolver().resolveDependency( ThreadToStatementContextBridge.class );
+            KernelTransaction ktx = txBridge.getKernelTransactionBoundToThisThread( true, db.databaseId() );
 
             TokenRead tokenRead = ktx.tokenRead();
             int labelId = tokenRead.nodeLabel( label.name() );

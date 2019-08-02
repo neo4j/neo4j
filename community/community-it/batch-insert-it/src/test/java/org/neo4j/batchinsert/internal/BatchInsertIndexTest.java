@@ -91,7 +91,8 @@ class BatchInsertIndexTest
         {
             DependencyResolver dependencyResolver = ((GraphDatabaseAPI) db).getDependencyResolver();
             ThreadToStatementContextBridge threadToStatementContextBridge = dependencyResolver.resolveDependency( ThreadToStatementContextBridge.class );
-            KernelTransaction kernelTransaction = threadToStatementContextBridge.getKernelTransactionBoundToThisThread( true );
+            KernelTransaction kernelTransaction =
+                    threadToStatementContextBridge.getKernelTransactionBoundToThisThread( true, ((GraphDatabaseAPI) db).databaseId() );
             TokenRead tokenRead = kernelTransaction.tokenRead();
             SchemaRead schemaRead = kernelTransaction.schemaRead();
             int labelId = tokenRead.nodeLabel( TestLabels.LABEL_ONE.name() );

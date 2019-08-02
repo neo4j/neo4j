@@ -150,6 +150,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     private final PageCursorTracerSupplier cursorTracerSupplier;
     private final VersionContextSupplier versionContextSupplier;
     private final AvailabilityGuard databaseAvailabilityGuard;
+    private final DatabaseId databaseId;
     private final StorageReader storageReader;
     private final CommandCreationContext commandCreationContext;
     private final ClockContext clocks;
@@ -221,6 +222,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         this.cursorTracerSupplier = cursorTracerSupplier;
         this.versionContextSupplier = versionContextSupplier;
         this.databaseAvailabilityGuard = databaseAvailabilityGuard;
+        this.databaseId = databaseId;
         this.currentStatement = new KernelStatement( this, lockTracer, this.clocks, versionContextSupplier, cpuClockRef, heapAllocationRef, databaseId );
         this.accessCapability = accessCapability;
         this.statistics = new Statistics( this, cpuClockRef, heapAllocationRef );
@@ -364,6 +366,12 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     public boolean isSchemaTransaction()
     {
         return writeState == TransactionWriteState.SCHEMA;
+    }
+
+    @Override
+    public DatabaseId getDatabaseId()
+    {
+        return databaseId;
     }
 
     private boolean markForTerminationIfPossible( Status reason )

@@ -30,10 +30,10 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.schema.IndexCreator;
 import org.neo4j.index.internal.gbptree.TreeNodeDynamicSize;
-import org.neo4j.internal.schema.IndexOrder;
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.internal.kernel.api.IndexReadSession;
 import org.neo4j.internal.kernel.api.NodeValueIndexCursor;
+import org.neo4j.internal.schema.IndexOrder;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.schema.index.TestIndexDescriptorFactory;
@@ -110,7 +110,7 @@ class CompositeStringLengthValidationIT
         {
             KernelTransaction ktx =
                     db.getDependencyResolver().resolveDependency( ThreadToStatementContextBridge.class )
-                            .getKernelTransactionBoundToThisThread( true );
+                            .getKernelTransactionBoundToThisThread( true, db.databaseId() );
             int labelId = ktx.tokenRead().nodeLabel( LABEL.name() );
             int propertyKeyId1 = ktx.tokenRead().propertyKey( KEY );
             int propertyKeyId2 = ktx.tokenRead().propertyKey( KEY2 );

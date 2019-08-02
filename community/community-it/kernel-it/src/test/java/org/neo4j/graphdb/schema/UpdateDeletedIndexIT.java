@@ -68,7 +68,7 @@ class UpdateDeletedIndexIT
         shouldHandleIndexDropConcurrentlyWithOperation( nodeId ->
         {
             ThreadToStatementContextBridge txBridge = db.getDependencyResolver().resolveDependency( ThreadToStatementContextBridge.class );
-            txBridge.getKernelTransactionBoundToThisThread( true ).dataWrite().nodeDetachDelete( nodeId );
+            txBridge.getKernelTransactionBoundToThisThread( true, db.databaseId() ).dataWrite().nodeDetachDelete( nodeId );
         } );
     }
 
