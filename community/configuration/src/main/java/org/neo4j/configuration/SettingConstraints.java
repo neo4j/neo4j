@@ -326,7 +326,7 @@ public final class SettingConstraints
         {
             if ( !value.isAbsolute() )
             {
-                throw new IllegalArgumentException( format("'%s' is not an absolute path.", value ) );
+                throw new IllegalArgumentException( format("`%s` is not an absolute path.", value ) );
             }
         }
 

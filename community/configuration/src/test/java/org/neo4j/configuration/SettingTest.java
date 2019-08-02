@@ -421,13 +421,10 @@ class SettingTest
 
         var durationSetting = (SettingImpl<Duration>) settingBuilder( "setting", DURATION )
                 .addConstraint( any( min( Duration.ofMinutes( 30 ) ), is( Duration.ZERO ) )  ).build();
-        assertDoesNotThrow( () -> durationSetting.parse( "30m" ) );
+        assertDoesNotThrow( () -> durationSetting.validate( Duration.ofMinutes( 30 ) ) );
         assertDoesNotThrow( () -> durationSetting.validate( Duration.ofHours( 1 ) ) );
-        assertDoesNotThrow( () -> durationSetting.parse( "0" ) );
-        assertDoesNotThrow( () -> durationSetting.parse( "0s" ) );
         assertDoesNotThrow( () -> durationSetting.validate( Duration.ZERO ) );
-        assertThrows( IllegalArgumentException.class, () -> durationSetting.parse( "29m" ) );
-        assertThrows( IllegalArgumentException.class, () -> durationSetting.parse( "1ms" ) );
+        assertThrows( IllegalArgumentException.class, () -> durationSetting.validate( Duration.ofMinutes( 29 ) ) );
         assertThrows( IllegalArgumentException.class, () -> durationSetting.validate( Duration.ofMillis( 1 ) ) );
 
     }
