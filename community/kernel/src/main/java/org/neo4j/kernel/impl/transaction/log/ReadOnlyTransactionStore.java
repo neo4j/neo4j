@@ -81,6 +81,12 @@ public class ReadOnlyTransactionStore implements Lifecycle, LogicalTransactionSt
     }
 
     @Override
+    public boolean existsOnDisk( long transactionId ) throws IOException
+    {
+        return physicalStore.existsOnDisk( transactionId );
+    }
+
+    @Override
     public void init()
     {
         life.init();

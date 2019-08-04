@@ -29,6 +29,8 @@ import org.neo4j.kernel.impl.transaction.log.entry.LogEntry;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReader;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryStart;
 
+import static org.neo4j.kernel.impl.transaction.log.TransactionIdStore.BASE_TX_ID;
+
 public class TransactionLogFileInformation implements LogFileInformation
 {
     private final LogFiles logFiles;
@@ -90,6 +92,15 @@ public class TransactionLogFileInformation implements LogFileInformation
     public long getFirstStartRecordTimestamp( long version ) throws IOException
     {
         return logFileTimestampMapper.getTimestampForVersion( version );
+    }
+
+    @Override
+    public boolean transactionExistsOnDisk( long transactionId ) throws IOException
+    {
+        long lowestOnDisk = getFirstExistingEntryId();
+        long highestOnDisk = getLastEntryId();
+        return ( transactionId >= BASE_TX_ID ) // It's a real transaction id
+                && ( transactionId >= lowestOnDisk && transactionId <= highestOnDisk ); // and it's in the on-disk range
     }
 
     private static class TransactionLogFileTimestampMapper
