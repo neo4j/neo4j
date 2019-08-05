@@ -202,7 +202,7 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
             indexingService = IndexingServiceFactory.createIndexingService( config, scheduler, indexProviderMap,
                     indexStoreView, tokenNameLookup,
                     Iterators.asList( schemaStorage.loadAllSchemaRules() ), logProvider, userLogProvider,
-                    indexingServiceMonitor, schemaState );
+                    indexingServiceMonitor, schemaState, readOnly );
 
             integrityValidator = new IntegrityValidator( neoStores, indexingService );
             cacheAccess = new BridgingCacheAccess( schemaCache, schemaState, tokenHolders );

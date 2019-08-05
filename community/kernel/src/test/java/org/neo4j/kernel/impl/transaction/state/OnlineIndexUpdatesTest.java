@@ -127,7 +127,7 @@ public class OnlineIndexUpdatesTest
         life.add( providerMap );
         indexingService = IndexingServiceFactory.createIndexingService( config, scheduler, providerMap,
                 new NeoStoreIndexStoreView( LockService.NO_LOCK_SERVICE, neoStores ), SchemaUtil.idTokenNameLookup, empty(), nullLogProvider, nullLogProvider,
-                IndexingService.NO_MONITOR, new DatabaseSchemaState( nullLogProvider ) );
+                IndexingService.NO_MONITOR, new DatabaseSchemaState( nullLogProvider ), false );
         propertyPhysicalToLogicalConverter = new PropertyPhysicalToLogicalConverter( neoStores.getPropertyStore() );
         life.add( indexingService );
         life.add( scheduler );

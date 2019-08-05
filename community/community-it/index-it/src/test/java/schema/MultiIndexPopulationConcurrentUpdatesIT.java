@@ -318,7 +318,7 @@ public class MultiIndexPopulationConcurrentUpdatesIT
             NullLogProvider nullLogProvider = NullLogProvider.getInstance();
             indexService = IndexingServiceFactory.createIndexingService( Config.defaults(), scheduler,
                     providerMap, storeView, tokenNameLookup, getIndexRules( neoStores ),
-                    nullLogProvider, nullLogProvider, IndexingService.NO_MONITOR, getSchemaState() );
+                    nullLogProvider, nullLogProvider, IndexingService.NO_MONITOR, getSchemaState(), false );
             indexService.start();
 
             rules = createIndexRules( labelNameIdMap, propertyId );
