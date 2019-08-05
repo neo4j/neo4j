@@ -151,15 +151,6 @@ public class SslPolicyLoader
         File privateKeyFile = config.get( GraphDatabaseSettings.tls_key_file ).toFile().getAbsoluteFile();
         File certificateFile = config.get( GraphDatabaseSettings.tls_certificate_file ).toFile().getAbsoluteFile();
 
-        if ( !privateKeyFile.exists()  )
-        {
-            throw new RuntimeException( "Missing private key in path: " + privateKeyFile.getAbsolutePath() );
-        }
-        if ( !certificateFile.exists() )
-        {
-            throw new RuntimeException( "Missing public certificate in path: " + certificateFile.getAbsolutePath() );
-        }
-
         PrivateKey privateKey = loadPrivateKey( privateKeyFile, null );
         X509Certificate[] keyCertChain = loadCertificateChain( certificateFile );
 
@@ -206,15 +197,6 @@ public class SslPolicyLoader
 
         X509Certificate[] keyCertChain;
         File keyCertChainFile = config.get( policyConfig.public_certificate ).toFile();
-
-        if ( !privateKeyFile.exists()  )
-        {
-            throw new RuntimeException( "Missing private key in path: " + privateKeyFile.getAbsolutePath() );
-        }
-        if ( !keyCertChainFile.exists() )
-        {
-            throw new RuntimeException( "Missing public certificate in path: " + keyCertChainFile.getAbsolutePath() );
-        }
 
         privateKey = loadPrivateKey( privateKeyFile, privateKeyPassword );
         keyCertChain = loadCertificateChain( keyCertChainFile );
