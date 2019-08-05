@@ -1238,7 +1238,7 @@ public class GBPTree<KEY,VALUE> implements Closeable
         try ( PageCursor cursor = pagedFile.io( 0L /*ignored*/, PagedFile.PF_SHARED_READ_LOCK ) )
         {
             long unstableGeneration = unstableGeneration( generation );
-            ConsistencyChecker<KEY> consistencyChecker = new ConsistencyChecker<>( bTreeNode, layout,
+            GBPTreeConsistencyChecker<KEY> consistencyChecker = new GBPTreeConsistencyChecker<>( bTreeNode, layout,
                     stableGeneration( generation ), unstableGeneration );
 
             long rootGeneration = root.goTo( cursor );

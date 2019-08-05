@@ -29,7 +29,7 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PagedFile;
 
-import static org.neo4j.index.internal.gbptree.ConsistencyChecker.assertOnTreeNode;
+import static org.neo4j.index.internal.gbptree.GBPTreeConsistencyChecker.assertOnTreeNode;
 import static org.neo4j.index.internal.gbptree.GenerationSafePointerPair.pointer;
 import static org.neo4j.index.internal.gbptree.TreeNode.Type.INTERNAL;
 import static org.neo4j.index.internal.gbptree.TreeNode.Type.LEAF;

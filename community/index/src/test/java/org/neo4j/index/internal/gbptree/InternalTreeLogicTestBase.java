@@ -46,8 +46,8 @@ import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.junit.Assume.assumeTrue;
-import static org.neo4j.index.internal.gbptree.ConsistencyChecker.assertNoCrashOrBrokenPointerInGSPP;
 import static org.neo4j.index.internal.gbptree.GBPTree.NO_MONITOR;
+import static org.neo4j.index.internal.gbptree.GBPTreeConsistencyChecker.assertNoCrashOrBrokenPointerInGSPP;
 import static org.neo4j.index.internal.gbptree.GenerationSafePointerPair.pointer;
 import static org.neo4j.index.internal.gbptree.TreeNode.Overflow.NO;
 import static org.neo4j.index.internal.gbptree.TreeNode.Overflow.YES;
@@ -1525,8 +1525,8 @@ public abstract class InternalTreeLogicTestBase<KEY,VALUE>
     {
         long currentPageId = readCursor.getCurrentPageId();
         goTo( readCursor, rootId );
-        ConsistencyChecker<KEY> consistencyChecker =
-                new ConsistencyChecker<>( node, layout, stableGeneration, unstableGeneration );
+        GBPTreeConsistencyChecker<KEY> consistencyChecker =
+                new GBPTreeConsistencyChecker<>( node, layout, stableGeneration, unstableGeneration );
         consistencyChecker.check( readCursor, rootGeneration );
         goTo( readCursor, currentPageId );
     }

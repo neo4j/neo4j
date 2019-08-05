@@ -47,7 +47,7 @@ import static org.neo4j.index.internal.gbptree.TreeNode.Type.LEAF;
  * <li>GSPP
  * </ul>
  */
-class ConsistencyChecker<KEY>
+class GBPTreeConsistencyChecker<KEY>
 {
     private final TreeNode<KEY,?> node;
     private final Comparator<KEY> comparator;
@@ -57,7 +57,7 @@ class ConsistencyChecker<KEY>
     private final long unstableGeneration;
     private final GenerationKeeper generationTarget = new GenerationKeeper();
 
-    ConsistencyChecker( TreeNode<KEY,?> node, Layout<KEY,?> layout, long stableGeneration, long unstableGeneration )
+    GBPTreeConsistencyChecker( TreeNode<KEY,?> node, Layout<KEY,?> layout, long stableGeneration, long unstableGeneration )
     {
         this.node = node;
         this.comparator = node.keyComparator();

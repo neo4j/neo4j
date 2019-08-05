@@ -30,13 +30,13 @@ import static org.hamcrest.CoreMatchers.allOf;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.neo4j.index.internal.gbptree.ConsistencyChecker.assertNoCrashOrBrokenPointerInGSPP;
 import static org.neo4j.index.internal.gbptree.GBPTree.NO_MONITOR;
+import static org.neo4j.index.internal.gbptree.GBPTreeConsistencyChecker.assertNoCrashOrBrokenPointerInGSPP;
 import static org.neo4j.index.internal.gbptree.GenerationSafePointer.MIN_GENERATION;
 import static org.neo4j.index.internal.gbptree.PageCursorUtil.goTo;
 import static org.neo4j.index.internal.gbptree.SimpleLongLayout.longLayout;
 
-class ConsistencyCheckerTest
+class GBPTreeConsistencyCheckerTest
 {
     @Test
     void shouldThrowDescriptiveExceptionOnBrokenGSPP() throws Exception
@@ -115,8 +115,8 @@ class ConsistencyCheckerTest
         }
 
         // WHEN
-        ConsistencyChecker<MutableLong> cc =
-                new ConsistencyChecker<>( node, layout, stableGeneration, unstableGeneration );
+        GBPTreeConsistencyChecker<MutableLong> cc =
+                new GBPTreeConsistencyChecker<>( node, layout, stableGeneration, unstableGeneration );
         RuntimeException exception =
                 assertThrows( RuntimeException.class, () -> cc.checkSpace( cursor, idProvider.lastId(), ImmutableEmptyLongIterator.INSTANCE ) );
         assertThat( exception.getMessage(), containsString( "unused pages" ) );

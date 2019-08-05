@@ -104,7 +104,8 @@ public class TestReadOnlyNeo4j
             Throwable rootCause = Exceptions.rootCause( e );
             assertTrue( rootCause instanceof IllegalStateException );
             assertTrue( rootCause.getMessage().contains(
-                    "Some indexes need to be rebuilt. This is not allowed in read only mode. Please start db in writable mode to rebuild indexes. Indexes needing rebuild:" ) );
+                    "Some indexes need to be rebuilt. This is not allowed in read only mode. Please start db in writable mode to rebuild indexes. Indexes " +
+                            "needing rebuild:" ) );
         }
         finally
         {
