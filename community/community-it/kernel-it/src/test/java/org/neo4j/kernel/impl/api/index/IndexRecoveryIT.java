@@ -24,6 +24,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
+import java.io.File;
 import java.io.IOException;
 import java.time.Duration;
 import java.util.HashSet;
@@ -44,8 +45,8 @@ import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.LabelSchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptor;
-import org.neo4j.io.fs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.fs.FileUtils;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.index.IndexAccessor;
@@ -69,7 +70,6 @@ import org.neo4j.monitoring.Monitors;
 import org.neo4j.storageengine.api.IndexEntryUpdate;
 import org.neo4j.storageengine.migration.StoreMigrationParticipant;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
-import org.neo4j.test.extension.EphemeralFileSystemExtension;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.TestDirectoryExtension;
 import org.neo4j.test.rule.TestDirectory;
@@ -98,12 +98,10 @@ import static org.neo4j.test.mockito.matcher.Neo4jMatchers.hasSize;
 import static org.neo4j.test.mockito.matcher.Neo4jMatchers.haveState;
 import static org.neo4j.test.mockito.matcher.Neo4jMatchers.inTx;
 
-@ExtendWith( {EphemeralFileSystemExtension.class, TestDirectoryExtension.class} )
+@ExtendWith( TestDirectoryExtension.class )
 class IndexRecoveryIT
 {
     private static final Duration TIMEOUT = Duration.ofMinutes( 1 );
-    @Inject
-    private volatile EphemeralFileSystemAbstraction fs;
     @Inject
     private TestDirectory testDirectory;
     private GraphDatabaseAPI db;
@@ -148,7 +146,13 @@ class IndexRecoveryIT
 
             // And Given
             Future<Void> killFuture = killDbInSeparateThread();
-            rotateLogsAndCheckPoint();
+            int iterations = 0;
+            do
+            {
+                rotateLogsAndCheckPoint();
+                Thread.sleep( 10 );
+            } while ( iterations++ < 100 && !killFuture.isDone() );
+
             populationSemaphore.release();
             killFuture.get();
 
@@ -158,7 +162,7 @@ class IndexRecoveryIT
             {
                 when( mockedIndexProvider.getPopulator( any( IndexDescriptor.class ), any( IndexSamplingConfig.class ), any() ) ).thenReturn(
                         indexPopulatorWithControlledCompletionTiming( recoverySemaphore ) );
-                boolean recoveryRequired = Recovery.isRecoveryRequired( fs, testDirectory.databaseLayout(), defaults() );
+                boolean recoveryRequired = Recovery.isRecoveryRequired( testDirectory.getFileSystem(), testDirectory.databaseLayout(), defaults() );
                 monitors.addMonitorListener( new MyRecoveryMonitor( recoverySemaphore ) );
                 // When
                 startDb();
@@ -302,7 +306,7 @@ class IndexRecoveryIT
         Dependencies dependencies = new Dependencies();
         dependencies.satisfyDependencies( SystemGraphInitializer.NO_OP );   // disable system graph construction because it will interfere with some tests
         managementService = new TestDatabaseManagementServiceBuilder( testDirectory.storeDir() )
-                .setFileSystem( fs )
+                .setFileSystem( testDirectory.getFileSystem() )
                 .setExtensions( singletonList( mockedIndexProviderFactory ) )
                 .setExternalDependencies( dependencies )
                 .setMonitors( monitors )
@@ -317,8 +321,42 @@ class IndexRecoveryIT
     {
         if ( db != null )
         {
-            fs = fs.snapshot();
+            File snapshotDir = testDirectory.directory( "snapshot" );
+            snapshotFs( snapshotDir );
             managementService.shutdown();
+            restoreSnapshot( snapshotDir );
+        }
+    }
+
+    private void snapshotFs( File snapshotDir )
+    {
+        try
+        {
+            FileUtils.copyRecursively( testDirectory.directory(), snapshotDir, pathname -> !pathname.equals( snapshotDir ) );
+        }
+        catch ( IOException e )
+        {
+            throw new RuntimeException( e );
+        }
+    }
+
+    private void restoreSnapshot( File snapshotDir )
+    {
+        try
+        {
+            for ( File file : testDirectory.getFileSystem().listFiles( testDirectory.directory() ) )
+            {
+                if ( !file.equals( snapshotDir ) )
+                {
+                    FileUtils.deleteRecursively( file );
+                }
+            }
+            FileUtils.copyRecursively( snapshotDir, testDirectory.directory() );
+            FileUtils.deleteRecursively( snapshotDir );
+        }
+        catch ( IOException e )
+        {
+            throw new RuntimeException( e );
         }
     }
 
