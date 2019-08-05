@@ -23,22 +23,29 @@ import org.neo4j.kernel.api.exceptions.Status;
 
 public class ReadAndDeleteTransactionConflictException extends RuntimeException implements Status.HasStatus
 {
-    private static final String MESSAGE = "Database elements (nodes, relationships, properties) were observed during query execution, but got deleted by an " +
-            "overlapping committed transaction before the query results could be serialised. The transaction might succeed if it is retried.";
+    private static final String CONCURRENT_DELETE_MESSAGE = "Database elements (nodes, relationships, properties) were observed during query execution, " +
+            "but got deleted by an overlapping committed transaction before the query results could be serialised. " +
+            "The transaction might succeed if it is retried.";
+    private static final String DELETED_IN_TRANSACTION_MESSAGE = "Database elements (nodes, relationships, properties) were deleted in this transaction, " +
+            "but were also included in the result set.";
 
-    public ReadAndDeleteTransactionConflictException()
+    private final boolean deletedInThisTransaction;
+
+    public ReadAndDeleteTransactionConflictException( boolean deletedInThisTransaction )
     {
-        super( MESSAGE );
+        super( deletedInThisTransaction ? DELETED_IN_TRANSACTION_MESSAGE : CONCURRENT_DELETE_MESSAGE );
+        this.deletedInThisTransaction = deletedInThisTransaction;
     }
 
-    public ReadAndDeleteTransactionConflictException( Throwable cause )
+    public ReadAndDeleteTransactionConflictException( boolean deletedInThisTransaction, Throwable cause )
     {
-        super( MESSAGE, cause );
+        super( deletedInThisTransaction ? DELETED_IN_TRANSACTION_MESSAGE : CONCURRENT_DELETE_MESSAGE, cause );
+        this.deletedInThisTransaction = deletedInThisTransaction;
     }
 
     @Override
     public Status status()
     {
-        return Status.Transaction.Outdated;
+        return deletedInThisTransaction ? Status.Statement.EntityNotFound : Status.Transaction.Outdated;
     }
 }

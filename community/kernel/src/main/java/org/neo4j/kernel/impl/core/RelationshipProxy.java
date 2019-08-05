@@ -72,6 +72,20 @@ public class RelationshipProxy implements Relationship, RelationshipVisitor<Runt
         this.id = id;
     }
 
+    public static boolean isDeletedInCurrentTransaction( Relationship relationship )
+    {
+        if ( relationship instanceof RelationshipProxy )
+        {
+            RelationshipProxy proxy = (RelationshipProxy) relationship;
+            KernelTransaction ktx = proxy.spi.kernelTransaction();
+            try ( Statement ignore = ktx.acquireStatement() )
+            {
+                return ktx.dataRead().relationshipDeletedInTransaction( proxy.id );
+            }
+        }
+        return false;
+    }
+
     @Override
     public final void visit( long id, int type, long startNode, long endNode ) throws RuntimeException
     {
