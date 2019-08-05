@@ -19,6 +19,10 @@
  */
 package org.neo4j.internal.id.indexed;
 
+import org.eclipse.collections.api.iterator.MutableLongIterator;
+import org.eclipse.collections.api.list.primitive.LongList;
+import org.eclipse.collections.api.list.primitive.MutableLongList;
+import org.eclipse.collections.impl.list.mutable.primitive.LongArrayList;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -31,15 +35,14 @@ import java.util.Random;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.stream.Stream;
 
 import org.neo4j.internal.id.FreeIds;
 import org.neo4j.internal.id.IdCapacityExceededException;
-import org.neo4j.internal.id.IdGenerator;
 import org.neo4j.internal.id.IdGenerator.CommitMarker;
 import org.neo4j.internal.id.IdGenerator.ReuseMarker;
 import org.neo4j.internal.id.IdType;
 import org.neo4j.internal.id.IdValidator;
-import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.test.Race;
@@ -66,15 +69,13 @@ class IndexedIdGeneratorTest
     private static final long MAX_ID = 0x3_00000000L;
 
     @Inject
-    private FileSystemAbstraction fs;
-    @Inject
     private TestDirectory directory;
     @Inject
     private PageCache pageCache;
     @Inject
     private RandomRule random;
 
-    private IdGenerator freelist;
+    private IndexedIdGenerator freelist;
 
     @BeforeEach
     void open()
@@ -101,7 +102,6 @@ class IndexedIdGeneratorTest
         long nextTimeId = freelist.nextId();
 
         // then
-        // TODO of course later on we have to use the reuse thing too
         assertEquals( id, nextTimeId );
     }
 
@@ -261,7 +261,7 @@ class IndexedIdGeneratorTest
         open();
 
         // when
-        freelist.start( (FreeIds) visitor ->
+        freelist.start( visitor ->
         {
             throw new RuntimeException( "Failing because it should not be called" );
         } );
@@ -349,6 +349,52 @@ class IndexedIdGeneratorTest
         assertEquals( droppedId, freelist.nextId() );
     }
 
+    @Test
+    void shouldConcurrentlyAllocateAllIdsAroundReservedIds() throws IOException
+    {
+        // given
+        freelist.start( NO_FREE_IDS );
+        long startingId = IdValidator.INTEGER_MINUS_ONE - 100;
+        freelist.setHighId( startingId );
+        freelist.markHighestWrittenAtHighId();
+
+        // when
+        Race race = new Race();
+        int threads = 8;
+        int allocationsPerThread = 32;
+        LongList[] allocatedIds = new LongList[threads];
+        for ( int i = 0; i < 8; i++ )
+        {
+            LongArrayList list = new LongArrayList( 32 );
+            allocatedIds[i] = list;
+            race.addContestant( () ->
+            {
+                for ( int j = 0; j < allocationsPerThread; j++ )
+                {
+                    list.add( freelist.nextId() );
+                }
+            }, 1 );
+        }
+        race.goUnchecked();
+
+        // then
+        MutableLongList allIds = new LongArrayList( allocationsPerThread * threads );
+        Stream.of( allocatedIds ).forEach( allIds::addAll );
+        allIds = allIds.sortThis();
+        assertEquals( allocationsPerThread * threads, allIds.size() );
+        MutableLongIterator allIdsIterator = allIds.longIterator();
+        long nextExpected = startingId;
+        while ( allIdsIterator.hasNext() )
+        {
+            assertEquals( nextExpected, allIdsIterator.next() );
+            do
+            {
+                nextExpected++;
+            }
+            while ( IdValidator.isReservedId( nextExpected ) );
+        }
+    }
+
     private void verifyReallocationDoesNotIncreaseHighId( ConcurrentLinkedQueue<Allocation> allocations, ConcurrentSparseLongBitSet expectedInUse )
     {
         // then after all remaining allocations have been freed, allocating that many ids again should not need to increase highId,
@@ -364,8 +410,7 @@ class IndexedIdGeneratorTest
             numberOfIdsOutThere -= 1;
             reallocationIds.set( allocation.id, 1, true );
         }
-        // TODO really it should be 0, but sometimes it's 1 and haven't figured out why yet
-        assertThat( freelist.getHighId() - highIdBeforeReallocation, Matchers.lessThan( 5L ) );
+        assertThat( freelist.getHighId() - highIdBeforeReallocation, Matchers.equalTo( 0L ) );
     }
 
     private void restart() throws IOException
@@ -443,16 +488,8 @@ class IndexedIdGeneratorTest
                     }
                     if ( allocation != null )
                     {
-                        try
-                        {
-                            // Won't delete if it has already been deleted, but that's fine
-                            allocation.delete();
-                        }
-                        catch ( Exception e )
-                        {
-                            System.err.println( allocation );
-                            throw e;
-                        }
+                        // Won't delete if it has already been deleted, but that's fine
+                        allocation.delete();
                     }
                 }
             }
@@ -468,16 +505,8 @@ class IndexedIdGeneratorTest
             {
                 long id = freelist.nextId();
                 Allocation allocation = new Allocation( id );
-                try
-                {
-                    allocation.markAsInUse( expectedInUse );
-                    allocations.add( allocation );
-                }
-                catch ( Exception e )
-                {
-                    System.err.println( allocation );
-                    throw e;
-                }
+                allocation.markAsInUse( expectedInUse );
+                allocations.add( allocation );
             }
         };
     }

@@ -22,17 +22,21 @@ package org.neo4j.internal.id.indexed;
 import org.neo4j.index.internal.gbptree.GBPTree;
 import org.neo4j.index.internal.gbptree.Layout;
 import org.neo4j.io.pagecache.PageCursor;
+import org.neo4j.util.Preconditions;
 
 /**
  * {@link Layout} for a {@link GBPTree} writing and reading the ID ranges that make up the contents of an {@link IndexedIdGenerator}.
  */
 class IdRangeLayout extends Layout.Adapter<IdRangeKey, IdRange>
 {
-    private final int octletsPerEntry;
+    private final int longsPerEntry;
+    private final int idsPerEntry;
 
     IdRangeLayout( int idsPerEntry )
     {
-        this.octletsPerEntry = ((idsPerEntry - 1) / (Long.SIZE / 2)) + 1;
+        Preconditions.checkArgument( Integer.bitCount( idsPerEntry ) == 1, "idsPerEntry must be power of 2, was %d", idsPerEntry );
+        this.longsPerEntry = ((idsPerEntry - 1) / (IdRange.BITSET_SIZE)) + 1;
+        this.idsPerEntry = idsPerEntry;
     }
 
     @Override
@@ -51,7 +55,7 @@ class IdRangeLayout extends Layout.Adapter<IdRangeKey, IdRange>
     @Override
     public IdRange newValue()
     {
-        return new IdRange( octletsPerEntry );
+        return new IdRange( longsPerEntry );
     }
 
     @Override
@@ -64,8 +68,8 @@ class IdRangeLayout extends Layout.Adapter<IdRangeKey, IdRange>
     @Override
     public int valueSize( IdRange ignore )
     {
-        // generation + state octlets
-        return Long.BYTES + octletsPerEntry * Long.BYTES;
+        // generation + state bit-sets
+        return Long.BYTES + longsPerEntry * Long.BYTES;
     }
 
     @Override
@@ -119,7 +123,7 @@ class IdRangeLayout extends Layout.Adapter<IdRangeKey, IdRange>
     @Override
     public long identifier()
     {
-        return 3735929054L;
+        return 3735929054L + idsPerEntry;
     }
 
     @Override

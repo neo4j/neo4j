@@ -97,7 +97,7 @@ class IdRange
     /**
      * Each {@code long} contains two bit-sets, one for commit bits and one for reuse bits
      */
-    private static final int BITSET_SIZE = Long.SIZE / 2;
+    static final int BITSET_SIZE = Long.SIZE / 2;
     private static final long COMMIT_BITS_MASK = 0xFFFFFFFFL;
 
     private long generation;
@@ -239,6 +239,22 @@ class IdRange
             System.arraycopy( padded, i * Byte.SIZE, spaced, i * Byte.SIZE + i, Byte.SIZE );
         }
         return String.valueOf( spaced );
+    }
+
+    @Override
+    public String toString()
+    {
+        StringBuilder builder = new StringBuilder();
+        for ( int i = 0; i < longs.length; i++ )
+        {
+            if ( i > 0 )
+            {
+                builder.append( " , " );
+            }
+            builder.append( toPaddedBinaryString( longs[i] ) );
+        }
+        builder.append( " gen:" ).append( generation );
+        return builder.toString();
     }
 
     public boolean isEmpty()

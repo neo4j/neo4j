@@ -122,7 +122,9 @@ class IdRangeMarkerTest
         {
             assertTrue( seek.next() );
             assertEquals( 0, seek.key().getIdRangeIdx() );
-            // TODO verify that the bits are correct (this will change when the layout changes underneath pretty soon so not implemented)
+            assertEquals( IdRange.IdState.DELETED, seek.value().getState( 0 ) );
+            assertEquals( IdRange.IdState.DELETED, seek.value().getState( 1 ) );
+            assertEquals( IdRange.IdState.USED, seek.value().getState( 2 ) );
         }
     }
 
@@ -160,6 +162,19 @@ class IdRangeMarkerTest
                 marker.markReserved( id );
             }
         }
+        AtomicBoolean exists = new AtomicBoolean();
+        tree.visit( new GBPTreeVisitor.Adaptor<>()
+        {
+            @Override
+            public void key( IdRangeKey key, boolean isLeaf )
+            {
+                if ( isLeaf )
+                {
+                    assertEquals( 0, key.getIdRangeIdx() );
+                    exists.set( true );
+                }
+            }
+        } );
 
         // when
         try ( IdRangeMarker marker = instantiateMarker( mock( Lock.class ), IdRangeMerger.DEFAULT ) )
@@ -259,9 +274,6 @@ class IdRangeMarkerTest
         } );
         assertEquals( expectedIds, deletedIdsInTree );
     }
-
-    // TODO: ... more tests about idempotency when we get that sorted out
-    // TODO: ... more tests about batch updates when we add that
 
     private ValueMerger realMergerMock()
     {

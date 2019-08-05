@@ -232,33 +232,20 @@ public class IndexedIdGenerator implements IdGenerator
                 new HeaderWriter( highId::get, highestWrittenId::get, STARTING_GENERATION, idsPerEntry ), recoveryCleanupWorkCollector, openOptions );
 
         boolean strictlyPrioritizeFreelist = flag( IndexedIdGenerator.class, STRICTLY_PRIORITIZE_FREELIST_NAME, STRICTLY_PRIORITIZE_FREELIST_DEFAULT );
-        this.scanner = new FreeIdScanner( IDS_PER_ENTRY, tree, cache, atLeastOneIdOnFreelist, this::reuseMarker, generation, strictlyPrioritizeFreelist );
+        this.scanner = new FreeIdScanner( idsPerEntry, tree, cache, atLeastOneIdOnFreelist, this::reuseMarker, generation, strictlyPrioritizeFreelist );
     }
 
     @Override
     public long nextId()
     {
+        // To try and minimize the gap where the cache is empty and scanner is trying to find more to put in the cache
+        // we can see if the cache is starting to dry out and if so do a scan right here.
+        // There may be multiple allocation requests doing this, but it should be very cheap:
+        // comparing two ints, reading an AtomicBoolean and trying to CAS an AtomicBoolean.
+        maintenance();
+
         // try get from cache
         long id = cache.takeOrDefault( NO_ID );
-        if ( id == NO_ID )
-        {
-            // No ID in cache so scan and cache more ids if it looks like there's a chance we can find some more
-            if ( scanner.scanMightFindFreeIds() )
-            {
-                scanner.scanForMoreFreeIds();
-                id = cache.takeOrDefault( NO_ID );
-            }
-        }
-        else // potentially add some condition here so that not all of the allocation requests do this preemptive check,
-        // only perhaps a random selection of the requests... how do we do that efficiently?
-        {
-            // So we found an ID from the cache. To try and minimize the gap where the cache is empty and scanner is trying
-            // to find more to put in the cache we can see if the cache is starting to dry out and if so do a scan right here
-            // There may be multiple allocation requests doing this, but it should be very cheap:
-            // comparing two ints, reading an AtomicBoolean and trying to CAS an AtomicBoolean.
-            maintenance();
-        }
-
         if ( id != NO_ID )
         {
             // We got an ID from the cache, all good
@@ -272,16 +259,10 @@ public class IndexedIdGenerator implements IdGenerator
         // but this should be a fairly rare event.
         do
         {
-            // Although we would've wanted to do a simple getAndIncrement we quite can't because we need to check against maxId too.
-            // Therefore instead get the highId here, do some checks and try CAS +1 later.
-            id = highId.get();
-            while ( IdValidator.isReservedId( id ) )
-            {
-                id = highId.incrementAndGet();
-            }
+            id = highId.getAndIncrement();
             IdValidator.assertIdWithinMaxCapacity( idType, id, maxId );
         }
-        while ( !highId.compareAndSet( id, id + 1 ) );
+        while ( IdValidator.isReservedId( id ) );
         return id;
     }
 
@@ -417,10 +398,10 @@ public class IndexedIdGenerator implements IdGenerator
     @Override
     public void maintenance()
     {
-        if ( cache.size() < cacheOptimisticRefillThreshold && scanner.scanMightFindFreeIds() )
+        if ( cache.size() < cacheOptimisticRefillThreshold )
         {
             // We're just helping other allocation requests and avoiding unwanted sliding of highId here
-            scanner.scanForMoreFreeIds();
+            scanner.tryLoadFreeIdsIntoCache();
         }
     }
 
@@ -467,7 +448,6 @@ public class IndexedIdGenerator implements IdGenerator
     @Override
     public long getNumberOfIdsInUse()
     {
-        // TODO actually needed anymore?
         return getHighId();
     }
 
@@ -544,7 +524,7 @@ public class IndexedIdGenerator implements IdGenerator
                 @Override
                 public void value( IdRange value )
                 {
-                    System.out.println( format( "%s [%d]", BitsUtil.bitsToString( value.getLongs() ), key.getIdRangeIdx() ) );
+                    System.out.println( format( "%s [%d]", value.toString(), key.getIdRangeIdx() ) );
                 }
             } );
             System.out.println( header );

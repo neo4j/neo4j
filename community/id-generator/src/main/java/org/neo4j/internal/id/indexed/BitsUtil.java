@@ -31,12 +31,27 @@ final class BitsUtil
         // util
     }
 
+    /**
+     * Constructs and returns a {@code long} with a range of bits set.
+     *
+     * @param start offset of starting bit to set.
+     * @param slots number of bits to set.
+     * @return a {@code long} with the desired bits set.
+     */
     static long bitsInSingleLong( int start, int slots )
     {
         long bits = (start + slots == Long.SIZE) ? -1 : (1L << (start + slots)) - 1;
         return bits & -(1L << start);
     }
 
+    /**
+     * Sets a range of bits in one of the longs in the provided array.
+     *
+     * @param bits array of longs where one of them, decided by {@code bitsArraySlot} will have some bits set.
+     * @param start offset of starting bit to set.
+     * @param slots number of bits to set.
+     * @param bitsArraySlot the index into {@code bits} which will have the bits set.
+     */
     static void setBits( long[] bits, int start, int slots, int bitsArraySlot )
     {
         int firstArraySlot = bitsArraySlot + start / Long.SIZE;
@@ -50,34 +65,5 @@ final class BitsUtil
             slots -= slotsInThisLong;
             start = 0;
         }
-    }
-
-    private static String internalBitsToString( long bits )
-    {
-        char[] chars = new char[Long.SIZE + Long.SIZE / 8 - 1];
-        for ( int i = 0, ci = 0; i < Long.SIZE; i++, ci++ )
-        {
-            if ( i > 0 && i % 8 == 0 )
-            {
-                chars[ci++] = ' ';
-            }
-            long mask = 1L << (Long.SIZE - i - 1);
-            chars[ci] = (bits & mask) == 0 ? '0' : '1';
-        }
-        return String.valueOf( chars );
-    }
-
-    static String bitsToString( long[] bits )
-    {
-        StringBuilder builder = new StringBuilder();
-        for ( int i = bits.length - 1; i >= 0; i-- )
-        {
-            if ( i < bits.length - 1 )
-            {
-                builder.append( " , " );
-            }
-            builder.append( internalBitsToString( bits[i] ) );
-        }
-        return builder.toString();
     }
 }

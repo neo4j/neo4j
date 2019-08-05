@@ -23,8 +23,8 @@ import java.io.Closeable;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.Supplier;
 
-import org.neo4j.function.ThrowingSupplier;
 import org.neo4j.index.internal.gbptree.GBPTree;
 import org.neo4j.index.internal.gbptree.Seeker;
 import org.neo4j.internal.id.IdGenerator.ReuseMarker;
@@ -47,17 +47,16 @@ class FreeIdScanner implements Closeable
     private final GBPTree<IdRangeKey, IdRange> tree;
     private final ConcurrentLongQueue cache;
     private final AtomicBoolean atLeastOneIdOnFreelist;
-    private final ThrowingSupplier<ReuseMarker, IOException> reuseMarkerSupplier;
+    private final Supplier<ReuseMarker> reuseMarkerSupplier;
     private final long generation;
     private final ScanLock lock;
     private volatile Seeker<IdRangeKey, IdRange> scanner;
     private final long[] pendingItemsToCache;
     private int pendingItemsToCacheCursor;
-    private int maxItemsToCache;
     private int nextPosInRange;
 
     FreeIdScanner( int idsPerEntry, GBPTree<IdRangeKey, IdRange> tree, ConcurrentLongQueue cache, AtomicBoolean atLeastOneIdOnFreelist,
-            ThrowingSupplier<ReuseMarker,IOException> reuseMarkerSupplier, long generation, boolean strictlyPrioritizeFreelistOverHighId )
+            Supplier<ReuseMarker> reuseMarkerSupplier, long generation, boolean strictlyPrioritizeFreelistOverHighId )
     {
         this.idsPerEntry = idsPerEntry;
         this.tree = tree;
@@ -70,22 +69,18 @@ class FreeIdScanner implements Closeable
     }
 
     /**
-     * @return {@code true} if there's a chance calling {@link #scanForMoreFreeIds()} may find any free ids.
-     * It may have been that a previous scan was performed where no ids were found and no ids have been freed since.
-     */
-    boolean scanMightFindFreeIds()
-    {
-        // If a scan is already in progress (SeekCursor now sitting and waiting at some leaf in the free-list)
-        // Or if we know that there have been at least one freed id that we haven't picked up yet.
-        return scanner != null || atLeastOneIdOnFreelist.get();
-    }
-
-    /**
      * Do a batch of scanning, either start a new scan from the beginning if none is active, or continue where a previous scan
      * paused. In this call free ids can be discovered and placed into the ID cache. IDs are marked as reserved before placed into cache.
      */
-    void scanForMoreFreeIds()
+    boolean tryLoadFreeIdsIntoCache()
     {
+        if ( scanner == null && !atLeastOneIdOnFreelist.get() )
+        {
+            // If no scan is in progress (SeekCursor now sitting and waiting at some leaf in the free-list)
+            // and if we have no reason to expect finding any free id from a scan then don't do it.
+            return false;
+        }
+
         if ( lock.tryLock() )
         {
             try
@@ -96,16 +91,17 @@ class FreeIdScanner implements Closeable
                 // may be even bigger, but not smaller. This is important because we discover IDs, mark them as non-reusable
                 // and then place them in the cache so IDs that wouldn't fit in the cache would need to be marked as reusable again,
                 // which would be somewhat annoying.
-                maxItemsToCache = cache.capacity() - cache.size();
+                int maxItemsToCache = cache.capacity() - cache.size();
 
                 // Find items to cache
-                if ( maxItemsToCache > 0 && findSomeIdsToCache() )
+                if ( maxItemsToCache > 0 && findSomeIdsToCache( maxItemsToCache ) )
                 {
                     // Get a writer and mark the found ids as reserved
                     markIdsAsReserved();
 
                     // Place them in the cache so that allocation requests can see them
                     placeIdsInCache();
+                    return true;
                 }
             }
             catch ( IOException e )
@@ -117,6 +113,7 @@ class FreeIdScanner implements Closeable
                 lock.unlock();
             }
         }
+        return false;
     }
 
     void clearCache()
@@ -140,10 +137,6 @@ class FreeIdScanner implements Closeable
             }
             atLeastOneIdOnFreelist.set( true );
         }
-        catch ( IOException e )
-        {
-            throw new UncheckedIOException( e );
-        }
         finally
         {
             lock.unlock();
@@ -162,7 +155,7 @@ class FreeIdScanner implements Closeable
         }
     }
 
-    private void markIdsAsReserved() throws IOException
+    private void markIdsAsReserved()
     {
         try ( ReuseMarker marker = reuseMarkerSupplier.get() )
         {
@@ -173,7 +166,7 @@ class FreeIdScanner implements Closeable
         }
     }
 
-    private boolean findSomeIdsToCache() throws IOException
+    private boolean findSomeIdsToCache( int maxItemsToCache ) throws IOException
     {
         boolean startedNow = false;
         if ( scanner == null )
@@ -188,7 +181,7 @@ class FreeIdScanner implements Closeable
         // First check if the previous scan was aborted in the middle of the entry
         if ( !startedNow && nextPosInRange > 0 && nextPosInRange < idsPerEntry )
         {
-            queueIdsFromTreeItem( scanner.key(), scanner.value(), nextPosInRange );
+            queueIdsFromTreeItem( scanner.key(), scanner.value(), nextPosInRange, maxItemsToCache );
         }
 
         // Then continue looking at additional entries
@@ -199,7 +192,7 @@ class FreeIdScanner implements Closeable
                 seekerExhausted = true;
                 break;
             }
-            queueIdsFromTreeItem( scanner.key(), scanner.value(), 0 );
+            queueIdsFromTreeItem( scanner.key(), scanner.value(), 0, maxItemsToCache );
         }
         boolean somethingWasCached = pendingItemsToCacheCursor > 0;
         if ( seekerExhausted )
@@ -215,7 +208,7 @@ class FreeIdScanner implements Closeable
         return somethingWasCached;
     }
 
-    private void queueIdsFromTreeItem( IdRangeKey key, IdRange range, int startPosInRange )
+    private void queueIdsFromTreeItem( IdRangeKey key, IdRange range, int startPosInRange, int maxItemsToCache )
     {
         final long baseId = key.getIdRangeIdx() * idsPerEntry;
         final boolean differentGeneration = generation != range.getGeneration();
