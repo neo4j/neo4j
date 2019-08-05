@@ -66,14 +66,16 @@ class GBPTreeConsistencyChecker<KEY>
         this.unstableGeneration = unstableGeneration;
     }
 
-    public boolean check( PageCursor cursor, long expectedGeneration ) throws IOException
+    public boolean check( PageCursor cursor, Root root ) throws IOException
     {
+        long rootGeneration = root.goTo( cursor );
         assertOnTreeNode( cursor );
         KeyRange<KEY> openRange = new KeyRange<>( comparator, null, null, layout, null );
-        boolean result = checkSubtree( cursor, openRange, expectedGeneration, 0 );
+        boolean result = checkSubtree( cursor, openRange, rootGeneration, 0 );
 
         // Assert that rightmost node on each level has empty right sibling.
         rightmostPerLevel.forEach( RightmostInChain::assertLast );
+        root.goTo( cursor );
         return result;
     }
 

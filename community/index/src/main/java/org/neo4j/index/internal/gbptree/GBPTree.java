@@ -1241,9 +1241,7 @@ public class GBPTree<KEY,VALUE> implements Closeable
             GBPTreeConsistencyChecker<KEY> consistencyChecker = new GBPTreeConsistencyChecker<>( bTreeNode, layout,
                     stableGeneration( generation ), unstableGeneration );
 
-            long rootGeneration = root.goTo( cursor );
-            boolean check = consistencyChecker.check( cursor, rootGeneration );
-            root.goTo( cursor );
+            boolean check = consistencyChecker.check( cursor, root );
 
             final MutableLongSet freelistIds = new LongHashSet();
             freeList.visitFreelistPageIds( freelistIds::add );
