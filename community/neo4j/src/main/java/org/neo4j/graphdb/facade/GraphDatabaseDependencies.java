@@ -141,6 +141,7 @@ public class GraphDatabaseDependencies implements ExternalDependencies
 
     public GraphDatabaseDependencies queryEngineProviders( Iterable<QueryEngineProvider> queryEngineProviders )
     {
+        this.queryEngineProviders.clear();
         addAll( this.queryEngineProviders, queryEngineProviders );
         return this;
     }

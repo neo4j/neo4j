@@ -54,7 +54,7 @@ public final class Services
     /**
      * Load all available implementations of a service, if any.
      *
-     * @param service the type of the srevice
+     * @param service the type of the service
      * @return all registered implementations of the SPI
      */
     public static <T> Collection<T> loadAll( Class<T> service )

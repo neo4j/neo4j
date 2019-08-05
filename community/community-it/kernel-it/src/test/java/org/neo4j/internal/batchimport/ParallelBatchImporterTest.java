@@ -193,7 +193,7 @@ public class ParallelBatchImporterTest
                     NODE_COUNT * TOKENS.length / 2 ), groups ) );
 
             // THEN
-            DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder( directory.storeDir() ).build();
+            DatabaseManagementService managementService = getDBMSBuilder( directory.storeDir() ).build();
             GraphDatabaseService db = managementService.database( DEFAULT_DATABASE_NAME );
             try ( Transaction tx = db.beginTx() )
             {
@@ -242,6 +242,11 @@ public class ParallelBatchImporterTest
     protected RecordFormats getFormat()
     {
         return Standard.LATEST_RECORD_FORMATS;
+    }
+
+    protected TestDatabaseManagementServiceBuilder getDBMSBuilder( File databaseRootDir )
+    {
+        return new TestDatabaseManagementServiceBuilder( databaseRootDir );
     }
 
     private static class ExistingId
