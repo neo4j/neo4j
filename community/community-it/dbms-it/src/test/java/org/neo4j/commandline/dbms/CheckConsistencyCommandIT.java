@@ -46,6 +46,7 @@ import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.internal.helpers.progress.ProgressMonitorFactory;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
+import org.neo4j.kernel.internal.locker.FileLockException;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.Inject;
@@ -55,6 +56,7 @@ import org.neo4j.test.rule.TestDirectory;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.instanceOf;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
@@ -182,7 +184,9 @@ class CheckConsistencyCommandIT
         try ( Closeable lock = DatabaseLockChecker.check( databaseLayout ) )
         {
             CommandLine.populateCommand( checkConsistencyCommand, "--database=mydb", "--verbose" );
-            assertThrows( CommandFailedException.class, checkConsistencyCommand::execute );
+            CommandFailedException exception = assertThrows( CommandFailedException.class, checkConsistencyCommand::execute );
+            assertThat( exception.getCause(), instanceOf( FileLockException.class ) );
+            assertThat( exception.getMessage(), equalTo( "The database is in use. Stop database 'mydb' and try again." ) );
         }
     }
 

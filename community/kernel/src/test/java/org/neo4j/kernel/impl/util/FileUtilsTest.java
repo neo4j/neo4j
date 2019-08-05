@@ -130,6 +130,28 @@ class FileUtilsTest
     }
 
     @Test
+    void deleteNestedPathRecursivelyWithFilter() throws IOException
+    {
+        FileSystemAbstraction fileSystem = testDirectory.getFileSystem();
+        File root = testDirectory.directory( "a" );
+        File child = new File( root, "a" );
+        File file = new File( child, "aaFile" );
+
+        File toKeepDelete = new File( root, "b" );
+
+        assertTrue( child.mkdirs() );
+        assertTrue( file.createNewFile() );
+        assertTrue( toKeepDelete.mkdirs() );
+
+        FileUtils.deletePathRecursively( root.toPath(), path -> !path.equals( file.toPath() ) );
+
+        assertTrue( file.exists() );
+        assertTrue( child.exists() );
+
+        assertFalse( toKeepDelete.exists() );
+    }
+
+    @Test
     void pathToFileAfterMoveMustThrowIfFileNotSubPathToFromShorter()
     {
         File file = new File( "/a" );

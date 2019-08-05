@@ -40,7 +40,6 @@ import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.TestDirectoryExtension;
 import org.neo4j.test.rule.TestDirectory;
 
-import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.allOf;
 import static org.hamcrest.Matchers.greaterThan;
@@ -48,6 +47,7 @@ import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.lessThan;
 import static org.hamcrest.Matchers.startsWith;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.configuration.Config.defaults;
 import static org.neo4j.configuration.GraphDatabaseSettings.pagecache_memory;
 import static org.neo4j.io.ByteUnit.kibiBytes;
@@ -81,7 +81,7 @@ class BatchInserterImplTest
         BatchInserter inserter = BatchInserters.inserter( databaseLayout, fileSystem );
         try
         {
-            assertThat( databaseLayout.databaseLockFile().exists(), equalTo( true ) );
+            assertTrue( databaseLayout.databaseLockFile().exists() );
         }
         finally
         {

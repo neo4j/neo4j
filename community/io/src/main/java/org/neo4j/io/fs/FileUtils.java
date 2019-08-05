@@ -182,7 +182,7 @@ public class FileUtils
                         Files.delete( dir );
                         return FileVisitResult.CONTINUE;
                     }
-                    if ( Files.list( dir ).noneMatch( alwaysTrue() ) )
+                    if ( isDirectoryEmpty( dir ) )
                     {
                         Files.delete( dir );
                     }
@@ -192,6 +192,14 @@ public class FileUtils
                 {
                     String reason = notEmptyReason( dir, notEmpty );
                     throw new IOException( notEmpty.getMessage() + ": " + reason, notEmpty );
+                }
+            }
+
+            private boolean isDirectoryEmpty( Path dir ) throws IOException
+            {
+                try ( Stream<Path> list = Files.list( dir ) )
+                {
+                    return list.noneMatch( alwaysTrue() );
                 }
             }
 

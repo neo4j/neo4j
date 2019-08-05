@@ -57,6 +57,10 @@ public class DatabaseLockChecker implements Closeable
         Path lockFile = databaseLayout.databaseLockFile().toPath();
         if ( Files.isWritable( databaseLayout.databaseDirectory().toPath() ) )
         {
+            if ( Files.exists( databaseLayout.databaseLockFile().toPath() ) && !Files.isWritable( databaseLayout.databaseLockFile().toPath() ) )
+            {
+                throw new CannotWriteException( lockFile );
+            }
             DatabaseLockChecker locker = new DatabaseLockChecker( new DefaultFileSystemAbstraction(), databaseLayout );
             try
             {

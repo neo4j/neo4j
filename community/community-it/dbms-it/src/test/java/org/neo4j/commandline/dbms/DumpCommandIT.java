@@ -262,7 +262,7 @@ class DumpCommandIT
             try ( Closeable ignored = withPermissions( databaseLayout.databaseLockFile().toPath(), emptySet() ) )
             {
                 CommandFailedException commandFailed = assertThrows( CommandFailedException.class, () -> execute( "foo" ) );
-                assertEquals( "The database is in use. Stop database 'foo' and try again.", commandFailed.getMessage() );
+                assertEquals( "You do not have permission to dump the database.", commandFailed.getMessage() );
             }
         }
     }
