@@ -30,7 +30,7 @@ import org.neo4j.kernel.DeadlockDetectedException;
 import org.neo4j.lock.LockTracer;
 
 import static java.lang.System.currentTimeMillis;
-import static java.util.concurrent.TimeUnit.SECONDS;
+import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.neo4j.lock.ResourceTypes.NODE;
@@ -280,19 +280,20 @@ abstract class RWLockCompatibility extends LockCompatibilityTestSupport
     void testStressMultipleThreads() throws Exception
     {
         long r1 = 1L;
-        StressThread[] stressThreads = new StressThread[100];
+        int numThreads = 25;
+        StressThread[] stressThreads = new StressThread[numThreads];
         CountDownLatch startSignal = new CountDownLatch( 1 );
-        for ( int i = 0; i < 100; i++ )
+        for ( int i = 0; i < numThreads; i++ )
         {
-            stressThreads[i] = new StressThread( "Thread" + i, 100, 9, 0.50f, r1, startSignal );
+            stressThreads[i] = new StressThread( "Thread" + i, 75, 9, 0.50f, r1, startSignal );
         }
-        for ( int i = 0; i < 100; i++ )
+        for ( int i = 0; i < numThreads; i++ )
         {
             stressThreads[i].start();
         }
         startSignal.countDown();
 
-        long end = currentTimeMillis() + SECONDS.toMillis( 2000 );
+        long end = currentTimeMillis() + MINUTES.toMillis( 5 );
         boolean anyAlive;
         while ( (anyAlive = anyAliveAndAllWell( stressThreads )) && currentTimeMillis() < end )
         {
