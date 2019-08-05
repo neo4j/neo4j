@@ -28,6 +28,7 @@ import org.neo4j.exceptions.KernelException;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.api.procedure.GlobalProcedures;
 import org.neo4j.kernel.api.security.provider.SecurityProvider;
+import org.neo4j.kernel.internal.event.GlobalTransactionEventListeners;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.logging.internal.LogService;
@@ -78,5 +79,7 @@ public abstract class SecurityModule implements Lifecycle, SecurityProvider, Nam
         FileSystemAbstraction fileSystem();
 
         DependencySatisfier dependencySatisfier();
+
+        GlobalTransactionEventListeners transactionEventListeners();
     }
 }

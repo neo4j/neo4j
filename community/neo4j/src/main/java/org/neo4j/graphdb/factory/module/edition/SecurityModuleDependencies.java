@@ -25,6 +25,7 @@ import org.neo4j.graphdb.factory.module.GlobalModule;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.api.procedure.GlobalProcedures;
 import org.neo4j.kernel.api.security.SecurityModule;
+import org.neo4j.kernel.internal.event.GlobalTransactionEventListeners;
 import org.neo4j.logging.internal.LogService;
 import org.neo4j.scheduler.JobScheduler;
 
@@ -73,5 +74,11 @@ class SecurityModuleDependencies implements SecurityModule.Dependencies
     public DependencySatisfier dependencySatisfier()
     {
         return globalModule.getGlobalDependencies();
+    }
+
+    @Override
+    public GlobalTransactionEventListeners transactionEventListeners()
+    {
+        return globalModule.getTransactionEventListeners();
     }
 }
