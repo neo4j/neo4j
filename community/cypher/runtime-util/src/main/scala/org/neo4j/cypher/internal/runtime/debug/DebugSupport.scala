@@ -21,16 +21,7 @@ package org.neo4j.cypher.internal.runtime.debug
 
 object DebugSupport {
 
-  final val DEBUG_WORKERS = false
-  final val DEBUG_QUERIES = false
-  final val DEBUG_TRACKER = false
-  final val DEBUG_LOCKS = false
-  final val DEBUG_ERROR_HANDLING = false
-  final val DEBUG_CURSORS = false
-  final val DEBUG_PIPELINES = false
-  final val DEBUG_BUFFERS = false
-  final val DEBUG_SCHEDULING = false
-  final val DEBUG_ASM = false
+  /** COLORS AND FORMATTING **/
 
   final val Black   = "\u001b[30m"
   final val Red     = "\u001b[31m"
@@ -47,62 +38,23 @@ object DebugSupport {
 
   final val Reset   = "\u001b[0m"
 
-  // Not using println because that is synchronized and can hide
-  // parallel problems.
+  /** DEBUG CONFIGURATION **/
 
-  def logWorker(str: => String): Unit = {
-    if (DEBUG_WORKERS) {
-      print(s"        $str\n")
-    }
-  }
+  final val TIMELINE = new DebugTimeline(false)
 
-  def logQueries(str: => String): Unit = {
-    if (DEBUG_QUERIES) {
-      println(s"        $str")
-    }
-  }
+  final val WORKERS = new DebugLog(false, "")
+  final val QUERIES = new DebugLog(false, "")
+  final val TRACKER = new DebugLog(false, Yellow)
+  final val LOCKS = new DebugLog(false, Blue)
+  final val ERROR_HANDLING = new DebugLog(false, Red)
+  final val CURSORS = new DebugLog(false, "")
+  final val BUFFERS = new DebugLog(false, Magenta)
+  final val SCHEDULING = new DebugLog(false, Cyan)
+  final val ASM = new DebugLog(false, "")
 
-  def logTracker(str: => String): Unit = {
-    if (DEBUG_TRACKER) {
-      print(s"        $Yellow$str$Reset\n")
-    }
-  }
+  final val DEBUG_PIPELINES = false
 
-  def logLocks(str: => String): Unit = {
-    if (DEBUG_LOCKS) {
-      print(s"        $Blue$str$Reset\n")
-    }
-  }
-
-  def logErrorHandling(str: => String): Unit = {
-    if (DEBUG_ERROR_HANDLING) {
-      print(s"        $Red$str$Reset\n")
-    }
-  }
-
-  def logCursors(str: => String): Unit = {
-    if (DEBUG_CURSORS) {
-      print(s"        $str\n")
-    }
-  }
-
-  def logBuffers(str: => String): Unit = {
-    if (DEBUG_BUFFERS) {
-      print(s"        $Magenta$str$Reset\n")
-    }
-  }
-
-  def logAsm(str: => String): Unit = {
-    if (DEBUG_ASM) {
-      print(s"        $str\n")
-    }
-  }
-
-  def logScheduling(str: => String): Unit = {
-    if (DEBUG_SCHEDULING) {
-      print(s"      $Cyan$str$Reset\n")
-    }
-  }
+  /** TOOLING **/
 
   def logPipelines(rows: => Seq[String]): Unit = {
     if (DEBUG_PIPELINES) {
@@ -110,5 +62,76 @@ object DebugSupport {
         print(s"       || $row\n")
       }
     }
+  }
+
+  final class DebugLog(val enabled: Boolean, val color: String) {
+
+    // Not using println because that is synchronized and can hide
+    // parallel problems.
+    def log(str: String): Unit = {
+      if (enabled) {
+        print(s"        $color$str$Reset\n")
+      }
+    }
+
+    def log(str: String, x: Any): Unit =
+      if (enabled) {
+        log(str.format(x))
+      }
+
+    def log(str: String, x1: Any, x2: Any): Unit =
+      if (enabled) {
+        log(str.format(x1, x2))
+      }
+
+    def log(str: String, x1: Any, x2: Any, x3: Any): Unit =
+      if (enabled) {
+        log(str.format(x1, x2, x3))
+      }
+  }
+
+  final class DebugTimeline(val enabled: Boolean) {
+
+    private var t0: Long = 0L
+    private var tn: Long = 0L
+
+    def beginTime(): Unit =
+      if (enabled) {
+        println("")
+        println("            ~= BEGINNING OF TIME =~")
+        t0 = System.currentTimeMillis()
+        log("")
+      }
+
+    def log(str: String): Unit =
+      if (enabled) {
+        tn = System.currentTimeMillis()
+        println("[%6d ms] %s".format(tn - t0, str))
+      }
+
+    def log(str: String, x: Any): Unit =
+      if (enabled) {
+        tn = System.currentTimeMillis()
+        println("[%6d ms] %s".format(tn - t0, str.format(x)))
+      }
+
+    def log(str: String, x1: Any, x2: Any): Unit =
+      if (enabled) {
+        tn = System.currentTimeMillis()
+        println("[%6d ms] %s".format(tn - t0, str.format(x1, x2)))
+      }
+
+    def log(str: String, x1: Any, x2: Any, x3: Any): Unit =
+      if (enabled) {
+        tn = System.currentTimeMillis()
+        println("[%6d ms] %s".format(tn - t0, str.format(x1, x2, x3)))
+      }
+
+    def logDiff(str: String): Unit =
+      if (enabled) {
+        val tPrev = tn
+        tn = System.currentTimeMillis()
+        println("     %+4d ms: %s".format(tn - tPrev, str))
+      }
   }
 }

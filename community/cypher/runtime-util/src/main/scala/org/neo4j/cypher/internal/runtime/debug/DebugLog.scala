@@ -34,13 +34,31 @@ object DebugLog {
       log("")
     }
 
-  def log(str: => String): Unit =
+  def log(str: String): Unit =
     if (ENABLED) {
       tn = System.currentTimeMillis()
       println("[%6d ms] %s".format(tn - t0, str))
     }
 
-  def logDiff(str: => String): Unit =
+  def log(str: String, x: Any): Unit =
+    if (ENABLED) {
+      tn = System.currentTimeMillis()
+      println("[%6d ms] %s".format(tn - t0, str.format(x)))
+    }
+
+  def log(str: String, x1: Any, x2: Any): Unit =
+    if (ENABLED) {
+      tn = System.currentTimeMillis()
+      println("[%6d ms] %s".format(tn - t0, str.format(x1, x2)))
+    }
+
+  def log(str: String, x1: Any, x2: Any, x3: Any): Unit =
+    if (ENABLED) {
+      tn = System.currentTimeMillis()
+      println("[%6d ms] %s".format(tn - t0, str.format(x1, x2, x3)))
+    }
+
+  def logDiff(str: String): Unit =
     if (ENABLED) {
       val tPrev = tn
       tn = System.currentTimeMillis()
