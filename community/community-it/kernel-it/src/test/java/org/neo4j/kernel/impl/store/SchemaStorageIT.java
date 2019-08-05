@@ -52,7 +52,6 @@ import org.neo4j.kernel.api.schema.index.TestIndexDescriptorFactory;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.storageengine.api.ConstraintRule;
-import org.neo4j.test.GraphDatabaseServiceCleaner;
 import org.neo4j.test.extension.ImpermanentDbmsExtension;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.token.TokenHolders;
@@ -101,12 +100,6 @@ class SchemaStorageIT
         }
         schemaStore = resolveDependency( RecordStorageEngine.class ).testAccessNeoStores().getSchemaStore();
         storage = new SchemaStorage( schemaStore, resolveDependency( TokenHolders.class ) );
-    }
-
-    @BeforeEach
-    void clearSchema()
-    {
-        GraphDatabaseServiceCleaner.cleanupSchema( db );
     }
 
     @Test
