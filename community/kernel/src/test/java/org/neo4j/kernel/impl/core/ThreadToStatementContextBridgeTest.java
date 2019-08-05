@@ -53,7 +53,7 @@ class ThreadToStatementContextBridgeTest
     }
 
     @Test
-    void bingTransaction()
+    void bindTransaction()
     {
         assertFalse( bridge.hasTransaction() );
 
