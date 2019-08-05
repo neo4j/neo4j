@@ -23,6 +23,7 @@ import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.parallel.ResourceLock;
 
 import java.io.File;
 import java.io.IOException;
@@ -47,8 +48,10 @@ import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.test.scheduler.ThreadPoolJobScheduler;
 
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.neo4j.test.extension.ExecutionSharedContext.SHARED_RESOURCE;
 import static org.neo4j.test.matchers.ByteArrayMatcher.byteArray;
 
+@ResourceLock( SHARED_RESOURCE )
 public abstract class PageCacheTestSupport<T extends PageCache>
 {
     protected static final long SHORT_TIMEOUT_MILLIS = 10_000;
