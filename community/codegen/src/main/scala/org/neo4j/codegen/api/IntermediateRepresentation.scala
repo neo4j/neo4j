@@ -147,6 +147,14 @@ case class Add(lhs: IntermediateRepresentation, rhs: IntermediateRepresentation)
 case class Subtract(lhs: IntermediateRepresentation, rhs: IntermediateRepresentation) extends IntermediateRepresentation
 
 /**
+  * Defines {{{lhs * rhs}}}
+  *
+  * @param lhs the left-hand side to multiply
+  * @param rhs the right-hand side to multiply
+  */
+case class Multiply(lhs: IntermediateRepresentation, rhs: IntermediateRepresentation) extends IntermediateRepresentation
+
+/**
   * Defines {{{lhs < rhs}}}
   *
   * @param lhs the left-hand side to compare
@@ -568,6 +576,9 @@ object IntermediateRepresentation {
 
   def subtract(lhs: IntermediateRepresentation, rhs: IntermediateRepresentation): IntermediateRepresentation =
     Subtract(lhs, rhs)
+
+  def multiply(lhs: IntermediateRepresentation, rhs: IntermediateRepresentation): IntermediateRepresentation =
+    Multiply(lhs, rhs)
 
   def lessThan(lhs: IntermediateRepresentation, rhs: IntermediateRepresentation): IntermediateRepresentation =
     Lt(lhs, rhs)

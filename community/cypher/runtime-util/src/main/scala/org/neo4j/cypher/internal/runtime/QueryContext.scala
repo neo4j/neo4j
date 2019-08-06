@@ -174,10 +174,6 @@ trait QueryContext extends TokenContext with DbAccess {
   def allShortestPath(left: Long, right: Long, depth: Int, expander: Expander, pathPredicate: KernelPredicate[Path],
                       filters: Seq[KernelPredicate[PropertyContainer]]): Iterator[Path]
 
-  def nodeCountByCountStore(labelId: Int): Long
-
-  def relationshipCountByCountStore(startLabelId: Int, typeId: Int, endLabelId: Int): Long
-
   def lockNodes(nodeIds: Long*)
 
   def lockRelationships(relIds: Long*)

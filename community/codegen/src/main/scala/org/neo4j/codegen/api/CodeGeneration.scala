@@ -147,6 +147,10 @@ object CodeGeneration {
     case Subtract(lhs, rhs) =>
       codegen.Expression.subtract(compileExpression(lhs, block), compileExpression(rhs, block))
 
+    //lhs * rhs
+    case Multiply(lhs, rhs) =>
+      codegen.Expression.multiply(compileExpression(lhs, block), compileExpression(rhs, block))
+
     //lhs < rhs
     case Lt(lhs, rhs) =>
       codegen.Expression.lt(compileExpression(lhs, block), compileExpression(rhs, block))

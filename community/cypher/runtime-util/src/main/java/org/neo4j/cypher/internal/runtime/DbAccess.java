@@ -116,4 +116,8 @@ public interface DbAccess extends EntityById
      *         `Optional.of(false)` if the property or the entity were deleted in TxState.
      */
     Optional<Boolean> hasTxStatePropertyForCachedRelationshipProperty( long relId, int propertyKeyId );
+
+    long nodeCountByCountStore(int labelId);
+
+    long relationshipCountByCountStore(int startLabelId, int typeId, int endLabelId);
 }
