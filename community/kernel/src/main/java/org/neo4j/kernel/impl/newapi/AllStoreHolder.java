@@ -214,6 +214,26 @@ public class AllStoreHolder extends Read
         }
     }
 
+    private long countsByAllRelationshipScan( int typeId )
+    {
+        // We have a restriction on what part of the graph can be traversed. This disables the count store entirely.
+        // We need to calculate the counts through expensive operations.
+        long count = 0;
+        try ( DefaultRelationshipScanCursor rels = cursors.allocateRelationshipScanCursor() )
+        // DefaultRelationshipScanCursor already contains traversal checks within next()
+        {
+            this.allRelationshipsScan( rels );
+            while ( rels.next() )
+            {
+                if ( typeId == TokenRead.ANY_RELATIONSHIP_TYPE || rels.type() == typeId )
+                {
+                    count++;
+                }
+            }
+            return count;
+        }
+    }
+
     private long countsForNodeInTxState( int labelId )
     {
         long count = 0;
@@ -240,6 +260,13 @@ public class AllStoreHolder extends Read
     @Override
     public long countsForRelationship( int startLabelId, int typeId, int endLabelId )
     {
+        AccessMode mode = ktx.securityContext().mode();
+        if ( !mode.allowsTraverseAllRelTypes() )
+        {
+            // expensive path
+            return countsByAllRelationshipScan( typeId );
+        }
+
         long count = countsForRelationshipWithoutTxState( startLabelId, typeId, endLabelId );
         if ( ktx.hasTxStateWithChanges() )
         {
