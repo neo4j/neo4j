@@ -372,9 +372,10 @@ class SlottedPipeBuilder(fallback: PipeBuilder,
 
       case joinPlan: NodeHashJoin =>
         val argumentSize = physicalPlan.argumentSizes(plan.id)
-        val leftNodes: Array[Int] = joinPlan.nodes.map(k => slots.getLongOffsetFor(k)).toArray
+        val nodes = joinPlan.nodes.toArray // Make sure that leftNodes and rightNodes have the same order
+        val leftNodes: Array[Int] = nodes.map(k => slots.getLongOffsetFor(k))
         val rhsSlots = slotConfigs(joinPlan.right.id)
-        val rightNodes: Array[Int] = joinPlan.nodes.map(k => rhsSlots.getLongOffsetFor(k)).toArray
+        val rightNodes: Array[Int] = nodes.map(k => rhsSlots.getLongOffsetFor(k))
         val copyLongsFromRHS = collection.mutable.ArrayBuffer.newBuilder[(Int,Int)]
         val copyRefsFromRHS = collection.mutable.ArrayBuffer.newBuilder[(Int,Int)]
 
