@@ -19,16 +19,16 @@
  */
 package org.neo4j.db;
 
+import org.neo4j.snapshot.TestTransactionVersionContextSupplier;
+import org.neo4j.snapshot.TestVersionContext;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.io.File;
-import java.util.function.LongSupplier;
 
 import org.neo4j.collection.Dependencies;
-import org.neo4j.common.DependencyResolver;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -37,17 +37,13 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.QueryExecutionException;
 import org.neo4j.graphdb.Result;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.io.pagecache.tracing.cursor.context.VersionContext;
-import org.neo4j.kernel.impl.context.TransactionVersionContext;
-import org.neo4j.kernel.impl.context.TransactionVersionContextSupplier;
-import org.neo4j.kernel.internal.GraphDatabaseAPI;
-import org.neo4j.storageengine.api.TransactionIdStore;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.TestDirectoryExtension;
 import org.neo4j.test.rule.TestDirectory;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.fail;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 
 @ExtendWith( {TestDirectoryExtension.class} )
@@ -69,7 +65,7 @@ class QueryRestartIT
         database = startSnapshotQueryDb();
         createData();
 
-        testCursorContext = testCursorContext();
+        testCursorContext = TestVersionContext.testCursorContext( managementService, DEFAULT_DATABASE_NAME );
         testContextSupplier.setCursorContext( testCursorContext );
     }
 
@@ -129,16 +125,17 @@ class QueryRestartIT
     }
 
     @Test
-    void queryThatModifyDataAndSeeUnstableSnapshotThrowException()
+    void queryThatModifiesDataAndSeesUnstableSnapshotShouldThrowException()
     {
         try
         {
             database.execute( "MATCH (n:toRetry) CREATE () RETURN n.c" );
+            fail( "No exception thrown" );
         }
         catch ( QueryExecutionException e )
         {
             assertEquals( "Unable to get clean data snapshot for query " +
-                    "'MATCH (n:toRetry) CREATE () RETURN n.c' that perform updates.", e.getMessage() );
+                    "'MATCH (n:toRetry) CREATE () RETURN n.c' that performs updates.", e.getMessage() );
         }
     }
 
@@ -163,72 +160,6 @@ class QueryRestartIT
             Node node = database.createNode( label );
             node.setProperty( "c", "d" );
             transaction.commit();
-        }
-    }
-
-    private TestVersionContext testCursorContext()
-    {
-        TransactionIdStore transactionIdStore = getTransactionIdStore();
-        return new TestVersionContext( transactionIdStore::getLastClosedTransactionId );
-    }
-
-    private TransactionIdStore getTransactionIdStore()
-    {
-        DependencyResolver dependencyResolver = ((GraphDatabaseAPI) database).getDependencyResolver();
-        return dependencyResolver.resolveDependency( TransactionIdStore.class );
-    }
-
-    private class TestVersionContext extends TransactionVersionContext
-    {
-
-        private boolean wrongLastClosedTxId = true;
-        private int additionalAttempts;
-
-        TestVersionContext( LongSupplier transactionIdSupplier )
-        {
-            super( transactionIdSupplier );
-        }
-
-        @Override
-        public long lastClosedTransactionId()
-        {
-            return wrongLastClosedTxId ? TransactionIdStore.BASE_TX_ID : super.lastClosedTransactionId();
-        }
-
-        @Override
-        public void markAsDirty()
-        {
-            super.markAsDirty();
-            wrongLastClosedTxId = false;
-        }
-
-        void setWrongLastClosedTxId( boolean wrongLastClosedTxId )
-        {
-            this.wrongLastClosedTxId = wrongLastClosedTxId;
-        }
-
-        @Override
-        public boolean isDirty()
-        {
-            boolean dirty = super.isDirty();
-            if ( dirty )
-            {
-                additionalAttempts++;
-            }
-            return dirty;
-        }
-
-        int getAdditionalAttempts()
-        {
-            return additionalAttempts;
-        }
-    }
-
-    private class TestTransactionVersionContextSupplier extends TransactionVersionContextSupplier
-    {
-        void setCursorContext( VersionContext versionContext )
-        {
-            this.cursorContext.set( versionContext );
         }
     }
 }

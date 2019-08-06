@@ -19,35 +19,70 @@
  */
 package org.neo4j.server.http.cypher.integration;
 
+import org.neo4j.snapshot.TestTransactionVersionContextSupplier;
+import org.neo4j.snapshot.TestVersionContext;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
+import java.util.List;
+import java.util.Map;
+
+import org.neo4j.collection.Dependencies;
 import org.neo4j.configuration.GraphDatabaseSettings;
+import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.server.CommunityNeoServer;
-import org.neo4j.server.database.DatabaseService;
 import org.neo4j.test.server.ExclusiveServerTestBase;
 import org.neo4j.test.server.HTTP;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.Assert.assertEquals;
 import static org.neo4j.configuration.SettingValueParsers.TRUE;
 import static org.neo4j.server.helpers.CommunityServerBuilder.serverOnRandomPorts;
 import static org.neo4j.test.server.HTTP.RawPayload.quotedJson;
 
 public class SnapshotQueryExecutionIT extends ExclusiveServerTestBase
 {
-
+    private TestTransactionVersionContextSupplier testContextSupplier;
+    private TestVersionContext testCursorContext;
     private CommunityNeoServer server;
 
     @Before
     public void setUp() throws Exception
     {
-        server = serverOnRandomPorts().withProperty( GraphDatabaseSettings.snapshot_query.name(), TRUE ).build();
+        testContextSupplier = new TestTransactionVersionContextSupplier();
+        var dependencies = new Dependencies();
+        dependencies.satisfyDependencies( testContextSupplier );
+        server = serverOnRandomPorts()
+                .withProperty( GraphDatabaseSettings.snapshot_query.name(), TRUE )
+                .withDependencies( dependencies )
+                .build();
         server.start();
+        prepareCursorContext();
+        createData( server.getDatabaseService().getDatabase() );
+    }
+
+    private void prepareCursorContext()
+    {
+        testCursorContext = TestVersionContext
+                .testCursorContext( server.getDatabaseService().getDatabaseManagementService(),
+                                    server.getDatabaseService().getDatabase().databaseName() );
+        testContextSupplier.setCursorContext( testCursorContext );
+    }
+
+    private static void createData( GraphDatabaseService database )
+    {
+        Label label = Label.label( "toRetry" );
+        try ( Transaction transaction = database.beginTx() )
+        {
+            Node node = database.createNode( label );
+            node.setProperty( "c", "d" );
+            transaction.commit();
+        }
     }
 
     @After
@@ -60,26 +95,30 @@ public class SnapshotQueryExecutionIT extends ExclusiveServerTestBase
     }
 
     @Test
-    public void executeQueryWithSnapshotEngine()
+    public void executeQueryWithSingleRetry()
     {
-        DatabaseService database = server.getDatabaseService();
-        GraphDatabaseFacade graph = database.getDatabase();
-        try ( Transaction transaction = graph.beginTx() )
-        {
-            for ( int i = 0; i < 10; i++ )
-            {
-                Node node = graph.createNode();
-                node.setProperty( "a", "b" );
-            }
-            transaction.commit();
-        }
+        HTTP.Response response = excuteOverHTTP( "MATCH (n) RETURN n.c" );
+        assertThat( response.status(), equalTo( 200 ) );
+        Map<String,List<Map<String,List<Map<String,List<String>>>>>> content = response.content();
+        assertEquals( "d", content.get( "results" ).get( 0 ).get( "data" ).get( 0 ).get( "row" ).get( 0 ) );
+        assertEquals( 1, testCursorContext.getAdditionalAttempts() );
+    }
 
+    @Test
+    public void queryThatModifiesDataAndSeesUnstableSnapshotShouldThrowException()
+    {
+        HTTP.Response response = excuteOverHTTP( "MATCH (n:toRetry) CREATE () RETURN n.c" );
+        Map<String,List<Map<String,String>>> content = response.content();
+        assertEquals( "Unable to get clean data snapshot for query 'MATCH (n:toRetry) CREATE () RETURN n.c' that performs updates.",
+                      content.get( "errors" ).get( 0 ).get( "message" ) );
+    }
+
+    private HTTP.Response excuteOverHTTP( String query )
+    {
         HTTP.Builder httpClientBuilder = HTTP.withBaseUri( server.baseUri() );
         HTTP.Response transactionStart = httpClientBuilder.POST( transactionURI() );
         assertThat( transactionStart.status(), equalTo( 201 ) );
-        HTTP.Response response =
-                httpClientBuilder.POST( transactionStart.location(), quotedJson( "{ 'statements': [ { 'statement': 'MATCH (n) RETURN n' } ] }" ) );
-        assertThat( response.status(), equalTo( 200 ) );
+        return httpClientBuilder.POST( transactionStart.location(), quotedJson( "{ 'statements': [ { 'statement': '" + query + "' } ] }" ) );
     }
 
     private static String transactionURI()

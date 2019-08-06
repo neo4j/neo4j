@@ -27,6 +27,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
 
+import org.neo4j.common.DependencyResolver;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.configuration.connectors.HttpConnector;
@@ -73,6 +74,7 @@ public class CommunityServerBuilder
     private boolean persistent;
     private boolean httpEnabled = true;
     private boolean httpsEnabled;
+    private GraphDatabaseDependencies dependencies = GraphDatabaseDependencies.newDependencies();
 
     public static CommunityServerBuilder server( LogProvider logProvider )
     {
@@ -103,8 +105,10 @@ public class CommunityServerBuilder
                 .fromFile( configFile )
                 .build();
         config.setLogger( log );
-        return build( configFile, config, GraphDatabaseDependencies.newDependencies().userLogProvider( logProvider )
-                .monitors( new Monitors() ) );
+        ExternalDependencies dependencies = this.dependencies
+                .userLogProvider( logProvider )
+                .monitors( new Monitors() );
+        return build( configFile, config, dependencies );
     }
 
     protected CommunityNeoServer build( File configFile, Config config,
@@ -189,6 +193,12 @@ public class CommunityServerBuilder
     protected CommunityServerBuilder( LogProvider logProvider )
     {
         this.logProvider = logProvider;
+    }
+
+    public CommunityServerBuilder withDependencies( DependencyResolver dependencyResolver )
+    {
+        this.dependencies = this.dependencies.dependencies( dependencyResolver );
+        return this;
     }
 
     public CommunityServerBuilder persistent()
