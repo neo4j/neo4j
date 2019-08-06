@@ -47,6 +47,7 @@ import org.neo4j.internal.schema.LabelSchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.FileUtils;
+import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.index.IndexAccessor;
@@ -332,7 +333,9 @@ class IndexRecoveryIT
     {
         try
         {
-            FileUtils.copyRecursively( testDirectory.directory(), snapshotDir, pathname -> !pathname.equals( snapshotDir ) );
+            DatabaseLayout layout = testDirectory.databaseLayout();
+            FileUtils.copyRecursively( layout.databaseDirectory(), new File( snapshotDir, "data" ) );
+            FileUtils.copyRecursively( layout.getTransactionLogsDirectory(), new File( snapshotDir, "tx-logs" ) );
         }
         catch ( IOException e )
         {
@@ -344,14 +347,11 @@ class IndexRecoveryIT
     {
         try
         {
-            for ( File file : testDirectory.getFileSystem().listFiles( testDirectory.directory() ) )
-            {
-                if ( !file.equals( snapshotDir ) )
-                {
-                    FileUtils.deleteRecursively( file );
-                }
-            }
-            FileUtils.copyRecursively( snapshotDir, testDirectory.directory() );
+            DatabaseLayout layout = testDirectory.databaseLayout();
+            FileUtils.deleteRecursively( layout.databaseDirectory() );
+            FileUtils.deleteRecursively( layout.getTransactionLogsDirectory() );
+            FileUtils.copyRecursively( new File( snapshotDir, "data" ), layout.databaseDirectory() );
+            FileUtils.copyRecursively( new File( snapshotDir, "tx-logs" ), layout.getTransactionLogsDirectory() );
             FileUtils.deleteRecursively( snapshotDir );
         }
         catch ( IOException e )
