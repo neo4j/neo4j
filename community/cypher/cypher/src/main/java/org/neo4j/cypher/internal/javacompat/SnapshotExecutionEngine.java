@@ -19,14 +19,19 @@
  */
 package org.neo4j.cypher.internal.javacompat;
 
+import java.util.Optional;
+
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.cypher.internal.CompilerFactory;
 import org.neo4j.graphdb.Result;
+import org.neo4j.internal.helpers.collection.Pair;
 import org.neo4j.io.pagecache.tracing.cursor.context.VersionContext;
 import org.neo4j.kernel.GraphDatabaseQueryService;
 import org.neo4j.kernel.impl.api.KernelStatement;
+import org.neo4j.kernel.impl.query.QueryExecution;
 import org.neo4j.kernel.impl.query.QueryExecutionKernelException;
+import org.neo4j.kernel.impl.query.QuerySubscriber;
 import org.neo4j.kernel.impl.query.TransactionalContext;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.values.virtual.MapValue;
@@ -52,13 +57,25 @@ public class SnapshotExecutionEngine extends ExecutionEngine
     public Result executeQuery( String query, MapValue parameters, TransactionalContext context, boolean prePopulate )
             throws QueryExecutionKernelException
     {
-        return executeWithRetries( query, parameters, context, super::executeQuery, prePopulate );
+        return executeWithRetries( query, parameters, context, super::executeQuery, prePopulate ).other();
     }
 
-    protected <T> Result executeWithRetries( String query, T parameters, TransactionalContext context,
-            ParametrizedQueryExecutor<T> executor, boolean prePopulate ) throws QueryExecutionKernelException
+    @Override
+    public QueryExecution executeQuery( String query, MapValue parameters, TransactionalContext context, boolean prePopulate, QuerySubscriber subscriber )
+            throws QueryExecutionKernelException
+    {
+        var pair = executeWithRetries( query, parameters, context, super::executeQuery, prePopulate );
+        return pair.other().streamToSubscriber( subscriber, pair.first() );
+    }
+
+    protected <T> Pair<QueryExecution, EagerResult> executeWithRetries( String query,
+                                                                   T parameters,
+                                                                   TransactionalContext context,
+                                                                   ParametrizedQueryExecutor<T> executor,
+                                                                   boolean prePopulate ) throws QueryExecutionKernelException
     {
         VersionContext versionContext = getCursorContext( context );
+        QueryExecution queryExecution;
         EagerResult eagerResult;
         int attempt = 0;
         boolean dirtySnapshot;
@@ -66,29 +83,39 @@ public class SnapshotExecutionEngine extends ExecutionEngine
         {
             if ( attempt == maxQueryExecutionAttempts )
             {
-                return throwQueryExecutionException(
-                        "Unable to get clean data snapshot for query '%s' after %d attempts.", query, attempt );
+                throw new QueryExecutionKernelException( new UnstableSnapshotException( "Unable to get clean data snapshot for query '%s' after %d attempts.",
+                                                                                        query, attempt ) );
             }
             attempt++;
             versionContext.initRead();
-            Result result = executor.execute( query, parameters, context, prePopulate );
-            eagerResult = new EagerResult( result, versionContext );
+
+            ResultSubscriber resultSubscriber = getResultSubscriber( context );
+
+            queryExecution = executor.execute( query, parameters, context, prePopulate, resultSubscriber );
+            resultSubscriber.init( queryExecution );
+
+            eagerResult = getEagerResult( versionContext, resultSubscriber );
             eagerResult.consume();
             dirtySnapshot = versionContext.isDirty();
-            if ( dirtySnapshot && result.getQueryStatistics().containsUpdates() )
+            if ( dirtySnapshot && resultSubscriber.getQueryStatistics().containsUpdates() )
             {
-                return throwQueryExecutionException(
-                        "Unable to get clean data snapshot for query '%s' that perform updates.", query, attempt );
+                throw new QueryExecutionKernelException( new UnstableSnapshotException(
+                        "Unable to get clean data snapshot for query '%s' that performs updates.", query, attempt ) );
             }
         }
         while ( dirtySnapshot );
-        return eagerResult;
+
+        return Pair.of(queryExecution, eagerResult);
     }
 
-    private Result throwQueryExecutionException( String message, Object... parameters ) throws
-            QueryExecutionKernelException
+    protected EagerResult getEagerResult( VersionContext versionContext, ResultSubscriber resultSubscriber )
     {
-        throw new QueryExecutionKernelException( new UnstableSnapshotException( message, parameters ) );
+        return new EagerResult( resultSubscriber, versionContext );
+    }
+
+    protected ResultSubscriber getResultSubscriber( TransactionalContext context )
+    {
+        return new ResultSubscriber( context );
     }
 
     private static VersionContext getCursorContext( TransactionalContext context )
@@ -99,7 +126,7 @@ public class SnapshotExecutionEngine extends ExecutionEngine
     @FunctionalInterface
     protected interface ParametrizedQueryExecutor<T>
     {
-        Result execute( String query, T parameters, TransactionalContext context, boolean prePopulate ) throws QueryExecutionKernelException;
+        QueryExecution execute( String query, T parameters, TransactionalContext context, boolean prePopulate, QuerySubscriber subscriber )
+                throws QueryExecutionKernelException;
     }
-
 }

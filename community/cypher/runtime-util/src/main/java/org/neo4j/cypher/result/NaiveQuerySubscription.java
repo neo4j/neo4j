@@ -30,75 +30,33 @@ import org.neo4j.values.AnyValue;
  * pieces of reactive results in the code. Implements {@link org.neo4j.kernel.impl.query.QuerySubscription} by simply reading
  * the entire result in to memory and serves it in chunks as demanded by the client.
  */
-public abstract class NaiveQuerySubscription implements VisitableRuntimeResult
+public abstract class NaiveQuerySubscription extends EagerQuerySubscription implements VisitableRuntimeResult
 {
-    private long requestedRecords;
-    private int servedRecords;
     private List<AnyValue[]> materializedResult;
-    private final QuerySubscriber subscriber;
-    private Throwable error;
-    private boolean cancelled;
 
     protected NaiveQuerySubscription( QuerySubscriber subscriber )
     {
-        this.subscriber = subscriber;
+        super( subscriber );
     }
 
     @Override
-    public void request( long numberOfRecords ) throws Exception
+    protected void streamRecordToSubscriber( int servedRecords ) throws Exception
     {
-        requestedRecords = checkForOverflow( requestedRecords + numberOfRecords );
-        materializeIfNecessary();
-        serveResults();
+        AnyValue[] current = materializedResult.get( servedRecords );
+        for ( AnyValue anyValue : current )
+        {
+            subscriber.onField( anyValue );
+        }
     }
 
     @Override
-    public void cancel()
+    protected int resultSize()
     {
-        cancelled = true;
+        return materializedResult.size();
     }
 
     @Override
-    public boolean await()
-    {
-        boolean hasMore = servedRecords < materializedResult.size();
-        if ( !hasMore )
-        {
-            if ( error != null )
-            {
-               subscriber.onError( error );
-            }
-            else
-            {
-                subscriber.onResultCompleted( queryStatistics() );
-            }
-        }
-        return hasMore && !cancelled;
-    }
-
-    private void serveResults()
-    {
-        try
-        {
-            for ( ; servedRecords < requestedRecords && servedRecords < materializedResult.size(); servedRecords++ )
-            {
-                subscriber.onRecord();
-                AnyValue[] current = materializedResult.get( servedRecords );
-                for ( AnyValue anyValue : current )
-                {
-                    subscriber.onField( anyValue );
-                }
-                subscriber.onRecordCompleted();
-            }
-        }
-        catch ( Throwable t )
-        {
-            error = t;
-            servedRecords = materializedResult.size();
-        }
-    }
-
-    private void materializeIfNecessary() throws Exception
+    protected void materializeIfNecessary() throws Exception
     {
         if ( materializedResult == null )
         {
@@ -119,18 +77,6 @@ public abstract class NaiveQuerySubscription implements VisitableRuntimeResult
 
             //only call onResult first time
             subscriber.onResult( fieldNames().length );
-        }
-    }
-
-    private long checkForOverflow( long value )
-    {
-        if ( value < 0 )
-        {
-            return Long.MAX_VALUE;
-        }
-        else
-        {
-            return value;
         }
     }
 }

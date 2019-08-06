@@ -32,7 +32,9 @@ import org.neo4j.graphdb.QueryStatistics;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.Result;
 import org.neo4j.io.pagecache.tracing.cursor.context.VersionContext;
+import org.neo4j.kernel.impl.query.QueryExecution;
 import org.neo4j.kernel.impl.query.QueryExecutionKernelException;
+import org.neo4j.kernel.impl.query.QuerySubscriber;
 
 import static java.lang.System.lineSeparator;
 
@@ -59,6 +61,11 @@ class EagerResult implements Result
         {
             queryResult.add( originalResult.next() );
         }
+    }
+
+    QueryExecution streamToSubscriber( QuerySubscriber subscriber, QueryExecution innerExecution )
+    {
+        return new EagerQueryExecution( subscriber, innerExecution, originalResult.getQueryStatistics(), queryResult );
     }
 
     @Override
