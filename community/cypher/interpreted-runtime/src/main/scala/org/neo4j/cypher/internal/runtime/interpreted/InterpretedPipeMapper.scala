@@ -31,7 +31,7 @@ import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.{Aggre
 import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates.Predicate
 import org.neo4j.cypher.internal.runtime.interpreted.pipes._
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.aggregation.{GroupingAggTable, NonGroupingAggTable, OrderedGroupingAggTable, OrderedNonGroupingAggTable}
-import org.neo4j.cypher.internal.runtime.{ExecutionContext, ProcedureCallMode, QueryIndexes}
+import org.neo4j.cypher.internal.runtime.{ExecutionContext, ProcedureCallMode, QueryIndexRegistrator}
 import org.neo4j.cypher.internal.v4_0.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.v4_0.expressions.{Equals => ASTEquals, Expression => ASTExpression, _}
 import org.neo4j.cypher.internal.v4_0.util.attribution.Id
@@ -46,7 +46,7 @@ import org.neo4j.values.virtual.{NodeValue, RelationshipValue}
 case class InterpretedPipeMapper(readOnly: Boolean,
                                  expressionConverters: ExpressionConverters,
                                  tokenContext: TokenContext,
-                                 queryIndexes: QueryIndexes)
+                                 indexRegistrator: QueryIndexRegistrator)
                                 (implicit semanticTable: SemanticTable) extends PipeMapper {
 
   private def getBuildExpression(id: Id): ASTExpression => Expression =
@@ -71,7 +71,7 @@ case class InterpretedPipeMapper(readOnly: Boolean,
                                             RelationshipTypes(typeNames.map(_.name).toArray, tokenContext), endLabel.map(LazyLabel.apply))(id = id)
 
       case NodeByLabelScan(ident, label, _) =>
-        queryIndexes.registerLabelScan()
+        indexRegistrator.registerLabelScan()
         NodeByLabelScanPipe(ident, LazyLabel(label))(id = id)
 
       case NodeByIdSeek(ident, nodeIdExpr, _) =>
@@ -85,23 +85,23 @@ case class InterpretedPipeMapper(readOnly: Boolean,
 
       case NodeIndexSeek(ident, label, properties, valueExpr, _, indexOrder) =>
         val indexSeekMode = IndexSeekModeFactory(unique = false, readOnly = readOnly).fromQueryExpression(valueExpr)
-        NodeIndexSeekPipe(ident, label, properties.toArray, queryIndexes.registerQueryIndex(label, properties),
+        NodeIndexSeekPipe(ident, label, properties.toArray, indexRegistrator.registerQueryIndex(label, properties),
                           valueExpr.map(buildExpression), indexSeekMode, indexOrder)(id = id)
 
       case NodeUniqueIndexSeek(ident, label, properties, valueExpr, _, indexOrder) =>
         val indexSeekMode = IndexSeekModeFactory(unique = true, readOnly = readOnly).fromQueryExpression(valueExpr)
-        NodeIndexSeekPipe(ident, label, properties.toArray, queryIndexes.registerQueryIndex(label, properties),
+        NodeIndexSeekPipe(ident, label, properties.toArray, indexRegistrator.registerQueryIndex(label, properties),
                           valueExpr.map(buildExpression), indexSeekMode, indexOrder)(id = id)
 
       case NodeIndexScan(ident, label, properties, _, indexOrder) =>
-        NodeIndexScanPipe(ident, label, properties, queryIndexes.registerQueryIndex(label, properties), indexOrder)(id = id)
+        NodeIndexScanPipe(ident, label, properties, indexRegistrator.registerQueryIndex(label, properties), indexOrder)(id = id)
 
       case NodeIndexContainsScan(ident, label, property, valueExpr, _, indexOrder) =>
-        NodeIndexContainsScanPipe(ident, label, property, queryIndexes.registerQueryIndex(label, property),
+        NodeIndexContainsScanPipe(ident, label, property, indexRegistrator.registerQueryIndex(label, property),
                                   buildExpression(valueExpr), indexOrder)(id = id)
 
       case NodeIndexEndsWithScan(ident, label, property, valueExpr, _, indexOrder) =>
-        NodeIndexEndsWithScanPipe(ident, label, property, queryIndexes.registerQueryIndex(label, property),
+        NodeIndexEndsWithScanPipe(ident, label, property, indexRegistrator.registerQueryIndex(label, property),
                                   buildExpression(valueExpr), indexOrder)(id = id)
 
       case Input(nodes, variables, _) =>

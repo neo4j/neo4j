@@ -21,17 +21,17 @@ package org.neo4j.cypher.internal.runtime
 
 import org.neo4j.cypher.internal.logical.plans.IndexedProperty
 import org.neo4j.cypher.internal.v4_0.expressions.LabelToken
-import org.neo4j.internal.kernel.api.SchemaRead
+import org.neo4j.internal.kernel.api.{IndexReadSession, SchemaRead}
 import org.neo4j.internal.schema.{IndexDescriptor, SchemaDescriptor}
 
 import scala.collection.mutable.ArrayBuffer
 
 /**
-  * Helper class used to collect the indexes for a query and allocate query-local index ids.
+  * Helper class used to register the indexes for a query and allocate query-local index ids.
   *
   * @param schemaRead SchemaRead used to acquire index references for registered indexes.
   */
-class QueryIndexes(schemaRead: SchemaRead) {
+class QueryIndexRegistrator(schemaRead: SchemaRead) {
 
   private val buffer = new ArrayBuffer[InternalIndexReference]
   private var labelScan: Boolean = false
@@ -52,10 +52,29 @@ class QueryIndexes(schemaRead: SchemaRead) {
     }
   }
 
-  def indexes: Array[IndexDescriptor] = buffer.map(index => schemaRead.indexForSchemaNonTransactional(
-    SchemaDescriptor.forLabel(index.label, index.properties:_*))).toArray
+  def result(): QueryIndexes = {
+    val indexes =
+      buffer.map(index => schemaRead.indexForSchemaNonTransactional(
+        SchemaDescriptor.forLabel(index.label, index.properties:_*))).toArray
 
-  def hasLabelScan: Boolean = labelScan
+    QueryIndexes(labelScan, indexes)
+  }
 
   private case class InternalIndexReference(label: Int, properties: Seq[Int])
+}
+
+case class QueryIndexes(private val hasLabelScan: Boolean,
+                        private val indexes: Array[IndexDescriptor]) {
+  def initiateLabelAndSchemaIndexes(queryContext: QueryContext): Array[IndexReadSession] = {
+    if (hasLabelScan)
+      queryContext.transactionalContext.dataRead.prepareForLabelScans()
+
+    val indexReadSessions = new Array[IndexReadSession](indexes.length)
+    var i = 0
+    while (i < indexReadSessions.length) {
+      indexReadSessions(i) = queryContext.transactionalContext.dataRead.indexReadSession(indexes(i))
+      i += 1
+    }
+    indexReadSessions
+  }
 }

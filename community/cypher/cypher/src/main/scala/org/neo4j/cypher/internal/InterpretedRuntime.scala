@@ -40,14 +40,14 @@ object InterpretedRuntime extends CypherRuntime[RuntimeContext] {
     val (withSlottedParameters, parameterMapping) = slottedParameters(logicalPlan)
 
     val converters = new ExpressionConverters(CommunityExpressionConverter(context.tokenContext))
-    val queryIndexes = new QueryIndexes(context.schemaRead)
-    val pipeMapper = InterpretedPipeMapper(query.readOnly, converters, context.tokenContext, queryIndexes)(query.semanticTable)
+    val queryIndexRegistrator = new QueryIndexRegistrator(context.schemaRead)
+    val pipeMapper = InterpretedPipeMapper(query.readOnly, converters, context.tokenContext, queryIndexRegistrator)(query.semanticTable)
     val pipeTreeBuilder = PipeTreeBuilder(pipeMapper)
     val logicalPlanWithConvertedNestedPlans = NestedPipeExpressions.build(pipeTreeBuilder, withSlottedParameters, availableExpressionVars)
     val pipe = pipeTreeBuilder.build(logicalPlanWithConvertedNestedPlans)
     val columns = query.resultColumns
     val resultBuilderFactory = InterpretedExecutionResultBuilderFactory(pipe,
-                                                                        queryIndexes,
+                                                                        queryIndexRegistrator.result(),
                                                                         nExpressionSlots,
                                                                         parameterMapping,
                                                                         query.readOnly,
