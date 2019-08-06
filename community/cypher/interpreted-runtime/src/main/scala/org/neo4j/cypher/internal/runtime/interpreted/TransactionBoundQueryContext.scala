@@ -111,21 +111,32 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
     transactionalContext.kernelTransaction.tokenWrite().relationshipTypeGetOrCreateForName(relTypeName)
 
   override def getLabelsForNode(node: Long, nodeCursor: NodeCursor): ListValue = {
-      reads().singleNode(node, nodeCursor)
-      if (!nodeCursor.next()) {
-        if (nodeOps.isDeletedInThisTx(node))
-          throw new EntityNotFoundException(s"Node with id $node has been deleted in this transaction")
-        else
-          VirtualValues.EMPTY_LIST
-      }
-      val labelSet = nodeCursor.labels()
-      val labelArray = new Array[TextValue](labelSet.numberOfLabels())
-      var i = 0
-      while (i < labelSet.numberOfLabels()) {
-        labelArray(i) = Values.stringValue(tokenRead.nodeLabelName(labelSet.label(i)))
-        i += 1
-      }
-      VirtualValues.list(labelArray: _*)
+    reads().singleNode(node, nodeCursor)
+    if (!nodeCursor.next()) {
+      if (nodeOps.isDeletedInThisTx(node))
+        throw new EntityNotFoundException(s"Node with id $node has been deleted in this transaction")
+      else
+        VirtualValues.EMPTY_LIST
+    }
+    val labelSet = nodeCursor.labels()
+    val labelArray = new Array[TextValue](labelSet.numberOfLabels())
+    var i = 0
+    while (i < labelSet.numberOfLabels()) {
+      labelArray(i) = Values.stringValue(tokenRead.nodeLabelName(labelSet.label(i)))
+      i += 1
+    }
+    VirtualValues.list(labelArray: _*)
+  }
+
+  override def getTypeForRelationship(id: Long, cursor: RelationshipScanCursor): TextValue = {
+    reads().singleRelationship(id, cursor)
+    if (!cursor.next()) {
+      if (relationshipOps.isDeletedInThisTx(id))
+        throw new EntityNotFoundException(s"Relatinoship with id $id has been deleted in this transaction")
+      else
+        VirtualValues.EMPTY_LIST
+    }
+    Values.stringValue(tokenRead.relationshipTypeName(cursor.`type`()))
   }
 
   override def isLabelSetOnNode(label: Int, node: Long, nodeCursor: NodeCursor): Boolean = {

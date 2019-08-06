@@ -25,6 +25,7 @@ import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.PropertyCursor;
 import org.neo4j.internal.kernel.api.RelationshipScanCursor;
 import org.neo4j.values.AnyValue;
+import org.neo4j.values.storable.TextValue;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.virtual.ListValue;
 import org.neo4j.values.virtual.MapValue;
@@ -85,6 +86,8 @@ public interface DbAccess extends EntityById
     void singleRelationship( long id, RelationshipScanCursor cursor );
 
     ListValue getLabelsForNode( long id, NodeCursor nodeCursor );
+
+    TextValue getTypeForRelationship( long id, RelationshipScanCursor relationshipCursor );
 
     boolean isLabelSetOnNode( int label, long id, NodeCursor nodeCursor );
 

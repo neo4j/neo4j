@@ -60,6 +60,9 @@ class ExceptionTranslatingQueryContext(val inner: QueryContext) extends QueryCon
   override def getLabelsForNode(node: Long, nodeCursor: NodeCursor): ListValue =
     translateException(inner.getLabelsForNode(node, nodeCursor))
 
+  override def getTypeForRelationship(id: Long, cursor: RelationshipScanCursor): TextValue =
+    translateException(inner.getTypeForRelationship(id, cursor))
+
   override def getLabelName(id: Int): String =
     translateException(inner.getLabelName(id))
 
