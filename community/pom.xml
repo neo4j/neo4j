@@ -68,6 +68,7 @@
     <module>procedure-compiler</module>
     <module>values</module>
     <module>ssl</module>
+    <module>push-to-cloud</module>
   </modules>
 
   <licenses>
