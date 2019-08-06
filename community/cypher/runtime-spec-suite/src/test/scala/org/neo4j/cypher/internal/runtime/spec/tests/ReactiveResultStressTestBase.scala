@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.runtime.spec.tests
 
-import org.neo4j.configuration.GraphDatabaseSettings.{cypher_morsel_size, cypher_worker_count}
+import org.neo4j.configuration.GraphDatabaseSettings.{cypher_morsel_size_big, cypher_morsel_size_small, cypher_worker_count}
 import org.neo4j.cypher.internal.runtime.spec.tests.ReactiveResultStressTestBase.{MORSEL_SIZE, WORKERS}
 import org.neo4j.cypher.internal.runtime.spec.{Edition, LogicalQueryBuilder, RuntimeTestSuite}
 import org.neo4j.cypher.internal.{CypherRuntime, LogicalQuery, RuntimeContext}
@@ -35,7 +35,8 @@ abstract class ReactiveResultStressTestBase[CONTEXT <: RuntimeContext](edition: 
                                                                        runtime: CypherRuntime[CONTEXT],
                                                                        sizeHint: Int)
   extends RuntimeTestSuite[CONTEXT](edition.copyWith(
-    cypher_morsel_size -> Integer.valueOf(MORSEL_SIZE),
+    cypher_morsel_size_big -> Integer.valueOf(MORSEL_SIZE),
+    cypher_morsel_size_small -> Integer.valueOf(MORSEL_SIZE),
     cypher_worker_count -> Integer.valueOf(WORKERS)), runtime) with Eventually {
   private val random = new Random(seed = 31)
 

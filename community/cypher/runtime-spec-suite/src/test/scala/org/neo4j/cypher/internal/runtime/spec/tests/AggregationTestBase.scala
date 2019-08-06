@@ -291,9 +291,9 @@ abstract class AggregationTestBase[CONTEXT <: RuntimeContext](
       consume(execute(logicalQuery, runtime, input))
     }
 
-    val batchSize = edition.getSetting(GraphDatabaseSettings.cypher_morsel_size).getOrElse(10).asInstanceOf[Int]
+    val batchSize = edition.getSetting(GraphDatabaseSettings.cypher_morsel_size_big).getOrElse(10).asInstanceOf[Int]
     val numberBatches = (0 until batchSize * 10).map(_ => NUMBER)
-    val durationBatches= (0 until batchSize * 10).map(_ => DURATION)
+    val durationBatches = (0 until batchSize * 10).map(_ => DURATION)
 
     // then III
     intercept[CypherTypeException] {

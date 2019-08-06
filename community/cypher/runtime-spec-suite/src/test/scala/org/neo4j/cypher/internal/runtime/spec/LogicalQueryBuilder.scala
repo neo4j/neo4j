@@ -24,6 +24,7 @@ import org.neo4j.cypher.internal.logical.builder.{AbstractLogicalPlanBuilder, To
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.Cardinalities
 import org.neo4j.cypher.internal.v4_0.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.v4_0.expressions.Variable
+import org.neo4j.cypher.internal.v4_0.util.Cardinality
 
 /**
   * Test help utility for hand-writing logical queries.
@@ -43,12 +44,14 @@ class LogicalQueryBuilder(tokenResolver: TokenResolver)
 
   def build(readOnly: Boolean = true): LogicalQuery = {
     val logicalPlan = buildLogicalPlan()
+    val cardinalities = new Cardinalities
+    logicalPlan.flatten.foreach(plan => cardinalities.set(plan.id, Cardinality(1)))
     LogicalQuery(logicalPlan,
                  "<<queryText>>",
                  readOnly,
                  resultColumns,
                  semanticTable,
-                 new Cardinalities,
+                 cardinalities,
                  hasLoadCSV = false,
                  None)
   }

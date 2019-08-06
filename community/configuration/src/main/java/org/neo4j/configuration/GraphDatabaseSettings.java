@@ -386,10 +386,15 @@ public class GraphDatabaseSettings implements SettingsDeclaration
     public static final Setting<Boolean> enable_morsel_runtime_trace =
             newBuilder( "unsupported.cypher.enable_morsel_runtime_trace", BOOL, false ).build();
 
-    @Description( "The size of the morsels" )
+    @Description( "The size of small query morsels" )
     @Internal
-    public static final Setting<Integer> cypher_morsel_size =
-            newBuilder( "unsupported.cypher.morsel_size", INT, 1000 ).addConstraint( min( 1 ) ).build();
+    public static final Setting<Integer> cypher_morsel_size_small =
+            newBuilder( "unsupported.cypher.morsel_size_small", INT, 128 ).addConstraint( min( 1 ) ).build();
+
+    @Description( "The size of big query morsels" )
+    @Internal
+    public static final Setting<Integer> cypher_morsel_size_big =
+            newBuilder( "unsupported.cypher.morsel_size_big", INT, 1024 ).addConstraint( min( 1 ) ).build();
 
     @Description( "Duration in milliseconds that parallel runtime waits on a task before trying another task" )
     @Internal
