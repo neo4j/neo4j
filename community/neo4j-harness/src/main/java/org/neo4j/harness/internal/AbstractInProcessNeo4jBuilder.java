@@ -130,7 +130,8 @@ public abstract class AbstractInProcessNeo4jBuilder implements Neo4jBuilder
             config.set( GraphDatabaseSettings.legacy_certificates_directory, certificates.toPath() );
 
             Config dbConfig = config.build();
-            if ( dbConfig.get( HttpsConnector.enabled ) )
+            if ( dbConfig.get( HttpsConnector.enabled ) ||
+                 dbConfig.get( BoltConnector.enabled ) && dbConfig.get( BoltConnector.encryption_level ) != BoltConnector.EncryptionLevel.DISABLED )
             {
                 SelfSignedCertificateFactory.create( certificates );
             }
