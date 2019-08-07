@@ -194,7 +194,7 @@ public class DatabaseAvailabilityGuard extends LifecycleAdapter implements Avail
     private Availability availability( long millis )
     {
         Availability availability = availability();
-        if ( availability != Availability.UNAVAILABLE )
+        if ( availability == Availability.AVAILABLE )
         {
             return availability;
         }
@@ -212,7 +212,7 @@ public class DatabaseAvailabilityGuard extends LifecycleAdapter implements Avail
                 break;
             }
             availability = availability();
-        } while ( availability == Availability.UNAVAILABLE && clock.millis() < timeout );
+        } while ( availability != Availability.AVAILABLE && clock.millis() < timeout );
 
         return availability;
     }

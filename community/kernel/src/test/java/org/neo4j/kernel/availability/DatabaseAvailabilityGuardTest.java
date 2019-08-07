@@ -20,6 +20,7 @@
 package org.neo4j.kernel.availability;
 
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Timeout;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mockito;
 import org.mockito.verification.VerificationMode;
@@ -34,6 +35,9 @@ import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.LifeExtension;
 import org.neo4j.time.Clocks;
 
+import static java.util.concurrent.CompletableFuture.supplyAsync;
+import static java.util.concurrent.TimeUnit.DAYS;
+import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
@@ -46,6 +50,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyZeroInteractions;
 
+@Timeout( 30 )
 @ExtendWith( LifeExtension.class )
 class DatabaseAvailabilityGuardTest
 {
@@ -315,22 +320,6 @@ class DatabaseAvailabilityGuardTest
     }
 
     @Test
-    void givenAccessGuardWithConditionWhenShutdownThenInstantlyDenyAccess()
-    {
-        // Given
-        Clock clock = mock( Clock.class );
-        final DatabaseAvailabilityGuard databaseAvailabilityGuard = getDatabaseAvailabilityGuard( clock, log );
-        databaseAvailabilityGuard.require( REQUIREMENT_1 );
-
-        // When
-        databaseAvailabilityGuard.shutdown();
-
-        // Then
-        assertFalse( databaseAvailabilityGuard.isAvailable( 1000 ) );
-        verifyZeroInteractions( clock );
-    }
-
-    @Test
     void shouldExplainWhoIsBlockingAccess()
     {
         // Given
@@ -342,6 +331,35 @@ class DatabaseAvailabilityGuardTest
 
         // Then
         assertThat( databaseAvailabilityGuard.describe(), equalTo( "2 reasons for blocking: Requirement 1, Requirement 2." ) );
+    }
+
+    @Test
+    void shouldWaitForAvailabilityWhenShutdown() throws Exception
+    {
+        // very long timeout to force blocking
+        var waitMs = DAYS.toMillis( 1 );
+        var availabilityGuard = createAvailabilityGuard( clock, log );
+
+        availabilityGuard.init();
+        availabilityGuard.start();
+
+        assertFalse( availabilityGuard.isShutdown() );
+        assertTrue( availabilityGuard.isAvailable( waitMs ) );
+
+        availabilityGuard.stop();
+        availabilityGuard.shutdown();
+
+        assertTrue( availabilityGuard.isShutdown() );
+
+        // check isAvailable in a separate thread with a very long timeout; this thread should keep polling and sleeping
+        var isAvailableFuture = supplyAsync( () -> availabilityGuard.isAvailable( waitMs ) );
+        SECONDS.sleep( 1 );
+        assertFalse( isAvailableFuture.isDone() );
+
+        // start the guard, this should make the polling thread exit
+        availabilityGuard.init();
+        availabilityGuard.start();
+        assertTrue( isAvailableFuture.get( 5, SECONDS ) );
     }
 
     private static void verifyLogging( Log log, VerificationMode mode )
@@ -359,6 +377,6 @@ class DatabaseAvailabilityGuardTest
     private static DatabaseAvailabilityGuard createAvailabilityGuard( Clock clock, Log log )
     {
         return new DatabaseAvailabilityGuard( new TestDatabaseIdRepository().defaultDatabase(), clock, log, 0,
-                    mock( CompositeDatabaseAvailabilityGuard.class ) );
+                mock( CompositeDatabaseAvailabilityGuard.class ) );
     }
 }
