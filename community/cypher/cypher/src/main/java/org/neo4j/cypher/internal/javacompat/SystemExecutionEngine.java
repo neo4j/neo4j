@@ -36,7 +36,7 @@ class SystemExecutionEngine extends ExecutionEngine
 
     /**
      * Creates an execution engine around the given graph database wrapping an internal compiler factory for two level Cypher runtime.
-     * This is used for processing system database commands, where the outer Cypher engine will only understand DDL commands
+     * This is used for processing system database commands, where the outer Cypher engine will only understand administration commands
      * and translate them into normal Cypher against the SYSTEM database, processed by the inner Cypher runtime, which understands normal Cypher.
      */
     SystemExecutionEngine( GraphDatabaseQueryService queryService, LogProvider logProvider, CompilerFactory systemCompilerFactory,

@@ -33,7 +33,7 @@ trait Statement extends Parser
     CreateGraph | DropGraph | CreateView | DropView
   }
 
-  def MultiDatabaseCommand: Rule1[CatalogDDL] = rule("MultiDatabase DDL statement") {
+  def MultiDatabaseCommand: Rule1[CatalogDDL] = rule("MultiDatabase administration statement") {
     optional(keyword("CATALOG")) ~~ (ShowDatabase | ShowDatabases | ShowDefaultDatabase | CreateDatabase | DropDatabase | StartDatabase | StopDatabase)
   }
 

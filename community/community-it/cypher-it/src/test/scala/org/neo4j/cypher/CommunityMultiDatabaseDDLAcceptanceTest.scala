@@ -140,7 +140,7 @@ class CommunityMultiDatabaseDDLAcceptanceTest extends CommunityDDLAcceptanceTest
       execute("SHOW DEFAULT DATABASE")
       // THEN
     } should have message
-      "This is a DDL command and it should be executed against the system database: SHOW DEFAULT DATABASE"
+      "This is a administration command and it should be executed against the system database: SHOW DEFAULT DATABASE"
   }
 
   // Test for non-valid community commands

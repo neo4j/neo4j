@@ -240,7 +240,7 @@ public interface Status
         RuntimeUnsupportedError( ClientError,
                 "This query is not supported by the chosen runtime." ),
         NotSystemDatabaseError( ClientError,
-                "This is a DDL command and it should be executed against the system database." ),
+                "This is a administration command and it should be executed against the system database." ),
 
         // database errors
         ExecutionFailed( DatabaseError,
