@@ -275,6 +275,19 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
     appendAtCurrentIndent(LeafOperator(DirectedRelationshipByIdSeek(relationship, input, from, to, Set.empty)(_)))
   }
 
+  def undirectedRelationshipByIdSeek(relationship: String, from: String, to: String, ids: Long*): IMPL = {
+    newRelationship(varFor(relationship))
+    val idExpressions = ids.map(l => UnsignedDecimalIntegerLiteral(l.toString)(pos))
+    val input =
+      if (idExpressions.length == 1) {
+        SingleSeekableArg(idExpressions.head)
+      } else {
+        ManySeekableArgs(ListLiteral(idExpressions)(pos))
+      }
+
+    appendAtCurrentIndent(LeafOperator(UndirectedRelationshipByIdSeek(relationship, input, from, to, Set.empty)(_)))
+  }
+
   def nodeCountFromCountStore(node: String, labels: List[Option[String]]): IMPL = {
     val labelNames = labels.map(maybeLabel => maybeLabel.map(labelName))
     appendAtCurrentIndent(LeafOperator(NodeCountFromCountStore(node, labelNames, Set.empty)(_)))
