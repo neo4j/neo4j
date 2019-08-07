@@ -28,6 +28,29 @@ abstract class ProfileRowsTestBase[CONTEXT <: RuntimeContext](edition: Edition[C
                                                               sizeHint: Int
                                                          ) extends RuntimeTestSuite[CONTEXT](edition, runtime) {
 
+  test("should profile rows of all nodes scan + aggregation + produce results") {
+    // given
+    nodeGraph(sizeHint)
+
+    val aggregationGroups = sizeHint / 2
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("k", "c")
+      .aggregation(groupingExpressions = Seq(s"id(x) % $aggregationGroups AS k"), aggregationExpression = Seq("count(*) AS c"))
+      .allNodeScan("x")
+      .build()
+
+    val runtimeResult = profile(logicalQuery, runtime)
+    consume(runtimeResult)
+
+    // then
+    val queryProfile = runtimeResult.runtimeResult.queryProfile()
+    queryProfile.operatorProfile(0).rows() shouldBe aggregationGroups // produce results
+    queryProfile.operatorProfile(1).rows() shouldBe aggregationGroups // aggregation
+    queryProfile.operatorProfile(2).rows() shouldBe sizeHint          // all nodes scan
+  }
+
   test("should profile rows of all nodes scan + produce results") {
     // given
     nodeGraph(sizeHint)

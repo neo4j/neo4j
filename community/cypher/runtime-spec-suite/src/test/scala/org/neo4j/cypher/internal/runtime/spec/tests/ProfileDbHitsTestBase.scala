@@ -374,4 +374,26 @@ abstract class ProfileDbHitsTestBase[CONTEXT <: RuntimeContext](
     val queryProfile = runtimeResult.runtimeResult.queryProfile()
     queryProfile.operatorProfile(1).dbHits() shouldBe sizeHint * costOfProperty // late x.prop in morsel
   }
+
+  // TODO fix for Morsel. test passes in Slotted but failed in (non)fused Morsel with wrong count
+  ignore("should profile dbHits of aggregation with grouping") {
+    // given
+    val aggregationGroups = sizeHint / 2
+
+    nodePropertyGraph(sizeHint, { case i => Map("group" -> i % aggregationGroups, "prop" -> i)})
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("group", "avg")
+      .aggregation(Seq("x.group AS group"), Seq("avg(x.prop) AS avg"))
+      .allNodeScan("x")
+      .build()
+
+    val runtimeResult = profile(logicalQuery, runtime)
+    consume(runtimeResult)
+
+    // then
+    val queryProfile = runtimeResult.runtimeResult.queryProfile()
+    queryProfile.operatorProfile(1).dbHits() shouldBe sizeHint * (costOfProperty * 2) // late x.prop in morsel
+  }
 }
