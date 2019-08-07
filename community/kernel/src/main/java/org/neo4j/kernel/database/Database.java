@@ -231,7 +231,7 @@ public class Database extends LifecycleAdapter
     private final Iterable<ExtensionFactory<?>> extensionFactories;
     private final Function<DatabaseLayout,DatabaseLayoutWatcher> watcherServiceFactory;
     private final Factory<DatabaseHealth> databaseHealthFactory;
-    private final Iterable<QueryEngineProvider> engineProviders;
+    private final QueryEngineProvider engineProvider;
     private volatile boolean started;
     private Monitors databaseMonitors;
     private DatabasePageCache databasePageCache;
@@ -274,7 +274,7 @@ public class Database extends LifecycleAdapter
         this.versionContextSupplier = context.getVersionContextSupplier();
         this.extensionFactories = context.getExtensionFactories();
         this.watcherServiceFactory = context.getWatcherServiceFactory();
-        this.engineProviders = context.getEngineProviders();
+        this.engineProvider = context.getEngineProvider();
         this.msgLog = internalLogProvider.getLog( getClass() );
         this.lockService = new ReentrantLockService();
         this.commitProcessFactory = context.getCommitProcessFactory();
@@ -439,7 +439,7 @@ public class Database extends LifecycleAdapter
                     databaseDependencies.resolveDependency( CountsAccessor.class ) ) );
 
             var providerSpi = QueryEngineProvider.spi( internalLogProvider, databaseMonitors, scheduler, life, getKernel(), databaseConfig );
-            this.executionEngine = QueryEngineProvider.initialize( databaseDependencies, databaseFacade, engineProviders, isSystem(), providerSpi );
+            this.executionEngine = QueryEngineProvider.initialize( databaseDependencies, databaseFacade, engineProvider, isSystem(), providerSpi );
 
             this.checkpointerLifecycle = new CheckpointerLifecycle( transactionLogModule.checkPointer(), databaseHealth );
 

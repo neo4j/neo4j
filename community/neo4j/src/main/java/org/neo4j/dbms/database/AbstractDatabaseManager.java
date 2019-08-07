@@ -43,6 +43,7 @@ import org.neo4j.kernel.database.DatabaseIdRepository;
 import org.neo4j.kernel.database.MapCachingDatabaseIdRepository;
 import org.neo4j.kernel.database.SystemDbDatabaseIdRepository;
 import org.neo4j.kernel.impl.context.TransactionVersionContextSupplier;
+import org.neo4j.kernel.impl.query.QueryEngineProvider;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
@@ -139,8 +140,12 @@ public abstract class AbstractDatabaseManager<DB extends DatabaseContext> extend
         EditionDatabaseComponents editionDatabaseComponents = edition.createDatabaseComponents( databaseId );
         GlobalProcedures globalProcedures = edition.getGlobalProcedures();
         var databaseConfig = new DatabaseConfig( config, databaseId );
+
+        QueryEngineProvider queryEngineProvider = edition.chooseEngineProvider( globalModule.getQueryEngineProviders() );
+
         return new ModularDatabaseCreationContext( databaseId, globalModule, parentDependencies, parentMonitors,
-                editionDatabaseComponents, globalProcedures, createVersionContextSupplier( databaseConfig ), databaseConfig );
+                                                   editionDatabaseComponents, globalProcedures, createVersionContextSupplier( databaseConfig ), databaseConfig,
+                                                   queryEngineProvider );
     }
 
     private void forEachDatabase( BiConsumer<DatabaseId,DB> consumer, boolean systemDatabaseLast )

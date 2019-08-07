@@ -76,6 +76,7 @@ public class ModularDatabaseCreationContext implements DatabaseCreationContext
     private final DatabaseId databaseId;
     private final Config globalConfig;
     private final DatabaseConfig databaseConfig;
+    private final QueryEngineProvider queryEngineProvider;
     private final IdGeneratorFactory idGeneratorFactory;
     private final DatabaseLogService databaseLogService;
     private final JobScheduler scheduler;
@@ -104,7 +105,6 @@ public class ModularDatabaseCreationContext implements DatabaseCreationContext
     private final CollectionsFactorySupplier collectionsFactorySupplier;
     private final Iterable<ExtensionFactory<?>> extensionFactories;
     private final Function<DatabaseLayout,DatabaseLayoutWatcher> watcherServiceFactory;
-    private final Iterable<QueryEngineProvider> engineProviders;
     private final DatabaseLayout databaseLayout;
     private final DatabaseEventListeners eventListeners;
     private final GlobalTransactionEventListeners transactionEventListeners;
@@ -114,13 +114,15 @@ public class ModularDatabaseCreationContext implements DatabaseCreationContext
     private final AccessCapabilityFactory accessCapabilityFactory;
 
     public ModularDatabaseCreationContext( DatabaseId databaseId, GlobalModule globalModule, Dependencies globalDependencies,
-            Monitors parentMonitors, EditionDatabaseComponents editionComponents, GlobalProcedures globalProcedures,
-            VersionContextSupplier versionContextSupplier, DatabaseConfig databaseConfig )
+                                           Monitors parentMonitors, EditionDatabaseComponents editionComponents, GlobalProcedures globalProcedures,
+                                           VersionContextSupplier versionContextSupplier, DatabaseConfig databaseConfig,
+                                           QueryEngineProvider queryEngineProvider )
     {
         this.databaseId = databaseId;
         this.globalConfig = globalModule.getGlobalConfig();
         this.databaseConfig = databaseConfig;
         this.versionContextSupplier = versionContextSupplier;
+        this.queryEngineProvider = queryEngineProvider;
         DatabaseIdContext idContext = editionComponents.getIdContext();
         this.idGeneratorFactory = idContext.getIdGeneratorFactory();
         this.idController = idContext.getIdController();
@@ -153,7 +155,6 @@ public class ModularDatabaseCreationContext implements DatabaseCreationContext
         this.collectionsFactorySupplier = globalModule.getCollectionsFactorySupplier();
         this.extensionFactories = globalModule.getExtensionFactories();
         this.watcherServiceFactory = editionComponents.getWatcherServiceFactory();
-        this.engineProviders = globalModule.getQueryEngineProviders();
         this.databaseAvailabilityGuardFactory = databaseTimeoutMillis -> databaseAvailabilityGuardFactory( databaseId, globalModule, databaseTimeoutMillis );
         this.storageEngineFactory = globalModule.getStorageEngineFactory();
         this.contextBridge = globalModule.getThreadToTransactionBridge();
@@ -360,9 +361,9 @@ public class ModularDatabaseCreationContext implements DatabaseCreationContext
     }
 
     @Override
-    public Iterable<QueryEngineProvider> getEngineProviders()
+    public QueryEngineProvider getEngineProvider()
     {
-        return engineProviders;
+        return queryEngineProvider;
     }
 
     @Override

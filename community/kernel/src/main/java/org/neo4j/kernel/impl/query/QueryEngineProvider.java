@@ -46,16 +46,23 @@ public abstract class QueryEngineProvider implements NamedService
 
     protected abstract int enginePriority();
 
+    /**
+     * Return the query engine provider among the given ones with the highest priority.
+     * If queryEngineProviders is empty, return null.
+     */
+    public static QueryEngineProvider chooseAlternative( Iterable<QueryEngineProvider> queryEngineProviders )
+    {
+        List<QueryEngineProvider> engineProviders = asList( queryEngineProviders );
+        engineProviders.sort( Comparator.comparingInt( QueryEngineProvider::enginePriority ) );
+        return Iterables.firstOrNull( engineProviders );
+    }
+
     public static QueryExecutionEngine initialize( Dependencies deps,
                                                    GraphDatabaseAPI graphAPI,
-                                                   Iterable<QueryEngineProvider> providers,
+                                                   QueryEngineProvider provider,
                                                    boolean isSystemDatabase,
                                                    SPI spi )
     {
-        List<QueryEngineProvider> engineProviders = asList( providers );
-        engineProviders.sort( Comparator.comparingInt( QueryEngineProvider::enginePriority ) );
-        QueryEngineProvider provider = Iterables.firstOrNull( engineProviders );
-
         if ( provider == null )
         {
             return noEngine();

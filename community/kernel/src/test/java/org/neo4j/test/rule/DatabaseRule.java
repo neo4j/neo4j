@@ -168,7 +168,7 @@ public class DatabaseRule extends ExternalResource
                 new BufferedIdController( new BufferingIdGeneratorFactory( idGeneratorFactory ),
                         jobScheduler ), DatabaseInfo.COMMUNITY, new TransactionVersionContextSupplier(), ON_HEAP,
                 Iterables.iterable( new EmptyIndexExtensionFactory() ),
-                file -> mock( DatabaseLayoutWatcher.class ), Iterables.empty(),
+                file -> mock( DatabaseLayoutWatcher.class ), null,
                 storageEngineFactory, new ThreadToStatementContextBridge(), new GlobalLockerService() ) );
         return database;
     }
@@ -232,7 +232,7 @@ public class DatabaseRule extends ExternalResource
         private final CollectionsFactorySupplier collectionsFactorySupplier;
         private final Iterable<ExtensionFactory<?>> extensionFactories;
         private final Function<DatabaseLayout,DatabaseLayoutWatcher> watcherServiceFactory;
-        private final Iterable<QueryEngineProvider> engineProviders;
+        private final QueryEngineProvider engineProvider;
         private final DatabaseEventListeners eventListeners;
         private final StorageEngineFactory storageEngineFactory;
         private final ThreadToStatementContextBridge contextBridge;
@@ -248,7 +248,7 @@ public class DatabaseRule extends ExternalResource
                 StoreCopyCheckPointMutex storeCopyCheckPointMutex, IdController idController,
                 DatabaseInfo databaseInfo, VersionContextSupplier versionContextSupplier, CollectionsFactorySupplier collectionsFactorySupplier,
                 Iterable<ExtensionFactory<?>> extensionFactories, Function<DatabaseLayout,DatabaseLayoutWatcher> watcherServiceFactory,
-                Iterable<QueryEngineProvider> engineProviders, StorageEngineFactory storageEngineFactory, ThreadToStatementContextBridge contextBridge,
+                QueryEngineProvider engineProvider, StorageEngineFactory storageEngineFactory, ThreadToStatementContextBridge contextBridge,
                 FileLockerService fileLockerService )
         {
             this.databaseId = databaseId;
@@ -282,7 +282,7 @@ public class DatabaseRule extends ExternalResource
             this.collectionsFactorySupplier = collectionsFactorySupplier;
             this.extensionFactories = extensionFactories;
             this.watcherServiceFactory = watcherServiceFactory;
-            this.engineProviders = engineProviders;
+            this.engineProvider = engineProvider;
             this.eventListeners = mock( DatabaseEventListeners.class );
             this.storageEngineFactory = storageEngineFactory;
             this.contextBridge = contextBridge;
@@ -498,9 +498,9 @@ public class DatabaseRule extends ExternalResource
         }
 
         @Override
-        public Iterable<QueryEngineProvider> getEngineProviders()
+        public QueryEngineProvider getEngineProvider()
         {
-            return engineProviders;
+            return engineProvider;
         }
 
         @Override

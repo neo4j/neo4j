@@ -445,7 +445,7 @@ public class GlobalModule
         return jobScheduler;
     }
 
-    Iterable<QueryEngineProvider> getQueryEngineProviders()
+    public Iterable<QueryEngineProvider> getQueryEngineProviders()
     {
         return queryEngineProviders;
     }

@@ -25,6 +25,7 @@ import org.neo4j.collection.Dependencies;
 import org.neo4j.internal.helpers.collection.Iterables;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
@@ -41,37 +42,36 @@ class QueryEngineProviderTest
         QueryEngineProvider provider2 = mock( QueryEngineProvider.class );
         when( provider1.enginePriority() ).thenReturn( 1 );
         when( provider2.enginePriority() ).thenReturn( 2 );
-        Dependencies deps = new Dependencies();
-        GraphDatabaseAPI graphAPI = mock( GraphDatabaseAPI.class );
-        QueryExecutionEngine executionEngine = mock( QueryExecutionEngine.class );
-        QueryExecutionEngine executionEngine2 = mock( QueryExecutionEngine.class );
-        when( provider1.createEngine( any(), any(), anyBoolean(), any() ) ).thenReturn( executionEngine );
-        when( provider2.createEngine( any(), any(), anyBoolean(), any() ) ).thenReturn( executionEngine2 );
-
         // When
         Iterable<QueryEngineProvider> providers = Iterables.asIterable( provider1, provider2 );
-        QueryExecutionEngine engine = QueryEngineProvider.initialize( deps, graphAPI, providers, false, null );
+        QueryEngineProvider provider = QueryEngineProvider.chooseAlternative( providers );
 
         // Then
-        assertSame( executionEngine, engine );
+        assertSame( provider1, provider );
     }
 
     @Test
     void shouldPickTheOneAndOnlyQueryEngineAvailable()
     {
         // Given
-        QueryEngineProvider provider = mock( QueryEngineProvider.class );
-        when( provider.enginePriority() ).thenReturn( 1 );
-        Dependencies deps = new Dependencies();
-        GraphDatabaseAPI graphAPI = mock( GraphDatabaseAPI.class );
-        QueryExecutionEngine executionEngine = mock( QueryExecutionEngine.class );
-        when( provider.createEngine( any(), any(), anyBoolean(), any() ) ).thenReturn( executionEngine );
+        QueryEngineProvider provider1 = mock( QueryEngineProvider.class );
+        when( provider1.enginePriority() ).thenReturn( 1 );
 
         // When
-        Iterable<QueryEngineProvider> providers = Iterables.asIterable( provider );
-        QueryExecutionEngine engine = QueryEngineProvider.initialize( deps, graphAPI, providers, false, null );
+        Iterable<QueryEngineProvider> providers = Iterables.asIterable( provider1 );
+        QueryEngineProvider provider = QueryEngineProvider.chooseAlternative( providers );
 
         // Then
-        assertSame( executionEngine, engine );
+        assertSame( provider1, provider );
+    }
+
+    @Test
+    void shouldReturnNullOfNoQueryEngineAvailable()
+    {
+        // When
+        QueryEngineProvider provider = QueryEngineProvider.chooseAlternative( Iterables.empty() );
+
+        // Then
+        assertNull( provider );
     }
 }

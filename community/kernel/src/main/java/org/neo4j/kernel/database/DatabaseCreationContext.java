@@ -130,7 +130,7 @@ public interface DatabaseCreationContext
 
     Function<DatabaseLayout,DatabaseLayoutWatcher> getWatcherServiceFactory();
 
-    Iterable<QueryEngineProvider> getEngineProviders();
+    QueryEngineProvider getEngineProvider();
 
     DatabaseEventListeners getDatabaseEventListeners();
 

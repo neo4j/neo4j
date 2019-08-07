@@ -19,7 +19,6 @@
  */
 package org.neo4j.cypher.internal.javacompat;
 
-import org.neo4j.annotations.service.ServiceProvider;
 import org.neo4j.collection.Dependencies;
 import org.neo4j.common.DependencyResolver;
 import org.neo4j.configuration.GraphDatabaseSettings;
@@ -34,7 +33,6 @@ import org.neo4j.kernel.impl.query.QueryEngineProvider;
 import org.neo4j.kernel.impl.query.QueryExecutionEngine;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 
-@ServiceProvider
 public class CommunityCypherEngineProvider extends QueryEngineProvider
 {
     @Override

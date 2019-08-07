@@ -44,6 +44,7 @@ import org.neo4j.kernel.api.security.provider.SecurityProvider;
 import org.neo4j.kernel.database.DatabaseId;
 import org.neo4j.kernel.database.DatabaseIdRepository;
 import org.neo4j.kernel.impl.constraints.ConstraintSemantics;
+import org.neo4j.kernel.impl.query.QueryEngineProvider;
 import org.neo4j.kernel.impl.transaction.TransactionHeaderInformationFactory;
 import org.neo4j.kernel.impl.transaction.stats.DatabaseTransactionStats;
 import org.neo4j.kernel.impl.transaction.stats.GlobalTransactionStats;
@@ -201,6 +202,23 @@ public abstract class AbstractEditionModule
     public void setSecurityProvider( SecurityProvider securityProvider )
     {
         this.securityProvider = securityProvider;
+    }
+
+    public abstract DatabaseIdRepository databaseIdRepository();
+
+    /**
+     * @return the default engine provider for this edition.
+     */
+    protected abstract QueryEngineProvider defaultEngineProvider();
+
+    /**
+     * Choose among the given queryEngineProviders the one with the highest priority. If no
+     * queryEngineProviders, return the {@link #defaultEngineProvider()}
+     */
+    public final QueryEngineProvider chooseEngineProvider( Iterable<QueryEngineProvider> queryEngineProviders )
+    {
+        QueryEngineProvider provider = QueryEngineProvider.chooseAlternative( queryEngineProviders );
+        return provider != null ? provider : defaultEngineProvider();
     }
 
     public abstract BoltGraphDatabaseManagementServiceSPI createBoltDatabaseManagementServiceProvider( DatabaseManagementService managementService,
