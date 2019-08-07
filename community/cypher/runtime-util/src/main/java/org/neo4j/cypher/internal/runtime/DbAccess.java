@@ -117,7 +117,21 @@ public interface DbAccess extends EntityById
      */
     Optional<Boolean> hasTxStatePropertyForCachedRelationshipProperty( long relId, int propertyKeyId );
 
-    long nodeCountByCountStore(int labelId);
+    /**
+     * Get the node count from the count store
+     *
+     * @param labelId the label of the nodes to count or -1 for wildcard count
+     * @return the number of nodes with the given label in the database
+     */
+    long nodeCountByCountStore( int labelId );
 
-    long relationshipCountByCountStore(int startLabelId, int typeId, int endLabelId);
+    /**
+     * Get the node count from the count store
+     *
+     * @param startLabelId the label of the start node or -1 for wildcard count
+     * @param typeId the type of the relationship or -1 for wildcard count
+     * @param endLabelId the label of the end node or -1 for wildcard count
+     * @return the number of relationships with the given start label, type and end label in the database
+     */
+    long relationshipCountByCountStore( int startLabelId, int typeId, int endLabelId );
 }
