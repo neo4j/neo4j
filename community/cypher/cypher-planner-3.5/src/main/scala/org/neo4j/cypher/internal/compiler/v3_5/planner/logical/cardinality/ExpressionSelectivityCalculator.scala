@@ -217,7 +217,8 @@ case class ExpressionSelectivityCalculator(stats: GraphStatistics, combiner: Sel
               val pNeqRange = pNeq.factor * DEFAULT_RANGE_SEEK_FACTOR / Math.min(seekable.expr.inequalities.size, 2)
 
               val pRange = Selectivity(if (seekable.hasEquality) propEqValueSelectivity.factor + pNeqRange else pNeqRange)
-              pRange * propertyExistsSelectivity
+              val pRangeBounded = Selectivity(math.max(propEqValueSelectivity.factor, pRange.factor))
+              pRangeBounded * propertyExistsSelectivity
             }
 
           case _ =>
