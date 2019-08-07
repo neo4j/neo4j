@@ -188,6 +188,36 @@ abstract class ReactiveResultTestBase[CONTEXT <: RuntimeContext](edition: Editio
     subscriber.isCompleted shouldBe false
   }
 
+  test("should handle multiple times cancel stream and close cursors") {
+    //Given
+    val nodes = nodeGraph(3)
+
+    val subscriber = new TestSubscriber
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x")
+      .allNodeScan("x")
+      .build()
+
+    val result = execute(logicalQuery, runtime, subscriber)
+
+    //When
+    result.request(1)
+    result.await() shouldBe true
+    subscriber.lastSeen should equal(Array(VirtualValues.node(nodes.head.getId)))
+    subscriber.isCompleted shouldBe false
+    result.cancel()
+    val now = System.currentTimeMillis()
+    while (System.currentTimeMillis() - now < 1200) {
+      // Bombard with cancel requests, so that we likely have multiple CleanupTasks in the parallel runtime
+      result.cancel()
+    }
+
+    //Then
+    result.await() shouldBe false
+    subscriber.numberOfSeenResults shouldBe 1
+    subscriber.isCompleted shouldBe false
+  }
+
   test("should not exhaust input when there is no demand") {
     // Given
     val (nodes, _) = circleGraph(1000)
