@@ -126,6 +126,12 @@ public class ProfilingTracer implements QueryProfiler, QueryProfile
         }
 
         @Override
+        public void dbHits( int hits )
+        {
+            hitCount += hits;
+        }
+
+        @Override
         public void row()
         {
             rowCount++;

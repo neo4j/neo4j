@@ -25,6 +25,8 @@ public abstract class OperatorProfileEvent implements AutoCloseable, KernelReadT
 {
     public abstract void dbHit();
 
+    public abstract void dbHits( int hits );
+
     public abstract void row();
 
     public abstract void rows( int n );
@@ -83,6 +85,12 @@ public abstract class OperatorProfileEvent implements AutoCloseable, KernelReadT
         @Override
         public void dbHit()
         {
+        }
+
+        @Override
+        public void dbHits( int hits )
+        {
+
         }
 
         @Override
