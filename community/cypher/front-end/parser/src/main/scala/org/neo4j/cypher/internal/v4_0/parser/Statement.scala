@@ -37,11 +37,11 @@ trait Statement extends Parser
     optional(keyword("CATALOG")) ~~ (ShowDatabase | ShowDatabases | ShowDefaultDatabase | CreateDatabase | DropDatabase | StartDatabase | StopDatabase)
   }
 
-  def UserManagementCommand: Rule1[CatalogDDL] = rule("Security user management statement") {
+  def UserManagementCommand: Rule1[CatalogDDL] = rule("Security user administration statement") {
     optional(keyword("CATALOG")) ~~ (ShowRoles | CreateRole | DropRole | ShowUsers | CreateUser | DropUser | AlterUser | SetOwnPassword)
   }
 
-  def PrivilegeManagementCommand: Rule1[CatalogDDL] = rule("Security privilege management statement") {
+  def PrivilegeManagementCommand: Rule1[CatalogDDL] = rule("Security privilege administration statement") {
     optional(keyword("CATALOG")) ~~ (ShowPrivileges | GrantCommand | DenyCommand | RevokeCommand)
   }
 

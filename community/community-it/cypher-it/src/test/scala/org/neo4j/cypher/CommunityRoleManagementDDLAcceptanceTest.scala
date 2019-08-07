@@ -28,7 +28,7 @@ class CommunityRoleManagementDDLAcceptanceTest extends CommunityDDLAcceptanceTes
     selectDatabase(GraphDatabaseSettings.SYSTEM_DATABASE_NAME)
 
     // THEN
-    assertFailure("SHOW ROLES", "Unsupported management command: SHOW ROLES")
+    assertFailure("SHOW ROLES", "Unsupported administration command: SHOW ROLES")
   }
 
   test("should fail on showing roles with users from community") {
@@ -36,7 +36,7 @@ class CommunityRoleManagementDDLAcceptanceTest extends CommunityDDLAcceptanceTes
     selectDatabase(GraphDatabaseSettings.SYSTEM_DATABASE_NAME)
 
     // THEN
-    assertFailure("SHOW POPULATED ROLES WITH USERS", "Unsupported management command: SHOW POPULATED ROLES WITH USERS")
+    assertFailure("SHOW POPULATED ROLES WITH USERS", "Unsupported administration command: SHOW POPULATED ROLES WITH USERS")
   }
 
   test("should fail on creating role from community") {
@@ -44,7 +44,7 @@ class CommunityRoleManagementDDLAcceptanceTest extends CommunityDDLAcceptanceTes
     selectDatabase(GraphDatabaseSettings.SYSTEM_DATABASE_NAME)
 
     // THEN
-    assertFailure("CREATE ROLE foo", "Unsupported management command: CREATE ROLE foo")
+    assertFailure("CREATE ROLE foo", "Unsupported administration command: CREATE ROLE foo")
   }
 
   test("should fail on creating role as copy of non-existing role with correct error message") {
@@ -52,7 +52,7 @@ class CommunityRoleManagementDDLAcceptanceTest extends CommunityDDLAcceptanceTes
     selectDatabase(GraphDatabaseSettings.SYSTEM_DATABASE_NAME)
 
     // THEN
-    assertFailure("CREATE ROLE foo AS COPY OF bar", "Unsupported management command: CREATE ROLE foo AS COPY OF bar")
+    assertFailure("CREATE ROLE foo AS COPY OF bar", "Unsupported administration command: CREATE ROLE foo AS COPY OF bar")
   }
 
   test("should fail on dropping non-existing role from community") {
@@ -60,7 +60,7 @@ class CommunityRoleManagementDDLAcceptanceTest extends CommunityDDLAcceptanceTes
     selectDatabase(GraphDatabaseSettings.SYSTEM_DATABASE_NAME)
 
     // THEN
-    assertFailure("DROP ROLE foo", "Unsupported management command: DROP ROLE foo")
+    assertFailure("DROP ROLE foo", "Unsupported administration command: DROP ROLE foo")
   }
 
   test("should fail on granting role to user from community") {
@@ -68,7 +68,7 @@ class CommunityRoleManagementDDLAcceptanceTest extends CommunityDDLAcceptanceTes
     selectDatabase(GraphDatabaseSettings.SYSTEM_DATABASE_NAME)
 
     // THEN
-    assertFailure("GRANT ROLE reader TO neo4j", "Unsupported management command: GRANT ROLE reader TO neo4j")
+    assertFailure("GRANT ROLE reader TO neo4j", "Unsupported administration command: GRANT ROLE reader TO neo4j")
   }
 
   test("should fail on revoking non-existing role to user with correct error message") {
@@ -76,6 +76,6 @@ class CommunityRoleManagementDDLAcceptanceTest extends CommunityDDLAcceptanceTes
     selectDatabase(GraphDatabaseSettings.SYSTEM_DATABASE_NAME)
 
     // THEN
-    assertFailure("REVOKE ROLE custom FROM neo4j", "Unsupported management command: REVOKE ROLE custom FROM neo4j")
+    assertFailure("REVOKE ROLE custom FROM neo4j", "Unsupported administration command: REVOKE ROLE custom FROM neo4j")
   }
 }

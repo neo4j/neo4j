@@ -148,61 +148,61 @@ class CommunityMultiDatabaseDDLAcceptanceTest extends CommunityDDLAcceptanceTest
   test("should fail on showing database from community") {
     setup( defaultConfig )
     assertFailure(s"SHOW DATABASE $DEFAULT_DATABASE_NAME",
-      s"Unsupported management command: SHOW DATABASE $DEFAULT_DATABASE_NAME")
+      s"Unsupported administration command: SHOW DATABASE $DEFAULT_DATABASE_NAME")
   }
 
   test("should fail on showing non-existing database with correct error message") {
     setup( defaultConfig )
-    assertFailure("SHOW DATABASE foo", "Unsupported management command: SHOW DATABASE foo")
+    assertFailure("SHOW DATABASE foo", "Unsupported administration command: SHOW DATABASE foo")
   }
 
   test("should fail on showing databases from community") {
     setup( defaultConfig )
-    assertFailure("SHOW DATABASES", "Unsupported management command: SHOW DATABASES")
+    assertFailure("SHOW DATABASES", "Unsupported administration command: SHOW DATABASES")
   }
 
   test("should fail on creating database from community") {
     setup( defaultConfig )
-    assertFailure("CREATE DATABASE foo", "Unsupported management command: CREATE DATABASE foo")
+    assertFailure("CREATE DATABASE foo", "Unsupported administration command: CREATE DATABASE foo")
   }
 
   test("should fail on creating already existing database with correct error message") {
     setup( defaultConfig )
     assertFailure(s"CREATE DATABASE $DEFAULT_DATABASE_NAME",
-      s"Unsupported management command: CREATE DATABASE $DEFAULT_DATABASE_NAME")
+      s"Unsupported administration command: CREATE DATABASE $DEFAULT_DATABASE_NAME")
   }
 
   test("should fail on dropping database from community") {
     setup( defaultConfig )
     assertFailure(s"DROP DATABASE $DEFAULT_DATABASE_NAME",
-      s"Unsupported management command: DROP DATABASE $DEFAULT_DATABASE_NAME")
+      s"Unsupported administration command: DROP DATABASE $DEFAULT_DATABASE_NAME")
   }
 
   test("should fail on dropping non-existing database with correct error message") {
     setup( defaultConfig )
-    assertFailure("DROP DATABASE foo", "Unsupported management command: DROP DATABASE foo")
+    assertFailure("DROP DATABASE foo", "Unsupported administration command: DROP DATABASE foo")
   }
 
   test("should fail on starting database from community") {
     setup( defaultConfig )
     assertFailure(s"START DATABASE $DEFAULT_DATABASE_NAME",
-      s"Unsupported management command: START DATABASE $DEFAULT_DATABASE_NAME")
+      s"Unsupported administration command: START DATABASE $DEFAULT_DATABASE_NAME")
   }
 
   test("should fail on starting non-existing database with correct error message") {
     setup( defaultConfig )
-    assertFailure("START DATABASE foo", "Unsupported management command: START DATABASE foo")
+    assertFailure("START DATABASE foo", "Unsupported administration command: START DATABASE foo")
   }
 
   test("should fail on stopping database from community") {
     setup( defaultConfig )
     assertFailure(s"STOP DATABASE $DEFAULT_DATABASE_NAME",
-      s"Unsupported management command: STOP DATABASE $DEFAULT_DATABASE_NAME")
+      s"Unsupported administration command: STOP DATABASE $DEFAULT_DATABASE_NAME")
   }
 
   test("should fail on stopping non-existing database with correct error message") {
     setup( defaultConfig )
-    assertFailure("STOP DATABASE foo", "Unsupported management command: STOP DATABASE foo")
+    assertFailure("STOP DATABASE foo", "Unsupported administration command: STOP DATABASE foo")
   }
 
   // Disable normal database creation because we need different settings on each test

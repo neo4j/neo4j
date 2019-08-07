@@ -58,7 +58,7 @@ abstract class SecurityManagementLogicalPlan(source: Option[MultiDatabaseLogical
   override def invalid(message: String): SecurityManagementException = new SecurityManagementException(message)
 }
 
-// Security management commands
+// Security administration commands
 case class ShowUsers()(implicit idGen: IdGen) extends SecurityManagementLogicalPlan
 case class CreateUser(userName: String, initialStringPassword: Option[Array[Byte]], initialParameterPassword: Option[Parameter],
                       requirePasswordChange: Boolean, suspended: Option[Boolean])(implicit idGen: IdGen) extends SecurityManagementLogicalPlan
@@ -92,7 +92,7 @@ case class ShowPrivileges(scope: ShowPrivilegeScope)(implicit idGen: IdGen) exte
 
 case class LogSystemCommand(source: LogicalPlan, command: String)(implicit idGen: IdGen) extends SecurityManagementLogicalPlan
 
-// Database management commands
+// Database administration commands
 case class ShowDatabases()(implicit idGen: IdGen) extends DatabaseManagementLogicalPlan
 case class ShowDefaultDatabase()(implicit idGen: IdGen) extends DatabaseManagementLogicalPlan
 case class ShowDatabase(normalizedName: NormalizedDatabaseName)(implicit idGen: IdGen) extends DatabaseManagementLogicalPlan

@@ -34,10 +34,10 @@ import org.neo4j.values.storable.{TextValue, Values}
 import org.neo4j.values.virtual.VirtualValues
 
 /**
-  * This runtime takes on queries that require no planning, such as multidatabase management commands
+  * This runtime takes on queries that require no planning, such as multidatabase administration commands
   */
 case class CommunityManagementCommandRuntime(normalExecutionEngine: ExecutionEngine, resolver: DependencyResolver) extends ManagementCommandRuntime {
-  override def name: String = "community management-commands"
+  override def name: String = "community administration-commands"
 
   def throwCantCompile(unknownPlan: LogicalPlan): Nothing = {
     throw new CantCompileQueryException(

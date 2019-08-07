@@ -381,7 +381,7 @@ class CommunityUserManagementDDLAcceptanceTest extends CommunityDDLAcceptanceTes
     selectDatabase(SYSTEM_DATABASE_NAME)
 
     // THEN
-    assertFailure("ALTER USER neo4j SET PASSWORD 'xxx'", "Unsupported management command: ALTER USER neo4j SET PASSWORD 'xxx'")
+    assertFailure("ALTER USER neo4j SET PASSWORD 'xxx'", "Unsupported administration command: ALTER USER neo4j SET PASSWORD 'xxx'")
   }
 
   test("should fail on altering non-existing user with correct error message") {
@@ -389,7 +389,7 @@ class CommunityUserManagementDDLAcceptanceTest extends CommunityDDLAcceptanceTes
     selectDatabase(SYSTEM_DATABASE_NAME)
 
     // THEN
-    assertFailure("ALTER USER foo SET PASSWORD 'xxx'", "Unsupported management command: ALTER USER foo SET PASSWORD 'xxx'")
+    assertFailure("ALTER USER foo SET PASSWORD 'xxx'", "Unsupported administration command: ALTER USER foo SET PASSWORD 'xxx'")
   }
 
   // Tests for changing own password

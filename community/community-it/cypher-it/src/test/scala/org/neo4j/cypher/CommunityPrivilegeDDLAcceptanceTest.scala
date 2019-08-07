@@ -30,7 +30,7 @@ class CommunityPrivilegeDDLAcceptanceTest extends CommunityDDLAcceptanceTestBase
     selectDatabase(SYSTEM_DATABASE_NAME)
 
     // THEN
-    assertFailure("SHOW ALL PRIVILEGES", "Unsupported management command: SHOW ALL PRIVILEGES")
+    assertFailure("SHOW ALL PRIVILEGES", "Unsupported administration command: SHOW ALL PRIVILEGES")
   }
 
   test("should fail on showing role privileges from community") {
@@ -38,7 +38,7 @@ class CommunityPrivilegeDDLAcceptanceTest extends CommunityDDLAcceptanceTestBase
     selectDatabase(SYSTEM_DATABASE_NAME)
 
     // THEN
-    assertFailure("SHOW ROLE reader PRIVILEGES", "Unsupported management command: SHOW ROLE reader PRIVILEGES")
+    assertFailure("SHOW ROLE reader PRIVILEGES", "Unsupported administration command: SHOW ROLE reader PRIVILEGES")
   }
 
   test("should fail on showing user privileges for non-existing user with correct error message") {
@@ -46,7 +46,7 @@ class CommunityPrivilegeDDLAcceptanceTest extends CommunityDDLAcceptanceTestBase
     selectDatabase(SYSTEM_DATABASE_NAME)
 
     // THEN
-    assertFailure("SHOW USER foo PRIVILEGES", "Unsupported management command: SHOW USER foo PRIVILEGES")
+    assertFailure("SHOW USER foo PRIVILEGES", "Unsupported administration command: SHOW USER foo PRIVILEGES")
   }
 
   // Tests for granting privileges
@@ -56,7 +56,7 @@ class CommunityPrivilegeDDLAcceptanceTest extends CommunityDDLAcceptanceTestBase
     selectDatabase(SYSTEM_DATABASE_NAME)
 
     // THEN
-    assertFailure("GRANT TRAVERSE ON GRAPH * NODES * (*) TO custom", "Unsupported management command: GRANT TRAVERSE ON GRAPH * NODES * (*) TO custom")
+    assertFailure("GRANT TRAVERSE ON GRAPH * NODES * (*) TO custom", "Unsupported administration command: GRANT TRAVERSE ON GRAPH * NODES * (*) TO custom")
   }
 
   test("should fail on granting read privilege from community") {
@@ -64,7 +64,7 @@ class CommunityPrivilegeDDLAcceptanceTest extends CommunityDDLAcceptanceTestBase
     selectDatabase(SYSTEM_DATABASE_NAME)
 
     // THEN
-    assertFailure("GRANT READ (*) ON GRAPH * NODES * (*) TO custom", "Unsupported management command: GRANT READ (*) ON GRAPH * NODES * (*) TO custom")
+    assertFailure("GRANT READ (*) ON GRAPH * NODES * (*) TO custom", "Unsupported administration command: GRANT READ (*) ON GRAPH * NODES * (*) TO custom")
   }
 
   test("should fail on granting MATCH privilege from community") {
@@ -72,7 +72,7 @@ class CommunityPrivilegeDDLAcceptanceTest extends CommunityDDLAcceptanceTestBase
     selectDatabase(SYSTEM_DATABASE_NAME)
 
     // THEN
-    assertFailure("GRANT MATCH (*) ON GRAPH * NODES * (*) TO custom", "Unsupported management command: GRANT MATCH (*) ON GRAPH * NODES * (*) TO custom")
+    assertFailure("GRANT MATCH (*) ON GRAPH * NODES * (*) TO custom", "Unsupported administration command: GRANT MATCH (*) ON GRAPH * NODES * (*) TO custom")
   }
 
   // Tests for denying privileges
@@ -82,7 +82,7 @@ class CommunityPrivilegeDDLAcceptanceTest extends CommunityDDLAcceptanceTestBase
     selectDatabase(SYSTEM_DATABASE_NAME)
 
     // THEN
-    assertFailure("DENY TRAVERSE ON GRAPH * NODES * (*) TO custom", "Unsupported management command: DENY TRAVERSE ON GRAPH * NODES * (*) TO custom")
+    assertFailure("DENY TRAVERSE ON GRAPH * NODES * (*) TO custom", "Unsupported administration command: DENY TRAVERSE ON GRAPH * NODES * (*) TO custom")
   }
 
   test("should fail on denying read privilege from community") {
@@ -90,7 +90,7 @@ class CommunityPrivilegeDDLAcceptanceTest extends CommunityDDLAcceptanceTestBase
     selectDatabase(SYSTEM_DATABASE_NAME)
 
     // THEN
-    assertFailure("DENY READ (*) ON GRAPH * NODES * (*) TO custom", "Unsupported management command: DENY READ (*) ON GRAPH * NODES * (*) TO custom")
+    assertFailure("DENY READ (*) ON GRAPH * NODES * (*) TO custom", "Unsupported administration command: DENY READ (*) ON GRAPH * NODES * (*) TO custom")
   }
 
   test("should fail on denying MATCH privilege from community") {
@@ -98,7 +98,7 @@ class CommunityPrivilegeDDLAcceptanceTest extends CommunityDDLAcceptanceTestBase
     selectDatabase(SYSTEM_DATABASE_NAME)
 
     // THEN
-    assertFailure("DENY MATCH (*) ON GRAPH * NODES * (*) TO custom", "Unsupported management command: DENY MATCH (*) ON GRAPH * NODES * (*) TO custom")
+    assertFailure("DENY MATCH (*) ON GRAPH * NODES * (*) TO custom", "Unsupported administration command: DENY MATCH (*) ON GRAPH * NODES * (*) TO custom")
   }
 
   // Tests for revoking grant privileges
@@ -108,7 +108,7 @@ class CommunityPrivilegeDDLAcceptanceTest extends CommunityDDLAcceptanceTestBase
     selectDatabase(SYSTEM_DATABASE_NAME)
 
     // THEN
-    assertFailure("REVOKE GRANT TRAVERSE ON GRAPH * NODES * (*) FROM custom", "Unsupported management command: REVOKE GRANT TRAVERSE ON GRAPH * NODES * (*) FROM custom")
+    assertFailure("REVOKE GRANT TRAVERSE ON GRAPH * NODES * (*) FROM custom", "Unsupported administration command: REVOKE GRANT TRAVERSE ON GRAPH * NODES * (*) FROM custom")
   }
 
   test("should fail on revoking grant read privilege from community") {
@@ -116,7 +116,7 @@ class CommunityPrivilegeDDLAcceptanceTest extends CommunityDDLAcceptanceTestBase
     selectDatabase(SYSTEM_DATABASE_NAME)
 
     // THEN
-    assertFailure("REVOKE GRANT READ (*) ON GRAPH * NODES * (*) FROM custom", "Unsupported management command: REVOKE GRANT READ (*) ON GRAPH * NODES * (*) FROM custom")
+    assertFailure("REVOKE GRANT READ (*) ON GRAPH * NODES * (*) FROM custom", "Unsupported administration command: REVOKE GRANT READ (*) ON GRAPH * NODES * (*) FROM custom")
   }
 
   test("should fail on revoking grant MATCH privilege from community") {
@@ -124,7 +124,7 @@ class CommunityPrivilegeDDLAcceptanceTest extends CommunityDDLAcceptanceTestBase
     selectDatabase(SYSTEM_DATABASE_NAME)
 
     // THEN
-    assertFailure("REVOKE GRANT MATCH (*) ON GRAPH * NODES * (*) FROM custom", "Unsupported management command: REVOKE GRANT MATCH (*) ON GRAPH * NODES * (*) FROM custom")
+    assertFailure("REVOKE GRANT MATCH (*) ON GRAPH * NODES * (*) FROM custom", "Unsupported administration command: REVOKE GRANT MATCH (*) ON GRAPH * NODES * (*) FROM custom")
   }
   
   // Tests for revoking deny privileges
@@ -133,7 +133,7 @@ class CommunityPrivilegeDDLAcceptanceTest extends CommunityDDLAcceptanceTestBase
     selectDatabase(SYSTEM_DATABASE_NAME)
 
     // THEN
-    assertFailure("REVOKE DENY TRAVERSE ON GRAPH * NODES * (*) FROM custom", "Unsupported management command: REVOKE DENY TRAVERSE ON GRAPH * NODES * (*) FROM custom")
+    assertFailure("REVOKE DENY TRAVERSE ON GRAPH * NODES * (*) FROM custom", "Unsupported administration command: REVOKE DENY TRAVERSE ON GRAPH * NODES * (*) FROM custom")
   }
 
   test("should fail on revoking deny read privilege from community") {
@@ -141,7 +141,7 @@ class CommunityPrivilegeDDLAcceptanceTest extends CommunityDDLAcceptanceTestBase
     selectDatabase(SYSTEM_DATABASE_NAME)
 
     // THEN
-    assertFailure("REVOKE DENY READ (*) ON GRAPH * NODES * (*) FROM custom", "Unsupported management command: REVOKE DENY READ (*) ON GRAPH * NODES * (*) FROM custom")
+    assertFailure("REVOKE DENY READ (*) ON GRAPH * NODES * (*) FROM custom", "Unsupported administration command: REVOKE DENY READ (*) ON GRAPH * NODES * (*) FROM custom")
   }
 
   test("should fail on revoking deny MATCH privilege from community") {
@@ -149,7 +149,7 @@ class CommunityPrivilegeDDLAcceptanceTest extends CommunityDDLAcceptanceTestBase
     selectDatabase(SYSTEM_DATABASE_NAME)
 
     // THEN
-    assertFailure("REVOKE DENY MATCH (*) ON GRAPH * NODES * (*) FROM custom", "Unsupported management command: REVOKE DENY MATCH (*) ON GRAPH * NODES * (*) FROM custom")
+    assertFailure("REVOKE DENY MATCH (*) ON GRAPH * NODES * (*) FROM custom", "Unsupported administration command: REVOKE DENY MATCH (*) ON GRAPH * NODES * (*) FROM custom")
   }
 
   // Tests for revoking privileges
@@ -158,7 +158,7 @@ class CommunityPrivilegeDDLAcceptanceTest extends CommunityDDLAcceptanceTestBase
     selectDatabase(SYSTEM_DATABASE_NAME)
 
     // THEN
-    assertFailure("REVOKE TRAVERSE ON GRAPH * NODES * (*) FROM custom", "Unsupported management command: REVOKE TRAVERSE ON GRAPH * NODES * (*) FROM custom")
+    assertFailure("REVOKE TRAVERSE ON GRAPH * NODES * (*) FROM custom", "Unsupported administration command: REVOKE TRAVERSE ON GRAPH * NODES * (*) FROM custom")
   }
 
   test("should fail on revokingread privilege from community") {
@@ -166,7 +166,7 @@ class CommunityPrivilegeDDLAcceptanceTest extends CommunityDDLAcceptanceTestBase
     selectDatabase(SYSTEM_DATABASE_NAME)
 
     // THEN
-    assertFailure("REVOKE READ (*) ON GRAPH * NODES * (*) FROM custom", "Unsupported management command: REVOKE READ (*) ON GRAPH * NODES * (*) FROM custom")
+    assertFailure("REVOKE READ (*) ON GRAPH * NODES * (*) FROM custom", "Unsupported administration command: REVOKE READ (*) ON GRAPH * NODES * (*) FROM custom")
   }
 
   test("should fail on revoking MATCH privilege from community") {
@@ -174,7 +174,7 @@ class CommunityPrivilegeDDLAcceptanceTest extends CommunityDDLAcceptanceTestBase
     selectDatabase(SYSTEM_DATABASE_NAME)
 
     // THEN
-    assertFailure("REVOKE MATCH (*) ON GRAPH * NODES * (*) FROM custom", "Unsupported management command: REVOKE MATCH (*) ON GRAPH * NODES * (*) FROM custom")
+    assertFailure("REVOKE MATCH (*) ON GRAPH * NODES * (*) FROM custom", "Unsupported administration command: REVOKE MATCH (*) ON GRAPH * NODES * (*) FROM custom")
   }
 
 }

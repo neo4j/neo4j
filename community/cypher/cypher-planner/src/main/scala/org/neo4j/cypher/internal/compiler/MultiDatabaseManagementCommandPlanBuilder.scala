@@ -35,7 +35,7 @@ import org.neo4j.cypher.internal.v4_0.util.attribution.SequentialIdGen
 import org.neo4j.string.UTF8
 
 /**
-  * This planner takes on queries that run at the DBMS level for multi-database management
+  * This planner takes on queries that run at the DBMS level for multi-database administration
   */
 case object MultiDatabaseManagementCommandPlanBuilder extends Phase[PlannerContext, BaseState, LogicalPlanState] {
 
@@ -43,7 +43,7 @@ case object MultiDatabaseManagementCommandPlanBuilder extends Phase[PlannerConte
 
   override def phase: CompilationPhase = PIPE_BUILDING
 
-  override def description = "take on administrative queries that require no planning such as multi-database management commands"
+  override def description = "take on administrative queries that require no planning such as multi-database administration commands"
 
   override def postConditions: Set[Condition] = Set.empty
 

@@ -131,9 +131,9 @@ case class Cypher4_0Planner(config: CypherPlannerConfiguration,
               FineToReuse
             else logicalPlanState.maybeLogicalPlan match {
               case Some(ProcedureCall(_,ResolvedCall(signature,_,_,_,_))) if signature.systemProcedure => FineToReuse
-              case Some(_: ProcedureCall) => throw new DatabaseManagementException("Attempting invalid procedure call in management runtime")
-              case Some(plan: MultiDatabaseLogicalPlan) => throw plan.invalid("Unsupported management command: " + logicalPlanState.queryText)
-              case _ => throw new DatabaseManagementException("Attempting invalid management command in management runtime")
+              case Some(_: ProcedureCall) => throw new DatabaseManagementException("Attempting invalid procedure call in administration runtime")
+              case Some(plan: MultiDatabaseLogicalPlan) => throw plan.invalid("Unsupported administration command: " + logicalPlanState.queryText)
+              case _ => throw new DatabaseManagementException("Attempting invalid administration command in administration runtime")
             }
           case _ if SchemaCommandRuntime.isApplicable(logicalPlanState) => FineToReuse
           case _ =>
