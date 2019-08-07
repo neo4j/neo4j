@@ -130,11 +130,10 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
 
   override def getTypeForRelationship(id: Long, cursor: RelationshipScanCursor): TextValue = {
     reads().singleRelationship(id, cursor)
-    if (!cursor.next()) {
-      if (relationshipOps.isDeletedInThisTx(id))
-        throw new EntityNotFoundException(s"Relationship with id $id has been deleted in this transaction")
-      else
-        VirtualValues.EMPTY_LIST
+    if (!cursor.next() && !relationshipOps.isDeletedInThisTx(id)) {
+      // we are allowed to read the type of relationships we have deleted, but
+      // if we have a concurrent delete by another tx we resort to NO_VALUE
+      Values.NO_VALUE
     }
     Values.stringValue(tokenRead.relationshipTypeName(cursor.`type`()))
   }
