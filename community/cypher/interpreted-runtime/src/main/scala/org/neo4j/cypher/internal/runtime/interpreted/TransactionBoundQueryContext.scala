@@ -132,7 +132,7 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
     reads().singleRelationship(id, cursor)
     if (!cursor.next()) {
       if (relationshipOps.isDeletedInThisTx(id))
-        throw new EntityNotFoundException(s"Relatinoship with id $id has been deleted in this transaction")
+        throw new EntityNotFoundException(s"Relationship with id $id has been deleted in this transaction")
       else
         VirtualValues.EMPTY_LIST
     }
