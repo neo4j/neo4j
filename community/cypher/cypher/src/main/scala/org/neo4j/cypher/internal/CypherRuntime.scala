@@ -34,6 +34,7 @@ import org.neo4j.cypher.{CypherMorselRuntimeSchedulerOption, CypherRuntimeOption
 import org.neo4j.internal.kernel.api.security.SecurityContext
 import org.neo4j.internal.kernel.api.{Cursor, SchemaRead}
 import org.neo4j.logging.Log
+import org.neo4j.util.Preconditions
 
 import scala.concurrent.duration.Duration
 
@@ -193,7 +194,10 @@ case class CypherRuntimeConfiguration(workers: Int,
                                       waitTimeout: Duration,
                                       lenientCreateRelationship: Boolean,
                                       fuseOperators: Boolean,
-                                      transactionMaxMemory: Long)
+                                      transactionMaxMemory: Long) {
+
+  Preconditions.checkArgument(morselSizeSmall <= morselSizeBig, s"morselSizeSmall (got $morselSizeSmall) must be <= morselSizeBig (got $morselSizeBig)")
+}
 
 sealed trait SchedulerTracingConfiguration
 case object NoSchedulerTracing extends SchedulerTracingConfiguration
