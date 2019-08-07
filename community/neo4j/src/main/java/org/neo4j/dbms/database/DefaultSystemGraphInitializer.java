@@ -90,7 +90,7 @@ public class DefaultSystemGraphInitializer extends SystemGraphInitializer
                 hasDatabaseNodes = true;
             }
             nodes.close();
-            tx.success();
+            tx.commit();
         }
         return !hasDatabaseNodes;
     }
@@ -100,7 +100,7 @@ public class DefaultSystemGraphInitializer extends SystemGraphInitializer
         try ( Transaction tx = system.beginTx() )
         {
             system.schema().constraintFor( DATABASE_LABEL ).assertPropertyIsUnique( DATABASE_NAME_PROPERTY ).create();
-            tx.success();
+            tx.commit();
         }
 
         newDb( system, defaultDbName, true, UUID.randomUUID() );
@@ -153,7 +153,7 @@ public class DefaultSystemGraphInitializer extends SystemGraphInitializer
                     defaultFound = true;
                 }
             }
-            tx.success();
+            tx.commit();
         }
 
         // If no database exists with the default name, create it
@@ -172,7 +172,7 @@ public class DefaultSystemGraphInitializer extends SystemGraphInitializer
             node.setProperty( DATABASE_UUID_PROPERTY, uuid.toString() );
             node.setProperty( DATABASE_STATUS_PROPERTY, "online" );
             node.setProperty( DATABASE_DEFAULT_PROPERTY, defaultDb );
-            tx.success();
+            tx.commit();
         }
         catch ( ConstraintViolationException e )
         {

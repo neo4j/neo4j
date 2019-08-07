@@ -100,7 +100,7 @@ class PartialTransactionFailureIT
             b = db.createNode();
             c = db.createNode();
             d = db.createNode();
-            tx.success();
+            tx.commit();
         }
 
         adversary.enable();
@@ -166,7 +166,7 @@ class PartialTransactionFailureIT
             try ( Transaction tx = db.beginTx() )
             {
                 x.createRelationshipTo( y, RelationshipType.withName( "r" ) );
-                tx.success();
+                tx.commit();
                 latch.await();
                 db.getDependencyResolver().resolveDependency( LogRotation.class ).rotateLogFile( LogAppendEvent.NULL );
                 db.getDependencyResolver().resolveDependency( CheckPointer.class ).forceCheckPoint(

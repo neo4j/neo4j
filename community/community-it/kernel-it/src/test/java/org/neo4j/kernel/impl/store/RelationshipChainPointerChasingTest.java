@@ -78,13 +78,13 @@ class RelationshipChainPointerChasingTest
             {
                 node.createRelationshipTo( db.createNode(), TEST );
             }
-            tx.success();
+            tx.commit();
         }
         Relationship[] relationships;
         try ( Transaction tx = db.beginTx() )
         {
             relationships = asArray( Relationship.class, node.getRelationships() );
-            tx.success();
+            tx.commit();
         }
 
         try ( Transaction tx = db.beginTx() )
@@ -104,7 +104,7 @@ class RelationshipChainPointerChasingTest
             assertNext( relationships[3], iterator );
             assertNext( relationships[4], iterator );
             assertFalse( iterator.hasNext() );
-            tx.success();
+            tx.commit();
         }
     }
 
@@ -124,7 +124,7 @@ class RelationshipChainPointerChasingTest
             }
             relationshipInTheMiddle = node.createRelationshipTo( db.createNode(), TEST2 );
             relationshipInTheEnd = node.createRelationshipTo( db.createNode(), TEST_TRAVERSAL );
-            tx.success();
+            tx.commit();
         }
 
         try ( Transaction tx = db.beginTx() )
@@ -152,7 +152,7 @@ class RelationshipChainPointerChasingTest
             assertNext( relationshipInTheEnd, relationships );
             assertFalse( relationships.hasNext() );
 
-            tx.success();
+            tx.commit();
         }
     }
 
@@ -179,7 +179,7 @@ class RelationshipChainPointerChasingTest
             try ( Transaction tx = db.beginTx() )
             {
                 actionInsideTransaction.run();
-                tx.success();
+                tx.commit();
             }
         } );
         thread.start();

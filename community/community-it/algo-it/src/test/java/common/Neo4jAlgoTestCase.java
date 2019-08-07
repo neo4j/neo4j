@@ -87,8 +87,7 @@ public abstract class Neo4jAlgoTestCase
     public void tearDownTransactionAndGraph()
     {
         graph.clear();
-        tx.success();
-        tx.close();
+        tx.commit();
     }
 
     protected static void assertPathDef( Path path, String... names )

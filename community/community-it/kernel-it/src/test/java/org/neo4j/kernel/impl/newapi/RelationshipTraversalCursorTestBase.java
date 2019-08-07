@@ -71,7 +71,7 @@ public abstract class RelationshipTraversalCursorTestBase<G extends KernelAPIRea
             end = y.getId();
             x.createRelationshipTo( y, withName( "GEN" ) );
 
-            tx.success();
+            tx.commit();
         }
     }
 

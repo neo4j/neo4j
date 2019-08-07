@@ -178,7 +178,7 @@ public abstract class SchemaConstraintProviderApprovalTest
             {
                 addToResults( db, results, value );
             }
-            tx.success();
+            tx.commit();
         }
         return results;
     }
@@ -189,7 +189,7 @@ public abstract class SchemaConstraintProviderApprovalTest
         {
             Node node = db.createNode( label( LABEL ) );
             node.setProperty( propertyKey, value );
-            tx.success();
+            tx.commit();
             return node;
         }
     }

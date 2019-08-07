@@ -79,7 +79,7 @@ public abstract class RelationshipTransactionStateTestBase<G extends KernelAPIWr
             long decoyNode = tx.dataWrite().nodeCreate();
             label = tx.tokenWrite().relationshipTypeGetOrCreateForName( "R" );
             tx.dataWrite().relationshipCreate( n2, label, decoyNode );
-            tx.success();
+            tx.commit();
         }
 
         try ( Transaction tx = beginTransaction() )
@@ -97,7 +97,7 @@ public abstract class RelationshipTransactionStateTestBase<G extends KernelAPIWr
 
                 assertFalse( relationship.next(), "should only find one relationship" );
             }
-            tx.success();
+            tx.commit();
         }
     }
 
@@ -116,7 +116,7 @@ public abstract class RelationshipTransactionStateTestBase<G extends KernelAPIWr
             tx.dataWrite().relationshipCreate( n2, label, decoyNode ); // to have >1 relationship in the db
 
             r = tx.dataWrite().relationshipCreate( n1, label, n2 );
-            tx.success();
+            tx.commit();
         }
 
         try ( Transaction tx = beginTransaction() )
@@ -127,7 +127,7 @@ public abstract class RelationshipTransactionStateTestBase<G extends KernelAPIWr
                 tx.dataRead().singleRelationship( r, relationship );
                 assertFalse( relationship.next(), "should not find relationship" );
             }
-            tx.success();
+            tx.commit();
         }
     }
 
@@ -147,7 +147,7 @@ public abstract class RelationshipTransactionStateTestBase<G extends KernelAPIWr
             // setup some in store relationships
             type = tx.tokenWrite().relationshipTypeGetOrCreateForName( "R" );
             relateNTimes( nRelationshipsInStore, type, n1, n2, tx );
-            tx.success();
+            tx.commit();
         }
 
         try ( Transaction tx = beginTransaction() )
@@ -158,7 +158,7 @@ public abstract class RelationshipTransactionStateTestBase<G extends KernelAPIWr
                 tx.dataRead().allRelationshipsScan( relationship );
                 assertCountRelationships( relationship, nRelationshipsInStore + 1, n1, type, n2 );
             }
-            tx.success();
+            tx.commit();
         }
     }
 
@@ -179,7 +179,7 @@ public abstract class RelationshipTransactionStateTestBase<G extends KernelAPIWr
             r = tx.dataWrite().relationshipCreate( n1, type, n2 );
             relateNTimes( 5, type, n1, n2, tx );
 
-            tx.success();
+            tx.commit();
         }
 
         try ( Transaction tx = beginTransaction() )
@@ -190,7 +190,7 @@ public abstract class RelationshipTransactionStateTestBase<G extends KernelAPIWr
                 tx.dataRead().allRelationshipsScan( relationship );
                 assertCountRelationships( relationship, nRelationshipsInStore - 1, n1, type, n2 );
             }
-            tx.success();
+            tx.commit();
         }
     }
 
@@ -202,7 +202,7 @@ public abstract class RelationshipTransactionStateTestBase<G extends KernelAPIWr
         {
             n1 = tx.dataWrite().nodeCreate();
             n2 = tx.dataWrite().nodeCreate();
-            tx.success();
+            tx.commit();
         }
 
         try ( Transaction tx = beginTransaction() )
@@ -221,7 +221,7 @@ public abstract class RelationshipTransactionStateTestBase<G extends KernelAPIWr
 
                 assertFalse( relationship.next(), "should only find one relationship" );
             }
-            tx.success();
+            tx.commit();
         }
     }
 
@@ -237,7 +237,7 @@ public abstract class RelationshipTransactionStateTestBase<G extends KernelAPIWr
             int label = tx.tokenWrite().relationshipTypeGetOrCreateForName( "R" );
             r = tx.dataWrite().relationshipCreate( n1, label, n2 );
 
-            tx.success();
+            tx.commit();
         }
 
         try ( Transaction tx = beginTransaction() )
@@ -252,7 +252,7 @@ public abstract class RelationshipTransactionStateTestBase<G extends KernelAPIWr
                 node.allRelationships( relationship );
                 assertFalse( relationship.next(), "should not find relationship" );
             }
-            tx.success();
+            tx.commit();
         }
     }
 
@@ -264,7 +264,7 @@ public abstract class RelationshipTransactionStateTestBase<G extends KernelAPIWr
         {
             n1 = tx.dataWrite().nodeCreate();
             n2 = tx.dataWrite().nodeCreate();
-            tx.success();
+            tx.commit();
         }
 
         try ( Transaction tx = beginTransaction() )
@@ -284,7 +284,7 @@ public abstract class RelationshipTransactionStateTestBase<G extends KernelAPIWr
                 tx.dataWrite().relationshipCreate( n1, label, n2 ); // should not be seen
                 assertFalse( relationship.next(), "should not find relationship added after cursor init" );
             }
-            tx.success();
+            tx.commit();
         }
     }
 
@@ -382,7 +382,7 @@ public abstract class RelationshipTransactionStateTestBase<G extends KernelAPIWr
 
                 assertFalse( relationship.next(), "should only find one relationship" );
             }
-            tx.success();
+            tx.commit();
         }
     }
 
@@ -397,7 +397,7 @@ public abstract class RelationshipTransactionStateTestBase<G extends KernelAPIWr
             Write write = tx.dataWrite();
             relationshipId = write.relationshipCreate( write.nodeCreate(),
                     tx.tokenWrite().relationshipTypeGetOrCreateForName( "R" ), write.nodeCreate() );
-            tx.success();
+            tx.commit();
         }
 
         // When/Then
@@ -422,7 +422,7 @@ public abstract class RelationshipTransactionStateTestBase<G extends KernelAPIWr
                 assertFalse( relationship.next(), "should only find one relationship" );
             }
 
-            tx.success();
+            tx.commit();
         }
 
         try ( org.neo4j.graphdb.Transaction ignored = graphDb.beginTx() )
@@ -449,7 +449,7 @@ public abstract class RelationshipTransactionStateTestBase<G extends KernelAPIWr
             propToken1 = tx.token().propertyKeyGetOrCreateForName( propKey1 );
             assertEquals( write.relationshipSetProperty( relationshipId, propToken1, stringValue( "hello" ) ),
                     NO_VALUE );
-            tx.success();
+            tx.commit();
         }
 
         // When/Then
@@ -486,7 +486,7 @@ public abstract class RelationshipTransactionStateTestBase<G extends KernelAPIWr
 
                 assertFalse( relationship.next(), "should only find one relationship" );
             }
-            tx.success();
+            tx.commit();
         }
 
         try ( org.neo4j.graphdb.Transaction ignored = graphDb.beginTx() )
@@ -512,7 +512,7 @@ public abstract class RelationshipTransactionStateTestBase<G extends KernelAPIWr
             propToken = tx.token().propertyKeyGetOrCreateForName( propKey );
             assertEquals( write.relationshipSetProperty( relationshipId, propToken, stringValue( "hello" ) ),
                     NO_VALUE );
-            tx.success();
+            tx.commit();
         }
 
         // When/Then
@@ -536,7 +536,7 @@ public abstract class RelationshipTransactionStateTestBase<G extends KernelAPIWr
                 assertFalse( relationship.next(), "should only find one relationship" );
             }
 
-            tx.success();
+            tx.commit();
         }
 
         try ( org.neo4j.graphdb.Transaction ignored = graphDb.beginTx() )
@@ -561,7 +561,7 @@ public abstract class RelationshipTransactionStateTestBase<G extends KernelAPIWr
             propToken = tx.token().propertyKeyGetOrCreateForName( propKey );
             assertEquals( write.relationshipSetProperty( relationshipId, propToken, stringValue( "hello" ) ),
                     NO_VALUE );
-            tx.success();
+            tx.commit();
         }
 
         // When/Then
@@ -580,7 +580,7 @@ public abstract class RelationshipTransactionStateTestBase<G extends KernelAPIWr
                 assertFalse( relationship.next(), "should only find one relationship" );
             }
 
-            tx.success();
+            tx.commit();
         }
 
         try ( org.neo4j.graphdb.Transaction ignored = graphDb.beginTx() )
@@ -605,7 +605,7 @@ public abstract class RelationshipTransactionStateTestBase<G extends KernelAPIWr
             propToken = tx.token().propertyKeyGetOrCreateForName( propKey );
             assertEquals( write.relationshipSetProperty( relationshipId, propToken, stringValue( "hello" ) ),
                     NO_VALUE );
-            tx.success();
+            tx.commit();
         }
 
         // When/Then
@@ -630,7 +630,7 @@ public abstract class RelationshipTransactionStateTestBase<G extends KernelAPIWr
                 assertFalse( relationship.next(), "should only find one relationship" );
             }
 
-            tx.success();
+            tx.commit();
         }
 
         try ( org.neo4j.graphdb.Transaction ignored = graphDb.beginTx() )
@@ -768,7 +768,7 @@ public abstract class RelationshipTransactionStateTestBase<G extends KernelAPIWr
             start = write.nodeCreate();
             type = tx.tokenWrite().relationshipTypeGetOrCreateForName( "OUT" );
             existingRelationship = write.relationshipCreate( start, type, write.nodeCreate() );
-            tx.success();
+            tx.commit();
         }
 
         try ( Transaction tx = beginTransaction() )
@@ -809,7 +809,7 @@ public abstract class RelationshipTransactionStateTestBase<G extends KernelAPIWr
             start = write.nodeCreate();
             one = tx.tokenWrite().relationshipTypeGetOrCreateForName( "ONE" );
             existingRelationship = write.relationshipCreate( start, one, write.nodeCreate() );
-            tx.success();
+            tx.commit();
         }
 
         try ( Transaction tx = beginTransaction() )
@@ -872,7 +872,7 @@ public abstract class RelationshipTransactionStateTestBase<G extends KernelAPIWr
             {
                 write.relationshipCreate( start, bulk, write.nodeCreate() );
             }
-            tx.success();
+            tx.commit();
         }
 
         try ( Transaction tx = beginTransaction() )
@@ -938,7 +938,7 @@ public abstract class RelationshipTransactionStateTestBase<G extends KernelAPIWr
             end = write.nodeCreate();
             type = tx.tokenWrite().relationshipTypeGetOrCreateForName( "R" );
             existingRelationship = write.relationshipCreate( start, type, end );
-            tx.success();
+            tx.commit();
         }
 
         try ( Transaction tx = beginTransaction() )
@@ -987,7 +987,7 @@ public abstract class RelationshipTransactionStateTestBase<G extends KernelAPIWr
             {
                 write.relationshipCreate( start, bulk, write.nodeCreate() );
             }
-            tx.success();
+            tx.commit();
         }
 
         try ( Transaction tx = beginTransaction() )
@@ -1041,7 +1041,7 @@ public abstract class RelationshipTransactionStateTestBase<G extends KernelAPIWr
             Write write = tx.dataWrite();
             relationship = tx.tokenWrite().relationshipTypeGetOrCreateForName( "R" );
             write.relationshipCreate( write.nodeCreate(), relationship, write.nodeCreate() );
-            tx.success();
+            tx.commit();
         }
 
         try ( Transaction tx = beginTransaction() )
@@ -1067,7 +1067,7 @@ public abstract class RelationshipTransactionStateTestBase<G extends KernelAPIWr
             Write write = tx.dataWrite();
             relationshipId = tx.tokenWrite().relationshipTypeGetOrCreateForName( "R" );
             relationship = write.relationshipCreate( write.nodeCreate(), relationshipId, write.nodeCreate() );
-            tx.success();
+            tx.commit();
         }
 
         try ( Transaction tx = beginTransaction() )
@@ -1163,7 +1163,7 @@ public abstract class RelationshipTransactionStateTestBase<G extends KernelAPIWr
                 assertCounts( expectedCounts, counts );
             }
 
-            tx.failure();
+            tx.rollback();
         }
     }
 
@@ -1291,7 +1291,7 @@ public abstract class RelationshipTransactionStateTestBase<G extends KernelAPIWr
             relationship = write.relationshipCreate( write.nodeCreate(),
                     token,
                     write.nodeCreate() );
-            tx.success();
+            tx.commit();
         }
 
         // Then
@@ -1348,7 +1348,7 @@ public abstract class RelationshipTransactionStateTestBase<G extends KernelAPIWr
             tx.dataWrite().relationshipSetProperty( relationship, prop1, longValue( 1 ) );
             tx.dataWrite().relationshipSetProperty( relationship, prop2, longValue( 2 ) );
             tx.dataWrite().relationshipSetProperty( relationship, prop3, longValue( 3 ) );
-            tx.success();
+            tx.commit();
         }
 
         // Then
@@ -1380,7 +1380,7 @@ public abstract class RelationshipTransactionStateTestBase<G extends KernelAPIWr
             Write write = tx.dataWrite();
             int token = tx.tokenWrite().relationshipTypeGetOrCreateForName( "R" );
             relationship = write.relationshipCreate( write.nodeCreate(), token, write.nodeCreate() );
-            tx.success();
+            tx.commit();
         }
 
         // Then
@@ -1455,7 +1455,7 @@ public abstract class RelationshipTransactionStateTestBase<G extends KernelAPIWr
             {
                 createRelationship( direction, start, type, write );
             }
-            tx.success();
+            tx.commit();
         }
 
         try ( Transaction tx = beginTransaction() )

@@ -182,7 +182,7 @@ public abstract class IndexProviderApprovalTest
             {
                 addToResults( db, results, value );
             }
-            tx.success();
+            tx.commit();
         }
         return results;
     }
@@ -193,7 +193,7 @@ public abstract class IndexProviderApprovalTest
         {
             Node node = db.createNode( label( LABEL ) );
             node.setProperty( propertyKey, value );
-            tx.success();
+            tx.commit();
             return node;
         }
     }

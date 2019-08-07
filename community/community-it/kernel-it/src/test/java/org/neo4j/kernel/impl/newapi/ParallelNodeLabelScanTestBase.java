@@ -99,7 +99,7 @@ public abstract class ParallelNodeLabelScanTestBase<G extends KernelAPIReadTestS
             FOO_NODES = fooNodes;
             BAR_NODES = barNodes;
 
-            tx.success();
+            tx.commit();
         }
         catch ( KernelException e )
         {

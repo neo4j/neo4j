@@ -77,7 +77,7 @@ class TransactionLogsInSeparateLocationIT
                 Node node = database.createNode();
                 node.setProperty( "a", "b" );
                 node.setProperty( "c", "d" );
-                transaction.success();
+                transaction.commit();
             }
         }
         managementService.shutdown();

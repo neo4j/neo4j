@@ -31,8 +31,6 @@ public interface EmbeddedProxySPI
 
     void assertInUnterminatedTransaction();
 
-    void failTransaction();
-
     RelationshipProxy newRelationshipProxy( long id );
 
     RelationshipProxy newRelationshipProxy( long id, long startNodeId, int typeId, long endNodeId );

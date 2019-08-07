@@ -160,7 +160,7 @@ public class IndexBackupIT
         try ( Transaction transaction = database.beginTx() )
         {
             idRange.mapToObj( id -> database.getNodeById( id ) ).forEach( Node::delete );
-            transaction.success();
+            transaction.commit();
         }
     }
 
@@ -174,7 +174,7 @@ public class IndexBackupIT
                 String propertyName = PROPERTY_PREFIX + i;
                 nodes.forEach( node -> node.setProperty( propertyName, randomRule.nextLong() ) );
             }
-            transaction.success();
+            transaction.commit();
         }
     }
 
@@ -206,7 +206,7 @@ public class IndexBackupIT
             {
                 database.schema().indexFor( label ).on( PROPERTY_PREFIX + i ).create();
             }
-            transaction.success();
+            transaction.commit();
         }
 
         try ( Transaction ignored = database.beginTx() )
@@ -233,7 +233,7 @@ public class IndexBackupIT
         {
             Node node = database.createNode( label );
             node.setProperty( "property" + i, i );
-            transaction.success();
+            transaction.commit();
         }
     }
 

@@ -603,8 +603,7 @@ public class TestRelationshipCount
     public void closeTransaction()
     {
         assert tx != null;
-        tx.success();
-        tx.close();
+        tx.commit();
     }
 
     private GraphDatabaseService getGraphDb()

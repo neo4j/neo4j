@@ -82,8 +82,7 @@ public class BatchTransaction implements AutoCloseable
 
     private void closeTx()
     {
-        tx.success();
-        tx.close();
+        tx.commit();
     }
 
     @Override

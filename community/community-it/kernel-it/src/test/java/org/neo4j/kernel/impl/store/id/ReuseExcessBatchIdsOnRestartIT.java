@@ -50,7 +50,7 @@ public class ReuseExcessBatchIdsOnRestartIT
         try ( Transaction tx = db.beginTx() )
         {
             firstNode = db.createNode();
-            tx.success();
+            tx.commit();
         }
 
         try ( Transaction ignore = db.beginTx() )
@@ -66,7 +66,7 @@ public class ReuseExcessBatchIdsOnRestartIT
         try ( Transaction tx = db.beginTx() )
         {
             secondNode = db.createNode();
-            tx.success();
+            tx.commit();
         }
 
         // then
@@ -82,7 +82,7 @@ public class ReuseExcessBatchIdsOnRestartIT
         try ( Transaction tx = db.beginTx() )
         {
             firstNode = db.createNode();
-            tx.success();
+            tx.commit();
         }
 
         try ( Transaction tx = db.beginTx() )
@@ -90,7 +90,7 @@ public class ReuseExcessBatchIdsOnRestartIT
             // This one gets deleted before commit.
             Node node = db.createNode();
             node.delete();
-            tx.success();
+            tx.commit();
         }
 
         // when
@@ -100,7 +100,7 @@ public class ReuseExcessBatchIdsOnRestartIT
         try ( Transaction tx = db.beginTx() )
         {
             secondNode = db.createNode();
-            tx.success();
+            tx.commit();
         }
 
         // then
@@ -114,7 +114,7 @@ public class ReuseExcessBatchIdsOnRestartIT
         try ( Transaction tx = db.beginTx() )
         {
             db.schema().indexFor( Label.label( "LabelA" ) ).on( "a" ).withName( "A" ).create();
-            tx.success();
+            tx.commit();
         }
 
         try ( Transaction ignore = db.beginTx() )
@@ -129,7 +129,7 @@ public class ReuseExcessBatchIdsOnRestartIT
         try ( Transaction tx = db.beginTx() )
         {
             db.schema().indexFor( Label.label( "LabelB" ) ).on( "b" ).withName( "B" ).create();
-            tx.success();
+            tx.commit();
         }
 
         // then
@@ -139,7 +139,7 @@ public class ReuseExcessBatchIdsOnRestartIT
         {
             first = db.schema().getIndexByName( "A" );
             second = db.schema().getIndexByName( "B" );
-            tx.success();
+            tx.commit();
         }
         IndexDefinitionImpl firstImpl = (IndexDefinitionImpl) first;
         IndexDefinitionImpl secondImpl = (IndexDefinitionImpl) second;
@@ -155,7 +155,7 @@ public class ReuseExcessBatchIdsOnRestartIT
         try ( Transaction tx = db.beginTx() )
         {
             db.schema().constraintFor( Label.label( "LabelA" ) ).assertPropertyIsUnique( "a" ).create();
-            tx.success();
+            tx.commit();
         }
 
         try ( Transaction ignore = db.beginTx() )
@@ -170,7 +170,7 @@ public class ReuseExcessBatchIdsOnRestartIT
         try ( Transaction tx = db.beginTx() )
         {
             db.schema().constraintFor( Label.label( "LabelB" ) ).assertPropertyIsUnique( "b" ).create();
-            tx.success();
+            tx.commit();
         }
 
         // then
@@ -180,7 +180,7 @@ public class ReuseExcessBatchIdsOnRestartIT
         {
             first = first( db.schema().getIndexes( Label.label( "LabelA" ) ) );
             second = first( db.schema().getIndexes( Label.label( "LabelB" ) ) );
-            tx.success();
+            tx.commit();
         }
         IndexDefinitionImpl firstImpl = (IndexDefinitionImpl) first;
         IndexDefinitionImpl secondImpl = (IndexDefinitionImpl) second;

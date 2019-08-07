@@ -107,17 +107,17 @@ class KernelDiagnosticsIT
                 {
                     db.createNode( label ).setProperty( key, i );
                 }
-                tx.success();
+                tx.commit();
             }
             try ( Transaction tx = db.beginTx() )
             {
                 db.schema().indexFor( label ).on( key ).create();
-                tx.success();
+                tx.commit();
             }
             try ( Transaction tx = db.beginTx() )
             {
                 db.schema().awaitIndexesOnline( 1, MINUTES );
-                tx.success();
+                tx.commit();
             }
         }
         finally

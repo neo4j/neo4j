@@ -467,13 +467,13 @@ class IndexIT extends KernelIntegrationTest
             try ( org.neo4j.graphdb.Transaction transaction = db.beginTx() )
             {
                 db.schema().indexFor( label ).on( propertyKey ).create();
-                transaction.success();
+                transaction.commit();
             }
 
             try ( org.neo4j.graphdb.Transaction transaction = db.beginTx() )
             {
                 db.schema().awaitIndexesOnline( 1, TimeUnit.MINUTES );
-                transaction.success();
+                transaction.commit();
             }
         };
     }

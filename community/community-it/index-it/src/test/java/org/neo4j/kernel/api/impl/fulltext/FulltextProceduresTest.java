@@ -182,7 +182,7 @@ public class FulltextProceduresTest
             assertFalse( result.hasNext() );
             result.close();
             assertNotNull( db.schema().getIndexByName( "test-index" ) );
-            tx.success();
+            tx.commit();
         }
         managementService.shutdown();
         db = createDatabase();
@@ -197,7 +197,7 @@ public class FulltextProceduresTest
             //noinspection ConstantConditions
             assertFalse( result.hasNext() );
             assertNotNull( db.schema().getIndexByName( "test-index" ) );
-            tx.success();
+            tx.commit();
         }
     }
 
@@ -227,7 +227,7 @@ public class FulltextProceduresTest
             assertFalse( result.hasNext() );
             result.close();
             assertNotNull( db.schema().getIndexByName( "test-index" ) );
-            tx.success();
+            tx.commit();
         }
         managementService.shutdown();
         db = createDatabase();
@@ -242,7 +242,7 @@ public class FulltextProceduresTest
             //noinspection ConstantConditions
             assertFalse( result.hasNext() );
             assertNotNull( db.schema().getIndexByName( "test-index" ) );
-            tx.success();
+            tx.commit();
         }
     }
 
@@ -354,7 +354,7 @@ public class FulltextProceduresTest
             Relationship relB = nodeB.createRelationshipTo( nodeA, REL );
             relB.setProperty( PROP, "Hello and hello again, in the end." );
             englishRels.add( relB.getId() );
-            tx.success();
+            tx.commit();
         }
         try ( Transaction tx = db.beginTx() )
         {
@@ -364,7 +364,7 @@ public class FulltextProceduresTest
             String swedish = props + ", {analyzer: '" + FulltextAnalyzerTest.SWEDISH + "'}";
             db.execute( format( NODE_CREATE, labelledSwedishNodes, lbl, swedish ) ).close();
             db.execute( format( RELATIONSHIP_CREATE, typedSwedishRelationships, rel, swedish ) ).close();
-            tx.success();
+            tx.commit();
         }
         awaitIndexesOnline();
         try ( Transaction tx = db.beginTx() )
@@ -382,7 +382,7 @@ public class FulltextProceduresTest
             Relationship relD = nodeD.createRelationshipTo( nodeC, REL );
             relD.setProperty( PROP, "Hello and hello again, in the end." );
             englishRels.add( relD.getId() );
-            tx.success();
+            tx.commit();
         }
         try ( Transaction ignore = db.beginTx() )
         {
@@ -420,7 +420,7 @@ public class FulltextProceduresTest
 
             horseId = horse.getId();
             horseRelId = horseRel.getId();
-            tx.success();
+            tx.commit();
         }
         assertQueryFindsIds( db, true, "node", "horse", newSetWith( horseId ) );
         assertQueryFindsIds( db, true, "node", "horse zebra", newSetWith( horseId ) );
@@ -445,13 +445,13 @@ public class FulltextProceduresTest
             node2.setProperty( "otherprop", "This is a related integration test" );
             relationship = node1.createRelationshipTo( node2, REL );
             relationship.setProperty( PROP, "They relate" );
-            tx.success();
+            tx.commit();
         }
         try ( Transaction tx = db.beginTx() )
         {
             db.execute( format( NODE_CREATE, "node", array( LABEL.name() ), array( PROP, "otherprop" ) ) );
             db.execute( format( RELATIONSHIP_CREATE, "rel", array( REL.name() ), array( PROP ) ) );
-            tx.success();
+            tx.commit();
         }
         awaitIndexesOnline();
 
@@ -472,7 +472,7 @@ public class FulltextProceduresTest
         {
             db.execute( format( NODE_CREATE, "node", array( LABEL.name() ), array( PROP ) + EVENTUALLY_CONSISTENT ) );
             db.execute( format( RELATIONSHIP_CREATE, "rel", array( REL.name() ), array( PROP ) + EVENTUALLY_CONSISTENT ) );
-            tx.success();
+            tx.commit();
         }
 
         int entityCount = 200;
@@ -489,7 +489,7 @@ public class FulltextProceduresTest
                 nodeIds.add( node.getId() );
                 relIds.add( rel.getId() );
             }
-            tx.success();
+            tx.commit();
         }
 
         // Assert that we can observe our updates within 20 seconds from now. We have, after all, already committed the transaction.
@@ -525,7 +525,7 @@ public class FulltextProceduresTest
         {
             db.execute( format( NODE_CREATE, "node", array( LABEL.name() ), array( PROP ) + EVENTUALLY_CONSISTENT ) );
             db.execute( format( RELATIONSHIP_CREATE, "rel", array( REL.name() ), array( PROP ) + EVENTUALLY_CONSISTENT ) );
-            tx.success();
+            tx.commit();
         }
         awaitIndexesOnline();
 
@@ -543,7 +543,7 @@ public class FulltextProceduresTest
                 nodeIds.add( node.getId() );
                 relIds.add( rel.getId() );
             }
-            tx.success();
+            tx.commit();
         }
 
         db.execute( AWAIT_REFRESH ).close();
@@ -571,14 +571,14 @@ public class FulltextProceduresTest
                 nodeIds.add( node.getId() );
                 relIds.add( rel.getId() );
             }
-            tx.success();
+            tx.commit();
         }
 
         try ( Transaction tx = db.beginTx() )
         {
             db.execute( format( NODE_CREATE, "node", array( LABEL.name() ), array( PROP ) + EVENTUALLY_CONSISTENT ) );
             db.execute( format( RELATIONSHIP_CREATE, "rel", array( REL.name() ), array( PROP ) + EVENTUALLY_CONSISTENT ) );
-            tx.success();
+            tx.commit();
         }
 
         awaitIndexesOnline();
@@ -609,7 +609,7 @@ public class FulltextProceduresTest
                 nodeIds.add( node.getId() );
                 relIds.add( rel.getId() );
             }
-            tx.success();
+            tx.commit();
         }
 
         // Then, in two concurrent transactions, we create our indexes AND change all the property values to "green".
@@ -623,7 +623,7 @@ public class FulltextProceduresTest
             {
                 db.execute( format( NODE_CREATE, "node", array( LABEL.name() ), array( PROP ) + EVENTUALLY_CONSISTENT ) );
                 db.execute( format( RELATIONSHIP_CREATE, "rel", array( REL.name() ), array( PROP ) + EVENTUALLY_CONSISTENT ) );
-                tx.success();
+                tx.commit();
             }
         };
         Runnable makeAllEntitiesGreen = () ->
@@ -633,7 +633,7 @@ public class FulltextProceduresTest
                 // Prepare our transaction state first.
                 nodeIds.forEach( nodeId -> db.getNodeById( nodeId ).setProperty( PROP, newValue ) );
                 relIds.forEach( relId -> db.getRelationshipById( relId ).setProperty( PROP, newValue ) );
-                tx.success();
+                tx.commit();
                 // Okay, NOW we're ready to race!
                 readyLatch.countDown();
                 startLatch.await();
@@ -664,7 +664,7 @@ public class FulltextProceduresTest
         {
             db.execute( format( NODE_CREATE, "node", array( LABEL.name() ), array( PROP, "otherprop" ) ) );
             db.execute( format( RELATIONSHIP_CREATE, "rel", array( REL.name() ), array( PROP ) ) );
-            tx.success();
+            tx.commit();
         }
         awaitIndexesOnline();
 
@@ -687,7 +687,7 @@ public class FulltextProceduresTest
                 nodeIds.add( node1.getId() );
                 nodeIds.add( node2.getId() );
                 relId = relationship.getId();
-                tx.success();
+                tx.commit();
             }
 
             // Index updates are still blocked for eventually consistent indexes, so we should not find anything at this point.
@@ -727,7 +727,7 @@ public class FulltextProceduresTest
             assertThat( analyzers, hasItem( "english" ) );
             assertThat( analyzers, hasItem( "swedish" ) );
             assertThat( analyzers, hasItem( "standard" ) );
-            tx.success();
+            tx.commit();
         }
 
         // Verify that all analyzers have a description.
@@ -745,7 +745,7 @@ public class FulltextProceduresTest
                     }
                 }
             }
-            tx.success();
+            tx.commit();
         }
     }
 
@@ -756,7 +756,7 @@ public class FulltextProceduresTest
         try ( Transaction tx = db.beginTx() )
         {
             createSimpleRelationshipIndex();
-            tx.success();
+            tx.commit();
         }
 
         awaitIndexesOnline();
@@ -765,7 +765,7 @@ public class FulltextProceduresTest
         {
             expectedException.expect( Exception.class );
             db.execute( format( QUERY_NODES, "rels", "bla bla" ) ).next();
-            tx.success();
+            tx.commit();
         }
     }
 
@@ -777,7 +777,7 @@ public class FulltextProceduresTest
         try ( Transaction tx = db.beginTx() )
         {
             createSimpleNodesIndex();
-            tx.success();
+            tx.commit();
         }
 
         awaitIndexesOnline();
@@ -786,7 +786,7 @@ public class FulltextProceduresTest
         {
             expectedException.expect( Exception.class );
             db.execute( format( QUERY_RELS, "nodes", "bla bla" ) ).next();
-            tx.success();
+            tx.commit();
         }
     }
 
@@ -800,7 +800,7 @@ public class FulltextProceduresTest
         {
             db.execute( format( NODE_CREATE, "nodes", array( label.name() ), array( PROP ) ) ).close();
             createSimpleRelationshipIndex();
-            tx.success();
+            tx.commit();
         }
 
         awaitIndexesOnline();
@@ -816,7 +816,7 @@ public class FulltextProceduresTest
                 node.setProperty( PROP, propertyValue );
                 node.createRelationshipTo( node, REL ).setProperty( PROP, propertyValue );
             }
-            tx.success();
+            tx.commit();
         }
 
         for ( Value value : values )
@@ -862,13 +862,13 @@ public class FulltextProceduresTest
                 node.setProperty( PROP, propertyValue );
                 node.createRelationshipTo( node, REL ).setProperty( PROP, propertyValue );
             }
-            tx.success();
+            tx.commit();
         }
         try ( Transaction tx = db.beginTx() )
         {
             createSimpleNodesIndex();
             createSimpleRelationshipIndex();
-            tx.success();
+            tx.commit();
         }
 
         awaitIndexesOnline();
@@ -908,7 +908,7 @@ public class FulltextProceduresTest
         try ( Transaction tx = db.beginTx() )
         {
             createSimpleNodesIndex();
-            tx.success();
+            tx.commit();
         }
         long nodeId;
         try ( Transaction tx = db.beginTx() )
@@ -916,7 +916,7 @@ public class FulltextProceduresTest
             Node node = db.createNode( LABEL );
             nodeId = node.getId();
             node.setProperty( PROP, "bla bla" );
-            tx.success();
+            tx.commit();
         }
 
         awaitIndexesOnline();
@@ -925,7 +925,7 @@ public class FulltextProceduresTest
         {
             Node node = db.getNodeById( nodeId );
             node.setProperty( PROP, 42 );
-            tx.success();
+            tx.commit();
         }
 
         try ( Transaction tx = db.beginTx() )
@@ -933,7 +933,7 @@ public class FulltextProceduresTest
             Result result = db.execute( format( QUERY_NODES, "nodes", "bla" ) );
             assertFalse( result.hasNext() );
             result.close();
-            tx.success();
+            tx.commit();
         }
     }
 
@@ -945,7 +945,7 @@ public class FulltextProceduresTest
         try ( Transaction tx = db.beginTx() )
         {
             createSimpleNodesIndex();
-            tx.success();
+            tx.commit();
         }
         long nodeId;
         try ( Transaction tx = db.beginTx() )
@@ -953,7 +953,7 @@ public class FulltextProceduresTest
             Node node = db.createNode( LABEL );
             node.setProperty( PROP, 42 );
             nodeId = node.getId();
-            tx.success();
+            tx.commit();
         }
 
         awaitIndexesOnline();
@@ -962,13 +962,13 @@ public class FulltextProceduresTest
         {
             Node node = db.getNodeById( nodeId );
             node.setProperty( PROP, "bla bla" );
-            tx.success();
+            tx.commit();
         }
 
         try ( Transaction tx = db.beginTx() )
         {
             assertQueryFindsIds( db, true, "nodes", "bla", nodeId );
-            tx.success();
+            tx.commit();
         }
     }
 
@@ -980,7 +980,7 @@ public class FulltextProceduresTest
         try ( Transaction tx = db.beginTx() )
         {
             db.execute( format( NODE_CREATE, "nodes", array( LABEL.name() ), array( "prop1", "prop2" ) ) ).close();
-            tx.success();
+            tx.commit();
         }
         long nodeId;
         try ( Transaction tx = db.beginTx() )
@@ -989,7 +989,7 @@ public class FulltextProceduresTest
             nodeId = node.getId();
             node.setProperty( "prop1", "foo" );
             node.setProperty( "prop2", "bar" );
-            tx.success();
+            tx.commit();
         }
 
         awaitIndexesOnline();
@@ -998,7 +998,7 @@ public class FulltextProceduresTest
         {
             Node node = db.getNodeById( nodeId );
             node.setProperty( "prop2", 42 );
-            tx.success();
+            tx.commit();
         }
 
         try ( Transaction tx = db.beginTx() )
@@ -1007,7 +1007,7 @@ public class FulltextProceduresTest
             Result result = db.execute( format( QUERY_NODES, "nodes", "bar" ) );
             assertFalse( result.hasNext() );
             result.close();
-            tx.success();
+            tx.commit();
         }
     }
 
@@ -1019,7 +1019,7 @@ public class FulltextProceduresTest
         try ( Transaction tx = db.beginTx() )
         {
             db.execute( format( NODE_CREATE, "nodes", array( LABEL.name() ), array( "prop1", "prop2" ) ) ).close();
-            tx.success();
+            tx.commit();
         }
         long nodeId;
         try ( Transaction tx = db.beginTx() )
@@ -1028,7 +1028,7 @@ public class FulltextProceduresTest
             nodeId = node.getId();
             node.setProperty( "prop1", "foo" );
             node.setProperty( "prop2", 42 );
-            tx.success();
+            tx.commit();
         }
 
         awaitIndexesOnline();
@@ -1037,14 +1037,14 @@ public class FulltextProceduresTest
         {
             Node node = db.getNodeById( nodeId );
             node.setProperty( "prop2", "bar" );
-            tx.success();
+            tx.commit();
         }
 
         try ( Transaction tx = db.beginTx() )
         {
             assertQueryFindsIds( db, true, "nodes", "foo", nodeId );
             assertQueryFindsIds( db, true, "nodes", "bar", nodeId );
-            tx.success();
+            tx.commit();
         }
     }
 
@@ -1064,7 +1064,7 @@ public class FulltextProceduresTest
         try ( Transaction tx = db.beginTx() )
         {
             db.execute( format( NODE_CREATE, "books", array( label.name() ), array( "title", "author", "contents" ) ) ).close();
-            tx.success();
+            tx.commit();
         }
         long nodeId;
         try ( Transaction tx = db.beginTx() )
@@ -1074,7 +1074,7 @@ public class FulltextProceduresTest
             node.setProperty( "title", "Meditationes de prima philosophia" );
             node.setProperty( "author", "René Descartes" );
             node.setProperty( "contents", meditationes );
-            tx.success();
+            tx.commit();
         }
 
         awaitIndexesOnline();
@@ -1082,7 +1082,7 @@ public class FulltextProceduresTest
         try ( Transaction tx = db.beginTx() )
         {
             assertQueryFindsIds( db, true, "books", "impellit scriptum offerendum", nodeId );
-            tx.success();
+            tx.commit();
         }
     }
 
@@ -1107,12 +1107,12 @@ public class FulltextProceduresTest
             node.setProperty( "title", "Meditationes de prima philosophia" );
             node.setProperty( "author", "René Descartes" );
             node.setProperty( "contents", meditationes );
-            tx.success();
+            tx.commit();
         }
         try ( Transaction tx = db.beginTx() )
         {
             db.execute( format( NODE_CREATE, "books", array( label.name() ), array( "title", "author", "contents" ) ) ).close();
-            tx.success();
+            tx.commit();
         }
 
         awaitIndexesOnline();
@@ -1120,7 +1120,7 @@ public class FulltextProceduresTest
         try ( Transaction tx = db.beginTx() )
         {
             assertQueryFindsIds( db, true, "books", "impellit scriptum offerendum", nodeId );
-            tx.success();
+            tx.commit();
         }
     }
 
@@ -1132,7 +1132,7 @@ public class FulltextProceduresTest
         try ( Transaction tx = db.beginTx() )
         {
             db.execute( format( NODE_CREATE, "books", array( book.name() ), array( "title", "author" ) ) ).close();
-            tx.success();
+            tx.commit();
         }
 
         long book2id;
@@ -1146,14 +1146,14 @@ public class FulltextProceduresTest
             book2.setProperty( "author", "E. M. Curley" );
             book2.setProperty( "title", "Descartes Against the Skeptics" );
             book2id = book2.getId();
-            tx.success();
+            tx.commit();
         }
 
         try ( Transaction tx = db.beginTx() )
         {
             LongHashSet ids = newSetWith( book2id );
             assertQueryFindsIds( db, true, "books", "title:Descartes", ids );
-            tx.success();
+            tx.commit();
         }
     }
 
@@ -1164,7 +1164,7 @@ public class FulltextProceduresTest
         try ( Transaction tx = db.beginTx() )
         {
             db.execute( format( NODE_CREATE, "nodes", array( LABEL.name() ), array( "a", "b", "c", "d", "e", "f" ) ) ).close();
-            tx.success();
+            tx.commit();
         }
         long nodeId;
         try ( Transaction tx = db.beginTx() )
@@ -1173,12 +1173,12 @@ public class FulltextProceduresTest
             Node node = db.createNode( LABEL );
             node.setProperty( "e", "value" );
             nodeId = node.getId();
-            tx.success();
+            tx.commit();
         }
         try ( Transaction tx = db.beginTx() )
         {
             assertQueryFindsIds( db, true, "nodes", "e:value", nodeId );
-            tx.success();
+            tx.commit();
         }
     }
 
@@ -1194,12 +1194,12 @@ public class FulltextProceduresTest
 
                 db.createNode( LABEL ).setProperty( PROP, "value" );
             }
-            tx.success();
+            tx.commit();
         }
         try ( Transaction tx = db.beginTx() )
         {
             createSimpleNodesIndex();
-            tx.success();
+            tx.commit();
         }
         try ( Transaction tx = db.beginTx() )
         {
@@ -1208,7 +1208,7 @@ public class FulltextProceduresTest
             {
                 assertThat( stream.count(), is( nodeCount ) );
             }
-            tx.success();
+            tx.commit();
         }
     }
 
@@ -1224,12 +1224,12 @@ public class FulltextProceduresTest
 
                 db.createNode( LABEL ).setProperty( PROP, "value" );
             }
-            tx.success();
+            tx.commit();
         }
         try ( Transaction tx = db.beginTx() )
         {
             createSimpleNodesIndex();
-            tx.success();
+            tx.commit();
         }
         try ( Transaction tx = db.beginTx() )
         {
@@ -1239,7 +1239,7 @@ public class FulltextProceduresTest
             {
                 assertThat( stream.count(), is( nodeCount + 1 ) );
             }
-            tx.success();
+            tx.commit();
         }
     }
 
@@ -1262,7 +1262,7 @@ public class FulltextProceduresTest
         try ( Transaction tx = db.beginTx() )
         {
             createSimpleNodesIndex();
-            tx.success();
+            tx.commit();
         }
         long nodeIdA;
         long nodeIdB;
@@ -1275,7 +1275,7 @@ public class FulltextProceduresTest
             Node nodeB = db.createNode( LABEL );
             nodeB.setProperty( PROP, "value" );
             nodeIdB = nodeB.getId();
-            tx.success();
+            tx.commit();
         }
         try ( Transaction tx = db.beginTx() )
         {
@@ -1287,13 +1287,13 @@ public class FulltextProceduresTest
                     {
                         db.getNodeById( nodeIdA ).delete();
                         db.getNodeById( nodeIdB ).delete();
-                        forkedTx.success();
+                        forkedTx.commit();
                     }
                     return null;
                 } ).get();
                 assertThat( result.stream().count(), is( 0L ) );
             }
-            tx.success();
+            tx.commit();
         }
     }
 
@@ -1304,7 +1304,7 @@ public class FulltextProceduresTest
         try ( Transaction tx = db.beginTx() )
         {
             createSimpleRelationshipIndex();
-            tx.success();
+            tx.commit();
         }
         long relIdA;
         long relIdB;
@@ -1318,7 +1318,7 @@ public class FulltextProceduresTest
             Relationship relB = node.createRelationshipTo( node, REL );
             relB.setProperty( PROP, "value" );
             relIdB = relB.getId();
-            tx.success();
+            tx.commit();
         }
         try ( Transaction tx = db.beginTx() )
         {
@@ -1330,13 +1330,13 @@ public class FulltextProceduresTest
                     {
                         db.getRelationshipById( relIdA ).delete();
                         db.getRelationshipById( relIdB ).delete();
-                        forkedTx.success();
+                        forkedTx.commit();
                     }
                     return null;
                 } ).get();
                 assertThat( result.stream().count(), is( 0L ) );
             }
-            tx.success();
+            tx.commit();
         }
     }
 
@@ -1347,7 +1347,7 @@ public class FulltextProceduresTest
         try ( Transaction tx = db.beginTx() )
         {
             createSimpleNodesIndex();
-            tx.success();
+            tx.commit();
         }
         long nodeIdA;
         long nodeIdB;
@@ -1360,7 +1360,7 @@ public class FulltextProceduresTest
             Node nodeB = db.createNode( LABEL );
             nodeB.setProperty( PROP, "value" );
             nodeIdB = nodeB.getId();
-            tx.success();
+            tx.commit();
         }
         try ( Transaction tx = db.beginTx() )
         {
@@ -1370,7 +1370,7 @@ public class FulltextProceduresTest
             {
                 assertThat( result.stream().count(), is( 0L ) );
             }
-            tx.success();
+            tx.commit();
         }
     }
 
@@ -1381,7 +1381,7 @@ public class FulltextProceduresTest
         try ( Transaction tx = db.beginTx() )
         {
             createSimpleRelationshipIndex();
-            tx.success();
+            tx.commit();
         }
         long relIdA;
         long relIdB;
@@ -1395,7 +1395,7 @@ public class FulltextProceduresTest
             Relationship relB = node.createRelationshipTo( node, REL );
             relB.setProperty( PROP, "value" );
             relIdB = relB.getId();
-            tx.success();
+            tx.commit();
         }
         try ( Transaction tx = db.beginTx() )
         {
@@ -1405,7 +1405,7 @@ public class FulltextProceduresTest
             {
                 assertThat( result.stream().count(), is( 0L ) );
             }
-            tx.success();
+            tx.commit();
         }
     }
 
@@ -1416,7 +1416,7 @@ public class FulltextProceduresTest
         try ( Transaction tx = db.beginTx() )
         {
             createSimpleNodesIndex();
-            tx.success();
+            tx.commit();
         }
         awaitIndexesOnline();
         try ( Transaction tx = db.beginTx() )
@@ -1424,7 +1424,7 @@ public class FulltextProceduresTest
             Node node = db.createNode( LABEL );
             node.setProperty( PROP, "value" );
             assertQueryFindsIds( db, true, "nodes", "value", newSetWith( node.getId() ) );
-            tx.success();
+            tx.commit();
         }
     }
 
@@ -1435,7 +1435,7 @@ public class FulltextProceduresTest
         try ( Transaction tx = db.beginTx() )
         {
             createSimpleRelationshipIndex();
-            tx.success();
+            tx.commit();
         }
         awaitIndexesOnline();
         try ( Transaction tx = db.beginTx() )
@@ -1444,7 +1444,7 @@ public class FulltextProceduresTest
             Relationship relationship = node.createRelationshipTo( node, REL );
             relationship.setProperty( PROP, "value" );
             assertQueryFindsIds( db, false, "rels", "value", newSetWith( relationship.getId() ) );
-            tx.success();
+            tx.commit();
         }
     }
 
@@ -1455,20 +1455,20 @@ public class FulltextProceduresTest
         try ( Transaction tx = db.beginTx() )
         {
             createSimpleNodesIndex();
-            tx.success();
+            tx.commit();
         }
         long nodeId;
         try ( Transaction tx = db.beginTx() )
         {
             awaitIndexesOnline();
             nodeId = db.createNode( LABEL ).getId();
-            tx.success();
+            tx.commit();
         }
         try ( Transaction tx = db.beginTx() )
         {
             db.getNodeById( nodeId ).setProperty( PROP, "value" );
             assertQueryFindsIds( db, true, "nodes", "prop:value", nodeId );
-            tx.success();
+            tx.commit();
         }
     }
 
@@ -1479,7 +1479,7 @@ public class FulltextProceduresTest
         try ( Transaction tx = db.beginTx() )
         {
             createSimpleRelationshipIndex();
-            tx.success();
+            tx.commit();
         }
         long relId;
         try ( Transaction tx = db.beginTx() )
@@ -1488,14 +1488,14 @@ public class FulltextProceduresTest
             Node node = db.createNode();
             Relationship rel = node.createRelationshipTo( node, REL );
             relId = rel.getId();
-            tx.success();
+            tx.commit();
         }
         try ( Transaction tx = db.beginTx() )
         {
             Relationship rel = db.getRelationshipById( relId );
             rel.setProperty( PROP, "value" );
             assertQueryFindsIds( db, false, "rels", "prop:value", relId );
-            tx.success();
+            tx.commit();
         }
     }
 
@@ -1506,7 +1506,7 @@ public class FulltextProceduresTest
         try ( Transaction tx = db.beginTx() )
         {
             createSimpleNodesIndex();
-            tx.success();
+            tx.commit();
         }
         long nodeId;
         try ( Transaction tx = db.beginTx() )
@@ -1515,14 +1515,14 @@ public class FulltextProceduresTest
             Node node = db.createNode();
             node.setProperty( PROP, "value" );
             nodeId = node.getId();
-            tx.success();
+            tx.commit();
         }
         try ( Transaction tx = db.beginTx() )
         {
             Node node = db.getNodeById( nodeId );
             node.addLabel( LABEL );
             assertQueryFindsIds( db, true, "nodes", "value", nodeId );
-            tx.success();
+            tx.commit();
         }
     }
 
@@ -1533,7 +1533,7 @@ public class FulltextProceduresTest
         try ( Transaction tx = db.beginTx() )
         {
             createSimpleNodesIndex();
-            tx.success();
+            tx.commit();
         }
         long nodeId;
         try ( Transaction tx = db.beginTx() )
@@ -1542,14 +1542,14 @@ public class FulltextProceduresTest
             Node node = db.createNode( LABEL );
             node.setProperty( PROP, "primo" );
             nodeId = node.getId();
-            tx.success();
+            tx.commit();
         }
         try ( Transaction tx = db.beginTx() )
         {
             db.getNodeById( nodeId ).setProperty( PROP, "secundo" );
             assertQueryFindsIds( db, true, "nodes", "primo" );
             assertQueryFindsIds( db, true, "nodes", "secundo", nodeId );
-            tx.success();
+            tx.commit();
         }
     }
 
@@ -1560,7 +1560,7 @@ public class FulltextProceduresTest
         try ( Transaction tx = db.beginTx() )
         {
             createSimpleRelationshipIndex();
-            tx.success();
+            tx.commit();
         }
         long relId;
         try ( Transaction tx = db.beginTx() )
@@ -1570,14 +1570,14 @@ public class FulltextProceduresTest
             Relationship rel = node.createRelationshipTo( node, REL );
             rel.setProperty( PROP, "primo" );
             relId = rel.getId();
-            tx.success();
+            tx.commit();
         }
         try ( Transaction tx = db.beginTx() )
         {
             db.getRelationshipById( relId ).setProperty( PROP, "secundo" );
             assertQueryFindsIds( db, false, "rels", "primo" );
             assertQueryFindsIds( db, false, "rels", "secundo", relId );
-            tx.success();
+            tx.commit();
         }
     }
 
@@ -1588,7 +1588,7 @@ public class FulltextProceduresTest
         try ( Transaction tx = db.beginTx() )
         {
             createSimpleNodesIndex();
-            tx.success();
+            tx.commit();
         }
         long nodeId;
         try ( Transaction tx = db.beginTx() )
@@ -1597,13 +1597,13 @@ public class FulltextProceduresTest
             Node node = db.createNode( LABEL );
             node.setProperty( PROP, "value" );
             nodeId = node.getId();
-            tx.success();
+            tx.commit();
         }
         try ( Transaction tx = db.beginTx() )
         {
             db.getNodeById( nodeId ).removeProperty( PROP );
             assertQueryFindsIds( db, true, "nodes", "value" );
-            tx.success();
+            tx.commit();
         }
     }
 
@@ -1614,7 +1614,7 @@ public class FulltextProceduresTest
         try ( Transaction tx = db.beginTx() )
         {
             createSimpleRelationshipIndex();
-            tx.success();
+            tx.commit();
         }
         long relId;
         try ( Transaction tx = db.beginTx() )
@@ -1624,13 +1624,13 @@ public class FulltextProceduresTest
             Relationship rel = node.createRelationshipTo( node, REL );
             rel.setProperty( PROP, "value" );
             relId = rel.getId();
-            tx.success();
+            tx.commit();
         }
         try ( Transaction tx = db.beginTx() )
         {
             db.getRelationshipById( relId ).removeProperty( PROP );
             assertQueryFindsIds( db, false, "rels", "value" );
-            tx.success();
+            tx.commit();
         }
     }
 
@@ -1641,7 +1641,7 @@ public class FulltextProceduresTest
         try ( Transaction tx = db.beginTx() )
         {
             createSimpleNodesIndex();
-            tx.success();
+            tx.commit();
         }
         long nodeId;
         try ( Transaction tx = db.beginTx() )
@@ -1649,13 +1649,13 @@ public class FulltextProceduresTest
             Node node = db.createNode( LABEL );
             node.setProperty( PROP, "value" );
             nodeId = node.getId();
-            tx.success();
+            tx.commit();
         }
         try ( Transaction tx = db.beginTx() )
         {
             db.getNodeById( nodeId ).removeLabel( LABEL );
             assertQueryFindsIds( db, true, "nodes", "nodes" );
-            tx.success();
+            tx.commit();
         }
     }
 
@@ -1666,7 +1666,7 @@ public class FulltextProceduresTest
         try ( Transaction tx = db.beginTx() )
         {
             createSimpleNodesIndex();
-            tx.success();
+            tx.commit();
         }
         long nodeId;
         try ( Transaction tx = db.beginTx() )
@@ -1675,7 +1675,7 @@ public class FulltextProceduresTest
             Node node = db.createNode( LABEL );
             node.setProperty( PROP, "primo" );
             nodeId = node.getId();
-            tx.success();
+            tx.commit();
         }
         try ( Transaction tx = db.beginTx() )
         {
@@ -1688,7 +1688,7 @@ public class FulltextProceduresTest
             node.setProperty( PROP, "primo" );
             assertQueryFindsIds( db, true, "nodes", "primo", nodeId );
             assertQueryFindsIds( db, true, "nodes", "secundo" );
-            tx.success();
+            tx.commit();
         }
     }
 
@@ -1699,7 +1699,7 @@ public class FulltextProceduresTest
         try ( Transaction tx = db.beginTx() )
         {
             createSimpleRelationshipIndex();
-            tx.success();
+            tx.commit();
         }
         long relId;
         try ( Transaction tx = db.beginTx() )
@@ -1709,7 +1709,7 @@ public class FulltextProceduresTest
             Relationship rel = node.createRelationshipTo( node, REL );
             rel.setProperty( PROP, "primo" );
             relId = rel.getId();
-            tx.success();
+            tx.commit();
         }
         try ( Transaction tx = db.beginTx() )
         {
@@ -1722,7 +1722,7 @@ public class FulltextProceduresTest
             rel.setProperty( PROP, "primo" );
             assertQueryFindsIds( db, false, "rels", "primo", relId );
             assertQueryFindsIds( db, false, "rels", "secundo" );
-            tx.success();
+            tx.commit();
         }
     }
 
@@ -1733,7 +1733,7 @@ public class FulltextProceduresTest
         try ( Transaction tx = db.beginTx() )
         {
             createSimpleNodesIndex();
-            tx.success();
+            tx.commit();
         }
         long nodeId;
         try ( Transaction tx = db.beginTx() )
@@ -1742,7 +1742,7 @@ public class FulltextProceduresTest
             Node node = db.createNode( LABEL );
             node.setProperty( PROP, "primo" );
             nodeId = node.getId();
-            tx.success();
+            tx.commit();
         }
         try ( Transaction tx = db.beginTx() )
         {
@@ -1752,7 +1752,7 @@ public class FulltextProceduresTest
             assertQueryFindsIds( db, true, "nodes", "primo" );
             node.setProperty( PROP, "primo" );
             assertQueryFindsIds( db, true, "nodes", "primo", nodeId );
-            tx.success();
+            tx.commit();
         }
     }
 
@@ -1763,7 +1763,7 @@ public class FulltextProceduresTest
         try ( Transaction tx = db.beginTx() )
         {
             createSimpleRelationshipIndex();
-            tx.success();
+            tx.commit();
         }
         long relId;
         try ( Transaction tx = db.beginTx() )
@@ -1773,7 +1773,7 @@ public class FulltextProceduresTest
             Relationship rel = node.createRelationshipTo( node, REL );
             rel.setProperty( PROP, "primo" );
             relId = rel.getId();
-            tx.success();
+            tx.commit();
         }
         try ( Transaction tx = db.beginTx() )
         {
@@ -1783,7 +1783,7 @@ public class FulltextProceduresTest
             assertQueryFindsIds( db, false, "rels", "primo" );
             rel.setProperty( PROP, "primo" );
             assertQueryFindsIds( db, false, "rels", "primo", relId );
-            tx.success();
+            tx.commit();
         }
     }
 
@@ -1794,7 +1794,7 @@ public class FulltextProceduresTest
         try ( Transaction tx = db.beginTx() )
         {
             createSimpleNodesIndex();
-            tx.success();
+            tx.commit();
         }
         long nodeId;
         try ( Transaction tx = db.beginTx() )
@@ -1803,7 +1803,7 @@ public class FulltextProceduresTest
             Node node = db.createNode( LABEL );
             node.setProperty( PROP, "primo" );
             nodeId = node.getId();
-            tx.success();
+            tx.commit();
         }
         try ( Transaction tx = db.beginTx() )
         {
@@ -1812,7 +1812,7 @@ public class FulltextProceduresTest
             assertQueryFindsIds( db, true, "nodes", "primo" );
             node.addLabel( LABEL );
             assertQueryFindsIds( db, true, "nodes", "primo", nodeId );
-            tx.success();
+            tx.commit();
         }
     }
 
@@ -1823,7 +1823,7 @@ public class FulltextProceduresTest
         try ( Transaction tx = db.beginTx() )
         {
             createSimpleNodesIndex();
-            tx.success();
+            tx.commit();
         }
         long firstId;
         long secondId;
@@ -1837,7 +1837,7 @@ public class FulltextProceduresTest
             Node third = db.createNode( LABEL );
             third.setProperty( PROP, "God Wars: Future Past" );
             thirdId = third.getId();
-            tx.success();
+            tx.commit();
         }
         try ( Transaction tx = db.beginTx() )
         {
@@ -1845,7 +1845,7 @@ public class FulltextProceduresTest
             second.setProperty( PROP, "God of War III Remastered" );
             secondId = second.getId();
             assertQueryFindsIds( db, true, "nodes", "god of war", firstId, secondId, thirdId );
-            tx.success();
+            tx.commit();
         }
     }
 
@@ -1856,7 +1856,7 @@ public class FulltextProceduresTest
         try ( Transaction tx = db.beginTx() )
         {
             createSimpleNodesIndex();
-            tx.success();
+            tx.commit();
         }
         long firstId;
         long secondId;
@@ -1867,26 +1867,26 @@ public class FulltextProceduresTest
             Node node = db.createNode( LABEL );
             node.setProperty( PROP, "dude sweet" );
             firstId = node.getId();
-            tx.success();
+            tx.commit();
         }
         try ( Transaction tx = db.beginTx() )
         {
             Node node = db.createNode( LABEL );
             node.setProperty( PROP, "dude sweet dude sweet" );
             secondId = node.getId();
-            tx.success();
+            tx.commit();
         }
         try ( Transaction tx = db.beginTx() )
         {
             Node node = db.createNode( LABEL );
             node.setProperty( PROP, "dude sweet dude dude dude sweet" );
             thirdId = node.getId();
-            tx.success();
+            tx.commit();
         }
         try ( Transaction tx = db.beginTx() )
         {
             assertQueryFindsIds( db, true, "nodes", "dude", thirdId, secondId, firstId );
-            tx.success();
+            tx.commit();
         }
     }
 
@@ -1897,7 +1897,7 @@ public class FulltextProceduresTest
         try ( Transaction tx = db.beginTx() )
         {
             createSimpleNodesIndex();
-            tx.success();
+            tx.commit();
         }
         awaitIndexesOnline();
         try ( Transaction ignore = db.beginTx() )
@@ -1915,7 +1915,7 @@ public class FulltextProceduresTest
         try ( Transaction tx = db.beginTx() )
         {
             createSimpleRelationshipIndex();
-            tx.success();
+            tx.commit();
         }
         awaitIndexesOnline();
         try ( Transaction ignore = db.beginTx() )
@@ -1934,19 +1934,19 @@ public class FulltextProceduresTest
         {
             createSimpleNodesIndex();
             db.execute( format( DROP, "nodes" ) ).close();
-            tx.success();
+            tx.commit();
         }
         try ( Transaction tx = db.beginTx() )
         {
             createSimpleRelationshipIndex();
             db.execute( format( DROP, "rels" ) ).close();
-            tx.success();
+            tx.commit();
         }
         awaitIndexesOnline();
         try ( Transaction tx = db.beginTx() )
         {
             assertFalse( db.schema().getIndexes().iterator().hasNext() );
-            tx.success();
+            tx.commit();
         }
     }
 
@@ -1958,7 +1958,7 @@ public class FulltextProceduresTest
         {
             db.execute( format( NODE_CREATE, "nodes", array( LABEL.name() ), array( PROP ) + EVENTUALLY_CONSISTENT ) ).close();
             db.execute( format( RELATIONSHIP_CREATE, "rels", array( REL.name() ), array( PROP ) + EVENTUALLY_CONSISTENT ) ).close();
-            tx.success();
+            tx.commit();
         }
         try ( Transaction tx = db.beginTx() )
         {
@@ -1972,7 +1972,7 @@ public class FulltextProceduresTest
             db.execute( AWAIT_REFRESH ).close();
             assertQueryFindsIds( db, true, "nodes", "value" );
             assertQueryFindsIds( db, false, "rels", "value" );
-            tx.success();
+            tx.commit();
         }
     }
 
@@ -1984,7 +1984,7 @@ public class FulltextProceduresTest
         {
             createSimpleNodesIndex();
             createSimpleRelationshipIndex();
-            tx.success();
+            tx.commit();
         }
         awaitIndexesOnline();
         try ( Transaction tx = db.beginTx() )
@@ -2009,12 +2009,12 @@ public class FulltextProceduresTest
                     rel2.setProperty( PROP, "value" );
                     nodeIds.add( node2.getId() );
                     relIds.add( rel2.getId() );
-                    forkedTx.success();
+                    forkedTx.commit();
                 }
             }).get();
             assertQueryFindsIds( db, true, "nodes", "value", nodeIds );
             assertQueryFindsIds( db, false, "rels", "value", relIds );
-            tx.success();
+            tx.commit();
         }
     }
 
@@ -2025,7 +2025,7 @@ public class FulltextProceduresTest
         try ( Transaction tx = db.beginTx() )
         {
             db.schema().indexFor( LABEL ).on( PROP ).create();
-            tx.success();
+            tx.commit();
         }
         awaitIndexesOnline();
         String schemaIndexName;
@@ -2048,7 +2048,7 @@ public class FulltextProceduresTest
         try ( Transaction tx = db.beginTx() )
         {
             createSimpleNodesIndex();
-            tx.success();
+            tx.commit();
         }
         String valueToQueryFor = "value to query for";
         try ( Transaction tx = db.beginTx() )
@@ -2060,7 +2060,7 @@ public class FulltextProceduresTest
                 db.createNode( LABEL ).setProperty( PROP, value.asObject() );
             }
             db.createNode( LABEL ).setProperty( PROP, valueToQueryFor );
-            tx.success();
+            tx.commit();
         }
         Map<String,Object> params = new HashMap<>();
         params.put( "prop", valueToQueryFor );
@@ -2081,7 +2081,7 @@ public class FulltextProceduresTest
         try ( Transaction tx = db.beginTx() )
         {
             createSimpleNodesIndex();
-            tx.success();
+            tx.commit();
         }
         managementService.shutdown();
         db = createDatabase();
@@ -2095,7 +2095,7 @@ public class FulltextProceduresTest
                 db.createNode( LABEL ).setProperty( PROP, value.asObject() );
             }
             db.createNode( LABEL ).setProperty( PROP, valueToQueryFor );
-            tx.success();
+            tx.commit();
         }
         Map<String,Object> params = new HashMap<>();
         params.put( "prop", valueToQueryFor );
@@ -2168,19 +2168,19 @@ public class FulltextProceduresTest
                 Relationship rel = node.createRelationshipTo( node, REL );
                 rel.setProperty( PROP, "value" );
             }
-            tx.success();
+            tx.commit();
         }
         try ( Transaction tx = db.beginTx() )
         {
             createSimpleNodesIndex();
             createSimpleRelationshipIndex();
-            tx.success();
+            tx.commit();
         }
         try ( Transaction tx = db.beginTx() )
         {
             db.execute( format( DB_AWAIT_INDEX, "nodes" ) ).close();
             db.execute( format( DB_AWAIT_INDEX, "rels" ) ).close();
-            tx.success();
+            tx.commit();
         }
     }
 
@@ -2192,23 +2192,23 @@ public class FulltextProceduresTest
         {
             db.execute( "CREATE INDEX ON :Person(name)" ).close();
             db.execute( "call db.index.fulltext.createNodeIndex('nameIndex', ['Person'], ['name'])" ).close();
-            tx.success();
+            tx.commit();
         }
         try ( Transaction tx = db.beginTx() )
         {
             db.schema().awaitIndexesOnline( 1, TimeUnit.MINUTES );
-            tx.success();
+            tx.commit();
         }
         try ( Transaction tx = db.beginTx() )
         {
             // This must not throw:
             db.execute( "call db.index.fulltext.drop('nameIndex')" ).close();
-            tx.success();
+            tx.commit();
         }
         try ( Transaction tx = db.beginTx() )
         {
             assertThat( single( db.schema().getIndexes() ).getName(), is( not( "nameIndex" ) ) );
-            tx.success();
+            tx.commit();
         }
     }
 
@@ -2220,23 +2220,23 @@ public class FulltextProceduresTest
         {
             db.execute( "CREATE INDEX ON :Person(name)" ).close();
             db.execute( "call db.index.fulltext.createNodeIndex('nameIndex', ['Person'], ['name'])" ).close();
-            tx.success();
+            tx.commit();
         }
         try ( Transaction tx = db.beginTx() )
         {
             db.schema().awaitIndexesOnline( 1, TimeUnit.MINUTES );
-            tx.success();
+            tx.commit();
         }
         try ( Transaction tx = db.beginTx() )
         {
             // This must not throw:
             db.execute( "DROP INDEX ON :Person(name)" ).close();
-            tx.success();
+            tx.commit();
         }
         try ( Transaction tx = db.beginTx() )
         {
             assertThat( single( db.schema().getIndexes() ).getName(), is( "nameIndex" ) );
-            tx.success();
+            tx.commit();
         }
     }
 
@@ -2249,7 +2249,7 @@ public class FulltextProceduresTest
         try ( Transaction tx = db.beginTx() )
         {
             db.execute( "call db.createIndex( \":User(searchableString)\", \"" + FulltextIndexProviderFactory.DESCRIPTOR.name() + "\" );" ).close();
-            tx.success();
+            tx.commit();
         }
         catch ( QueryExecutionException e )
         {
@@ -2260,7 +2260,7 @@ public class FulltextProceduresTest
         {
             long indexCount = db.execute( DB_INDEXES ).stream().count();
             assertThat( indexCount, is( 0L ) );
-            tx.success();
+            tx.commit();
         }
     }
 
@@ -2271,7 +2271,7 @@ public class FulltextProceduresTest
         try ( Transaction tx = db.beginTx() )
         {
             createSimpleNodesIndex();
-            tx.success();
+            tx.commit();
         }
         LongHashSet ids = new LongHashSet();
         try ( Transaction tx = db.beginTx() )
@@ -2279,7 +2279,7 @@ public class FulltextProceduresTest
             Node node = db.createNode( LABEL );
             node.setProperty( PROP, "abcdef" );
             ids.add( node.getId() );
-            tx.success();
+            tx.commit();
         }
         try ( Transaction tx = db.beginTx() )
         {
@@ -2289,7 +2289,7 @@ public class FulltextProceduresTest
 
             assertQueryFindsIds( db, true, "nodes", "abc*", ids );
 
-            tx.success();
+            tx.commit();
         }
     }
 
@@ -2300,7 +2300,7 @@ public class FulltextProceduresTest
         try ( Transaction tx = db.beginTx() )
         {
             createSimpleNodesIndex();
-            tx.success();
+            tx.commit();
         }
         LongHashSet ids = new LongHashSet();
         try ( Transaction tx = db.beginTx() )
@@ -2308,7 +2308,7 @@ public class FulltextProceduresTest
             Node node = db.createNode( LABEL );
             node.setProperty( PROP, "defabc" );
             ids.add( node.getId() );
-            tx.success();
+            tx.commit();
         }
         try ( Transaction tx = db.beginTx() )
         {
@@ -2318,7 +2318,7 @@ public class FulltextProceduresTest
 
             assertQueryFindsIds( db, true, "nodes", "*abc", ids );
 
-            tx.success();
+            tx.commit();
         }
     }
 
@@ -2329,7 +2329,7 @@ public class FulltextProceduresTest
         try ( Transaction tx = db.beginTx() )
         {
             createSimpleNodesIndex();
-            tx.success();
+            tx.commit();
         }
         LongHashSet ids = new LongHashSet();
         try ( Transaction tx = db.beginTx() )
@@ -2337,7 +2337,7 @@ public class FulltextProceduresTest
             Node node = db.createNode( LABEL );
             node.setProperty( PROP, "defabcdef" );
             ids.add( node.getId() );
-            tx.success();
+            tx.commit();
         }
         try ( Transaction tx = db.beginTx() )
         {
@@ -2347,7 +2347,7 @@ public class FulltextProceduresTest
 
             assertQueryFindsIds( db, true, "nodes", "*abc*", ids );
 
-            tx.success();
+            tx.commit();
         }
     }
 
@@ -2362,12 +2362,12 @@ public class FulltextProceduresTest
             db.execute( "foreach (x in range (1,1000) | create (n:Label {id:'B'}))" ).close();
             db.execute( "foreach (x in range (1,1000) | create (n:Label {id:'C'}))" ).close();
             db.execute( "foreach (x in range (1,1000) | create (n:Label {id:'b'}))" ).close();
-            tx.success();
+            tx.commit();
         }
         try ( Transaction tx = db.beginTx() )
         {
             db.execute( format( NODE_CREATE, "myindex", array( "Label" ), array( "id" ) + ", {analyzer: 'standard'}" ) ).close();
-            tx.success();
+            tx.commit();
         }
         awaitIndexesOnline();
 
@@ -2385,7 +2385,7 @@ public class FulltextProceduresTest
             {
                 assertThat( result.stream().count(), is( 1000L ) ); // We only have upper-case 'C' nodes.
             }
-            tx.success();
+            tx.commit();
         }
     }
 
@@ -2400,12 +2400,12 @@ public class FulltextProceduresTest
             db.execute( "foreach (x in range (1,1000) | create (n:Label {id:'B'}))" ).close();
             db.execute( "foreach (x in range (1,1000) | create (n:Label {id:'C'}))" ).close();
             db.execute( "foreach (x in range (1,1000) | create (n:Label {id:'b'}))" ).close();
-            tx.success();
+            tx.commit();
         }
         try ( Transaction tx = db.beginTx() )
         {
             db.execute( format( NODE_CREATE, "myindex", array( "Label" ), array( "id" ) + ", {analyzer: 'simple'}" ) ).close();
-            tx.success();
+            tx.commit();
         }
         awaitIndexesOnline();
 
@@ -2423,7 +2423,7 @@ public class FulltextProceduresTest
             {
                 assertThat( result.stream().count(), is( 1000L ) ); // We only have upper-case 'C' nodes.
             }
-            tx.success();
+            tx.commit();
         }
     }
 
@@ -2438,12 +2438,12 @@ public class FulltextProceduresTest
             db.execute( "foreach (x in range (1,1000) | create (n:Label {id:'B'}))" ).close();
             db.execute( "foreach (x in range (1,1000) | create (n:Label {id:'C'}))" ).close();
             db.execute( "foreach (x in range (1,1000) | create (n:Label {id:'b'}))" ).close();
-            tx.success();
+            tx.commit();
         }
         try ( Transaction tx = db.beginTx() )
         {
             db.execute( format( NODE_CREATE, "myindex", array( "Label" ), array( "id" ) ) ).close();
-            tx.success();
+            tx.commit();
         }
         awaitIndexesOnline();
 
@@ -2461,7 +2461,7 @@ public class FulltextProceduresTest
             {
                 assertThat( result.stream().count(), is( 1000L ) ); // We only have upper-case 'C' nodes.
             }
-            tx.success();
+            tx.commit();
         }
     }
 
@@ -2485,7 +2485,7 @@ public class FulltextProceduresTest
         try ( Transaction tx = db.beginTx() )
         {
             db.schema().awaitIndexesOnline( 1, TimeUnit.MINUTES );
-            tx.success();
+            tx.commit();
         }
     }
 
@@ -2515,7 +2515,7 @@ public class FulltextProceduresTest
                 num++;
             }
             assertEquals( "Number of results differ from expected", ids.length, num );
-            tx.success();
+            tx.commit();
         }
     }
 
@@ -2549,7 +2549,7 @@ public class FulltextProceduresTest
                 String msg = "Not all expected ids were found: " + ids;
                 failQuery( getEntity, index, query, ids, expectedIds, actualIds, msg );
             }
-            tx.success();
+            tx.commit();
         }
     }
 

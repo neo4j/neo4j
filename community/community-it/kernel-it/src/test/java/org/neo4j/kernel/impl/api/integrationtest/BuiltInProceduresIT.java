@@ -328,7 +328,7 @@ class BuiltInProceduresIT extends KernelIntegrationTest
         try ( org.neo4j.graphdb.Transaction tx = db.beginTx() )
         {
             db.schema().awaitIndexesOnline( 2, MINUTES );
-            tx.success();
+            tx.commit();
         }
 
         transaction = newTransaction();
@@ -405,7 +405,7 @@ class BuiltInProceduresIT extends KernelIntegrationTest
         try ( org.neo4j.graphdb.Transaction tx = db.beginTx() )
         {
             db.schema().awaitIndexesOnline( 2, MINUTES );
-            tx.success();
+            tx.commit();
         }
 
         CountDownLatch constraintLatch = new CountDownLatch( 1 );

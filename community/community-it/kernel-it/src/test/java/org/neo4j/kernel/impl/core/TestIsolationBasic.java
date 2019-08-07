@@ -54,7 +54,7 @@ class TestIsolationBasic extends AbstractNeo4jTestCase
             n2 = getGraphDb().createNode();
             r1 = n1.createRelationshipTo( n2,
                     RelationshipType.withName( "TEST" ) );
-            tx.success();
+            tx.commit();
         }
 
         final Node node1 = n1;
@@ -65,18 +65,20 @@ class TestIsolationBasic extends AbstractNeo4jTestCase
         {
             node1.setProperty( "key", "old" );
             rel1.setProperty( "key", "old" );
-            tx.success();
+            tx.commit();
         }
-        assertPropertyEqual( node1, "key", "old" );
-        assertPropertyEqual( rel1, "key", "old" );
-        assertRelationshipCount( node1, 1 );
-        assertRelationshipCount( node2, 1 );
+        try ( Transaction tx = getGraphDb().beginTx() )
+        {
+            assertPropertyEqual( node1, "key", "old" );
+            assertPropertyEqual( rel1, "key", "old" );
+            assertRelationshipCount( node1, 1 );
+            assertRelationshipCount( node2, 1 );
+        }
 
         // This is the mutating transaction - it will change stuff which will be read in between
         final AtomicReference<Exception> t1Exception = new AtomicReference<>();
         Thread t1 = new Thread( () ->
         {
-
             try ( Transaction tx = getGraphDb().beginTx() )
             {
                 node1.setProperty( "key", "new" );
@@ -101,7 +103,7 @@ class TestIsolationBasic extends AbstractNeo4jTestCase
             }
             finally
             {
-                try
+                try ( Transaction tx = getGraphDb().beginTx() )
                 {
                     assertPropertyEqual( node1, "key", "old" );
                     assertPropertyEqual( rel1, "key", "old" );
@@ -119,20 +121,25 @@ class TestIsolationBasic extends AbstractNeo4jTestCase
         latch1.await();
 
         // The transaction started above that runs in t1 has not finished. The old values should still be visible.
-        assertPropertyEqual( node1, "key", "old" );
-        assertPropertyEqual( rel1, "key", "old" );
-        assertRelationshipCount( node1, 1 );
-        assertRelationshipCount( node2, 1 );
+        try ( Transaction tx = getGraphDb().beginTx() )
+        {
+            assertPropertyEqual( node1, "key", "old" );
+            assertPropertyEqual( rel1, "key", "old" );
+            assertRelationshipCount( node1, 1 );
+            assertRelationshipCount( node2, 1 );
+        }
 
         latch2.countDown();
         t1.join();
 
         // The transaction in t1 has finished but not committed. Its changes should still not be visible.
-        assertPropertyEqual( node1, "key", "old" );
-        assertPropertyEqual( rel1, "key", "old" );
-        assertRelationshipCount( node1, 1 );
-        assertRelationshipCount( node2, 1 );
-
+        try ( Transaction tx = getGraphDb().beginTx() )
+        {
+            assertPropertyEqual( node1, "key", "old" );
+            assertPropertyEqual( rel1, "key", "old" );
+            assertRelationshipCount( node1, 1 );
+            assertRelationshipCount( node2, 1 );
+        }
         if ( t1Exception.get() != null )
         {
             throw t1Exception.get();
@@ -146,30 +153,22 @@ class TestIsolationBasic extends AbstractNeo4jTestCase
             }
             node1.delete();
             node2.delete();
-            tx.success();
+            tx.commit();
         }
     }
 
-    private void assertPropertyEqual( PropertyContainer primitive, String key,
-        String value )
+    private void assertPropertyEqual( PropertyContainer primitive, String key, String value )
     {
-        try ( Transaction tx = getGraphDb().beginTx() )
-        {
-            assertEquals( value, primitive.getProperty( key ) );
-        }
+        assertEquals( value, primitive.getProperty( key ) );
     }
 
     private void assertRelationshipCount( Node node, int count )
     {
-
-        try ( Transaction tx = getGraphDb().beginTx() )
+        int actualCount = 0;
+        for ( Relationship rel : node.getRelationships() )
         {
-            int actualCount = 0;
-            for ( Relationship rel : node.getRelationships() )
-            {
-                actualCount++;
-            }
-            assertEquals( count, actualCount );
+            actualCount++;
         }
+        assertEquals( count, actualCount );
     }
 }

@@ -207,12 +207,12 @@ public class IndexTxStateLookupTest
         try ( Transaction tx = db.beginTx() )
         {
             db.schema().indexFor( label( "Node" ) ).on( "prop" ).create();
-            tx.success();
+            tx.commit();
         }
         try ( Transaction tx = db.beginTx() )
         {
             db.schema().awaitIndexesOnline( 10, SECONDS );
-            tx.success();
+            tx.commit();
         }
     }
 
@@ -254,13 +254,13 @@ public class IndexTxStateLookupTest
         try ( Transaction tx = db.beginTx() )
         {
             (node = db.createNode( label( "Node" ) )).setProperty( "prop", store );
-            tx.success();
+            tx.commit();
         }
         // then
         try ( Transaction tx = db.beginTx() )
         {
             assertEquals( 1, count( db.findNodes( label( "Node" ), "prop", lookup ) ) );
-            tx.success();
+            tx.commit();
         }
         deleteNode( node );
     }
@@ -270,7 +270,7 @@ public class IndexTxStateLookupTest
         try ( Transaction tx = db.beginTx() )
         {
             node.delete();
-            tx.success();
+            tx.commit();
         }
     }
 
@@ -282,13 +282,13 @@ public class IndexTxStateLookupTest
         try ( Transaction tx = db.beginTx() )
         {
             (node = db.createNode( label( "Node" ) )).setProperty( "prop", store );
-            tx.success();
+            tx.commit();
         }
         // then
         try ( Transaction tx = db.beginTx() )
         {
             assertEquals( 1, count( db.findNodes( label( "Node" ), "prop", lookup ) ) );
-            tx.success();
+            tx.commit();
         }
         deleteNode( node );
     }

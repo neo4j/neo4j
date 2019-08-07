@@ -854,8 +854,7 @@ public class NeoStoresTest
 
     private void commitTx() throws TransactionFailureException
     {
-        tx.success();
-        tx.close();
+        tx.commit();
     }
 
     private int index( String key ) throws KernelException

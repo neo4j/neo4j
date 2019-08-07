@@ -19,7 +19,6 @@
  */
 package org.neo4j.kernel.impl.newapi;
 
-
 import org.junit.jupiter.api.Test;
 
 import org.neo4j.internal.kernel.api.NodeCursor;
@@ -31,7 +30,6 @@ import org.neo4j.test.assertion.Assert;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assertions.fail;
 
 public abstract class TransactionTestBase<G extends KernelAPIWriteTestSupport> extends KernelAPIWriteTestBase<G>
 {
@@ -68,36 +66,7 @@ public abstract class TransactionTestBase<G extends KernelAPIWriteTestSupport> e
             labelId = tx.tokenWrite().labelGetOrCreateForName( "labello" );
             tx.dataWrite().nodeAddLabel( nodeId, labelId );
 
-            tx.failure();
-        }
-
-        // THEN
-        assertNoNode( nodeId );
-    }
-
-    @Test
-    void shouldRollbackAndThrowWhenTxIsBothFailedAndSuccess() throws Exception
-    {
-        // GIVEN
-        long nodeId;
-        int labelId;
-
-        Transaction tx = beginTransaction();
-        nodeId = tx.dataWrite().nodeCreate();
-        labelId = tx.tokenWrite().labelGetOrCreateForName( "labello" );
-        tx.dataWrite().nodeAddLabel( nodeId, labelId );
-        tx.failure();
-        tx.success();
-
-        // WHEN
-        try
-        {
-            tx.close();
-            fail( "Expected TransactionFailureException" );
-        }
-        catch ( TransactionFailureException e )
-        {
-            // wanted
+            tx.rollback();
         }
 
         // THEN
@@ -116,7 +85,7 @@ public abstract class TransactionTestBase<G extends KernelAPIWriteTestSupport> e
             label = tx.tokenWrite().labelGetOrCreateForName( "Label" );
             propertyKey = tx.tokenWrite().propertyKeyGetOrCreateForName( "prop" );
             tx.schemaWrite().indexCreate( SchemaDescriptor.forLabel( label, propertyKey ) );
-            tx.success();
+            tx.commit();
         }
 
         try ( Transaction tx = beginTransaction() )
@@ -143,7 +112,7 @@ public abstract class TransactionTestBase<G extends KernelAPIWriteTestSupport> e
             label = tx.tokenWrite().labelGetOrCreateForName( "Label" );
             propertyKey = tx.tokenWrite().propertyKeyGetOrCreateForName( "prop" );
             tx.schemaWrite().indexCreate( SchemaDescriptor.forLabel( label, propertyKey ) );
-            tx.success();
+            tx.commit();
         }
 
         try ( Transaction tx = beginTransaction() )
@@ -169,7 +138,7 @@ public abstract class TransactionTestBase<G extends KernelAPIWriteTestSupport> e
             label = tx.tokenWrite().labelGetOrCreateForName( "Label" );
             propertyKey = tx.tokenWrite().propertyKeyGetOrCreateForName( "prop" );
             tx.schemaWrite().indexCreate( SchemaDescriptor.forLabel( label, propertyKey ) );
-            tx.success();
+            tx.commit();
         }
 
         try ( Transaction tx = beginTransaction() )
@@ -215,7 +184,7 @@ public abstract class TransactionTestBase<G extends KernelAPIWriteTestSupport> e
 
             // WHEN
             tx.freezeLocks();
-            tx.success();
+            tx.commit();
         }
 
         // THEN

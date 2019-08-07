@@ -89,7 +89,7 @@ public class IndexPopulationIT
         try ( Transaction transaction = database.beginTx() )
         {
             database.createNode(nodeLabel);
-            transaction.success();
+            transaction.commit();
         }
 
         try ( Transaction transaction = database.beginTx() )
@@ -99,7 +99,7 @@ public class IndexPopulationIT
             Future<Number> countFuture = executorService.submit( countNodes() );
             assertEquals( 1, countFuture.get().intValue() );
 
-            transaction.success();
+            transaction.commit();
         }
     }
 
@@ -115,7 +115,7 @@ public class IndexPopulationIT
 
             Future<?> creationFuture = executorService.submit( createIndexForLabelAndProperty( nodeLabel, testProperty ) );
             creationFuture.get();
-            transaction.success();
+            transaction.commit();
         }
         waitForOnlineIndexes();
 
@@ -134,7 +134,7 @@ public class IndexPopulationIT
             Future<?> creation = executorService.submit( createNodeWithLabel( nodesLabel ) );
             creation.get();
 
-            transaction.success();
+            transaction.commit();
         }
 
         try ( Transaction transaction = database.beginTx() )
@@ -163,7 +163,7 @@ public class IndexPopulationIT
         try ( Transaction transaction = shutDownDb.beginTx() )
         {
             shutDownDb.schema().indexFor( testLabel ).on( propertyName ).create();
-            transaction.success();
+            transaction.commit();
         }
         managementService.shutdown();
         assertableLogProvider.assertNone( AssertableLogProvider.inLog( IndexPopulationJob.class ).anyError() );
@@ -178,14 +178,14 @@ public class IndexPopulationIT
         try ( Transaction transaction = database.beginTx() )
         {
             database.createNode( nodeLabel ).setProperty( key, value );
-            transaction.success();
+            transaction.commit();
         }
 
         // when
         try ( Transaction tx = database.beginTx() )
         {
             database.schema().indexFor( nodeLabel ).on( key ).create();
-            tx.success();
+            tx.commit();
         }
         waitForOnlineIndexes();
 
@@ -196,7 +196,7 @@ public class IndexPopulationIT
             long nodeCount = Iterators.count( nodes );
             assertEquals( "expected exactly one hit in index but was ",1, nodeCount );
             nodes.close();
-            tx.success();
+            tx.commit();
         }
         AssertableLogProvider.LogMatcher matcher = inLog( IndexPopulationJob.class ).info( containsString( "TIME/PHASE Final:" ) );
         logProvider.assertAtLeastOnce( matcher );
@@ -212,7 +212,7 @@ public class IndexPopulationIT
                 Node node = database.createNode( testLabel );
                 Object property = randomValues.nextValue().asObject();
                 node.setProperty( propertyName, property );
-                transaction.success();
+                transaction.commit();
             }
         }
     }
@@ -224,7 +224,7 @@ public class IndexPopulationIT
             try ( Transaction transaction = database.beginTx() )
             {
                 database.createNode( label );
-                transaction.success();
+                transaction.commit();
             }
         };
     }
@@ -244,7 +244,7 @@ public class IndexPopulationIT
             try ( Transaction transaction = database.beginTx() )
             {
                 database.schema().indexFor( label ).on( propertyKey ).create();
-                transaction.success();
+                transaction.commit();
             }
 
             waitForOnlineIndexes();
@@ -256,7 +256,7 @@ public class IndexPopulationIT
         try ( Transaction transaction = database.beginTx() )
         {
             database.schema().awaitIndexesOnline( 1, TimeUnit.MINUTES );
-            transaction.success();
+            transaction.commit();
         }
     }
 

@@ -53,7 +53,7 @@ class TestTransactionEventDeadlocks
         {
             node = graphdb.createNode();
             node.setProperty( "counter", 0L );
-            tx.success();
+            tx.commit();
         }
 
         managementService.registerTransactionEventListener( DEFAULT_DATABASE_NAME, new RelationshipCounterTransactionEventListener( node ) );
@@ -63,7 +63,7 @@ class TestTransactionEventDeadlocks
             node.setProperty( "state", "not broken yet" );
             node.createRelationshipTo( graphdb.createNode(), RelationshipType.withName( "TEST" ) );
             node.removeProperty( "state" );
-            tx.success();
+            tx.commit();
         }
 
         assertThat( node, inTx( graphdb, hasProperty( "counter" ).withValue( 1L ) ) );

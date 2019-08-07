@@ -107,7 +107,7 @@ public class GraphDescription implements GraphDefinition
             {
                 node = rel.create( graphdb, nodes ).getEndNode();
             }
-            tx.success();
+            tx.commit();
         }
         return node;
     }

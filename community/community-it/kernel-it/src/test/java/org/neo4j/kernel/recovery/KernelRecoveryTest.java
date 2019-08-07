@@ -96,7 +96,7 @@ class KernelRecoveryTest
         {
             assertEquals( "v1", rebuilt.getNodeById( node1 ).getProperty( "k" ) );
             assertEquals( "v2", rebuilt.getNodeById( node2 ).getProperty( "k" ) );
-            tx.success();
+            tx.commit();
         }
     }
 
@@ -135,7 +135,7 @@ class KernelRecoveryTest
             Node node = db.createNode();
             node.setProperty( key, value );
             nodeId = node.getId();
-            tx.success();
+            tx.commit();
         }
         return nodeId;
     }

@@ -237,7 +237,7 @@ public class FullCheckIntegrationTest
                 }
 
                 db.schema().constraintFor( label( "label4" ) ).assertPropertyIsUnique( PROP1 ).create();
-                tx.success();
+                tx.commit();
             }
             catch ( KernelException e )
             {
@@ -261,7 +261,6 @@ public class FullCheckIntegrationTest
                         property( PROP1, VALUE1 ), property( PROP2, VALUE2 ) ).getId() );
 
                 set( db.createNode( label( "label4" ) ), property( PROP1, VALUE1 ) );
-                tx.success();
 
                 KernelTransaction ktx = transactionOn( db );
                 try ( Statement ignore = ktx.acquireStatement() )
@@ -279,6 +278,7 @@ public class FullCheckIntegrationTest
                     T = tokenRead.relationshipType( "T" );
                     M = tokenWrite.relationshipTypeGetOrCreateForName( "M" );
                 }
+                tx.commit();
             }
             catch ( KernelException e )
             {

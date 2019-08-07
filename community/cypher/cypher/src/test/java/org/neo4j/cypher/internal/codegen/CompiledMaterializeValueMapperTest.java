@@ -172,12 +172,6 @@ class CompiledMaterializeValueMapperTest
         }
 
         @Override
-        public void failTransaction()
-        {
-            throw new IllegalStateException( "Should not be used" );
-        }
-
-        @Override
         public RelationshipProxy newRelationshipProxy( long id, long startNodeId, int typeId, long endNodeId )
         {
             throw new IllegalStateException( "Should not be used" );

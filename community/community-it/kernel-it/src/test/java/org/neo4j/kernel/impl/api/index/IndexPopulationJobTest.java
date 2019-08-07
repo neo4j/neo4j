@@ -139,7 +139,7 @@ class IndexPopulationJobTest
         {
             labelId = tx.tokenWrite().labelGetOrCreateForName( FIRST.name() );
             tx.tokenWrite().labelGetOrCreateForName( SECOND.name() );
-            tx.success();
+            tx.commit();
         }
     }
 
@@ -794,7 +794,7 @@ class IndexPopulationJobTest
             IndexPrototype descriptor = constraint ?
                                          IndexPrototype.uniqueForSchema( schema, PROVIDER_DESCRIPTOR ) :
                                          IndexPrototype.forSchema( schema, PROVIDER_DESCRIPTOR );
-            tx.success();
+            tx.commit();
             return descriptor;
         }
     }
@@ -808,7 +808,7 @@ class IndexPopulationJobTest
             {
                 node.setProperty( property.getKey(), property.getValue() );
             }
-            tx.success();
+            tx.commit();
             return node.getId();
         }
     }
@@ -824,7 +824,7 @@ class IndexPopulationJobTest
             {
                 relationship.setProperty( property.getKey(), property.getValue() );
             }
-            tx.success();
+            tx.commit();
             return relationship.getId();
         }
     }
@@ -834,7 +834,7 @@ class IndexPopulationJobTest
         try ( Transaction tx = kernel.beginTransaction( implicit, AUTH_DISABLED ) )
         {
             int result = tx.tokenRead().propertyKey( name );
-            tx.success();
+            tx.commit();
             return result;
         }
     }

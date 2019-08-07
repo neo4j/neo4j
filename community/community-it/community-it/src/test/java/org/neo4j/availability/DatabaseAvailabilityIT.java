@@ -152,7 +152,7 @@ class DatabaseAvailabilityIT
     {
         try ( Transaction transaction = database.beginTx() )
         {
-            transaction.success();
+            transaction.commit();
         }
     }
 

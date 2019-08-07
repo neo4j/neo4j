@@ -63,7 +63,7 @@ class DenseNodeRelChainPositionTest
             {
                 node1.createRelationshipTo( node2, RelationshipType.withName( "FOO" ) );
             }
-            tx.success();
+            tx.commit();
         }
 
         // When/Then

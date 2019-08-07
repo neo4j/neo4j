@@ -138,7 +138,7 @@ public class ConcurrentLuceneFulltextUpdaterTest extends LuceneFulltextTestSuppo
                         Thread.yield();
                         work.apply();
                         Thread.yield();
-                        tx.success();
+                        tx.commit();
                     }
                 }
             }

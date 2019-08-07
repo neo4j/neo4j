@@ -145,13 +145,11 @@ class BigStoreIT
             setProperties( highNode, properties );
             if ( i % 100 == 0 && i > 0 )
             {
-                tx.success();
-                tx.close();
+                tx.commit();
                 tx = db.beginTx();
             }
         }
-        tx.success();
-        tx.close();
+        tx.commit();
 
         managementService.shutdown();
         startDb();
@@ -171,7 +169,7 @@ class BigStoreIT
                 assertProperties( properties, highNode );
                 verified++;
             }
-            transaction.success();
+            transaction.commit();
         }
         assertEquals( count, verified );
     }
@@ -183,7 +181,7 @@ class BigStoreIT
         try ( Transaction tx = db.beginTx() )
         {
             Node node = db.createNode( REFERENCE );
-            tx.success();
+            tx.commit();
             return node;
         }
     }
@@ -260,8 +258,7 @@ class BigStoreIT
         assertEquals( intPropertyValue, nodeBelowTheLine.getProperty( propertyKey ) );
         assertEquals( stringPropertyValue, nodeAboveTheLine.getProperty( propertyKey ) );
         assertArrayEquals( arrayPropertyValue, (long[]) relBelowTheLine.getProperty( propertyKey ) );
-        tx.success();
-        tx.close();
+        tx.commit();
 
         for ( int i = 0; i < 2; i++ )
         {
@@ -280,7 +277,7 @@ class BigStoreIT
                 assertEquals( highMark, relAboveTheLine.getId() );
                 assertEquals( asSet( asList( relBelowTheLine, relAboveTheLine ) ),
                     asSet( Iterables.asCollection( db.getNodeById( idBelow ).getRelationships() ) ) );
-                transaction.success();
+                transaction.commit();
             }
             if ( i == 0 )
             {

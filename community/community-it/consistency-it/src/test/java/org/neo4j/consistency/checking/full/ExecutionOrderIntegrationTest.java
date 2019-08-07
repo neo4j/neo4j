@@ -101,7 +101,7 @@ public class ExecutionOrderIntegrationTest
                 Node node1 = set( graphDb.createNode( label( "Foo" ) ) );
                 Node node2 = set( graphDb.createNode( label( "Foo" ) ), property( "key", "value" ) );
                 node1.createRelationshipTo( node2, RelationshipType.withName( "C" ) );
-                tx.success();
+                tx.commit();
             }
         }
 

@@ -225,11 +225,11 @@ class ImportCommandTest
             long nodeCount = Iterables.count( databaseService.getAllNodes() );
             assertEquals( 4097, nodeCount );
 
-            tx.success();
             ResourceIterator<Node> nodes = databaseService.findNodes( label( "FIRST 4096" ) );
             assertEquals( 1, Iterators.asList( nodes ).size() );
             nodes = databaseService.findNodes( label( "SECOND 4096" ) );
             assertEquals( 1, Iterators.asList( nodes ).size() );
+            tx.commit();
         }
     }
 
@@ -297,7 +297,7 @@ class ImportCommandTest
                 }
             }
 
-            tx.success();
+            tx.commit();
         }
 
         assertEquals( values.size(), nodeCount );
@@ -362,7 +362,7 @@ class ImportCommandTest
                 }
             }
 
-            tx.success();
+            tx.commit();
         }
 
         assertEquals( values.size(), nodeCount );
@@ -417,7 +417,7 @@ class ImportCommandTest
 
             long nodeCount = Iterables.count( databaseApi.getAllNodes() );
             assertEquals( 10, nodeCount );
-            tx.success();
+            tx.commit();
         }
     }
 
@@ -492,7 +492,7 @@ class ImportCommandTest
                 }
             }
 
-            tx.success();
+            tx.commit();
         }
 
         assertEquals( 1, nodeCount );
@@ -548,7 +548,7 @@ class ImportCommandTest
                 }
             }
 
-            tx.success();
+            tx.commit();
         }
 
         assertEquals( 1, nodeCount );
@@ -593,7 +593,7 @@ class ImportCommandTest
                 }
             }
 
-            tx.success();
+            tx.commit();
         }
 
         assertEquals( 1, nodeCount );
@@ -800,7 +800,7 @@ class ImportCommandTest
                 assertFalse( node.hasRelationship() );
             }
             assertEquals( NODE_COUNT, nodeCount );
-            tx.success();
+            tx.commit();
         }
     }
 
@@ -841,7 +841,7 @@ class ImportCommandTest
                 assertEquals( 1, Iterables.count( node.getRelationships() ) );
             }
             assertEquals( 6, nodeCount );
-            tx.success();
+            tx.commit();
         }
     }
 
@@ -965,7 +965,7 @@ class ImportCommandTest
                 }
             }
 
-            tx.success();
+            tx.commit();
         }
     }
 
@@ -1209,7 +1209,7 @@ class ImportCommandTest
                 }
             }
             assertEquals( anonymousCount, count( Iterators.filter( nodeFilter( "" ), allNodes.iterator() ) ) );
-            tx.success();
+            tx.commit();
         }
     }
 
@@ -1256,7 +1256,7 @@ class ImportCommandTest
 
             assertEquals( name, node.getProperty( "name" ) );
 
-            tx.success();
+            tx.commit();
         }
     }
 
@@ -1293,7 +1293,7 @@ class ImportCommandTest
             assertTrue( names.remove( name.trim() ) );
             assertTrue( names.isEmpty() );
 
-            tx.success();
+            tx.commit();
         }
     }
 
@@ -1336,7 +1336,7 @@ class ImportCommandTest
 
             assertEquals( "This is a line with\nnewlines in", node.getProperty( "name" ) );
 
-            tx.success();
+            tx.commit();
         }
     }
 
@@ -1359,7 +1359,7 @@ class ImportCommandTest
         {
             ResourceIterator<Node> allNodes = graphDatabaseService.getAllNodes().iterator();
             assertFalse( allNodes.hasNext(), "Expected database to be empty" );
-            tx.success();
+            tx.commit();
         }
     }
 
@@ -1386,7 +1386,7 @@ class ImportCommandTest
             assertFalse( node.hasProperty( "one" ) );
             assertFalse( node.hasProperty( "two" ) );
             assertEquals( "value", node.getProperty( "three" ) );
-            tx.success();
+            tx.commit();
         }
     }
 
@@ -1444,7 +1444,7 @@ class ImportCommandTest
                 assertTrue( names.remove( name ), "Didn't expect node with name '" + name + "'" );
             }
             assertTrue( names.isEmpty() );
-            tx.success();
+            tx.commit();
         }
     }
 
@@ -1544,7 +1544,7 @@ class ImportCommandTest
                 assertTrue( names.remove( name ), "Didn't expect node with name '" + name + "'" );
             }
             assertTrue( names.isEmpty() );
-            tx.success();
+            tx.commit();
         }
     }
 
@@ -1602,7 +1602,7 @@ class ImportCommandTest
                 assertTrue( names.remove( name ), "Didn't expect node with name '" + name + "'" );
             }
             assertTrue( names.isEmpty() );
-            tx.success();
+            tx.commit();
         }
     }
 
@@ -1684,7 +1684,7 @@ class ImportCommandTest
                 assertTrue( names.remove( name ), "Didn't expect node with name '" + name + "'" );
             }
             assertTrue( names.isEmpty() );
-            tx.success();
+            tx.commit();
         }
     }
 
@@ -1965,7 +1965,7 @@ class ImportCommandTest
             assertEquals( 9999999999L, relationship2.getProperty( "prop1" ) );
             assertEquals( 123456789L, relationship2.getProperty( "prop2" ) );
 
-            tx.success();
+            tx.commit();
         }
     }
 
@@ -2126,7 +2126,7 @@ class ImportCommandTest
                 relationshipCount++;
             }
             assertEquals( expectedRelationshipCount, relationshipCount );
-            tx.success();
+            tx.commit();
         }
     }
 
@@ -2147,7 +2147,7 @@ class ImportCommandTest
                 }
                 assertNotNull( findRelationship( startNode, endNode, relationship ), relationship.toString() );
             }
-            tx.success();
+            tx.commit();
         }
     }
 
@@ -2168,7 +2168,7 @@ class ImportCommandTest
             {
                 nodes.put( idOf( node ), node );
             }
-            tx.success();
+            tx.commit();
             return nodes;
         }
     }

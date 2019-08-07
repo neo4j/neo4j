@@ -51,7 +51,7 @@ public class MyCoreAPI
             int labelId = ktx.tokenWrite().labelGetOrCreateForName( label );
             ktx.dataWrite().nodeAddLabel( nodeId, labelId );
             result = nodeId;
-            tx.success();
+            tx.commit();
         }
         catch ( Exception e )
         {
@@ -69,7 +69,7 @@ public class MyCoreAPI
         {
             KernelTransaction kernelTransaction = this.txBridge.getKernelTransactionBoundToThisThread(true, graph.databaseId() );
             result = kernelTransaction.dataRead().countsForNode( -1 );
-            tx.success();
+            tx.commit();
         }
         return result;
     }

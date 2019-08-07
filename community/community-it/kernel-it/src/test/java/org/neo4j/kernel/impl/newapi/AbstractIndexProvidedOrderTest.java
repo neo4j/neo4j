@@ -34,10 +34,10 @@ import org.neo4j.exceptions.KernelException;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.internal.schema.IndexOrder;
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.internal.kernel.api.IndexReadSession;
 import org.neo4j.internal.kernel.api.NodeValueIndexCursor;
+import org.neo4j.internal.schema.IndexOrder;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.RandomExtension;
 import org.neo4j.test.rule.RandomRule;
@@ -82,12 +82,12 @@ public abstract class AbstractIndexProvidedOrderTest extends KernelAPIReadTestBa
         {
             graphDb.schema().indexFor( label( "Node" ) ).on( "prop" ).create();
             graphDb.schema().indexFor( label( "Node" ) ).on( "prop" ).on( "prip" ).create();
-            tx.success();
+            tx.commit();
         }
         try ( Transaction tx = graphDb.beginTx() )
         {
             graphDb.schema().awaitIndexesOnline( 5, MINUTES );
-            tx.success();
+            tx.commit();
         }
 
         RandomValues randomValues = randomRule.randomValues();
@@ -129,7 +129,7 @@ public abstract class AbstractIndexProvidedOrderTest extends KernelAPIReadTestBa
                 node.setProperty( "prop", propValue.asObject() );
                 node.setProperty( "prip", pripValue.asObject() );
             }
-            tx.success();
+            tx.commit();
         }
     }
 

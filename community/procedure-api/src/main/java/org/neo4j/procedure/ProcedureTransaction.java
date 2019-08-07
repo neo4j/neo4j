@@ -20,6 +20,7 @@
 package org.neo4j.procedure;
 
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.graphdb.TransactionTerminatedException;
 
 /**
@@ -31,7 +32,7 @@ public interface ProcedureTransaction
      * Marks this transaction as terminated, which means that it will be, much like in the case of failure,
      * unconditionally rolled back when {@link Transaction#close()} is called. Once this method has been invoked, it doesn't
      * matter
-     * if {@link Transaction#success()} is invoked afterwards -- the transaction will still be rolled back.
+     * if {@link Transaction#commit()} is invoked afterwards -- the transaction will still be rolled back.
      *
      * Additionally, terminating a transaction causes all subsequent operations carried out within that
      * transaction to throw a {@link TransactionTerminatedException} in the owning thread.
@@ -45,13 +46,10 @@ public interface ProcedureTransaction
     void terminate();
 
     /**
-     * Marks this transaction as failed, which means that it will
-     * unconditionally be rolled back when {@link Transaction#close()} is called. Once
-     * this method has been invoked, it doesn't matter if
-     * {@link Transaction#success()} is invoked afterwards -- the transaction will still be
-     * rolled back.
+     * Rollback this transaction. Once
+     * this method has been invoked, it doesn't matter if {@link Transaction#commit()} is invoked afterwards.
      *
      * This method is not thread safe.
      */
-    void failure();
+    void rollback() throws TransactionFailureException;
 }

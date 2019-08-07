@@ -381,7 +381,7 @@ class CsvInputBatchImportIT
                         "Label count mismatch for label " + key );
             }
 
-            tx.success();
+            tx.commit();
         }
         finally
         {

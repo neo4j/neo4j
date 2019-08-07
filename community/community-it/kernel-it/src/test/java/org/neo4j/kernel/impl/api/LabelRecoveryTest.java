@@ -85,14 +85,14 @@ class LabelRecoveryTest
         try ( Transaction tx = database.beginTx() )
         {
             node = database.createNode( labels );
-            tx.success();
+            tx.commit();
         }
 
         // WHEN
         try ( Transaction tx = database.beginTx() )
         {
             node.setProperty( "prop", "value" );
-            tx.success();
+            tx.commit();
         }
         EphemeralFileSystemAbstraction snapshot = filesystem.snapshot();
         managementService.shutdown();

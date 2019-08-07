@@ -313,7 +313,7 @@ class RecoveryRequiredCheckerTest
             try ( Transaction tx = db.beginTx() )
             {
                 db.createNode();
-                tx.success();
+                tx.commit();
             }
 
             EphemeralFileSystemAbstraction snapshot = ephemeralFs.snapshot();
@@ -344,7 +344,7 @@ class RecoveryRequiredCheckerTest
             try ( Transaction transaction = database.beginTx() )
             {
                 database.createNode();
-                transaction.success();
+                transaction.commit();
             }
         }
         finally

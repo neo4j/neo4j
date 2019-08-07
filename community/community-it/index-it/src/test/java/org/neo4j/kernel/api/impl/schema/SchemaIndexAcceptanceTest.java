@@ -85,7 +85,7 @@ public class SchemaIndexAcceptanceTest
             node1 = createNode( label, "name", "One" );
             node2 = createNode( label, "name", "Two" );
             node3 = createNode( label, "name", "Three" );
-            tx.success();
+            tx.commit();
         }
 
         createIndex( db, label, propertyKey );
@@ -106,7 +106,7 @@ public class SchemaIndexAcceptanceTest
         try ( Transaction tx = db.beginTx() )
         {
             node1 = createNode( label, propertyKey, arrayPropertyValue );
-            tx.success();
+            tx.commit();
         }
 
         restart();
@@ -126,7 +126,7 @@ public class SchemaIndexAcceptanceTest
         try ( Transaction tx = db.beginTx() )
         {
             node1 = createNode( label, propertyKey, arrayPropertyValue );
-            tx.success();
+            tx.commit();
         }
 
         restart();
@@ -146,7 +146,7 @@ public class SchemaIndexAcceptanceTest
         try ( Transaction tx = db.beginTx() )
         {
             node1 = createNode( label, propertyKey, arrayPropertyValue );
-            tx.success();
+            tx.commit();
         }
 
         createIndex( db, label, propertyKey );
@@ -210,7 +210,7 @@ public class SchemaIndexAcceptanceTest
         try ( Transaction tx = db.beginTx() )
         {
             indexDefinition.drop();
-            tx.success();
+            tx.commit();
         }
     }
 
@@ -231,7 +231,7 @@ public class SchemaIndexAcceptanceTest
         {
             Node node = db.createNode( label );
             node.setProperty( propertyKey, "yeah" );
-            tx.success();
+            tx.commit();
         }
     }
 }

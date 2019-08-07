@@ -62,20 +62,19 @@ public class BoltKernelTransaction extends BoltQueryExecutorImpl implements Bolt
     @Override
     public void commit() throws TransactionFailureException
     {
-        kernelTransaction.success();
+        // because of the placebo context changes and existence this needs to be temporary like this.
         if ( kernelTransaction.isOpen() )
         {
-            kernelTransaction.close();
+            kernelTransaction.commit();
         }
     }
 
     @Override
     public void rollback() throws TransactionFailureException
     {
-        kernelTransaction.failure();
         if ( kernelTransaction.isOpen() )
         {
-            kernelTransaction.close();
+            kernelTransaction.rollback();
         }
     }
 

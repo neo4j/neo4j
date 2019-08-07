@@ -68,7 +68,7 @@ class TestMultiPruneEvaluators extends TraversalTestBase
                 String name = (String) position.endNode().getProperty( "name" );
                 assertTrue( expectedNodes.remove( name ), name + " shouldn't have been returned" );
             }
-            tx.success();
+            tx.commit();
         }
         assertTrue( expectedNodes.isEmpty() );
     }

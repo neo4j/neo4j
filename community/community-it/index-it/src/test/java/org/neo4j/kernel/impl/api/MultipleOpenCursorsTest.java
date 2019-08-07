@@ -166,7 +166,7 @@ public class MultipleOpenCursorsTest
                 indexCoordinator.assertExistsResult( actual2 );
             }
 
-            tx.success();
+            tx.commit();
         }
     }
 
@@ -197,7 +197,7 @@ public class MultipleOpenCursorsTest
                 indexCoordinator.assertExactResult( actual1 );
                 indexCoordinator.assertExactResult( actual2 );
             }
-            tx.success();
+            tx.commit();
         }
     }
 
@@ -219,7 +219,7 @@ public class MultipleOpenCursorsTest
                 indexCoordinator.assertRangeResult( actual1 );
                 indexCoordinator.assertRangeResult( actual2 );
             }
-            tx.success();
+            tx.commit();
         }
     }
 
@@ -246,7 +246,7 @@ public class MultipleOpenCursorsTest
                 // then
                 indexCoordinator.assertExistsResult( actual1 );
             }
-            tx.success();
+            tx.commit();
         }
     }
 
@@ -272,7 +272,7 @@ public class MultipleOpenCursorsTest
                 // then
                 indexCoordinator.assertExactResult( actual1 );
             }
-            tx.success();
+            tx.commit();
         }
     }
 
@@ -299,7 +299,7 @@ public class MultipleOpenCursorsTest
                 // then
                 indexCoordinator.assertRangeResult( actual1 );
             }
-            tx.success();
+            tx.commit();
         }
     }
 
@@ -325,7 +325,7 @@ public class MultipleOpenCursorsTest
                     indexCoordinator.assertExistsResult( actual2 );
                 }
             }
-            tx.success();
+            tx.commit();
         }
     }
 
@@ -351,7 +351,7 @@ public class MultipleOpenCursorsTest
                     indexCoordinator.assertExactResult( actual2 );
                 }
             }
-            tx.success();
+            tx.commit();
         }
     }
 
@@ -377,7 +377,7 @@ public class MultipleOpenCursorsTest
                 indexCoordinator.assertRangeResult( actual1 );
                 indexCoordinator.assertRangeResult( actual2 );
             }
-            tx.success();
+            tx.commit();
         }
     }
 
@@ -749,7 +749,7 @@ public class MultipleOpenCursorsTest
                     node.setProperty( stringProp1, stringProp1Values[i] );
                     node.setProperty( stringProp2, stringProp2Values[i] );
                 }
-                tx.success();
+                tx.commit();
             }
 
             try ( Transaction tx = db.beginTx() )
@@ -760,7 +760,7 @@ public class MultipleOpenCursorsTest
                 numberPropId2 = tokenRead.propertyKey( numberProp2 );
                 stringPropId1 = tokenRead.propertyKey( stringProp1 );
                 stringPropId2 = tokenRead.propertyKey( stringProp2 );
-                tx.success();
+                tx.commit();
             }
             indexDescriptor = extractIndexDescriptor();
         }
@@ -772,12 +772,12 @@ public class MultipleOpenCursorsTest
             try ( Transaction tx = db.beginTx() )
             {
                 doCreateIndex( db );
-                tx.success();
+                tx.commit();
             }
             try ( Transaction tx = db.beginTx() )
             {
                 db.schema().awaitIndexesOnline( 1, TimeUnit.MINUTES );
-                tx.success();
+                tx.commit();
             }
         }
 

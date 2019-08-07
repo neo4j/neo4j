@@ -33,7 +33,6 @@ import org.neo4j.test.extension.Inject;
 
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.Matchers.is;
@@ -100,11 +99,11 @@ class SchemaAcceptanceTest
             try ( Transaction nestedTransaction = db.beginTx() )
             {
                 indexDef = db.schema().indexFor( label ).on( propertyKey ).create();
-                nestedTransaction.success();
+                nestedTransaction.commit();
             }
 
             index = indexDef;
-            tx.success();
+            tx.commit();
         }
         waitForIndex( db, indexDef );
 
@@ -129,7 +128,7 @@ class SchemaAcceptanceTest
             {
                 assertEquals( "There already exists an index :MY_LABEL(my_property_key).", e.getMessage() );
             }
-            tx.success();
+            tx.commit();
         }
     }
 
@@ -142,7 +141,7 @@ class SchemaAcceptanceTest
         {
             schema = db.schema();
             schema.indexFor( label ).on( propertyKey ).create();
-            tx.success();
+            tx.commit();
         }
 
         // WHEN
@@ -150,7 +149,7 @@ class SchemaAcceptanceTest
         try ( Transaction tx = db.beginTx() )
         {
             schema.indexFor( label ).on( propertyKey ).create();
-            tx.success();
+            tx.commit();
         }
         catch ( ConstraintViolationException e )
         {
@@ -171,7 +170,7 @@ class SchemaAcceptanceTest
             schema.constraintFor( label )
                     .assertPropertyIsUnique( "my_property_key" )
                     .assertPropertyIsUnique( "other_property" ).create();
-            tx.success();
+            tx.commit();
             fail( "Should not be able to create constraint on multiple propertyKey keys" );
         }
         catch ( UnsupportedOperationException e )
@@ -212,7 +211,7 @@ class SchemaAcceptanceTest
             {
                 assertThat( e.getMessage(), containsString( "No such INDEX ON :MY_LABEL(my_property_key)." ) );
             }
-            tx.success();
+            tx.commit();
         }
 
         // THEN
@@ -328,7 +327,7 @@ class SchemaAcceptanceTest
 
             assertEquals( label.name(), constraint.getLabel().name() );
             assertEquals( asSet( propertyKey ), Iterables.asSet( constraint.getPropertyKeys() ) );
-            tx.success();
+            tx.commit();
         }
     }
 
@@ -394,7 +393,7 @@ class SchemaAcceptanceTest
         {
             db.createNode( label ).setProperty( propertyKey, "value1" );
             db.createNode( label ).setProperty( propertyKey, "value1" );
-            transaction.success();
+            transaction.commit();
         }
 
         // WHEN
@@ -494,7 +493,7 @@ class SchemaAcceptanceTest
         try ( Transaction tx = db.beginTx() )
         {
             constraint.drop();
-            tx.success();
+            tx.commit();
         }
     }
 
@@ -504,7 +503,7 @@ class SchemaAcceptanceTest
         {
             ConstraintDefinition constraint =
                     db.schema().constraintFor( label ).assertPropertyIsUnique( prop ).create();
-            tx.success();
+            tx.commit();
             return constraint;
         }
     }
@@ -514,7 +513,7 @@ class SchemaAcceptanceTest
         try ( Transaction tx = db.beginTx() )
         {
             index.drop();
-            tx.success();
+            tx.commit();
         }
     }
 
@@ -524,7 +523,7 @@ class SchemaAcceptanceTest
         {
             Node node = db.createNode( label );
             node.setProperty( key, value );
-            tx.success();
+            tx.commit();
             return node;
         }
     }

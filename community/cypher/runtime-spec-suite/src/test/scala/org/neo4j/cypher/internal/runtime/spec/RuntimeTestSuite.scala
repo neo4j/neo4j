@@ -105,16 +105,18 @@ abstract class RuntimeTestSuite[CONTEXT <: RuntimeContext](edition: Edition[CONT
   override def getLabelId(label: String): Int = {
     val tx = graphDb.beginTx()
     try {
-      tx.success()
-      tx.asInstanceOf[InternalTransaction].kernelTransaction().tokenRead().nodeLabel(label)
+      val result = tx.asInstanceOf[InternalTransaction].kernelTransaction().tokenRead().nodeLabel(label)
+      tx.commit()
+      result
     } finally tx.close()
   }
 
   override def getPropertyKeyId(prop: String): Int =  {
     val tx = graphDb.beginTx()
     try {
-      tx.success()
-      tx.asInstanceOf[InternalTransaction].kernelTransaction().tokenRead().propertyKey(prop)
+      val result = tx.asInstanceOf[InternalTransaction].kernelTransaction().tokenRead().propertyKey(prop)
+      tx.commit()
+      result
     } finally tx.close()
   }
 
@@ -403,32 +405,36 @@ abstract class RuntimeTestSuite[CONTEXT <: RuntimeContext](edition: Edition[CONT
   def inTx[T](f: => T): T = {
     val tx = graphDb.beginTx()
     try {
-      tx.success()
-      f
-    } finally tx.close()
+      val result = f
+      tx.commit()
+      result
+    }
+    finally tx.close()
   }
 
   def nodePropertyGraph(nNodes: Int, properties: PartialFunction[Int, Map[String, Any]], labels: String*): Seq[Node] = {
     val tx = graphDb.beginTx()
     try {
-      tx.success()
       val labelArray = labels.map(Label.label)
-      for (i <- 0 until nNodes) yield {
+      val result = for (i <- 0 until nNodes) yield {
         val node = graphDb.createNode(labelArray: _*)
         properties.runWith(_.foreach(kv => node.setProperty(kv._1, kv._2)))(i)
         node
       }
+      tx.commit()
+      result
     } finally tx.close()
   }
 
   def connect(nodes: Seq[Node], rels: Seq[(Int, Int, String)]): Seq[Relationship] = {
     val tx = graphDb.beginTx()
     try {
-      tx.success()
-      rels.map {
+      val result = rels.map {
         case (from, to, typ) =>
           nodes(from).createRelationshipTo(nodes(to), RelationshipType.withName(typ))
       }
+      tx.commit()
+      result
     } finally tx.close()
   }
 
@@ -437,31 +443,31 @@ abstract class RuntimeTestSuite[CONTEXT <: RuntimeContext](edition: Edition[CONT
   def index(label: String, properties: String*): Unit = {
     var tx = graphDb.beginTx()
     try {
-      tx.success()
       var creator = graphDb.schema().indexFor(Label.label(label))
       properties.foreach(p => creator = creator.on(p))
       creator.create()
+      tx.commit()
     } finally tx.close()
 
     tx = graphDb.beginTx()
     try {
-      tx.success()
       graphDb.schema().awaitIndexesOnline(10, TimeUnit.MINUTES)
+      tx.commit()
     } finally tx.close()
   }
 
   def uniqueIndex(label: String, property: String): Unit = {
     var tx = graphDb.beginTx()
     try {
-      tx.success()
       val creator = graphDb.schema().constraintFor(Label.label(label)).assertPropertyIsUnique(property)
       creator.create()
+      tx.commit()
     } finally tx.close()
 
     tx = graphDb.beginTx()
     try {
-      tx.success()
       graphDb.schema().awaitIndexesOnline(10, TimeUnit.MINUTES)
+      tx.commit()
     } finally tx.close()
   }
 

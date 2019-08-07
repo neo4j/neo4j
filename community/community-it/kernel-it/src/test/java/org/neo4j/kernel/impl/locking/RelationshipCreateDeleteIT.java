@@ -60,7 +60,7 @@ class RelationshipCreateDeleteIT
         try ( Transaction tx = db.beginTx() )
         {
             (a = db.createNode()).createRelationshipTo( b = db.createNode(), MyRelTypes.TEST );
-            tx.success();
+            tx.commit();
         }
 
         // WHEN
@@ -87,7 +87,7 @@ class RelationshipCreateDeleteIT
                                 assertTrue( e.getMessage().contains( "already deleted" ) );
                             }
                         }
-                        tx.success();
+                        tx.commit();
                     }
                 }
             } );
@@ -106,7 +106,7 @@ class RelationshipCreateDeleteIT
                         Node start = order ? a : b;
                         Node end = order ? b : a;
                         start.createRelationshipTo( end, MyRelTypes.TEST );
-                        tx.success();
+                        tx.commit();
                     }
                 }
             } );

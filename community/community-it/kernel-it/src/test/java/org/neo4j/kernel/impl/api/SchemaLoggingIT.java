@@ -82,13 +82,13 @@ class SchemaLoggingIT
         try ( Transaction tx = db.beginTx() )
         {
             db.schema().indexFor( label( labelName ) ).on( property ).create();
-            tx.success();
+            tx.commit();
         }
 
         try ( Transaction tx = db.beginTx() )
         {
             db.schema().awaitIndexesOnline( 1, TimeUnit.MINUTES );
-            tx.success();
+            tx.commit();
         }
     }
 

@@ -87,8 +87,7 @@ class TestGraphProperties
         Transaction tx = db.beginTx();
         graphProperties.setProperty( "test", "yo" );
         assertEquals( "yo", graphProperties.getProperty( "test" ) );
-        tx.success();
-        tx.close();
+        tx.commit();
         assertThat( graphProperties, inTx( db, hasProperty( "test" ).withValue( "yo" ) ) );
         tx = db.beginTx();
         assertNull( graphProperties.removeProperty( "something non existent" ) );
@@ -97,8 +96,7 @@ class TestGraphProperties
         graphProperties.setProperty( "other", 10 );
         assertEquals( 10, graphProperties.getProperty( "other" ) );
         graphProperties.setProperty( "new", "third" );
-        tx.success();
-        tx.close();
+        tx.commit();
         assertThat( graphProperties, inTx( db, not( hasProperty( "test" ) ) ) );
         assertThat( graphProperties, inTx( db, hasProperty( "other" ).withValue( 10 ) ) );
         assertThat( getPropertyKeys( db, graphProperties ), containsOnly( "other", "new" ) );
@@ -119,8 +117,7 @@ class TestGraphProperties
         PropertyContainer graphProperties = properties( db );
         Transaction tx = db.beginTx();
         assertEquals( "default", graphProperties.getProperty( "test", "default" ) );
-        tx.success();
-        tx.close();
+        tx.commit();
         managementService.shutdown();
     }
 
@@ -138,8 +135,7 @@ class TestGraphProperties
         {
             properties( db ).setProperty( "key" + i, values[i % values.length] );
         }
-        tx.success();
-        tx.close();
+        tx.commit();
 
         for ( int i = 0; i < count; i++ )
         {
@@ -166,8 +162,7 @@ class TestGraphProperties
         Transaction tx = db.beginTx();
         properties( db ).setProperty( key, array );
         assertThat( properties( db ), hasProperty( key ).withValue( array ) );
-        tx.success();
-        tx.close();
+        tx.commit();
 
         assertThat( properties( db ), inTx( db, hasProperty( key ).withValue( array ) ) );
         assertThat( properties( db ), inTx( db, hasProperty( key ).withValue( array ) ) );
@@ -187,16 +182,14 @@ class TestGraphProperties
         Transaction tx = db.beginTx();
         Node node = db.createNode();
         node.setProperty( "name", "Yo" );
-        tx.success();
-        tx.close();
+        tx.commit();
         managementService.shutdown();
 
         managementService = factory.impermanent().build();
         db = (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );
         tx = db.beginTx();
         properties( db ).setProperty( "test", "something" );
-        tx.success();
-        tx.close();
+        tx.commit();
         managementService.shutdown();
 
         Config config = Config.defaults();
@@ -283,7 +276,7 @@ class TestGraphProperties
         try ( Transaction tx = db.beginTx() )
         {
             graphProperties.setProperty( "test", "test" );
-            tx.success();
+            tx.commit();
         }
 
         assertEquals( graphProperties, properties( db ) );
@@ -307,7 +300,7 @@ class TestGraphProperties
             graphProperties.setProperty( "a", new String[]{"A", "B", "C", "D", "E"} );
             graphProperties.setProperty( "b", true );
             graphProperties.setProperty( "c", "C" );
-            tx.success();
+            tx.commit();
         }
 
         try ( Transaction tx = database.beginTx() )
@@ -315,7 +308,7 @@ class TestGraphProperties
             graphProperties.setProperty( "d", new String[]{"A", "F"} );
             graphProperties.setProperty( "e", true );
             graphProperties.setProperty( "f", "F" );
-            tx.success();
+            tx.commit();
         }
 
         try ( Transaction tx = database.beginTx() )
@@ -323,7 +316,7 @@ class TestGraphProperties
             graphProperties.setProperty( "g", new String[]{"F"} );
             graphProperties.setProperty( "h", false );
             graphProperties.setProperty( "i", "I" );
-            tx.success();
+            tx.commit();
         }
 
         try ( Transaction tx = database.beginTx() )
@@ -339,7 +332,7 @@ class TestGraphProperties
             assertArrayEquals( new String[]{"F"}, (String[]) graphProperties.getProperty( "g" ) );
             assertFalse( (boolean) graphProperties.getProperty( "h" ) );
             assertEquals( "I", graphProperties.getProperty( "i" ) );
-            tx.success();
+            tx.commit();
         }
         managementService.shutdown();
     }
@@ -373,8 +366,7 @@ class TestGraphProperties
         {
             execute( (WorkerCommand<State,Void>) state ->
             {
-                state.tx.success();
-                state.tx.close();
+                state.tx.commit();
                 return null;
             } );
         }
@@ -409,8 +401,7 @@ class TestGraphProperties
         Node node = db.createNode();
         node.setProperty( "name", "Something" );
         properties( (GraphDatabaseAPI) db ).setProperty( "prop", "Some value" );
-        tx.success();
-        tx.close();
+        tx.commit();
         EphemeralFileSystemAbstraction snapshot = fileSystem.snapshot();
         managementService.shutdown();
         return snapshot;

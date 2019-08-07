@@ -58,7 +58,7 @@ class NodeTest
             node = db.createNode();
             Node node2 = db.createNode();
             node.createRelationshipTo( node2, RelationshipType.withName( "MAYOR_OF" ) );
-            transaction.success();
+            transaction.commit();
         }
 
         // And given a transaction deleting just the node
@@ -68,7 +68,7 @@ class NodeTest
             try ( Transaction transaction = db.beginTx() )
             {
                 node.delete();
-                transaction.success();
+                transaction.commit();
             }
         } );
         assertThat( exception.getMessage(), containsString( "Cannot delete node<" + node.getId() + ">, because it still has relationships. " +
@@ -85,7 +85,7 @@ class NodeTest
             nodeId = node.getId();
             db.getNodeById( nodeId );
             node.delete();
-            transaction.success();
+            transaction.commit();
         }
         assertThrows( NotFoundException.class, () -> {
             try ( Transaction transaction = db.beginTx() )
@@ -124,7 +124,6 @@ class NodeTest
         {
             Node node1 = db.createNode();
             assertThrows( IllegalArgumentException.class, () -> node1.setProperty( "foo", null ) );
-            transaction.failure();
         }
     }
 
@@ -330,13 +329,13 @@ class NodeTest
         {
             node = db.createNode();
             node.setProperty( "test", "test" );
-            transaction.success();
+            transaction.commit();
         }
         try ( Transaction transaction = db.beginTx() )
         {
             node.setProperty( "test2", "test2" );
             node.delete();
-            transaction.success();
+            transaction.commit();
         }
     }
 
@@ -348,7 +347,7 @@ class NodeTest
         {
             node = db.createNode();
             node.setProperty( "test", "test1" );
-            transaction.success();
+            transaction.commit();
         }
         try ( Transaction transaction = db.beginTx() )
         {
@@ -358,7 +357,7 @@ class NodeTest
             assertEquals( "test3", node.getProperty( "test" ) );
             node.removeProperty( "test" );
             node.setProperty( "test", "test4" );
-            transaction.success();
+            transaction.commit();
         }
         try ( Transaction transaction = db.beginTx() )
         {
@@ -374,21 +373,21 @@ class NodeTest
         {
             node = db.createNode();
             node.setProperty( "test", "test1" );
-            transaction.success();
+            transaction.commit();
         }
         try ( Transaction transaction = db.beginTx() )
         {
             node.removeProperty( "test" );
             node.setProperty( "test", "test3" );
             assertEquals( "test3", node.getProperty( "test" ) );
-            transaction.success();
+            transaction.commit();
         }
         try ( Transaction transaction = db.beginTx() )
         {
             assertEquals( "test3", node.getProperty( "test" ) );
             node.removeProperty( "test" );
             node.setProperty( "test", "test4" );
-            transaction.success();
+            transaction.commit();
         }
         try ( Transaction transaction = db.beginTx() )
         {

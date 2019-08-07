@@ -70,7 +70,7 @@ abstract class TraversalTestBase extends AbstractNeo4jTestCase
         try ( Transaction tx = beginTx() )
         {
             Map<String, Node> result = graph.create( getGraphDb() );
-            tx.success();
+            tx.commit();
             return result;
         }
     }
@@ -212,7 +212,7 @@ abstract class TraversalTestBase extends AbstractNeo4jTestCase
                 assertTrue( repr + " not expected ", expected.remove( repr ) );
                 encounteredItems.add( repr );
             }
-            tx.success();
+            tx.commit();
         }
 
         if ( !expected.isEmpty() )

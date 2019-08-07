@@ -124,7 +124,7 @@ class TreeGraphTest extends TraversalTestBase
         try ( Transaction tx = beginTx() )
         {
             assertLevels( traverser, levels );
-            tx.success();
+            tx.commit();
         }
     }
 
@@ -157,7 +157,7 @@ class TreeGraphTest extends TraversalTestBase
                 encounteredNodes.add( (String) pos.endNode().getProperty( "name" ) );
                 assertEquals( expectedDepth( 12 - i++ ), pos.length() );
             }
-            tx.success();
+            tx.commit();
         }
         assertEquals( 13, i );
 
@@ -187,7 +187,7 @@ class TreeGraphTest extends TraversalTestBase
         try ( Transaction tx = beginTx() )
         {
             assertLevels( traverser, levels );
-            tx.success();
+            tx.commit();
         }
     }
 

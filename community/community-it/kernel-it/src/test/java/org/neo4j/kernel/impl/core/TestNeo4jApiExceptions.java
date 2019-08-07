@@ -138,8 +138,7 @@ class TestNeo4jApiExceptions
     {
         if ( tx != null )
         {
-            tx.success();
-            tx.close();
+            tx.commit();
         }
         tx = graph.beginTx();
     }
@@ -148,8 +147,7 @@ class TestNeo4jApiExceptions
     {
         if ( tx != null )
         {
-            tx.success();
-            tx.close();
+            tx.commit();
             tx = null;
         }
     }

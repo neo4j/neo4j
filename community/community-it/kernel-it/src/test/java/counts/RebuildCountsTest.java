@@ -157,7 +157,7 @@ class RebuildCountsTest
             {
                 db.createNode( HUMAN );
             }
-            tx.success();
+            tx.commit();
         }
     }
 
@@ -172,7 +172,7 @@ class RebuildCountsTest
                     humans.next().delete();
                 }
             }
-            tx.success();
+            tx.commit();
         }
     }
 

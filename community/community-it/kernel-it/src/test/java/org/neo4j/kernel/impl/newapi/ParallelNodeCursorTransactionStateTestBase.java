@@ -92,7 +92,7 @@ public abstract class ParallelNodeCursorTransactionStateTestBase<G extends Kerne
                 created.add( write.nodeCreate() );
                 deleted.add( write.nodeCreate() );
             }
-            tx.success();
+            tx.commit();
         }
 
         try ( Transaction tx = beginTransaction() )
@@ -225,7 +225,7 @@ public abstract class ParallelNodeCursorTransactionStateTestBase<G extends Kerne
             TestUtils.assertDistinct( ids1, ids2, ids3, ids4 );
             LongList concat = TestUtils.concat( ids1, ids2, ids3, ids4 );
             assertEquals( ids.toSortedList(), concat.toSortedList() );
-            tx.failure();
+            tx.rollback();
         }
         finally
         {
@@ -315,7 +315,7 @@ public abstract class ParallelNodeCursorTransactionStateTestBase<G extends Kerne
             LongList concat = TestUtils.concat( lists );
 
             assertEquals( ids.toSortedList(), concat.toSortedList() );
-            tx.failure();
+            tx.rollback();
         }
         finally
         {
@@ -362,7 +362,7 @@ public abstract class ParallelNodeCursorTransactionStateTestBase<G extends Kerne
                             allNodes, LongSets.immutable.withAll( concat ),
                             format( "nodes=%d, seen=%d, all=%d", nodeInTx, concat.size(), allNodes.size() ) );
                     assertEquals( allNodes.size(), concat.size(), format( "nodes=%d", nodeInTx ) );
-                    tx.failure();
+                    tx.rollback();
                 }
             }
         }
@@ -384,7 +384,7 @@ public abstract class ParallelNodeCursorTransactionStateTestBase<G extends Kerne
             {
                 nodes.add( write.nodeCreate() );
             }
-            tx.success();
+            tx.commit();
         }
         return nodes;
     }

@@ -35,7 +35,7 @@ import org.neo4j.test.extension.Inject;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.fail;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 @ImpermanentDbmsExtension
 class AccidentalUniquenessConstraintViolationIT
@@ -53,13 +53,13 @@ class AccidentalUniquenessConstraintViolationIT
 
     @ParameterizedTest
     @MethodSource( "parameters" )
-    void shouldApplyChangesWithIntermediateConstraintViolations( Object value1, Object value2 ) throws Exception
+    void shouldApplyChangesWithIntermediateConstraintViolations( Object value1, Object value2 )
     {
         // given
         try ( Transaction tx = db.beginTx() )
         {
             db.schema().constraintFor( Foo ).assertPropertyIsUnique( BAR ).create();
-            tx.success();
+            tx.commit();
         }
         Node fourtyTwo;
         Node fourtyOne;
@@ -69,7 +69,7 @@ class AccidentalUniquenessConstraintViolationIT
             fourtyTwo.setProperty( BAR, value1 );
             fourtyOne = db.createNode( Foo );
             fourtyOne.setProperty( BAR, value2 );
-            tx.success();
+            tx.commit();
         }
 
         // when
@@ -77,26 +77,18 @@ class AccidentalUniquenessConstraintViolationIT
         {
             fourtyOne.delete();
             fourtyTwo.setProperty( BAR, value2 );
-            tx.success();
+            tx.commit();
         }
 
         // then
         try ( Transaction tx = db.beginTx() )
         {
             assertEquals( value2, fourtyTwo.getProperty( BAR ) );
-            try
-            {
-                fourtyOne.getProperty( BAR );
-                fail( "Should be deleted" );
-            }
-            catch ( NotFoundException e )
-            {
-                // good
-            }
-            tx.success();
+            assertThrows( NotFoundException.class, () -> fourtyOne.getProperty( BAR ) );
 
             assertEquals( fourtyTwo, db.findNode( Foo, BAR, value2 ) );
             assertNull( db.findNode( Foo, BAR, value1 ) );
+            tx.commit();
         }
     }
 }

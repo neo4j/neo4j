@@ -96,7 +96,7 @@ public class AllNodesInStoreExistInLabelIndexTest
         try ( Transaction tx = db.beginTx() )
         {
             db.createNode( LABEL_ONE );
-            tx.success();
+            tx.commit();
         }
 
         db.shutdown();
@@ -137,7 +137,7 @@ public class AllNodesInStoreExistInLabelIndexTest
         try ( Transaction tx = db.beginTx() )
         {
             db.createNode( LABEL_ONE );
-            tx.success();
+            tx.commit();
         }
 
         // and
@@ -160,7 +160,7 @@ public class AllNodesInStoreExistInLabelIndexTest
         try ( Transaction tx = db.beginTx() )
         {
             addLabelToExistingNode( nodesInStore );
-            tx.success();
+            tx.commit();
         }
 
         // and
@@ -183,7 +183,7 @@ public class AllNodesInStoreExistInLabelIndexTest
         try ( Transaction tx = db.beginTx() )
         {
             removeLabelFromExistingNode( nodesInStore );
-            tx.success();
+            tx.commit();
         }
 
         // and
@@ -206,7 +206,7 @@ public class AllNodesInStoreExistInLabelIndexTest
         try ( Transaction tx = db.beginTx() )
         {
             removeExistingNode( nodesInStore );
-            tx.success();
+            tx.commit();
         }
 
         // and
@@ -291,7 +291,7 @@ public class AllNodesInStoreExistInLabelIndexTest
         try ( Transaction tx = db.beginTx() )
         {
             randomModifications( existingNodes, numberOfModifications );
-            tx.success();
+            tx.commit();
         }
         return existingNodes;
     }

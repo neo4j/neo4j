@@ -99,7 +99,7 @@ public class DetectAllRelationshipInconsistenciesIT
                     relationships[i] =
                             random.among( nodes ).createRelationshipTo( random.among( nodes ), MyRelTypes.TEST );
                 }
-                tx.success();
+                tx.commit();
             }
 
             // WHEN sabotaging a random relationship

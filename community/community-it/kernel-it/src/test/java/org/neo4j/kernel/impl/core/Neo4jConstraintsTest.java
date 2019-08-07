@@ -55,12 +55,10 @@ class Neo4jConstraintsTest extends AbstractNeo4jTestCase
             }
             node.delete();
         }
-        tx.success();
-        tx.close();
+        tx.commit();
         tx = getGraphDb().beginTx();
         assertFalse( getGraphDb().getAllNodes().iterator().hasNext() );
-        tx.success();
-        tx.close();
+        tx.commit();
     }
 
     @Test
@@ -73,8 +71,7 @@ class Neo4jConstraintsTest extends AbstractNeo4jTestCase
         assertThrows( Exception.class, () ->
         {
             Transaction tx = getTransaction();
-            tx.success();
-            tx.close();
+            tx.commit();
         } );
         setTransaction( getGraphDb().beginTx() );
     }
@@ -90,8 +87,7 @@ class Neo4jConstraintsTest extends AbstractNeo4jTestCase
         assertThrows( Exception.class, () ->
         {
             Transaction tx = getTransaction();
-            tx.success();
-            tx.close();
+            tx.commit();
         } );
         setTransaction( getGraphDb().beginTx() );
     }
@@ -108,8 +104,7 @@ class Neo4jConstraintsTest extends AbstractNeo4jTestCase
         node1.delete();
         rel0.delete();
         Transaction tx = getTransaction();
-        tx.success();
-        tx.close();
+        tx.commit();
         setTransaction( getGraphDb().beginTx() );
         node2.delete();
         rel1.delete();
@@ -122,16 +117,14 @@ class Neo4jConstraintsTest extends AbstractNeo4jTestCase
         Node node1 = getGraphDb().createNode();
         Node node2 = getGraphDb().createNode();
         Transaction tx = getTransaction();
-        tx.success();
-        tx.close();
+        tx.commit();
         tx = getGraphDb().beginTx();
         node1.delete();
         assertThrows( Exception.class, () ->
         {
             node1.createRelationshipTo( node2, MyRelTypes.TEST );
         } );
-        tx.failure();
-        tx.close();
+        tx.rollback();
         setTransaction( getGraphDb().beginTx() );
         node2.delete();
         node1.delete();
@@ -155,8 +148,7 @@ class Neo4jConstraintsTest extends AbstractNeo4jTestCase
         {
             node.removeProperty( key );
             Transaction tx = getTransaction();
-            tx.success();
-            tx.close();
+            tx.commit();
         } );
     }
 
@@ -170,8 +162,7 @@ class Neo4jConstraintsTest extends AbstractNeo4jTestCase
         {
             node.setProperty( key, 2 );
             Transaction tx = getTransaction();
-            tx.success();
-            tx.close();
+            tx.commit();
         } );
     }
 
@@ -186,8 +177,7 @@ class Neo4jConstraintsTest extends AbstractNeo4jTestCase
         {
             rel.setProperty( key, 1 );
             Transaction tx = getTransaction();
-            tx.success();
-            tx.close();
+            tx.commit();
         } );
         node1.delete();
         node2.delete();
@@ -205,8 +195,7 @@ class Neo4jConstraintsTest extends AbstractNeo4jTestCase
         {
             rel.removeProperty( key );
             Transaction tx = getTransaction();
-            tx.success();
-            tx.close();
+            tx.commit();
         } );
         node1.delete();
         node2.delete();
@@ -224,8 +213,7 @@ class Neo4jConstraintsTest extends AbstractNeo4jTestCase
         {
             rel.setProperty( key, 2 );
             Transaction tx = getTransaction();
-            tx.success();
-            tx.close();
+            tx.commit();
         } );
         node1.delete();
         node2.delete();
@@ -240,8 +228,7 @@ class Neo4jConstraintsTest extends AbstractNeo4jTestCase
         {
             node1.delete();
             Transaction tx = getTransaction();
-            tx.success();
-            tx.close();
+            tx.commit();
         } );
     }
 
@@ -258,8 +245,7 @@ class Neo4jConstraintsTest extends AbstractNeo4jTestCase
         {
             rel.delete();
             Transaction tx = getTransaction();
-            tx.success();
-            tx.close();
+            tx.commit();
         } );
     }
 
@@ -268,11 +254,7 @@ class Neo4jConstraintsTest extends AbstractNeo4jTestCase
     {
         final Node node1 = getGraphDb().createNode();
         assertThrows( Exception.class, () -> node1.setProperty( key, new Object() ) );
-        {
-            Transaction tx = getTransaction();
-            tx.failure();
-            tx.close();
-        }
+
         setTransaction( getGraphDb().beginTx() );
         assertThrows( NotFoundException.class, () -> getGraphDb().getNodeById( node1.getId() ) );
         Node node3 = getGraphDb().createNode();
@@ -283,8 +265,7 @@ class Neo4jConstraintsTest extends AbstractNeo4jTestCase
         assertThrows( Exception.class, () ->
         {
             Transaction tx = getTransaction();
-            tx.success();
-            tx.close();
+            tx.commit();
         } );
         setTransaction( getGraphDb().beginTx() );
         assertThrows( Exception.class, () -> getGraphDb().getNodeById( node3.getId() ) );
@@ -307,7 +288,7 @@ class Neo4jConstraintsTest extends AbstractNeo4jTestCase
         assertThrows( NotFoundException.class, () -> node1.setProperty( "key1", "value2" ) );
         assertThrows( NotFoundException.class, () -> node1.removeProperty( "key1" ) );
         node2.delete();
-        assertThrows( NotFoundException.class, () -> node2.delete() );
+        assertThrows( NotFoundException.class, node2::delete );
         assertThrows( NotFoundException.class, () -> node1.getProperty( "key1" ) );
         assertThrows( NotFoundException.class, () -> node1.setProperty( "key1", "value2" ) );
         assertThrows( NotFoundException.class, () -> node1.removeProperty( "key1" ) );

@@ -82,7 +82,7 @@ public class ContextSwitchingSystemGraphQueryExecutor implements QueryExecutor
             systemDbExecuteWithinTransaction( query, parameters, subscriber );
             if ( !subscriber.hasError() )
             {
-                transaction.success();
+                transaction.commit();
             }
         }
     }
@@ -133,15 +133,15 @@ public class ContextSwitchingSystemGraphQueryExecutor implements QueryExecutor
             }
 
             @Override
-            public void failure()
+            public void commit()
             {
-                transaction.failure();
+                transaction.commit();
             }
 
             @Override
-            public void success()
+            public void rollback()
             {
-                transaction.success();
+                transaction.rollback();
             }
 
             @Override

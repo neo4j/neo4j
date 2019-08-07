@@ -144,7 +144,7 @@ class KernelSchemaStateFlushingTest
         {
             ConstraintDescriptor descriptor = transaction.schemaWrite().uniquePropertyConstraintCreate(
                     SchemaDescriptor.forLabel( 1, 1 ) );
-            transaction.success();
+            transaction.commit();
             return descriptor;
         }
     }
@@ -154,7 +154,7 @@ class KernelSchemaStateFlushingTest
         try ( Transaction transaction = beginTransaction() )
         {
             transaction.schemaWrite().constraintDrop( descriptor );
-            transaction.success();
+            transaction.commit();
         }
     }
 
@@ -164,7 +164,7 @@ class KernelSchemaStateFlushingTest
         {
             IndexDescriptor reference = transaction.schemaWrite().indexCreate(
                     SchemaDescriptor.forLabel( 1, 1 ) );
-            transaction.success();
+            transaction.commit();
             return reference;
         }
     }
@@ -174,7 +174,7 @@ class KernelSchemaStateFlushingTest
         try ( Transaction transaction = beginTransaction() )
         {
             transaction.schemaWrite().indexDrop( reference );
-            transaction.success();
+            transaction.commit();
         }
     }
 
@@ -184,7 +184,7 @@ class KernelSchemaStateFlushingTest
         try ( Transaction transaction = beginTransaction() )
         {
             SchemaIndexTestHelper.awaitIndexOnline( transaction.schemaRead(), descriptor );
-            transaction.success();
+            transaction.commit();
         }
         awaitSchemaStateCleared( keyForProbing );
     }
@@ -197,7 +197,7 @@ class KernelSchemaStateFlushingTest
             {
                 LockSupport.parkNanos( MILLISECONDS.toNanos( 10 ) );
             }
-            transaction.success();
+            transaction.commit();
         }
     }
 
@@ -206,7 +206,7 @@ class KernelSchemaStateFlushingTest
         try ( Transaction transaction = beginTransaction() )
         {
             String result = getOrCreateFromState( transaction, key, value );
-            transaction.success();
+            transaction.commit();
             return result;
         }
     }

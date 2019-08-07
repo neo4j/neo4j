@@ -75,7 +75,7 @@ class RecoveryLogIT
             Node node1 = db.createNode();
             Node node2 = db.createNode();
             node1.createRelationshipTo( node2, RelationshipType.withName( "likes" ) );
-            tx.success();
+            tx.commit();
         }
 
         File[] txLogs = LogFilesBuilder.logFilesBasedOnlyBuilder( databaseLayout.getTransactionLogsDirectory(), fileSystem ).build().logFiles();

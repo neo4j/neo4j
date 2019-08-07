@@ -95,7 +95,7 @@ class IndexConsistencyIT
         try ( Transaction tx = db.beginTx() )
         {
             createNewNode( new Label[]{LABEL_ONE} );
-            tx.success();
+            tx.commit();
         }
 
         managementService.shutdown();
@@ -148,17 +148,17 @@ class IndexConsistencyIT
         try ( Transaction tx = db.beginTx() )
         {
             randomModifications( existingNodes, numberOfModifications );
-            tx.success();
+            tx.commit();
         }
         try ( Transaction tx = db.beginTx() )
         {
             db.schema().indexFor( LABEL_ONE ).on( PROPERTY_KEY ).create();
-            tx.success();
+            tx.commit();
         }
         try ( Transaction tx = db.beginTx() )
         {
             db.schema().awaitIndexesOnline( 1, TimeUnit.MINUTES );
-            tx.success();
+            tx.commit();
         }
     }
 

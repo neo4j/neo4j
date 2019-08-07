@@ -65,8 +65,7 @@ class KernelIT extends KernelIntegrationTest
         ktx.dataWrite().nodeAddLabel( node.getId(), labelId );
 
         // 4: Commit through the beans API
-        transaction.success();
-        transaction.close();
+        transaction.commit();
     }
 
     @Test
@@ -84,7 +83,7 @@ class KernelIT extends KernelIntegrationTest
         try ( Transaction tx = db.beginTx() )
         {
             db.schema().awaitIndexesOnline( 20, SECONDS );
-            tx.success();
+            tx.commit();
         }
         // THEN schema state is eventually updated (clearing the schema cache is not atomic with respect to flipping
         // the new index to the ONLINE state, but happens as soon as possible *after* the index becomes ONLINE).
@@ -103,7 +102,7 @@ class KernelIT extends KernelIntegrationTest
         {
             db.schema().awaitIndexesOnline( 20, SECONDS );
             getOrCreateSchemaState( "my key", "some state" );
-            tx.success();
+            tx.commit();
         }
         // WHEN
         schemaWriteInNewTransaction().indexDrop( idx );
@@ -121,11 +120,10 @@ class KernelIT extends KernelIntegrationTest
 
         org.neo4j.internal.kernel.api.Transaction tx = newTransaction( AUTH_DISABLED );
         tx.dataWrite().nodeCreate();
-        tx.success();
 
         long previousCommittedTxId = lastCommittedTxId( db );
 
-        assertEquals( previousCommittedTxId + 1, tx.closeTransaction() );
+        assertEquals( previousCommittedTxId + 1, tx.commit() );
         assertFalse( tx.isOpen() );
     }
 
@@ -136,7 +134,6 @@ class KernelIT extends KernelIntegrationTest
 
         org.neo4j.internal.kernel.api.Transaction tx = newTransaction( AUTH_DISABLED );
         tx.dataWrite().nodeCreate();
-        tx.failure();
 
         assertEquals( KernelTransaction.ROLLBACK, tx.closeTransaction() );
         assertFalse( tx.isOpen() );
@@ -162,7 +159,6 @@ class KernelIT extends KernelIntegrationTest
 
         org.neo4j.internal.kernel.api.Transaction tx = newTransaction( AUTH_DISABLED );
         tx.dataWrite().nodeCreate();
-        tx.failure();
         tx.markForTermination( Status.Transaction.Terminated );
 
         assertEquals( KernelTransaction.ROLLBACK, tx.closeTransaction() );
@@ -180,9 +176,8 @@ class KernelIT extends KernelIntegrationTest
             tx.dataRead().singleNode( 1, node );
             node.next();
         }
-        tx.success();
 
-        assertEquals( KernelTransaction.READ_ONLY, tx.closeTransaction() );
+        assertEquals( KernelTransaction.READ_ONLY, tx.commit() );
         assertFalse( tx.isOpen() );
     }
 
@@ -193,7 +188,7 @@ class KernelIT extends KernelIntegrationTest
             try ( Transaction tx = db.beginTx() )
             {
                 db.createNode();
-                tx.success();
+                tx.commit();
             }
         }
     }
@@ -221,7 +216,7 @@ class KernelIT extends KernelIntegrationTest
             KernelTransaction ktx =
                     statementContextSupplier.getKernelTransactionBoundToThisThread( true, db.databaseId() );
             String state = ktx.schemaRead().schemaStateGetOrCreate( key, s -> maybeSetThisState );
-            tx.success();
+            tx.commit();
             return state;
         }
     }
@@ -237,7 +232,7 @@ class KernelIT extends KernelIntegrationTest
                 result.set( false );
                 return null;
             } );
-            tx.success();
+            tx.commit();
             return result.get();
         }
     }

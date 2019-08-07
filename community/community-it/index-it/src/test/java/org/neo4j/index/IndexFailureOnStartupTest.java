@@ -64,7 +64,7 @@ public class IndexFailureOnStartupTest
         try ( Transaction tx = db.beginTx() )
         {
             db.schema().indexFor( PERSON ).on( "name" ).create();
-            tx.success();
+            tx.commit();
         }
         awaitIndexesOnline( 5, SECONDS );
         createNamed( PERSON, "Johan" );
@@ -84,7 +84,7 @@ public class IndexFailureOnStartupTest
         try ( Transaction tx = db.beginTx() )
         {
             db.schema().constraintFor( PERSON ).assertPropertyIsUnique( "name" ).create();
-            tx.success();
+            tx.commit();
         }
         createNamed( PERSON, "Lars" );
         // when - we restart the database in a state where the index is not operational
@@ -114,19 +114,19 @@ public class IndexFailureOnStartupTest
         {
             Node node = db.createNode( PERSON );
             node.setProperty( "name", "Fry" );
-            tx.success();
+            tx.commit();
         }
         try ( Transaction tx = db.beginTx() )
         {
             Node node = db.createNode( PERSON );
             node.setProperty( "name", Values.pointValue( CoordinateReferenceSystem.WGS84, 1, 2 ) );
-            tx.success();
+            tx.commit();
         }
 
         try ( Transaction tx = db.beginTx() )
         {
             db.schema().constraintFor( PERSON ).assertPropertyIsUnique( "name" ).create();
-            tx.success();
+            tx.commit();
         }
         assertThat( archiveFile(), nullValue() );
 
@@ -155,7 +155,7 @@ public class IndexFailureOnStartupTest
         try ( Transaction tx = db.beginTx() )
         {
             db.schema().awaitIndexesOnline( timeout, unit );
-            tx.success();
+            tx.commit();
         }
     }
 
@@ -165,7 +165,7 @@ public class IndexFailureOnStartupTest
         {
             assertNotNull( "Must be able to find node created while index was offline",
                     db.findNode( label, "name", name ) );
-            tx.success();
+            tx.commit();
         }
     }
 
@@ -177,7 +177,7 @@ public class IndexFailureOnStartupTest
             {
                 assertThat( db.schema().getIndexState( index ), matchesExpectation );
             }
-            tx.success();
+            tx.commit();
         }
     }
 
@@ -186,7 +186,7 @@ public class IndexFailureOnStartupTest
         try ( Transaction tx = db.beginTx() )
         {
             db.createNode( label ).setProperty( "name", name );
-            tx.success();
+            tx.commit();
         }
     }
 }

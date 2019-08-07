@@ -62,7 +62,7 @@ class RelationshipGroupStoreIT
             {
                 node.createRelationshipTo( db.createNode(), type( i ) );
             }
-            tx.success();
+            tx.commit();
         }
 
         try ( Transaction ignored = db.beginTx() )

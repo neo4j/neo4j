@@ -348,7 +348,7 @@ class NeoStoreIndexStoreViewTest
             sKnowsA = stefan.createRelationshipTo( alistair, relationshipType );
             sKnowsA.setProperty( "duration", "lengthy" );
             sKnowsA.setProperty( "irrelevant", "prop" );
-            tx.success();
+            tx.commit();
         }
     }
 
@@ -360,7 +360,7 @@ class NeoStoreIndexStoreViewTest
             sKnowsA.delete();
             alistair.delete();
             stefan.delete();
-            tx.success();
+            tx.commit();
         }
     }
 
@@ -376,7 +376,7 @@ class NeoStoreIndexStoreViewTest
             relTypeId = tokenWrite.relationshipTypeGetOrCreateForName( "Knows" );
             propertyKeyId = tokenWrite.propertyKeyGetOrCreateForName( "name" );
             relPropertyKeyId = tokenWrite.propertyKeyGetOrCreateForName( "duration" );
-            tx.success();
+            tx.commit();
         }
     }
 

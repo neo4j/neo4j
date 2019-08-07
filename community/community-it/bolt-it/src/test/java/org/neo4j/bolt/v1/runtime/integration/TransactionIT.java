@@ -195,7 +195,7 @@ public class TransactionIT
         {
             Node node = env.graph().createNode( Label.label( "A" ) );
             node.setProperty( "prop", "one" );
-            tx.success();
+            tx.commit();
         }
 
         BinaryLatch latch = new BinaryLatch();

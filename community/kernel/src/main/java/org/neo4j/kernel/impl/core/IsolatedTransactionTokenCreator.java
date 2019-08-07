@@ -51,7 +51,7 @@ abstract class IsolatedTransactionTokenCreator implements TokenCreator
         try ( Transaction tx = kernel.beginTransaction( Type.implicit, AUTH_DISABLED ) )
         {
             int id = createKey( tx, name, internal );
-            tx.success();
+            tx.commit();
             return id;
         }
     }
@@ -69,7 +69,7 @@ abstract class IsolatedTransactionTokenCreator implements TokenCreator
                     ids[i] = createKey( tx, names[i], internal );
                 }
             }
-            tx.success();
+            tx.commit();
         }
     }
 

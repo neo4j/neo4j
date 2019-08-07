@@ -60,7 +60,7 @@ public abstract class LargeNodeCursorTestBase<G extends KernelAPIReadTestSupport
                     deleted.add( node );
                 }
             }
-            tx.success();
+            tx.commit();
         }
 
         try ( Transaction tx = graphDb.beginTx() )
@@ -69,7 +69,7 @@ public abstract class LargeNodeCursorTestBase<G extends KernelAPIReadTestSupport
             {
                 node.delete();
             }
-            tx.success();
+            tx.commit();
         }
     }
 

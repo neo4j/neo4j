@@ -119,7 +119,7 @@ class QueryExecutionLocksIT
         {
             Node node = db.createNode( human );
             node.setProperty( propertyKey, RandomStringUtils.randomAscii( 10 ) );
-            transaction.success();
+            transaction.commit();
         }
 
         String query = "MATCH (n:" + labelName + ") where n." + propertyKey + " = \"Fry\" RETURN n ";
@@ -146,7 +146,7 @@ class QueryExecutionLocksIT
         {
             Node node = db.createNode( robot );
             node.setProperty( propertyKey, RandomStringUtils.randomAscii( 10 ) );
-            transaction.success();
+            transaction.commit();
         }
 
         String query = "MATCH (n:" + labelName + ") where n." + propertyKey + " = \"Bender\" RETURN n ";
@@ -177,7 +177,7 @@ class QueryExecutionLocksIT
         try ( Transaction transaction = db.beginTx() )
         {
             db.schema().indexFor( label ).on( propertyKey ).create();
-            transaction.success();
+            transaction.commit();
         }
         try ( Transaction ignored = db.beginTx() )
         {
@@ -525,15 +525,15 @@ class QueryExecutionLocksIT
         }
 
         @Override
-        public void success()
+        public long commit() throws TransactionFailureException
         {
-            internal.success();
+            return internal.commit();
         }
 
         @Override
-        public void failure()
+        public void rollback() throws TransactionFailureException
         {
-            internal.failure();
+            internal.rollback();
         }
 
         @Override

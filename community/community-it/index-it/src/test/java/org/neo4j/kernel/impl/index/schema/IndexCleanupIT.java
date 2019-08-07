@@ -115,7 +115,7 @@ public class IndexCleanupIT
                 Schema.IndexState indexState = db.schema().getIndexState( index );
                 assertEquals( Schema.IndexState.FAILED, indexState, "expected index state to be " + Schema.IndexState.FAILED );
             }
-            tx.success();
+            tx.commit();
         }
 
         // when
@@ -170,7 +170,7 @@ public class IndexCleanupIT
         try ( Transaction tx = db.beginTx() )
         {
             db.schema().getIndexes().forEach( IndexDefinition::drop );
-            tx.success();
+            tx.commit();
         }
     }
 
@@ -184,14 +184,14 @@ public class IndexCleanupIT
         try ( Transaction tx = db.beginTx() )
         {
             IndexDefinition indexDefinition = db.schema().indexFor( LABEL_ONE ).on( propertyKey ).create();
-            tx.success();
+            tx.commit();
         }
         if ( awaitOnline )
         {
             try ( Transaction tx = db.beginTx() )
             {
                 db.schema().awaitIndexesOnline( 1, TimeUnit.MINUTES );
-                tx.success();
+                tx.commit();
             }
         }
     }

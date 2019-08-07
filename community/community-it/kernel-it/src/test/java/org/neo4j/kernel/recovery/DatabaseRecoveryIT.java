@@ -166,7 +166,7 @@ class DatabaseRecoveryIT
             {
                 database.createNode();
             }
-            transaction.success();
+            transaction.commit();
         }
 
         var restoreDbLayout = copyStore();
@@ -190,7 +190,7 @@ class DatabaseRecoveryIT
             try ( Transaction transaction = database.beginTx() )
             {
                 database.createNode();
-                transaction.success();
+                transaction.commit();
             }
         }
 
@@ -219,7 +219,7 @@ class DatabaseRecoveryIT
         {
             Node node = database.createNode();
             node.addLabel( testLabel );
-            transaction.success();
+            transaction.commit();
         }
 
         try ( Transaction transaction = database.beginTx() )
@@ -227,14 +227,14 @@ class DatabaseRecoveryIT
             Node node = findNodeByLabel( database, testLabel );
             node.setProperty( propertyToDelete, createLongString() );
             node.setProperty( validPropertyName, createLongString() );
-            transaction.success();
+            transaction.commit();
         }
 
         try ( Transaction transaction = database.beginTx() )
         {
             Node node = findNodeByLabel( database, testLabel );
             node.removeProperty( propertyToDelete );
-            transaction.success();
+            transaction.commit();
         }
 
         // copying only transaction log simulate non clean shutdown db that should be able to recover just from logs
@@ -274,7 +274,7 @@ class DatabaseRecoveryIT
                 try ( Transaction tx = db.beginTx() )
                 {
                     db.schema().constraintFor( label ).assertPropertyIsUnique( property ).create();
-                    tx.success();
+                    tx.commit();
                 }
 
                 long relationshipId = createRelationship( db );
@@ -285,8 +285,8 @@ class DatabaseRecoveryIT
                     Node node = db.createNode( label );
                     node.setProperty( property, "B" );
                     db.getRelationshipById( relationshipId ).delete(); // this should fail because of the adversary
-                    tx.success();
                     adversary.enable();
+                    tx.commit();
                 }
                 catch ( TransactionFailureException e )
                 {
@@ -302,7 +302,7 @@ class DatabaseRecoveryIT
                 {
                     assertNotNull( findNode( db, label, property, "B" ) );
                     assertNotNull( db.getRelationshipById( relationshipId ) );
-                    tx.success();
+                    tx.commit();
                 }
 
                 healthOf( db ).panic( txFailure.getCause() ); // panic the db again to force recovery on the next startup
@@ -316,7 +316,7 @@ class DatabaseRecoveryIT
                 {
                     assertNotNull( findNode( db, label, property, "B" ) );
                     assertRelationshipNotExist( db, relationshipId );
-                    tx.success();
+                    tx.commit();
                 }
             }
             finally
@@ -349,12 +349,12 @@ class DatabaseRecoveryIT
         {
             db.schema().indexFor( label ).on( key1 ).create();
             db.schema().indexFor( label ).on( key1 ).on( key2 ).create();
-            tx.success();
+            tx.commit();
         }
         try ( Transaction tx = db.beginTx() )
         {
             db.schema().awaitIndexesOnline( 10, SECONDS );
-            tx.success();
+            tx.commit();
         }
         checkPoint( db );
 
@@ -535,7 +535,7 @@ class DatabaseRecoveryIT
                     nodes.add( allNodes.next() );
                 }
             }
-            tx.success();
+            tx.commit();
         }
 
         for ( int i = 0; i < numberOfTransactions; i++ )
@@ -619,7 +619,7 @@ class DatabaseRecoveryIT
                         }
                     }
                 }
-                tx.success();
+                tx.commit();
             }
         }
     }
@@ -686,7 +686,7 @@ class DatabaseRecoveryIT
                     nodes.add( allNodes.next() );
                 }
             }
-            tx.success();
+            tx.commit();
         }
 
         for ( int i = 0; i < numberOfTransactions; i++ )
@@ -733,7 +733,7 @@ class DatabaseRecoveryIT
                         random.among( nodes, node -> node.removeProperty( random.among( keys ) ) );
                     }
                 }
-                tx.success();
+                tx.commit();
             }
         }
     }
@@ -762,7 +762,7 @@ class DatabaseRecoveryIT
             Node start = db.createNode( Label.label( System.currentTimeMillis() + "" ) );
             Node end = db.createNode( Label.label( System.currentTimeMillis() + "" ) );
             relationshipId = start.createRelationshipTo( end, withName( "KNOWS" ) ).getId();
-            tx.success();
+            tx.commit();
         }
         return relationshipId;
     }

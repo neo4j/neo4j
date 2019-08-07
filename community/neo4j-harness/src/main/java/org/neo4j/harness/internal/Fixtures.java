@@ -97,7 +97,7 @@ public class Fixtures
             try ( Transaction tx = db.beginTx() )
             {
                 db.execute( fixtureStatement );
-                tx.success();
+                tx.commit();
             }
         }
         for ( Function<GraphDatabaseService,Void> fixtureFunction : fixtureFunctions )

@@ -306,7 +306,6 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         return lastTransactionIdWhenStarted;
     }
 
-    @Override
     public void success()
     {
         this.success = true;
@@ -317,7 +316,6 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         return success;
     }
 
-    @Override
     public void failure()
     {
         failure = true;
@@ -560,6 +558,20 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     }
 
     @Override
+    public long commit() throws TransactionFailureException
+    {
+        success();
+        return closeTransaction();
+    }
+
+    @Override
+    public void rollback() throws TransactionFailureException
+    {
+        failure();
+        closeTransaction();
+    }
+
+    @Override
     public long closeTransaction() throws TransactionFailureException
     {
         assertTransactionOpen();
@@ -575,7 +587,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
             }
             else
             {
-                return commit();
+                return commitTransaction();
             }
         }
         catch ( TransactionFailureException e )
@@ -641,7 +653,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         }
     }
 
-    private long commit() throws KernelException
+    private long commitTransaction() throws KernelException
     {
         boolean success = false;
         long txId = READ_ONLY;

@@ -151,7 +151,7 @@ public class RelationshipChainExplorerTest
                 }
                 degreeTwoNode.createRelationshipTo( leafNode, TestRelationshipType.CONNECTED );
             }
-            transaction.success();
+            transaction.commit();
         }
         managementService.shutdown();
         StoreAccess storeAccess = new StoreAccess( fileSystem, pageCache, testDirectory.databaseLayout(), Config.defaults() );

@@ -56,7 +56,7 @@ class TestTraversalWithIterable extends TraversalTestBase
             Iterable<Node> iterableStartNodes = startNodes;
 
             expectPaths( basicTraverser.traverse( iterableStartNodes ), "a,b,c", "d,e,f");
-            tx.success();
+            tx.commit();
         }
     }
 
@@ -91,7 +91,7 @@ class TestTraversalWithIterable extends TraversalTestBase
 
             TraversalDescription nestedTraversal = getGraphDb().traversalDescription().evaluator( Evaluators.atDepth( 2 ) );
             expectPaths( nestedTraversal.traverse( startNodesForNestedTraversal ), "a,b,c", "d,e,f");
-            tx.success();
+            tx.commit();
         }
     }
 

@@ -59,7 +59,7 @@ class TestNoFileDescriptorLeaks
         try ( Transaction tx = db.beginTx() )
         {
             db.execute( "create constraint on (n:Node) assert n.id is unique" );
-            tx.success();
+            tx.commit();
         }
         cycleMerge( 1 );
 
@@ -100,7 +100,7 @@ class TestNoFileDescriptorLeaks
                 db.execute( "MERGE (n:Node {id: {a}}) ", map( "a", nextId() ) );
                 db.execute( "MERGE (n:Node {id: {a}}) ", map( "a", nextId() ) );
                 db.execute( "MERGE (n:Node {id: {a}}) ", map( "a", nextId() ) );
-                tx.success();
+                tx.commit();
             }
         }
     }

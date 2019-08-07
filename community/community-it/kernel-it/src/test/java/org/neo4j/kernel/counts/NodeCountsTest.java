@@ -71,7 +71,7 @@ class NodeCountsTest
         {
             db.createNode();
             db.createNode();
-            tx.success();
+            tx.commit();
         }
 
         // when
@@ -90,12 +90,12 @@ class NodeCountsTest
         {
             one = db.createNode();
             db.createNode();
-            tx.success();
+            tx.commit();
         }
         try ( Transaction tx = db.beginTx() )
         {
             one.delete();
-            tx.success();
+            tx.commit();
         }
 
         // when
@@ -113,7 +113,7 @@ class NodeCountsTest
         {
             db.createNode();
             db.createNode();
-            tx.success();
+            tx.commit();
         }
         long before = numberOfNodes();
 
@@ -125,7 +125,7 @@ class NodeCountsTest
 
             // then
             assertEquals( before + 1, nodeCount );
-            tx.success();
+            tx.commit();
         }
     }
 
@@ -138,7 +138,7 @@ class NodeCountsTest
         {
             one = db.createNode();
             db.createNode();
-            tx.success();
+            tx.commit();
         }
         long before = numberOfNodes();
 
@@ -150,7 +150,7 @@ class NodeCountsTest
 
             // then
             assertEquals( before - 1, nodeCount );
-            tx.success();
+            tx.commit();
         }
     }
 
@@ -174,7 +174,7 @@ class NodeCountsTest
                     graphDb.createNode();
                     barrier.reached();
                     long whatThisThreadSees = countsForNode();
-                    tx.success();
+                    tx.commit();
                     return whatThisThreadSees;
                 }
             } );
@@ -205,7 +205,7 @@ class NodeCountsTest
         try ( Transaction tx = db.beginTx() )
         {
             long nodeCount = countsForNode();
-            tx.success();
+            tx.commit();
             return nodeCount;
         }
     }

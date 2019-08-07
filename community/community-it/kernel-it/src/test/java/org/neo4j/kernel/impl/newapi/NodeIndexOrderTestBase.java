@@ -30,12 +30,12 @@ import java.util.concurrent.TimeUnit;
 
 import org.neo4j.graphdb.Label;
 import org.neo4j.internal.helpers.collection.Pair;
-import org.neo4j.internal.schema.IndexOrder;
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.internal.kernel.api.IndexReadSession;
 import org.neo4j.internal.kernel.api.NodeValueIndexCursor;
 import org.neo4j.internal.kernel.api.Transaction;
 import org.neo4j.internal.kernel.api.Write;
+import org.neo4j.internal.schema.IndexOrder;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 
@@ -63,7 +63,7 @@ public abstract class NodeIndexOrderTestBase<G extends KernelAPIWriteTestSupport
             nodeWithProp( tx, "yellow" );
             expected.add( nodeWithProp( tx, "low" ) );
             nodeWithProp( tx, "below" );
-            tx.success();
+            tx.commit();
         }
 
         createIndex();
@@ -106,7 +106,7 @@ public abstract class NodeIndexOrderTestBase<G extends KernelAPIWriteTestSupport
             nodeWithProp( tx, "street smart" );
             expected.add( nodeWithProp( tx, "builder" ) );
             nodeWithProp( tx, "ceasar" );
-            tx.success();
+            tx.commit();
         }
 
         createIndex();
@@ -161,7 +161,7 @@ public abstract class NodeIndexOrderTestBase<G extends KernelAPIWriteTestSupport
         try ( org.neo4j.graphdb.Transaction tx = graphDb.beginTx() )
         {
             graphDb.schema().indexFor( Label.label( "Node" ) ).on( "prop" ).create();
-            tx.success();
+            tx.commit();
         }
 
         try ( org.neo4j.graphdb.Transaction tx = graphDb.beginTx() )

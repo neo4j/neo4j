@@ -439,8 +439,15 @@ public class RelationshipProxy implements Relationship, RelationshipVisitor<Runt
         }
         catch ( IllegalArgumentException e )
         {
-            // Trying to set an illegal value is a critical error - fail this transaction
-            spi.failTransaction();
+            try
+            {
+                transaction.rollback();
+            }
+            catch ( org.neo4j.internal.kernel.api.exceptions.TransactionFailureException ex )
+            {
+                ex.addSuppressed( e );
+                throw new TransactionFailureException( "Fail to rollback transaction.", ex );
+            }
             throw e;
         }
         catch ( EntityNotFoundException e )

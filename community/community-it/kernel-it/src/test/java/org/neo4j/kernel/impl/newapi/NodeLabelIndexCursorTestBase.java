@@ -54,13 +54,13 @@ public abstract class NodeLabelIndexCursorTestBase<G extends KernelAPIWriteTestS
             createNode( tx.dataWrite(), labelTwo );
             createNode( tx.dataWrite(), labelThree );
             createNode( tx.dataWrite(), labelThree );
-            tx.success();
+            tx.commit();
         }
 
         try ( Transaction tx = beginTransaction() )
         {
             tx.dataWrite().nodeDelete( toDelete );
-            tx.success();
+            tx.commit();
         }
 
         try ( Transaction tx = beginTransaction() )
@@ -111,7 +111,7 @@ public abstract class NodeLabelIndexCursorTestBase<G extends KernelAPIWriteTestS
             inStore = createNode( tx.dataWrite(), labelOne );
             createNode( tx.dataWrite(), labelTwo );
             deletedInTx = createNode( tx.dataWrite(), labelOne );
-            tx.success();
+            tx.commit();
         }
 
         try ( Transaction tx = beginTransaction() )

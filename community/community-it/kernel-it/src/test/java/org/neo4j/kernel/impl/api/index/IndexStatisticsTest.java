@@ -448,7 +448,7 @@ public class IndexStatisticsTest
         try ( Transaction tx = db.beginTx() )
         {
             db.getNodeById( nodeId ).delete();
-            tx.success();
+            tx.commit();
         }
     }
 
@@ -465,7 +465,7 @@ public class IndexStatisticsTest
                 changeIndexedNode = true;
             }
             node.setProperty( NAME_PROPERTY, newValue );
-            tx.success();
+            tx.commit();
         }
         return changeIndexedNode;
     }
@@ -483,7 +483,7 @@ public class IndexStatisticsTest
                     nodes[offset++] = nodeId;
                 }
             }
-            tx.success();
+            tx.commit();
         }
         return NAMES.length;
     }
@@ -550,7 +550,7 @@ public class IndexStatisticsTest
             {
                 ktx.schemaWrite().indexDrop( index );
             }
-            tx.success();
+            tx.commit();
         }
     }
 
@@ -569,7 +569,7 @@ public class IndexStatisticsTest
         try ( Transaction tx = db.beginTx() )
         {
             double selectivity = getSelectivity( reference );
-            tx.success();
+            tx.commit();
             return selectivity;
         }
     }
@@ -593,7 +593,7 @@ public class IndexStatisticsTest
             createPersonNode( ktx, "Stefan" );
             createPersonNode( ktx, "John" );
             createPersonNode( ktx, "John" );
-            tx.success();
+            tx.commit();
         }
     }
 
@@ -621,7 +621,7 @@ public class IndexStatisticsTest
                 LabelSchemaDescriptor descriptor = forLabel( labelId, propertyKeyId );
                 index = ktx.schemaWrite().indexCreate( descriptor );
             }
-            tx.success();
+            tx.commit();
             return index;
         }
     }

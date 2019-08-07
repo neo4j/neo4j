@@ -61,7 +61,7 @@ public class NestedIndexReadersIT
             {
                 createRoundOfNodes();
             }
-            tx.success();
+            tx.commit();
         }
 
         // when
@@ -86,7 +86,7 @@ public class NestedIndexReadersIT
                 reader.close();
             }
 
-            tx.success();
+            tx.commit();
         }
     }
 
@@ -104,7 +104,7 @@ public class NestedIndexReadersIT
                     db.createNode( LABEL ).setProperty( KEY, id );
                 }
             }
-            tx.success();
+            tx.commit();
         }
 
         // when
@@ -137,7 +137,7 @@ public class NestedIndexReadersIT
                 reader.close();
             }
 
-            tx.success();
+            tx.commit();
         }
     }
 
@@ -164,7 +164,7 @@ public class NestedIndexReadersIT
             try ( Transaction tx = db.beginTx() )
             {
                 createRoundOfNodes();
-                tx.success();
+                tx.commit();
             }
             return null;
         };
@@ -184,12 +184,12 @@ public class NestedIndexReadersIT
         try ( Transaction tx = db.beginTx() )
         {
             db.schema().indexFor( LABEL ).on( KEY ).create();
-            tx.success();
+            tx.commit();
         }
         try ( Transaction tx = db.beginTx() )
         {
             db.schema().awaitIndexesOnline( 10, SECONDS );
-            tx.success();
+            tx.commit();
         }
     }
 }

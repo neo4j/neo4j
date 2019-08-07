@@ -68,7 +68,7 @@ public class SchemaIndexWaitingAcceptanceTest
         try ( Transaction tx = db.beginTx() )
         {
             index = db.schema().indexFor( Label.label( "Person" ) ).on( "name" ).create();
-            tx.success();
+            tx.commit();
         }
 
         latch.waitForAllToStart();
@@ -102,7 +102,7 @@ public class SchemaIndexWaitingAcceptanceTest
         try ( Transaction tx = db.beginTx() )
         {
             db.schema().indexFor( Label.label( "Person" ) ).on( "name" ).create();
-            tx.success();
+            tx.commit();
         }
 
         latch.waitForAllToStart();

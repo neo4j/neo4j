@@ -131,7 +131,7 @@ class CountsStoreRecoveryTest
         {
             db.createNode( label( label ) );
 
-            tx.success();
+            tx.commit();
         }
     }
 

@@ -103,7 +103,7 @@ class CompositeStringLengthValidationIT
             node = db.createNode( LABEL );
             node.setProperty( KEY, firstSlot );
             node.setProperty( KEY2, secondSlot );
-            tx.success();
+            tx.commit();
         }
 
         try ( Transaction tx = db.beginTx() )
@@ -125,7 +125,7 @@ class CompositeStringLengthValidationIT
                 assertEquals( node.getId(), cursor.nodeReference() );
                 assertFalse( cursor.next() );
             }
-            tx.success();
+            tx.commit();
         }
     }
 
@@ -145,7 +145,7 @@ class CompositeStringLengthValidationIT
                 Node node = db.createNode( LABEL );
                 node.setProperty( KEY, firstSlot );
                 node.setProperty( KEY2, secondSlot );
-                tx.success();
+                tx.commit();
             }
             fail( "Should have failed" );
         }
@@ -167,12 +167,12 @@ class CompositeStringLengthValidationIT
                 indexCreator = indexCreator.on( key );
             }
             indexCreator.create();
-            tx.success();
+            tx.commit();
         }
         try ( Transaction tx = db.beginTx() )
         {
             db.schema().awaitIndexesOnline( 10, SECONDS );
-            tx.success();
+            tx.commit();
         }
     }
 }

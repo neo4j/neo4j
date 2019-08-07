@@ -66,7 +66,7 @@ class DeleteRelationshipStressIT
                     }
                     prev = node;
                 }
-                tx.success();
+                tx.commit();
             }
         }
     }

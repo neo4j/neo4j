@@ -28,13 +28,13 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 @ImpermanentDbmsExtension
-class DeleteNodeWithRelsIT
+class DeleteNodeWithRelationshipsIT
 {
     @Inject
     private GraphDatabaseService db;
 
     @Test
-    void shouldGiveHelpfulExceptionWhenDeletingNodeWithRels()
+    void shouldGiveHelpfulExceptionWhenDeletingNodeWithRelationships()
     {
         // Given
         Node node;
@@ -42,15 +42,14 @@ class DeleteNodeWithRelsIT
         {
             node = db.createNode();
             node.createRelationshipTo( db.createNode(), RelationshipType.withName( "MAYOR_OF" ) );
-            tx.success();
+            tx.commit();
         }
 
         // And given a transaction deleting just the node
         Transaction tx = db.beginTx();
         node.delete();
-        tx.success();
 
-        ConstraintViolationException ex = assertThrows( ConstraintViolationException.class, tx::close );
+        ConstraintViolationException ex = assertThrows( ConstraintViolationException.class, tx::commit );
         assertEquals( "Cannot delete node<" + node.getId() + ">, because it still has relationships. " +
                 "To delete this node, you must first delete its relationships.", ex.getMessage() );
     }

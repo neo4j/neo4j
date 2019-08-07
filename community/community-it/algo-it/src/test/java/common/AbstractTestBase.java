@@ -109,7 +109,7 @@ public abstract class AbstractTestBase
                 String repr = representation.represent( item );
                 assertTrue( repr + " not expected ", expected.remove( repr ) );
             }
-            tx.success();
+            tx.commit();
         }
 
         if ( !expected.isEmpty() )

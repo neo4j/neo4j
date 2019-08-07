@@ -116,7 +116,7 @@ public class CommunityLockAcquisitionTimeoutIT
                     try ( Transaction transaction1 = database.beginTx() )
                     {
                         node.setProperty( TEST_PROPERTY_NAME, "b" );
-                        transaction1.success();
+                        transaction1.commit();
                     }
                     return null;
                 } );
@@ -155,7 +155,7 @@ public class CommunityLockAcquisitionTimeoutIT
                         ResourceIterator<Node> nodes = database.findNodes( marker );
                         Node node = nodes.next();
                         node.addLabel( Label.label( "anotherLabel" ) );
-                        nestedTransaction.success();
+                        nestedTransaction.commit();
                     }
                     return null;
                 } );
@@ -201,7 +201,7 @@ public class CommunityLockAcquisitionTimeoutIT
         try ( Transaction transaction = database.beginTx() )
         {
             database.createNode( marker );
-            transaction.success();
+            transaction.commit();
         }
     }
 }

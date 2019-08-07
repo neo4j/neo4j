@@ -870,7 +870,7 @@ class RecoveryCorruptedTransactionLogIT
             Node endNode = database.createNode( Label.label( "endNode" ) );
             endNode.setProperty( "key", "value" );
             startNode.createRelationshipTo( endNode, RelationshipType.withName( "connects" ) );
-            transaction.success();
+            transaction.commit();
         }
     }
 

@@ -96,13 +96,13 @@ public class IndexingCompositeQueryAcceptanceTest
                     indexCreator = indexCreator.on( key );
                 }
                 indexCreator.create();
-                tx.success();
+                tx.commit();
             }
 
             try ( org.neo4j.graphdb.Transaction tx = db.beginTx() )
             {
                 db.schema().awaitIndexesOnline( 5, TimeUnit.MINUTES );
-                tx.success();
+                tx.commit();
             }
         }
     }
@@ -242,7 +242,7 @@ public class IndexingCompositeQueryAcceptanceTest
             {
                 expected.add( createNode( db, propertyMap( keys, valueTuple ), label ).getId() );
             }
-            tx.success();
+            tx.commit();
         }
         return expected;
     }
@@ -274,7 +274,7 @@ public class IndexingCompositeQueryAcceptanceTest
             {
                 node.setProperty( property.getKey(), property.getValue() );
             }
-            tx.success();
+            tx.commit();
             return node;
         }
     }

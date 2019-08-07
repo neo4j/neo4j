@@ -258,13 +258,13 @@ public abstract class BaseBootstrapperIT extends ExclusiveServerTestBase
         try ( Transaction tx = db.beginTx() )
         {
             db.createNode( label ).setProperty( propertyKey, propertyValue );
-            tx.success();
+            tx.commit();
         }
         try ( Transaction tx = db.beginTx() )
         {
             Node node = single( db.findNodes( label ) );
             assertEquals( propertyValue, node.getProperty( propertyKey ) );
-            tx.success();
+            tx.commit();
         }
     }
 

@@ -210,7 +210,7 @@ class InProcessServerBuilderIT
                 try ( Transaction transaction = service.beginTx() )
                 {
                     service.createNode();
-                    transaction.success();
+                    transaction.commit();
                 }
             } );
         }
@@ -262,7 +262,7 @@ class InProcessServerBuilderIT
 
                 // When: create another node
                 neo4j.graph().createNode();
-                tx.success();
+                tx.commit();
             }
         }
 
@@ -275,7 +275,7 @@ class InProcessServerBuilderIT
             try ( Transaction tx = db.beginTx() )
             {
                 assertEquals( 1, Iterables.count( db.getAllNodes() ) );
-                tx.success();
+                tx.commit();
             }
         }
         finally
@@ -390,13 +390,13 @@ class InProcessServerBuilderIT
         try ( Transaction tx = db.beginTx() )
         {
             db.createNode( label ).setProperty( propertyKey, propertyValue );
-            tx.success();
+            tx.commit();
         }
         try ( Transaction tx = db.beginTx() )
         {
             Node node = single( db.findNodes( label ) );
             assertEquals( propertyValue, node.getProperty( propertyKey ) );
-            tx.success();
+            tx.commit();
         }
     }
 

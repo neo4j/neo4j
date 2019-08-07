@@ -360,7 +360,7 @@ class MemoryRecommendationsCommandTest
                 try ( Transaction tx = db.beginTx() )
                 {
                     db.schema().indexFor( labelOne ).on( key ).create();
-                    tx.success();
+                    tx.commit();
                 }
 
                 try ( Transaction tx = db.beginTx() )
@@ -370,7 +370,7 @@ class MemoryRecommendationsCommandTest
                     {
                         db.createNode( labelOne ).setProperty( key, randomValues.nextValue().asObject() );
                     }
-                    tx.success();
+                    tx.commit();
                 }
             }
             finally

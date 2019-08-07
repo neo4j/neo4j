@@ -32,8 +32,8 @@ import org.neo4j.graphdb.TransactionFailureException;
  * and has any data that is accessible via {@link TransactionData}.
  * Handlers won't get notified about transactions which hasn't performed any
  * write operation or won't be committed (either if
- * {@link Transaction#success()} hasn't been called or the transaction has been
- * marked as failed, {@link Transaction#failure()}.
+ * {@link Transaction#commit()} hasn't been called or the transaction has been
+ * rolled back, {@link Transaction#rollback()}.
  * <p>
  * Right before a transaction is about to be committed the
  * {@link #beforeCommit(TransactionData, GraphDatabaseService)} method is called with the entire diff

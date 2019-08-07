@@ -32,7 +32,7 @@ import org.neo4j.internal.kernel.api.security.LoginContext.AUTH_DISABLED
 import org.neo4j.kernel.GraphDatabaseQueryService
 import org.neo4j.kernel.api.Statement
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge
-import org.neo4j.kernel.impl.coreapi.InternalTransaction
+import org.neo4j.kernel.impl.coreapi.{InternalTransaction, TopLevelTransaction}
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade
 import org.neo4j.kernel.impl.query._
 import org.neo4j.kernel.impl.transaction.stats.DatabaseTransactionStats
@@ -141,7 +141,7 @@ trait GraphIcing {
       val tx = graph.beginTransaction(txType, AUTH_DISABLED)
       try {
         val result = f(tx)
-        tx.success()
+        tx.commit()
         result
       } finally {
         tx.close()
@@ -153,10 +153,11 @@ trait GraphIcing {
       val tx = graph.beginTransaction(Type.`implicit`, AUTH_DISABLED)
       try {
         val result = f
-        tx.failure()
+        if (tx.isInstanceOf[TopLevelTransaction]) {
+          tx.rollback()
+        }
         result
       } finally {
-        tx.failure()
         tx.close()
       }
     }

@@ -109,7 +109,7 @@ class CommunitySystemDatabaseIT
         {
             Node node = systemDb.createNode( systemLabel );
             node.setProperty( "a", "b" );
-            transaction.success();
+            transaction.commit();
         }
         try ( Transaction ignored = defaultDb.beginTx() )
         {
@@ -136,7 +136,7 @@ class CommunitySystemDatabaseIT
                 Node nodeA = systemDb.createNode();
                 Node nodeB = systemDb.createNode();
                 nodeA.createRelationshipTo( nodeB, RelationshipType.withName( valueOf( i ) ) );
-                transaction.success();
+                transaction.commit();
             }
         }
 
@@ -145,7 +145,7 @@ class CommunitySystemDatabaseIT
             try ( Transaction transaction = defaultDb.beginTx() )
             {
                 defaultDb.createNode( label( valueOf( i ) ) );
-                transaction.success();
+                transaction.commit();
             }
         }
 
@@ -176,7 +176,7 @@ class CommunitySystemDatabaseIT
                 Node nodeA = systemDb.createNode();
                 Node nodeB = systemDb.createNode();
                 nodeA.createRelationshipTo( nodeB, RelationshipType.withName( valueOf( i ) ) );
-                transaction.success();
+                transaction.commit();
             }
         }
 
@@ -185,7 +185,7 @@ class CommunitySystemDatabaseIT
             try ( Transaction transaction = defaultDb.beginTx() )
             {
                 defaultDb.createNode( label( valueOf( i ) ) );
-                transaction.success();
+                transaction.commit();
             }
         }
 

@@ -76,7 +76,7 @@ class RelationshipTestSupport
             graphDb.createNode().createRelationshipTo( clump, withName( "REL" ) );
             graphDb.createNode().createRelationshipTo( clump, withName( "REL" ) );
 
-            tx.success();
+            tx.commit();
         }
 
         try ( org.neo4j.graphdb.Transaction tx = graphDb.beginTx() )
@@ -85,7 +85,7 @@ class RelationshipTestSupport
             dead.delete();
             node.delete();
 
-            tx.success();
+            tx.commit();
         }
     }
 
@@ -97,7 +97,7 @@ class RelationshipTestSupport
         {
             node = graphDb.createNode();
             relationshipMap = buildSparseDenseRels( node );
-            tx.success();
+            tx.commit();
         }
         return new StartNode( node.getId(), relationshipMap );
     }
@@ -123,7 +123,7 @@ class RelationshipTestSupport
             String bulkKey = computeKey( "BULK", Direction.OUTGOING );
             relationshipMap.put( bulkKey, bulk );
 
-            tx.success();
+            tx.commit();
         }
         return new StartNode( node.getId(), relationshipMap );
     }

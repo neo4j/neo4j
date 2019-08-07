@@ -86,7 +86,7 @@ public class GraphDatabaseShutdownTest
             managementService.shutdown();
 
             db.createNode();
-            tx.success();
+            tx.commit();
         }
         catch ( Exception e )
         {
@@ -107,7 +107,7 @@ public class GraphDatabaseShutdownTest
         try ( Transaction tx = db.beginTx() )
         {
             node = db.createNode();
-            tx.success();
+            tx.commit();
         }
 
         final CountDownLatch nodeLockedLatch = new CountDownLatch( 1 );
@@ -128,7 +128,7 @@ public class GraphDatabaseShutdownTest
                 managementService.shutdown();
 
                 shutdownCalled.countDown();
-                tx.success();
+                tx.commit();
             }
             return null;
         } );
@@ -144,7 +144,7 @@ public class GraphDatabaseShutdownTest
                 node.addLabel( label( "DEF" ) );
 
                 shutdownCalled.await();
-                tx.success();
+                tx.commit();
             }
             return null;
         } );

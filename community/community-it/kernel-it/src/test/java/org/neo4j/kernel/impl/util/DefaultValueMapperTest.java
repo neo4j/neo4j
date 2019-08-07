@@ -72,7 +72,7 @@ class DefaultValueMapperTest
         try ( Transaction tx = db.beginTx() )
         {
             node = db.createNode();
-            tx.success();
+            tx.commit();
         }
 
         // When
@@ -104,7 +104,7 @@ class DefaultValueMapperTest
             start = db.createNode();
             end = db.createNode();
             relationship = start.createRelationshipTo( end, RelationshipType.withName( "R" ) );
-            tx.success();
+            tx.commit();
         }
 
         // When
@@ -142,7 +142,7 @@ class DefaultValueMapperTest
             r2 = b.createRelationshipTo( c, RelationshipType.withName( "R" ) );
             r3 = c.createRelationshipTo( d, RelationshipType.withName( "R" ) );
             r4 = d.createRelationshipTo( e, RelationshipType.withName( "R" ) );
-            tx.success();
+            tx.commit();
         }
 
         // When
@@ -175,7 +175,7 @@ class DefaultValueMapperTest
             start = db.createNode();
             end = db.createNode();
             relationship = start.createRelationshipTo( end, RelationshipType.withName( "R" ) );
-            tx.success();
+            tx.commit();
         }
         RelationshipValue relationshipValue =
                 VirtualValues.relationshipValue( relationship.getId(), nodeValue( start.getId(),

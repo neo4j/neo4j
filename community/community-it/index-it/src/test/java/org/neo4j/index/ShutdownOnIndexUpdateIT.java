@@ -87,7 +87,7 @@ class ShutdownOnIndexUpdateIT
         {
             Schema schema = database.schema();
             schema.constraintFor( constraintIndexLabel ).assertPropertyIsUnique( UNIQUE_PROPERTY_NAME ).create();
-            transaction.success();
+            transaction.commit();
         }
     }
 
@@ -106,8 +106,7 @@ class ShutdownOnIndexUpdateIT
         {
             if ( (LifecycleStatus.STOPPED == to) && (instance instanceof RecordStorageEngine) )
             {
-                transaction.success();
-                transaction.close();
+                transaction.commit();
                 transactionClosed = true;
             }
         }

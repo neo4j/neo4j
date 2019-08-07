@@ -260,7 +260,7 @@ class LuceneIndexRecoveryIT
         try ( Transaction tx = db.beginTx() )
         {
             IndexDefinition definition = db.schema().indexFor( label ).on( NUM_BANANAS_KEY ).create();
-            tx.success();
+            tx.commit();
             return definition;
         }
     }
@@ -270,7 +270,7 @@ class LuceneIndexRecoveryIT
         try ( Transaction tx = db.beginTx() )
         {
             db.schema().awaitIndexOnline( definition, 10, TimeUnit.MINUTES );
-            tx.success();
+            tx.commit();
         }
     }
 
@@ -280,7 +280,7 @@ class LuceneIndexRecoveryIT
         {
             Iterator<Node> iter = db.findNodes( myLabel, NUM_BANANAS_KEY, value );
             Set<Node> nodes = asUniqueSet( iter );
-            tx.success();
+            tx.commit();
             return nodes;
         }
     }
@@ -291,7 +291,7 @@ class LuceneIndexRecoveryIT
         {
             Node node = db.createNode( label );
             node.setProperty( NUM_BANANAS_KEY, number );
-            tx.success();
+            tx.commit();
             return node.getId();
         }
     }
@@ -303,7 +303,7 @@ class LuceneIndexRecoveryIT
         {
             Node node = db.getNodeById( nodeId );
             node.setProperty( NUM_BANANAS_KEY, value );
-            tx.success();
+            tx.commit();
         }
     }
 
@@ -313,7 +313,7 @@ class LuceneIndexRecoveryIT
         try ( Transaction tx = db.beginTx() )
         {
             db.getNodeById( node ).delete();
-            tx.success();
+            tx.commit();
         }
     }
 

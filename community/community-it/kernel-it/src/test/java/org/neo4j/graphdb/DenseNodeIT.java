@@ -47,7 +47,7 @@ class DenseNodeIT
         {
             root = db.createNode();
             createRelationshipsOnNode( db, root, 40 );
-            tx.success();
+            tx.commit();
         }
 
         // WHEN
@@ -63,7 +63,7 @@ class DenseNodeIT
             assertEquals( 25, root.getDegree( RelationshipType.withName( "Type1" ) ) );
             assertEquals( 25, root.getDegree( RelationshipType.withName( "Type2" ) ) );
             assertEquals( 25, root.getDegree( RelationshipType.withName( "Type3" ) ) );
-            tx.success();
+            tx.commit();
         }
 
         try ( Transaction tx = db.beginTx() )
@@ -75,7 +75,7 @@ class DenseNodeIT
             assertEquals( 25, root.getDegree( RelationshipType.withName( "Type1" ) ) );
             assertEquals( 25, root.getDegree( RelationshipType.withName( "Type2" ) ) );
             assertEquals( 25, root.getDegree( RelationshipType.withName( "Type3" ) ) );
-            tx.success();
+            tx.commit();
         }
     }
 
@@ -88,7 +88,7 @@ class DenseNodeIT
         {
             root = db.createNode();
             createRelationshipsOnNode( db, root, 100 );
-            tx.success();
+            tx.commit();
         }
 
         try ( Transaction tx = db.beginTx() )
@@ -98,7 +98,7 @@ class DenseNodeIT
             assertEquals( 20, root.getDegree() );
             assertEquals( 20, root.getDegree( Direction.OUTGOING ) );
             assertEquals( 0, root.getDegree( Direction.INCOMING ) );
-            tx.success();
+            tx.commit();
         }
 
         try ( Transaction tx = db.beginTx() )
@@ -106,7 +106,7 @@ class DenseNodeIT
             assertEquals( 20, root.getDegree() );
             assertEquals( 20, root.getDegree( Direction.OUTGOING ) );
             assertEquals( 0, root.getDegree( Direction.INCOMING ) );
-            tx.success();
+            tx.commit();
         }
     }
 
@@ -126,7 +126,7 @@ class DenseNodeIT
             assertEquals( 20, root.getDegree( Direction.OUTGOING ) );
             assertEquals( 0, root.getDegree( Direction.INCOMING ) );
 
-            tx.success();
+            tx.commit();
         }
 
         // THEN
@@ -135,7 +135,7 @@ class DenseNodeIT
             assertEquals( 20, root.getDegree() );
             assertEquals( 20, root.getDegree( Direction.OUTGOING ) );
             assertEquals( 0, root.getDegree( Direction.INCOMING ) );
-            tx.success();
+            tx.commit();
         }
     }
 
@@ -150,7 +150,7 @@ class DenseNodeIT
             source = db.createNode();
             sink = db.createNode();
             createRelationshipsBetweenNodes( source, sink, 40 );
-            tx.success();
+            tx.commit();
         }
 
         // WHEN
@@ -174,7 +174,7 @@ class DenseNodeIT
             assertEquals( 25, sink.getDegree( RelationshipType.withName( "Type1" ) ) );
             assertEquals( 25, sink.getDegree( RelationshipType.withName( "Type2" ) ) );
             assertEquals( 25, sink.getDegree( RelationshipType.withName( "Type3" ) ) );
-            tx.success();
+            tx.commit();
         }
 
         try ( Transaction tx = db.beginTx() )
@@ -194,7 +194,7 @@ class DenseNodeIT
             assertEquals( 25, sink.getDegree( RelationshipType.withName( "Type1" ) ) );
             assertEquals( 25, sink.getDegree( RelationshipType.withName( "Type2" ) ) );
             assertEquals( 25, sink.getDegree( RelationshipType.withName( "Type3" ) ) );
-            tx.success();
+            tx.commit();
         }
     }
 
@@ -207,12 +207,12 @@ class DenseNodeIT
         {
             node = db.createNode();
             createRelationshipsBetweenNodes( node, db.createNode(), denseNodeThreshold( db ) + 1 );
-            tx.success();
+            tx.commit();
         }
         try ( Transaction tx = db.beginTx() )
         {
             node.getRelationships().forEach( Relationship::delete );
-            tx.success();
+            tx.commit();
         }
 
         // WHEN
@@ -220,14 +220,14 @@ class DenseNodeIT
         try ( Transaction tx = db.beginTx() )
         {
             rel = node.createRelationshipTo( db.createNode(), MyRelTypes.TEST );
-            tx.success();
+            tx.commit();
         }
 
         try ( Transaction tx = db.beginTx() )
         {
             // THEN
             assertEquals( rel, single( node.getRelationships() ) );
-            tx.success();
+            tx.commit();
         }
     }
 

@@ -106,7 +106,7 @@ class TestOrderByTypeExpander extends TraversalTestBase
                 assertEquals( getNodeWithName( name ), node, "expected " + name + ", was " + node.getProperty( "name" ) );
             }
             assertFalse( itr.hasNext() );
-            tx.success();
+            tx.commit();
         }
     }
 }

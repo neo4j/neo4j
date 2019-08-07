@@ -126,7 +126,7 @@ class ConcurrentChangesOnEntitiesTest
         {
             Node theNode = db.createNode();
             long id = theNode.getId();
-            tx.success();
+            tx.commit();
             return id;
         }
 
@@ -140,7 +140,7 @@ class ConcurrentChangesOnEntitiesTest
             node.setProperty( "a", "prop" );
             Relationship rel = node.createRelationshipTo( db.createNode(), RelationshipType.withName( "T" ) );
             long id = rel.getId();
-            tx.success();
+            tx.commit();
             return id;
         }
     }
@@ -153,7 +153,7 @@ class ConcurrentChangesOnEntitiesTest
                 Node node = db.getNodeById( nodeId );
                 barrier.await();
                 nodeConsumer.accept( node );
-                tx.success();
+                tx.commit();
             }
             catch ( Exception e )
             {
@@ -170,7 +170,7 @@ class ConcurrentChangesOnEntitiesTest
                 Relationship relationship = db.getRelationshipById( relationshipId );
                 barrier.await();
                 relConsumer.accept( relationship );
-                tx.success();
+                tx.commit();
             }
             catch ( Exception e )
             {

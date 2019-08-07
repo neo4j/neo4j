@@ -166,7 +166,7 @@ class IndexStatisticsIT
                 Node alien = db.createNode( ALIEN );
                 alien.setProperty( SPECIMEN, i / 2 );
             }
-            tx.success();
+            tx.commit();
         }
     }
 
@@ -175,7 +175,7 @@ class IndexStatisticsIT
         try ( Transaction tx = db.beginTx() )
         {
             db.schema().awaitIndexOnline( definition, 10, TimeUnit.SECONDS );
-            tx.success();
+            tx.commit();
         }
     }
 
@@ -184,7 +184,7 @@ class IndexStatisticsIT
         try ( Transaction tx = db.beginTx() )
         {
             IndexDefinition definition = db.schema().indexFor( ALIEN ).on( SPECIMEN ).create();
-            tx.success();
+            tx.commit();
             return definition;
         }
     }

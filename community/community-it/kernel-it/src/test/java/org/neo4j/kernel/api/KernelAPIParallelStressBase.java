@@ -71,7 +71,7 @@ class KernelAPIParallelStress
             {
                 cursor.close();
             }
-            tx.success();
+            tx.commit();
         }
     }
 }

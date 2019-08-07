@@ -30,9 +30,9 @@ import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.internal.helpers.collection.Iterators;
+import org.neo4j.internal.schema.IndexProviderDescriptor;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
-import org.neo4j.internal.schema.IndexProviderDescriptor;
 import org.neo4j.kernel.impl.index.schema.GenericNativeIndexProvider;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.rule.DbmsRule;
@@ -125,7 +125,7 @@ public class FusionIndexIT
             assertNotNull( newDb.findNode( label, propKey, stringValue ) );
             assertNotNull( newDb.findNode( label, propKey, spatialValue ) );
             assertNotNull( newDb.findNode( label, propKey, temporalValue ) );
-            tx.success();
+            tx.commit();
         }
     }
 
@@ -149,7 +149,7 @@ public class FusionIndexIT
             db.createNode( label ).setProperty( propKey, stringValue );
             db.createNode( label ).setProperty( propKey, spatialValue );
             db.createNode( label ).setProperty( propKey, temporalValue );
-            tx.success();
+            tx.commit();
         }
         db.shutdown();
     }
@@ -159,12 +159,12 @@ public class FusionIndexIT
         try ( Transaction tx = db.beginTx() )
         {
             db.schema().indexFor( label ).on( propKey ).create();
-            tx.success();
+            tx.commit();
         }
         try ( Transaction tx = db.beginTx() )
         {
             db.schema().awaitIndexesOnline( 10, TimeUnit.SECONDS );
-            tx.success();
+            tx.commit();
         }
     }
 }

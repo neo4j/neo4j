@@ -290,8 +290,7 @@ class ExportTest
 
     private void commitAndStartNewTransactionAfterSchemaChanges()
     {
-        tx.success();
-        tx.close();
+        tx.commit();
         tx = gdb.beginTx();
     }
 

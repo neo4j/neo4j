@@ -226,7 +226,7 @@ public class MultipleIndexPopulationStressIT
             {
                 index.drop();
             }
-            tx.success();
+            tx.commit();
         }
         finally
         {
@@ -252,7 +252,7 @@ public class MultipleIndexPopulationStressIT
                     throw new UnsupportedOperationException();
                 }
             }
-            tx.success();
+            tx.commit();
         }
         return true;
     }
@@ -272,7 +272,7 @@ public class MultipleIndexPopulationStressIT
                     db.schema().indexFor( Label.label( label ) ).on( propertyKey ).create();
                 }
             }
-            tx.success();
+            tx.commit();
         }
     }
 
@@ -292,7 +292,7 @@ public class MultipleIndexPopulationStressIT
             {   // CHANGE
                 node.setProperty( key, random.nextValue().asObject() );
             }
-            tx.success();
+            tx.commit();
         }
         catch ( NotFoundException e )
         {   // It's OK, it happens if some other thread deleted that property in between us reading it and

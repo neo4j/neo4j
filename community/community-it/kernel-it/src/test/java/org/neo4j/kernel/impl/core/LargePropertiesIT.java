@@ -62,7 +62,7 @@ class LargePropertiesIT
                 nodeId = node.getId();
                 node.setProperty( "string", stringValue );
                 node.setProperty( "array", arrayValue );
-                tx.success();
+                tx.commit();
             }
 
             try ( Transaction tx = db.beginTx() )
@@ -70,7 +70,7 @@ class LargePropertiesIT
                 Node node = db.getNodeById( nodeId );
                 assertEquals( stringValue, node.getProperty( "string" ) );
                 assertArrayEquals( arrayValue, (byte[]) node.getProperty( "array" ) );
-                tx.success();
+                tx.commit();
             }
         }
         finally

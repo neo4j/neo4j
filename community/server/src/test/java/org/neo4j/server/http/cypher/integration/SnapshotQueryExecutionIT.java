@@ -71,7 +71,7 @@ public class SnapshotQueryExecutionIT extends ExclusiveServerTestBase
                 Node node = graph.createNode();
                 node.setProperty( "a", "b" );
             }
-            transaction.success();
+            transaction.commit();
         }
 
         HTTP.Builder httpClientBuilder = HTTP.withBaseUri( server.baseUri() );

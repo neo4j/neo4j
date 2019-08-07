@@ -73,7 +73,7 @@ public abstract class RelationshipScanCursorTestBase<G extends KernelAPIReadTest
 
             loop = a.createRelationshipTo( a, withName( "LOOP" ) ).getId();
 
-            tx.success();
+            tx.commit();
         }
 
         RELATIONSHIP_IDS = new ArrayList<>();
@@ -84,7 +84,7 @@ public abstract class RelationshipScanCursorTestBase<G extends KernelAPIReadTest
             {
                 RELATIONSHIP_IDS.add( relationship.getId() );
             }
-            tx.success();
+            tx.commit();
         }
     }
 

@@ -110,7 +110,7 @@ class IndexCRUDIT
             LabelSchemaDescriptor descriptor = SchemaDescriptor.forLabel( label, propertyKey1 );
             assertThat( writer.updatesCommitted, equalTo( asSet(
                     IndexEntryUpdate.add( node.getId(), descriptor, Values.of( value1 ) ) ) ) );
-            tx.success();
+            tx.commit();
         }
         // We get two updates because we both add a label and a property to be indexed
         // in the same transaction, in the future, we should optimize this down to
@@ -138,7 +138,7 @@ class IndexCRUDIT
         try ( Transaction tx = db.beginTx() )
         {
             node.addLabel( myLabel );
-            tx.success();
+            tx.commit();
         }
 
         // THEN
@@ -151,7 +151,7 @@ class IndexCRUDIT
             LabelSchemaDescriptor descriptor = SchemaDescriptor.forLabel( label, propertyKey1 );
             assertThat( writer.updatesCommitted, equalTo( asSet(
                     IndexEntryUpdate.add( node.getId(), descriptor, Values.of( value ) ) ) ) );
-            tx.success();
+            tx.commit();
         }
     }
 
@@ -164,7 +164,7 @@ class IndexCRUDIT
             {
                 node.setProperty( prop.getKey(), prop.getValue() );
             }
-            tx.success();
+            tx.commit();
             return node;
         }
     }

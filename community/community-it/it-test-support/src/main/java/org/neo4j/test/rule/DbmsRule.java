@@ -131,7 +131,7 @@ public abstract class DbmsRule extends ExternalResource implements GraphDatabase
      * Also returning a result from the supplied transaction function.
      *
      * @param db {@link GraphDatabaseService} to apply the transaction on.
-     * @param commit whether or not to call {@link Transaction#success()} in the end.
+     * @param commit whether or not to call {@link Transaction#commit()} in the end.
      * @param transaction {@link Function} containing the transaction logic and returning a result.
      * @return result from transaction {@link Function}.
      */
@@ -142,7 +142,7 @@ public abstract class DbmsRule extends ExternalResource implements GraphDatabase
             T result = transaction.apply( db );
             if ( commit )
             {
-                tx.success();
+                tx.commit();
             }
             return result;
         }

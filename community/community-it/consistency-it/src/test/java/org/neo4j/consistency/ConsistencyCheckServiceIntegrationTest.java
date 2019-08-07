@@ -92,7 +92,7 @@ public class ConsistencyCheckServiceIntegrationTest
                 Node node1 = set( graphDb.createNode() );
                 Node node2 = set( graphDb.createNode(), property( "key", "exampleValue" ) );
                 node1.createRelationshipTo( node2, RelationshipType.withName( "C" ) );
-                tx.success();
+                tx.commit();
             }
         }
 
@@ -214,13 +214,13 @@ public class ConsistencyCheckServiceIntegrationTest
         try ( Transaction tx = db.beginTx() )
         {
             db.schema().constraintFor( label ).assertPropertyIsUnique( propertyKey ).create();
-            tx.success();
+            tx.commit();
         }
         try ( Transaction tx = db.beginTx() )
         {
             set( db.createNode( label ), property( propertyKey, 973305894188596880L ) );
             set( db.createNode( label ), property( propertyKey, 973305894188596864L ) );
-            tx.success();
+            tx.commit();
         }
         managementService.shutdown();
 
@@ -279,7 +279,7 @@ public class ConsistencyCheckServiceIntegrationTest
         {
             db.createNode( label ).setProperty( propKey, 1 );
             db.createNode( label ).setProperty( propKey, "string" );
-            tx.success();
+            tx.commit();
         }
         managementService.shutdown();
 
@@ -299,13 +299,13 @@ public class ConsistencyCheckServiceIntegrationTest
         try ( Transaction tx = gds.beginTx() )
         {
             indexDefinition = gds.schema().indexFor( label ).on( propKey ).create();
-            tx.success();
+            tx.commit();
         }
 
         try ( Transaction tx = gds.beginTx() )
         {
             gds.schema().awaitIndexOnline( indexDefinition, 1, TimeUnit.MINUTES );
-            tx.success();
+            tx.commit();
         }
     }
 
@@ -358,7 +358,7 @@ public class ConsistencyCheckServiceIntegrationTest
                 node1.createRelationshipTo( node2, relationshipType );
                 node1.createRelationshipTo( node2, relationshipType );
                 node1.createRelationshipTo( node2, relationshipType );
-                tx.success();
+                tx.commit();
             }
 
             RecordStorageEngine recordStorageEngine = db.getDependencyResolver().resolveDependency( RecordStorageEngine.class );
@@ -391,7 +391,7 @@ public class ConsistencyCheckServiceIntegrationTest
             Node node1 = set( db.createNode() );
             Node node2 = set( db.createNode(), property( "key", "value" ) );
             node1.createRelationshipTo( node2, relationshipType );
-            tx.success();
+            tx.commit();
         }
         File[] txLogs = LogFilesBuilder.logFilesBasedOnlyBuilder( databaseLayout.getTransactionLogsDirectory(), fs ).build().logFiles();
         for ( File file : txLogs )

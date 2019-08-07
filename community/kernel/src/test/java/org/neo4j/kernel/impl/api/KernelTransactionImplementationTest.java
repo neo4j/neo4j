@@ -161,7 +161,7 @@ class KernelTransactionImplementationTest extends KernelTransactionTestBase
         {
             // WHEN
             transactionInitializer.accept( transaction );
-            transaction.success();
+            transaction.commit();
         }
 
         // THEN
@@ -194,7 +194,7 @@ class KernelTransactionImplementationTest extends KernelTransactionTestBase
         {
             // WHEN
             transactionInitializer.accept( transaction );
-            transaction.failure();
+            transaction.rollback();
         }
 
         // THEN
@@ -207,22 +207,16 @@ class KernelTransactionImplementationTest extends KernelTransactionTestBase
     void shouldRollbackAndThrowOnFailedAndSuccess( String name, boolean isWriteTx, Consumer<KernelTransaction> transactionInitializer )
     {
         // GIVEN
-        boolean exceptionReceived = false;
-        try ( KernelTransaction transaction = newTransaction( loginContext( isWriteTx ) ) )
+        assertThrows( IllegalStateException.class, () ->
         {
-            // WHEN
-            transactionInitializer.accept( transaction );
-            transaction.failure();
-            transaction.success();
-        }
-        catch ( TransactionFailureException e )
-        {
-            // Expected.
-            exceptionReceived = true;
-        }
-
-        // THEN
-        assertTrue( exceptionReceived );
+            try ( KernelTransaction transaction = newTransaction( loginContext( isWriteTx ) ) )
+            {
+                // WHEN
+                transactionInitializer.accept( transaction );
+                transaction.rollback();
+                transaction.commit();
+            }
+        });
         verify( transactionMonitor ).transactionFinished( false, isWriteTx );
         verifyExtraInteractionWithTheMonitor( transactionMonitor, isWriteTx );
     }
@@ -230,15 +224,15 @@ class KernelTransactionImplementationTest extends KernelTransactionTestBase
     @ParameterizedTest
     @MethodSource( "parameters" )
     void shouldRollbackOnClosingTerminatedTransaction( String name, boolean isWriteTx, Consumer<KernelTransaction> transactionInitializer )
+            throws TransactionFailureException
     {
         // GIVEN
         KernelTransaction transaction = newTransaction( loginContext( isWriteTx ) );
 
         transactionInitializer.accept( transaction );
-        transaction.success();
         transaction.markForTermination( Status.General.UnknownError );
 
-        assertThrows( TransactionTerminatedException.class, transaction::close );
+        assertThrows( TransactionTerminatedException.class, transaction::commit );
 
         // THEN
         verify( transactionMonitor ).transactionFinished( false, isWriteTx );
@@ -268,16 +262,16 @@ class KernelTransactionImplementationTest extends KernelTransactionTestBase
     @ParameterizedTest
     @MethodSource( "parameters" )
     void shouldRollbackOnClosingTerminatedButSuccessfulTransaction( String name, boolean isWriteTx, Consumer<KernelTransaction> transactionInitializer )
+            throws TransactionFailureException
     {
         // GIVEN
         KernelTransaction transaction = newTransaction( loginContext( isWriteTx ) );
 
         transactionInitializer.accept( transaction );
         transaction.markForTermination( Status.General.UnknownError );
-        transaction.success();
         assertEquals( Status.General.UnknownError, transaction.getReasonIfTerminated().get() );
 
-        assertThrows( TransactionTerminatedException.class, transaction::close );
+        assertThrows( TransactionTerminatedException.class, transaction::commit );
 
         // THEN
         verify( transactionMonitor ).transactionFinished( false, isWriteTx );
@@ -294,7 +288,6 @@ class KernelTransactionImplementationTest extends KernelTransactionTestBase
             // WHEN
             transactionInitializer.accept( transaction );
             transaction.markForTermination( Status.General.UnknownError );
-            transaction.failure();
             assertEquals( Status.General.UnknownError, transaction.getReasonIfTerminated().get() );
         }
 
@@ -310,8 +303,7 @@ class KernelTransactionImplementationTest extends KernelTransactionTestBase
     {
         KernelTransaction transaction = newTransaction( loginContext( isWriteTx ) );
         transactionInitializer.accept( transaction );
-        transaction.success();
-        transaction.close();
+        transaction.commit();
         transaction.markForTermination( Status.General.UnknownError );
 
         // THEN
@@ -339,10 +331,9 @@ class KernelTransactionImplementationTest extends KernelTransactionTestBase
     {
         KernelTransaction transaction = newTransaction( loginContext( isWriteTx ) );
         transactionInitializer.accept( transaction );
-        transaction.success();
         transaction.markForTermination( Status.General.UnknownError );
 
-        assertThrows( TransactionTerminatedException.class, transaction::close );
+        assertThrows( TransactionTerminatedException.class, transaction::commit );
     }
 
     @ParameterizedTest
@@ -380,11 +371,10 @@ class KernelTransactionImplementationTest extends KernelTransactionTestBase
             } );
 
             // WHEN
-            transaction.success();
             latch.startAndWaitForAllToStartAndFinish();
 
             assertNull( terminationFuture.get( 1, TimeUnit.MINUTES ) );
-            assertThrows( TransactionTerminatedException.class, transaction::close );
+            assertThrows( TransactionTerminatedException.class, transaction::commit );
         }
         finally
         {
@@ -726,16 +716,6 @@ class KernelTransactionImplementationTest extends KernelTransactionTestBase
 
         assertFalse( tx.getReasonIfTerminated().isPresent() );
         verify( locksClient, never() ).stop();
-    }
-
-    @Test
-    void closeClosedTransactionIsNotAllowed() throws TransactionFailureException
-    {
-        KernelTransactionImplementation transaction = newTransaction( 1000 );
-        transaction.close();
-
-        var e = assertThrows( IllegalStateException.class, transaction::close );
-        assertThat( e.getMessage(), equalTo( "This transaction has already been completed." ) );
     }
 
     @Test

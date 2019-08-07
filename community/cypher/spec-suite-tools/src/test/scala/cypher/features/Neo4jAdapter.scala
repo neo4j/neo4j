@@ -68,16 +68,21 @@ class Neo4jAdapter(managementService: DatabaseManagementService, service: GraphD
     } else query
     val result: Result = Try(instance.execute(queryToExecute, neo4jParams)).flatMap(r => Try(convertResult(r))) match {
       case Success(converted) =>
-        tx.success()
-        converted
+        Try(tx.commit()) match {
+          case Failure(exception) =>
+            convert(Phase.runtime, exception)
+          case Success(_) => converted
+        }
       case Failure(exception) =>
         val explainedResult = Try(instance.execute(explainPrefix + queryToExecute))
         val phase = explainedResult match {
           case Failure(_) => Phase.compile
           case Success(_) => Phase.runtime
         }
-        tx.failure()
-        convert(phase, exception)
+        Try(tx.rollback()) match {
+          case Failure(exception) => convert(Phase.runtime, exception)
+          case Success(_) => convert(phase, exception)
+        }
     }
     Try(tx.close()) match {
       case Failure(exception) =>

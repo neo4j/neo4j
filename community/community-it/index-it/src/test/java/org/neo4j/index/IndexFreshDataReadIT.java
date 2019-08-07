@@ -99,7 +99,7 @@ class IndexFreshDataReadIT
             try ( Transaction transaction = db.beginTx() )
             {
                 db.execute( "CREATE (n:staff {name:{name}})", map( "name", name ) );
-                transaction.success();
+                transaction.commit();
             }
         }
     }

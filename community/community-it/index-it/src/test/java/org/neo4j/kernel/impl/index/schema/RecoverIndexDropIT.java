@@ -109,7 +109,7 @@ class RecoverIndexDropIT
             try ( Transaction tx = db.beginTx() )
             {
                 assertEquals( 0, count( db.schema().getIndexes() ) );
-                tx.success();
+                tx.commit();
             }
         }
         finally
@@ -124,7 +124,7 @@ class RecoverIndexDropIT
         try ( Transaction tx = db.beginTx() )
         {
             IndexDefinition index = db.schema().indexFor( LABEL_ONE ).on( KEY ).create();
-            tx.success();
+            tx.commit();
             return index;
         }
     }
@@ -163,7 +163,7 @@ class RecoverIndexDropIT
             try ( Transaction tx = db.beginTx() )
             {
                 index.drop();
-                tx.success();
+                tx.commit();
             }
             return extractLastTransaction( db );
         }

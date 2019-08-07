@@ -74,7 +74,7 @@ class RecordFormatMigrationIT
         {
             Node node = database.createNode();
             node.setProperty( "a", "b" );
-            transaction.success();
+            transaction.commit();
         }
         managementService.shutdown();
         managementService = startManagementService( StandardV4_0.NAME );
@@ -100,7 +100,7 @@ class RecordFormatMigrationIT
         {
             Node node = database.createNode();
             node.setProperty( "a", "b" );
-            transaction.success();
+            transaction.commit();
         }
         managementService.shutdown();
 
@@ -127,7 +127,7 @@ class RecordFormatMigrationIT
         {
             Node node = database.createNode();
             node.setProperty( "a", "b" );
-            transaction.success();
+            transaction.commit();
         }
         managementService.shutdown();
 
@@ -147,7 +147,7 @@ class RecordFormatMigrationIT
         {
             Node node = database.createNode();
             node.setProperty( "a", "b" );
-            transaction.success();
+            transaction.commit();
         }
         managementService.shutdown();
 
@@ -172,7 +172,7 @@ class RecordFormatMigrationIT
         {
             Node node = database.createNode();
             node.setProperty( "a", "b" );
-            transaction.success();
+            transaction.commit();
         }
         managementService.shutdown();
 

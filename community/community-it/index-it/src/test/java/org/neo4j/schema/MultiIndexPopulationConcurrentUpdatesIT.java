@@ -310,9 +310,9 @@ public class MultiIndexPopulationConcurrentUpdatesIT
         LabelScanStore labelScanStore = getLabelScanStore();
         ThreadToStatementContextBridge transactionStatementContextBridge = getTransactionStatementContextBridge();
 
-        try ( Transaction transaction = embeddedDatabase.beginTx();
-              KernelTransaction ktx = transactionStatementContextBridge.getKernelTransactionBoundToThisThread( true, embeddedDatabase.databaseId() ) )
+        try ( Transaction transaction = embeddedDatabase.beginTx() )
         {
+            KernelTransaction ktx = transactionStatementContextBridge.getKernelTransactionBoundToThisThread( true, embeddedDatabase.databaseId() );
             DynamicIndexStoreView storeView = dynamicIndexStoreViewWrapper( customAction, storageEngine::newReader, labelScanStore );
 
             IndexProviderMap providerMap = getIndexProviderMap();
@@ -331,7 +331,7 @@ public class MultiIndexPopulationConcurrentUpdatesIT
             schemaCache.load( iterable( rules ) );
 
             indexService.createIndexes( rules );
-            transaction.success();
+            transaction.commit();
         }
     }
 
@@ -444,7 +444,7 @@ public class MultiIndexPopulationConcurrentUpdatesIT
                 otherNodes[i] = embeddedDatabase.createNode();
             }
 
-            transaction.success();
+            transaction.commit();
         }
     }
 
@@ -620,7 +620,7 @@ public class MultiIndexPopulationConcurrentUpdatesIT
                                 }
                             }
                         }
-                        transaction.success();
+                        transaction.commit();
                     }
                 }
                 try ( StorageReader reader = storageEngine.newReader() )

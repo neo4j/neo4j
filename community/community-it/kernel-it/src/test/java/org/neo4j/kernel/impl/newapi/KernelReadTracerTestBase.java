@@ -94,25 +94,25 @@ public abstract class KernelReadTracerTestBase<G extends KernelAPIReadTestSuppor
             foo.setProperty( "p3", 3 );
             foo.setProperty( "p4", 4 );
 
-            tx.success();
+            tx.commit();
         }
 
         try ( Transaction tx = graphDb.beginTx() )
         {
             graphDb.schema().indexFor( label( "Foo" ) ).on( "p1" ).create();
-            tx.success();
+            tx.commit();
         }
 
         try ( Transaction tx = graphDb.beginTx() )
         {
             graphDb.schema().awaitIndexesOnline( 1, TimeUnit.MINUTES );
-            tx.success();
+            tx.commit();
         }
 
         try ( Transaction tx = graphDb.beginTx() )
         {
             deleted.delete();
-            tx.success();
+            tx.commit();
         }
     }
 

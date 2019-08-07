@@ -380,7 +380,7 @@ class IndexRecoveryIT
         try ( Transaction tx = db.beginTx() )
         {
             db.schema().awaitIndexOnline( index, 10, SECONDS );
-            tx.success();
+            tx.commit();
         }
     }
 
@@ -389,7 +389,7 @@ class IndexRecoveryIT
         try ( Transaction tx = db.beginTx() )
         {
             IndexDefinition index = db.schema().indexFor( label ).on( key ).create();
-            tx.success();
+            tx.commit();
             return index;
         }
     }
@@ -412,7 +412,7 @@ class IndexRecoveryIT
                 node.setProperty( key, number );
                 updates.add( IndexEntryUpdate.add( node.getId(), schemaDescriptor, Values.of( number ) ) );
             }
-            tx.success();
+            tx.commit();
             return updates;
         }
     }

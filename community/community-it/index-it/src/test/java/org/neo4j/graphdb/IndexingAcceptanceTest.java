@@ -85,7 +85,7 @@ public class IndexingAcceptanceTest
                 // Use a small long here which will only occupy one property block
                 myNode.setProperty( "key", smallValue );
 
-                tx.success();
+                tx.commit();
             }
         }
 
@@ -96,7 +96,7 @@ public class IndexingAcceptanceTest
         {
             // A big long value which will occupy two property blocks
             myNode.setProperty( "key", bigValue );
-            tx.success();
+            tx.commit();
         }
 
         // THEN
@@ -120,7 +120,7 @@ public class IndexingAcceptanceTest
                 myNode.setProperty( "key0", true );
                 myNode.setProperty( "key1", true );
 
-                tx.success();
+                tx.commit();
             }
         }
 
@@ -134,7 +134,7 @@ public class IndexingAcceptanceTest
                 myNode.setProperty( "key2", LONG_STRING );
                 myNode.setProperty( "key3", LONG_STRING );
 
-                tx.success();
+                tx.commit();
             }
         }
 
@@ -183,7 +183,7 @@ public class IndexingAcceptanceTest
             myNode.removeLabel( LABEL1 );
             myNode.addLabel( LABEL3 );
             myNode.setProperty( "name", "Einstein" );
-            tx.success();
+            tx.commit();
         }
 
         // Then
@@ -217,7 +217,7 @@ public class IndexingAcceptanceTest
             myNode.setProperty( "name", "Einstein" );
             myNode.removeLabel( LABEL1 );
             myNode.setProperty( "name", "Feynman" );
-            tx.success();
+            tx.commit();
         }
 
         // Then
@@ -400,7 +400,7 @@ public class IndexingAcceptanceTest
 
             node2 = graph.createNode( LABEL1 );
             node2.setProperty( "name", "Stefan" );
-            tx.success();
+            tx.commit();
         }
 
         try ( Transaction tx = graph.beginTx() )
@@ -408,7 +408,7 @@ public class IndexingAcceptanceTest
             ResourceIterator<Node> result = graph.findNodes( LABEL1, "name", "Stefan" );
             assertEquals( asSet( node1, node2 ), asSet( result ) );
 
-            tx.success();
+            tx.commit();
         }
     }
 
@@ -428,7 +428,7 @@ public class IndexingAcceptanceTest
 
             node2 = graph.createNode( LABEL1 );
             node2.setProperty( "name", "Stefan" );
-            tx.success();
+            tx.commit();
         }
 
         try ( Transaction tx = graph.beginTx() )
@@ -465,7 +465,7 @@ public class IndexingAcceptanceTest
         try ( Transaction tx = db.beginTx() )
         {
             nodeId = db.createNode().getId();
-            tx.success();
+            tx.commit();
         }
 
         try ( Transaction tx = db.beginTx() )
@@ -476,7 +476,7 @@ public class IndexingAcceptanceTest
                 node.addLabel( Label.label( labelPrefix + i ) );
                 node.setProperty( propertyKeyPrefix + i, propertyValuePrefix + i );
             }
-            tx.success();
+            tx.commit();
         }
 
         // Then
@@ -491,7 +491,7 @@ public class IndexingAcceptanceTest
                 ResourceIterator<Node> nodes = db.findNodes( label, key, value );
                 assertEquals( 1, Iterators.count( nodes ) );
             }
-            tx.success();
+            tx.commit();
         }
     }
 
@@ -504,7 +504,7 @@ public class IndexingAcceptanceTest
             Node found = db.findNode( label, propertyKey, value );
             assertThat( found, equalTo( created ) );
             found.delete();
-            tx.success();
+            tx.commit();
         }
     }
 
@@ -536,7 +536,7 @@ public class IndexingAcceptanceTest
             {
                 node.setProperty( property.getKey(), property.getValue() );
             }
-            tx.success();
+            tx.commit();
             return node;
         }
     }

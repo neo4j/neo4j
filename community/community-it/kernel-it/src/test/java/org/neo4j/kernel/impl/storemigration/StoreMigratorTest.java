@@ -251,7 +251,7 @@ class StoreMigratorTest
             try ( Transaction transaction = database.beginTx() )
             {
                 Node node = database.createNode();
-                transaction.success();
+                transaction.commit();
             }
         }
         managementService.shutdown();

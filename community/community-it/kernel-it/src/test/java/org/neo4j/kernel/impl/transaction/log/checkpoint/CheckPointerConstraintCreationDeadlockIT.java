@@ -147,7 +147,7 @@ class CheckPointerConstraintCreationDeadlockIT
             {
                 ConstraintDefinition constraint = single( db.schema().getConstraints( LABEL ) );
                 assertEquals( KEY, single( constraint.getPropertyKeys() ) );
-                tx.success();
+                tx.commit();
             }
 
             createNode( db, "A" );
@@ -170,7 +170,7 @@ class CheckPointerConstraintCreationDeadlockIT
         try ( Transaction tx = db.beginTx() )
         {
             db.createNode( LABEL ).setProperty( KEY, name );
-            tx.success();
+            tx.commit();
         }
     }
 
@@ -199,7 +199,7 @@ class CheckPointerConstraintCreationDeadlockIT
             try ( Transaction tx = db.beginTx() )
             {
                 db.schema().constraintFor( LABEL ).assertPropertyIsUnique( KEY ).create();
-                tx.success();
+                tx.commit();
             }
 
             LogicalTransactionStore txStore = db.getDependencyResolver().resolveDependency( LogicalTransactionStore.class );

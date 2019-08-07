@@ -63,7 +63,7 @@ public abstract class NodeIndexTransactionStateTestBase<G extends KernelAPIWrite
         {
             expected.add( nodeWithProp( tx, "1suff" ) );
             nodeWithProp( tx, "pluff" );
-            tx.success();
+            tx.commit();
         }
 
         createIndex();
@@ -94,7 +94,7 @@ public abstract class NodeIndexTransactionStateTestBase<G extends KernelAPIWrite
             expected.add( nodeWithProp( tx, "supp" ) );
             nodeToDelete = nodeWithPropId( tx, "supp" );
             nodeToChange = nodeWithPropId( tx, "supper" );
-            tx.success();
+            tx.commit();
         }
 
         createIndex();
@@ -126,7 +126,7 @@ public abstract class NodeIndexTransactionStateTestBase<G extends KernelAPIWrite
         {
             expected.add( nodeWithProp( tx, "banana" ) );
             nodeWithProp( tx, "apple" );
-            tx.success();
+            tx.commit();
         }
 
         createIndex();
@@ -154,7 +154,7 @@ public abstract class NodeIndexTransactionStateTestBase<G extends KernelAPIWrite
         {
             expected.add( nodeWithProp( tx, "suff1" ) );
             nodeWithPropId( tx, "supp" );
-            tx.success();
+            tx.commit();
         }
 
         createIndex();
@@ -182,7 +182,7 @@ public abstract class NodeIndexTransactionStateTestBase<G extends KernelAPIWrite
         {
             expected.add( nodeWithProp( tx, "banana" ) );
             nodeWithProp( tx, "apple" );
-            tx.success();
+            tx.commit();
         }
 
         createIndex();
@@ -210,7 +210,7 @@ public abstract class NodeIndexTransactionStateTestBase<G extends KernelAPIWrite
         {
             expected.add( nodeWithProp( tx, "banana" ) );
             nodeToChange = nodeWithPropId( tx, "apple" );
-            tx.success();
+            tx.commit();
         }
 
         createIndex();
@@ -242,7 +242,7 @@ public abstract class NodeIndexTransactionStateTestBase<G extends KernelAPIWrite
         {
             nodeToChange = nodeWithPropId( tx, "banana" );
             nodeWithPropId( tx, "apple" );
-            tx.success();
+            tx.commit();
         }
 
         createIndex();
@@ -273,7 +273,7 @@ public abstract class NodeIndexTransactionStateTestBase<G extends KernelAPIWrite
         {
             nodeToChange = nodeWithPropId( tx, "banana" );
             nodeWithPropId( tx, "apple" );
-            tx.success();
+            tx.commit();
         }
 
         createIndex();
@@ -302,7 +302,7 @@ public abstract class NodeIndexTransactionStateTestBase<G extends KernelAPIWrite
         {
             expected.add( nodeWithProp( tx, "gnomebat" ) );
             nodeWithPropId( tx, "fishwombat" );
-            tx.success();
+            tx.commit();
         }
 
         createIndex();
@@ -355,7 +355,7 @@ public abstract class NodeIndexTransactionStateTestBase<G extends KernelAPIWrite
         try ( org.neo4j.graphdb.Transaction tx = graphDb.beginTx() )
         {
             graphDb.schema().indexFor( Label.label( "Node" ) ).on( "prop" ).create();
-            tx.success();
+            tx.commit();
         }
 
         try ( org.neo4j.graphdb.Transaction tx = graphDb.beginTx() )

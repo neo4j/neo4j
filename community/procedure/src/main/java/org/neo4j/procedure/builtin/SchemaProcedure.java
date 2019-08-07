@@ -155,7 +155,7 @@ public class SchemaProcedure
                         }
                     }
                 }
-                transaction.success();
+                transaction.commit();
                 return getGraphResult( nodes, relationships );
             }
         }

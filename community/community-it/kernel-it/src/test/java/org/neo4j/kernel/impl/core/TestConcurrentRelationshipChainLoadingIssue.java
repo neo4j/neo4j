@@ -119,7 +119,7 @@ class TestConcurrentRelationshipChainLoadingIssue
             {
                 node.createRelationshipTo( node, MyRelTypes.TEST2 );
             }
-            tx.success();
+            tx.commit();
             return node;
         }
     }

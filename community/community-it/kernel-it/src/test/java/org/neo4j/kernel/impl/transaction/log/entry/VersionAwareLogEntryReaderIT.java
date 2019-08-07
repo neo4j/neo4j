@@ -57,7 +57,6 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.io.ByteUnit.kibiBytes;
-import static org.neo4j.io.ByteUnit.mebiBytes;
 import static org.neo4j.io.fs.ReadAheadChannel.DEFAULT_READ_AHEAD_SIZE;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogHeader.LOG_HEADER_SIZE;
 
@@ -211,7 +210,7 @@ class VersionAwareLogEntryReaderIT
         try ( Transaction transaction = database.beginTx() )
         {
             Node node = database.createNode();
-            transaction.success();
+            transaction.commit();
         }
     }
 }

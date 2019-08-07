@@ -104,7 +104,7 @@ public abstract class StringLengthIndexValidationIT
         {
             String propValue = getString( singleKeySizeLimit + 1 );
             db.createNode( LABEL_ONE ).setProperty( propKey, propValue );
-            tx.success();
+            tx.commit();
         }
         catch ( IllegalArgumentException e )
         {
@@ -124,14 +124,14 @@ public abstract class StringLengthIndexValidationIT
         try ( Transaction tx = db.beginTx() )
         {
             db.schema().indexFor( LABEL_ONE ).on( propKey ).create();
-            tx.success();
+            tx.commit();
         }
 
         // Waiting for it to come online should fail
         try ( Transaction tx = db.beginTx() )
         {
             db.schema().awaitIndexesOnline( 1, TimeUnit.MINUTES );
-            tx.success();
+            tx.commit();
         }
         catch ( IllegalStateException e )
         {
@@ -152,7 +152,7 @@ public abstract class StringLengthIndexValidationIT
             assertEquals( "state is FAILED", Schema.IndexState.FAILED, db.schema().getIndexState( next ) );
             assertThat( db.schema().getIndexFailure( next ),
                     Matchers.containsString( expectedPopulationFailureMessage() ) );
-            tx.success();
+            tx.commit();
         }
     }
 
@@ -179,7 +179,7 @@ public abstract class StringLengthIndexValidationIT
                 node.setProperty( propKey, string );
                 strings.put( string, node.getId() );
             }
-            tx.success();
+            tx.commit();
         }
 
         // then
@@ -190,7 +190,7 @@ public abstract class StringLengthIndexValidationIT
                 Node node = db.findNode( LABEL_ONE, propKey, string );
                 assertEquals( strings.get( string ).longValue(), node.getId() );
             }
-            tx.success();
+            tx.commit();
         }
     }
 
@@ -210,12 +210,12 @@ public abstract class StringLengthIndexValidationIT
                 indexCreator = indexCreator.on( key );
             }
             indexCreator.create();
-            tx.success();
+            tx.commit();
         }
         try ( Transaction tx = db.beginTx() )
         {
             db.schema().awaitIndexesOnline( 1, MINUTES );
-            tx.success();
+            tx.commit();
         }
     }
 
@@ -227,7 +227,7 @@ public abstract class StringLengthIndexValidationIT
             Node node = db.createNode( LABEL_ONE );
             node.setProperty( propKey, propValue );
             expectedNodeId = node.getId();
-            tx.success();
+            tx.commit();
         }
         return expectedNodeId;
     }
@@ -239,7 +239,7 @@ public abstract class StringLengthIndexValidationIT
             Node node = db.findNode( LABEL_ONE, propKey, propValue );
             assertNotNull( node );
             assertEquals( "node id", expectedNodeId, node.getId() );
-            tx.success();
+            tx.commit();
         }
     }
 }

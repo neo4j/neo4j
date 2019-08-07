@@ -121,7 +121,7 @@ class NestedTransactionLocksIT
         try ( Transaction tx = db.beginTx() )
         {
             Node n = db.createNode();
-            tx.success();
+            tx.commit();
             return n;
         }
     }

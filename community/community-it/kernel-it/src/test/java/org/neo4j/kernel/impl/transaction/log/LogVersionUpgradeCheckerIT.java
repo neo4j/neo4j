@@ -131,7 +131,7 @@ class LogVersionUpgradeCheckerIT
         {
             db.createNode( label( "FOO" ) );
             db.createNode( label( "BAR" ) );
-            tx.success();
+            tx.commit();
         }
 
         managementService.shutdown();

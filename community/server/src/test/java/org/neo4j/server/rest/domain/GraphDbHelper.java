@@ -86,7 +86,7 @@ public class GraphDbHelper
         {
             Node node = database.getDatabase().getNodeById( nodeId );
             Map<String, Object> allProperties = node.getAllProperties();
-            tx.success();
+            tx.commit();
             return allProperties;
         }
     }
@@ -100,7 +100,7 @@ public class GraphDbHelper
             {
                 node.setProperty( propertyEntry.getKey(), propertyEntry.getValue() );
             }
-            tx.success();
+            tx.commit();
         }
     }
 
@@ -109,7 +109,7 @@ public class GraphDbHelper
         try ( Transaction tx = database.getDatabase().beginTransaction( implicit, AnonymousContext.writeToken() ) )
         {
             Node node = database.getDatabase().createNode( labels );
-            tx.success();
+            tx.commit();
             return node.getId();
         }
     }
@@ -123,7 +123,7 @@ public class GraphDbHelper
             {
                 node.setProperty( entry.getKey(), entry.getValue() );
             }
-            tx.success();
+            tx.commit();
             return node.getId();
         }
     }
@@ -134,7 +134,7 @@ public class GraphDbHelper
         {
             Node node = database.getDatabase().getNodeById( id );
             node.delete();
-            tx.success();
+            tx.commit();
         }
     }
 
@@ -145,7 +145,7 @@ public class GraphDbHelper
             Node startNode = database.getDatabase().getNodeById( startNodeId );
             Node endNode = database.getDatabase().getNodeById( endNodeId );
             Relationship relationship = startNode.createRelationshipTo( endNode, RelationshipType.withName( type ) );
-            tx.success();
+            tx.commit();
             return relationship.getId();
         }
     }
@@ -158,7 +158,7 @@ public class GraphDbHelper
             Node endNode = database.getDatabase().createNode();
             Relationship relationship = startNode.createRelationshipTo( endNode,
                     RelationshipType.withName( type ) );
-            tx.success();
+            tx.commit();
             return relationship.getId();
         }
     }
@@ -173,7 +173,7 @@ public class GraphDbHelper
             {
                 relationship.setProperty( propertyEntry.getKey(), propertyEntry.getValue() );
             }
-            tx.success();
+            tx.commit();
         }
     }
 
@@ -183,7 +183,7 @@ public class GraphDbHelper
         {
             Relationship relationship = database.getDatabase().getRelationshipById( relationshipId );
             Map<String, Object> allProperties = relationship.getAllProperties();
-            tx.success();
+            tx.commit();
             return allProperties;
         }
     }
@@ -193,7 +193,7 @@ public class GraphDbHelper
         try ( Transaction tx = database.getDatabase().beginTransaction( implicit, AnonymousContext.read() ) )
         {
             Relationship relationship = database.getDatabase().getRelationshipById( relationshipId );
-            tx.success();
+            tx.commit();
             return relationship;
         }
     }
@@ -206,13 +206,13 @@ public class GraphDbHelper
             {
                 Node referenceNode = database.getDatabase().getNodeById( 0L );
 
-                tx.success();
+                tx.commit();
                 return referenceNode.getId();
             }
             catch ( NotFoundException e )
             {
                 Node newNode = database.getDatabase().createNode();
-                tx.success();
+                tx.commit();
                 return newNode.getId();
             }
         }
@@ -235,7 +235,7 @@ public class GraphDbHelper
         try ( Transaction tx = database.getDatabase().beginTransaction( implicit, AnonymousContext.writeToken() ) )
         {
             database.getDatabase().getNodeById( node ).addLabel( label( labelName ) );
-            tx.success();
+            tx.commit();
         }
     }
 
@@ -249,7 +249,7 @@ public class GraphDbHelper
         try ( Transaction tx = database.getDatabase().beginTransaction( implicit, AUTH_DISABLED ) )
         {
             IndexDefinition index = database.getDatabase().schema().indexFor( label( labelName ) ).on( propertyKey ).create();
-            tx.success();
+            tx.commit();
             return index;
         }
     }
@@ -271,7 +271,7 @@ public class GraphDbHelper
                 }
 
             }, database.getDatabase().schema().getConstraints( label( labelName ) ) );
-            tx.success();
+            tx.commit();
             return definitions;
         }
     }
@@ -286,7 +286,7 @@ public class GraphDbHelper
                 creator = creator.assertPropertyIsUnique( propertyKey );
             }
             ConstraintDefinition result = creator.create();
-            tx.success();
+            tx.commit();
             return result;
         }
     }

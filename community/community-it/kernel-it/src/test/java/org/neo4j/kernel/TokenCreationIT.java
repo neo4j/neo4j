@@ -104,7 +104,7 @@ class TokenCreationIT
                         Node node = database.createNode( createdLabels );
                         Iterable<Label> nodeLabels = node.getLabels();
                         assertEquals( asSet( asList( createdLabels ) ), asSet( nodeLabels ) );
-                        transaction.success();
+                        transaction.commit();
                     }
                     catch ( Exception e )
                     {

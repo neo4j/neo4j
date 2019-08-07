@@ -320,11 +320,6 @@ public class ConsistencyCheckService
 
     private static File defaultReportDir( Config tuningConfiguration, File storeDir )
     {
-        if ( tuningConfiguration.get( GraphDatabaseSettings.neo4j_home ) == null )
-        {
-            tuningConfiguration.set( GraphDatabaseSettings.neo4j_home, storeDir.toPath() );
-        }
-
         return tuningConfiguration.get( GraphDatabaseSettings.logs_directory ).toFile();
     }
 

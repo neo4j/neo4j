@@ -46,12 +46,12 @@ public abstract class AbstractIndexQueryingTest<S extends KernelAPIReadTestSuppo
         {
             db.execute( "call db.index.fulltext.createNodeIndex('ftsNodes', ['Label'], ['prop'])" ).close();
             db.execute( "call db.index.fulltext.createRelationshipIndex('ftsRels', ['Type'], ['prop'])" ).close();
-            tx.success();
+            tx.commit();
         }
         try ( Transaction tx = db.beginTx() )
         {
             db.schema().awaitIndexesOnline( 1, TimeUnit.MINUTES );
-            tx.success();
+            tx.commit();
         }
     }
 

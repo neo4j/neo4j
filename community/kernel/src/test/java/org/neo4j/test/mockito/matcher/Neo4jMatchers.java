@@ -62,7 +62,7 @@ public class Neo4jMatchers
     public static <T> Matcher<? super T> inTx( final GraphDatabaseService db, final Matcher<T> inner,
             final boolean successful )
     {
-        return new DiagnosingMatcher<T>()
+        return new DiagnosingMatcher<>()
         {
             @Override
             protected boolean matches( Object item, Description mismatchDescription )
@@ -73,7 +73,7 @@ public class Neo4jMatchers
                     {
                         if ( successful )
                         {
-                            ignored.success();
+                            ignored.commit();
                         }
                         return true;
                     }
@@ -82,7 +82,7 @@ public class Neo4jMatchers
 
                     if ( successful )
                     {
-                        ignored.success();
+                        ignored.commit();
                     }
                     return false;
                 }
@@ -98,7 +98,7 @@ public class Neo4jMatchers
 
     public static TypeSafeDiagnosingMatcher<Node> hasLabel( final Label myLabel )
     {
-        return new TypeSafeDiagnosingMatcher<Node>()
+        return new TypeSafeDiagnosingMatcher<>()
         {
             @Override
             public void describeTo( Description description )
@@ -142,7 +142,7 @@ public class Neo4jMatchers
 
     public static TypeSafeDiagnosingMatcher<Node> hasLabels( final Set<String> expectedLabels )
     {
-        return new TypeSafeDiagnosingMatcher<Node>()
+        return new TypeSafeDiagnosingMatcher<>()
         {
             private Set<String> foundLabels;
 
@@ -170,7 +170,7 @@ public class Neo4jMatchers
 
     public static TypeSafeDiagnosingMatcher<GraphDatabaseService> hasNoNodes( final Label withLabel )
     {
-        return new TypeSafeDiagnosingMatcher<GraphDatabaseService>()
+        return new TypeSafeDiagnosingMatcher<>()
         {
             @Override
             protected boolean matchesSafely( GraphDatabaseService db, Description mismatchDescription )
@@ -194,7 +194,7 @@ public class Neo4jMatchers
 
     public static TypeSafeDiagnosingMatcher<GraphDatabaseService> hasNodes( final Label withLabel, final Node... expectedNodes )
     {
-        return new TypeSafeDiagnosingMatcher<GraphDatabaseService>()
+        return new TypeSafeDiagnosingMatcher<>()
         {
             @Override
             protected boolean matchesSafely( GraphDatabaseService db, Description mismatchDescription )
@@ -322,7 +322,7 @@ public class Neo4jMatchers
                                                               final Object propertyValue,
                                                               final GraphDatabaseService db )
     {
-        return new Deferred<Node>( db )
+        return new Deferred<>( db )
         {
             @Override
             protected Iterable<Node> manifest()
@@ -334,12 +334,15 @@ public class Neo4jMatchers
 
     public static Deferred<IndexDefinition> getIndexes( final GraphDatabaseService db, final Label label )
     {
-        return new Deferred<IndexDefinition>( db )
+        return new Deferred<>( db )
         {
             @Override
             protected Iterable<IndexDefinition> manifest()
             {
-                return db.schema().getIndexes( label );
+                try ( Transaction transaction = db.beginTx() )
+                {
+                    return db.schema().getIndexes( label );
+                }
             }
         };
     }
@@ -347,7 +350,7 @@ public class Neo4jMatchers
     public static Deferred<String> getPropertyKeys( final GraphDatabaseService db,
                                                     final PropertyContainer propertyContainer )
     {
-        return new Deferred<String>( db )
+        return new Deferred<>( db )
         {
             @Override
             protected Iterable<String> manifest()
@@ -359,7 +362,7 @@ public class Neo4jMatchers
 
     public static Deferred<ConstraintDefinition> getConstraints( final GraphDatabaseService db, final Label label )
     {
-        return new Deferred<ConstraintDefinition>( db )
+        return new Deferred<>( db )
         {
             @Override
             protected Iterable<ConstraintDefinition> manifest()
@@ -372,7 +375,7 @@ public class Neo4jMatchers
     public static Deferred<ConstraintDefinition> getConstraints( final GraphDatabaseService db,
             final RelationshipType type )
     {
-        return new Deferred<ConstraintDefinition>( db )
+        return new Deferred<>( db )
         {
             @Override
             protected Iterable<ConstraintDefinition> manifest()
@@ -384,12 +387,12 @@ public class Neo4jMatchers
 
     public static Deferred<ConstraintDefinition> getConstraints( final GraphDatabaseService db )
     {
-        return new Deferred<ConstraintDefinition>( db )
+        return new Deferred<>( db )
         {
             @Override
             protected Iterable<ConstraintDefinition> manifest()
             {
-                return db.schema().getConstraints( );
+                return db.schema().getConstraints();
             }
         };
     }
@@ -426,7 +429,7 @@ public class Neo4jMatchers
     @SafeVarargs
     public static <T> TypeSafeDiagnosingMatcher<Neo4jMatchers.Deferred<T>> containsOnly( final T... expectedObjects )
     {
-        return new TypeSafeDiagnosingMatcher<Neo4jMatchers.Deferred<T>>()
+        return new TypeSafeDiagnosingMatcher<>()
         {
             @Override
             protected boolean matchesSafely( Neo4jMatchers.Deferred<T> nodes, Description description )
@@ -451,7 +454,7 @@ public class Neo4jMatchers
 
     public static TypeSafeDiagnosingMatcher<Neo4jMatchers.Deferred<?>> hasSize( final int expectedSize )
     {
-        return new TypeSafeDiagnosingMatcher<Neo4jMatchers.Deferred<?>>()
+        return new TypeSafeDiagnosingMatcher<>()
         {
             @Override
             protected boolean matchesSafely( Neo4jMatchers.Deferred<?> nodes, Description description )
@@ -477,7 +480,7 @@ public class Neo4jMatchers
     public static TypeSafeDiagnosingMatcher<Neo4jMatchers.Deferred<IndexDefinition>> haveState(
             final GraphDatabaseService db, final Schema.IndexState expectedState )
     {
-        return new TypeSafeDiagnosingMatcher<Neo4jMatchers.Deferred<IndexDefinition>>()
+        return new TypeSafeDiagnosingMatcher<>()
         {
             @Override
             protected boolean matchesSafely( Neo4jMatchers.Deferred<IndexDefinition> indexes, Description description )
@@ -510,7 +513,7 @@ public class Neo4jMatchers
     @SafeVarargs
     public static <T> TypeSafeDiagnosingMatcher<Neo4jMatchers.Deferred<T>> contains( final T... expectedObjects )
     {
-        return new TypeSafeDiagnosingMatcher<Neo4jMatchers.Deferred<T>>()
+        return new TypeSafeDiagnosingMatcher<>()
         {
             @Override
             protected boolean matchesSafely( Neo4jMatchers.Deferred<T> nodes, Description description )
@@ -535,7 +538,7 @@ public class Neo4jMatchers
 
     public static TypeSafeDiagnosingMatcher<Neo4jMatchers.Deferred<?>> isEmpty( )
     {
-        return new TypeSafeDiagnosingMatcher<Deferred<?>>()
+        return new TypeSafeDiagnosingMatcher<>()
         {
             @Override
             protected boolean matchesSafely( Deferred<?> deferred, Description description )
@@ -577,7 +580,7 @@ public class Neo4jMatchers
                 indexCreator = indexCreator.on( property );
             }
             indexDef = indexCreator.create();
-            tx.success();
+            tx.commit();
         }
         return indexDef;
     }
@@ -612,7 +615,7 @@ public class Neo4jMatchers
         {
             ConstraintDefinition constraint =
                     db.schema().constraintFor( label ).assertPropertyIsUnique( propertyKey ).create();
-            tx.success();
+            tx.commit();
             return constraint;
         }
     }

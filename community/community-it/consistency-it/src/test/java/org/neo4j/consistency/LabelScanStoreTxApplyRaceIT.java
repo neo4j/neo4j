@@ -126,7 +126,7 @@ class LabelScanStoreTxApplyRaceIT
                             // and therefore have a positive effect on this test.
                             db.createNode( randomLabels() ).setProperty( "name", randomUUID().toString() );
                         }
-                        tx.success();
+                        tx.commit();
                     }
                 }
                 else
@@ -137,7 +137,7 @@ class LabelScanStoreTxApplyRaceIT
                     {
                         node = db.createNode( randomLabels() );
                         nodeHeads.set( guy, node );
-                        tx.success();
+                        tx.commit();
                     }
                     if ( random.nextFloat() < CHANCE_TO_DELETE_BY_SAME_THREAD )
                     {
@@ -147,7 +147,7 @@ class LabelScanStoreTxApplyRaceIT
                             try ( Transaction tx = db.beginTx() )
                             {
                                 node.delete();
-                                tx.success();
+                                tx.commit();
                             }
                         }
                         // Otherwise there will be other threads sitting there waiting for these nodes and deletes them if they can
@@ -192,7 +192,7 @@ class LabelScanStoreTxApplyRaceIT
                     try ( Transaction tx = db.beginTx() )
                     {
                         node.delete();
-                        tx.success();
+                        tx.commit();
                     }
                     catch ( NotFoundException e )
                     {

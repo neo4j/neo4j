@@ -94,17 +94,17 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
             graphDb.schema().indexFor( label( "Node" ) ).on( "prop" ).create();
             graphDb.schema().indexFor( label( "Node" ) ).on( "prop2" ).create();
             graphDb.schema().indexFor( label( "Node" ) ).on( "prop3" ).create();
-            tx.success();
+            tx.commit();
         }
         try ( Transaction tx = graphDb.beginTx() )
         {
             graphDb.schema().indexFor( label( "What" ) ).on( "ever" ).create();
-            tx.success();
+            tx.commit();
         }
         try ( Transaction tx = graphDb.beginTx() )
         {
             createCompositeIndex( graphDb, "Person", "firstname", "surname" );
-            tx.success();
+            tx.commit();
         }
         catch ( Exception e )
         {
@@ -113,7 +113,7 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
         try ( Transaction tx = graphDb.beginTx() )
         {
             graphDb.schema().awaitIndexesOnline( 5, MINUTES );
-            tx.success();
+            tx.commit();
         }
         try ( Transaction tx = graphDb.beginTx() )
         {
@@ -177,7 +177,7 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
             nodeWithProp( graphDb, "prop3", POINT_2.asObjectCopy() );
             nodeWithProp( graphDb, "prop3", POINT_2.asObjectCopy() );
 
-            tx.success();
+            tx.commit();
         }
     }
 
@@ -1483,7 +1483,7 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
                 write.nodeSetProperty( nodeId, key, Values.of( value ) );
                 expected.computeIfAbsent( Values.of( value ), v -> new HashSet<>() ).add( nodeId );
             }
-            tx.success();
+            tx.commit();
         }
 
         // then

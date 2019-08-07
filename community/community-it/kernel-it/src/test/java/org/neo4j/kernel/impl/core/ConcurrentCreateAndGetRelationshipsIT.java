@@ -115,7 +115,7 @@ class ConcurrentCreateAndGetRelationshipsIT
         try ( Transaction tx = db.beginTx() )
         {
             Node node = db.createNode();
-            tx.success();
+            tx.commit();
             return node;
         }
     }
@@ -150,7 +150,7 @@ class ConcurrentCreateAndGetRelationshipsIT
                     Iterables.count( parentNode.getRelationships( RELTYPE, OUTGOING ) );
 
                     parentNode.createRelationshipTo( db.createNode(), RELTYPE );
-                    tx.success();
+                    tx.commit();
                 }
                 catch ( Exception e )
                 {

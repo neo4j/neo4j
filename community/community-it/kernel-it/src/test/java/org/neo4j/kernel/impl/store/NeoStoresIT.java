@@ -88,7 +88,7 @@ class NeoStoresIT
                 Node node = db.createNode();
                 latestNodeId[0] = node.getId();
                 node.setProperty( "largeProperty", LONG_STRING_VALUE );
-                tx.success();
+                tx.commit();
             }
             writes.incrementAndGet();
         } );
@@ -101,7 +101,7 @@ class NeoStoresIT
                 {
                     node.getProperty( propertyKey );
                 }
-                tx.success();
+                tx.commit();
             }
             catch ( NotFoundException e )
             {
@@ -130,7 +130,7 @@ class NeoStoresIT
                 Node node = db.createNode();
                 latestNodeId[0] = node.getId();
                 node.setProperty( "largeProperty", LONG_STRING_VALUE );
-                tx.success();
+                tx.commit();
             }
             writes.incrementAndGet();
         } );
@@ -144,7 +144,7 @@ class NeoStoresIT
                 {
                     node.getProperty( propertyKey );
                 }
-                tx.success();
+                tx.commit();
             }
             catch ( NotFoundException e )
             {
@@ -172,7 +172,7 @@ class NeoStoresIT
             Node node2 = db.createNode();
             node2Id = node2.getId();
 
-            tx.success();
+            tx.commit();
         }
 
         Race race = new Race();
@@ -192,7 +192,7 @@ class NeoStoresIT
                 latestRelationshipId[0] = rel.getId();
                 rel.setProperty( "largeProperty", LONG_STRING_VALUE );
 
-                tx.success();
+                tx.commit();
             }
             writes.incrementAndGet();
         } );
@@ -206,7 +206,7 @@ class NeoStoresIT
                 {
                     rel.getProperty( propertyKey );
                 }
-                tx.success();
+                tx.commit();
             }
             catch ( NotFoundException e )
             {

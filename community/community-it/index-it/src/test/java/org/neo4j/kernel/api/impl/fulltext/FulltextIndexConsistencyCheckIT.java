@@ -38,6 +38,7 @@ import java.util.stream.Stream;
 
 import org.neo4j.common.DependencyResolver;
 import org.neo4j.configuration.Config;
+import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.consistency.ConsistencyCheckService;
 import org.neo4j.consistency.checking.full.ConsistencyCheckIncompleteException;
 import org.neo4j.consistency.checking.full.ConsistencyFlags;
@@ -54,6 +55,7 @@ import org.neo4j.internal.helpers.progress.ProgressMonitorFactory;
 import org.neo4j.internal.recordstorage.RecordStorageEngine;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.impl.api.index.IndexProxy;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
@@ -129,13 +131,13 @@ class FulltextIndexConsistencyCheckIT
         try ( Transaction tx = db.beginTx() )
         {
             db.execute( format( NODE_CREATE, "nodes", array( "Label" ), array( "prop" ) ) ).close();
-            tx.success();
+            tx.commit();
         }
         try ( Transaction tx = db.beginTx() )
         {
             db.schema().awaitIndexesOnline( 1, TimeUnit.MINUTES );
             db.createNode( Label.label( "Label" ) ).setProperty( "prop", "value" );
-            tx.success();
+            tx.commit();
         }
         managementService.shutdown();
         assertIsConsistent( checkConsistency() );
@@ -148,7 +150,7 @@ class FulltextIndexConsistencyCheckIT
         try ( Transaction tx = db.beginTx() )
         {
             db.execute( format( NODE_CREATE, "nodes", array( "Label" ), array( "p1", "p2" ) ) ).close();
-            tx.success();
+            tx.commit();
         }
         try ( Transaction tx = db.beginTx() )
         {
@@ -158,7 +160,7 @@ class FulltextIndexConsistencyCheckIT
             node.setProperty( "p2", "value" );
             db.createNode( Label.label( "Label" ) ).setProperty( "p1", "value" );
             db.createNode( Label.label( "Label" ) ).setProperty( "p2", "value" );
-            tx.success();
+            tx.commit();
         }
         managementService.shutdown();
         assertIsConsistent( checkConsistency() );
@@ -171,7 +173,7 @@ class FulltextIndexConsistencyCheckIT
         try ( Transaction tx = db.beginTx() )
         {
             db.execute( format( NODE_CREATE, "nodes", array( "L1", "L2" ), array( "prop" ) ) ).close();
-            tx.success();
+            tx.commit();
         }
         try ( Transaction tx = db.beginTx() )
         {
@@ -179,7 +181,7 @@ class FulltextIndexConsistencyCheckIT
             db.createNode( Label.label( "L1" ), Label.label( "L2" ) ).setProperty( "prop", "value" );
             db.createNode( Label.label( "L2" ) ).setProperty( "prop", "value" );
             db.createNode( Label.label( "L1" ) ).setProperty( "prop", "value" );
-            tx.success();
+            tx.commit();
         }
         managementService.shutdown();
         assertIsConsistent( checkConsistency() );
@@ -194,13 +196,13 @@ class FulltextIndexConsistencyCheckIT
         try ( Transaction tx = db.beginTx() )
         {
             db.execute( format( NODE_CREATE, "nodes", array( labels ), array( "prop" ) ) ).close();
-            tx.success();
+            tx.commit();
         }
         try ( Transaction tx = db.beginTx() )
         {
             db.schema().awaitIndexesOnline( 1, TimeUnit.MINUTES );
             db.createNode( Stream.of( labels ).map( Label::label ).toArray( Label[]::new ) ).setProperty( "prop", "value" );
-            tx.success();
+            tx.commit();
         }
         managementService.shutdown();
         assertIsConsistent( checkConsistency() );
@@ -213,7 +215,7 @@ class FulltextIndexConsistencyCheckIT
         try ( Transaction tx = db.beginTx() )
         {
             db.execute( format( NODE_CREATE, "nodes", array( "L1", "L2" ), array( "p1", "p2" ) ) ).close();
-            tx.success();
+            tx.commit();
         }
         try ( Transaction tx = db.beginTx() )
         {
@@ -243,7 +245,7 @@ class FulltextIndexConsistencyCheckIT
             db.createNode( Label.label( "L2" ) ).setProperty( "p2", "value" );
             db.createNode( Label.label( "L1" ) ).setProperty( "p1", "value" );
             db.createNode( Label.label( "L1" ) ).setProperty( "p2", "value" );
-            tx.success();
+            tx.commit();
         }
         managementService.shutdown();
         assertIsConsistent( checkConsistency() );
@@ -257,7 +259,7 @@ class FulltextIndexConsistencyCheckIT
         try ( Transaction tx = db.beginTx() )
         {
             db.execute( format( RELATIONSHIP_CREATE, "rels", array( "R1" ), array( "p1" ) ) ).close();
-            tx.success();
+            tx.commit();
         }
         try ( Transaction tx = db.beginTx() )
         {
@@ -265,7 +267,7 @@ class FulltextIndexConsistencyCheckIT
             Node node = db.createNode();
             node.createRelationshipTo( node, relationshipType ).setProperty( "p1", "value" );
             node.createRelationshipTo( node, relationshipType ).setProperty( "p1", "value" ); // This relationship will have a different id value than the node.
-            tx.success();
+            tx.commit();
         }
         managementService.shutdown();
         assertIsConsistent( checkConsistency() );
@@ -279,7 +281,7 @@ class FulltextIndexConsistencyCheckIT
         try ( Transaction tx = db.beginTx() )
         {
             db.execute( format( RELATIONSHIP_CREATE, "rels", array( "R1" ), array( "p1", "p2" ) ) ).close();
-            tx.success();
+            tx.commit();
         }
         try ( Transaction tx = db.beginTx() )
         {
@@ -293,7 +295,7 @@ class FulltextIndexConsistencyCheckIT
             r2.setProperty( "p2", "value" );
             node.createRelationshipTo( node, relationshipType ).setProperty( "p1", "value" );
             node.createRelationshipTo( node, relationshipType ).setProperty( "p2", "value" );
-            tx.success();
+            tx.commit();
         }
         managementService.shutdown();
         assertIsConsistent( checkConsistency() );
@@ -308,7 +310,7 @@ class FulltextIndexConsistencyCheckIT
         try ( Transaction tx = db.beginTx() )
         {
             db.execute( format( RELATIONSHIP_CREATE, "rels", array( "R1", "R2" ), array( "p1" ) ) ).close();
-            tx.success();
+            tx.commit();
         }
         try ( Transaction tx = db.beginTx() )
         {
@@ -319,7 +321,7 @@ class FulltextIndexConsistencyCheckIT
             n1.createRelationshipTo( n1, relType2 ).setProperty( "p1", "value" );
             n2.createRelationshipTo( n2, relType1 ).setProperty( "p1", "value" );
             n2.createRelationshipTo( n2, relType2 ).setProperty( "p1", "value" );
-            tx.success();
+            tx.commit();
         }
         managementService.shutdown();
         assertIsConsistent( checkConsistency() );
@@ -334,7 +336,7 @@ class FulltextIndexConsistencyCheckIT
         try ( Transaction tx = db.beginTx() )
         {
             db.execute( format( RELATIONSHIP_CREATE, "rels", array( "R1", "R2" ), array( "p1", "p2" ) ) ).close();
-            tx.success();
+            tx.commit();
         }
         try ( Transaction tx = db.beginTx() )
         {
@@ -357,7 +359,7 @@ class FulltextIndexConsistencyCheckIT
             n1.createRelationshipTo( n2, relType2 ).setProperty( "p1", "value" );
             n1.createRelationshipTo( n2, relType1 ).setProperty( "p2", "value" );
             n1.createRelationshipTo( n2, relType2 ).setProperty( "p2", "value" );
-            tx.success();
+            tx.commit();
         }
         managementService.shutdown();
         assertIsConsistent( checkConsistency() );
@@ -371,7 +373,7 @@ class FulltextIndexConsistencyCheckIT
         {
             db.execute( format( NODE_CREATE, "nodes", array( "L1", "L2", "L3" ), array( "p1", "p2" ) ) ).close();
             db.execute( format( RELATIONSHIP_CREATE, "rels", array( "R1", "R2" ), array( "p1", "p2" ) ) ).close();
-            tx.success();
+            tx.commit();
         }
         try ( Transaction tx = db.beginTx() )
         {
@@ -385,7 +387,7 @@ class FulltextIndexConsistencyCheckIT
             Relationship r1 = n2.createRelationshipTo( n2, RelationshipType.withName( "R1" ) );
             r1.setProperty( "p1", "value" );
             r1.setProperty( "p2", "value" );
-            tx.success();
+            tx.commit();
         }
         managementService.shutdown();
         assertIsConsistent( checkConsistency() );
@@ -398,13 +400,13 @@ class FulltextIndexConsistencyCheckIT
         try ( Transaction tx = db.beginTx() )
         {
             db.execute( format( NODE_CREATE, "nodes", array( "L1" ), array( "p1" ) ) ).close();
-            tx.success();
+            tx.commit();
         }
         try ( Transaction tx = db.beginTx() )
         {
             db.schema().awaitIndexesOnline( 1, TimeUnit.MINUTES );
             db.createNode( Label.label( "L1" ) ).setProperty( "p1", 1 );
-            tx.success();
+            tx.commit();
         }
         managementService.shutdown();
         assertIsConsistent( checkConsistency() );
@@ -417,14 +419,14 @@ class FulltextIndexConsistencyCheckIT
         try ( Transaction tx = db.beginTx() )
         {
             db.execute( format( RELATIONSHIP_CREATE, "rels", array( "R1" ), array( "p1" ) ) ).close();
-            tx.success();
+            tx.commit();
         }
         try ( Transaction tx = db.beginTx() )
         {
             db.schema().awaitIndexesOnline( 1, TimeUnit.MINUTES );
             Node node = db.createNode();
             node.createRelationshipTo( node, RelationshipType.withName( "R1" ) ).setProperty( "p1", 1 );
-            tx.success();
+            tx.commit();
         }
         managementService.shutdown();
         assertIsConsistent( checkConsistency() );
@@ -455,7 +457,7 @@ class FulltextIndexConsistencyCheckIT
                         x -> node.createRelationshipTo( nodes.get( x ), relTypes[rng.nextInt( relTypes.length )] ) ).forEach(
                         r -> Stream.of( propertyKeys ).forEach( p -> r.setProperty( p, rng.nextBoolean() ? p : randomValues.nextValue().asObject() ) ) );
             }
-            tx.success();
+            tx.commit();
         }
 
         try ( Transaction tx = db.beginTx() )
@@ -471,13 +473,13 @@ class FulltextIndexConsistencyCheckIT
                         array( Arrays.stream( relTypes ).limit( i ).map( RelationshipType::name ).toArray( String[]::new ) ),
                         array( Arrays.copyOf( propertyKeys, i ) ) ) ).close();
             }
-            tx.success();
+            tx.commit();
         }
 
         try ( Transaction tx = db.beginTx() )
         {
             db.schema().awaitIndexesOnline( 1, TimeUnit.MINUTES );
-            tx.success();
+            tx.commit();
         }
 
         managementService.shutdown();
@@ -492,7 +494,7 @@ class FulltextIndexConsistencyCheckIT
         try ( Transaction tx = db.beginTx() )
         {
             db.execute( format( NODE_CREATE, "nodes", array( "Label" ), array( "prop" ) ) ).close();
-            tx.success();
+            tx.commit();
         }
         IndexDescriptor indexDescriptor;
         long nodeId;
@@ -503,7 +505,7 @@ class FulltextIndexConsistencyCheckIT
             Node node = db.createNode( Label.label( "Label" ) );
             node.setProperty( "prop", "value" );
             nodeId = node.getId();
-            tx.success();
+            tx.commit();
         }
         IndexingService indexes = getIndexingService( db );
         IndexProxy indexProxy = indexes.getIndexProxy( indexDescriptor.schema() );
@@ -527,7 +529,7 @@ class FulltextIndexConsistencyCheckIT
         try ( Transaction tx = db.beginTx() )
         {
             db.execute( format( NODE_CREATE, "nodes", array( "Label" ), array( "prop" ) ) ).close();
-            tx.success();
+            tx.commit();
         }
         long nodeId;
         try ( Transaction tx = db.beginTx() )
@@ -536,7 +538,7 @@ class FulltextIndexConsistencyCheckIT
             Node node = db.createNode( Label.label( "Label" ) );
             nodeId = node.getId();
             node.setProperty( "prop", "value" );
-            tx.success();
+            tx.commit();
         }
 
         // Remove the property without updating the index
@@ -551,7 +553,7 @@ class FulltextIndexConsistencyCheckIT
         try ( Transaction tx = db.beginTx() )
         {
             db.getNodeById( nodeId ).removeProperty( "prop" );
-            tx.success();
+            tx.commit();
         }
         managementService.shutdown();
 
@@ -566,7 +568,7 @@ class FulltextIndexConsistencyCheckIT
         try ( Transaction tx = db.beginTx() )
         {
             db.execute( format( RELATIONSHIP_CREATE, "rels", array( "REL" ), array( "prop" ) ) ).close();
-            tx.success();
+            tx.commit();
         }
         IndexDescriptor indexDescriptor;
         long relId;
@@ -578,7 +580,7 @@ class FulltextIndexConsistencyCheckIT
             Relationship rel = node.createRelationshipTo( node, RelationshipType.withName( "REL" ) );
             rel.setProperty( "prop", "value" );
             relId = rel.getId();
-            tx.success();
+            tx.commit();
         }
         IndexingService indexes = getIndexingService( db );
         IndexProxy indexProxy = indexes.getIndexProxy( indexDescriptor.schema() );
@@ -602,7 +604,7 @@ class FulltextIndexConsistencyCheckIT
         try ( Transaction tx = db.beginTx() )
         {
             db.execute( format( RELATIONSHIP_CREATE, "rels", array( "REL" ), array( "prop" ) ) ).close();
-            tx.success();
+            tx.commit();
         }
         long relId;
         try ( Transaction tx = db.beginTx() )
@@ -612,7 +614,7 @@ class FulltextIndexConsistencyCheckIT
             Relationship rel = node.createRelationshipTo( node, RelationshipType.withName( "REL" ) );
             relId = rel.getId();
             rel.setProperty( "prop", "value" );
-            tx.success();
+            tx.commit();
         }
         NeoStores stores = getNeoStores( db );
         RelationshipRecord record = stores.getRelationshipStore().newRecord();
@@ -638,9 +640,10 @@ class FulltextIndexConsistencyCheckIT
 
     private ConsistencyCheckService.Result checkConsistency() throws ConsistencyCheckIncompleteException
     {
-        Config config = Config.defaults();
+        DatabaseLayout databaseLayout = testDirectory.databaseLayout();
+        Config config = Config.defaults( GraphDatabaseSettings.logs_directory, databaseLayout.databaseDirectory().toPath() );
         ConsistencyCheckService consistencyCheckService = new ConsistencyCheckService( new Date() );
-        return consistencyCheckService.runFullConsistencyCheck( testDirectory.databaseLayout(), config, ProgressMonitorFactory.NONE,
+        return consistencyCheckService.runFullConsistencyCheck( databaseLayout, config, ProgressMonitorFactory.NONE,
                 NullLogProvider.getInstance(), true, ConsistencyFlags.DEFAULT );
     }
 

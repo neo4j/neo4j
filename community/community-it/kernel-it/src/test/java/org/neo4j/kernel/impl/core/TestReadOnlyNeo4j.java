@@ -48,7 +48,6 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.graphdb.RelationshipType.withName;
 import static org.neo4j.test.mockito.matcher.Neo4jMatchers.hasProperty;
-import static org.neo4j.test.mockito.matcher.Neo4jMatchers.inTx;
 
 @ExtendWith( {EphemeralFileSystemExtension.class, TestDirectoryExtension.class} )
 class TestReadOnlyNeo4j
@@ -86,7 +85,7 @@ class TestReadOnlyNeo4j
             {
                 readGraphDb.createNode();
 
-                tx.success();
+                tx.commit();
             }
         } );
     }
@@ -106,8 +105,7 @@ class TestReadOnlyNeo4j
         Relationship rel = node1.createRelationshipTo( node2, withName( "TEST" ) );
         node1.setProperty( "key1", "value1" );
         rel.setProperty( "key1", "value1" );
-        tx.success();
-        tx.close();
+        tx.commit();
 
         // make sure write operations still throw exception
         assertThrows( NotInTransactionException.class, db::createNode );
@@ -115,16 +113,17 @@ class TestReadOnlyNeo4j
         assertThrows( NotInTransactionException.class, () -> node1.setProperty( "key1", "value2" ) );
         assertThrows( NotInTransactionException.class, () -> rel.removeProperty( "key1" ) );
 
-        Transaction transaction = db.beginTx();
-        assertEquals( node1, db.getNodeById( node1.getId() ) );
-        assertEquals( node2, db.getNodeById( node2.getId() ) );
-        assertEquals( rel, db.getRelationshipById( rel.getId() ) );
+        try ( Transaction transaction = db.beginTx() )
+        {
+            assertEquals( node1, db.getNodeById( node1.getId() ) );
+            assertEquals( node2, db.getNodeById( node2.getId() ) );
+            assertEquals( rel, db.getRelationshipById( rel.getId() ) );
 
-        assertThat( node1, inTx( db, hasProperty( "key1" ).withValue( "value1" ) ) );
-        Relationship loadedRel = node1.getSingleRelationship( withName( "TEST" ), Direction.OUTGOING );
-        assertEquals( rel, loadedRel );
-        assertThat(loadedRel, inTx(db, hasProperty( "key1" ).withValue( "value1" )));
-        transaction.close();
+            assertThat( node1, hasProperty( "key1" ).withValue( "value1" ) );
+            Relationship loadedRel = node1.getSingleRelationship( withName( "TEST" ), Direction.OUTGOING );
+            assertEquals( rel, loadedRel );
+            assertThat( loadedRel, hasProperty( "key1" ).withValue( "value1" ) );
+        }
     }
 
     private DbRepresentation createSomeData()
@@ -145,7 +144,7 @@ class TestReadOnlyNeo4j
                 node.setProperty( "someKey" + i % 10, i % 15 );
                 rel.setProperty( "since", System.currentTimeMillis() );
             }
-            tx.success();
+            tx.commit();
         }
         DbRepresentation result = DbRepresentation.of( db );
         managementService.shutdown();

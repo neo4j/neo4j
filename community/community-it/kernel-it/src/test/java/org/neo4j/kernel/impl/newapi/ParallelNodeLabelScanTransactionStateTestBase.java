@@ -99,7 +99,7 @@ public abstract class ParallelNodeLabelScanTransactionStateTestBase<G extends Ke
                 created.add( createId );
                 deleted.add( deleteId );
             }
-            tx.success();
+            tx.commit();
         }
 
         try ( Transaction tx = beginTransaction() )
@@ -222,8 +222,7 @@ public abstract class ParallelNodeLabelScanTransactionStateTestBase<G extends Ke
             assertDistinct( ids1, ids2, ids3, ids4 );
             LongList concat = concat( ids1, ids2, ids3, ids4 );
             assertEquals( ids.toSortedList(), concat.toSortedList() );
-            tx.failure();
-
+            tx.rollback();
         }
         finally
         {
@@ -262,7 +261,7 @@ public abstract class ParallelNodeLabelScanTransactionStateTestBase<G extends Ke
 
             assertDistinct( lists );
             assertEquals( ids.toSortedList(), concat( lists ).toSortedList() );
-            tx.failure();
+            tx.rollback();
         }
         finally
         {
@@ -310,7 +309,7 @@ public abstract class ParallelNodeLabelScanTransactionStateTestBase<G extends Ke
                     assertEquals( allNodes, LongSets.immutable.withAll( concat ),
                             format( "nodes=%d, seen=%d, all=%d", nodeInTx, concat.size(), allNodes.size() ) );
                     assertEquals( allNodes.size(), concat.size(), format( "nodes=%d", nodeInTx ) );
-                    tx.failure();
+                    tx.rollback();
                 }
             }
         }
@@ -329,7 +328,7 @@ public abstract class ParallelNodeLabelScanTransactionStateTestBase<G extends Ke
         {
             Write write = tx.dataWrite();
             ids = createNodesWithLabel( write, label, size );
-            tx.success();
+            tx.commit();
         }
         return ids;
     }
@@ -353,7 +352,7 @@ public abstract class ParallelNodeLabelScanTransactionStateTestBase<G extends Ke
         try ( Transaction tx = beginTransaction() )
         {
             label = tx.tokenWrite().labelGetOrCreateForName( name );
-            tx.success();
+            tx.commit();
         }
         return label;
     }

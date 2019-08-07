@@ -86,19 +86,19 @@ public class LabelAndIndexUpdateBatchingIT
                 {
                     db.createNode();
                 }
-                tx.success();
+                tx.commit();
             }
             // node N
             try ( Transaction tx = db.beginTx() )
             {
                 db.createNode( LABEL ).setProperty( PROPERTY_KEY, nodeN );
-                tx.success();
+                tx.commit();
             }
             // uniqueness constraint affecting N
             try ( Transaction tx = db.beginTx() )
             {
                 db.schema().constraintFor( LABEL ).assertPropertyIsUnique( PROPERTY_KEY ).create();
-                tx.success();
+                tx.commit();
             }
             transactions = extractTransactions( db );
         }
@@ -126,7 +126,7 @@ public class LabelAndIndexUpdateBatchingIT
                         singleOrNull( db.findNodes( LABEL, PROPERTY_KEY, otherNode ) ) ); // just to verify
                 assertNotNull( "Node N not found",
                         singleOrNull( db.findNodes( LABEL, PROPERTY_KEY, nodeN ) ) );
-                tx.success();
+                tx.commit();
             }
         }
         finally

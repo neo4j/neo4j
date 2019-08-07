@@ -25,8 +25,6 @@ import java.util.Optional;
 
 import org.neo4j.graphdb.TransactionTerminatedException;
 import org.neo4j.graphdb.TransientDatabaseFailureException;
-import org.neo4j.graphdb.TransientFailureException;
-import org.neo4j.graphdb.TransientTransactionFailureException;
 import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.exceptions.Status;
@@ -34,8 +32,6 @@ import org.neo4j.kernel.impl.coreapi.TopLevelTransaction;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertSame;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.doThrow;
@@ -55,8 +51,7 @@ class TopLevelTransactionTest
         TopLevelTransaction transaction = new TopLevelTransaction( kernelTransaction );
 
         // WHEN
-        transaction.success();
-        assertThrows( TransientTransactionFailureException.class, transaction::close );
+        transaction.commit();
     }
 
     @Test
@@ -69,8 +64,7 @@ class TopLevelTransactionTest
         TopLevelTransaction transaction = new TopLevelTransaction( kernelTransaction );
 
         // WHEN
-        transaction.success();
-        assertThrows( org.neo4j.graphdb.TransactionFailureException.class, transaction::close );
+        transaction.commit();
     }
 
     @Test
@@ -83,8 +77,7 @@ class TopLevelTransactionTest
         TopLevelTransaction transaction = new TopLevelTransaction( kernelTransaction );
 
         // WHEN
-        transaction.success();
-        assertThrows( TransientFailureException.class, transaction::close );
+        transaction.commit();
     }
 
     @Test
@@ -96,9 +89,7 @@ class TopLevelTransactionTest
         doThrow( error ).when( kernelTransaction ).close();
         TopLevelTransaction transaction = new TopLevelTransaction( kernelTransaction );
 
-        transaction.success();
-        TransientTransactionFailureException exception = assertThrows( TransientTransactionFailureException.class, transaction::close );
-        assertSame( error, exception.getCause() );
+        transaction.commit();
     }
 
     @Test

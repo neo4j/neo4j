@@ -73,20 +73,20 @@ class NonUniqueIndexTest
             try ( Transaction tx = db.beginTx() )
             {
                 db.schema().indexFor( label( LABEL ) ).on( KEY ).create();
-                tx.success();
+                tx.commit();
             }
             Node node;
             try ( Transaction tx = db.beginTx() )
             {
                 node = db.createNode( label( LABEL ) );
                 node.setProperty( KEY, VALUE );
-                tx.success();
+                tx.commit();
             }
 
             try ( Transaction tx = db.beginTx() )
             {
                 db.schema().awaitIndexesOnline( 1, MINUTES );
-                tx.success();
+                tx.commit();
             }
 
             // Then
@@ -104,7 +104,7 @@ class NonUniqueIndexTest
                     assertEquals( node.getId(), cursor.nodeReference() );
                     assertFalse( cursor.next() );
                 }
-                tx.success();
+                tx.commit();
             }
         }
         finally

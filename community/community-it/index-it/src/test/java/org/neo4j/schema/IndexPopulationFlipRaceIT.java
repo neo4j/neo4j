@@ -73,7 +73,7 @@ public class IndexPopulationFlipRaceIT
         try ( Transaction tx = db.beginTx() )
         {
             db.schema().awaitIndexesOnline( 30, SECONDS );
-            tx.success();
+            tx.commit();
         }
     }
 
@@ -91,7 +91,7 @@ public class IndexPopulationFlipRaceIT
             {
                 db.schema().constraintFor( labelB( i ) ).assertPropertyIsUnique( keyB( i ) ).create();
             }
-            tx.success();
+            tx.commit();
         }
     }
 
@@ -127,7 +127,7 @@ public class IndexPopulationFlipRaceIT
                 nodeA.setProperty( keyA( i ), dataA[t] = nodeA.getId() );
                 Node nodeB = db.createNode( labelB( i ) );
                 nodeB.setProperty( keyB( i ), dataB[t] = nodeB.getId() );
-                tx.success();
+                tx.commit();
             }
         }
         return Pair.of( dataA, dataB );

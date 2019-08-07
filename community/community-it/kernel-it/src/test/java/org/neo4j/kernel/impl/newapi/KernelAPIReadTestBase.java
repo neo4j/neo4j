@@ -73,8 +73,7 @@ public abstract class KernelAPIReadTestBase<ReadSupport extends KernelAPIReadTes
     @AfterEach
     public void closeTransaction() throws Exception
     {
-        tx.success();
-        tx.close();
+        tx.commit();
         cursors.assertAllClosedAndReset();
     }
 

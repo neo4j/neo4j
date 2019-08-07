@@ -114,7 +114,7 @@ public class FulltextIndexProviderTest
             rel.setProperty( "ho", "value3" );
             rel.setProperty( "hi", "value4" );
 
-            transaction.success();
+            transaction.commit();
         }
     }
 
@@ -186,7 +186,7 @@ public class FulltextIndexProviderTest
             secondRelId = ho.getId();
             ho.setProperty( "hej", "villa" );
             ho.setProperty( "ho", "value3" );
-            transaction.success();
+            transaction.commit();
         }
         verifyRelationshipData( secondRelId );
         db.restartDatabase( DbmsRule.RestartAction.EMPTY );
@@ -200,7 +200,7 @@ public class FulltextIndexProviderTest
         {
             db.execute( format( NODE_CREATE, "nodeIndex", array( "Label1", "Label2" ), array( "prop1", "prop2" ) ) ).close();
             db.execute( format( RELATIONSHIP_CREATE, "relIndex", array( "RelType1", "RelType2" ), array( "prop1", "prop2" ) ) ).close();
-            tx.success();
+            tx.commit();
         }
 
         try ( Transaction tx = db.beginTx() )
@@ -256,7 +256,7 @@ public class FulltextIndexProviderTest
                     }
                 }
             }
-            tx.success();
+            tx.commit();
         }
     }
 
@@ -308,7 +308,7 @@ public class FulltextIndexProviderTest
                 rel3.setProperty( prop3, val3 );
                 rels3.add( rel3.getId() );
             }
-            tx.success();
+            tx.commit();
         }
 
         // Test that multi-token node indexes can be waited for.
@@ -317,13 +317,13 @@ public class FulltextIndexProviderTest
             db.execute( format( NODE_CREATE, "nodeIndex",
                     array( label1.name(), label2.name(), label3.name() ),
                     array( prop1, prop2, prop3 ) ) ).close();
-            tx.success();
+            tx.commit();
         }
 
         try ( Transaction tx = db.beginTx() )
         {
             db.schema().awaitIndexesOnline( 10, TimeUnit.SECONDS );
-            tx.success();
+            tx.commit();
         }
 
         try ( Transaction tx = db.beginTx() )
@@ -331,7 +331,7 @@ public class FulltextIndexProviderTest
             assertQueryFindsIds( db, true, "nodeIndex", "foo", nodes1 );
             assertQueryFindsIds( db, true, "nodeIndex", "bar", nodes2 );
             assertQueryFindsIds( db, true, "nodeIndex", "baz", nodes3 );
-            tx.success();
+            tx.commit();
         }
 
         // Test that multi-token relationship indexes can be waited for.
@@ -340,13 +340,13 @@ public class FulltextIndexProviderTest
             db.execute( format( RELATIONSHIP_CREATE, "relIndex",
                     array( relType1.name(), relType2.name(), relType3.name() ),
                     array( prop1, prop2, prop3 ) ) ).close();
-            tx.success();
+            tx.commit();
         }
 
         try ( Transaction tx = db.beginTx() )
         {
             db.schema().awaitIndexesOnline( 10, TimeUnit.SECONDS );
-            tx.success();
+            tx.commit();
         }
 
         try ( Transaction tx = db.beginTx() )
@@ -354,7 +354,7 @@ public class FulltextIndexProviderTest
             assertQueryFindsIds( db, false, "relIndex", "foo", rels1 );
             assertQueryFindsIds( db, false, "relIndex", "bar", rels2 );
             assertQueryFindsIds( db, false, "relIndex", "baz", rels3 );
-            tx.success();
+            tx.commit();
         }
     }
 
@@ -466,7 +466,7 @@ public class FulltextIndexProviderTest
             nodeId = hej.getId();
             hej.setProperty( "hej", "villa" );
             hej.setProperty( "ho", "value3" );
-            transaction.success();
+            transaction.commit();
         }
         return nodeId;
     }
@@ -499,7 +499,7 @@ public class FulltextIndexProviderTest
                 assertTrue( ids.remove( cursor.nodeReference() ) );
                 assertFalse( cursor.next() );
             }
-            tx.success();
+            tx.commit();
         }
     }
 
@@ -528,7 +528,7 @@ public class FulltextIndexProviderTest
                 assertEquals( secondRelId, cursor.relationshipReference() );
                 assertFalse( cursor.next() );
             }
-            tx.success();
+            tx.commit();
         }
     }
 

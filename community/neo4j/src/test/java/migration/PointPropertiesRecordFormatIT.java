@@ -66,7 +66,7 @@ class PointPropertiesRecordFormatIT
         {
             Node node = database.createNode( pointNode );
             node.setProperty( propertyKey, pointValue );
-            transaction.success();
+            transaction.commit();
         }
         managementService.shutdown();
 
@@ -93,7 +93,7 @@ class PointPropertiesRecordFormatIT
         {
             Node node = database.createNode( pointNode );
             node.setProperty( propertyKey, new PointValue[]{pointValue, pointValue} );
-            transaction.success();
+            transaction.commit();
         }
         managementService.shutdown();
 

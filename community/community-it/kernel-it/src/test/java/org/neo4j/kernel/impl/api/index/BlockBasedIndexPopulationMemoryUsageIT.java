@@ -103,7 +103,7 @@ class BlockBasedIndexPopulationMemoryUsageIT
                     db.schema().indexFor( label ).on( key ).create();
                 }
             }
-            tx.success();
+            tx.commit();
         }
         while ( true )
         {
@@ -148,7 +148,7 @@ class BlockBasedIndexPopulationMemoryUsageIT
                                 node.setProperty( key, format( "some value %d", n ) );
                             }
                         }
-                        tx.success();
+                        tx.commit();
                     }
                 }
             } );

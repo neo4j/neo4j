@@ -63,7 +63,7 @@ class ConsistentPropertyReadsIT
                     nodes[i].setProperty( key, values[0] );
                 }
             }
-            tx.success();
+            tx.commit();
         }
 
         int updaters = 10;
@@ -84,12 +84,12 @@ class ConsistentPropertyReadsIT
                         try ( Transaction tx = db.beginTx() )
                         {
                             node.removeProperty( key );
-                            tx.success();
+                            tx.commit();
                         }
                         try ( Transaction tx = db.beginTx() )
                         {
                             node.setProperty( key, values[random.nextInt( values.length )] );
-                            tx.success();
+                            tx.commit();
                         }
                     }
                 }
@@ -112,7 +112,7 @@ class ConsistentPropertyReadsIT
                         String value = (String) nodes[random.nextInt( nodes.length )]
                                 .getProperty( keys[random.nextInt( keys.length )], null );
                         assertTrue( value == null || ArrayUtil.contains( values, value ), value );
-                        tx.success();
+                        tx.commit();
                     }
                 }
             } );

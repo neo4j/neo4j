@@ -85,7 +85,7 @@ class UpdateDeletedIndexIT
             try ( Transaction tx = db.beginTx() )
             {
                 indexDefinition.drop();
-                tx.success();
+                tx.commit();
             }
         }, 1 );
         for ( int i = 0; i < NODES; i++ )
@@ -96,7 +96,7 @@ class UpdateDeletedIndexIT
                 try ( Transaction tx = db.beginTx() )
                 {
                     operation.run( nodeId );
-                    tx.success();
+                    tx.commit();
                 }
             } ) );
         }
@@ -116,7 +116,7 @@ class UpdateDeletedIndexIT
                 node.setProperty( KEY, i );
                 nodes[i] = node.getId();
             }
-            tx.success();
+            tx.commit();
         }
         return nodes;
     }
@@ -129,18 +129,18 @@ class UpdateDeletedIndexIT
             {
                 db.createNode( LABEL ).setProperty( KEY, i );
             }
-            tx.success();
+            tx.commit();
         }
         IndexDefinition indexDefinition;
         try ( Transaction tx = db.beginTx() )
         {
             indexDefinition = db.schema().indexFor( LABEL ).on( KEY ).create();
-            tx.success();
+            tx.commit();
         }
         try ( Transaction tx = db.beginTx() )
         {
             db.schema().awaitIndexesOnline( 10, TimeUnit.SECONDS );
-            tx.success();
+            tx.commit();
         }
         return indexDefinition;
     }

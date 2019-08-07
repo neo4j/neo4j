@@ -56,7 +56,7 @@ public abstract class RandomRelationshipTraversalCursorTestBase<G extends Kernel
             {
                 nodeIds.add( graphDb.createNode( Label.label( "LABEL" + i ) ).getId() );
             }
-            tx.success();
+            tx.commit();
         }
 
         try ( Transaction tx = graphDb.beginTx() )
@@ -68,7 +68,7 @@ public abstract class RandomRelationshipTraversalCursorTestBase<G extends Kernel
                 graphDb.getNodeById( source ).createRelationshipTo( graphDb.getNodeById( target ),
                         RelationshipType.withName( "REL" + (i % 10) ) );
             }
-            tx.success();
+            tx.commit();
         }
     }
 

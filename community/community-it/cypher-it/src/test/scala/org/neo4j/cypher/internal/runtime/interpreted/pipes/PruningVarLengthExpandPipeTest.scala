@@ -336,8 +336,7 @@ class PruningVarLengthExpandPipeTest extends GraphDatabaseFunSuite {
     def checkAndSwitch(): Unit = {
       count += 1
       if (count == 1000) {
-        tx.success()
-        tx.close()
+        tx.commit()
         tx = graph.beginTransaction(Type.`implicit`, LoginContext.AUTH_DISABLED)
         count = 0
       }
@@ -358,8 +357,7 @@ class PruningVarLengthExpandPipeTest extends GraphDatabaseFunSuite {
       relate(n1, n2)
     }
 
-    tx.success()
-    tx.close()
+    tx.commit()
 
     nodes
   }

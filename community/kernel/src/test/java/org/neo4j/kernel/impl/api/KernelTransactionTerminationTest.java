@@ -115,7 +115,6 @@ class KernelTransactionTerminationTest
             {
                 tx.initialize();
                 CommitterAction committerAction = CommitterAction.random();
-                committerAction.executeOn( tx );
                 if ( committerToTerminator.offer( true ) )
                 {
                     TerminatorAction terminatorAction;
@@ -224,11 +223,6 @@ class KernelTransactionTerminationTest
         NONE
                 {
                     @Override
-                    void executeOn( KernelTransaction tx )
-                    {
-                    }
-
-                    @Override
                     void closeTerminated( TestKernelTransaction tx ) throws TransactionFailureException
                     {
                         tx.assertTerminated();
@@ -247,16 +241,10 @@ class KernelTransactionTerminationTest
         MARK_SUCCESS
                 {
                     @Override
-                    void executeOn( KernelTransaction tx )
-                    {
-                        tx.success();
-                    }
-
-                    @Override
                     void closeTerminated( TestKernelTransaction tx )
                     {
                         tx.assertTerminated();
-                        assertThrows( TransactionTerminatedException.class, tx::close );
+                        assertThrows( TransactionTerminatedException.class, tx::commit );
                         tx.assertRolledBack();
                     }
 
@@ -264,18 +252,12 @@ class KernelTransactionTerminationTest
                     void closeNotTerminated( TestKernelTransaction tx ) throws TransactionFailureException
                     {
                         tx.assertNotTerminated();
-                        tx.close();
+                        tx.commit();
                         tx.assertCommitted();
                     }
                 },
         MARK_FAILURE
                 {
-                    @Override
-                    void executeOn( KernelTransaction tx )
-                    {
-                        tx.failure();
-                    }
-
                     @Override
                     void closeTerminated( TestKernelTransaction tx ) throws TransactionFailureException
                     {
@@ -287,34 +269,9 @@ class KernelTransactionTerminationTest
                     {
                         NONE.closeNotTerminated( tx );
                     }
-                },
-        MARK_SUCCESS_AND_FAILURE
-                {
-                    @Override
-                    void executeOn( KernelTransaction tx )
-                    {
-                        tx.success();
-                        tx.failure();
-                    }
-
-                    @Override
-                    void closeTerminated( TestKernelTransaction tx ) throws TransactionFailureException
-                    {
-                        MARK_SUCCESS.closeTerminated( tx );
-                    }
-
-                    @Override
-                    void closeNotTerminated( TestKernelTransaction tx )
-                    {
-                        tx.assertNotTerminated();
-                        assertThrows( TransactionFailureException.class, tx::close );
-                        tx.assertRolledBack();
-                    }
                 };
 
         static final CommitterAction[] VALUES = values();
-
-        abstract void executeOn( KernelTransaction tx );
 
         abstract void closeTerminated( TestKernelTransaction tx ) throws TransactionFailureException;
 

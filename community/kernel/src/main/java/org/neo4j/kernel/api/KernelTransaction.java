@@ -38,8 +38,7 @@ import org.neo4j.kernel.impl.api.ClockContext;
 
 /**
  * Extends the outwards-facing {@link org.neo4j.internal.kernel.api.Transaction} with additional functionality
- * that is used inside the kernel (and in some other places, ahum). Please do not rely on this class unless you
- * have to.
+ * that is used inside the kernel.
  */
 public interface KernelTransaction extends Transaction, AssertOpen
 {

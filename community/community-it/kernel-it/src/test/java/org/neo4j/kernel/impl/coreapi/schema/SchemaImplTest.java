@@ -94,7 +94,7 @@ class SchemaImplTest
                 Node userNode = db.createNode( label );
                 userNode.setProperty( "username", "user" + id + "@neo4j.org" );
             }
-            tx.success();
+            tx.commit();
         }
 
         // Create an index
@@ -103,7 +103,7 @@ class SchemaImplTest
         {
             Schema schema = db.schema();
             indexDefinition = schema.indexFor( USER_LABEL ).on( "username" ).create();
-            tx.success();
+            tx.commit();
         }
 
         // Get state and progress
@@ -136,7 +136,7 @@ class SchemaImplTest
         {
             IndexDefinition index = db.schema().indexFor( USER_LABEL ).on( "name" ).create();
             assertThat( index.getName(), startsWith( "index_" ) );
-            tx.success();
+            tx.commit();
         }
     }
 
@@ -148,13 +148,13 @@ class SchemaImplTest
         {
             IndexDefinition index = db.schema().indexFor( USER_LABEL ).on( "name" ).withName( indexName ).create();
             assertThat( index.getName(), is( indexName ) );
-            tx.success();
+            tx.commit();
         }
         try ( Transaction tx = db.beginTx() )
         {
             IndexDefinition index = db.schema().getIndexByName( indexName );
             assertThat( index.getName(), is( indexName ) );
-            tx.success();
+            tx.commit();
         }
     }
 
@@ -165,7 +165,7 @@ class SchemaImplTest
             Iterable<IndexDefinition> indexes = db.schema().getIndexes( label );
             IndexDefinition index = Iterables.firstOrNull( indexes );
             boolean exists = index != null;
-            transaction.success();
+            transaction.commit();
             return exists;
         }
     }

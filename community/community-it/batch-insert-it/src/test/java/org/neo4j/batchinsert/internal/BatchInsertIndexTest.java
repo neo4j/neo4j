@@ -100,7 +100,7 @@ class BatchInsertIndexTest
             IndexDescriptor index = schemaRead.index( labelId, propertyId );
             assertTrue( schemaIndex.providerName().contains( index.getIndexProvider().getKey() ), unexpectedIndexProviderMessage( index ) );
             assertTrue( schemaIndex.providerName().contains( index.getIndexProvider().getVersion() ), unexpectedIndexProviderMessage( index ) );
-            tx.success();
+            tx.commit();
         }
         finally
         {
@@ -130,7 +130,7 @@ class BatchInsertIndexTest
             {
                 assertSingleCorrectHit( db, collidingPoints.first() );
                 assertSingleCorrectHit( db, collidingPoints.other() );
-                tx.success();
+                tx.commit();
             }
         }
         finally
@@ -162,7 +162,7 @@ class BatchInsertIndexTest
             Schema.IndexState indexState = db.schema().getIndexState( index );
             assertEquals( Schema.IndexState.FAILED, indexState );
             assertFalse( indexes.hasNext() );
-            tx.success();
+            tx.commit();
         }
         finally
         {
@@ -199,7 +199,7 @@ class BatchInsertIndexTest
         try ( Transaction tx = db.beginTx() )
         {
             db.schema().awaitIndexesOnline( 10, TimeUnit.SECONDS );
-            tx.success();
+            tx.commit();
         }
     }
 

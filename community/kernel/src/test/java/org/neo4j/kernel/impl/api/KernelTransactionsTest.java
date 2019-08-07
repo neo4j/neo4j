@@ -211,7 +211,7 @@ class KernelTransactionsTest
         {
             // Just pick anything that can flag that changes have been made to this transaction
             ((KernelTransactionImplementation) transaction).txState().nodeDoCreate( 0 );
-            transaction.success();
+            transaction.commit();
         }
 
         // Then

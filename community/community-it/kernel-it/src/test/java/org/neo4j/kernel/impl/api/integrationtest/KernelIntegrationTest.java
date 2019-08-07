@@ -142,28 +142,14 @@ public abstract class KernelIntegrationTest
 
     protected void commit() throws TransactionFailureException
     {
-        transaction.success();
-        try
-        {
-            transaction.close();
-        }
-        finally
-        {
-            transaction = null;
-        }
+        transaction.commit();
+        transaction = null;
     }
 
     protected void rollback() throws TransactionFailureException
     {
-        transaction.failure();
-        try
-        {
-            transaction.close();
-        }
-        finally
-        {
-            transaction = null;
-        }
+        transaction.rollback();
+        transaction = null;
     }
 
     @BeforeEach

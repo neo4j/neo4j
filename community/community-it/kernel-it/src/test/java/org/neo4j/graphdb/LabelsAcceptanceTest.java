@@ -111,21 +111,21 @@ class LabelsAcceptanceTest
             node = db.createNode();
             node.addLabel( Labels.MY_LABEL );
 
-            tx.success();
+            tx.commit();
         }
 
         // POST "FOOBAR"
         try ( Transaction tx = db.beginTx() )
         {
             node.addLabel( Labels.MY_LABEL );
-            tx.success();
+            tx.commit();
         }
 
         // POST ["BAZQUX"]
         try ( Transaction tx = db.beginTx() )
         {
             node.addLabel( label( "BAZQUX" ) );
-            tx.success();
+            tx.commit();
         }
         // PUT ["BAZQUX"]
         try ( Transaction tx = db.beginTx() )
@@ -135,7 +135,7 @@ class LabelsAcceptanceTest
                 node.removeLabel( label );
             }
             node.addLabel( label( "BAZQUX" ) );
-            tx.success();
+            tx.commit();
         }
 
         // GET
@@ -146,7 +146,7 @@ class LabelsAcceptanceTest
             {
                 labels.add( label );
             }
-            tx.success();
+            tx.commit();
         }
         assertEquals( 1, labels.size(), labels.toString() );
         assertEquals( "BAZQUX", labels.get( 0 ).name() );
@@ -164,7 +164,7 @@ class LabelsAcceptanceTest
             myNode = db.createNode();
             myNode.addLabel( Labels.MY_LABEL );
 
-            tx.success();
+            tx.commit();
         }
 
         // Then
@@ -209,7 +209,7 @@ class LabelsAcceptanceTest
             myNode.addLabel( Labels.MY_LABEL );
             myNode.addLabel( Labels.MY_LABEL );
 
-            tx.success();
+            tx.commit();
         }
 
         // Then
@@ -263,7 +263,7 @@ class LabelsAcceptanceTest
         try ( Transaction tx = db.beginTx() )
         {
             myNode.removeLabel( label );
-            tx.success();
+            tx.commit();
         }
 
         // Then
@@ -278,7 +278,7 @@ class LabelsAcceptanceTest
         try ( Transaction tx = db.beginTx() )
         {
             node = db.createNode( Labels.values() );
-            tx.success();
+            tx.commit();
         }
 
         // THEN
@@ -299,7 +299,7 @@ class LabelsAcceptanceTest
         {
             myNode = db.createNode();
             myNode.removeLabel( label );
-            tx.success();
+            tx.commit();
         }
 
         // THEN
@@ -318,7 +318,7 @@ class LabelsAcceptanceTest
         try ( Transaction tx = db.beginTx() )
         {
             myNode.removeLabel( label );
-            tx.success();
+            tx.commit();
         }
 
         // THEN
@@ -342,7 +342,7 @@ class LabelsAcceptanceTest
             // THEN
             assertFalse( myNode.hasLabel( label ) );
 
-            tx.success();
+            tx.commit();
         }
     }
 
@@ -359,7 +359,7 @@ class LabelsAcceptanceTest
             {
                 node.addLabel( label( label ) );
             }
-            tx.success();
+            tx.commit();
         }
 
         assertThat( node, inTx( db, hasLabels( expected ) ) );
@@ -384,7 +384,7 @@ class LabelsAcceptanceTest
         {
             node = db.createNode();
             node.addLabel( Labels.MY_LABEL );
-            tx.success();
+            tx.commit();
         }
 
         // THEN
@@ -410,7 +410,7 @@ class LabelsAcceptanceTest
             // extracted here to be asserted below
             nodesWithMyLabel = asSet( db.findNodes( Labels.MY_LABEL ) );
             nodesWithMyOtherLabel = asSet( db.findNodes( Labels.MY_OTHER_LABEL ) );
-            tx.success();
+            tx.commit();
         }
 
         // THEN
@@ -445,7 +445,7 @@ class LabelsAcceptanceTest
         try ( Transaction tx = db.beginTx() )
         {
             node.delete();
-            tx.success();
+            tx.commit();
         }
 
         // When
@@ -471,7 +471,7 @@ class LabelsAcceptanceTest
             try ( Transaction tx = db.beginTx() )
             {
                 node.delete();
-                tx.success();
+                tx.commit();
             }
 
             BinaryLatch indexCreateStarted = new BinaryLatch();
@@ -483,7 +483,7 @@ class LabelsAcceptanceTest
                     db.schema().indexFor( Labels.MY_LABEL ).on( "prop" ).create();
                     indexCreateStarted.release();
                     indexCreateAllowToFinish.await();
-                    tx.success();
+                    tx.commit();
                 }
             } );
             indexCreator.start();
@@ -515,7 +515,7 @@ class LabelsAcceptanceTest
             try ( Transaction tx = db.beginTx() )
             {
                 node.createRelationshipTo( node, relType ).setProperty( "prop", "val" );
-                tx.success();
+                tx.commit();
             }
 
             BinaryLatch indexCreateStarted = new BinaryLatch();
@@ -527,7 +527,7 @@ class LabelsAcceptanceTest
                     db.execute( "CALL db.index.fulltext.createRelationshipIndex('myIndex', ['REL'], ['prop'] )" ).close();
                     indexCreateStarted.release();
                     indexCreateAllowToFinish.await();
-                    tx.success();
+                    tx.commit();
                 }
             } );
             indexCreator.start();
@@ -558,7 +558,7 @@ class LabelsAcceptanceTest
             Node node = db.createNode();
             node.addLabel( label );
             node.setProperty( "name", "bla" );
-            tx.success();
+            tx.commit();
         }
 
         // WHEN
@@ -569,7 +569,7 @@ class LabelsAcceptanceTest
                 node.removeLabel( label ); // remove Label ...
                 node.delete(); // ... and afterwards the node
             }
-            tx.success();
+            tx.commit();
         } // tx.close(); - here comes the exception
 
         // THEN
@@ -594,7 +594,7 @@ class LabelsAcceptanceTest
             {
                 node.removeLabel( next );
             }
-            tx.success();
+            tx.commit();
         }
     }
 
@@ -612,7 +612,7 @@ class LabelsAcceptanceTest
             {
                 node.removeProperty( key );
             }
-            tx.success();
+            tx.commit();
         }
     }
 
@@ -631,7 +631,7 @@ class LabelsAcceptanceTest
                 node.addLabel( label( "label:" + i ) );
             }
 
-            tx.success();
+            tx.commit();
         }
 
         // when
@@ -642,7 +642,7 @@ class LabelsAcceptanceTest
                 node.removeLabel( label( "label:" + i ) );
             }
 
-            tx.success();
+            tx.commit();
         }
 
         // then
@@ -675,7 +675,7 @@ class LabelsAcceptanceTest
             {
                 node.addLabel( label( "label" + i ) );
             }
-            tx.success();
+            tx.commit();
         }
 
         Set<Integer> seenProperties = new HashSet<>();
@@ -704,7 +704,7 @@ class LabelsAcceptanceTest
                     }
                 }
             }
-            tx.success();
+            tx.commit();
         }
 
         assertEquals( propertyCount, seenProperties.size() );
@@ -740,7 +740,7 @@ class LabelsAcceptanceTest
             {
                 node.addLabel( labelWithIndex( i ) );
             }
-            tx.success();
+            tx.commit();
         }
     }
 
@@ -760,7 +760,7 @@ class LabelsAcceptanceTest
             {
                 assertTrue( labelNames.contains( labelName( i ) ) );
             }
-            tx.success();
+            tx.commit();
         }
     }
 
@@ -774,7 +774,7 @@ class LabelsAcceptanceTest
             {
                 node.removeLabel( labelWithIndex( i ) );
             }
-            tx.success();
+            tx.commit();
         }
     }
 
@@ -793,7 +793,7 @@ class LabelsAcceptanceTest
         try ( Transaction tx = db.beginTx() )
         {
             Node node = db.createNode( labels );
-            tx.success();
+            tx.commit();
             return node;
         }
     }

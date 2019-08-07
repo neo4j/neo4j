@@ -82,7 +82,7 @@ class DatabaseStartupTest
         try ( Transaction tx = db.beginTx() )
         {
             db.createNode();
-            tx.success();
+            tx.commit();
         }
         managementService.shutdown();
 
@@ -124,7 +124,7 @@ class DatabaseStartupTest
         try ( Transaction tx = db.beginTx() )
         {
             db.createNode();
-            tx.success();
+            tx.commit();
         }
         managementService.shutdown();
 

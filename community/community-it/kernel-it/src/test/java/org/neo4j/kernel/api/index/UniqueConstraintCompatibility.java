@@ -168,7 +168,7 @@ public class UniqueConstraintCompatibility extends IndexProviderCompatibilityTes
         {
             n = db.createNode( label );
             n.setProperty( property, "n" );
-            tx.success();
+            tx.commit();
         }
 
         // Then
@@ -193,7 +193,7 @@ public class UniqueConstraintCompatibility extends IndexProviderCompatibilityTes
 
             m = db.createNode( label );
             m.setProperty( property, "m" );
-            tx.success();
+            tx.commit();
         }
 
         // Then
@@ -213,7 +213,7 @@ public class UniqueConstraintCompatibility extends IndexProviderCompatibilityTes
         {
             n = db.createNode( label );
             n.setProperty( property, COLLISION_X );
-            tx.success();
+            tx.commit();
         }
 
         // When
@@ -221,7 +221,7 @@ public class UniqueConstraintCompatibility extends IndexProviderCompatibilityTes
         {
             m = db.createNode( label );
             m.setProperty( property, COLLISION_Y );
-            tx.success();
+            tx.commit();
         }
 
         // Then
@@ -306,8 +306,7 @@ public class UniqueConstraintCompatibility extends IndexProviderCompatibilityTes
         finally
         {
             resume( otherTx );
-            otherTx.failure();
-            otherTx.close();
+            otherTx.rollback();
         }
     }
 
@@ -640,7 +639,7 @@ public class UniqueConstraintCompatibility extends IndexProviderCompatibilityTes
                 {
                     action.accept( tx );
                 }
-                tx.success();
+                tx.commit();
                 createNodeReadyLatch.countDown();
                 awaitUninterruptibly( createNodeCommitLatch );
             }
@@ -734,7 +733,7 @@ public class UniqueConstraintCompatibility extends IndexProviderCompatibilityTes
             c.setProperty( property, "a" );
             d = db.createNode();
             d.setProperty( property, "d" );
-            tx.success();
+            tx.commit();
         }
     }
 
@@ -761,7 +760,7 @@ public class UniqueConstraintCompatibility extends IndexProviderCompatibilityTes
             c.setProperty( property, "c" );
             d = db.createNode( label );
             d.setProperty( property, "d" );
-            tx.success();
+            tx.commit();
         }
     }
 
@@ -797,7 +796,7 @@ public class UniqueConstraintCompatibility extends IndexProviderCompatibilityTes
                 preCreateLatch.countDown();
             }
             db.schema().constraintFor( label ).assertPropertyIsUnique( property ).create();
-            tx.success();
+            tx.commit();
         }
     }
 
@@ -860,9 +859,7 @@ public class UniqueConstraintCompatibility extends IndexProviderCompatibilityTes
         @Override
         public void accept( Transaction transaction )
         {
-            transaction.success();
-            // We also call close() here, because some validations and checks don't run until commit
-            transaction.close();
+            transaction.commit();
         }
     };
 

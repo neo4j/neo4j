@@ -104,7 +104,7 @@ class TransactionEventsIT
             {
                 Operation.createRelationship.perform( state, expected );
             }
-            tx.success();
+            tx.commit();
         }
 
         dbms.registerTransactionEventListener( DEFAULT_DATABASE_NAME, listener );
@@ -121,7 +121,7 @@ class TransactionEventsIT
                 {
                     random.among( operations ).perform( state, expected );
                 }
-                tx.success();
+                tx.commit();
             }
         }
 
@@ -233,7 +233,7 @@ class TransactionEventsIT
             try ( Transaction tx = db.beginTx() )
             {
                 relNodeId = db.createNode().getId();
-                tx.success();
+                tx.commit();
             }
             Future<?> nodeCreator = executor.submit( () ->
             {
@@ -248,7 +248,7 @@ class TransactionEventsIT
                             db.createNode();
                             if ( ThreadLocalRandom.current().nextBoolean() )
                             {
-                                tx.success();
+                                tx.commit();
                             }
                         }
                     }
@@ -272,7 +272,7 @@ class TransactionEventsIT
                             relNode.createRelationshipTo( relNode, relationshipType );
                             if ( ThreadLocalRandom.current().nextBoolean() )
                             {
-                                tx.success();
+                                tx.commit();
                             }
                         }
                     }
@@ -342,7 +342,7 @@ class TransactionEventsIT
                             .getKernelTransactionBoundToThisThread( true, db.databaseId() );
             kernelTransaction.setMetaData( metaData );
             db.createNode();
-            transaction.success();
+            transaction.commit();
         }
     }
 

@@ -113,7 +113,7 @@ class DepthPitfallGraphTest extends TraversalTestBase
                 }
             }
             assertNotEquals( 0, count, "empty traversal" );
-            transaction.success();
+            transaction.commit();
         }
     }
 

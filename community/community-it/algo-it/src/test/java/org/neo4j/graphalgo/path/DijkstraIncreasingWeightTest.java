@@ -187,7 +187,7 @@ class DijkstraIncreasingWeightTest extends Neo4jAlgoTestCase
             assertEquals( 6, paths.next().length(), "Expected second path of length 6" );
             assertFalse( paths.hasNext(), "Expected exactly two paths" );
 
-            tx.success();
+            tx.commit();
         }
     }
 

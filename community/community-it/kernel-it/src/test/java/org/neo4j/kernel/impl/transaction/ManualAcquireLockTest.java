@@ -129,7 +129,7 @@ class ManualAcquireLockTest
             catch ( Exception ignored )
             {
             }
-            transaction.success();
+            transaction.commit();
         }
 
         try
@@ -147,7 +147,7 @@ class ManualAcquireLockTest
         try ( Transaction transaction = db.beginTx() )
         {
             Node node = getGraphDb().createNode();
-            transaction.success();
+            transaction.commit();
             return node;
         }
     }
@@ -188,8 +188,7 @@ class ManualAcquireLockTest
         {
             execute( (WorkerCommand<State,Void>) state ->
             {
-                state.tx.success();
-                state.tx.close();
+                state.tx.commit();
                 return null;
             } );
         }

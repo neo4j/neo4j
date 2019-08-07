@@ -50,7 +50,7 @@ class BatchTransactionTest
 
         // THEN
         verify( db, times( 2 ) ).beginTx();
-        verify( transaction ).close();
+        verify( transaction ).commit();
         verify( progress ).add( 1 );
         verify( progress ).add( 9 );
     }

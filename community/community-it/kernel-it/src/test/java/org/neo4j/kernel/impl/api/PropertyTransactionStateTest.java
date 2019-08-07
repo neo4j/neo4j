@@ -59,7 +59,7 @@ class PropertyTransactionStateTest
         {
             node = db.createNode();
             node.setProperty( "foo", new double[] { 0, 0, 0, 0 } );
-            tx.success();
+            tx.commit();
         }
 
         try ( Transaction ignore = db.beginTx() )
@@ -84,7 +84,7 @@ class PropertyTransactionStateTest
         {
             node = db.createNode();
             node.setProperty( key, "one" );
-            tx.success();
+            tx.commit();
         }
 
         try ( Transaction ignore = db.beginTx() )

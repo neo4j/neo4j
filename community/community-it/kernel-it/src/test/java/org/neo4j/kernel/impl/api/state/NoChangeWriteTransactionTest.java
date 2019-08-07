@@ -50,7 +50,7 @@ class NoChangeWriteTransactionTest
         {
             node.addLabel( TestLabels.LABEL_ONE );
             node.removeLabel( TestLabels.LABEL_ONE );
-            tx.success();
+            tx.commit();
         } // WHEN closing that transaction
 
         // THEN it should not have been committed
@@ -63,7 +63,7 @@ class NoChangeWriteTransactionTest
         try ( Transaction tx = db.beginTx() )
         {
             Node node = db.createNode();
-            tx.success();
+            tx.commit();
             return node;
         }
     }

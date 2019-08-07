@@ -146,13 +146,13 @@ class TestNeo4j extends AbstractNeo4jTestCase
         try ( Transaction tx = getGraphDb().beginTx() )
         {
             node = getGraphDb().createNode();
-            tx.success();
+            tx.commit();
         }
 
         try ( Transaction tx = getGraphDb().beginTx() )
         {
             node.setProperty( "test", new String[] { "value1" } );
-            tx.success();
+            tx.commit();
         }
 
         try ( Transaction ignored = getGraphDb().beginTx() )
@@ -166,7 +166,7 @@ class TestNeo4j extends AbstractNeo4jTestCase
             String[] value = (String[]) node.getProperty( "test" );
             assertEquals( 1, value.length );
             assertEquals( "value1", value[0] );
-            tx.success();
+            tx.commit();
         }
 
         setTransaction( getGraphDb().beginTx() );

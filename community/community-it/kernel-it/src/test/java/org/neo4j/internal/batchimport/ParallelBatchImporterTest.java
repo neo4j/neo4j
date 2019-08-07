@@ -199,7 +199,7 @@ public class ParallelBatchImporterTest
             {
                 inputIdGenerator.reset();
                 verifyData( NODE_COUNT, RELATIONSHIP_COUNT, db, groupDistribution, nodeRandomSeed, relationshipRandomSeed );
-                tx.success();
+                tx.commit();
             }
             finally
             {

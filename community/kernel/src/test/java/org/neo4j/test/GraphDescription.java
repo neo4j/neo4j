@@ -242,7 +242,7 @@ public class GraphDescription implements GraphDefinition
                                 RelationshipType.withName( def.type() ) ), def.setNameProperty() ? def.name() : null,
                         def.properties() );
             }
-            tx.success();
+            tx.commit();
         }
         return result;
     }
@@ -309,7 +309,7 @@ public class GraphDescription implements GraphDefinition
                 }
                 node.delete();
             }
-            tx.success();
+            tx.commit();
         }
     }
 

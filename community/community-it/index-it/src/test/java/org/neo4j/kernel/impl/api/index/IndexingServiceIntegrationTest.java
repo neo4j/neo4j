@@ -114,7 +114,7 @@ public class IndexingServiceIntegrationTest
         try ( Transaction tx = database.beginTx() )
         {
             database.schema().indexFor( Label.label( FOOD_LABEL ) ).on( PROPERTY_NAME ).create();
-            tx.success();
+            tx.commit();
         }
 
         int labelId = getLabelId( FOOD_LABEL );
@@ -140,7 +140,7 @@ public class IndexingServiceIntegrationTest
             int propertyId = tx.tokenWrite().propertyKeyGetOrCreateForName( PROPERTY_NAME );
             descriptor = forRelType( foodId, propertyId );
             tx.schemaWrite().indexCreate( descriptor );
-            tx.success();
+            tx.commit();
         }
 
         IndexingService indexingService = getIndexingService( database );
@@ -160,7 +160,7 @@ public class IndexingServiceIntegrationTest
             database.schema().constraintFor( Label.label( CLOTHES_LABEL ) ).assertPropertyIsUnique( PROPERTY_NAME ).create();
             database.schema().indexFor( Label.label( WEATHER_LABEL ) ).on( PROPERTY_NAME ).create();
 
-            transaction.success();
+            transaction.commit();
         }
 
         try ( Transaction ignored = database.beginTx() )
@@ -193,7 +193,7 @@ public class IndexingServiceIntegrationTest
                 database.schema().constraintFor( Label.label( constraintLabelPrefix + i ) )
                         .assertPropertyIsUnique( constraintPropertyPrefix + i ).create();
                 database.schema().indexFor( Label.label( indexLabelPrefix + i ) ).on( indexPropertyPrefix + i ).create();
-                transaction.success();
+                transaction.commit();
             }
         }
 
@@ -245,7 +245,7 @@ public class IndexingServiceIntegrationTest
                 node.setProperty( PROPERTY_NAME, "Node" + i );
                 Relationship relationship = node.createRelationshipTo( node, RelationshipType.withName( FOOD_LABEL ) );
                 relationship.setProperty( PROPERTY_NAME, "Relationship" + i );
-                transaction.success();
+                transaction.commit();
             }
         }
     }

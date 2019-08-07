@@ -115,7 +115,7 @@ public class GenericIndexValidationIT
                     Node node = db.createNode( LABEL_ONE );
                     node.setProperty( propKey, propValue );
                     expectedNodeId = node.getId();
-                    tx.success();
+                    tx.commit();
                 }
                 catch ( Exception e )
                 {
@@ -220,7 +220,7 @@ public class GenericIndexValidationIT
                     Node node = db.createNode( LABEL_ONE );
                     setProperties( propKeys, propValues, node );
                     expectedNodeId = node.getId();
-                    tx.success();
+                    tx.commit();
                 }
                 catch ( Exception e )
                 {
@@ -291,7 +291,7 @@ public class GenericIndexValidationIT
             {
                 assertFalse( nodes.hasNext() );
             }
-            tx.success();
+            tx.commit();
         }
     }
 
@@ -305,12 +305,12 @@ public class GenericIndexValidationIT
                 indexCreator = indexCreator.on( propKey );
             }
             indexCreator.create();
-            tx.success();
+            tx.commit();
         }
         try ( Transaction tx = db.beginTx() )
         {
             db.schema().awaitIndexesOnline( 1, TimeUnit.MINUTES );
-            tx.success();
+            tx.commit();
         }
     }
 

@@ -571,7 +571,7 @@ class BatchInsertTest
                 relationship.delete();
             }
             node.delete();
-            tx.success();
+            tx.commit();
         }
 
         managementService.shutdown();
@@ -1225,13 +1225,13 @@ class BatchInsertTest
 
                 db.createNode( label ).setProperty( propertyKey, duplicatedValue );
 
-                tx.success();
+                tx.commit();
             }
 
             try ( Transaction tx = db.beginTx() )
             {
                 db.createNode( label ).setProperty( propertyKey, duplicatedValue );
-                tx.success();
+                tx.commit();
             }
             fail( "Uniqueness property constraint was violated, exception expected" );
         }
@@ -1325,7 +1325,7 @@ class BatchInsertTest
             String indexFailure = db.schema().getIndexFailure( index );
             assertThat( indexFailure, containsString( "IndexEntryConflictException" ) );
             assertThat( indexFailure, containsString( value ) );
-            tx.success();
+            tx.commit();
         }
         finally
         {

@@ -78,7 +78,7 @@ class TestStoreAccess
         try ( Transaction tx = db.beginTx() )
         {
             db.createNode();
-            tx.success();
+            tx.commit();
         }
         EphemeralFileSystemAbstraction snapshot = fs.snapshot();
         managementService.shutdown();

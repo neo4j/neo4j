@@ -30,16 +30,17 @@ import org.neo4j.kernel.api.exceptions.Status;
 /**
  * A transaction with the graph database.
  *
- * Access to the graph is performed via sub-interfaces like {@link org.neo4j.internal.kernel.api.Read}.
+ * Access to the graph is performed via sub-interfaces like {@link Read}.
  * Changes made within a transaction are immediately visible to all operations within it, but are only
  * visible to other transactions after the successful commit of the transaction.
  *
+ * <p>
  * Typical usage:
  * <pre>
  * try ( Transaction transaction = session.beginTransaction() )
  * {
  *      ...
- *      transaction.success();
+ *      transaction.commit();
  * }
  * catch ( SomeException e )
  * {
@@ -47,17 +48,20 @@ import org.neo4j.kernel.api.exceptions.Status;
  * }
  * </pre>
  *
- * Typical usage of failure if failure isn't controlled with exceptions:
+ * <p>
+ * Typical usage of {@code rollback()}, if failure isn't controlled with exceptions:
  * <pre>
  * try ( Transaction transaction = session.beginTransaction() )
  * {
  *      ...
  *      if ( ... some condition )
  *      {
- *          transaction.failure();
+ *          transaction.rollback();
  *      }
- *
- *      transaction.success();
+ *      else
+ *      {
+ *          transaction.commit();
+ *      }
  * }
  * </pre>
  */
@@ -80,17 +84,22 @@ public interface Transaction extends AutoCloseable
     long READ_ONLY = 0;
 
     /**
-     * Marks this transaction as successful. When this transaction later gets {@link #close() closed}
-     * its changes, if any, will be committed. If this method hasn't been called or if {@link #failure()}
-     * has been called then any changes in this transaction will be rolled back as part of {@link #close() closing}.
+     * Commit and any changes introduced as part of this transaction.
+     * Any transaction that was not committed will be rolled back when it will be closed.
+     *
+     * When {@code commit()} is completed, all resources are released and no more changes are possible in this transaction.
+     *
+     * @return id of the committed transaction or {@link #ROLLBACK} if transaction was rolled back or
+     * {@link #READ_ONLY} if transaction was read-only.
      */
-    void success();
+    long commit() throws TransactionFailureException;
 
     /**
-     * Marks this transaction as failed. No amount of calls to {@link #success()} will clear this flag.
-     * When {@link #close() closing} this transaction any changes will be rolled back.
+     * Roll back and any changes introduced as part of this transaction.
+     *
+     * When {@code rollback()} is completed, all resources are released and no more changes are possible in this transaction.
      */
-    void failure();
+    void rollback() throws TransactionFailureException;
 
     /**
      * @return The Read operations of the graph. The returned instance targets the active transaction state layer.
@@ -166,9 +175,7 @@ public interface Transaction extends AutoCloseable
     ExecutionStatistics executionStatistics();
 
     /**
-     * Closes this transaction, committing its changes if {@link #success()} has been called and neither
-     * {@link #failure()} nor {@link #markForTermination(Status)} has been called.
-     * Otherwise its changes will be rolled back.
+     * Closes this transaction, roll back any changes if {@link #commit()} was not called.
      *
      * @return id of the committed transaction or {@link #ROLLBACK} if transaction was rolled back or
      * {@link #READ_ONLY} if transaction was read-only.
@@ -176,14 +183,15 @@ public interface Transaction extends AutoCloseable
     long closeTransaction() throws TransactionFailureException;
 
     /**
-     * Closes this transaction, committing its changes if {@link #success()} has been called and neither
-     * {@link #failure()} nor {@link #markForTermination(Status)} has been called.
-     * Otherwise its changes will be rolled back.
+     * Closes this transaction, roll back any changes if {@link #commit()} was not called.
      */
     @Override
     default void close() throws TransactionFailureException
     {
-        closeTransaction();
+        if ( isOpen() )
+        {
+            closeTransaction();
+        }
     }
 
     /**

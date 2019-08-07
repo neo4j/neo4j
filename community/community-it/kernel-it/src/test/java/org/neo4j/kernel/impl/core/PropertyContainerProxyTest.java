@@ -78,7 +78,7 @@ public abstract class PropertyContainerProxyTest
                 container.setProperty( entry.getKey(), entry.getValue() );
             }
 
-            tx.success();
+            tx.commit();
         }
 
         // When
@@ -86,7 +86,7 @@ public abstract class PropertyContainerProxyTest
         try ( Transaction tx = db.beginTx() )
         {
             listedProperties = lookupPropertyContainer( containerId ).getAllProperties();
-            tx.success();
+            tx.commit();
         }
 
         // Then

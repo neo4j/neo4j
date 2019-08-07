@@ -54,7 +54,7 @@ class TestConcurrentIteratorModification
         {
             node1 = db.createNode( label );
             node2 = db.createNode( label );
-            tx.success();
+            tx.commit();
         }
 
         // when
@@ -69,7 +69,7 @@ class TestConcurrentIteratorModification
             {
                 result.add( iterator.next() );
             }
-            tx.success();
+            tx.commit();
         }
 
         // then does not throw and retains view from iterator creation time

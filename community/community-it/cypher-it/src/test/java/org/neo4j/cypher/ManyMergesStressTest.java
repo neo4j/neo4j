@@ -69,19 +69,19 @@ class ManyMergesStressTest
             // THIS SHOULD ALSO WORK
             db.schema().constraintFor( person ).assertPropertyIsUnique( "id" ).create();
 
-            tx.success();
+            tx.commit();
         }
 
         try ( Transaction tx = db.beginTx() )
         {
             db.schema().indexFor( person ).on( "name" ).create();
-            tx.success();
+            tx.commit();
         }
 
         try ( Transaction tx = db.beginTx() )
         {
             db.schema().awaitIndexesOnline( 1, TimeUnit.MINUTES );
-            tx.success();
+            tx.commit();
         }
 
         for ( int count = 0; count < TRIES; count++ )
@@ -97,7 +97,7 @@ class ManyMergesStressTest
             {
                 Result result = db.execute( query );
                 result.close();
-                tx.success();
+                tx.commit();
             }
         }
     }

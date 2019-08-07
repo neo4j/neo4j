@@ -60,7 +60,7 @@ public abstract class ConstraintTestBase<G extends KernelAPIWriteTestSupport> ex
             {
                 definition.drop();
             }
-            tx.success();
+            tx.commit();
         }
 
     }
@@ -117,7 +117,7 @@ public abstract class ConstraintTestBase<G extends KernelAPIWriteTestSupport> ex
             ConstraintDefinition dropped =
                     graphDb.schema().constraintFor( label( "FOO" ) ).assertPropertyIsUnique( "prop2" ).create();
             dropped.drop();
-            tx.success();
+            tx.commit();
         }
 
         try ( Transaction tx = beginTransaction() )
@@ -168,7 +168,7 @@ public abstract class ConstraintTestBase<G extends KernelAPIWriteTestSupport> ex
             Node existing = graphDb.createNode();
             existing.addLabel( Label.label( "FOO" ) );
             existing.setProperty( "prop", 1337 );
-            tx.success();
+            tx.commit();
         }
 
         int label;
@@ -188,7 +188,7 @@ public abstract class ConstraintTestBase<G extends KernelAPIWriteTestSupport> ex
             {
                 //ignore
             }
-            tx.success();
+            tx.commit();
         }
 
         //Verify
@@ -226,7 +226,7 @@ public abstract class ConstraintTestBase<G extends KernelAPIWriteTestSupport> ex
             Node existing = graphDb.createNode();
             existing.addLabel( Label.label( "FOO" ) );
             existing.setProperty( "prop", 1337 );
-            tx.success();
+            tx.commit();
         }
 
         int property;
@@ -246,7 +246,7 @@ public abstract class ConstraintTestBase<G extends KernelAPIWriteTestSupport> ex
             {
                 //ignore
             }
-            tx.success();
+            tx.commit();
         }
 
         //Verify
@@ -290,7 +290,7 @@ public abstract class ConstraintTestBase<G extends KernelAPIWriteTestSupport> ex
                 graphDb.schema().constraintFor( label( labelProps[i] ) ).assertPropertyIsUnique( labelProps[i + 1] )
                         .create();
             }
-            tx.success();
+            tx.commit();
         }
     }
 }

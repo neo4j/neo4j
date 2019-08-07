@@ -227,7 +227,7 @@ public class LuceneFulltextTestSupport
         {
             Node node = db.getNodeById( nodeId );
             node.setProperty( propertyKey, value );
-            tx.success();
+            tx.commit();
         }
     }
 

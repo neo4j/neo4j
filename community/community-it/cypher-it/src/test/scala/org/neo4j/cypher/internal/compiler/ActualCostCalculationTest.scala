@@ -354,7 +354,7 @@ class ActualCostCalculationTest extends CypherFunSuite {
       val tx = graph.beginTransaction(Type.explicit, LoginContext.AUTH_DISABLED)
       try {
         val result = f(tx)
-        tx.success()
+        tx.commit()
         result
       } finally {
         tx.close()

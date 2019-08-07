@@ -92,7 +92,7 @@ class RelationshipCountsTest
             node.createRelationshipTo( db.createNode(), withName( "KNOWS" ) );
             node.createRelationshipTo( db.createNode(), withName( "KNOWS" ) );
             during = countsForRelationship( null, null, null );
-            tx.success();
+            tx.commit();
         }
 
         // when
@@ -115,7 +115,7 @@ class RelationshipCountsTest
             node.createRelationshipTo( db.createNode(), withName( "KNOWS" ) );
             rel = node.createRelationshipTo( db.createNode(), withName( "KNOWS" ) );
             node.createRelationshipTo( db.createNode(), withName( "KNOWS" ) );
-            tx.success();
+            tx.commit();
         }
         long before = numberOfRelationships();
         long during;
@@ -123,7 +123,7 @@ class RelationshipCountsTest
         {
             rel.delete();
             during = countsForRelationship( null, null, null );
-            tx.success();
+            tx.commit();
         }
 
         // when
@@ -150,7 +150,7 @@ class RelationshipCountsTest
                 node.createRelationshipTo( db.createNode(), withName( "KNOWS" ) );
                 long whatThisThreadSees = countsForRelationship( null, null, null );
                 barrier.reached();
-                txn.success();
+                txn.commit();
                 return whatThisThreadSees;
             }
         } );
@@ -180,7 +180,7 @@ class RelationshipCountsTest
             node.createRelationshipTo( db.createNode(), withName( "KNOWS" ) );
             rel = node.createRelationshipTo( db.createNode(), withName( "KNOWS" ) );
             node.createRelationshipTo( db.createNode(), withName( "KNOWS" ) );
-            tx.success();
+            tx.commit();
         }
         final Barrier.Control barrier = new Barrier.Control();
         long before = numberOfRelationships();
@@ -191,7 +191,7 @@ class RelationshipCountsTest
                 rel.delete();
                 long whatThisThreadSees = countsForRelationship( null, null, null );
                 barrier.reached();
-                txn.success();
+                txn.commit();
                 return whatThisThreadSees;
             }
         } );
@@ -222,7 +222,7 @@ class RelationshipCountsTest
             db.createNode().createRelationshipTo( db.createNode(), withName( "BAR" ) );
             db.createNode().createRelationshipTo( db.createNode(), withName( "BAR" ) );
             db.createNode().createRelationshipTo( db.createNode(), withName( "BAZ" ) );
-            tx.success();
+            tx.commit();
         }
 
         // when
@@ -251,7 +251,7 @@ class RelationshipCountsTest
             Node bar = db.createNode( label( "Bar" ) );
             foo.createRelationshipTo( bar, withName( "BAZ" ) );
 
-            tx.success();
+            tx.commit();
         }
         long before = numberOfRelationshipsMatching( label( "Foo" ), withName( "BAZ" ), null );
 
@@ -264,7 +264,7 @@ class RelationshipCountsTest
             }
             foo.delete();
 
-            tx.success();
+            tx.commit();
         }
         long after = numberOfRelationshipsMatching( label( "Foo" ), withName( "BAZ" ), null );
 
@@ -289,7 +289,7 @@ class RelationshipCountsTest
                 nodes[i] = foo;
             }
 
-            tx.success();
+            tx.commit();
         }
 
         long[] beforeCommon = new long[numberOfNodes];
@@ -312,7 +312,7 @@ class RelationshipCountsTest
                 node.delete();
             }
 
-            tx.success();
+            tx.commit();
         }
         long[] afterCommon = new long[numberOfNodes];
         long[] after = new long[numberOfNodes];
@@ -341,7 +341,7 @@ class RelationshipCountsTest
             Node bar = db.createNode( label( "Bar" ) );
             foo.createRelationshipTo( bar, withName( "BAZ" ) );
 
-            tx.success();
+            tx.commit();
         }
         long before = numberOfRelationshipsMatching( label( "Foo" ), withName( "BAZ" ), null );
 
@@ -354,7 +354,7 @@ class RelationshipCountsTest
             }
             foo.removeLabel( label("Foo"));
 
-            tx.success();
+            tx.commit();
         }
         long after = numberOfRelationshipsMatching( label( "Foo" ), withName( "BAZ" ), null );
 
@@ -378,7 +378,7 @@ class RelationshipCountsTest
         try ( Transaction tx = db.beginTx() )
         {
             long nodeCount = countsForRelationship( lhs, type, rhs );
-            tx.success();
+            tx.commit();
             return nodeCount;
         }
     }

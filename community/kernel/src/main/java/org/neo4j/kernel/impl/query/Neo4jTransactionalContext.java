@@ -33,6 +33,7 @@ import org.neo4j.kernel.api.query.ExecutingQuery;
 import org.neo4j.kernel.database.DatabaseId;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
+import org.neo4j.kernel.impl.coreapi.TopLevelTransaction;
 import org.neo4j.kernel.impl.query.statistic.StatisticProvider;
 import org.neo4j.values.ValueMapper;
 
@@ -122,16 +123,17 @@ public class Neo4jTransactionalContext implements TransactionalContext
             {
                 statement.queryRegistration().unregisterExecutingQuery( executingQuery );
                 statement.close();
-
-                if ( success )
+                if ( transaction instanceof TopLevelTransaction )
                 {
-                    transaction.success();
+                    if ( success )
+                    {
+                        transaction.commit();
+                    }
+                    else
+                    {
+                        transaction.rollback();
+                    }
                 }
-                else
-                {
-                    transaction.failure();
-                }
-                transaction.close();
             }
             finally
             {
@@ -191,16 +193,14 @@ public class Neo4jTransactionalContext implements TransactionalContext
         try
         {
             oldStatement.close();
-            oldTransaction.success();
-            oldTransaction.close();
+            oldTransaction.commit();
         }
         catch ( Throwable t )
         {
             // Corner case: The old transaction might have been terminated by the user. Now we also need to
             // terminate the new transaction.
             txBridge.bindTransactionToCurrentThread( kernelTransaction );
-            transaction.failure();
-            transaction.close();
+            transaction.rollback();
             txBridge.unbindTransactionFromCurrentThread();
             throw t;
         }

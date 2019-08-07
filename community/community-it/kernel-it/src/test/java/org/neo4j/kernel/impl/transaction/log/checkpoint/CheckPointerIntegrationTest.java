@@ -99,7 +99,7 @@ class CheckPointerIntegrationTest
         try ( Transaction tx = db.beginTx() )
         {
             db.createNode();
-            tx.success();
+            tx.commit();
         }
         Thread.sleep( 10 );
         managementService.shutdown();
@@ -120,7 +120,7 @@ class CheckPointerIntegrationTest
         try ( Transaction tx = db.beginTx() )
         {
             db.createNode();
-            tx.success();
+            tx.commit();
         }
 
         // The scheduled job checking whether or not checkpoints are needed runs more frequently
@@ -174,7 +174,7 @@ class CheckPointerIntegrationTest
         try ( Transaction tx = db.beginTx() )
         {
             db.createNode();
-            tx.success();
+            tx.commit();
         }
 
         // Instead of waiting 10s for the background job to do this check, perform the check right here

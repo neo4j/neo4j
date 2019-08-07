@@ -572,7 +572,7 @@ public class QueryResultsSerializationTest extends AbstractRestFunctionalTestBas
         {
             Node node = db.createNode( label( "N" ) );
             node.setProperty( "date", new ZonedDateTime[]{date} );
-            tx.success();
+            tx.commit();
         }
 
         //When
@@ -598,7 +598,7 @@ public class QueryResultsSerializationTest extends AbstractRestFunctionalTestBas
         {
             Node node = db.createNode( label( "N" ) );
             node.setProperty( "duration", new Duration[]{duration} );
-            tx.success();
+            tx.commit();
         }
 
         //When
@@ -625,7 +625,7 @@ public class QueryResultsSerializationTest extends AbstractRestFunctionalTestBas
         {
             Node node = db.createNode( label( "N" ) );
             node.setProperty( "date", date );
-            tx.success();
+            tx.commit();
         }
 
         //When
@@ -651,7 +651,7 @@ public class QueryResultsSerializationTest extends AbstractRestFunctionalTestBas
         {
             Node node = db.createNode( label( "N" ) );
             node.setProperty( "duration", duration );
-            tx.success();
+            tx.commit();
         }
 
         //When
@@ -677,7 +677,7 @@ public class QueryResultsSerializationTest extends AbstractRestFunctionalTestBas
         {
             Node node = db.createNode( label( "N" ) );
             node.setProperty( "dates", new ZonedDateTime[]{date} );
-            tx.success();
+            tx.commit();
         }
 
         //When
@@ -703,7 +703,7 @@ public class QueryResultsSerializationTest extends AbstractRestFunctionalTestBas
         {
             Node node = db.createNode( label( "N" ) );
             node.setProperty( "durations", new Duration[]{duration} );
-            tx.success();
+            tx.commit();
         }
 
         //When
@@ -729,7 +729,7 @@ public class QueryResultsSerializationTest extends AbstractRestFunctionalTestBas
         {
             Node node = db.createNode( label( "N" ) );
             node.setProperty( "date", date );
-            tx.success();
+            tx.commit();
         }
 
         //When
@@ -754,7 +754,7 @@ public class QueryResultsSerializationTest extends AbstractRestFunctionalTestBas
         {
             Node node = db.createNode( label( "N" ) );
             node.setProperty( "duration", duration );
-            tx.success();
+            tx.commit();
         }
 
         //When
@@ -780,7 +780,7 @@ public class QueryResultsSerializationTest extends AbstractRestFunctionalTestBas
         {
             Node node = db.createNode( label( "N" ) );
             node.setProperty( "dates", new ZonedDateTime[]{date} );
-            tx.success();
+            tx.commit();
         }
 
         //When
@@ -806,7 +806,7 @@ public class QueryResultsSerializationTest extends AbstractRestFunctionalTestBas
         {
             Node node = db.createNode( label( "N" ) );
             node.setProperty( "durations", new Duration[]{duration} );
-            tx.success();
+            tx.commit();
         }
 
         //When

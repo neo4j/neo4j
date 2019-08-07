@@ -103,7 +103,7 @@ class ConstraintRecoveryIT
                 db.createNode( LABEL ).setProperty( KEY, "true" );
             }
 
-            tx.success();
+            tx.commit();
         }
 
         assertThrows( ConstraintViolationException.class, () ->

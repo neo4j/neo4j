@@ -85,7 +85,7 @@ class CompiledExpandUtilsTest
             write.relationshipCreate( node,
                     tx.tokenWrite().relationshipTypeGetOrCreateForName( "R4" ), node );
 
-            tx.success();
+            tx.commit();
         }
 
         try ( Transaction tx = transaction() )
@@ -122,7 +122,7 @@ class CompiledExpandUtilsTest
             write.relationshipCreate( write.nodeCreate(), in, node );
             write.relationshipCreate( node, loop, node );
 
-            tx.success();
+            tx.commit();
         }
 
         try ( Transaction tx = transaction() )

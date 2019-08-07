@@ -198,7 +198,7 @@ class NodeGetUniqueFromIndexSeekIT extends KernelIntegrationTest
                   NodeValueIndexCursor cursor = tx.cursors().allocateNodeValueIndexCursor() )
             {
                 tx.dataRead().lockingNodeUniqueIndexSeek( index, cursor, exact( propertyId1, value ) );
-                tx.success();
+                tx.commit();
             }
             catch ( KernelException e )
             {

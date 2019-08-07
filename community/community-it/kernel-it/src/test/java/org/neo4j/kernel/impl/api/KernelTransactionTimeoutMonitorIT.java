@@ -95,7 +95,7 @@ public class KernelTransactionTimeoutMonitorIT
         try ( Transaction tx = database.beginTx() )
         {
             nodeId = database.createNode().getId();
-            tx.success();
+            tx.commit();
         }
         Future<?> locker = executor.submit( () ->
         {
@@ -124,7 +124,7 @@ public class KernelTransactionTimeoutMonitorIT
         {
             // Write-locking is only possible if their shared lock was released
             tx.acquireWriteLock( database.getNodeById( nodeId ) );
-            tx.success();
+            tx.commit();
         }
         // No exception from our lock client being stopped (e.g. we ended up blocked for too long) or from timeout
         lockerPause.release();
@@ -139,7 +139,7 @@ public class KernelTransactionTimeoutMonitorIT
         try ( Transaction transaction = database.beginTx() )
         {
             database.createNode();
-            transaction.success();
+            transaction.commit();
         }
 
         Exception exception = assertThrows( Exception.class, () ->

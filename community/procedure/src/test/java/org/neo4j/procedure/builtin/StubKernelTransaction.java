@@ -68,13 +68,13 @@ public class StubKernelTransaction implements KernelTransaction
     }
 
     @Override
-    public void success()
+    public long commit()
     {
         throw new UnsupportedOperationException( "not implemented" );
     }
 
     @Override
-    public void failure()
+    public void rollback()
     {
         throw new UnsupportedOperationException( "not implemented" );
     }

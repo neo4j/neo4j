@@ -160,7 +160,7 @@ class MissingStoreFilesRecoveryIT
                 Node nodeA = databaseApi.createNode( testNodes );
                 Node nodeB = databaseApi.createNode( testNodes );
                 nodeA.createRelationshipTo( nodeB, withName( valueOf( i ) ) );
-                transaction.success();
+                transaction.commit();
             }
         }
     }

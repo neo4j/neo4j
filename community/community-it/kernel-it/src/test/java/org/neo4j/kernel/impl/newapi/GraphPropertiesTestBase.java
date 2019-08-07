@@ -44,7 +44,7 @@ public abstract class GraphPropertiesTestBase<G extends KernelAPIWriteTestSuppor
         {
             prop = tx.tokenWrite().propertyKeyGetOrCreateForName( "prop" );
             assertThat( tx.dataWrite().graphSetProperty( prop, stringValue( "hello" ) ), equalTo( NO_VALUE ) );
-            tx.success();
+            tx.commit();
         }
 
         try ( org.neo4j.graphdb.Transaction ignore = graphDb.beginTx() )
@@ -61,13 +61,13 @@ public abstract class GraphPropertiesTestBase<G extends KernelAPIWriteTestSuppor
         {
             prop = tx.tokenWrite().propertyKeyGetOrCreateForName( "prop" );
             assertThat( tx.dataWrite().graphSetProperty( prop, stringValue( "hello" ) ), equalTo( NO_VALUE ) );
-            tx.success();
+            tx.commit();
         }
 
         try ( Transaction tx = beginTransaction() )
         {
             assertThat( tx.dataWrite().graphSetProperty( prop, stringValue( "good bye" ) ), equalTo( stringValue("hello") ) );
-            tx.success();
+            tx.commit();
         }
 
         try ( org.neo4j.graphdb.Transaction ignore = graphDb.beginTx() )
@@ -84,13 +84,13 @@ public abstract class GraphPropertiesTestBase<G extends KernelAPIWriteTestSuppor
         {
             prop = tx.tokenWrite().propertyKeyGetOrCreateForName( "prop" );
             assertThat( tx.dataWrite().graphSetProperty( prop, stringValue( "hello" ) ), equalTo( NO_VALUE ) );
-            tx.success();
+            tx.commit();
         }
 
         try ( Transaction tx = beginTransaction() )
         {
             assertThat( tx.dataWrite().graphRemoveProperty( prop ), equalTo( stringValue("hello") ) );
-            tx.success();
+            tx.commit();
         }
 
         try ( org.neo4j.graphdb.Transaction ignore = graphDb.beginTx() )
@@ -111,7 +111,7 @@ public abstract class GraphPropertiesTestBase<G extends KernelAPIWriteTestSuppor
             tx.dataWrite().graphSetProperty( prop1, stringValue( "hello" ) );
             tx.dataWrite().graphSetProperty( prop2, stringValue( "world" ) );
             tx.dataWrite().graphSetProperty( prop3, stringValue( "etc" ) );
-            tx.success();
+            tx.commit();
         }
 
         try ( Transaction tx = beginTransaction();
@@ -159,7 +159,7 @@ public abstract class GraphPropertiesTestBase<G extends KernelAPIWriteTestSuppor
         {
             prop = tx.tokenWrite().propertyKeyGetOrCreateForName( "prop" );
             assertThat( tx.dataWrite().graphSetProperty( prop, stringValue( "hello" ) ), equalTo( NO_VALUE ) );
-            tx.success();
+            tx.commit();
         }
 
         try ( Transaction tx = beginTransaction();
@@ -184,7 +184,7 @@ public abstract class GraphPropertiesTestBase<G extends KernelAPIWriteTestSuppor
         {
             prop = tx.tokenWrite().propertyKeyGetOrCreateForName( "prop" );
             assertThat( tx.dataWrite().graphSetProperty( prop, stringValue( "hello" ) ), equalTo( NO_VALUE ) );
-            tx.success();
+            tx.commit();
         }
 
         try ( Transaction tx = beginTransaction();
@@ -208,14 +208,13 @@ public abstract class GraphPropertiesTestBase<G extends KernelAPIWriteTestSuppor
         {
             prop = tx.tokenWrite().propertyKeyGetOrCreateForName( "prop" );
             tx.dataWrite().graphSetProperty( prop, theValue );
-            tx.success();
+            tx.commit();
         }
 
         // When
         Transaction tx = beginTransaction();
         assertThat( tx.dataWrite().graphSetProperty( prop, theValue ), equalTo( theValue ) );
-        tx.success();
 
-        assertThat( tx.closeTransaction(), equalTo( Transaction.READ_ONLY ) );
+        assertThat( tx.commit(), equalTo( Transaction.READ_ONLY ) );
     }
 }

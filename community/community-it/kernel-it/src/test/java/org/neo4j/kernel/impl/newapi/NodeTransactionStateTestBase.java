@@ -61,7 +61,7 @@ public abstract class NodeTransactionStateTestBase<G extends KernelAPIWriteTestS
                 assertEquals( nodeId, node.nodeReference() );
                 assertFalse( node.next(), "should only find one node" );
             }
-            tx.success();
+            tx.commit();
         }
 
         try ( org.neo4j.graphdb.Transaction ignore = graphDb.beginTx() )
@@ -95,7 +95,7 @@ public abstract class NodeTransactionStateTestBase<G extends KernelAPIWriteTestS
                 assertFalse( node.hasLabel( labelId + 1 ) );
                 assertFalse( node.next(), "should only find one node" );
             }
-            tx.success();
+            tx.commit();
         }
 
         try ( org.neo4j.graphdb.Transaction ignore = graphDb.beginTx() )
@@ -123,7 +123,7 @@ public abstract class NodeTransactionStateTestBase<G extends KernelAPIWriteTestS
             toDelete = tx.token().labelGetOrCreateForName( toDeleteName );
             tx.dataWrite().nodeAddLabel( nodeId, toRetain );
             tx.dataWrite().nodeAddLabel( nodeId, toDelete );
-            tx.success();
+            tx.commit();
         }
 
         try ( org.neo4j.graphdb.Transaction ignore = graphDb.beginTx() )
@@ -155,7 +155,7 @@ public abstract class NodeTransactionStateTestBase<G extends KernelAPIWriteTestS
                 assertFalse( node.hasLabel( toRegret ) );
                 assertFalse( node.next(), "should only find one node" );
             }
-            tx.success();
+            tx.commit();
         }
 
         try ( org.neo4j.graphdb.Transaction ignored = graphDb.beginTx() )
@@ -173,7 +173,7 @@ public abstract class NodeTransactionStateTestBase<G extends KernelAPIWriteTestS
         try ( Transaction tx = beginTransaction() )
         {
             nodeId = tx.dataWrite().nodeCreate();
-            tx.success();
+            tx.commit();
         }
 
         try ( Transaction tx = beginTransaction() )
@@ -184,7 +184,7 @@ public abstract class NodeTransactionStateTestBase<G extends KernelAPIWriteTestS
                 tx.dataRead().singleNode( nodeId, node );
                 assertFalse( node.next() );
             }
-            tx.success();
+            tx.commit();
         }
     }
 
@@ -195,14 +195,14 @@ public abstract class NodeTransactionStateTestBase<G extends KernelAPIWriteTestS
         try ( Transaction tx = beginTransaction() )
         {
             nodeId = tx.dataWrite().nodeCreate();
-            tx.success();
+            tx.commit();
         }
 
         try ( Transaction tx = beginTransaction() )
         {
             assertTrue( tx.dataWrite().nodeDelete( nodeId ) );
             assertFalse( tx.dataWrite().nodeDelete( nodeId ) );
-            tx.success();
+            tx.commit();
         }
     }
 
@@ -240,7 +240,7 @@ public abstract class NodeTransactionStateTestBase<G extends KernelAPIWriteTestS
                 assertFalse( property.next(), "should only find two properties" );
                 assertFalse( node.next(), "should only find one node" );
             }
-            tx.success();
+            tx.commit();
         }
     }
 
@@ -253,7 +253,7 @@ public abstract class NodeTransactionStateTestBase<G extends KernelAPIWriteTestS
         try ( Transaction tx = beginTransaction() )
         {
             nodeId = tx.dataWrite().nodeCreate();
-            tx.success();
+            tx.commit();
         }
 
         // When/Then
@@ -277,7 +277,7 @@ public abstract class NodeTransactionStateTestBase<G extends KernelAPIWriteTestS
                 assertFalse( node.next(), "should only find one node" );
             }
 
-            tx.success();
+            tx.commit();
         }
 
         try ( org.neo4j.graphdb.Transaction ignored = graphDb.beginTx() )
@@ -301,7 +301,7 @@ public abstract class NodeTransactionStateTestBase<G extends KernelAPIWriteTestS
             nodeId = tx.dataWrite().nodeCreate();
             propToken1 = tx.token().propertyKeyGetOrCreateForName( propKey1 );
             assertEquals( tx.dataWrite().nodeSetProperty( nodeId, propToken1, stringValue( "hello" ) ), NO_VALUE );
-            tx.success();
+            tx.commit();
         }
 
         // When/Then
@@ -331,7 +331,7 @@ public abstract class NodeTransactionStateTestBase<G extends KernelAPIWriteTestS
                 assertFalse( property.next(), "should only find two properties" );
                 assertFalse( node.next(), "should only find one node" );
             }
-            tx.success();
+            tx.commit();
         }
 
         try ( org.neo4j.graphdb.Transaction ignored = graphDb.beginTx() )
@@ -355,7 +355,7 @@ public abstract class NodeTransactionStateTestBase<G extends KernelAPIWriteTestS
             nodeId = tx.dataWrite().nodeCreate();
             propToken = tx.token().propertyKeyGetOrCreateForName( propKey );
             assertEquals( tx.dataWrite().nodeSetProperty( nodeId, propToken, stringValue( "hello" ) ), NO_VALUE );
-            tx.success();
+            tx.commit();
         }
 
         // When/Then
@@ -379,7 +379,7 @@ public abstract class NodeTransactionStateTestBase<G extends KernelAPIWriteTestS
                 assertFalse( node.next(), "should only find one node" );
             }
 
-            tx.success();
+            tx.commit();
         }
 
         try ( org.neo4j.graphdb.Transaction ignored = graphDb.beginTx() )
@@ -401,7 +401,7 @@ public abstract class NodeTransactionStateTestBase<G extends KernelAPIWriteTestS
             nodeId = tx.dataWrite().nodeCreate();
             propToken = tx.token().propertyKeyGetOrCreateForName( propKey );
             assertEquals( tx.dataWrite().nodeSetProperty( nodeId, propToken, stringValue( "hello" ) ), NO_VALUE );
-            tx.success();
+            tx.commit();
         }
 
         // When/Then
@@ -419,7 +419,7 @@ public abstract class NodeTransactionStateTestBase<G extends KernelAPIWriteTestS
                 assertFalse( node.next(), "should only find one node" );
             }
 
-            tx.success();
+            tx.commit();
         }
 
         try ( org.neo4j.graphdb.Transaction ignored = graphDb.beginTx() )
@@ -441,7 +441,7 @@ public abstract class NodeTransactionStateTestBase<G extends KernelAPIWriteTestS
             nodeId = tx.dataWrite().nodeCreate();
             propToken = tx.token().propertyKeyGetOrCreateForName( propKey );
             assertEquals( tx.dataWrite().nodeSetProperty( nodeId, propToken, stringValue( "hello" ) ), NO_VALUE );
-            tx.success();
+            tx.commit();
         }
 
         // When/Then
@@ -464,7 +464,7 @@ public abstract class NodeTransactionStateTestBase<G extends KernelAPIWriteTestS
                 assertFalse( node.next(), "should only find one node" );
             }
 
-            tx.success();
+            tx.commit();
         }
 
         try ( org.neo4j.graphdb.Transaction ignored = graphDb.beginTx() )
@@ -482,7 +482,7 @@ public abstract class NodeTransactionStateTestBase<G extends KernelAPIWriteTestS
         try ( Transaction tx = beginTransaction() )
         {
             node = tx.dataWrite().nodeCreate();
-            tx.success();
+            tx.commit();
         }
 
         // Then
@@ -523,7 +523,7 @@ public abstract class NodeTransactionStateTestBase<G extends KernelAPIWriteTestS
         try ( Transaction tx = beginTransaction() )
         {
             node = tx.dataWrite().nodeCreate();
-            tx.success();
+            tx.commit();
         }
 
         // Then
@@ -699,7 +699,7 @@ public abstract class NodeTransactionStateTestBase<G extends KernelAPIWriteTestS
         try ( Transaction tx = beginTransaction() )
         {
             node = tx.dataWrite().nodeCreate();
-            tx.success();
+            tx.commit();
         }
 
         // Then
@@ -758,7 +758,7 @@ public abstract class NodeTransactionStateTestBase<G extends KernelAPIWriteTestS
             tx.dataWrite().nodeSetProperty( node, prop1, longValue( 1 ) );
             tx.dataWrite().nodeSetProperty( node, prop2, longValue( 2 ) );
             tx.dataWrite().nodeSetProperty( node, prop3, longValue( 3 ) );
-            tx.success();
+            tx.commit();
         }
 
         // Then
@@ -789,7 +789,7 @@ public abstract class NodeTransactionStateTestBase<G extends KernelAPIWriteTestS
         try ( Transaction tx = beginTransaction() )
         {
             node = tx.dataWrite().nodeCreate();
-            tx.success();
+            tx.commit();
         }
 
         // Then
@@ -838,7 +838,7 @@ public abstract class NodeTransactionStateTestBase<G extends KernelAPIWriteTestS
                 labelIds[i] = tx.tokenWrite().labelGetOrCreateForName( labels[i] );
                 write.nodeAddLabel( node, labelIds[i] );
             }
-            tx.success();
+            tx.commit();
         }
         return new Node( node, labelIds );
     }

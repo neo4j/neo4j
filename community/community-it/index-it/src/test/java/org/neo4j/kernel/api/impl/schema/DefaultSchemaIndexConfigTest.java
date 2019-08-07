@@ -174,7 +174,7 @@ public class DefaultSchemaIndexConfigTest
             assertEquals( Values.intValue( 20 ), indexConfig.get( "spatial.wgs-84-3d.maxLevels" ) );
             assertEquals( Values.doubleArray( new double[]{-180.0, -90.0, -1000000.0} ), indexConfig.get( "spatial.wgs-84-3d.min" ) );
             assertEquals( Values.doubleArray( new double[]{180.0, 90.0, 1000000.0} ), indexConfig.get( "spatial.wgs-84-3d.max" ) );
-            tx.success();
+            tx.commit();
         }
     }
 
@@ -203,7 +203,7 @@ public class DefaultSchemaIndexConfigTest
             IndexDescriptor index = ktx.schemaRead().index( labelId, propertyId );
 
             assertEquals( "expected IndexProvider.Descriptor", expectedProviderIdentifier, index.getIndexProvider().name() );
-            tx.success();
+            tx.commit();
         }
     }
 
@@ -212,12 +212,12 @@ public class DefaultSchemaIndexConfigTest
         try ( Transaction tx = db.beginTx() )
         {
             db.schema().indexFor( LABEL ).on( KEY ).create();
-            tx.success();
+            tx.commit();
         }
         try ( Transaction tx = db.beginTx() )
         {
             db.schema().awaitIndexesOnline( 1, TimeUnit.MINUTES );
-            tx.success();
+            tx.commit();
         }
     }
 }

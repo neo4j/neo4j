@@ -52,7 +52,7 @@ class TestShortStringProperties
             node = graphdb.createNode();
             node.setProperty( "key", "value" );
             node.setProperty( "reverse", "esrever" );
-            transaction.success();
+            transaction.commit();
         }
         assertThat( node, inTx( graphdb, hasProperty( "key" ).withValue( "value" )  ) );
         assertThat( node, inTx( graphdb, hasProperty( "reverse" ).withValue( "esrever" )  ) );
@@ -66,7 +66,7 @@ class TestShortStringProperties
         {
             rel = graphdb.createNode().createRelationshipTo( graphdb.createNode(), withName( "REL_TYPE" ) );
             rel.setProperty( "type", "dimsedut" );
-            transaction.success();
+            transaction.commit();
         }
         assertThat( rel, inTx( graphdb, hasProperty( "type" ).withValue( "dimsedut" ) ) );
     }
@@ -79,14 +79,14 @@ class TestShortStringProperties
         {
             node = graphdb.createNode();
             node.setProperty( "key", "value" );
-            transaction.success();
+            transaction.commit();
         }
 
         try ( Transaction transaction = graphdb.beginTx() )
         {
             assertEquals( "value", node.getProperty( "key" ) );
             node.setProperty( "key", "other" );
-            transaction.success();
+            transaction.commit();
         }
 
         assertThat( node, inTx( graphdb, hasProperty( "key" ).withValue( "other" )  ) );
@@ -100,14 +100,14 @@ class TestShortStringProperties
         {
             node = graphdb.createNode();
             node.setProperty( "key", LONG_STRING );
-            transaction.success();
+            transaction.commit();
         }
 
         try ( Transaction transaction = graphdb.beginTx() )
         {
             assertEquals( LONG_STRING, node.getProperty( "key" ) );
             node.setProperty( "key", "value" );
-            transaction.success();
+            transaction.commit();
         }
 
         assertThat( node, inTx( graphdb, hasProperty( "key" ).withValue( "value" )  ) );
@@ -121,14 +121,14 @@ class TestShortStringProperties
         {
             node = graphdb.createNode();
             node.setProperty( "key", "value" );
-            transaction.success();
+            transaction.commit();
         }
 
         try ( Transaction transaction = graphdb.beginTx() )
         {
             assertEquals( "value", node.getProperty( "key" ) );
             node.setProperty( "key", LONG_STRING );
-            transaction.success();
+            transaction.commit();
         }
 
         assertThat( node, inTx( graphdb, hasProperty( "key" ).withValue( LONG_STRING )  ) );
@@ -142,7 +142,7 @@ class TestShortStringProperties
         {
             node = graphdb.createNode();
             node.setProperty( "key", "value" );
-            transaction.success();
+            transaction.commit();
         }
 
         try ( Transaction transaction = graphdb.beginTx() )
@@ -150,7 +150,7 @@ class TestShortStringProperties
             assertEquals( "value", node.getProperty( "key" ) );
 
             node.removeProperty( "key" );
-            transaction.success();
+            transaction.commit();
         }
 
         assertThat( node, inTx( graphdb, not( hasProperty( "key" ) ) ) );

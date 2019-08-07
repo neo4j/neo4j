@@ -76,17 +76,17 @@ class SchemaRecoveryIT
         try ( Transaction tx = db.beginTx() )
         {
             db.schema().constraintFor( label ).assertPropertyIsUnique( property ).create();
-            tx.success();
+            tx.commit();
         }
         try ( Transaction tx = db.beginTx() )
         {
             db.createNode( label ).setProperty( property, "neo4j@neo4j.com" );
-            tx.success();
+            tx.commit();
         }
         try ( Transaction tx = db.beginTx() )
         {
             db.schema().awaitIndexesOnline( 1, TimeUnit.HOURS );
-            tx.success();
+            tx.commit();
         }
         killDb();
 
@@ -108,7 +108,7 @@ class SchemaRecoveryIT
         try ( Transaction tx = db.beginTx() )
         {
             db.schema().constraintFor( label ).assertPropertyIsUnique( property ).create();
-            tx.success();
+            tx.commit();
         }
 
         // Flush the property token store, but NOT the property token ~name~ store. This means tokens will refer to unused dynamic records for their names.

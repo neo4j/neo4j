@@ -290,7 +290,7 @@ abstract class KernelReadTracerTxStateTestBase<G extends KernelAPIWriteTestSuppo
         {
             connection = tx.tokenWrite().relationshipTypeGetOrCreateForName( "Connection" );
             name = tx.tokenWrite().propertyKeyGetOrCreateForName( "name" );
-            tx.success();
+            tx.commit();
         }
 
         try ( Transaction tx = beginTransaction() )
@@ -300,7 +300,7 @@ abstract class KernelReadTracerTxStateTestBase<G extends KernelAPIWriteTestSuppo
                                                                  array( connection ),
                                                                  array( name ) );
             index = tx.schemaWrite().indexCreate( schema, DESCRIPTOR.name(), Optional.of( indexName ) );
-            tx.success();
+            tx.commit();
         }
 
         try ( Transaction tx = beginTransaction() )
@@ -310,7 +310,7 @@ abstract class KernelReadTracerTxStateTestBase<G extends KernelAPIWriteTestSuppo
             long n2 = tx.dataWrite().nodeCreate();
             long r = tx.dataWrite().relationshipCreate( n1, connection, n2 );
             tx.dataWrite().relationshipSetProperty( r, name, Values.stringValue( "transformational" ) );
-            tx.success();
+            tx.commit();
         }
 
         // when
@@ -341,7 +341,7 @@ abstract class KernelReadTracerTxStateTestBase<G extends KernelAPIWriteTestSuppo
         try ( org.neo4j.graphdb.Transaction tx = graphDb.beginTx() )
         {
             graphDb.schema().indexFor( Label.label( label ) ).on( propertyKey ).create();
-            tx.success();
+            tx.commit();
         }
 
         try ( org.neo4j.graphdb.Transaction tx = graphDb.beginTx() )

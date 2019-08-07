@@ -95,7 +95,7 @@ class ConstraintCreationIT
                 node1.setProperty( "prop", true );
             }
 
-            tx.success();
+            tx.commit();
         }
 
         // when
@@ -103,7 +103,7 @@ class ConstraintCreationIT
         {
             db.schema().constraintFor( LABEL ).assertPropertyIsUnique( "prop" ).create();
             fail( "Should have failed with ConstraintViolationException" );
-            tx.success();
+            tx.commit();
         }
         catch ( ConstraintViolationException ignored )
         {

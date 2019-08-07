@@ -66,7 +66,7 @@ class KernelAPIParallelIndexScanStressIT
             createLabeledNodes( N_NODES, "LABEL1", "prop" );
             createLabeledNodes( N_NODES, "LABEL2", "prop" );
             createLabeledNodes( N_NODES, "LABEL3", "prop" );
-            tx.success();
+            tx.commit();
         }
 
         try ( org.neo4j.graphdb.Transaction tx = db.beginTx() )
@@ -74,13 +74,13 @@ class KernelAPIParallelIndexScanStressIT
             db.schema().indexFor( Label.label( "LABEL1" ) ).on( "prop" ).create();
             db.schema().indexFor( Label.label( "LABEL2" ) ).on( "prop" ).create();
             db.schema().indexFor( Label.label( "LABEL3" ) ).on( "prop" ).create();
-            tx.success();
+            tx.commit();
         }
 
         try ( org.neo4j.graphdb.Transaction tx = db.beginTx() )
         {
             db.schema().awaitIndexesOnline( 10, MINUTES );
-            tx.success();
+            tx.commit();
         }
 
         // when & then
@@ -93,7 +93,7 @@ class KernelAPIParallelIndexScanStressIT
             indexes[0] = indexReadSession( tx, propKey, "LABEL1" );
             indexes[1] = indexReadSession( tx, propKey, "LABEL2" );
             indexes[2] = indexReadSession( tx, propKey, "LABEL3" );
-            tx.success();
+            tx.commit();
         }
 
         KernelAPIParallelStress.parallelStressInTx( kernel,

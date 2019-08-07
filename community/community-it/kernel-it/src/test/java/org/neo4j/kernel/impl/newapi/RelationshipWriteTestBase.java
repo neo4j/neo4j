@@ -50,7 +50,7 @@ public abstract class RelationshipWriteTestBase<G extends KernelAPIWriteTestSupp
         {
             n1 = graphDb.createNode().getId();
             n2 = graphDb.createNode().getId();
-            tx.success();
+            tx.commit();
         }
 
         long r;
@@ -58,7 +58,7 @@ public abstract class RelationshipWriteTestBase<G extends KernelAPIWriteTestSupp
         {
             int label = tx.token().relationshipTypeGetOrCreateForName( "R" );
             r = tx.dataWrite().relationshipCreate( n1, label, n2 );
-            tx.success();
+            tx.commit();
         }
 
         try ( org.neo4j.graphdb.Transaction ignore = graphDb.beginTx() )
@@ -79,7 +79,7 @@ public abstract class RelationshipWriteTestBase<G extends KernelAPIWriteTestSupp
             n2 = tx.dataWrite().nodeCreate();
             int label = tx.token().relationshipTypeGetOrCreateForName( "R" );
             r = tx.dataWrite().relationshipCreate( n1, label, n2 );
-            tx.success();
+            tx.commit();
         }
 
         try ( org.neo4j.graphdb.Transaction ignore = graphDb.beginTx() )
@@ -98,14 +98,14 @@ public abstract class RelationshipWriteTestBase<G extends KernelAPIWriteTestSupp
         {
             n1 = graphDb.createNode().getId();
             n2 = graphDb.createNode().getId();
-            tx.success();
+            tx.commit();
         }
 
         try ( Transaction tx = beginTransaction() )
         {
             int label = tx.token().relationshipTypeGetOrCreateForName( "R" );
             tx.dataWrite().relationshipCreate( n1, label, n2 );
-            tx.failure();
+            tx.rollback();
         }
 
         try ( org.neo4j.graphdb.Transaction ignore = graphDb.beginTx() )
@@ -126,13 +126,13 @@ public abstract class RelationshipWriteTestBase<G extends KernelAPIWriteTestSupp
             n1 = node1.getId();
             r = node1.createRelationshipTo( node2, RelationshipType.withName( "R" ) ).getId();
 
-            tx.success();
+            tx.commit();
         }
 
         try ( Transaction tx = beginTransaction() )
         {
             assertTrue( tx.dataWrite().relationshipDelete( r ), "should delete relationship" );
-            tx.success();
+            tx.commit();
         }
 
         try ( org.neo4j.graphdb.Transaction ignore = graphDb.beginTx() )
@@ -149,12 +149,12 @@ public abstract class RelationshipWriteTestBase<G extends KernelAPIWriteTestSupp
         try ( Transaction tx = beginTransaction() )
         {
             assertFalse( tx.dataWrite().relationshipDelete( relationship ) );
-            tx.failure();
+            tx.rollback();
         }
         try ( Transaction tx = beginTransaction() )
         {
             assertFalse( tx.dataWrite().relationshipDelete( relationship ) );
-            tx.success();
+            tx.commit();
         }
         // should not crash
     }
@@ -167,7 +167,7 @@ public abstract class RelationshipWriteTestBase<G extends KernelAPIWriteTestSupp
         {
             n1 = graphDb.createNode().getId();
             n2 = graphDb.createNode().getId();
-            tx.success();
+            tx.commit();
         }
 
         try ( Transaction tx = beginTransaction() )
@@ -176,7 +176,7 @@ public abstract class RelationshipWriteTestBase<G extends KernelAPIWriteTestSupp
             long r = tx.dataWrite().relationshipCreate( n1, label, n2 );
 
             assertTrue( tx.dataWrite().relationshipDelete( r ) );
-            tx.success();
+            tx.commit();
         }
 
         try ( org.neo4j.graphdb.Transaction ignore = graphDb.beginTx() )
@@ -198,7 +198,7 @@ public abstract class RelationshipWriteTestBase<G extends KernelAPIWriteTestSupp
 
             relationshipId = node1.createRelationshipTo( node2, RelationshipType.withName( "R" ) ).getId();
 
-            tx.success();
+            tx.commit();
         }
 
         // When
@@ -206,7 +206,7 @@ public abstract class RelationshipWriteTestBase<G extends KernelAPIWriteTestSupp
         {
             int token = tx.token().propertyKeyGetOrCreateForName( propertyKey );
             assertThat( tx.dataWrite().relationshipSetProperty( relationshipId, token, stringValue( "hello" ) ), equalTo( NO_VALUE ) );
-            tx.success();
+            tx.commit();
         }
 
         // Then
@@ -231,7 +231,7 @@ public abstract class RelationshipWriteTestBase<G extends KernelAPIWriteTestSupp
             r.setProperty( propertyKey, 42  );
             relationshipId = r.getId();
 
-            tx.success();
+            tx.commit();
         }
 
         // When
@@ -240,7 +240,7 @@ public abstract class RelationshipWriteTestBase<G extends KernelAPIWriteTestSupp
             int token = tx.token().propertyKeyGetOrCreateForName( propertyKey );
             assertThat( tx.dataWrite().relationshipSetProperty( relationshipId, token, stringValue( "hello" ) ),
                     equalTo( intValue( 42 ) ) );
-            tx.success();
+            tx.commit();
         }
 
         // Then
@@ -264,7 +264,7 @@ public abstract class RelationshipWriteTestBase<G extends KernelAPIWriteTestSupp
             Relationship proxy = node1.createRelationshipTo( node2, RelationshipType.withName( "R" ) );
             relationshipId = proxy.getId();
             proxy.setProperty( propertyKey, 42 );
-            tx.success();
+            tx.commit();
         }
 
         // When
@@ -273,7 +273,7 @@ public abstract class RelationshipWriteTestBase<G extends KernelAPIWriteTestSupp
             int token = tx.token().propertyKeyGetOrCreateForName( propertyKey );
             assertThat( tx.dataWrite().relationshipRemoveProperty( relationshipId, token ),
                     equalTo( intValue( 42 ) ) );
-            tx.success();
+            tx.commit();
         }
 
         // Then
@@ -296,7 +296,7 @@ public abstract class RelationshipWriteTestBase<G extends KernelAPIWriteTestSupp
 
             Relationship proxy = node1.createRelationshipTo( node2, RelationshipType.withName( "R" ) );
             relationshipId = proxy.getId();
-            tx.success();
+            tx.commit();
         }
         // When
         try ( Transaction tx = beginTransaction() )
@@ -304,7 +304,7 @@ public abstract class RelationshipWriteTestBase<G extends KernelAPIWriteTestSupp
             int token = tx.token().propertyKeyGetOrCreateForName( propertyKey );
             assertThat( tx.dataWrite().relationshipRemoveProperty( relationshipId, token ),
                     equalTo( NO_VALUE ) );
-            tx.success();
+            tx.commit();
         }
 
         // Then
@@ -328,7 +328,7 @@ public abstract class RelationshipWriteTestBase<G extends KernelAPIWriteTestSupp
             Relationship proxy = node1.createRelationshipTo( node2, RelationshipType.withName( "R" ) );
             relationshipId = proxy.getId();
             proxy.setProperty( propertyKey, 42 );
-            tx.success();
+            tx.commit();
         }
 
         // When
@@ -339,7 +339,7 @@ public abstract class RelationshipWriteTestBase<G extends KernelAPIWriteTestSupp
                     equalTo( intValue( 42 ) ) );
             assertThat( tx.dataWrite().relationshipRemoveProperty( relationshipId, token ),
                     equalTo( NO_VALUE ) );
-            tx.success();
+            tx.commit();
         }
 
         // Then
@@ -362,7 +362,7 @@ public abstract class RelationshipWriteTestBase<G extends KernelAPIWriteTestSupp
 
             relationshipId = node1.createRelationshipTo( node2, RelationshipType.withName( "R" ) ).getId();
 
-            tx.success();
+            tx.commit();
         }
 
         // When
@@ -372,7 +372,7 @@ public abstract class RelationshipWriteTestBase<G extends KernelAPIWriteTestSupp
             assertThat( tx.dataWrite().relationshipSetProperty( relationshipId, token, stringValue( "hello" ) ), equalTo( NO_VALUE ) );
             assertThat( tx.dataWrite().relationshipSetProperty( relationshipId, token, stringValue( "world" ) ), equalTo( stringValue( "hello" ) ) );
             assertThat( tx.dataWrite().relationshipSetProperty( relationshipId, token, intValue( 1337 ) ), equalTo( stringValue( "world" ) ) );
-            tx.success();
+            tx.commit();
         }
 
         // Then
@@ -399,15 +399,14 @@ public abstract class RelationshipWriteTestBase<G extends KernelAPIWriteTestSupp
 
             r.setProperty( propertyKey, theValue.asObject() );
             relationshipId = r.getId();
-            ctx.success();
+            ctx.commit();
         }
 
         // When
         Transaction tx = beginTransaction();
         int property = tx.token().propertyKeyGetOrCreateForName( propertyKey );
         assertThat( tx.dataWrite().relationshipSetProperty( relationshipId, property, theValue ), equalTo( theValue ) );
-        tx.success();
 
-        assertThat( tx.closeTransaction(), equalTo( Transaction.READ_ONLY ) );
+        assertThat( tx.commit(), equalTo( Transaction.READ_ONLY ) );
     }
 }

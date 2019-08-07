@@ -89,24 +89,24 @@ class LogPruningIT
         try ( Transaction tx = db.beginTx() )
         {
             db.createNode();
-            tx.success();
+            tx.commit();
         }
         logRotation.rotateLogFile( LogAppendEvent.NULL );
         try ( Transaction tx = db.beginTx() )
         {
             db.createNode();
-            tx.success();
+            tx.commit();
         }
         logRotation.rotateLogFile( LogAppendEvent.NULL );
         try ( Transaction tx = db.beginTx() )
         {
             db.createNode();
-            tx.success();
+            tx.commit();
         }
         try ( Transaction tx = db.beginTx() )
         {
             db.createNode();
-            tx.success();
+            tx.commit();
         }
     }
 

@@ -121,7 +121,7 @@ class ExecutionResultTest
         try ( Transaction tx = db.beginTx() )
         {
             db.createNode();
-            tx.success();
+            tx.commit();
         }
     }
 

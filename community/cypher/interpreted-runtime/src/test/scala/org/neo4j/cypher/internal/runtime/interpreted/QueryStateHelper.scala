@@ -27,6 +27,8 @@ import org.neo4j.cypher.internal.runtime.interpreted.pipes._
 import org.neo4j.cypher.internal.runtime.{ExecutionContext, ExpressionCursors, NoMemoryTracker, QueryContext}
 import org.neo4j.graphdb.spatial.Point
 import org.neo4j.graphdb.{Node, Relationship}
+import org.neo4j.internal.kernel.api.Transaction.Type
+import org.neo4j.internal.kernel.api.security.LoginContext
 import org.neo4j.internal.kernel.api.{CursorFactory, IndexReadSession}
 import org.neo4j.kernel.GraphDatabaseQueryService
 import org.neo4j.kernel.impl.coreapi.InternalTransaction
@@ -62,7 +64,8 @@ object QueryStateHelper extends MockitoSugar {
                     ): QueryState = {
     val searchMonitor = new Monitors().newMonitor(classOf[IndexSearchMonitor])
     val contextFactory = Neo4jTransactionalContextFactory.create(db)
-    val transactionalContext = TransactionalContextWrapper(contextFactory.newContext(tx, "X", EMPTY_MAP))
+    val transaction = db.beginTransaction(Type.explicit, LoginContext.AUTH_DISABLED);
+    val transactionalContext = TransactionalContextWrapper(contextFactory.newContext(transaction, "X", EMPTY_MAP))
     val queryContext = new TransactionBoundQueryContext(transactionalContext)(searchMonitor)
     emptyWith(db = db,
               query = queryContext,

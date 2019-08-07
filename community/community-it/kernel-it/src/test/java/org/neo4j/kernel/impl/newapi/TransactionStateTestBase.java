@@ -41,7 +41,7 @@ public abstract class TransactionStateTestBase<G extends KernelAPIWriteTestSuppo
         {
             deletedInTx = tx.dataWrite().nodeCreate();
             unaffected = tx.dataWrite().nodeCreate();
-            tx.success();
+            tx.commit();
         }
 
         try ( Transaction tx = beginTransaction() )
@@ -73,7 +73,7 @@ public abstract class TransactionStateTestBase<G extends KernelAPIWriteTestSuppo
             relType = tx.tokenWrite().relationshipTypeCreateForName( "REL_TYPE", false );
             deletedInTx = tx.dataWrite().relationshipCreate(node, relType, node);
             unaffected = tx.dataWrite().relationshipCreate(node, relType, node);
-            tx.success();
+            tx.commit();
         }
 
         try ( Transaction tx = beginTransaction() )
@@ -109,7 +109,7 @@ public abstract class TransactionStateTestBase<G extends KernelAPIWriteTestSuppo
             tx.dataWrite().nodeSetProperty( node, p1, Values.of( 1 ) );
             tx.dataWrite().nodeSetProperty( node, p3, Values.of( 3 ) );
             tx.dataWrite().nodeSetProperty( node, p4, Values.of( 4 ) );
-            tx.success();
+            tx.commit();
         }
 
         try ( Transaction tx = beginTransaction() )

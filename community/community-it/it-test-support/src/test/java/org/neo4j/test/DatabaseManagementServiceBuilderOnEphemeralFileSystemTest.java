@@ -121,7 +121,7 @@ public class DatabaseManagementServiceBuilderOnEphemeralFileSystemTest
             n2.createRelationshipTo(n1, relationshipType);
             n3.createRelationshipTo(n1, relationshipType);
 
-            tx.success();
+            tx.commit();
         }
 
         cleanDatabaseContent( db );
@@ -135,7 +135,7 @@ public class DatabaseManagementServiceBuilderOnEphemeralFileSystemTest
         {
             db.getAllRelationships().forEach( Relationship::delete );
             db.getAllNodes().forEach( Node::delete );
-            tx.success();
+            tx.commit();
         }
     }
 
@@ -152,7 +152,7 @@ public class DatabaseManagementServiceBuilderOnEphemeralFileSystemTest
         try ( Transaction tx = db.beginTx() )
         {
             db.createNode();
-            tx.success();
+            tx.commit();
         }
     }
 }

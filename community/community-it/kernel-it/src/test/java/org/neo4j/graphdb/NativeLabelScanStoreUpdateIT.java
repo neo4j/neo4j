@@ -193,7 +193,7 @@ class NativeLabelScanStoreUpdateIT
                 node.removeLabel( label( "Label-" + l ) );
             }
 
-            tx.success();
+            tx.commit();
         }
 
         // Then
@@ -232,7 +232,7 @@ class NativeLabelScanStoreUpdateIT
             {
                 node.removeLabel( label );
             }
-            tx.success();
+            tx.commit();
         }
     }
 
@@ -241,7 +241,7 @@ class NativeLabelScanStoreUpdateIT
         try ( Transaction tx = db.beginTx() )
         {
             node.delete();
-            tx.success();
+            tx.commit();
         }
     }
 
@@ -258,7 +258,7 @@ class NativeLabelScanStoreUpdateIT
         try ( Transaction tx = db.beginTx() )
         {
             Node node = db.createNode( labels );
-            tx.success();
+            tx.commit();
             return node;
         }
     }
@@ -271,7 +271,7 @@ class NativeLabelScanStoreUpdateIT
             {
                 node.addLabel( label );
             }
-            tx.success();
+            tx.commit();
         }
     }
 

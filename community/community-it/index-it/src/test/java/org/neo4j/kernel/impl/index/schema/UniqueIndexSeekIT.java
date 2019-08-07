@@ -141,7 +141,7 @@ class UniqueIndexSeekIT
             {
                 dataRead.lockingNodeUniqueIndexSeek( indexReference, cursor, IndexQuery.ExactPredicate.exact( propertyId, "value" ) );
             }
-            transaction.success();
+            transaction.commit();
         }
     }
 
@@ -153,7 +153,7 @@ class UniqueIndexSeekIT
             {
                 Node node = database.createNode( label );
                 node.setProperty( nameProperty, "PlanetExpress" + i );
-                transaction.success();
+                transaction.commit();
             }
         }
     }
@@ -163,12 +163,12 @@ class UniqueIndexSeekIT
         try ( Transaction transaction = database.beginTx() )
         {
             database.schema().constraintFor( label ).assertPropertyIsUnique( nameProperty ).create();
-            transaction.success();
+            transaction.commit();
         }
         try ( Transaction transaction = database.beginTx() )
         {
             database.schema().awaitIndexesOnline( 1, TimeUnit.MINUTES );
-            transaction.success();
+            transaction.commit();
         }
     }
 }

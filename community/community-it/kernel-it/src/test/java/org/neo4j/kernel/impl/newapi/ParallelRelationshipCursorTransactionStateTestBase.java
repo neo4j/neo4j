@@ -92,7 +92,7 @@ abstract class ParallelRelationshipCursorTransactionStateTestBase<G extends Kern
                 created.add( write.relationshipCreate( write.nodeCreate(), type, write.nodeCreate() ) );
                 deleted.add( write.relationshipCreate( write.nodeCreate(), type, write.nodeCreate() ) );
             }
-            tx.success();
+            tx.commit();
         }
 
         try ( Transaction tx = beginTransaction() )
@@ -233,7 +233,7 @@ abstract class ParallelRelationshipCursorTransactionStateTestBase<G extends Kern
             TestUtils.assertDistinct( ids1, ids2, ids3, ids4 );
             LongList concat = TestUtils.concat( ids1, ids2, ids3, ids4 );
             assertEquals( ids.toSortedList(), concat.toSortedList() );
-            tx.failure();
+            tx.rollback();
         }
         finally
         {
@@ -324,7 +324,7 @@ abstract class ParallelRelationshipCursorTransactionStateTestBase<G extends Kern
             LongList concat = TestUtils.concat( lists );
 
             assertEquals( ids.toSortedList(), concat.toSortedList() );
-            tx.failure();
+            tx.rollback();
         }
         finally
         {
@@ -375,7 +375,7 @@ abstract class ParallelRelationshipCursorTransactionStateTestBase<G extends Kern
                             format( "relationships=%d, seen=%d, all=%d", relationshipsInTx, concat.size(),
                                     allRels.size() ) );
                     assertEquals( allRels.size(), concat.size(), format( "relationships=%d", relationshipsInTx ) );
-                    tx.failure();
+                    tx.rollback();
                 }
             }
         }
@@ -397,7 +397,7 @@ abstract class ParallelRelationshipCursorTransactionStateTestBase<G extends Kern
             {
                 rels.add( write.relationshipCreate( write.nodeCreate(), type, write.nodeCreate() ) );
             }
-            tx.success();
+            tx.commit();
         }
         return rels;
     }

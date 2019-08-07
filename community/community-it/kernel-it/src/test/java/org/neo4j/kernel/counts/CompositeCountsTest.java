@@ -62,7 +62,7 @@ class CompositeCountsTest
             fooBar.createRelationshipTo( db.createNode( label( "Bar" ) ), withName( "BETA" ) );
             fooBar.createRelationshipTo( db.createNode(), withName( "GAMMA" ) );
             bar.createRelationshipTo( db.createNode( label( "Foo" ) ), withName( "GAMMA" ) );
-            tx.success();
+            tx.commit();
         }
 
         // then
@@ -92,7 +92,7 @@ class CompositeCountsTest
             foo = db.createNode( label( "Foo" ) );
             bar = db.createNode( label( "Bar" ) );
 
-            tx.success();
+            tx.commit();
         }
 
         // when
@@ -100,7 +100,7 @@ class CompositeCountsTest
         {
             foo.createRelationshipTo( bar, withName( "KNOWS" ) );
 
-            tx.success();
+            tx.commit();
         }
 
         // then
@@ -120,7 +120,7 @@ class CompositeCountsTest
             relationship = db.createNode( label( "Foo" ) ).createRelationshipTo(
                     db.createNode( label( "Bar" ) ), withName( "KNOWS" ) );
 
-            tx.success();
+            tx.commit();
         }
 
         // when
@@ -128,7 +128,7 @@ class CompositeCountsTest
         {
             relationship.delete();
 
-            tx.success();
+            tx.commit();
         }
 
         // then
@@ -150,7 +150,7 @@ class CompositeCountsTest
             bar = db.createNode( label( "Bar" ) );
             foo.createRelationshipTo( bar, withName( "KNOWS" ) );
 
-            tx.success();
+            tx.commit();
         }
 
         // when
@@ -158,7 +158,7 @@ class CompositeCountsTest
         {
             foo.addLabel( label( "Foo" ) );
 
-            tx.success();
+            tx.commit();
         }
 
         // then
@@ -180,7 +180,7 @@ class CompositeCountsTest
             bar = db.createNode( label( "Bar" ) );
             foo.createRelationshipTo( bar, withName( "KNOWS" ) );
 
-            tx.success();
+            tx.commit();
         }
 
         // when
@@ -188,7 +188,7 @@ class CompositeCountsTest
         {
             foo.removeLabel( label( "Foo" ) );
 
-            tx.success();
+            tx.commit();
         }
 
         // then
@@ -210,7 +210,7 @@ class CompositeCountsTest
             bar = db.createNode( label( "Bar" ) );
             foo.createRelationshipTo( bar, withName( "KNOWS" ) );
 
-            tx.success();
+            tx.commit();
         }
 
         // when
@@ -219,7 +219,7 @@ class CompositeCountsTest
             foo.addLabel( label( "Bar" ) );
             foo.createRelationshipTo( db.createNode( label( "Foo" ) ), withName( "KNOWS" ) );
 
-            tx.success();
+            tx.commit();
         }
 
         // then
@@ -243,7 +243,7 @@ class CompositeCountsTest
             foo.createRelationshipTo( bar, withName( "KNOWS" ) );
             rel = bar.createRelationshipTo( foo, withName( "KNOWS" ) );
 
-            tx.success();
+            tx.commit();
         }
 
         // when
@@ -252,7 +252,7 @@ class CompositeCountsTest
             foo.removeLabel( label( "Bar" ) );
             rel.delete();
 
-            tx.success();
+            tx.commit();
         }
 
         // then
@@ -276,7 +276,7 @@ class CompositeCountsTest
             foo.createRelationshipTo( bar, withName( "KNOWS" ) );
             rel = bar.createRelationshipTo( foo, withName( "KNOWS" ) );
 
-            tx.success();
+            tx.commit();
         }
 
         // when
@@ -285,7 +285,7 @@ class CompositeCountsTest
             foo.addLabel( label( "Bar" ) );
             rel.delete();
 
-            tx.success();
+            tx.commit();
         }
 
         // then
@@ -307,7 +307,7 @@ class CompositeCountsTest
             bar = db.createNode( label( "Bar" ) );
             foo.createRelationshipTo( bar, withName( "KNOWS" ) );
 
-            tx.success();
+            tx.commit();
         }
 
         // when
@@ -316,7 +316,7 @@ class CompositeCountsTest
             foo.removeLabel( label( "Bar" ) );
             foo.createRelationshipTo( db.createNode( label( "Foo" ) ), withName( "KNOWS" ) );
 
-            tx.success();
+            tx.commit();
         }
 
         // then
@@ -337,7 +337,7 @@ class CompositeCountsTest
             foo = db.createNode( label( "Foo" ) );
             bar = db.createNode( label( "Bar" ) );
 
-            tx.success();
+            tx.commit();
         }
 
         // when
@@ -345,7 +345,7 @@ class CompositeCountsTest
         {
             foo.createRelationshipTo( bar, withName( "KNOWS" ) ).delete();
 
-            tx.success();
+            tx.commit();
         }
 
         // then
@@ -363,7 +363,7 @@ class CompositeCountsTest
         try ( Transaction tx = db.beginTx() )
         {
             long nodeCount = countsForRelationship( lhs, type, rhs );
-            tx.success();
+            tx.commit();
             return new MatchingRelationships( String.format( "(%s)-%s->(%s)",
                                                              lhs == null ? "" : ":" + lhs.name(),
                                                              type == null ? "" : "[:" + type.name() + "]",

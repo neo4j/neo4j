@@ -135,7 +135,7 @@ class TestTransactionEvents
         try ( Transaction tx = db.beginTx() )
         {
             db.createNode().delete();
-            tx.success();
+            tx.commit();
         }
 
         assertNotNull( listener1.beforeCommit );
@@ -155,7 +155,7 @@ class TestTransactionEvents
         try ( Transaction tx = db.beginTx() )
         {
             db.createNode().delete();
-            tx.success();
+            tx.commit();
         }
         assertEquals( Integer.valueOf( 0 ), listener.beforeCommit );
         assertEquals( Integer.valueOf( 1 ), listener.afterCommit );
@@ -212,7 +212,7 @@ class TestTransactionEvents
 
                 node3.setProperty( "name", "Node 3" );
                 expectedData.assignedProperty( node3, "name", "Node 3", null );
-                tx.success();
+                tx.commit();
             }
 
             assertTrue( listener.hasBeenCalled(), "Should have been invoked" );
@@ -277,7 +277,7 @@ class TestTransactionEvents
 
                 tempRel.delete();
                 tempNode.delete();
-                tx.success();
+                tx.commit();
             }
 
             assertTrue( listener.hasBeenCalled(), "Should have been invoked" );
@@ -312,8 +312,7 @@ class TestTransactionEvents
             try
             {
                 db.createNode().delete();
-                tx.success();
-                tx.close();
+                tx.commit();
                 fail( "Should fail commit" );
             }
             catch ( TransactionFailureException e )
@@ -329,7 +328,7 @@ class TestTransactionEvents
             try ( Transaction transaction = db.beginTx() )
             {
                 db.createNode().delete();
-                transaction.success();
+                transaction.commit();
             }
             verifyListenerCalls( listeners, true );
         }
@@ -359,8 +358,7 @@ class TestTransactionEvents
             try
             {
                 db.createNode().delete();
-                tx.success();
-                tx.close();
+                tx.commit();
                 fail( "Should fail commit" );
             }
             catch ( TransactionFailureException e )
@@ -400,7 +398,7 @@ class TestTransactionEvents
             rel.setProperty( "test1", "stringvalue" );
             rel.setProperty( "test2", 1L );
             rel.setProperty( "test3", new int[] { 1, 2, 3 } );
-            tx.success();
+            tx.commit();
         }
         MyTxEventListener listener = new MyTxEventListener();
         dbms.registerTransactionEventListener( DEFAULT_DATABASE_NAME, listener );
@@ -409,7 +407,7 @@ class TestTransactionEvents
             rel.delete();
             node1.delete();
             node2.delete();
-            tx.success();
+            tx.commit();
         }
         assertEquals( "stringvalue", listener.nodeProps.get( "test1" ) );
         assertEquals( "stringvalue", listener.relProps.get( "test1" ) );
@@ -456,7 +454,7 @@ class TestTransactionEvents
         {
             node = db.createNode();
             node.setProperty( key, "initial value" );
-            tx.success();
+            tx.commit();
         }
         // -- register a tx listener which will override a property
         TransactionEventListener<Void> listener = new TransactionEventListenerAdapter<>()
@@ -476,7 +474,7 @@ class TestTransactionEvents
         {
             // When
             node.setProperty( key, value1 );
-            tx.success();
+            tx.commit();
         }
         // Then
         assertThat(node, inTx(db, hasProperty(key).withValue(value2)));
@@ -491,7 +489,7 @@ class TestTransactionEvents
         try ( Transaction tx = db.beginTx() )
         {
             db.schema().indexFor( label ).on( "indexed" ).create();
-            tx.success();
+            tx.commit();
         }
 
         // ... and a transaction event listener that likes to add the indexed property on nodes
@@ -516,7 +514,7 @@ class TestTransactionEvents
             db.schema().awaitIndexesOnline( AWAIT_INDEX_DURATION, AWAIT_INDEX_UNIT );
             Node node = db.createNode( label );
             node.setProperty( "random", 42 );
-            tx.success();
+            tx.commit();
         }
 
         // Then we should be able to look it up through the index.
@@ -535,7 +533,7 @@ class TestTransactionEvents
         try ( Transaction tx = db.beginTx() )
         {
             db.schema().indexFor( label ).on( "indexed" ).create();
-            tx.success();
+            tx.commit();
         }
 
         // ... and a transaction event listener that likes to add the indexed property on nodes
@@ -561,7 +559,7 @@ class TestTransactionEvents
             Node node = db.createNode();
             node.setProperty( "indexed", "value" );
             node.setProperty( "random", 42 );
-            tx.success();
+            tx.commit();
         }
 
         // Then we should be able to look it up through the index.
@@ -593,7 +591,7 @@ class TestTransactionEvents
                 labels.add( node3, "Bar" );
 
                 labels.activate();
-                tx.success();
+                tx.commit();
             }
             // then
             assertTrue( labels.isEmpty() );
@@ -627,7 +625,7 @@ class TestTransactionEvents
                 labels.add( node3, "Baz" );
                 labels.add( node3, "Bar" );
 
-                tx.success();
+                tx.commit();
             }
             labels.clear();
 
@@ -640,7 +638,7 @@ class TestTransactionEvents
                 labels.remove( node3, "Bar" );
 
                 labels.activate();
-                tx.success();
+                tx.commit();
             }
             // then
             assertTrue( labels.isEmpty() );
@@ -677,7 +675,7 @@ class TestTransactionEvents
                     {
                         accessData( change.entity() );
                     }
-                    tx.success();
+                    tx.commit();
                 }
             }
 
@@ -701,7 +699,7 @@ class TestTransactionEvents
             {
                 relationship = db.createNode().createRelationshipTo( db.createNode(), MyRelTypes.TEST );
                 expectedRelationshipData.put( relationship.getId(), new RelationshipData( relationship ) );
-                tx.success();
+                tx.commit();
             }
             // THEN
             assertEquals( 1, accessCount.get() );
@@ -713,7 +711,7 @@ class TestTransactionEvents
                 Relationship otherRelationship =
                         db.createNode().createRelationshipTo( db.createNode(), MyRelTypes.TEST2 );
                 expectedRelationshipData.put( otherRelationship.getId(), new RelationshipData( otherRelationship ) );
-                tx.success();
+                tx.commit();
             }
             // THEN
             assertEquals( 2, accessCount.get() );
@@ -722,7 +720,7 @@ class TestTransactionEvents
             try ( Transaction tx = db.beginTx() )
             {
                 relationship.delete();
-                tx.success();
+                tx.commit();
             }
             // THEN
             assertEquals( 1, accessCount.get() );
@@ -754,7 +752,7 @@ class TestTransactionEvents
             Relationship rel = person.createRelationshipTo( city, livesIn );
             rel.setProperty( "since", 2009 );
             relId = rel.getId();
-            tx.success();
+            tx.commit();
         }
 
         final Set<String> changedRelationships = new HashSet<>();
@@ -777,7 +775,7 @@ class TestTransactionEvents
         {
             Relationship rel = db.getRelationshipById( relId );
             rel.setProperty( "since", 2010 );
-            tx.success();
+            tx.commit();
         }
 
         assertEquals( 1, changedRelationships.size() );
@@ -796,7 +794,7 @@ class TestTransactionEvents
         try ( Transaction tx = db.beginTx() )
         {
             count( db.traversalDescription().traverse( root ) );
-            tx.success();
+            tx.commit();
         }
     }
 
@@ -824,34 +822,34 @@ class TestTransactionEvents
         try ( Transaction tx = db.beginTx() )
         {
             db.createNode( label );
-            tx.success();
+            tx.commit();
         }
         assertEquals( 1, counter.get() );
         // ... a property key token
         try ( Transaction tx = db.beginTx() )
         {
             db.createNode().setProperty( key, "value" );
-            tx.success();
+            tx.commit();
         }
         assertEquals( 2, counter.get() );
         // ... and a relationship type
         try ( Transaction tx = db.beginTx() )
         {
             db.createNode().createRelationshipTo( db.createNode(), withName( "A_TYPE" ) );
-            tx.success();
+            tx.commit();
         }
         assertEquals( 3, counter.get() );
         // ... also when creating an index
         try ( Transaction tx = db.beginTx() )
         {
             db.schema().indexFor( label ).on( key ).create();
-            tx.success();
+            tx.commit();
         }
         // ... or a constraint
         try ( Transaction tx = db.beginTx() )
         {
             db.schema().constraintFor( label ).assertPropertyIsUnique( "otherkey" ).create();
-            tx.success();
+            tx.commit();
         }
 
         // THEN only three transaction events (all including graph data) should've been fired
@@ -874,7 +872,7 @@ class TestTransactionEvents
                     {   // Just to see if one can reach them
                         node.getProperty( key );
                     }
-                    tx.success();
+                    tx.commit();
                 }
             }
         } );
@@ -884,7 +882,7 @@ class TestTransactionEvents
             // WHEN/THEN
             db.createNode();
             node.setProperty( "five", "Six" );
-            tx.success();
+            tx.commit();
         }
     }
 
@@ -901,7 +899,7 @@ class TestTransactionEvents
             startNode = db.createNode();
             endNode = db.createNode();
             relationship = startNode.createRelationshipTo( endNode, type );
-            tx.success();
+            tx.commit();
         }
 
         // WHEN
@@ -920,7 +918,7 @@ class TestTransactionEvents
         try ( Transaction tx = db.beginTx() )
         {
             relationship.delete();
-            tx.success();
+            tx.commit();
         }
 
         // THEN
@@ -950,7 +948,7 @@ class TestTransactionEvents
         {
             // when
             db.createNode();
-            tx.success();
+            tx.commit();
         }
         catch ( Exception e )
         {
@@ -1054,7 +1052,7 @@ class TestTransactionEvents
         {
             var node = db.createNode( TestLabels.values() );
             node.createRelationshipTo( node, TestRelType.LOOP );
-            tx.success();
+            tx.commit();
         }
     }
 
@@ -1069,7 +1067,7 @@ class TestTransactionEvents
             {
                 assertNotNull( nodesIterator.next() );
             }
-            tx.success();
+            tx.commit();
         }
     }
 
@@ -1298,7 +1296,7 @@ class TestTransactionEvents
             {
                 node.setProperty( properties[i++], properties[i] );
             }
-            tx.success();
+            tx.commit();
             return node;
         }
     }
@@ -1309,7 +1307,7 @@ class TestTransactionEvents
         {
             Node root = db.createNode( TestLabels.LABEL_ONE );
             createTree( root, depth, width, 0 );
-            tx.success();
+            tx.commit();
             return root;
         }
     }

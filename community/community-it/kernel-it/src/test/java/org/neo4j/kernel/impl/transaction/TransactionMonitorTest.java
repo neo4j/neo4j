@@ -61,7 +61,7 @@ class TransactionMonitorTest
             try ( Transaction tx = db.beginTx() )
             {
                 dbConsumer.accept( db );
-                tx.success();
+                tx.commit();
             }
             checker.verifyCommitted( isWriteTx, counts );
         }
@@ -84,7 +84,7 @@ class TransactionMonitorTest
             try ( Transaction tx = db.beginTx() )
             {
                 dbConsumer.accept( db );
-                tx.failure();
+                tx.rollback();
             }
             checker.verifyRolledBacked( isWriteTx, counts );
         }

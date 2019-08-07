@@ -79,13 +79,13 @@ class IndexSamplingIntegrationTest
             try ( Transaction tx = db.beginTx() )
             {
                 indexDefinition = db.schema().indexFor( label ).on( property ).create();
-                tx.success();
+                tx.commit();
             }
 
             try ( Transaction tx = db.beginTx() )
             {
                 db.schema().awaitIndexOnline( indexDefinition, 10, TimeUnit.SECONDS );
-                tx.success();
+                tx.commit();
             }
 
             try ( Transaction tx = db.beginTx() )
@@ -93,9 +93,8 @@ class IndexSamplingIntegrationTest
                 for ( int i = 0; i < nodes; i++ )
                 {
                     db.createNode( label ).setProperty( property, names[i % names.length] );
-                    tx.success();
                 }
-
+                tx.commit();
             }
 
             try ( Transaction tx = db.beginTx() )
@@ -107,8 +106,8 @@ class IndexSamplingIntegrationTest
                         nodes.next().delete();
                     }
                     deletedNodes++;
-                    tx.success();
                 }
+                tx.commit();
             }
         }
         finally
@@ -149,7 +148,7 @@ class IndexSamplingIntegrationTest
             try ( Transaction tx = db.beginTx() )
             {
                 db.schema().constraintFor( label ).assertPropertyIsUnique( property ).create();
-                tx.success();
+                tx.commit();
             }
 
             try ( Transaction tx = db.beginTx() )
@@ -157,8 +156,8 @@ class IndexSamplingIntegrationTest
                 for ( int i = 0; i < nodes; i++ )
                 {
                     db.createNode( label ).setProperty( property, "" + i );
-                    tx.success();
                 }
+                tx.commit();
             }
 
             try ( Transaction tx = db.beginTx() )
@@ -169,9 +168,9 @@ class IndexSamplingIntegrationTest
                     {
                         deletedNodes++;
                         db.findNode( label, property, "" + i ).delete();
-                        tx.success();
                     }
                 }
+                tx.commit();
             }
         }
         finally

@@ -65,7 +65,7 @@ class TemporalPropertiesRecordFormatIT
         {
             Node node = database.createNode( label );
             node.setProperty( propertyKey, date );
-            transaction.success();
+            transaction.commit();
         }
         managementService.shutdown();
 
@@ -92,7 +92,7 @@ class TemporalPropertiesRecordFormatIT
         {
             Node node = database.createNode( label );
             node.setProperty( propertyKey, new LocalDate[]{date, date} );
-            transaction.success();
+            transaction.commit();
         }
         managementService.shutdown();
 

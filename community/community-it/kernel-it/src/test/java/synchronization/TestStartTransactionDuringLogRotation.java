@@ -116,7 +116,7 @@ public class TestStartTransactionDuringLogRotation
             try ( Transaction tx = db.beginTx() )
             {
                 db.createNode( label ).setProperty( "a", 1 );
-                tx.success();
+                tx.commit();
             }
 
             db.getDependencyResolver().resolveDependency( LogRotation.class ).rotateLogFile( LogAppendEvent.NULL );
@@ -138,8 +138,8 @@ public class TestStartTransactionDuringLogRotation
         try ( Transaction tx = db.beginTx() )
         {
             db.getNodeById( 0 );
-            tx.success();
             completeLogRotationLatch.countDown();
+            tx.commit();
         }
     }
 
@@ -149,8 +149,8 @@ public class TestStartTransactionDuringLogRotation
         try ( Transaction tx = db.beginTx() )
         {
             db.createNode();
-            tx.success();
             completeLogRotationLatch.countDown();
+            tx.commit();
         }
     }
 }

@@ -215,7 +215,7 @@ public class UserSecurityGraphInitializer implements SecurityGraphInitializer
                 {
                     systemGraphOperations.addUser( user );
                 }
-                transaction.success();
+                transaction.commit();
             }
 
             // Log what happened to the security log

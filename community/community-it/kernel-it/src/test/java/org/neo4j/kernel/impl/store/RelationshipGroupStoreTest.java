@@ -118,13 +118,13 @@ class RelationshipGroupStoreTest
             assertEquals( 2, node.getDegree() );
             assertEquals( 1, node.getDegree( MyRelTypes.TEST ) );
             assertEquals( 1, node.getDegree( MyRelTypes.TEST2 ) );
-            tx.success();
+            tx.commit();
         }
 
         try ( Transaction tx = db.beginTx() )
         {
             node.createRelationshipTo( db.createNode(), MyRelTypes.TEST );
-            tx.success();
+            tx.commit();
         }
 
         managementService.shutdown();
@@ -192,7 +192,7 @@ class RelationshipGroupStoreTest
                 rel.delete();
             }
             node.delete();
-            tx.success();
+            tx.commit();
         }
 
         managementService.shutdown();
@@ -219,7 +219,7 @@ class RelationshipGroupStoreTest
             rel4 = node.createRelationshipTo( db.createNode(), MyRelTypes.TEST );
             rel5 = db.createNode().createRelationshipTo( node, MyRelTypes.TEST );
             rel6 = node.createRelationshipTo( node, MyRelTypes.TEST );
-            tx.success();
+            tx.commit();
         }
 
         NeoStores neoStores = db.getDependencyResolver().resolveDependency( RecordStorageEngine.class ).testAccessNeoStores();
@@ -256,7 +256,7 @@ class RelationshipGroupStoreTest
             rel4 = node.createRelationshipTo( db.createNode(), MyRelTypes.TEST2 );
             rel5 = node.createRelationshipTo( db.createNode(), MyRelTypes.TEST2 );
             rel6 = node.createRelationshipTo( db.createNode(), MyRelTypes.TEST2 );
-            tx.success();
+            tx.commit();
         }
 
         NeoStores neoStores = db.getDependencyResolver().resolveDependency( RecordStorageEngine.class ).testAccessNeoStores();
@@ -291,8 +291,7 @@ class RelationshipGroupStoreTest
         Relationship rel4 = node.createRelationshipTo( db.createNode(), MyRelTypes.TEST2 );
         Relationship rel5 = node.createRelationshipTo( db.createNode(), MyRelTypes.TEST2 );
         Relationship rel6 = node.createRelationshipTo( db.createNode(), MyRelTypes.TEST2 );
-        tx.success();
-        tx.close();
+        tx.commit();
 
         NeoStores neoStores = db.getDependencyResolver().resolveDependency( RecordStorageEngine.class ).testAccessNeoStores();
         NodeStore nodeStore = neoStores.getNodeStore();

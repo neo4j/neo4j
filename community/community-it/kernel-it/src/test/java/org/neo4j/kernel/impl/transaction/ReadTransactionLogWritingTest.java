@@ -68,7 +68,7 @@ class ReadTransactionLogWritingTest
             relationship = node.createRelationshipTo( db.createNode(), MyRelTypes.TEST );
             relationship.setProperty( "short", 123 );
             relationship.setProperty( "long", longString( 300 ) );
-            tx.success();
+            tx.commit();
         }
         logEntriesWrittenBeforeReadOperations = countLogEntries();
     }
@@ -131,7 +131,7 @@ class ReadTransactionLogWritingTest
             runnable.run();
             if ( success )
             {
-                tx.success();
+                tx.commit();
             }
         }
     }

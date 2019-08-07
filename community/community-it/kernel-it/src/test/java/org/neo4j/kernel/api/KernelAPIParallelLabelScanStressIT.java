@@ -61,7 +61,7 @@ class KernelAPIParallelLabelScanStressIT
             labels[0] = createLabeledNodes( tx, N_NODES, "LABEL1" );
             labels[1] = createLabeledNodes( tx, N_NODES, "LABEL2" );
             labels[2] = createLabeledNodes( tx, N_NODES, "LABEL3" );
-            tx.success();
+            tx.commit();
         }
 
         KernelAPIParallelStress.parallelStressInTx( kernel,

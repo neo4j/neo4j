@@ -50,7 +50,7 @@ class TestTraversalWithLoops extends TraversalTestBase
             expectPaths( basicTraverser.traverse( a ), "a,b,c,d,e" );
             expectPaths( basicTraverser.uniqueness( Uniqueness.RELATIONSHIP_PATH ).traverse( a ),
                     "a,b,c,d,e", "a,b,c,c,d,e", "a,b,c,d,d,e", "a,b,c,c,d,d,e" );
-            tx.success();
+            tx.commit();
         }
     }
 }

@@ -83,7 +83,7 @@ public abstract class DeepRelationshipTraversalCursorTestBase<G extends KernelAP
             expected_total = offset + duplicate;
             expected_unique = leafs.length;
 
-            tx.success();
+            tx.commit();
         }
     }
 

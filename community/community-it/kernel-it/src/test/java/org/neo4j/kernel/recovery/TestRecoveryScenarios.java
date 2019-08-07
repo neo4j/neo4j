@@ -101,7 +101,7 @@ class TestRecoveryScenarios
         try ( Transaction tx = db.beginTx() )
         {
             node = db.getNodeById( node.getId() );
-            tx.success();
+            tx.commit();
             fail( "Should not exist" );
         }
         catch ( NotFoundException e )
@@ -131,7 +131,7 @@ class TestRecoveryScenarios
         {
             assertEquals( Collections.<Node>emptyList(),
                 Iterators.asList( db.findNodes( label, "key", "value" ) ), "Updates not propagated correctly during recovery" );
-            tx.success();
+            tx.commit();
         }
     }
 
@@ -151,7 +151,7 @@ class TestRecoveryScenarios
         {
             node = db.createNode( labels );
             node.addLabel( label );
-            tx.success();
+            tx.commit();
         }
         checkPoint();
         setProperty( node, "key", "value" );
@@ -166,7 +166,7 @@ class TestRecoveryScenarios
         try ( Transaction tx = db.beginTx() )
         {
             assertEquals( node, db.findNode( label, "key", "value" ) );
-            tx.success();
+            tx.commit();
         }
     }
 
@@ -190,7 +190,7 @@ class TestRecoveryScenarios
             final TokenHolder holder = db.getDependencyResolver().resolveDependency( TokenHolders.class ).labelTokens();
             int labelId = holder.getIdByName( label.name() );
             assertEquals( 0, tx.dataRead().countsForNode( labelId ) );
-            tx.success();
+            tx.commit();
         }
     }
 
@@ -202,7 +202,7 @@ class TestRecoveryScenarios
             {
                 node.removeLabel( label );
             }
-            tx.success();
+            tx.commit();
         }
     }
 
@@ -211,7 +211,7 @@ class TestRecoveryScenarios
         try ( Transaction tx = db.beginTx() )
         {
             node.removeProperty( key );
-            tx.success();
+            tx.commit();
         }
     }
 
@@ -220,7 +220,7 @@ class TestRecoveryScenarios
         try ( Transaction tx = db.beginTx() )
         {
             node.addLabel( label );
-            tx.success();
+            tx.commit();
         }
     }
 
@@ -229,7 +229,7 @@ class TestRecoveryScenarios
         try ( Transaction tx = db.beginTx() )
         {
             Node node = db.createNode( labels );
-            tx.success();
+            tx.commit();
             return node;
         }
     }
@@ -240,7 +240,7 @@ class TestRecoveryScenarios
         {
             Node node = db.createNode( labels );
             node.setProperty( key, value );
-            tx.success();
+            tx.commit();
             return node;
         }
     }
@@ -250,12 +250,12 @@ class TestRecoveryScenarios
         try ( Transaction tx = db.beginTx() )
         {
             db.schema().indexFor( label ).on( key ).create();
-            tx.success();
+            tx.commit();
         }
         try ( Transaction tx = db.beginTx() )
         {
             db.schema().awaitIndexesOnline( 10, SECONDS );
-            tx.success();
+            tx.commit();
         }
     }
 
@@ -294,7 +294,7 @@ class TestRecoveryScenarios
         try ( Transaction tx = db.beginTx() )
         {
             node.delete();
-            tx.success();
+            tx.commit();
         }
     }
 
@@ -303,7 +303,7 @@ class TestRecoveryScenarios
         try ( Transaction tx = db.beginTx() )
         {
             node.setProperty( key, value );
-            tx.success();
+            tx.commit();
         }
     }
 

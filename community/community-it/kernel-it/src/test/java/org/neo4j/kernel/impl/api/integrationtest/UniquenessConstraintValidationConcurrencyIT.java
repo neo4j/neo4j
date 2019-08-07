@@ -130,7 +130,7 @@ public class UniquenessConstraintValidationConcurrencyIT
             {
                 db.createNode( label( label ) ).setProperty( propertyKey, propertyValue );
 
-                tx.success();
+                tx.commit();
                 return true;
             }
             catch ( ConstraintViolationException e )

@@ -665,7 +665,7 @@ class CommunityUserManagementDDLAcceptanceTest extends CommunityDDLAcceptanceTes
         count = count + 1
         true
       })
-      tx.success()
+      tx.commit()
       count
     } finally {
       tx.close()

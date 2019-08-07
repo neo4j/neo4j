@@ -244,12 +244,12 @@ class RecoveryCleanupIT
         try ( Transaction tx = db.beginTx() )
         {
             db.schema().indexFor( label ).on( propKey ).create();
-            tx.success();
+            tx.commit();
         }
         try ( Transaction tx = db.beginTx() )
         {
             db.schema().awaitIndexesOnline( 1, TimeUnit.MINUTES );
-            tx.success();
+            tx.commit();
         }
     }
 
@@ -267,7 +267,7 @@ class RecoveryCleanupIT
             db.createNode( label ).setProperty( propKey, "string" );
             db.createNode( label ).setProperty( propKey, Values.pointValue( Cartesian, 0.5, 0.5 ) );
             db.createNode( label ).setProperty( propKey, LocalTime.of( 0, 0 ) );
-            tx.success();
+            tx.commit();
         }
     }
 

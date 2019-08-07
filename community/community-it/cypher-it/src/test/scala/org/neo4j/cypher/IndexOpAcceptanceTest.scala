@@ -119,7 +119,7 @@ class IndexOpAcceptanceTest extends ExecutionEngineFunSuite with QueryStatistics
     val tx = graph.getGraphDatabaseService.beginTx()
     try {
       graph.schema().awaitIndexesOnline(3, TimeUnit.SECONDS)
-      tx.success()
+      tx.commit()
     } catch {
       case e:IllegalStateException => assert(e.getMessage.contains("FAILED"), "Was expecting FAILED state")
     } finally {

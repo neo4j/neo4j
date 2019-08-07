@@ -75,7 +75,7 @@ public class PointTypeIT extends AbstractRestFunctionalTestBase
                     verifyPoint( points[2], Cartesian, 3.0, 3.0 );
                 }
             }
-            tx.success();
+            tx.commit();
         }
     }
 
@@ -102,7 +102,7 @@ public class PointTypeIT extends AbstractRestFunctionalTestBase
             node.setProperty( "coordinates", new Point[]{pointValue( WGS84, 30.655691, 104.081602 )} );
             node.setProperty( "location", "Shanghai" );
             node.setProperty( "type", "gps" );
-            tx.success();
+            tx.commit();
         }
 
         //When
@@ -130,7 +130,7 @@ public class PointTypeIT extends AbstractRestFunctionalTestBase
             node.setProperty( "coordinates", pointValue( WGS84, 30.655691, 104.081602 ) );
             node.setProperty( "location", "Shanghai" );
             node.setProperty( "type", "gps" );
-            tx.success();
+            tx.commit();
         }
 
         //When
@@ -156,7 +156,7 @@ public class PointTypeIT extends AbstractRestFunctionalTestBase
         {
             Node node = db.createNode( label( "N" ) );
             node.setProperty( "coordinates", pointValue( WGS84, 30.655691, 104.081602 ) );
-            tx.success();
+            tx.commit();
         }
 
         //When
@@ -182,7 +182,7 @@ public class PointTypeIT extends AbstractRestFunctionalTestBase
         {
             Node node = db.createNode( label( "N" ) );
             node.setProperty( "coordinates", new Point[]{pointValue( WGS84, 30.655691, 104.081602 )});
-            tx.success();
+            tx.commit();
         }
 
         //When
@@ -208,7 +208,7 @@ public class PointTypeIT extends AbstractRestFunctionalTestBase
         {
             Node node = db.createNode( label( "N" ) );
             node.setProperty( "coordinates", new Point[]{pointValue( WGS84, 30.655691, 104.081602 )});
-            tx.success();
+            tx.commit();
         }
 
         //When

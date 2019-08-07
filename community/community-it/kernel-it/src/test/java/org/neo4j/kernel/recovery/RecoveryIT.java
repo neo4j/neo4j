@@ -154,7 +154,7 @@ class RecoveryIT
                 Node start = database.createNode();
                 Node stop = database.createNode();
                 start.createRelationshipTo( stop, withName( valueOf( i ) ) );
-                transaction.success();
+                transaction.commit();
             }
         }
         managementService.shutdown();
@@ -191,7 +191,7 @@ class RecoveryIT
                 start.setProperty( "start" + i, i );
                 stop.setProperty( "stop" + i, i );
                 start.createRelationshipTo( stop, withName( valueOf( i ) ) );
-                transaction.success();
+                transaction.commit();
             }
         }
         managementService.shutdown();
@@ -229,12 +229,12 @@ class RecoveryIT
         {
             database.schema().indexFor( startMarker ).on( startProperty ).create();
             database.schema().constraintFor( stopMarker ).assertPropertyIsUnique( stopProperty ).create();
-            transaction.success();
+            transaction.commit();
         }
         try ( Transaction transaction = database.beginTx() )
         {
             database.schema().awaitIndexesOnline( 1, TimeUnit.MINUTES );
-            transaction.success();
+            transaction.commit();
         }
 
         for ( int i = 0; i < numberOfRelationships; i++ )
@@ -247,7 +247,7 @@ class RecoveryIT
                 start.setProperty( startProperty, i );
                 stop.setProperty( stopProperty, i );
                 start.createRelationshipTo( stop, withName( valueOf( i ) ) );
-                transaction.success();
+                transaction.commit();
             }
         }
         long numberOfPropertyKeys;
@@ -516,7 +516,7 @@ class RecoveryIT
         try ( Transaction transaction = service.beginTx() )
         {
             service.createNode();
-            transaction.success();
+            transaction.commit();
         }
     }
 
@@ -633,7 +633,7 @@ class RecoveryIT
                 Node node2 = database.createNode();
                 node1.createRelationshipTo( node2, withName( "Type" + i ) );
                 node2.setProperty( "a", randomAlphanumeric( TEN_KB ) );
-                transaction.success();
+                transaction.commit();
             }
         }
     }

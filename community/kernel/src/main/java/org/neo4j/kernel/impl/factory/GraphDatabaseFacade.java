@@ -859,12 +859,6 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI, EmbeddedProxySPI
     }
 
     @Override
-    public void failTransaction()
-    {
-        statementContext.getKernelTransactionBoundToThisThread( true, databaseId() ).failure();
-    }
-
-    @Override
     public RelationshipProxy newRelationshipProxy( long id )
     {
         return new RelationshipProxy( this, id );

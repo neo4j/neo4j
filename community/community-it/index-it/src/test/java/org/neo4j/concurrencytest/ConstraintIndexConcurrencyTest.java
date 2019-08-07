@@ -71,7 +71,7 @@ public class ConstraintIndexConcurrencyTest
         try ( Transaction tx = graphDb.beginTx() )
         {
             graphDb.schema().constraintFor( label ).assertPropertyIsUnique( propertyKey ).create();
-            tx.success();
+            tx.commit();
         }
 
         // When
@@ -94,7 +94,7 @@ public class ConstraintIndexConcurrencyTest
                 try ( Transaction transaction = db.beginTx() )
                 {
                     db.createNode( label ).setProperty( propertyKey, conflictingValue );
-                    transaction.success();
+                    transaction.commit();
                 }
                 return null;
             }, graphDb ).get();
@@ -117,7 +117,7 @@ public class ConstraintIndexConcurrencyTest
                 assertEquals( Values.stringValue( conflictingValue ), conflict.getSinglePropertyValue() );
             }
 
-            tx.success();
+            tx.commit();
         }
     }
 }

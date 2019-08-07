@@ -91,8 +91,7 @@ class TestNeo4jCacheAndPersistence extends AbstractNeo4jTestCase
         node2.setProperty( arrayKey, array );
         rel.setProperty( arrayKey, array );
         Transaction tx = getTransaction();
-        tx.success();
-        tx.close();
+        tx.commit();
         tx = getGraphDb().beginTx();
         assertEquals( 1, node1.getProperty( key1 ) );
         setTransaction( tx );
@@ -371,7 +370,7 @@ class TestNeo4jCacheAndPersistence extends AbstractNeo4jTestCase
             node1.createRelationshipTo( node2, MyRelTypes.TEST );
             node2.createRelationshipTo( node1, MyRelTypes.TEST2 );
             node1.createRelationshipTo( node2, MyRelTypes.TEST_TRAVERSAL );
-            tx.success();
+            tx.commit();
         }
 
         try ( Transaction tx = graphDb.beginTx() )
@@ -394,7 +393,7 @@ class TestNeo4jCacheAndPersistence extends AbstractNeo4jTestCase
 
             assertEquals( 2, Iterables.count( node2.getRelationships( INCOMING ) ) );
 
-            tx.success();
+            tx.commit();
         }
         managementService.shutdown();
     }
@@ -449,8 +448,7 @@ class TestNeo4jCacheAndPersistence extends AbstractNeo4jTestCase
             total += 2;
             totalOneDirection++;
         }
-        tx.success();
-        tx.close();
+        tx.commit();
 
         tx = graphDb.beginTx();
         Set<Relationship> rels = new HashSet<>();
@@ -528,8 +526,7 @@ class TestNeo4jCacheAndPersistence extends AbstractNeo4jTestCase
         assertEquals( 0, incoming.size() );
         rels.clear();
 
-        tx.success();
-        tx.close();
+        tx.commit();
         managementService.shutdown();
     }
 

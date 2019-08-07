@@ -300,7 +300,7 @@ class FileWatchIT
             {
                 definition.drop();
             }
-            transaction.success();
+            transaction.commit();
         }
     }
 
@@ -309,7 +309,7 @@ class FileWatchIT
         try ( Transaction transaction = database.beginTx() )
         {
             database.schema().indexFor( testLabel ).on( propertyName ).create();
-            transaction.success();
+            transaction.commit();
         }
 
         try ( Transaction ignored = database.beginTx() )
@@ -329,7 +329,7 @@ class FileWatchIT
         {
             Node node = database.createNode( testLabel );
             node.setProperty( propertyName, "value" );
-            transaction.success();
+            transaction.commit();
         }
     }
 
@@ -355,7 +355,7 @@ class FileWatchIT
         try ( Transaction transaction = database.beginTx() )
         {
             database.createNode();
-            transaction.success();
+            transaction.commit();
         }
     }
 

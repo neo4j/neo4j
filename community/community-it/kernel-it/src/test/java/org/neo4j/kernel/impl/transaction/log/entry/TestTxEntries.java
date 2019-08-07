@@ -76,22 +76,21 @@ class TestTxEntries
             node1 = db.createNode();
             Node node2 = db.createNode();
             node1.createRelationshipTo( node2, RelationshipType.withName( "relType1" ) );
-            tx.success();
+            tx.commit();
         }
 
         try ( Transaction tx = db.beginTx() )
         {
             node1.delete();
-            tx.success();
             // Will throw exception, causing the tx to be rolledback.
             // InvalidRecordException coming, node1 has rels
-            assertThrows( ConstraintViolationException.class, tx::close );
+            assertThrows( ConstraintViolationException.class, tx::commit );
         }
 
         try ( Transaction tx = db.beginTx() )
         {
             node1.setProperty( "foo", "bar" );
-            tx.success();
+            tx.commit();
         }
     }
 }

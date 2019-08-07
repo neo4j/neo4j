@@ -245,7 +245,7 @@ class IndexConfigMigrationIT
                 assertTrue( allCRS.isEmpty(), "Expected all CRS to be represented in store, but missing " + allCRS );
                 assertIndexConfiguration( db );
                 assertFulltextIndexConfiguration( db );
-                tx.success();
+                tx.commit();
             }
         }
         finally
@@ -350,7 +350,7 @@ class IndexConfigMigrationIT
                 double[] coords = new double[dim];
                 node.setProperty( propKey, Values.pointValue( crs, coords ) );
             }
-            tx.success();
+            tx.commit();
         }
     }
 
@@ -361,12 +361,12 @@ class IndexConfigMigrationIT
             String indexPattern = format( "\":%s(%s)\"", label.name(), propKey );
             String indexProvider = "\"" + providerName + "\"";
             db.execute( format( "CALL db.createIndex( %s, %s )", indexPattern, indexProvider ) ).close();
-            tx.success();
+            tx.commit();
         }
         try ( Transaction tx = db.beginTx() )
         {
             db.schema().awaitIndexesOnline( 1, TimeUnit.MINUTES );
-            tx.success();
+            tx.commit();
         }
     }
 
@@ -381,7 +381,7 @@ class IndexConfigMigrationIT
             System.out.println( fulltextName + " created with config: " + configString );
             String query = format( "CALL db.index.fulltext." + indexProcedure + "(\"%s\", %s, %s, %s )", fulltextName, labelArray, propArray, configString );
             db.execute( query ).close();
-            tx.success();
+            tx.commit();
         }
     }
 

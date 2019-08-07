@@ -135,7 +135,7 @@ class StartOldDbOnCurrentVersionAndCreateFusionIndexIT
                 db.execute( "CALL db.index.fulltext.createNodeIndex('fts3', ['Fts4'], ['prop1'], {eventually_consistent: 'true'} )" ).close();
                 db.execute( "CALL db.index.fulltext.createRelationshipIndex('fts4', ['FtsRel1', 'FtsRel2'], ['prop1', 'prop2'], " +
                         "{eventually_consistent: 'true'} )" ).close();
-                tx.success();
+                tx.commit();
             }
             try ( Transaction tx = db.beginTx() )
             {
@@ -145,12 +145,12 @@ class StartOldDbOnCurrentVersionAndCreateFusionIndexIT
                 node.setProperty( "prop2", "abc" );
                 node.createRelationshipTo( node, RelationshipType.withName( "FtsRel1" ) ).setProperty( "prop1", "abc" );
                 node.createRelationshipTo( node, RelationshipType.withName( "FtsRel2" ) ).setProperty( "prop2", "abc" );
-                tx.success();
+                tx.commit();
             }
             try ( Transaction tx = db.beginTx() )
             {
                 db.execute( "call db.index.fulltext.awaitEventuallyConsistentIndexRefresh" ).close();
-                tx.success();
+                tx.commit();
             }
         } );
 
@@ -190,7 +190,7 @@ class StartOldDbOnCurrentVersionAndCreateFusionIndexIT
             try ( Transaction tx = db.beginTx() )
             {
                 db.schema().awaitIndexesOnline( 10, TimeUnit.MINUTES );
-                tx.success();
+                tx.commit();
             }
 
             // then
@@ -292,7 +292,7 @@ class StartOldDbOnCurrentVersionAndCreateFusionIndexIT
                     assertEquals( result.count(), 2L );
                 }
 
-                tx.success();
+                tx.commit();
             }
 
             // and finally
@@ -366,7 +366,7 @@ class StartOldDbOnCurrentVersionAndCreateFusionIndexIT
             assertIndexHasExpectedProvider( expectedDescriptor, index );
             index = schemaRead.index( labelId, key1Id, key2Id );
             assertIndexHasExpectedProvider( expectedDescriptor, index );
-            tx.success();
+            tx.commit();
         }
     }
 
@@ -417,12 +417,12 @@ class StartOldDbOnCurrentVersionAndCreateFusionIndexIT
         {
             db.schema().indexFor( label ).on( KEY1 ).create();
             db.schema().indexFor( label ).on( KEY1 ).on( KEY2 ).create();
-            tx.success();
+            tx.commit();
         }
         try ( Transaction tx = db.beginTx() )
         {
             db.schema().awaitIndexesOnline( 10, TimeUnit.MINUTES );
-            tx.success();
+            tx.commit();
         }
 
         createData( db, label );
@@ -442,7 +442,7 @@ class StartOldDbOnCurrentVersionAndCreateFusionIndexIT
                     node.setProperty( KEY2, value );
                 }
             }
-            tx.success();
+            tx.commit();
         }
     }
 
@@ -462,7 +462,7 @@ class StartOldDbOnCurrentVersionAndCreateFusionIndexIT
                     node.setProperty( KEY2, value );
                 }
             }
-            tx.success();
+            tx.commit();
         }
     }
 
@@ -511,18 +511,17 @@ class StartOldDbOnCurrentVersionAndCreateFusionIndexIT
             }
             IndexDescriptor index = ktx.schemaRead().index( labelId, propertyKeyIds );
             IndexReadSession indexSession = ktx.dataRead().indexReadSession( index );
+            int count = 0;
             try ( NodeValueIndexCursor cursor = ktx.cursors().allocateNodeValueIndexCursor() )
             {
                 ktx.dataRead().nodeIndexSeek( indexSession, cursor, IndexOrder.NONE, false, predicates );
-                int count = 0;
                 while ( cursor.next() )
                 {
                     count++;
                 }
-
-                tx.success();
-                return count;
             }
+            tx.commit();
+            return count;
         }
     }
 
@@ -538,7 +537,7 @@ class StartOldDbOnCurrentVersionAndCreateFusionIndexIT
                     return true;
                 }
             }
-            tx.success();
+            tx.commit();
         }
         return false;
     }

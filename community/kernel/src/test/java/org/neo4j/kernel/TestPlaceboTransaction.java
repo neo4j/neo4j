@@ -27,6 +27,7 @@ import java.util.Optional;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.internal.kernel.api.Locks;
+import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.exceptions.Status;
@@ -41,7 +42,6 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.spy;
-import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -61,54 +61,32 @@ class TestPlaceboTransaction
         kernelTransaction = spy( KernelTransaction.class );
         locks = mock( Locks.class );
         when(kernelTransaction.locks()).thenReturn( locks );
+        when(kernelTransaction.isOpen()).thenReturn( true );
         placeboTx = new PlaceboTransaction( kernelTransaction );
         resource = mock( Node.class );
         when( resource.getId() ).thenReturn( 1L );
     }
 
     @Test
-    void shouldRollbackParentByDefault()
+    void shouldNotRollbackParentIfSuccessCalled() throws TransactionFailureException
     {
         // When
-        placeboTx.close();
+        placeboTx.commit();
 
         // Then
-        verify( kernelTransaction ).failure();
+        verify( kernelTransaction, never() ).rollback();
     }
 
     @Test
-    void shouldRollbackParentIfFailureCalled()
+    void successCannotOverrideFailure() throws TransactionFailureException
     {
         // When
-        placeboTx.failure();
-        placeboTx.close();
+        placeboTx.rollback();
+        placeboTx.commit();
 
         // Then
-        verify( kernelTransaction, times(2) ).failure(); // We accept two calls to failure, since KernelTX#failure is idempotent
-    }
-
-    @Test
-    void shouldNotRollbackParentIfSuccessCalled()
-    {
-        // When
-        placeboTx.success();
-        placeboTx.close();
-
-        // Then
-        verify( kernelTransaction, never() ).failure();
-    }
-
-    @Test
-    void successCannotOverrideFailure()
-    {
-        // When
-        placeboTx.failure();
-        placeboTx.success();
-        placeboTx.close();
-
-        // Then
-        verify( kernelTransaction ).failure();
-        verify( kernelTransaction, never() ).success();
+        verify( kernelTransaction ).rollback();
+        verify( kernelTransaction, never() ).commit();
     }
 
     @Test

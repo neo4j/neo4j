@@ -59,7 +59,7 @@ public class FulltextAnalyzerTest extends LuceneFulltextTestSupport
             createNodeIndexableByPropertyValue( LABEL, "Hello and hello again, in the end." );
             id = createNodeIndexableByPropertyValue( LABEL, "En apa och en tomte bodde i ett hus." );
 
-            tx.success();
+            tx.commit();
         }
 
         try ( Transaction tx = db.beginTx() )
@@ -94,7 +94,7 @@ public class FulltextAnalyzerTest extends LuceneFulltextTestSupport
             id = createNodeIndexableByPropertyValue( LABEL, "Hello and hello again, in the end." );
             createNodeIndexableByPropertyValue( LABEL, "En apa och en tomte bodde i ett hus." );
 
-            tx.success();
+            tx.commit();
         }
 
         try ( Transaction tx = db.beginTx() )
@@ -129,7 +129,7 @@ public class FulltextAnalyzerTest extends LuceneFulltextTestSupport
             createNodeIndexableByPropertyValue( LABEL, "Hello and hello again, in the end." );
             secondID = createNodeIndexableByPropertyValue( LABEL, "En apa och en tomte bodde i ett hus." );
 
-            tx.success();
+            tx.commit();
         }
 
         try ( Transaction tx = db.beginTx() )

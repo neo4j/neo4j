@@ -99,28 +99,28 @@ public class NodeProxyTest extends PropertyContainerProxyTest
         {
             Node node = db.createNode( markerLabel );
             node.setProperty( testPropertyKey, propertyValue );
-            tx.success();
+            tx.commit();
         }
 
         try ( Transaction tx = db.beginTx() )
         {
             Node node = Iterators.single( db.findNodes( markerLabel ) );
             assertEquals( propertyValue, node.getProperty( testPropertyKey ) );
-            tx.success();
+            tx.commit();
         }
 
         try ( Transaction tx = db.beginTx() )
         {
             Node node = Iterators.single( db.findNodes( markerLabel ) );
             node.removeProperty( testPropertyKey );
-            tx.success();
+            tx.commit();
         }
 
         try ( Transaction tx = db.beginTx() )
         {
             Node node = Iterators.single( db.findNodes( markerLabel ) );
             assertFalse( node.hasProperty( testPropertyKey ) );
-            tx.success();
+            tx.commit();
         }
     }
 
@@ -135,28 +135,28 @@ public class NodeProxyTest extends PropertyContainerProxyTest
         {
             Node node = db.createNode( markerLabel );
             node.setProperty( testPropertyKey, propertyValue );
-            tx.success();
+            tx.commit();
         }
 
         try ( Transaction tx = db.beginTx() )
         {
             Node node = Iterators.single( db.findNodes( markerLabel ) );
             assertArrayEquals( propertyValue, (byte[]) node.getProperty( testPropertyKey ) );
-            tx.success();
+            tx.commit();
         }
 
         try ( Transaction tx = db.beginTx() )
         {
             Node node = Iterators.single( db.findNodes( markerLabel ) );
             node.removeProperty( testPropertyKey );
-            tx.success();
+            tx.commit();
         }
 
         try ( Transaction tx = db.beginTx() )
         {
             Node node = Iterators.single( db.findNodes( markerLabel ) );
             assertFalse( node.hasProperty( testPropertyKey ) );
-            tx.success();
+            tx.commit();
         }
     }
 
@@ -186,7 +186,7 @@ public class NodeProxyTest extends PropertyContainerProxyTest
         try ( Transaction tx = db.beginTx() )
         {
             node = db.createNode();
-            tx.success();
+            tx.commit();
         }
 
         // When
@@ -203,7 +203,7 @@ public class NodeProxyTest extends PropertyContainerProxyTest
             {
                 exceptionThrownBySecondDelete = e;
             }
-            tx.success();
+            tx.commit();
         }
 
         // Then
@@ -214,7 +214,7 @@ public class NodeProxyTest extends PropertyContainerProxyTest
             try ( Transaction tx = db.beginTx() )
             {
                 db.getNodeById( node.getId() ); // should throw NotFoundException
-                tx.success();
+                tx.commit();
             }
         } );
     }
@@ -227,12 +227,12 @@ public class NodeProxyTest extends PropertyContainerProxyTest
         try ( Transaction tx = db.beginTx() )
         {
             node = db.createNode();
-            tx.success();
+            tx.commit();
         }
         try ( Transaction tx = db.beginTx() )
         {
             node.delete();
-            tx.success();
+            tx.commit();
         }
 
         // When
@@ -241,7 +241,7 @@ public class NodeProxyTest extends PropertyContainerProxyTest
             try ( Transaction tx = db.beginTx() )
             {
                 node.delete(); // should throw NotFoundException as this node is already deleted
-                tx.success();
+                tx.commit();
             }
         } );
     }
@@ -264,7 +264,7 @@ public class NodeProxyTest extends PropertyContainerProxyTest
                 {
                     node.setProperty( "property-" + i, i );
                 }
-                tx.success();
+                tx.commit();
             }
 
             final CountDownLatch start = new CountDownLatch( 1 );
@@ -285,7 +285,7 @@ public class NodeProxyTest extends PropertyContainerProxyTest
                             {
                                 node.setProperty( "property-" + propertyKey, UUID.randomUUID().toString() );
                             }
-                            tx.success();
+                            tx.commit();
                         }
                     }
                 }
@@ -305,7 +305,7 @@ public class NodeProxyTest extends PropertyContainerProxyTest
                         int size = node.getAllProperties().size();
                         assertThat( size, greaterThan( 0 ) );
                     }
-                    tx.success();
+                    tx.commit();
                 }
             };
 
@@ -322,7 +322,7 @@ public class NodeProxyTest extends PropertyContainerProxyTest
             try ( Transaction tx = db.beginTx() )
             {
                 assertEquals( propertiesCount, db.getNodeById( nodeId ).getAllProperties().size() );
-                tx.success();
+                tx.commit();
             }
         }
         finally
@@ -340,14 +340,14 @@ public class NodeProxyTest extends PropertyContainerProxyTest
         {
             node = db.createNode();
             node.setProperty( "prop", 1337 );
-            tx.success();
+            tx.commit();
         }
 
         // When
         try ( Transaction tx = db.beginTx() )
         {
             node.setProperty( "prop", 1337.0 );
-            tx.success();
+            tx.commit();
         }
 
         // Then
@@ -368,7 +368,7 @@ public class NodeProxyTest extends PropertyContainerProxyTest
             node.createRelationshipTo( db.createNode(), RelationshipType.withName( "R" ) );
             node.createRelationshipTo( db.createNode(), RelationshipType.withName( "R" ) );
             node.createRelationshipTo( db.createNode(), RelationshipType.withName( "R" ) );
-            tx.success();
+            tx.commit();
         }
 
         // Then
@@ -418,7 +418,7 @@ public class NodeProxyTest extends PropertyContainerProxyTest
         {
             Node node = db.createNode();
             node.setProperty( key, 1 );
-            tx.success();
+            tx.commit();
         }
     }
 }

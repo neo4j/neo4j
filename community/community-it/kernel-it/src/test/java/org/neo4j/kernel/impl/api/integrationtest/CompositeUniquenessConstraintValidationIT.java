@@ -30,7 +30,6 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
 import java.util.Arrays;
-import java.util.Iterator;
 
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.internal.kernel.api.Kernel;
@@ -39,8 +38,6 @@ import org.neo4j.internal.kernel.api.Transaction;
 import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.internal.schema.ConstraintDescriptor;
-import org.neo4j.internal.schema.SchemaDescriptor;
-import org.neo4j.internal.schema.constraints.ConstraintDescriptorFactory;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.exceptions.schema.UniquePropertyValueValidationException;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
@@ -48,7 +45,6 @@ import org.neo4j.test.rule.ImpermanentDbmsRule;
 import org.neo4j.values.storable.Values;
 
 import static org.junit.Assert.fail;
-import static org.neo4j.internal.helpers.collection.Iterators.single;
 import static org.neo4j.internal.schema.SchemaDescriptor.forLabel;
 import static org.neo4j.test.assertion.Assert.assertException;
 
@@ -129,15 +125,17 @@ public class CompositeUniquenessConstraintValidationIT
         transaction.schemaWrite().constraintDrop( constraintDescriptor );
         commit();
 
-        try ( Transaction tx = kernel.beginTransaction( Transaction.Type.implicit, LoginContext.AUTH_DISABLED );
-              NodeCursor node = tx.cursors().allocateNodeCursor() )
+        try ( Transaction tx = kernel.beginTransaction( Transaction.Type.implicit, LoginContext.AUTH_DISABLED ) )
         {
-            tx.dataRead().allNodesScan( node );
-            while ( node.next() )
+            try ( NodeCursor node = tx.cursors().allocateNodeCursor() )
             {
-                tx.dataWrite().nodeDelete( node.nodeReference() );
+                tx.dataRead().allNodesScan( node );
+                while ( node.next() )
+                {
+                    tx.dataWrite().nodeDelete( node.nodeReference() );
+                }
             }
-            tx.success();
+            tx.commit();
         }
     }
 
@@ -326,15 +324,8 @@ public class CompositeUniquenessConstraintValidationIT
 
     protected void commit() throws TransactionFailureException
     {
-        transaction.success();
-        try
-        {
-            transaction.close();
-        }
-        finally
-        {
-            transaction = null;
-        }
+        transaction.commit();
+        transaction = null;
     }
 
     private long createLabeledNode( int labelId ) throws KernelException

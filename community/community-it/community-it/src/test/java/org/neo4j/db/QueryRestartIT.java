@@ -162,7 +162,7 @@ class QueryRestartIT
         {
             Node node = database.createNode( label );
             node.setProperty( "c", "d" );
-            transaction.success();
+            transaction.commit();
         }
     }
 

@@ -163,7 +163,7 @@ public abstract class PropertyCursorTestBase<G extends KernelAPIReadTestSupport>
 
             allProps = all.getId();
 
-            tx.success();
+            tx.commit();
         }
     }
 

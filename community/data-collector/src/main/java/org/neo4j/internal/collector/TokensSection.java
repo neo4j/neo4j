@@ -72,7 +72,7 @@ final class TokensSection
             metaData.put( "labelCount", tokens.labelCount() );
             metaData.put( "relationshipTypeCount", tokens.relationshipTypeCount() );
             metaData.put( "propertyKeyCount", tokens.propertyKeyCount() );
-            tx.success();
+            tx.commit();
         }
     }
 }

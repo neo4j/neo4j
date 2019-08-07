@@ -201,15 +201,14 @@ class TestLoopRelationships extends AbstractNeo4jTestCase
         {
             node = db.createNode();
             node.createRelationshipTo( node, RelationshipType.withName( "MAYOR_OF" ) );
-            tx.success();
+            tx.commit();
         }
 
         // And given a transaction deleting just the node
         Transaction tx = newTransaction();
         node.delete();
-        tx.success();
 
-        var e = assertThrows( ConstraintViolationException.class, tx::close );
+        var e = assertThrows( ConstraintViolationException.class, tx::commit );
         assertThat( e.getMessage(), equalTo( "Cannot delete node<" + node.getId() + ">, because it still has relationships. " +
             "To delete this node, you must first delete its relationships." ) );
     }

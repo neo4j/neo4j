@@ -54,7 +54,7 @@ class TestBranchState extends TraversalTestBase
             DepthStateExpander expander = new DepthStateExpander();
             Iterables.count( getGraphDb().traversalDescription().expand( expander,
                     new InitialBranchState.State<>( 0, 0 ) ).traverse( getNodeWithName( "a" ) ) );
-            tx.success();
+            tx.commit();
         }
     }
 
@@ -75,7 +75,7 @@ class TestBranchState extends TraversalTestBase
             IncrementEveryOtherDepthCountingExpander expander = new IncrementEveryOtherDepthCountingExpander();
             Iterables.count( getGraphDb().traversalDescription().expand( expander,
                     new InitialBranchState.State<>( 0, 0 ) ).traverse( getNodeWithName( "a" ) ) );
-            tx.success();
+            tx.commit();
         }
     }
 
@@ -104,7 +104,7 @@ class TestBranchState extends TraversalTestBase
             expectPaths( getGraphDb().traversalDescription().uniqueness( Uniqueness.NODE_PATH ).expand(
                     new RelationshipWeightExpander(), new InitialBranchState.State<>( 1, 1 ) )
                     .evaluator( evaluator ).traverse( getNodeWithName( "a" ) ), "a,b,c" );
-            tx.success();
+            tx.commit();
         }
     }
 

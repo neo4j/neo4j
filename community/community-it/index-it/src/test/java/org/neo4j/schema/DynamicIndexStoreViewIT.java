@@ -74,7 +74,7 @@ public class DynamicIndexStoreViewIT
                         Node node = database.createNode( Label.label( "label" + counter ) );
                         node.setProperty( "property", randomValues.nextValue().asObject() );
                     }
-                    transaction.success();
+                    transaction.commit();
                 }
                 counter++;
             }
@@ -93,14 +93,14 @@ public class DynamicIndexStoreViewIT
                 try ( Transaction transaction = database.beginTx() )
                 {
                     database.schema().indexFor( Label.label( "label10" ) ).on( "property" ).create();
-                    transaction.success();
+                    transaction.commit();
                 }
                 startSignal.countDown();
 
                 try ( Transaction transaction = database.beginTx() )
                 {
                     database.schema().awaitIndexesOnline( populatorCount, TimeUnit.MINUTES );
-                    transaction.success();
+                    transaction.commit();
                 }
             }
             finally
@@ -170,11 +170,11 @@ public class DynamicIndexStoreViewIT
                         default:
                             throw new UnsupportedOperationException( "Unknown type of index operation" );
                         }
-                        transaction.success();
+                        transaction.commit();
                     }
                     catch ( Exception e )
                     {
-                        transaction.failure();
+                        transaction.rollback();
                     }
                 }
             }

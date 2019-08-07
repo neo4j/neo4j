@@ -100,7 +100,7 @@ class TruncateDatabaseIT
                 Node nodeB = databaseAPI.createNode();
                 nodeA.createRelationshipTo( nodeB, withName( "any" ) );
             }
-            transaction.success();
+            transaction.commit();
         }
         assertEquals( 10, countRelationships() );
         truncator.truncate( database );
@@ -126,7 +126,7 @@ class TruncateDatabaseIT
                 Node nodeB = databaseAPI.createNode();
                 nodeA.createRelationshipTo( nodeB, withName( "any" + i ) );
             }
-            transaction.success();
+            transaction.commit();
         }
         assertEquals( 10, countRelationshipTypes() );
         truncator.truncate( database );
@@ -145,7 +145,7 @@ class TruncateDatabaseIT
                 databaseAPI.createNode( label( "start" + i ));
                 databaseAPI.createNode( label( "finish" + i ) );
             }
-            transaction.success();
+            transaction.commit();
         }
         assertEquals( 20, countLabels() );
         truncator.truncate( database );
@@ -165,7 +165,7 @@ class TruncateDatabaseIT
                 node.setProperty( "a" + i, random( 10 ) );
                 node.setProperty( "b" + i, random( 10 ) );
             }
-            transaction.success();
+            transaction.commit();
         }
         assertEquals( 20, countPropertyKeys() );
         truncator.truncate( database );
@@ -187,7 +187,7 @@ class TruncateDatabaseIT
                     .on( indexedProperty )
                     .withName( indexName )
                     .create();
-            transaction.success();
+            transaction.commit();
         }
         awaitIndexes();
 
@@ -198,7 +198,7 @@ class TruncateDatabaseIT
                 Node node = databaseAPI.createNode( indexLabel );
                 node.setProperty( indexedProperty, random( 10 ) );
             }
-            transaction.success();
+            transaction.commit();
         }
 
         truncator.truncate( database );
@@ -223,7 +223,7 @@ class TruncateDatabaseIT
                 node.setProperty( "a" + i, random( 10 ) );
                 node.setProperty( "b" + i, random( 10 ) );
             }
-            transaction.success();
+            transaction.commit();
         }
         assertEquals( 20, countPropertyKeys() );
         LogFiles logFiles = getLogFiles();
@@ -253,7 +253,7 @@ class TruncateDatabaseIT
                 nodeB.setProperty( "b" + i, random( 10 ) );
                 nodeA.createRelationshipTo( nodeB, relationshipType );
             }
-            transaction.success();
+            transaction.commit();
         }
 
         TokenHolders tokenHolders = database.getTokenHolders();
@@ -340,7 +340,7 @@ class TruncateDatabaseIT
             {
                 databaseAPI.createNode();
             }
-            transaction.success();
+            transaction.commit();
         }
     }
 

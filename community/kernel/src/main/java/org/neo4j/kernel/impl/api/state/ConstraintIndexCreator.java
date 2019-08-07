@@ -39,7 +39,6 @@ import org.neo4j.internal.schema.constraints.ConstraintDescriptorFactory;
 import org.neo4j.internal.schema.constraints.IndexBackedConstraintDescriptor;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.SilentTokenNameLookup;
-import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.exceptions.index.IndexPopulationFailedKernelException;
 import org.neo4j.kernel.api.exceptions.schema.AlreadyConstrainedException;
@@ -193,11 +192,10 @@ public class ConstraintIndexCreator
     public void dropUniquenessConstraintIndex( IndexDescriptor index )
             throws TransactionFailureException
     {
-        try ( Transaction transaction = kernelSupplier.get().beginTransaction( implicit, AUTH_DISABLED );
-              Statement ignore = ((KernelTransaction)transaction).acquireStatement() )
+        try ( Transaction transaction = kernelSupplier.get().beginTransaction( implicit, AUTH_DISABLED ) )
         {
             ((KernelTransactionImplementation)transaction).addIndexDoDropToTxState( index );
-            transaction.success();
+            transaction.commit();
         }
     }
 
@@ -263,7 +261,7 @@ public class ConstraintIndexCreator
         try ( Transaction transaction = kernelSupplier.get().beginTransaction( implicit, AUTH_DISABLED ) )
         {
             IndexDescriptor index = ((KernelTransaction) transaction).indexUniqueCreate( schema, provider );
-            transaction.success();
+            transaction.commit();
             return index;
         }
         catch ( TransactionFailureException | SchemaKernelException e )

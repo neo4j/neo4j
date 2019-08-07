@@ -64,7 +64,7 @@ class LabelCountsTest
             db.createNode( label( "Bar" ) );
             db.createNode( label( "Bar" ) );
 
-            tx.success();
+            tx.commit();
         }
 
         // when
@@ -86,13 +86,13 @@ class LabelCountsTest
             node = db.createNode( label( "Foo" ) );
             db.createNode( label( "Foo" ) );
 
-            tx.success();
+            tx.commit();
         }
         try ( Transaction tx = db.beginTx() )
         {
             node.delete();
 
-            tx.success();
+            tx.commit();
         }
 
         // when
@@ -113,13 +113,13 @@ class LabelCountsTest
             db.createNode( label( "Foo" ) );
             db.createNode( label( "Bar" ) );
 
-            tx.success();
+            tx.commit();
         }
         try ( Transaction tx = db.beginTx() )
         {
             node.delete();
 
-            tx.success();
+            tx.commit();
         }
 
         // when
@@ -144,7 +144,7 @@ class LabelCountsTest
             n2 = db.createNode();
             n3 = db.createNode();
 
-            tx.success();
+            tx.commit();
         }
         try ( Transaction tx = db.beginTx() )
         {
@@ -152,7 +152,7 @@ class LabelCountsTest
             n2.addLabel( label( "Bar" ) );
             n3.addLabel( label( "Foo" ) );
 
-            tx.success();
+            tx.commit();
         }
 
         // when
@@ -177,7 +177,7 @@ class LabelCountsTest
             n2 = db.createNode( label( "Bar" ) );
             n3 = db.createNode( label( "Foo" ) );
 
-            tx.success();
+            tx.commit();
         }
         try ( Transaction tx = db.beginTx() )
         {
@@ -185,7 +185,7 @@ class LabelCountsTest
             n2.removeLabel( label( "Bar" ) );
             n3.removeLabel( label( "Foo" ) );
 
-            tx.success();
+            tx.commit();
         }
 
         // when
@@ -203,7 +203,7 @@ class LabelCountsTest
         try ( Transaction tx = db.beginTx() )
         {
             long nodeCount = countsForNode( label );
-            tx.success();
+            tx.commit();
             return nodeCount;
         }
     }

@@ -90,7 +90,7 @@ class TestRecoveryRelationshipTypes
         try ( Transaction tx = db.beginTx() )
         {
             db.createNode().createRelationshipTo( db.createNode(), MyRelTypes.TEST );
-            tx.success();
+            tx.commit();
         }
 
         CheckPointer checkPointer = ((GraphDatabaseAPI) db).getDependencyResolver().resolveDependency( CheckPointer.class );

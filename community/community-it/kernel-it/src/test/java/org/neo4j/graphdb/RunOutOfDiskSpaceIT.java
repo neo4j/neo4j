@@ -78,7 +78,7 @@ class RunOutOfDiskSpaceIT
         try ( Transaction tx = database.beginTx() )
         {
             database.createNode();
-            tx.success();
+            tx.commit();
         }
 
         long logVersion = database.getDependencyResolver().resolveDependency( LogVersionRepository.class )
@@ -92,7 +92,7 @@ class RunOutOfDiskSpaceIT
             try ( Transaction tx = database.beginTx() )
             {
                 database.createNode();
-                tx.success();
+                tx.commit();
             }
         } );
         assertTrue( Exceptions.contains( exception, IOException.class ) );
@@ -111,7 +111,7 @@ class RunOutOfDiskSpaceIT
         try ( Transaction tx = database.beginTx() )
         {
             database.createNode();
-            tx.success();
+            tx.commit();
         }
 
         long logVersion = database.getDependencyResolver().resolveDependency( LogVersionRepository.class )
@@ -124,7 +124,7 @@ class RunOutOfDiskSpaceIT
             try ( Transaction tx = database.beginTx() )
             {
                 database.createNode();
-                tx.success();
+                tx.commit();
             }
         } );
 

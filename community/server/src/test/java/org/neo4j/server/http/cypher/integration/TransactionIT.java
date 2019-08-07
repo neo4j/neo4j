@@ -964,7 +964,7 @@ public class TransactionIT extends AbstractRestFunctionalTestBase
                     count++;
                 }
             }
-            transaction.failure();
+            transaction.rollback();
             return count;
         }
     }

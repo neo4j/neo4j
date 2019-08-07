@@ -55,7 +55,7 @@ public class DeadlockIT extends AbstractRestFunctionalTestBase
         {
             graphdb().createNode( Label.label( "First" ) );
             graphdb().createNode( Label.label( "Second" ) );
-            tx.success();
+            tx.commit();
         }
 
         // When I lock node:First

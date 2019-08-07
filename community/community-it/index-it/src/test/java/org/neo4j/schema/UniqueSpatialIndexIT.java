@@ -149,7 +149,7 @@ class UniqueSpatialIndexIT
             originNode.setProperty( KEY, point1 );
             Node centerNode = db.createNode( LABEL );
             centerNode.setProperty( KEY, point1 );
-            tx.success();
+            tx.commit();
         }
     }
 
@@ -164,7 +164,7 @@ class UniqueSpatialIndexIT
             centerNode.setProperty( KEY, point2 );
 
             nodeIds = Pair.of( originNode.getId(), centerNode.getId() );
-            tx.success();
+            tx.commit();
         }
         return nodeIds;
     }
@@ -183,7 +183,7 @@ class UniqueSpatialIndexIT
             assertEquals( nodeIds.other().longValue(), center.next().getId() );
             assertFalse( center.hasNext() );
 
-            tx.success();
+            tx.commit();
         }
     }
 
@@ -192,12 +192,12 @@ class UniqueSpatialIndexIT
         try ( Transaction tx = db.beginTx() )
         {
             db.schema().constraintFor( TestLabels.LABEL_ONE ).assertPropertyIsUnique( KEY ).create();
-            tx.success();
+            tx.commit();
         }
         try ( Transaction tx = db.beginTx() )
         {
             db.schema().awaitIndexesOnline( 1, TimeUnit.MINUTES );
-            tx.success();
+            tx.commit();
         }
     }
 

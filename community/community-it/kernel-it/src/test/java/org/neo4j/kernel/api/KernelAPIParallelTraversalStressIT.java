@@ -70,8 +70,7 @@ class KernelAPIParallelTraversalStressIT
             nodes[i] = setup.dataWrite().nodeCreate();
             if ( (i + 1) % 10000 == 0 )
             {
-                setup.success();
-                setup.close();
+                setup.commit();
                 setup = kernel.beginTransaction( explicit, LoginContext.AUTH_DISABLED );
             }
         }
@@ -87,14 +86,12 @@ class KernelAPIParallelTraversalStressIT
             setup.dataWrite().relationshipCreate( nodes[n1], relationshipType, nodes[n2] );
             if ( (i + 1) % 10000 == 0 )
             {
-                setup.success();
-                setup.close();
+                setup.commit();
                 setup = kernel.beginTransaction( explicit, LoginContext.AUTH_DISABLED );
             }
         }
 
-        setup.success();
-        setup.close();
+        setup.commit();
     }
 
     private static Runnable scanAndTraverse( Read read, NodeAndTraverseCursors cursors )

@@ -121,7 +121,7 @@ class RelationshipCreatorTest
             {
                 node.createRelationshipTo( db.createNode(), MyRelTypes.TEST );
             }
-            tx.success();
+            tx.commit();
             return node.getId();
         }
     }

@@ -58,7 +58,7 @@ public abstract class NodeWriteTestBase<G extends KernelAPIWriteTestSupport> ext
         try ( Transaction tx = beginTransaction() )
         {
             node = tx.dataWrite().nodeCreate();
-            tx.success();
+            tx.commit();
         }
 
         try ( org.neo4j.graphdb.Transaction ignore = graphDb.beginTx() )
@@ -74,7 +74,7 @@ public abstract class NodeWriteTestBase<G extends KernelAPIWriteTestSupport> ext
         try ( Transaction tx = beginTransaction() )
         {
             node = tx.dataWrite().nodeCreate();
-            tx.failure();
+            tx.rollback();
         }
 
         try ( org.neo4j.graphdb.Transaction ignore = graphDb.beginTx() )
@@ -96,7 +96,7 @@ public abstract class NodeWriteTestBase<G extends KernelAPIWriteTestSupport> ext
         try ( Transaction tx = beginTransaction() )
         {
             tx.dataWrite().nodeDelete( node );
-            tx.success();
+            tx.commit();
         }
         try ( org.neo4j.graphdb.Transaction ignore = graphDb.beginTx() )
         {
@@ -120,12 +120,12 @@ public abstract class NodeWriteTestBase<G extends KernelAPIWriteTestSupport> ext
         try ( Transaction tx = beginTransaction() )
         {
             assertFalse( tx.dataWrite().nodeDelete( node ) );
-            tx.failure();
+            tx.rollback();
         }
         try ( Transaction tx = beginTransaction() )
         {
             assertFalse( tx.dataWrite().nodeDelete( node ) );
-            tx.success();
+            tx.commit();
         }
         // should not crash
     }
@@ -141,7 +141,7 @@ public abstract class NodeWriteTestBase<G extends KernelAPIWriteTestSupport> ext
         {
             int labelId = tx.token().labelGetOrCreateForName( labelName );
             assertTrue( tx.dataWrite().nodeAddLabel( node, labelId ) );
-            tx.success();
+            tx.commit();
         }
 
         // Then
@@ -157,7 +157,7 @@ public abstract class NodeWriteTestBase<G extends KernelAPIWriteTestSupport> ext
         {
             int labelId = tx.token().labelGetOrCreateForName( labelName );
             assertFalse( tx.dataWrite().nodeAddLabel( node, labelId ) );
-            tx.success();
+            tx.commit();
         }
 
         assertLabels( node, labelName );
@@ -172,7 +172,7 @@ public abstract class NodeWriteTestBase<G extends KernelAPIWriteTestSupport> ext
         {
             int labelId = tx.token().labelGetOrCreateForName( labelName );
             assertTrue( tx.dataWrite().nodeRemoveLabel( nodeId, labelId ) );
-            tx.success();
+            tx.commit();
         }
 
         assertNoLabels( nodeId );
@@ -200,14 +200,14 @@ public abstract class NodeWriteTestBase<G extends KernelAPIWriteTestSupport> ext
         {
             labelId = tx.token().labelGetOrCreateForName( labelName );
             assertTrue( tx.dataWrite().nodeRemoveLabel( nodeId, labelId ) );
-            tx.success();
+            tx.commit();
         }
 
         try ( Transaction tx = beginTransaction() )
         {
             labelId = tx.token().labelGetOrCreateForName( labelName );
             assertFalse( tx.dataWrite().nodeRemoveLabel( nodeId, labelId ) );
-            tx.success();
+            tx.commit();
         }
 
         assertNoLabels( nodeId );
@@ -224,7 +224,7 @@ public abstract class NodeWriteTestBase<G extends KernelAPIWriteTestSupport> ext
         {
             int token = tx.token().propertyKeyGetOrCreateForName( propertyKey );
             assertThat( tx.dataWrite().nodeSetProperty( node, token, stringValue( "hello" ) ), equalTo( NO_VALUE ) );
-            tx.success();
+            tx.commit();
         }
 
         // Then
@@ -242,7 +242,7 @@ public abstract class NodeWriteTestBase<G extends KernelAPIWriteTestSupport> ext
         {
             int token = tx.token().propertyKeyGetOrCreateForName( propertyKey );
             assertThat( tx.dataWrite().nodeSetProperty( node, token, stringValue( "hello" ) ), equalTo( NO_VALUE ) );
-            tx.failure();
+            tx.rollback();
         }
 
         // Then
@@ -281,7 +281,7 @@ public abstract class NodeWriteTestBase<G extends KernelAPIWriteTestSupport> ext
             int token = tx.token().propertyKeyGetOrCreateForName( propertyKey );
             assertThat( tx.dataWrite().nodeSetProperty( node, token, stringValue( "hello" ) ),
                     equalTo( intValue( 42 ) ) );
-            tx.success();
+            tx.commit();
         }
 
         // Then
@@ -300,7 +300,7 @@ public abstract class NodeWriteTestBase<G extends KernelAPIWriteTestSupport> ext
             int token = tx.token().propertyKeyGetOrCreateForName( propertyKey );
             assertThat( tx.dataWrite().nodeRemoveProperty( node, token ),
                     equalTo( intValue( 42 ) ) );
-            tx.success();
+            tx.commit();
         }
 
         // Then
@@ -318,7 +318,7 @@ public abstract class NodeWriteTestBase<G extends KernelAPIWriteTestSupport> ext
         {
             int token = tx.token().propertyKeyGetOrCreateForName( propertyKey );
             assertThat( tx.dataWrite().nodeRemoveProperty( node, token ), equalTo( NO_VALUE ) );
-            tx.success();
+            tx.commit();
         }
 
         // Then
@@ -339,7 +339,7 @@ public abstract class NodeWriteTestBase<G extends KernelAPIWriteTestSupport> ext
                     equalTo( intValue( 42 ) ) );
             assertThat( tx.dataWrite().nodeRemoveProperty( node, token ),
                     equalTo( NO_VALUE ) );
-            tx.success();
+            tx.commit();
         }
 
         // Then
@@ -359,7 +359,7 @@ public abstract class NodeWriteTestBase<G extends KernelAPIWriteTestSupport> ext
             assertThat( tx.dataWrite().nodeSetProperty( node, token, stringValue( "hello" ) ), equalTo( NO_VALUE ) );
             assertThat( tx.dataWrite().nodeSetProperty( node, token, stringValue( "world" ) ), equalTo( stringValue( "hello" ) ) );
             assertThat( tx.dataWrite().nodeSetProperty( node, token, intValue( 1337 ) ), equalTo( stringValue( "world" ) ) );
-            tx.success();
+            tx.commit();
         }
 
         // Then
@@ -381,7 +381,7 @@ public abstract class NodeWriteTestBase<G extends KernelAPIWriteTestSupport> ext
             tx.dataWrite().nodeSetProperty( node, prop, Values.of( "bar" ) );
             tx.dataWrite().nodeRemoveProperty( node, prop );
             tx.dataWrite().nodeRemoveProperty( node, prop );
-            tx.success();
+            tx.commit();
         }
 
         // then
@@ -399,9 +399,8 @@ public abstract class NodeWriteTestBase<G extends KernelAPIWriteTestSupport> ext
         Transaction tx = beginTransaction();
         int property = tx.token().propertyKeyGetOrCreateForName( propertyKey );
         assertThat( tx.dataWrite().nodeSetProperty( nodeId, property, theValue ), equalTo( theValue ) );
-        tx.success();
 
-        assertThat( tx.closeTransaction(), equalTo( Transaction.READ_ONLY ) );
+        assertThat( tx.commit(), equalTo( Transaction.READ_ONLY ) );
     }
 
     @Test
@@ -417,7 +416,7 @@ public abstract class NodeWriteTestBase<G extends KernelAPIWriteTestSupport> ext
         {
             prop = tx.token().propertyKeyGetOrCreateForName( propertyKey );
             assertThat( tx.dataWrite().nodeSetProperty( node, prop, largeByteArray ), equalTo( NO_VALUE ) );
-            tx.success();
+            tx.commit();
         }
 
         // Then
@@ -442,7 +441,7 @@ public abstract class NodeWriteTestBase<G extends KernelAPIWriteTestSupport> ext
         try ( org.neo4j.graphdb.Transaction ctx = graphDb.beginTx() )
         {
             node = graphDb.createNode().getId();
-            ctx.success();
+            ctx.commit();
         }
         return node;
     }
@@ -452,7 +451,7 @@ public abstract class NodeWriteTestBase<G extends KernelAPIWriteTestSupport> ext
         try ( org.neo4j.graphdb.Transaction ctx = graphDb.beginTx() )
         {
             graphDb.getNodeById( node ).delete();
-            ctx.success();
+            ctx.commit();
         }
     }
 
@@ -462,7 +461,7 @@ public abstract class NodeWriteTestBase<G extends KernelAPIWriteTestSupport> ext
         try ( org.neo4j.graphdb.Transaction ctx = graphDb.beginTx() )
         {
             node = graphDb.createNode( label( labelName ) ).getId();
-            ctx.success();
+            ctx.commit();
         }
         return node;
     }
@@ -474,7 +473,7 @@ public abstract class NodeWriteTestBase<G extends KernelAPIWriteTestSupport> ext
         {
             node = graphDb.createNode();
             node.setProperty( propertyKey, value );
-            ctx.success();
+            ctx.commit();
         }
         return node.getId();
     }

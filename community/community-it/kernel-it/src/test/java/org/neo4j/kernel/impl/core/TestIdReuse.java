@@ -110,7 +110,7 @@ class TestIdReuse
             {
                 commonNode.setProperty( "key" + i, value );
             }
-            transaction.success();
+            transaction.commit();
         }
 
         try ( Transaction transaction = graphDatabaseService.beginTx() )
@@ -119,7 +119,7 @@ class TestIdReuse
             {
                 commonNode.removeProperty( "key" + i );
             }
-            transaction.success();
+            transaction.commit();
         }
     }
 }

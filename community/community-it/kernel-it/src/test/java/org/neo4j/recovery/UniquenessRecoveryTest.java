@@ -228,7 +228,7 @@ public class UniquenessRecoveryTest
             assertEquals( "Person", constraint.getLabel().name() );
             assertEquals( "name", Iterables.single( constraint.getPropertyKeys() ) );
 
-            tx.success();
+            tx.commit();
         }
     }
 
@@ -249,7 +249,7 @@ public class UniquenessRecoveryTest
                 }
             }
 
-            tx.success();
+            tx.commit();
         }
     }
 
@@ -267,7 +267,7 @@ public class UniquenessRecoveryTest
             {
                 db.schema().constraintFor( label( "Person" ) ).assertPropertyIsUnique( "name" ).create();
 
-                tx.success();
+                tx.commit();
             }
         }
     }
@@ -285,7 +285,7 @@ public class UniquenessRecoveryTest
             {
                 db.createNode( label( "Person" ) ).setProperty( "name", "Sneaky Steve" );
 
-                tx.success();
+                tx.commit();
             }
         }
     }

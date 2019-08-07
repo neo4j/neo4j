@@ -252,7 +252,7 @@ class TestProperties extends AbstractNeo4jTestCase
         try ( Transaction tx = getGraphDb().beginTx() )
         {
             node.getProperty( "name" );
-            tx.success();
+            tx.commit();
         }
     }
 }

@@ -96,7 +96,7 @@ class SchemaStorageIT
             tokenWrite.labelGetOrCreateForName( LABEL1 );
             tokenWrite.labelGetOrCreateForName( LABEL2 );
             tokenWrite.relationshipTypeGetOrCreateForName( TYPE1 );
-            transaction.success();
+            transaction.commit();
         }
         schemaStore = resolveDependency( RecordStorageEngine.class ).testAccessNeoStores().getSchemaStore();
         storage = new SchemaStorage( schemaStore, resolveDependency( TokenHolders.class ) );
@@ -345,7 +345,7 @@ class SchemaStorageIT
             {
                 rule.accept( db );
             }
-            tx.success();
+            tx.commit();
         }
         awaitIndexes();
     }
@@ -355,7 +355,7 @@ class SchemaStorageIT
         try ( Transaction tx = db.beginTx() )
         {
             db.schema().awaitIndexesOnline( 1, TimeUnit.MINUTES );
-            tx.success();
+            tx.commit();
         }
     }
 }

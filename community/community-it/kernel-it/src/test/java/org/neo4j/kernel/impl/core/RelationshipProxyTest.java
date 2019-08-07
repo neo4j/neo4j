@@ -114,7 +114,7 @@ public class RelationshipProxyTest extends PropertyContainerProxyTest
             start = db.createNode();
             end = db.createNode();
             relationship = start.createRelationshipTo( end, type );
-            tx.success();
+            tx.commit();
 
             // WHEN
             String toString = relationship.toString();
@@ -137,28 +137,28 @@ public class RelationshipProxyTest extends PropertyContainerProxyTest
             Node end = db.createNode( markerLabel );
             Relationship relationship = start.createRelationshipTo( end, withName( "type" ) );
             relationship.setProperty( testPropertyKey, propertyValue );
-            tx.success();
+            tx.commit();
         }
 
         try ( Transaction tx = db.beginTx() )
         {
             Relationship relationship = db.getRelationshipById( 0 );
             assertEquals( propertyValue, relationship.getProperty( testPropertyKey ) );
-            tx.success();
+            tx.commit();
         }
 
         try ( Transaction tx = db.beginTx() )
         {
             Relationship relationship = db.getRelationshipById( 0 );
             relationship.removeProperty( testPropertyKey );
-            tx.success();
+            tx.commit();
         }
 
         try ( Transaction tx = db.beginTx() )
         {
             Relationship relationship = db.getRelationshipById( 0 );
             assertFalse( relationship.hasProperty( testPropertyKey ) );
-            tx.success();
+            tx.commit();
         }
     }
 
@@ -175,28 +175,28 @@ public class RelationshipProxyTest extends PropertyContainerProxyTest
             Node end = db.createNode( markerLabel );
             Relationship relationship = start.createRelationshipTo( end, withName( "type" ) );
             relationship.setProperty( testPropertyKey, propertyValue );
-            tx.success();
+            tx.commit();
         }
 
         try ( Transaction tx = db.beginTx() )
         {
             Relationship relationship = db.getRelationshipById( 0 );
             assertArrayEquals( propertyValue, (byte[]) relationship.getProperty( testPropertyKey ) );
-            tx.success();
+            tx.commit();
         }
 
         try ( Transaction tx = db.beginTx() )
         {
             Relationship relationship = db.getRelationshipById( 0 );
             relationship.removeProperty( testPropertyKey );
-            tx.success();
+            tx.commit();
         }
 
         try ( Transaction tx = db.beginTx() )
         {
             Relationship relationship = db.getRelationshipById( 0 );
             assertFalse( relationship.hasProperty( testPropertyKey ) );
-            tx.success();
+            tx.commit();
         }
     }
 
@@ -209,14 +209,14 @@ public class RelationshipProxyTest extends PropertyContainerProxyTest
         {
             relationship = db.createNode().createRelationshipTo( db.createNode(), withName( "R" ) );
             relationship.setProperty( "prop", 1337 );
-            tx.success();
+            tx.commit();
         }
 
         // When
         try ( Transaction tx = db.beginTx() )
         {
             relationship.setProperty( "prop", 1337.0 );
-            tx.success();
+            tx.commit();
         }
 
         // Then

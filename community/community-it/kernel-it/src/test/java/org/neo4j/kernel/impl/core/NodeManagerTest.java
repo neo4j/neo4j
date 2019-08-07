@@ -68,8 +68,7 @@ class NodeManagerTest
             Transaction tx = db.beginTx();
             db.createNode();
             db.createNode();
-            tx.success();
-            tx.close();
+            tx.commit();
         }
 
         // WHEN iterator is started
@@ -83,8 +82,7 @@ class NodeManagerTest
             Transaction newTx = db.beginTx();
             assertThat( newTx, not( instanceOf( PlaceboTransaction.class ) ) );
             db.createNode();
-            newTx.success();
-            newTx.close();
+            newTx.commit();
         } );
         thread.start();
         thread.join();
@@ -101,8 +99,7 @@ class NodeManagerTest
         Transaction tx = db.beginTx();
         createRelationshipAssumingTxWith( "key", 1 );
         createRelationshipAssumingTxWith( "key", 2 );
-        tx.success();
-        tx.close();
+        tx.commit();
 
         // WHEN
         tx = db.beginTx();
@@ -113,16 +110,14 @@ class NodeManagerTest
             Transaction newTx = db.beginTx();
             assertThat( newTx, not( instanceOf( PlaceboTransaction.class ) ) );
             createRelationshipAssumingTxWith( "key", 3 );
-            newTx.success();
-            newTx.close();
+            newTx.commit();
         } );
         thread.start();
         thread.join();
 
         // THEN
         assertThat( addToCollection( allRelationships, new ArrayList<>() ).size(), is(3) );
-        tx.success();
-        tx.close();
+        tx.commit();
     }
 
     private void createRelationshipAssumingTxWith( String key, Object value )

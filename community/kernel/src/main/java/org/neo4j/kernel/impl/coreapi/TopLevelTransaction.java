@@ -39,10 +39,12 @@ import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.exceptions.Status.Classification;
 import org.neo4j.kernel.api.exceptions.Status.Code;
 
+import static org.neo4j.kernel.api.exceptions.Status.Transaction.Terminated;
+
 public class TopLevelTransaction implements InternalTransaction
 {
     private static final PropertyContainerLocker locker = new PropertyContainerLocker();
-    private boolean successCalled;
+    private boolean commitCalled;
     private final KernelTransaction transaction;
 
     public TopLevelTransaction( KernelTransaction transaction )
@@ -51,33 +53,34 @@ public class TopLevelTransaction implements InternalTransaction
     }
 
     @Override
-    public void failure()
+    public void commit()
     {
-        transaction.failure();
+        safeTransactionOperation( Transaction::commit );
     }
 
     @Override
-    public void success()
+    public void rollback()
     {
-        successCalled = true;
-        transaction.success();
+        safeTransactionOperation( Transaction::rollback );
     }
 
     @Override
     public final void terminate()
     {
-        this.transaction.markForTermination( Status.Transaction.Terminated );
+        transaction.markForTermination( Terminated );
     }
 
     @Override
     public void close()
     {
+        safeTransactionOperation( Transaction::close );
+    }
+
+    private void safeTransactionOperation( TransactionalOperation operation )
+    {
         try
         {
-            if ( transaction.isOpen() )
-            {
-                transaction.close();
-            }
+            operation.perform( transaction );
         }
         catch ( TransientFailureException e )
         {
@@ -106,11 +109,15 @@ public class TopLevelTransaction implements InternalTransaction
         }
     }
 
+    @FunctionalInterface
+    private interface TransactionalOperation
+    {
+        void perform( KernelTransaction transaction ) throws Exception;
+    }
+
     private String closeFailureMessage()
     {
-        return successCalled
-                        ? "Transaction was marked as successful, but unable to commit transaction so rolled back."
-                        : "Unable to rollback transaction";
+        return commitCalled ? "Transaction failed to commit and was rolled back." : "Unable to rollback transaction";
     }
 
     @Override

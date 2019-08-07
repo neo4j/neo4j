@@ -79,8 +79,10 @@ public class TransitionalTxManagementKernelTransaction
         try
         {
             KernelTransaction kernelTransactionBoundToThisThread = bridge.getKernelTransactionBoundToThisThread( false, db.databaseId() );
-            kernelTransactionBoundToThisThread.failure();
-            kernelTransactionBoundToThisThread.close();
+            if ( kernelTransactionBoundToThisThread != null )
+            {
+                kernelTransactionBoundToThisThread.rollback();
+            }
         }
         catch ( TransactionFailureException e )
         {
@@ -97,8 +99,7 @@ public class TransitionalTxManagementKernelTransaction
         try
         {
             KernelTransaction kernelTransactionBoundToThisThread = bridge.getKernelTransactionBoundToThisThread( true, db.databaseId() );
-            kernelTransactionBoundToThisThread.success();
-            kernelTransactionBoundToThisThread.close();
+            kernelTransactionBoundToThisThread.commit();
         }
         catch ( NotInTransactionException e )
         {

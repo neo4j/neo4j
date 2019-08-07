@@ -97,7 +97,7 @@ class TransactionBoundQueryContextTest extends CypherFunSuite {
 
   test("should mark transaction successful if successful") {
     // GIVEN
-    when(outerTx.failure()).thenThrow(new AssertionError("Shouldn't be called"))
+    when(outerTx.rollback()).thenThrow(new AssertionError("Shouldn't be called"))
     when(outerTx.transactionType()).thenReturn(Type.`implicit`)
     when(outerTx.securityContext()).thenReturn(AUTH_DISABLED)
     when(outerTx.clientInfo()).thenReturn(ClientConnectionInfo.EMBEDDED_CONNECTION)
@@ -116,14 +116,12 @@ class TransactionBoundQueryContextTest extends CypherFunSuite {
     verify(outerTx).transactionType()
     verify(outerTx).clientInfo()
     verify(outerTx).securityContext()
-    verify(outerTx).success()
-    verify(outerTx).close()
     verifyNoMoreInteractions(outerTx)
   }
 
   test("should mark transaction failed if not successful") {
     // GIVEN
-    when(outerTx.success()).thenThrow(new AssertionError("Shouldn't be called"))
+    when(outerTx.commit()).thenThrow(new AssertionError("Shouldn't be called"))
     when(outerTx.transactionType()).thenReturn(Type.`implicit`)
     when(outerTx.securityContext()).thenReturn(AUTH_DISABLED)
     when(outerTx.clientInfo()).thenReturn(ClientConnectionInfo.EMBEDDED_CONNECTION)
@@ -142,8 +140,6 @@ class TransactionBoundQueryContextTest extends CypherFunSuite {
     verify(outerTx).transactionType()
     verify(outerTx).clientInfo()
     verify(outerTx).securityContext()
-    verify(outerTx).failure()
-    verify(outerTx).close()
     verifyNoMoreInteractions(outerTx)
   }
 
@@ -168,7 +164,6 @@ class TransactionBoundQueryContextTest extends CypherFunSuite {
     listA.size should equal(2)
 
     transactionalContext.close(true)
-    tx.success()
     tx.close()
   }
 
@@ -184,7 +179,6 @@ class TransactionBoundQueryContextTest extends CypherFunSuite {
     context.getImportURL(new URL("jar:file:/tmp/blah.jar!/tmp/foo/data.csv")) should equal(Left("loading resources via protocol 'jar' is not permitted"))
 
     transactionalContext.close(true)
-    tx.success()
     tx.close()
   }
 
@@ -201,7 +195,6 @@ class TransactionBoundQueryContextTest extends CypherFunSuite {
     context.getImportURL(new URL("file:///tmp/foo/data.csv")) should equal (Left("configuration property 'dbms.security.allow_csv_import_from_file_urls' is false"))
 
     transactionalContext.close(true)
-    tx.success()
     tx.close()
   }
 
@@ -210,8 +203,7 @@ class TransactionBoundQueryContextTest extends CypherFunSuite {
     graphOps.createNode()
     graphOps.createNode()
     graphOps.createNode()
-    creator.success()
-    creator.close()
+    creator.commit()
 
     val tx = graph.beginTransaction(Type.explicit, LoginContext.AUTH_DISABLED)
     val transactionalContext = TransactionalContextWrapper(createTransactionContext(graph, tx))
@@ -326,7 +318,7 @@ class TransactionBoundQueryContextTest extends CypherFunSuite {
 
       node.createRelationshipTo(other1, relType)
       other2.createRelationshipTo(node, relType)
-      tx.success()
+      tx.commit()
       node
     }
     finally {

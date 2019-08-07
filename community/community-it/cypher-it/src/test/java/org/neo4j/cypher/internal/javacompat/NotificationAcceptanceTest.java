@@ -268,7 +268,7 @@ class NotificationAcceptanceTest extends NotificationTestSupport
             try ( Transaction tx = db.beginTx() )
             {
                 db.createNode().addLabel( label( "A" ) );
-                tx.success();
+                tx.commit();
             }
         }
         Stream.of( "CYPHER 3.5", "CYPHER 4.0" ).forEach(
@@ -284,7 +284,7 @@ class NotificationAcceptanceTest extends NotificationTestSupport
             try ( Transaction tx = db.beginTx() )
             {
                 db.createNode().addLabel( label( "A" ) );
-                tx.success();
+                tx.commit();
             }
         }
         Stream.of( "CYPHER 3.5", "CYPHER 4.0" ).forEach(
@@ -298,7 +298,7 @@ class NotificationAcceptanceTest extends NotificationTestSupport
         try ( Transaction tx = db.beginTx() )
         {
             db.createNode().addLabel( label( "A" ) );
-            tx.success();
+            tx.commit();
         }
         Stream.of( "CYPHER 3.5", "CYPHER 4.0" ).forEach( version ->
         {
@@ -348,7 +348,7 @@ class NotificationAcceptanceTest extends NotificationTestSupport
             try ( Transaction tx = db.beginTx() )
             {
                 db.createNode().addLabel( label( "Foo" ) );
-                tx.success();
+                tx.commit();
             }
             shouldNotNotifyInStream( version, "EXPLAIN MATCH (n:Foo) WHERE n['key-' + n.name] = 'value' RETURN n" );
 
@@ -466,7 +466,7 @@ class NotificationAcceptanceTest extends NotificationTestSupport
         try ( Transaction tx = db.beginTx() )
         {
             db.createNode().addLabel( label( "Person" ) );
-            tx.success();
+            tx.commit();
         }
 
         Stream.of( "CYPHER 3.5", "CYPHER 4.0" ).forEach( version ->
@@ -519,7 +519,7 @@ class NotificationAcceptanceTest extends NotificationTestSupport
         try ( Transaction tx = db.beginTx() )
         {
             db.createNode().addLabel( label( "Person" ) );
-            tx.success();
+            tx.commit();
         }
 
         Stream.of( "CYPHER 3.5", "CYPHER 4.0" ).forEach( version ->

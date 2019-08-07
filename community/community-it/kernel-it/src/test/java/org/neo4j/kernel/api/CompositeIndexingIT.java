@@ -81,7 +81,7 @@ class CompositeIndexingIT
             {
                 index = ktx.schemaWrite().indexCreate( prototype.schema() );
             }
-            tx.success();
+            tx.commit();
         }
 
         try ( Transaction ignore = graphDatabaseAPI.beginTx() )
@@ -110,7 +110,7 @@ class CompositeIndexingIT
             {
                 ktx.schemaWrite().indexDrop( index );
             }
-            tx.success();
+            tx.commit();
         }
 
         try ( Transaction tx = graphDatabaseAPI.beginTx() )
@@ -119,7 +119,7 @@ class CompositeIndexingIT
             {
                 node.delete();
             }
-            tx.success();
+            tx.commit();
         }
     }
 
@@ -331,7 +331,7 @@ class CompositeIndexingIT
             {
                 write.nodeSetProperty( nodeID, propID, Values.intValue( propID ) );
             }
-            tx.success();
+            tx.commit();
         }
         return nodeID;
     }

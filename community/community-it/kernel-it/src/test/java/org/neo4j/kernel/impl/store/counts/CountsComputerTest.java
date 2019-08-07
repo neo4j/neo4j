@@ -130,7 +130,7 @@ class CountsComputerTest
             db.createNode( Label.label( "C" ) );
             db.createNode( Label.label( "D" ) );
             db.createNode();
-            tx.success();
+            tx.commit();
         }
         long lastCommittedTransactionId = getLastTxId( db );
         managementService.shutdown();
@@ -162,7 +162,7 @@ class CountsComputerTest
             Node node = db.createNode( Label.label( "D" ) );
             db.createNode();
             node.delete();
-            tx.success();
+            tx.commit();
         }
         long lastCommittedTransactionId = getLastTxId( db );
         managementService.shutdown();
@@ -194,7 +194,7 @@ class CountsComputerTest
             Relationship rel = nodeA.createRelationshipTo( nodeC, RelationshipType.withName( "TYPE1" ) );
             nodeC.createRelationshipTo( nodeA, RelationshipType.withName( "TYPE2" ) );
             rel.delete();
-            tx.success();
+            tx.commit();
         }
         long lastCommittedTransactionId = getLastTxId( db );
         managementService.shutdown();
@@ -229,7 +229,7 @@ class CountsComputerTest
             Node node = db.createNode();
             nodeA.createRelationshipTo( nodeD, RelationshipType.withName( "TYPE" ) );
             node.createRelationshipTo( nodeC, RelationshipType.withName( "TYPE2" ) );
-            tx.success();
+            tx.commit();
         }
         long lastCommittedTransactionId = getLastTxId( db );
         managementService.shutdown();
@@ -270,7 +270,7 @@ class CountsComputerTest
             nodeA.createRelationshipTo( nodeC, RelationshipType.withName( "TYPE2" ) );
             nodeA.createRelationshipTo( nodeD, RelationshipType.withName( "TYPE3" ) );
             nodeD.createRelationshipTo( nodeC, RelationshipType.withName( "TYPE4" ) );
-            tx.success();
+            tx.commit();
         }
         long lastCommittedTransactionId = getLastTxId( db );
         managementService.shutdown();

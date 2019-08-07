@@ -49,7 +49,7 @@ class CreateAndDeleteNodesIT
             myNode.setProperty( "Name", "Bob" );
 
             myNode.createRelationshipTo( db.createNode(), RelTypes.ASD );
-            bobTransaction.success();
+            bobTransaction.commit();
         }
 
         // When

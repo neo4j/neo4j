@@ -29,7 +29,6 @@ import org.neo4j.internal.kernel.api.Transaction.Type
 import org.neo4j.internal.kernel.api.security.LoginContext.AUTH_DISABLED
 import org.neo4j.kernel.impl.query.QuerySubscriber.DO_NOTHING_SUBSCRIBER
 import org.neo4j.kernel.impl.query.{Neo4jTransactionalContextFactory, TransactionalContext, TransactionalContextFactory}
-import org.neo4j.logging.{LogProvider, NullLogProvider}
 import org.neo4j.values.virtual.VirtualValues.EMPTY_MAP
 
 class KillQueryTest extends ExecutionEngineFunSuite {
@@ -50,7 +49,6 @@ class KillQueryTest extends ExecutionEngineFunSuite {
       createLabeledNode(Map("x" -> x, "name" -> ("apa" + x)), "Label")
     }
 
-    val logProvider: LogProvider = NullLogProvider.getInstance()
     val engine = ExecutionEngineHelper.createEngine(graph)
 
     val query = "MATCH (n:Label) WHERE n.x > 12 RETURN n.name"
@@ -109,7 +107,6 @@ class KillQueryTest extends ExecutionEngineFunSuite {
                                         DO_NOTHING_SUBSCRIBER)
             result.request(Long.MaxValue)
             result.await()
-            tx.success()
           }
           catch {
             // These are the acceptable exceptions

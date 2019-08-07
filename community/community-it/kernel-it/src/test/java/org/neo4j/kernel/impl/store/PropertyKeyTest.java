@@ -73,7 +73,7 @@ class PropertyKeyTest
 
             // Then
             assertEquals( count, Iterables.count( node.getPropertyKeys() ) );
-            tx.success();
+            tx.commit();
         }
         finally
         {

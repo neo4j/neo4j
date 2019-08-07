@@ -200,7 +200,7 @@ class TestLogPruning
         {
             Node node = db.createNode();
             node.setProperty( "name", "a somewhat lengthy string of some sort, right?" );
-            tx.success();
+            tx.commit();
         }
         checkPoint();
     }

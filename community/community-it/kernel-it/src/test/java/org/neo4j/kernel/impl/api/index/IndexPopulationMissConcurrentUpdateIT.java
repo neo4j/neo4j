@@ -137,7 +137,7 @@ public class IndexPopulationMissConcurrentUpdateIT
                 nodes.add( node );
             }
             while ( node.getId() < INITIAL_CREATION_NODE_ID_THRESHOLD );
-            tx.success();
+            tx.commit();
         }
         assertThat( "At least one node below the scan barrier threshold must have been created, otherwise test assumptions are invalid or outdated",
                 count( filter( n -> n.getId() <= SCAN_BARRIER_NODE_ID_THRESHOLD, nodes ) ), greaterThan( 0L ) );
@@ -151,7 +151,7 @@ public class IndexPopulationMissConcurrentUpdateIT
         try ( Transaction tx = db.beginTx() )
         {
             db.schema().indexFor( LABEL_ONE ).on( NAME_PROPERTY ).create();
-            tx.success();
+            tx.commit();
         }
 
         index.barrier.await();
@@ -167,13 +167,13 @@ public class IndexPopulationMissConcurrentUpdateIT
             }
             while ( node.getId() < index.populationAtId );
             // here we know that we have created a node in front of the index populator and also inside the cached bit-set of the label index reader
-            tx.success();
+            tx.commit();
         }
         index.barrier.release();
         try ( Transaction tx = db.beginTx() )
         {
             db.schema().awaitIndexesOnline( 1, MINUTES );
-            tx.success();
+            tx.commit();
         }
 
         // then all nodes must be in the index
@@ -184,7 +184,7 @@ public class IndexPopulationMissConcurrentUpdateIT
             {
                 assertTrue( index.entitiesByScan.contains( node.getId() ) || index.entitiesByUpdater.contains( node.getId() ) );
             }
-            tx.success();
+            tx.commit();
         }
     }
 

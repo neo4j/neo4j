@@ -70,7 +70,7 @@ public abstract class ParallelRelationshipCursorTestBase<G extends KernelAPIRead
                         .createRelationshipTo( graphDb.createNode(), RelationshipType.withName( "R" ) ).getId() );
             }
             RELATIONSHIPS = list;
-            tx.success();
+            tx.commit();
         }
     }
 

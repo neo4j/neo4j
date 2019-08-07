@@ -48,23 +48,35 @@ public class PlaceboTransaction implements InternalTransaction
     }
 
     @Override
-    public void failure()
-    {
-        currentTransaction.failure();
-    }
-
-    @Override
-    public void success()
+    public void commit()
     {
         success = true;
     }
 
     @Override
+    public void rollback()
+    {
+        internalRollback();
+    }
+
+    @Override
     public void close()
     {
-        if ( !success )
+
+    }
+
+    private void internalRollback()
+    {
+        try
         {
-            currentTransaction.failure();
+            if ( currentTransaction.isOpen() )
+            {
+                currentTransaction.rollback();
+            }
+        }
+        catch ( Exception tfe )
+        {
+            throw new RuntimeException( tfe );
         }
     }
 

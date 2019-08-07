@@ -37,7 +37,7 @@ public abstract class AbstractMandatoryTransactionsTest<T>
         try ( Transaction tx = db.beginTx() )
         {
             T result = obtainEntityInTransaction( db );
-            tx.success();
+            tx.commit();
 
             return result;
         }

@@ -29,7 +29,6 @@ import org.neo4j.annotations.api.PublicApi;
  * If you attempt to access the graph outside of a transaction, those operations will throw
  * {@link NotInTransactionException}.
  * <p>
- * Transactions are bound to the thread in which they were created.
  * Here's the idiomatic use of programmatic transactions in Neo4j:
  *
  * <pre>
@@ -39,7 +38,7 @@ import org.neo4j.annotations.api.PublicApi;
  *     // operations on the graph
  *     // ...
  *
- *     tx.success();
+ *     tx.commit();
  * }
  * </code>
  * </pre>
@@ -50,18 +49,14 @@ import org.neo4j.annotations.api.PublicApi;
  * This creates a new transaction which has internal state to keep
  * track of whether the current transaction is successful. Then we wrap all
  * operations that modify the graph in a try-finally block with the transaction
- * as resource. At the end of the block, we invoke the {@link #success() tx.success()}
- * method to indicate that the transaction is successful. As we exit the block,
- * the transaction will automatically be closed where {@link #close() tx.close()}
- * will be called and commit the transaction if the internal state indicates success
- * or else mark it for rollback.
+ * as resource. At the end of the block, we invoke the {@link #commit() tx.commit()}
+ * method to commit that the transaction.
  * <p>
- * If an exception is raised in the try-block, {@link #success()} will never be
- * invoked and the internal state of the transaction object will cause
- * {@link #close()} to roll back the transaction. This is very important:
- * unless {@link #success()} is invoked, the transaction will fail upon
- * {@link #close()}. A transaction can be explicitly marked for rollback by
- * invoking the {@link #failure()} method.
+ * If an exception is raised in the try-block, {@link #commit()} will never be
+ * invoked and the transaction will be roll backed. This is very important:
+ * unless {@link #commit()} is invoked, the transaction will fail upon
+ * {@link #close()}. A transaction can be explicitly rolled back by
+ * invoking the {@link #rollback()} method.
  * <p>
  * Read operations inside of a transaction will also read uncommitted data from
  * the same transaction.
@@ -78,7 +73,7 @@ public interface Transaction extends AutoCloseable
     /**
      * Marks this transaction as terminated, which means that it will be, much like in the case of failure,
      * unconditionally rolled back when {@link #close()} is called. Once this method has been invoked, it doesn't matter
-     * if {@link #success()} is invoked afterwards -- the transaction will still be rolled back.
+     * if {@link #commit()} ()} is invoked afterwards -- the transaction will still be rolled back.
      *
      * Additionally, terminating a transaction causes all subsequent operations carried out within that
      * transaction to throw a {@link TransactionTerminatedException} in the owning thread.
@@ -92,32 +87,27 @@ public interface Transaction extends AutoCloseable
     void terminate();
 
     /**
-     * Marks this transaction as failed, which means that it will
-     * unconditionally be rolled back when {@link #close()} is called. Once
-     * this method has been invoked, it doesn't matter if
-     * {@link #success()} is invoked afterwards -- the transaction will still be
-     * rolled back.
+     * Commit and close current transaction.
+     * <p>
+     * When {@code commit()} is completed, all resources are released and no more changes are possible in this transaction.
      */
-    void failure();
+    void commit();
 
     /**
-     * Marks this transaction as successful, which means that it will be
-     * committed upon invocation of {@link #close()} unless {@link #failure()}
-     * has or will be invoked before then.
+     * Roll back and close current transaction.
+     * When {@code rollback()} is completed, all resources are released and no more changes are possible in this transaction
      */
-    void success();
+    void rollback();
 
     /**
-     * Commits or marks this transaction for rollback, depending on whether
-     * {@link #success()} or {@link #failure()} has been previously invoked.
+     * Close transaction. If {@link #commit()} or {@link #rollback()} have been called this does nothing.
+     * If none of them are called, the transaction will be rolled back.
      *
-     * All {@link ResourceIterable ResourceIterables} that where returned from operations executed inside this
-     * transaction will be automatically closed by this method.
+     * <p>All {@link ResourceIterable ResourceIterables} that where returned from operations executed inside this
+     * transaction will be automatically closed by this method in they were not closed before.
      *
-     * This method comes from {@link AutoCloseable} so that a {@link Transaction} can participate
-     * in try-with-resource statements. It will not throw any declared exception.
-     *
-     * Invoking this method (which is unnecessary when in try-with-resource statement).
+     * <p>This method comes from {@link AutoCloseable} so that a {@link Transaction} can participate
+     * in try-with-resource statements.
      */
     @Override
     void close();
@@ -126,13 +116,14 @@ public interface Transaction extends AutoCloseable
      * Acquires a write lock for {@code entity} for this transaction.
      * The lock (returned from this method) can be released manually, but
      * if not it's released automatically when the transaction finishes.
+     *
      * @param entity the entity to acquire a lock for. If another transaction
      * currently holds a write lock to that entity this call will wait until
      * it's released.
      *
      * @return a {@link Lock} which optionally can be used to release this
      * lock earlier than when the transaction finishes. If not released
-     * (with {@link Lock#release()} it's going to be released with the
+     * (with {@link Lock#release()} it's going to be released when the
      * transaction finishes.
      */
     Lock acquireWriteLock( PropertyContainer entity );

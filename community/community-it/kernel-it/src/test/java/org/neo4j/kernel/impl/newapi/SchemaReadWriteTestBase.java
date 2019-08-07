@@ -80,7 +80,7 @@ public abstract class SchemaReadWriteTestBase<G extends KernelAPIWriteTestSuppor
             prop1 = tokenWrite.propertyKeyGetOrCreateForName( "prop1" );
             prop2 = tokenWrite.propertyKeyGetOrCreateForName( "prop2" );
             prop3 = tokenWrite.propertyKeyGetOrCreateForName( "prop3" );
-            transaction.success();
+            transaction.commit();
         }
     }
 
@@ -101,7 +101,7 @@ public abstract class SchemaReadWriteTestBase<G extends KernelAPIWriteTestSuppor
         try ( Transaction transaction = beginTransaction() )
         {
             index = transaction.schemaWrite().indexCreate( labelDescriptor( label, prop1 ) );
-            transaction.success();
+            transaction.commit();
         }
 
         try ( Transaction transaction = beginTransaction() )
@@ -122,7 +122,7 @@ public abstract class SchemaReadWriteTestBase<G extends KernelAPIWriteTestSuppor
             assertThat( tx.schemaRead().indexGetState( index ), equalTo( InternalIndexState.POPULATING ) );
             assertThat( tx.schemaRead().snapshot().indexGetState( index ), equalTo( InternalIndexState.POPULATING ) );
             assertThat( before.indexGetState( index ), equalTo( InternalIndexState.POPULATING ) );
-            tx.success();
+            tx.commit();
         }
     }
 
@@ -133,13 +133,13 @@ public abstract class SchemaReadWriteTestBase<G extends KernelAPIWriteTestSuppor
         try ( Transaction transaction = beginTransaction() )
         {
             index = transaction.schemaWrite().indexCreate( labelDescriptor( label, prop1 ) );
-            transaction.success();
+            transaction.commit();
         }
 
         try ( Transaction transaction = beginTransaction() )
         {
             transaction.schemaWrite().indexDrop( index );
-            transaction.success();
+            transaction.commit();
         }
 
         try ( Transaction transaction = beginTransaction() )
@@ -156,13 +156,13 @@ public abstract class SchemaReadWriteTestBase<G extends KernelAPIWriteTestSuppor
         try ( Transaction transaction = beginTransaction() )
         {
             index = transaction.schemaWrite().indexCreate( labelDescriptor( label, prop1 ) );
-            transaction.success();
+            transaction.commit();
         }
 
         try ( Transaction transaction = beginTransaction() )
         {
             transaction.schemaWrite().indexDrop( index.schema() );
-            transaction.success();
+            transaction.commit();
         }
 
         try ( Transaction transaction = beginTransaction() )
@@ -178,7 +178,7 @@ public abstract class SchemaReadWriteTestBase<G extends KernelAPIWriteTestSuppor
         try ( Transaction transaction = beginTransaction() )
         {
             assertThrows( SchemaKernelException.class, () -> transaction.schemaWrite().indexDrop( NO_INDEX ) );
-            transaction.success();
+            transaction.commit();
         }
     }
 
@@ -189,20 +189,20 @@ public abstract class SchemaReadWriteTestBase<G extends KernelAPIWriteTestSuppor
         try ( Transaction transaction = beginTransaction() )
         {
             index = transaction.schemaWrite().indexCreate( labelDescriptor( label, prop1 ) );
-            transaction.success();
+            transaction.commit();
         }
 
         try ( Transaction transaction = beginTransaction() )
         {
             transaction.schemaWrite().indexDrop( index );
-            transaction.success();
+            transaction.commit();
         }
 
         try ( Transaction transaction = beginTransaction() )
         {
             assertThrows( SchemaKernelException.class, () ->
                     transaction.schemaWrite().indexDrop( index ) );
-            transaction.success();
+            transaction.commit();
         }
     }
 
@@ -213,20 +213,20 @@ public abstract class SchemaReadWriteTestBase<G extends KernelAPIWriteTestSuppor
         try ( Transaction transaction = beginTransaction() )
         {
             index = transaction.schemaWrite().indexCreate( labelDescriptor( label, prop1 ) );
-            transaction.success();
+            transaction.commit();
         }
 
         try ( Transaction transaction = beginTransaction() )
         {
             transaction.schemaWrite().indexDrop( index );
-            transaction.success();
+            transaction.commit();
         }
 
         try ( Transaction transaction = beginTransaction() )
         {
             assertThrows( SchemaKernelException.class, () ->
                     transaction.schemaWrite().indexDrop( index.schema() ) );
-            transaction.success();
+            transaction.commit();
         }
     }
 
@@ -237,7 +237,7 @@ public abstract class SchemaReadWriteTestBase<G extends KernelAPIWriteTestSuppor
         try ( Transaction transaction = beginTransaction() )
         {
             transaction.schemaWrite().indexCreate( labelDescriptor( label, prop1 ) );
-            transaction.success();
+            transaction.commit();
         }
 
         //When
@@ -245,7 +245,7 @@ public abstract class SchemaReadWriteTestBase<G extends KernelAPIWriteTestSuppor
         {
             assertThrows( SchemaKernelException.class, () ->
                     transaction.schemaWrite().indexCreate( labelDescriptor( label, prop1 ) ) );
-            transaction.success();
+            transaction.commit();
         }
     }
 
@@ -255,7 +255,7 @@ public abstract class SchemaReadWriteTestBase<G extends KernelAPIWriteTestSuppor
         try ( Transaction transaction = beginTransaction() )
         {
             transaction.schemaWrite().indexCreate( labelDescriptor( label, prop1 ) );
-            transaction.success();
+            transaction.commit();
         }
 
         try ( Transaction transaction = beginTransaction() )
@@ -274,7 +274,7 @@ public abstract class SchemaReadWriteTestBase<G extends KernelAPIWriteTestSuppor
         try ( Transaction transaction = beginTransaction() )
         {
             transaction.schemaWrite().indexCreate( labelDescriptor( label, prop1 ) );
-            transaction.success();
+            transaction.commit();
         }
 
         try ( Transaction transaction = beginTransaction() )
@@ -300,7 +300,7 @@ public abstract class SchemaReadWriteTestBase<G extends KernelAPIWriteTestSuppor
         try ( Transaction transaction = beginTransaction() )
         {
             index = transaction.schemaWrite().indexCreate( labelDescriptor( label, prop1 ) );
-            transaction.success();
+            transaction.commit();
         }
 
         try ( Transaction transaction = beginTransaction() )
@@ -318,7 +318,7 @@ public abstract class SchemaReadWriteTestBase<G extends KernelAPIWriteTestSuppor
         try ( Transaction transaction = beginTransaction() )
         {
             index = transaction.schemaWrite().indexCreate( labelDescriptor( label, prop1 ) );
-            transaction.success();
+            transaction.commit();
         }
 
         try ( Transaction transaction = beginTransaction() )
@@ -345,7 +345,7 @@ public abstract class SchemaReadWriteTestBase<G extends KernelAPIWriteTestSuppor
             toRetain = tx.schemaWrite().indexCreate( labelDescriptor( label, prop1 ) );
             toRetain2 = tx.schemaWrite().indexCreate( labelDescriptor( label2, prop1 ) );
             toDrop = tx.schemaWrite().indexCreate( labelDescriptor( label, prop2 ) );
-            tx.success();
+            tx.commit();
         }
 
         try ( Transaction tx = beginTransaction() )
@@ -356,7 +356,7 @@ public abstract class SchemaReadWriteTestBase<G extends KernelAPIWriteTestSuppor
             Iterable<IndexDescriptor> allIndexes = () -> tx.schemaRead().indexesGetAll();
             assertThat( allIndexes, containsInAnyOrder( toRetain, toRetain2, created ) );
 
-            tx.success();
+            tx.commit();
         }
     }
 
@@ -373,7 +373,7 @@ public abstract class SchemaReadWriteTestBase<G extends KernelAPIWriteTestSuppor
             toRetain = tx.schemaWrite().indexCreate( labelDescriptor( label, prop1 ) );
             toRetain2 = tx.schemaWrite().indexCreate( labelDescriptor( label2, prop1 ) );
             toDrop = tx.schemaWrite().indexCreate( labelDescriptor( label, prop2 ) );
-            tx.success();
+            tx.commit();
         }
 
         try ( Transaction tx = beginTransaction() )
@@ -386,7 +386,7 @@ public abstract class SchemaReadWriteTestBase<G extends KernelAPIWriteTestSuppor
             assertThat( allIndexes, containsInAnyOrder( toRetain, toRetain2, created ) );
             assertThat( before::indexesGetAll, containsInAnyOrder( toRetain, toRetain2, created ) );
 
-            tx.success();
+            tx.commit();
         }
     }
 
@@ -407,7 +407,7 @@ public abstract class SchemaReadWriteTestBase<G extends KernelAPIWriteTestSuppor
             inStore = tx.schemaWrite().indexCreate( labelDescriptor( label, prop1 ) );
             droppedInTx = tx.schemaWrite().indexCreate( labelDescriptor( label, prop2 ) );
 
-            tx.success();
+            tx.commit();
         }
 
         try ( Transaction tx = beginTransaction() )
@@ -419,7 +419,7 @@ public abstract class SchemaReadWriteTestBase<G extends KernelAPIWriteTestSuppor
             Iterable<IndexDescriptor> indexes = () -> tx.schemaRead().indexesGetForLabel( label );
             assertThat( indexes, containsInAnyOrder( inStore, createdInTx ) );
 
-            tx.success();
+            tx.commit();
         }
     }
 
@@ -440,7 +440,7 @@ public abstract class SchemaReadWriteTestBase<G extends KernelAPIWriteTestSuppor
             inStore = tx.schemaWrite().indexCreate( labelDescriptor( label, prop1 ) );
             droppedInTx = tx.schemaWrite().indexCreate( labelDescriptor( label, prop2 ) );
 
-            tx.success();
+            tx.commit();
         }
 
         try ( Transaction tx = beginTransaction() )
@@ -454,7 +454,7 @@ public abstract class SchemaReadWriteTestBase<G extends KernelAPIWriteTestSuppor
             assertThat( indexes, containsInAnyOrder( inStore, createdInTx ) );
             assertThat( () -> before.indexesGetForLabel( label ), containsInAnyOrder( inStore, createdInTx ) );
 
-            tx.success();
+            tx.commit();
         }
     }
 
@@ -465,7 +465,7 @@ public abstract class SchemaReadWriteTestBase<G extends KernelAPIWriteTestSuppor
         try ( Transaction transaction = beginTransaction() )
         {
             constraint = transaction.schemaWrite().uniquePropertyConstraintCreate( labelDescriptor( label, prop1 ) );
-            transaction.success();
+            transaction.commit();
         }
 
         try ( Transaction transaction = beginTransaction() )
@@ -484,13 +484,13 @@ public abstract class SchemaReadWriteTestBase<G extends KernelAPIWriteTestSuppor
         try ( Transaction transaction = beginTransaction() )
         {
             constraint = transaction.schemaWrite().uniquePropertyConstraintCreate( labelDescriptor( label, prop1 ) );
-            transaction.success();
+            transaction.commit();
         }
 
         try ( Transaction transaction = beginTransaction() )
         {
             transaction.schemaWrite().constraintDrop( constraint );
-            transaction.success();
+            transaction.commit();
         }
 
         try ( Transaction transaction = beginTransaction() )
@@ -509,7 +509,7 @@ public abstract class SchemaReadWriteTestBase<G extends KernelAPIWriteTestSuppor
         try ( Transaction transaction = beginTransaction() )
         {
             transaction.schemaWrite().indexCreate( labelDescriptor( label, prop1 ) );
-            transaction.success();
+            transaction.commit();
         }
 
         //When
@@ -517,7 +517,7 @@ public abstract class SchemaReadWriteTestBase<G extends KernelAPIWriteTestSuppor
         {
             assertThrows( SchemaKernelException.class, () ->
                     transaction.schemaWrite().uniquePropertyConstraintCreate( labelDescriptor( label, prop1 ) ) );
-            transaction.success();
+            transaction.commit();
         }
     }
 
@@ -528,7 +528,7 @@ public abstract class SchemaReadWriteTestBase<G extends KernelAPIWriteTestSuppor
         try ( Transaction transaction = beginTransaction() )
         {
             transaction.schemaWrite().uniquePropertyConstraintCreate( labelDescriptor( label, prop1 ) );
-            transaction.success();
+            transaction.commit();
         }
 
         //When
@@ -536,7 +536,7 @@ public abstract class SchemaReadWriteTestBase<G extends KernelAPIWriteTestSuppor
         {
             assertThrows( SchemaKernelException.class, () ->
                     transaction.schemaWrite().indexCreate( labelDescriptor( label, prop1 ) ) );
-            transaction.success();
+            transaction.commit();
         }
     }
 
@@ -547,7 +547,7 @@ public abstract class SchemaReadWriteTestBase<G extends KernelAPIWriteTestSuppor
         try ( Transaction transaction = beginTransaction() )
         {
             transaction.schemaWrite().uniquePropertyConstraintCreate( labelDescriptor( label, prop1 ) );
-            transaction.success();
+            transaction.commit();
         }
 
         //When
@@ -556,7 +556,7 @@ public abstract class SchemaReadWriteTestBase<G extends KernelAPIWriteTestSuppor
             IndexDescriptor index = transaction.schemaRead().index( label, prop1 );
             assertThrows( SchemaKernelException.class, () ->
                     transaction.schemaWrite().indexDrop( index ) );
-            transaction.success();
+            transaction.commit();
         }
     }
 
@@ -567,7 +567,7 @@ public abstract class SchemaReadWriteTestBase<G extends KernelAPIWriteTestSuppor
         try ( Transaction transaction = beginTransaction() )
         {
             transaction.schemaWrite().uniquePropertyConstraintCreate( labelDescriptor( label, prop1 ) );
-            transaction.success();
+            transaction.commit();
         }
 
         //When
@@ -576,7 +576,7 @@ public abstract class SchemaReadWriteTestBase<G extends KernelAPIWriteTestSuppor
             IndexDescriptor index = transaction.schemaRead().index( label, prop1 );
             assertThrows( SchemaKernelException.class, () ->
                     transaction.schemaWrite().indexDrop( index.schema() ) );
-            transaction.success();
+            transaction.commit();
         }
     }
 
@@ -593,7 +593,7 @@ public abstract class SchemaReadWriteTestBase<G extends KernelAPIWriteTestSuppor
             long node2 = write.nodeCreate();
             write.nodeAddLabel( node2, label );
             write.nodeSetProperty( node2, prop1, Values.intValue( 42 ) );
-            transaction.success();
+            transaction.commit();
         }
 
         //When
@@ -612,7 +612,7 @@ public abstract class SchemaReadWriteTestBase<G extends KernelAPIWriteTestSuppor
         {
             existing =
                     transaction.schemaWrite().uniquePropertyConstraintCreate( labelDescriptor( label, prop1 ) );
-            transaction.success();
+            transaction.commit();
         }
 
         try ( Transaction transaction = beginTransaction() )
@@ -636,7 +636,7 @@ public abstract class SchemaReadWriteTestBase<G extends KernelAPIWriteTestSuppor
         try ( Transaction transaction = beginTransaction() )
         {
             existing = transaction.schemaWrite().uniquePropertyConstraintCreate( labelDescriptor( label, prop1 ) );
-            transaction.success();
+            transaction.commit();
         }
 
         try ( Transaction transaction = beginTransaction() )
@@ -658,7 +658,7 @@ public abstract class SchemaReadWriteTestBase<G extends KernelAPIWriteTestSuppor
         try ( Transaction transaction = beginTransaction() )
         {
             constraint = transaction.schemaWrite().nodeKeyConstraintCreate( labelDescriptor( label, prop1 ) );
-            transaction.success();
+            transaction.commit();
         }
 
         try ( Transaction transaction = beginTransaction() )
@@ -677,13 +677,13 @@ public abstract class SchemaReadWriteTestBase<G extends KernelAPIWriteTestSuppor
         try ( Transaction transaction = beginTransaction() )
         {
             constraint = transaction.schemaWrite().nodeKeyConstraintCreate( labelDescriptor( label, prop1 ) );
-            transaction.success();
+            transaction.commit();
         }
 
         try ( Transaction transaction = beginTransaction() )
         {
             transaction.schemaWrite().constraintDrop( constraint );
-            transaction.success();
+            transaction.commit();
         }
 
         try ( Transaction transaction = beginTransaction() )
@@ -704,7 +704,7 @@ public abstract class SchemaReadWriteTestBase<G extends KernelAPIWriteTestSuppor
             Write write = transaction.dataWrite();
             long node = write.nodeCreate();
             write.nodeAddLabel( node, label );
-            transaction.success();
+            transaction.commit();
         }
 
         //When
@@ -723,7 +723,7 @@ public abstract class SchemaReadWriteTestBase<G extends KernelAPIWriteTestSuppor
         {
             existing =
                     transaction.schemaWrite().nodeKeyConstraintCreate( labelDescriptor( label, prop1 ) );
-            transaction.success();
+            transaction.commit();
         }
 
         try ( Transaction transaction = beginTransaction() )
@@ -747,7 +747,7 @@ public abstract class SchemaReadWriteTestBase<G extends KernelAPIWriteTestSuppor
         try ( Transaction transaction = beginTransaction() )
         {
             existing = transaction.schemaWrite().nodeKeyConstraintCreate( labelDescriptor( label, prop1 ) );
-            transaction.success();
+            transaction.commit();
         }
 
         try ( Transaction transaction = beginTransaction() )
@@ -770,7 +770,7 @@ public abstract class SchemaReadWriteTestBase<G extends KernelAPIWriteTestSuppor
         try ( Transaction transaction = beginTransaction() )
         {
             constraint = transaction.schemaWrite().nodePropertyExistenceConstraintCreate( labelDescriptorNoIndex( label, prop1 ) );
-            transaction.success();
+            transaction.commit();
         }
 
         try ( Transaction transaction = beginTransaction() )
@@ -789,13 +789,13 @@ public abstract class SchemaReadWriteTestBase<G extends KernelAPIWriteTestSuppor
         try ( Transaction transaction = beginTransaction() )
         {
             constraint = transaction.schemaWrite().nodePropertyExistenceConstraintCreate( labelDescriptorNoIndex( label, prop1 ) );
-            transaction.success();
+            transaction.commit();
         }
 
         try ( Transaction transaction = beginTransaction() )
         {
             transaction.schemaWrite().constraintDrop( constraint );
-            transaction.success();
+            transaction.commit();
         }
 
         try ( Transaction transaction = beginTransaction() )
@@ -816,7 +816,7 @@ public abstract class SchemaReadWriteTestBase<G extends KernelAPIWriteTestSuppor
             Write write = transaction.dataWrite();
             long node = write.nodeCreate();
             write.nodeAddLabel( node, label );
-            transaction.success();
+            transaction.commit();
         }
 
         //When
@@ -835,7 +835,7 @@ public abstract class SchemaReadWriteTestBase<G extends KernelAPIWriteTestSuppor
         {
             existing =
                     transaction.schemaWrite().nodePropertyExistenceConstraintCreate( labelDescriptorNoIndex( label, prop1 ) );
-            transaction.success();
+            transaction.commit();
         }
 
         try ( Transaction transaction = beginTransaction() )
@@ -859,7 +859,7 @@ public abstract class SchemaReadWriteTestBase<G extends KernelAPIWriteTestSuppor
         try ( Transaction transaction = beginTransaction() )
         {
             existing = transaction.schemaWrite().nodePropertyExistenceConstraintCreate( labelDescriptorNoIndex( label, prop1 ) );
-            transaction.success();
+            transaction.commit();
         }
 
         try ( Transaction transaction = beginTransaction() )
@@ -885,7 +885,7 @@ public abstract class SchemaReadWriteTestBase<G extends KernelAPIWriteTestSuppor
         {
             constraint = transaction.schemaWrite()
                     .relationshipPropertyExistenceConstraintCreate( typeDescriptorNoIndex( type, prop1 ) );
-            transaction.success();
+            transaction.commit();
         }
 
         try ( Transaction transaction = beginTransaction() )
@@ -905,13 +905,13 @@ public abstract class SchemaReadWriteTestBase<G extends KernelAPIWriteTestSuppor
         {
             constraint = transaction.schemaWrite()
                     .relationshipPropertyExistenceConstraintCreate( typeDescriptorNoIndex( type, prop1 ) );
-            transaction.success();
+            transaction.commit();
         }
 
         try ( Transaction transaction = beginTransaction() )
         {
             transaction.schemaWrite().constraintDrop( constraint );
-            transaction.success();
+            transaction.commit();
         }
 
         try ( Transaction transaction = beginTransaction() )
@@ -931,7 +931,7 @@ public abstract class SchemaReadWriteTestBase<G extends KernelAPIWriteTestSuppor
         {
             Write write = transaction.dataWrite();
             write.relationshipCreate( write.nodeCreate(), type, write.nodeCreate() );
-            transaction.success();
+            transaction.commit();
         }
 
         //When
@@ -950,7 +950,7 @@ public abstract class SchemaReadWriteTestBase<G extends KernelAPIWriteTestSuppor
         {
             existing =
                     transaction.schemaWrite().relationshipPropertyExistenceConstraintCreate( typeDescriptorNoIndex( type, prop1 ) );
-            transaction.success();
+            transaction.commit();
         }
 
         try ( Transaction transaction = beginTransaction() )
@@ -975,7 +975,7 @@ public abstract class SchemaReadWriteTestBase<G extends KernelAPIWriteTestSuppor
         {
             existing = transaction.schemaWrite()
                     .relationshipPropertyExistenceConstraintCreate( typeDescriptorNoIndex( type, prop1 ) );
-            transaction.success();
+            transaction.commit();
         }
 
         try ( Transaction transaction = beginTransaction() )
@@ -1005,7 +1005,7 @@ public abstract class SchemaReadWriteTestBase<G extends KernelAPIWriteTestSuppor
             toRetain = tx.schemaWrite().uniquePropertyConstraintCreate( labelDescriptor( label, prop1 ) );
             toRetain2 = tx.schemaWrite().uniquePropertyConstraintCreate( labelDescriptor( label2, prop1 ) );
             toDrop = tx.schemaWrite().uniquePropertyConstraintCreate( labelDescriptor( label, prop2 ) );
-            tx.success();
+            tx.commit();
         }
 
         try ( Transaction tx = beginTransaction() )
@@ -1016,7 +1016,7 @@ public abstract class SchemaReadWriteTestBase<G extends KernelAPIWriteTestSuppor
             Iterable<ConstraintDescriptor> allConstraints = () -> tx.schemaRead().constraintsGetAll();
             assertThat( allConstraints, containsInAnyOrder( toRetain, toRetain2, created ) );
 
-            tx.success();
+            tx.commit();
         }
     }
 
@@ -1032,7 +1032,7 @@ public abstract class SchemaReadWriteTestBase<G extends KernelAPIWriteTestSuppor
             toRetain = tx.schemaWrite().uniquePropertyConstraintCreate( labelDescriptor( label, prop1 ) );
             toRetain2 = tx.schemaWrite().uniquePropertyConstraintCreate( labelDescriptor( label2, prop1 ) );
             toDrop = tx.schemaWrite().uniquePropertyConstraintCreate( labelDescriptor( label, prop2 ) );
-            tx.success();
+            tx.commit();
         }
 
         try ( Transaction tx = beginTransaction() )
@@ -1045,7 +1045,7 @@ public abstract class SchemaReadWriteTestBase<G extends KernelAPIWriteTestSuppor
             assertThat( allConstraints, containsInAnyOrder( toRetain, toRetain2, created ) );
             assertThat( before::constraintsGetAll, containsInAnyOrder( toRetain, toRetain2, created ) );
 
-            tx.success();
+            tx.commit();
         }
     }
 
@@ -1066,7 +1066,7 @@ public abstract class SchemaReadWriteTestBase<G extends KernelAPIWriteTestSuppor
             inStore = tx.schemaWrite().uniquePropertyConstraintCreate( labelDescriptor( label, prop1 ) );
             droppedInTx = tx.schemaWrite().uniquePropertyConstraintCreate( labelDescriptor( label, prop2 ) );
 
-            tx.success();
+            tx.commit();
         }
 
         try ( Transaction tx = beginTransaction() )
@@ -1080,7 +1080,7 @@ public abstract class SchemaReadWriteTestBase<G extends KernelAPIWriteTestSuppor
             assertThat( allConstraints, containsInAnyOrder( inStore, createdInTx ) );
             assertThat( () -> before.constraintsGetForLabel( label ), containsInAnyOrder( inStore, createdInTx ) );
 
-            tx.success();
+            tx.commit();
         }
     }
 

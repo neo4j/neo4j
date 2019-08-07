@@ -248,7 +248,7 @@ class ReuseStorageSpaceIT
                         setProperties( random, relationship );
                         relationshipCount++;
                     }
-                    tx.success();
+                    tx.commit();
                 }
             }
             createdNodes.addAndGet( nodeCount );
@@ -273,15 +273,17 @@ class ReuseStorageSpaceIT
         do
         {
             deleted = 0;
-            try ( Transaction tx = db.beginTx();
-                  ResourceIterator<ENTITY> iterator = stream.get().iterator() )
+            try ( Transaction tx = db.beginTx() )
             {
-                for ( ; iterator.hasNext() && deleted < 10_000; deleted++ )
+                try ( ResourceIterator<ENTITY> iterator = stream.get().iterator() )
                 {
-                    ENTITY entity = iterator.next();
-                    deleter.accept( entity );
+                    for ( ; iterator.hasNext() && deleted < 10_000; deleted++ )
+                    {
+                        ENTITY entity = iterator.next();
+                        deleter.accept( entity );
+                    }
                 }
-                tx.success();
+                tx.commit();
             }
         }
         while ( deleted > 0 );

@@ -51,7 +51,7 @@ class DropBrokenUniquenessConstraintIT
         try ( Transaction tx = db.beginTx() )
         {
             db.schema().constraintFor( label ).assertPropertyIsUnique( key ).create();
-            tx.success();
+            tx.commit();
         }
 
         // when intentionally breaking the schema by setting the backing index rule to unused
@@ -63,7 +63,7 @@ class DropBrokenUniquenessConstraintIT
         try ( Transaction tx = db.beginTx() )
         {
             single( db.schema().getConstraints( label ).iterator() ).drop();
-            tx.success();
+            tx.commit();
         }
 
         // then
@@ -81,7 +81,7 @@ class DropBrokenUniquenessConstraintIT
         try ( Transaction tx = db.beginTx() )
         {
             db.schema().constraintFor( label ).assertPropertyIsUnique( key ).create();
-            tx.success();
+            tx.commit();
         }
 
         // when intentionally breaking the schema by setting the backing index rule to unused
@@ -93,7 +93,7 @@ class DropBrokenUniquenessConstraintIT
         try ( Transaction tx = db.beginTx() )
         {
             single( db.schema().getConstraints( label ).iterator() ).drop();
-            tx.success();
+            tx.commit();
         }
 
         // then
@@ -111,7 +111,7 @@ class DropBrokenUniquenessConstraintIT
         try ( Transaction tx = db.beginTx() )
         {
             db.schema().constraintFor( label ).assertPropertyIsUnique( key ).create();
-            tx.success();
+            tx.commit();
         }
 
         // when intentionally breaking the schema by setting the backing index rule to unused
@@ -126,7 +126,7 @@ class DropBrokenUniquenessConstraintIT
             // We don't use single() here, because it is okay for the schema cache reload to clean up after us.
             db.schema().getConstraints( label ).forEach( ConstraintDefinition::drop );
             db.schema().getIndexes( label ).forEach( IndexDefinition::drop );
-            tx.success();
+            tx.commit();
         }
 
         // then
@@ -144,7 +144,7 @@ class DropBrokenUniquenessConstraintIT
         try ( Transaction tx = db.beginTx() )
         {
             db.schema().constraintFor( label ).assertPropertyIsUnique( key ).create();
-            tx.success();
+            tx.commit();
         }
 
         // when intentionally breaking the schema by setting the backing index rule to unused
@@ -160,7 +160,7 @@ class DropBrokenUniquenessConstraintIT
             // We don't use single() here, because it is okay for the schema cache reload to clean up after us.
             db.schema().getConstraints( label ).forEach( ConstraintDefinition::drop );
             db.schema().getIndexes( label ).forEach( IndexDefinition::drop );
-            tx.success();
+            tx.commit();
         }
 
         // then

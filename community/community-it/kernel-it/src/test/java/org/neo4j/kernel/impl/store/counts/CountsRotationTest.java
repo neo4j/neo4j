@@ -211,7 +211,7 @@ public class CountsRotationTest
             try ( Transaction tx = db.beginTx() )
             {
                 db.createNode( B );
-                tx.success();
+                tx.commit();
             }
             checkPoint( db );
         }
@@ -247,7 +247,7 @@ public class CountsRotationTest
         try ( Transaction tx = db.beginTx() )
         {
             db.createNode( A );
-            tx.success();
+            tx.commit();
         }
 
         // WHEN
@@ -280,7 +280,7 @@ public class CountsRotationTest
         try ( Transaction tx = db.beginTx() )
         {
             db.createNode( B );
-            tx.success();
+            tx.commit();
         }
         // and rotating the log (which implies flushing)
         checkPoint( db );
@@ -288,7 +288,7 @@ public class CountsRotationTest
         try ( Transaction tx = db.beginTx() )
         {
             db.createNode( C );
-            tx.success();
+            tx.commit();
         }
 
         // THEN
@@ -347,7 +347,7 @@ public class CountsRotationTest
                 txStartLatch.countDown();
                 db.createNode();
                 await( txCommitLatch );
-                tx.success();
+                tx.commit();
             }
         } );
 

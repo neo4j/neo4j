@@ -57,7 +57,7 @@ class DeleteNodeStressIT
                     Node node = db.createNode( label( "L" ) );
                     node.setProperty( "prop", i + j );
                 }
-                tx.success();
+                tx.commit();
             }
         }
     }

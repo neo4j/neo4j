@@ -163,8 +163,7 @@ class Neo4jTransactionalContextTest
         // (4) Rebind, unregister, and close old
         order.verify( txBridge ).bindTransactionToCurrentThread( initialKTX );
         order.verify( initialQueryRegistry ).unregisterExecutingQuery( executingQuery );
-        order.verify( initialTransaction ).success();
-        order.verify( initialTransaction ).close();
+        order.verify( initialTransaction ).commit();
         order.verify( txBridge ).unbindTransactionFromCurrentThread();
 
         // (5) Rebind new
@@ -202,7 +201,7 @@ class Neo4jTransactionalContextTest
         when( executingQuery.queryText() ).thenReturn( "X" );
         when( executingQuery.databaseId() ).thenReturn( databaseId );
         when( executingQuery.queryParameters() ).thenReturn( EMPTY_MAP );
-        Mockito.doThrow( RuntimeException.class ).when( initialTransaction ).close();
+        Mockito.doThrow( RuntimeException.class ).when( initialTransaction ).commit();
         when( initialStatement.queryRegistration() ).thenReturn( initialQueryRegistry );
         when( queryService.beginTransaction( transactionType, securityContext, connectionInfo ) ).thenReturn( secondTransaction );
         when( txBridge.getKernelTransactionBoundToThisThread( eq( true ), any( DatabaseId.class ) ) ).thenReturn( initialKTX, initialKTX, secondKTX );
@@ -243,11 +242,9 @@ class Neo4jTransactionalContextTest
         // (4) Rebind, unregister, and close old
         order.verify( txBridge ).bindTransactionToCurrentThread( initialKTX );
         order.verify( initialQueryRegistry ).unregisterExecutingQuery( executingQuery );
-        order.verify( initialTransaction ).success();
-        order.verify( initialTransaction ).close();
+        order.verify( initialTransaction ).commit();
         order.verify( txBridge ).bindTransactionToCurrentThread( secondKTX );
-        order.verify( secondTransaction ).failure();
-        order.verify( secondTransaction ).close();
+        order.verify( secondTransaction ).rollback();
         order.verify( txBridge ).unbindTransactionFromCurrentThread();
 
         verifyNoMoreInteractions( mocks );
@@ -342,8 +339,6 @@ class Neo4jTransactionalContextTest
         verify( tx, never() ).close();
 
         context.close( false );
-        verify( tx ).failure();
-        verify( tx ).close();
     }
 
     @Test
@@ -353,8 +348,6 @@ class Neo4jTransactionalContextTest
         Neo4jTransactionalContext context = newContext( tx );
 
         context.close( true );
-        verify( tx ).success();
-        verify( tx ).close();
 
         context.terminate();
         verify( tx, never() ).terminate();
@@ -408,9 +401,6 @@ class Neo4jTransactionalContextTest
         context.close( true );
         context.close( false );
 
-        verify( tx ).failure();
-        verify( tx, never() ).success();
-        verify( tx ).close();
     }
 
     private void setUpMocks()

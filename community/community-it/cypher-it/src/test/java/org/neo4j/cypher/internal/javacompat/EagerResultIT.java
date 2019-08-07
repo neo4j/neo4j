@@ -231,14 +231,14 @@ class EagerResultIT
             Node node = database.createNode( label );
             node.setProperty( "c", "d" );
             node.setProperty( "d", "a" );
-            transaction.success();
+            transaction.commit();
         }
         try ( Transaction transaction = database.beginTx() )
         {
             Node node = database.createNode( label );
             node.setProperty( "c", "y" );
             node.setProperty( "d", "k" );
-            transaction.success();
+            transaction.commit();
         }
     }
 

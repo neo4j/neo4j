@@ -37,7 +37,6 @@ import org.neo4j.test.mockito.matcher.Neo4jMatchers;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.fail;
 
 @ImpermanentDbmsExtension
 class BigPropertyIndexValidationIT
@@ -70,16 +69,8 @@ class BigPropertyIndexValidationIT
         {
             try ( Transaction tx = db.beginTx() )
             {
-                try
-                {
-                    db.execute( "CREATE (n:" + LABEL + " {name: \"" + longString + "\"})" );
-                    fail( "Argument was illegal" );
-                }
-                catch ( IllegalArgumentException e )
-                {
-                    //this is expected.
-                }
-                tx.success();
+                assertThrows( IllegalArgumentException.class, () -> db.execute( "CREATE (n:" + LABEL + " {name: \"" + longString + "\"})" ) );
+                tx.commit();
             }
             //Check that the database is empty.
             try ( Transaction tx = db.beginTx() )
@@ -102,16 +93,8 @@ class BigPropertyIndexValidationIT
             try ( Transaction tx = db.beginTx() )
             {
                 db.execute( "CREATE (n:" + LABEL + ")" );
-                try
-                {
-                    db.execute( "match (n:" + LABEL + ")set n.name= \"" + longString + "\"" );
-                    fail( "Argument was illegal" );
-                }
-                catch ( IllegalArgumentException e )
-                {
-                    //this is expected.
-                }
-                tx.success();
+                assertThrows( IllegalArgumentException.class, () -> db.execute( "match (n:" + LABEL + ")set n.name= \"" + longString + "\"" ) );
+                tx.commit();
             }
             //Check that the database is empty.
             try ( Transaction tx = db.beginTx() )
@@ -135,16 +118,8 @@ class BigPropertyIndexValidationIT
             {
                 String otherLabel = "SomethingElse";
                 db.execute( "CREATE (n:" + otherLabel + " {name: \"" + longString + "\"})" );
-                try
-                {
-                    db.execute( "match (n:" + otherLabel + ")set n:" + LABEL );
-                    fail( "Argument was illegal" );
-                }
-                catch ( IllegalArgumentException e )
-                {
-                    //this is expected.
-                }
-                tx.success();
+                assertThrows( IllegalArgumentException.class, () -> db.execute( "match (n:" + otherLabel + ")set n:" + LABEL ) );
+                tx.commit();
             }
             //Check that the database is empty.
             try ( Transaction tx = db.beginTx() )

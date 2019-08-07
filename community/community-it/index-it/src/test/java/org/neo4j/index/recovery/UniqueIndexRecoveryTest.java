@@ -104,7 +104,7 @@ public class UniqueIndexRecoveryTest
         try ( Transaction tx = db.beginTx() )
         {
             assertFalse( db.schema().getConstraints( LABEL ).iterator().hasNext() );
-            tx.success();
+            tx.commit();
         }
     }
 
@@ -131,7 +131,7 @@ public class UniqueIndexRecoveryTest
             assertThat(
                     db.findNode( LABEL, PROPERTY_KEY, PROPERTY_VALUE ),
                     equalTo( unLabeledNode ) );
-            tx.success();
+            tx.commit();
         }
     }
 
@@ -166,7 +166,7 @@ public class UniqueIndexRecoveryTest
         try ( Transaction tx = db.beginTx() )
         {
             unLabeledNode.addLabel( LABEL );
-            tx.success();
+            tx.commit();
         }
     }
 
@@ -175,7 +175,7 @@ public class UniqueIndexRecoveryTest
         try ( Transaction tx = db.beginTx() )
         {
             labeledNode.setProperty( PROPERTY_KEY, PROPERTY_VALUE );
-            tx.success();
+            tx.commit();
         }
     }
 
@@ -184,7 +184,7 @@ public class UniqueIndexRecoveryTest
         try ( Transaction tx = db.beginTx() )
         {
             labeledNode.removeProperty( PROPERTY_KEY );
-            tx.success();
+            tx.commit();
         }
     }
 
@@ -193,7 +193,7 @@ public class UniqueIndexRecoveryTest
         try ( Transaction tx = db.beginTx() )
         {
             db.schema().constraintFor( LABEL ).assertPropertyIsUnique( PROPERTY_KEY ).create();
-            tx.success();
+            tx.commit();
         }
     }
 
@@ -202,7 +202,7 @@ public class UniqueIndexRecoveryTest
         try ( Transaction tx = db.beginTx() )
         {
             Node node = db.createNode( LABEL );
-            tx.success();
+            tx.commit();
             return node;
         }
     }
@@ -213,7 +213,7 @@ public class UniqueIndexRecoveryTest
         {
             Node node = db.createNode();
             node.setProperty( PROPERTY_KEY, PROPERTY_VALUE );
-            tx.success();
+            tx.commit();
             return node;
         }
     }
@@ -226,7 +226,7 @@ public class UniqueIndexRecoveryTest
             {
                 constraint.drop();
             }
-            tx.success();
+            tx.commit();
         }
     }
 

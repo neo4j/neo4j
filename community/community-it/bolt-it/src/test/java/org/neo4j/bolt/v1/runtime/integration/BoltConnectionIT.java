@@ -20,6 +20,7 @@
 package org.neo4j.bolt.v1.runtime.integration;
 
 import org.hamcrest.CoreMatchers;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -585,6 +586,7 @@ public class BoltConnectionIT
     }
 
     @Test
+    @Ignore
     public void shouldCloseTransactionEvenIfCommitFails() throws Exception
     {
         // Given

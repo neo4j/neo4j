@@ -304,8 +304,7 @@ class TestRelationship extends AbstractNeo4jTestCase
         node2.delete();
         assertThrows( Exception.class, () ->
         {
-            getTransaction().success();
-            getTransaction().close();
+            getTransaction().commit();
         } );
         setTransaction( getGraphDb().beginTx() );
     }
@@ -340,8 +339,6 @@ class TestRelationship extends AbstractNeo4jTestCase
         Relationship rel1 = node1.createRelationshipTo( node2, TEST );
 
         assertThrows( Exception.class, () -> rel1.setProperty( "foo", null ) );
-
-        getTransaction().failure();
     }
 
     @Test
@@ -373,7 +370,7 @@ class TestRelationship extends AbstractNeo4jTestCase
         assertEquals( string2, rel1.getProperty( key2 ) );
         assertEquals( int2, rel2.getProperty( key2 ) );
 
-        getTransaction().failure();
+        getTransaction().rollback();
     }
 
     @Test
@@ -574,8 +571,7 @@ class TestRelationship extends AbstractNeo4jTestCase
         newTransaction();
         node1.delete();
         rel1.delete();
-        getTransaction().failure();
-        getTransaction().close();
+        getTransaction().rollback();
         setTransaction( getGraphDb().beginTx() );
         node1.delete();
         node2.delete();
@@ -832,7 +828,7 @@ class TestRelationship extends AbstractNeo4jTestCase
                 node.createRelationshipTo( db.createNode(), TEST );
                 db.createNode().createRelationshipTo( node, TEST );
             }
-            tx.success();
+            tx.commit();
         }
         // WHEN
         long one;
@@ -841,7 +837,7 @@ class TestRelationship extends AbstractNeo4jTestCase
         {
             one = Iterables.count( node.getRelationships( TEST, Direction.OUTGOING ) );
             two = Iterables.count( node.getRelationships( TEST, Direction.OUTGOING ) );
-            tx.success();
+            tx.commit();
         }
 
         // THEN
@@ -864,13 +860,13 @@ class TestRelationship extends AbstractNeo4jTestCase
         {
             relationship.delete();
             assertThrows( NotFoundException.class, () -> relationship.delete() );
-            tx.success();
+            tx.commit();
         }
 
         try ( Transaction tx = db.beginTx() )
         {
             assertThrows( NotFoundException.class, () -> db.getRelationshipById( relationship.getId() ) );
-            tx.success();
+            tx.commit();
         }
     }
 
@@ -889,14 +885,14 @@ class TestRelationship extends AbstractNeo4jTestCase
         try ( Transaction tx = db.beginTx() )
         {
             relationship.delete();
-            tx.success();
+            tx.commit();
         }
 
         // When
         try ( Transaction tx = db.beginTx() )
         {
             assertThrows( NotFoundException.class, () -> relationship.delete() );
-            tx.success();
+            tx.commit();
         }
     }
 

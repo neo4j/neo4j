@@ -155,7 +155,7 @@ public class IndexRestartIT
         try ( Transaction tx = db.beginTx() )
         {
             IndexDefinition index = db.schema().indexFor( myLabel ).on( "number_of_bananas_owned" ).create();
-            tx.success();
+            tx.commit();
             return index;
         }
     }
@@ -166,7 +166,7 @@ public class IndexRestartIT
         {
             index.drop();
             populationCompletionLatch.finish();
-            tx.success();
+            tx.commit();
         }
     }
 

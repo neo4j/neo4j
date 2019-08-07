@@ -21,6 +21,7 @@ package org.neo4j.procedure.impl;
 
 import org.neo4j.function.ThrowingFunction;
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
+import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.procedure.Context;
@@ -51,9 +52,16 @@ public class ProcedureTransactionProvider implements ThrowingFunction<Context,Pr
         }
 
         @Override
-        public void failure()
+        public void rollback()
         {
-            ktx.failure();
+            try
+            {
+                ktx.rollback();
+            }
+            catch ( TransactionFailureException e )
+            {
+                throw new org.neo4j.graphdb.TransactionFailureException( "Rollback procedure transaction.", e );
+            }
         }
     }
 }

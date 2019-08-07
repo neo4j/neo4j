@@ -111,7 +111,7 @@ public class GraphDatabaseServiceTest
             {
                 barrier.reached();
                 db.createNode();
-                tx.success();
+                tx.commit();
             }
             return null;
         } );
@@ -362,10 +362,9 @@ public class GraphDatabaseServiceTest
         // (t1) --> (r1) although delayed until commit, this is accomplished by deleting an adjacent
         //               relationship so that its surrounding relationships are locked at commit time.
         r2.delete();
-        t1Tx.success();
         try
         {
-            t1Tx.close();
+            t1Tx.commit();
             fail( "Should throw exception about deadlock" );
         }
         catch ( Exception e )
@@ -390,21 +389,21 @@ public class GraphDatabaseServiceTest
         try ( Transaction tx = db.beginTx() )
         {
             db.createNode();
-            tx.success();
+            tx.commit();
         }
 
         Transaction transaction = db.beginTx();
         try ( Transaction tx = transaction )
         {
             db.createNode();
-            tx.success();
+            tx.commit();
         }
         transaction.terminate();
 
         try ( Transaction tx = db.beginTx() )
         {
             assertThat( db.getAllNodes(), is( iterableWithSize( 2 ) ) );
-            tx.success();
+            tx.commit();
         }
     }
 
@@ -437,7 +436,7 @@ public class GraphDatabaseServiceTest
         try ( Transaction tx = node.getGraphDatabase().beginTx() )
         {
             Relationship rel = node.createRelationshipTo( node, MyRelTypes.TEST );
-            tx.success();
+            tx.commit();
             return rel;
         }
     }
@@ -447,7 +446,7 @@ public class GraphDatabaseServiceTest
         try ( Transaction tx = db.beginTx() )
         {
             Node node = db.createNode();
-            tx.success();
+            tx.commit();
             return node;
         }
     }

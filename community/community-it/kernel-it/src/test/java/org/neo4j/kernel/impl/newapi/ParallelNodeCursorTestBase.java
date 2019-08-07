@@ -65,7 +65,7 @@ public abstract class ParallelNodeCursorTestBase<G extends KernelAPIReadTestSupp
                 list.add( graphDb.createNode().getId() );
             }
             NODE_IDS = list;
-            tx.success();
+            tx.commit();
         }
     }
 
