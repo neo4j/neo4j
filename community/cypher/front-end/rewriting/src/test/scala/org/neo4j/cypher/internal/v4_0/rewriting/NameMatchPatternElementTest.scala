@@ -17,6 +17,7 @@
 package org.neo4j.cypher.internal.v4_0.rewriting
 
 import org.neo4j.cypher.internal.v4_0.rewriting.rewriters.{nameMatchPatternElements, nameUpdatingClauses}
+import org.neo4j.cypher.internal.v4_0.util.OpenCypherExceptionFactory
 import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
 
 
@@ -24,73 +25,75 @@ class NameMatchPatternElementTest extends CypherFunSuite {
 
   import org.neo4j.cypher.internal.v4_0.parser.ParserFixture._
 
+  private val exceptionFactory = OpenCypherExceptionFactory(None)
+
   test("name all NodePatterns in Query") {
-    val original = parser.parse("MATCH (n)-[r:Foo]->() RETURN n")
-    val expected = parser.parse("MATCH (n)-[r:Foo]->(`  UNNAMED20`) RETURN n")
+    val original = parser.parse("MATCH (n)-[r:Foo]->() RETURN n", exceptionFactory)
+    val expected = parser.parse("MATCH (n)-[r:Foo]->(`  UNNAMED20`) RETURN n", exceptionFactory)
 
     val result = original.rewrite(nameMatchPatternElements)
     assert(result === expected)
   }
 
   test("name all RelationshipPatterns in Query") {
-    val original = parser.parse("MATCH (n)-[:Foo]->(m) WHERE (n)-[:Bar]->(m) RETURN n")
-    val expected = parser.parse("MATCH (n)-[`  UNNAMED10`:Foo]->(m) WHERE (n)-[:Bar]->(m) RETURN n")
+    val original = parser.parse("MATCH (n)-[:Foo]->(m) WHERE (n)-[:Bar]->(m) RETURN n", exceptionFactory)
+    val expected = parser.parse("MATCH (n)-[`  UNNAMED10`:Foo]->(m) WHERE (n)-[:Bar]->(m) RETURN n", exceptionFactory)
 
     val result = original.rewrite(nameMatchPatternElements)
     assert(result === expected)
   }
 
   test("rename unnamed varlength paths") {
-    val original = parser.parse("MATCH (n)-[:Foo*]->(m) RETURN n")
-    val expected = parser.parse("MATCH (n)-[`  UNNAMED10`:Foo*]->(m) RETURN n")
+    val original = parser.parse("MATCH (n)-[:Foo*]->(m) RETURN n", exceptionFactory)
+    val expected = parser.parse("MATCH (n)-[`  UNNAMED10`:Foo*]->(m) RETURN n", exceptionFactory)
 
     val result = original.rewrite(nameMatchPatternElements)
     assert(result === expected)
   }
 
   test("match (a) create unique (a)-[:X]->() return a") {
-    val original = parser.parse("match (a) create unique p=(a)-[:X]->() return p")
-    val expected = parser.parse("match (a) create unique p=(a)-[`  UNNAMED30`:X]->(`  UNNAMED37`) return p")
+    val original = parser.parse("match (a) create unique p=(a)-[:X]->() return p", exceptionFactory)
+    val expected = parser.parse("match (a) create unique p=(a)-[`  UNNAMED30`:X]->(`  UNNAMED37`) return p", exceptionFactory)
 
     val result = original.rewrite(nameUpdatingClauses)
     assert(result === expected)
   }
 
   test("match (a) create (a)-[:X]->() return a") {
-    val original = parser.parse("match (a) create (a)-[:X]->() return a")
-    val expected = parser.parse("match (a) create (a)-[`  UNNAMED21`:X]->(`  UNNAMED28`) return a")
+    val original = parser.parse("match (a) create (a)-[:X]->() return a", exceptionFactory)
+    val expected = parser.parse("match (a) create (a)-[`  UNNAMED21`:X]->(`  UNNAMED28`) return a", exceptionFactory)
 
     val result = original.rewrite(nameUpdatingClauses)
     assert(result === expected)
   }
 
   test("merge (a) merge p = (a)-[:R]->() return p") {
-    val original = parser.parse("merge (a) merge p = (a)-[:R]->() return p")
-    val expected = parser.parse("merge (a) merge p = (a)-[`  UNNAMED24`:R]->(`  UNNAMED31`) return p")
+    val original = parser.parse("merge (a) merge p = (a)-[:R]->() return p", exceptionFactory)
+    val expected = parser.parse("merge (a) merge p = (a)-[`  UNNAMED24`:R]->(`  UNNAMED31`) return p", exceptionFactory)
 
     val result = original.rewrite(nameUpdatingClauses)
     assert(result === expected)
   }
 
   test("merge (a)-[:R]->() return a") {
-    val original = parser.parse("merge (a)-[:R]->() return a")
-    val expected = parser.parse("merge (a)-[`  UNNAMED10`:R]->(`  UNNAMED17`) return a")
+    val original = parser.parse("merge (a)-[:R]->() return a", exceptionFactory)
+    val expected = parser.parse("merge (a)-[`  UNNAMED10`:R]->(`  UNNAMED17`) return a", exceptionFactory)
 
     val result = original.rewrite(nameUpdatingClauses)
     assert(result === expected)
   }
 
   test("does not touch parameters") {
-    val original = parser.parse("MATCH (n)-[r:Foo]->($p) RETURN n")
-    val expected = parser.parse("MATCH (n)-[r:Foo]->(`  UNNAMED20` $p) RETURN n")
+    val original = parser.parse("MATCH (n)-[r:Foo]->($p) RETURN n", exceptionFactory)
+    val expected = parser.parse("MATCH (n)-[r:Foo]->(`  UNNAMED20` $p) RETURN n", exceptionFactory)
 
     val result = original.rewrite(nameMatchPatternElements)
     assert(result === expected)
   }
 
   test("names all unnamed var length relationships") {
-    val original = parser.parse("MATCH (a:Artist)-[:WORKED_WITH* { year: 1988 }]->(b:Artist) RETURN *")
-    val expected = parser.parse("MATCH (a:Artist)-[`  UNNAMED17`:WORKED_WITH* { year: 1988 }]->(b:Artist) RETURN *")
+    val original = parser.parse("MATCH (a:Artist)-[:WORKED_WITH* { year: 1988 }]->(b:Artist) RETURN *", exceptionFactory)
+    val expected = parser.parse("MATCH (a:Artist)-[`  UNNAMED17`:WORKED_WITH* { year: 1988 }]->(b:Artist) RETURN *", exceptionFactory)
 
     val result = original.rewrite(nameMatchPatternElements)
     assert(result === expected)

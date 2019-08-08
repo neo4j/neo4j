@@ -70,7 +70,7 @@ case class AddUniquenessPredicates(innerVariableNamer: InnerVariableNamer = Same
 
       case RelationshipChain(_, patRel@RelationshipPattern(optIdent, types, _, _, _, _, _), _) =>
         acc => {
-          val ident = optIdent.getOrElse(throw new InternalException("This rewriter cannot work with unnamed patterns"))
+          val ident = optIdent.getOrElse(throw new IllegalStateException("This rewriter cannot work with unnamed patterns"))
           (acc :+ UniqueRel(ident, types.toSet, patRel.isSingleLength), Some(identity))
         }
     }

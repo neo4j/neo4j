@@ -18,14 +18,14 @@ package org.neo4j.cypher.internal.v4_0.rewriting.rewriters
 
 import org.neo4j.cypher.internal.v4_0.expressions._
 import org.neo4j.cypher.internal.v4_0.util
-import org.neo4j.cypher.internal.v4_0.util.{Rewriter, bottomUp}
+import org.neo4j.cypher.internal.v4_0.util.{CypherExceptionFactory, Rewriter, bottomUp}
 
-case object foldConstants extends Rewriter {
+case class foldConstants(cypherExceptionFactory: CypherExceptionFactory) extends Rewriter {
   def apply(that: AnyRef): AnyRef =
   try {
     instance.apply(that)
   } catch {
-    case e: java.lang.ArithmeticException => throw new util.ArithmeticException(e.getMessage, e)
+    case e: java.lang.ArithmeticException => throw cypherExceptionFactory.arithmeticException(e.getMessage, e)
   }
   private val instance: Rewriter = bottomUp(Rewriter.lift {
     case e@Add(lhs: SignedIntegerLiteral, rhs: SignedIntegerLiteral) =>

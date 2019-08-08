@@ -40,7 +40,7 @@ import org.neo4j.cypher.internal.v4_0.util._
   * WITH n.prop AS prop ORDER BY prop DESC
   * RETURN prop AS prop
   */
-case class normalizeWithAndReturnClauses(mkException: (String, InputPosition) => CypherException) extends Rewriter {
+case class normalizeWithAndReturnClauses(cypherExceptionFactory: CypherExceptionFactory) extends Rewriter {
 
   def apply(that: AnyRef): AnyRef = instance.apply(that)
 
@@ -53,7 +53,7 @@ case class normalizeWithAndReturnClauses(mkException: (String, InputPosition) =>
 
     // Alias return items and rewrite ORDER BY and WHERE
     case clause@ProjectionClause(distinct, ri: ReturnItems, orderBy, skip, limit, where) =>
-      clause.verifyOrderByAggregationUse((s, i) => throw mkException(s, i))
+      clause.verifyOrderByAggregationUse((s, i) => throw cypherExceptionFactory.syntaxException(s, i))
       val (unaliasedReturnItems, aliasedReturnItems) = partitionReturnItems(ri.items, clause.isReturn)
       val initialReturnItems = unaliasedReturnItems ++ aliasedReturnItems
 

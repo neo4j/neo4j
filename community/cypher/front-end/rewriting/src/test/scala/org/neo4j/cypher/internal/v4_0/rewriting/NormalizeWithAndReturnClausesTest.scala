@@ -16,16 +16,17 @@
  */
 package org.neo4j.cypher.internal.v4_0.rewriting
 
-import org.neo4j.cypher.internal.v4_0.ast.semantics.{SemanticState, SyntaxExceptionCreator}
+import org.neo4j.cypher.internal.v4_0.ast.semantics.SemanticState
 import org.neo4j.cypher.internal.v4_0.ast.{AstConstructionTestSupport, Statement}
 import org.neo4j.cypher.internal.v4_0.parser.ParserFixture.parser
 import org.neo4j.cypher.internal.v4_0.rewriting.rewriters.normalizeWithAndReturnClauses
+import org.neo4j.cypher.internal.v4_0.util.OpenCypherExceptionFactory.SyntaxException
 import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.v4_0.util.{Rewriter, SyntaxException}
+import org.neo4j.cypher.internal.v4_0.util.{OpenCypherExceptionFactory, Rewriter}
 
-class NormalizeWithAndReturnClausesTest extends CypherFunSuite with RewriteTest with AstConstructionTestSupport {
-  val mkException = new SyntaxExceptionCreator("<Query>", Some(pos))
-  val rewriterUnderTest: Rewriter = normalizeWithAndReturnClauses(mkException)
+class NormalizeWithAndReturnClausesTest extends CypherFunSuite with RewriteTest {
+  val exceptionFactory = OpenCypherExceptionFactory(None)
+  val rewriterUnderTest: Rewriter = normalizeWithAndReturnClauses(exceptionFactory)
 
   test("ensure variables are aliased") {
     assertRewrite(
@@ -783,7 +784,7 @@ class NormalizeWithAndReturnClausesTest extends CypherFunSuite with RewriteTest 
   }
 
   protected def assertNotRewrittenAndSemanticErrors(query: String, semanticErrors: String*): Unit = {
-    val original = parser.parse(query)
+    val original = parser.parse(query, exceptionFactory)
     val result = endoRewrite(original)
     assert(result === original, s"\n$query\nshould not have been rewritten but was to:\n${prettifier.asString(result.asInstanceOf[Statement])}")
 

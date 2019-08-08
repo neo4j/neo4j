@@ -17,7 +17,7 @@
 package org.neo4j.cypher.internal.v4_0.parser
 
 import org.neo4j.cypher.internal.v4_0.expressions.{Namespace => ASTNamespace}
-import org.neo4j.cypher.internal.v4_0.util.{InputPosition, InternalException, SyntaxException}
+import org.neo4j.cypher.internal.v4_0.util.{CypherExceptionFactory, InputPosition}
 import org.parboiled.Context
 import org.parboiled.errors.{InvalidInputError, ParseError}
 import org.parboiled.scala.{Parser, _}
@@ -118,7 +118,7 @@ trait Base extends Parser {
     zeroOrMore(SymbolicNameString ~ ".") ~~>> (ASTNamespace(_))
   }
 
-  def parseOrThrow[T](input: String, initialOffset: Option[InputPosition], rule: Rule1[Seq[T]]): T = {
+  def parseOrThrow[T](input: String, cypherExceptionFactory: CypherExceptionFactory, initialOffset: Option[InputPosition], rule: Rule1[Seq[T]]): T = {
     val parsingResults = ReportingParseRunner(rule).run(input)
     parsingResults.result match {
       case Some(statements) =>
@@ -126,7 +126,7 @@ trait Base extends Parser {
           val statement = statements.head
           statement
         } else {
-          throw new SyntaxException(s"Expected exactly one statement per query but got: ${statements.size}")
+          throw cypherExceptionFactory.syntaxException(s"Expected exactly one statement per query but got: ${statements.size}", InputPosition.NONE)
         }
       case _ =>
         val parseErrors: List[ParseError] = parsingResults.parseErrors
@@ -142,10 +142,10 @@ trait Base extends Parser {
 
           val bufferPosition = BufferPosition(error.getInputBuffer, error.getStartIndex)
           val position = bufferPosition.withOffset(initialOffset)
-          throw new SyntaxException(s"$message ($position)", input, position)
+          throw cypherExceptionFactory.syntaxException(message, position)
         }
 
-        throw new InternalException("Parsing failed but no parse errors were provided")
+        throw new IllegalStateException("Parsing failed but no parse errors were provided")
     }
   }
 

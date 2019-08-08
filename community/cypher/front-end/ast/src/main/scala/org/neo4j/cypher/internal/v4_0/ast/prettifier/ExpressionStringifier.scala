@@ -18,7 +18,6 @@ package org.neo4j.cypher.internal.v4_0.ast.prettifier
 
 import org.neo4j.cypher.internal.v4_0.ast.prettifier.ExpressionStringifier._
 import org.neo4j.cypher.internal.v4_0.expressions._
-import org.neo4j.cypher.internal.v4_0.util.InternalException
 
 case class ExpressionStringifier(
   extender: Expression => String = failingExtender,
@@ -335,5 +334,5 @@ case class ExpressionStringifier(
 object ExpressionStringifier {
 
   val failingExtender: Expression => String =
-    e => throw new InternalException(s"failed to pretty print $e")
+    e => throw new IllegalStateException(s"failed to pretty print $e")
 }

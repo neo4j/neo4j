@@ -57,7 +57,7 @@ case object inlineProjections extends Rewriter {
         m.copy(pattern = newPattern, hints = newHints, where = newOptWhere)(m.position)
 
       case _: UpdateClause  =>
-        throw new InternalException("Update clauses not excepted here")
+        throw new IllegalStateException("Update clauses not excepted here")
 
       case clause: Clause =>
         inlineVariables.narrowed(clause)

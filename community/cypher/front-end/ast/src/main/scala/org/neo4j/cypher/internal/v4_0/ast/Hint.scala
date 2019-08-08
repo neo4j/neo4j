@@ -19,7 +19,7 @@ package org.neo4j.cypher.internal.v4_0.ast
 import org.neo4j.cypher.internal.v4_0.ast.semantics.{SemanticAnalysisTooling, SemanticCheckable, _}
 import org.neo4j.cypher.internal.v4_0.expressions.{LabelName, Parameter, PropertyKeyName, Variable, _}
 import org.neo4j.cypher.internal.v4_0.util.symbols._
-import org.neo4j.cypher.internal.v4_0.util.{ASTNode, InputPosition, InternalException, NonEmptyList}
+import org.neo4j.cypher.internal.v4_0.util.{ASTNode, InputPosition, NonEmptyList}
 
 sealed trait Hint extends ASTNode with SemanticCheckable with SemanticAnalysisTooling {
   def variables: NonEmptyList[Variable]
@@ -76,7 +76,7 @@ object UsingJoinHint {
   import NonEmptyList._
 
   def apply(elts: Seq[Variable])(pos: InputPosition): UsingJoinHint =
-    UsingJoinHint(elts.toNonEmptyListOption.getOrElse(throw new InternalException("Expected non-empty sequence of variables")))(pos)
+    UsingJoinHint(elts.toNonEmptyListOption.getOrElse(throw new IllegalStateException("Expected non-empty sequence of variables")))(pos)
 }
 
 case class UsingJoinHint(variables: NonEmptyList[Variable])(val position: InputPosition) extends UsingHint with NodeHint {

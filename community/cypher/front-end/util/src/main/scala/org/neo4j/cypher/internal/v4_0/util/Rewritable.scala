@@ -64,7 +64,7 @@ object Rewritable {
         productClass.getMethods.find(_.getName == "copy").get
       } catch {
         case _: NoSuchElementException =>
-          throw new InternalException(
+          throw new IllegalStateException(
             s"Failed trying to rewrite $productClass - this class does not have a `copy` method"
           )
       }
@@ -98,7 +98,7 @@ object Rewritable {
       }
     } catch {
       case e: IllegalArgumentException =>
-        throw new InternalException(s"Failed rewriting $that\nTried using children: ${children.mkString(",")}", e)
+        throw new IllegalStateException(s"Failed rewriting $that\nTried using children: ${children.mkString(",")}", e)
     }
 
   def dupProduct(product: Product, children: Seq[AnyRef]): Product = product match {

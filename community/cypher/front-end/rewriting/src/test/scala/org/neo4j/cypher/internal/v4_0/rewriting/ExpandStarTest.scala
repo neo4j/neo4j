@@ -17,9 +17,9 @@
 package org.neo4j.cypher.internal.v4_0.rewriting
 
 import org.neo4j.cypher.internal.v4_0.ast._
-import org.neo4j.cypher.internal.v4_0.ast.semantics.{SemanticState, SyntaxExceptionCreator}
+import org.neo4j.cypher.internal.v4_0.ast.semantics.SemanticState
 import org.neo4j.cypher.internal.v4_0.rewriting.rewriters.{expandStar, normalizeWithAndReturnClauses}
-import org.neo4j.cypher.internal.v4_0.util.inSequence
+import org.neo4j.cypher.internal.v4_0.util.{OpenCypherExceptionFactory, inSequence}
 import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
 
 class ExpandStarTest extends CypherFunSuite with AstConstructionTestSupport {
@@ -111,11 +111,11 @@ class ExpandStarTest extends CypherFunSuite with AstConstructionTestSupport {
   }
 
   private def prepRewrite(q: String, multipleGraphs: Boolean = false) = {
-    val mkException = new SyntaxExceptionCreator(q, Some(pos))
+    val exceptionFactory = OpenCypherExceptionFactory(None)
     val rewriter = if (multipleGraphs)
-      inSequence(normalizeWithAndReturnClauses(mkException))
+      inSequence(normalizeWithAndReturnClauses(exceptionFactory))
     else
-      inSequence(normalizeWithAndReturnClauses(mkException))
-    parser.parse(q).endoRewrite(rewriter)
+      inSequence(normalizeWithAndReturnClauses(exceptionFactory))
+    parser.parse(q, exceptionFactory).endoRewrite(rewriter)
   }
 }

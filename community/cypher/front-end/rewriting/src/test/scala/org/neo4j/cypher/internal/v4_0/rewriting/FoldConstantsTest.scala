@@ -17,13 +17,13 @@
 package org.neo4j.cypher.internal.v4_0.rewriting
 
 import org.neo4j.cypher.internal.v4_0.rewriting.rewriters.foldConstants
-import org.neo4j.cypher.internal.v4_0.util.Rewriter
+import org.neo4j.cypher.internal.v4_0.util.{OpenCypherExceptionFactory, Rewriter}
 import org.neo4j.cypher.internal.v4_0.util.helpers.fixedPoint
 import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
 
 class FoldConstantsTest extends CypherFunSuite with RewriteTest {
-
-  val rewriterUnderTest: Rewriter = fixedPoint(foldConstants)
+  val exceptionFactory = OpenCypherExceptionFactory(None)
+  val rewriterUnderTest: Rewriter = fixedPoint(foldConstants(exceptionFactory))
 
   test("solve literal expressions") {
     assertRewrite("RETURN 1+1 AS r", "RETURN 2 AS r")

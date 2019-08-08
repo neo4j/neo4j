@@ -29,7 +29,7 @@ object NonEmptyList {
 
   def from[T](input: Iterator[T]): NonEmptyList[T] =
     input.asNonEmptyListOption.getOrElse(
-      throw new RuntimeException("Attempt to construct empty non-empty list ")
+      throw new IllegalArgumentException("Attempt to construct empty non-empty list ")
     )
 
   def apply[T](first: T, tail: T*): NonEmptyList[T] =
@@ -67,7 +67,7 @@ object NonEmptyList {
 
     def toNonEmptyList: NonEmptyList[T] =
       toNonEmptyListOption.getOrElse(
-        throw new InternalException("Attempt to construct empty non-empty list ")
+        throw new IllegalArgumentException("Attempt to construct empty non-empty list ")
       )
   }
 

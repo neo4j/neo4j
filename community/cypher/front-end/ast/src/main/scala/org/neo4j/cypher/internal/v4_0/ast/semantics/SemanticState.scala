@@ -52,7 +52,7 @@ final case class Symbol(name: String, positions: Set[InputPosition],
                         types: TypeSpec,
                         generated: Boolean = false) {
   if (positions.isEmpty)
-    throw new InternalException(s"Cannot create empty symbol with name '$name'")
+    throw new IllegalStateException(s"Cannot create empty symbol with name '$name'")
 
   def uses: Set[SymbolUse] = positions.map { pos => SymbolUse(name, pos) }
 

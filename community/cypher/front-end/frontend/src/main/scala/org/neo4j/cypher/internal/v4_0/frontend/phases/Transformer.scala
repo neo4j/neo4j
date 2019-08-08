@@ -18,7 +18,6 @@ package org.neo4j.cypher.internal.v4_0.frontend.phases
 
 import org.neo4j.cypher.internal.v4_0.ast.prettifier.{ExpressionStringifier, Prettifier}
 import org.neo4j.cypher.internal.v4_0.util.AssertionUtils.ifAssertionsEnabled
-import org.neo4j.cypher.internal.v4_0.util.InternalException
 
 trait Transformer[-C <: BaseContext, -FROM, TO] {
   def transform(from: FROM, context: C): TO
@@ -73,7 +72,7 @@ class PipeLine[-C <: BaseContext, FROM, MID, TO](first: Transformer[C, FROM, MID
         val conditions = f.accumulatedConditions ++ phase.postConditions
         val messages = conditions.flatMap(condition => condition.check(f))
         if (messages.nonEmpty) {
-          throw new InternalException(messages.mkString(", "))
+          throw new IllegalStateException(messages.mkString(", "))
         }
       case _ =>
     }

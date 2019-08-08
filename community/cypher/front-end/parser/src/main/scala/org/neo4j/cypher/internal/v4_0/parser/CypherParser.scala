@@ -17,17 +17,16 @@
 package org.neo4j.cypher.internal.v4_0.parser
 
 import org.neo4j.cypher.internal.v4_0.ast
-import org.neo4j.cypher.internal.v4_0.util.{InputPosition, SyntaxException}
+import org.neo4j.cypher.internal.v4_0.util.{CypherException, CypherExceptionFactory, InputPosition}
 import org.parboiled.scala._
 
 class CypherParser extends Parser
   with Statement
   with Expressions {
 
-
-  @throws(classOf[SyntaxException])
-  def parse(queryText: String, offset: Option[InputPosition] = None): ast.Statement =
-    parseOrThrow(queryText, offset, CypherParser.Statements)
+  @throws(classOf[CypherException])
+  def parse(queryText: String, cypherExceptionFactory: CypherExceptionFactory, offset: Option[InputPosition] = None): ast.Statement =
+    parseOrThrow(queryText, cypherExceptionFactory, offset, CypherParser.Statements)
 }
 
 object CypherParser extends Parser with Statement with Expressions {

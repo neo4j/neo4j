@@ -16,7 +16,6 @@
  */
 package org.neo4j.cypher.internal.v4_0.ast.semantics
 
-import org.neo4j.cypher.internal.v4_0.util.InternalException
 import org.neo4j.cypher.internal.v4_0.ast.Statement
 
 object SemanticChecker {
@@ -24,7 +23,7 @@ object SemanticChecker {
     val result = statement.semanticCheck(state)
     val scopeTreeIssues = ScopeTreeVerifier.verify(result.state.scopeTree)
     if (scopeTreeIssues.nonEmpty)
-      throw new InternalException(scopeTreeIssues.mkString(s"\n"))
+      throw new IllegalStateException(scopeTreeIssues.mkString(s"\n"))
 
     result
   }

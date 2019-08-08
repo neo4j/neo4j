@@ -17,11 +17,12 @@
 package org.neo4j.cypher.internal.v4_0.parser
 
 import org.neo4j.cypher.internal.v4_0.ast
+import org.neo4j.cypher.internal.v4_0.util.OpenCypherExceptionFactory
 import org.scalatest.mock.MockitoSugar
 
 object ParserFixture extends MockitoSugar {
 
-  def parse(a: String): ast.Statement = parser.parse(a)
+  def parse(a: String): ast.Statement = parser.parse(a, OpenCypherExceptionFactory(None))
 
   val parser = new CypherParser
 }

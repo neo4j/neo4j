@@ -16,11 +16,11 @@
  */
 package org.neo4j.cypher.internal.v4_0.rewriting
 
-import org.neo4j.cypher.internal.v4_0.ast.semantics.{SemanticState, SyntaxExceptionCreator}
+import org.neo4j.cypher.internal.v4_0.ast.semantics.SemanticState
 import org.neo4j.cypher.internal.v4_0.ast.{Where, _}
 import org.neo4j.cypher.internal.v4_0.expressions._
 import org.neo4j.cypher.internal.v4_0.rewriting.rewriters.{expandStar, normalizeWithAndReturnClauses, projectNamedPaths}
-import org.neo4j.cypher.internal.v4_0.util.inSequence
+import org.neo4j.cypher.internal.v4_0.util.{OpenCypherExceptionFactory, inSequence}
 import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
 
 class ProjectNamedPathsTest extends CypherFunSuite with AstRewritingTestSupport {
@@ -28,9 +28,9 @@ class ProjectNamedPathsTest extends CypherFunSuite with AstRewritingTestSupport 
   private def projectionInlinedAst(queryText: String) = ast(queryText).endoRewrite(projectNamedPaths)
 
   private def ast(queryText: String) = {
-    val parsed = parser.parse(queryText)
-    val mkException = new SyntaxExceptionCreator(queryText, Some(pos))
-    val normalized = parsed.endoRewrite(inSequence(normalizeWithAndReturnClauses(mkException)))
+    val parsed = parser.parse(queryText, OpenCypherExceptionFactory(None))
+    val exceptionFactory = OpenCypherExceptionFactory(Some(pos))
+    val normalized = parsed.endoRewrite(inSequence(normalizeWithAndReturnClauses(exceptionFactory)))
     val checkResult = normalized.semanticCheck(SemanticState.clean)
     normalized.endoRewrite(inSequence(expandStar(checkResult.state)))
   }

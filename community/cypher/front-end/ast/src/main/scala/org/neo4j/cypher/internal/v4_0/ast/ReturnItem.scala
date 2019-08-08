@@ -29,7 +29,6 @@ import org.neo4j.cypher.internal.v4_0.expressions.LogicalVariable
 import org.neo4j.cypher.internal.v4_0.expressions.MapProjection
 import org.neo4j.cypher.internal.v4_0.util.ASTNode
 import org.neo4j.cypher.internal.v4_0.util.InputPosition
-import org.neo4j.cypher.internal.v4_0.util.InternalException
 
 sealed trait ReturnItemsDef extends ASTNode with SemanticCheckable with SemanticAnalysisTooling {
   /**
@@ -117,7 +116,7 @@ case class UnaliasedReturnItem(expression: Expression, inputText: String)(val po
   val name: String = alias.map(_.name) getOrElse { inputText.trim }
 
   def makeSureIsNotUnaliased(state: SemanticState): SemanticCheckResult =
-    throw new InternalException("Should have been aliased before this step")
+    throw new IllegalStateException("Should have been aliased before this step")
 }
 
 object AliasedReturnItem {

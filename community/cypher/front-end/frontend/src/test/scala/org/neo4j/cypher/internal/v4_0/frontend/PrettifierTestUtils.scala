@@ -19,7 +19,7 @@ package org.neo4j.cypher.internal.v4_0.frontend
 import org.neo4j.cypher.internal.v4_0.ast._
 import org.neo4j.cypher.internal.v4_0.ast.prettifier.Prettifier
 import org.neo4j.cypher.internal.v4_0.parser.CypherParser
-import org.neo4j.cypher.internal.v4_0.util.{ASTNode, Rewriter, bottomUp}
+import org.neo4j.cypher.internal.v4_0.util.{ASTNode, OpenCypherExceptionFactory, Rewriter, bottomUp}
 import org.scalatest.{Assertion, Matchers}
 
 trait PrettifierTestUtils extends Matchers {
@@ -52,7 +52,7 @@ trait PrettifierTestUtils extends Matchers {
   def roundTripCheck(original: Statement): Assertion = {
     val pretty = pr.asString(original)
     val parsed = try {
-      parser.parse(pretty)
+      parser.parse(pretty, OpenCypherExceptionFactory(None))
     } catch {
       case e: Exception =>
         println("-- failure --------------------------------------")
@@ -80,11 +80,11 @@ trait PrettifierTestUtils extends Matchers {
 
   def show(original: String): Unit = {
     println("original: " + original)
-    val parsed1 = parser.parse(original)
+    val parsed1 = parser.parse(original, OpenCypherExceptionFactory(None))
     println("  - ast1: " + parsed1)
     val pretty = pr.asString(parsed1)
     println("  - pret: " + pretty)
-    val parsed2 = parser.parse(pretty)
+    val parsed2 = parser.parse(pretty, OpenCypherExceptionFactory(None))
     println("  - ast2: " + parsed2)
   }
 

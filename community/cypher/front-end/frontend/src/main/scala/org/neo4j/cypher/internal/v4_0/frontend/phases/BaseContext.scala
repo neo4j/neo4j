@@ -17,12 +17,12 @@
 package org.neo4j.cypher.internal.v4_0.frontend.phases
 
 import org.neo4j.cypher.internal.v4_0.ast.semantics.SemanticErrorDef
-import org.neo4j.cypher.internal.v4_0.util.{CypherException, InputPosition}
+import org.neo4j.cypher.internal.v4_0.util.CypherExceptionFactory
 
 trait BaseContext {
   def tracer: CompilationPhaseTracer
   def notificationLogger: InternalNotificationLogger
-  def exceptionCreator: (String, InputPosition) => CypherException
+  def cypherExceptionFactory: CypherExceptionFactory
   def monitors: Monitors
   def errorHandler: Seq[SemanticErrorDef] => Unit
 }

@@ -18,27 +18,22 @@ package org.neo4j.cypher.internal.v4_0.frontend.phases
 
 import org.neo4j.cypher.internal.v4_0.ast.semantics.SemanticErrorDef
 import org.neo4j.cypher.internal.v4_0.frontend.phases.CompilationPhaseTracer.NO_TRACING
-import org.neo4j.cypher.internal.v4_0.util.CypherException
-import org.neo4j.cypher.internal.v4_0.util.InputPosition
-import org.neo4j.cypher.internal.v4_0.util.InternalException
+import org.neo4j.cypher.internal.v4_0.util.{CypherException, CypherExceptionFactory, InputPosition, OpenCypherExceptionFactory}
 import org.scalatest.mock.MockitoSugar
 
 object ContextHelper extends MockitoSugar {
-  def create(exceptionCreatorArg: (String, InputPosition) => CypherException = (_, _) => new InternalException("apa"),
-             tracerArg: CompilationPhaseTracer = NO_TRACING,
-             notificationLoggerArg: InternalNotificationLogger = devNullLogger,
-             monitorsArg: Monitors = mock[Monitors]): BaseContext = {
+  def create(): BaseContext = {
     new BaseContext {
-      override def tracer: CompilationPhaseTracer = tracerArg
+      override def tracer: CompilationPhaseTracer = NO_TRACING
 
-      override def notificationLogger: InternalNotificationLogger = notificationLoggerArg
+      override def notificationLogger: InternalNotificationLogger = devNullLogger
 
-      override def exceptionCreator: (String, InputPosition) => CypherException = exceptionCreatorArg
+      override def cypherExceptionFactory: CypherExceptionFactory = OpenCypherExceptionFactory(None)
 
-      override def monitors: Monitors = monitorsArg
+      override def monitors: Monitors = mock[Monitors]
 
       override def errorHandler: Seq[SemanticErrorDef] => Unit =
-        (errors: Seq[SemanticErrorDef]) => errors.foreach(e => throw exceptionCreator(e.msg, e.position))
+        (errors: Seq[SemanticErrorDef]) => errors.foreach(e => throw cypherExceptionFactory.syntaxException(e.msg, e.position))
     }
   }
 }

@@ -20,7 +20,7 @@ import org.neo4j.cypher.internal.v4_0.ast.{AliasedReturnItem, ProjectionClause}
 import org.neo4j.cypher.internal.v4_0.expressions
 import org.neo4j.cypher.internal.v4_0.expressions._
 import org.neo4j.cypher.internal.v4_0.util.Foldable.FoldableAny
-import org.neo4j.cypher.internal.v4_0.util.{InternalException, Ref, Rewriter, topDown}
+import org.neo4j.cypher.internal.v4_0.util.{Ref, Rewriter, topDown}
 
 import scala.annotation.tailrec
 
@@ -121,7 +121,7 @@ case object projectNamedPaths extends Rewriter {
 
   def patternPartPathExpression(patternPart: AnonymousPatternPart): PathStep = patternPart match {
     case EveryPath(element) => patternPartPathExpression(element)
-    case x                  => throw new InternalException(s"Unknown pattern part: $x")
+    case x                  => throw new IllegalStateException(s"Unknown pattern part: $x")
   }
 
   def patternPartPathExpression(element: PatternElement): PathStep = flip(element, NilPathStep)

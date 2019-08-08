@@ -44,16 +44,16 @@ class SemanticTable(
     }.reduce(_ & _)
 
     if (reducedType.isEmpty)
-      throw new InternalException(s"This semantic table contains conflicting type information for variable $s")
+      throw new IllegalStateException(s"This semantic table contains conflicting type information for variable $s")
 
     reducedType
   } catch {
     case e: UnsupportedOperationException =>
-      throw new InternalException(s"Did not find any type information for variable $s", e)
+      throw new IllegalStateException(s"Did not find any type information for variable $s", e)
   }
 
   def getActualTypeFor(expr: Expression): TypeSpec =
-    types.getOrElse(expr, throw new InternalException(s"Did not find any type information for expression $expr")).actual
+    types.getOrElse(expr, throw new IllegalStateException(s"Did not find any type information for expression $expr")).actual
 
   def containsNode(expr: String): Boolean = types.exists {
     case (v@Variable(name), _) => name == expr && isNode(v) // NOTE: Profiling showed that checking node type last is better

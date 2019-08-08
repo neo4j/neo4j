@@ -27,14 +27,14 @@ class Unchangeable[A]() {
 
   // Getter
   def value: A = {
-    val result = _value.getOrElse(throw new InternalException("Value still not set"))
+    val result = _value.getOrElse(throw new IllegalStateException("Value still not set"))
     _seen = true
     result
   }
 
   // Setter
   def value_=(newValue: A): Unit = {
-    if (_seen) throw new InternalException("Can't change a seen value")
+    if (_seen) throw new IllegalStateException("Can't change a seen value")
     _value = Some(newValue)
   }
 

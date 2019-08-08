@@ -20,6 +20,7 @@ import org.neo4j.cypher.internal.v4_0.ast.Query
 import org.neo4j.cypher.internal.v4_0.frontend.phases.CNFNormalizer
 import org.neo4j.cypher.internal.v4_0.rewriting.AstRewritingTestSupport
 import org.neo4j.cypher.internal.v4_0.rewriting.rewriters.mergeInPredicates
+import org.neo4j.cypher.internal.v4_0.util.OpenCypherExceptionFactory
 import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
 
 class mergeInPredicatesTest extends CypherFunSuite with AstRewritingTestSupport {
@@ -129,8 +130,9 @@ class mergeInPredicatesTest extends CypherFunSuite with AstRewritingTestSupport 
   }
 
   private def shouldRewrite(from: String, to: String): Unit = {
-    val original = parser.parse(from).asInstanceOf[Query]
-    val expected = parser.parse(to).asInstanceOf[Query]
+    val exceptionFactory = OpenCypherExceptionFactory(None)
+    val original = parser.parse(from, exceptionFactory).asInstanceOf[Query]
+    val expected = parser.parse(to, exceptionFactory).asInstanceOf[Query]
     val common = CNFNormalizer.instance(TestContext())
     val result = mergeInPredicates(original)
 

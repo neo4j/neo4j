@@ -16,7 +16,7 @@
  */
 package org.neo4j.cypher.internal.v4_0.util
 
-abstract class CypherException(protected val message: String, cause: Throwable)
-  extends RuntimeException(message, cause) {
-  def this(message: String) = this(message, null)
+trait CypherExceptionFactory {
+  def arithmeticException(message: String, cause: Exception = null): CypherException
+  def syntaxException(message: String, pos: InputPosition): CypherException
 }

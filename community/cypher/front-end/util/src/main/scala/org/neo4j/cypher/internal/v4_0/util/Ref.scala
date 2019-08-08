@@ -22,7 +22,7 @@ object Ref {
 
 final class Ref[+T <: AnyRef](val value: T) {
   if (value == null)
-    throw new InternalException("Attempt to instantiate Ref(null)")
+    throw new IllegalArgumentException("Attempt to instantiate Ref(null)")
 
   def toIdString = Integer.toHexString(java.lang.System.identityHashCode(value))
 

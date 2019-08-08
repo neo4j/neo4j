@@ -22,13 +22,12 @@ import org.neo4j.cypher.internal.v4_0.ast.StatementHelper._
 import org.neo4j.cypher.internal.v4_0.ast.prettifier.ExpressionStringifier
 import org.neo4j.cypher.internal.v4_0.ast.prettifier.Prettifier
 import org.neo4j.cypher.internal.v4_0.ast.semantics.SemanticFeature
-import org.neo4j.cypher.internal.v4_0.ast.semantics.SyntaxExceptionCreator
 import org.neo4j.cypher.internal.v4_0.expressions.Expression
 import org.neo4j.cypher.internal.v4_0.frontend.PlannerName
 import org.neo4j.cypher.internal.v4_0.parser.ParserFixture.parser
 import org.neo4j.cypher.internal.v4_0.rewriting.RewriterStepSequencer
 import org.neo4j.cypher.internal.v4_0.rewriting.rewriters.{Never, SameNameNamer, normalizeWithAndReturnClauses}
-import org.neo4j.cypher.internal.v4_0.util.inSequence
+import org.neo4j.cypher.internal.v4_0.util.{OpenCypherExceptionFactory, inSequence}
 import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
 
 trait RewritePhaseTest {
@@ -74,10 +73,10 @@ trait RewritePhaseTest {
   }
 
   def parseAndRewrite(queryText: String, features: SemanticFeature*): Statement = {
-    val parsedAst = parser.parse(queryText)
-    val mkException = new SyntaxExceptionCreator(queryText, Some(pos))
-    val cleanedAst = parsedAst.endoRewrite(inSequence(normalizeWithAndReturnClauses(mkException)))
-    val (rewrittenAst, _, _) = astRewriter.rewrite(queryText, cleanedAst, cleanedAst.semanticState(features: _*))
+    val exceptionFactory = OpenCypherExceptionFactory(None)
+    val parsedAst = parser.parse(queryText, exceptionFactory)
+    val cleanedAst = parsedAst.endoRewrite(inSequence(normalizeWithAndReturnClauses(exceptionFactory)))
+    val (rewrittenAst, _, _) = astRewriter.rewrite(queryText, cleanedAst, cleanedAst.semanticState(features: _*), exceptionFactory)
     rewrittenAst
   }
 }

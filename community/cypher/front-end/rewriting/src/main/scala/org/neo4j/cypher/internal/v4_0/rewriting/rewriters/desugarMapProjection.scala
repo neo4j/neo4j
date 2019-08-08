@@ -16,10 +16,9 @@
  */
 package org.neo4j.cypher.internal.v4_0.rewriting.rewriters
 
-import org.neo4j.cypher.internal.v4_0.expressions._
-import org.neo4j.cypher.internal.v4_0.util.{InputPosition, InternalException, Rewriter, topDown}
 import org.neo4j.cypher.internal.v4_0.ast.semantics.SemanticState
-import org.neo4j.cypher.internal.v4_0.expressions.{PropertyKeyName, Variable}
+import org.neo4j.cypher.internal.v4_0.expressions.{PropertyKeyName, Variable, _}
+import org.neo4j.cypher.internal.v4_0.util.{InputPosition, Rewriter, topDown}
 
 /*
 Handles rewriting map projection elements to literal entries when possible. If the user
@@ -38,7 +37,7 @@ case class desugarMapProjection(state: SemanticState) extends Rewriter {
 
       def propertySelect(propertyPosition: InputPosition, name: String): LiteralEntry = {
         val key = PropertyKeyName(name)(propertyPosition)
-        val idPos = e.definitionPos.getOrElse(throw new InternalException("MapProjection definition pos is not known"))
+        val idPos = e.definitionPos.getOrElse(throw new IllegalStateException("MapProjection definition pos is not known"))
         val newIdentifier = Variable(id.name)(idPos)
         val value = Property(newIdentifier, key)(propertyPosition)
         LiteralEntry(key, value)(propertyPosition)

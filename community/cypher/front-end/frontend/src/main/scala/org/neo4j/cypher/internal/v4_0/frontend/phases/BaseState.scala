@@ -20,7 +20,7 @@ import org.neo4j.cypher.internal.v4_0.ast.{Query, Statement}
 import org.neo4j.cypher.internal.v4_0.ast.semantics.{SemanticState, SemanticTable}
 import org.neo4j.cypher.internal.v4_0.frontend.PlannerName
 import org.neo4j.cypher.internal.v4_0.util.symbols.CypherType
-import org.neo4j.cypher.internal.v4_0.util.{InputPosition, InternalException}
+import org.neo4j.cypher.internal.v4_0.util.InputPosition
 
 trait BaseState {
   def queryText: String
@@ -45,7 +45,7 @@ trait BaseState {
   def semanticTable(): SemanticTable = maybeSemanticTable getOrElse fail("Semantic table")
 
   protected def fail(what: String) = {
-    throw new InternalException(s"$what not yet initialised")
+    throw new IllegalStateException(s"$what not yet initialised")
   }
 
   def withStatement(s: Statement): BaseState

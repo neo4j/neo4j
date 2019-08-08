@@ -16,7 +16,7 @@
  */
 package org.neo4j.cypher.internal.v4_0.rewriting
 
-import org.neo4j.cypher.internal.v4_0.util.{InternalException, Rewriter}
+import org.neo4j.cypher.internal.v4_0.util.Rewriter
 
 trait RewriterTaskProcessor extends (RewriterTask => Rewriter) {
   def sequenceName: String
@@ -38,7 +38,7 @@ case class RunConditionRewriter(sequenceName: String, name: Option[String], cond
   }
 
   case class RewritingConditionViolationException(optName: Option[String], failures: Seq[RewriterConditionFailure])
-    extends InternalException(buildMessage(sequenceName, optName, failures))
+    extends IllegalStateException(buildMessage(sequenceName, optName, failures))
 
   private def buildMessage(sequenceName: String, optName: Option[String], failures: Seq[RewriterConditionFailure]) = {
     val name = optName.map(name => s"step '$name'").getOrElse("start of rewriting")
@@ -62,8 +62,6 @@ case class TracingRewriterTaskProcessor(sequenceName: String, onlyWhenChanged: B
       in =>
         val result = innerRewriter(in)
         if (!onlyWhenChanged || in != result) {
-//          val resultDoc = pprintToDoc[AnyRef, Any](Result(result))(ResultHandler.docGen)
-//          val resultString = printCommandsToString(DocFormatters.defaultFormatter(resultDoc))
           val resultString = result.toString
           Console.print(s"*** $name ($sequenceName):$resultString\n")
         } else {
@@ -75,20 +73,4 @@ case class TracingRewriterTaskProcessor(sequenceName: String, onlyWhenChanged: B
       super.apply(task)
   }
 }
-//
-//object TracingRewriterTaskProcessor {
-//  import Pretty._
-//
-//  object ResultHandler extends CustomDocHandler[Any] {
-//    def docGen = resultDocGen orElse InternalDocHandler.docGen
-//  }
-//
-//  object resultDocGen extends CustomDocGen[Any] {
-//    def apply[X <: Any : TypeTag](x: X): Option[DocRecipe[Any]] = x match {
-//      case Result(result) => Pretty(page(nestWith(indent = 2, group(break :: group(pretty(result))))))
-//      case _              => None
-//    }
-//  }
-//
-//  case class Result(v: Any)
-//}
+

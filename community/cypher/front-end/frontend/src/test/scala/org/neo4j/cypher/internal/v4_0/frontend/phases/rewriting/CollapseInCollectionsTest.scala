@@ -20,6 +20,7 @@ import org.neo4j.cypher.internal.v4_0.rewriting.rewriters.collapseMultipleInPred
 import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.v4_0.frontend.phases.CNFNormalizer
 import org.neo4j.cypher.internal.v4_0.rewriting.AstRewritingTestSupport
+import org.neo4j.cypher.internal.v4_0.util.OpenCypherExceptionFactory
 
 class CollapseInCollectionsTest extends CypherFunSuite with AstRewritingTestSupport {
 
@@ -60,7 +61,7 @@ class CollapseInCollectionsTest extends CypherFunSuite with AstRewritingTestSupp
   }
 
   private def parse(query: String) = {
-    val parsed = parser.parse(query)
+    val parsed = parser.parse(query, OpenCypherExceptionFactory(None))
     val rewriter = CNFNormalizer.instance(TestContext())
     parsed.endoRewrite(rewriter)
   }

@@ -21,7 +21,7 @@ import org.neo4j.cypher.internal.v4_0.rewriting.RewriterCondition
 case class StatementCondition(inner: Any => Seq[String]) extends Condition {
   override def check(state: AnyRef): Seq[String] = state match {
     case s: BaseState => inner(s.statement())
-    case x => throw new IllegalArgumentException(s"Unknown state: $x")
+    case x => throw new IllegalStateException(s"Unknown state: $x")
   }
 }
 
