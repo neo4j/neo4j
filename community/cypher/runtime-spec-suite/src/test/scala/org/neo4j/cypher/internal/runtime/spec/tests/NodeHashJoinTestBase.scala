@@ -466,4 +466,38 @@ abstract class NodeHashJoinTestBase[CONTEXT <: RuntimeContext](edition: Edition[
     // then
     runtimeResult should beColumns("x", "y").withRows(rowCount(limitCount))
   }
+
+  test("should join on more than 5 variables") {
+    // given
+    val (unfilteredNodes, _) = circleGraph(sizeHint, "A", "B")
+    val nodes = select(unfilteredNodes, selectivity = 0.5, duplicateProbability = 0.5, nullProbability = 0.1)
+    val lhsRows = batchedInputValues(sizeHint / 8, nodes.map(n => Array[Any](n)): _*).stream()
+    val limitCount = 1
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x1")
+      .limit(count = limitCount)
+      .nodeHashJoin("x1", "x2", "x3", "x4", "x5", "x6")
+      .|.expand("(x5)-->(x6)")
+      .|.expand("(x4)-->(x5)")
+      .|.expand("(x3)-->(x4)")
+      .|.expand("(x2)-->(x3)")
+      .|.expand("(x1)-->(x2)")
+      .|.expand("(y)-->(x1)")
+      .|.nodeByLabelScan("y", "B")
+      .expand("(x6)-->(z)")
+      .expand("(x5)-->(x6)")
+      .expand("(x4)-->(x5)")
+      .expand("(x3)-->(x4)")
+      .expand("(x2)-->(x3)")
+      .expand("(x1)-->(x2)")
+      .nodeByLabelScan("x1", "A")
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime, lhsRows)
+
+    // then
+    runtimeResult should beColumns("x1").withRows(rowCount(limitCount))
+  }
 }
