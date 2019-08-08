@@ -61,16 +61,16 @@ public class DBMSModule implements ServerModule
                 singletonList( DiscoveryService.class ), ROOT_PATH,
                 singletonList( injectable( DiscoverableURIs.class, discoverableURIs.get() ) ) );
 
-        webServer.addJAXRSClasses( getClasses(), ROOT_PATH, null );
+        webServer.addJAXRSClasses( jaxRsClasses(), ROOT_PATH, null );
     }
 
     @Override
     public void stop()
     {
-        webServer.removeJAXRSClasses( getClasses(), ROOT_PATH );
+        webServer.removeJAXRSClasses( jaxRsClasses(), ROOT_PATH );
     }
 
-    private List<Class<?>> getClasses()
+    private List<Class<?>> jaxRsClasses()
     {
         if ( config.get( GraphDatabaseSettings.auth_enabled ) )
         {

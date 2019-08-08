@@ -33,11 +33,13 @@ import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriBuilder;
 import javax.ws.rs.core.UriInfo;
 
+import org.neo4j.configuration.Config;
 import org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo;
 import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.logging.Log;
+import org.neo4j.server.configuration.ServerSettings;
 import org.neo4j.server.http.cypher.format.api.InputEventStream;
 import org.neo4j.server.http.cypher.format.api.TransactionUriScheme;
 import org.neo4j.server.rest.Neo4jError;
@@ -47,9 +49,10 @@ import org.neo4j.server.rest.web.HttpConnectionInfoFactory;
 import static java.util.Collections.emptyMap;
 import static org.neo4j.server.web.HttpHeaderUtils.getTransactionTimeout;
 
-@Path( "/{databaseName}/transaction" )
+@Path( CypherResource.DB_TRANSACTION_PATH )
 public class CypherResource
 {
+    static final String DB_TRANSACTION_PATH = "/{databaseName}/transaction";
 
     private final HttpTransactionManager httpTransactionManager;
     private final TransactionUriScheme uriScheme;
@@ -161,6 +164,11 @@ public class CypherResource
             return Response.ok().entity( outputEventStream ).build();
 
         } ).orElse( createNonExistentDatabaseResponse( emptyMap() ) );
+    }
+
+    public static String absoluteDatabaseTransactionPath( Config config )
+    {
+        return config.get( ServerSettings.db_api_path ).getPath() + DB_TRANSACTION_PATH;
     }
 
     private boolean isDatabaseNotAvailable( GraphDatabaseFacade facade )

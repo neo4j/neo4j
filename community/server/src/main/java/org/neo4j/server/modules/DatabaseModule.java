@@ -19,8 +19,6 @@
  */
 package org.neo4j.server.modules;
 
-import java.net.URI;
-import java.util.Arrays;
 import java.util.List;
 
 import org.neo4j.configuration.Config;
@@ -53,26 +51,23 @@ public class DatabaseModule implements ServerModule
     @Override
     public void start()
     {
-        URI restApiUri = restApiUri();
-
         webServer.addFilter( new CorsFilter( logProvider, config.get( http_access_control_allow_origin ) ), "/*" );
-        webServer.addJAXRSClasses( getClassNames(), restApiUri.toString(), null );
-    }
-
-    private List<Class<?>> getClassNames()
-    {
-        return Arrays.asList( CypherResource.class, JsonMessageBodyReader.class, JsonMessageBodyWriter.class );
+        webServer.addJAXRSClasses( jaxRsClasses(), mountPoint(), null );
     }
 
     @Override
     public void stop()
     {
-        webServer.removeJAXRSClasses( getClassNames(), restApiUri().toString() );
+        webServer.removeJAXRSClasses( jaxRsClasses(), mountPoint() );
     }
 
-    private URI restApiUri()
+    private String mountPoint()
     {
-        return config.get( ServerSettings.db_api_path );
+        return config.get( ServerSettings.db_api_path ).toString();
     }
 
+    private static List<Class<?>> jaxRsClasses()
+    {
+        return List.of( CypherResource.class, JsonMessageBodyReader.class, JsonMessageBodyWriter.class );
+    }
 }

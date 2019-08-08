@@ -180,11 +180,6 @@ public class ServerSettings implements SettingsDeclaration
             newBuilder( "unsupported.dbms.uris.db", NORMALIZED_RELATIVE_URI, NORMALIZED_RELATIVE_URI.parse( "/db" ) ).build();
 
     @Internal
-    public static final Setting<URI> management_api_path =
-            // TODO change it to a string such as /{name}/manage and hock it under /db
-            newBuilder( "unsupported.dbms.uris.management", NORMALIZED_RELATIVE_URI, NORMALIZED_RELATIVE_URI.parse( "/db/manage" ) ).build();
-
-    @Internal
     public static final Setting<URI> browser_path =
             newBuilder( "unsupported.dbms.uris.browser", SettingValueParsers.URI, SettingValueParsers.URI.parse( "/browser/" ) ).build();
 

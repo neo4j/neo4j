@@ -19,7 +19,7 @@
  */
 package org.neo4j.server.rest.discovery;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.net.InetSocketAddress;
 import java.net.URI;
@@ -32,22 +32,21 @@ import org.neo4j.configuration.connectors.ConnectorPortRegister;
 import org.neo4j.configuration.helpers.SocketAddress;
 import org.neo4j.server.configuration.ServerSettings;
 
-import static org.junit.Assert.assertEquals;
-import static org.neo4j.configuration.SettingValueParsers.TRUE;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.internal.helpers.collection.MapUtil.map;
 import static org.neo4j.server.rest.discovery.CommunityDiscoverableURIs.communityDiscoverableURIs;
 
-public class CommunityDiscoverableURIsTest
+class CommunityDiscoverableURIsTest
 {
     @Test
-    public void shouldAdvertiseTransactionAndManagementURIs() throws Exception
+    void shouldAdvertiseTransactionAndManagementURIs()
     {
         var uris = communityDiscoverableURIs( Config.defaults(), null );
-        assertEquals( map( "transaction", "/db/{name}/transaction/" ), toMap( uris ) );
+        assertEquals( map( "transaction", "/db/{databaseName}/transaction" ), toMap( uris ) );
     }
 
     @Test
-    public void shouldAdvertiseBoltIfExplicitlyConfigured() throws Exception
+    void shouldAdvertiseBoltIfExplicitlyConfigured()
     {
         var uris = communityDiscoverableURIs(
                 Config.newBuilder()
@@ -61,7 +60,7 @@ public class CommunityDiscoverableURIsTest
     }
 
     @Test
-    public void shouldLookupBoltPortInRegisterIfConfigured() throws Exception
+    void shouldLookupBoltPortInRegisterIfConfigured()
     {
         var register = new ConnectorPortRegister();
         register.register( BoltConnector.NAME, new InetSocketAddress( 1337 ) );
