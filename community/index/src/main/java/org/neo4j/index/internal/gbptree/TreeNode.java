@@ -112,14 +112,19 @@ abstract class TreeNode<KEY,VALUE>
 
     // HEADER METHODS
 
+    static byte treeNodeType( PageCursor cursor )
+    {
+        return cursor.getByte( BYTE_POS_TYPE );
+    }
+
     static boolean isLeaf( PageCursor cursor )
     {
-        return cursor.getByte( BYTE_POS_TYPE ) == LEAF_FLAG;
+        return treeNodeType( cursor ) == LEAF_FLAG;
     }
 
     static boolean isInternal( PageCursor cursor )
     {
-        return cursor.getByte( BYTE_POS_TYPE ) == INTERNAL_FLAG;
+        return treeNodeType( cursor ) == INTERNAL_FLAG;
     }
 
     static long generation( PageCursor cursor )
