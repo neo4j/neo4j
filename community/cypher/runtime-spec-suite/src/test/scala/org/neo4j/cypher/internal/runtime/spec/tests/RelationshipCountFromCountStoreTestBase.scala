@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.runtime.spec.tests
 
 import org.neo4j.cypher.internal.runtime.spec._
 import org.neo4j.cypher.internal.{CypherRuntime, RuntimeContext}
+import org.neo4j.graphdb.{Label, RelationshipType}
 
 abstract class RelationshipCountFromCountStoreTestBase[CONTEXT <: RuntimeContext](
                                                                                    edition: Edition[CONTEXT],
@@ -147,6 +148,69 @@ abstract class RelationshipCountFromCountStoreTestBase[CONTEXT <: RuntimeContext
 
     // then
     runtimeResult should beColumns("x").withRows(singleColumn(Seq(0)))
+  }
+
+  test("should handle start label not present at compile time") {
+    // given
+    bipartiteGraph(actualSize, "LabelA", "LabelB", "RelType")
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x")
+      .relationshipCountFromCountStore("x", Some("NotThereYet"), List("RelType"), None)
+      .build()
+
+    val plan = buildPlan(logicalQuery, runtime)
+    execute(plan) should beColumns("x").withRows(singleColumn(Seq(0)))
+    inTx(
+      graphDb.createNode(Label.label("NotThereYet")).createRelationshipTo(graphDb.createNode(),
+                                                                          RelationshipType.withName("RelType"))
+      )
+
+    // then
+    execute(plan) should beColumns("x").withRows(singleColumn(Seq(1)))
+  }
+
+  test("should handle end label not present at compile time") {
+    // given
+    bipartiteGraph(actualSize, "LabelA", "LabelB", "RelType")
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x")
+      .relationshipCountFromCountStore("x", None, List("RelType"),  Some("NotThereYet"))
+      .build()
+
+    val plan = buildPlan(logicalQuery, runtime)
+    execute(plan) should beColumns("x").withRows(singleColumn(Seq(0)))
+    inTx(
+      graphDb.createNode().createRelationshipTo(graphDb.createNode(Label.label("NotThereYet")),
+                                                                          RelationshipType.withName("RelType"))
+      )
+
+    // then
+    execute(plan) should beColumns("x").withRows(singleColumn(Seq(1)))
+  }
+
+  test("should handle relationship type not present at compile time") {
+    // given
+    bipartiteGraph(actualSize, "LabelA", "LabelB", "RelType")
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x")
+      .relationshipCountFromCountStore("x", None, List("NotThereYet"), None)
+      .build()
+
+    val plan = buildPlan(logicalQuery, runtime)
+    execute(plan) should beColumns("x").withRows(singleColumn(Seq(0)))
+    inTx(
+      graphDb.createNode().createRelationshipTo(graphDb.createNode(),
+                                                RelationshipType.withName("NotThereYet"))
+      )
+
+    // then
+    execute(plan) should beColumns("x").withRows(singleColumn(Seq(1)))
   }
 
   test("should get count when all wildcards") {

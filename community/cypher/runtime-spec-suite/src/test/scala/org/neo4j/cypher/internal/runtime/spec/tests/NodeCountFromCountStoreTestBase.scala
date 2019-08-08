@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.runtime.spec.tests
 
 import org.neo4j.cypher.internal.runtime.spec._
 import org.neo4j.cypher.internal.{CypherRuntime, RuntimeContext}
+import org.neo4j.graphdb.Label
 
 abstract class NodeCountFromCountStoreTestBase[CONTEXT <: RuntimeContext](
                                                                            edition: Edition[CONTEXT],
@@ -74,6 +75,25 @@ abstract class NodeCountFromCountStoreTestBase[CONTEXT <: RuntimeContext](
 
     // then
     runtimeResult should beColumns("x").withRows(singleColumn(Seq(0)))
+  }
+
+  test("should handle label not present at compile time") {
+    // given
+    nodeGraph(actualSize, "LabelA")
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x")
+      .nodeCountFromCountStore("x", List(Some("NotThereYet")))
+      .build()
+
+    val plan = buildPlan(logicalQuery, runtime)
+    execute(plan) should beColumns("x").withRows(singleColumn(Seq(0)))
+
+    inTx(graphDb.createNode(Label.label("NotThereYet")))
+
+    // then
+    execute(plan) should beColumns("x").withRows(singleColumn(Seq(1)))
   }
 
   test("should return zero for count when one label is non-existent") {
