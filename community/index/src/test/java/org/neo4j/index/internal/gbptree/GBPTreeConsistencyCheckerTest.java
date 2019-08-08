@@ -19,27 +19,328 @@
  */
 package org.neo4j.index.internal.gbptree;
 
+import org.apache.commons.lang3.mutable.MutableBoolean;
 import org.apache.commons.lang3.mutable.MutableLong;
+import org.apache.commons.lang3.tuple.Pair;
 import org.eclipse.collections.impl.iterator.ImmutableEmptyLongIterator;
-import org.junit.jupiter.api.Test;
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.RuleChain;
+
+import java.io.File;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 import org.neo4j.io.pagecache.CursorException;
+import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCursor;
+import org.neo4j.io.pagecache.PagedFile;
+import org.neo4j.test.rule.PageCacheRule;
+import org.neo4j.test.rule.RandomRule;
+import org.neo4j.test.rule.TestDirectory;
+import org.neo4j.test.rule.fs.DefaultFileSystemRule;
+import org.neo4j.values.storable.RandomValues;
 
 import static org.hamcrest.CoreMatchers.allOf;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+import static org.junit.rules.RuleChain.outerRule;
 import static org.neo4j.index.internal.gbptree.GBPTree.NO_MONITOR;
 import static org.neo4j.index.internal.gbptree.GBPTreeConsistencyChecker.assertNoCrashOrBrokenPointerInGSPP;
 import static org.neo4j.index.internal.gbptree.GenerationSafePointer.MIN_GENERATION;
 import static org.neo4j.index.internal.gbptree.PageCursorUtil.goTo;
 import static org.neo4j.index.internal.gbptree.SimpleLongLayout.longLayout;
+import static org.neo4j.test.rule.PageCacheRule.config;
 
-class GBPTreeConsistencyCheckerTest
+public class GBPTreeConsistencyCheckerTest
 {
+    private static final int PAGE_SIZE = 256;
+    private final DefaultFileSystemRule fs = new DefaultFileSystemRule();
+    private final TestDirectory directory = TestDirectory.testDirectory( getClass(), fs.get() );
+    private final PageCacheRule pageCacheRule = new PageCacheRule( config().withAccessChecks( true ) );
+    private final RandomRule random = new RandomRule();
+    private RandomValues randomValues;
+    private Layout<MutableLong,MutableLong> layout = SimpleLongLayout.longLayout().build();
+    private TreeNode<MutableLong,MutableLong> node;
+    private File indexFile;
+    private PageCache pageCache;
+
+    @Rule
+    public final RuleChain rules = outerRule( fs ).around( directory ).around( pageCacheRule ).around( random );
+
+    @Before
+    public void setUp()
+    {
+        indexFile = directory.file( "index" );
+        pageCache = createPageCache();
+        node = TreeNodeSelector.selectByLayout( layout ).create( PAGE_SIZE, layout );
+        randomValues = random.randomValues();
+    }
+
+    private PageCache createPageCache()
+    {
+        return pageCacheRule.getPageCache( fs.get(), PageCacheRule.config().withPageSize( PAGE_SIZE ) );
+    }
+
     @Test
-    void shouldThrowDescriptiveExceptionOnBrokenGSPP() throws Exception
+    public void shouldDetectNotATreeNodeRoot() throws IOException
+    {
+        try ( GBPTree<MutableLong,MutableLong> index = index().build() )
+        {
+            treeWithHeight( index, 2 );
+
+            InspectingVisitor visitor = inspect( index );
+            long rootNode = visitor.rootNode;
+            long stableGeneration = visitor.treeState.stableGeneration();
+            long unstableGeneration = visitor.treeState.unstableGeneration();
+
+            corrupt( rootNode, stableGeneration, unstableGeneration, GBPTreeCorruption.notATreeNode() );
+
+            assertReportNotATreeNode( index, rootNode );
+        }
+    }
+
+    @Test
+    public void shouldDetectNotATreeNodeInternal() throws IOException
+    {
+        try ( GBPTree<MutableLong,MutableLong> index = index().build() )
+        {
+            treeWithHeight( index, 2 );
+
+            InspectingVisitor visitor = inspect( index );
+            long internalNode = randomValues.among( visitor.internalNodes );
+            long stableGeneration = visitor.treeState.stableGeneration();
+            long unstableGeneration = visitor.treeState.unstableGeneration();
+
+            corrupt( internalNode, stableGeneration, unstableGeneration, GBPTreeCorruption.notATreeNode() );
+
+            assertReportNotATreeNode( index, internalNode );
+        }
+    }
+
+    @Test
+    public void shouldDetectNotATreeNodeLeaf() throws IOException
+    {
+        try ( GBPTree<MutableLong,MutableLong> index = index().build() )
+        {
+            treeWithHeight( index, 2 );
+
+            InspectingVisitor visitor = inspect( index );
+            long leafNode = randomValues.among( visitor.leafNodes );
+            long stableGeneration = visitor.treeState.stableGeneration();
+            long unstableGeneration = visitor.treeState.unstableGeneration();
+
+            corrupt( leafNode, stableGeneration, unstableGeneration, GBPTreeCorruption.notATreeNode() );
+
+            assertReportNotATreeNode( index, leafNode );
+        }
+    }
+
+    @Test
+    public void shouldDetectUnknownTreeNodeTypeRoot() throws IOException
+    {
+        try ( GBPTree<MutableLong,MutableLong> index = index().build() )
+        {
+            treeWithHeight( index, 2 );
+
+            InspectingVisitor visitor = inspect( index );
+            long rootNode = visitor.rootNode;
+            long stableGeneration = visitor.treeState.stableGeneration();
+            long unstableGeneration = visitor.treeState.unstableGeneration();
+
+            corrupt( rootNode, stableGeneration, unstableGeneration, GBPTreeCorruption.unknownTreeNodeType() );
+
+            assertReportUnknownTreeNodeType( index, rootNode );
+        }
+    }
+
+    @Test
+    public void shouldDetectUnknownTreeNodeTypeInternal() throws IOException
+    {
+        try ( GBPTree<MutableLong,MutableLong> index = index().build() )
+        {
+            treeWithHeight( index, 2 );
+
+            InspectingVisitor visitor = inspect( index );
+            long internalNode = randomValues.among( visitor.internalNodes );
+            long stableGeneration = visitor.treeState.stableGeneration();
+            long unstableGeneration = visitor.treeState.unstableGeneration();
+
+            corrupt( internalNode, stableGeneration, unstableGeneration, GBPTreeCorruption.unknownTreeNodeType() );
+
+            assertReportUnknownTreeNodeType( index, internalNode );
+        }
+    }
+
+    @Test
+    public void shouldDetectUnknownTreeNodeTypeLeaf() throws IOException
+    {
+        try ( GBPTree<MutableLong,MutableLong> index = index().build() )
+        {
+            treeWithHeight( index, 2 );
+
+            InspectingVisitor visitor = inspect( index );
+            long leafNode = randomValues.among( visitor.leafNodes );
+            long stableGeneration = visitor.treeState.stableGeneration();
+            long unstableGeneration = visitor.treeState.unstableGeneration();
+
+            corrupt( leafNode, stableGeneration, unstableGeneration, GBPTreeCorruption.unknownTreeNodeType() );
+
+            assertReportUnknownTreeNodeType( index, leafNode );
+        }
+    }
+
+    @Test
+    public void shouldDetectRightSiblingNotPointingToCorrectSibling() throws IOException
+    {
+        try ( GBPTree<MutableLong,MutableLong> index = index().build() )
+        {
+            treeWithHeight( index, 2 );
+
+            InspectingVisitor visitor = inspect( index );
+            long targetNode = randomValues.among( visitor.leafNodes );
+            long stableGeneration = visitor.treeState.stableGeneration();
+            long unstableGeneration = visitor.treeState.unstableGeneration();
+
+            corrupt( targetNode, stableGeneration, unstableGeneration, GBPTreeCorruption.rightSiblingPointToNonExisting() );
+
+            assertReportMisalignedSiblingPointers( index );
+        }
+    }
+
+    @Test
+    public void shouldDetectLeftSiblingNotPointingToCorrectSibling() throws IOException
+    {
+        try ( GBPTree<MutableLong,MutableLong> index = index().build() )
+        {
+            treeWithHeight( index, 2 );
+
+            InspectingVisitor visitor = inspect( index );
+            long targetNode = randomValues.among( visitor.leafNodes );
+            long stableGeneration = visitor.treeState.stableGeneration();
+            long unstableGeneration = visitor.treeState.unstableGeneration();
+
+            corrupt( targetNode, stableGeneration, unstableGeneration, GBPTreeCorruption.leftSiblingPointToNonExisting() );
+
+            assertReportMisalignedSiblingPointers( index );
+        }
+    }
+
+    @Test
+    public void shouldDetectIfAnyNodeInTreeHasSuccessor() throws IOException
+    {
+        try ( GBPTree<MutableLong,MutableLong> index = index().build() )
+        {
+            treeWithHeight( index, 2 );
+
+            InspectingVisitor visitor = inspect( index );
+            long targetNode = randomValues.among( visitor.allNodes );
+            long stableGeneration = visitor.treeState.stableGeneration();
+            long unstableGeneration = visitor.treeState.unstableGeneration();
+
+            corrupt( targetNode, stableGeneration, unstableGeneration, GBPTreeCorruption.hasSuccessor() );
+
+            assertReportPointerToOldVersionOfTreeNode( index, targetNode );
+        }
+    }
+
+    @Test
+    public void shouldDetectRightSiblingPointerWithTooLowGeneration() throws IOException
+    {
+        try ( GBPTree<MutableLong,MutableLong> index = index().build() )
+        {
+            treeWithHeight( index, 2 );
+
+            InspectingVisitor visitor = inspect( index );
+            long targetNode = nodeWithRightSibling( visitor );
+            long stableGeneration = visitor.treeState.stableGeneration();
+            long unstableGeneration = visitor.treeState.unstableGeneration();
+
+            corrupt( targetNode, stableGeneration, unstableGeneration, GBPTreeCorruption.rightSiblingPointerHasTooLowGeneration() );
+
+            assertReportPointerGenerationLowerThanNodeGeneration( index, targetNode, GBPTreePointerType.rightSibling() );
+        }
+    }
+
+    @Test
+    public void shouldDetectLeftSiblingPointerWithTooLowGeneration() throws IOException
+    {
+        try ( GBPTree<MutableLong,MutableLong> index = index().build() )
+        {
+            treeWithHeight( index, 2 );
+
+            InspectingVisitor visitor = inspect( index );
+            long targetNode = nodeWithLeftSibling( visitor );
+            long stableGeneration = visitor.treeState.stableGeneration();
+            long unstableGeneration = visitor.treeState.unstableGeneration();
+
+            corrupt( targetNode, stableGeneration, unstableGeneration, GBPTreeCorruption.leftSiblingPointerHasTooLowGeneration() );
+
+            assertReportPointerGenerationLowerThanNodeGeneration( index, targetNode, GBPTreePointerType.leftSibling() );
+        }
+    }
+
+    @Test
+    public void shouldDetectChildPointerWithTooLowGeneration() throws IOException
+    {
+        try ( GBPTree<MutableLong,MutableLong> index = index().build() )
+        {
+            treeWithHeight( index, 2 );
+
+            InspectingVisitor visitor = inspect( index );
+            long targetNode = randomValues.among( visitor.internalNodes );
+            int keyCount = visitor.allKeyCounts.get( targetNode );
+            int childPos = randomValues.nextInt( keyCount + 1 );
+            long stableGeneration = visitor.treeState.stableGeneration();
+            long unstableGeneration = visitor.treeState.unstableGeneration();
+
+            corrupt( targetNode, stableGeneration, unstableGeneration, GBPTreeCorruption.childPointerHasTooLowGeneration( childPos ) );
+
+            assertReportPointerGenerationLowerThanNodeGeneration( index, targetNode, GBPTreePointerType.child( childPos ) );
+        }
+    }
+
+    //todo
+    //  Tree structure inconsistencies:
+    //    > Pointer generation lower than node generation
+    //      X Child pointer generation lower than node generation
+    //      X Sibling pointer generation lower than node generation
+    //    > Sibling pointers don't align
+    //      X Sibling pointer generation to low
+    //      X Sibling pointer not pointing to correct sibling
+    //    > None-tree node
+    //      X Root, internal or leaf is none-tree node
+    //    > Unknown tree node type
+    //      X Root, internal or leaf has unknown tree node type
+    //    > Node in tree has successor
+    //      X Root, internal or leaf has successor
+    //    > Level hierarchy
+    //      - Child pointer dont point to next level
+    //      - Sibling pointer point to node on other level
+    //  Key order inconsistencies:
+    //      - Keys out of order in isolated node
+    //      - Keys not within parent range
+    //  Node meta inconsistency:
+    //      - Dynamic layout: Space areas did not sum to total space
+    //      - Dynamic layout: Overlap between offsetArray and allocSpace
+    //  Free list inconsistencies:
+    //  A page can be either used as a freelist page, used as a tree node (unstable generation), listed in freelist (stable generation), listen in freelist
+    //  (unstable generation)
+    //      - Page missing from freelist
+    //      - Extra page on free list
+    //      - Extra empty page in file
+    //  Tree meta inconsistencies:
+    //    > Can not read meta data.
+
+    @Test
+    public void shouldThrowDescriptiveExceptionOnBrokenGSPP() throws Exception
     {
         // GIVEN
         int pageSize = 256;
@@ -55,21 +356,24 @@ class GBPTreeConsistencyCheckerTest
         TreeNode.setSuccessor( cursor, pointer, stableGeneration, crashGeneration );
 
         // WHEN
-        CursorException exception = assertThrows( CursorException.class, () ->
+        try
         {
             assertNoCrashOrBrokenPointerInGSPP( cursor, stableGeneration, unstableGeneration, pointerFieldName, TreeNode.BYTE_POS_SUCCESSOR );
             cursor.checkAndClearCursorException();
-        } );
-
-        assertThat( exception.getMessage(), allOf( containsString( pointerFieldName ),
-                        containsString( pointerFieldName ),
-                        containsString( "state=CRASH" ),
-                        containsString( "state=EMPTY" ),
-                        containsString( String.valueOf( pointer ) ) ) );
+            fail( "Should have failed" );
+        }
+        catch ( CursorException exception )
+        {
+            assertThat( exception.getMessage(), allOf( containsString( pointerFieldName ),
+                    containsString( pointerFieldName ),
+                    containsString( "state=CRASH" ),
+                    containsString( "state=EMPTY" ),
+                    containsString( String.valueOf( pointer ) ) ) );
+        }
     }
 
     @Test
-    void shouldDetectUnusedPages() throws Exception
+    public void shouldDetectUnusedPages() throws Exception
     {
         // GIVEN
         int pageSize = 256;
@@ -117,8 +421,279 @@ class GBPTreeConsistencyCheckerTest
         // WHEN
         GBPTreeConsistencyChecker<MutableLong> cc =
                 new GBPTreeConsistencyChecker<>( node, layout, stableGeneration, unstableGeneration );
-        RuntimeException exception =
-                assertThrows( RuntimeException.class, () -> cc.checkSpace( cursor, idProvider.lastId(), ImmutableEmptyLongIterator.INSTANCE ) );
-        assertThat( exception.getMessage(), containsString( "unused pages" ) );
+        try
+        {
+            cc.checkSpace( cursor, idProvider.lastId(), ImmutableEmptyLongIterator.INSTANCE );
+            fail( "Should have failed" );
+        }
+        catch ( RuntimeException exception )
+        {
+            assertThat( exception.getMessage(), containsString( "unused pages" ) );
+        }
+    }
+
+    private void corrupt( long targetNode, long stableGeneration, long unstableGeneration,
+            GBPTreeCorruption.PageCorruption<MutableLong,MutableLong>... corruptions ) throws IOException
+    {
+        try ( PagedFile pagedFile = pageCache.map( indexFile, pageCache.pageSize() );
+              PageCursor cursor = pagedFile.io( 0, PagedFile.PF_SHARED_WRITE_LOCK ) )
+        {
+            cursor.next( targetNode );
+            for ( GBPTreeCorruption.PageCorruption<MutableLong,MutableLong> corruption : corruptions )
+            {
+                corruption.corrupt( cursor, layout, node, stableGeneration, unstableGeneration, unstableGeneration - 1 );
+            }
+        }
+    }
+
+    private long nodeWithLeftSibling( InspectingVisitor visitor )
+    {
+        List<List<Long>> nodesPerLevel = visitor.nodesPerLevel;
+        long targetNode = -1;
+        boolean foundNodeWithLeftSibling;
+        do
+        {
+            List<Long> level = randomValues.among( nodesPerLevel );
+            if ( level.size() < 2 )
+            {
+                foundNodeWithLeftSibling = false;
+            }
+            else
+            {
+                int index = random.nextInt( level.size() - 1 ) + 1;
+                targetNode = level.get( index );
+                foundNodeWithLeftSibling = true;
+            }
+        }
+        while ( !foundNodeWithLeftSibling );
+        return targetNode;
+    }
+
+    private long nodeWithRightSibling( InspectingVisitor visitor )
+    {
+        List<List<Long>> nodesPerLevel = visitor.nodesPerLevel;
+        long targetNode = -1;
+        boolean foundNodeWithRightSibling;
+        do
+        {
+            List<Long> level = randomValues.among( nodesPerLevel );
+            if ( level.size() < 2 )
+            {
+                foundNodeWithRightSibling = false;
+            }
+            else
+            {
+                int index = random.nextInt( level.size() - 1 );
+                targetNode = level.get( index );
+                foundNodeWithRightSibling = true;
+            }
+        }
+        while ( !foundNodeWithRightSibling );
+        return targetNode;
+    }
+
+    private long nodeWithMultipleKeys( InspectingVisitor visitor )
+    {
+        long targetNode;
+        int keyCount = 0;
+        do
+        {
+            targetNode = randomValues.among( visitor.allNodes );
+            keyCount = visitor.allKeyCounts.get( targetNode );
+        }
+        while ( keyCount < 2 );
+        return targetNode;
+    }
+
+    private int nextRandomIntExcluding( int bound, int excluding )
+    {
+        int result;
+        do
+        {
+            result = randomValues.nextInt( bound );
+        }
+        while ( result == excluding );
+        return result;
+    }
+
+    private GBPTreeBuilder<MutableLong,MutableLong> index()
+    {
+        return new GBPTreeBuilder<>( pageCache, indexFile, layout );
+    }
+
+    private static void treeWithHeight( GBPTree<MutableLong,MutableLong> index, int height ) throws IOException
+    {
+        try ( Writer<MutableLong,MutableLong> writer = index.writer() )
+        {
+            int keyCount = 0;
+            while ( getHeight( index ) < height )
+            {
+                writer.put( new MutableLong( keyCount ), new MutableLong( keyCount ) );
+                keyCount++;
+            }
+        }
+    }
+
+    private static int getHeight( GBPTree<MutableLong,MutableLong> index ) throws IOException
+    {
+        InspectingVisitor visitor = inspect( index );
+        return visitor.lastLevel;
+    }
+
+    private static InspectingVisitor inspect( GBPTree<MutableLong,MutableLong> index ) throws IOException
+    {
+        InspectingVisitor visitor = new InspectingVisitor();
+        index.visit( visitor );
+        return visitor;
+    }
+
+    private static void assertReportNotATreeNode( GBPTree<MutableLong,MutableLong> index, long targetNode ) throws IOException
+    {
+        MutableBoolean called = new MutableBoolean();
+        index.consistencyCheck( new GBPTreeConsistencyCheckVisitor.Adaptor()
+        {
+            @Override
+            public void notATreeNode( long pageId )
+            {
+                called.setTrue();
+                assertEquals( targetNode, pageId );
+            }
+        } );
+        assertTrue( called.getValue() );
+    }
+
+    private static void assertReportUnknownTreeNodeType( GBPTree<MutableLong,MutableLong> index, long targetNode ) throws IOException
+    {
+        MutableBoolean called = new MutableBoolean();
+        index.consistencyCheck( new GBPTreeConsistencyCheckVisitor.Adaptor()
+        {
+            @Override
+            public void unknownTreeNodeType( long pageId, byte treeNodeType )
+            {
+                called.setTrue();
+                assertEquals( targetNode, pageId );
+            }
+        } );
+        assertTrue( called.getValue() );
+    }
+
+    private static void assertReportMisalignedSiblingPointers( GBPTree<MutableLong,MutableLong> index ) throws IOException
+    {
+        MutableBoolean corruptedSiblingPointerCalled = new MutableBoolean();
+        MutableBoolean rightmostNodeHasRightSiblingCalled = new MutableBoolean();
+        index.consistencyCheck( new GBPTreeConsistencyCheckVisitor.Adaptor()
+        {
+            @Override
+            public void siblingsDontPointToEachOther( long leftNode, long leftNodeGeneration, long leftRightSiblingPointerGeneration,
+                    long leftRightSiblingPointer, long rightNode, long rightNodeGeneration, long rightLeftSiblingPointerGeneration,
+                    long rightLeftSiblingPointer )
+            {
+                corruptedSiblingPointerCalled.setTrue();
+            }
+
+            @Override
+            public void rightmostNodeHasRightSibling( long rightmostNode, long rightSiblingPointer )
+            {
+                rightmostNodeHasRightSiblingCalled.setTrue();
+            }
+        } );
+        assertTrue( corruptedSiblingPointerCalled.getValue() || rightmostNodeHasRightSiblingCalled.getValue() );
+    }
+
+    private static void assertReportPointerToOldVersionOfTreeNode( GBPTree<MutableLong,MutableLong> index, long targetNode ) throws IOException
+    {
+        MutableBoolean called = new MutableBoolean();
+        index.consistencyCheck( new GBPTreeConsistencyCheckVisitor.Adaptor()
+        {
+            @Override
+            public void pointerToOldVersionOfTreeNode( long pageId, long successorPointer )
+            {
+                called.setTrue();
+                assertEquals( targetNode, pageId );
+                assertEquals( GenerationSafePointer.MAX_POINTER, successorPointer );
+            }
+        } );
+        assertTrue( called.getValue() );
+    }
+
+    private static void assertReportPointerGenerationLowerThanNodeGeneration( GBPTree<MutableLong,MutableLong> index, long targetNode,
+            GBPTreePointerType expectedPointerType ) throws IOException
+    {
+        MutableBoolean called = new MutableBoolean();
+        index.consistencyCheck( new GBPTreeConsistencyCheckVisitor.Adaptor()
+        {
+            @Override
+            public void pointerHasLowerGenerationThanNode( GBPTreePointerType pointerType, long sourceNode, long pointer, long pointerGeneration,
+                    long targetNodeGeneration )
+            {
+                called.setTrue();
+                assertEquals( targetNode, sourceNode );
+                assertEquals( expectedPointerType, pointerType );
+            }
+        } );
+        assertTrue( called.getValue() );
+    }
+
+    private static class InspectingVisitor extends GBPTreeVisitor.Adaptor<MutableLong,MutableLong>
+    {
+        private final List<Long> internalNodes = new ArrayList<>();
+        private final List<Long> leafNodes = new ArrayList<>();
+        private final List<Long> allNodes = new ArrayList<>();
+        private final Map<Long,Integer> allKeyCounts = new HashMap<>();
+        private final List<List<Long>> nodesPerLevel = new ArrayList<>();
+        private ArrayList<Long> currentLevelNodes;
+        private long rootNode;
+        private int lastLevel;
+        private TreeState treeState;
+
+        private InspectingVisitor()
+        {
+            clear();
+        }
+
+        @Override
+        public void treeState( Pair<TreeState,TreeState> statePair )
+        {
+            this.treeState = TreeStatePair.selectNewestValidState( statePair );
+        }
+
+        @Override
+        public void beginLevel( int level )
+        {
+            lastLevel = level;
+            currentLevelNodes = new ArrayList<>();
+            nodesPerLevel.add( currentLevelNodes );
+        }
+
+        @Override
+        public void beginNode( long pageId, boolean isLeaf, long generation, int keyCount )
+        {
+            if ( lastLevel == 0 )
+            {
+                if ( rootNode != -1 )
+                {
+                    throw new IllegalStateException( "Expected to only have a single node on level 0" );
+                }
+                rootNode = pageId;
+            }
+
+            currentLevelNodes.add( pageId );
+            allNodes.add( pageId );
+            allKeyCounts.put( pageId, keyCount );
+            if ( isLeaf )
+            {
+                leafNodes.add( pageId );
+            }
+            else
+            {
+                internalNodes.add( pageId );
+            }
+        }
+
+        private void clear()
+        {
+            rootNode = -1;
+            lastLevel = -1;
+        }
     }
 }

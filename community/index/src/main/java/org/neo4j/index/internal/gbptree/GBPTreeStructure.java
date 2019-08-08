@@ -29,7 +29,6 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PagedFile;
 
-import static org.neo4j.index.internal.gbptree.GBPTreeConsistencyChecker.assertOnTreeNode;
 import static org.neo4j.index.internal.gbptree.GenerationSafePointerPair.pointer;
 import static org.neo4j.index.internal.gbptree.TreeNode.Type.INTERNAL;
 import static org.neo4j.index.internal.gbptree.TreeNode.Type.LEAF;
@@ -122,7 +121,32 @@ public class GBPTreeStructure<KEY, VALUE>
         while ( goToLeftmostChild( cursor, writeCursor ) );
     }
 
-    private void visitTreeNode( PageCursor cursor, GBPTreeVisitor<KEY,VALUE> visitor ) throws IOException
+    private static void assertOnTreeNode( PageCursor cursor ) throws IOException
+    {
+        byte nodeType;
+        boolean isInternal;
+        boolean isLeaf;
+        do
+        {
+            nodeType = TreeNode.nodeType( cursor );
+            isInternal = TreeNode.isInternal( cursor );
+            isLeaf = TreeNode.isLeaf( cursor );
+        }
+        while ( cursor.shouldRetry() );
+
+        if ( nodeType != TreeNode.NODE_TYPE_TREE_NODE )
+        {
+            throw new IllegalArgumentException( "Cursor is not pinned to a tree node page. pageId:" +
+                    cursor.getCurrentPageId() );
+        }
+        if ( !isInternal && !isLeaf )
+        {
+            throw new IllegalArgumentException( "Cursor is not pinned to a page containing a tree node. pageId:" +
+                    cursor.getCurrentPageId() );
+        }
+    }
+
+    void visitTreeNode( PageCursor cursor, GBPTreeVisitor<KEY,VALUE> visitor ) throws IOException
     {
         //[TYPE][GEN][KEYCOUNT] ([RIGHTSIBLING][LEFTSIBLING][SUCCESSOR]))
         boolean isLeaf;

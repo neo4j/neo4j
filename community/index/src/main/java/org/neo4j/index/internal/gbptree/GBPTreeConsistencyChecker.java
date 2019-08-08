@@ -66,17 +66,15 @@ class GBPTreeConsistencyChecker<KEY>
         this.unstableGeneration = unstableGeneration;
     }
 
-    public boolean check( PageCursor cursor, Root root ) throws IOException
+    public void check( PageCursor cursor, Root root, GBPTreeConsistencyCheckVisitor visitor ) throws IOException
     {
         long rootGeneration = root.goTo( cursor );
-        assertOnTreeNode( cursor );
         KeyRange<KEY> openRange = new KeyRange<>( comparator, null, null, layout, null );
-        boolean result = checkSubtree( cursor, openRange, rootGeneration, 0 );
+        checkSubtree( cursor, openRange, -1, rootGeneration, GBPTreePointerType.noPointer(), 0, visitor );
 
         // Assert that rightmost node on each level has empty right sibling.
-        rightmostPerLevel.forEach( RightmostInChain::assertLast );
+        rightmostPerLevel.forEach( rightmost -> rightmost.assertLast( visitor ) );
         root.goTo( cursor );
-        return result;
     }
 
     /**
@@ -92,8 +90,6 @@ class GBPTreeConsistencyChecker<KEY>
      */
     boolean checkSpace( PageCursor cursor, long lastId, LongIterator freelistIds ) throws IOException
     {
-        assertOnTreeNode( cursor );
-
         // TODO: limitation, can't run on an index larger than Integer.MAX_VALUE pages (which is fairly large)
         long highId = lastId + 1;
         BitSet seenIds = new BitSet( toIntExact( highId ) );
@@ -203,36 +199,12 @@ class GBPTreeConsistencyChecker<KEY>
         target.set( index );
     }
 
-    static void assertOnTreeNode( PageCursor cursor ) throws IOException
-    {
-        byte nodeType;
-        boolean isInternal;
-        boolean isLeaf;
-        do
-        {
-            nodeType = TreeNode.nodeType( cursor );
-            isInternal = TreeNode.isInternal( cursor );
-            isLeaf = TreeNode.isLeaf( cursor );
-        }
-        while ( cursor.shouldRetry() );
-
-        if ( nodeType != TreeNode.NODE_TYPE_TREE_NODE )
-        {
-            throw new IllegalArgumentException( "Cursor is not pinned to a tree node page. pageId:" +
-                    cursor.getCurrentPageId() );
-        }
-        if ( !isInternal && !isLeaf )
-        {
-            throw new IllegalArgumentException( "Cursor is not pinned to a page containing a tree node. pageId:" +
-                    cursor.getCurrentPageId() );
-        }
-    }
-
-    private boolean checkSubtree( PageCursor cursor, KeyRange<KEY> range, long expectedGeneration, int level )
+    private void checkSubtree( PageCursor cursor, KeyRange<KEY> range, long parentNode, long pointerGeneration, GBPTreePointerType parentPointerType, int level,
+            GBPTreeConsistencyCheckVisitor visitor )
             throws IOException
     {
-        boolean isInternal = false;
-        boolean isLeaf = false;
+        byte nodeType;
+        byte treeNodeType;
         int keyCount;
         long successor;
         long successorGeneration;
@@ -266,21 +238,27 @@ class GBPTreeConsistencyChecker<KEY>
             successorGeneration = generationTarget.generation;
 
             keyCount = TreeNode.keyCount( cursor );
+            nodeType = TreeNode.nodeType( cursor );
+            treeNodeType = TreeNode.treeNodeType( cursor );
             if ( !node.reasonableKeyCount( keyCount ) )
             {
+                // todo change this to report inconsistency instead
                 cursor.setCursorException( "Unexpected keyCount:" + keyCount );
-                continue;
             }
-            isInternal = TreeNode.isInternal( cursor );
-            isLeaf = TreeNode.isLeaf( cursor );
         }
         while ( cursor.shouldRetry() );
         checkAfterShouldRetry( cursor );
 
+        if ( nodeType != TreeNode.NODE_TYPE_TREE_NODE )
+        {
+             visitor.notATreeNode( cursor.getCurrentPageId() );
+        }
+
+        boolean isLeaf = treeNodeType == TreeNode.LEAF_FLAG;
+        boolean isInternal = treeNodeType == TreeNode.INTERNAL_FLAG;
         if ( !isInternal && !isLeaf )
         {
-            throw new TreeInconsistencyException( "Page:" + cursor.getCurrentPageId() + " at level:" + level +
-                    " isn't a tree node, parent expected range " + range );
+            visitor.unknownTreeNodeType( cursor.getCurrentPageId(), treeNodeType );
         }
 
         do
@@ -297,59 +275,40 @@ class GBPTreeConsistencyChecker<KEY>
         while ( cursor.shouldRetry() );
         checkAfterShouldRetry( cursor );
 
-        assertPointerGenerationMatchesGeneration( cursor, currentNodeGeneration, expectedGeneration );
+        assertPointerGenerationMatchesGeneration( parentPointerType, parentNode, cursor.getCurrentPageId(), pointerGeneration,
+                currentNodeGeneration, visitor );
         assertSiblings( cursor, currentNodeGeneration, leftSiblingPointer, leftSiblingPointerGeneration, rightSiblingPointer,
-                rightSiblingPointerGeneration, level );
-        checkSuccessorPointerGeneration( cursor, successor, successorGeneration );
+                rightSiblingPointerGeneration, level, visitor );
+        checkSuccessorPointerGeneration( cursor, successor, successorGeneration, visitor );
 
         if ( isInternal )
         {
-            assertSubtrees( cursor, range, keyCount, level );
+            assertSubtrees( cursor, range, keyCount, level, visitor );
         }
-        return true;
     }
 
-    private static void assertPointerGenerationMatchesGeneration( PageCursor cursor, long nodeGeneration,
-            long expectedGeneration )
+    private static void assertPointerGenerationMatchesGeneration( GBPTreePointerType pointerType, long sourceNode, long pointer, long pointerGeneration,
+            long targetNodeGeneration, GBPTreeConsistencyCheckVisitor visitor )
     {
-        if ( nodeGeneration > expectedGeneration )
+        if ( targetNodeGeneration > pointerGeneration )
         {
-            throw new TreeInconsistencyException( "Expected node:%d generation:%d to be ≤ pointer generation:%d", cursor.getCurrentPageId(), nodeGeneration,
-                    expectedGeneration );
+            visitor.pointerHasLowerGenerationThanNode( pointerType, sourceNode, pointer, pointerGeneration, targetNodeGeneration );
         }
     }
 
-    private void checkSuccessorPointerGeneration( PageCursor cursor, long successor, long successorGeneration )
-            throws IOException
+    private void checkSuccessorPointerGeneration( PageCursor cursor, long successor, long successorGeneration,
+            GBPTreeConsistencyCheckVisitor visitor )
     {
         if ( TreeNode.isNode( successor ) )
         {
-            cursor.setCursorException( "WARNING: we ended up on an old generation " + cursor.getCurrentPageId() +
-                    " which had successor:" + pointer( successor ) );
-            long origin = cursor.getCurrentPageId();
-            TreeNode.goTo( cursor, "successor", successor );
-            try
-            {
-                long nodeGeneration;
-                do
-                {
-                    nodeGeneration = TreeNode.generation( cursor );
-                }
-                while ( cursor.shouldRetry() );
-                checkAfterShouldRetry( cursor );
-
-                assertPointerGenerationMatchesGeneration( cursor, nodeGeneration, successorGeneration );
-            }
-            finally
-            {
-                TreeNode.goTo( cursor, "back", origin );
-            }
+            visitor.pointerToOldVersionOfTreeNode( cursor.getCurrentPageId(), pointer( successor ) );
         }
     }
 
     // Assumption: We traverse the tree from left to right on every level
     private void assertSiblings( PageCursor cursor, long currentNodeGeneration, long leftSiblingPointer,
-            long leftSiblingPointerGeneration, long rightSiblingPointer, long rightSiblingPointerGeneration, int level )
+            long leftSiblingPointerGeneration, long rightSiblingPointer, long rightSiblingPointerGeneration, int level,
+            GBPTreeConsistencyCheckVisitor visitor )
     {
         // If this is the first time on this level, we will add a new entry
         for ( int i = rightmostPerLevel.size(); i <= level; i++ )
@@ -359,11 +318,11 @@ class GBPTreeConsistencyChecker<KEY>
         RightmostInChain rightmost = rightmostPerLevel.get( level );
 
         rightmost.assertNext( cursor, currentNodeGeneration, leftSiblingPointer, leftSiblingPointerGeneration, rightSiblingPointer,
-                rightSiblingPointerGeneration );
+                rightSiblingPointerGeneration, visitor );
     }
 
-    private void assertSubtrees( PageCursor cursor, KeyRange<KEY> range, int keyCount, int level )
-            throws IOException
+    private void assertSubtrees( PageCursor cursor, KeyRange<KEY> range, int keyCount, int level,
+            GBPTreeConsistencyCheckVisitor visitor ) throws IOException
     {
         long pageId = cursor.getCurrentPageId();
         KEY prev = null;
@@ -392,7 +351,7 @@ class GBPTreeConsistencyChecker<KEY>
             }
 
             TreeNode.goTo( cursor, "child at pos " + pos, child );
-            checkSubtree( cursor, childRange, childGeneration, level + 1 );
+            checkSubtree( cursor, childRange, pageId, childGeneration, GBPTreePointerType.child( pos ), level + 1, visitor );
 
             TreeNode.goTo( cursor, "parent", pageId );
 
@@ -417,7 +376,7 @@ class GBPTreeConsistencyChecker<KEY>
 
         TreeNode.goTo( cursor, "child at pos " + pos, child );
         childRange = range.restrictLeft( prev );
-        checkSubtree( cursor, childRange, childGeneration, level + 1 );
+        checkSubtree( cursor, childRange, pageId, childGeneration, GBPTreePointerType.child( pos ), level + 1, visitor );
         TreeNode.goTo( cursor, "parent", pageId );
     }
 

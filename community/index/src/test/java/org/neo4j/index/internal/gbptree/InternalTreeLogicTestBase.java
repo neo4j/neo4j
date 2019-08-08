@@ -1526,7 +1526,7 @@ public abstract class InternalTreeLogicTestBase<KEY,VALUE>
         root.goTo( readCursor );
         GBPTreeConsistencyChecker<KEY> consistencyChecker =
                 new GBPTreeConsistencyChecker<>( node, layout, stableGeneration, unstableGeneration );
-        consistencyChecker.check( readCursor, root );
+        consistencyChecker.check( readCursor, root, new ThrowingConsistencyCheckVisitor() );
         goTo( readCursor, currentPageId );
     }
 
@@ -1770,6 +1770,7 @@ public abstract class InternalTreeLogicTestBase<KEY,VALUE>
         long currentPageId = readCursor.getCurrentPageId();
         RightmostInChain rightmost = new RightmostInChain();
         GenerationKeeper generationTarget = new GenerationKeeper();
+        ThrowingConsistencyCheckVisitor visitor = new ThrowingConsistencyCheckVisitor();
         for ( long child : children )
         {
             goTo( readCursor, child );
@@ -1782,9 +1783,10 @@ public abstract class InternalTreeLogicTestBase<KEY,VALUE>
                     pointer( leftSibling ),
                     leftSiblingGeneration,
                     pointer( rightSibling ),
-                    rightSiblingGeneration );
+                    rightSiblingGeneration,
+                    visitor );
         }
-        rightmost.assertLast();
+        rightmost.assertLast( visitor );
         goTo( readCursor, currentPageId );
     }
 

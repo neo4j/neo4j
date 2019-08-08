@@ -20,8 +20,6 @@
 package org.neo4j.index.internal.gbptree;
 
 import org.apache.commons.lang3.tuple.Pair;
-import org.eclipse.collections.api.set.primitive.MutableLongSet;
-import org.eclipse.collections.impl.set.mutable.primitive.LongHashSet;
 
 import java.io.Closeable;
 import java.io.File;
@@ -1232,8 +1230,14 @@ public class GBPTree<KEY,VALUE> implements Closeable
         }
     }
 
-    // Utility method
     public boolean consistencyCheck() throws IOException
+    {
+        ThrowingConsistencyCheckVisitor reporter = new ThrowingConsistencyCheckVisitor();
+        return consistencyCheck( reporter );
+    }
+
+    // Utility method
+    public boolean consistencyCheck( GBPTreeConsistencyCheckVisitor visitor ) throws IOException
     {
         try ( PageCursor cursor = pagedFile.io( 0L /*ignored*/, PagedFile.PF_SHARED_READ_LOCK ) )
         {
@@ -1241,14 +1245,15 @@ public class GBPTree<KEY,VALUE> implements Closeable
             GBPTreeConsistencyChecker<KEY> consistencyChecker = new GBPTreeConsistencyChecker<>( bTreeNode, layout,
                     stableGeneration( generation ), unstableGeneration );
 
-            boolean check = consistencyChecker.check( cursor, root );
+            consistencyChecker.check( cursor, root, visitor );
 
-            final MutableLongSet freelistIds = new LongHashSet();
-            freeList.visitFreelistPageIds( freelistIds::add );
-            freeList.visitUnacquiredIds( freelistIds::add, unstableGeneration );
-            boolean checkSpace = consistencyChecker.checkSpace( cursor, freeList.lastId(), freelistIds.longIterator() );
+            // todo reimplement space check
+//            final MutableLongSet freelistIds = new LongHashSet();
+//            freeList.visitFreelistPageIds( freelistIds::add );
+//            freeList.visitUnacquiredIds( freelistIds::add, unstableGeneration );
+//            boolean checkSpace = consistencyChecker.checkSpace( cursor, freeList.lastId(), freelistIds.longIterator() );
 
-            return check && checkSpace;
+            return visitor.clean();
         }
     }
 

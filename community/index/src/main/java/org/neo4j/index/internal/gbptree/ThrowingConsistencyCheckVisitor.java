@@ -1,0 +1,112 @@
+/*
+ * Copyright (c) 2002-2019 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
+ *
+ * This file is part of Neo4j.
+ *
+ * Neo4j is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+package org.neo4j.index.internal.gbptree;
+
+import static java.lang.String.format;
+import static org.neo4j.index.internal.gbptree.TreeNode.NO_NODE_FLAG;
+
+public class ThrowingConsistencyCheckVisitor implements GBPTreeConsistencyCheckVisitor
+{
+    private static final String treeStructureInconsistency = "Tree structure inconsistency: ";
+    private static final String keyOrderInconsistency = "Key order inconsistency: ";
+    private static final String nodeMetaInconsistency = "Node meta inconsistency: ";
+    private static final String treeMetaInconsistency = "Tree meta inconsistency: ";
+    private boolean clean = true;
+
+    @Override
+    public boolean clean()
+    {
+        return clean;
+    }
+
+    @Override
+    public void notATreeNode( long pageId )
+    {
+        notClean();
+        throwTreeStructureInconsistency( "Page: %d is not a tree node page.", pageId );
+    }
+
+    @Override
+    public void unknownTreeNodeType( long pageId, byte treeNodeType )
+    {
+        notClean();
+        throwTreeStructureInconsistency( "Page: %d has an unknown tree node type: %d.", pageId, treeNodeType );
+    }
+
+    @Override
+    public void siblingsDontPointToEachOther( long leftNode, long leftNodeGeneration, long leftRightSiblingPointerGeneration, long leftRightSiblingPointer,
+            long rightNode, long rightNodeGeneration, long rightLeftSiblingPointerGeneration, long rightLeftSiblingPointer )
+    {
+        notClean();
+        throwTreeStructureInconsistency( "Sibling pointers misaligned." +
+                        "  Left siblings view:  %s%n" +
+                        "  Right siblings view: %s%n",
+                leftPattern( leftNode, leftNodeGeneration, leftRightSiblingPointerGeneration, leftRightSiblingPointer ),
+                rightPattern( rightNode, rightNodeGeneration, rightLeftSiblingPointerGeneration, rightLeftSiblingPointer ) );
+    }
+
+    @Override
+    public void rightmostNodeHasRightSibling( long rightmostNode, long rightSiblingPointer )
+    {
+        notClean();
+        throwTreeStructureInconsistency( "Expected rightmost right sibling to be %d but was %d. Current rightmost node is %d.",
+                NO_NODE_FLAG, rightSiblingPointer, rightmostNode );
+    }
+
+    @Override
+    public void pointerToOldVersionOfTreeNode( long pageId, long successorPointer )
+    {
+        notClean();
+        throwTreeStructureInconsistency( "We ended up on node %d which has a newer generation, successor is: %d", pageId, successorPointer );
+    }
+
+    @Override
+    public void pointerHasLowerGenerationThanNode( GBPTreePointerType pointerType, long sourceNode, long pointer, long pointerGeneration,
+            long targetNodeGeneration )
+    {
+        notClean();
+        throwTreeStructureInconsistency( "Pointer (%s) in node %d has pointer generation %d, but target node %d has a higher generation %d.",
+                pointerType.toString(), sourceNode, pointerGeneration, pointer, targetNodeGeneration );
+    }
+
+    private void notClean()
+    {
+        clean = false;
+    }
+
+    private String leftPattern( long actualLeftSibling, long actualLeftSiblingGeneration,
+            long expectedRightSiblingGeneration, long expectedRightSibling )
+    {
+        return format( "{%d(%d)}-(%d)->{%d}", actualLeftSibling, actualLeftSiblingGeneration, expectedRightSiblingGeneration,
+                expectedRightSibling );
+    }
+
+    private String rightPattern( long actualRightSibling, long actualRightSiblingGeneration,
+            long expectedLeftSiblingGeneration, long expectedLeftSibling )
+    {
+        return format( "{%d}<-(%d)-{%d(%d)}", expectedLeftSibling, expectedLeftSiblingGeneration, actualRightSibling,
+                actualRightSiblingGeneration );
+    }
+
+    private void throwTreeStructureInconsistency( String format, Object... args )
+    {
+        throw new TreeInconsistencyException( String.format( treeStructureInconsistency + format, args ) );
+    }
+}
