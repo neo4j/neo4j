@@ -32,8 +32,10 @@ import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import org.neo4j.io.pagecache.CursorException;
 import org.neo4j.io.pagecache.PageCache;
@@ -94,7 +96,7 @@ public class GBPTreeConsistencyCheckerTest
     {
         try ( GBPTree<MutableLong,MutableLong> index = index().build() )
         {
-            treeWithHeight( index, 2 );
+            treeWithHeightTwo( index );
 
             InspectingVisitor visitor = inspect( index );
             long rootNode = visitor.rootNode;
@@ -112,7 +114,7 @@ public class GBPTreeConsistencyCheckerTest
     {
         try ( GBPTree<MutableLong,MutableLong> index = index().build() )
         {
-            treeWithHeight( index, 2 );
+            treeWithHeightTwo( index );
 
             InspectingVisitor visitor = inspect( index );
             long internalNode = randomValues.among( visitor.internalNodes );
@@ -130,7 +132,7 @@ public class GBPTreeConsistencyCheckerTest
     {
         try ( GBPTree<MutableLong,MutableLong> index = index().build() )
         {
-            treeWithHeight( index, 2 );
+            treeWithHeightTwo( index );
 
             InspectingVisitor visitor = inspect( index );
             long leafNode = randomValues.among( visitor.leafNodes );
@@ -148,7 +150,7 @@ public class GBPTreeConsistencyCheckerTest
     {
         try ( GBPTree<MutableLong,MutableLong> index = index().build() )
         {
-            treeWithHeight( index, 2 );
+            treeWithHeightTwo( index );
 
             InspectingVisitor visitor = inspect( index );
             long rootNode = visitor.rootNode;
@@ -166,7 +168,7 @@ public class GBPTreeConsistencyCheckerTest
     {
         try ( GBPTree<MutableLong,MutableLong> index = index().build() )
         {
-            treeWithHeight( index, 2 );
+            treeWithHeightTwo( index );
 
             InspectingVisitor visitor = inspect( index );
             long internalNode = randomValues.among( visitor.internalNodes );
@@ -184,7 +186,7 @@ public class GBPTreeConsistencyCheckerTest
     {
         try ( GBPTree<MutableLong,MutableLong> index = index().build() )
         {
-            treeWithHeight( index, 2 );
+            treeWithHeightTwo( index );
 
             InspectingVisitor visitor = inspect( index );
             long leafNode = randomValues.among( visitor.leafNodes );
@@ -202,7 +204,7 @@ public class GBPTreeConsistencyCheckerTest
     {
         try ( GBPTree<MutableLong,MutableLong> index = index().build() )
         {
-            treeWithHeight( index, 2 );
+            treeWithHeightTwo( index );
 
             InspectingVisitor visitor = inspect( index );
             long targetNode = randomValues.among( visitor.leafNodes );
@@ -220,7 +222,7 @@ public class GBPTreeConsistencyCheckerTest
     {
         try ( GBPTree<MutableLong,MutableLong> index = index().build() )
         {
-            treeWithHeight( index, 2 );
+            treeWithHeightTwo( index );
 
             InspectingVisitor visitor = inspect( index );
             long targetNode = randomValues.among( visitor.leafNodes );
@@ -238,7 +240,7 @@ public class GBPTreeConsistencyCheckerTest
     {
         try ( GBPTree<MutableLong,MutableLong> index = index().build() )
         {
-            treeWithHeight( index, 2 );
+            treeWithHeightTwo( index );
 
             InspectingVisitor visitor = inspect( index );
             long targetNode = randomValues.among( visitor.allNodes );
@@ -256,7 +258,7 @@ public class GBPTreeConsistencyCheckerTest
     {
         try ( GBPTree<MutableLong,MutableLong> index = index().build() )
         {
-            treeWithHeight( index, 2 );
+            treeWithHeightTwo( index );
 
             InspectingVisitor visitor = inspect( index );
             long targetNode = nodeWithRightSibling( visitor );
@@ -274,7 +276,7 @@ public class GBPTreeConsistencyCheckerTest
     {
         try ( GBPTree<MutableLong,MutableLong> index = index().build() )
         {
-            treeWithHeight( index, 2 );
+            treeWithHeightTwo( index );
 
             InspectingVisitor visitor = inspect( index );
             long targetNode = nodeWithLeftSibling( visitor );
@@ -292,7 +294,7 @@ public class GBPTreeConsistencyCheckerTest
     {
         try ( GBPTree<MutableLong,MutableLong> index = index().build() )
         {
-            treeWithHeight( index, 2 );
+            treeWithHeightTwo( index );
 
             InspectingVisitor visitor = inspect( index );
             long targetNode = randomValues.among( visitor.internalNodes );
@@ -304,6 +306,81 @@ public class GBPTreeConsistencyCheckerTest
             corrupt( targetNode, stableGeneration, unstableGeneration, GBPTreeCorruption.childPointerHasTooLowGeneration( childPos ) );
 
             assertReportPointerGenerationLowerThanNodeGeneration( index, targetNode, GBPTreePointerType.child( childPos ) );
+        }
+    }
+
+    @Test
+    public void shouldDetectKeysOutOfOrderInIsolatedNode() throws IOException
+    {
+        try ( GBPTree<MutableLong,MutableLong> index = index().build() )
+        {
+            treeWithHeightTwo( index );
+
+            InspectingVisitor visitor = inspect( index );
+            long targetNode = nodeWithMultipleKeys( visitor );
+            int keyCount = visitor.allKeyCounts.get( targetNode );
+            int firstKey = randomValues.nextInt( keyCount );
+            int secondKey = nextRandomIntExcluding( keyCount, firstKey );
+            boolean isLeaf = visitor.leafNodes.contains( targetNode );
+            long stableGeneration = visitor.treeState.stableGeneration();
+            long unstableGeneration = visitor.treeState.unstableGeneration();
+
+            GBPTreeCorruption.PageCorruption<MutableLong,MutableLong> swapKeyOrder = isLeaf ?
+                                                                           GBPTreeCorruption.swapKeyOrderLeaf( firstKey, secondKey, keyCount ) :
+                                                                           GBPTreeCorruption.swapKeyOrderInternal( firstKey, secondKey, keyCount );
+            corrupt( targetNode, stableGeneration, unstableGeneration, swapKeyOrder );
+
+            assertReportKeysOutOfOrderInNode( index, targetNode );
+        }
+    }
+
+    @Test
+    public void shouldDetectKeysLocatedInWrongNodeLowKey() throws IOException
+    {
+        try ( GBPTree<MutableLong,MutableLong> index = index().build() )
+        {
+            treeWithHeightTwo( index );
+
+            InspectingVisitor visitor = inspect( index );
+            long targetNode = nodeWithLeftSibling( visitor );
+            int keyCount = visitor.allKeyCounts.get( targetNode );
+            int keyPos = randomValues.nextInt( keyCount );
+            MutableLong key = new MutableLong( Long.MIN_VALUE );
+            boolean isLeaf = visitor.leafNodes.contains( targetNode );
+            long stableGeneration = visitor.treeState.stableGeneration();
+            long unstableGeneration = visitor.treeState.unstableGeneration();
+
+            GBPTreeCorruption.PageCorruption<MutableLong,MutableLong> swapKeyOrder = isLeaf ?
+                                                                                     GBPTreeCorruption.overwriteKeyAtPosLeaf( key, keyPos, keyCount ) :
+                                                                                     GBPTreeCorruption.overwriteKeyAtPosInternal( key, keyPos, keyCount );
+            corrupt( targetNode, stableGeneration, unstableGeneration, swapKeyOrder );
+
+            assertReportKeysLocatedInWrongNode( index, targetNode );
+        }
+    }
+
+    @Test
+    public void shouldDetectKeysLocatedInWrongNodeHighKey() throws IOException
+    {
+        try ( GBPTree<MutableLong,MutableLong> index = index().build() )
+        {
+            treeWithHeightTwo( index );
+
+            InspectingVisitor visitor = inspect( index );
+            long targetNode = nodeWithRightSibling( visitor );
+            int keyCount = visitor.allKeyCounts.get( targetNode );
+            int keyPos = randomValues.nextInt( keyCount );
+            MutableLong key = new MutableLong( Long.MAX_VALUE );
+            boolean isLeaf = visitor.leafNodes.contains( targetNode );
+            long stableGeneration = visitor.treeState.stableGeneration();
+            long unstableGeneration = visitor.treeState.unstableGeneration();
+
+            GBPTreeCorruption.PageCorruption<MutableLong,MutableLong> swapKeyOrder = isLeaf ?
+                                                                                     GBPTreeCorruption.overwriteKeyAtPosLeaf( key, keyPos, keyCount ) :
+                                                                                     GBPTreeCorruption.overwriteKeyAtPosInternal( key, keyPos, keyCount );
+            corrupt( targetNode, stableGeneration, unstableGeneration, swapKeyOrder );
+
+            assertReportKeysLocatedInWrongNode( index, targetNode );
         }
     }
 
@@ -325,8 +402,8 @@ public class GBPTreeConsistencyCheckerTest
     //      - Child pointer dont point to next level
     //      - Sibling pointer point to node on other level
     //  Key order inconsistencies:
-    //      - Keys out of order in isolated node
-    //      - Keys not within parent range
+    //      X Keys out of order in isolated node
+    //      X Keys not within parent range
     //  Node meta inconsistency:
     //      - Dynamic layout: Space areas did not sum to total space
     //      - Dynamic layout: Overlap between offsetArray and allocSpace
@@ -433,16 +510,13 @@ public class GBPTreeConsistencyCheckerTest
     }
 
     private void corrupt( long targetNode, long stableGeneration, long unstableGeneration,
-            GBPTreeCorruption.PageCorruption<MutableLong,MutableLong>... corruptions ) throws IOException
+            GBPTreeCorruption.PageCorruption<MutableLong,MutableLong> corruption ) throws IOException
     {
         try ( PagedFile pagedFile = pageCache.map( indexFile, pageCache.pageSize() );
               PageCursor cursor = pagedFile.io( 0, PagedFile.PF_SHARED_WRITE_LOCK ) )
         {
             cursor.next( targetNode );
-            for ( GBPTreeCorruption.PageCorruption<MutableLong,MutableLong> corruption : corruptions )
-            {
-                corruption.corrupt( cursor, layout, node, stableGeneration, unstableGeneration, unstableGeneration - 1 );
-            }
+            corruption.corrupt( cursor, layout, node, stableGeneration, unstableGeneration, unstableGeneration - 1 );
         }
     }
 
@@ -495,7 +569,7 @@ public class GBPTreeConsistencyCheckerTest
     private long nodeWithMultipleKeys( InspectingVisitor visitor )
     {
         long targetNode;
-        int keyCount = 0;
+        int keyCount;
         do
         {
             targetNode = randomValues.among( visitor.allNodes );
@@ -521,12 +595,12 @@ public class GBPTreeConsistencyCheckerTest
         return new GBPTreeBuilder<>( pageCache, indexFile, layout );
     }
 
-    private static void treeWithHeight( GBPTree<MutableLong,MutableLong> index, int height ) throws IOException
+    private static void treeWithHeightTwo( GBPTree<MutableLong,MutableLong> index ) throws IOException
     {
         try ( Writer<MutableLong,MutableLong> writer = index.writer() )
         {
             int keyCount = 0;
-            while ( getHeight( index ) < height )
+            while ( getHeight( index ) < 2 )
             {
                 writer.put( new MutableLong( keyCount ), new MutableLong( keyCount ) );
                 keyCount++;
@@ -632,6 +706,38 @@ public class GBPTreeConsistencyCheckerTest
             }
         } );
         assertTrue( called.getValue() );
+    }
+
+    private static void assertReportKeysOutOfOrderInNode( GBPTree<MutableLong,MutableLong> index, long targetNode ) throws IOException
+    {
+        MutableBoolean called = new MutableBoolean();
+        index.consistencyCheck( new GBPTreeConsistencyCheckVisitor.Adaptor()
+        {
+            @Override
+            public void keysOutOfOrderInNode( long pageId )
+            {
+                called.setTrue();
+                assertEquals( targetNode, pageId );
+            }
+        } );
+        assertTrue( called.getValue() );
+    }
+
+    private static void assertReportKeysLocatedInWrongNode( GBPTree<MutableLong,MutableLong> index, long targetNode ) throws IOException
+    {
+        Set<Long> allNodesWithKeysLocatedInWrongNode = new HashSet<>();
+        MutableBoolean called = new MutableBoolean();
+        index.consistencyCheck( new GBPTreeConsistencyCheckVisitor.Adaptor<MutableLong>()
+        {
+            @Override
+            public void keysLocatedInWrongNode( long pageId, KeyRange<MutableLong> range, MutableLong key, int pos, int keyCount )
+            {
+                called.setTrue();
+                allNodesWithKeysLocatedInWrongNode.add( pageId );
+            }
+        } );
+        assertTrue( called.getValue() );
+        assertTrue( allNodesWithKeysLocatedInWrongNode.contains( targetNode ) );
     }
 
     private static class InspectingVisitor extends GBPTreeVisitor.Adaptor<MutableLong,MutableLong>

@@ -136,6 +136,37 @@ final class GBPTreeCorruption
         };
     }
 
+    static <KEY,VALUE> PageCorruption<KEY,VALUE> overwriteKeyAtPosLeaf( KEY key, int keyPos, int keyCount )
+    {
+        return ( cursor, layout, node, stableGeneration, unstableGeneration, crashGeneration ) -> {
+            // Record value so that we can reinsert it together with key later
+            VALUE value = layout.newValue();
+            node.valueAt( cursor, value, keyPos );
+
+            // Remove key and value, may need to defragment node to make sure we have room for insert later
+            node.removeKeyValueAt( cursor, keyPos, keyCount );
+            node.defragmentLeaf( cursor );
+
+            // Insert new key and value
+            node.insertKeyValueAt( cursor, key, value, keyPos, keyCount - 1 );
+        };
+    }
+
+    static <KEY,VALUE> PageCorruption<KEY,VALUE> overwriteKeyAtPosInternal( KEY key, int keyPos, int keyCount )
+    {
+        return ( cursor, layout, node, stableGeneration, unstableGeneration, crashGeneration ) -> {
+            // Record rightChild so that we can reinsert it together with key later
+            long rightChild = node.childAt( cursor, keyPos, stableGeneration, unstableGeneration );
+
+            // Remove key and right child, may need to defragment node to make sure we have room for insert later
+            node.removeKeyAndRightChildAt( cursor, keyPos, keyCount );
+            node.defragmentLeaf( cursor );
+
+            // Insert key and right child
+            node.insertKeyAndRightChildAt( cursor, key, rightChild, keyPos, keyCount - 1, stableGeneration, unstableGeneration );
+        };
+    }
+
     private static void overwriteGSPP( PageCursor cursor, int gsppOffset, long generation, long pointer )
     {
         cursor.setOffset( gsppOffset );

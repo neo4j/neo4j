@@ -22,7 +22,7 @@ package org.neo4j.index.internal.gbptree;
 import static java.lang.String.format;
 import static org.neo4j.index.internal.gbptree.TreeNode.NO_NODE_FLAG;
 
-public class ThrowingConsistencyCheckVisitor implements GBPTreeConsistencyCheckVisitor
+public class ThrowingConsistencyCheckVisitor<KEY> implements GBPTreeConsistencyCheckVisitor<KEY>
 {
     private static final String treeStructureInconsistency = "Tree structure inconsistency: ";
     private static final String keyOrderInconsistency = "Key order inconsistency: ";
@@ -39,14 +39,12 @@ public class ThrowingConsistencyCheckVisitor implements GBPTreeConsistencyCheckV
     @Override
     public void notATreeNode( long pageId )
     {
-        notClean();
         throwTreeStructureInconsistency( "Page: %d is not a tree node page.", pageId );
     }
 
     @Override
     public void unknownTreeNodeType( long pageId, byte treeNodeType )
     {
-        notClean();
         throwTreeStructureInconsistency( "Page: %d has an unknown tree node type: %d.", pageId, treeNodeType );
     }
 
@@ -54,7 +52,6 @@ public class ThrowingConsistencyCheckVisitor implements GBPTreeConsistencyCheckV
     public void siblingsDontPointToEachOther( long leftNode, long leftNodeGeneration, long leftRightSiblingPointerGeneration, long leftRightSiblingPointer,
             long rightNode, long rightNodeGeneration, long rightLeftSiblingPointerGeneration, long rightLeftSiblingPointer )
     {
-        notClean();
         throwTreeStructureInconsistency( "Sibling pointers misaligned." +
                         "  Left siblings view:  %s%n" +
                         "  Right siblings view: %s%n",
@@ -65,7 +62,6 @@ public class ThrowingConsistencyCheckVisitor implements GBPTreeConsistencyCheckV
     @Override
     public void rightmostNodeHasRightSibling( long rightmostNode, long rightSiblingPointer )
     {
-        notClean();
         throwTreeStructureInconsistency( "Expected rightmost right sibling to be %d but was %d. Current rightmost node is %d.",
                 NO_NODE_FLAG, rightSiblingPointer, rightmostNode );
     }
@@ -73,7 +69,6 @@ public class ThrowingConsistencyCheckVisitor implements GBPTreeConsistencyCheckV
     @Override
     public void pointerToOldVersionOfTreeNode( long pageId, long successorPointer )
     {
-        notClean();
         throwTreeStructureInconsistency( "We ended up on node %d which has a newer generation, successor is: %d", pageId, successorPointer );
     }
 
@@ -81,14 +76,21 @@ public class ThrowingConsistencyCheckVisitor implements GBPTreeConsistencyCheckV
     public void pointerHasLowerGenerationThanNode( GBPTreePointerType pointerType, long sourceNode, long pointer, long pointerGeneration,
             long targetNodeGeneration )
     {
-        notClean();
         throwTreeStructureInconsistency( "Pointer (%s) in node %d has pointer generation %d, but target node %d has a higher generation %d.",
                 pointerType.toString(), sourceNode, pointerGeneration, pointer, targetNodeGeneration );
     }
 
-    private void notClean()
+    @Override
+    public void keysOutOfOrderInNode( long pageId )
     {
-        clean = false;
+        throwKeyOrderInconsistency( "Keys in node %d are out of order.", pageId );
+    }
+
+    @Override
+    public void keysLocatedInWrongNode( long pageId, KeyRange<KEY> range, KEY key, int pos, int keyCount )
+    {
+        throwKeyOrderInconsistency( "Expected range for this node is %n%s%n but found %s in position %d, with keyCount %d on page %d.",
+                range, key, pos, keyCount, pageId );
     }
 
     private String leftPattern( long actualLeftSibling, long actualLeftSiblingGeneration,
@@ -105,8 +107,25 @@ public class ThrowingConsistencyCheckVisitor implements GBPTreeConsistencyCheckV
                 actualRightSiblingGeneration );
     }
 
+    private void throwKeyOrderInconsistency( String format, Object... args )
+    {
+        notClean();
+        throwWithPrefix( keyOrderInconsistency, format, args );
+    }
+
     private void throwTreeStructureInconsistency( String format, Object... args )
     {
-        throw new TreeInconsistencyException( String.format( treeStructureInconsistency + format, args ) );
+        notClean();
+        throwWithPrefix( treeStructureInconsistency, format, args );
+    }
+
+    private void throwWithPrefix( String prefix, String format, Object[] args )
+    {
+        throw new TreeInconsistencyException( String.format( prefix + format, args ) );
+    }
+
+    private void notClean()
+    {
+        clean = false;
     }
 }

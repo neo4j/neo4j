@@ -19,7 +19,7 @@
  */
 package org.neo4j.index.internal.gbptree;
 
-public interface GBPTreeConsistencyCheckVisitor
+public interface GBPTreeConsistencyCheckVisitor<KEY>
 {
     boolean clean();
 
@@ -38,7 +38,11 @@ public interface GBPTreeConsistencyCheckVisitor
     void pointerHasLowerGenerationThanNode( GBPTreePointerType pointerType, long sourceNode, long pointer,
             long pointerGeneration, long targetNodeGeneration );
 
-    class Adaptor implements GBPTreeConsistencyCheckVisitor
+    void keysOutOfOrderInNode( long pageId );
+
+    void keysLocatedInWrongNode( long pageId, KeyRange<KEY> range, KEY key, int pos, int keyCount );
+
+    class Adaptor<KEY> implements GBPTreeConsistencyCheckVisitor<KEY>
     {
         @Override
         public boolean clean()
@@ -75,6 +79,16 @@ public interface GBPTreeConsistencyCheckVisitor
         @Override
         public void pointerHasLowerGenerationThanNode( GBPTreePointerType pointerType, long sourceNode, long pointer, long pointerGeneration,
                 long targetNodeGeneration )
+        {
+        }
+
+        @Override
+        public void keysOutOfOrderInNode( long pageId )
+        {
+        }
+
+        @Override
+        public void keysLocatedInWrongNode( long pageId, KeyRange<KEY> range, KEY key, int pos, int keyCount )
         {
         }
     }

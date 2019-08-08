@@ -20,6 +20,10 @@
 package org.neo4j.index.internal.gbptree;
 
 import org.eclipse.collections.api.iterator.LongIterator;
+import org.eclipse.collections.api.list.MutableList;
+import org.eclipse.collections.api.list.primitive.MutableLongList;
+import org.eclipse.collections.impl.factory.Lists;
+import org.eclipse.collections.impl.factory.primitive.LongLists;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -66,7 +70,7 @@ class GBPTreeConsistencyChecker<KEY>
         this.unstableGeneration = unstableGeneration;
     }
 
-    public void check( PageCursor cursor, Root root, GBPTreeConsistencyCheckVisitor visitor ) throws IOException
+    public void check( PageCursor cursor, Root root, GBPTreeConsistencyCheckVisitor<KEY> visitor ) throws IOException
     {
         long rootGeneration = root.goTo( cursor );
         KeyRange<KEY> openRange = new KeyRange<>( comparator, null, null, layout, null );
@@ -200,7 +204,7 @@ class GBPTreeConsistencyChecker<KEY>
     }
 
     private void checkSubtree( PageCursor cursor, KeyRange<KEY> range, long parentNode, long pointerGeneration, GBPTreePointerType parentPointerType, int level,
-            GBPTreeConsistencyCheckVisitor visitor )
+            GBPTreeConsistencyCheckVisitor<KEY> visitor )
             throws IOException
     {
         byte nodeType;
@@ -261,12 +265,7 @@ class GBPTreeConsistencyChecker<KEY>
             visitor.unknownTreeNodeType( cursor.getCurrentPageId(), treeNodeType );
         }
 
-        do
-        {
-            assertKeyOrder( cursor, range, keyCount, isLeaf ? LEAF : INTERNAL );
-        }
-        while ( cursor.shouldRetry() );
-        checkAfterShouldRetry( cursor );
+        assertKeyOrder( cursor, range, keyCount, isLeaf ? LEAF : INTERNAL, visitor );
 
         do
         {
@@ -287,8 +286,8 @@ class GBPTreeConsistencyChecker<KEY>
         }
     }
 
-    private static void assertPointerGenerationMatchesGeneration( GBPTreePointerType pointerType, long sourceNode, long pointer, long pointerGeneration,
-            long targetNodeGeneration, GBPTreeConsistencyCheckVisitor visitor )
+    private static <KEY> void assertPointerGenerationMatchesGeneration( GBPTreePointerType pointerType, long sourceNode, long pointer, long pointerGeneration,
+            long targetNodeGeneration, GBPTreeConsistencyCheckVisitor<KEY> visitor )
     {
         if ( targetNodeGeneration > pointerGeneration )
         {
@@ -297,7 +296,7 @@ class GBPTreeConsistencyChecker<KEY>
     }
 
     private void checkSuccessorPointerGeneration( PageCursor cursor, long successor, long successorGeneration,
-            GBPTreeConsistencyCheckVisitor visitor )
+            GBPTreeConsistencyCheckVisitor<KEY> visitor )
     {
         if ( TreeNode.isNode( successor ) )
         {
@@ -308,7 +307,7 @@ class GBPTreeConsistencyChecker<KEY>
     // Assumption: We traverse the tree from left to right on every level
     private void assertSiblings( PageCursor cursor, long currentNodeGeneration, long leftSiblingPointer,
             long leftSiblingPointerGeneration, long rightSiblingPointer, long rightSiblingPointerGeneration, int level,
-            GBPTreeConsistencyCheckVisitor visitor )
+            GBPTreeConsistencyCheckVisitor<KEY> visitor )
     {
         // If this is the first time on this level, we will add a new entry
         for ( int i = rightmostPerLevel.size(); i <= level; i++ )
@@ -322,7 +321,7 @@ class GBPTreeConsistencyChecker<KEY>
     }
 
     private void assertSubtrees( PageCursor cursor, KeyRange<KEY> range, int keyCount, int level,
-            GBPTreeConsistencyCheckVisitor visitor ) throws IOException
+            GBPTreeConsistencyCheckVisitor<KEY> visitor ) throws IOException
     {
         long pageId = cursor.getCurrentPageId();
         KEY prev = null;
@@ -347,7 +346,7 @@ class GBPTreeConsistencyChecker<KEY>
             childRange = range.restrictRight( readKey );
             if ( pos > 0 )
             {
-                childRange = range.restrictLeft( prev );
+                childRange = childRange.narrowLeft( prev );
             }
 
             TreeNode.goTo( cursor, "child at pos " + pos, child );
@@ -393,33 +392,42 @@ class GBPTreeConsistencyChecker<KEY>
         return node.childAt( cursor, pos, stableGeneration, unstableGeneration, childGeneration );
     }
 
-    private void assertKeyOrder( PageCursor cursor, KeyRange<KEY> range, int keyCount, TreeNode.Type type )
+    private void assertKeyOrder( PageCursor cursor, KeyRange<KEY> range, int keyCount, TreeNode.Type type,
+            GBPTreeConsistencyCheckVisitor<KEY> visitor ) throws IOException
     {
-        KEY prev = layout.newKey();
-        KEY readKey = layout.newKey();
-        boolean first = true;
-        for ( int pos = 0; pos < keyCount; pos++ )
+        DelayedVisitor<KEY> delayedVisitor = new DelayedVisitor<>();
+        do
         {
-            node.keyAt( cursor, readKey, pos, type );
-            if ( !range.inRange( readKey ) )
+            delayedVisitor.clear();
+            KEY prev = layout.newKey();
+            KEY readKey = layout.newKey();
+            boolean first = true;
+            for ( int pos = 0; pos < keyCount; pos++ )
             {
-                cursor.setCursorException(
-                        format( "Expected range for this node is %n%s%n but found %s in position %d, with keyCount %d on page %d",
-                        range, readKey, pos, keyCount, cursor.getCurrentPageId() ) );
-            }
-            if ( !first )
-            {
-                if ( comparator.compare( prev, readKey ) >= 0 )
+                node.keyAt( cursor, readKey, pos, type );
+                if ( !range.inRange( readKey ) )
                 {
-                    cursor.setCursorException( format( "Non-unique key, id=%d, key=%s ", cursor.getCurrentPageId(), readKey ) );
+                    KEY keyCopy = layout.newKey();
+                    layout.copyKey( readKey, keyCopy );
+                    delayedVisitor.keysLocatedInWrongNode( cursor.getCurrentPageId(), range, keyCopy, pos, keyCount );
                 }
+                if ( !first )
+                {
+                    if ( comparator.compare( prev, readKey ) >= 0 )
+                    {
+                        delayedVisitor.keysOutOfOrderInNode( cursor.getCurrentPageId() );
+                    }
+                }
+                else
+                {
+                    first = false;
+                }
+                layout.copyKey( readKey, prev );
             }
-            else
-            {
-                first = false;
-            }
-            layout.copyKey( readKey, prev );
         }
+        while ( cursor.shouldRetry() );
+        checkAfterShouldRetry( cursor );
+        delayedVisitor.report( visitor );
     }
 
     static void assertNoCrashOrBrokenPointerInGSPP( PageCursor cursor, long stableGeneration, long unstableGeneration,
@@ -465,75 +473,58 @@ class GBPTreeConsistencyChecker<KEY>
                 generation, readPointer, pointer, GenerationSafePointerPair.pointerStateName( stateA ) );
     }
 
-    private static class KeyRange<KEY>
+    private static class DelayedVisitor<KEY> extends GBPTreeConsistencyCheckVisitor.Adaptor<KEY>
     {
-        private final Comparator<KEY> comparator;
-        private final KEY fromInclusive;
-        private final KEY toExclusive;
-        private final Layout<KEY,?> layout;
-        private final KeyRange<KEY> superRange;
+        MutableLongList keysOutOfOrder = LongLists.mutable.empty();
+        MutableList<KeyInWrongNode<KEY>> keysLocatedInWrongNode = Lists.mutable.empty();
 
-        private KeyRange( Comparator<KEY> comparator, KEY fromInclusive, KEY toExclusive, Layout<KEY,?> layout,
-                KeyRange<KEY> superRange )
+        @Override
+        public void keysOutOfOrderInNode( long pageId )
         {
-            this.comparator = comparator;
-            this.superRange = superRange;
-            this.fromInclusive = fromInclusive == null ? null : layout.copyKey( fromInclusive, layout.newKey() );
-            this.toExclusive = toExclusive == null ? null : layout.copyKey( toExclusive, layout.newKey() );
-            this.layout = layout;
-        }
-
-        boolean inRange( KEY key )
-        {
-            if ( fromInclusive != null )
-            {
-                if ( toExclusive != null )
-                {
-                    return comparator.compare( key, fromInclusive ) >= 0 && comparator.compare( key, toExclusive ) < 0;
-                }
-                return comparator.compare( key, fromInclusive ) >= 0;
-            }
-            return toExclusive == null || comparator.compare( key, toExclusive ) < 0;
-        }
-
-        KeyRange<KEY> restrictLeft( KEY left )
-        {
-            if ( fromInclusive == null )
-            {
-                return new KeyRange<>( comparator, left, toExclusive, layout, this );
-            }
-            if ( left == null )
-            {
-                return new KeyRange<>( comparator, fromInclusive, toExclusive, layout, this );
-            }
-            if ( comparator.compare( fromInclusive, left ) < 0 )
-            {
-                return new KeyRange<>( comparator, left, toExclusive, layout, this );
-            }
-            return new KeyRange<>( comparator, fromInclusive, toExclusive, layout, this );
-        }
-
-        KeyRange<KEY> restrictRight( KEY right )
-        {
-            if ( toExclusive == null )
-            {
-                return new KeyRange<>( comparator, fromInclusive, right, layout, this );
-            }
-            if ( right == null )
-            {
-                return new KeyRange<>( comparator, fromInclusive, toExclusive, layout, this );
-            }
-            if ( comparator.compare( toExclusive, right ) > 0 )
-            {
-                return new KeyRange<>( comparator, fromInclusive, right, layout, this );
-            }
-            return new KeyRange<>( comparator, fromInclusive, toExclusive, layout, this );
+            keysOutOfOrder.add( pageId );
         }
 
         @Override
-        public String toString()
+        public void keysLocatedInWrongNode( long pageId, KeyRange<KEY> range, KEY key, int pos, int keyCount )
         {
-            return (superRange != null ? format( "%s%n", superRange ) : "") + fromInclusive + " ≤ key < " + toExclusive;
+            keysLocatedInWrongNode.add( new KeyInWrongNode<>( pageId, range, key, pos, keyCount ) );
+        }
+
+        void clear()
+        {
+            keysOutOfOrder.clear();
+            keysLocatedInWrongNode.clear();
+        }
+
+        void report( GBPTreeConsistencyCheckVisitor<KEY> visitor )
+        {
+            if ( keysOutOfOrder.notEmpty() )
+            {
+                keysOutOfOrder.forEach( visitor::keysOutOfOrderInNode );
+            }
+            if ( keysLocatedInWrongNode.notEmpty() )
+            {
+                keysLocatedInWrongNode.forEach( keyInWrongNode -> visitor.keysLocatedInWrongNode(
+                        keyInWrongNode.pageId, keyInWrongNode.range, keyInWrongNode.key, keyInWrongNode.pos, keyInWrongNode.keyCount ) );
+            }
+        }
+
+        private static class KeyInWrongNode<KEY>
+        {
+            final long pageId;
+            final KeyRange<KEY> range;
+            final KEY key;
+            final int pos;
+            final int keyCount;
+
+            private KeyInWrongNode( long pageId, KeyRange<KEY> range, KEY key, int pos, int keyCount )
+            {
+                this.pageId = pageId;
+                this.range = range;
+                this.key = key;
+                this.pos = pos;
+                this.keyCount = keyCount;
+            }
         }
     }
 }
