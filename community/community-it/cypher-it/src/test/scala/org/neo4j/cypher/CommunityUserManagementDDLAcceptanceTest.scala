@@ -71,7 +71,7 @@ class CommunityUserManagementDDLAcceptanceTest extends CommunityDDLAcceptanceTes
       execute("SHOW USERS")
       // THEN
     } should have message
-      "This is a administration command and it should be executed against the system database: SHOW USERS"
+      "This is an administration command and it should be executed against the system database: SHOW USERS"
   }
 
   // Tests for creating users
@@ -272,7 +272,7 @@ class CommunityUserManagementDDLAcceptanceTest extends CommunityDDLAcceptanceTes
       // WHEN
       execute("CREATE USER foo SET PASSWORD 'bar'")
       // THEN
-    } should have message "This is a administration command and it should be executed against the system database: CREATE USER"
+    } should have message "This is an administration command and it should be executed against the system database: CREATE USER"
   }
 
   // Tests for dropping users
@@ -371,7 +371,7 @@ class CommunityUserManagementDDLAcceptanceTest extends CommunityDDLAcceptanceTes
       // WHEN
       execute("DROP USER foo")
       // THEN
-    } should have message "This is a administration command and it should be executed against the system database: DROP USER"
+    } should have message "This is an administration command and it should be executed against the system database: DROP USER"
   }
 
   // Tests for altering users (not supported in community)
@@ -623,7 +623,7 @@ class CommunityUserManagementDDLAcceptanceTest extends CommunityDDLAcceptanceTes
       executeOn(DEFAULT_DATABASE_NAME, "foo", "bar", "ALTER CURRENT USER SET PASSWORD FROM 'bar' TO 'baz'")
       // THEN
     } should have message
-      "This is a administration command and it should be executed against the system database: ALTER CURRENT USER SET PASSWORD"
+      "This is an administration command and it should be executed against the system database: ALTER CURRENT USER SET PASSWORD"
   }
 
   // helper methods

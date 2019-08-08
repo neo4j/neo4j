@@ -102,7 +102,7 @@ case class CypherCurrentCompiler[CONTEXT <: RuntimeContext](planner: CypherPlann
           SetOwnPassword(p.newStringPassword, None, Some(getParamValue(currentParamPassword)), None)(new SequentialIdGen(p.id.x + 1))
         case p@SetOwnPassword(_, Some(newParamPassword), _, Some(currentParamPassword)) =>
           SetOwnPassword(Some(getParamValue(newParamPassword)), None, Some(getParamValue(currentParamPassword)), None)(new SequentialIdGen(p.id.x + 1))
-        case _ => // Not a administration command that needs resolving, do nothing
+        case _ => // Not an administration command that needs resolving, do nothing
           logicalPlan
       }
     }

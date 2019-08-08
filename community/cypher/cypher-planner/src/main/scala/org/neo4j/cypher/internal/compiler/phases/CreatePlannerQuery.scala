@@ -41,7 +41,7 @@ object CreatePlannerQuery extends Phase[BaseContext, BaseState, LogicalPlanState
       LogicalPlanState(from).copy(maybeUnionQuery = Some(unionQuery))
 
     case ddl: MultiDatabaseDDL => throw new DatabaseManagementException(
-      s"This is a administration command and it should be executed against the system database: ${ddl.name}")
+      s"This is an administration command and it should be executed against the system database: ${ddl.name}")
 
     case x => throw new InternalException(s"Expected a Query and not `$x`")
   }
