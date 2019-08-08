@@ -41,12 +41,7 @@ object Neo4jAdapter {
   def apply(executionPrefix: String, graphDatabaseFactory: TestDatabaseManagementServiceBuilder,
             dbConfig: collection.Map[Setting[_], Object] = Map[Setting[_], Object](cypher_hints_error -> TRUE)): Neo4jAdapter = {
     val managementService = createManagementService(dbConfig, graphDatabaseFactory)
-    val service = createGraphDatabase(managementService)
-    new Neo4jAdapter(managementService, service, executionPrefix)
-  }
-
-  private def createGraphDatabase(managementService: DatabaseManagementService): GraphDatabaseCypherService = {
-    new GraphDatabaseCypherService(managementService.database(DEFAULT_DATABASE_NAME))
+    new Neo4jAdapter(managementService, executionPrefix)
   }
 
   private def createManagementService(config: collection.Map[Setting[_], Object], graphDatabaseFactory: TestDatabaseManagementServiceBuilder) = {
@@ -54,19 +49,22 @@ object Neo4jAdapter {
   }
 }
 
-class Neo4jAdapter(managementService: DatabaseManagementService, service: GraphDatabaseCypherService, executionPrefix: String) extends Graph with Neo4jProcedureAdapter {
-  protected val instance: GraphDatabaseFacade = service.getGraphDatabaseService
+class Neo4jAdapter(var managementService: DatabaseManagementService,
+                   executionPrefix: String) extends Graph with Neo4jProcedureAdapter {
+
+  protected var database: GraphDatabaseFacade =
+    new GraphDatabaseCypherService(managementService.database(DEFAULT_DATABASE_NAME)).getGraphDatabaseService
 
   private val explainPrefix = "EXPLAIN\n"
 
   override def cypher(query: String, params: Map[String, CypherValue], meta: QueryType): Result = {
     val neo4jParams = params.mapValues(v => TCKValueToNeo4jValue(v)).asJava
 
-    val tx = instance.beginTx
+    val tx = database.beginTx
     val queryToExecute = if (meta == ExecQuery) {
       s"$executionPrefix $query"
     } else query
-    val result: Result = Try(instance.execute(queryToExecute, neo4jParams)).flatMap(r => Try(convertResult(r))) match {
+    val result: Result = Try(database.execute(queryToExecute, neo4jParams)).flatMap(r => Try(convertResult(r))) match {
       case Success(converted) =>
         Try(tx.commit()) match {
           case Failure(exception) =>
@@ -74,7 +72,7 @@ class Neo4jAdapter(managementService: DatabaseManagementService, service: GraphD
           case Success(_) => converted
         }
       case Failure(exception) =>
-        val explainedResult = Try(instance.execute(explainPrefix + queryToExecute))
+        val explainedResult = Try(database.execute(explainPrefix + queryToExecute))
         val phase = explainedResult match {
           case Failure(_) => Phase.compile
           case Success(_) => Phase.runtime
@@ -105,6 +103,8 @@ class Neo4jAdapter(managementService: DatabaseManagementService, service: GraphD
 
   override def close(): Unit = {
     managementService.shutdown()
+    managementService = null
+    database = null
   }
 
 }

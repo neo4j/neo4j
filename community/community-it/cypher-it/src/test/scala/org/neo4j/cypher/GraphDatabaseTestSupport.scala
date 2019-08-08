@@ -104,7 +104,13 @@ trait GraphDatabaseTestSupport extends CypherTestSupport with GraphIcing {
       super.stopTest()
     }
     finally {
-      if (managementService != null) managementService.shutdown()
+      if (managementService != null) {
+        managementService.shutdown()
+      }
+      graphOps = null
+      graph = null
+      managementService = null
+      nodes = null
     }
   }
 

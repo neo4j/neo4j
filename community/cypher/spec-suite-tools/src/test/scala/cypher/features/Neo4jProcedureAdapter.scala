@@ -56,14 +56,14 @@ object Neo4jValueRecords {
 trait Neo4jProcedureAdapter extends ProcedureSupport {
   self: Graph =>
 
-  protected def instance: GraphDatabaseAPI
+  protected def database: GraphDatabaseAPI
 
   protected val parser = new ProcedureSignatureParser
 
   override def registerProcedure(signature: String, values: CypherValueRecords): Unit = {
     val parsedSignature = parser.parse(signature)
     val kernelProcedure = buildProcedure(parsedSignature, values)
-    Try(instance.getDependencyResolver.resolveDependency(classOf[InwardKernel]).registerProcedure(kernelProcedure)) match {
+    Try(database.getDependencyResolver.resolveDependency(classOf[InwardKernel]).registerProcedure(kernelProcedure)) match {
       case Success(_) =>
       case Failure(e) => System.err.println(s"\nRegistration of procedure $signature failed: " + e.getMessage)
     }
