@@ -635,6 +635,7 @@ object IntermediateRepresentation {
 
   def and(ands: Seq[IntermediateRepresentation]): IntermediateRepresentation = {
     if (ands.isEmpty) constant(true)
+    else if (ands.size == 1) ands.head
     else ands.reduceLeft((acc, current) => and(acc, current))
   }
 
