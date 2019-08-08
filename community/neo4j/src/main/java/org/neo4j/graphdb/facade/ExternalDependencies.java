@@ -48,8 +48,6 @@ public interface ExternalDependencies
 
     Map<String,URLAccessRule> urlAccessRules();
 
-    Iterable<QueryEngineProvider> executionEngines();
-
     /**
      * Collection of command executors to start running once the db is started
      */

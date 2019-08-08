@@ -117,7 +117,6 @@ public class GlobalModule
     private final FileSystemAbstraction fileSystem;
     private final GlobalExtensions globalExtensions;
     private final Iterable<ExtensionFactory<?>> extensionFactories;
-    private final Iterable<QueryEngineProvider> queryEngineProviders;
     private final JobScheduler jobScheduler;
     private final SystemNanoClock globalClock;
     private final CollectionsFactorySupplier collectionsFactorySupplier;
@@ -206,7 +205,6 @@ public class GlobalModule
         globalDependencies.satisfyDependency( fileSystemWatcher );
 
         extensionFactories = externalDependencies.extensions();
-        queryEngineProviders = externalDependencies.executionEngines();
         globalExtensions = globalDependencies.satisfyDependency(
                 new GlobalExtensions( new GlobalExtensionContext( storeLayout, databaseInfo, globalDependencies ), extensionFactories, globalDependencies,
                         ExtensionFailureStrategies.fail() ) );
@@ -443,11 +441,6 @@ public class GlobalModule
     public JobScheduler getJobScheduler()
     {
         return jobScheduler;
-    }
-
-    public Iterable<QueryEngineProvider> getQueryEngineProviders()
-    {
-        return queryEngineProviders;
     }
 
     public GlobalExtensions getGlobalExtensions()

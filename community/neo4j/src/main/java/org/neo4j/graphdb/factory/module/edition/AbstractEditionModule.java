@@ -207,19 +207,9 @@ public abstract class AbstractEditionModule
     public abstract DatabaseIdRepository databaseIdRepository();
 
     /**
-     * @return the default engine provider for this edition.
+     * @return the query engine provider for this edition.
      */
-    protected abstract QueryEngineProvider defaultEngineProvider();
-
-    /**
-     * Choose among the given queryEngineProviders the one with the highest priority. If no
-     * queryEngineProviders, return the {@link #defaultEngineProvider()}
-     */
-    public final QueryEngineProvider chooseEngineProvider( Iterable<QueryEngineProvider> queryEngineProviders )
-    {
-        QueryEngineProvider provider = QueryEngineProvider.chooseAlternative( queryEngineProviders );
-        return provider != null ? provider : defaultEngineProvider();
-    }
+    public abstract QueryEngineProvider queryEngineProvider();
 
     public abstract BoltGraphDatabaseManagementServiceSPI createBoltDatabaseManagementServiceProvider( DatabaseManagementService managementService,
             Monitors monitors, SystemNanoClock clock, LogService logService );

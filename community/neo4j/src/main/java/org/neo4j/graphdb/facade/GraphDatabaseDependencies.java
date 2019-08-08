@@ -47,7 +47,7 @@ public class GraphDatabaseDependencies implements ExternalDependencies
     public static GraphDatabaseDependencies newDependencies( ExternalDependencies deps )
     {
         return new GraphDatabaseDependencies( deps.monitors(), deps.userLogProvider(), deps.dependencies(), deps.extensions(),
-                deps.urlAccessRules(), deps.executionEngines(), deps.deferredExecutors(), deps.databaseEventListeners() );
+                deps.urlAccessRules(), deps.deferredExecutors(), deps.databaseEventListeners() );
     }
 
     public static GraphDatabaseDependencies newDependencies()
@@ -60,10 +60,8 @@ public class GraphDatabaseDependencies implements ExternalDependencies
         urlAccessRules.put( "ftp", URLAccessRules.alwaysPermitted() );
         urlAccessRules.put( "file", URLAccessRules.fileAccess() );
 
-        Iterable<QueryEngineProvider> queryEngineProviders = Services.loadAll( QueryEngineProvider.class );
-
         return new GraphDatabaseDependencies( null, null, null, extensions,
-                urlAccessRules, queryEngineProviders, empty(), empty() );
+                urlAccessRules, empty(), empty() );
     }
 
     private Monitors monitors;
@@ -72,7 +70,6 @@ public class GraphDatabaseDependencies implements ExternalDependencies
     private List<ExtensionFactory<?>> extensions;
     private List<DatabaseEventListener> databaseEventListeners;
     private final Map<String,URLAccessRule> urlAccessRules;
-    private final List<QueryEngineProvider> queryEngineProviders;
     private final List<Pair<DeferredExecutor, Group>> deferredExecutors;
 
     private GraphDatabaseDependencies(
@@ -81,7 +78,6 @@ public class GraphDatabaseDependencies implements ExternalDependencies
             DependencyResolver dependencies,
             Iterable<ExtensionFactory<?>> extensions,
             Map<String,URLAccessRule> urlAccessRules,
-            Iterable<QueryEngineProvider> queryEngineProviders,
             Iterable<Pair<DeferredExecutor, Group>> deferredExecutors,
             Iterable<DatabaseEventListener> eventListeners
             )
@@ -91,7 +87,6 @@ public class GraphDatabaseDependencies implements ExternalDependencies
         this.dependencies = dependencies;
         this.extensions = asList( extensions );
         this.urlAccessRules = urlAccessRules;
-        this.queryEngineProviders = asList( queryEngineProviders );
         this.deferredExecutors = asList( deferredExecutors );
         this.databaseEventListeners = asList( eventListeners );
     }
@@ -139,13 +134,6 @@ public class GraphDatabaseDependencies implements ExternalDependencies
         return this;
     }
 
-    public GraphDatabaseDependencies queryEngineProviders( Iterable<QueryEngineProvider> queryEngineProviders )
-    {
-        this.queryEngineProviders.clear();
-        addAll( this.queryEngineProviders, queryEngineProviders );
-        return this;
-    }
-
     // Dependencies implementation
     @Override
     public Monitors monitors()
@@ -169,12 +157,6 @@ public class GraphDatabaseDependencies implements ExternalDependencies
     public Map<String,URLAccessRule> urlAccessRules()
     {
         return urlAccessRules;
-    }
-
-    @Override
-    public Iterable<QueryEngineProvider> executionEngines()
-    {
-        return queryEngineProviders;
     }
 
     @Override

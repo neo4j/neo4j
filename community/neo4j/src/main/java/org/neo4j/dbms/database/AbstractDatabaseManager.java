@@ -141,7 +141,7 @@ public abstract class AbstractDatabaseManager<DB extends DatabaseContext> extend
         GlobalProcedures globalProcedures = edition.getGlobalProcedures();
         var databaseConfig = new DatabaseConfig( config, databaseId );
 
-        QueryEngineProvider queryEngineProvider = edition.chooseEngineProvider( globalModule.getQueryEngineProviders() );
+        QueryEngineProvider queryEngineProvider = edition.queryEngineProvider();
 
         return new ModularDatabaseCreationContext( databaseId, globalModule, parentDependencies, parentMonitors,
                                                    editionDatabaseComponents, globalProcedures, createVersionContextSupplier( databaseConfig ), databaseConfig,
