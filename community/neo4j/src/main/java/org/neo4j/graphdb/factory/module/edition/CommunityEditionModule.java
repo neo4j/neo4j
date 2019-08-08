@@ -184,7 +184,7 @@ public class CommunityEditionModule extends StandaloneEditionModule
     }
 
     @Override
-    public QueryEngineProvider queryEngineProvider()
+    public QueryEngineProvider getQueryEngineProvider()
     {
         return new CommunityCypherEngineProvider();
     }

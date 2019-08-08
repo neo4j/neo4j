@@ -209,7 +209,7 @@ public abstract class AbstractEditionModule
     /**
      * @return the query engine provider for this edition.
      */
-    public abstract QueryEngineProvider queryEngineProvider();
+    public abstract QueryEngineProvider getQueryEngineProvider();
 
     public abstract BoltGraphDatabaseManagementServiceSPI createBoltDatabaseManagementServiceProvider( DatabaseManagementService managementService,
             Monitors monitors, SystemNanoClock clock, LogService logService );

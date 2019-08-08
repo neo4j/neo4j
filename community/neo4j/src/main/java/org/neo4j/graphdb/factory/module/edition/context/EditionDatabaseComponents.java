@@ -30,6 +30,7 @@ import org.neo4j.kernel.impl.constraints.ConstraintSemantics;
 import org.neo4j.kernel.impl.factory.AccessCapabilityFactory;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.locking.StatementLocksFactory;
+import org.neo4j.kernel.impl.query.QueryEngineProvider;
 import org.neo4j.kernel.impl.transaction.TransactionHeaderInformationFactory;
 import org.neo4j.kernel.impl.transaction.stats.DatabaseTransactionStats;
 import org.neo4j.token.TokenHolders;
@@ -55,6 +56,8 @@ public interface EditionDatabaseComponents
     StatementLocksFactory getStatementLocksFactory();
 
     DatabaseTransactionStats getTransactionMonitor();
+
+    QueryEngineProvider getQueryEngineProvider();
 
     AccessCapabilityFactory getAccessCapabilityFactory();
 }

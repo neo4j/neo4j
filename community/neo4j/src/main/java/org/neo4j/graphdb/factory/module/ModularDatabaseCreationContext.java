@@ -115,14 +115,13 @@ public class ModularDatabaseCreationContext implements DatabaseCreationContext
 
     public ModularDatabaseCreationContext( DatabaseId databaseId, GlobalModule globalModule, Dependencies globalDependencies,
                                            Monitors parentMonitors, EditionDatabaseComponents editionComponents, GlobalProcedures globalProcedures,
-                                           VersionContextSupplier versionContextSupplier, DatabaseConfig databaseConfig,
-                                           QueryEngineProvider queryEngineProvider )
+                                           VersionContextSupplier versionContextSupplier, DatabaseConfig databaseConfig )
     {
         this.databaseId = databaseId;
         this.globalConfig = globalModule.getGlobalConfig();
         this.databaseConfig = databaseConfig;
         this.versionContextSupplier = versionContextSupplier;
-        this.queryEngineProvider = queryEngineProvider;
+        this.queryEngineProvider = editionComponents.getQueryEngineProvider();
         DatabaseIdContext idContext = editionComponents.getIdContext();
         this.idGeneratorFactory = idContext.getIdGeneratorFactory();
         this.idController = idContext.getIdController();

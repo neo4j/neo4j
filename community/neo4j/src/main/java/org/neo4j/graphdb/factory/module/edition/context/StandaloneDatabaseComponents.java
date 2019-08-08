@@ -32,6 +32,7 @@ import org.neo4j.kernel.impl.constraints.ConstraintSemantics;
 import org.neo4j.kernel.impl.factory.AccessCapabilityFactory;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.locking.StatementLocksFactory;
+import org.neo4j.kernel.impl.query.QueryEngineProvider;
 import org.neo4j.kernel.impl.transaction.TransactionHeaderInformationFactory;
 import org.neo4j.kernel.impl.transaction.stats.DatabaseTransactionStats;
 import org.neo4j.token.TokenHolders;
@@ -48,6 +49,7 @@ public class StandaloneDatabaseComponents implements EditionDatabaseComponents
     private final DatabaseTransactionStats transactionMonitor;
     private final DatabaseIdContext idContext;
     private final StatementLocksFactory statementLocksFactory;
+    private final QueryEngineProvider queryEngineProvider;
     private final AccessCapabilityFactory accessCapabilityFactory;
 
     public StandaloneDatabaseComponents( StandaloneEditionModule editionModule, DatabaseId databaseId )
@@ -62,6 +64,7 @@ public class StandaloneDatabaseComponents implements EditionDatabaseComponents
         this.locks = editionModule.getLocksSupplier().get();
         this.statementLocksFactory = editionModule.getStatementLocksFactoryProvider().apply( locks );
         this.transactionMonitor = editionModule.createTransactionMonitor();
+        this.queryEngineProvider = editionModule.getQueryEngineProvider();
         this.accessCapabilityFactory = AccessCapabilityFactory.configDependent();
     }
 
@@ -123,6 +126,12 @@ public class StandaloneDatabaseComponents implements EditionDatabaseComponents
     public DatabaseTransactionStats getTransactionMonitor()
     {
         return transactionMonitor;
+    }
+
+    @Override
+    public QueryEngineProvider getQueryEngineProvider()
+    {
+        return queryEngineProvider;
     }
 
     @Override
