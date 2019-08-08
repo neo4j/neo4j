@@ -397,9 +397,7 @@ abstract class TreeNode<KEY,VALUE>
 
     // Useful for debugging
     @SuppressWarnings( "unused" )
-    void printNode( PageCursor cursor, boolean includeValue, boolean includeAllocSpace, long stableGeneration, long unstableGeneration )
-    {   // default no-op
-    }
+    abstract void printNode( PageCursor cursor, boolean includeValue, boolean includeAllocSpace, long stableGeneration, long unstableGeneration );
 
     abstract void checkMetaConsistency( PageCursor cursor, int keyCount, Type type );
 
