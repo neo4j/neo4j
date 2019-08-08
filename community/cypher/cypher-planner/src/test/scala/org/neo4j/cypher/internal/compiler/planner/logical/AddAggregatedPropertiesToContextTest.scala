@@ -104,7 +104,7 @@ class AddAggregatedPropertiesToContextTest extends CypherFunSuite with LogicalPl
   }
 
   test("should return updated context for LOAD CSV before aggregation") {
-    val plannerQuery = buildPlannerQuery("LOAD CSV WITH HEADERS FROM '$url' AS row MATCH (n) WHERE toInt(row.Value) > 20 RETURN count(n.prop)")
+    val plannerQuery = buildPlannerQuery("LOAD CSV WITH HEADERS FROM '$url' AS row MATCH (n) WHERE toInteger(row.Value) > 20 RETURN count(n.prop)")
     val result = planSingeQuery.addAggregatedPropertiesToContext(plannerQuery, context)
 
     assertContextUpdated(result, Set(("n", "prop")))

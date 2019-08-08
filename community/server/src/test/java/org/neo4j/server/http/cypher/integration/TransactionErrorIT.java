@@ -121,7 +121,7 @@ public class TransactionErrorIT extends AbstractRestFunctionalTestBase
             out.close();
 
             String url = file.toURI().toURL().toString().replace("\\", "\\\\");
-            String query = "USING PERIODIC COMMIT 1 LOAD CSV FROM \\\"" + url + "\\\" AS line CREATE ({name: 1/toInt(line[0])});";
+            String query = "USING PERIODIC COMMIT 1 LOAD CSV FROM \\\"" + url + "\\\" AS line CREATE ({name: 1/toInteger(line[0])});";
 
             // begin and execute and commit
             HTTP.RawPayload payload = quotedJson("{ 'statements': [ { 'statement': '" + query + "' } ] }");

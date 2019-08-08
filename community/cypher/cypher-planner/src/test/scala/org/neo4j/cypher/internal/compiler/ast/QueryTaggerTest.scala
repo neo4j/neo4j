@@ -121,7 +121,7 @@ class QueryTaggerTest extends CypherFunSuite {
   }
 
   test(queryTag(LoadCSVTag)) {
-    val tags = QueryTagger("LOAD CSV WITH HEADERS FROM \"http://somewhere/file.csv\" AS csvLine\nCREATE (p:Person { id: toInt(csvLine.id), name: csvLine.name })")
+    val tags = QueryTagger("LOAD CSV WITH HEADERS FROM \"http://somewhere/file.csv\" AS csvLine\nCREATE (p:Person { id: toInteger(csvLine.id), name: csvLine.name })")
     tags should contain(LoadCSVTag)
     tags should contain(UpdatesTag)
   }
