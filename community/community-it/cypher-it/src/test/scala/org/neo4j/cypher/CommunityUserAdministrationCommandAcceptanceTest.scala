@@ -31,7 +31,7 @@ import org.neo4j.server.security.auth.SecurityTestUtils
 
 import scala.collection.Map
 
-class CommunityUserManagementDDLAcceptanceTest extends CommunityDDLAcceptanceTestBase {
+class CommunityUserAdministrationCommandAcceptanceTest extends CommunityAdministrationCommandAcceptanceTestBase {
 
   // Tests for showing users
 
@@ -66,7 +66,7 @@ class CommunityUserManagementDDLAcceptanceTest extends CommunityDDLAcceptanceTes
   }
 
   test("should fail when showing users when not on system database") {
-    the[DatabaseManagementException] thrownBy {
+    the[DatabaseAdministrationException] thrownBy {
       // WHEN
       execute("SHOW USERS")
       // THEN
@@ -268,7 +268,7 @@ class CommunityUserManagementDDLAcceptanceTest extends CommunityDDLAcceptanceTes
   }
 
   test("should fail when creating user when not on system database") {
-    the[DatabaseManagementException] thrownBy {
+    the[DatabaseAdministrationException] thrownBy {
       // WHEN
       execute("CREATE USER foo SET PASSWORD 'bar'")
       // THEN
@@ -367,7 +367,7 @@ class CommunityUserManagementDDLAcceptanceTest extends CommunityDDLAcceptanceTes
   }
 
   test("should fail when dropping user when not on system database") {
-    the[DatabaseManagementException] thrownBy {
+    the[DatabaseAdministrationException] thrownBy {
       // WHEN
       execute("DROP USER foo")
       // THEN

@@ -19,7 +19,7 @@ package org.neo4j.cypher.internal.v4_0.parser
 import org.neo4j.cypher.internal.v4_0.ast
 import org.neo4j.cypher.internal.v4_0.util.InputPosition
 
-class RoleManagementDDLParserTest extends DDLParserTestBase {
+class RoleAdministrationCommandParserTest extends AdministrationCommandParserTestBase {
 
   //  Showing roles
 

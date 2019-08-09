@@ -21,7 +21,7 @@ package org.neo4j.cypher
 
 import org.neo4j.configuration.GraphDatabaseSettings
 
-class CommunityRoleManagementDDLAcceptanceTest extends CommunityDDLAcceptanceTestBase {
+class CommunityRoleAdministrationCommandAcceptanceTest extends CommunityAdministrationCommandAcceptanceTestBase {
 
   test("should fail on showing roles from community") {
     // GIVEN

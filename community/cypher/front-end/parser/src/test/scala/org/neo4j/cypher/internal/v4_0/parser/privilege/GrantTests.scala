@@ -16,7 +16,7 @@
  */
 package org.neo4j.cypher.internal.v4_0.parser.privilege
 
-class GrantTests extends WritePrivilegeManagementDDLParserTest {
+class GrantTests extends WritePrivilegeAdministrationCommandParserTest {
   privilegeTests("GRANT", "TO", grant)
 }
 

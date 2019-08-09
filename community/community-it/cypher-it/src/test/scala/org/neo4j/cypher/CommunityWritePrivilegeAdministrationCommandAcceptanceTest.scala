@@ -21,7 +21,7 @@ package org.neo4j.cypher
 
 import org.neo4j.configuration.GraphDatabaseSettings.SYSTEM_DATABASE_NAME
 
-class CommunityWritePrivilegeDDLAcceptanceTest extends CommunityDDLAcceptanceTestBase {
+class CommunityWritePrivilegeAdministrationCommandAcceptanceTest extends CommunityAdministrationCommandAcceptanceTestBase {
 
   test("should fail on granting write privileges from community") {
     // GIVEN

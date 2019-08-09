@@ -21,7 +21,7 @@ import org.neo4j.cypher.internal.v4_0.ast._
 import org.neo4j.cypher.internal.v4_0.util.InputPosition
 import org.parboiled.scala.Rule1
 
-class DDLParserTestBase
+class AdministrationCommandParserTestBase
   extends ParserAstTest[ast.Statement] with Statement with AstConstructionTestSupport {
 
   implicit val parser: Rule1[ast.Statement] = Statement

@@ -21,7 +21,7 @@ package org.neo4j.cypher
 
 import org.neo4j.configuration.GraphDatabaseSettings.SYSTEM_DATABASE_NAME
 
-class CommunityPrivilegeDDLAcceptanceTest extends CommunityDDLAcceptanceTestBase {
+class CommunityPrivilegeAdministrationCommandAcceptanceTest extends CommunityAdministrationCommandAcceptanceTestBase {
 
   // Tests for showing privileges
 

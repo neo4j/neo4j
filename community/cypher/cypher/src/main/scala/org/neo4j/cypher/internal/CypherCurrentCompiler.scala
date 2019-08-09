@@ -162,7 +162,7 @@ case class CypherCurrentCompiler[CONTEXT <: RuntimeContext](planner: CypherPlann
   private def getQueryType(planState: LogicalPlanState): InternalQueryType = {
     // check system and procedure runtimes first, because if this is true solveds will be empty
     runtime match {
-      case m:ManagementCommandRuntime if m.isApplicableManagementCommand(planState) =>
+      case m:AdministrationCommandRuntime if m.isApplicableAdministrationCommand(planState) =>
           DBMS
       case _ =>
         val procedureOrSchema = SchemaCommandRuntime.queryType(planState.logicalPlan)

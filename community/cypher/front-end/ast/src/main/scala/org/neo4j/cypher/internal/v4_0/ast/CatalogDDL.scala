@@ -30,7 +30,7 @@ sealed trait CatalogDDL extends Statement with SemanticAnalysisTooling {
   override def returnColumns: List[String] = List.empty
 }
 
-sealed trait MultiDatabaseDDL extends CatalogDDL {
+sealed trait MultiDatabaseAdministrationCommand extends CatalogDDL {
   override def semanticCheck: SemanticCheck =
     requireFeatureSupport(s"The `$name` clause", SemanticFeature.MultipleDatabases, position)
 }
@@ -41,7 +41,7 @@ sealed trait MultiGraphDDL extends CatalogDDL {
     requireFeatureSupport(s"The `$name` clause", SemanticFeature.MultipleGraphs, position)
 }
 
-final case class ShowUsers()(val position: InputPosition) extends MultiDatabaseDDL {
+final case class ShowUsers()(val position: InputPosition) extends MultiDatabaseAdministrationCommand {
 
   override def name: String = "SHOW USERS"
 
@@ -54,7 +54,7 @@ final case class CreateUser(userName: String,
                             initialStringPassword: Option[String],
                             initialParameterPassword: Option[Parameter],
                             requirePasswordChange: Boolean,
-                            suspended: Option[Boolean])(val position: InputPosition) extends MultiDatabaseDDL {
+                            suspended: Option[Boolean])(val position: InputPosition) extends MultiDatabaseAdministrationCommand {
   assert(initialStringPassword.isDefined || initialParameterPassword.isDefined)
   assert(!(initialStringPassword.isDefined && initialParameterPassword.isDefined))
 
@@ -65,7 +65,7 @@ final case class CreateUser(userName: String,
       SemanticState.recordCurrentScope(this)
 }
 
-final case class DropUser(userName: String)(val position: InputPosition) extends MultiDatabaseDDL {
+final case class DropUser(userName: String)(val position: InputPosition) extends MultiDatabaseAdministrationCommand {
 
   override def name = "DROP USER"
 
@@ -78,7 +78,7 @@ final case class AlterUser(userName: String,
                            initialStringPassword: Option[String],
                            initialParameterPassword: Option[Parameter],
                            requirePasswordChange: Option[Boolean],
-                           suspended: Option[Boolean])(val position: InputPosition) extends MultiDatabaseDDL {
+                           suspended: Option[Boolean])(val position: InputPosition) extends MultiDatabaseAdministrationCommand {
   assert(initialStringPassword.isDefined || initialParameterPassword.isDefined || requirePasswordChange.isDefined || suspended.isDefined)
   assert(!(initialStringPassword.isDefined && initialParameterPassword.isDefined))
 
@@ -92,7 +92,7 @@ final case class AlterUser(userName: String,
 final case class SetOwnPassword(newStringPassword: Option[String],
                                 newParameterPassword: Option[Parameter],
                                 currentStringPassword: Option[String],
-                                currentParameterPassword: Option[Parameter])(val position: InputPosition) extends MultiDatabaseDDL {
+                                currentParameterPassword: Option[Parameter])(val position: InputPosition) extends MultiDatabaseAdministrationCommand {
   assert(newStringPassword.isDefined || newParameterPassword.isDefined)
   assert(!(newStringPassword.isDefined && newParameterPassword.isDefined))
   assert(currentStringPassword.isDefined || currentParameterPassword.isDefined)
@@ -105,7 +105,7 @@ final case class SetOwnPassword(newStringPassword: Option[String],
       SemanticState.recordCurrentScope(this)
 }
 
-final case class ShowRoles(withUsers: Boolean, showAll: Boolean)(val position: InputPosition) extends MultiDatabaseDDL {
+final case class ShowRoles(withUsers: Boolean, showAll: Boolean)(val position: InputPosition) extends MultiDatabaseAdministrationCommand {
 
   override def name: String = if (showAll) "SHOW ALL ROLES" else "SHOW POPULATED ROLES"
 
@@ -114,7 +114,7 @@ final case class ShowRoles(withUsers: Boolean, showAll: Boolean)(val position: I
       SemanticState.recordCurrentScope(this)
 }
 
-final case class CreateRole(roleName: String, from: Option[String])(val position: InputPosition) extends MultiDatabaseDDL {
+final case class CreateRole(roleName: String, from: Option[String])(val position: InputPosition) extends MultiDatabaseAdministrationCommand {
 
   override def name = "CREATE ROLE"
 
@@ -123,7 +123,7 @@ final case class CreateRole(roleName: String, from: Option[String])(val position
       SemanticState.recordCurrentScope(this)
 }
 
-final case class DropRole(roleName: String)(val position: InputPosition) extends MultiDatabaseDDL {
+final case class DropRole(roleName: String)(val position: InputPosition) extends MultiDatabaseAdministrationCommand {
 
   override def name = "DROP ROLE"
 
@@ -132,7 +132,7 @@ final case class DropRole(roleName: String)(val position: InputPosition) extends
       SemanticState.recordCurrentScope(this)
 }
 
-final case class GrantRolesToUsers(roleNames: Seq[String], userNames: Seq[String])(val position: InputPosition) extends MultiDatabaseDDL {
+final case class GrantRolesToUsers(roleNames: Seq[String], userNames: Seq[String])(val position: InputPosition) extends MultiDatabaseAdministrationCommand {
 
   override def name = "GRANT ROLE"
 
@@ -141,7 +141,7 @@ final case class GrantRolesToUsers(roleNames: Seq[String], userNames: Seq[String
       SemanticState.recordCurrentScope(this)
 }
 
-final case class RevokeRolesFromUsers(roleNames: Seq[String], userNames: Seq[String])(val position: InputPosition) extends MultiDatabaseDDL {
+final case class RevokeRolesFromUsers(roleNames: Seq[String], userNames: Seq[String])(val position: InputPosition) extends MultiDatabaseAdministrationCommand {
 
   override def name = "REVOKE ROLE"
 
@@ -279,7 +279,7 @@ object RevokePrivilege {
 }
 
 final case class GrantPrivilege(privilege: PrivilegeType, resource: ActionResource, scope: GraphScope, qualifier: PrivilegeQualifier, roleNames: Seq[String])
-                               (val position: InputPosition) extends MultiDatabaseDDL {
+                               (val position: InputPosition) extends MultiDatabaseAdministrationCommand {
 
   override def name = s"GRANT ${privilege.name}"
 
@@ -289,7 +289,7 @@ final case class GrantPrivilege(privilege: PrivilegeType, resource: ActionResour
 }
 
 final case class DenyPrivilege(privilege: PrivilegeType, resource: ActionResource, scope: GraphScope, qualifier: PrivilegeQualifier, roleNames: Seq[String])
-                                (val position: InputPosition) extends MultiDatabaseDDL {
+                                (val position: InputPosition) extends MultiDatabaseAdministrationCommand {
 
   override def name = s"DENY ${privilege.name}"
 
@@ -299,7 +299,7 @@ final case class DenyPrivilege(privilege: PrivilegeType, resource: ActionResourc
 }
 
 final case class RevokePrivilege(privilege: PrivilegeType, resource: ActionResource, scope: GraphScope, qualifier: PrivilegeQualifier, roleNames: Seq[String],
-                                 revokeType: RevokeType)(val position: InputPosition) extends MultiDatabaseDDL {
+                                 revokeType: RevokeType)(val position: InputPosition) extends MultiDatabaseAdministrationCommand {
 
   override def name: String = {
     if (revokeType.name.nonEmpty) {
@@ -314,7 +314,7 @@ final case class RevokePrivilege(privilege: PrivilegeType, resource: ActionResou
       SemanticState.recordCurrentScope(this)
 }
 
-final case class ShowPrivileges(scope: ShowPrivilegeScope)(val position: InputPosition) extends MultiDatabaseDDL {
+final case class ShowPrivileges(scope: ShowPrivilegeScope)(val position: InputPosition) extends MultiDatabaseAdministrationCommand {
 
   override def name = "SHOW PRIVILEGE"
 
@@ -323,7 +323,7 @@ final case class ShowPrivileges(scope: ShowPrivilegeScope)(val position: InputPo
       SemanticState.recordCurrentScope(this)
 }
 
-final case class ShowDatabases()(val position: InputPosition) extends MultiDatabaseDDL {
+final case class ShowDatabases()(val position: InputPosition) extends MultiDatabaseAdministrationCommand {
 
   override def name = "SHOW DATABASES"
 
@@ -332,7 +332,7 @@ final case class ShowDatabases()(val position: InputPosition) extends MultiDatab
       SemanticState.recordCurrentScope(this)
 }
 
-final case class ShowDefaultDatabase()(val position: InputPosition) extends MultiDatabaseDDL {
+final case class ShowDefaultDatabase()(val position: InputPosition) extends MultiDatabaseAdministrationCommand {
 
   override def name = "SHOW DEFAULT DATABASE"
 
@@ -341,7 +341,7 @@ final case class ShowDefaultDatabase()(val position: InputPosition) extends Mult
       SemanticState.recordCurrentScope(this)
 }
 
-final case class ShowDatabase(dbName: String)(val position: InputPosition) extends MultiDatabaseDDL {
+final case class ShowDatabase(dbName: String)(val position: InputPosition) extends MultiDatabaseAdministrationCommand {
 
   override def name = "SHOW DATABASE"
 
@@ -350,7 +350,7 @@ final case class ShowDatabase(dbName: String)(val position: InputPosition) exten
       SemanticState.recordCurrentScope(this)
 }
 
-final case class CreateDatabase(dbName: String)(val position: InputPosition) extends MultiDatabaseDDL {
+final case class CreateDatabase(dbName: String)(val position: InputPosition) extends MultiDatabaseAdministrationCommand {
 
   override def name = "CREATE DATABASE"
 
@@ -359,7 +359,7 @@ final case class CreateDatabase(dbName: String)(val position: InputPosition) ext
       SemanticState.recordCurrentScope(this)
 }
 
-final case class DropDatabase(dbName: String)(val position: InputPosition) extends MultiDatabaseDDL {
+final case class DropDatabase(dbName: String)(val position: InputPosition) extends MultiDatabaseAdministrationCommand {
 
   override def name = "DROP DATABASE"
 
@@ -368,7 +368,7 @@ final case class DropDatabase(dbName: String)(val position: InputPosition) exten
       SemanticState.recordCurrentScope(this)
 }
 
-final case class StartDatabase(dbName: String)(val position: InputPosition) extends MultiDatabaseDDL {
+final case class StartDatabase(dbName: String)(val position: InputPosition) extends MultiDatabaseAdministrationCommand {
 
   override def name = "START DATABASE"
 
@@ -377,7 +377,7 @@ final case class StartDatabase(dbName: String)(val position: InputPosition) exte
       SemanticState.recordCurrentScope(this)
 }
 
-final case class StopDatabase(dbName: String)(val position: InputPosition) extends MultiDatabaseDDL {
+final case class StopDatabase(dbName: String)(val position: InputPosition) extends MultiDatabaseAdministrationCommand {
 
   override def name = "STOP DATABASE"
 

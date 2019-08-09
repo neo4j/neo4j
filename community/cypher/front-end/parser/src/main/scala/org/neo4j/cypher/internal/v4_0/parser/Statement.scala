@@ -26,22 +26,22 @@ trait Statement extends Parser
   with Base {
 
   def Statement: Rule1[ast.Statement] = rule(
-    MultiDatabaseCommand | CatalogCommand | UserManagementCommand | PrivilegeManagementCommand | Command | Query
+    MultiDatabaseAdministrationCommand | CatalogCommand | UserAdministrationCommand | PrivilegeAdministrationCommand | Command | Query
   )
 
   def CatalogCommand: Rule1[CatalogDDL] = rule("Catalog DDL statement") {
     CreateGraph | DropGraph | CreateView | DropView
   }
 
-  def MultiDatabaseCommand: Rule1[CatalogDDL] = rule("MultiDatabase administration statement") {
+  def MultiDatabaseAdministrationCommand: Rule1[CatalogDDL] = rule("MultiDatabase administration statement") {
     optional(keyword("CATALOG")) ~~ (ShowDatabase | ShowDatabases | ShowDefaultDatabase | CreateDatabase | DropDatabase | StartDatabase | StopDatabase)
   }
 
-  def UserManagementCommand: Rule1[CatalogDDL] = rule("Security user administration statement") {
+  def UserAdministrationCommand: Rule1[CatalogDDL] = rule("Security user administration statement") {
     optional(keyword("CATALOG")) ~~ (ShowRoles | CreateRole | DropRole | ShowUsers | CreateUser | DropUser | AlterUser | SetOwnPassword)
   }
 
-  def PrivilegeManagementCommand: Rule1[CatalogDDL] = rule("Security privilege administration statement") {
+  def PrivilegeAdministrationCommand: Rule1[CatalogDDL] = rule("Security privilege administration statement") {
     optional(keyword("CATALOG")) ~~ (ShowPrivileges | GrantCommand | DenyCommand | RevokeCommand)
   }
 

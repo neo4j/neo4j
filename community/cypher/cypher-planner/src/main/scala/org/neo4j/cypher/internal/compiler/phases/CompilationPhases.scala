@@ -23,7 +23,7 @@ import org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter.PlanRew
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.insertCachedProperties
 import org.neo4j.cypher.internal.compiler.planner.logical.{OptionalMatchRemover, QueryPlanner}
 import org.neo4j.cypher.internal.compiler.planner.{CheckForUnresolvedTokens, ResolveTokens}
-import org.neo4j.cypher.internal.compiler.{MultiDatabaseManagementCommandPlanBuilder, SchemaCommandPlanBuilder, UnsupportedSystemCommand}
+import org.neo4j.cypher.internal.compiler.{MultiDatabaseAdministrationCommandPlanBuilder, SchemaCommandPlanBuilder, UnsupportedSystemCommand}
 import org.neo4j.cypher.internal.ir.UnionQuery
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.v4_0.ast.Statement
@@ -78,7 +78,7 @@ object CompilationPhases {
   // Alternative Phase 3
   def systemPipeLine: Transformer[PlannerContext, BaseState, LogicalPlanState] =
     RewriteProcedureCalls andThen
-    MultiDatabaseManagementCommandPlanBuilder andThen
+    MultiDatabaseAdministrationCommandPlanBuilder andThen
       If((s: LogicalPlanState) => s.maybeLogicalPlan.isEmpty)(
         UnsupportedSystemCommand
       )

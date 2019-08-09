@@ -71,11 +71,11 @@ object exceptionHandler extends MapToPublicExceptions[CypherException] {
   override def transactionOutOfMemoryException(message: String, cause: Throwable): CypherException =
     new TransactionOutOfMemoryException(message, cause)
 
-  override def databaseManagementException(message: String): CypherException =
-    new DatabaseManagementException(message)
+  override def databaseAdministrationException(message: String): CypherException =
+    new DatabaseAdministrationException(message)
 
-  override def securityManagementException(message: String): CypherException =
-    new SecurityManagementException(message)
+  override def securityAdministrationException(message: String): CypherException =
+    new SecurityAdministrationException(message)
 
   override def invalidSemanticException(message: String, cause: Throwable) = new InvalidSemanticsException(message, cause)
 

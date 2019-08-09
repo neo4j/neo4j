@@ -28,7 +28,7 @@ import org.neo4j.cypher.internal.compatibility.{CypherPlanner, _}
 import org.neo4j.cypher.internal.compiler._
 import org.neo4j.cypher.internal.compiler.phases.PlannerContext
 import org.neo4j.cypher.internal.compiler.planner.logical.{CachedMetricsFactory, SimpleMetricsFactory, simpleExpressionEvaluator}
-import org.neo4j.cypher.internal.logical.plans.{DatabaseManagementException => _, _}
+import org.neo4j.cypher.internal.logical.plans.{DatabaseAdministrationException => _, _}
 import org.neo4j.cypher.internal.planner.spi.PlanContext
 import org.neo4j.cypher.internal.runtime.interpreted._
 import org.neo4j.cypher.internal.spi.{ExceptionTranslatingPlanContext, TransactionBoundPlanContext}
@@ -126,14 +126,14 @@ case class Cypher4_0Planner(config: CypherPlannerConfiguration,
           notificationLogger.log(MissingParametersNotification(missingParameterNames))
         }
         val reusabilityState = runtime match {
-          case m: ManagementCommandRuntime =>
-            if (m.isApplicableManagementCommand(logicalPlanState))
+          case m: AdministrationCommandRuntime =>
+            if (m.isApplicableAdministrationCommand(logicalPlanState))
               FineToReuse
             else logicalPlanState.maybeLogicalPlan match {
               case Some(ProcedureCall(_,ResolvedCall(signature,_,_,_,_))) if signature.systemProcedure => FineToReuse
-              case Some(_: ProcedureCall) => throw new DatabaseManagementException("Attempting invalid procedure call in administration runtime")
+              case Some(_: ProcedureCall) => throw new DatabaseAdministrationException("Attempting invalid procedure call in administration runtime")
               case Some(plan: MultiDatabaseLogicalPlan) => throw plan.invalid("Unsupported administration command: " + logicalPlanState.queryText)
-              case _ => throw new DatabaseManagementException("Attempting invalid administration command in administration runtime")
+              case _ => throw new DatabaseAdministrationException("Attempting invalid administration command in administration runtime")
             }
           case _ if SchemaCommandRuntime.isApplicable(logicalPlanState) => FineToReuse
           case _ =>

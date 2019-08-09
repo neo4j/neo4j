@@ -18,7 +18,7 @@ package org.neo4j.cypher.internal.v4_0.parser
 
 import org.neo4j.cypher.internal.v4_0.ast
 
-class PrivilegeManagementDDLParserTest extends DDLParserTestBase {
+class PrivilegeAdministrationCommandParserTest extends AdministrationCommandParserTestBase {
 
   //  Showing privileges
 

@@ -19,10 +19,10 @@
  */
 package org.neo4j.cypher.internal.compiler.phases
 
-import org.neo4j.cypher.DatabaseManagementException
+import org.neo4j.cypher.DatabaseAdministrationException
 import org.neo4j.cypher.internal.v4_0.util.InternalException
 import org.neo4j.cypher.internal.compiler.ast.convert.plannerQuery.StatementConverters._
-import org.neo4j.cypher.internal.v4_0.ast.{MultiDatabaseDDL, Query}
+import org.neo4j.cypher.internal.v4_0.ast.{MultiDatabaseAdministrationCommand, Query}
 import org.neo4j.cypher.internal.v4_0.frontend.phases.CompilationPhaseTracer.CompilationPhase.LOGICAL_PLANNING
 import org.neo4j.cypher.internal.v4_0.frontend.phases.{BaseContext, BaseState, Phase}
 import org.neo4j.cypher.internal.ir.UnionQuery
@@ -40,7 +40,7 @@ object CreatePlannerQuery extends Phase[BaseContext, BaseState, LogicalPlanState
       val unionQuery: UnionQuery = toUnionQuery(query, from.semanticTable())
       LogicalPlanState(from).copy(maybeUnionQuery = Some(unionQuery))
 
-    case ddl: MultiDatabaseDDL => throw new DatabaseManagementException(
+    case ddl: MultiDatabaseAdministrationCommand => throw new DatabaseAdministrationException(
       s"This is an administration command and it should be executed against the system database: ${ddl.name}")
 
     case x => throw new InternalException(s"Expected a Query and not `$x`")

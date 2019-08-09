@@ -22,8 +22,8 @@ package org.neo4j.cypher.internal
 import org.neo4j.cypher.internal.compiler.phases.LogicalPlanState
 import org.neo4j.kernel.api.exceptions.InvalidArgumentsException
 
-trait ManagementCommandRuntime extends CypherRuntime[RuntimeContext] {
-  def isApplicableManagementCommand(logicalPlanState: LogicalPlanState): Boolean
+trait AdministrationCommandRuntime extends CypherRuntime[RuntimeContext] {
+  def isApplicableAdministrationCommand(logicalPlanState: LogicalPlanState): Boolean
 
   def validatePassword(password: Array[Byte]): Array[Byte] = {
     if (password == null || password.length == 0) throw new InvalidArgumentsException("A password cannot be empty.")

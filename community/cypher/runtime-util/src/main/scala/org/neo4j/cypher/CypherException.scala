@@ -177,11 +177,11 @@ class ExhaustiveShortestPathForbiddenException(message: String, cause: Throwable
 
 class ShortestPathCommonEndNodesForbiddenException(message: String, cause: Throwable) extends CypherExecutionException(message, cause)
 
-class DatabaseManagementException(message: String) extends CypherExecutionException(message, null) {
+class DatabaseAdministrationException(message: String) extends CypherExecutionException(message, null) {
   override val status: Status = Status.Statement.NotSystemDatabaseError
 }
 
-class SecurityManagementException(message: String) extends CypherExecutionException(message, null)
+class SecurityAdministrationException(message: String) extends CypherExecutionException(message, null)
 
 class TransactionOutOfMemoryException(message: String, cause: Throwable) extends CypherExecutionException(message, cause) {
   override val status: Status = Status.General.TransactionOutOfMemoryError

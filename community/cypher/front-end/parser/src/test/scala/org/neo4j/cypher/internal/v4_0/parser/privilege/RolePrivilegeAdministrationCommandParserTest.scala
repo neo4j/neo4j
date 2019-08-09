@@ -17,9 +17,9 @@
 package org.neo4j.cypher.internal.v4_0.parser.privilege
 
 import org.neo4j.cypher.internal.v4_0.ast
-import org.neo4j.cypher.internal.v4_0.parser.DDLParserTestBase
+import org.neo4j.cypher.internal.v4_0.parser.AdministrationCommandParserTestBase
 
-class RolePrivilegeDDLParserTest extends DDLParserTestBase {
+class RolePrivilegeAdministrationCommandParserTest extends AdministrationCommandParserTestBase {
 
   Seq(
     ("GRANT", "TO", grant: privilegeFunc),

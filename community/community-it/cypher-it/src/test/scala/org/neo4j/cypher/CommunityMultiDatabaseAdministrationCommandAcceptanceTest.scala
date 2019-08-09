@@ -33,7 +33,7 @@ import org.neo4j.server.security.systemgraph.{BasicSystemGraphOperations, Contex
 
 import scala.collection.Map
 
-class CommunityMultiDatabaseDDLAcceptanceTest extends CommunityDDLAcceptanceTestBase {
+class CommunityMultiDatabaseAdministrationCommandAcceptanceTest extends CommunityAdministrationCommandAcceptanceTestBase {
   private val defaultConfig = Config.defaults()
 
   test("should fail at startup when config setting for default database name is invalid") {
@@ -135,7 +135,7 @@ class CommunityMultiDatabaseDDLAcceptanceTest extends CommunityDDLAcceptanceTest
   test("should fail when showing default database when not on system database") {
     setup(defaultConfig)
     selectDatabase(DEFAULT_DATABASE_NAME)
-    the [DatabaseManagementException] thrownBy {
+    the [DatabaseAdministrationException] thrownBy {
       // WHEN
       execute("SHOW DEFAULT DATABASE")
       // THEN

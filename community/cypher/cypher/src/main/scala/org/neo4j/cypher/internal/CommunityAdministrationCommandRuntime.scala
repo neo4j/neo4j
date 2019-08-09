@@ -36,7 +36,7 @@ import org.neo4j.values.virtual.VirtualValues
 /**
   * This runtime takes on queries that require no planning, such as multidatabase administration commands
   */
-case class CommunityManagementCommandRuntime(normalExecutionEngine: ExecutionEngine, resolver: DependencyResolver) extends ManagementCommandRuntime {
+case class CommunityAdministrationCommandRuntime(normalExecutionEngine: ExecutionEngine, resolver: DependencyResolver) extends AdministrationCommandRuntime {
   override def name: String = "community administration-commands"
 
   def throwCantCompile(unknownPlan: LogicalPlan): Nothing = {
@@ -170,7 +170,7 @@ case class CommunityManagementCommandRuntime(normalExecutionEngine: ExecutionEng
       logicalToExecutable.applyOrElse(source, throwCantCompile).apply(context, parameterMapping, securityContext)
   }
 
-  override def isApplicableManagementCommand(logicalPlanState: LogicalPlanState): Boolean = {
+  override def isApplicableAdministrationCommand(logicalPlanState: LogicalPlanState): Boolean = {
     val logicalPlan = logicalPlanState.maybeLogicalPlan.get match {
       // Ignore the log command in community
       case LogSystemCommand(source, _) => source

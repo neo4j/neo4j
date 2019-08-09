@@ -84,7 +84,7 @@ trait MapToPublicExceptions[T <: Throwable] {
 
   def transactionOutOfMemoryException(message: String, cause: Throwable): T
 
-  def databaseManagementException(message: String): T
+  def databaseAdministrationException(message: String): T
 
-  def securityManagementException(message: String): T
+  def securityAdministrationException(message: String): T
 }

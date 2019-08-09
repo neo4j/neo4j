@@ -30,7 +30,7 @@ import org.neo4j.kernel.api.security.AuthManager
 
 import scala.collection.Map
 
-abstract class CommunityDDLAcceptanceTestBase extends ExecutionEngineFunSuite with GraphDatabaseTestSupport {
+abstract class CommunityAdministrationCommandAcceptanceTestBase extends ExecutionEngineFunSuite with GraphDatabaseTestSupport {
 
   def authManager: AuthManager = graph.getDependencyResolver.resolveDependency(classOf[AuthManager])
 
