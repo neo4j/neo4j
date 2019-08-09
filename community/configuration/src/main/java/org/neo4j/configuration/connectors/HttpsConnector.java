@@ -26,13 +26,11 @@ import org.neo4j.configuration.SettingsDeclaration;
 import org.neo4j.configuration.helpers.SocketAddress;
 import org.neo4j.graphdb.config.Setting;
 
-import static org.neo4j.configuration.GraphDatabaseSettings.LEGACY_POLICY_NAME;
 import static org.neo4j.configuration.GraphDatabaseSettings.default_advertised_address;
 import static org.neo4j.configuration.GraphDatabaseSettings.default_listen_address;
 import static org.neo4j.configuration.SettingImpl.newBuilder;
 import static org.neo4j.configuration.SettingValueParsers.BOOL;
 import static org.neo4j.configuration.SettingValueParsers.SOCKET_ADDRESS;
-import static org.neo4j.configuration.SettingValueParsers.STRING;
 
 @ServiceProvider
 @PublicApi
@@ -54,7 +52,4 @@ public final class HttpsConnector implements SettingsDeclaration
             newBuilder( "dbms.connector.https.advertised_address", SOCKET_ADDRESS, new SocketAddress( DEFAULT_PORT ) )
                     .setDependency( default_advertised_address )
                     .build();
-
-    @Description( "SSL policy name." )
-    public static final Setting<String> ssl_policy = newBuilder( "dbms.connector.https.ssl_policy", STRING, LEGACY_POLICY_NAME ).build();
 }

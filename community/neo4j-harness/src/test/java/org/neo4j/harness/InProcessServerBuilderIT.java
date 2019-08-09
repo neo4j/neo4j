@@ -86,6 +86,7 @@ import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_TX_LOGS_ROOT
 import static org.neo4j.configuration.GraphDatabaseSettings.data_directory;
 import static org.neo4j.configuration.GraphDatabaseSettings.databases_root_path;
 import static org.neo4j.configuration.GraphDatabaseSettings.transaction_logs_root_path;
+import static org.neo4j.configuration.ssl.SslPolicyScope.HTTPS;
 import static org.neo4j.harness.internal.TestNeo4jBuilders.newInProcessBuilder;
 import static org.neo4j.internal.helpers.collection.Iterables.asIterable;
 import static org.neo4j.internal.helpers.collection.Iterators.single;
@@ -127,7 +128,7 @@ class InProcessServerBuilderIT
         List<String> defaultCiphers = Arrays.asList( ssf.getDefaultCipherSuites() );
 
         // When
-        PemSslPolicyConfig pem = PemSslPolicyConfig.group( "test" );
+        PemSslPolicyConfig pem = PemSslPolicyConfig.forScope( HTTPS );
 
         var certificates = directory.directory( "certificates" );
         SelfSignedCertificateFactory.create( certificates, "private.key", "public.crt" );
@@ -141,7 +142,6 @@ class InProcessServerBuilderIT
                 .withConfig( HttpsConnector.listen_address, new SocketAddress( "localhost", 0 ) )
                 .withConfig( GraphDatabaseSettings.dense_node_threshold, 20 )
                 // override legacy policy
-                .withConfig( HttpsConnector.ssl_policy, "test" )
                 .withConfig( pem.base_directory, certificates.toPath() )
                 .withConfig( pem.ciphers, defaultCiphers )
                 .withConfig( pem.tls_versions, List.of( "TLSv1.2", "TLSv1.1", "TLSv1" ) )
@@ -358,7 +358,6 @@ class InProcessServerBuilderIT
     {
         var certificates = directory.directory( "certificates" );
         Neo4jBuilder serverBuilder = newInProcessBuilder( directory.directory() )
-                .withConfig( GraphDatabaseSettings.legacy_certificates_directory, certificates.toPath() )
                 .withConfig( HttpConnector.enabled, httpEnabled )
                 .withConfig( HttpConnector.listen_address, new SocketAddress( 0 ) )
                 .withConfig( HttpsConnector.enabled, httpsEnabled )
@@ -369,6 +368,7 @@ class InProcessServerBuilderIT
         if ( httpsEnabled )
         {
             SelfSignedCertificateFactory.create( certificates );
+            serverBuilder.withConfig( PemSslPolicyConfig.forScope( HTTPS ).base_directory, certificates.toPath() );
         }
 
         try ( InProcessNeo4j neo4j = serverBuilder.build() )

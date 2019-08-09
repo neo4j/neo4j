@@ -64,12 +64,12 @@ import org.neo4j.server.rest.repr.RepresentationFormatRepository;
 import org.neo4j.server.web.RotatingRequestLog;
 import org.neo4j.server.web.SimpleUriBuilder;
 import org.neo4j.server.web.WebServer;
-import org.neo4j.ssl.SslPolicy;
 import org.neo4j.ssl.config.SslPolicyLoader;
 import org.neo4j.time.Clocks;
 
 import static java.util.stream.Collectors.toUnmodifiableList;
 import static org.neo4j.configuration.GraphDatabaseSettings.db_timezone;
+import static org.neo4j.configuration.ssl.SslPolicyScope.HTTPS;
 import static org.neo4j.server.configuration.ServerSettings.http_log_path;
 import static org.neo4j.server.configuration.ServerSettings.http_logging_enabled;
 import static org.neo4j.server.configuration.ServerSettings.http_logging_rotation_keep_number;
@@ -243,11 +243,10 @@ public abstract class AbstractNeoServer implements NeoServer
 
         if ( httpsEnabled ) // only load sslPolicy when encryption is enabled
         {
-            String sslPolicyName = config.get( HttpsConnector.ssl_policy );
-            if ( sslPolicyName != null )
+            SslPolicyLoader sslPolicyLoader = sslPolicyFactorySupplier.get();
+            if ( sslPolicyLoader.hasPolicyForSource( HTTPS ) )
             {
-                SslPolicy sslPolicy = sslPolicyFactorySupplier.get().getPolicy( sslPolicyName );
-                webServer.setSslPolicy( sslPolicy );
+                webServer.setSslPolicy( sslPolicyLoader.getPolicy( HTTPS ) );
             }
         }
     }

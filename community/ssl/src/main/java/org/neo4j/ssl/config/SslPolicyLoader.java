@@ -45,7 +45,6 @@ import java.security.cert.X509Certificate;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -53,12 +52,12 @@ import javax.net.ssl.CertPathTrustManagerParameters;
 import javax.net.ssl.TrustManagerFactory;
 
 import org.neo4j.configuration.Config;
-import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.configuration.ssl.ClientAuth;
 import org.neo4j.configuration.ssl.JksSslPolicyConfig;
 import org.neo4j.configuration.ssl.PemSslPolicyConfig;
 import org.neo4j.configuration.ssl.Pkcs12SslPolicyConfig;
 import org.neo4j.configuration.ssl.SslPolicyConfig;
+import org.neo4j.configuration.ssl.SslPolicyScope;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.ssl.PkiUtils;
@@ -66,7 +65,6 @@ import org.neo4j.ssl.SslPolicy;
 import org.neo4j.string.SecureString;
 
 import static java.lang.String.format;
-import static org.neo4j.configuration.GraphDatabaseSettings.LEGACY_POLICY_NAME;
 
 /**
  * Each component which utilises SSL policies is recommended to provide a component
@@ -79,18 +77,18 @@ import static org.neo4j.configuration.GraphDatabaseSettings.LEGACY_POLICY_NAME;
  */
 public class SslPolicyLoader
 {
-    private final Map<String,SslPolicy> policies = new ConcurrentHashMap<>();
+    private final Map<SslPolicyScope,SslPolicy> policies = new ConcurrentHashMap<>();
     private final Config config;
     private final SslProvider sslProvider;
     private final LogProvider logProvider;
-
-    private SslPolicy legacyPolicy;
+    private final Log log;
 
     private SslPolicyLoader( Config config, LogProvider logProvider )
     {
         this.config = config;
         this.sslProvider = config.get( SslSystemSettings.netty_ssl_provider );
         this.logProvider = logProvider;
+        this.log = logProvider.getLog( SslPolicyLoader.class );
     }
 
     /**
@@ -102,92 +100,76 @@ public class SslPolicyLoader
     public static SslPolicyLoader create( Config config, LogProvider logProvider )
     {
         SslPolicyLoader policyFactory = new SslPolicyLoader( config, logProvider );
-        policyFactory.load( config, logProvider.getLog( SslPolicyLoader.class ) );
+        policyFactory.load();
         return policyFactory;
     }
 
     /**
      * Use this for retrieving the SSL policy configured under the specified name.
      *
-     * @param policyName The name of the SSL policy to be returned.
+     * @param scope The scope of the SSL policy to be returned.
      * @return Returns the policy defined under the requested name. If the policy name is null
      * then the null policy will be returned which means that SSL will not be used. It is up
      * to each respective SSL policy using component to decide exactly what that means.
      * @throws IllegalArgumentException If a policy with the supplied name does not exist.
      */
-    public SslPolicy getPolicy( String policyName )
+    public SslPolicy getPolicy( SslPolicyScope scope )
     {
-        if ( policyName == null )
+        if ( scope == null )
         {
             return null;
         }
-        else if ( policyName.equals( LEGACY_POLICY_NAME ) )
-        {
-            return getOrCreateLegacyPolicy();
-        }
 
-        SslPolicy sslPolicy = policies.get( policyName );
+        SslPolicy sslPolicy = policies.get( scope );
 
         if ( sslPolicy == null )
         {
             throw new IllegalArgumentException(
-                    format( "Cannot find enabled SSL policy with name '%s' in the configuration", policyName ) );
+                    format( "Cannot find enabled SSL policy with name '%s' in the configuration", scope ) );
         }
         return sslPolicy;
     }
 
-    private synchronized SslPolicy getOrCreateLegacyPolicy()
+    public boolean hasPolicyForSource( SslPolicyScope scope )
     {
-        if ( legacyPolicy != null )
+        return policies.containsKey( scope );
+    }
+
+    private void load()
+    {
+        config.getGroups( PemSslPolicyConfig.class ).values().forEach( policy -> addPolicy( policy, pemSslPolicy( policy ) ) );
+        config.getGroups( JksSslPolicyConfig.class ).values().forEach( policy -> addPolicy( policy, jksKeyStoreSslPolicy( policy ) ) );
+        config.getGroups( Pkcs12SslPolicyConfig.class ).values().forEach( policy -> addPolicy( policy, pkcsKeyStoreSslPolicy( policy ) ) );
+
+        policies.forEach( ( scope, sslPolicy ) -> log.info( format( "Loaded SSL policy '%s' = %s", scope.name(), sslPolicy ) ) );
+    }
+
+    private void addPolicy( SslPolicyConfig policyConfig, SslPolicy policy )
+    {
+        SslPolicyScope scope = policyConfig.getScope();
+        if ( policies.put( scope, policy ) != null )
         {
-            return legacyPolicy;
+            throw new IllegalStateException( "Can not have multiple SslPolicies configured for " + scope.name() );
         }
-        legacyPolicy = loadOrCreateLegacyPolicy();
-        return legacyPolicy;
     }
 
-    private SslPolicy loadOrCreateLegacyPolicy()
+    private SslPolicy pemSslPolicy( PemSslPolicyConfig policyConfig )
     {
-        File privateKeyFile = config.get( GraphDatabaseSettings.tls_key_file ).toFile().getAbsoluteFile();
-        File certificateFile = config.get( GraphDatabaseSettings.tls_certificate_file ).toFile().getAbsoluteFile();
-
-        PrivateKey privateKey = loadPrivateKey( privateKeyFile, null );
-        X509Certificate[] keyCertChain = loadCertificateChain( certificateFile );
-
-        return new SslPolicy( privateKey, keyCertChain, Collections.singletonList( "TLSv1.2" ), null,
-                ClientAuth.NONE, InsecureTrustManagerFactory.INSTANCE, sslProvider, false, logProvider );
-    }
-
-    private void load( Config config, Log log )
-    {
-        config.getGroups( PemSslPolicyConfig.class ).forEach(
-                ( policyName, policyConfig ) -> policies.put( policyName, pemSslPolicy( config, policyName ) ) );
-        config.getGroups( JksSslPolicyConfig.class ).forEach(
-                ( policyName, policyConfig ) -> policies.put( policyName, jksKeyStoreSslPolicy( config, log, policyName ) ) );
-        config.getGroups( Pkcs12SslPolicyConfig.class ).forEach(
-                ( policyName, policyConfig ) -> policies.put( policyName, pkcsKeyStoreSslPolicy( config, log, policyName ) ) );
-
-        policies.forEach( ( policyName, sslPolicy ) -> log.info( format( "Loaded SSL policy '%s' = %s", policyName, sslPolicy ) ) );
-    }
-
-    private SslPolicy pemSslPolicy( Config config, String policyName )
-    {
-        PemSslPolicyConfig policyConfig = PemSslPolicyConfig.group( policyName );
         File baseDirectory = config.get( policyConfig.base_directory ).toFile();
         File revokedCertificatesDir = config.get( policyConfig.revoked_dir ).toFile();
 
         if ( !baseDirectory.exists() )
         {
             throw new IllegalArgumentException(
-                    format( "Base directory '%s' for SSL policy with name '%s' does not exist.", baseDirectory, policyName ) );
+                    format( "Base directory '%s' for SSL policy with name '%s' does not exist.", baseDirectory, policyConfig.name() ) );
         }
 
-        KeyAndChain keyAndChain = pemKeyAndChain( config, policyConfig );
+        KeyAndChain keyAndChain = pemKeyAndChain( policyConfig );
 
-        return sslPolicy( config, policyConfig, revokedCertificatesDir, keyAndChain );
+        return sslPolicy( policyConfig, revokedCertificatesDir, keyAndChain );
     }
 
-    private KeyAndChain pemKeyAndChain( Config config, PemSslPolicyConfig policyConfig )
+    private KeyAndChain pemKeyAndChain( PemSslPolicyConfig policyConfig )
     {
         File privateKeyFile = config.get( policyConfig.private_key ).toFile();
         SecureString privateKeyPassword = config.get( policyConfig.private_key_password );
@@ -215,16 +197,15 @@ public class SslPolicyLoader
         return new KeyAndChain( privateKey, keyCertChain, trustStore );
     }
 
-    private SslPolicy jksKeyStoreSslPolicy( Config config, Log log, String policyName )
+    private SslPolicy jksKeyStoreSslPolicy( JksSslPolicyConfig policyConfig )
     {
-        JksSslPolicyConfig policyConfig = JksSslPolicyConfig.group( policyName );
         File baseDirectory = config.get( policyConfig.base_directory ).toFile();
         File revokedCertificatesDir = config.get( policyConfig.revoked_dir ).toFile();
 
         if ( !baseDirectory.exists() )
         {
             throw new IllegalArgumentException(
-                    format( "Base directory '%s' for SSL policy with name '%s' does not exist.", baseDirectory, policyName ) );
+                    format( "Base directory '%s' for SSL policy with name '%s' does not exist.", baseDirectory, policyConfig.name() ) );
         }
 
         File keyStoreFile = config.get( policyConfig.keystore ).toFile();
@@ -236,19 +217,18 @@ public class SslPolicyLoader
 
         KeyAndChain keyAndChain = keyStoreKeyAndChain( "JKS", keyStoreFile, trustStoreFile, storePass, trustStorePass, keyPass, keyAlias );
 
-        return sslPolicy( config, policyConfig, revokedCertificatesDir, keyAndChain );
+        return sslPolicy( policyConfig, revokedCertificatesDir, keyAndChain );
     }
 
-    private SslPolicy pkcsKeyStoreSslPolicy( Config config, Log log, String policyName )
+    private SslPolicy pkcsKeyStoreSslPolicy( Pkcs12SslPolicyConfig policyConfig )
     {
-        Pkcs12SslPolicyConfig policyConfig = Pkcs12SslPolicyConfig.group( policyName );
         File baseDirectory = config.get( policyConfig.base_directory ).toFile();
         File revokedCertificatesDir = config.get( policyConfig.revoked_dir ).toFile();
 
         if ( !baseDirectory.exists() )
         {
             throw new IllegalArgumentException(
-                    format( "Base directory '%s' for SSL policy with name '%s' does not exist.", baseDirectory, policyName ) );
+                    format( "Base directory '%s' for SSL policy with name '%s' does not exist.", baseDirectory, policyConfig.name() ) );
         }
 
         File trustStoreFile = config.get( policyConfig.truststore ).toFile();
@@ -260,7 +240,7 @@ public class SslPolicyLoader
 
         KeyAndChain keyAndChain = keyStoreKeyAndChain( "PKCS12", keyStoreFile, trustStoreFile, storePass, trustStorePass, keyPass, keyAlias );
 
-        return sslPolicy( config, policyConfig, revokedCertificatesDir, keyAndChain );
+        return sslPolicy( policyConfig, revokedCertificatesDir, keyAndChain );
     }
 
     private KeyAndChain keyStoreKeyAndChain( String type, File keyStoreFile, File trustStoreFile, SecureString storePass, SecureString trustStorePass,
@@ -328,7 +308,7 @@ public class SslPolicyLoader
         return keyStore;
     }
 
-    private SslPolicy sslPolicy( Config config, SslPolicyConfig policyConfig, File revokedCertificatesDir, KeyAndChain keyAndChain )
+    private SslPolicy sslPolicy( SslPolicyConfig policyConfig, File revokedCertificatesDir, KeyAndChain keyAndChain )
     {
         Collection<X509CRL> crls = getCRLs( revokedCertificatesDir );
         TrustManagerFactory trustManagerFactory;
@@ -361,7 +341,7 @@ public class SslPolicyLoader
     private Collection<X509CRL> getCRLs( File revokedCertificatesDir )
     {
         Collection<X509CRL> crls = new ArrayList<>();
-        File[] revocationFiles = revokedCertificatesDir.listFiles();
+        File[] revocationFiles = revokedCertificatesDir.exists() ? revokedCertificatesDir.listFiles() : new File[0];
 
         if ( revocationFiles == null )
         {
@@ -462,7 +442,7 @@ public class SslPolicyLoader
         KeyStore trustStore = KeyStore.getInstance( KeyStore.getDefaultType() );
         trustStore.load( null, null );
 
-        File[] trustedCertFiles = trustedCertificatesDir.listFiles();
+        File[] trustedCertFiles = trustedCertificatesDir.exists() ? trustedCertificatesDir.listFiles() : new File[0];
 
         if ( trustedCertFiles == null )
         {

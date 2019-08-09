@@ -31,6 +31,7 @@ import java.util.Base64;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.TrustManager;
 
@@ -244,7 +245,7 @@ public final class HTTP
         {
             try
             {
-                return CLIENT.send( request, BodyHandlers.ofString() );
+                return CLIENT.sendAsync( request, BodyHandlers.ofString() ).get( 4, TimeUnit.MINUTES );
             }
             catch ( Exception e )
             {

@@ -36,15 +36,15 @@ import org.neo4j.bolt.v1.messaging.Neo4jPackV1;
 import org.neo4j.bolt.v1.transport.socket.client.SecureSocketConnection;
 import org.neo4j.configuration.connectors.BoltConnector;
 import org.neo4j.configuration.helpers.SocketAddress;
+import org.neo4j.configuration.ssl.PemSslPolicyConfig;
 import org.neo4j.ssl.PkiUtils;
 import org.neo4j.test.ssl.SelfSignedCertificateFactory;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
-import static org.neo4j.configuration.GraphDatabaseSettings.tls_certificate_file;
-import static org.neo4j.configuration.GraphDatabaseSettings.tls_key_file;
 import static org.neo4j.configuration.connectors.BoltConnector.EncryptionLevel.OPTIONAL;
+import static org.neo4j.configuration.ssl.SslPolicyScope.BOLT;
 
 public class CertificatesIT
 {
@@ -56,8 +56,9 @@ public class CertificatesIT
     @Rule
     public Neo4jWithSocket server = new Neo4jWithSocket( getClass(), settings ->
     {
-        settings.put( tls_certificate_file, certFile.toPath().toAbsolutePath() );
-        settings.put( tls_key_file, keyFile.toPath().toAbsolutePath() );
+        PemSslPolicyConfig policy = PemSslPolicyConfig.forScope( BOLT );
+        settings.put( policy.public_certificate, certFile.toPath().toAbsolutePath() );
+        settings.put( policy.private_key, keyFile.toPath().toAbsolutePath() );
         settings.put( BoltConnector.enabled, true );
         settings.put( BoltConnector.encryption_level, OPTIONAL );
         settings.put( BoltConnector.listen_address, new SocketAddress( "localhost", 0 ) );

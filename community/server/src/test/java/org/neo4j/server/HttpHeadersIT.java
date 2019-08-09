@@ -25,8 +25,10 @@ import org.junit.Test;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
+import java.time.Duration;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.TrustManager;
 
@@ -184,9 +186,10 @@ public class HttpHeadersIT extends ExclusiveServerTestBase
 
         var client = HttpClient.newBuilder()
                 .sslContext( trustAllSslContext )
+                .connectTimeout( Duration.ofMinutes( 1 ) )
                 .build();
 
-        var response = client.send( request, discarding() );
+        var response = client.sendAsync( request, discarding() ).get( 1, TimeUnit.MINUTES );
 
         assertEquals( 200, response.statusCode() );
 

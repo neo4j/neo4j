@@ -55,7 +55,6 @@ import static org.neo4j.configuration.SettingValueParsers.BYTES;
 import static org.neo4j.configuration.SettingValueParsers.DATABASENAME;
 import static org.neo4j.configuration.SettingValueParsers.DOUBLE;
 import static org.neo4j.configuration.SettingValueParsers.DURATION;
-import static org.neo4j.configuration.SettingValueParsers.FALSE;
 import static org.neo4j.configuration.SettingValueParsers.INT;
 import static org.neo4j.configuration.SettingValueParsers.LONG;
 import static org.neo4j.configuration.SettingValueParsers.PATH;
@@ -1036,27 +1035,6 @@ public class GraphDatabaseSettings implements SettingsDeclaration
             newBuilder( "unsupported.dbms.bolt.inbound_message_throttle.low_watermark", INT, 100 )
                     .addConstraint( range( 1, Integer.MAX_VALUE ) )
                     .build();
-
-    public static final String LEGACY_POLICY_NAME = "legacy"; // TODO: keep?
-    @Description( "Directory for storing certificates to be used by Neo4j for TLS connections" )
-    public static final Setting<Path> legacy_certificates_directory = newBuilder( "dbms.directories.certificates", PATH, Path.of( "certificates" ) )
-            .setDependency( neo4j_home )
-            .immutable()
-            .build();
-
-    @Internal
-    @Description( "Path to the X.509 public certificate to be used by Neo4j for TLS connections" )
-    public static final Setting<Path> tls_certificate_file = newBuilder( "unsupported.dbms.security.tls_certificate_file", PATH, Path.of( "neo4j.cert" ) )
-            .setDependency( legacy_certificates_directory )
-            .immutable()
-            .build();
-
-    @Internal
-    @Description( "Path to the X.509 private key to be used by Neo4j for TLS connections" )
-    public static final Setting<Path> tls_key_file = newBuilder( "unsupported.dbms.security.tls_key_file", PATH, Path.of( "neo4j.key" ) )
-            .setDependency( legacy_certificates_directory )
-            .immutable()
-            .build();
 
     @Description( "Create an archive of an index before re-creating it if failing to load on startup." )
     @Internal

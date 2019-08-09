@@ -42,6 +42,7 @@ import static org.hamcrest.Matchers.containsString;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.neo4j.configuration.GraphDatabaseSettings.strict_config_validation;
+import static org.neo4j.configuration.ssl.SslPolicyScope.TESTING;
 import static org.neo4j.internal.helpers.collection.MapUtil.stringMap;
 
 @ExtendWith( TestDirectoryExtension.class )
@@ -53,7 +54,7 @@ class SslPolicyConfigValidatorTest
     @Test
     void shouldAcceptAllValidPemPolicyKeys()
     {
-        PemSslPolicyConfig sslPolicy = PemSslPolicyConfig.group( "default" );
+        PemSslPolicyConfig sslPolicy = PemSslPolicyConfig.forScope( TESTING );
         var builder = Config.newBuilder()
                 .set( sslPolicy.base_directory, Path.of( "xyz" ) )
                 .set( sslPolicy.revoked_dir, Path.of( "xyz" ) )
@@ -74,7 +75,7 @@ class SslPolicyConfigValidatorTest
     @Test
     void shouldAcceptAllValidJksPolicyKeys()
     {
-        JksSslPolicyConfig sslPolicy = JksSslPolicyConfig.group( "default" );
+        JksSslPolicyConfig sslPolicy = JksSslPolicyConfig.forScope( TESTING );
 
         var builder = Config.newBuilder()
                 .set( sslPolicy.base_directory, Path.of( "xyz" ) )
@@ -98,15 +99,15 @@ class SslPolicyConfigValidatorTest
         // given
         File confFile = testDirectory.createFile( "test.conf" );
         Files.write( confFile.toPath(), Arrays.asList(
-                "dbms.ssl.policy.pem.default.base_directory=xyz",
-                "dbms.ssl.policy.pem.default.allow_key_generation=xyz",
-                "dbms.ssl.policy.pem.default.trust_all=xyz",
-                "dbms.ssl.policy.pem.default.keystore=xyz",
-                "dbms.ssl.policy.pem.default.private_key_password=xyz",
-                "dbms.ssl.policy.pem.default.public_certificate=xyz",
-                "dbms.ssl.policy.pem.default.client_auth=xyz",
-                "dbms.ssl.policy.pem.default.tls_versions=xyz",
-                "dbms.ssl.policy.pem.default.ciphers=xyz"
+                "dbms.ssl.policy.pem.testing.base_directory=xyz",
+                "dbms.ssl.policy.pem.testing.allow_key_generation=xyz",
+                "dbms.ssl.policy.pem.testing.trust_all=xyz",
+                "dbms.ssl.policy.pem.testing.keystore=xyz",
+                "dbms.ssl.policy.pem.testing.private_key_password=xyz",
+                "dbms.ssl.policy.pem.testing.public_certificate=xyz",
+                "dbms.ssl.policy.pem.testing.client_auth=xyz",
+                "dbms.ssl.policy.pem.testing.tls_versions=xyz",
+                "dbms.ssl.policy.pem.testing.ciphers=xyz"
         ) );
         // when
         IllegalArgumentException exception = assertThrows( IllegalArgumentException.class, () -> Config.newBuilder().fromFile( confFile ).build() );
@@ -119,8 +120,8 @@ class SslPolicyConfigValidatorTest
         // given
         File confFile = testDirectory.createFile( "test.conf" );
         Files.write( confFile.toPath(), Arrays.asList(
-                "dbms.ssl.policy.pem.default.trust_all=xyz",
-                "dbms.ssl.policy.pem.default.color=blue"
+                "dbms.ssl.policy.pem.testing.trust_all=xyz",
+                "dbms.ssl.policy.pem.testing.color=blue"
         ) );
 
         // when
@@ -139,10 +140,11 @@ class SslPolicyConfigValidatorTest
                 "dbms.ssl.policy.pem.base_directory=path"
         ) );
 
+        Config.Builder builder = Config.newBuilder().set( strict_config_validation, true ).fromFile( confFile );
         // when
-        IllegalArgumentException exception = assertThrows( IllegalArgumentException.class, () -> Config.newBuilder().fromFile( confFile ).build() );
+        IllegalArgumentException exception = assertThrows( IllegalArgumentException.class, builder::build );
 
-        assertThat( exception.getMessage(), containsString( "Error evaluating value for setting" ) );
+        assertThat( exception.getMessage(), containsString( "No declared setting with name: dbms.ssl.policy.pem." ) );
     }
 
     @Test

@@ -57,9 +57,7 @@ import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAM
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_TX_LOGS_ROOT_DIR_NAME;
 import static org.neo4j.configuration.GraphDatabaseSettings.data_directory;
 import static org.neo4j.configuration.GraphDatabaseSettings.databases_root_path;
-import static org.neo4j.configuration.GraphDatabaseSettings.legacy_certificates_directory;
 import static org.neo4j.configuration.GraphDatabaseSettings.transaction_logs_root_path;
-import static org.neo4j.server.ServerTestUtils.getRelativePath;
 import static org.neo4j.test.server.HTTP.RawPayload.quotedJson;
 
 public class JUnitRuleTestIT
@@ -72,7 +70,6 @@ public class JUnitRuleTestIT
     public Neo4jRule neo4j = new Neo4jRule()
             .withFixture( "CREATE (u:User)" )
             .withConfig( GraphDatabaseSettings.db_timezone, LogTimeZone.SYSTEM )
-            .withConfig( legacy_certificates_directory, getRelativePath( testDirectory.storeDir(), legacy_certificates_directory ) )
             .withFixture( graphDatabaseService ->
             {
                 try ( Transaction tx = graphDatabaseService.beginTx() )

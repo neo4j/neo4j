@@ -30,9 +30,13 @@ import java.util.Properties;
 import org.neo4j.common.DependencyResolver;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
+import org.neo4j.configuration.SettingValueParsers;
 import org.neo4j.configuration.connectors.HttpConnector;
 import org.neo4j.configuration.connectors.HttpsConnector;
 import org.neo4j.configuration.helpers.SocketAddress;
+import org.neo4j.configuration.ssl.ClientAuth;
+import org.neo4j.configuration.ssl.PemSslPolicyConfig;
+import org.neo4j.configuration.ssl.SslPolicyScope;
 import org.neo4j.graphdb.facade.ExternalDependencies;
 import org.neo4j.graphdb.facade.GraphDatabaseDependencies;
 import org.neo4j.logging.Log;
@@ -173,7 +177,10 @@ public class CommunityServerBuilder
         {
             var certificates = new File( temporaryFolder, "certificates" );
             SelfSignedCertificateFactory.create( certificates );
-            properties.put( GraphDatabaseSettings.legacy_certificates_directory.name(), certificates.getAbsolutePath() );
+            PemSslPolicyConfig policy = PemSslPolicyConfig.forScope( SslPolicyScope.HTTPS );
+            properties.put( policy.base_directory.name(), certificates.getAbsolutePath() );
+            properties.put( policy.trust_all.name(), SettingValueParsers.TRUE );
+            properties.put( policy.client_auth.name(), ClientAuth.NONE.name() );
         }
 
         properties.put( GraphDatabaseSettings.logs_directory.name(),

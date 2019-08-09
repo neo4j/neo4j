@@ -28,7 +28,6 @@ import org.neo4j.configuration.Internal;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.string.SecureString;
 
-import static org.neo4j.configuration.SettingValueParsers.BOOL;
 import static org.neo4j.configuration.SettingValueParsers.PATH;
 import static org.neo4j.configuration.SettingValueParsers.SECURE_STRING;
 
@@ -55,18 +54,18 @@ public class PemSslPolicyConfig extends SslPolicyConfig
     @Description( "The password for the private key." )
     public final Setting<SecureString> private_key_password = getBuilder( "private_key_password", SECURE_STRING, null ).build();
 
-    public static PemSslPolicyConfig group( String name )
+    public static PemSslPolicyConfig forScope( SslPolicyScope scope )
     {
-        return new PemSslPolicyConfig( name );
+        return new PemSslPolicyConfig( scope.name() );
     }
 
-    private PemSslPolicyConfig( String name )
+    private PemSslPolicyConfig( String scope )
     {
-        super( name );
+        super( scope );
     }
     public PemSslPolicyConfig()
     {
-        super( null );  // For ServiceLoader
+        super();  // For ServiceLoader
     }
     @Override
     public String getPrefix()

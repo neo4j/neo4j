@@ -26,18 +26,18 @@ import org.neo4j.annotations.service.ServiceProvider;
 @PublicApi
 public class JksSslPolicyConfig extends KeyStoreSslPolicyConfig
 {
-    public static JksSslPolicyConfig group( String name )
+    public static JksSslPolicyConfig forScope( SslPolicyScope scope )
     {
-        return new JksSslPolicyConfig( name );
+        return new JksSslPolicyConfig( scope.name() );
     }
 
-    private JksSslPolicyConfig( String name )
+    private JksSslPolicyConfig( String scope )
     {
-        super( name );
+        super( scope );
     }
     public JksSslPolicyConfig()
     {
-        super( null );  // For ServiceLoader
+        super();  // For ServiceLoader
     }
 
     @Override

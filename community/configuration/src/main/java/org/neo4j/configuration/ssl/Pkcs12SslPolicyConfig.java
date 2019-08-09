@@ -26,18 +26,18 @@ import org.neo4j.annotations.service.ServiceProvider;
 @PublicApi
 public class Pkcs12SslPolicyConfig extends KeyStoreSslPolicyConfig
 {
-    public static Pkcs12SslPolicyConfig group( String name )
+    public static Pkcs12SslPolicyConfig forScope( SslPolicyScope scope )
     {
-        return new Pkcs12SslPolicyConfig( name );
+        return new Pkcs12SslPolicyConfig( scope.name() );
     }
 
-    private Pkcs12SslPolicyConfig( String name )
+    private Pkcs12SslPolicyConfig( String scope )
     {
-        super( name );
+        super( scope );
     }
     public Pkcs12SslPolicyConfig()
     {
-        super( null );  // For ServiceLoader
+        super();  // For ServiceLoader
     }
 
     @Override

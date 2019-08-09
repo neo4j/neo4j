@@ -716,26 +716,6 @@ class ConfigTest
     }
 
     @Test
-    void testBoltHttpsSslPolicyMigration() throws IOException
-    {
-
-        File confFile = testDirectory.createFile( "test.conf" );
-        Files.write( confFile.toPath(), List.of( "bolt.ssl_policy=foo", "https.ssl_policy=bar" ) );
-
-        Config config = Config.newBuilder().fromFile( confFile ).build();
-        var logProvider = new AssertableLogProvider();
-        config.setLogger( logProvider.getLog( Config.class ) );
-
-        assertEquals( "foo", config.get( BoltConnector.ssl_policy ) );
-        assertEquals( "bar", config.get( HttpsConnector.ssl_policy ) );
-
-        String msg = "Use of deprecated setting %s. It is replaced by %s";
-        logProvider.assertAtLeastOnce( inLog( Config.class ).warn( msg, "bolt.ssl_policy", BoltConnector.ssl_policy.name() ) );
-        logProvider.assertAtLeastOnce( inLog( Config.class ).warn( msg, "https.ssl_policy", HttpsConnector.ssl_policy.name() ) );
-
-    }
-
-    @Test
     void testDoesNotLogChangedJvmArgs() throws IOException
     {
         File confFile = testDirectory.createFile( "test.conf" );

@@ -413,7 +413,7 @@ public class Config implements Configuration
             }
             else
             {
-                // Not found, could be a group setting, e.g "dbms.connector.*"
+                // Not found, could be a group setting, e.g "dbms.ssl.policy.*"
                 var groupEntryOpt = definedGroups.entrySet().stream().filter( e -> key.startsWith( e.getKey() + '.' ) ).findAny();
                 if ( groupEntryOpt.isEmpty() )
                 {
@@ -452,7 +452,22 @@ public class Config implements Configuration
                 Map<String, GroupSetting> groupInstances = allGroupInstances.computeIfAbsent( groupEntry.getValue(), k -> new HashMap<>() );
                 if ( !groupInstances.containsKey( id ) )
                 {
-                    GroupSetting group = createStringInstance( groupEntry.getValue(), id );
+
+                    GroupSetting group;
+                    try
+                    {
+                        group = createStringInstance( groupEntry.getValue(), id );
+                    }
+                    catch ( IllegalArgumentException e )
+                    {
+                        String msg = format( "Unrecognized setting. No declared setting with name: %s", key );
+                        if ( strict )
+                        {
+                            throw new IllegalArgumentException( msg );
+                        }
+                        log.warn( msg );
+                        continue;
+                    }
                     groupInstances.put( id, group );
                     //Add all settings from created groups, to get possible default values.
                     Map<String,SettingImpl<?>> definedSettings = getDefinedSettings( group.getClass(), group );
@@ -734,8 +749,12 @@ public class Config implements Configuration
         }
         catch ( Exception e )
         {
+            if ( e.getCause() instanceof  IllegalArgumentException )
+            {
+                throw new IllegalArgumentException( "Could not create instance with id: " + id, e );
+            }
             String msg = format( "'%s' must have a ( @Nullable String ) constructor, be static & non-abstract", cls.getSimpleName() );
-            throw new IllegalArgumentException( msg, e );
+            throw new RuntimeException( msg, e );
         }
     }
 

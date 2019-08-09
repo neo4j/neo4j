@@ -82,7 +82,6 @@ public class StartupLoggingIT extends ExclusiveServerTestBase
 
         properties.put( GraphDatabaseSettings.data_directory.name(), testDir.storeDir().toString() );
         properties.put( GraphDatabaseSettings.logs_directory.name(), testDir.storeDir().toString() );
-        properties.put( GraphDatabaseSettings.legacy_certificates_directory.name(), testDir.storeDir().toString() );
         properties.put( GraphDatabaseSettings.allow_upgrade.name(), TRUE );
 
         properties.put( HttpConnector.listen_address.name(), "localhost:0" );

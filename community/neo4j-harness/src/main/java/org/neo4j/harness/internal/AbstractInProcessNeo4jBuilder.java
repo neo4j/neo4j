@@ -37,6 +37,7 @@ import org.neo4j.configuration.connectors.BoltConnector;
 import org.neo4j.configuration.connectors.HttpConnector;
 import org.neo4j.configuration.connectors.HttpsConnector;
 import org.neo4j.configuration.helpers.SocketAddress;
+import org.neo4j.configuration.ssl.PemSslPolicyConfig;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.facade.ExternalDependencies;
@@ -62,6 +63,8 @@ import static org.neo4j.configuration.GraphDatabaseSettings.auth_enabled;
 import static org.neo4j.configuration.GraphDatabaseSettings.data_directory;
 import static org.neo4j.configuration.GraphDatabaseSettings.db_timezone;
 import static org.neo4j.configuration.GraphDatabaseSettings.pagecache_memory;
+import static org.neo4j.configuration.ssl.SslPolicyScope.BOLT;
+import static org.neo4j.configuration.ssl.SslPolicyScope.HTTPS;
 import static org.neo4j.internal.helpers.collection.Iterables.addAll;
 import static org.neo4j.internal.helpers.collection.Iterables.append;
 import static org.neo4j.io.fs.FileSystemUtils.createOrOpenAsOutputStream;
@@ -120,20 +123,21 @@ public abstract class AbstractInProcessNeo4jBuilder implements Neo4jBuilder
             config.set( ServerSettings.third_party_packages, unmanagedExtentions.toList() );
             config.set( GraphDatabaseSettings.store_internal_log_path, internalLogFile.toPath().toAbsolutePath() );
 
+            var certificates = new File( serverFolder, "certificates" );
             if ( disabledServer )
             {
                 config.set( HttpConnector.enabled, false );
                 config.set( HttpsConnector.enabled, false );
             }
 
-            var certificates = new File( serverFolder, "certificates" );
-            config.set( GraphDatabaseSettings.legacy_certificates_directory, certificates.toPath() );
-
             Config dbConfig = config.build();
             if ( dbConfig.get( HttpsConnector.enabled ) ||
                  dbConfig.get( BoltConnector.enabled ) && dbConfig.get( BoltConnector.encryption_level ) != BoltConnector.EncryptionLevel.DISABLED )
             {
                 SelfSignedCertificateFactory.create( certificates );
+                config.set( PemSslPolicyConfig.forScope( HTTPS ).base_directory, certificates.toPath() );
+                config.set( PemSslPolicyConfig.forScope( BOLT ).base_directory, certificates.toPath() );
+                dbConfig = config.build();
             }
 
             LogProvider userLogProvider = FormattedLogProvider.withZoneId( dbConfig.get( db_timezone ).getZoneId() ).toOutputStream( userLogOutputStream );

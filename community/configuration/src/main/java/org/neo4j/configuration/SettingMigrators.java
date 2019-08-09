@@ -34,10 +34,10 @@ import org.neo4j.configuration.connectors.BoltConnector;
 import org.neo4j.configuration.connectors.HttpConnector;
 import org.neo4j.configuration.connectors.HttpsConnector;
 import org.neo4j.configuration.helpers.SocketAddress;
+import org.neo4j.configuration.ssl.SslPolicyScope;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.logging.Log;
 import org.neo4j.values.storable.CoordinateReferenceSystem;
-import org.neo4j.values.storable.Value;
 
 import static java.lang.String.format;
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
@@ -167,14 +167,72 @@ public final class SettingMigrators
     }
 
     @ServiceProvider
-    public static class BoltHttpsSslPolicyMigrator implements SettingMigrator
+    public static class SslPolicyMigrator implements SettingMigrator
     {
+        private static final Pattern pattern = Pattern.compile( "^(dbms\\.ssl\\.policy\\.[^.]+\\.)([^.]+)(\\.[^.]+)$" );
+        private static final Map<String,SslPolicyScope> settingScopeMap = Map.of(
+                "bolt.ssl_policy", SslPolicyScope.BOLT,
+                "https.ssl_policy", SslPolicyScope.HTTPS,
+                "dbms.backup.ssl_policy", SslPolicyScope.BACKUP,
+                "causal_clustering.ssl_policy", SslPolicyScope.CLUSTER
+        );
+
+        private static final List<String> legacySettings =
+                List.of( "dbms.directories.certificates", "unsupported.dbms.security.tls_certificate_file", "unsupported.dbms.security.tls_key_file" );
+
         @Override
         public void migrate( Map<String,String> values, Map<String,String> defaultValues, Log log )
         {
-            migrateSettingNameChange( values, log, "bolt.ssl_policy", BoltConnector.ssl_policy );
-            migrateSettingNameChange( values, log, "https.ssl_policy", HttpsConnector.ssl_policy );
+            migratePolicies( values, log );
+            warnUseOfLegacyPolicy( values, log );
+        }
 
+        private static void migratePolicies( Map<String,String> values, Log log )
+        {
+            Map<String,String> valueCopy = new HashMap<>( values );
+            Map<String,SslPolicyScope> oldNameToScope = new HashMap<>();
+            valueCopy.forEach( ( setting, value ) -> {
+                if ( settingScopeMap.containsKey( setting ) )
+                {
+                    log.warn( "Use of deprecated setting %s.", setting );
+                    oldNameToScope.put( value, settingScopeMap.get( setting ) );
+                    values.remove( setting );
+                }
+            } );
+
+            valueCopy.forEach( ( setting, value ) -> {
+                var matcher = pattern.matcher( setting );
+                if ( matcher.find() )
+                {
+                    String groupName = matcher.group( 2 );
+                    if ( oldNameToScope.containsKey( groupName ) )
+                    {
+                        String newGroupName = oldNameToScope.get( groupName ).name().toLowerCase();
+                        if ( !Objects.equals( groupName, newGroupName ) )
+                        {
+                            String prefix = matcher.group( 1 );
+                            String suffix = matcher.group( 3 );
+                            String newSetting = prefix + newGroupName + suffix;
+
+                            log.warn( "Use of deprecated setting %s. It is replaced by %s", setting, newSetting );
+                            values.remove( setting );
+                            values.put( newSetting, value );
+                        }
+                    }
+                }
+            } );
+        }
+
+        private static void warnUseOfLegacyPolicy( Map<String,String> values, Log log )
+        {
+            for ( String legacySetting : legacySettings )
+            {
+                if ( values.remove( legacySetting ) != null )
+                {
+                    log.warn( "Use of deprecated setting %s. Legacy ssl policy is no longer supported.", legacySetting );
+
+                }
+            }
         }
     }
 

@@ -34,6 +34,8 @@ import org.neo4j.configuration.Config;
 import org.neo4j.configuration.connectors.BoltConnector;
 import org.neo4j.configuration.connectors.HttpConnector;
 import org.neo4j.configuration.connectors.HttpsConnector;
+import org.neo4j.configuration.ssl.PemSslPolicyConfig;
+import org.neo4j.configuration.ssl.SslPolicyScope;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
@@ -49,7 +51,6 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.neo4j.configuration.GraphDatabaseSettings.data_directory;
 import static org.neo4j.configuration.GraphDatabaseSettings.forced_kernel_id;
-import static org.neo4j.configuration.GraphDatabaseSettings.legacy_certificates_directory;
 import static org.neo4j.configuration.GraphDatabaseSettings.logs_directory;
 import static org.neo4j.configuration.SettingValueParsers.FALSE;
 import static org.neo4j.configuration.SettingValueParsers.TRUE;
@@ -190,11 +191,18 @@ public abstract class BaseBootstrapperIT extends ExclusiveServerTestBase
 
     private void testStartupWithConnectors( boolean httpEnabled, boolean httpsEnabled, boolean boltEnabled ) throws Exception
     {
+        PemSslPolicyConfig httpsPolicy = PemSslPolicyConfig.forScope( SslPolicyScope.HTTPS );
+        if ( httpsEnabled )
+        {
+            //create self signed
+            SelfSignedCertificateFactory.create( testDirectory.storeDir().getAbsoluteFile() );
+        }
+
         int resultCode = ServerBootstrapper.start( bootstrapper,
                 "--home-dir", testDirectory.directory( "home-dir" ).getAbsolutePath(),
                 "-c", configOption( data_directory, testDirectory.storeDir().getAbsolutePath() ),
                 "-c", configOption( logs_directory, testDirectory.storeDir().getAbsolutePath() ),
-                "-c", configOption( legacy_certificates_directory, testDirectory.storeDir().getAbsolutePath() ),
+                "-c", httpsEnabled ? configOption( httpsPolicy.base_directory, testDirectory.storeDir().getAbsolutePath() ) : "",
 
                 "-c", HttpConnector.enabled.name() + "=" + httpEnabled,
                 "-c", HttpConnector.listen_address.name() + "=localhost:0",

@@ -44,6 +44,8 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.neo4j.configuration.Config.newBuilder;
 import static org.neo4j.configuration.GraphDatabaseSettings.neo4j_home;
+import static org.neo4j.configuration.ssl.SslPolicyScope.BOLT;
+import static org.neo4j.configuration.ssl.SslPolicyScope.TESTING;
 
 @ExtendWith( TestDirectoryExtension.class )
 class PemSslPolicyLoaderTest
@@ -76,7 +78,7 @@ class PemSslPolicyLoaderTest
     void shouldLoadBaseCryptographicObjects() throws Exception
     {
         // given
-        PemSslPolicyConfig policyConfig = PemSslPolicyConfig.group( "default" );
+        PemSslPolicyConfig policyConfig = PemSslPolicyConfig.forScope( TESTING );
 
         Config config = newBuilder()
                 .set( neo4j_home, home.toPath().toAbsolutePath() )
@@ -87,7 +89,7 @@ class PemSslPolicyLoaderTest
         SslPolicyLoader sslPolicyLoader = SslPolicyLoader.create( config, NullLogProvider.getInstance() );
 
         // then
-        SslPolicy sslPolicy = sslPolicyLoader.getPolicy( "default" );
+        SslPolicy sslPolicy = sslPolicyLoader.getPolicy( TESTING );
         assertNotNull( sslPolicy );
         assertNotNull( sslPolicy.privateKey() );
         assertNotNull( sslPolicy.certificateChain() );
@@ -112,7 +114,7 @@ class PemSslPolicyLoaderTest
         // given
         FileUtils.deleteFile( file );
 
-        PemSslPolicyConfig policyConfig = PemSslPolicyConfig.group( "default" );
+        PemSslPolicyConfig policyConfig = PemSslPolicyConfig.forScope( TESTING );
 
         Config config = newBuilder()
                 .set( neo4j_home, home.toPath().toAbsolutePath() )
@@ -128,7 +130,7 @@ class PemSslPolicyLoaderTest
     void shouldThrowIfPolicyNameDoesNotExist()
     {
         // given
-        PemSslPolicyConfig policyConfig = PemSslPolicyConfig.group( "default" );
+        PemSslPolicyConfig policyConfig = PemSslPolicyConfig.forScope( TESTING );
 
         Config config = newBuilder()
                 .set( neo4j_home, home.toPath().toAbsolutePath() )
@@ -138,7 +140,7 @@ class PemSslPolicyLoaderTest
         SslPolicyLoader sslPolicyLoader = SslPolicyLoader.create( config, NullLogProvider.getInstance() );
 
         // when
-        assertThrows( IllegalArgumentException.class, () -> sslPolicyLoader.getPolicy( "unknown" ) );
+        assertThrows( IllegalArgumentException.class, () -> sslPolicyLoader.getPolicy( BOLT ) );
     }
 
     @Test

@@ -51,8 +51,13 @@ public abstract class KeyStoreSslPolicyConfig extends SslPolicyConfig
     @Description( "The password for the private key entry. Should not be set if format is PKCS12." )
     public final Setting<SecureString> entry_pass = getBuilder( "entry_pass", SECURE_STRING, null ).setDependency( keystore_pass ).build();
 
-    protected KeyStoreSslPolicyConfig( String name )
+    protected KeyStoreSslPolicyConfig( String scope )
     {
-        super( name );
+        super( scope );
+    }
+
+    protected KeyStoreSslPolicyConfig()
+    {
+        super();
     }
 }

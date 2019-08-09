@@ -19,22 +19,29 @@
  */
 package org.neo4j.configuration.ssl;
 
-import org.junit.jupiter.api.Test;
+import static org.neo4j.configuration.ssl.ClientAuth.OPTIONAL;
+import static org.neo4j.configuration.ssl.ClientAuth.REQUIRE;
 
-import org.neo4j.configuration.Config;
-import org.neo4j.configuration.GraphDatabaseSettings;
-
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
-class LegacySslPolicyConfigTest
+public enum SslPolicyScope
 {
-    @Test
-    void shouldBeFoundInServerDefaults()
-    {
-        // given
-        Config serverDefaultConfig = Config.defaults();
+    BOLT( OPTIONAL ), HTTPS( OPTIONAL ), CLUSTER( REQUIRE ), BACKUP( REQUIRE ), TESTING( REQUIRE );
 
-        // then
-        assertTrue( serverDefaultConfig.getValues().containsKey( GraphDatabaseSettings.legacy_certificates_directory ) );
+    final ClientAuth authDefault;
+
+    SslPolicyScope( ClientAuth authDefault )
+    {
+        this.authDefault = authDefault;
+    }
+
+    static SslPolicyScope fromName( String name )
+    {
+        for ( SslPolicyScope value : values() )
+        {
+            if ( value.name().equalsIgnoreCase( name ) )
+            {
+                return value;
+            }
+        }
+        return null;
     }
 }

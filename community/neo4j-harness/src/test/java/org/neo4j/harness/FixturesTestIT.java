@@ -25,25 +25,26 @@ import org.junit.jupiter.api.parallel.ResourceLock;
 import org.junit.jupiter.api.parallel.Resources;
 
 import java.io.File;
-import java.nio.file.Path;
 
-import org.neo4j.configuration.GraphDatabaseSettings;
+import org.neo4j.configuration.ssl.PemSslPolicyConfig;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.harness.internal.InProcessNeo4j;
 import org.neo4j.harness.internal.Neo4jBuilder;
 import org.neo4j.io.fs.FileUtils;
-import org.neo4j.server.ServerTestUtils;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.SuppressOutputExtension;
 import org.neo4j.test.extension.TestDirectoryExtension;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.server.HTTP;
+import org.neo4j.test.ssl.SelfSignedCertificateFactory;
 
 import static java.lang.System.lineSeparator;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.fail;
+import static org.neo4j.configuration.ssl.SslPolicyScope.BOLT;
+import static org.neo4j.configuration.ssl.SslPolicyScope.HTTPS;
 import static org.neo4j.harness.internal.TestNeo4jBuilders.newInProcessBuilder;
 import static org.neo4j.test.server.HTTP.RawPayload.quotedJson;
 
@@ -221,8 +222,10 @@ class FixturesTestIT
 
     private Neo4jBuilder getServerBuilder( File targetFolder )
     {
-        Path relativePath = ServerTestUtils.getRelativePath( testDir.directory(), GraphDatabaseSettings.legacy_certificates_directory);
-        return newInProcessBuilder( targetFolder ).withConfig( GraphDatabaseSettings.legacy_certificates_directory, relativePath );
+        SelfSignedCertificateFactory.create( testDir.directory() );
+        return newInProcessBuilder( targetFolder )
+                .withConfig( PemSslPolicyConfig.forScope( BOLT ).base_directory, testDir.directory().toPath() )
+                .withConfig( PemSslPolicyConfig.forScope( HTTPS ).base_directory, testDir.directory().toPath() );
     }
 
 }

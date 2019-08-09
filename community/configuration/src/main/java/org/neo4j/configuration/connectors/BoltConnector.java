@@ -24,7 +24,6 @@ import java.time.Duration;
 import org.neo4j.annotations.api.PublicApi;
 import org.neo4j.annotations.service.ServiceProvider;
 import org.neo4j.configuration.Description;
-import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.configuration.Internal;
 import org.neo4j.configuration.SettingsDeclaration;
 import org.neo4j.configuration.helpers.SocketAddress;
@@ -38,7 +37,6 @@ import static org.neo4j.configuration.SettingValueParsers.BOOL;
 import static org.neo4j.configuration.SettingValueParsers.DURATION;
 import static org.neo4j.configuration.SettingValueParsers.INT;
 import static org.neo4j.configuration.SettingValueParsers.SOCKET_ADDRESS;
-import static org.neo4j.configuration.SettingValueParsers.STRING;
 import static org.neo4j.configuration.SettingValueParsers.ofEnum;
 import static org.neo4j.configuration.connectors.BoltConnector.EncryptionLevel.DISABLED;
 
@@ -81,9 +79,6 @@ public final class BoltConnector implements SettingsDeclaration
     @Internal
     public static final Setting<Integer> unsupported_thread_pool_queue_size =
             newBuilder( "dbms.connector.bolt.unsupported_thread_pool_queue_size", INT, 0 ).build();
-
-    @Description( "Specify the SSL policy to use if encrypted" )
-    public static final Setting<String> ssl_policy = newBuilder( "dbms.connector.bolt.ssl_policy", STRING, GraphDatabaseSettings.LEGACY_POLICY_NAME ).build();
 
     public enum EncryptionLevel
     {

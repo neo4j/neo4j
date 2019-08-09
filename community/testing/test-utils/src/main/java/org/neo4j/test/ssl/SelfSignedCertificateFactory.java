@@ -61,8 +61,8 @@ public class SelfSignedCertificateFactory
     private static final Date NOT_AFTER = new Date( 253402300799000L );
     private static final Provider PROVIDER = new BouncyCastleProvider();
 
-    private static final String DEFAULT_KEY_FILE_NAME = "neo4j.key";
-    private static final String DEFAULT_CERT_FILE_NAME = "neo4j.cert";
+    private static final String DEFAULT_KEY_FILE_NAME = "private.key";
+    private static final String DEFAULT_CERT_FILE_NAME = "public.crt";
     private static final String DEFAULT_HOST_NAME = "localhost";
 
     private static volatile boolean cleanupRequired = true;

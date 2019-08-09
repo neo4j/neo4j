@@ -49,7 +49,7 @@ public abstract class SslPolicyConfig extends GroupSetting
     public final Setting<Boolean> trust_all = getBuilder( "trust_all", BOOL, false ).build();
 
     @Description( "Client authentication stance." )
-    public final Setting<ClientAuth> client_auth = getBuilder( "client_auth", ofEnum( ClientAuth.class ), ClientAuth.REQUIRE).build();
+    public final Setting<ClientAuth> client_auth;
 
     @Description( "Restrict allowed TLS protocol versions." )
     public final Setting<List<String>> tls_versions = getBuilder( "tls_versions", listOf( STRING ),  List.of("TLSv1.2") ).build();
@@ -61,14 +61,34 @@ public abstract class SslPolicyConfig extends GroupSetting
             "and the patterns described in the remote hosts public certificate Subject Alternative Names" )
     public final Setting<Boolean> verify_hostname = getBuilder( "verify_hostname", BOOL, false ).build();
 
-    protected SslPolicyConfig( String name )
+    private SslPolicyScope scope;
+
+    protected SslPolicyConfig( String scopeString )
     {
-        super( name );
+        super( scopeString.toLowerCase() );
+        scope = SslPolicyScope.fromName( scopeString );
+        if ( scope == null )
+        {
+            throw new IllegalArgumentException( "SslPolicy can not be created for scope: " + scopeString );
+        }
+
+        client_auth = getBuilder( "client_auth", ofEnum( ClientAuth.class ), scope.authDefault ).build();
+    }
+
+    protected SslPolicyConfig() //For serviceloading
+    {
+        super( null );
+        client_auth = getBuilder( "client_auth", ofEnum( ClientAuth.class ), ClientAuth.REQUIRE ).build(); //to remove IDE null warnings
     }
 
     @Override
     public String getPrefix()
     {
         return "dbms.ssl.policy";
+    }
+
+    public SslPolicyScope getScope()
+    {
+        return scope;
     }
 }

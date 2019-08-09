@@ -61,6 +61,8 @@ import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.ssl.config.SslPolicyLoader;
 import org.neo4j.time.SystemNanoClock;
 
+import static org.neo4j.configuration.ssl.SslPolicyScope.BOLT;
+
 public class BoltServer extends LifecycleAdapter
 {
     // platform dependencies
@@ -151,17 +153,17 @@ public class BoltServer extends LifecycleAdapter
         switch ( encryptionLevel )
         {
         case REQUIRED:
-            // Encrypted connections are mandatory, a self-signed certificate may be generated.
+            // Encrypted connections are mandatory.
             requireEncryption = true;
-            sslCtx = createSslContext( sslPolicyLoader, config );
+            sslCtx = createSslContext( sslPolicyLoader );
             break;
         case OPTIONAL:
-            // Encrypted connections are optional, a self-signed certificate may be generated.
+            // Encrypted connections are optional.
             requireEncryption = false;
-            sslCtx = createSslContext( sslPolicyLoader, config );
+            sslCtx = createSslContext( sslPolicyLoader );
             break;
         case DISABLED:
-            // Encryption is turned off, no self-signed certificate will be generated.
+            // Encryption is turned off.
             requireEncryption = false;
             sslCtx = null;
             break;
@@ -181,16 +183,15 @@ public class BoltServer extends LifecycleAdapter
                 throttleGroup, boltProtocolFactory, connectionTracker );
     }
 
-    private static SslContext createSslContext( SslPolicyLoader sslPolicyFactory, Config config )
+    private static SslContext createSslContext( SslPolicyLoader sslPolicyFactory )
     {
         try
         {
-            String policyName = config.get( BoltConnector.ssl_policy );
-            if ( policyName == null )
+            if ( !sslPolicyFactory.hasPolicyForSource( BOLT ) )
             {
                 throw new IllegalArgumentException( "No SSL policy has been configured for Bolt server" );
             }
-            return sslPolicyFactory.getPolicy( policyName ).nettyServerContext();
+            return sslPolicyFactory.getPolicy( BOLT ).nettyServerContext();
         }
         catch ( Exception e )
         {

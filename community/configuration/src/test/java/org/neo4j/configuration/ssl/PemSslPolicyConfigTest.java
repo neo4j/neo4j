@@ -50,20 +50,19 @@ class PemSslPolicyConfigTest
     void shouldFindPolicyDefaults()
     {
         // given
-        String policyName = "XYZ";
-        PemSslPolicyConfig policyConfig = PemSslPolicyConfig.group( policyName );
+        PemSslPolicyConfig policyConfig = PemSslPolicyConfig.forScope( SslPolicyScope.TESTING );
 
         File homeDir = testDirectory.directory( "home" );
         Config config = Config.newBuilder()
                 .set( GraphDatabaseSettings.neo4j_home, homeDir.toPath().toAbsolutePath() )
-                .set( policyConfig.base_directory, Path.of( "certificates/XYZ" ) )
+                .set( policyConfig.base_directory, Path.of( "certificates/testing" ) )
                 .build();
 
         // derived defaults
-        File privateKey = new File( homeDir, "certificates/XYZ/private.key" );
-        File publicCertificate = new File( homeDir, "certificates/XYZ/public.crt" );
-        File trustedDir = new File( homeDir, "certificates/XYZ/trusted" );
-        File revokedDir = new File( homeDir, "certificates/XYZ/revoked" );
+        File privateKey = new File( homeDir, "certificates/testing/private.key" );
+        File publicCertificate = new File( homeDir, "certificates/testing/public.crt" );
+        File trustedDir = new File( homeDir, "certificates/testing/trusted" );
+        File revokedDir = new File( homeDir, "certificates/testing/revoked" );
 
         // when
         File privateKeyFromConfig = config.get( policyConfig.private_key ).toFile();
@@ -94,13 +93,12 @@ class PemSslPolicyConfigTest
         // given
         Config.Builder builder = Config.newBuilder();
 
-        String policyName = "XYZ";
-        PemSslPolicyConfig policyConfig = PemSslPolicyConfig.group( policyName );
+        PemSslPolicyConfig policyConfig = PemSslPolicyConfig.forScope( SslPolicyScope.TESTING );
 
         File homeDir = testDirectory.directory( "home" );
 
         builder.set( GraphDatabaseSettings.neo4j_home, homeDir.toPath().toAbsolutePath() );
-        builder.set( policyConfig.base_directory, Path.of( "certificates/XYZ" ) );
+        builder.set( policyConfig.base_directory, Path.of( "certificates/testing" ) );
 
         File privateKey = testDirectory.directory( "/path/to/my.key" );
         File publicCertificate = testDirectory.directory( "/path/to/my.crt" );

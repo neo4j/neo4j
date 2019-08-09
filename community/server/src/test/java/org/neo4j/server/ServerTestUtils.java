@@ -80,7 +80,6 @@ public class ServerTestUtils
     {
         addRelativeProperty( temporaryFolder, properties, GraphDatabaseSettings.data_directory );
         addRelativeProperty( temporaryFolder, properties, GraphDatabaseSettings.logs_directory );
-        addRelativeProperty( temporaryFolder, properties, GraphDatabaseSettings.legacy_certificates_directory );
         properties.put( GraphDatabaseSettings.pagecache_memory.name(), "8m" );
     }
 
