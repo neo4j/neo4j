@@ -22,6 +22,10 @@ class MultiDatabaseAdministrationCommandParserTest extends AdministrationCommand
 
   // SHOW DATABASE
 
+  test("SHOW DATABASE foo") {
+    yields(ast.ShowDatabase("foo"))
+  }
+
   test("SHOW DATABASE `foo.bar`") {
     yields(ast.ShowDatabase("foo.bar"))
   }
@@ -43,6 +47,10 @@ class MultiDatabaseAdministrationCommandParserTest extends AdministrationCommand
   }
 
   // CREATE DATABASE
+
+  test("CREATE DATABASE foo") {
+    yields(ast.CreateDatabase("foo"))
+  }
 
   test("CREATE DATABASE `foo.bar`") {
     yields(ast.CreateDatabase("foo.bar"))
@@ -90,11 +98,55 @@ class MultiDatabaseAdministrationCommandParserTest extends AdministrationCommand
 
   // DROP DATABASE
 
+  test("DROP DATABASE foo") {
+    yields(ast.DropDatabase("foo"))
+  }
+
   test("CATALOG DROP DATABASE `foo.bar`") {
     yields(ast.DropDatabase("foo.bar"))
   }
 
   test("CATALOG DROP DATABASE foo.bar") {
+    failsToParse
+  }
+
+  test("DROP DATABASE") {
+    failsToParse
+  }
+
+  // START DATABASE
+
+  test("START DATABASE foo") {
+    yields(ast.StartDatabase("foo"))
+  }
+
+  test("CATALOG START DATABASE `foo.bar`") {
+    yields(ast.StartDatabase("foo.bar"))
+  }
+
+  test("CATALOG START DATABASE foo.bar") {
+    failsToParse
+  }
+
+  test("START DATABASE") {
+    failsToParse
+  }
+
+  // STOP DATABASE
+
+  test("STOP DATABASE foo") {
+    yields(ast.StopDatabase("foo"))
+  }
+
+  test("CATALOG STOP DATABASE `foo.bar`") {
+    yields(ast.StopDatabase("foo.bar"))
+  }
+
+  test("CATALOG STOP DATABASE foo.bar") {
+    failsToParse
+  }
+
+  test("STOP DATABASE") {
     failsToParse
   }
 }
