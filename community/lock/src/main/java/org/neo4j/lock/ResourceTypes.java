@@ -31,7 +31,8 @@ public enum ResourceTypes implements ResourceType
     INDEX_ENTRY( 4, LockWaitStrategies.INCREMENTAL_BACKOFF ),
     // EXPLICIT INDEX resource had type id 5 - skip it to avoid resource types conflicts
     LABEL( 6, LockWaitStrategies.INCREMENTAL_BACKOFF ),
-    RELATIONSHIP_TYPE( 7, LockWaitStrategies.INCREMENTAL_BACKOFF );
+    RELATIONSHIP_TYPE( 7, LockWaitStrategies.INCREMENTAL_BACKOFF ),
+    SCHEMA_NAME( 8, LockWaitStrategies.INCREMENTAL_BACKOFF );
 
     private static final MutableIntObjectMap<ResourceType> idToType = new IntObjectHashMap<>();
 

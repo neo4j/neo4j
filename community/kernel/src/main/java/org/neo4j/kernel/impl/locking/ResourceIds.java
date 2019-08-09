@@ -25,7 +25,8 @@ import org.neo4j.values.storable.Value;
 
 public class ResourceIds
 {
-    private static final HashFunction indexEntryHash_4_x = HashFunction.incrementalXXH64();
+    // The hash code function we use for index entries and schema names, since Neo4j 4.0.
+    private static final HashFunction HASH_40 = HashFunction.incrementalXXH64();
 
     /**
      * Produces a 64-bit hashcode for locking index entries.
@@ -41,24 +42,36 @@ public class ResourceIds
     }
 
     /**
+     * Produces a 64-bit hashcode for strings that are used as names of schema entities, like indexes and constraints.
+     * @param schemaName The name to compute a hash code for.
+     * @return The hash code for the given schema name.
+     */
+    public static long schemaNameResourceId( String schemaName )
+    {
+        long hash = HASH_40.initialise( 0x0123456789abcdefL );
+        hash = schemaName.chars().asLongStream().reduce( hash, HASH_40::update );
+        return HASH_40.finalise( hash );
+    }
+
+    /**
      * This is a stronger, full 64-bit hashing method for schema index entries.
      *
      * @see HashFunction#incrementalXXH64()
      */
     static long indexEntryResourceId_4_x( long labelId, IndexQuery.ExactPredicate[] predicates )
     {
-        long hash = indexEntryHash_4_x.initialise( 0x0123456789abcdefL );
+        long hash = HASH_40.initialise( 0x0123456789abcdefL );
 
-        hash = indexEntryHash_4_x.update( hash, labelId );
+        hash = HASH_40.update( hash, labelId );
 
         for ( IndexQuery.ExactPredicate predicate : predicates )
         {
             int propertyKeyId = predicate.propertyKeyId();
-            hash = indexEntryHash_4_x.update( hash, propertyKeyId );
+            hash = HASH_40.update( hash, propertyKeyId );
             Value value = predicate.value();
-            hash = value.updateHash( indexEntryHash_4_x, hash );
+            hash = value.updateHash( HASH_40, hash );
         }
 
-        return indexEntryHash_4_x.finalise( hash );
+        return HASH_40.finalise( hash );
     }
 }
