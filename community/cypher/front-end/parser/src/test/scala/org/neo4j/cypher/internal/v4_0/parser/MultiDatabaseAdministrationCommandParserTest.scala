@@ -22,16 +22,8 @@ class MultiDatabaseAdministrationCommandParserTest extends AdministrationCommand
 
   // SHOW DATABASE
 
-  test("SHOW DATABASE foo.bar") {
-    failsToParse
-  }
-
   test("SHOW DATABASE `foo.bar`") {
     yields(ast.ShowDatabase("foo.bar"))
-  }
-
-  test("SHOW DATABASE") {
-    failsToParse
   }
 
   test("SHOW DATABASES") {
@@ -42,38 +34,26 @@ class MultiDatabaseAdministrationCommandParserTest extends AdministrationCommand
     yields(ast.ShowDefaultDatabase())
   }
 
-  // CREATE DATABASE
-
-  test("CREATE DATABASE foo.bar") {
+  test("SHOW DATABASE foo.bar") {
     failsToParse
   }
+
+  test("SHOW DATABASE") {
+    failsToParse
+  }
+
+  // CREATE DATABASE
 
   test("CREATE DATABASE `foo.bar`") {
     yields(ast.CreateDatabase("foo.bar"))
-  }
-
-  test("CREATE DATABASE \"foo.bar\"") {
-    failsToParse
-  }
-
-  test("CATALOG CREATE DATABASE foo.bar") {
-    failsToParse
   }
 
   test("CATALOG CREATE DATABASE `foo.bar`") {
     yields(ast.CreateDatabase("foo.bar"))
   }
 
-  test("CATALOG CREATE DATABASE foo-bar42") {
-    failsToParse
-  }
-
   test("CATALOG CREATE DATABASE `foo-bar42`") {
     yields(ast.CreateDatabase("foo-bar42"))
-  }
-
-  test("CATALOG CREATE DATABASE _foo-bar42") {
-    failsToParse
   }
 
   test("CATALOG CREATE DATABASE `_foo-bar42`") {
@@ -84,17 +64,37 @@ class MultiDatabaseAdministrationCommandParserTest extends AdministrationCommand
     yields(ast.CreateDatabase(""))
   }
 
+  test("CREATE DATABASE foo.bar") {
+    failsToParse
+  }
+
+  test("CREATE DATABASE \"foo.bar\"") {
+    failsToParse
+  }
+
+  test("CATALOG CREATE DATABASE foo.bar") {
+    failsToParse
+  }
+
+  test("CATALOG CREATE DATABASE foo-bar42") {
+    failsToParse
+  }
+
+  test("CATALOG CREATE DATABASE _foo-bar42") {
+    failsToParse
+  }
+
   test("CATALOG CREATE DATABASE 42foo-bar") {
     failsToParse
   }
 
   // DROP DATABASE
 
-  test("CATALOG DROP DATABASE foo.bar") {
-    failsToParse
-  }
-
   test("CATALOG DROP DATABASE `foo.bar`") {
     yields(ast.DropDatabase("foo.bar"))
+  }
+
+  test("CATALOG DROP DATABASE foo.bar") {
+    failsToParse
   }
 }
