@@ -469,9 +469,7 @@ abstract class NodeHashJoinTestBase[CONTEXT <: RuntimeContext](edition: Edition[
 
   test("should join on more than 5 variables") {
     // given
-    val (unfilteredNodes, _) = circleGraph(sizeHint, "A", "B")
-    val nodes = select(unfilteredNodes, selectivity = 0.5, duplicateProbability = 0.5, nullProbability = 0.1)
-    val lhsRows = batchedInputValues(sizeHint / 8, nodes.map(n => Array[Any](n)): _*).stream()
+    circleGraph(sizeHint, "A", "B")
     val limitCount = 1
 
     // when
@@ -495,7 +493,7 @@ abstract class NodeHashJoinTestBase[CONTEXT <: RuntimeContext](edition: Edition[
       .nodeByLabelScan("x1", "A")
       .build()
 
-    val runtimeResult = execute(logicalQuery, runtime, lhsRows)
+    val runtimeResult = execute(logicalQuery, runtime)
 
     // then
     runtimeResult should beColumns("x1").withRows(rowCount(limitCount))
