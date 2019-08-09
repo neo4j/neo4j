@@ -27,6 +27,7 @@ case class PreparatoryRewriting(deprecations: Deprecations) extends Phase[BaseCo
 
     val rewrittenStatement = from.statement().endoRewrite(inSequence(
       normalizeWithAndReturnClauses(context.exceptionCreator),
+      insertWithBetweenOptionalMatchAndMatch,
       expandCallWhere,
       replaceAliasedFunctionInvocations(deprecations),
       mergeInPredicates))

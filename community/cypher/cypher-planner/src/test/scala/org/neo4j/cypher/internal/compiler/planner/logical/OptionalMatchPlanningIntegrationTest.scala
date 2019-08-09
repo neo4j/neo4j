@@ -22,12 +22,12 @@ package org.neo4j.cypher.internal.compiler.planner.logical
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport2
 import org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter.unnestOptional
 import org.neo4j.cypher.internal.ir.SimplePatternLength
-import org.neo4j.cypher.internal.planner.spi.DelegatingGraphStatistics
-import org.neo4j.cypher.internal.v4_0.expressions.{Ands, RelTypeName, SemanticDirection}
 import org.neo4j.cypher.internal.logical.plans._
+import org.neo4j.cypher.internal.planner.spi.DelegatingGraphStatistics
+import org.neo4j.cypher.internal.v4_0.expressions.{Ands, HasLabels, LabelName, RelTypeName, SemanticDirection}
 import org.neo4j.cypher.internal.v4_0.util.Foldable._
-import org.neo4j.cypher.internal.v4_0.util.{Cardinality, LabelId, RelTypeId}
 import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.v4_0.util.{Cardinality, LabelId, RelTypeId}
 import org.neo4j.kernel.impl.util.dbstructure.DbStructureLargeOptionalMatchStructure
 
 class OptionalMatchPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
@@ -133,6 +133,22 @@ class OptionalMatchPlanningIntegrationTest extends CypherFunSuite with LogicalPl
   test("should build simple optional match plans") { // This should be built using plan rewriting
     planFor("OPTIONAL MATCH (a) RETURN a")._2 should equal(
       Optional(AllNodesScan("a", Set.empty)))
+  }
+
+  test("should allow MATCH after OPTIONAL MATCH") {
+    planFor("OPTIONAL MATCH (a) MATCH (b) RETURN a, b")._2 should equal(
+      Apply(
+        Optional(AllNodesScan("a", Set.empty)),
+        AllNodesScan("b", Set("a"))
+      )
+    )
+  }
+
+  test("should allow MATCH after OPTIONAL MATCH on same node") {
+    planFor("OPTIONAL MATCH (a) MATCH (a:A) RETURN a")._2 should equal(
+      Selection(Seq(HasLabels(varFor("a"), Seq(LabelName("A")(pos)))(pos)),
+        Optional(AllNodesScan("a", Set.empty)))
+    )
   }
 
   test("should build simple optional expand") {

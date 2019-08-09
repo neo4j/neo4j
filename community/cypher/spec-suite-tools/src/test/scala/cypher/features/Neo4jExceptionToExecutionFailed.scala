@@ -134,8 +134,6 @@ object Neo4jExceptionToExecutionFailed {
       INVALID_PARAMETER_USE
     else if (msg.matches(semanticError("Variable `.+` already declared")))
       VARIABLE_ALREADY_BOUND
-    else if (msg.matches(semanticError("MATCH cannot follow OPTIONAL MATCH \\(perhaps use a WITH clause between them\\)")))
-      INVALID_CLAUSE_COMPOSITION
     else if (msg.matches(semanticError("Invalid combination of UNION and UNION ALL")))
       INVALID_CLAUSE_COMPOSITION
     else if (msg.matches(semanticError("floating point number is too large")))
