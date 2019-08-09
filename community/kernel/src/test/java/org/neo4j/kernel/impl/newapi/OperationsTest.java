@@ -624,7 +624,7 @@ class OperationsTest
         when( storageReader.constraintsGetForSchema(  descriptor.schema() ) ).thenReturn( Collections.emptyIterator() );
 
         // when
-        operations.uniquePropertyConstraintCreate( descriptor );
+        operations.uniquePropertyConstraintCreate( descriptor, "constraint name" );
 
         // then
         order.verify( locks ).acquireExclusive( LockTracer.NONE, ResourceTypes.LABEL, descriptor.getLabelId() );
@@ -645,7 +645,7 @@ class OperationsTest
         // when
         try
         {
-            operations.uniquePropertyConstraintCreate( descriptor );
+            operations.uniquePropertyConstraintCreate( descriptor, "constraint name" );
             fail( "Expected an exception because this schema should already be constrained." );
         }
         catch ( AlreadyConstrainedException ignore )
@@ -674,7 +674,7 @@ class OperationsTest
         // when
         try
         {
-            operations.uniquePropertyConstraintCreate( descriptor, indexProvider );
+            operations.uniquePropertyConstraintCreate( descriptor, indexProvider, "constraint name" );
             fail( "Expected an exception because this schema should already be constrained." );
         }
         catch ( AlreadyConstrainedException ignore )
@@ -702,7 +702,7 @@ class OperationsTest
         // when
         try
         {
-            operations.nodeKeyConstraintCreate( descriptor );
+            operations.nodeKeyConstraintCreate( descriptor, "constraint name" );
             fail( "Expected an exception because this schema should already be constrained." );
         }
         catch ( AlreadyConstrainedException ignore )
@@ -731,7 +731,7 @@ class OperationsTest
         // when
         try
         {
-            operations.nodeKeyConstraintCreate( descriptor, indexProvider );
+            operations.nodeKeyConstraintCreate( descriptor, indexProvider, "constraint name" );
             fail( "Expected an exception because this schema should already be constrained." );
         }
         catch ( AlreadyConstrainedException ignore )
@@ -759,7 +759,7 @@ class OperationsTest
         // when
         try
         {
-            operations.nodePropertyExistenceConstraintCreate( descriptor );
+            operations.nodePropertyExistenceConstraintCreate( descriptor, "constraint name" );
             fail( "Expected an exception because this schema should already be constrained." );
         }
         catch ( AlreadyConstrainedException ignore )
@@ -788,7 +788,7 @@ class OperationsTest
         // when
         try
         {
-            operations.relationshipPropertyExistenceConstraintCreate( descriptor );
+            operations.relationshipPropertyExistenceConstraintCreate( descriptor, "constraint name" );
             fail( "Expected an exception because this schema should already be constrained." );
         }
         catch ( AlreadyConstrainedException ignore )
@@ -961,8 +961,8 @@ class OperationsTest
         when( tokenHolders.propertyKeyTokens().getTokenById( 1 ) ).thenReturn( new NamedToken( "PropA", 1 ) );
         when( tokenHolders.propertyKeyTokens().getTokenById( 2 ) ).thenReturn( new NamedToken( "PropB", 2 ) );
         operations.indexCreate( SchemaDescriptor.forLabel( 1, 1 ) );
-        operations.indexCreate( SchemaDescriptor.fulltext( EntityType.NODE, IndexConfig.empty(), new int[] {2, 3}, new int[] {1, 2} ), Optional.empty() );
-        operations.indexCreate( SchemaDescriptor.forLabel( 3, 1 ), "provider-1.0", Optional.empty() );
+        operations.indexCreate( SchemaDescriptor.fulltext( EntityType.NODE, IndexConfig.empty(), new int[] {2, 3}, new int[] {1, 2} ), null );
+        operations.indexCreate( SchemaDescriptor.forLabel( 3, 1 ), "provider-1.0", null );
         IndexDescriptor[] indexDescriptors = txState.indexChanges().getAdded()
                 .stream()
                 .sorted( Comparator.comparing( d -> d.schema().getEntityTokenIds()[0] ) )
@@ -977,14 +977,12 @@ class OperationsTest
     }
 
     @Test
-    void mustAssignNameToUniqueIndexesThatDoNotHaveUserSuppliedName() throws Exception
+    void uniqueIndexesMustBeNamedAfterTheirConstraints() throws Exception
     {
         when( creationContext.reserveSchema() ).thenReturn( 1L, 2L, 3L );
-        when( tokenHolders.labelTokens().getTokenById( 1 ) ).thenReturn( new NamedToken( "LabelA", 1 ) );
-        when( tokenHolders.propertyKeyTokens().getTokenById( 1 ) ).thenReturn( new NamedToken( "PropA", 1 ) );
-        operations.indexUniqueCreate( SchemaDescriptor.forLabel( 1, 1 ), "provider-1.0" );
+        operations.indexUniqueCreate( ConstraintDescriptorFactory.uniqueForLabel( 1, 1 ).withName( "My bla bla constraint" ), "provider-1.0" );
         IndexDescriptor indexDescriptor = single( txState.indexChanges().getAdded() );
-        assertThat( indexDescriptor.toString(), indexDescriptor.getName(), is( "Unique Index on :LabelA (PropA)" ) );
+        assertThat( indexDescriptor.toString(), indexDescriptor.getName(), is( "My bla bla constraint" ) );
     }
 
     private void setStoreRelationship( long relationshipId, long sourceNode, long targetNode, int relationshipLabel )

@@ -46,6 +46,7 @@ import org.neo4j.internal.id.ScanOnOpenOverwritingIdGeneratorFactory;
 import org.neo4j.internal.recordstorage.RandomSchema;
 import org.neo4j.internal.recordstorage.SchemaStorage;
 import org.neo4j.internal.recordstorage.StoreTokens;
+import org.neo4j.internal.schema.ConstraintDescriptor;
 import org.neo4j.internal.schema.SchemaRule;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
@@ -64,7 +65,6 @@ import org.neo4j.logging.internal.LogService;
 import org.neo4j.logging.internal.NullLogService;
 import org.neo4j.logging.internal.SimpleLogService;
 import org.neo4j.scheduler.JobScheduler;
-import org.neo4j.storageengine.api.ConstraintRule;
 import org.neo4j.storageengine.api.StoreVersionCheck;
 import org.neo4j.storageengine.api.TransactionId;
 import org.neo4j.storageengine.migration.MigrationProgressMonitor;
@@ -290,10 +290,10 @@ class RecordStorageMigratorIT
             try
             {
                 SchemaRule schemaRule = randomSchema.nextSchemaRule();
-                if ( schemaRule instanceof ConstraintRule )
+                if ( schemaRule instanceof ConstraintDescriptor )
                 {
-                    ConstraintRule constraint = (ConstraintRule) schemaRule;
-                    if ( constraint.getConstraintDescriptor().enforcesUniqueness() && !constraint.hasOwnedIndexReference() )
+                    ConstraintDescriptor constraint = (ConstraintDescriptor) schemaRule;
+                    if ( constraint.isIndexBackedConstraint() && !constraint.asIndexBackedConstraint().hasOwnedIndexId() )
                     {
                         // Filter out constraints that are supposed to own indexes, but don't, because those are illegal to persist.
                         randomSchema.rollback();

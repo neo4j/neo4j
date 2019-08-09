@@ -137,16 +137,34 @@ public interface SchemaDescriptor extends SchemaDescriptorSupplier
     }
 
     /**
+     * Test if this schema descriptor is a {@link LabelSchemaDescriptor}.
+     * @return {@code true} if calling {@link #asLabelSchemaDescriptor()} will not throw an exception.
+     */
+    boolean isLabelSchemaDescriptor();
+
+    /**
      * If this schema descriptor matches the structure required by {@link LabelSchemaDescriptor}, then return this descriptor as that type.
      * Otherwise, throw an {@link IllegalStateException}.
      */
     LabelSchemaDescriptor asLabelSchemaDescriptor();
 
     /**
+     * Test if this schema descriptor is a {@link RelationTypeSchemaDescriptor}.
+     * @return {@code true} if calling {@link #asRelationshipTypeSchemaDescriptor()} will not throw an exception.
+     */
+    boolean isRelationshipTypeSchemaDescriptor();
+
+    /**
      * If this schema descriptor matches the structure required by {@link RelationTypeSchemaDescriptor}, then return this descriptor as that type.
      * Otherwise, throw an {@link IllegalStateException}.
      */
     RelationTypeSchemaDescriptor asRelationshipTypeSchemaDescriptor();
+
+    /**
+     * Test if this schema descriptor is a {@link FulltextSchemaDescriptor}.
+     * @return {@code true} if calling {@link #asFulltextSchemaDescriptor()} will not throw an exception.
+     */
+    boolean isFulltextSchemaDescriptor();
 
     /**
      * If this schema descriptor matches the structure required by {@link FulltextSchemaDescriptor}, then return this descriptor as that type.
@@ -160,17 +178,6 @@ public interface SchemaDescriptor extends SchemaDescriptorSupplier
      * @return true if the supplied ids are relevant to this schema unit.
      */
     boolean isAffected( long[] entityTokenIds );
-
-    /**
-     * Computes some value by feeding this object into the given SchemaComputer.
-     *
-     * Note that implementers of this method just need to call `return computer.compute( this );`.
-     *
-     * @param computer The SchemaComputer that hold the logic for the computation
-     * @param <R> The return type
-     * @return The result of the computation
-     */
-    <R> R computeWith( SchemaComputer<R> computer );
 
     /**
      * Performs some side-effect type logic by processing this object using the given SchemaProcessor.

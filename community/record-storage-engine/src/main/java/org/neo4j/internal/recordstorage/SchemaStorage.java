@@ -45,7 +45,6 @@ import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.kernel.impl.store.record.Record;
 import org.neo4j.kernel.impl.store.record.RecordLoad;
 import org.neo4j.kernel.impl.store.record.SchemaRecord;
-import org.neo4j.storageengine.api.ConstraintRule;
 import org.neo4j.token.TokenHolders;
 import org.neo4j.util.VisibleForTesting;
 import org.neo4j.values.storable.Value;
@@ -106,11 +105,11 @@ public class SchemaStorage implements SchemaRuleAccess
     }
 
     @Override
-    public ConstraintRule constraintsGetSingle( ConstraintDescriptor descriptor ) throws SchemaRuleNotFoundException, DuplicateSchemaRuleException
+    public ConstraintDescriptor constraintsGetSingle( ConstraintDescriptor descriptor ) throws SchemaRuleNotFoundException, DuplicateSchemaRuleException
     {
-        ConstraintRule[] rules = constraintRules( streamAllSchemaRules( false ) )
-                .filter( descriptor::isSame )
-                .toArray( ConstraintRule[]::new );
+        ConstraintDescriptor[] rules = constraintRules( streamAllSchemaRules( false ) )
+                .filter( descriptor::equals )
+                .toArray( ConstraintDescriptor[]::new );
         if ( rules.length == 0 )
         {
             throw new SchemaRuleNotFoundException( descriptor );
@@ -123,7 +122,7 @@ public class SchemaStorage implements SchemaRuleAccess
     }
 
     @Override
-    public Iterator<ConstraintRule> constraintsGetAllIgnoreMalformed()
+    public Iterator<ConstraintDescriptor> constraintsGetAllIgnoreMalformed()
     {
         return constraintRules( streamAllSchemaRules( true ) ).iterator();
     }
@@ -246,11 +245,11 @@ public class SchemaStorage implements SchemaRuleAccess
                 .map( rule -> (IndexDescriptor) rule );
     }
 
-    private Stream<ConstraintRule> constraintRules( Stream<SchemaRule> stream )
+    private Stream<ConstraintDescriptor> constraintRules( Stream<SchemaRule> stream )
     {
         return stream
-                .filter( rule -> rule instanceof ConstraintRule )
-                .map( rule -> (ConstraintRule) rule );
+                .filter( rule -> rule instanceof ConstraintDescriptor )
+                .map( rule -> (ConstraintDescriptor) rule );
     }
 
     private Stream<SchemaRule> readSchemaRuleThrowingRuntimeException( SchemaRecord record, boolean ignoreMalformed )

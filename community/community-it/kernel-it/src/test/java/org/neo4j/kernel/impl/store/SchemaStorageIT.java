@@ -40,6 +40,7 @@ import org.neo4j.internal.kernel.api.exceptions.schema.SchemaRuleNotFoundExcepti
 import org.neo4j.internal.recordstorage.RecordStorageEngine;
 import org.neo4j.internal.recordstorage.SchemaStorage;
 import org.neo4j.internal.schema.ConstraintDescriptor;
+import org.neo4j.internal.schema.ConstraintType;
 import org.neo4j.internal.schema.IndexConfig;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexPrototype;
@@ -51,7 +52,6 @@ import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.schema.index.TestIndexDescriptorFactory;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
-import org.neo4j.storageengine.api.ConstraintRule;
 import org.neo4j.test.extension.ImpermanentDbmsExtension;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.token.TokenHolders;
@@ -232,12 +232,12 @@ class SchemaStorageIT
                 uniquenessConstraint( LABEL2, PROP1 ) );
 
         // When
-        ConstraintRule rule = storage.constraintsGetSingle(
+        ConstraintDescriptor rule = storage.constraintsGetSingle(
                 ConstraintDescriptorFactory.uniqueForLabel( labelId( LABEL1 ), propId( PROP1 ) ) );
 
         // Then
         assertNotNull( rule );
-        assertRule( rule, LABEL1, PROP1, ConstraintDescriptor.Type.UNIQUE );
+        assertRule( rule, LABEL1, PROP1, ConstraintType.UNIQUE );
     }
 
     @Test
@@ -271,9 +271,8 @@ class SchemaStorageIT
         assertEquals( isUnique, rule.isUnique() );
     }
 
-    private void assertRule( ConstraintRule rule, String label, String propertyKey, ConstraintDescriptor.Type type )
+    private void assertRule( ConstraintDescriptor constraint, String label, String propertyKey, ConstraintType type )
     {
-        ConstraintDescriptor constraint = rule.getConstraintDescriptor();
         assertTrue( SchemaDescriptorPredicates.hasLabel( constraint, labelId( label ) ) );
         assertTrue( SchemaDescriptorPredicates.hasProperty( constraint, propId( propertyKey ) ) );
         assertEquals( type, constraint.type() );

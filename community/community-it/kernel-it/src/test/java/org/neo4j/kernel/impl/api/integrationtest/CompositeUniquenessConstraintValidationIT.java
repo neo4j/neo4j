@@ -34,6 +34,7 @@ import java.util.Arrays;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.internal.kernel.api.Kernel;
 import org.neo4j.internal.kernel.api.NodeCursor;
+import org.neo4j.internal.kernel.api.TokenWrite;
 import org.neo4j.internal.kernel.api.Transaction;
 import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.internal.kernel.api.security.LoginContext;
@@ -44,6 +45,7 @@ import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.rule.ImpermanentDbmsRule;
 import org.neo4j.values.storable.Values;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 import static org.neo4j.internal.schema.SchemaDescriptor.forLabel;
 import static org.neo4j.test.assertion.Assert.assertException;
@@ -52,7 +54,7 @@ import static org.neo4j.test.assertion.Assert.assertException;
 public class CompositeUniquenessConstraintValidationIT
 {
     @ClassRule
-    public static ImpermanentDbmsRule dbRule = new ImpermanentDbmsRule();
+    public static final ImpermanentDbmsRule dbRule = new ImpermanentDbmsRule();
 
     @Rule
     public final TestName testName = new TestName();
@@ -60,6 +62,9 @@ public class CompositeUniquenessConstraintValidationIT
     private final Object[] aValues;
     private final Object[] bValues;
     private ConstraintDescriptor constraintDescriptor;
+    private int label;
+    private Transaction transaction;
+    protected Kernel kernel;
 
     @Parameterized.Parameters( name = "{index}: {0}" )
     public static Iterable<TestParams> parameterValues()
@@ -88,8 +93,6 @@ public class CompositeUniquenessConstraintValidationIT
         return values;
     }
 
-    private static final int label = 1;
-
     public CompositeUniquenessConstraintValidationIT( TestParams params )
     {
         assert params.lhs.length == params.rhs.length;
@@ -98,18 +101,28 @@ public class CompositeUniquenessConstraintValidationIT
         numberOfProps = aValues.length;
     }
 
-    private Transaction transaction;
-    private GraphDatabaseAPI graphDatabaseAPI;
-    protected Kernel kernel;
-
     @Before
     public void setup() throws Exception
     {
-        graphDatabaseAPI = dbRule.getGraphDatabaseAPI();
+        GraphDatabaseAPI graphDatabaseAPI = dbRule.getGraphDatabaseAPI();
         kernel = graphDatabaseAPI.getDependencyResolver().resolveDependency( Kernel.class );
 
         newTransaction();
-        constraintDescriptor = transaction.schemaWrite().uniquePropertyConstraintCreate( forLabel( label, propertyIds() ) );
+        // This transaction allocates all the tokens we'll need in this test.
+        // We rely on token ids being allocated sequentially, from and including zero.
+        TokenWrite tokenWrite = transaction.tokenWrite();
+        tokenWrite.labelGetOrCreateForName( "Label0" );
+        label = tokenWrite.labelGetOrCreateForName( "Label1" );
+        assertEquals( 1, label );
+        for ( int i = 0; i < 10; i++ )
+        {
+            int prop = tokenWrite.propertyKeyGetOrCreateForName( "prop" + i );
+            assertEquals( i, prop );
+        }
+        commit();
+
+        newTransaction();
+        constraintDescriptor = transaction.schemaWrite().uniquePropertyConstraintCreate( forLabel( label, propertyIds() ), null );
         commit();
     }
 
@@ -119,6 +132,7 @@ public class CompositeUniquenessConstraintValidationIT
         if ( transaction != null )
         {
             transaction.close();
+            transaction = null;
         }
 
         newTransaction();

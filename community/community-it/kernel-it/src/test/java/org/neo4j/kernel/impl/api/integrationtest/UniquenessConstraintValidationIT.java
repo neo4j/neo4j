@@ -405,7 +405,7 @@ class UniquenessConstraintValidationIT extends KernelIntegrationTest
         commit();
 
         SchemaWrite schemaWrite = schemaWriteInNewTransaction();
-        schemaWrite.uniquePropertyConstraintCreate( forLabel( labelId, propertyKeyId ) );
+        schemaWrite.uniquePropertyConstraintCreate( forLabel( labelId, propertyKeyId ), null );
         commit();
     }
 }

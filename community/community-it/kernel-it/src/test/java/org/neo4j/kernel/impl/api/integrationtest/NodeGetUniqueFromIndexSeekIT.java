@@ -252,7 +252,7 @@ class NodeGetUniqueFromIndexSeekIT extends KernelIntegrationTest
     {
         Transaction transaction = newTransaction( LoginContext.AUTH_DISABLED );
         LabelSchemaDescriptor descriptor = SchemaDescriptor.forLabel( labelId, propertyIds );
-        transaction.schemaWrite().uniquePropertyConstraintCreate( descriptor );
+        transaction.schemaWrite().uniquePropertyConstraintCreate( descriptor, null );
         IndexDescriptor result = transaction.schemaRead().index( descriptor.getLabelId(), descriptor.getPropertyIds() );
         commit();
         return result;

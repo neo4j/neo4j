@@ -19,33 +19,13 @@
  */
 package org.neo4j.internal.schema.constraints;
 
-import org.neo4j.common.TokenNameLookup;
-import org.neo4j.internal.schema.RelationTypeSchemaDescriptor;
+import org.neo4j.internal.schema.ConstraintDescriptor;
 
-public class RelExistenceConstraintDescriptor extends AbstractConstraintDescriptor
+public interface RelExistenceConstraintDescriptor extends ConstraintDescriptor
 {
-    private final RelationTypeSchemaDescriptor schema;
-
-    RelExistenceConstraintDescriptor( RelationTypeSchemaDescriptor schema )
-    {
-        super( Type.EXISTS );
-        this.schema = schema;
-    }
+    @Override
+    RelExistenceConstraintDescriptor withId( long id );
 
     @Override
-    public RelationTypeSchemaDescriptor schema()
-    {
-        return schema;
-    }
-
-    @Override
-    public String prettyPrint( TokenNameLookup tokenNameLookup )
-    {
-        String typeName = escapeLabelOrRelTyp( tokenNameLookup.relationshipTypeGetName( schema.getRelTypeId() ) );
-        String relName = typeName.toLowerCase();
-        String propertyName = tokenNameLookup.propertyKeyGetName( schema.getPropertyId() );
-
-        return String.format( "CONSTRAINT ON ()-[ %s:%s ]-() ASSERT exists(%s.%s)",
-                relName, typeName, relName, propertyName );
-    }
+    RelExistenceConstraintDescriptor withName( String name );
 }

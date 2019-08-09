@@ -152,23 +152,23 @@ public class GraphDbStructureGuide implements Visitable<DbStructureVisitor>
             ConstraintDescriptor constraint = constraints.next();
             String userDescription = constraint.prettyPrint( nameLookup );
 
-            if ( constraint instanceof UniquenessConstraintDescriptor )
+            if ( constraint.isUniquenessConstraint() )
             {
-                visitor.visitUniqueConstraint( (UniquenessConstraintDescriptor) constraint, userDescription );
+                visitor.visitUniqueConstraint( constraint.asUniquenessConstraint(), userDescription );
             }
-            else if ( constraint instanceof NodeExistenceConstraintDescriptor )
+            else if ( constraint.isNodePropertyExistenceConstraint() )
             {
-                NodeExistenceConstraintDescriptor existenceConstraint = (NodeExistenceConstraintDescriptor) constraint;
+                NodeExistenceConstraintDescriptor existenceConstraint = constraint.asNodePropertyExistenceConstraint();
                 visitor.visitNodePropertyExistenceConstraint( existenceConstraint, userDescription );
             }
-            else if ( constraint instanceof RelExistenceConstraintDescriptor )
+            else if ( constraint.isRelationshipPropertyExistenceConstraint() )
             {
-                RelExistenceConstraintDescriptor existenceConstraint = (RelExistenceConstraintDescriptor) constraint;
+                RelExistenceConstraintDescriptor existenceConstraint = constraint.asRelationshipPropertyExistenceConstraint();
                 visitor.visitRelationshipPropertyExistenceConstraint( existenceConstraint, userDescription );
             }
-            else if ( constraint instanceof NodeKeyConstraintDescriptor )
+            else if ( constraint.isNodeKeyConstraint() )
             {
-                NodeKeyConstraintDescriptor nodeKeyConstraint = (NodeKeyConstraintDescriptor) constraint;
+                NodeKeyConstraintDescriptor nodeKeyConstraint = constraint.asNodeKeyConstraint();
                 visitor.visitNodeKeyConstraint( nodeKeyConstraint, userDescription );
             }
             else

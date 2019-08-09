@@ -25,31 +25,29 @@ import org.neo4j.internal.schema.constraints.UniquenessConstraintDescriptor;
 
 public class StandardConstraintRuleAccessor implements ConstraintRuleAccessor
 {
-    public static final ConstraintRuleAccessor STANDARD = new StandardConstraintRuleAccessor();
-
     @Override
-    public ConstraintDescriptor readConstraint( ConstraintRule rule )
+    public ConstraintDescriptor readConstraint( ConstraintDescriptor constraint )
     {
-        return rule.getConstraintDescriptor();
+        return constraint;
     }
 
     @Override
-    public ConstraintRule createUniquenessConstraintRule(
-            long ruleId, UniquenessConstraintDescriptor descriptor, long indexId )
+    public ConstraintDescriptor createUniquenessConstraintRule(
+            long ruleId, UniquenessConstraintDescriptor constraint, long indexId )
     {
-        return ConstraintRule.constraintRule( ruleId, descriptor, indexId );
+        return constraint.withId( ruleId ).withOwnedIndexId( indexId );
     }
 
     @Override
-    public ConstraintRule createNodeKeyConstraintRule(
-            long ruleId, NodeKeyConstraintDescriptor descriptor, long indexId )
+    public ConstraintDescriptor createNodeKeyConstraintRule(
+            long ruleId, NodeKeyConstraintDescriptor constraint, long indexId )
     {
-        return ConstraintRule.constraintRule( ruleId, descriptor, indexId );
+        return constraint.withId( ruleId ).withOwnedIndexId( indexId );
     }
 
     @Override
-    public ConstraintRule createExistenceConstraint( long ruleId, ConstraintDescriptor descriptor )
+    public ConstraintDescriptor createExistenceConstraint( long ruleId, ConstraintDescriptor constraint )
     {
-        return ConstraintRule.constraintRule( ruleId, descriptor );
+        return constraint.withId( ruleId );
     }
 }

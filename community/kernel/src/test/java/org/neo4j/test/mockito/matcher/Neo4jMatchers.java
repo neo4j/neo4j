@@ -144,8 +144,6 @@ public class Neo4jMatchers
     {
         return new TypeSafeDiagnosingMatcher<>()
         {
-            private Set<String> foundLabels;
-
             @Override
             public void describeTo( Description description )
             {
@@ -155,7 +153,7 @@ public class Neo4jMatchers
             @Override
             protected boolean matchesSafely( Node item, Description mismatchDescription )
             {
-                foundLabels = asLabelNameSet( item.getLabels() );
+                Set<String> foundLabels = asLabelNameSet( item.getLabels() );
 
                 if ( foundLabels.size() == expectedLabels.size() && foundLabels.containsAll( expectedLabels ) )
                 {
@@ -563,13 +561,22 @@ public class Neo4jMatchers
 
     public static IndexDefinition createIndex( GraphDatabaseService beansAPI, Label label, String... properties )
     {
-        IndexDefinition indexDef = createIndexNoWait( beansAPI, label, properties );
+        return createIndex( beansAPI, null, label, properties );
+    }
 
+    public static IndexDefinition createIndex( GraphDatabaseService beansAPI, String name, Label label, String... properties )
+    {
+        IndexDefinition indexDef = createIndexNoWait( beansAPI, name, label, properties );
         waitForIndex( beansAPI, indexDef );
         return indexDef;
     }
 
     public static IndexDefinition createIndexNoWait( GraphDatabaseService beansAPI, Label label, String... properties )
+    {
+        return createIndexNoWait( beansAPI, null, label, properties );
+    }
+
+    public static IndexDefinition createIndexNoWait( GraphDatabaseService beansAPI, String name, Label label, String... properties )
     {
         IndexDefinition indexDef;
         try ( Transaction tx = beansAPI.beginTx() )
@@ -578,6 +585,10 @@ public class Neo4jMatchers
             for ( String property : properties )
             {
                 indexCreator = indexCreator.on( property );
+            }
+            if ( name != null )
+            {
+                indexCreator = indexCreator.withName( name );
             }
             indexDef = indexCreator.create();
             tx.commit();

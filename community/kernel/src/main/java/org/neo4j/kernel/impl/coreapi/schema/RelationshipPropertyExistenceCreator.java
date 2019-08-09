@@ -19,36 +19,29 @@
  */
 package org.neo4j.kernel.impl.coreapi.schema;
 
-import org.neo4j.graphdb.schema.ConstraintType;
-import org.neo4j.graphdb.schema.IndexDefinition;
+import org.neo4j.graphdb.RelationshipType;
+import org.neo4j.graphdb.schema.ConstraintCreator;
+import org.neo4j.graphdb.schema.ConstraintDefinition;
 
-import static java.lang.String.format;
-
-public class NodeKeyConstraintDefinition extends NodeConstraintDefinition
+public class RelationshipPropertyExistenceCreator extends BaseRelationshipConstraintCreator
 {
-    public NodeKeyConstraintDefinition( InternalSchemaActions actions, String name, IndexDefinition indexDefinition )
+    private final String propertyKey;
+
+    RelationshipPropertyExistenceCreator( InternalSchemaActions actions, String name, RelationshipType type, String propertyKey )
     {
-        super( actions, name, indexDefinition );
+        super( actions, name, type );
+        this.propertyKey = propertyKey;
     }
 
     @Override
-    public void drop()
+    public ConstraintCreator assertPropertyExists( String propertyKey )
     {
-        assertInUnterminatedTransaction();
-        actions.dropNodeKeyConstraint( label, propertyKeys );
+        throw new UnsupportedOperationException( "You can only create one property existence constraint at a time." );
     }
 
     @Override
-    public ConstraintType getConstraintType()
+    public ConstraintDefinition create()
     {
-        assertInUnterminatedTransaction();
-        return ConstraintType.NODE_KEY;
-    }
-
-    @Override
-    public String toString()
-    {
-        return format( "ON (%1$s:%2$s) ASSERT (%3$s) IS NODE KEY",
-                label.name().toLowerCase(), label.name(), propertyText() );
+        return actions.createPropertyExistenceConstraint( name, type, propertyKey );
     }
 }

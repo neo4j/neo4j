@@ -33,17 +33,17 @@ import org.neo4j.graphdb.schema.IndexDefinition;
  */
 public interface InternalSchemaActions
 {
-    IndexDefinition createIndexDefinition( Label label, Optional<String> indexName, String... propertyKey );
+    IndexDefinition createIndexDefinition( Label label, String indexName, String... propertyKey );
 
     void dropIndexDefinitions( IndexDefinition indexDefinition );
 
-    ConstraintDefinition createPropertyUniquenessConstraint( IndexDefinition indexDefinition );
+    ConstraintDefinition createPropertyUniquenessConstraint( IndexDefinition indexDefinition, String name );
 
-    ConstraintDefinition createNodeKeyConstraint( IndexDefinition indexDefinition );
+    ConstraintDefinition createNodeKeyConstraint( IndexDefinition indexDefinition, String name );
 
-    ConstraintDefinition createPropertyExistenceConstraint( Label label, String... propertyKey );
+    ConstraintDefinition createPropertyExistenceConstraint( String name, Label label, String... propertyKey );
 
-    ConstraintDefinition createPropertyExistenceConstraint( RelationshipType type, String propertyKey );
+    ConstraintDefinition createPropertyExistenceConstraint( String name, RelationshipType type, String propertyKey );
 
     void dropPropertyUniquenessConstraint( Label label, String[] properties );
 

@@ -45,6 +45,7 @@ import org.neo4j.internal.schema.IndexProviderDescriptor;
 import org.neo4j.internal.schema.LabelSchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.internal.schema.constraints.ConstraintDescriptorFactory;
+import org.neo4j.internal.schema.constraints.IndexBackedConstraintDescriptor;
 import org.neo4j.internal.schema.constraints.UniquenessConstraintDescriptor;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
@@ -145,12 +146,11 @@ class ConstraintIndexCreatorTest
         UniquePropertyValueValidationException exception = assertThrows( UniquePropertyValueValidationException.class,
                 () -> creator.createUniquenessConstraintIndex( transaction, constraint, getDefaultProvider() ) );
         assertEquals( "Existing data does not satisfy CONSTRAINT ON ( label[123]:label[123] ) " +
-                "ASSERT label[123].property[456] IS UNIQUE: Both node 2 and node 1 share the property value ( String(\"a\") )",
+                "ASSERT (label[123].property[456]) IS UNIQUE: Both node 2 and node 1 share the property value ( String(\"a\") )",
                 exception.getMessage() );
         assertEquals( 2, kernel.transactions.size() );
         KernelTransactionImplementation tx1 = kernel.transactions.get( 0 );
-        SchemaDescriptor newIndex = index.schema();
-        verify( tx1 ).indexUniqueCreate( eq( newIndex ), eq( getDefaultProvider() ) );
+        verify( tx1 ).indexUniqueCreate( eq( constraint ), eq( getDefaultProvider() ) );
         verify( schemaRead, times( 2 ) ).index( descriptor );
         verifyNoMoreInteractions( schemaRead );
         KernelTransactionImplementation kti2 = kernel.transactions.get( 1 );
@@ -286,7 +286,7 @@ class ConstraintIndexCreatorTest
         // then
         assertEquals( 1, kernel.transactions.size() );
         KernelTransactionImplementation transactionInstance = kernel.transactions.get( 0 );
-        verify( transactionInstance ).indexUniqueCreate( eq( descriptor ), eq( providerDescriptor.name() ) );
+        verify( transactionInstance ).indexUniqueCreate( eq( constraint ), eq( providerDescriptor.name() ) );
         verify( schemaRead ).index( descriptor );
         verifyNoMoreInteractions( schemaRead );
     }
@@ -366,8 +366,8 @@ class ConstraintIndexCreatorTest
             when( transaction.schemaWrite() ).thenReturn( schemaWrite );
             TransactionState transactionState = mock( TransactionState.class );
             when( transaction.txState() ).thenReturn( transactionState );
-            when( transaction.indexUniqueCreate( any( SchemaDescriptor.class ), any( String.class ) ) ).thenAnswer(
-                    i -> IndexPrototype.uniqueForSchema( i.getArgument( 0 ) ).materialise( INDEX_ID ) );
+            when( transaction.indexUniqueCreate( any( IndexBackedConstraintDescriptor.class ), any( String.class ) ) ).thenAnswer(
+                    i -> IndexPrototype.uniqueForSchema( i.<IndexBackedConstraintDescriptor>getArgument( 0 ).schema() ).materialise( INDEX_ID ) );
             when( transaction.newStorageReader() ).thenReturn( mock( StorageReader.class ) );
         }
         catch ( InvalidTransactionTypeKernelException e )

@@ -31,6 +31,7 @@ import org.neo4j.common.EntityType;
 import org.neo4j.configuration.Config;
 import org.neo4j.internal.id.DefaultIdGeneratorFactory;
 import org.neo4j.internal.id.IdType;
+import org.neo4j.internal.schema.ConstraintDescriptor;
 import org.neo4j.internal.schema.IndexConfig;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexPrototype;
@@ -42,7 +43,6 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.impl.store.format.standard.StandardV3_4;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.logging.NullLogProvider;
-import org.neo4j.storageengine.api.ConstraintRule;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.pagecache.EphemeralPageCacheExtension;
 import org.neo4j.test.rule.TestDirectory;
@@ -226,13 +226,13 @@ class SchemaStore35Test
         return IndexPrototype.uniqueForSchema( forLabel( labelId, propertyIds ), PROVIDER ).materialise( ruleId ).withOwningConstraintId( owningConstraint );
     }
 
-    private static ConstraintRule constraintUniqueRule( long ruleId, long ownedIndexId, int labelId, int... propertyIds )
+    private static ConstraintDescriptor constraintUniqueRule( long ruleId, long ownedIndexId, int labelId, int... propertyIds )
     {
-        return ConstraintRule.constraintRule( ruleId, ConstraintDescriptorFactory.uniqueForLabel( labelId, propertyIds ), ownedIndexId );
+        return ConstraintDescriptorFactory.uniqueForLabel( labelId, propertyIds ).withId( ruleId ).withOwnedIndexId( ownedIndexId );
     }
 
-    private static ConstraintRule constraintExistsRule( long ruleId, int labelId, int... propertyIds )
+    private static ConstraintDescriptor constraintExistsRule( long ruleId, int labelId, int... propertyIds )
     {
-        return ConstraintRule.constraintRule( ruleId, ConstraintDescriptorFactory.existsForLabel( labelId, propertyIds ) );
+        return ConstraintDescriptorFactory.existsForLabel( labelId, propertyIds ).withId( ruleId );
     }
 }

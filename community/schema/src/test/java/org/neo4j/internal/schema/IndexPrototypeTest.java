@@ -53,7 +53,7 @@ class IndexPrototypeTest
 
     private void assertName( IndexPrototype labelPrototype, String[] entityTokenNames, String[] propertyNames, String expectedName )
     {
-        IndexPrototype withName = labelPrototype.withGeneratedName( entityTokenNames, propertyNames );
+        IndexPrototype withName = labelPrototype.withName( SchemaRule.generateName( labelPrototype, entityTokenNames, propertyNames ) );
         assertTrue( withName.getName().isPresent() );
         assertEquals( expectedName, withName.getName().get() );
     }

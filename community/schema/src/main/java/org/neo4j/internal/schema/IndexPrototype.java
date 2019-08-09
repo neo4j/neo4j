@@ -129,42 +129,18 @@ public class IndexPrototype implements IndexRef<IndexPrototype>
 
     /**
      * Produce a new index prototype that is the same as this index prototype in every way, except it has the given name.
+     * If the given name is null, then this index descriptor is returned unchanged.
      *
      * @param name The name used in the new index prototype.
      * @return A new index prototype with the given name.
      */
     public IndexPrototype withName( String name )
     {
-        Objects.requireNonNull( name, "Index name cannot be null." );
-        return new IndexPrototype( schema, isUnique, indexProvider, name );
-    }
-
-    /**
-     * Produce a new index prototype that is the same as this index prototype in every way, except it has a name that is generated based on the given
-     * entity token names and property key names.
-     *
-     * @param entityTokenNames The entity token names, like label names or relationship type names.
-     * @param propertyNames The property key names.
-     * @return A new index prototype with the generated name.
-     */
-    public IndexPrototype withGeneratedName( String[] entityTokenNames, String[] propertyNames )
-    {
-        String indexType = schema.getIndexType() == IndexType.FULLTEXT ? "Full-Text Index" : isUnique ? "Unique Index" : "Index";
-        String entityPart;
-        switch ( schema.entityType() )
+        if ( name == null )
         {
-        case NODE:
-            entityPart = Arrays.stream( entityTokenNames ).collect( Collectors.joining( ",:", ":", "" ) );
-            break;
-        case RELATIONSHIP:
-            entityPart = Arrays.stream( entityTokenNames ).collect( Collectors.joining( "|:", "()-[:", "]-()" ) );
-            break;
-        default:
-            throw new IllegalArgumentException( "Unknown EntityType: " + schema.entityType() + "." );
+            return this;
         }
-
-        String name = indexType + " on " + entityPart + " (" + String.join( ",", propertyNames ) + ")";
-        return withName( name );
+        return new IndexPrototype( schema, isUnique, indexProvider, name );
     }
 
     /**

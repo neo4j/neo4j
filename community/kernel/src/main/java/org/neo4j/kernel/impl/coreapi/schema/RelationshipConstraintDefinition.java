@@ -28,10 +28,9 @@ abstract class RelationshipConstraintDefinition extends SinglePropertyConstraint
 {
     protected final RelationshipType relationshipType;
 
-    protected RelationshipConstraintDefinition( InternalSchemaActions actions, RelationshipType relationshipType,
-            String propertyKey )
+    RelationshipConstraintDefinition( InternalSchemaActions actions, String name, RelationshipType relationshipType, String propertyKey )
     {
-        super( actions, propertyKey );
+        super( actions, name, propertyKey );
         this.relationshipType = requireNonNull( relationshipType );
     }
 

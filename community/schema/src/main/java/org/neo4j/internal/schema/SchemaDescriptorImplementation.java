@@ -137,6 +137,12 @@ public final class SchemaDescriptorImplementation implements SchemaDescriptor, L
     }
 
     @Override
+    public boolean isLabelSchemaDescriptor()
+    {
+        return archetypalLabelSchema;
+    }
+
+    @Override
     public LabelSchemaDescriptor asLabelSchemaDescriptor()
     {
         if ( !archetypalLabelSchema )
@@ -147,6 +153,12 @@ public final class SchemaDescriptorImplementation implements SchemaDescriptor, L
     }
 
     @Override
+    public boolean isRelationshipTypeSchemaDescriptor()
+    {
+        return archetypalRelationshipTypeSchema;
+    }
+
+    @Override
     public RelationTypeSchemaDescriptor asRelationshipTypeSchemaDescriptor()
     {
         if ( !archetypalRelationshipTypeSchema )
@@ -154,6 +166,12 @@ public final class SchemaDescriptorImplementation implements SchemaDescriptor, L
             throw cannotCastException( "RelationTypeSchemaDescriptor" );
         }
         return this;
+    }
+
+    @Override
+    public boolean isFulltextSchemaDescriptor()
+    {
+        return archetypalFulltextSchema;
     }
 
     @Override
@@ -185,20 +203,6 @@ public final class SchemaDescriptorImplementation implements SchemaDescriptor, L
     }
 
     @Override
-    public <R> R computeWith( SchemaComputer<R> computer )
-    {
-        if ( archetypalLabelSchema )
-        {
-            return computer.computeSpecific( this.asLabelSchemaDescriptor() );
-        }
-        if ( archetypalRelationshipTypeSchema )
-        {
-            return computer.computeSpecific( this.asRelationshipTypeSchemaDescriptor() );
-        }
-        return computer.computeSpecific( (SchemaDescriptor) this );
-    }
-
-    @Override
     public void processWith( SchemaProcessor processor )
     {
         if ( archetypalLabelSchema )
@@ -226,8 +230,8 @@ public final class SchemaDescriptorImplementation implements SchemaDescriptor, L
     {
         String prefix = entityType == RELATIONSHIP ? "-[" : "";
         String suffix = entityType == RELATIONSHIP ? "]-" : "";
-        return prefix + ":" + String.join( ",", tokenNameLookup.entityTokensGetNames( entityType, entityTokens ) ) + "(" +
-                TokenIdPrettyPrinter.niceProperties( tokenNameLookup, propertyKeyIds ) + ")" + suffix;
+        return prefix + ":" + String.join( ",", tokenNameLookup.entityTokensGetNames( entityType, entityTokens ) ) +
+                TokenIdPrettyPrinter.niceProperties( tokenNameLookup, propertyKeyIds ) + suffix;
     }
 
     @Override

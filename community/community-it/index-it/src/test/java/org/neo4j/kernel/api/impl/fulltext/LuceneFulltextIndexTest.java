@@ -21,8 +21,6 @@ package org.neo4j.kernel.api.impl.fulltext;
 
 import org.junit.Test;
 
-import java.util.Optional;
-
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.internal.schema.FulltextSchemaDescriptor;
@@ -64,7 +62,7 @@ public class LuceneFulltextIndexTest extends LuceneFulltextTestSupport
         try ( KernelTransactionImplementation tx = getKernelTransaction() )
         {
             SchemaDescriptor descriptor = indexProvider.schemaFor( NODE, new String[]{LABEL.name()}, indexConfig, PROP );
-            index = tx.schemaWrite().indexCreate( descriptor, FulltextIndexProviderFactory.DESCRIPTOR.name(), Optional.of( NODE_INDEX_NAME ) );
+            index = tx.schemaWrite().indexCreate( descriptor, FulltextIndexProviderFactory.DESCRIPTOR.name(), NODE_INDEX_NAME );
             tx.success();
         }
         await( index );
@@ -96,7 +94,7 @@ public class LuceneFulltextIndexTest extends LuceneFulltextTestSupport
         try ( KernelTransactionImplementation tx = getKernelTransaction() )
         {
             SchemaDescriptor descriptor = indexProvider.schemaFor( NODE, new String[]{LABEL.name()}, indexConfig, PROP );
-            index = tx.schemaWrite().indexCreate( descriptor, FulltextIndexProviderFactory.DESCRIPTOR.name(), Optional.of( NODE_INDEX_NAME ) );
+            index = tx.schemaWrite().indexCreate( descriptor, FulltextIndexProviderFactory.DESCRIPTOR.name(), NODE_INDEX_NAME );
             tx.success();
         }
         await( index );
@@ -139,7 +137,7 @@ public class LuceneFulltextIndexTest extends LuceneFulltextTestSupport
         try ( KernelTransactionImplementation tx = getKernelTransaction() )
         {
             SchemaDescriptor descriptor = indexProvider.schemaFor( NODE, new String[]{LABEL.name()}, indexConfig, PROP );
-            index = tx.schemaWrite().indexCreate( descriptor, FulltextIndexProviderFactory.DESCRIPTOR.name(), Optional.of( NODE_INDEX_NAME ) );
+            index = tx.schemaWrite().indexCreate( descriptor, FulltextIndexProviderFactory.DESCRIPTOR.name(), NODE_INDEX_NAME );
             tx.success();
         }
         await( index );
@@ -180,7 +178,7 @@ public class LuceneFulltextIndexTest extends LuceneFulltextTestSupport
         try ( KernelTransactionImplementation tx = getKernelTransaction() )
         {
             SchemaDescriptor descriptor = indexProvider.schemaFor( NODE, new String[]{LABEL.name()}, indexConfig, "prop", "prop2" );
-            index = tx.schemaWrite().indexCreate( descriptor, FulltextIndexProviderFactory.DESCRIPTOR.name(), Optional.of( NODE_INDEX_NAME ) );
+            index = tx.schemaWrite().indexCreate( descriptor, FulltextIndexProviderFactory.DESCRIPTOR.name(), NODE_INDEX_NAME );
             tx.success();
         }
         await( index );
@@ -234,7 +232,7 @@ public class LuceneFulltextIndexTest extends LuceneFulltextTestSupport
         try ( KernelTransactionImplementation tx = getKernelTransaction() )
         {
             SchemaDescriptor descriptor = indexProvider.schemaFor( NODE, new String[]{LABEL.name()}, indexConfig, PROP );
-            index = tx.schemaWrite().indexCreate( descriptor, FulltextIndexProviderFactory.DESCRIPTOR.name(), Optional.of( NODE_INDEX_NAME ) );
+            index = tx.schemaWrite().indexCreate( descriptor, FulltextIndexProviderFactory.DESCRIPTOR.name(), NODE_INDEX_NAME );
             tx.success();
         }
         await( index );
@@ -267,7 +265,7 @@ public class LuceneFulltextIndexTest extends LuceneFulltextTestSupport
         try ( KernelTransactionImplementation tx = getKernelTransaction() )
         {
             SchemaDescriptor descriptor = indexProvider.schemaFor( NODE, new String[]{LABEL.name()}, indexConfig, "prop", "prop2" );
-            index = tx.schemaWrite().indexCreate( descriptor, FulltextIndexProviderFactory.DESCRIPTOR.name(), Optional.of( NODE_INDEX_NAME ) );
+            index = tx.schemaWrite().indexCreate( descriptor, FulltextIndexProviderFactory.DESCRIPTOR.name(), NODE_INDEX_NAME );
             tx.success();
         }
         await( index );
@@ -302,7 +300,7 @@ public class LuceneFulltextIndexTest extends LuceneFulltextTestSupport
         try ( KernelTransactionImplementation tx = getKernelTransaction() )
         {
             SchemaDescriptor descriptor = indexProvider.schemaFor( NODE, new String[]{LABEL.name()}, indexConfig, "first", "last" );
-            index = tx.schemaWrite().indexCreate( descriptor, FulltextIndexProviderFactory.DESCRIPTOR.name(), Optional.of( NODE_INDEX_NAME ) );
+            index = tx.schemaWrite().indexCreate( descriptor, FulltextIndexProviderFactory.DESCRIPTOR.name(), NODE_INDEX_NAME );
             tx.success();
         }
         await( index );
@@ -344,8 +342,8 @@ public class LuceneFulltextIndexTest extends LuceneFulltextTestSupport
         IndexDescriptor relsIndex;
         try ( KernelTransactionImplementation tx = getKernelTransaction() )
         {
-            nodesIndex = tx.schemaWrite().indexCreate( nodes, FulltextIndexProviderFactory.DESCRIPTOR.name(), Optional.of( NODE_INDEX_NAME ) );
-            relsIndex = tx.schemaWrite().indexCreate( rels, FulltextIndexProviderFactory.DESCRIPTOR.name(), Optional.of( REL_INDEX_NAME ) );
+            nodesIndex = tx.schemaWrite().indexCreate( nodes, FulltextIndexProviderFactory.DESCRIPTOR.name(), NODE_INDEX_NAME );
+            relsIndex = tx.schemaWrite().indexCreate( rels, FulltextIndexProviderFactory.DESCRIPTOR.name(), REL_INDEX_NAME );
             tx.success();
         }
         await( nodesIndex );
@@ -388,8 +386,8 @@ public class LuceneFulltextIndexTest extends LuceneFulltextTestSupport
         IndexDescriptor relsIndex;
         try ( KernelTransactionImplementation tx = getKernelTransaction() )
         {
-            nodesIndex = tx.schemaWrite().indexCreate( nodes, FulltextIndexProviderFactory.DESCRIPTOR.name(), Optional.of( NODE_INDEX_NAME ) );
-            relsIndex = tx.schemaWrite().indexCreate( rels, FulltextIndexProviderFactory.DESCRIPTOR.name(), Optional.of( REL_INDEX_NAME ) );
+            nodesIndex = tx.schemaWrite().indexCreate( nodes, FulltextIndexProviderFactory.DESCRIPTOR.name(), NODE_INDEX_NAME );
+            relsIndex = tx.schemaWrite().indexCreate( rels, FulltextIndexProviderFactory.DESCRIPTOR.name(), REL_INDEX_NAME );
             tx.success();
         }
         await( nodesIndex );
@@ -444,8 +442,8 @@ public class LuceneFulltextIndexTest extends LuceneFulltextTestSupport
         IndexDescriptor relsIndex;
         try ( KernelTransactionImplementation tx = getKernelTransaction() )
         {
-            nodesIndex = tx.schemaWrite().indexCreate( nodes, FulltextIndexProviderFactory.DESCRIPTOR.name(), Optional.of( NODE_INDEX_NAME ) );
-            relsIndex = tx.schemaWrite().indexCreate( rels, FulltextIndexProviderFactory.DESCRIPTOR.name(), Optional.of( REL_INDEX_NAME ) );
+            nodesIndex = tx.schemaWrite().indexCreate( nodes, FulltextIndexProviderFactory.DESCRIPTOR.name(), NODE_INDEX_NAME );
+            relsIndex = tx.schemaWrite().indexCreate( rels, FulltextIndexProviderFactory.DESCRIPTOR.name(), REL_INDEX_NAME );
             tx.success();
         }
         await( nodesIndex );
@@ -472,7 +470,7 @@ public class LuceneFulltextIndexTest extends LuceneFulltextTestSupport
         try ( KernelTransactionImplementation tx = getKernelTransaction() )
         {
             SchemaDescriptor descriptor = indexProvider.schemaFor( NODE, new String[]{LABEL.name()}, indexConfig, PROP );
-            index = tx.schemaWrite().indexCreate( descriptor, FulltextIndexProviderFactory.DESCRIPTOR.name(), Optional.of( NODE_INDEX_NAME ) );
+            index = tx.schemaWrite().indexCreate( descriptor, FulltextIndexProviderFactory.DESCRIPTOR.name(), NODE_INDEX_NAME );
             tx.success();
         }
         await( index );
@@ -502,7 +500,7 @@ public class LuceneFulltextIndexTest extends LuceneFulltextTestSupport
         {
             SchemaDescriptor descriptor = indexProvider.schemaFor( NODE, new String[]{LABEL.name()}, indexConfig, "prop2" );
             tx.schemaWrite().indexDrop( index );
-            index = tx.schemaWrite().indexCreate( descriptor, FulltextIndexProviderFactory.DESCRIPTOR.name(), Optional.of( NODE_INDEX_NAME ) );
+            index = tx.schemaWrite().indexCreate( descriptor, FulltextIndexProviderFactory.DESCRIPTOR.name(), NODE_INDEX_NAME );
             tx.success();
         }
         await( index );
@@ -530,7 +528,7 @@ public class LuceneFulltextIndexTest extends LuceneFulltextTestSupport
         IndexDescriptor index;
         try ( KernelTransactionImplementation tx = getKernelTransaction() )
         {
-            index = tx.schemaWrite().indexCreate( descriptor, FulltextIndexProviderFactory.DESCRIPTOR.name(), Optional.of( NODE_INDEX_NAME ) );
+            index = tx.schemaWrite().indexCreate( descriptor, FulltextIndexProviderFactory.DESCRIPTOR.name(), NODE_INDEX_NAME );
             tx.success();
         }
         await( index );
@@ -553,7 +551,7 @@ public class LuceneFulltextIndexTest extends LuceneFulltextTestSupport
         }
         try ( KernelTransactionImplementation tx = getKernelTransaction() )
         {
-            index = tx.schemaWrite().indexCreate( descriptor, FulltextIndexProviderFactory.DESCRIPTOR.name(), Optional.of( NODE_INDEX_NAME ) );
+            index = tx.schemaWrite().indexCreate( descriptor, FulltextIndexProviderFactory.DESCRIPTOR.name(), NODE_INDEX_NAME );
             tx.success();
         }
         await( index );

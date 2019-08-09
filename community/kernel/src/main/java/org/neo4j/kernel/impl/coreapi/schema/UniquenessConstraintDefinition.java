@@ -26,9 +26,9 @@ import static java.lang.String.format;
 
 public class UniquenessConstraintDefinition extends NodeConstraintDefinition
 {
-    public UniquenessConstraintDefinition( InternalSchemaActions actions, IndexDefinition indexDefinition )
+    public UniquenessConstraintDefinition( InternalSchemaActions actions, String name, IndexDefinition indexDefinition )
     {
-        super( actions, indexDefinition );
+        super( actions, name, indexDefinition );
     }
 
     @Override

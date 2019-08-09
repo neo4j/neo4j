@@ -111,18 +111,35 @@ public interface Schema
 
     /**
      * Returns a {@link ConstraintCreator} where details about the constraint can be
-     * specified. When all details have been entered {@link ConstraintCreator#create()}
+     * specified. When all details have been entered, {@link ConstraintCreator#create()}
      * must be called for it to actually be created.
      *
      * Creating a constraint will block on the {@linkplain ConstraintCreator#create() create method} until
-     * all existing data has been verified for compliance. If any existing data doesn't comply with the constraint an
-     * exception will be thrown, and the constraint will not be created.
+     * all existing data has been verified for compliance.
+     * If any existing data doesn't comply with the constraint an exception will be thrown,
+     * and the constraint will not be created.
      *
      * @param label the label this constraint is for.
      * @return a {@link ConstraintCreator} capable of providing details for, as well as creating
      * a constraint for the given {@linkplain Label label}.
      */
     ConstraintCreator constraintFor( Label label );
+
+    /**
+     * Returns a {@link ConstraintCreator} where details about the constraint can be specified.
+     * When all details have been entered, {@link ConstraintCreator#create()}
+     * must be called for it the actually be created.
+     *
+     * Creating a constraint will block on the {@linkplain ConstraintCreator#create() create method} until
+     * all existing data has been verified for compliance.
+     * If any existing data doesn't comply with the constraint an exception will be thrown,
+     * and the constraint will not be created.
+     *
+     * @param type the relationship type this constraint is for.
+     * @return a {@link ConstraintCreator} capable of providing details for, as well as creating
+     * a constraint for the given {@linkplain RelationshipType}.
+     */
+    ConstraintCreator constraintFor( RelationshipType type );
 
     /**
      * @param label the {@linkplain Label label} to get constraints for.
@@ -165,10 +182,18 @@ public interface Schema
     void awaitIndexesOnline( long duration, TimeUnit unit );
 
     /**
-     * Get an {@link IndexDefinition} by the given name of the index.
-     * @param indexName The given name of the index.
-     * @return The index with that given name.
-     * @throws IllegalArgumentException if there is no index with that given name.
+     * Get a {@link ConstraintDefinition} by the given name of the constraint.
+     * @param constraintName The name of the constraint.
+     * @return The constraint with that name.
+     * @throws IllegalArgumentException if there is no constraint with that name.
+     */
+    ConstraintDefinition getConstraintByName( String constraintName );
+
+    /**
+     * Get an {@link IndexDefinition} by the name of the index.
+     * @param indexName The name of the index.
+     * @return The index with that name.
+     * @throws IllegalArgumentException if there is no index with that name.
      */
     IndexDefinition getIndexByName( String indexName );
 }

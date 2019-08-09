@@ -22,8 +22,8 @@ package org.neo4j.kernel.api.schema.constraints;
 import org.junit.jupiter.api.Test;
 
 import org.neo4j.internal.schema.ConstraintDescriptor;
+import org.neo4j.internal.schema.ConstraintType;
 import org.neo4j.internal.schema.SchemaDescriptor;
-import org.neo4j.internal.schema.constraints.AbstractConstraintDescriptor;
 import org.neo4j.internal.schema.constraints.ConstraintDescriptorFactory;
 
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -39,60 +39,60 @@ class ConstraintDescriptorFactoryTest
     @Test
     void shouldCreateExistsConstraintDescriptors()
     {
-        AbstractConstraintDescriptor desc;
+        ConstraintDescriptor desc;
 
         desc = ConstraintDescriptorFactory.existsForLabel( LABEL_ID, 1 );
-        assertThat( desc.type(), equalTo( ConstraintDescriptor.Type.EXISTS ) );
+        assertThat( desc.type(), equalTo( ConstraintType.EXISTS ) );
         assertThat( desc.schema(), equalTo( SchemaDescriptor.forLabel( LABEL_ID, 1 ) ) );
 
         desc = ConstraintDescriptorFactory.existsForRelType( REL_TYPE_ID, 1 );
-        assertThat( desc.type(), equalTo( ConstraintDescriptor.Type.EXISTS ) );
+        assertThat( desc.type(), equalTo( ConstraintType.EXISTS ) );
         assertThat( desc.schema(), equalTo( SchemaDescriptor.forRelType( REL_TYPE_ID, 1 ) ) );
     }
 
     @Test
     void shouldCreateUniqueConstraintDescriptors()
     {
-        AbstractConstraintDescriptor desc;
+        ConstraintDescriptor desc;
 
         desc = ConstraintDescriptorFactory.uniqueForLabel( LABEL_ID, 1 );
-        assertThat( desc.type(), equalTo( ConstraintDescriptor.Type.UNIQUE ) );
+        assertThat( desc.type(), equalTo( ConstraintType.UNIQUE ) );
         assertThat( desc.schema(), equalTo( SchemaDescriptor.forLabel( LABEL_ID, 1 ) ) );
     }
 
     @Test
     void shouldCreateNodeKeyConstraintDescriptors()
     {
-        AbstractConstraintDescriptor desc;
+        ConstraintDescriptor desc;
 
         desc = ConstraintDescriptorFactory.nodeKeyForLabel( LABEL_ID, 1 );
-        assertThat( desc.type(), equalTo( ConstraintDescriptor.Type.UNIQUE_EXISTS ) );
+        assertThat( desc.type(), equalTo( ConstraintType.UNIQUE_EXISTS ) );
         assertThat( desc.schema(), equalTo( SchemaDescriptor.forLabel( LABEL_ID, 1 ) ) );
     }
 
     @Test
     void shouldCreateConstraintDescriptorsFromSchema()
     {
-        AbstractConstraintDescriptor desc;
+        ConstraintDescriptor desc;
 
         desc = ConstraintDescriptorFactory.uniqueForSchema( SchemaDescriptor.forLabel( LABEL_ID, 1 ) );
-        assertThat( desc.type(), equalTo( ConstraintDescriptor.Type.UNIQUE ) );
+        assertThat( desc.type(), equalTo( ConstraintType.UNIQUE ) );
         assertThat( desc.schema(), equalTo( SchemaDescriptor.forLabel( LABEL_ID, 1 ) ) );
 
         desc = ConstraintDescriptorFactory.nodeKeyForSchema( SchemaDescriptor.forLabel( LABEL_ID, 1 ) );
-        assertThat( desc.type(), equalTo( ConstraintDescriptor.Type.UNIQUE_EXISTS ) );
+        assertThat( desc.type(), equalTo( ConstraintType.UNIQUE_EXISTS ) );
         assertThat( desc.schema(), equalTo( SchemaDescriptor.forLabel( LABEL_ID, 1 ) ) );
 
         desc = ConstraintDescriptorFactory.existsForSchema( SchemaDescriptor.forRelType( REL_TYPE_ID, 1 ) );
-        assertThat( desc.type(), equalTo( ConstraintDescriptor.Type.EXISTS) );
+        assertThat( desc.type(), equalTo( ConstraintType.EXISTS) );
         assertThat( desc.schema(), equalTo( SchemaDescriptor.forRelType( REL_TYPE_ID, 1 ) ) );
     }
 
     @Test
     void shouldCreateEqualDescriptors()
     {
-        AbstractConstraintDescriptor desc1;
-        AbstractConstraintDescriptor desc2;
+        ConstraintDescriptor desc1;
+        ConstraintDescriptor desc2;
 
         desc1 = ConstraintDescriptorFactory.uniqueForLabel( LABEL_ID, 1 );
         desc2 = ConstraintDescriptorFactory.uniqueForLabel( LABEL_ID, 1 );

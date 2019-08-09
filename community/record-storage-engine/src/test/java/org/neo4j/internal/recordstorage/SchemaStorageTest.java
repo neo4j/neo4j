@@ -32,6 +32,7 @@ import org.neo4j.configuration.Config;
 import org.neo4j.internal.id.DefaultIdGeneratorFactory;
 import org.neo4j.internal.kernel.api.exceptions.schema.DuplicateSchemaRuleException;
 import org.neo4j.internal.kernel.api.exceptions.schema.SchemaRuleNotFoundException;
+import org.neo4j.internal.schema.ConstraintDescriptor;
 import org.neo4j.internal.schema.constraints.ConstraintDescriptorFactory;
 import org.neo4j.io.fs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
@@ -39,7 +40,6 @@ import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.StoreFactory;
 import org.neo4j.kernel.impl.store.StoreType;
 import org.neo4j.logging.NullLogProvider;
-import org.neo4j.storageengine.api.ConstraintRule;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.pagecache.EphemeralPageCacheExtension;
 import org.neo4j.test.mockito.matcher.KernelExceptionUserMessageMatcher;
@@ -51,6 +51,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
 
+@SuppressWarnings( "unchecked" )
 @EphemeralPageCacheExtension
 class SchemaStorageTest
 {
@@ -159,13 +160,13 @@ class SchemaStorageTest
         return tokenNameLookup;
     }
 
-    private static ConstraintRule getUniquePropertyConstraintRule( long id, int label, int property )
+    private static ConstraintDescriptor getUniquePropertyConstraintRule( long id, int label, int property )
     {
-        return ConstraintRule.constraintRule( id, ConstraintDescriptorFactory.uniqueForLabel( label, property ), 0L );
+        return ConstraintDescriptorFactory.uniqueForLabel( label, property ).withId( id ).withOwnedIndexId( 0 );
     }
 
-    private static ConstraintRule getRelationshipPropertyExistenceConstraintRule( long id, int type, int property )
+    private static ConstraintDescriptor getRelationshipPropertyExistenceConstraintRule( long id, int type, int property )
     {
-        return ConstraintRule.constraintRule( id, ConstraintDescriptorFactory.existsForRelType( type, property ) );
+        return ConstraintDescriptorFactory.existsForRelType( type, property ).withId( id );
     }
 }

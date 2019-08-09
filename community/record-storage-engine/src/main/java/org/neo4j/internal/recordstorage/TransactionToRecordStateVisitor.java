@@ -31,10 +31,10 @@ import org.neo4j.internal.kernel.api.exceptions.schema.DuplicateSchemaRuleExcept
 import org.neo4j.internal.kernel.api.exceptions.schema.SchemaRuleNotFoundException;
 import org.neo4j.internal.schema.ConstraintDescriptor;
 import org.neo4j.internal.schema.IndexDescriptor;
+import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.internal.schema.SchemaState;
 import org.neo4j.internal.schema.constraints.NodeKeyConstraintDescriptor;
 import org.neo4j.internal.schema.constraints.UniquenessConstraintDescriptor;
-import org.neo4j.storageengine.api.ConstraintRule;
 import org.neo4j.storageengine.api.ConstraintRuleAccessor;
 import org.neo4j.storageengine.api.StorageProperty;
 import org.neo4j.storageengine.api.txstate.TxStateVisitor;
@@ -180,15 +180,15 @@ class TransactionToRecordStateVisitor extends TxStateVisitor.Adapter
         switch ( constraint.type() )
         {
         case UNIQUE:
-            visitAddedUniquenessConstraint( (UniquenessConstraintDescriptor) constraint, constraintId );
+            visitAddedUniquenessConstraint( constraint.asUniquenessConstraint(), constraintId );
             break;
 
         case UNIQUE_EXISTS:
-            visitAddedNodeKeyConstraint( (NodeKeyConstraintDescriptor) constraint, constraintId );
+            visitAddedNodeKeyConstraint( constraint.asNodeKeyConstraint(), constraintId );
             break;
 
         case EXISTS:
-            ConstraintRule rule = constraintSemantics.createExistenceConstraint( constraintId, constraint );
+            ConstraintDescriptor rule = constraintSemantics.createExistenceConstraint( constraintId, constraint );
             schemaStateChanger.createSchemaRule( recordState, rule );
             break;
 
@@ -199,17 +199,19 @@ class TransactionToRecordStateVisitor extends TxStateVisitor.Adapter
 
     private void visitAddedUniquenessConstraint( UniquenessConstraintDescriptor uniqueConstraint, long constraintId ) throws KernelException
     {
-        IndexDescriptor indexRule = firstUniqueConstraintIndex( schemaStorage.indexGetForSchema( uniqueConstraint.ownedIndexSchema() ) );
-        ConstraintRule constraintRule = constraintSemantics.createUniquenessConstraintRule( constraintId, uniqueConstraint, indexRule.getId() );
-        schemaStateChanger.createSchemaRule( recordState, constraintRule );
+        SchemaDescriptor schema = uniqueConstraint.schema();
+        IndexDescriptor[] indexGetForSchema = schemaStorage.indexGetForSchema( schema );
+        IndexDescriptor indexRule = firstUniqueConstraintIndex( indexGetForSchema );
+        ConstraintDescriptor constraint = constraintSemantics.createUniquenessConstraintRule( constraintId, uniqueConstraint, indexRule.getId() );
+        schemaStateChanger.createSchemaRule( recordState, constraint );
         schemaStateChanger.setConstraintIndexOwner( recordState, indexRule, constraintId );
     }
 
     private void visitAddedNodeKeyConstraint( NodeKeyConstraintDescriptor uniqueConstraint, long constraintId ) throws KernelException
     {
-        IndexDescriptor indexRule = firstUniqueConstraintIndex( schemaStorage.indexGetForSchema( uniqueConstraint.ownedIndexSchema() ) );
-        ConstraintRule constraintRule = constraintSemantics.createNodeKeyConstraintRule( constraintId, uniqueConstraint, indexRule.getId() );
-        schemaStateChanger.createSchemaRule( recordState, constraintRule );
+        IndexDescriptor indexRule = firstUniqueConstraintIndex( schemaStorage.indexGetForSchema( uniqueConstraint.schema() ) );
+        ConstraintDescriptor constraint = constraintSemantics.createNodeKeyConstraintRule( constraintId, uniqueConstraint, indexRule.getId() );
+        schemaStateChanger.createSchemaRule( recordState, constraint );
         schemaStateChanger.setConstraintIndexOwner( recordState, indexRule, constraintId );
     }
 
@@ -224,7 +226,7 @@ class TransactionToRecordStateVisitor extends TxStateVisitor.Adapter
         clearSchemaState = true;
         try
         {
-            ConstraintRule rule = schemaStorage.constraintsGetSingle( constraint );
+            ConstraintDescriptor rule = schemaStorage.constraintsGetSingle( constraint );
             schemaStateChanger.dropSchemaRule( recordState, rule );
 
             if ( constraint.enforcesUniqueness() )

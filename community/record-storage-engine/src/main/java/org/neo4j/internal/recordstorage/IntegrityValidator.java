@@ -28,7 +28,6 @@ import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.Record;
-import org.neo4j.storageengine.api.ConstraintRule;
 import org.neo4j.storageengine.api.IndexUpdateListener;
 import org.neo4j.util.Preconditions;
 
@@ -85,13 +84,12 @@ class IntegrityValidator
     void validateSchemaRule( SchemaRule schemaRule ) throws TransactionFailureException
     {
         Preconditions.checkState( indexValidator != null, "No index validator installed" );
-        if ( schemaRule instanceof ConstraintRule )
+        if ( schemaRule instanceof ConstraintDescriptor )
         {
-            ConstraintRule constraintRule = (ConstraintRule) schemaRule;
-            ConstraintDescriptor constraintDescriptor = constraintRule.getConstraintDescriptor();
-            if ( constraintDescriptor.enforcesUniqueness() )
+            ConstraintDescriptor constraint = (ConstraintDescriptor) schemaRule;
+            if ( constraint.isIndexBackedConstraint() )
             {
-                long ownedIndex = constraintRule.ownedIndexReference();
+                long ownedIndex = constraint.asIndexBackedConstraint().ownedIndexId();
                 try
                 {
                     indexValidator.validateIndex( ownedIndex );

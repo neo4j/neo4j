@@ -25,7 +25,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
 
 import java.util.List;
-import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -49,7 +48,9 @@ import org.neo4j.internal.schema.IndexConfig;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.LabelSchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptor;
+import org.neo4j.internal.schema.constraints.ConstraintDescriptorFactory;
 import org.neo4j.internal.schema.constraints.IndexBackedConstraintDescriptor;
+import org.neo4j.internal.schema.constraints.UniquenessConstraintDescriptor;
 import org.neo4j.kernel.api.impl.fulltext.FulltextIndexProviderFactory;
 import org.neo4j.kernel.impl.api.integrationtest.KernelIntegrationTest;
 import org.neo4j.kernel.impl.api.state.ConstraintIndexCreator;
@@ -169,7 +170,7 @@ class IndexIT extends KernelIntegrationTest
 
         // WHEN
         Transaction transaction = newTransaction( AUTH_DISABLED );
-        IndexDescriptor addedRule = transaction.schemaWrite().indexCreate( SchemaDescriptor.forLabel( labelId, 10 ) );
+        IndexDescriptor addedRule = transaction.schemaWrite().indexCreate( SchemaDescriptor.forLabel( labelId, propertyKeyId2 ) );
         Set<IndexDescriptor> indexRulesInTx = asSet( transaction.schemaRead().indexesGetForLabel( labelId ) );
         commit();
 
@@ -202,7 +203,8 @@ class IndexIT extends KernelIntegrationTest
         ConstraintIndexCreator creator = new ConstraintIndexCreator( () -> kernel, indexingService, logProvider );
 
         String defaultProvider = Config.defaults().get( default_schema_provider );
-        IndexDescriptor constraintIndex = creator.createConstraintIndex( descriptor, defaultProvider );
+        UniquenessConstraintDescriptor constraint = ConstraintDescriptorFactory.uniqueForSchema( descriptor ).withName( "constraint name" );
+        IndexDescriptor constraintIndex = creator.createConstraintIndex( constraint, defaultProvider );
         // then
         Transaction transaction = newTransaction();
         assertEquals( emptySet(), asSet( transaction.schemaRead().constraintsGetForLabel( labelId ) ) );
@@ -284,7 +286,7 @@ class IndexIT extends KernelIntegrationTest
         // given
         {
             SchemaWrite statement = schemaWriteInNewTransaction();
-            statement.uniquePropertyConstraintCreate( descriptor );
+            statement.uniquePropertyConstraintCreate( descriptor, "constraint name" );
             commit();
         }
 
@@ -304,11 +306,10 @@ class IndexIT extends KernelIntegrationTest
     {
         // given
         Transaction transaction = newTransaction( AUTH_DISABLED );
-        transaction.schemaWrite().uniquePropertyConstraintCreate(
-                SchemaDescriptor.forLabel(
-                        transaction.tokenWrite().labelGetOrCreateForName( "Label1" ),
-                        transaction.tokenWrite().propertyKeyGetOrCreateForName( "property1" )
-                ) );
+        int labelId = transaction.tokenWrite().labelGetOrCreateForName( "Label1" );
+        int propertyKeyId = transaction.tokenWrite().propertyKeyGetOrCreateForName( "property1" );
+        LabelSchemaDescriptor schema = SchemaDescriptor.forLabel( labelId, propertyKeyId );
+        transaction.schemaWrite().uniquePropertyConstraintCreate( schema, "constraint name" );
         commit();
 
         // when
@@ -335,19 +336,19 @@ class IndexIT extends KernelIntegrationTest
         Transaction transaction = newTransaction( AUTH_DISABLED );
         SchemaDescriptor descriptor = SchemaDescriptor.fulltext(
                 EntityType.NODE, IndexConfig.empty(), new int[]{labelId, labelId2}, new int[]{propertyKeyId} );
-        transaction.schemaWrite().indexCreate( descriptor, FulltextIndexProviderFactory.DESCRIPTOR.name(), Optional.empty() );
+        transaction.schemaWrite().indexCreate( descriptor, FulltextIndexProviderFactory.DESCRIPTOR.name(), null );
         commit();
 
-        try ( @SuppressWarnings( "unused" ) org.neo4j.graphdb.Transaction tx = db.beginTx() )
+        try ( org.neo4j.graphdb.Transaction ignore = db.beginTx() )
         {
             Set<IndexDefinition> indexes = Iterables.asSet( db.schema().getIndexes() );
 
             // then
             assertEquals( 1, indexes.size() );
             IndexDefinition index = indexes.iterator().next();
-            assertThrows( IllegalStateException.class, () -> index.getLabel() );
-            assertThrows( IllegalStateException.class, () -> index.getRelationshipType() );
-            assertThrows( IllegalStateException.class, () -> index.getRelationshipTypes() );
+            assertThrows( IllegalStateException.class, index::getLabel );
+            assertThrows( IllegalStateException.class, index::getRelationshipType );
+            assertThrows( IllegalStateException.class, index::getRelationshipTypes );
             assertThat( index.getLabels(), containsInAnyOrder( label( LABEL ), label( LABEL2 ) ) );
             assertFalse( index.isConstraintIndex(), "should not be a constraint index" );
             assertTrue( index.isMultiTokenIndex(), "should be a multi-token index" );
@@ -366,7 +367,7 @@ class IndexIT extends KernelIntegrationTest
         transaction.schemaWrite().indexCreate( descriptor );
         commit();
 
-        try ( @SuppressWarnings( "unused" ) org.neo4j.graphdb.Transaction tx = db.beginTx() )
+        try ( org.neo4j.graphdb.Transaction ignore = db.beginTx() )
         {
             Set<IndexDefinition> indexes = Iterables.asSet( db.schema().getIndexes() );
 
@@ -375,8 +376,8 @@ class IndexIT extends KernelIntegrationTest
             IndexDefinition index = indexes.iterator().next();
             assertEquals( LABEL, single( index.getLabels() ).name() );
             assertThat( index.getLabels(), containsInAnyOrder( label( LABEL ) ) );
-            assertThrows( IllegalStateException.class, () -> index.getRelationshipType() );
-            assertThrows( IllegalStateException.class, () -> index.getRelationshipTypes() );
+            assertThrows( IllegalStateException.class, index::getRelationshipType );
+            assertThrows( IllegalStateException.class, index::getRelationshipTypes );
             assertFalse( index.isConstraintIndex(), "should not be a constraint index" );
             assertFalse( index.isMultiTokenIndex(), "should not be a multi-token index" );
             assertTrue( index.isCompositeIndex(), "should be a composite index" );
@@ -394,15 +395,15 @@ class IndexIT extends KernelIntegrationTest
         transaction.schemaWrite().indexCreate( descriptor );
         commit();
 
-        try ( org.neo4j.graphdb.Transaction tx = db.beginTx() )
+        try ( org.neo4j.graphdb.Transaction ignore = db.beginTx() )
         {
             Set<IndexDefinition> indexes = Iterables.asSet( db.schema().getIndexes() );
 
             // then
             assertEquals( 1, indexes.size() );
             IndexDefinition index = indexes.iterator().next();
-            assertThrows( IllegalStateException.class, () -> index.getLabel() );
-            assertThrows( IllegalStateException.class, () -> index.getLabels() );
+            assertThrows( IllegalStateException.class, index::getLabel );
+            assertThrows( IllegalStateException.class, index::getLabels );
             assertEquals( REL_TYPE, index.getRelationshipType().name() );
             assertEquals( singletonList( withName( REL_TYPE ) ), index.getRelationshipTypes() );
             assertFalse( index.isConstraintIndex(), "should not be a constraint index" );
@@ -420,19 +421,19 @@ class IndexIT extends KernelIntegrationTest
         Transaction transaction = newTransaction( AUTH_DISABLED );
         SchemaDescriptor descriptor = SchemaDescriptor.fulltext( EntityType.RELATIONSHIP, IndexConfig.empty(), new int[]{relType, relType2},
                 new int[]{propertyKeyId, propertyKeyId2} );
-        transaction.schemaWrite().indexCreate( descriptor, FulltextIndexProviderFactory.DESCRIPTOR.name(), Optional.empty() );
+        transaction.schemaWrite().indexCreate( descriptor, FulltextIndexProviderFactory.DESCRIPTOR.name(), "index name" );
         commit();
 
-        try ( org.neo4j.graphdb.Transaction tx = db.beginTx() )
+        try ( org.neo4j.graphdb.Transaction ignore = db.beginTx() )
         {
             Set<IndexDefinition> indexes = Iterables.asSet( db.schema().getIndexes() );
 
             // then
             assertEquals( 1, indexes.size() );
             IndexDefinition index = indexes.iterator().next();
-            assertThrows( IllegalStateException.class, () -> index.getLabel() );
-            assertThrows( IllegalStateException.class, () -> index.getLabels() );
-            assertThrows( IllegalStateException.class, () -> index.getRelationshipType() );
+            assertThrows( IllegalStateException.class, index::getLabel );
+            assertThrows( IllegalStateException.class, index::getLabels );
+            assertThrows( IllegalStateException.class, index::getRelationshipType );
             assertThat( index.getRelationshipTypes(), containsInAnyOrder( withName( REL_TYPE ), withName( REL_TYPE2 ) ) );
             assertFalse( index.isConstraintIndex(), "should not be a constraint index" );
             assertTrue( index.isMultiTokenIndex(), "should be a multi-token index" );
@@ -449,12 +450,12 @@ class IndexIT extends KernelIntegrationTest
         // given
         SchemaWrite schemaWrite = schemaWriteInNewTransaction();
         IndexDescriptor index1 = schemaWrite.indexCreate( descriptor );
-        IndexBackedConstraintDescriptor constraint = (IndexBackedConstraintDescriptor) schemaWrite.uniquePropertyConstraintCreate( descriptor2 );
+        IndexBackedConstraintDescriptor constraint = schemaWrite.uniquePropertyConstraintCreate( descriptor2, "constraint name" ).asIndexBackedConstraint();
         commit();
 
         // then/when
         SchemaRead schemaRead = newTransaction().schemaRead();
-        IndexDescriptor index2 = schemaRead.index( constraint.ownedIndexSchema() );
+        IndexDescriptor index2 = schemaRead.index( constraint.schema() );
         List<IndexDescriptor> indexes = Iterators.asList( schemaRead.indexesGetAll() );
         assertThat( indexes, containsInAnyOrder( index1, index2 ) );
         commit();

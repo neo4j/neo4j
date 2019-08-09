@@ -20,12 +20,14 @@
 package org.neo4j.internal.schema.constraints;
 
 import org.neo4j.common.TokenNameLookup;
+import org.neo4j.internal.schema.ConstraintDescriptor;
 import org.neo4j.internal.schema.LabelSchemaDescriptor;
 import org.neo4j.internal.schema.RelationTypeSchemaDescriptor;
-import org.neo4j.internal.schema.SchemaComputer;
 import org.neo4j.internal.schema.SchemaDescriptor;
 
-import static java.lang.String.format;
+import static org.neo4j.internal.schema.ConstraintType.EXISTS;
+import static org.neo4j.internal.schema.ConstraintType.UNIQUE;
+import static org.neo4j.internal.schema.ConstraintType.UNIQUE_EXISTS;
 
 public class ConstraintDescriptorFactory
 {
@@ -35,12 +37,12 @@ public class ConstraintDescriptorFactory
 
     public static NodeExistenceConstraintDescriptor existsForLabel( int labelId, int... propertyIds )
     {
-        return new NodeExistenceConstraintDescriptor( SchemaDescriptor.forLabel( labelId, propertyIds ) );
+        return new ConstraintDescriptorImplementation( EXISTS, SchemaDescriptor.forLabel( labelId, propertyIds ) );
     }
 
     public static RelExistenceConstraintDescriptor existsForRelType( int relTypeId, int... propertyIds )
     {
-        return new RelExistenceConstraintDescriptor( SchemaDescriptor.forRelType( relTypeId, propertyIds ) );
+        return new ConstraintDescriptorImplementation( EXISTS, SchemaDescriptor.forRelType( relTypeId, propertyIds ) );
     }
 
     public static UniquenessConstraintDescriptor uniqueForLabel( int labelId, int... propertyIds )
@@ -53,96 +55,48 @@ public class ConstraintDescriptorFactory
         return nodeKeyForSchema( SchemaDescriptor.forLabel( labelId, propertyIds ) );
     }
 
-    public static AbstractConstraintDescriptor existsForSchema( SchemaDescriptor schema )
+    public static ConstraintDescriptor existsForSchema( SchemaDescriptor schema )
     {
-        return schema.computeWith( convertToExistenceConstraint );
+        ConstraintDescriptorImplementation constraint = new ConstraintDescriptorImplementation( EXISTS, schema );
+        if ( schema.isLabelSchemaDescriptor() )
+        {
+            return constraint.asNodePropertyExistenceConstraint();
+        }
+        if ( schema.isRelationshipTypeSchemaDescriptor() )
+        {
+            return constraint.asRelationshipPropertyExistenceConstraint();
+        }
+        throw new UnsupportedOperationException(
+                "Cannot create existence constraint for schema '" + schema.userDescription( TokenNameLookup.idTokenNameLookup ) + "'." );
     }
 
     public static NodeExistenceConstraintDescriptor existsForSchema( LabelSchemaDescriptor schema )
     {
-        return new NodeExistenceConstraintDescriptor( schema );
+        return new ConstraintDescriptorImplementation( EXISTS, schema );
     }
 
     public static RelExistenceConstraintDescriptor existsForSchema( RelationTypeSchemaDescriptor schema )
     {
-        return new RelExistenceConstraintDescriptor( schema );
+        return new ConstraintDescriptorImplementation( EXISTS, schema );
     }
 
     public static UniquenessConstraintDescriptor uniqueForSchema( SchemaDescriptor schema )
     {
-        return schema.computeWith( convertToUniquenessConstraint );
+        if ( schema.isLabelSchemaDescriptor() )
+        {
+            return new ConstraintDescriptorImplementation( UNIQUE, schema.asLabelSchemaDescriptor() );
+        }
+        throw new UnsupportedOperationException(
+                "Cannot create uniqueness constraint for schema '" + schema.userDescription( TokenNameLookup.idTokenNameLookup ) + "'." );
     }
 
     public static NodeKeyConstraintDescriptor nodeKeyForSchema( SchemaDescriptor schema )
     {
-        return schema.computeWith( convertToNodeKeyConstraint );
+        if ( schema.isLabelSchemaDescriptor() )
+        {
+            return new ConstraintDescriptorImplementation( UNIQUE_EXISTS, schema.asLabelSchemaDescriptor() ).asNodeKeyConstraint();
+        }
+        throw new UnsupportedOperationException(
+                "Cannot create node key constraint for schema '" + schema.userDescription( TokenNameLookup.idTokenNameLookup ) + "'." );
     }
-
-    private static SchemaComputer<AbstractConstraintDescriptor> convertToExistenceConstraint = new SchemaComputer<>()
-    {
-        @Override
-        public AbstractConstraintDescriptor computeSpecific( LabelSchemaDescriptor schema )
-        {
-            return new NodeExistenceConstraintDescriptor( schema );
-        }
-
-        @Override
-        public AbstractConstraintDescriptor computeSpecific( RelationTypeSchemaDescriptor schema )
-        {
-            return new RelExistenceConstraintDescriptor( schema );
-        }
-
-        @Override
-        public AbstractConstraintDescriptor computeSpecific( SchemaDescriptor schema )
-        {
-            throw new UnsupportedOperationException( format( "Cannot create existence constraint for schema '%s' of type %s",
-                    schema.userDescription( TokenNameLookup.idTokenNameLookup ), schema.getClass().getSimpleName() ) );
-        }
-    };
-
-    private static SchemaComputer<UniquenessConstraintDescriptor> convertToUniquenessConstraint = new SchemaComputer<>()
-    {
-        @Override
-        public UniquenessConstraintDescriptor computeSpecific( LabelSchemaDescriptor schema )
-        {
-            return new UniquenessConstraintDescriptor( schema );
-        }
-
-        @Override
-        public UniquenessConstraintDescriptor computeSpecific( RelationTypeSchemaDescriptor schema )
-        {
-            throw new UnsupportedOperationException( format( "Cannot create uniqueness constraint for schema '%s' of type %s",
-                    schema.userDescription( TokenNameLookup.idTokenNameLookup ), schema.getClass().getSimpleName() ) );
-        }
-
-        @Override
-        public UniquenessConstraintDescriptor computeSpecific( SchemaDescriptor schema )
-        {
-            throw new UnsupportedOperationException( format( "Cannot create uniqueness constraint for schema '%s' of type %s",
-                    schema.userDescription( TokenNameLookup.idTokenNameLookup ), schema.getClass().getSimpleName() ) );
-        }
-    };
-
-    private static SchemaComputer<NodeKeyConstraintDescriptor> convertToNodeKeyConstraint = new SchemaComputer<>()
-    {
-        @Override
-        public NodeKeyConstraintDescriptor computeSpecific( LabelSchemaDescriptor schema )
-        {
-            return new NodeKeyConstraintDescriptor( schema );
-        }
-
-        @Override
-        public NodeKeyConstraintDescriptor computeSpecific( RelationTypeSchemaDescriptor schema )
-        {
-            throw new UnsupportedOperationException( format( "Cannot create node key constraint for schema '%s' of type %s",
-                    schema.userDescription( TokenNameLookup.idTokenNameLookup ), schema.getClass().getSimpleName() ) );
-        }
-
-        @Override
-        public NodeKeyConstraintDescriptor computeSpecific( SchemaDescriptor schema )
-        {
-            throw new UnsupportedOperationException( format( "Cannot create node key constraint for schema '%s' of type %s",
-                    schema.userDescription( TokenNameLookup.idTokenNameLookup ), schema.getClass().getSimpleName() ) );
-        }
-    };
 }

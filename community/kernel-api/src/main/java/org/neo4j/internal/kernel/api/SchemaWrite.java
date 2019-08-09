@@ -53,7 +53,7 @@ public interface SchemaWrite
      * @param name name of the index
      * @return the newly created index
      */
-    IndexDescriptor indexCreate( SchemaDescriptor descriptor, Optional<String> name ) throws KernelException;
+    IndexDescriptor indexCreate( SchemaDescriptor descriptor, String name ) throws KernelException;
 
     /**
      * Create index from schema descriptor
@@ -63,7 +63,7 @@ public interface SchemaWrite
      * @param name name of the index
      * @return the newly created index
      */
-    IndexDescriptor indexCreate( SchemaDescriptor descriptor, String provider, Optional<String> name ) throws KernelException;
+    IndexDescriptor indexCreate( SchemaDescriptor descriptor, String provider, String name ) throws KernelException;
 
     /**
      * Drop the given index
@@ -84,7 +84,7 @@ public interface SchemaWrite
      *
      * @param descriptor description of the constraint
      */
-    ConstraintDescriptor uniquePropertyConstraintCreate( SchemaDescriptor descriptor ) throws KernelException;
+    ConstraintDescriptor uniquePropertyConstraintCreate( SchemaDescriptor descriptor, String name ) throws KernelException;
 
     /**
      * Create unique property constraint
@@ -92,14 +92,14 @@ public interface SchemaWrite
      * @param descriptor description of the constraint
      * @param provider name of the desired index provider implementation
      */
-    ConstraintDescriptor uniquePropertyConstraintCreate( SchemaDescriptor descriptor, String provider ) throws KernelException;
+    ConstraintDescriptor uniquePropertyConstraintCreate( SchemaDescriptor descriptor, String provider, String name ) throws KernelException;
 
     /**
      * Create node key constraint
      *
      * @param descriptor description of the constraint
      */
-    ConstraintDescriptor nodeKeyConstraintCreate( LabelSchemaDescriptor descriptor ) throws KernelException;
+    ConstraintDescriptor nodeKeyConstraintCreate( LabelSchemaDescriptor descriptor, String name ) throws KernelException;
 
     /**
      * Create node key constraint
@@ -107,21 +107,21 @@ public interface SchemaWrite
      * @param descriptor description of the constraint
      * @param provider name of the desired index provider implementation
      */
-    ConstraintDescriptor nodeKeyConstraintCreate( LabelSchemaDescriptor descriptor, String provider ) throws KernelException;
+    ConstraintDescriptor nodeKeyConstraintCreate( LabelSchemaDescriptor descriptor, String provider, String name ) throws KernelException;
 
     /**
      * Create node property existence constraint
      *
      * @param descriptor description of the constraint
      */
-    ConstraintDescriptor nodePropertyExistenceConstraintCreate( LabelSchemaDescriptor descriptor ) throws KernelException;
+    ConstraintDescriptor nodePropertyExistenceConstraintCreate( LabelSchemaDescriptor descriptor, String name ) throws KernelException;
 
     /**
      * Create relationship property existence constraint
      *
      * @param descriptor description of the constraint
      */
-    ConstraintDescriptor relationshipPropertyExistenceConstraintCreate( RelationTypeSchemaDescriptor descriptor ) throws KernelException;
+    ConstraintDescriptor relationshipPropertyExistenceConstraintCreate( RelationTypeSchemaDescriptor descriptor, String name ) throws KernelException;
 
     /**
      * Drop constraint

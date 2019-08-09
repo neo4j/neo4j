@@ -19,18 +19,14 @@
  */
 package org.neo4j.internal.schema.constraints;
 
-import org.neo4j.internal.schema.LabelSchemaDescriptor;
-
-public class UniquenessConstraintDescriptor extends IndexBackedConstraintDescriptor
+public interface UniquenessConstraintDescriptor extends IndexBackedConstraintDescriptor
 {
-    UniquenessConstraintDescriptor( LabelSchemaDescriptor ownedSchema )
-    {
-        super( Type.UNIQUE, ownedSchema );
-    }
+    @Override
+    UniquenessConstraintDescriptor withId( long id );
 
     @Override
-    protected String constraintTypeText()
-    {
-        return "UNIQUE";
-    }
+    UniquenessConstraintDescriptor withName( String name );
+
+    @Override
+    UniquenessConstraintDescriptor withOwnedIndexId( long id );
 }

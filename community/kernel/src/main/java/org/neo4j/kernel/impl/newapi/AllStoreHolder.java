@@ -518,6 +518,26 @@ public class AllStoreHolder extends Read
     }
 
     @Override
+    public ConstraintDescriptor constraintGetForName( String name )
+    {
+        ktx.assertOpen();
+
+        ConstraintDescriptor constraint = storageReader.constraintGetForName( name );
+        if ( ktx.hasTxStateWithChanges() )
+        {
+            Predicate<ConstraintDescriptor> namePredicate = constraintDescriptor -> constraintDescriptor.getName().equals( name );
+            Iterator<ConstraintDescriptor> constraints =
+                    ktx.txState().constraintsChanges().filterAdded( namePredicate ).apply( Iterators.iterator( constraint ) );
+            constraint = singleOrNull( constraints );
+        }
+        if ( constraint == null )
+        {
+            return null;
+        }
+        return acquireSharedSchemaLock( constraint );
+    }
+
+    @Override
     public Iterator<IndexDescriptor> indexesGetAll()
     {
         ktx.assertOpen();

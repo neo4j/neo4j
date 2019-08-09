@@ -37,15 +37,33 @@ class NoSchemaDescriptor implements SchemaDescriptor
     }
 
     @Override
+    public boolean isLabelSchemaDescriptor()
+    {
+        return false;
+    }
+
+    @Override
     public LabelSchemaDescriptor asLabelSchemaDescriptor()
     {
         throw new IllegalStateException( "NO_SCHEMA cannot be cast to a LabelSchemaDescriptor." );
     }
 
     @Override
+    public boolean isRelationshipTypeSchemaDescriptor()
+    {
+        return false;
+    }
+
+    @Override
     public RelationTypeSchemaDescriptor asRelationshipTypeSchemaDescriptor()
     {
         throw new IllegalStateException( "NO_SCHEMA cannot be cast to a RelationTypeSchemaDescriptor." );
+    }
+
+    @Override
+    public boolean isFulltextSchemaDescriptor()
+    {
+        return false;
     }
 
     @Override
@@ -58,12 +76,6 @@ class NoSchemaDescriptor implements SchemaDescriptor
     public boolean isAffected( long[] entityIds )
     {
         return false;
-    }
-
-    @Override
-    public <R> R computeWith( SchemaComputer<R> computer )
-    {
-        return null;
     }
 
     @Override

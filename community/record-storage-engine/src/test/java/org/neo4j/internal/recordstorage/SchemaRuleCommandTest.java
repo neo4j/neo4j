@@ -30,6 +30,7 @@ import java.util.function.Predicate;
 import org.neo4j.internal.id.IdGenerator;
 import org.neo4j.internal.id.IdType;
 import org.neo4j.internal.recordstorage.Command.SchemaRuleCommand;
+import org.neo4j.internal.schema.ConstraintDescriptor;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.SchemaDescriptor;
@@ -45,7 +46,6 @@ import org.neo4j.kernel.impl.store.SchemaStore;
 import org.neo4j.kernel.impl.store.record.SchemaRecord;
 import org.neo4j.kernel.impl.transaction.log.InMemoryClosableChannel;
 import org.neo4j.lock.LockService;
-import org.neo4j.storageengine.api.ConstraintRule;
 import org.neo4j.storageengine.api.IndexUpdateListener;
 import org.neo4j.storageengine.api.NodeLabelUpdateListener;
 import org.neo4j.storageengine.api.StorageEngine;
@@ -145,8 +145,7 @@ class SchemaRuleCommandTest
         when( neoStores.getSchemaStore() ).thenReturn( schemaStore );
         when( neoStores.getMetaDataStore() ).thenReturn( metaDataStore );
 
-        ConstraintRule schemaRule = ConstraintRule.constraintRule( id,
-                ConstraintDescriptorFactory.uniqueForLabel( labelId, propertyKey ), 0 );
+        ConstraintDescriptor schemaRule = ConstraintDescriptorFactory.uniqueForLabel( labelId, propertyKey ).withId( id ).withOwnedIndexId( 0 );
 
         // WHEN
         visitSchemaRuleCommand( storeApplier, new SchemaRuleCommand( before, after, schemaRule ) );
@@ -262,16 +261,17 @@ class SchemaRuleCommandTest
 
     /**
      * When we get to committing a schema rule command that writes a constraint rule, it is illegal for an index-backed constraint rule to not have a reference
-     * to an index that it owns. However, the {@link RandomSchema} might generate such {@link ConstraintRule ConstraintRules}, so we have to filter them out.
+     * to an index that it owns. However, the {@link RandomSchema} might generate such {@link ConstraintDescriptor ConstraintDescriptors},
+     * so we have to filter them out.
      */
     private Predicate<? super SchemaRule> indexBackedConstraintsWithoutIndexes()
     {
         return r ->
         {
-            if ( r instanceof ConstraintRule )
+            if ( r instanceof ConstraintDescriptor )
             {
-                ConstraintRule constraintRule = (ConstraintRule) r;
-                return constraintRule.getConstraintDescriptor().enforcesUniqueness() && constraintRule.hasOwnedIndexReference();
+                ConstraintDescriptor constraint = (ConstraintDescriptor) r;
+                return constraint.isIndexBackedConstraint() && constraint.asIndexBackedConstraint().hasOwnedIndexId();
             }
             return true;
         };

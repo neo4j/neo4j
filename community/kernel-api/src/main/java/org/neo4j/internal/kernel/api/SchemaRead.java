@@ -53,12 +53,20 @@ public interface SchemaRead extends SchemaReadCore
     IndexDescriptor indexForSchemaNonTransactional( SchemaDescriptor schema );
 
     /**
-     * Returns the index with the given name
+     * Returns the index with the given name.
      *
-     * @param name The name of the index you are looking for
-     * @return The index associated with the given name
+     * @param name The name of the index you are looking for.
+     * @return The index associated with the given name.
      */
     IndexDescriptor indexGetForName( String name );
+
+    /**
+     * Returns the constraint with the given name.
+     *
+     * @param name The name of the constraint you are looking for.
+     * @return The constraint associated with the given name.
+     */
+    ConstraintDescriptor constraintGetForName( String name );
 
     /**
      * Computes the selectivity of the unique values.

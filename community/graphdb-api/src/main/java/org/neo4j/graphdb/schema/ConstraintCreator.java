@@ -40,13 +40,40 @@ import org.neo4j.graphdb.ConstraintViolationException;
 public interface ConstraintCreator
 {
     /**
-     * Imposes a uniqueness constraint for the given property, such that
-     * there can be at most one node, having the given label, for any set value of that property key.
+     * Imposes a uniqueness constraint for the given property.
+     * This means that there can be at most one node, having the given label, for any set value of that property key.
      *
-     * @param propertyKey property to impose the uniqueness constraint for
+     * @param propertyKey property to impose the uniqueness constraint for.
      * @return a {@link ConstraintCreator} instance to be used for further interaction.
      */
     ConstraintCreator assertPropertyIsUnique( String propertyKey );
+
+    /**
+     * Imposes an existence constraint for the given property.
+     * This means that all nodes with the given label must have a value for this property.
+     *
+     * @param propertyKey property to impose the existence constraint for.
+     * @return a {@link ConstraintCreator}  instance to be used for further interaction.
+     */
+    ConstraintCreator assertPropertyExists( String propertyKey );
+
+    /**
+     * Imposes both a uniqueness constraint, and a property existence constraint, for the given property.
+     * This means that all nodes with the given label must have this property, and they must all have different values for the property.
+     *
+     * @param propertyKey property to use as the node key.
+     * @return a {@link ConstraintCreator} instance to be used for further interaction.
+     */
+    ConstraintCreator assertPropertyIsNodeKey( String propertyKey );
+
+    /**
+     * Assign a name to the constraint, which will then be returned from {@link ConstraintDefinition#getName()}, and can be used for finding the constraint
+     * with {@link Schema#getConstraintByName(String)}, or the associated index with {@link Schema#getIndexByName(String)} for index backed constraints.
+     *
+     * @param name the name to give the constraint.
+     * @return an {@link ConstraintCreator} instance to be used for further interaction.
+     */
+    ConstraintCreator withName( String name );
 
     /**
      * Creates a constraint with the details specified by the other methods in this interface.

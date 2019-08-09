@@ -33,14 +33,14 @@ public class IndexCreatorImpl implements IndexCreator
     private final Collection<String> propertyKeys;
     private final Label label;
     private final InternalSchemaActions actions;
-    private final Optional<String> indexName;
+    private final String indexName;
 
     public IndexCreatorImpl( InternalSchemaActions actions, Label label )
     {
-        this( actions, label, Optional.empty(), new ArrayList<>() );
+        this( actions, label, null, new ArrayList<>() );
     }
 
-    private IndexCreatorImpl( InternalSchemaActions actions, Label label, Optional<String> indexName, Collection<String> propertyKeys )
+    private IndexCreatorImpl( InternalSchemaActions actions, Label label, String indexName, Collection<String> propertyKeys )
     {
         this.actions = actions;
         this.label = label;
@@ -61,7 +61,7 @@ public class IndexCreatorImpl implements IndexCreator
     public IndexCreator withName( String indexName )
     {
         assertInUnterminatedTransaction();
-        return new IndexCreatorImpl( actions, label, Optional.ofNullable( indexName ), propertyKeys );
+        return new IndexCreatorImpl( actions, label, indexName, propertyKeys );
     }
 
     @Override

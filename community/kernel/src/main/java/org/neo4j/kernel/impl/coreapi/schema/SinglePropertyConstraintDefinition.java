@@ -26,9 +26,9 @@ abstract class SinglePropertyConstraintDefinition extends PropertyConstraintDefi
 {
     protected final String propertyKey;
 
-    protected SinglePropertyConstraintDefinition( InternalSchemaActions actions, String propertyKey )
+    SinglePropertyConstraintDefinition( InternalSchemaActions actions, String name, String propertyKey )
     {
-        super( actions );
+        super( actions, name );
         this.propertyKey = requireNonNull( propertyKey );
     }
 

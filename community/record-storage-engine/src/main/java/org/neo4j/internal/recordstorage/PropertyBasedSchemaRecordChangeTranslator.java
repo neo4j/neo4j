@@ -23,9 +23,9 @@ import org.eclipse.collections.api.block.procedure.primitive.IntObjectProcedure;
 import org.eclipse.collections.api.map.primitive.IntObjectMap;
 
 import org.neo4j.exceptions.KernelException;
+import org.neo4j.internal.schema.ConstraintDescriptor;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.SchemaRule;
-import org.neo4j.storageengine.api.ConstraintRule;
 import org.neo4j.values.storable.Value;
 
 public abstract class PropertyBasedSchemaRecordChangeTranslator implements SchemaRecordChangeTranslator
@@ -35,7 +35,7 @@ public abstract class PropertyBasedSchemaRecordChangeTranslator implements Schem
     {
         IntObjectMap<Value> properties = asMap( rule );
         long ruleId = rule.getId();
-        recordState.schemaRuleCreate( ruleId, rule instanceof ConstraintRule, rule );
+        recordState.schemaRuleCreate( ruleId, rule instanceof ConstraintDescriptor, rule );
         properties.forEachKeyValue( ( propertyKeyId, value ) -> recordState.schemaRuleSetProperty( ruleId, propertyKeyId, value, rule ) );
     }
 

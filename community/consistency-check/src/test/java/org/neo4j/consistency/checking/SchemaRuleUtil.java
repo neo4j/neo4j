@@ -19,11 +19,11 @@
  */
 package org.neo4j.consistency.checking;
 
+import org.neo4j.internal.schema.ConstraintDescriptor;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.IndexProviderDescriptor;
 import org.neo4j.internal.schema.constraints.ConstraintDescriptorFactory;
-import org.neo4j.storageengine.api.ConstraintRule;
 
 import static org.neo4j.internal.schema.SchemaDescriptor.forLabel;
 
@@ -33,22 +33,19 @@ public class SchemaRuleUtil
     {
     }
 
-    public static ConstraintRule uniquenessConstraintRule( long ruleId, int labelId, int propertyId, long indexId )
+    public static ConstraintDescriptor uniquenessConstraintRule( long ruleId, int labelId, int propertyId, long indexId )
     {
-        return ConstraintRule.constraintRule( ruleId,
-                ConstraintDescriptorFactory.uniqueForLabel( labelId, propertyId ), indexId );
+        return ConstraintDescriptorFactory.uniqueForLabel( labelId, propertyId ).withId( ruleId ).withOwnedIndexId( indexId );
     }
 
-    public static ConstraintRule nodePropertyExistenceConstraintRule( long ruleId, int labelId, int propertyId )
+    public static ConstraintDescriptor nodePropertyExistenceConstraintRule( long ruleId, int labelId, int propertyId )
     {
-        return ConstraintRule.constraintRule( ruleId,
-                ConstraintDescriptorFactory.existsForLabel( labelId, propertyId ) );
+        return ConstraintDescriptorFactory.existsForLabel( labelId, propertyId ).withId( ruleId );
     }
 
-    public static ConstraintRule relPropertyExistenceConstraintRule( long ruleId, int relTypeId, int propertyId )
+    public static ConstraintDescriptor relPropertyExistenceConstraintRule( long ruleId, int relTypeId, int propertyId )
     {
-        return ConstraintRule.constraintRule( ruleId,
-                ConstraintDescriptorFactory.existsForRelType( relTypeId, propertyId ) );
+        return ConstraintDescriptorFactory.existsForRelType( relTypeId, propertyId ).withId( ruleId );
     }
 
     public static IndexDescriptor indexRule( long ruleId, int labelId, int propertyId, IndexProviderDescriptor descriptor )

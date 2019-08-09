@@ -56,7 +56,7 @@ import org.neo4j.internal.kernel.api.security.AuthSubject;
 import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.internal.schema.IndexDescriptor;
-import org.neo4j.internal.schema.SchemaDescriptor;
+import org.neo4j.internal.schema.constraints.IndexBackedConstraintDescriptor;
 import org.neo4j.kernel.GraphDatabaseQueryService;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.ResourceTracker;
@@ -621,10 +621,10 @@ class QueryExecutionLocksIT
         }
 
         @Override
-        public IndexDescriptor indexUniqueCreate( SchemaDescriptor schema, String provider ) throws KernelException
+        public IndexDescriptor indexUniqueCreate( IndexBackedConstraintDescriptor constraint, String provider ) throws KernelException
         {
             String defaultProvider = Config.defaults().get( GraphDatabaseSettings.default_schema_provider );
-            return internal.indexUniqueCreate( schema, defaultProvider );
+            return internal.indexUniqueCreate( constraint, defaultProvider );
         }
 
         @Override

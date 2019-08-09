@@ -34,15 +34,15 @@ abstract class NodeConstraintDefinition extends MultiPropertyConstraintDefinitio
 {
     protected final Label label;
 
-    protected NodeConstraintDefinition( InternalSchemaActions actions, Label label, String[] propertyKeys )
+    NodeConstraintDefinition( InternalSchemaActions actions, String name, Label label, String[] propertyKeys )
     {
-        super( actions, propertyKeys );
+        super( actions, name, propertyKeys );
         this.label = requireNonNull( label );
     }
 
-    protected NodeConstraintDefinition( InternalSchemaActions actions, IndexDefinition indexDefinition )
+    NodeConstraintDefinition( InternalSchemaActions actions, String name, IndexDefinition indexDefinition )
     {
-        super( actions, indexDefinition );
+        super( actions, name, indexDefinition );
         if ( indexDefinition.isMultiTokenIndex() )
         {
             throw new IllegalArgumentException( "Node constraints do not support multi-token definitions. That is, they cannot apply to more than one label, " +
@@ -81,7 +81,7 @@ abstract class NodeConstraintDefinition extends MultiPropertyConstraintDefinitio
         return label.name().equals( that.label.name() ) && Arrays.equals( propertyKeys, that.propertyKeys );
     }
 
-    protected String propertyText()
+    String propertyText()
     {
         String nodeVariable = label.name().toLowerCase();
         if ( propertyKeys.length == 1 )

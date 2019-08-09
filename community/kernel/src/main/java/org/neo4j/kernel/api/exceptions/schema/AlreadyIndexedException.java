@@ -33,7 +33,10 @@ public class AlreadyIndexedException extends SchemaKernelException
     private static final String INDEX_CONTEXT_FORMAT = "There already exists an index %s.";
     private static final String CONSTRAINT_CONTEXT_FORMAT = "There already exists an index %s. " +
                                                             "A constraint cannot be created until the index has been dropped.";
+    private static final String INDEX_NAME_FORMAT = "There already exists an index called '%s'.";
+    private static final String CONSTRAINT_NAME_FORMAT = "There already exists a constraint called '%s'.";
 
+    private final String schemaName;
     private final SchemaDescriptor descriptor;
     private final OperationContext context;
 
@@ -41,12 +44,21 @@ public class AlreadyIndexedException extends SchemaKernelException
     {
         super( Status.Schema.IndexAlreadyExists, constructUserMessage( context, idTokenNameLookup, descriptor ) );
 
+        this.schemaName = null;
         this.descriptor = descriptor;
         this.context = context;
     }
 
-    private static String constructUserMessage( OperationContext context, TokenNameLookup tokenNameLookup,
-            SchemaDescriptor descriptor )
+    public AlreadyIndexedException( String schemaName, OperationContext context )
+    {
+        super( Status.Schema.IndexAlreadyExists, constructUserMessage( context, schemaName ) );
+
+        this.schemaName = schemaName;
+        this.descriptor = null;
+        this.context = context;
+    }
+
+    private static String constructUserMessage( OperationContext context, TokenNameLookup tokenNameLookup, SchemaDescriptor descriptor )
     {
         switch ( context )
         {
@@ -59,9 +71,30 @@ public class AlreadyIndexedException extends SchemaKernelException
         }
     }
 
+    private static String constructUserMessage( OperationContext context, String schemaName )
+    {
+        switch ( context )
+        {
+            case INDEX_CREATION:
+                return String.format( INDEX_NAME_FORMAT, schemaName );
+            case CONSTRAINT_CREATION:
+                return String.format( CONSTRAINT_NAME_FORMAT, schemaName );
+            default:
+                return String.format( NO_CONTEXT_FORMAT, schemaName );
+        }
+    }
+
     @Override
     public String getUserMessage( TokenNameLookup tokenNameLookup )
     {
-        return constructUserMessage( context, tokenNameLookup, descriptor );
+        if ( schemaName != null )
+        {
+            return constructUserMessage( context, schemaName );
+        }
+        if ( descriptor != null )
+        {
+            return constructUserMessage( context, tokenNameLookup, descriptor );
+        }
+        return "Already indexes.";
     }
 }

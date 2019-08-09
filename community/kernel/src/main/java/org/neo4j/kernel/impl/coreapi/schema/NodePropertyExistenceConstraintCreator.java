@@ -25,24 +25,18 @@ import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.schema.ConstraintCreator;
 import org.neo4j.graphdb.schema.ConstraintDefinition;
 
-public class NodePropertyUniqueConstraintCreator extends BaseNodeConstraintCreator
+public class NodePropertyExistenceConstraintCreator extends BaseNodeConstraintCreator
 {
     private final List<String> propertyKeys;
 
-    NodePropertyUniqueConstraintCreator( InternalSchemaActions internalCreator, String name, Label label, List<String> propertyKeys )
+    NodePropertyExistenceConstraintCreator( InternalSchemaActions actions, String name, Label label, List<String> propertyKeys )
     {
-        super( internalCreator, name, label );
+        super( actions, name, label );
         this.propertyKeys = propertyKeys;
     }
 
     @Override
-    public final NodePropertyUniqueConstraintCreator assertPropertyIsUnique( String propertyKey )
-    {
-        throw new UnsupportedOperationException( "You can only create one unique constraint at a time." );
-    }
-
-    @Override
-    public ConstraintCreator assertPropertyExists( String propertyKey )
+    public ConstraintCreator assertPropertyIsUnique( String propertyKey )
     {
         List<String> keys = List.of( propertyKey );
         if ( propertyKeys.equals( keys ) )
@@ -54,24 +48,26 @@ public class NodePropertyUniqueConstraintCreator extends BaseNodeConstraintCreat
     }
 
     @Override
+    public ConstraintCreator assertPropertyExists( String propertyKey )
+    {
+        throw new UnsupportedOperationException( "You can only create one property existence constraint at a time." );
+    }
+
+    @Override
     public ConstraintCreator assertPropertyIsNodeKey( String propertyKey )
     {
-        return assertPropertyExists( propertyKey );
+        return assertPropertyIsUnique( propertyKey );
     }
 
     @Override
     public ConstraintCreator withName( String name )
     {
-        return new NodePropertyUniqueConstraintCreator( actions, name, label, propertyKeys );
+        return new NodePropertyExistenceConstraintCreator( actions, name, label, propertyKeys );
     }
 
     @Override
-    public final ConstraintDefinition create()
+    public ConstraintDefinition create()
     {
-        assertInUnterminatedTransaction();
-
-        IndexDefinitionImpl definition =
-                new IndexDefinitionImpl( actions, null, new Label[]{label}, propertyKeys.toArray( new String[0] ), true );
-        return actions.createPropertyUniquenessConstraint( definition, name );
+        return actions.createPropertyExistenceConstraint( name, label, propertyKeys.toArray( new String[0] ) );
     }
 }

@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.store.record;
+package org.neo4j.internal.schema;
 
 import org.junit.jupiter.api.Test;
 
@@ -25,18 +25,13 @@ import java.util.NoSuchElementException;
 import java.util.OptionalLong;
 import java.util.function.BiFunction;
 
-import org.neo4j.internal.schema.IndexDescriptor;
-import org.neo4j.internal.schema.IndexPrototype;
-import org.neo4j.internal.schema.IndexProviderDescriptor;
-import org.neo4j.internal.schema.SchemaDescriptor;
-
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.test.assertion.Assert.assertException;
 
-class IndexRuleTest extends SchemaRuleTestBase
+class IndexDescriptorSampleTest extends SchemaRuleTestBase
 {
     @Test
     void shouldCreateGeneralIndex()

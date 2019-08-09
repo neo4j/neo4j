@@ -26,9 +26,9 @@ import static java.lang.String.format;
 
 public class NodePropertyExistenceConstraintDefinition extends NodeConstraintDefinition
 {
-    public NodePropertyExistenceConstraintDefinition( InternalSchemaActions actions, Label label, String[] propertyKeys )
+    public NodePropertyExistenceConstraintDefinition( InternalSchemaActions actions, String name, Label label, String[] propertyKeys )
     {
-        super( actions, label, propertyKeys );
+        super( actions, name, label, propertyKeys );
     }
 
     @Override

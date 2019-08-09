@@ -26,10 +26,10 @@ import static java.lang.String.format;
 
 public class RelationshipPropertyExistenceConstraintDefinition extends RelationshipConstraintDefinition
 {
-    public RelationshipPropertyExistenceConstraintDefinition( InternalSchemaActions actions,
+    public RelationshipPropertyExistenceConstraintDefinition( InternalSchemaActions actions, String name,
             RelationshipType relationshipType, String propertyKey )
     {
-        super( actions, relationshipType, propertyKey );
+        super( actions, name, relationshipType, propertyKey );
     }
 
     @Override

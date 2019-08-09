@@ -102,7 +102,7 @@ public class IndexProcedures implements AutoCloseable
     public Stream<BuiltInProcedures.SchemaIndexInfo> createIndex( String indexSpecification, String providerName ) throws ProcedureException
     {
         return createIndex( indexSpecification, providerName, "index created",
-                ( schemaWrite, descriptor, provider ) -> schemaWrite.indexCreate( descriptor, provider, Optional.empty() ) );
+                ( schemaWrite, descriptor, provider ) -> schemaWrite.indexCreate( descriptor, provider, null ) );
     }
 
     public Stream<BuiltInProcedures.SchemaIndexInfo> createUniquePropertyConstraint( String indexSpecification, String providerName ) throws ProcedureException

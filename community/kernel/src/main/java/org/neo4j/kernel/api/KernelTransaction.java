@@ -31,7 +31,7 @@ import org.neo4j.internal.kernel.api.security.AuthSubject;
 import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.internal.schema.IndexDescriptor;
-import org.neo4j.internal.schema.SchemaDescriptor;
+import org.neo4j.internal.schema.constraints.IndexBackedConstraintDescriptor;
 import org.neo4j.kernel.availability.AvailabilityGuard;
 import org.neo4j.kernel.database.DatabaseId;
 import org.neo4j.kernel.impl.api.ClockContext;
@@ -63,11 +63,11 @@ public interface KernelTransaction extends Transaction, AssertOpen
     /**
      * Create unique index which will be used to support uniqueness constraint.
      *
-     * @param schema schema to create unique index for.
+     * @param constraint the constraint to create a unique index for.
      * @param provider index provider identifier
      * @return IndexReference for the index to be created.
      */
-    IndexDescriptor indexUniqueCreate( SchemaDescriptor schema, String provider ) throws KernelException;
+    IndexDescriptor indexUniqueCreate( IndexBackedConstraintDescriptor constraint, String provider ) throws KernelException;
 
     /**
      * @return the security context this transaction is currently executing in.

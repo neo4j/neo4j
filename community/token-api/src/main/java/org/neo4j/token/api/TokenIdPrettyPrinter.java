@@ -44,17 +44,13 @@ public class TokenIdPrettyPrinter
 
     public static String niceProperties( TokenNameLookup tokenNameLookup, int[] propertyIds )
     {
-        return niceProperties( tokenNameLookup, propertyIds, "", false );
+        return niceProperties( tokenNameLookup, propertyIds, "" );
     }
 
-    public static String niceProperties( TokenNameLookup tokenNameLookup, int[] propertyIds, String prefix,
-            boolean useBrackets )
+    public static String niceProperties( TokenNameLookup tokenNameLookup, int[] propertyIds, String prefix )
     {
         StringBuilder properties = new StringBuilder();
-        if ( useBrackets )
-        {
-            properties.append( "(" );
-        }
+        properties.append( "(" );
         for ( int i = 0; i < propertyIds.length; i++ )
         {
             if ( i > 0 )
@@ -63,10 +59,7 @@ public class TokenIdPrettyPrinter
             }
             properties.append( prefix ).append( tokenNameLookup.propertyKeyGetName( propertyIds[i] ) );
         }
-        if ( useBrackets )
-        {
-            properties.append( ")" );
-        }
+        properties.append( ")" );
         return properties.toString();
     }
 }

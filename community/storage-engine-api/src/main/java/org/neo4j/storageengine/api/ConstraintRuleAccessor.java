@@ -26,13 +26,13 @@ import org.neo4j.internal.schema.constraints.UniquenessConstraintDescriptor;
 
 public interface ConstraintRuleAccessor
 {
-    ConstraintDescriptor readConstraint( ConstraintRule rule );
+    ConstraintDescriptor readConstraint( ConstraintDescriptor rule );
 
-    ConstraintRule createUniquenessConstraintRule( long ruleId, UniquenessConstraintDescriptor descriptor, long indexId );
+    ConstraintDescriptor createUniquenessConstraintRule( long ruleId, UniquenessConstraintDescriptor descriptor, long indexId );
 
-    ConstraintRule createNodeKeyConstraintRule( long ruleId, NodeKeyConstraintDescriptor descriptor, long indexId )
+    ConstraintDescriptor createNodeKeyConstraintRule( long ruleId, NodeKeyConstraintDescriptor descriptor, long indexId )
             throws CreateConstraintFailureException;
 
-    ConstraintRule createExistenceConstraint( long ruleId, ConstraintDescriptor descriptor )
+    ConstraintDescriptor createExistenceConstraint( long ruleId, ConstraintDescriptor descriptor )
             throws CreateConstraintFailureException;
 }

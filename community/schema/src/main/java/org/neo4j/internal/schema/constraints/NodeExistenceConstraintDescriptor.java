@@ -19,34 +19,13 @@
  */
 package org.neo4j.internal.schema.constraints;
 
-import org.neo4j.common.TokenNameLookup;
-import org.neo4j.internal.schema.LabelSchemaDescriptor;
-import org.neo4j.internal.schema.SchemaDescriptorSupplier;
-import org.neo4j.token.api.TokenIdPrettyPrinter;
+import org.neo4j.internal.schema.ConstraintDescriptor;
 
-public class NodeExistenceConstraintDescriptor extends AbstractConstraintDescriptor implements SchemaDescriptorSupplier
+public interface NodeExistenceConstraintDescriptor extends ConstraintDescriptor
 {
-    private LabelSchemaDescriptor schema;
-
-    NodeExistenceConstraintDescriptor( LabelSchemaDescriptor schema )
-    {
-        super( Type.EXISTS );
-        this.schema = schema;
-    }
+    @Override
+    NodeExistenceConstraintDescriptor withId( long id );
 
     @Override
-    public LabelSchemaDescriptor schema()
-    {
-        return schema;
-    }
-
-    @Override
-    public String prettyPrint( TokenNameLookup tokenNameLookup )
-    {
-        String labelName = escapeLabelOrRelTyp( tokenNameLookup.labelGetName( schema.getLabelId() ) );
-        String nodeName = labelName.toLowerCase();
-        String properties = TokenIdPrettyPrinter.niceProperties( tokenNameLookup, schema.getPropertyIds(), nodeName + ".", false );
-
-        return String.format( "CONSTRAINT ON ( %s:%s ) ASSERT exists(%s)", nodeName, labelName, properties );
-    }
+    NodeExistenceConstraintDescriptor withName( String name );
 }

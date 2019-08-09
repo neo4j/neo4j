@@ -21,7 +21,6 @@ package org.neo4j.kernel.impl.newapi;
 
 import org.junit.jupiter.api.Test;
 
-import java.util.Optional;
 import java.util.concurrent.TimeoutException;
 
 import org.neo4j.common.EntityType;
@@ -299,7 +298,7 @@ abstract class KernelReadTracerTxStateTestBase<G extends KernelAPIWriteTestSuppo
                                                                  IndexConfig.empty(),
                                                                  array( connection ),
                                                                  array( name ) );
-            index = tx.schemaWrite().indexCreate( schema, DESCRIPTOR.name(), Optional.of( indexName ) );
+            index = tx.schemaWrite().indexCreate( schema, DESCRIPTOR.name(), indexName );
             tx.commit();
         }
 
@@ -344,7 +343,7 @@ abstract class KernelReadTracerTxStateTestBase<G extends KernelAPIWriteTestSuppo
             tx.commit();
         }
 
-        try ( org.neo4j.graphdb.Transaction tx = graphDb.beginTx() )
+        try ( org.neo4j.graphdb.Transaction ignore = graphDb.beginTx() )
         {
             graphDb.schema().awaitIndexesOnline( 1, MINUTES );
         }

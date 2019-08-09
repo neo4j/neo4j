@@ -33,6 +33,7 @@ import org.neo4j.consistency.report.ConsistencyReport;
 import org.neo4j.consistency.report.ConsistencyReporter;
 import org.neo4j.internal.recordstorage.SchemaRuleAccess;
 import org.neo4j.internal.recordstorage.StoreTokens;
+import org.neo4j.internal.schema.ConstraintDescriptor;
 import org.neo4j.internal.schema.LabelSchemaDescriptor;
 import org.neo4j.internal.schema.RelationTypeSchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptor;
@@ -41,7 +42,6 @@ import org.neo4j.kernel.impl.store.StoreAccess;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.PrimitiveRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
-import org.neo4j.storageengine.api.ConstraintRule;
 import org.neo4j.token.TokenHolders;
 
 import static org.neo4j.internal.helpers.Numbers.safeCastLongToInt;
@@ -57,16 +57,16 @@ public class MandatoryProperties
         this.storeAccess = storeAccess;
         TokenHolders tokenHolders = StoreTokens.readOnlyTokenHolders( storeAccess.getRawNeoStores() );
         SchemaRuleAccess schemaRuleAccess = SchemaRuleAccess.getSchemaRuleAccess( storeAccess.getSchemaStore(), tokenHolders );
-        for ( ConstraintRule constraint : constraintsIgnoringMalformed( schemaRuleAccess ) )
+        for ( ConstraintDescriptor constraint : constraintsIgnoringMalformed( schemaRuleAccess ) )
         {
-            if ( constraint.getConstraintDescriptor().enforcesPropertyExistence() )
+            if ( constraint.enforcesPropertyExistence() )
             {
                 constraint.schema().processWith( constraintRecorder );
             }
         }
     }
 
-    private SchemaProcessor constraintRecorder = new SchemaProcessor()
+    private final SchemaProcessor constraintRecorder = new SchemaProcessor()
     {
         @Override
         public void processSpecific( LabelSchemaDescriptor schema )
@@ -142,7 +142,7 @@ public class MandatoryProperties
         };
     }
 
-    private Iterable<ConstraintRule> constraintsIgnoringMalformed( SchemaRuleAccess schemaStorage )
+    private Iterable<ConstraintDescriptor> constraintsIgnoringMalformed( SchemaRuleAccess schemaStorage )
     {
         return schemaStorage::constraintsGetAllIgnoreMalformed;
     }

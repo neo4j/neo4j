@@ -143,7 +143,7 @@ class KernelSchemaStateFlushingTest
         try ( Transaction transaction = beginTransaction() )
         {
             ConstraintDescriptor descriptor = transaction.schemaWrite().uniquePropertyConstraintCreate(
-                    SchemaDescriptor.forLabel( 1, 1 ) );
+                    SchemaDescriptor.forLabel( 1, 1 ), null );
             transaction.commit();
             return descriptor;
         }

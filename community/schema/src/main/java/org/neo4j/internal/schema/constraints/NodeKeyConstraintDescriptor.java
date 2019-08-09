@@ -19,26 +19,14 @@
  */
 package org.neo4j.internal.schema.constraints;
 
-import org.neo4j.common.TokenNameLookup;
-import org.neo4j.internal.schema.LabelSchemaDescriptor;
-import org.neo4j.token.api.TokenIdPrettyPrinter;
-
-public class NodeKeyConstraintDescriptor extends IndexBackedConstraintDescriptor
+public interface NodeKeyConstraintDescriptor extends IndexBackedConstraintDescriptor
 {
-    NodeKeyConstraintDescriptor( LabelSchemaDescriptor ownedSchema )
-    {
-        super( Type.UNIQUE_EXISTS, ownedSchema );
-    }
+    @Override
+    NodeKeyConstraintDescriptor withId( long id );
 
     @Override
-    protected String constraintTypeText()
-    {
-        return "NODE KEY";
-    }
+    NodeKeyConstraintDescriptor withName( String name );
 
     @Override
-    protected String formatProperties( int[] propertyIds, TokenNameLookup tokenNameLookup, String nodeName )
-    {
-        return TokenIdPrettyPrinter.niceProperties( tokenNameLookup, propertyIds, nodeName + ".", true );
-    }
+    NodeKeyConstraintDescriptor withOwnedIndexId( long id );
 }

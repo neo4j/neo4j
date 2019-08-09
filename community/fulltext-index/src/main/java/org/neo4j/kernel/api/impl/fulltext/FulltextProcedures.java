@@ -137,7 +137,7 @@ public class FulltextProcedures
     {
         IndexConfig indexConfig = createIndexConfig( config );
         SchemaDescriptor schemaDescriptor = accessor.schemaFor( EntityType.NODE, stringArray( labels ), indexConfig, stringArray( properties ) );
-        tx.schemaWrite().indexCreate( schemaDescriptor, DESCRIPTOR.name(), Optional.of( name ) );
+        tx.schemaWrite().indexCreate( schemaDescriptor, DESCRIPTOR.name(), name );
     }
 
     private String[] stringArray( List<String> strings )
@@ -162,7 +162,7 @@ public class FulltextProcedures
     {
         IndexConfig indexConfig = createIndexConfig( config );
         SchemaDescriptor schemaDescriptor = accessor.schemaFor( EntityType.RELATIONSHIP, stringArray( relTypes ), indexConfig, stringArray( properties ) );
-        tx.schemaWrite().indexCreate( schemaDescriptor, DESCRIPTOR.name(), Optional.of( name ) );
+        tx.schemaWrite().indexCreate( schemaDescriptor, DESCRIPTOR.name(), name );
     }
 
     private IndexConfig createIndexConfig( @Name( value = "config", defaultValue = "{}" ) Map<String,String> config )

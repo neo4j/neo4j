@@ -25,18 +25,18 @@ import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.schema.ConstraintCreator;
 import org.neo4j.graphdb.schema.ConstraintDefinition;
 
-public class NodePropertyUniqueConstraintCreator extends BaseNodeConstraintCreator
+public class NodeKeyConstraintCreator extends BaseNodeConstraintCreator
 {
     private final List<String> propertyKeys;
 
-    NodePropertyUniqueConstraintCreator( InternalSchemaActions internalCreator, String name, Label label, List<String> propertyKeys )
+    NodeKeyConstraintCreator( InternalSchemaActions actions, String name, Label label, List<String> propertyKeys )
     {
-        super( internalCreator, name, label );
+        super( actions, name, label );
         this.propertyKeys = propertyKeys;
     }
 
     @Override
-    public final NodePropertyUniqueConstraintCreator assertPropertyIsUnique( String propertyKey )
+    public ConstraintCreator assertPropertyIsUnique( String propertyKey )
     {
         throw new UnsupportedOperationException( "You can only create one unique constraint at a time." );
     }
@@ -44,34 +44,30 @@ public class NodePropertyUniqueConstraintCreator extends BaseNodeConstraintCreat
     @Override
     public ConstraintCreator assertPropertyExists( String propertyKey )
     {
-        List<String> keys = List.of( propertyKey );
-        if ( propertyKeys.equals( keys ) )
-        {
-            return new NodeKeyConstraintCreator( actions, name, label, propertyKeys );
-        }
-        throw new UnsupportedOperationException(
-                "You cannot create a constraint on two different sets of property keys: " + propertyKeys + " vs. " + keys + "." );
+        throw new UnsupportedOperationException( "You can only create one property existence constraint at a time." );
     }
 
     @Override
     public ConstraintCreator assertPropertyIsNodeKey( String propertyKey )
     {
-        return assertPropertyExists( propertyKey );
+        String[] keys = new String[propertyKeys.size() + 1];
+        propertyKeys.toArray( keys );
+        keys[propertyKeys.size()] = propertyKey;
+        return new NodeKeyConstraintCreator( actions, name, label, List.of( keys ) );
     }
 
     @Override
     public ConstraintCreator withName( String name )
     {
-        return new NodePropertyUniqueConstraintCreator( actions, name, label, propertyKeys );
+        return new NodeKeyConstraintCreator( actions, name, label, propertyKeys );
     }
 
     @Override
-    public final ConstraintDefinition create()
+    public ConstraintDefinition create()
     {
         assertInUnterminatedTransaction();
-
-        IndexDefinitionImpl definition =
+        IndexDefinitionImpl index =
                 new IndexDefinitionImpl( actions, null, new Label[]{label}, propertyKeys.toArray( new String[0] ), true );
-        return actions.createPropertyUniquenessConstraint( definition, name );
+        return actions.createNodeKeyConstraint( index, name );
     }
 }

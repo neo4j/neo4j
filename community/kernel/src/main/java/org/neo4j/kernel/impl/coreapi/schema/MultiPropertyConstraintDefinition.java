@@ -29,15 +29,15 @@ abstract class MultiPropertyConstraintDefinition extends PropertyConstraintDefin
 {
     protected final String[] propertyKeys;
 
-    protected MultiPropertyConstraintDefinition( InternalSchemaActions actions, String[] propertyKeys )
+    MultiPropertyConstraintDefinition( InternalSchemaActions actions, String name, String[] propertyKeys )
     {
-        super( actions );
+        super( actions, name );
         this.propertyKeys = requireNonEmpty( propertyKeys );
     }
 
-    protected MultiPropertyConstraintDefinition( InternalSchemaActions actions, IndexDefinition indexDefinition )
+    MultiPropertyConstraintDefinition( InternalSchemaActions actions, String name, IndexDefinition indexDefinition )
     {
-        super( actions );
+        super( actions, name );
         this.propertyKeys = requireNonEmpty( Iterables.asArray( String.class, indexDefinition.getPropertyKeys() ) );
     }
 

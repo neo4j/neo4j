@@ -745,7 +745,7 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
   }
 
   override def createNodeKeyConstraint(labelId: Int, propertyKeyIds: Seq[Int]): Boolean = try {
-    transactionalContext.kernelTransaction.schemaWrite().nodeKeyConstraintCreate(SchemaDescriptor.forLabel(labelId, propertyKeyIds:_*))
+    transactionalContext.kernelTransaction.schemaWrite().nodeKeyConstraintCreate(SchemaDescriptor.forLabel(labelId, propertyKeyIds:_*), null)
     true
   } catch {
     case _: AlreadyConstrainedException => false
@@ -756,7 +756,7 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
       .constraintDrop(ConstraintDescriptorFactory.nodeKeyForSchema(SchemaDescriptor.forLabel(labelId, propertyKeyIds:_*)))
 
   override def createUniqueConstraint(labelId: Int, propertyKeyIds: Seq[Int]): Boolean = try {
-    transactionalContext.kernelTransaction.schemaWrite().uniquePropertyConstraintCreate(SchemaDescriptor.forLabel(labelId, propertyKeyIds:_*))
+    transactionalContext.kernelTransaction.schemaWrite().uniquePropertyConstraintCreate(SchemaDescriptor.forLabel(labelId, propertyKeyIds:_*), null)
     true
   } catch {
     case _: AlreadyConstrainedException => false
@@ -769,7 +769,7 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
   override def createNodePropertyExistenceConstraint(labelId: Int, propertyKeyId: Int): Boolean =
     try {
       transactionalContext.kernelTransaction.schemaWrite().nodePropertyExistenceConstraintCreate(
-        SchemaDescriptor.forLabel(labelId, propertyKeyId))
+        SchemaDescriptor.forLabel(labelId, propertyKeyId), null)
       true
     } catch {
       case _: AlreadyConstrainedException => false
@@ -782,7 +782,7 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
   override def createRelationshipPropertyExistenceConstraint(relTypeId: Int, propertyKeyId: Int): Boolean =
     try {
       transactionalContext.kernelTransaction.schemaWrite().relationshipPropertyExistenceConstraintCreate(
-        SchemaDescriptor.forRelType(relTypeId, propertyKeyId))
+        SchemaDescriptor.forRelType(relTypeId, propertyKeyId), null)
       true
     } catch {
       case _: AlreadyConstrainedException => false

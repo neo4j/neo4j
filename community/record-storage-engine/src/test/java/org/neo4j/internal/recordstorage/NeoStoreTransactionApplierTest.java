@@ -32,6 +32,7 @@ import org.neo4j.internal.recordstorage.Command.LabelTokenCommand;
 import org.neo4j.internal.recordstorage.Command.PropertyKeyTokenCommand;
 import org.neo4j.internal.recordstorage.Command.RelationshipTypeTokenCommand;
 import org.neo4j.internal.recordstorage.CommandHandlerContract.ApplyFunction;
+import org.neo4j.internal.schema.ConstraintDescriptor;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.IndexProviderDescriptor;
@@ -61,7 +62,6 @@ import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
 import org.neo4j.kernel.impl.store.record.SchemaRecord;
 import org.neo4j.lock.LockService;
 import org.neo4j.storageengine.api.CommandsToApply;
-import org.neo4j.storageengine.api.ConstraintRule;
 import org.neo4j.storageengine.api.IndexUpdateListener;
 import org.neo4j.storageengine.api.NodeLabelUpdateListener;
 import org.neo4j.storageengine.api.StorageEngine;
@@ -720,7 +720,7 @@ class NeoStoreTransactionApplierTest
         SchemaRecord after = before.clone().initialize( true, Record.NO_NEXT_PROPERTY.longValue() );
         after.setCreated();
         after.setConstraint( true );
-        ConstraintRule rule = uniquenessConstraintRule( 0L, 1, 2, 3L );
+        ConstraintDescriptor rule = uniquenessConstraintRule( 0L, 1, 2, 3L );
         Command.SchemaRuleCommand command = new Command.SchemaRuleCommand( before, after, rule );
 
         // when
@@ -743,7 +743,7 @@ class NeoStoreTransactionApplierTest
         SchemaRecord after = before.clone().initialize( true, Record.NO_NEXT_PROPERTY.longValue() );
         after.setCreated();
         after.setConstraint( true );
-        ConstraintRule rule = uniquenessConstraintRule( 0L, 1, 2, 3L );
+        ConstraintDescriptor rule = uniquenessConstraintRule( 0L, 1, 2, 3L );
         Command.SchemaRuleCommand command = new Command.SchemaRuleCommand( before, after, rule );
 
         // when
@@ -766,7 +766,7 @@ class NeoStoreTransactionApplierTest
         SchemaRecord before = new SchemaRecord( 21 );
         SchemaRecord after = before.clone().initialize( true, Record.NO_NEXT_PROPERTY.longValue() );
         after.setConstraint( true );
-        ConstraintRule rule = uniquenessConstraintRule( 0L, 1, 2, 3L );
+        ConstraintDescriptor rule = uniquenessConstraintRule( 0L, 1, 2, 3L );
         Command.SchemaRuleCommand command = new Command.SchemaRuleCommand( before, after, rule );
 
         // when
@@ -788,7 +788,7 @@ class NeoStoreTransactionApplierTest
         SchemaRecord before = new SchemaRecord( 21 );
         SchemaRecord after = before.clone().initialize( true, Record.NO_NEXT_PROPERTY.longValue() );
         after.setConstraint( true );
-        ConstraintRule rule = uniquenessConstraintRule( 0L, 1, 2, 3L );
+        ConstraintDescriptor rule = uniquenessConstraintRule( 0L, 1, 2, 3L );
         Command.SchemaRuleCommand command = new Command.SchemaRuleCommand( before, after, rule );
 
         // when
@@ -810,7 +810,7 @@ class NeoStoreTransactionApplierTest
         BatchTransactionApplier applier = newApplier( false );
         SchemaRecord before = new SchemaRecord( 21 ).initialize( true, Record.NO_NEXT_PROPERTY.longValue() );
         SchemaRecord after = before.clone().initialize( false, Record.NO_NEXT_PROPERTY.longValue() );
-        ConstraintRule rule = uniquenessConstraintRule( 0L, 1, 2, 3L );
+        ConstraintDescriptor rule = uniquenessConstraintRule( 0L, 1, 2, 3L );
         Command.SchemaRuleCommand command = new Command.SchemaRuleCommand( before, after, rule );
 
         // when
@@ -831,7 +831,7 @@ class NeoStoreTransactionApplierTest
         BatchTransactionApplier applier = newApplier( true );
         SchemaRecord before = new SchemaRecord( 21 ).initialize( true, Record.NO_NEXT_PROPERTY.longValue() );
         SchemaRecord after = before.clone().initialize( false, Record.NO_NEXT_PROPERTY.longValue() );
-        ConstraintRule rule = uniquenessConstraintRule( 0L, 1, 2, 3L );
+        ConstraintDescriptor rule = uniquenessConstraintRule( 0L, 1, 2, 3L );
         Command.SchemaRuleCommand command = new Command.SchemaRuleCommand( before, after, rule );
 
         // when
@@ -939,8 +939,8 @@ class NeoStoreTransactionApplierTest
                 .materialise( id ).withOwningConstraintId( constraintId );
     }
 
-    private static ConstraintRule uniquenessConstraintRule( long id, int labelId, int propertyKeyId, long ownedIndexRule )
+    private static ConstraintDescriptor uniquenessConstraintRule( long id, int labelId, int propertyKeyId, long ownedIndexRule )
     {
-        return ConstraintRule.constraintRule( id, ConstraintDescriptorFactory.uniqueForLabel( labelId, propertyKeyId ), ownedIndexRule );
+        return ConstraintDescriptorFactory.uniqueForLabel( labelId, propertyKeyId ).withId( id ).withOwnedIndexId( ownedIndexRule );
     }
 }

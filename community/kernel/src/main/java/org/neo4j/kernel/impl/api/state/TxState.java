@@ -718,9 +718,9 @@ public class TxState implements TransactionState, RelationshipVisitor.Home
     @Override
     public IndexDescriptor indexCreatedForConstraint( ConstraintDescriptor constraint )
     {
-        if ( constraint instanceof IndexBackedConstraintDescriptor )
+        if ( constraint.isIndexBackedConstraint() )
         {
-            IndexBackedConstraintDescriptor indexBacked = (IndexBackedConstraintDescriptor) constraint;
+            IndexBackedConstraintDescriptor indexBacked = constraint.asIndexBackedConstraint();
             return createdConstraintIndexesByConstraint == null ? null :
                    createdConstraintIndexesByConstraint.get( indexBacked );
         }

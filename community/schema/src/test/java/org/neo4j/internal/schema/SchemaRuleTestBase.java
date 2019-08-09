@@ -17,11 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.store.record;
-
-import org.neo4j.internal.schema.IndexPrototype;
-import org.neo4j.internal.schema.IndexProviderDescriptor;
-import org.neo4j.internal.schema.SchemaDescriptor;
+package org.neo4j.internal.schema;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
@@ -35,8 +31,8 @@ abstract class SchemaRuleTestBase
     static final int PROPERTY_ID_1 = 30;
     static final int PROPERTY_ID_2 = 31;
 
-    static final String PROVIDER_KEY = "index-provider";
-    static final String PROVIDER_VERSION = "1.0";
+    private static final String PROVIDER_KEY = "index-provider";
+    private static final String PROVIDER_VERSION = "1.0";
     static final IndexProviderDescriptor PROVIDER = new IndexProviderDescriptor( PROVIDER_KEY, PROVIDER_VERSION );
 
     void assertEquality( Object o1, Object o2 )

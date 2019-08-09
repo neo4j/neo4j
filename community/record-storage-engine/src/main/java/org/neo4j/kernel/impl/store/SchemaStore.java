@@ -39,6 +39,7 @@ import org.neo4j.internal.id.IdGeneratorFactory;
 import org.neo4j.internal.id.IdType;
 import org.neo4j.internal.kernel.api.exceptions.schema.MalformedSchemaRuleException;
 import org.neo4j.internal.schema.ConstraintDescriptor;
+import org.neo4j.internal.schema.ConstraintType;
 import org.neo4j.internal.schema.IndexConfig;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexPrototype;
@@ -49,8 +50,6 @@ import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptorImplementation;
 import org.neo4j.internal.schema.SchemaRule;
 import org.neo4j.internal.schema.constraints.ConstraintDescriptorFactory;
-import org.neo4j.internal.schema.constraints.NodeKeyConstraintDescriptor;
-import org.neo4j.internal.schema.constraints.UniquenessConstraintDescriptor;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.kernel.impl.store.format.RecordStorageCapability;
@@ -59,9 +58,7 @@ import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.kernel.impl.store.record.RecordLoad;
 import org.neo4j.kernel.impl.store.record.SchemaRecord;
 import org.neo4j.logging.LogProvider;
-import org.neo4j.storageengine.api.ConstraintRule;
 import org.neo4j.storageengine.api.PropertyKeyValue;
-import org.neo4j.storageengine.api.StorageConstraintReference;
 import org.neo4j.token.TokenHolders;
 import org.neo4j.token.api.NamedToken;
 import org.neo4j.token.api.TokenNotFoundException;
@@ -199,9 +196,9 @@ public class SchemaStore extends CommonAbstractStore<SchemaRecord,IntStoreHeader
         {
             schemaIndexToMap( (IndexDescriptor) rule, map );
         }
-        else if ( rule instanceof StorageConstraintReference )
+        else if ( rule instanceof ConstraintDescriptor )
         {
-            schemaConstraintToMap( (StorageConstraintReference) rule, map );
+            schemaConstraintToMap( (ConstraintDescriptor) rule, map );
         }
         return map;
     }
@@ -290,18 +287,18 @@ public class SchemaStore extends CommonAbstractStore<SchemaRecord,IntStoreHeader
         putStringProperty( map, PROP_INDEX_PROVIDER_VERSION, version );
     }
 
-    private static void schemaConstraintToMap( StorageConstraintReference rule, Map<String,Value> map )
+    private static void schemaConstraintToMap( ConstraintDescriptor rule, Map<String,Value> map )
     {
         // Rule
         putStringProperty( map, PROP_SCHEMA_RULE_TYPE, "CONSTRAINT" );
-        ConstraintDescriptor.Type type = rule.getConstraintDescriptor().type();
+        ConstraintType type = rule.type();
         switch ( type )
         {
         case UNIQUE:
             putStringProperty( map, PROP_CONSTRAINT_RULE_TYPE, "UNIQUE" );
-            if ( rule.hasOwnedIndexReference() )
+            if ( rule.asIndexBackedConstraint().hasOwnedIndexId() )
             {
-                putLongProperty( map, PROP_OWNED_INDEX, rule.ownedIndexReference() );
+                putLongProperty( map, PROP_OWNED_INDEX, rule.asIndexBackedConstraint().ownedIndexId() );
             }
             break;
         case EXISTS:
@@ -309,9 +306,9 @@ public class SchemaStore extends CommonAbstractStore<SchemaRecord,IntStoreHeader
             break;
         case UNIQUE_EXISTS:
             putStringProperty( map, PROP_CONSTRAINT_RULE_TYPE, "UNIQUE_EXISTS" );
-            if ( rule.hasOwnedIndexReference() )
+            if ( rule.asIndexBackedConstraint().hasOwnedIndexId() )
             {
-                putLongProperty( map, PROP_OWNED_INDEX, rule.ownedIndexReference() );
+                putLongProperty( map, PROP_OWNED_INDEX, rule.asIndexBackedConstraint().ownedIndexId() );
             }
             break;
         default:
@@ -392,25 +389,26 @@ public class SchemaStore extends CommonAbstractStore<SchemaRecord,IntStoreHeader
         String constraintRuleType = getString( PROP_CONSTRAINT_RULE_TYPE, props );
         String name = getString( PROP_SCHEMA_RULE_NAME, props );
         OptionalLong ownedIndex = getOptionalLong( PROP_OWNED_INDEX, props );
+        ConstraintDescriptor constraint;
         switch ( constraintRuleType )
         {
         case "UNIQUE":
-            UniquenessConstraintDescriptor uniquenessDescriptor = ConstraintDescriptorFactory.uniqueForSchema( schema );
+            constraint = ConstraintDescriptorFactory.uniqueForSchema( schema );
             if ( ownedIndex.isPresent() )
             {
-                return ConstraintRule.constraintRule( id, uniquenessDescriptor, ownedIndex.getAsLong(), name );
+                constraint = constraint.withOwnedIndexId( ownedIndex.getAsLong() );
             }
-            return ConstraintRule.constraintRule( id, uniquenessDescriptor, name );
+            return constraint.withId( id ).withName( name );
         case "EXISTS":
-            ConstraintDescriptor existsDescriptor = ConstraintDescriptorFactory.existsForSchema( schema );
-            return ConstraintRule.constraintRule( id, existsDescriptor, name );
+            constraint = ConstraintDescriptorFactory.existsForSchema( schema );
+            return constraint.withId( id ).withName( name );
         case "UNIQUE_EXISTS":
-            NodeKeyConstraintDescriptor nodeKeyDescriptor = ConstraintDescriptorFactory.nodeKeyForSchema( schema );
+            constraint = ConstraintDescriptorFactory.nodeKeyForSchema( schema );
             if ( ownedIndex.isPresent() )
             {
-                return ConstraintRule.constraintRule( id, nodeKeyDescriptor, ownedIndex.getAsLong(), name );
+                constraint = constraint.withOwnedIndexId( ownedIndex.getAsLong() );
             }
-            return ConstraintRule.constraintRule( id, nodeKeyDescriptor, name );
+            return constraint.withId( id ).withName( name );
         default:
             throw new MalformedSchemaRuleException( "Did not recognize constraint rule type: " + constraintRuleType );
         }

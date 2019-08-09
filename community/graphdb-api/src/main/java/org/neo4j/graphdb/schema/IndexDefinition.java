@@ -133,8 +133,8 @@ public interface IndexDefinition
     boolean isCompositeIndex();
 
     /**
-     * Get the name given to this index when it was created, if any.
-     * If the index was not given any name, then the string {@code "Unnamed index"} is returned instead.
+     * Get the name given to this index when it was created.
+     * Indexes that were not explicitly given a name at creation, will have an auto-generated name.
      */
     String getName();
 }

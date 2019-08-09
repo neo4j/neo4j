@@ -30,7 +30,6 @@ import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptorSupplier;
 import org.neo4j.internal.schema.SchemaRule;
 import org.neo4j.kernel.impl.store.SchemaStore;
-import org.neo4j.storageengine.api.ConstraintRule;
 import org.neo4j.token.TokenHolders;
 import org.neo4j.util.VisibleForTesting;
 
@@ -68,13 +67,13 @@ public interface SchemaRuleAccess
     /**
      * Get the constraint rule that matches the given ConstraintDescriptor
      * @param descriptor the ConstraintDescriptor to match
-     * @return the matching ConstrainRule
-     * @throws SchemaRuleNotFoundException if no ConstraintRule matches the given descriptor
-     * @throws DuplicateSchemaRuleException if two or more ConstraintRules match the given descriptor
+     * @return the matching ConstraintDescriptor
+     * @throws SchemaRuleNotFoundException if no ConstraintDescriptor matches the given descriptor
+     * @throws DuplicateSchemaRuleException if two or more ConstraintDescriptors match the given descriptor
      */
-    ConstraintRule constraintsGetSingle( ConstraintDescriptor descriptor ) throws SchemaRuleNotFoundException, DuplicateSchemaRuleException;
+    ConstraintDescriptor constraintsGetSingle( ConstraintDescriptor descriptor ) throws SchemaRuleNotFoundException, DuplicateSchemaRuleException;
 
-    Iterator<ConstraintRule> constraintsGetAllIgnoreMalformed();
+    Iterator<ConstraintDescriptor> constraintsGetAllIgnoreMalformed();
 
     SchemaRecordChangeTranslator getSchemaRecordChangeTranslator();
 

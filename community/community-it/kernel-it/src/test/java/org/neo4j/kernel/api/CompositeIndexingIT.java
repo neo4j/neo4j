@@ -36,6 +36,7 @@ import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.internal.kernel.api.IndexReadSession;
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.kernel.api.NodeValueIndexCursor;
+import org.neo4j.internal.kernel.api.TokenWrite;
 import org.neo4j.internal.kernel.api.Write;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexOrder;
@@ -51,6 +52,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.equalTo;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.params.provider.Arguments.arguments;
@@ -64,7 +66,6 @@ class CompositeIndexingIT
 
     @Inject
     private GraphDatabaseAPI graphDatabaseAPI;
-    private IndexPrototype prototype;
     private IndexDescriptor index;
 
     void setup( IndexPrototype prototype ) throws Exception
@@ -72,9 +73,21 @@ class CompositeIndexingIT
         try ( Transaction tx = graphDatabaseAPI.beginTx() )
         {
             KernelTransaction ktx = ktx();
+            TokenWrite tokenWrite = ktx.tokenWrite();
+            tokenWrite.labelGetOrCreateForName( "Label0" );
+            assertEquals( LABEL_ID, tokenWrite.labelGetOrCreateForName( "Label1" ) );
+            for ( int i = 0; i < 10; i++ )
+            {
+                tokenWrite.propertyKeyGetOrCreateForName( "prop" + i );
+            }
+            tx.commit();
+        }
+        try ( Transaction tx = graphDatabaseAPI.beginTx() )
+        {
+            KernelTransaction ktx = ktx();
             if ( prototype.isUnique() )
             {
-                ktx.schemaWrite().uniquePropertyConstraintCreate( prototype.schema() );
+                ktx.schemaWrite().uniquePropertyConstraintCreate( prototype.schema(), null );
                 index = ktx.schemaRead().index( prototype.schema() );
             }
             else
@@ -87,8 +100,7 @@ class CompositeIndexingIT
         try ( Transaction ignore = graphDatabaseAPI.beginTx() )
         {
             KernelTransaction ktx = ktx();
-            while ( ktx.schemaRead().indexGetState( index ) !=
-                InternalIndexState.ONLINE )
+            while ( ktx.schemaRead().indexGetState( index ) != InternalIndexState.ONLINE )
             {
                 Thread.sleep( 10 );
             } // Will break loop on test timeout

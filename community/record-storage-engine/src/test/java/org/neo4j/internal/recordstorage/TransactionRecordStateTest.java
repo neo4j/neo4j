@@ -51,6 +51,7 @@ import org.neo4j.internal.recordstorage.Command.RelationshipCommand;
 import org.neo4j.internal.recordstorage.Command.RelationshipGroupCommand;
 import org.neo4j.internal.recordstorage.Command.SchemaRuleCommand;
 import org.neo4j.internal.recordstorage.RecordAccess.RecordProxy;
+import org.neo4j.internal.schema.ConstraintDescriptor;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.SchemaDescriptor;
@@ -82,7 +83,6 @@ import org.neo4j.lock.LockService;
 import org.neo4j.lock.ResourceLocker;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.storageengine.api.CommandsToApply;
-import org.neo4j.storageengine.api.ConstraintRule;
 import org.neo4j.storageengine.api.IndexEntryUpdate;
 import org.neo4j.storageengine.api.StandardConstraintRuleAccessor;
 import org.neo4j.storageengine.api.StorageCommand;
@@ -122,7 +122,6 @@ import static org.neo4j.internal.schema.SchemaDescriptor.forRelType;
 import static org.neo4j.internal.schema.constraints.ConstraintDescriptorFactory.uniqueForLabel;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.FORCE;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.NORMAL;
-import static org.neo4j.storageengine.api.ConstraintRule.constraintRule;
 import static org.neo4j.storageengine.api.IndexEntryUpdate.add;
 import static org.neo4j.storageengine.api.IndexEntryUpdate.change;
 import static org.neo4j.storageengine.api.IndexEntryUpdate.remove;
@@ -750,7 +749,7 @@ class TransactionRecordStateTest
         final long indexId = neoStores.getSchemaStore().nextId();
         final long constraintId = neoStores.getSchemaStore().nextId();
 
-        recordState.schemaRuleCreate( constraintId, true, constraintRule( constraintId, uniqueForLabel( 1, 1 ), indexId ) );
+        recordState.schemaRuleCreate( constraintId, true, uniqueForLabel( 1, 1 ).withId( constraintId ).withOwnedIndexId( indexId ) );
 
         // WHEN
         recordState.extractCommands( new ArrayList<>() );
@@ -1244,7 +1243,7 @@ class TransactionRecordStateTest
         neoStores = createStores();
         TransactionRecordState state = newTransactionRecordState();
         long ruleId = neoStores.getSchemaStore().nextId();
-        ConstraintRule rule = constraintRule( ruleId, ConstraintDescriptorFactory.existsForLabel( 0, 1 ) );
+        ConstraintDescriptor rule = ConstraintDescriptorFactory.existsForLabel( 0, 1 ).withId( ruleId );
         state.schemaRuleCreate( ruleId, true, rule );
 
         List<StorageCommand> commands = new ArrayList<>();
@@ -1376,7 +1375,7 @@ class TransactionRecordStateTest
     }
 
     /**
-     * This is important because we have transaction appliers that look for the schema recard changes and inspect the attached schema rule.
+     * This is important because we have transaction appliers that look for the schema record changes and inspect the attached schema rule.
      * These appliers will not know what to do with the modified property record. Specifically, the index activator needs to observe the schema record
      * update when an index owner is attached to it.
      */
@@ -1634,9 +1633,9 @@ class TransactionRecordStateTest
         return (RelationshipGroupCommand) single( filter( t -> t instanceof RelationshipGroupCommand, commands ) );
     }
 
-    private IndexDescriptor createIndex( int labeId, int... propertyKeyIds )
+    private IndexDescriptor createIndex( int labelId, int... propertyKeyIds )
     {
-        IndexDescriptor descriptor = IndexPrototype.forSchema( forLabel( labeId, propertyKeyIds ) ).materialise( nextRuleId++ );
+        IndexDescriptor descriptor = IndexPrototype.forSchema( forLabel( labelId, propertyKeyIds ) ).materialise( nextRuleId++ );
         schemaCache.addSchemaRule( descriptor );
         return descriptor;
     }

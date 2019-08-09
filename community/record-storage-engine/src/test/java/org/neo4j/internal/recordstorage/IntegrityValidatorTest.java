@@ -22,12 +22,12 @@ package org.neo4j.internal.recordstorage;
 import org.junit.jupiter.api.Test;
 
 import org.neo4j.graphdb.ConstraintViolationException;
+import org.neo4j.internal.schema.ConstraintDescriptor;
 import org.neo4j.internal.schema.constraints.ConstraintDescriptorFactory;
 import org.neo4j.internal.schema.constraints.UniquenessConstraintDescriptor;
 import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
-import org.neo4j.storageengine.api.ConstraintRule;
 import org.neo4j.storageengine.api.IndexUpdateListener;
 
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -49,7 +49,7 @@ class IntegrityValidatorTest
 
         doThrow( new ConstraintViolationException( "error", new RuntimeException() ) ).when( indexes ).validateIndex( 2L );
 
-        ConstraintRule record = ConstraintRule.constraintRule( 1L, constraint, 2L );
+        ConstraintDescriptor record = constraint.withId( 1 ).withOwnedIndexId( 2 );
 
         // When
         assertThrows( Exception.class, () -> validator.validateSchemaRule( record ) );

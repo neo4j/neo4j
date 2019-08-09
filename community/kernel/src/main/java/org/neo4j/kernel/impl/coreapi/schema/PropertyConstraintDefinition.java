@@ -27,10 +27,12 @@ import static java.util.Objects.requireNonNull;
 abstract class PropertyConstraintDefinition implements ConstraintDefinition
 {
     protected final InternalSchemaActions actions;
+    protected String name;
 
-    protected PropertyConstraintDefinition( InternalSchemaActions actions )
+    PropertyConstraintDefinition( InternalSchemaActions actions, String name )
     {
         this.actions = requireNonNull( actions );
+        this.name = requireNonNull( name );
     }
 
     @Override
@@ -41,6 +43,12 @@ abstract class PropertyConstraintDefinition implements ConstraintDefinition
     {
         assertInUnterminatedTransaction();
         return getConstraintType().equals( type );
+    }
+
+    @Override
+    public String getName()
+    {
+        return name;
     }
 
     @Override

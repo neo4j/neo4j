@@ -17,15 +17,30 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.storageengine.api;
+package org.neo4j.internal.schema;
 
-import org.neo4j.internal.schema.ConstraintDescriptor;
-
-public interface StorageConstraintReference extends ConstraintDescriptor.Supplier
+public enum ConstraintType
 {
-    boolean hasOwnedIndexReference();
+    UNIQUE( true, false ),
+    EXISTS( false, true ),
+    UNIQUE_EXISTS( true, true );
 
-    long ownedIndexReference();
+    private final boolean isUnique;
+    private final boolean mustExist;
 
-    long constraintReference();
+    ConstraintType( boolean isUnique, boolean mustExist )
+    {
+        this.isUnique = isUnique;
+        this.mustExist = mustExist;
+    }
+
+    public boolean enforcesUniqueness()
+    {
+        return isUnique;
+    }
+
+    public boolean enforcesPropertyExistence()
+    {
+        return mustExist;
+    }
 }

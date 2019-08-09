@@ -34,7 +34,6 @@ import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.internal.schema.constraints.ConstraintDescriptorFactory;
 import org.neo4j.internal.schema.constraints.NodeKeyConstraintDescriptor;
 import org.neo4j.internal.schema.constraints.UniquenessConstraintDescriptor;
-import org.neo4j.storageengine.api.ConstraintRule;
 import org.neo4j.storageengine.api.StandardConstraintRuleAccessor;
 import org.neo4j.storageengine.api.StorageReader;
 import org.neo4j.storageengine.api.txstate.ReadableTransactionState;
@@ -86,21 +85,20 @@ public class StandardConstraintSemantics extends ConstraintSemantics
     }
 
     @Override
-    public ConstraintDescriptor readConstraint( ConstraintRule rule )
+    public ConstraintDescriptor readConstraint( ConstraintDescriptor constraint )
     {
-        ConstraintDescriptor descriptor = rule.getConstraintDescriptor();
-        switch ( descriptor.type() )
+        switch ( constraint.type() )
         {
         case EXISTS:
-            return readNonStandardConstraint( rule, ERROR_MESSAGE_EXISTS );
+            return readNonStandardConstraint( constraint, ERROR_MESSAGE_EXISTS );
         case UNIQUE_EXISTS:
-            return readNonStandardConstraint( rule, ERROR_MESSAGE_NODE_KEY );
+            return readNonStandardConstraint( constraint, ERROR_MESSAGE_NODE_KEY );
         default:
-            return descriptor;
+            return constraint;
         }
     }
 
-    protected ConstraintDescriptor readNonStandardConstraint( ConstraintRule rule, String errorMessage )
+    protected ConstraintDescriptor readNonStandardConstraint( ConstraintDescriptor constraint, String errorMessage )
     {
         // When opening a store in Community Edition that contains a Property Existence Constraint
         throw new IllegalStateException( errorMessage );
@@ -121,21 +119,21 @@ public class StandardConstraintSemantics extends ConstraintSemantics
     }
 
     @Override
-    public ConstraintRule createUniquenessConstraintRule(
+    public ConstraintDescriptor createUniquenessConstraintRule(
             long ruleId, UniquenessConstraintDescriptor descriptor, long indexId )
     {
         return accessor.createUniquenessConstraintRule( ruleId, descriptor, indexId );
     }
 
     @Override
-    public ConstraintRule createNodeKeyConstraintRule(
+    public ConstraintDescriptor createNodeKeyConstraintRule(
             long ruleId, NodeKeyConstraintDescriptor descriptor, long indexId ) throws CreateConstraintFailureException
     {
         throw nodeKeyConstraintsNotAllowed( descriptor.schema() );
     }
 
     @Override
-    public ConstraintRule createExistenceConstraint( long ruleId, ConstraintDescriptor descriptor )
+    public ConstraintDescriptor createExistenceConstraint( long ruleId, ConstraintDescriptor descriptor )
             throws CreateConstraintFailureException
     {
         throw propertyExistenceConstraintsNotAllowed( descriptor.schema() );

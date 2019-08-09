@@ -25,6 +25,7 @@ import java.util.function.Supplier;
 import java.util.stream.Stream;
 
 import org.neo4j.common.EntityType;
+import org.neo4j.internal.schema.ConstraintDescriptor;
 import org.neo4j.internal.schema.IndexConfig;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexPrototype;
@@ -34,14 +35,12 @@ import org.neo4j.internal.schema.RelationTypeSchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.internal.schema.SchemaRule;
 import org.neo4j.internal.schema.constraints.ConstraintDescriptorFactory;
+import org.neo4j.internal.schema.constraints.IndexBackedConstraintDescriptor;
 import org.neo4j.kernel.impl.store.format.standard.StandardFormatSettings;
-import org.neo4j.storageengine.api.ConstraintRule;
 import org.neo4j.values.storable.RandomValues;
 import org.neo4j.values.storable.TextValue;
 import org.neo4j.values.storable.ValueGroup;
 import org.neo4j.values.storable.ValueType;
-
-import static org.neo4j.storageengine.api.ConstraintRule.constraintRule;
 
 @SuppressWarnings( "WeakerAccess" ) // Keep accessibility high in case someone wants to extend this class in the future.
 public class RandomSchema implements Supplier<SchemaRule>
@@ -199,25 +198,26 @@ public class RandomSchema implements Supplier<SchemaRule>
         return nextRuleId();
     }
 
-    public ConstraintRule nextConstraint()
+    public ConstraintDescriptor nextConstraint()
     {
         long ruleId = nextRuleIdForConstraint();
-
         int choice = rng.nextInt( 12 );
         switch ( choice )
         {
-        case 0: return constraintRule( ruleId, ConstraintDescriptorFactory.existsForSchema( nextRelationshipSchema() ) );
-        case 1: return constraintRule( ruleId, ConstraintDescriptorFactory.existsForSchema( nextRelationshipSchema() ), nextName() );
-        case 2: return constraintRule( ruleId, ConstraintDescriptorFactory.existsForSchema( nextNodeSchema() ) );
-        case 3: return constraintRule( ruleId, ConstraintDescriptorFactory.existsForSchema( nextNodeSchema() ), nextName() );
-        case 4: return constraintRule( ruleId, ConstraintDescriptorFactory.uniqueForSchema( nextNodeSchema() ) );
-        case 5: return constraintRule( ruleId, ConstraintDescriptorFactory.uniqueForSchema( nextNodeSchema() ), existingIndexId() );
-        case 6: return constraintRule( ruleId, ConstraintDescriptorFactory.uniqueForSchema( nextNodeSchema() ), nextName() );
-        case 7: return constraintRule( ruleId, ConstraintDescriptorFactory.uniqueForSchema( nextNodeSchema() ), existingIndexId(), nextName() );
-        case 8: return constraintRule( ruleId, ConstraintDescriptorFactory.nodeKeyForSchema( nextNodeSchema() ) );
-        case 9: return constraintRule( ruleId, ConstraintDescriptorFactory.nodeKeyForSchema( nextNodeSchema() ), existingIndexId() );
-        case 10: return constraintRule( ruleId, ConstraintDescriptorFactory.nodeKeyForSchema( nextNodeSchema() ), nextName() );
-        case 11: return constraintRule( ruleId, ConstraintDescriptorFactory.nodeKeyForSchema( nextNodeSchema() ), existingIndexId(), nextName() );
+        case 0: return ConstraintDescriptorFactory.existsForSchema( nextRelationshipSchema() ).withId( ruleId );
+        case 1: return ConstraintDescriptorFactory.existsForSchema( nextRelationshipSchema() ).withId( ruleId ).withName( nextName() );
+        case 2: return ConstraintDescriptorFactory.existsForSchema( nextNodeSchema() ).withId( ruleId );
+        case 3: return ConstraintDescriptorFactory.existsForSchema( nextNodeSchema() ).withId( ruleId ).withName( nextName() );
+        case 4: return ConstraintDescriptorFactory.uniqueForSchema( nextNodeSchema() ).withId( ruleId );
+        case 5: return ConstraintDescriptorFactory.uniqueForSchema( nextNodeSchema() ).withId( ruleId ).withOwnedIndexId( existingIndexId() );
+        case 6: return ConstraintDescriptorFactory.uniqueForSchema( nextNodeSchema() ).withId( ruleId ).withName( nextName() );
+        case 7: return ConstraintDescriptorFactory.uniqueForSchema( nextNodeSchema() ).withId( ruleId ).withOwnedIndexId( existingIndexId() )
+                .withName( nextName() );
+        case 8: return ConstraintDescriptorFactory.nodeKeyForSchema( nextNodeSchema() ).withId( ruleId );
+        case 9: return ConstraintDescriptorFactory.nodeKeyForSchema( nextNodeSchema() ).withId( ruleId ).withOwnedIndexId( existingIndexId() );
+        case 10: return ConstraintDescriptorFactory.nodeKeyForSchema( nextNodeSchema() ).withId( ruleId ).withName( nextName() );
+        case 11: return ConstraintDescriptorFactory.nodeKeyForSchema( nextNodeSchema() ).withId( ruleId ).withOwnedIndexId( existingIndexId() )
+                .withName( nextName() );
         default: throw new RuntimeException( "Bad constraint choice: " + choice );
         }
     }
@@ -334,12 +334,23 @@ public class RandomSchema implements Supplier<SchemaRule>
         }
         else
         {
-            ConstraintRule constraintA = (ConstraintRule) a;
-            ConstraintRule constraintB = (ConstraintRule) b;
-            return constraintA.hasOwnedIndexReference() == constraintB.hasOwnedIndexReference() &&
-                    (!constraintA.hasOwnedIndexReference() || constraintA.ownedIndexReference() == constraintB.ownedIndexReference()) &&
-                    constraintA.getConstraintDescriptor().equals( constraintB.getConstraintDescriptor() ) &&
-                    schemaDeepEquals( constraintA.schema(), constraintB.schema() );
+            ConstraintDescriptor constraintA = (ConstraintDescriptor) a;
+            ConstraintDescriptor constraintB = (ConstraintDescriptor) b;
+            if ( constraintA.isIndexBackedConstraint() && constraintB.isIndexBackedConstraint() )
+            {
+                IndexBackedConstraintDescriptor ibcA = constraintA.asIndexBackedConstraint();
+                IndexBackedConstraintDescriptor ibcB = constraintB.asIndexBackedConstraint();
+                return ibcA.hasOwnedIndexId() == ibcB.hasOwnedIndexId() &&
+                        (!ibcA.hasOwnedIndexId() || ibcA.ownedIndexId() == ibcB.ownedIndexId()) &&
+                        ibcA.equals( ibcB ) &&
+                        schemaDeepEquals( ibcA.schema(), ibcB.schema() );
+            }
+            else
+            {
+                return constraintA.isIndexBackedConstraint() == constraintB.isIndexBackedConstraint() &&
+                        constraintA.equals( constraintB ) &&
+                        schemaDeepEquals( constraintA.schema(), constraintB.schema() );
+            }
         }
     }
 

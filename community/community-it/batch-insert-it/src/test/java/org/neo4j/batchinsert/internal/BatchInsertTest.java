@@ -65,6 +65,7 @@ import org.neo4j.internal.index.label.LabelScanStore;
 import org.neo4j.internal.index.label.NativeLabelScanStore;
 import org.neo4j.internal.recordstorage.RecordStorageEngine;
 import org.neo4j.internal.recordstorage.SchemaRuleAccess;
+import org.neo4j.internal.schema.ConstraintDescriptor;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexProviderDescriptor;
 import org.neo4j.internal.schema.SchemaRule;
@@ -90,7 +91,6 @@ import org.neo4j.kernel.impl.store.record.RecordLoad;
 import org.neo4j.kernel.impl.store.record.SchemaRecord;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.monitoring.Monitors;
-import org.neo4j.storageengine.api.ConstraintRule;
 import org.neo4j.storageengine.api.NodePropertyAccessor;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.Inject;
@@ -769,23 +769,23 @@ class BatchInsertTest
             SchemaRule rule0 = schemaRuleAccess.loadSingleSchemaRule( inUse.get( 0 ) );
             SchemaRule rule1 = schemaRuleAccess.loadSingleSchemaRule( inUse.get( 1 ) );
             IndexDescriptor indexRule;
-            ConstraintRule constraintRule;
+            ConstraintDescriptor constraint;
             if ( rule0 instanceof IndexDescriptor )
             {
                 indexRule = (IndexDescriptor) rule0;
-                constraintRule = (ConstraintRule) rule1;
+                constraint = (ConstraintDescriptor) rule1;
             }
             else
             {
-                constraintRule = (ConstraintRule) rule0;
+                constraint = (ConstraintDescriptor) rule0;
                 indexRule = (IndexDescriptor) rule1;
             }
             OptionalLong owningConstraintId = indexRule.getOwningConstraintId();
             assertTrue( owningConstraintId.isPresent(), "index should have owning constraint" );
             assertEquals(
-                constraintRule.getId(), owningConstraintId.getAsLong(), "index should reference constraint" );
+                constraint.getId(), owningConstraintId.getAsLong(), "index should reference constraint" );
             assertEquals(
-                indexRule.getId(), constraintRule.ownedIndexReference(), "constraint should reference index" );
+                indexRule.getId(), constraint.asIndexBackedConstraint().ownedIndexId(), "constraint should reference index" );
         }
         finally
         {
@@ -1033,7 +1033,7 @@ class BatchInsertTest
      * During first update email property will be migrated to dynamic property and last property record will become
      * empty. That record should be deleted form property chain or otherwise on next node load user will get an
      * property record not in use exception.
-     * @param denseNodeThreshold
+     * @param denseNodeThreshold relationship group threshold from "params".
      */
     @ParameterizedTest
     @MethodSource( "params" )

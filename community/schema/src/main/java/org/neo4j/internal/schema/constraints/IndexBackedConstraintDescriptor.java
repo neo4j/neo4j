@@ -19,49 +19,18 @@
  */
 package org.neo4j.internal.schema.constraints;
 
-import org.neo4j.common.TokenNameLookup;
-import org.neo4j.internal.schema.LabelSchemaDescriptor;
-import org.neo4j.internal.schema.SchemaDescriptorSupplier;
-import org.neo4j.token.api.TokenIdPrettyPrinter;
+import org.neo4j.internal.schema.ConstraintDescriptor;
 
-public abstract class IndexBackedConstraintDescriptor extends AbstractConstraintDescriptor implements SchemaDescriptorSupplier
+public interface IndexBackedConstraintDescriptor extends ConstraintDescriptor
 {
-    private final LabelSchemaDescriptor schema;
-    private final LabelSchemaDescriptor ownedIndexSchema;
+    /**
+     * @return {@code true} if this constraint has a backing index, and calling {@link #ownedIndexId()} will not throw.
+     */
+    boolean hasOwnedIndexId();
 
-    IndexBackedConstraintDescriptor( Type type, LabelSchemaDescriptor ownedIndexSchema )
-    {
-        super( type );
-        this.schema = ownedIndexSchema;
-        this.ownedIndexSchema = ownedIndexSchema;
-    }
-
-    @Override
-    public LabelSchemaDescriptor schema()
-    {
-        return schema;
-    }
-
-    public LabelSchemaDescriptor ownedIndexSchema()
-    {
-        return ownedIndexSchema;
-    }
-
-    @Override
-    public String prettyPrint( TokenNameLookup tokenNameLookup )
-    {
-        String labelName = escapeLabelOrRelTyp( tokenNameLookup.labelGetName( schema.getLabelId() ) );
-        String nodeName = labelName.toLowerCase();
-
-        return String.format( "CONSTRAINT ON ( %s:%s ) ASSERT %s IS %s", nodeName, labelName,
-                formatProperties( schema.getPropertyIds(), tokenNameLookup, nodeName ),
-                constraintTypeText() );
-    }
-
-    protected abstract String constraintTypeText();
-
-    protected String formatProperties( int[] propertyIds, TokenNameLookup tokenNameLookup, String nodeName )
-    {
-        return TokenIdPrettyPrinter.niceProperties( tokenNameLookup, propertyIds, nodeName + ".", propertyIds.length > 1 );
-    }
+    /**
+     * Return the id of the index that is owned by this constraint, if any, or throw an {@link IllegalStateException}.
+     * @return the id of the index backing this constraint.
+     */
+    long ownedIndexId();
 }

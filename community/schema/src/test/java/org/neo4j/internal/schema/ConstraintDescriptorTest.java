@@ -17,15 +17,13 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.store.record;
+package org.neo4j.internal.schema;
 
 import org.junit.jupiter.api.Test;
 
-import org.neo4j.internal.schema.ConstraintDescriptor;
 import org.neo4j.internal.schema.constraints.ConstraintDescriptorFactory;
 import org.neo4j.internal.schema.constraints.NodeKeyConstraintDescriptor;
 import org.neo4j.internal.schema.constraints.UniquenessConstraintDescriptor;
-import org.neo4j.storageengine.api.ConstraintRule;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
@@ -33,20 +31,20 @@ import static org.neo4j.internal.schema.constraints.ConstraintDescriptorFactory.
 import static org.neo4j.internal.schema.constraints.ConstraintDescriptorFactory.nodeKeyForLabel;
 import static org.neo4j.test.assertion.Assert.assertException;
 
-class ConstraintRuleTest extends SchemaRuleTestBase
+class ConstraintDescriptorTest extends SchemaRuleTestBase
 {
     @Test
     void shouldCreateUniquenessConstraint()
     {
         // GIVEN
         ConstraintDescriptor descriptor = ConstraintDescriptorFactory.uniqueForLabel( LABEL_ID, PROPERTY_ID_1 );
-        ConstraintRule constraintRule = ConstraintRule.constraintRule( RULE_ID, descriptor );
+        ConstraintDescriptor constraint = descriptor.withId( RULE_ID );
 
         // THEN
-        assertThat( constraintRule.getId(), equalTo( RULE_ID ) );
-        assertThat( constraintRule.schema(), equalTo( descriptor.schema() ) );
-        assertThat( constraintRule.getConstraintDescriptor(), equalTo( descriptor ) );
-        assertException( constraintRule::ownedIndexReference, IllegalStateException.class );
+        assertThat( constraint.getId(), equalTo( RULE_ID ) );
+        assertThat( constraint.schema(), equalTo( descriptor.schema() ) );
+        assertThat( constraint, equalTo( descriptor ) );
+        assertException( () -> constraint.asIndexBackedConstraint().ownedIndexId(), IllegalStateException.class );
     }
 
     @Test
@@ -54,11 +52,11 @@ class ConstraintRuleTest extends SchemaRuleTestBase
     {
         // GIVEN
         UniquenessConstraintDescriptor descriptor = ConstraintDescriptorFactory.uniqueForLabel( LABEL_ID, PROPERTY_ID_1 );
-        ConstraintRule constraintRule = ConstraintRule.constraintRule( RULE_ID, descriptor, RULE_ID_2 );
+        UniquenessConstraintDescriptor constraint = descriptor.withId( RULE_ID ).withOwnedIndexId( RULE_ID_2 );
 
         // THEN
-        assertThat( constraintRule.getConstraintDescriptor(), equalTo( descriptor ) );
-        assertThat( constraintRule.ownedIndexReference(), equalTo( RULE_ID_2 ) );
+        assertThat( constraint, equalTo( descriptor ) );
+        assertThat( constraint.ownedIndexId(), equalTo( RULE_ID_2 ) );
     }
 
     @Test
@@ -66,13 +64,13 @@ class ConstraintRuleTest extends SchemaRuleTestBase
     {
         // GIVEN
         ConstraintDescriptor descriptor = nodeKeyForLabel( LABEL_ID, PROPERTY_ID_1 );
-        ConstraintRule constraintRule = ConstraintRule.constraintRule( RULE_ID, descriptor );
+        ConstraintDescriptor constraint = descriptor.withId( RULE_ID );
 
         // THEN
-        assertThat( constraintRule.getId(), equalTo( RULE_ID ) );
-        assertThat( constraintRule.schema(), equalTo( descriptor.schema() ) );
-        assertThat( constraintRule.getConstraintDescriptor(), equalTo( descriptor ) );
-        assertException( constraintRule::ownedIndexReference, IllegalStateException.class );
+        assertThat( constraint.getId(), equalTo( RULE_ID ) );
+        assertThat( constraint.schema(), equalTo( descriptor.schema() ) );
+        assertThat( constraint, equalTo( descriptor ) );
+        assertException( () -> constraint.asIndexBackedConstraint().ownedIndexId(), IllegalStateException.class );
     }
 
     @Test
@@ -80,11 +78,11 @@ class ConstraintRuleTest extends SchemaRuleTestBase
     {
         // GIVEN
         NodeKeyConstraintDescriptor descriptor = nodeKeyForLabel( LABEL_ID, PROPERTY_ID_1 );
-        ConstraintRule constraintRule = ConstraintRule.constraintRule( RULE_ID, descriptor, RULE_ID_2 );
+        NodeKeyConstraintDescriptor constraint = descriptor.withId( RULE_ID ).withOwnedIndexId( RULE_ID_2 );
 
         // THEN
-        assertThat( constraintRule.getConstraintDescriptor(), equalTo( descriptor ) );
-        assertThat( constraintRule.ownedIndexReference(), equalTo( RULE_ID_2 ) );
+        assertThat( constraint, equalTo( descriptor ) );
+        assertThat( constraint.ownedIndexId(), equalTo( RULE_ID_2 ) );
     }
 
     @Test
@@ -92,13 +90,13 @@ class ConstraintRuleTest extends SchemaRuleTestBase
     {
         // GIVEN
         ConstraintDescriptor descriptor = existsForLabel( LABEL_ID, PROPERTY_ID_1 );
-        ConstraintRule constraintRule = ConstraintRule.constraintRule( RULE_ID, descriptor );
+        ConstraintDescriptor constraint = descriptor.withId( RULE_ID );
 
         // THEN
-        assertThat( constraintRule.getId(), equalTo( RULE_ID ) );
-        assertThat( constraintRule.schema(), equalTo( descriptor.schema() ) );
-        assertThat( constraintRule.getConstraintDescriptor(), equalTo( descriptor ) );
-        assertException( constraintRule::ownedIndexReference, IllegalStateException.class );
+        assertThat( constraint.getId(), equalTo( RULE_ID ) );
+        assertThat( constraint.schema(), equalTo( descriptor.schema() ) );
+        assertThat( constraint, equalTo( descriptor ) );
+        assertException( () -> constraint.asIndexBackedConstraint().ownedIndexId(), IllegalStateException.class );
     }
 
     @Test
@@ -115,16 +113,16 @@ class ConstraintRuleTest extends SchemaRuleTestBase
 
     private void assertEqualityByDescriptor( UniquenessConstraintDescriptor descriptor )
     {
-        ConstraintRule rule1 = ConstraintRule.constraintRule( RULE_ID, descriptor, RULE_ID_2 );
-        ConstraintRule rule2 = ConstraintRule.constraintRule( RULE_ID_2, descriptor );
+        ConstraintDescriptor rule1 = descriptor.withId( RULE_ID ).withOwnedIndexId( RULE_ID_2 );
+        ConstraintDescriptor rule2 = descriptor.withId( RULE_ID_2 );
 
         assertEquality( rule1, rule2 );
     }
 
     private void assertEqualityByDescriptor( ConstraintDescriptor descriptor )
     {
-        ConstraintRule rule1 = ConstraintRule.constraintRule( RULE_ID, descriptor );
-        ConstraintRule rule2 = ConstraintRule.constraintRule( RULE_ID_2, descriptor );
+        ConstraintDescriptor rule1 = descriptor.withId( RULE_ID );
+        ConstraintDescriptor rule2 = descriptor.withId( RULE_ID_2 );
 
         assertEquality( rule1, rule2 );
     }

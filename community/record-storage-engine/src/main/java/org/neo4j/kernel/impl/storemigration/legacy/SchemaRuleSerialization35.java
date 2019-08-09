@@ -31,14 +31,12 @@ import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.IndexProviderDescriptor;
 import org.neo4j.internal.schema.LabelSchemaDescriptor;
 import org.neo4j.internal.schema.RelationTypeSchemaDescriptor;
-import org.neo4j.internal.schema.SchemaComputer;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.internal.schema.SchemaProcessor;
 import org.neo4j.internal.schema.SchemaRule;
 import org.neo4j.internal.schema.constraints.ConstraintDescriptorFactory;
 import org.neo4j.internal.schema.constraints.NodeKeyConstraintDescriptor;
 import org.neo4j.internal.schema.constraints.UniquenessConstraintDescriptor;
-import org.neo4j.storageengine.api.ConstraintRule;
 import org.neo4j.string.UTF8;
 
 import static java.lang.String.format;
@@ -88,9 +86,9 @@ public class SchemaRuleSerialization35
         {
             return serialize( (IndexDescriptor) schemaRule );
         }
-        else if ( schemaRule instanceof ConstraintRule )
+        else if ( schemaRule instanceof ConstraintDescriptor )
         {
-            return serialize( (ConstraintRule) schemaRule );
+            return serialize( (ConstraintDescriptor) schemaRule );
         }
         throw new IllegalStateException( "Unknown schema rule type: " + schemaRule.getClass() );
     }
@@ -156,18 +154,17 @@ public class SchemaRuleSerialization35
     }
 
     /**
-     * Serialize the provided ConstraintRule onto the target buffer
-     * @param constraintRule the ConstraintRule to serialize
-     * @throws IllegalStateException if the ConstraintRule is of type unique, but the owned index has not been set
+     * Serialize the provided ConstraintDescriptor onto the target buffer
+     * @param constraint the ConstraintDescriptor to serialize
+     * @throws IllegalStateException if the ConstraintDescriptor is of type unique, but the owned index has not been set
      */
-    public static byte[] serialize( ConstraintRule constraintRule )
+    public static byte[] serialize( ConstraintDescriptor constraint )
     {
-        ByteBuffer target = ByteBuffer.allocate( lengthOf( constraintRule ) );
+        ByteBuffer target = ByteBuffer.allocate( lengthOf( constraint ) );
         target.putInt( LEGACY_LABEL_OR_REL_TYPE_ID );
         target.put( CONSTRAINT_RULE );
 
-        ConstraintDescriptor constraintDescriptor = constraintRule.getConstraintDescriptor();
-        switch ( constraintDescriptor.type() )
+        switch ( constraint.type() )
         {
         case EXISTS:
             target.put( EXISTS_CONSTRAINT );
@@ -175,21 +172,21 @@ public class SchemaRuleSerialization35
 
         case UNIQUE:
             target.put( UNIQUE_CONSTRAINT );
-            target.putLong( constraintRule.ownedIndexReference() );
+            target.putLong( constraint.asIndexBackedConstraint().ownedIndexId() );
             break;
 
         case UNIQUE_EXISTS:
             target.put( UNIQUE_EXISTS_CONSTRAINT );
-            target.putLong( constraintRule.ownedIndexReference() );
+            target.putLong( constraint.asIndexBackedConstraint().ownedIndexId() );
             break;
 
         default:
             throw new UnsupportedOperationException( format( "Got unknown index descriptor type '%s'.",
-                    constraintDescriptor.type() ) );
+                    constraint.type() ) );
         }
 
-        constraintDescriptor.schema().processWith( new SchemaDescriptorSerializer( target ) );
-        UTF8.putEncodedStringInto( constraintRule.getName(), target );
+        constraint.schema().processWith( new SchemaDescriptorSerializer( target ) );
+        UTF8.putEncodedStringInto( constraint.getName(), target );
         return target.array();
     }
 
@@ -212,30 +209,29 @@ public class SchemaRuleSerialization35
             length += 8; // owning constraint id
         }
 
-        length += indexDescriptor.schema().computeWith( schemaSizeComputer );
+        length += computeSchemaSize( indexDescriptor.schema() );
         length += UTF8.computeRequiredByteBufferSize( indexDescriptor.getName() );
         return length;
     }
 
     /**
-     * Compute the byte size needed to serialize the provided ConstraintRule using serialize.
-     * @param constraintRule the ConstraintRule
-     * @return the byte size of ConstraintRule
+     * Compute the byte size needed to serialize the provided ConstraintDescriptor using serialize.
+     * @param constraint the ConstraintDescriptor
+     * @return the byte size of ConstraintDescriptor
      */
-    static int lengthOf( ConstraintRule constraintRule )
+    static int lengthOf( ConstraintDescriptor constraint )
     {
         int length = 4; // legacy label or relType id
         length += 1; // schema rule type
 
         length += 1; // constraint type
-        ConstraintDescriptor constraintDescriptor = constraintRule.getConstraintDescriptor();
-        if ( constraintDescriptor.enforcesUniqueness() )
+        if ( constraint.enforcesUniqueness() )
         {
             length += 8; // owned index id
         }
 
-        length += constraintDescriptor.schema().computeWith( schemaSizeComputer );
-        length += UTF8.computeRequiredByteBufferSize( constraintRule.getName() );
+        length += computeSchemaSize( constraint.schema() );
+        length += UTF8.computeRequiredByteBufferSize( constraint.getName() );
         return length;
     }
 
@@ -288,7 +284,7 @@ public class SchemaRuleSerialization35
 
     // READ CONSTRAINT
 
-    private static ConstraintRule readConstraintRule( long id, ByteBuffer source ) throws MalformedSchemaRuleException
+    private static ConstraintDescriptor readConstraintRule( long id, ByteBuffer source ) throws MalformedSchemaRuleException
     {
         SchemaDescriptor schema;
         byte constraintRuleType = source.get();
@@ -298,21 +294,21 @@ public class SchemaRuleSerialization35
         case EXISTS_CONSTRAINT:
             schema = readSchema( source );
             name = readRuleName( source ).orElse( null );
-            return ConstraintRule.constraintRule( id, ConstraintDescriptorFactory.existsForSchema( schema ), name );
+            return ConstraintDescriptorFactory.existsForSchema( schema ).withId( id ).withName( name );
 
         case UNIQUE_CONSTRAINT:
             long ownedUniqueIndex = source.getLong();
             schema = readSchema( source );
             UniquenessConstraintDescriptor descriptor = ConstraintDescriptorFactory.uniqueForSchema( schema );
             name = readRuleName( source ).orElse( null );
-            return ConstraintRule.constraintRule( id, descriptor, ownedUniqueIndex, name );
+            return descriptor.withId( id ).withOwnedIndexId( ownedUniqueIndex ).withName( name );
 
         case UNIQUE_EXISTS_CONSTRAINT:
             long ownedNodeKeyIndex = source.getLong();
             schema = readSchema( source );
             NodeKeyConstraintDescriptor nodeKeyConstraintDescriptor = ConstraintDescriptorFactory.nodeKeyForSchema( schema );
             name = readRuleName( source ).orElse( null );
-            return ConstraintRule.constraintRule( id, nodeKeyConstraintDescriptor, ownedNodeKeyIndex, name );
+            return nodeKeyConstraintDescriptor.withId( id ).withOwnedIndexId( ownedNodeKeyIndex ).withName( name );
 
         default:
             throw new MalformedSchemaRuleException( format( "Got unknown constraint rule type '%d'.", constraintRuleType ) );
@@ -440,35 +436,27 @@ public class SchemaRuleSerialization35
 
     // LENGTH OF
 
-    private static SchemaComputer<Integer> schemaSizeComputer = new SchemaComputer<>()
+    private static int computeSchemaSize( SchemaDescriptor schema )
     {
-        @Override
-        public Integer computeSpecific( LabelSchemaDescriptor schema )
+        if ( schema.isLabelSchemaDescriptor() )
         {
-            return     1 // schema descriptor type
+            return    1 // schema descriptor type
                     + 4 // label id
                     + 2 // property id count
                     + 4 * schema.getPropertyIds().length; // the actual property ids
         }
-
-        @Override
-        public Integer computeSpecific( RelationTypeSchemaDescriptor schema )
+        if ( schema.isRelationshipTypeSchemaDescriptor() )
         {
             return    1 // schema descriptor type
                     + 4 // rel type id
                     + 2 // property id count
                     + 4 * schema.getPropertyIds().length; // the actual property ids
         }
-
-        @Override
-        public Integer computeSpecific( SchemaDescriptor schema )
-        {
-            return    1 // schema descriptor type
-                    + 1 // entity token type
-                    + 2 // entity token count
-                    + 4 * schema.getEntityTokenIds().length // the actual property ids
-                    + 2 // property id count
-                    + 4 * schema.getPropertyIds().length; // the actual property ids
-        }
-    };
+        return    1 // schema descriptor type
+                + 1 // entity token type
+                + 2 // entity token count
+                + 4 * schema.getEntityTokenIds().length // the actual property ids
+                + 2 // property id count
+                + 4 * schema.getPropertyIds().length; // the actual property ids
+    }
 }

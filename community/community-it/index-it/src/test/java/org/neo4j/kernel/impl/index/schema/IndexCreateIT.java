@@ -21,8 +21,6 @@ package org.neo4j.kernel.impl.index.schema;
 
 import org.junit.jupiter.api.Test;
 
-import java.util.Optional;
-
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.internal.kernel.api.SchemaWrite;
@@ -36,8 +34,7 @@ import static org.neo4j.internal.schema.SchemaDescriptor.forLabel;
 
 public class IndexCreateIT extends KernelIntegrationTest
 {
-    private static final IndexCreator INDEX_CREATOR =
-            ( schemaWrite, descriptor, providerName ) -> schemaWrite.indexCreate( descriptor, providerName, Optional.empty() );
+    private static final IndexCreator INDEX_CREATOR = SchemaWrite::indexCreate;
     private static final IndexCreator UNIQUE_CONSTRAINT_CREATOR = SchemaWrite::uniquePropertyConstraintCreate;
 
     @Test
@@ -71,7 +68,7 @@ public class IndexCreateIT extends KernelIntegrationTest
 
         // when
         assertThrows( IndexProviderNotFoundException.class,
-            () -> creator.create( schemaWrite, forLabel( 0, 0 ), "something-completely-different" ) );
+            () -> creator.create( schemaWrite, forLabel( 0, 0 ), "something-completely-different", "index name" ) );
     }
 
     protected void shouldCreateWithSpecificExistingProviderName( IndexCreator creator ) throws KernelException
@@ -83,7 +80,7 @@ public class IndexCreateIT extends KernelIntegrationTest
             SchemaWrite schemaWrite = schemaWriteInNewTransaction();
             String provider = indexSetting.providerName();
             LabelSchemaDescriptor descriptor = forLabel( labelId++, 0 );
-            creator.create( schemaWrite, descriptor, provider );
+            creator.create( schemaWrite, descriptor, provider, "index-" + labelId );
 
             // when
             commit();
@@ -95,6 +92,6 @@ public class IndexCreateIT extends KernelIntegrationTest
 
     protected interface IndexCreator
     {
-        void create( SchemaWrite schemaWrite, LabelSchemaDescriptor descriptor, String providerName ) throws KernelException;
+        void create( SchemaWrite schemaWrite, LabelSchemaDescriptor descriptor, String providerName, String indexName ) throws KernelException;
     }
 }

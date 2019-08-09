@@ -73,6 +73,7 @@ import org.neo4j.internal.kernel.api.TokenRead;
 import org.neo4j.internal.kernel.api.TokenWrite;
 import org.neo4j.internal.recordstorage.SchemaRuleAccess;
 import org.neo4j.internal.recordstorage.StoreTokens;
+import org.neo4j.internal.schema.ConstraintDescriptor;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexProviderDescriptor;
 import org.neo4j.internal.schema.SchemaRule;
@@ -109,7 +110,6 @@ import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
 import org.neo4j.kernel.impl.store.record.SchemaRecord;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.logging.FormattedLog;
-import org.neo4j.storageengine.api.ConstraintRule;
 import org.neo4j.storageengine.api.EntityUpdates;
 import org.neo4j.storageengine.api.IndexEntryUpdate;
 import org.neo4j.storageengine.api.NodeLabelUpdate;
@@ -1099,7 +1099,7 @@ public class FullCheckIntegrationTest
                 SchemaRecord after2 = cloneRecord( before2 ).initialize( true, 0 );
 
                 IndexDescriptor rule1 = constraintIndexRule( ruleId1, labelId, propertyKeyId, DESCRIPTOR, ruleId2 );
-                ConstraintRule rule2 = uniquenessConstraintRule( ruleId2, labelId, propertyKeyId, ruleId2 );
+                ConstraintDescriptor rule2 = uniquenessConstraintRule( ruleId2, labelId, propertyKeyId, ruleId2 );
 
                 serializeRule( rule1, after1, tx, next );
                 serializeRule( rule2, after2, tx, next );
@@ -2407,8 +2407,7 @@ public class FullCheckIntegrationTest
 
         IndexDescriptor indexRule =
                 uniqueForSchema( forLabel( labelId, propertyKeyIds ), DESCRIPTOR ).materialise( ruleId1 ).withOwningConstraintId( ruleId2 );
-        ConstraintRule uniqueRule = ConstraintRule.constraintRule( ruleId2,
-                ConstraintDescriptorFactory.uniqueForLabel( labelId, propertyKeyIds ), ruleId1 );
+        ConstraintDescriptor uniqueRule = ConstraintDescriptorFactory.uniqueForLabel( labelId, propertyKeyIds ).withId( ruleId2 ).withOwnedIndexId( ruleId1 );
 
         writeToSchemaStore( schemaStore, indexRule );
         writeToSchemaStore( schemaStore, uniqueRule );
@@ -2423,8 +2422,7 @@ public class FullCheckIntegrationTest
 
         IndexDescriptor indexRule =
                 uniqueForSchema( forLabel( labelId, propertyKeyIds ), DESCRIPTOR ).materialise( ruleId1 ).withOwningConstraintId( ruleId2 );
-        ConstraintRule nodeKeyRule = ConstraintRule.constraintRule( ruleId2,
-                ConstraintDescriptorFactory.nodeKeyForLabel( labelId, propertyKeyIds ), ruleId1 );
+        ConstraintDescriptor nodeKeyRule = ConstraintDescriptorFactory.nodeKeyForLabel( labelId, propertyKeyIds ).withId( ruleId2 ).withOwnedIndexId( ruleId1 );
 
         writeToSchemaStore( schemaStore, indexRule );
         writeToSchemaStore( schemaStore, nodeKeyRule );
@@ -2433,14 +2431,14 @@ public class FullCheckIntegrationTest
     private void createNodePropertyExistenceConstraint( int labelId, int propertyKeyId ) throws KernelException
     {
         SchemaStore schemaStore = fixture.directStoreAccess().nativeStores().getSchemaStore();
-        ConstraintRule rule = nodePropertyExistenceConstraintRule( schemaStore.nextId(), labelId, propertyKeyId );
+        ConstraintDescriptor rule = nodePropertyExistenceConstraintRule( schemaStore.nextId(), labelId, propertyKeyId );
         writeToSchemaStore( schemaStore, rule );
     }
 
     private void createRelationshipPropertyExistenceConstraint( int relTypeId, int propertyKeyId ) throws KernelException
     {
         SchemaStore schemaStore = fixture.directStoreAccess().nativeStores().getSchemaStore();
-        ConstraintRule rule = relPropertyExistenceConstraintRule( schemaStore.nextId(), relTypeId, propertyKeyId );
+        ConstraintDescriptor rule = relPropertyExistenceConstraintRule( schemaStore.nextId(), relTypeId, propertyKeyId );
         writeToSchemaStore( schemaStore, rule );
     }
 

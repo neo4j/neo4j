@@ -113,6 +113,12 @@ public class RecordStorageReader implements StorageReader
     }
 
     @Override
+    public ConstraintDescriptor constraintGetForName( String name )
+    {
+        return schemaCache.constraintForName( name );
+    }
+
+    @Override
     public Iterator<IndexDescriptor> indexesGetAll()
     {
         return schemaCache.indexDescriptors().iterator();

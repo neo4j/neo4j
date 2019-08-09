@@ -27,17 +27,18 @@ import org.neo4j.consistency.report.ConsistencyReport;
 import org.neo4j.consistency.store.RecordAccess;
 import org.neo4j.internal.kernel.api.exceptions.schema.MalformedSchemaRuleException;
 import org.neo4j.internal.recordstorage.SchemaRuleAccess;
+import org.neo4j.internal.schema.ConstraintDescriptor;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.LabelSchemaDescriptor;
 import org.neo4j.internal.schema.RelationTypeSchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.internal.schema.SchemaProcessor;
 import org.neo4j.internal.schema.SchemaRule;
+import org.neo4j.internal.schema.constraints.IndexBackedConstraintDescriptor;
 import org.neo4j.kernel.impl.store.record.LabelTokenRecord;
 import org.neo4j.kernel.impl.store.record.PropertyKeyTokenRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
 import org.neo4j.kernel.impl.store.record.SchemaRecord;
-import org.neo4j.storageengine.api.ConstraintRule;
 
 /**
  * Note that this class builds up an in-memory representation of the complete schema store by being used in
@@ -115,9 +116,9 @@ public class SchemaRecordCheck implements RecordCheck<SchemaRecord, ConsistencyR
             {
                 strategy.checkIndexRule( (IndexDescriptor)rule, record, records, engine );
             }
-            else if ( rule instanceof ConstraintRule )
+            else if ( rule instanceof ConstraintDescriptor )
             {
-                strategy.checkConstraintRule( (ConstraintRule) rule, record, records, engine );
+                strategy.checkConstraintRule( (ConstraintDescriptor) rule, record, records, engine );
             }
             else
             {
@@ -131,7 +132,7 @@ public class SchemaRecordCheck implements RecordCheck<SchemaRecord, ConsistencyR
         void checkIndexRule( IndexDescriptor rule, SchemaRecord record, RecordAccess records,
                              CheckerEngine<SchemaRecord,ConsistencyReport.SchemaConsistencyReport> engine );
 
-        void checkConstraintRule( ConstraintRule rule, SchemaRecord record,
+        void checkConstraintRule( ConstraintDescriptor rule, SchemaRecord record,
                 RecordAccess records, CheckerEngine<SchemaRecord,ConsistencyReport.SchemaConsistencyReport> engine );
 
         void reportMalformedSchemaRule( ConsistencyReport.SchemaConsistencyReport report );
@@ -160,14 +161,15 @@ public class SchemaRecordCheck implements RecordCheck<SchemaRecord, ConsistencyR
         }
 
         @Override
-        public void checkConstraintRule( ConstraintRule constraint, SchemaRecord record,
+        public void checkConstraintRule( ConstraintDescriptor constraint, SchemaRecord record,
                 RecordAccess records, CheckerEngine<SchemaRecord,ConsistencyReport.SchemaConsistencyReport> engine )
         {
             checkSchema( constraint, record, records, engine );
 
-            if ( constraint.getConstraintDescriptor().enforcesUniqueness() )
+            if ( constraint.isIndexBackedConstraint() )
             {
-                SchemaRecord previousObligation = indexObligations.put( constraint.ownedIndexReference(), cloneRecord( record ) );
+                IndexBackedConstraintDescriptor indexBacked = constraint.asIndexBackedConstraint();
+                SchemaRecord previousObligation = indexObligations.put( indexBacked.ownedIndexId(), cloneRecord( record ) );
                 if ( previousObligation != null )
                 {
                     engine.report().duplicateObligation( previousObligation );
@@ -217,10 +219,10 @@ public class SchemaRecordCheck implements RecordCheck<SchemaRecord, ConsistencyR
         }
 
         @Override
-        public void checkConstraintRule( ConstraintRule constraint, SchemaRecord record,
+        public void checkConstraintRule( ConstraintDescriptor constraint, SchemaRecord record,
                 RecordAccess records, CheckerEngine<SchemaRecord,ConsistencyReport.SchemaConsistencyReport> engine )
         {
-            if ( constraint.getConstraintDescriptor().enforcesUniqueness() )
+            if ( constraint.isIndexBackedConstraint() )
             {
                 SchemaRecord obligation = constraintObligations.get( constraint.getId() );
                 if ( obligation == null )
@@ -229,7 +231,7 @@ public class SchemaRecordCheck implements RecordCheck<SchemaRecord, ConsistencyR
                 }
                 else
                 {
-                    if ( obligation.getId() != constraint.ownedIndexReference() )
+                    if ( obligation.getId() != constraint.asIndexBackedConstraint().ownedIndexId() )
                     {
                         engine.report().uniquenessConstraintNotReferencingBack( obligation );
                     }

@@ -25,7 +25,6 @@ import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Objects;
-import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import java.util.function.Supplier;
@@ -64,10 +63,6 @@ import org.neo4j.internal.schema.LabelSchemaDescriptor;
 import org.neo4j.internal.schema.RelationTypeSchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.internal.schema.constraints.ConstraintDescriptorFactory;
-import org.neo4j.internal.schema.constraints.NodeExistenceConstraintDescriptor;
-import org.neo4j.internal.schema.constraints.NodeKeyConstraintDescriptor;
-import org.neo4j.internal.schema.constraints.RelExistenceConstraintDescriptor;
-import org.neo4j.internal.schema.constraints.UniquenessConstraintDescriptor;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.SilentTokenNameLookup;
 import org.neo4j.kernel.api.Statement;
@@ -248,6 +243,32 @@ public class SchemaImpl implements Schema
     }
 
     @Override
+    public ConstraintDefinition getConstraintByName( String constraintName )
+    {
+        Objects.requireNonNull( constraintName );
+        Iterator<ConstraintDefinition> constraints = getConstraints().iterator();
+        ConstraintDefinition constraint = null;
+        while ( constraints.hasNext() )
+        {
+            ConstraintDefinition candidate = constraints.next();
+            if ( candidate.getName().equals( constraintName ) )
+            {
+                if ( constraint != null )
+                {
+                    throw new IllegalStateException( "Multiple constraints found by the name '" + constraintName + "'. " +
+                            "Try iterating Schema#getIndexes() and filter by name instead." );
+                }
+                constraint = candidate;
+            }
+        }
+        if ( constraint == null )
+        {
+            throw new IllegalArgumentException( "No constraint found with the name '" + constraintName + "'." );
+        }
+        return constraint;
+    }
+
+    @Override
     public IndexDefinition getIndexByName( String indexName )
     {
         Objects.requireNonNull( indexName );
@@ -343,7 +364,14 @@ public class SchemaImpl implements Schema
     public ConstraintCreator constraintFor( Label label )
     {
         actions.assertInOpenTransaction();
-        return new BaseNodeConstraintCreator( actions, label );
+        return new BaseNodeConstraintCreator( actions, null, label );
+    }
+
+    @Override
+    public ConstraintCreator constraintFor( RelationshipType type )
+    {
+        actions.assertInOpenTransaction();
+        return new BaseRelationshipConstraintCreator( actions, null, type );
     }
 
     @Override
@@ -482,18 +510,18 @@ public class SchemaImpl implements Schema
         return definitions;
     }
 
-    private ConstraintDefinition asConstraintDefinition( ConstraintDescriptor constraint,
-            TokenRead tokenRead )
+    private ConstraintDefinition asConstraintDefinition( ConstraintDescriptor constraint, TokenRead tokenRead )
     {
         // This was turned inside out. Previously a low-level constraint object would reference a public enum type
         // which made it impossible to break out the low-level component from kernel. There could be a lower level
         // constraint type introduced to mimic the public ConstraintType, but that would be a duplicate of it
-        // essentially. Checking instanceof here is OKish since the objects it checks here are part of the
+        // essentially. Checking instanceof here is OK-ish since the objects it checks here are part of the
         // internal storage engine API.
         SilentTokenNameLookup lookup = new SilentTokenNameLookup( tokenRead );
-        if ( constraint instanceof NodeExistenceConstraintDescriptor ||
-             constraint instanceof NodeKeyConstraintDescriptor ||
-             constraint instanceof UniquenessConstraintDescriptor )
+        String name = constraint.getName();
+        if ( constraint.isNodePropertyExistenceConstraint() ||
+             constraint.isNodeKeyConstraint() ||
+             constraint.isUniquenessConstraint() )
         {
             SchemaDescriptor schemaDescriptor = constraint.schema();
             int[] entityTokenIds = schemaDescriptor.getEntityTokenIds();
@@ -503,23 +531,23 @@ public class SchemaImpl implements Schema
                 labels[i] = label( lookup.labelGetName( entityTokenIds[i] ) );
             }
             String[] propertyKeys = Arrays.stream( schemaDescriptor.getPropertyIds() ).mapToObj( lookup::propertyKeyGetName ).toArray( String[]::new );
-            if ( constraint instanceof NodeExistenceConstraintDescriptor )
+            if ( constraint.isNodePropertyExistenceConstraint() )
             {
-                return new NodePropertyExistenceConstraintDefinition( actions, labels[0], propertyKeys );
+                return new NodePropertyExistenceConstraintDefinition( actions, name, labels[0], propertyKeys );
             }
-            else if ( constraint instanceof UniquenessConstraintDescriptor )
+            else if ( constraint.isUniquenessConstraint() )
             {
-                return new UniquenessConstraintDefinition( actions, new IndexDefinitionImpl( actions, null, labels, propertyKeys, true ) );
+                return new UniquenessConstraintDefinition( actions, name, new IndexDefinitionImpl( actions, null, labels, propertyKeys, true ) );
             }
             else
             {
-                return new NodeKeyConstraintDefinition( actions, new IndexDefinitionImpl( actions, null, labels, propertyKeys, true ) );
+                return new NodeKeyConstraintDefinition( actions, name, new IndexDefinitionImpl( actions, null, labels, propertyKeys, true ) );
             }
         }
-        else if ( constraint instanceof RelExistenceConstraintDescriptor )
+        else if ( constraint.isRelationshipPropertyExistenceConstraint() )
         {
-            RelationTypeSchemaDescriptor descriptor = (RelationTypeSchemaDescriptor) constraint.schema();
-            return new RelationshipPropertyExistenceConstraintDefinition( actions,
+            RelationTypeSchemaDescriptor descriptor = constraint.schema().asRelationshipTypeSchemaDescriptor();
+            return new RelationshipPropertyExistenceConstraintDefinition( actions, name,
                     withName( lookup.relationshipTypeGetName( descriptor.getRelTypeId() ) ),
                     lookup.propertyKeyGetName( descriptor.getPropertyId() ) );
         }
@@ -547,7 +575,7 @@ public class SchemaImpl implements Schema
         }
 
         @Override
-        public IndexDefinition createIndexDefinition( Label label, Optional<String> indexName, String... propertyKeys )
+        public IndexDefinition createIndexDefinition( Label label, String indexName, String... propertyKeys )
         {
             KernelTransaction transaction = safeAcquireTransaction( transactionSupplier );
 
@@ -606,7 +634,7 @@ public class SchemaImpl implements Schema
         }
 
         @Override
-        public ConstraintDefinition createPropertyUniquenessConstraint( IndexDefinition indexDefinition )
+        public ConstraintDefinition createPropertyUniquenessConstraint( IndexDefinition indexDefinition, String name )
         {
             if ( indexDefinition.isMultiTokenIndex() )
             {
@@ -622,9 +650,9 @@ public class SchemaImpl implements Schema
                     TokenWrite tokenWrite = transaction.tokenWrite();
                     int labelId = tokenWrite.labelGetOrCreateForName( single( indexDefinition.getLabels() ).name() );
                     int[] propertyKeyIds = getOrCreatePropertyKeyIds( tokenWrite, indexDefinition );
-                    transaction.schemaWrite().uniquePropertyConstraintCreate(
-                            forLabel( labelId, propertyKeyIds ) );
-                    return new UniquenessConstraintDefinition( this, indexDefinition );
+                    LabelSchemaDescriptor schema = forLabel( labelId, propertyKeyIds );
+                    ConstraintDescriptor constraint = transaction.schemaWrite().uniquePropertyConstraintCreate( schema, name );
+                    return new UniquenessConstraintDefinition( this, constraint.getName(), indexDefinition );
                 }
                 catch ( AlreadyConstrainedException | CreateConstraintFailureException | AlreadyIndexedException |
                         RepeatedPropertyInCompositeSchemaException e )
@@ -652,7 +680,7 @@ public class SchemaImpl implements Schema
         }
 
         @Override
-        public ConstraintDefinition createNodeKeyConstraint( IndexDefinition indexDefinition )
+        public ConstraintDefinition createNodeKeyConstraint( IndexDefinition indexDefinition, String name )
         {
             if ( indexDefinition.isMultiTokenIndex() )
             {
@@ -668,9 +696,9 @@ public class SchemaImpl implements Schema
                     TokenWrite tokenWrite = transaction.tokenWrite();
                     int labelId = tokenWrite.labelGetOrCreateForName( single( indexDefinition.getLabels() ).name() );
                     int[] propertyKeyIds = getOrCreatePropertyKeyIds( tokenWrite, indexDefinition );
-                    transaction.schemaWrite().nodeKeyConstraintCreate(
-                            forLabel( labelId, propertyKeyIds ) );
-                    return new NodeKeyConstraintDefinition( this, indexDefinition );
+                    LabelSchemaDescriptor schema = forLabel( labelId, propertyKeyIds );
+                    ConstraintDescriptor constraint = transaction.schemaWrite().nodeKeyConstraintCreate( schema, name );
+                    return new NodeKeyConstraintDefinition( this, constraint.getName(), indexDefinition );
                 }
                 catch ( AlreadyConstrainedException | CreateConstraintFailureException | AlreadyIndexedException |
                         RepeatedPropertyInCompositeSchemaException e )
@@ -698,7 +726,7 @@ public class SchemaImpl implements Schema
         }
 
         @Override
-        public ConstraintDefinition createPropertyExistenceConstraint( Label label, String... propertyKeys )
+        public ConstraintDefinition createPropertyExistenceConstraint( String name, Label label, String... propertyKeys )
         {
             KernelTransaction transaction = safeAcquireTransaction( transactionSupplier );
             try ( Statement ignore = transaction.acquireStatement() )
@@ -708,9 +736,9 @@ public class SchemaImpl implements Schema
                     TokenWrite tokenWrite = transaction.tokenWrite();
                     int labelId = tokenWrite.labelGetOrCreateForName( label.name() );
                     int[] propertyKeyIds = getOrCreatePropertyKeyIds( tokenWrite, propertyKeys );
-                    transaction.schemaWrite().nodePropertyExistenceConstraintCreate(
-                            forLabel( labelId, propertyKeyIds ) );
-                    return new NodePropertyExistenceConstraintDefinition( this, label, propertyKeys );
+                    LabelSchemaDescriptor schema = forLabel( labelId, propertyKeyIds );
+                    ConstraintDescriptor constraint = transaction.schemaWrite().nodePropertyExistenceConstraintCreate( schema, name );
+                    return new NodePropertyExistenceConstraintDefinition( this, constraint.getName(), label, propertyKeys );
                 }
                 catch ( AlreadyConstrainedException | CreateConstraintFailureException |
                         RepeatedPropertyInCompositeSchemaException e )
@@ -738,7 +766,7 @@ public class SchemaImpl implements Schema
         }
 
         @Override
-        public ConstraintDefinition createPropertyExistenceConstraint( RelationshipType type, String propertyKey )
+        public ConstraintDefinition createPropertyExistenceConstraint( String name, RelationshipType type, String propertyKey )
         {
             KernelTransaction transaction = safeAcquireTransaction( transactionSupplier );
             try ( Statement ignore = transaction.acquireStatement() )
@@ -748,9 +776,9 @@ public class SchemaImpl implements Schema
                     TokenWrite tokenWrite = transaction.tokenWrite();
                     int typeId = tokenWrite.relationshipTypeGetOrCreateForName( type.name() );
                     int[] propertyKeyId = getOrCreatePropertyKeyIds( tokenWrite, propertyKey );
-                    transaction.schemaWrite().relationshipPropertyExistenceConstraintCreate(
-                            forRelType( typeId, propertyKeyId ) );
-                    return new RelationshipPropertyExistenceConstraintDefinition( this, type, propertyKey );
+                    RelationTypeSchemaDescriptor schema = forRelType( typeId, propertyKeyId );
+                    ConstraintDescriptor constraint = transaction.schemaWrite().relationshipPropertyExistenceConstraintCreate( schema, name );
+                    return new RelationshipPropertyExistenceConstraintDefinition( this, constraint.getName(), type, propertyKey );
                 }
                 catch ( AlreadyConstrainedException | CreateConstraintFailureException |
                         RepeatedPropertyInCompositeSchemaException e )

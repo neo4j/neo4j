@@ -19,46 +19,42 @@
  */
 package org.neo4j.kernel.impl.coreapi.schema;
 
-import java.util.List;
-
-import org.neo4j.graphdb.Label;
+import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.schema.ConstraintCreator;
 
-public class BaseNodeConstraintCreator extends AbstractConstraintCreator implements ConstraintCreator
+public class BaseRelationshipConstraintCreator extends AbstractConstraintCreator implements ConstraintCreator
 {
-    protected final String name;
-    protected final Label label;
+    final String name;
+    final RelationshipType type;
 
-    public BaseNodeConstraintCreator( InternalSchemaActions actions, String name, Label label )
+    BaseRelationshipConstraintCreator( InternalSchemaActions actions, String name, RelationshipType type )
     {
         super( actions );
         this.name = name;
-        this.label = label;
-
-        assertInUnterminatedTransaction();
+        this.type = type;
     }
 
     @Override
     public ConstraintCreator assertPropertyIsUnique( String propertyKey )
     {
-        return new NodePropertyUniqueConstraintCreator( actions, name, label, List.of( propertyKey ) );
+        throw new UnsupportedOperationException( "Uniqueness constraints are not supported on relationships." );
     }
 
     @Override
     public ConstraintCreator assertPropertyExists( String propertyKey )
     {
-        return new NodePropertyExistenceConstraintCreator( actions, name, label, List.of( propertyKey ) );
+        return new RelationshipPropertyExistenceCreator( actions, name, type, propertyKey );
     }
 
     @Override
     public ConstraintCreator assertPropertyIsNodeKey( String propertyKey )
     {
-        return new NodeKeyConstraintCreator( actions, name, label, List.of( propertyKey ) );
+        throw new UnsupportedOperationException( "Node key constraints are not supported on relationships." );
     }
 
     @Override
     public ConstraintCreator withName( String name )
     {
-        return new BaseNodeConstraintCreator( actions, name, label );
+        return new BaseRelationshipConstraintCreator( actions, name, type );
     }
 }

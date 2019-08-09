@@ -193,7 +193,7 @@ public class FulltextIndexProviderTest
         {
             SchemaDescriptor schema = SchemaDescriptor.fulltext( EntityType.RELATIONSHIP, IndexConfig.empty(), new int[]{labelIdHej, labelIdHa, labelIdHe},
                     new int[]{propIdHej, propIdHa, propIdHe, propIdHo} );
-            indexReference = transaction.schemaWrite().indexCreate( schema, DESCRIPTOR.name(), Optional.of( "fulltext" ) );
+            indexReference = transaction.schemaWrite().indexCreate( schema, DESCRIPTOR.name(), "fulltext" );
             transaction.success();
         }
         await( indexReference );
@@ -223,7 +223,7 @@ public class FulltextIndexProviderTest
         {
             SchemaDescriptor schema = SchemaDescriptor.fulltext( EntityType.RELATIONSHIP, IndexConfig.empty(), new int[]{labelIdHej, labelIdHa, labelIdHe},
                     new int[]{propIdHej, propIdHa, propIdHe, propIdHo} );
-            indexReference = transaction.schemaWrite().indexCreate( schema, DESCRIPTOR.name(), Optional.of( "fulltext" ) );
+            indexReference = transaction.schemaWrite().indexCreate( schema, DESCRIPTOR.name(), "fulltext" );
             transaction.success();
         }
         await( indexReference );
@@ -492,7 +492,7 @@ public class FulltextIndexProviderTest
         try ( KernelTransactionImplementation transaction = getKernelTransaction() )
         {
             SchemaDescriptor schema = SchemaDescriptor.fulltext( EntityType.NODE, IndexConfig.empty(), entityTokens, propertyIds );
-            fulltext = transaction.schemaWrite().indexCreate( schema, DESCRIPTOR.name(), Optional.of( NAME ) );
+            fulltext = transaction.schemaWrite().indexCreate( schema, DESCRIPTOR.name(), NAME );
             transaction.success();
         }
         return fulltext;

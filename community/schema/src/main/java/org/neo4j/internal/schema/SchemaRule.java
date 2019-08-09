@@ -19,6 +19,11 @@
  */
 package org.neo4j.internal.schema;
 
+import java.util.Arrays;
+import java.util.stream.Collectors;
+
+import org.neo4j.common.EntityType;
+
 import static org.apache.commons.lang3.StringUtils.isBlank;
 
 /**
@@ -66,6 +71,73 @@ public interface SchemaRule extends SchemaDescriptorSupplier
                     "The reserved names are " + ReservedSchemaRuleNames.getReservedNames() + "." );
         }
         return name;
+    }
+
+    /**
+     * Generate a human friendly name for the given {@link IndexPrototype}, using the supplied arrays of resolved schema token names.
+     * @param prototype The {@link IndexPrototype} to generate a name for.
+     * @param entityTokenNames The resolved names of the schema entity tokens, that is, label names or relationship type names.
+     * @param propertyNames The resolved property key names.
+     * @return A suitable name.
+     */
+    static String generateName( IndexPrototype prototype, String[] entityTokenNames, String[] propertyNames )
+    {
+        SchemaDescriptor schema = prototype.schema();
+        String indexType = schema.getIndexType() == IndexType.FULLTEXT ? "Full-Text Index" : prototype.isUnique() ? "Unique Index" : "Index";
+        String entityPart = generateEntityNamePart( schema, entityTokenNames );
+        return indexType + " on " + entityPart + " (" + String.join( ",", propertyNames ) + ")";
+    }
+
+    /**
+     * Generate a human friendly name for the given {@link ConstraintDescriptor}, using the supplied arrays of resolved schema token names.
+     * @param constraint The {@link ConstraintDescriptor} to generate a name for.
+     * @param entityTokenNames The resolved names of the schema entity tokens, that is, label names or relationship type names.
+     * @param propertyNames The resolved property key names.
+     * @return A suitable name.
+     */
+    static String generateName( ConstraintDescriptor constraint, String[] entityTokenNames, String[] propertyNames )
+    {
+        SchemaDescriptor schema = constraint.schema();
+        String constraintType;
+        switch ( constraint.type() )
+        {
+        case EXISTS:
+            constraintType = "Property existence constraint";
+            break;
+        case UNIQUE:
+            constraintType = "Uniqueness constraint";
+            break;
+        case UNIQUE_EXISTS:
+            if ( schema.entityType() != EntityType.NODE )
+            {
+                throw new IllegalArgumentException(
+                        "Cannot describe " + ConstraintType.UNIQUE_EXISTS + " constraints for " + schema.entityType() + " entities." );
+            }
+            constraintType = "Node key constraint";
+            break;
+        default:
+            throw new IllegalArgumentException( "Unknown ConstraintType: " + constraint.type() );
+        }
+
+        String entityPart = generateEntityNamePart( schema, entityTokenNames );
+        return constraintType + " on " + entityPart + " (" + String.join( ",", propertyNames ) + ")";
+    }
+
+    private static String generateEntityNamePart( SchemaDescriptor schema, String[] entityTokenNames )
+    {
+        String entityPart;
+        switch ( schema.entityType() )
+        {
+        case NODE:
+            entityPart = Arrays.stream( entityTokenNames ).collect( Collectors.joining( ",:", ":", "" ) );
+            break;
+        case RELATIONSHIP:
+            entityPart = Arrays.stream( entityTokenNames ).collect( Collectors.joining( "|:", "()-[:", "]-()" ) );
+            break;
+        default:
+            throw new IllegalArgumentException( "Unknown EntityType: " + schema.entityType() + "." );
+        }
+        return entityPart;
     }
 
     /**

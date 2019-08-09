@@ -117,7 +117,7 @@ class BuiltInProceduresIT extends KernelIntegrationTest
             SchemaWrite schemaWrite = schemaWriteInNewTransaction();
             try ( Resource ignore = captureTransaction() )
             {
-                schemaWrite.uniquePropertyConstraintCreate( SchemaDescriptor.forLabel( labelId, propKey ) );
+                schemaWrite.uniquePropertyConstraintCreate( SchemaDescriptor.forLabel( labelId, propKey ), "constraint name" );
                 // We now hold a schema lock on the "MyLabel" label. Let the procedure calling transaction have a go.
                 constraintLatch.countDown();
                 commitLatch.await();
@@ -320,7 +320,7 @@ class BuiltInProceduresIT extends KernelIntegrationTest
         LabelSchemaDescriptor ageFooDescriptor = forLabel( labelId2, propertyKeyId1 );
         LabelSchemaDescriptor personFooBarDescriptor = forLabel( labelId1, propertyKeyId1, propertyKeyId2 );
         transaction.schemaWrite().indexCreate( personFooDescriptor );
-        transaction.schemaWrite().uniquePropertyConstraintCreate( ageFooDescriptor );
+        transaction.schemaWrite().uniquePropertyConstraintCreate( ageFooDescriptor, "constraint name" );
         transaction.schemaWrite().indexCreate( personFooBarDescriptor );
         commit();
 
@@ -391,7 +391,7 @@ class BuiltInProceduresIT extends KernelIntegrationTest
         LabelSchemaDescriptor personFooBarDescriptor = forLabel( labelId1, propertyKeyId1, propertyKeyId2 );
         LabelSchemaDescriptor personBazDescriptor = forLabel( labelId1, propertyKeyId3 );
         transaction.schemaWrite().indexCreate( personFooDescriptor );
-        transaction.schemaWrite().uniquePropertyConstraintCreate( ageFooDescriptor );
+        transaction.schemaWrite().uniquePropertyConstraintCreate( ageFooDescriptor, "age foo constraint" );
         transaction.schemaWrite().indexCreate( personFooBarDescriptor );
         commit();
 
@@ -415,7 +415,7 @@ class BuiltInProceduresIT extends KernelIntegrationTest
             SchemaWrite schemaWrite = schemaWriteInNewTransaction();
             try ( Resource ignore = captureTransaction() )
             {
-                schemaWrite.uniquePropertyConstraintCreate( forLabel( labelId1, propertyKeyId3 ) );
+                schemaWrite.uniquePropertyConstraintCreate( forLabel( labelId1, propertyKeyId3 ), "person baz constraint" );
                 // We now hold a schema lock on the "MyLabel" label. Let the procedure calling transaction have a go.
                 constraintLatch.countDown();
                 commitLatch.await();

@@ -49,7 +49,6 @@ import org.neo4j.monitoring.DatabaseEventListeners;
 import org.neo4j.monitoring.DatabaseHealth;
 import org.neo4j.monitoring.DatabasePanicEventGenerator;
 import org.neo4j.monitoring.Health;
-import org.neo4j.storageengine.api.ConstraintRule;
 import org.neo4j.storageengine.api.ConstraintRuleAccessor;
 import org.neo4j.storageengine.api.IndexUpdateListener;
 import org.neo4j.storageengine.api.NodeLabelUpdateListener;
@@ -126,25 +125,25 @@ public class RecordStorageEngineRule extends ExternalResource
         private ConstraintRuleAccessor constraintSemantics = new ConstraintRuleAccessor()
         {
             @Override
-            public ConstraintDescriptor readConstraint( ConstraintRule rule )
+            public ConstraintDescriptor readConstraint( ConstraintDescriptor rule )
             {
-                return rule.getConstraintDescriptor();
+                return rule;
             }
 
             @Override
-            public ConstraintRule createUniquenessConstraintRule( long ruleId, UniquenessConstraintDescriptor descriptor, long indexId )
+            public ConstraintDescriptor createUniquenessConstraintRule( long ruleId, UniquenessConstraintDescriptor descriptor, long indexId )
             {
-                return ConstraintRule.constraintRule( ruleId, descriptor, indexId );
+                return descriptor.withId( ruleId ).withOwnedIndexId( indexId );
             }
 
             @Override
-            public ConstraintRule createNodeKeyConstraintRule( long ruleId, NodeKeyConstraintDescriptor descriptor, long indexId )
+            public ConstraintDescriptor createNodeKeyConstraintRule( long ruleId, NodeKeyConstraintDescriptor descriptor, long indexId )
             {
                 throw new UnsupportedOperationException( "Not needed a.t.m." );
             }
 
             @Override
-            public ConstraintRule createExistenceConstraint( long ruleId, ConstraintDescriptor descriptor )
+            public ConstraintDescriptor createExistenceConstraint( long ruleId, ConstraintDescriptor descriptor )
             {
                 throw new UnsupportedOperationException( "Not needed a.t.m." );
             }
