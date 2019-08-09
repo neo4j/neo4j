@@ -62,7 +62,7 @@ class extractPredicatesTest extends CypherFunSuite with AstConstructionTestSuppo
     solvedPredicates shouldBe List(rewrittenPredicate)
   }
 
-  test("p = (n)-[x*]->(o) WHERE NONE(r in rels(p) WHERE r.prop < 4) AND ALL(m in nodes(p) WHERE exists(m.prop))") {
+  test("p = (n)-[x*]->(o) WHERE NONE(r in relationships(p) WHERE r.prop < 4) AND ALL(m in nodes(p) WHERE exists(m.prop))") {
 
     val rewrittenRelPredicate = NoneIterablePredicate(
       FilterScope(varFor("r"), Some(propLessThan("r", "prop", 4)))(pos),
@@ -127,7 +127,7 @@ class extractPredicatesTest extends CypherFunSuite with AstConstructionTestSuppo
     solvedPredicates shouldBe empty
   }
 
-  test("p = (n)-[r*1]->() WHERE ALL (x IN rels(p) WHERE length(p) = 1)") {
+  test("p = (n)-[r*1]->() WHERE ALL (x IN relationships(p) WHERE length(p) = 1)") {
     val pathExpression = PathExpression(
       NodePathStep(
         varFor("n"),
@@ -163,7 +163,7 @@ class extractPredicatesTest extends CypherFunSuite with AstConstructionTestSuppo
     solvedPredicates shouldBe empty
   }
 
-  test("p = (n)-[r*1]->(m) WHERE NONE (x IN rels(p) WHERE length(p) = 1)") {
+  test("p = (n)-[r*1]->(m) WHERE NONE (x IN relationships(p) WHERE length(p) = 1)") {
     val pathExpression = PathExpression(
       NodePathStep(
         varFor("n"),

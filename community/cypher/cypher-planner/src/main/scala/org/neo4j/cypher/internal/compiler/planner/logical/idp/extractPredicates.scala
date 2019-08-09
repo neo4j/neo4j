@@ -67,14 +67,14 @@ object extractPredicates {
         val rewrittenPredicate = innerPredicate.endoRewrite(replaceVariable(variable, tempRelationship))
         (n, e :+ rewrittenPredicate, s :+ p)
 
-      //MATCH p = (a)-[x*]->(b) WHERE ALL(r in rels(p) WHERE r.prop > 5)
+      //MATCH p = (a)-[x*]->(b) WHERE ALL(r in relationships(p) WHERE r.prop > 5)
       case ((n, e, s),
             p @ AllRelationshipsInPath(`originalNodeName`, `originalRelationshipName`, variable, innerPredicate))
             if !pathDependent(innerPredicate) =>
         val rewrittenPredicate = innerPredicate.endoRewrite(replaceVariable(variable, tempRelationship))
         (n, e :+ rewrittenPredicate, s :+ p)
 
-      //MATCH p = ()-[*]->() WHERE NONE(r in rels(p) WHERE <innerPredicate>)
+      //MATCH p = ()-[*]->() WHERE NONE(r in relationships(p) WHERE <innerPredicate>)
       case ((n, e, s),
             p @ NoRelationshipInPath(`originalNodeName`, `originalRelationshipName`, variable, innerPredicate))
             if !pathDependent(innerPredicate) =>

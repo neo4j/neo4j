@@ -151,7 +151,7 @@ class ErrorMessagesTest extends ExecutionEngineFunSuite {
 
   test("noEqualsSignInStart") {
     expectSyntaxError(
-      "start r:relationship:rels() return r",
+      "start r:relationship:relationships() return r",
       "Invalid input ':': expected an identifier character, whitespace or '=' (line 1, column 8 (offset: 7))",
       7
     )

@@ -67,7 +67,7 @@ Feature: ShortestPathAcceptance
     When executing query:
       """
       MATCH p = shortestPath((src:A)-[*]->(dst:D))
-      WHERE NONE(r in rels(p) WHERE exists(r.blocked))
+      WHERE NONE(r in relationships(p) WHERE exists(r.blocked))
       UNWIND extract(n IN nodes(p) | n.name) AS node
       RETURN node
       """
@@ -94,7 +94,7 @@ Feature: ShortestPathAcceptance
     When executing query:
       """
       MATCH p = shortestPath((src:A)-[*]->(dst:D))
-      WHERE NONE(r in rels(p) WHERE r.blocked)
+      WHERE NONE(r in relationships(p) WHERE r.blocked)
       UNWIND extract(n IN nodes(p) | n.name) AS node
       RETURN node
       """
@@ -307,7 +307,7 @@ Feature: ShortestPathAcceptance
     When executing query:
       """
       MATCH p = shortestPath((src:A)-[r*]->(dst:D))
-      UNWIND extract(r IN rels(p) | r.id) AS rel
+      UNWIND extract(r IN relationships(p) | r.id) AS rel
       RETURN rel
       """
     Then the result should be, in order:
