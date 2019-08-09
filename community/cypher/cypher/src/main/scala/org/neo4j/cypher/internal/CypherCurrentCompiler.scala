@@ -20,7 +20,6 @@
 package org.neo4j.cypher.internal
 
 import org.neo4j.cypher._
-import org.neo4j.cypher.exceptionHandler.runSafely
 import org.neo4j.cypher.internal.NotificationWrapping.asKernelNotification
 import org.neo4j.cypher.internal.compatibility._
 import org.neo4j.cypher.internal.compatibility.v4_0.ExceptionTranslatingQueryContext
@@ -230,13 +229,14 @@ case class CypherCurrentCompiler[CONTEXT <: RuntimeContext](planner: CypherPlann
       val queryContext = getQueryContext(transactionalContext, preParsedQuery.debugOptions)
       if (shouldCloseTransaction) taskCloser.addTask(queryContext.transactionalContext.close)
       taskCloser.addTask(queryContext.resources.close)
-      runSafely {
+      try {
         innerExecute(transactionalContext, preParsedQuery, taskCloser, queryContext, params, prePopulateResults, subscriber)
-      }(e => {
-        subscriber.onError(e)
-        taskCloser.close(false)
-        new FailedExecutionResult(columnNames(logicalPlan), queryType, subscriber)
-      })
+      } catch {
+        case e: Throwable =>
+          subscriber.onError(e)
+          taskCloser.close(false)
+          new FailedExecutionResult(columnNames(logicalPlan), queryType, subscriber)
+      }
     }
 
     private def innerExecute(transactionalContext: TransactionalContext,
@@ -281,7 +281,6 @@ case class CypherCurrentCompiler[CONTEXT <: RuntimeContext](planner: CypherPlann
       ClosingExecutionResult.wrapAndInitiate(
         transactionalContext.executingQuery(),
         inner,
-        runSafely,
         kernelMonitors.newMonitor(classOf[QueryExecutionMonitor]),
         subscriber
       )

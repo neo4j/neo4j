@@ -78,7 +78,7 @@ class PreParser(configuredVersion: CypherVersion,
   }
 
   private def actuallyPreParse(queryText: String): PreParsedQuery = {
-    val preParsedStatement = exceptionHandler.runSafely(CypherPreParser(queryText))
+    val preParsedStatement = CypherPreParser(queryText)
 
     val executionMode: PPOption[CypherExecutionMode] = new PPOption(CypherExecutionMode.default)
     val version: PPOption[CypherVersion] = new PPOption(configuredVersion)

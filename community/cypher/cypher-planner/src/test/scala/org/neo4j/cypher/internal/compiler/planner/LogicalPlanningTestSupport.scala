@@ -29,7 +29,7 @@ import org.neo4j.cypher.internal.compiler.planner.logical._
 import org.neo4j.cypher.internal.compiler.planner.logical.idp._
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.{LogicalPlanProducer, devNullListener}
 import org.neo4j.cypher.internal.compiler.test_helpers.ContextHelper
-import org.neo4j.cypher.internal.compiler.{CypherPlannerConfiguration, StatsDivergenceCalculator, SyntaxExceptionCreator, TestSignatureResolvingPlanContext}
+import org.neo4j.cypher.internal.compiler.{CypherPlannerConfiguration, Neo4jCypherExceptionFactory, StatsDivergenceCalculator, SyntaxExceptionCreator, TestSignatureResolvingPlanContext}
 import org.neo4j.cypher.internal.ir._
 import org.neo4j.cypher.internal.logical.plans._
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.{Cardinalities, ProvidedOrders, Solveds}
@@ -279,12 +279,12 @@ trait LogicalPlanningTestSupport extends CypherTestSupport with AstConstructionT
       accessMode = ProcedureReadOnlyAccess(Array.empty),
       id = 42
     )
-    val mkException = new SyntaxExceptionCreator(query, Some(pos))
+    val exceptionFactory = new Neo4jCypherExceptionFactory(query, Some(pos))
     val procs: QualifiedName => ProcedureSignature = procLookup.getOrElse(_ => signature)
     val funcs: QualifiedName => Option[UserFunctionSignature] = fcnLookup.getOrElse(_ => None)
     val planContext = new TestSignatureResolvingPlanContext(procs, funcs)
     val state = LogicalPlanState(query, None, CostBasedPlannerName.default, PlanningAttributes(new Solveds, new Cardinalities, new ProvidedOrders))
-    val context = ContextHelper.create(exceptionCreator = mkException, planContext = planContext, logicalPlanIdGen = idGen)
+    val context = ContextHelper.create(cypherExceptionFactory = exceptionFactory, planContext = planContext, logicalPlanIdGen = idGen)
     val output = pipeLine.transform(state, context)
 
     output.unionQuery

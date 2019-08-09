@@ -23,13 +23,13 @@ import java.time.Clock
 import java.util.function.Supplier
 import java.{lang, util}
 
+import org.neo4j.cypher.ParameterNotFoundException
 import org.neo4j.cypher.internal.ExecutionEngine.{JitCompilation, NEVER_COMPILE, QueryCompilation}
 import org.neo4j.cypher.internal.QueryCache.ParameterTypeMap
 import org.neo4j.cypher.internal.compatibility.CypherCacheMonitor
 import org.neo4j.cypher.internal.tracing.CompilationTracer
 import org.neo4j.cypher.internal.tracing.CompilationTracer.QueryCompilationEvent
 import org.neo4j.cypher.internal.v4_0.expressions.functions.FunctionInfo
-import org.neo4j.cypher.{ParameterNotFoundException, exceptionHandler}
 import org.neo4j.internal.helpers.collection.Pair
 import org.neo4j.internal.kernel.api.security.AccessMode
 import org.neo4j.kernel.GraphDatabaseQueryService
@@ -234,11 +234,9 @@ class ExecutionEngine(val queryService: GraphDatabaseQueryService,
 
   @throws(classOf[ParameterNotFoundException])
   private def checkParameters(queryParams: Seq[String], givenParams: MapValue, extractedParams: MapValue) {
-    exceptionHandler.runSafely {
-      val missingKeys = queryParams.filter(key => !(givenParams.containsKey(key) || extractedParams.containsKey(key))).distinct
-      if (missingKeys.nonEmpty) {
-        throw new ParameterNotFoundException("Expected parameter(s): " + missingKeys.mkString(", "))
-      }
+    val missingKeys = queryParams.filter(key => !(givenParams.containsKey(key) || extractedParams.containsKey(key))).distinct
+    if (missingKeys.nonEmpty) {
+      throw new ParameterNotFoundException("Expected parameter(s): " + missingKeys.mkString(", "))
     }
   }
 

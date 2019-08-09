@@ -19,11 +19,10 @@
  */
 package org.neo4j.cypher.internal.result
 
-import org.neo4j.cypher.exceptionHandler.RunSafely
+import org.neo4j.cypher.CypherException
 import org.neo4j.cypher.internal.plandescription.InternalPlanDescription
 import org.neo4j.cypher.internal.runtime._
 import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
-import org.neo4j.cypher.{CypherException, CypherExecutionException}
 import org.neo4j.graphdb.Notification
 import org.neo4j.kernel.api.exceptions.Status
 import org.neo4j.kernel.api.query.ExecutingQuery
@@ -43,7 +42,7 @@ class ClosingExecutionResultTest extends CypherFunSuite {
     inner.close()
 
     // when
-    ClosingExecutionResult.wrapAndInitiate(query, inner, testRunSafely, monitor, DO_NOTHING_SUBSCRIBER)
+    ClosingExecutionResult.wrapAndInitiate(query, inner, monitor, DO_NOTHING_SUBSCRIBER)
 
     // then
     monitor.assertSuccess(query)
@@ -57,13 +56,13 @@ class ClosingExecutionResultTest extends CypherFunSuite {
     val monitor = AssertableMonitor()
 
     // when
-    intercept[TestOuterException] {
-      ClosingExecutionResult.wrapAndInitiate(query, inner, testRunSafely, monitor, DO_NOTHING_SUBSCRIBER)
+    intercept[TestClosingException] {
+      ClosingExecutionResult.wrapAndInitiate(query, inner, monitor, DO_NOTHING_SUBSCRIBER)
     }
 
     // then
     inner.isClosed should equal(true)
-    monitor.assertError(query, TestOuterException("initiate"))
+    monitor.assertError(query, TestClosingException("initiate"))
   }
 
   test("should close on exploding fieldNames") {
@@ -92,13 +91,13 @@ class ClosingExecutionResultTest extends CypherFunSuite {
     // given
     val inner = new ExplodingInner(iteratorMode = iteratorMode)
     val monitor = AssertableMonitor()
-    val x = ClosingExecutionResult.wrapAndInitiate(query, inner, testRunSafely, monitor, throwingSubscriber)
+    val x = ClosingExecutionResult.wrapAndInitiate(query, inner, monitor, throwingSubscriber)
 
     // when
-    intercept[TestOuterException] { f(x) }
+    intercept[TestClosingException] { f(x) }
 
     // then
-    val expectedException = TestOuterException(errorMsg)
+    val expectedException = TestClosingException(errorMsg)
     inner.closeReason should equal(Error(expectedException))
     monitor.assertError(query, expectedException)
   }
@@ -109,13 +108,13 @@ class ClosingExecutionResultTest extends CypherFunSuite {
     // given
     val inner = new ExplodingInner(alsoExplodeOnClose = true)
     val monitor = AssertableMonitor()
-    val x = ClosingExecutionResult.wrapAndInitiate(query, inner, testRunSafely, monitor, DO_NOTHING_SUBSCRIBER)
+    val x = ClosingExecutionResult.wrapAndInitiate(query, inner, monitor, DO_NOTHING_SUBSCRIBER)
 
     // when
-    intercept[TestOuterException] { x.close() }
+    intercept[TestClosingException] { x.close() }
 
     // then
-    monitor.assertError(query, TestOuterException("close"))
+    monitor.assertError(query, TestClosingException("close"))
   }
 
   // HELPERS
@@ -162,48 +161,34 @@ class ClosingExecutionResultTest extends CypherFunSuite {
 
     self =>
 
-    override def initiate(): Unit = if (alreadyInInitiate) throw TestInnerException("initiate")
+    override def initiate(): Unit = if (alreadyInInitiate) throw TestClosingException("initiate")
 
-    override def executionMode: ExecutionMode = throw TestInnerException("executionMode")
+    override def executionMode: ExecutionMode = throw TestClosingException("executionMode")
 
-    override def executionPlanDescription(): InternalPlanDescription = throw TestInnerException("executionPlanDescription")
+    override def executionPlanDescription(): InternalPlanDescription = throw TestClosingException("executionPlanDescription")
 
-    override def queryType: InternalQueryType = throw TestInnerException("queryType")
+    override def queryType: InternalQueryType = throw TestClosingException("queryType")
 
-    override def notifications: Iterable[Notification] = throw TestInnerException("notifications")
+    override def notifications: Iterable[Notification] = throw TestClosingException("notifications")
 
     override def close(reason: CloseReason): Unit = {
       super.close(reason)
-      if (alsoExplodeOnClose) throw TestInnerException("close")
+      if (alsoExplodeOnClose) throw TestClosingException("close")
     }
 
-    override def fieldNames(): Array[String] = throw TestInnerException("fieldNames")
+    override def fieldNames(): Array[String] = throw TestClosingException("fieldNames")
 
-    override def request(numberOfRows: Long): Unit = throw TestInnerException("request")
+    override def request(numberOfRows: Long): Unit = throw TestClosingException("request")
 
-    override def cancel(): Unit = throw TestInnerException("cancel")
+    override def cancel(): Unit = throw TestClosingException("cancel")
 
-    override def await(): Boolean = throw TestInnerException("await")
+    override def await(): Boolean = throw TestClosingException("await")
   }
 
   sealed trait IteratorMode
   case object DIRECT_EXPLODE extends IteratorMode
   case object HAS_NEXT_EXPLODE extends IteratorMode
   case object NEXT_EXPLODE extends IteratorMode
-
-  private val testRunSafely = new RunSafely {
-    override def apply[T](body: => T)(implicit f: Throwable => T): T = {
-      try {
-        body
-      } catch {
-        case t: TestInnerException =>
-          f(TestOuterException(t.msg))
-
-        case t: Throwable =>
-          f(new CypherExecutionException(t.getMessage, t))
-      }
-    }
-  }
 
   case class AssertableMonitor() extends QueryExecutionMonitor {
 
@@ -248,5 +233,4 @@ abstract class TestException(msg: String) extends CypherException(msg, null) {
   override def toString: String = s"${getClass.getSimpleName}($msg)"
 }
 
-case class TestInnerException(msg: String) extends TestException(msg)
-case class TestOuterException(msg: String) extends TestException(msg)
+case class TestClosingException(msg: String) extends TestException(msg)

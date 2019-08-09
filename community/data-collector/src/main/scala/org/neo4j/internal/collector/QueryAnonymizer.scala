@@ -20,6 +20,7 @@
 package org.neo4j.internal.collector
 
 import org.neo4j.cypher.internal.PreParser
+import org.neo4j.cypher.internal.compiler.Neo4jCypherExceptionFactory
 import org.neo4j.cypher.internal.v4_0.ast.Statement
 import org.neo4j.cypher.internal.v4_0.ast.prettifier.{ExpressionStringifier, Prettifier}
 import org.neo4j.cypher.internal.v4_0.expressions.Expression
@@ -53,7 +54,7 @@ case class IdAnonymizer(tokens: TokenRead) extends QueryAnonymizer {
 
   override def queryText(queryText: String): String = {
     val preParsedQuery = IdAnonymizer.preParser.preParseQuery(queryText)
-    val originalAst = parser.parse(preParsedQuery.statement, None)
+    val originalAst = parser.parse(preParsedQuery.statement, Neo4jCypherExceptionFactory(queryText, Some(preParsedQuery.offset)), None)
     val anonymizer = anonymizeQuery(new IdAnonymizerState(tokens, prettifier))
     val rewrittenAst = anonymizer(originalAst).asInstanceOf[Statement]
     preParsedQuery.rawPreparserOptions ++ prettifier.asString(rewrittenAst)

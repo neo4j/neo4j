@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.compiler.planner
 
 import org.neo4j.cypher.internal.compiler.phases.LogicalPlanState
 import org.neo4j.cypher.internal.compiler.test_helpers.ContextHelper
-import org.neo4j.cypher.internal.compiler.{MissingLabelNotification, MissingPropertyNameNotification, MissingRelTypeNotification}
+import org.neo4j.cypher.internal.compiler.{MissingLabelNotification, MissingPropertyNameNotification, MissingRelTypeNotification, Neo4jCypherExceptionFactory}
 import org.neo4j.cypher.internal.planner.spi.{IDPPlannerName, PlanningAttributes}
 import org.neo4j.values.storable.TemporalValue.TemporalFields
 import org.neo4j.values.storable.{DurationFields, PointFields}
@@ -184,13 +184,18 @@ class CheckForUnresolvedTokensTest extends CypherFunSuite with AstRewritingTestS
 
   private def checkForTokens(ast: Query, semanticTable: SemanticTable): Set[InternalNotification] = {
     val notificationLogger = new RecordingNotificationLogger
-    val compilationState = LogicalPlanState(queryText = "apa", startPosition = None, plannerName = IDPPlannerName, PlanningAttributes(new StubSolveds, new StubCardinalities, new StubProvidedOrders), maybeStatement = Some(ast), maybeSemanticTable = Some(semanticTable))
+    val compilationState = LogicalPlanState(queryText = "apa",
+      startPosition = None,
+      plannerName = IDPPlannerName,
+      PlanningAttributes(new StubSolveds, new StubCardinalities, new StubProvidedOrders),
+      maybeStatement = Some(ast),
+      maybeSemanticTable = Some(semanticTable))
     val context = ContextHelper.create(notificationLogger = notificationLogger)
     CheckForUnresolvedTokens.transform(compilationState, context)
     notificationLogger.notifications
   }
 
-  private def parse(query: String): Query = parser.parse(query) match {
+  private def parse(query: String): Query = parser.parse(query, Neo4jCypherExceptionFactory(query, None)) match {
     case q: Query => q
     case _ => fail("Must be a Query")
   }

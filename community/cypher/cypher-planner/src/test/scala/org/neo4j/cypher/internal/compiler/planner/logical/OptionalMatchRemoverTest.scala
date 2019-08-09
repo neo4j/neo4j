@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.compiler.planner.logical
 import org.neo4j.cypher.internal.v4_0.util.Rewritable._
 import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.v4_0.util.{DummyPosition, Rewriter}
-import org.neo4j.cypher.internal.compiler.SyntaxExceptionCreator
+import org.neo4j.cypher.internal.compiler.{Neo4jCypherExceptionFactory, SyntaxExceptionCreator}
 import org.neo4j.cypher.internal.compiler.ast.convert.plannerQuery.StatementConverters.toUnionQuery
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport2
 import org.neo4j.cypher.internal.compiler.planner.logical.OptionalMatchRemover.smallestGraphIncluding
@@ -350,13 +350,13 @@ assert_that(
 
   private def getUnionQueryFrom(query: String): UnionQuery = {
     val ast = parseForRewriting(query).endoRewrite(flattenBooleanOperators)
-    val mkException = new SyntaxExceptionCreator(query, Some(DummyPosition(0)))
-    val onError = SyntaxExceptionCreator.throwOnError(mkException)
+    val exceptionFactory = new Neo4jCypherExceptionFactory(query, Some(DummyPosition(0)))
+    val onError = SyntaxExceptionCreator.throwOnError(exceptionFactory)
     val result = SemanticChecker.check(ast)
     onError(result.errors)
     val table = SemanticTable(types = result.state.typeTable, recordedScopes = result.state.recordedScopes)
     toUnionQuery(ast.asInstanceOf[Query], table)
   }
 
-  private def parseForRewriting(queryText: String) = parser.parse(queryText.replace("\r\n", "\n"))
+  private def parseForRewriting(queryText: String) = parser.parse(queryText.replace("\r\n", "\n"), Neo4jCypherExceptionFactory(queryText, None))
 }

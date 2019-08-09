@@ -29,7 +29,7 @@ import org.neo4j.cypher.internal.compiler.planner.logical.idp._
 import org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter.unnestApply
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.{LogicalPlanProducer, devNullListener}
 import org.neo4j.cypher.internal.compiler.test_helpers.ContextHelper
-import org.neo4j.cypher.internal.compiler.{CypherPlannerConfiguration, NotImplementedPlanContext, StatsDivergenceCalculator, SyntaxExceptionCreator}
+import org.neo4j.cypher.internal.compiler.{CypherPlannerConfiguration, Neo4jCypherExceptionFactory, NotImplementedPlanContext, StatsDivergenceCalculator, SyntaxExceptionCreator}
 import org.neo4j.cypher.internal.ir.{PeriodicCommit, PlannerQuery, ProvidedOrder, QueryGraph}
 import org.neo4j.cypher.internal.logical.plans._
 import org.neo4j.cypher.internal.planner.spi.IndexDescriptor.{OrderCapability, ValueCapability}
@@ -175,10 +175,10 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
     }
 
     def getLogicalPlanFor(queryString: String, config:CypherPlannerConfiguration = cypherCompilerConfig, queryGraphSolver: QueryGraphSolver = queryGraphSolver): (Option[PeriodicCommit], LogicalPlan, SemanticTable, Solveds, Cardinalities) = {
-      val mkException = new SyntaxExceptionCreator(queryString, Some(pos))
+      val exceptionFactory = new Neo4jCypherExceptionFactory(queryString, Some(pos))
       val metrics = metricsFactory.newMetrics(planContext.statistics, mock[ExpressionEvaluator], config)
       def context = ContextHelper.create(planContext = planContext,
-        exceptionCreator = mkException,
+        cypherExceptionFactory = exceptionFactory,
         queryGraphSolver = queryGraphSolver,
         metrics = metrics,
         config = config,

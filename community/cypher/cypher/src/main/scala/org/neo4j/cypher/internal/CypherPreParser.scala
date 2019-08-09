@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal
 
+import org.neo4j.cypher.internal.compiler.Neo4jCypherExceptionFactory
 import org.neo4j.cypher.internal.v4_0.parser.Base
 import org.neo4j.cypher.internal.v4_0.util.InputPosition
 import org.parboiled.scala._
@@ -26,7 +27,7 @@ import org.parboiled.scala._
 final case class PreParsedStatement(statement: String, options: Seq[PreParserOption], offset: InputPosition)
 
 case object CypherPreParser extends org.parboiled.scala.Parser with Base {
-  def apply(input: String): PreParsedStatement = parseOrThrow(input, None, QueryWithOptions)
+  def apply(input: String): PreParsedStatement = parseOrThrow(input, Neo4jCypherExceptionFactory(input, None), None, QueryWithOptions)
 
   def QueryWithOptions: Rule1[Seq[PreParsedStatement]] =
     WS ~ AllOptions ~ WS ~ AnySomething ~~>>

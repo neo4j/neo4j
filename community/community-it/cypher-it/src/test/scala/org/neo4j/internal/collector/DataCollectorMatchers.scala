@@ -22,7 +22,8 @@ package org.neo4j.internal.collector
 import java.time.ZonedDateTime
 
 import org.neo4j.cypher.internal.v4_0.parser.CypherParser
-import org.neo4j.cypher.internal.PreParser
+import org.neo4j.cypher.internal.{PreParsedQuery, PreParser}
+import org.neo4j.cypher.internal.compiler.Neo4jCypherExceptionFactory
 import org.neo4j.cypher.{CypherExpressionEngineOption, CypherPlannerOption, CypherRuntimeOption, CypherVersion}
 import org.scalatest.matchers.{MatchResult, Matcher}
 
@@ -239,12 +240,15 @@ object DataCollectorMatchers {
   case class BeCypherMatcher(expected: String) extends Matcher[AnyRef] {
 
     val parser = new CypherParser
-    private val expectedAst = parser.parse(preParser.preParseQuery(expected, false).statement)
+    private val preParsedQuery: PreParsedQuery = preParser.preParseQuery(expected, profile = false)
+    private val expectedAst = parser.parse(preParsedQuery.statement, Neo4jCypherExceptionFactory(expected, Some(preParsedQuery.offset)))
 
     override def apply(left: AnyRef): MatchResult =
       MatchResult(
         matches = left match {
-          case text: String => parser.parse(preParser.preParseQuery(text, false).statement) == expectedAst
+          case text: String =>
+            val preParsedQuery1 = preParser.preParseQuery(text, profile = false)
+            parser.parse(preParsedQuery1.statement, Neo4jCypherExceptionFactory(text, Some(preParsedQuery1.offset))) == expectedAst
           case _ => false
         },
         rawFailureMessage = s"'$left' is not the same Cypher as '$expected'",

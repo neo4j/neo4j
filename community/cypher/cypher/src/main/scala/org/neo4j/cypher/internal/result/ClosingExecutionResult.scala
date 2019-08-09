@@ -19,7 +19,6 @@
  */
 package org.neo4j.cypher.internal.result
 
-import org.neo4j.cypher.exceptionHandler.RunSafely
 import org.neo4j.cypher.internal.runtime._
 import org.neo4j.graphdb.{ExecutionPlanDescription, Notification}
 import org.neo4j.kernel.api.query.ExecutingQuery
@@ -39,12 +38,10 @@ import org.neo4j.kernel.impl.query.{QueryExecutionMonitor, QuerySubscriber}
   *
   * @param query metadata about the executing query
   * @param inner the actual result
-  * @param runSafely RunSafely which converts any exception into the public exception space (subtypes of org.neo4j.cypher.CypherException)
   * @param innerMonitor monitor to report closing of the query to
   */
 class ClosingExecutionResult private(val query: ExecutingQuery,
                                      val inner: InternalExecutionResult,
-                                     runSafely: RunSafely,
                                      innerMonitor: QueryExecutionMonitor,
                                      subscriber: QuerySubscriber) extends InternalExecutionResult {
 
@@ -67,14 +64,16 @@ class ClosingExecutionResult private(val query: ExecutingQuery,
       inner.executionPlanDescription()
     }
 
-  override def close(reason: CloseReason): Unit = runSafely({
+  override def close(reason: CloseReason): Unit = try {
     inner.close(reason)
     reason match {
       case Success => monitor.endSuccess(query)
       case Failure => monitor.endFailure(query, null)
       case Error(t) => monitor.endFailure(query, t)
     }
-  })( handleErrorOnClose(reason) )
+  } catch {
+    case e: Throwable => handleErrorOnClose(reason)(e)
+  }
 
   override def queryType: InternalQueryType = safely { inner.queryType }
 
@@ -82,11 +81,15 @@ class ClosingExecutionResult private(val query: ExecutingQuery,
 
   override def executionMode: ExecutionMode = safely { inner.executionMode }
 
-  override def toString: String = runSafely { inner.toString }
+  override def toString: String = inner.toString
 
   // HELPERS
 
-  private def safely[T](body: => T): T = runSafely(body)(closeAndRethrowOnError)
+  private def safely[T](body: => T): T = try {
+    body
+  } catch {
+    case e: Throwable => closeAndRethrowOnError(e)
+  }
 
   private def closeAndRethrowOnError[T](t: Throwable): T = {
     try {
@@ -127,22 +130,30 @@ class ClosingExecutionResult private(val query: ExecutingQuery,
 
   override def isClosed: Boolean = inner.isClosed
 
-  override def request(numberOfRows: Long): Unit =
-    runSafely(inner.request(numberOfRows))(closeAndCallOnError)
+  override def request(numberOfRows: Long): Unit = try {
+    inner.request(numberOfRows)
+  } catch {
+    case e: Throwable => closeAndCallOnError(e)
+  }
 
-  override def cancel(): Unit = runSafely{
+  override def cancel(): Unit =  try {
     monitor.endSuccess(query)
     inner.cancel()
-  }(closeAndCallOnError)
+  } catch {
+    case e: Throwable => closeAndCallOnError(e)
+  }
 
   override def await(): Boolean = {
     if (error != null) {
       throw error
     }
-    val hasMore = runSafely(inner.await())(e => {
-      closeAndCallOnError(e)
-      false
-    })
+    val hasMore = try {
+      inner.await()
+    } catch {
+      case e: Throwable =>
+        closeAndCallOnError(e)
+        false
+    }
 
     if (!hasMore) {
       close()
@@ -154,11 +165,10 @@ class ClosingExecutionResult private(val query: ExecutingQuery,
 object ClosingExecutionResult {
   def wrapAndInitiate(query: ExecutingQuery,
                       inner: InternalExecutionResult,
-                      runSafely: RunSafely,
                       innerMonitor: QueryExecutionMonitor,
                       subscriber: QuerySubscriber): ClosingExecutionResult = {
 
-    val result = new ClosingExecutionResult(query, inner, runSafely, innerMonitor, subscriber)
+    val result = new ClosingExecutionResult(query, inner, innerMonitor, subscriber)
     result.initiate()
     result
   }

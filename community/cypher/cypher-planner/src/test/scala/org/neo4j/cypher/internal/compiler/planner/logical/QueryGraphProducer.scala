@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.planner.logical
 
-import org.neo4j.cypher.internal.compiler.SyntaxExceptionCreator
+import org.neo4j.cypher.internal.compiler.{Neo4jCypherExceptionFactory, SyntaxExceptionCreator}
 import org.neo4j.cypher.internal.compiler.phases.LogicalPlanState
 import org.neo4j.cypher.internal.compiler.planner._
 import org.neo4j.cypher.internal.compiler.test_helpers.ContextHelper
@@ -46,14 +46,14 @@ trait QueryGraphProducer extends MockitoSugar {
 
   def producePlannerQueryForPattern(query: String): (PlannerQuery, SemanticTable) = {
     val q = query + " RETURN 1 AS Result"
-    val ast = parser.parse(q)
-    val mkException = new SyntaxExceptionCreator(query, Some(pos))
-    val cleanedStatement: Statement = ast.endoRewrite(inSequence(normalizeWithAndReturnClauses(mkException)))
-    val onError = SyntaxExceptionCreator.throwOnError(mkException)
+    val exceptionFactory = Neo4jCypherExceptionFactory(q, None)
+    val ast = parser.parse(q, exceptionFactory)
+    val cleanedStatement: Statement = ast.endoRewrite(inSequence(normalizeWithAndReturnClauses(exceptionFactory)))
+    val onError = SyntaxExceptionCreator.throwOnError(exceptionFactory)
     val SemanticCheckResult(semanticState, errors) = SemanticChecker.check(cleanedStatement)
     onError(errors)
 
-    val (firstRewriteStep, _, _) = astRewriter.rewrite(query, cleanedStatement, semanticState)
+    val (firstRewriteStep, _, _) = astRewriter.rewrite(query, cleanedStatement, semanticState, exceptionFactory)
     val state = LogicalPlanState(query, None, IDPPlannerName, PlanningAttributes(new StubSolveds, new StubCardinalities, new StubProvidedOrders), Some(firstRewriteStep), Some(semanticState))
     val context = ContextHelper.create(logicalPlanIdGen = idGen)
     val output = (Namespacer andThen rewriteEqualityToInPredicate andThen CNFNormalizer andThen LateAstRewriting).transform(state, context)

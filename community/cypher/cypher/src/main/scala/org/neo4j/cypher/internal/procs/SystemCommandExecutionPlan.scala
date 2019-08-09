@@ -19,7 +19,6 @@
  */
 package org.neo4j.cypher.internal.procs
 
-import org.neo4j.cypher.exceptionHandler
 import org.neo4j.cypher.internal.plandescription.Argument
 import org.neo4j.cypher.internal.result.InternalExecutionResult
 import org.neo4j.cypher.internal.runtime.{InputDataStream, QueryContext, QueryStatistics => QueryStats}
@@ -116,10 +115,9 @@ class SystemCommandQuerySubscriber(ctx: SystemUpdateCountingQueryContext, inner:
 
   override def onField(value: AnyValue): Unit = {
     try {
-      queryHandler.onResult(currentOffset, value).foreach(error => {
-        val cypherError = exceptionHandler.mapToCypher(error)
-        inner.onError(cypherError)
-        failed = Some(cypherError)
+      queryHandler.onResult(currentOffset, value).foreach( error => {
+      inner.onError(error)
+        failed = Some(error)
       })
       if (failed.isEmpty) {
         inner.onField(value)
@@ -130,9 +128,8 @@ class SystemCommandQuerySubscriber(ctx: SystemUpdateCountingQueryContext, inner:
   }
 
   override def onError(throwable: Throwable): Unit = {
-    val cypherError = exceptionHandler.mapToCypher(queryHandler.onError(throwable))
-    inner.onError(cypherError)
-    failed = Some(cypherError)
+    inner.onError(throwable)
+    failed = Some(throwable)
   }
 
   def assertNotFailed(onFailure: Throwable => Unit = _ => ()): Unit = failed.foreach { exception =>

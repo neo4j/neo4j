@@ -30,8 +30,10 @@ import java.util.Map;
 
 import org.neo4j.cypher.CypherException;
 import org.neo4j.cypher.CypherExecutionException;
-import org.neo4j.cypher.exceptionHandler;
-import org.neo4j.cypher.exceptionHandler$;
+import org.neo4j.cypher.CypherTypeException;
+import org.neo4j.cypher.InternalException;
+import org.neo4j.cypher.InvalidArgumentException;
+import org.neo4j.cypher.SyntaxException;
 import org.neo4j.cypher.internal.result.string.ResultStringBuilder;
 import org.neo4j.graphdb.ExecutionPlanDescription;
 import org.neo4j.graphdb.Notification;
@@ -49,6 +51,10 @@ import org.neo4j.kernel.impl.query.TransactionalContext;
 import org.neo4j.kernel.impl.util.DefaultValueMapper;
 import org.neo4j.util.VisibleForTesting;
 import org.neo4j.values.AnyValue;
+import org.neo4j.values.utils.InvalidValuesArgumentException;
+import org.neo4j.values.utils.TemporalArithmeticException;
+import org.neo4j.values.utils.TemporalParseException;
+import org.neo4j.values.utils.UnsupportedTemporalUnitException;
 import org.neo4j.values.utils.ValuesException;
 
 /**
@@ -394,17 +400,13 @@ public class ResultSubscriber extends PrefetchingResourceIterator<Map<String,Obj
         {
             cypherException = (CypherException) e;
         }
-        else if ( e instanceof org.neo4j.cypher.internal.v4_0.util.CypherException )
-        {
-            cypherException = ((org.neo4j.cypher.internal.v4_0.util.CypherException) e).mapToPublic( exceptionHandler$.MODULE$ );
-        }
         else if ( e instanceof ValuesException )
         {
-            cypherException = exceptionHandler.mapToCypher( (ValuesException) e );
+            cypherException = convertedValuesException( (ValuesException) e );
         }
         else if ( e instanceof ArithmeticException )
         {
-            cypherException = exceptionHandler.arithmeticException( e.getMessage(), e );
+            cypherException = new org.neo4j.cypher.ArithmeticException( e.getMessage(), e );
         }
         else if ( e instanceof RuntimeException )
         {
@@ -415,6 +417,36 @@ public class ResultSubscriber extends PrefetchingResourceIterator<Map<String,Obj
             cypherException = new CypherExecutionException( e.getMessage(), e );
         }
         return new QueryExecutionKernelException( cypherException ).asUserException();
+    }
+
+    private CypherException convertedValuesException( ValuesException e )
+    {
+        if ( e instanceof UnsupportedTemporalUnitException )
+        {
+            return new CypherTypeException( e.getMessage(), e );
+        }
+        else if ( e instanceof InvalidValuesArgumentException )
+        {
+            return new InvalidArgumentException( e.getMessage(), e );
+        }
+        else if ( e instanceof TemporalArithmeticException )
+        {
+            return new org.neo4j.cypher.ArithmeticException( e.getMessage(), e );
+        }
+        else if ( e instanceof TemporalParseException )
+        {
+            TemporalParseException e1 = (TemporalParseException) e;
+            String parsedData = e1.getParsedData();
+            if ( parsedData == null )
+            {
+                return new SyntaxException( e.getMessage(), e );
+            }
+            else
+            {
+                return new SyntaxException( e.getMessage(), parsedData, e1.getErrorIndex(), e );
+            }
+        }
+        return new InternalException( e.getMessage(), e );
     }
 
     private <VisitationException extends Exception> void acceptFromMaterialized(

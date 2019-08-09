@@ -23,12 +23,11 @@ import java.time.Clock
 import java.util.function.BiFunction
 
 import org.neo4j.cypher._
-import org.neo4j.cypher.exceptionHandler.runSafely
 import org.neo4j.cypher.internal.compatibility.{CypherPlanner, _}
 import org.neo4j.cypher.internal.compiler._
 import org.neo4j.cypher.internal.compiler.phases.PlannerContext
 import org.neo4j.cypher.internal.compiler.planner.logical.{CachedMetricsFactory, SimpleMetricsFactory, simpleExpressionEvaluator}
-import org.neo4j.cypher.internal.logical.plans.{DatabaseAdministrationException => _, _}
+import org.neo4j.cypher.internal.logical.plans._
 import org.neo4j.cypher.internal.planner.spi.PlanContext
 import org.neo4j.cypher.internal.runtime.interpreted._
 import org.neo4j.cypher.internal.spi.{ExceptionTranslatingPlanContext, TransactionBoundPlanContext}
@@ -72,110 +71,109 @@ case class Cypher4_0Planner(config: CypherPlannerConfiguration,
                             params: MapValue,
                             runtime: CypherRuntime[_]
                            ): LogicalPlanResult = {
-    runSafely {
-      val notificationLogger = new RecordingNotificationLogger(Some(preParsedQuery.offset))
-      val innerVariableNamer = new GeneratingNamer
+    val notificationLogger = new RecordingNotificationLogger(Some(preParsedQuery.offset))
+    val innerVariableNamer = new GeneratingNamer
 
-      val syntacticQuery =
-        getOrParse(preParsedQuery, params, new Parser4_0(planner, notificationLogger, preParsedQuery.offset, tracer, innerVariableNamer))
+    val syntacticQuery =
+      getOrParse(preParsedQuery, params, new Parser4_0(planner, notificationLogger, preParsedQuery.offset, tracer, innerVariableNamer))
 
-      val transactionalContextWrapper = TransactionalContextWrapper(transactionalContext)
-      // Context used for db communication during planning
-      val createPlanContext = Cypher4_0Planner.customPlanContextCreator.getOrElse(TransactionBoundPlanContext.apply _)
-      val planContext =
-        new ExceptionTranslatingPlanContext(
-          createPlanContext(transactionalContextWrapper, notificationLogger)
-        )
+    val transactionalContextWrapper = TransactionalContextWrapper(transactionalContext)
+    // Context used for db communication during planning
+    val createPlanContext = Cypher4_0Planner.customPlanContextCreator.getOrElse(TransactionBoundPlanContext.apply _)
+    val planContext =
+      new ExceptionTranslatingPlanContext(
+        createPlanContext(transactionalContextWrapper, notificationLogger)
+      )
 
-      // Context used to create logical plans
-      val logicalPlanIdGen = new SequentialIdGen()
-      val context = contextCreator.create(tracer,
-                                          notificationLogger,
-                                          planContext,
-                                          syntacticQuery.queryText,
-                                          preParsedQuery.debugOptions,
-                                          Some(preParsedQuery.offset),
-                                          monitors,
-                                          CachedMetricsFactory(SimpleMetricsFactory),
-                                          createQueryGraphSolver(),
-                                          config,
-                                          maybeUpdateStrategy.getOrElse(defaultUpdateStrategy),
-                                          clock,
-                                          logicalPlanIdGen,
-                                          simpleExpressionEvaluator,
-                                          innerVariableNamer,
-                                          params)
+    // Context used to create logical plans
+    val logicalPlanIdGen = new SequentialIdGen()
+    val context = contextCreator.create(tracer,
+      notificationLogger,
+      planContext,
+      syntacticQuery.queryText,
+      preParsedQuery.debugOptions,
+      Some(preParsedQuery.offset),
+      monitors,
+      CachedMetricsFactory(SimpleMetricsFactory),
+      createQueryGraphSolver(),
+      config,
+      maybeUpdateStrategy.getOrElse(defaultUpdateStrategy),
+      clock,
+      logicalPlanIdGen,
+      simpleExpressionEvaluator,
+      innerVariableNamer,
+      params)
 
-      // Prepare query for caching
-      val preparedQuery = planner.normalizeQuery(syntacticQuery, context)
-      val queryParamNames: Seq[String] = preparedQuery.statement().findByAllClass[Parameter].map(x => x.name).distinct
+    // Prepare query for caching
+    val preparedQuery = planner.normalizeQuery(syntacticQuery, context)
+    val queryParamNames: Seq[String] = preparedQuery.statement().findByAllClass[Parameter].map(x => x.name).distinct
 
-      checkForSchemaChanges(transactionalContextWrapper)
+    checkForSchemaChanges(transactionalContextWrapper)
 
-      // If the query is not cached we want to do the full planning
-      def createPlan(shouldBeCached: Boolean, missingParameterNames: Seq[String] = Seq.empty): CacheableLogicalPlan = {
-        val logicalPlanStateOld = planner.planPreparedQuery(preparedQuery, context)
-        val hasLoadCsv = logicalPlanStateOld.logicalPlan.treeFind[LogicalPlan] {
-          case _: LoadCSV => true
-        }.nonEmpty
-        val logicalPlanState = logicalPlanStateOld.copy(hasLoadCSV = hasLoadCsv)
-        notification.LogicalPlanNotifications
-          .checkForNotifications(logicalPlanState.maybeLogicalPlan.get, planContext, config)
-          .foreach(notificationLogger.log)
-        if (missingParameterNames.nonEmpty) {
-          notificationLogger.log(MissingParametersNotification(missingParameterNames))
-        }
-        val reusabilityState = runtime match {
-          case m: AdministrationCommandRuntime =>
-            if (m.isApplicableAdministrationCommand(logicalPlanState))
-              FineToReuse
-            else logicalPlanState.maybeLogicalPlan match {
-              case Some(ProcedureCall(_,ResolvedCall(signature,_,_,_,_))) if signature.systemProcedure => FineToReuse
+    // If the query is not cached we want to do the full planning
+    def createPlan(shouldBeCached: Boolean, missingParameterNames: Seq[String] = Seq.empty): CacheableLogicalPlan = {
+      val logicalPlanStateOld = planner.planPreparedQuery(preparedQuery, context)
+      val hasLoadCsv = logicalPlanStateOld.logicalPlan.treeFind[LogicalPlan] {
+        case _: LoadCSV => true
+      }.nonEmpty
+      val logicalPlanState = logicalPlanStateOld.copy(hasLoadCSV = hasLoadCsv)
+      notification.LogicalPlanNotifications
+        .checkForNotifications(logicalPlanState.maybeLogicalPlan.get, planContext, config)
+        .foreach(notificationLogger.log)
+      if (missingParameterNames.nonEmpty) {
+        notificationLogger.log(MissingParametersNotification(missingParameterNames))
+      }
+      val reusabilityState = runtime match {
+        case m: AdministrationCommandRuntime =>
+          if (m.isApplicableAdministrationCommand(logicalPlanState)) {
+            FineToReuse
+          } else {
+            logicalPlanState.maybeLogicalPlan match {
+              case Some(ProcedureCall(_, ResolvedCall(signature, _, _, _, _))) if signature.systemProcedure => FineToReuse
               case Some(_: ProcedureCall) => throw new DatabaseAdministrationException("Attempting invalid procedure call in administration runtime")
               case Some(plan: MultiDatabaseLogicalPlan) => throw plan.invalid("Unsupported administration command: " + logicalPlanState.queryText)
               case _ => throw new DatabaseAdministrationException("Attempting invalid administration command in administration runtime")
             }
-          case _ if SchemaCommandRuntime.isApplicable(logicalPlanState) => FineToReuse
-          case _ =>
-            val fingerprint = PlanFingerprint.take(clock, planContext.txIdProvider, planContext.statistics)
-            val fingerprintReference = new PlanFingerprintReference(fingerprint)
-            MaybeReusable(fingerprintReference)
-        }
-        CacheableLogicalPlan(logicalPlanState, reusabilityState, notificationLogger.notifications, shouldBeCached)
+          }
+        case _ if SchemaCommandRuntime.isApplicable(logicalPlanState) => FineToReuse
+        case _ =>
+          val fingerprint = PlanFingerprint.take(clock, planContext.txIdProvider, planContext.statistics)
+          val fingerprintReference = new PlanFingerprintReference(fingerprint)
+          MaybeReusable(fingerprintReference)
       }
-
-      val autoExtractParams = ValueConversion.asValues(preparedQuery.extractedParams()) // only extracted ones
-      // Filter the parameters to retain only those that are actually used in the query (or a subset of them, if not enough
-      // parameters where given in the first place)
-      val filteredParams: MapValue = params.updatedWith(autoExtractParams).filter(new BiFunction[String, AnyValue, java.lang.Boolean] {
-        override def apply(name: String, value: AnyValue): java.lang.Boolean = queryParamNames.contains(name)
-      })
-
-      val enoughParametersSupplied = queryParamNames.size == filteredParams.size // this is relevant if the query has parameters
-
-      val cacheableLogicalPlan =
-        // We don't want to cache any query without enough given parameters (although EXPLAIN queries will succeed)
-        if (preParsedQuery.debugOptions.isEmpty && (queryParamNames.isEmpty || enoughParametersSupplied))
-          planCache.computeIfAbsentOrStale(Pair.of(syntacticQuery.statement(), QueryCache.extractParameterTypeMap(filteredParams)),
-                                           transactionalContext,
-                                           () => createPlan(shouldBeCached = true),
-                                           _ => None,
-                                           syntacticQuery.queryText).executableQuery
-
-        else if (!enoughParametersSupplied)
-          createPlan(shouldBeCached = false, missingParameterNames = queryParamNames.filterNot(filteredParams.containsKey))
-        else
-          createPlan(shouldBeCached = false)
-
-      LogicalPlanResult(
-        cacheableLogicalPlan.logicalPlanState,
-        queryParamNames,
-        autoExtractParams,
-        cacheableLogicalPlan.reusability,
-        context,
-        cacheableLogicalPlan.notifications,
-        cacheableLogicalPlan.shouldBeCached)
+      CacheableLogicalPlan(logicalPlanState, reusabilityState, notificationLogger.notifications, shouldBeCached)
     }
+
+    val autoExtractParams = ValueConversion.asValues(preparedQuery.extractedParams()) // only extracted ones
+    // Filter the parameters to retain only those that are actually used in the query (or a subset of them, if not enough
+    // parameters where given in the first place)
+    val filteredParams: MapValue = params.updatedWith(autoExtractParams).filter(new BiFunction[String, AnyValue, java.lang.Boolean] {
+      override def apply(name: String, value: AnyValue): java.lang.Boolean = queryParamNames.contains(name)
+    })
+
+    val enoughParametersSupplied = queryParamNames.size == filteredParams.size // this is relevant if the query has parameters
+
+    val cacheableLogicalPlan =
+    // We don't want to cache any query without enough given parameters (although EXPLAIN queries will succeed)
+      if (preParsedQuery.debugOptions.isEmpty && (queryParamNames.isEmpty || enoughParametersSupplied)) {
+        planCache.computeIfAbsentOrStale(Pair.of(syntacticQuery.statement(), QueryCache.extractParameterTypeMap(filteredParams)),
+          transactionalContext,
+          () => createPlan(shouldBeCached = true),
+          _ => None,
+          syntacticQuery.queryText).executableQuery
+      } else if (!enoughParametersSupplied) {
+        createPlan(shouldBeCached = false, missingParameterNames = queryParamNames.filterNot(filteredParams.containsKey))
+      } else {
+        createPlan(shouldBeCached = false)
+      }
+    LogicalPlanResult(
+      cacheableLogicalPlan.logicalPlanState,
+      queryParamNames,
+      autoExtractParams,
+      cacheableLogicalPlan.reusability,
+      context,
+      cacheableLogicalPlan.notifications,
+      cacheableLogicalPlan.shouldBeCached)
   }
 
   override val name: PlannerName = plannerName

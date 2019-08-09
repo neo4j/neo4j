@@ -19,17 +19,22 @@
  */
 package org.neo4j.cypher.internal.compiler
 
-import org.neo4j.cypher.internal.v4_0.util.{CypherException, InputPosition, SyntaxException}
+import org.neo4j.cypher.SyntaxException
+import org.neo4j.cypher.internal.v4_0.util.{CypherException, CypherExceptionFactory, InputPosition}
 import org.neo4j.cypher.internal.v4_0.ast.semantics.SemanticErrorDef
+import org.neo4j.cypher.ArithmeticException
 
-class SyntaxExceptionCreator(queryText: String, preParserOffset: Option[InputPosition]) extends ((String, InputPosition) => CypherException) {
-  override def apply(message: String, position: InputPosition): CypherException = {
-    val adjustedPosition = position.withOffset(preParserOffset)
-    new SyntaxException(s"$message ($adjustedPosition)", queryText, adjustedPosition)
+case class Neo4jCypherExceptionFactory(queryText: String, preParserOffset: Option[InputPosition]) extends CypherExceptionFactory {
+
+  override def arithmeticException(message: String, cause: Exception): CypherException = new ArithmeticException(message, cause)
+
+  override def syntaxException(message: String, pos: InputPosition): CypherException = {
+    val adjustedPosition = pos.withOffset(preParserOffset)
+    new SyntaxException(s"$message ($adjustedPosition)", queryText, adjustedPosition.offset)
   }
 }
 
 object SyntaxExceptionCreator {
-  def throwOnError(mkException: SyntaxExceptionCreator): Seq[SemanticErrorDef] => Unit =
-    (errors: Seq[SemanticErrorDef]) => errors.foreach(e => throw mkException(e.msg, e.position))
+  def throwOnError(exceptionFactory: CypherExceptionFactory): Seq[SemanticErrorDef] => Unit =
+    (errors: Seq[SemanticErrorDef]) => errors.foreach(e => throw exceptionFactory.syntaxException(e.msg, e.position))
 }

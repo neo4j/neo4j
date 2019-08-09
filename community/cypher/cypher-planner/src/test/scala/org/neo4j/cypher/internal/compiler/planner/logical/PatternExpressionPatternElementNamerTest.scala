@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.planner.logical
 
+import org.neo4j.cypher.internal.compiler.Neo4jCypherExceptionFactory
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport2
 import org.neo4j.cypher.internal.v4_0.ast._
 import org.neo4j.cypher.internal.v4_0.rewriting.rewriters.PatternExpressionPatternElementNamer
@@ -80,7 +81,7 @@ class PatternExpressionPatternElementNamerTest extends CypherFunSuite with Logic
   }
 
   private def parsePatternExpression(query: String): PatternExpression = {
-    parser.parse(query) match {
+    parser.parse(query, Neo4jCypherExceptionFactory(query, None)) match {
       case Query(_, SingleQuery(clauses)) =>
         val ret = clauses.last.asInstanceOf[Return]
         val patExpr = ret.returnItems.items.head.expression.asInstanceOf[PatternExpression]

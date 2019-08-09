@@ -21,9 +21,8 @@ package org.neo4j.cypher.internal.plandescription
 
 import java.util
 
-import org.neo4j.cypher.exceptionHandler
 import org.neo4j.cypher.internal.plandescription.Arguments._
-import org.neo4j.cypher.internal.v4_0.util.InternalException
+import org.neo4j.cypher.InternalException
 import org.neo4j.cypher.internal.v4_0.util.attribution.Id
 import org.neo4j.graphdb.ExecutionPlanDescription
 import org.neo4j.graphdb.ExecutionPlanDescription.ProfilerStatistics
@@ -92,10 +91,7 @@ sealed trait InternalPlanDescription extends org.neo4j.graphdb.ExecutionPlanDesc
   import scala.collection.JavaConverters._
 
   override def getChildren: util.List[ExecutionPlanDescription] = {
-    val childPlans: Seq[org.neo4j.graphdb.ExecutionPlanDescription] = exceptionHandler.runSafely {
-      children.toIndexedSeq
-    }
-
+    val childPlans: Seq[org.neo4j.graphdb.ExecutionPlanDescription] = children.toIndexedSeq
     childPlans.asJava
   }
 

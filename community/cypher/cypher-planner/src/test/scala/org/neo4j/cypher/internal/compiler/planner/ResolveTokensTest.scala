@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.compiler.planner
 
 import org.mockito.Mockito._
+import org.neo4j.cypher.internal.compiler.Neo4jCypherExceptionFactory
 import org.neo4j.cypher.internal.planner.spi.PlanContext
 import org.neo4j.cypher.internal.v4_0.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.v4_0.ast.{Match, Query, SingleQuery, Where, _}
@@ -177,7 +178,7 @@ class ResolveTokensTest extends CypherFunSuite {
     }
   }
 
-  def parseTest(queryText: String)(f: Query => Unit) = test(queryText) { parser.parse(queryText) match {
+  def parseTest(queryText: String)(f: Query => Unit) = test(queryText) { parser.parse(queryText, Neo4jCypherExceptionFactory(queryText, None)) match {
     case query: Query => f(query)
     }
   }

@@ -23,14 +23,13 @@ import java.io.File
 import java.time.Clock
 
 import org.neo4j.cypher.internal.compiler.RuntimeUnsupportedNotification
-import org.neo4j.cypher.internal.compiler.planner.CantCompileQueryException
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.Cardinalities
 import org.neo4j.cypher.internal.planner.spi.TokenContext
 import org.neo4j.cypher.internal.v4_0.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.v4_0.frontend.phases.RecordingNotificationLogger
 import org.neo4j.cypher.internal.v4_0.util.InternalNotification
-import org.neo4j.cypher.{CypherMorselRuntimeSchedulerOption, CypherRuntimeOption, RuntimeUnsupportedException, exceptionHandler}
+import org.neo4j.cypher.{CantCompileQueryException, CypherMorselRuntimeSchedulerOption, CypherRuntimeOption, RuntimeUnsupportedException}
 import org.neo4j.internal.kernel.api.security.SecurityContext
 import org.neo4j.internal.kernel.api.{Cursor, SchemaRead}
 import org.neo4j.logging.Log
@@ -158,7 +157,7 @@ class FallbackRuntime[CONTEXT <: RuntimeContext](runtimes: Seq[CypherRuntime[CON
       val runtime = runtimes(i)
 
       try {
-        val plan = exceptionHandler.runSafely(runtime.compileToExecutable(logicalQuery, context))
+        val plan = runtime.compileToExecutable(logicalQuery, context)
         val notifications = logger.notifications
         val notifiedPlan = if (notifications.isEmpty) plan else ExecutionPlanWithNotifications(plan, notifications)
        return notifiedPlan
