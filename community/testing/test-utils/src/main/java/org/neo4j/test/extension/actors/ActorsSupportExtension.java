@@ -19,6 +19,8 @@
  */
 package org.neo4j.test.extension.actors;
 
+import org.junit.jupiter.api.TestInstance;
+import org.junit.jupiter.api.extension.AfterAllCallback;
 import org.junit.jupiter.api.extension.AfterEachCallback;
 import org.junit.jupiter.api.extension.ExtensionConfigurationException;
 import org.junit.jupiter.api.extension.ExtensionContext;
@@ -33,15 +35,39 @@ import java.util.Optional;
 import org.neo4j.test.extension.Inject;
 
 import static java.lang.String.format;
+import static org.junit.jupiter.api.TestInstance.Lifecycle.PER_CLASS;
+import static org.junit.jupiter.api.TestInstance.Lifecycle.PER_METHOD;
 import static org.neo4j.test.ReflectionUtil.getAllFields;
 
-public class ActorsSupportExtension implements TestInstancePostProcessor, AfterEachCallback
+public class ActorsSupportExtension implements TestInstancePostProcessor, AfterEachCallback, AfterAllCallback
 {
     private static final Namespace NAMESPACE = Namespace.create( "neo4j", "actors" );
     private static final String ACTOR_MANAGER = "ACTOR_MANAGER";
 
     @Override
+    public void afterAll( ExtensionContext context ) throws Exception
+    {
+        if ( getLifecycle( context ) == PER_CLASS )
+        {
+            tearDownActors( context );
+        }
+    }
+
+    @Override
     public void afterEach( ExtensionContext context ) throws Exception
+    {
+        if ( getLifecycle( context ) == PER_METHOD )
+        {
+            tearDownActors( context );
+        }
+    }
+
+    private TestInstance.Lifecycle getLifecycle( ExtensionContext context )
+    {
+        return context.getTestInstanceLifecycle().orElse( PER_METHOD );
+    }
+
+    private void tearDownActors( ExtensionContext context ) throws Exception
     {
         Optional<ExtensionContext> current = Optional.of( context );
         while ( current.isPresent() )

@@ -135,7 +135,7 @@ class ActorImpl implements Actor
             {
                 throw new IllegalStateException( "Actor thread " + thread.getName() + " has not yet started." );
             }
-            if ( queue.hasWaitingConsumer() )
+            if ( queue.hasWaitingConsumer() && queue.isEmpty() )
             {
                 throw new IllegalStateException( "There are no tasks running or queued up that we can wait for." );
             }

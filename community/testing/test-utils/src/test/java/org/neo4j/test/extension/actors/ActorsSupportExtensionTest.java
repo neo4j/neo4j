@@ -21,12 +21,17 @@ package org.neo4j.test.extension.actors;
 
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestInstance;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import java.lang.reflect.Executable;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.IntStream;
 
 import org.neo4j.test.extension.Inject;
 
@@ -292,5 +297,50 @@ class ActorsSupportExtensionTest
             f1.get();
             assertEquals( counter.get(), 1 );
         }
+    }
+
+    static IntStream parameters()
+    {
+        return IntStream.range( 1, 10 );
+    }
+
+    enum ParametersEnum
+    {
+        A, B
+    }
+
+    @Nested
+    @ActorsExtension
+    class ActorsAndParameterisedTests
+    {
+        @Inject
+        Actor actor;
+
+        @ParameterizedTest
+        @MethodSource( "org.neo4j.test.extension.actors.ActorsSupportExtensionTest#parameters" )
+        void methodSourcedParameterisedTestWithActors( int ignored ) throws Exception
+        {
+            actor.submit( () -> {} ).get();
+        }
+
+        @ParameterizedTest
+        @EnumSource( ParametersEnum.class )
+        void enumSourcedParameterisedTestWithActors( ParametersEnum ignored ) throws Exception
+        {
+            actor.submit( () -> {} ).get();
+        }
+    }
+
+    @Nested
+    class ActorsAndParameterisedTestTemplates extends ActorsAndParameterisedTests
+    {
+        // Running tests inherited from the super class.
+    }
+
+    @Nested
+    @TestInstance( TestInstance.Lifecycle.PER_CLASS )
+    class ActorsAndParameterisedTestWithPerClassLifecycle extends ActorsAndParameterisedTests
+    {
+        // Running tests inherited from the super class.
     }
 }
