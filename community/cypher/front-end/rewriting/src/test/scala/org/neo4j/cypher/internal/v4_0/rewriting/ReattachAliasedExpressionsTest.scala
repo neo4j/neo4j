@@ -36,10 +36,10 @@ class ReattachAliasedExpressionsTest extends CypherFunSuite with RewriteTest {
       "MATCH (a) RETURN count(*) AS foo ORDER BY count(*)")
   }
 
-  test("MATCH (a) RETURN collect(a) AS foo ORDER BY length(foo)") {
+  test("MATCH (a) RETURN collect(a) AS foo ORDER BY size(foo)") {
     assertRewrite(
-      "MATCH (a) RETURN collect(a) AS foo ORDER BY length(foo)",
-      "MATCH (a) RETURN collect(a) AS foo ORDER BY length(collect(a))")
+      "MATCH (a) RETURN collect(a) AS foo ORDER BY size(foo)",
+      "MATCH (a) RETURN collect(a) AS foo ORDER BY size(collect(a))")
   }
 
   test("MATCH (x) WITH x AS x RETURN count(x) AS foo ORDER BY foo") {

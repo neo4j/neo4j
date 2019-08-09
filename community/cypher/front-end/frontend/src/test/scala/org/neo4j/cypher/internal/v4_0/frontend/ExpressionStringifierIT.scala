@@ -43,7 +43,7 @@ class ExpressionStringifierIT extends CypherFunSuite with Parser with Expression
       "[x in [1,2,3]\n\tWHERE x%2=0|x*2]" -> "[x IN [1, 2, 3] WHERE x % 2 = 0 | x * 2]",
       "[x in [1,2,3]\n\tWHERE x%2=0]" -> "[x IN [1, 2, 3] WHERE x % 2 = 0]",
       "[(a)-->(b)|a.prop]" -> "[(a)-->(b) | a.prop]",
-      "[p=(a)-->(b) WHERE a:APA|a.prop*size(p)]" -> "[p = (a)-->(b) WHERE a:APA | a.prop * size(p)]",
+      "[p=(a)-->(b) WHERE a:APA|a.prop*length(p)]" -> "[p = (a)-->(b) WHERE a:APA | a.prop * length(p)]",
       "n['apa']" -> "n[\"apa\"]",
       "'apa'" -> "\"apa\"",
       "'a\"pa'" -> "'a\"pa'",

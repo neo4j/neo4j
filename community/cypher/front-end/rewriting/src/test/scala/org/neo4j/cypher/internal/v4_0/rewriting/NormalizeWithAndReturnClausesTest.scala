@@ -64,11 +64,11 @@ class NormalizeWithAndReturnClausesTest extends CypherFunSuite with RewriteTest 
   test("attach WHERE expression to existing aliases") {
     assertRewrite(
       """MATCH (n)
-        |WITH length(n.prop) > 10 AS result WHERE length(n.prop) > 10
+        |WITH size(n.prop) > 10 AS result WHERE size(n.prop) > 10
         |RETURN result
       """.stripMargin,
       """MATCH (n)
-        |WITH length(n.prop) > 10 AS result WHERE result
+        |WITH size(n.prop) > 10 AS result WHERE result
         |RETURN result AS result
       """.stripMargin)
   }
@@ -92,11 +92,11 @@ class NormalizeWithAndReturnClausesTest extends CypherFunSuite with RewriteTest 
   test("WITH: does not introduce aliases for ORDER BY expressions that depend on existing variables") {
     assertRewrite(
       """MATCH (n)
-        |WITH n ORDER BY length(n.prop)
+        |WITH n ORDER BY size(n.prop)
         |RETURN n
       """.stripMargin,
       """MATCH (n)
-        |WITH n AS n ORDER BY length(n.prop)
+        |WITH n AS n ORDER BY size(n.prop)
         |RETURN n AS n
       """.stripMargin)
   }
@@ -104,21 +104,21 @@ class NormalizeWithAndReturnClausesTest extends CypherFunSuite with RewriteTest 
   test("RETURN: does not introduce aliases for ORDER BY expressions that depend on existing variables") {
     assertRewrite(
       """MATCH (n)
-        |RETURN n ORDER BY length(n.prop)
+        |RETURN n ORDER BY size(n.prop)
       """.stripMargin,
       """MATCH (n)
-        |RETURN n AS n ORDER BY length(n.prop)
+        |RETURN n AS n ORDER BY size(n.prop)
       """.stripMargin)
   }
 
   test("does not introduce aliases for WHERE expressions that depend on existing variables") {
     assertRewrite(
       """MATCH (n)
-        |WITH n WHERE length(n.prop) > 10
+        |WITH n WHERE size(n.prop) > 10
         |RETURN n
       """.stripMargin,
       """MATCH (n)
-        |WITH n AS n WHERE length(n.prop) > 10
+        |WITH n AS n WHERE size(n.prop) > 10
         |RETURN n AS n
       """.stripMargin)
   }
@@ -126,11 +126,11 @@ class NormalizeWithAndReturnClausesTest extends CypherFunSuite with RewriteTest 
   test("WITH: introduces aliases for ORDER BY expressions that depend on existing aliases") {
     assertRewrite(
       """MATCH (n)
-        |WITH n.prop AS prop ORDER BY length(n.prop)
+        |WITH n.prop AS prop ORDER BY size(n.prop)
         |RETURN prop
       """.stripMargin,
       """MATCH (n)
-        |WITH n.prop AS prop ORDER BY length(prop)
+        |WITH n.prop AS prop ORDER BY size(prop)
         |RETURN prop AS prop
       """.stripMargin)
   }
@@ -138,21 +138,21 @@ class NormalizeWithAndReturnClausesTest extends CypherFunSuite with RewriteTest 
   test("RETURN: introduces aliases for ORDER BY expressions that depend on existing aliases") {
     assertRewrite(
       """MATCH (n)
-        |RETURN n.prop AS prop ORDER BY length(n.prop)
+        |RETURN n.prop AS prop ORDER BY size(n.prop)
       """.stripMargin,
       """MATCH (n)
-        |RETURN n.prop AS prop ORDER BY length(prop)
+        |RETURN n.prop AS prop ORDER BY size(prop)
       """.stripMargin)
   }
 
   test("introduces aliases for WHERE expressions that depend on existing aliases") {
     assertRewrite(
       """MATCH (n)
-        |WITH n.prop AS prop WHERE length(n.prop) > 10
+        |WITH n.prop AS prop WHERE size(n.prop) > 10
         |RETURN prop
       """.stripMargin,
       """MATCH (n)
-        |WITH n.prop AS prop WHERE length(prop) > 10
+        |WITH n.prop AS prop WHERE size(prop) > 10
         |RETURN prop AS prop
       """.stripMargin)
   }
@@ -255,11 +255,11 @@ class NormalizeWithAndReturnClausesTest extends CypherFunSuite with RewriteTest 
   test("WITH: introduces aliases for complex ORDER BY expressions that depend on existing aliases") {
     assertRewrite(
       """MATCH (n)
-        |WITH n.prop AS prop ORDER BY length(n.prop[0])
+        |WITH n.prop AS prop ORDER BY size(n.prop[0])
         |RETURN prop
       """.stripMargin,
       """MATCH (n)
-        |WITH n.prop AS prop ORDER BY length(prop[0])
+        |WITH n.prop AS prop ORDER BY size(prop[0])
         |RETURN prop AS prop
       """.stripMargin)
   }
@@ -267,21 +267,21 @@ class NormalizeWithAndReturnClausesTest extends CypherFunSuite with RewriteTest 
   test("RETURN: introduces aliases for complex ORDER BY expressions that depend on existing aliases") {
     assertRewrite(
       """MATCH (n)
-        |RETURN n.prop AS prop ORDER BY length(n.prop[0])
+        |RETURN n.prop AS prop ORDER BY size(n.prop[0])
       """.stripMargin,
       """MATCH (n)
-        |RETURN n.prop AS prop ORDER BY length(prop[0])
+        |RETURN n.prop AS prop ORDER BY size(prop[0])
       """.stripMargin)
   }
 
   test("introduces aliases for complex WHERE expressions that depend on existing aliases") {
     assertRewrite(
       """MATCH (n)
-        |WITH n.prop AS prop WHERE length(n.prop[0]) > 10
+        |WITH n.prop AS prop WHERE size(n.prop[0]) > 10
         |RETURN prop
       """.stripMargin,
       """MATCH (n)
-        |WITH n.prop AS prop WHERE length(prop[0]) > 10
+        |WITH n.prop AS prop WHERE size(prop[0]) > 10
         |RETURN prop AS prop
       """.stripMargin)
   }
@@ -547,21 +547,21 @@ class NormalizeWithAndReturnClausesTest extends CypherFunSuite with RewriteTest 
   test("WITH: aggregating: does not change grouping set when introducing aliases for ORDER BY") {
     assertRewrite(
       """MATCH (n)
-        |WITH DISTINCT n.prop AS prop ORDER BY length(n.prop)
+        |WITH DISTINCT n.prop AS prop ORDER BY size(n.prop)
         |RETURN prop
       """.stripMargin,
       """MATCH (n)
-        |WITH DISTINCT n.prop AS prop ORDER BY length(prop)
+        |WITH DISTINCT n.prop AS prop ORDER BY size(prop)
         |RETURN prop AS prop
       """.stripMargin)
 
     assertRewrite(
       """MATCH (n)
-        |WITH n.prop AS prop, count(*) AS count ORDER BY length(n.prop)
+        |WITH n.prop AS prop, count(*) AS count ORDER BY size(n.prop)
         |RETURN prop, count
       """.stripMargin,
       """MATCH (n)
-        |WITH n.prop AS prop, count(*) AS count ORDER BY length(prop)
+        |WITH n.prop AS prop, count(*) AS count ORDER BY size(prop)
         |RETURN prop AS prop, count AS count
       """.stripMargin)
   }
@@ -569,39 +569,39 @@ class NormalizeWithAndReturnClausesTest extends CypherFunSuite with RewriteTest 
   test("RETURN: aggregating: does not change grouping set when introducing aliases for ORDER BY") {
     assertRewrite(
       """MATCH (n)
-        |RETURN DISTINCT n.prop AS prop ORDER BY length(n.prop)
+        |RETURN DISTINCT n.prop AS prop ORDER BY size(n.prop)
       """.stripMargin,
       """MATCH (n)
-        |RETURN DISTINCT n.prop AS prop ORDER BY length(prop)
+        |RETURN DISTINCT n.prop AS prop ORDER BY size(prop)
       """.stripMargin)
 
     assertRewrite(
       """MATCH (n)
-        |RETURN n.prop AS prop, count(*) AS count ORDER BY length(n.prop)
+        |RETURN n.prop AS prop, count(*) AS count ORDER BY size(n.prop)
       """.stripMargin,
       """MATCH (n)
-        |RETURN n.prop AS prop, count(*) AS count ORDER BY length(prop)
+        |RETURN n.prop AS prop, count(*) AS count ORDER BY size(prop)
       """.stripMargin)
   }
 
   test("aggregating: does not change grouping set when introducing aliases for WHERE") {
     assertRewrite(
       """MATCH (n)
-        |WITH DISTINCT n.prop AS prop WHERE length(n.prop) = 1
+        |WITH DISTINCT n.prop AS prop WHERE size(n.prop) = 1
         |RETURN prop
       """.stripMargin,
       """MATCH (n)
-        |WITH DISTINCT n.prop AS prop WHERE length(prop) = 1
+        |WITH DISTINCT n.prop AS prop WHERE size(prop) = 1
         |RETURN prop AS prop
       """.stripMargin)
 
     assertRewrite(
       """MATCH (n)
-        |WITH n.prop AS prop, count(*) AS count WHERE length(n.prop) = 1
+        |WITH n.prop AS prop, count(*) AS count WHERE size(n.prop) = 1
         |RETURN prop, count
       """.stripMargin,
       """MATCH (n)
-        |WITH n.prop AS prop, count(*) AS count WHERE length(prop) = 1
+        |WITH n.prop AS prop, count(*) AS count WHERE size(prop) = 1
         |RETURN prop AS prop, count AS count
       """.stripMargin)
   }

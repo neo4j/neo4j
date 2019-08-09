@@ -172,10 +172,10 @@ class IsolateAggregationTest extends CypherFunSuite with RewriteTest with AstCon
       "MATCH (n) WITH count(*) AS `  AGGREGATION17`, max(id(n)) AS `  AGGREGATION28` RETURN `  AGGREGATION17`+`  AGGREGATION28` AS r")
   }
 
-  test("MATCH (a) RETURN length(collect(a)) AS length") {
+  test("MATCH (a) RETURN size(collect(a)) AS size") {
     assertRewrite(
-      "MATCH (a) RETURN length(collect(a)) AS length",
-      "MATCH (a) WITH collect(a) AS `  AGGREGATION24` RETURN length(`  AGGREGATION24`) AS length")
+      "MATCH (a) RETURN size(collect(a)) AS size",
+      "MATCH (a) WITH collect(a) AS `  AGGREGATION22` RETURN size(`  AGGREGATION22`) AS size")
   }
 
   test("MATCH (a) RETURN count(a) > 0 AS bool") {
