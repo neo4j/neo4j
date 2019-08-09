@@ -204,8 +204,6 @@ public abstract class AbstractEditionModule
         this.securityProvider = securityProvider;
     }
 
-    public abstract DatabaseIdRepository databaseIdRepository();
-
     /**
      * @return the query engine provider for this edition.
      */
