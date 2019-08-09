@@ -29,6 +29,7 @@ import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.kernel.database.DatabaseId;
 import org.neo4j.kernel.impl.api.CommitProcessFactory;
 import org.neo4j.kernel.impl.constraints.ConstraintSemantics;
+import org.neo4j.kernel.impl.factory.AccessCapabilityFactory;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.locking.StatementLocksFactory;
 import org.neo4j.kernel.impl.transaction.TransactionHeaderInformationFactory;
@@ -47,6 +48,7 @@ public class StandaloneDatabaseComponents implements EditionDatabaseComponents
     private final DatabaseTransactionStats transactionMonitor;
     private final DatabaseIdContext idContext;
     private final StatementLocksFactory statementLocksFactory;
+    private final AccessCapabilityFactory accessCapabilityFactory;
 
     public StandaloneDatabaseComponents( StandaloneEditionModule editionModule, DatabaseId databaseId )
     {
@@ -60,6 +62,7 @@ public class StandaloneDatabaseComponents implements EditionDatabaseComponents
         this.locks = editionModule.getLocksSupplier().get();
         this.statementLocksFactory = editionModule.getStatementLocksFactoryProvider().apply( locks );
         this.transactionMonitor = editionModule.createTransactionMonitor();
+        this.accessCapabilityFactory = AccessCapabilityFactory.configDependent();
     }
 
     @Override
@@ -120,5 +123,11 @@ public class StandaloneDatabaseComponents implements EditionDatabaseComponents
     public DatabaseTransactionStats getTransactionMonitor()
     {
         return transactionMonitor;
+    }
+
+    @Override
+    public AccessCapabilityFactory getAccessCapabilityFactory()
+    {
+        return accessCapabilityFactory;
     }
 }

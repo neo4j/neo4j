@@ -59,6 +59,8 @@ import org.neo4j.kernel.impl.constraints.ConstraintSemantics;
 import org.neo4j.kernel.impl.constraints.StandardConstraintSemantics;
 import org.neo4j.kernel.impl.context.TransactionVersionContextSupplier;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
+import org.neo4j.kernel.impl.factory.AccessCapabilityFactory;
+import org.neo4j.kernel.impl.factory.CanWrite;
 import org.neo4j.kernel.impl.factory.CommunityCommitProcessFactory;
 import org.neo4j.kernel.impl.factory.DatabaseInfo;
 import org.neo4j.kernel.impl.locking.Locks;
@@ -523,6 +525,12 @@ public class DatabaseRule extends ExternalResource
         public FileLockerService getFileLockerService()
         {
             return fileLockerService;
+        }
+
+        @Override
+        public AccessCapabilityFactory getAccessCapabilityFactory()
+        {
+            return AccessCapabilityFactory.fixed( new CanWrite() );
         }
     }
 

@@ -85,10 +85,9 @@ import org.neo4j.kernel.impl.api.transaction.monitor.KernelTransactionMonitor;
 import org.neo4j.kernel.impl.api.transaction.monitor.KernelTransactionMonitorScheduler;
 import org.neo4j.kernel.impl.constraints.ConstraintSemantics;
 import org.neo4j.kernel.impl.factory.AccessCapability;
-import org.neo4j.kernel.impl.factory.CanWrite;
+import org.neo4j.kernel.impl.factory.AccessCapabilityFactory;
 import org.neo4j.kernel.impl.factory.DatabaseInfo;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
-import org.neo4j.kernel.impl.factory.ReadOnly;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.locking.StatementLocksFactory;
 import org.neo4j.kernel.impl.pagecache.PageCacheLifecycle;
@@ -207,6 +206,7 @@ public class Database extends LifecycleAdapter
     private final DatabaseTracer databaseTracer;
     private final PageCursorTracerSupplier pageCursorTracerSupplier;
     private final LockTracer lockTracer;
+    private final AccessCapabilityFactory accessCapabilityFactory;
 
     private Dependencies databaseDependencies;
     private LifeSupport life;
@@ -264,6 +264,7 @@ public class Database extends LifecycleAdapter
         this.ioLimiter = context.getIoLimiter();
         this.clock = context.getClock();
         this.eventListeners = context.getDatabaseEventListeners();
+        this.accessCapabilityFactory = context.getAccessCapabilityFactory();
 
         this.readOnly = databaseConfig.get( read_only );
         this.idController = context.getIdController();
@@ -306,7 +307,7 @@ public class Database extends LifecycleAdapter
             life.add( databaseConfig );
 
             databaseHealth = databaseHealthFactory.newInstance();
-            accessCapability = databaseConfig.get( read_only ) ? new ReadOnly() : new CanWrite();
+            accessCapability = accessCapabilityFactory.newAccessCapability( databaseConfig );
             DatabaseAvailability databaseAvailability =
                     new DatabaseAvailability( databaseAvailabilityGuard, transactionStats, clock, getAwaitActiveTransactionDeadlineMillis() );
 

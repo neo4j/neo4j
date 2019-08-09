@@ -27,6 +27,7 @@ import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.kernel.impl.api.CommitProcessFactory;
 import org.neo4j.kernel.impl.constraints.ConstraintSemantics;
+import org.neo4j.kernel.impl.factory.AccessCapabilityFactory;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.locking.StatementLocksFactory;
 import org.neo4j.kernel.impl.transaction.TransactionHeaderInformationFactory;
@@ -54,4 +55,6 @@ public interface EditionDatabaseComponents
     StatementLocksFactory getStatementLocksFactory();
 
     DatabaseTransactionStats getTransactionMonitor();
+
+    AccessCapabilityFactory getAccessCapabilityFactory();
 }

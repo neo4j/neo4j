@@ -48,6 +48,7 @@ import org.neo4j.kernel.impl.api.CommitProcessFactory;
 import org.neo4j.kernel.impl.api.NonTransactionalTokenNameLookup;
 import org.neo4j.kernel.impl.constraints.ConstraintSemantics;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
+import org.neo4j.kernel.impl.factory.AccessCapabilityFactory;
 import org.neo4j.kernel.impl.factory.DatabaseInfo;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.locking.StatementLocksFactory;
@@ -110,6 +111,7 @@ public class ModularDatabaseCreationContext implements DatabaseCreationContext
     private final StorageEngineFactory storageEngineFactory;
     private final ThreadToStatementContextBridge contextBridge;
     private final FileLockerService fileLockerService;
+    private final AccessCapabilityFactory accessCapabilityFactory;
 
     public ModularDatabaseCreationContext( DatabaseId databaseId, GlobalModule globalModule, Dependencies globalDependencies,
             Monitors parentMonitors, EditionDatabaseComponents editionComponents, GlobalProcedures globalProcedures,
@@ -156,6 +158,7 @@ public class ModularDatabaseCreationContext implements DatabaseCreationContext
         this.storageEngineFactory = globalModule.getStorageEngineFactory();
         this.contextBridge = globalModule.getThreadToTransactionBridge();
         this.fileLockerService = globalModule.getFileLockerService();
+        this.accessCapabilityFactory = editionComponents.getAccessCapabilityFactory();
     }
 
     @Override
@@ -384,6 +387,12 @@ public class ModularDatabaseCreationContext implements DatabaseCreationContext
     public FileLockerService getFileLockerService()
     {
         return fileLockerService;
+    }
+
+    @Override
+    public AccessCapabilityFactory getAccessCapabilityFactory()
+    {
+        return accessCapabilityFactory;
     }
 
     private DatabaseAvailabilityGuard databaseAvailabilityGuardFactory( DatabaseId databaseId, GlobalModule globalModule, long databaseTimeoutMillis  )
