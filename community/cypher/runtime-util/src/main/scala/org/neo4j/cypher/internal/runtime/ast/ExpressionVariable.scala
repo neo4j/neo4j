@@ -19,8 +19,8 @@
  */
 package org.neo4j.cypher.internal.runtime.ast
 
+import org.neo4j.cypher.InternalException
 import org.neo4j.cypher.internal.v4_0.expressions.LogicalVariable
-import org.neo4j.cypher.internal.v4_0.util.InternalException
 
 object ExpressionVariable {
   def cast(variable: LogicalVariable): ExpressionVariable =

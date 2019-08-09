@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.planner.logical.steps
 
+import org.neo4j.cypher.{HintException, IndexHintException, InternalException, JoinHintException}
 import org.neo4j.cypher.internal.compiler.planner.logical.{LogicalPlanningContext, PlanTransformer}
 import org.neo4j.cypher.internal.compiler.{IndexHintUnfulfillableNotification, JoinHintUnfulfillableNotification}
 import org.neo4j.cypher.internal.ir.PlannerQuery

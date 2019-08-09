@@ -28,8 +28,8 @@ import java.util.stream.DoubleStream;
 import java.util.stream.IntStream;
 import java.util.stream.LongStream;
 
-import org.neo4j.cypher.internal.v4_0.util.IncomparableValuesException;
-import org.neo4j.cypher.internal.v4_0.util.UnorderableValueException;
+import org.neo4j.cypher.IncomparableValuesException;
+import org.neo4j.cypher.UnorderableValueException;
 import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.internal.helpers.MathUtil;
@@ -203,7 +203,7 @@ public class CypherOrderability
             {
                 return PATH;
             }
-            throw new UnorderableValueException( value.getClass().getSimpleName() );
+            throw new UnorderableValueException( value.getClass().getSimpleName(), null );
         }
 
         public static final Comparator<SuperType> TYPE_ID_COMPARATOR = Comparator.comparingInt( left -> left.typeId );

@@ -23,7 +23,7 @@ import org.neo4j.configuration.GraphDatabaseSettings
 import org.neo4j.cypher.internal.logical.plans.Ascending
 import org.neo4j.cypher.internal.runtime.InputDataStream
 import org.neo4j.cypher.internal.runtime.spec._
-import org.neo4j.cypher.internal.v4_0.util.TransactionOutOfMemoryException
+import org.neo4j.cypher.TransactionOutOfMemoryException
 import org.neo4j.cypher.internal.{CypherRuntime, RuntimeContext}
 import org.neo4j.kernel.impl.util.ValueUtils
 

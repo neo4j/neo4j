@@ -19,9 +19,10 @@
  */
 package org.neo4j.cypher.internal.runtime.ast
 
+import org.neo4j.cypher.InternalException
 import org.neo4j.cypher.internal.v4_0.ast.semantics.{SemanticCheck, SemanticCheckResult, SemanticCheckableExpression}
 import org.neo4j.cypher.internal.v4_0.expressions.{LogicalVariable, Expression => ASTExpression}
-import org.neo4j.cypher.internal.v4_0.util.{InputPosition, InternalException}
+import org.neo4j.cypher.internal.v4_0.util.InputPosition
 
 abstract class RuntimeVariable(override val name: String) extends LogicalVariable with SemanticCheckableExpression {
   override def semanticCheck(ctx: ASTExpression.SemanticContext): SemanticCheck = SemanticCheckResult.success

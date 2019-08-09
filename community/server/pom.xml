@@ -131,6 +131,12 @@
 
         <dependency>
             <groupId>org.neo4j</groupId>
+            <artifactId>neo4j-cypher-exceptions</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.neo4j</groupId>
             <artifactId>neo4j-bolt</artifactId>
             <version>${project.version}</version>
         </dependency>

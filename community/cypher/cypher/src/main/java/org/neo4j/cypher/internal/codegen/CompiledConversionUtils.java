@@ -35,7 +35,7 @@ import java.util.stream.IntStream;
 import java.util.stream.LongStream;
 import java.util.stream.Stream;
 
-import org.neo4j.cypher.internal.v4_0.util.CypherTypeException;
+import org.neo4j.cypher.CypherTypeException;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;

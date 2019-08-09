@@ -21,13 +21,14 @@ package org.neo4j.cypher.internal.runtime.interpreted.commands.predicates
 
 import java.util.regex.Pattern
 
+import org.neo4j.cypher.CypherTypeException
 import org.neo4j.cypher.internal.runtime.interpreted.IsMap
 import org.neo4j.cypher.internal.runtime.interpreted.commands.AstNode
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.{AbstractCachedNodeProperty, AbstractCachedRelationshipProperty, Expression, Literal}
 import org.neo4j.cypher.internal.runtime.interpreted.commands.values.KeyToken
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
 import org.neo4j.cypher.internal.runtime.{CastSupport, ExecutionContext, IsList, IsNoValue}
-import org.neo4j.cypher.internal.v4_0.util.{CypherTypeException, NonEmptyList}
+import org.neo4j.cypher.internal.v4_0.util.NonEmptyList
 import org.neo4j.cypher.operations.CypherBoolean
 import org.neo4j.kernel.api.StatementConstants
 import org.neo4j.values.storable.{BooleanValue, TextValue, Value, Values}

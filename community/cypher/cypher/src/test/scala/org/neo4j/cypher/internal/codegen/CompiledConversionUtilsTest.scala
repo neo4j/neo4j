@@ -23,7 +23,7 @@ import java.util
 import java.util.stream.{DoubleStream, IntStream, LongStream}
 
 import org.mockito.Mockito.when
-import org.neo4j.cypher.internal.v4_0.util.CypherTypeException
+import org.neo4j.cypher.CypherTypeException
 import org.neo4j.cypher.internal.codegen.CompiledConversionUtils.makeValueNeoSafe
 import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
 import org.neo4j.graphdb.{Node, Relationship}

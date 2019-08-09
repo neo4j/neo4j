@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.runtime.spec.tests
 
 import org.neo4j.cypher.internal.logical.plans.Ascending
 import org.neo4j.cypher.internal.runtime.spec._
-import org.neo4j.cypher.internal.v4_0.util.InvalidArgumentException
+import org.neo4j.cypher.InvalidArgumentException
 import org.neo4j.cypher.internal.{CypherRuntime, RuntimeContext}
 import org.neo4j.values.virtual.VirtualNodeValue
 

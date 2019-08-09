@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.runtime.spec.tests
 
 import org.neo4j.cypher.internal.logical.plans.{Ascending, Descending}
 import org.neo4j.cypher.internal.runtime.spec._
-import org.neo4j.cypher.internal.v4_0.util.ArithmeticException
+import org.neo4j.cypher.ArithmeticException
 import org.neo4j.cypher.internal.{CypherRuntime, RuntimeContext}
 import org.neo4j.graphdb.Node
 import org.neo4j.values.storable.Values

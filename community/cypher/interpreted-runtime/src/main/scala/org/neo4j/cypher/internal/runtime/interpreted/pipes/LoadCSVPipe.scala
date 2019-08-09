@@ -21,19 +21,14 @@ package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
 import java.net.URL
 
+import org.neo4j.cypher.LoadExternalResourceException
 import org.neo4j.cypher.internal.ir.{CSVFormat, HasHeaders, NoHeaders}
-import org.neo4j.cypher.internal.runtime.ExecutionContext
+import org.neo4j.cypher.internal.runtime.{ArrayBackedMap, ExecutionContext, QueryContext}
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expression
-import org.neo4j.cypher.internal.runtime.ArrayBackedMap
-import org.neo4j.cypher.internal.runtime.QueryContext
-import org.neo4j.cypher.internal.v4_0.util.LoadExternalResourceException
 import org.neo4j.cypher.internal.v4_0.util.attribution.Id
 import org.neo4j.values._
-import org.neo4j.values.storable.TextValue
-import org.neo4j.values.storable.Value
-import org.neo4j.values.storable.Values
-import org.neo4j.values.virtual.MapValueBuilder
-import org.neo4j.values.virtual.VirtualValues
+import org.neo4j.values.storable.{TextValue, Value, Values}
+import org.neo4j.values.virtual.{MapValueBuilder, VirtualValues}
 
 case class LoadCSVPipe(source: Pipe,
                        format: CSVFormat,
@@ -52,7 +47,7 @@ case class LoadCSVPipe(source: Pipe,
       new URL(urlString)
     } catch {
       case e: java.net.MalformedURLException =>
-        throw new LoadExternalResourceException(s"Invalid URL '$urlString': ${e.getMessage}")
+        throw new LoadExternalResourceException(s"Invalid URL '$urlString': ${e.getMessage}", e)
     }
 
     context.getImportURL(url) match {

@@ -266,7 +266,7 @@ abstract class MiscTestBase[CONTEXT <: RuntimeContext](edition: Edition[CONTEXT]
     val futureResult = Future(consume(execute(logicalQuery, runtime, inputValues(Array(1)))))(global)
 
     // then
-    intercept[org.neo4j.cypher.internal.v4_0.util.ArithmeticException] {
+    intercept[org.neo4j.cypher.ArithmeticException] {
       Await.result(futureResult, 10.seconds)
     }
   }
@@ -288,7 +288,7 @@ abstract class MiscTestBase[CONTEXT <: RuntimeContext](edition: Edition[CONTEXT]
     val futureResult = Future(consume(execute(logicalQuery, runtime)))(global)
 
     // then
-    intercept[org.neo4j.cypher.internal.v4_0.util.ArithmeticException] {
+    intercept[org.neo4j.cypher.ArithmeticException] {
       Await.result(futureResult, 30.seconds)
     }
   }

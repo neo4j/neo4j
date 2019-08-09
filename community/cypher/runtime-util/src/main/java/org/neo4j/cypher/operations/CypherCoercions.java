@@ -22,10 +22,10 @@ package org.neo4j.cypher.operations;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.neo4j.cypher.CypherTypeException;
 import org.neo4j.cypher.internal.runtime.DbAccess;
 import org.neo4j.cypher.internal.runtime.ExpressionCursors;
 import org.neo4j.cypher.internal.runtime.makeValueNeoSafe;
-import org.neo4j.cypher.internal.v4_0.util.CypherTypeException;
 import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.PropertyCursor;
 import org.neo4j.internal.kernel.api.RelationshipScanCursor;

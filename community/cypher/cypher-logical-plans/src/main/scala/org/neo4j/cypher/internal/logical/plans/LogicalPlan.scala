@@ -21,12 +21,13 @@ package org.neo4j.cypher.internal.logical.plans
 
 import java.lang.reflect.Method
 
+import org.neo4j.cypher.InternalException
 import org.neo4j.cypher.internal.ir.{PlannerQuery, Strictness}
 import org.neo4j.cypher.internal.v4_0.expressions._
 import org.neo4j.cypher.internal.v4_0.util.Foldable._
 import org.neo4j.cypher.internal.v4_0.util.Rewritable._
 import org.neo4j.cypher.internal.v4_0.util.attribution.{Id, IdGen, Identifiable, SameId}
-import org.neo4j.cypher.internal.v4_0.util.{Foldable, InternalException, Rewritable}
+import org.neo4j.cypher.internal.v4_0.util.{Foldable, Rewritable}
 
 import scala.collection.mutable
 import scala.util.hashing.MurmurHash3

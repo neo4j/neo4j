@@ -258,7 +258,7 @@ class Invocation
             if ( hasPrevious || readStatement() != null )
             {
                 throw new QueryExecutionKernelException(
-                        new InvalidSemanticsException( "Cannot execute another statement with PERIODIC COMMIT statement in the same transaction" ) );
+                        new InvalidSemanticsException( "Cannot execute another statement with PERIODIC COMMIT statement in the same transaction", null ) );
             }
 
             transactionHandle.closeTransactionForPeriodicCommit();

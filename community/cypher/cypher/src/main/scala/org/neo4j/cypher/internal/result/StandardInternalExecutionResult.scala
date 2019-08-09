@@ -19,11 +19,12 @@
  */
 package org.neo4j.cypher.internal.result
 
+import org.neo4j.cypher.ProfilerStatisticsNotReadyException
 import org.neo4j.cypher.internal.RuntimeName
 import org.neo4j.cypher.internal.javacompat.ResultSubscriber
 import org.neo4j.cypher.internal.plandescription.{InternalPlanDescription, PlanDescriptionBuilder}
 import org.neo4j.cypher.internal.runtime._
-import org.neo4j.cypher.internal.v4_0.util.{ProfilerStatisticsNotReadyException, TaskCloser}
+import org.neo4j.cypher.internal.v4_0.util.TaskCloser
 import org.neo4j.cypher.result.RuntimeResult
 import org.neo4j.cypher.result.RuntimeResult.ConsumptionState
 import org.neo4j.graphdb.Notification

@@ -348,7 +348,7 @@ public class TransactionStateMachine implements StatementProcessor
                     @Override
                     State commitTransaction( MutableTransactionState ctx, TransactionStateMachineSPI spi ) throws KernelException
                     {
-                        throw new QueryExecutionKernelException( new InvalidSemanticsException( "No current transaction to commit." ) );
+                        throw new QueryExecutionKernelException( new InvalidSemanticsException( "No current transaction to commit.", null ) );
                     }
 
                     @Override
@@ -367,7 +367,7 @@ public class TransactionStateMachine implements StatementProcessor
                     State beginTransaction( MutableTransactionState ctx, TransactionStateMachineSPI spi, List<Bookmark> bookmarks, Duration txTimeout,
                             AccessMode accessMode, Map<String,Object> txMetadata ) throws KernelException
                     {
-                        throw new QueryExecutionKernelException( new InvalidSemanticsException( "Nested transactions are not supported." ) );
+                        throw new QueryExecutionKernelException( new InvalidSemanticsException( "Nested transactions are not supported.", null ) );
                     }
 
                     @Override
@@ -382,7 +382,7 @@ public class TransactionStateMachine implements StatementProcessor
                         {
                             throw new QueryExecutionKernelException( new InvalidSemanticsException(
                                     "Executing queries that use periodic commit in an " +
-                                    "open transaction is not possible." ) );
+                                    "open transaction is not possible.", null ) );
                         }
                         else
                         {

@@ -22,9 +22,9 @@ package org.neo4j.cypher.operations;
 import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
 
-import org.neo4j.cypher.internal.v4_0.util.CypherTypeException;
-import org.neo4j.cypher.internal.v4_0.util.InternalException;
-import org.neo4j.cypher.internal.v4_0.util.InvalidSemanticsException;
+import org.neo4j.cypher.CypherTypeException;
+import org.neo4j.cypher.InternalException;
+import org.neo4j.cypher.InvalidSemanticsException;
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.AnyValues;
 import org.neo4j.values.Comparison;
@@ -125,7 +125,7 @@ public final class CypherBoolean
         }
         catch ( PatternSyntaxException e )
         {
-            throw new InvalidSemanticsException( "Invalid Regex: " + e.getMessage() );
+            throw new InvalidSemanticsException( "Invalid Regex: " + e.getMessage(), null );
         }
     }
 

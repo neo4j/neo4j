@@ -23,7 +23,7 @@ import org.neo4j.cypher.internal.logical.plans.PrefixRange
 import org.neo4j.cypher.internal.runtime.ExecutionContext
 import org.neo4j.cypher.internal.runtime.interpreted.commands.AstNode
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
-import org.neo4j.cypher.internal.v4_0.util.InternalException
+import org.neo4j.cypher.InternalException
 import org.neo4j.values.AnyValue
 
 case class PrefixSeekRangeExpression(range: PrefixRange[Expression]) extends Expression {

@@ -23,11 +23,11 @@ import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.concurrent.ThreadLocalRandom;
 
+import org.neo4j.cypher.CypherTypeException;
+import org.neo4j.cypher.InvalidArgumentException;
+import org.neo4j.cypher.ParameterWrongTypeException;
 import org.neo4j.cypher.internal.runtime.DbAccess;
 import org.neo4j.cypher.internal.runtime.ExpressionCursors;
-import org.neo4j.cypher.internal.v4_0.util.CypherTypeException;
-import org.neo4j.cypher.internal.v4_0.util.InvalidArgumentException;
-import org.neo4j.cypher.internal.v4_0.util.ParameterWrongTypeException;
 import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.PropertyCursor;
 import org.neo4j.internal.kernel.api.RelationshipScanCursor;

@@ -23,7 +23,7 @@ import org.neo4j.cypher.internal.runtime.IsNoValue
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expression
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.{DurationValue, NumberValue, Values}
-import org.neo4j.cypher.internal.v4_0.util.CypherTypeException
+import org.neo4j.cypher.CypherTypeException
 
 trait NumericOrDurationAggregationExpression {
   trait AggregatingType

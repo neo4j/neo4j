@@ -93,7 +93,11 @@
             <artifactId>neo4j-codegen</artifactId>
             <version>${project.version}</version>
         </dependency>
-
+        <dependency>
+            <groupId>org.neo4j</groupId>
+            <artifactId>neo4j-cypher-exceptions</artifactId>
+            <version>${project.version}</version>
+        </dependency>
         <!-- neo4j testing -->
         <dependency>
             <groupId>org.neo4j</groupId>

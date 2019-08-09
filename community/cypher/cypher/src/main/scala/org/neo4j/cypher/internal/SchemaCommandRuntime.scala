@@ -19,8 +19,8 @@
  */
 package org.neo4j.cypher.internal
 
+import org.neo4j.cypher.CantCompileQueryException
 import org.neo4j.cypher.internal.compiler.phases.LogicalPlanState
-import org.neo4j.cypher.internal.compiler.planner.CantCompileQueryException
 import org.neo4j.cypher.internal.logical.plans._
 import org.neo4j.cypher.internal.procs.SchemaWriteExecutionPlan
 import org.neo4j.cypher.internal.runtime._

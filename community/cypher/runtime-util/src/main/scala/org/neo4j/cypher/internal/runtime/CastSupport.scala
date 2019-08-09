@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.runtime
 import java.time._
 import java.time.temporal.TemporalAmount
 
-import org.neo4j.cypher.internal.v4_0.util.CypherTypeException
+import org.neo4j.cypher.CypherTypeException
 import org.neo4j.graphdb.spatial.Point
 import org.neo4j.values.storable._
 import org.neo4j.values.virtual.{ListValue, MapValue, NodeValue, RelationshipValue}

@@ -20,10 +20,10 @@
 package org.neo4j.cypher.internal.runtime.interpreted.commands.expressions
 
 import org.mockito.Mockito._
+import org.neo4j.cypher.{CypherTypeException, InvalidArgumentException}
 import org.neo4j.cypher.internal.runtime.interpreted.QueryStateHelper
 import org.neo4j.cypher.internal.runtime.{ExecutionContext, QueryContext}
 import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.v4_0.util.{CypherTypeException, InvalidArgumentException}
 import org.neo4j.graphdb.{Node, Relationship}
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.Values
