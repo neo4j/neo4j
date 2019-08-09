@@ -74,7 +74,7 @@ public enum LockWaitStrategies implements WaitStrategy
             catch ( InterruptedException e )
             {
                 Thread.interrupted();
-                throw new AcquireLockTimeoutException( e, "Interrupted while waiting.", Interrupted );
+                throw new AcquireLockTimeoutException( "Interrupted while waiting.", e, Interrupted );
             }
         }
     },

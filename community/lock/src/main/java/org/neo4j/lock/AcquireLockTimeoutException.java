@@ -30,21 +30,14 @@ public class AcquireLockTimeoutException extends RuntimeException implements Sta
 {
     private final Status statusCode;
 
-    public AcquireLockTimeoutException( Throwable cause, String message, Status statusCode )
-    {
-        super( message, cause );
-        this.statusCode = statusCode;
-    }
-
-    public AcquireLockTimeoutException( Throwable cause, Status statusCode )
-    {
-        super( cause );
-        this.statusCode = statusCode;
-    }
-
     public AcquireLockTimeoutException( String message, Status statusCode )
     {
-        super( message );
+        this( message, null, statusCode );
+    }
+
+    public AcquireLockTimeoutException( String message, Throwable cause, Status statusCode )
+    {
+        super( message, cause );
         this.statusCode = statusCode;
     }
 
