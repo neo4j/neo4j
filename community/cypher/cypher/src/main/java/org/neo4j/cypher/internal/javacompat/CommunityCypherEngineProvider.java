@@ -36,12 +36,6 @@ import org.neo4j.kernel.internal.GraphDatabaseAPI;
 public class CommunityCypherEngineProvider extends QueryEngineProvider
 {
     @Override
-    public String getName()
-    {
-        return "cypher";
-    }
-
-    @Override
     protected int enginePriority()
     {
         return 42; // Lower means better. The enterprise version will have a lower number
