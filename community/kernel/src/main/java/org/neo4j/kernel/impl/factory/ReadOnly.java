@@ -19,7 +19,7 @@
  */
 package org.neo4j.kernel.impl.factory;
 
-import org.neo4j.graphdb.security.WriteOperationsNotAllowedException;
+import org.neo4j.graphdb.WriteOperationsNotAllowedException;
 import org.neo4j.kernel.api.exceptions.Status;
 
 public class ReadOnly implements AccessCapability
