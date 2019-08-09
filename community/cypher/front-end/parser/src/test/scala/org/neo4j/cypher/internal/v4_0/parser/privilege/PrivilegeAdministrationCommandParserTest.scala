@@ -14,9 +14,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.neo4j.cypher.internal.v4_0.parser
+package org.neo4j.cypher.internal.v4_0.parser.privilege
 
 import org.neo4j.cypher.internal.v4_0.ast
+import org.neo4j.cypher.internal.v4_0.parser.AdministrationCommandParserTestBase
 
 class PrivilegeAdministrationCommandParserTest extends AdministrationCommandParserTestBase {
 
