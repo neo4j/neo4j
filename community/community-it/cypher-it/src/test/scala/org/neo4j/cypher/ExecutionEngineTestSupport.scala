@@ -54,6 +54,10 @@ trait ExecutionEngineTestSupport extends CypherTestSupport with ExecutionEngineH
     eengine = createEngine(graph)
   }
 
+  override protected def onDeletedGraphDatabase(): Unit = {
+    eengine = null
+  }
+
   override def executeScalar[T](q: String, params: (String, Any)*): T = try {
     super.executeScalar[T](q, params: _*)
   } catch {

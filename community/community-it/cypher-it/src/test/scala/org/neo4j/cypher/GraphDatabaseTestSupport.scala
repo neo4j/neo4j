@@ -72,6 +72,7 @@ trait GraphDatabaseTestSupport extends CypherTestSupport with GraphIcing {
   }
 
   protected def onNewGraphDatabase(): Unit = ()
+  protected def onDeletedGraphDatabase(): Unit = ()
 
   protected def startGraphDatabase(storeDir: File): Unit = {
     managementService = graphDatabaseFactory(storeDir).impermanent().build()
@@ -111,6 +112,7 @@ trait GraphDatabaseTestSupport extends CypherTestSupport with GraphIcing {
       graph = null
       managementService = null
       nodes = null
+      onDeletedGraphDatabase()
     }
   }
 
