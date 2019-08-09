@@ -19,6 +19,7 @@
  */
 package org.neo4j.test.extension;
 
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
 import org.neo4j.dbms.api.DatabaseManagementService;
@@ -60,5 +61,15 @@ class DbmsExtensionInjectionTest
         assertTrue( fs instanceof DefaultFileSystemAbstraction );
 
         assertSame( db, dbApi );
+    }
+
+    @Nested
+    class NestedTest
+    {
+        @Test
+        void injectedFieldsShouldBeAvailableForNestedTests()
+        {
+            shouldInject();
+        }
     }
 }

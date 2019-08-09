@@ -24,6 +24,7 @@ import org.junit.jupiter.api.extension.BeforeEachCallback;
 import org.junit.jupiter.api.extension.ExtensionContext;
 import org.junit.jupiter.api.extension.ExtensionContext.Namespace;
 import org.junit.jupiter.api.extension.ExtensionContext.Store;
+import org.junit.jupiter.api.extension.TestInstances;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
@@ -49,7 +50,7 @@ public class DbmsSupportExtension implements AfterEachCallback, BeforeEachCallba
     @Override
     public void beforeEach( ExtensionContext context )
     {
-        Object testInstance = context.getRequiredTestInstance();
+        TestInstances testInstances = context.getRequiredTestInstances();
         TestDirectory testDir = getTestDirectory( context );
 
         // Find closest configuration
@@ -57,7 +58,10 @@ public class DbmsSupportExtension implements AfterEachCallback, BeforeEachCallba
 
         // Make service
         TestDatabaseManagementServiceBuilder builder = new TestDatabaseManagementServiceBuilder( testDir.storeDir() ).setFileSystem( testDir.getFileSystem() );
-        maybeInvokeCallback( testInstance, builder, configuration.configurationCallback );
+        for ( Object testInstance : testInstances.getAllInstances() )
+        {
+            maybeInvokeCallback( testInstance, builder, configuration.configurationCallback );
+        }
         DatabaseManagementService dbms = builder.build();
         GraphDatabaseAPI db = (GraphDatabaseAPI) dbms.database( configuration.injectableDatabase );
 
@@ -66,9 +70,12 @@ public class DbmsSupportExtension implements AfterEachCallback, BeforeEachCallba
         store.put( DBMS, dbms );
 
         // Inject
-        injectInstance( testInstance, dbms, DatabaseManagementService.class );
-        injectInstance( testInstance, db, GraphDatabaseService.class );
-        injectInstance( testInstance, db, GraphDatabaseAPI.class );
+        for ( Object testInstance : testInstances.getAllInstances() )
+        {
+            injectInstance( testInstance, dbms, DatabaseManagementService.class );
+            injectInstance( testInstance, db, GraphDatabaseService.class );
+            injectInstance( testInstance, db, GraphDatabaseAPI.class );
+        }
     }
 
     @Override
