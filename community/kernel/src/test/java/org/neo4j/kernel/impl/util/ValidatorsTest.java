@@ -28,9 +28,6 @@ import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.TestDirectoryExtension;
 import org.neo4j.test.rule.TestDirectory;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsString;
-import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 @ExtendWith( TestDirectoryExtension.class )
@@ -53,15 +50,6 @@ class ValidatorsTest
         assertValid( ".*bc" );
         assertNotValid( "abcd" );
         assertNotValid( ".*de.*" );
-    }
-
-    @Test
-    void shouldValidateInList()
-    {
-        var e = assertThrows( IllegalArgumentException.class, () -> Validators.inList( new String[]{"foo", "bar", "baz"} ).validate( "qux" ) );
-        assertThat( e.getMessage(), containsString( "'qux' found but must be one of: [foo, bar, baz]." ) );
-
-        assertDoesNotThrow( () -> Validators.inList( new String[]{"foo", "bar", "baz"} ).validate( "bar" ), "Should have found item in list." );
     }
 
     private void assertNotValid( String string )
