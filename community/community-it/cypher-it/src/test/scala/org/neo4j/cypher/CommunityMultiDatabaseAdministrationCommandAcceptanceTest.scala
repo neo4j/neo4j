@@ -30,6 +30,7 @@ import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge
 import org.neo4j.logging.Log
 import org.neo4j.server.security.auth.{InMemoryUserRepository, SecureHasher}
 import org.neo4j.server.security.systemgraph.{BasicSystemGraphOperations, ContextSwitchingSystemGraphQueryExecutor, UserSecurityGraphInitializer}
+import org.scalatest.enablers.Messaging.messagingNatureOfThrowable
 
 import scala.collection.Map
 

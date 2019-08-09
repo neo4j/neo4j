@@ -28,6 +28,7 @@ import org.neo4j.internal.kernel.api.Transaction
 import org.neo4j.internal.kernel.api.security.AuthenticationResult
 import org.neo4j.kernel.api.exceptions.InvalidArgumentsException
 import org.neo4j.server.security.auth.SecurityTestUtils
+import org.scalatest.enablers.Messaging.messagingNatureOfThrowable
 
 import scala.collection.Map
 
