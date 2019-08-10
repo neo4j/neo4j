@@ -56,6 +56,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.neo4j.configuration.GraphDatabaseSettings.logs_directory;
 import static org.neo4j.internal.helpers.progress.ProgressMonitorFactory.NONE;
 import static org.neo4j.io.fs.FileUtils.copyRecursively;
 import static org.neo4j.test.TestLabels.LABEL_ONE;
@@ -241,8 +242,9 @@ class IndexConsistencyIT
         try ( FileSystemAbstraction fsa = new DefaultFileSystemAbstraction() )
         {
             ConsistencyCheckService service = new ConsistencyCheckService();
-            Config config = Config.defaults();
-            return service.runFullConsistencyCheck( db.databaseLayout(), config, NONE, log, fsa, true, ConsistencyFlags.DEFAULT );
+            DatabaseLayout databaseLayout = db.databaseLayout();
+            Config config = Config.defaults( logs_directory, databaseLayout.databaseDirectory().toPath() );
+            return service.runFullConsistencyCheck( databaseLayout, config, NONE, log, fsa, true, ConsistencyFlags.DEFAULT );
         }
     }
 }

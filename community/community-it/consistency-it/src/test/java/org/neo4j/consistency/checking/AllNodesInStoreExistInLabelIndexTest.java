@@ -49,6 +49,7 @@ import static org.hamcrest.Matchers.containsString;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
+import static org.neo4j.configuration.GraphDatabaseSettings.logs_directory;
 import static org.neo4j.internal.helpers.progress.ProgressMonitorFactory.NONE;
 import static org.neo4j.io.fs.FileUtils.copyFile;
 import static org.neo4j.test.TestLabels.LABEL_ONE;
@@ -368,8 +369,9 @@ public class AllNodesInStoreExistInLabelIndexTest
         try ( FileSystemAbstraction fsa = new DefaultFileSystemAbstraction() )
         {
             ConsistencyCheckService service = new ConsistencyCheckService();
-            Config config = Config.defaults();
-            return service.runFullConsistencyCheck( db.databaseLayout(), config, NONE, log, fsa, true,
+            DatabaseLayout databaseLayout = db.databaseLayout();
+            Config config = Config.defaults( logs_directory, databaseLayout.databaseDirectory().toPath() );
+            return service.runFullConsistencyCheck( databaseLayout, config, NONE, log, fsa, true,
                     ConsistencyFlags.DEFAULT );
         }
     }

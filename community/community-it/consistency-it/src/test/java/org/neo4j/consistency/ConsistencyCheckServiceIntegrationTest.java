@@ -414,6 +414,7 @@ public class ConsistencyCheckServiceIntegrationTest
     {
         Map<Setting<?>, Object> defaults = new HashMap<>();
         defaults.put( GraphDatabaseSettings.pagecache_memory, "8m" );
+        defaults.put( GraphDatabaseSettings.logs_directory, testDirectory.databaseDir().toPath() );
         defaults.put( record_format, getRecordFormatName() );
         return defaults;
     }
