@@ -38,15 +38,6 @@ public interface BoltGraphDatabaseServiceSPI
     BoltTransaction beginTransaction( KernelTransaction.Type type, LoginContext loginContext, ClientConnectionInfo clientInfo, Duration txTimeout,
             AccessMode accessMode, Map<String,Object> txMetadata );
 
-    /**
-     * Returns a query executor that should be used for executing queries that use periodic commit.
-     * <p>
-     * This special executor must be used for queries with periodic commit, because such queries must not be executed
-     * in an explicitly started transaction, {@link BoltTransaction} should be used for any other queries.
-     */
-    BoltQueryExecutor getPeriodicCommitExecutor( LoginContext loginContext, ClientConnectionInfo clientInfo, Duration txTimeout,
-            AccessMode accessMode, Map<String,Object> txMetadata );
-
     boolean isPeriodicCommit( String query );
 
     void awaitUpToDate( List<Bookmark> bookmarks, Duration perBookmarkTimeout );

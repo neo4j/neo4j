@@ -28,9 +28,7 @@ import org.neo4j.kernel.api.exceptions.Status
 class DeleteConcurrencyIT extends ExecutionEngineFunSuite {
 
   test("should not fail if a node has been already deleted by another transaction") {
-    graph.inTx {
-      execute("CREATE (n:person)")
-    }
+    execute("CREATE (n:person)")
 
     val threadNum = 2
     val threads: List[MyThread] = (0 until threadNum).map { ignored =>
@@ -52,9 +50,7 @@ class DeleteConcurrencyIT extends ExecutionEngineFunSuite {
   }
 
   test("should not fail if a relationship has been already deleted by another transaction") {
-    graph.inTx {
-      execute("CREATE (:person)-[:FRIEND]->(:person)")
-    }
+    execute("CREATE (:person)-[:FRIEND]->(:person)")
 
     val threadNum = 2
     val threads: List[MyThread] = (0 until threadNum).map { ignored =>
@@ -76,9 +72,7 @@ class DeleteConcurrencyIT extends ExecutionEngineFunSuite {
   }
 
   test("relationship delete deadlock") {
-    graph.inTx {
-      execute("CREATE (p1:person) CREATE (p2:person) CREATE (p1)<-[:T]-(p2)")
-    }
+    execute("CREATE (p1:person) CREATE (p2:person) CREATE (p1)<-[:T]-(p2)")
     val concurrency = 30
     val threads: List[MyThread] = (0 until concurrency).map { ignored =>
       new MyThread(1, () => {
@@ -104,14 +98,10 @@ class DeleteConcurrencyIT extends ExecutionEngineFunSuite {
 
   test("should not fail when trying to detach delete a node from 2 different transactions") {
     val nodes = 10
-    val ids = graph.inTx {
-      (0 until nodes).map(ignored => execute("CREATE (n:person) RETURN ID(n) as id").columnAs[Long]("id").next()).toList
-    }
+    val ids = (0 until nodes).map(ignored => execute("CREATE (n:person) RETURN ID(n) as id").columnAs[Long]("id").next()).toList
 
-    graph.inTx {
-      ids.foreach { id =>
-        execute(s"MATCH (a) WHERE ID(a) = $id MERGE (b:person_name {val:'Bob Smith'}) CREATE (a)-[r:name]->(b)").toList
-      }
+    ids.foreach { id =>
+      execute(s"MATCH (a) WHERE ID(a) = $id MERGE (b:person_name {val:'Bob Smith'}) CREATE (a)-[r:name]->(b)").toList
     }
 
     val threads: List[MyThread] = ids.map { id =>
@@ -136,20 +126,15 @@ class DeleteConcurrencyIT extends ExecutionEngineFunSuite {
     val NUM_NODES = 13
     val NUM_EXECUTIONS = 10
 
-    val ids = {
-      val ids = graph.inTx {
-        (0 until NUM_NODES)
-          .map(ignored => execute("CREATE (n:Person) RETURN ID(n) as id")
-            .columnAs[Long]("id").next()
-          ).toList
-      }
-      new scala.util.Random(41).shuffle(ids)
-    }
+    val ids =
+      (0 until NUM_NODES)
+        .map(ignored => execute("CREATE (n:Person) RETURN ID(n) as id")
+          .columnAs[Long]("id").next()
+        ).toList
+    new scala.util.Random(41).shuffle(ids)
 
-    graph.inTx {
-      ids.foreach { id =>
-        execute(s"MATCH (a) WHERE ID(a) = $id MERGE (b:Name {val:'Bob Smith'}) CREATE (a)-[r:NAMED]->(b)").toList
-      }
+    ids.foreach { id =>
+      execute(s"MATCH (a) WHERE ID(a) = $id MERGE (b:Name {val:'Bob Smith'}) CREATE (a)-[r:NAMED]->(b)").toList
     }
 
     val threads: List[MyThread] = {
@@ -208,7 +193,7 @@ class DeleteConcurrencyIT extends ExecutionEngineFunSuite {
     override def run() {
       for ( i <- 0 until numExecutions ) {
         try {
-          graph.inTx { f() }
+          f()
         } catch {
           case ex: Throwable =>
             if (!ignoreException(ex))

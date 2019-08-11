@@ -36,7 +36,7 @@ trait TxCountsTrackingTestSupport extends CypherTestSupport {
   def prepareAndTrackTxCounts[T](f: => T): (T, TxCounts) = {
     // prepare
     f
-    deleteAllEntities()
+    graph.inTx(deleteAllEntities())
 
     val initialTxCounts = graph.txCounts
     val result = f

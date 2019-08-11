@@ -31,6 +31,7 @@ import org.neo4j.graphalgo.impl.shortestpath.Util;
 import org.neo4j.graphalgo.impl.shortestpath.Util.PathCounter;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
+import org.neo4j.graphdb.Transaction;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
@@ -40,50 +41,54 @@ class UtilTest extends Neo4jAlgoTestCase
     void testPathCounter()
     {
         // Nodes
-        Node a = graphDb.createNode();
-        Node b = graphDb.createNode();
-        Node c = graphDb.createNode();
-        Node d = graphDb.createNode();
-        Node e = graphDb.createNode();
-        Node f = graphDb.createNode();
-        // Predecessor lists
-        List<Relationship> ap = new LinkedList<>();
-        List<Relationship> bp = new LinkedList<>();
-        List<Relationship> cp = new LinkedList<>();
-        List<Relationship> dp = new LinkedList<>();
-        List<Relationship> ep = new LinkedList<>();
-        List<Relationship> fp = new LinkedList<>();
-        // Predecessor map
-        Map<Node,List<Relationship>> predecessors = new HashMap<>();
-        predecessors.put( a, ap );
-        predecessors.put( b, bp );
-        predecessors.put( c, cp );
-        predecessors.put( d, dp );
-        predecessors.put( e, ep );
-        predecessors.put( f, fp );
-        // Add relations
-        fp.add( f.createRelationshipTo( c, MyRelTypes.R1 ) );
-        fp.add( f.createRelationshipTo( e, MyRelTypes.R1 ) );
-        ep.add( e.createRelationshipTo( b, MyRelTypes.R1 ) );
-        ep.add( e.createRelationshipTo( d, MyRelTypes.R1 ) );
-        dp.add( d.createRelationshipTo( a, MyRelTypes.R1 ) );
-        cp.add( c.createRelationshipTo( b, MyRelTypes.R1 ) );
-        bp.add( b.createRelationshipTo( a, MyRelTypes.R1 ) );
-        // Count
-        PathCounter counter = new Util.PathCounter( predecessors );
-        assertEquals( 1, counter.getNumberOfPathsToNode( a ) );
-        assertEquals( 1, counter.getNumberOfPathsToNode( b ) );
-        assertEquals( 1, counter.getNumberOfPathsToNode( c ) );
-        assertEquals( 1, counter.getNumberOfPathsToNode( d ) );
-        assertEquals( 2, counter.getNumberOfPathsToNode( e ) );
-        assertEquals( 3, counter.getNumberOfPathsToNode( f ) );
-        // Reverse
-        counter = new Util.PathCounter( Util.reversedPredecessors( predecessors ) );
-        assertEquals( 3, counter.getNumberOfPathsToNode( a ) );
-        assertEquals( 2, counter.getNumberOfPathsToNode( b ) );
-        assertEquals( 1, counter.getNumberOfPathsToNode( c ) );
-        assertEquals( 1, counter.getNumberOfPathsToNode( d ) );
-        assertEquals( 1, counter.getNumberOfPathsToNode( e ) );
-        assertEquals( 1, counter.getNumberOfPathsToNode( f ) );
+        try ( Transaction transaction = graphDb.beginTx() )
+        {
+            Node a = graphDb.createNode();
+            Node b = graphDb.createNode();
+            Node c = graphDb.createNode();
+            Node d = graphDb.createNode();
+            Node e = graphDb.createNode();
+            Node f = graphDb.createNode();
+            // Predecessor lists
+            List<Relationship> ap = new LinkedList<>();
+            List<Relationship> bp = new LinkedList<>();
+            List<Relationship> cp = new LinkedList<>();
+            List<Relationship> dp = new LinkedList<>();
+            List<Relationship> ep = new LinkedList<>();
+            List<Relationship> fp = new LinkedList<>();
+            // Predecessor map
+            Map<Node,List<Relationship>> predecessors = new HashMap<>();
+            predecessors.put( a, ap );
+            predecessors.put( b, bp );
+            predecessors.put( c, cp );
+            predecessors.put( d, dp );
+            predecessors.put( e, ep );
+            predecessors.put( f, fp );
+            // Add relations
+            fp.add( f.createRelationshipTo( c, MyRelTypes.R1 ) );
+            fp.add( f.createRelationshipTo( e, MyRelTypes.R1 ) );
+            ep.add( e.createRelationshipTo( b, MyRelTypes.R1 ) );
+            ep.add( e.createRelationshipTo( d, MyRelTypes.R1 ) );
+            dp.add( d.createRelationshipTo( a, MyRelTypes.R1 ) );
+            cp.add( c.createRelationshipTo( b, MyRelTypes.R1 ) );
+            bp.add( b.createRelationshipTo( a, MyRelTypes.R1 ) );
+            // Count
+            PathCounter counter = new PathCounter( predecessors );
+            assertEquals( 1, counter.getNumberOfPathsToNode( a ) );
+            assertEquals( 1, counter.getNumberOfPathsToNode( b ) );
+            assertEquals( 1, counter.getNumberOfPathsToNode( c ) );
+            assertEquals( 1, counter.getNumberOfPathsToNode( d ) );
+            assertEquals( 2, counter.getNumberOfPathsToNode( e ) );
+            assertEquals( 3, counter.getNumberOfPathsToNode( f ) );
+            // Reverse
+            counter = new PathCounter( Util.reversedPredecessors( predecessors ) );
+            assertEquals( 3, counter.getNumberOfPathsToNode( a ) );
+            assertEquals( 2, counter.getNumberOfPathsToNode( b ) );
+            assertEquals( 1, counter.getNumberOfPathsToNode( c ) );
+            assertEquals( 1, counter.getNumberOfPathsToNode( d ) );
+            assertEquals( 1, counter.getNumberOfPathsToNode( e ) );
+            assertEquals( 1, counter.getNumberOfPathsToNode( f ) );
+            transaction.commit();
+        }
     }
 }

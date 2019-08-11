@@ -143,7 +143,7 @@ class ExecutionEngine(val queryService: GraphDatabaseQueryService,
       executableQuery.execute(context, shouldCloseTransaction, preParsedQuery, combinedParams, prePopulate, subscriber)
     } catch {
       case t: Throwable =>
-        context.close(false)
+        context.close()
         throw t
     } finally queryTracer.close()
   }

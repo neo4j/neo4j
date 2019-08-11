@@ -36,7 +36,7 @@ public interface TransactionStateMachineSPI
 
     BoltTransaction beginTransaction( LoginContext loginContext, Duration txTimeout, AccessMode accessMode, Map<String,Object> txMetaData );
 
-    BoltQueryExecutor getPeriodicCommitExecutor( LoginContext loginContext, Duration txTimeout, AccessMode accessMode, Map<String,Object> txMetaData );
+    BoltTransaction beginPeriodicCommitTransaction( LoginContext loginContext, Duration txTimeout, AccessMode accessMode, Map<String,Object> txMetaData );
 
     void bindTransactionToCurrentThread( BoltTransaction tx );
 

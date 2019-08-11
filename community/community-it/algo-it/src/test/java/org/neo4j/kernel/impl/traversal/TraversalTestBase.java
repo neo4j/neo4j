@@ -19,6 +19,10 @@
  */
 package org.neo4j.kernel.impl.traversal;
 
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.parallel.ResourceLock;
+
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -28,6 +32,8 @@ import java.util.Map;
 import java.util.Set;
 import java.util.Stack;
 
+import org.neo4j.dbms.api.DatabaseManagementService;
+import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.PropertyContainer;
@@ -38,16 +44,61 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.traversal.Traverser;
 import org.neo4j.internal.helpers.collection.Iterables;
 import org.neo4j.internal.helpers.collection.Iterators;
-import org.neo4j.kernel.impl.AbstractNeo4jTestCase;
+import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.GraphDefinition;
 import org.neo4j.test.GraphDescription;
+import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
+import static org.neo4j.test.extension.ExecutionSharedContext.SHARED_RESOURCE;
 
-abstract class TraversalTestBase extends AbstractNeo4jTestCase
+@ResourceLock( SHARED_RESOURCE )
+abstract class TraversalTestBase
 {
+    private static DatabaseManagementService managementService;
+    private static GraphDatabaseAPI graphDb;
+
+    @BeforeAll
+    static void beforeAll()
+    {
+        startDb();
+    }
+
+    @AfterAll
+    static void afterAll()
+    {
+        stopDb();
+    }
+
+    private static void startDb()
+    {
+        managementService = new TestDatabaseManagementServiceBuilder().impermanent().build();
+        graphDb = (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );
+    }
+
+    private static void stopDb()
+    {
+        managementService.shutdown();
+    }
+
+    public GraphDatabaseService getGraphDb()
+    {
+        return graphDb;
+    }
+
+    public DatabaseManagementService getManagementService()
+    {
+        return managementService;
+    }
+
+    protected GraphDatabaseAPI getGraphDbAPI()
+    {
+        return graphDb;
+    }
+
     private Map<String, Node> nodes;
 
     protected Node node( String name )
@@ -62,17 +113,27 @@ abstract class TraversalTestBase extends AbstractNeo4jTestCase
 
     protected void createGraph( String... description )
     {
+        resetDatabase();
         nodes = createGraph( GraphDescription.create( description ) );
+    }
+
+    private void resetDatabase()
+    {
+        try ( Transaction transaction = getGraphDb().beginTx() )
+        {
+            for ( Node node : getGraphDb().getAllNodes() )
+            {
+                node.getRelationships().forEach( Relationship::delete );
+                node.delete();
+            }
+            transaction.commit();
+        }
     }
 
     private Map<String, Node> createGraph( GraphDefinition graph )
     {
-        try ( Transaction tx = beginTx() )
-        {
-            Map<String, Node> result = graph.create( getGraphDb() );
-            tx.commit();
-            return result;
-        }
+        resetDatabase();
+        return graph.create( getGraphDb() );
     }
 
     protected Node getNodeWithName( String name )
@@ -204,15 +265,11 @@ abstract class TraversalTestBase extends AbstractNeo4jTestCase
             Representation<T> representation, Set<String> expected )
     {
         Collection<String> encounteredItems = new ArrayList<>();
-        try ( Transaction tx = beginTx() )
+        for ( T item : items )
         {
-            for ( T item : items )
-            {
-                String repr = representation.represent( item );
-                assertTrue( repr + " not expected ", expected.remove( repr ) );
-                encounteredItems.add( repr );
-            }
-            tx.commit();
+            String repr = representation.represent( item );
+            assertTrue( repr + " not expected ", expected.remove( repr ) );
+            encounteredItems.add( repr );
         }
 
         if ( !expected.isEmpty() )

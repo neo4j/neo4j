@@ -80,22 +80,21 @@ class TestUniqueness extends TraversalTestBase
          * (a)-TO->(b)-TO->(c)
          *   \----TO---->/
          */
-        createGraph( "a TO b", "a TO c", "b TO c" );
+        createGraph( "a TO c", "a TO b", "b TO c" );
         RelationshipType to = withName( "TO" );
 
         try ( Transaction tx = beginTx() )
         {
             Node a = getNodeWithName( "a" );
             Node c = getNodeWithName( "c" );
-            Iterator<Path> path =
-                    getGraphDb().traversalDescription().relationships( to, OUTGOING ).uniqueness( NODE_GLOBAL ).evaluator(
-                    includeWhereEndNodeIs( c ) ).traverse( a ).iterator();
+            Iterator<Path> path = getGraphDb().traversalDescription()
+                                    .relationships( to, OUTGOING )
+                                    .uniqueness( NODE_GLOBAL ).evaluator( includeWhereEndNodeIs( c ) ).traverse( a ).iterator();
             Path thePath = path.next();
             assertFalse( path.hasNext() );
             NodePathRepresentation pathRepresentation = new NodePathRepresentation( NAME_PROPERTY_REPRESENTATION );
 
             assertEquals( "a,b,c", pathRepresentation.represent( thePath ) );
-            tx.commit();
         }
     }
 

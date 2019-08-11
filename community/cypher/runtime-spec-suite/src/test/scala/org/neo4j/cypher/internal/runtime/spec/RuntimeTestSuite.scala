@@ -646,7 +646,9 @@ abstract class RuntimeTestSuite[CONTEXT <: RuntimeContext](edition: Edition[CONT
   }
 
   def consume(left: RecordingRuntimeResult): IndexedSeq[Array[AnyValue]] = {
-    left.awaitAll()
+    val seq = left.awaitAll()
+    left.runtimeResult.close()
+    seq
   }
 
   def inOrder(rows: Iterable[Array[_]]): RowsMatcher = {
@@ -715,6 +717,7 @@ case class SineGraph(start: Node,
 case class RecordingRuntimeResult(runtimeResult: RuntimeResult, recordingQuerySubscriber: RecordingQuerySubscriber) {
   def awaitAll(): IndexedSeq[Array[AnyValue]] = {
     runtimeResult.consumeAll()
+    runtimeResult.close();
     recordingQuerySubscriber.getOrThrow().asScala.toIndexedSeq
   }
 

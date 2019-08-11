@@ -202,16 +202,16 @@ public class GraphDescription implements GraphDefinition
 
     public static TestData.Producer<Map<String, Node>> createGraphFor( final GraphHolder holder, final boolean destroy )
     {
-        return new TestData.Producer<Map<String, Node>>()
+        return new TestData.Producer<>()
         {
             @Override
-            public Map<String, Node> create( GraphDefinition graph, String title, String documentation )
+            public Map<String,Node> create( GraphDefinition graph, String title, String documentation )
             {
                 return graph.create( holder.graphdb() );
             }
 
             @Override
-            public void destroy( Map<String, Node> product, boolean successful )
+            public void destroy( Map<String,Node> product, boolean successful )
             {
                 if ( destroy )
                 {

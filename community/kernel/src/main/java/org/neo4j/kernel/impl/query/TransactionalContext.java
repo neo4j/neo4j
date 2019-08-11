@@ -44,9 +44,8 @@ public interface TransactionalContext
     /**
      * This should be called once the query is finished, either successfully or not.
      * Should be called from the same thread the query was executing in.
-     * @param success signals if the underlying transaction should be committed or rolled back.
      */
-    void close( boolean success );
+    void close();
 
     /**
      * This is used to terminate a currently running query. Can be called from any thread. Will roll back the current

@@ -23,6 +23,7 @@ import org.codehaus.jackson.JsonNode;
 import org.junit.After;
 import org.junit.Test;
 
+import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.spatial.CRS;
@@ -49,7 +50,17 @@ public class PointTypeIT extends AbstractRestFunctionalTestBase
     public void tearDown()
     {
         // empty the database
-        graphdb().execute( "MATCH (n) DETACH DELETE n" );
+        executeTransactionally( "MATCH (n) DETACH DELETE n" );
+    }
+
+    private void executeTransactionally( String query )
+    {
+        GraphDatabaseService database = graphdb();
+        try ( Transaction transaction = database.beginTx() )
+        {
+            database.execute( query );
+            transaction.commit();
+        }
     }
 
     @Test

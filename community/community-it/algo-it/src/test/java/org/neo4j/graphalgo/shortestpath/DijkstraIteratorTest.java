@@ -31,6 +31,7 @@ import org.neo4j.graphalgo.impl.util.DoubleAdder;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
+import org.neo4j.graphdb.Transaction;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -40,7 +41,11 @@ class DijkstraIteratorTest extends Neo4jAlgoTestCase
     @Test
     void testRun()
     {
-        new TestDijkstra().runTest();
+        try ( Transaction transaction = graphDb.beginTx() )
+        {
+            new TestDijkstra().runTest();
+            transaction.commit();
+        }
     }
 
     static class TestDijkstra extends Dijkstra<Double>
@@ -65,7 +70,6 @@ class DijkstraIteratorTest extends Neo4jAlgoTestCase
             }
         }
 
-        @Test
         void runTest()
         {
             graph.makeEdge( "start", "a", "cost", (double) 1 );

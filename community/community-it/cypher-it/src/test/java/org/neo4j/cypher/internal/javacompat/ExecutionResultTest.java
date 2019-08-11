@@ -58,12 +58,15 @@ class ExecutionResultTest
         // Given an execution result that has been started but not exhausted
         createNode();
         createNode();
-        Result executionResult = db.execute( "CYPHER runtime=interpreted MATCH (n) RETURN n" );
-        executionResult.next();
-        assertThat( activeTransaction(), is( notNullValue() ) );
-
-        // When
-        executionResult.close();
+        try ( Transaction transaction = db.beginTx() )
+        {
+            try ( Result executionResult = db.execute( "CYPHER runtime=interpreted MATCH (n) RETURN n" ) )
+            {
+                executionResult.next();
+                assertThat( activeTransaction(), is( notNullValue() ) );
+            }
+            transaction.commit();
+        }
 
         // Then
         assertThat( activeTransaction(), is( nullValue() ) );
@@ -76,13 +79,18 @@ class ExecutionResultTest
         // Given an execution result that has been started but not exhausted
         createNode();
         createNode();
-        Result executionResult = db.execute( "CYPHER runtime=interpreted MATCH (n) RETURN n" );
-        ResourceIterator<Node> resultIterator = executionResult.columnAs( "n" );
-        resultIterator.next();
-        assertThat( activeTransaction(), is( notNullValue() ) );
-
-        // When
-        resultIterator.close();
+        try ( Transaction transaction = db.beginTx() )
+        {
+            try ( Result executionResult = db.execute( "CYPHER runtime=interpreted MATCH (n) RETURN n" ) )
+            {
+                ResourceIterator<Node> resultIterator = executionResult.columnAs( "n" );
+                resultIterator.next();
+                assertThat( activeTransaction(), is( notNullValue() ) );
+                // When
+                resultIterator.close();
+            }
+            transaction.commit();
+        }
 
         // Then
         assertThat( activeTransaction(), is( nullValue() ) );
@@ -93,7 +101,10 @@ class ExecutionResultTest
     {
         try
         {
-            db.execute( "RETURN rand()/0" ).next();
+            try ( Transaction transaction = db.beginTx() )
+            {
+                db.execute( "RETURN rand()/0" ).next();
+            }
         }
         catch ( QueryExecutionException ex )
         {
@@ -107,7 +118,10 @@ class ExecutionResultTest
     {
         try
         {
-            db.execute( "RETURN rand()/0" ).accept( row -> true );
+            try ( Transaction transaction = db.beginTx() )
+            {
+                db.execute( "RETURN rand()/0" ).accept( row -> true );
+            }
         }
         catch ( QueryExecutionException ex )
         {
@@ -128,37 +142,46 @@ class ExecutionResultTest
     @Test
     void shouldHandleListsOfPointsAsInput()
     {
-        // Given
-        Point point1 =
-                (Point) db.execute( "RETURN point({latitude: 12.78, longitude: 56.7}) as point" ).next().get( "point" );
-        Point point2 =
-                (Point) db.execute( "RETURN point({latitude: 12.18, longitude: 56.2}) as point" ).next().get( "point" );
+        try ( Transaction transaction = db.beginTx() )
+        {
+            // Given
+            Point point1 = (Point) db.execute( "RETURN point({latitude: 12.78, longitude: 56.7}) as point" ).next().get( "point" );
+            Point point2 = (Point) db.execute( "RETURN point({latitude: 12.18, longitude: 56.2}) as point" ).next().get( "point" );
 
-        // When
-        double distance = (double) db.execute( "RETURN distance($points[0], $points[1]) as dist",
-                map( "points", asList( point1, point2 ) ) ).next().get( "dist" );
-        // Then
-        assertThat( Math.round( distance ), equalTo( 86107L ) );
+            // When
+            double distance = (double) db.execute( "RETURN distance($points[0], $points[1]) as dist",
+                    map( "points", asList( point1, point2 ) ) ).next().get( "dist" );
+            // Then
+            assertThat( Math.round( distance ), equalTo( 86107L ) );
+            transaction.commit();
+        }
     }
 
     @Test
     void shouldHandleMapWithPointsAsInput()
     {
-        // Given
-        Point point1 = (Point) db.execute( "RETURN point({latitude: 12.78, longitude: 56.7}) as point"  ).next().get( "point" );
-        Point point2 = (Point) db.execute( "RETURN point({latitude: 12.18, longitude: 56.2}) as point"  ).next().get( "point" );
+        try ( Transaction transaction = db.beginTx() )
+        {
+            // Given
+            Point point1 = (Point) db.execute( "RETURN point({latitude: 12.78, longitude: 56.7}) as point" ).next().get( "point" );
+            Point point2 = (Point) db.execute( "RETURN point({latitude: 12.18, longitude: 56.2}) as point" ).next().get( "point" );
 
-        // When
-        double distance = (double) db.execute( "RETURN distance($points['p1'], $points['p2']) as dist",
-                map( "points", map("p1", point1, "p2", point2) ) ).next().get( "dist" );
-        // Then
-        assertThat(Math.round( distance ), equalTo(86107L));
+            // When
+            double distance = (double) db.execute( "RETURN distance($points['p1'], $points['p2']) as dist",
+                    map( "points", map( "p1", point1, "p2", point2 ) ) ).next().get( "dist" );
+            // Then
+            assertThat( Math.round( distance ), equalTo( 86107L ) );
+            transaction.commit();
+        }
     }
 
     @Test
     void shouldHandleColumnAsWithNull()
     {
-        assertThat( db.execute( "RETURN toLower(null) AS lower" ).<String>columnAs( "lower" ).next(), nullValue() );
+        try ( Transaction transaction = db.beginTx() )
+        {
+            assertThat( db.execute( "RETURN toLower(null) AS lower" ).<String>columnAs( "lower" ).next(), nullValue() );
+        }
     }
 
     private TopLevelTransaction activeTransaction()
@@ -166,6 +189,6 @@ class ExecutionResultTest
         ThreadToStatementContextBridge bridge = db.getDependencyResolver().resolveDependency(
                 ThreadToStatementContextBridge.class );
         KernelTransaction kernelTransaction = bridge.getKernelTransactionBoundToThisThread( false, db.databaseId() );
-        return kernelTransaction == null ? null : new TopLevelTransaction( kernelTransaction );
+        return kernelTransaction == null ? null : new TopLevelTransaction( kernelTransaction, new ThreadLocal<>() );
     }
 }

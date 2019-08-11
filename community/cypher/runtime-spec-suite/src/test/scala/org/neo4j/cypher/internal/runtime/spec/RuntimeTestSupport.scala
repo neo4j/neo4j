@@ -31,10 +31,13 @@ import org.neo4j.cypher.result.RuntimeResult
 import org.neo4j.graphdb.GraphDatabaseService
 import org.neo4j.internal.kernel.api.Transaction
 import org.neo4j.internal.kernel.api.security.LoginContext
+import org.neo4j.kernel.impl.coreapi.InternalTransaction
 import org.neo4j.kernel.impl.query.{Neo4jTransactionalContextFactory, QuerySubscriber, TransactionalContext}
 import org.neo4j.kernel.lifecycle.LifeSupport
 import org.neo4j.monitoring.Monitors
 import org.neo4j.values.virtual.VirtualValues
+
+import scala.util.Try
 
 /**
   * This class contains various ugliness needed to perform physical compilation
@@ -77,29 +80,37 @@ class RuntimeTestSupport[CONTEXT <: RuntimeContext](val graphDb: GraphDatabaseSe
                   resultMapper: (CONTEXT, RuntimeResult) => RESULT,
                   subscriber: QuerySubscriber,
                   profile: Boolean): RESULT = {
-    val txContext = beginTx()
-    val queryContext = newQueryContext(txContext)
-    val runtimeContext = newRuntimeContext(txContext, queryContext)
+    val tx = cypherGraphDb.beginTransaction(Transaction.Type.`implicit`, LoginContext.AUTH_DISABLED)
+    try {
+      val txContext = beginTx(tx)
+      val queryContext = newQueryContext(txContext)
+      val runtimeContext = newRuntimeContext(txContext, queryContext)
 
-    val result = executableQuery.run(queryContext, doProfile = profile, VirtualValues.EMPTY_MAP, prePopulateResults = true, input, subscriber)
-    val assertAllReleased =
-      if (!workloadMode) runtimeContextManager.assertAllReleased _ else () => ()
-    resultMapper(runtimeContext, new ClosingRuntimeResult(result, txContext, queryContext.resources, subscriber, assertAllReleased))
+      val result = executableQuery.run(queryContext, doProfile = profile, VirtualValues.EMPTY_MAP, prePopulateResults = true, input, subscriber)
+      val assertAllReleased =
+        if (!workloadMode) runtimeContextManager.assertAllReleased _ else () => ()
+      resultMapper(runtimeContext, new ClosingRuntimeResult(result, tx, txContext, queryContext.resources, subscriber, assertAllReleased))
+    } catch {
+      case t : Throwable =>
+        Try(tx.close())
+        throw t
+    }
   }
 
   def compile(logicalQuery: LogicalQuery,
               runtime: CypherRuntime[CONTEXT]): ExecutionPlan = {
-    val txContext = beginTx()
+    val tx = cypherGraphDb.beginTransaction(Transaction.Type.`implicit`, LoginContext.AUTH_DISABLED)
+    val txContext = beginTx(tx)
     val runtimeContext = newRuntimeContext(txContext, newQueryContext(txContext))
     try {
       runtime.compileToExecutable(logicalQuery, runtimeContext)
     } finally {
-      txContext.close(true) // also closes tx
+      txContext.close()
+      tx.close()
     }
   }
 
-  private def beginTx(): TransactionalContext = {
-    val tx = cypherGraphDb.beginTransaction(Transaction.Type.`implicit`, LoginContext.AUTH_DISABLED)
+  private def beginTx(tx: InternalTransaction): TransactionalContext = {
     contextFactory.newContext(tx, "<<queryText>>", VirtualValues.EMPTY_MAP)
   }
 

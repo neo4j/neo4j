@@ -83,54 +83,72 @@ class QueryRestartIT
     {
         testCursorContext.setWrongLastClosedTxId( false );
 
-        Result result = database.execute( "MATCH (n:label) RETURN n.c" );
-        while ( result.hasNext() )
+        try ( Transaction transaction = database.beginTx() )
         {
-            assertEquals( "d", result.next().get( "n.c" ) );
+            Result result = database.execute( "MATCH (n:label) RETURN n.c" );
+            while ( result.hasNext() )
+            {
+                assertEquals( "d", result.next().get( "n.c" ) );
+            }
+            assertEquals( 0, testCursorContext.getAdditionalAttempts() );
+            transaction.commit();
         }
-        assertEquals( 0, testCursorContext.getAdditionalAttempts() );
     }
 
     @Test
     void executeQueryWithSingleRetry()
     {
-        Result result = database.execute( "MATCH (n) RETURN n.c" );
-        assertEquals( 1, testCursorContext.getAdditionalAttempts() );
-        while ( result.hasNext() )
+        try ( Transaction transaction = database.beginTx() )
         {
-            assertEquals( "d", result.next().get( "n.c" ) );
+            Result result = database.execute( "MATCH (n) RETURN n.c" );
+            assertEquals( 1, testCursorContext.getAdditionalAttempts() );
+            while ( result.hasNext() )
+            {
+                assertEquals( "d", result.next().get( "n.c" ) );
+            }
+            transaction.commit();
         }
     }
 
     @Test
     void executeCountStoreQueryWithSingleRetry()
     {
-        Result result = database.execute( "MATCH (n:toRetry) RETURN count(n)" );
-        assertEquals( 1, testCursorContext.getAdditionalAttempts() );
-        while ( result.hasNext() )
+        try ( Transaction transaction = database.beginTx() )
         {
-            assertEquals( 1L, result.next().get( "count(n)" ) );
+            Result result = database.execute( "MATCH (n:toRetry) RETURN count(n)" );
+            assertEquals( 1, testCursorContext.getAdditionalAttempts() );
+            while ( result.hasNext() )
+            {
+                assertEquals( 1L, result.next().get( "count(n)" ) );
+            }
+            transaction.commit();
         }
     }
 
     @Test
     void executeLabelScanQueryWithSingleRetry()
     {
-        Result result = database.execute( "MATCH (n:toRetry) RETURN n.c" );
-        assertEquals( 1, testCursorContext.getAdditionalAttempts() );
-        while ( result.hasNext() )
+        try ( Transaction transaction = database.beginTx() )
         {
-            assertEquals( "d", result.next().get( "n.c" ) );
+            Result result = database.execute( "MATCH (n:toRetry) RETURN n.c" );
+            assertEquals( 1, testCursorContext.getAdditionalAttempts() );
+            while ( result.hasNext() )
+            {
+                assertEquals( "d", result.next().get( "n.c" ) );
+            }
+            transaction.commit();
         }
     }
 
     @Test
     void queryThatModifiesDataAndSeesUnstableSnapshotShouldThrowException()
     {
-        QueryExecutionException e = assertThrows( QueryExecutionException.class, () ->
-                database.execute( "MATCH (n:toRetry) CREATE () RETURN n.c" ) );
-        assertEquals( "Unable to get clean data snapshot for query " +
-                      "'MATCH (n:toRetry) CREATE () RETURN n.c' that performs updates.", e.getMessage() );
+        try ( Transaction transaction = database.beginTx() )
+        {
+            QueryExecutionException e = assertThrows( QueryExecutionException.class, () -> database.execute( "MATCH (n:toRetry) CREATE () RETURN n.c" ) );
+            assertEquals( "Unable to get clean data snapshot for query " + "'MATCH (n:toRetry) CREATE () RETURN n.c' that performs updates.", e.getMessage() );
+            transaction.commit();
+        }
     }
 
     private GraphDatabaseService startSnapshotQueryDb()

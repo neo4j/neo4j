@@ -21,9 +21,9 @@ package org.neo4j.server.http.cypher;
 
 import java.net.URI;
 
-import org.neo4j.exceptions.Neo4jException;
 import org.neo4j.exceptions.InvalidSemanticsException;
 import org.neo4j.exceptions.KernelException;
+import org.neo4j.exceptions.Neo4jException;
 import org.neo4j.graphdb.Result;
 import org.neo4j.graphdb.WriteOperationsNotAllowedException;
 import org.neo4j.graphdb.security.AuthorizationViolationException;
@@ -269,7 +269,7 @@ class Invocation
         Result result;
         try
         {
-            result = transactionHandle.executeStatement( statement );
+            result = transactionHandle.executeStatement( statement, periodicCommit );
         }
         finally
         {

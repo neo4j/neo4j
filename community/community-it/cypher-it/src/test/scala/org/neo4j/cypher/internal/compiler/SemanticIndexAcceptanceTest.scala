@@ -25,8 +25,8 @@ import java.util.concurrent.TimeUnit
 import org.neo4j.cypher.ExecutionEngineFunSuite
 import org.neo4j.values.storable._
 import org.neo4j.values.utils.TemporalUtil
-import org.scalacheck.{Gen, Shrink}
 import org.scalacheck.Arbitrary.arbitrary
+import org.scalacheck.{Gen, Shrink}
 import org.scalatest.matchers.{MatchResult, Matcher}
 import org.scalatest.prop.PropertyChecks
 
@@ -179,15 +179,14 @@ class SemanticIndexAcceptanceTest extends ExecutionEngineFunSuite with PropertyC
 
     test(s"testing ${setup.name} with n.prop $operator $$argument") {
       forAll(setup.generator) { propertyValue: T =>
-        graph.inTx {
-          createLabeledNode(Map("nonIndexed" -> propertyValue.asObject(), "indexed" -> propertyValue.asObject()), "Label")
+        createLabeledNode(Map("nonIndexed" -> propertyValue.asObject(), "indexed" -> propertyValue.asObject()), "Label")
 
-          withClue("with TxState\n") {
-            propertyValue should behaveEqualWithAndWithoutIndex
-            setup.lessThan(propertyValue) should behaveEqualWithAndWithoutIndex
-            setup.moreThan(propertyValue) should behaveEqualWithAndWithoutIndex
-          }
+        withClue("with TxState\n") {
+          propertyValue should behaveEqualWithAndWithoutIndex
+          setup.lessThan(propertyValue) should behaveEqualWithAndWithoutIndex
+          setup.moreThan(propertyValue) should behaveEqualWithAndWithoutIndex
         }
+
         withClue("without TxState\n") {
           propertyValue should behaveEqualWithAndWithoutIndex
           setup.lessThan(propertyValue) should behaveEqualWithAndWithoutIndex

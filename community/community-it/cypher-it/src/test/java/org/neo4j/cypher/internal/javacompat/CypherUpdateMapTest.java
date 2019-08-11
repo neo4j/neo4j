@@ -58,30 +58,28 @@ class CypherUpdateMapTest
     @Test
     void updateNodeByMapParameter()
     {
-        db.execute(
-                "CREATE (n:Reference) SET n = $data RETURN n" ,
-                map( "data",
-                        map("key1", "value1", "key2", 1234)
-                )
-        );
+        try ( Transaction transaction = db.beginTx() )
+        {
+            db.execute( "CREATE (n:Reference) SET n = $data RETURN n", map( "data", map( "key1", "value1", "key2", 1234 ) ) ).close();
+            transaction.commit();
+        }
 
         Node node1 = getNodeByIdInTx( 0 );
 
         assertThat( node1, inTxS( hasProperty( "key1" ).withValue( "value1" ) ) );
         assertThat( node1, inTxS( hasProperty( "key2" ).withValue( 1234 ) ) );
 
-        db.execute(
-                "MATCH (n:Reference) SET n = $data RETURN n",
-                map( "data",
-                        map("key1", null, "key3", 5678)
-                )
-        );
+        try ( Transaction transaction = db.beginTx() )
+        {
+            db.execute( "MATCH (n:Reference) SET n = $data RETURN n", map( "data", map( "key1", null, "key3", 5678 ) ) ).close();
+            transaction.commit();
+        }
 
         Node node2 = getNodeByIdInTx( 0 );
 
         assertThat( node2, inTxS( not( hasProperty( "key1" ) ) ) );
         assertThat( node2, inTxS( not( hasProperty( "key2" ) ) ) );
-        assertThat( node2, inTxS( hasProperty( "key3" ).withValue(5678) ) );
+        assertThat( node2, inTxS( hasProperty( "key3" ).withValue( 5678 ) ) );
     }
 
     <T> Matcher<? super T> inTxS( final Matcher<T> inner )

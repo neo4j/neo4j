@@ -21,6 +21,7 @@ package org.neo4j.server.http.cypher;
 
 import org.junit.Before;
 import org.junit.Test;
+import org.mockito.Answers;
 import org.mockito.ArgumentMatcher;
 import org.mockito.InOrder;
 
@@ -32,8 +33,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
 
-import org.neo4j.exceptions.SyntaxException;
 import org.neo4j.cypher.internal.runtime.QueryStatistics;
+import org.neo4j.exceptions.SyntaxException;
 import org.neo4j.graphdb.ExecutionPlanDescription;
 import org.neo4j.graphdb.Notification;
 import org.neo4j.graphdb.QueryExecutionType;
@@ -44,6 +45,7 @@ import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.kernel.DeadlockDetectedException;
 import org.neo4j.kernel.GraphDatabaseQueryService;
 import org.neo4j.kernel.api.exceptions.Status;
+import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.kernel.impl.query.QueryExecutionEngine;
 import org.neo4j.kernel.impl.query.QueryExecutionKernelException;
 import org.neo4j.kernel.impl.query.TransactionalContext;
@@ -232,9 +234,10 @@ public class InvocationTest
         // given
         String queryText = "USING PERIODIC COMMIT CREATE()";
         TransactionalContext transactionalContext = prepareKernelWithQuerySession( kernel );
+        var facade = mock( GraphDatabaseFacade.class, Answers.RETURNS_DEEP_STUBS );
         when( executionEngine.isPeriodicCommit( queryText ) ).thenReturn( true );
-        when( executionEngine.executeQuery( queryText, NO_PARAMS, transactionalContext, false ) ).thenReturn( executionResult );
-
+        when( facade.execute( eq( queryText), any() ) ).thenReturn( executionResult );
+        when( kernel.getDb() ).thenReturn( facade );
         when( registry.begin( any( TransactionHandle.class ) ) ).thenReturn( 1337L );
         TransactionHandle handle = getTransactionHandle( kernel, executionEngine, registry );
 
@@ -248,9 +251,6 @@ public class InvocationTest
 
         // when
         invocation.execute( outputEventStream );
-
-        // then
-        verify( executionEngine ).executeQuery( queryText, NO_PARAMS, transactionalContext, false );
 
         InOrder outputOrder = inOrder( outputEventStream );
         outputOrder.verify( outputEventStream ).writeStatementStart( statement, List.of( "c1", "c2", "c3" ) );
@@ -860,8 +860,8 @@ public class InvocationTest
     private TransactionalContext prepareKernelWithQuerySession( TransitionalPeriodTransactionMessContainer kernel )
     {
         TransactionalContext tc = mock( TransactionalContext.class );
-        when( kernel.create( any( GraphDatabaseQueryService.class ), any( Type.class ), any( LoginContext.class ), any( String.class ), any( Map.class ) ) ).
-                thenReturn( tc );
+        when( kernel.create( any( GraphDatabaseQueryService.class ), any(), any( Type.class ),
+                any( LoginContext.class ), any( String.class ), any( Map.class ) ) ).thenReturn( tc );
         return tc;
     }
 

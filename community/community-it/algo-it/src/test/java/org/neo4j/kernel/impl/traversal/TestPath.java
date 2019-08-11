@@ -19,7 +19,6 @@
  */
 package org.neo4j.kernel.impl.traversal;
 
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
@@ -48,67 +47,70 @@ class TestPath extends TraversalTestBase
     private Node c;
     private Node d;
     private Node e;
-    private Transaction tx;
 
     @BeforeEach
     void setup()
     {
         createGraph( "A TO B", "B TO C", "C TO D", "D TO E" );
 
-        tx = beginTx();
-
-        a = getNodeWithName( "A" );
-        b = getNodeWithName( "B" );
-        c = getNodeWithName( "C" );
-        d = getNodeWithName( "D" );
-        e = getNodeWithName( "E" );
-    }
-
-    @AfterEach
-    void tearDown()
-    {
-        tx.close();
+        try ( Transaction transaction = getGraphDb().beginTx() )
+        {
+            a = getNodeWithName( "A" );
+            b = getNodeWithName( "B" );
+            c = getNodeWithName( "C" );
+            d = getNodeWithName( "D" );
+            e = getNodeWithName( "E" );
+        }
     }
 
     @Test
     void testPathIterator()
     {
-        Traverser traverse = getGraphDb().traversalDescription().evaluator( atDepth( 4 ) ).traverse( node( "A" ) );
-        try ( ResourceIterator<Path> resourceIterator = traverse.iterator() )
+        try ( Transaction transaction = getGraphDb().beginTx() )
         {
-            Path path = resourceIterator.next();
-            assertPathIsCorrect( path );
+            Traverser traverse = getGraphDb().traversalDescription().evaluator( atDepth( 4 ) ).traverse( node( "A" ) );
+            try ( ResourceIterator<Path> resourceIterator = traverse.iterator() )
+            {
+                Path path = resourceIterator.next();
+                assertPathIsCorrect( path );
+            }
         }
     }
 
     @Test
     void reverseNodes()
     {
-        Traverser traverse = getGraphDb().traversalDescription().evaluator( atDepth( 0 ) ).traverse( a );
-        Path path = getFirstPath( traverse );
-        assertContains( path.reverseNodes(), a );
+        try ( Transaction transaction = getGraphDb().beginTx() )
+        {
+            Traverser traverse = getGraphDb().traversalDescription().evaluator( atDepth( 0 ) ).traverse( a );
+            Path path = getFirstPath( traverse );
+            assertContains( path.reverseNodes(), a );
 
-        Traverser traverse2 = getGraphDb().traversalDescription().evaluator( atDepth( 4 ) ).traverse( a );
-        Path path2 = getFirstPath( traverse2 );
-        assertContainsInOrder( path2.reverseNodes(), e, d, c, b, a );
+            Traverser traverse2 = getGraphDb().traversalDescription().evaluator( atDepth( 4 ) ).traverse( a );
+            Path path2 = getFirstPath( traverse2 );
+            assertContainsInOrder( path2.reverseNodes(), e, d, c, b, a );
+        }
     }
 
     @Test
     void reverseRelationships()
     {
-        Traverser traverser = getGraphDb().traversalDescription().evaluator( atDepth( 0 ) ).traverse( a );
-        Path path = getFirstPath( traverser );
-        assertFalse( path.reverseRelationships().iterator().hasNext() );
-
-        Traverser traverser2 = getGraphDb().traversalDescription().evaluator( atDepth( 4 ) ).traverse( a );
-        Path path2 = getFirstPath( traverser2 );
-        Node[] expectedNodes = {e, d, c, b, a};
-        int index = 0;
-        for ( Relationship rel : path2.reverseRelationships() )
+        try ( Transaction transaction = getGraphDb().beginTx() )
         {
-            assertEquals( expectedNodes[index++], rel.getEndNode(), "For index " + index );
+            Traverser traverser = getGraphDb().traversalDescription().evaluator( atDepth( 0 ) ).traverse( a );
+            Path path = getFirstPath( traverser );
+            assertFalse( path.reverseRelationships().iterator().hasNext() );
+
+            Traverser traverser2 = getGraphDb().traversalDescription().evaluator( atDepth( 4 ) ).traverse( a );
+            Path path2 = getFirstPath( traverser2 );
+            Node[] expectedNodes = {e, d, c, b, a};
+            int index = 0;
+            for ( Relationship rel : path2.reverseRelationships() )
+            {
+                assertEquals( expectedNodes[index++], rel.getEndNode(), "For index " + index );
+            }
+            assertEquals( 4, index );
         }
-        assertEquals( 4, index );
     }
 
     //TODO: This leaks cursors, and disabling cursor checking of this entire module seems

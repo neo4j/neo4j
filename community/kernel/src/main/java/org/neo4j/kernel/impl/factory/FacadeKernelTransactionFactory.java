@@ -17,36 +17,29 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.coreapi;
+package org.neo4j.kernel.impl.factory;
 
-import java.util.Map;
-import java.util.Optional;
-
-import org.neo4j.graphdb.Transaction;
+import org.neo4j.configuration.Config;
 import org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo;
-import org.neo4j.internal.kernel.api.security.SecurityContext;
+import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.kernel.api.KernelTransaction;
-import org.neo4j.kernel.api.exceptions.Status;
 
-public interface InternalTransaction extends Transaction
+import static org.neo4j.configuration.GraphDatabaseSettings.transaction_timeout;
+
+public class FacadeKernelTransactionFactory implements KernelTransactionFactory
 {
-    void setTransaction( KernelTransaction transaction );
+    private final Config config;
+    private final GraphDatabaseFacade facade;
 
-    /**
-     * Loop-hole to access underlying kernel transaction. This is intended to allow
-     * gradual removal of the InternalTransaction interface.
-     */
-    org.neo4j.internal.kernel.api.Transaction kernelTransaction();
+    public FacadeKernelTransactionFactory( Config config, GraphDatabaseFacade facade )
+    {
+        this.config = config;
+        this.facade = facade;
+    }
 
-    KernelTransaction.Type transactionType();
-
-    SecurityContext securityContext();
-
-    ClientConnectionInfo clientInfo();
-
-    KernelTransaction.Revertable overrideWith( SecurityContext context );
-
-    Optional<Status> terminationReason();
-
-    void setMetaData( Map<String, Object> txMeta );
+    @Override
+    public KernelTransaction beginKernelTransaction( KernelTransaction.Type type, LoginContext loginContext, ClientConnectionInfo connectionInfo )
+    {
+        return facade.beginKernelTransaction( type, loginContext, connectionInfo, config.get( transaction_timeout ).toMillis() );
+    }
 }

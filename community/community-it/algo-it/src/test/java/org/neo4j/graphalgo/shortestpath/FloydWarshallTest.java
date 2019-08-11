@@ -26,8 +26,10 @@ import java.util.List;
 
 import org.neo4j.graphalgo.CommonEvaluators;
 import org.neo4j.graphalgo.impl.shortestpath.FloydWarshall;
+import org.neo4j.graphalgo.impl.util.DoubleAdder;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.Transaction;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
@@ -39,20 +41,24 @@ class FloydWarshallTest extends Neo4jAlgoTestCase
     @Test
     void testMinimal()
     {
-        graph.makeEdge( "a", "b", "cost", (double) 1 );
-        graph.makeEdge( "a", "c", "cost", (float) 1 );
-        graph.makeEdge( "a", "d", "cost", (long) 1 );
-        graph.makeEdge( "a", "e", "cost", 1 );
-        graph.makeEdge( "b", "c", "cost", (double) 1 );
-        graph.makeEdge( "c", "d", "cost", (byte) 1 );
-        graph.makeEdge( "d", "e", "cost", (short) 1 );
-        graph.makeEdge( "e", "b", "cost", (byte) 1 );
-        FloydWarshall<Double> floydWarshall = new FloydWarshall<>( 0.0, Double.MAX_VALUE, Direction.OUTGOING,
-                CommonEvaluators.doubleCostEvaluator( "cost" ), new org.neo4j.graphalgo.impl.util.DoubleAdder(),
-                Double::compareTo, graph.getAllNodes(), graph.getAllEdges() );
-        assertEquals( 0.0, floydWarshall.getCost( graph.getNode( "a" ), graph.getNode( "a" ) ), 0.0 );
-        assertEquals( 1.0, floydWarshall.getCost( graph.getNode( "a" ), graph.getNode( "b" ) ), 0.0 );
-        assertEquals( floydWarshall.getCost( graph.getNode( "b" ), graph.getNode( "a" ) ), Double.MAX_VALUE, 0.0 );
+        try ( Transaction transaction = graphDb.beginTx() )
+        {
+            graph.makeEdge( "a", "b", "cost", (double) 1 );
+            graph.makeEdge( "a", "c", "cost", (float) 1 );
+            graph.makeEdge( "a", "d", "cost", (long) 1 );
+            graph.makeEdge( "a", "e", "cost", 1 );
+            graph.makeEdge( "b", "c", "cost", (double) 1 );
+            graph.makeEdge( "c", "d", "cost", (byte) 1 );
+            graph.makeEdge( "d", "e", "cost", (short) 1 );
+            graph.makeEdge( "e", "b", "cost", (byte) 1 );
+            FloydWarshall<Double> floydWarshall =
+                    new FloydWarshall<>( 0.0, Double.MAX_VALUE, Direction.OUTGOING, CommonEvaluators.doubleCostEvaluator( "cost" ), new DoubleAdder(),
+                            Double::compareTo, graph.getAllNodes(), graph.getAllEdges() );
+            assertEquals( 0.0, floydWarshall.getCost( graph.getNode( "a" ), graph.getNode( "a" ) ), 0.0 );
+            assertEquals( 1.0, floydWarshall.getCost( graph.getNode( "a" ), graph.getNode( "b" ) ), 0.0 );
+            assertEquals( floydWarshall.getCost( graph.getNode( "b" ), graph.getNode( "a" ) ), Double.MAX_VALUE, 0.0 );
+            transaction.commit();
+        }
     }
 
     /**
@@ -61,45 +67,52 @@ class FloydWarshallTest extends Neo4jAlgoTestCase
     @Test
     void testPath()
     {
-        graph.makeEdge( "a", "b", "cost", (double) 1 );
-        graph.makeEdge( "b", "c", "cost", (float) 1 );
-        graph.makeEdge( "c", "d", "cost", 1 );
-        graph.makeEdge( "d", "e", "cost", (long) 1 );
-        graph.makeEdge( "e", "f", "cost", (byte) 1 );
-        FloydWarshall<Double> floydWarshall = new FloydWarshall<>( 0.0, Double.MAX_VALUE, Direction.OUTGOING,
-                CommonEvaluators.doubleCostEvaluator( "cost" ), new org.neo4j.graphalgo.impl.util.DoubleAdder(),
-                Double::compareTo, graph.getAllNodes(), graph.getAllEdges() );
-        List<Node> path = floydWarshall.getPath( graph.getNode( "a" ), graph
-            .getNode( "f" ) );
-        assertEquals( 6, path.size() );
-        assertEquals( path.get( 0 ), graph.getNode( "a" ) );
-        assertEquals( path.get( 1 ), graph.getNode( "b" ) );
-        assertEquals( path.get( 2 ), graph.getNode( "c" ) );
-        assertEquals( path.get( 3 ), graph.getNode( "d" ) );
-        assertEquals( path.get( 4 ), graph.getNode( "e" ) );
-        assertEquals( path.get( 5 ), graph.getNode( "f" ) );
+        try ( Transaction transaction = graphDb.beginTx() )
+        {
+            graph.makeEdge( "a", "b", "cost", (double) 1 );
+            graph.makeEdge( "b", "c", "cost", (float) 1 );
+            graph.makeEdge( "c", "d", "cost", 1 );
+            graph.makeEdge( "d", "e", "cost", (long) 1 );
+            graph.makeEdge( "e", "f", "cost", (byte) 1 );
+            FloydWarshall<Double> floydWarshall =
+                    new FloydWarshall<>( 0.0, Double.MAX_VALUE, Direction.OUTGOING, CommonEvaluators.doubleCostEvaluator( "cost" ), new DoubleAdder(),
+                            Double::compareTo, graph.getAllNodes(), graph.getAllEdges() );
+            List<Node> path = floydWarshall.getPath( graph.getNode( "a" ), graph.getNode( "f" ) );
+            assertEquals( 6, path.size() );
+            assertEquals( path.get( 0 ), graph.getNode( "a" ) );
+            assertEquals( path.get( 1 ), graph.getNode( "b" ) );
+            assertEquals( path.get( 2 ), graph.getNode( "c" ) );
+            assertEquals( path.get( 3 ), graph.getNode( "d" ) );
+            assertEquals( path.get( 4 ), graph.getNode( "e" ) );
+            assertEquals( path.get( 5 ), graph.getNode( "f" ) );
+            transaction.commit();
+        }
     }
 
     @Test
     void testDirection()
     {
-        graph.makeEdge( "a", "b" );
-        graph.makeEdge( "b", "c" );
-        graph.makeEdge( "c", "d" );
-        graph.makeEdge( "d", "a" );
-        graph.makeEdge( "s", "a" );
-        graph.makeEdge( "b", "s" );
-        graph.makeEdge( "e", "c" );
-        graph.makeEdge( "d", "e" );
-        new FloydWarshall<>( 0.0, Double.MAX_VALUE, Direction.OUTGOING, ( relationship, direction ) -> {
-            assertEquals( Direction.OUTGOING, direction );
-            return 1.0;
-        }, new org.neo4j.graphalgo.impl.util.DoubleAdder(), Double::compareTo,
-                graph.getAllNodes(), graph.getAllEdges() ).calculate();
-        new FloydWarshall<>( 0.0, Double.MAX_VALUE, Direction.INCOMING, ( relationship, direction ) -> {
-            assertEquals( Direction.INCOMING, direction );
-            return 1.0;
-        }, new org.neo4j.graphalgo.impl.util.DoubleAdder(), Double::compareTo,
-                graph.getAllNodes(), graph.getAllEdges() ).calculate();
+        try ( Transaction transaction = graphDb.beginTx() )
+        {
+            graph.makeEdge( "a", "b" );
+            graph.makeEdge( "b", "c" );
+            graph.makeEdge( "c", "d" );
+            graph.makeEdge( "d", "a" );
+            graph.makeEdge( "s", "a" );
+            graph.makeEdge( "b", "s" );
+            graph.makeEdge( "e", "c" );
+            graph.makeEdge( "d", "e" );
+            new FloydWarshall<>( 0.0, Double.MAX_VALUE, Direction.OUTGOING, ( relationship, direction ) ->
+            {
+                assertEquals( Direction.OUTGOING, direction );
+                return 1.0;
+            }, new DoubleAdder(), Double::compareTo, graph.getAllNodes(), graph.getAllEdges() ).calculate();
+            new FloydWarshall<>( 0.0, Double.MAX_VALUE, Direction.INCOMING, ( relationship, direction ) ->
+            {
+                assertEquals( Direction.INCOMING, direction );
+                return 1.0;
+            }, new DoubleAdder(), Double::compareTo, graph.getAllNodes(), graph.getAllEdges() ).calculate();
+            transaction.commit();
+        }
     }
 }

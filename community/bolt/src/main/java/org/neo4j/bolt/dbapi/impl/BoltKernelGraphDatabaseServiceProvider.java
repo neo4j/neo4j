@@ -23,10 +23,8 @@ import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
-import java.util.function.Supplier;
 
 import org.neo4j.bolt.dbapi.BoltGraphDatabaseServiceSPI;
-import org.neo4j.bolt.dbapi.BoltQueryExecutor;
 import org.neo4j.bolt.dbapi.BoltTransaction;
 import org.neo4j.bolt.runtime.AccessMode;
 import org.neo4j.bolt.runtime.Bookmark;
@@ -95,21 +93,14 @@ public class BoltKernelGraphDatabaseServiceProvider implements BoltGraphDatabase
     public BoltTransaction beginTransaction( KernelTransaction.Type type, LoginContext loginContext, ClientConnectionInfo clientInfo, Duration txTimeout,
             AccessMode accessMode, Map<String,Object> txMetadata )
     {
-
-        Supplier<InternalTransaction> internalTransactionSupplier = () -> beginInternalTransaction( type, loginContext, clientInfo, txTimeout, txMetadata );
-        InternalTransaction topLevelInternalTransaction = internalTransactionSupplier.get();
+        InternalTransaction topLevelInternalTransaction = beginInternalTransaction( type, loginContext, clientInfo, txTimeout, txMetadata );
         KernelTransaction kernelTransaction = txBridge.getKernelTransactionBoundToThisThread( false, databaseAPI.databaseId() );
-        return new BoltKernelTransaction( queryExecutionEngine, txBridge, transactionalContextFactory, kernelTransaction, topLevelInternalTransaction,
-                internalTransactionSupplier );
-    }
-
-    @Override
-    public BoltQueryExecutor getPeriodicCommitExecutor( LoginContext loginContext, ClientConnectionInfo clientInfo, Duration txTimeout,
-            AccessMode accessMode, Map<String,Object> txMetadata )
-    {
-        Supplier<InternalTransaction> internalTransactionSupplier =
-                () -> beginInternalTransaction( Transaction.Type.implicit, loginContext, clientInfo, txTimeout, txMetadata );
-        return new BoltQueryExecutorImpl( queryExecutionEngine, transactionalContextFactory, internalTransactionSupplier );
+        if ( Transaction.Type.implicit == type )
+        {
+            return new PeriodicBoltKernelTransaction( queryExecutionEngine, txBridge, transactionalContextFactory, kernelTransaction,
+                    topLevelInternalTransaction );
+        }
+        return new BoltKernelTransaction( queryExecutionEngine, txBridge, transactionalContextFactory, kernelTransaction, topLevelInternalTransaction );
     }
 
     @Override

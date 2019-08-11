@@ -326,7 +326,7 @@ class DelegatingQueryTransactionalContext(val inner: QueryTransactionalContext) 
 
   override def isTopLevelTx: Boolean = inner.isTopLevelTx
 
-  override def close(success: Boolean) { inner.close(success) }
+  override def close() { inner.close() }
 
   override def kernelStatisticProvider: KernelStatisticProvider = inner.kernelStatisticProvider
 

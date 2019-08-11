@@ -190,15 +190,18 @@ class LuceneIndexRecoveryIT
         // When
         startDb( createAlwaysInitiallyPopulatingLuceneIndexFactory() );
 
+        IndexDefinition index;
         try ( Transaction ignored = db.beginTx() )
         {
-            IndexDefinition index = db.schema().getIndexes().iterator().next();
-            waitForIndex( index );
-
-            // Then
-            assertEquals( "12", db.getNodeById( nodeId ).getProperty( NUM_BANANAS_KEY ) );
-            assertEquals( 1, doIndexLookup( myLabel, "12" ).size() );
+            index = db.schema().getIndexes().iterator().next();
         }
+        waitForIndex( index );
+
+        try ( Transaction ignored = db.beginTx() )
+        {
+            assertEquals( "12", db.getNodeById( nodeId ).getProperty( NUM_BANANAS_KEY ) );
+        }
+        assertEquals( 1, doIndexLookup( myLabel, "12" ).size() );
     }
 
     @Test

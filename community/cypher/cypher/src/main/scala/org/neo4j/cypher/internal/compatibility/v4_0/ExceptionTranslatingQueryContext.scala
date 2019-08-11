@@ -333,7 +333,7 @@ class ExceptionTranslatingQueryContext(val inner: QueryContext) extends QueryCon
   }
 
   class ExceptionTranslatingTransactionalContext(inner: QueryTransactionalContext) extends DelegatingQueryTransactionalContext(inner) {
-    override def close(success: Boolean) { translateException(super.close(success)) }
+    override def close() { translateException(super.close()) }
   }
 
 }

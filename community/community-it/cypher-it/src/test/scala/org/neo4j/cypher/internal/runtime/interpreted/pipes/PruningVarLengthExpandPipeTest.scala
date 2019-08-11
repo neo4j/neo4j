@@ -345,7 +345,7 @@ class PruningVarLengthExpandPipeTest extends GraphDatabaseFunSuite {
 
     val nodes = (0 to POPULATION) map { _ =>
       checkAndSwitch()
-      createNode()
+      graph.createNode()
     }
 
     for {
@@ -355,7 +355,7 @@ class PruningVarLengthExpandPipeTest extends GraphDatabaseFunSuite {
       n2 = nodes(r.nextInt(POPULATION))
     } {
       checkAndSwitch()
-      relate(n1, n2)
+      n1.createRelationshipTo(n2, REL)
     }
 
     tx.commit()

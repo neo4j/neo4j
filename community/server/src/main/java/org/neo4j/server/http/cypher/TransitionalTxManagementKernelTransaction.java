@@ -55,6 +55,11 @@ public class TransitionalTxManagementKernelTransaction
         this.tx = startTransaction();
     }
 
+    public InternalTransaction getInternalTransaction()
+    {
+        return tx;
+    }
+
     void suspendSinceTransactionsAreStillThreadBound()
     {
         assert suspendedTransaction == null : "Can't suspend the transaction if it already is suspended.";

@@ -20,13 +20,12 @@
 package org.neo4j.kernel.impl;
 
 import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.parallel.ResourceLock;
 
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.internal.id.IdGenerator;
 import org.neo4j.internal.id.IdGeneratorFactory;
@@ -47,8 +46,6 @@ public abstract class AbstractNeo4jTestCase
 {
     private static DatabaseManagementService managementService;
     private static GraphDatabaseAPI graphDb;
-
-    private Transaction tx;
 
     @BeforeAll
     static void beforeAll()
@@ -73,21 +70,6 @@ public abstract class AbstractNeo4jTestCase
         managementService.shutdown();
     }
 
-    @BeforeEach
-    void setUpTest()
-    {
-        tx = graphDb.beginTx();
-    }
-
-    @AfterEach
-    void tearDownTest()
-    {
-        if ( tx != null )
-        {
-            tx.close();
-        }
-    }
-
     public GraphDatabaseService getGraphDb()
     {
         return graphDb;
@@ -103,69 +85,15 @@ public abstract class AbstractNeo4jTestCase
         return graphDb;
     }
 
-    public Transaction getTransaction()
+    protected Node createNode()
     {
-        return tx;
-    }
-
-    public void setTransaction( Transaction tx )
-    {
-        this.tx = tx;
-    }
-
-    public Transaction newTransaction()
-    {
-        if ( tx != null )
+        Node node;
+        try ( Transaction transaction = graphDb.beginTx() )
         {
-            tx.commit();
+            node = graphDb.createNode();
+            transaction.commit();
         }
-        tx = graphDb.beginTx();
-        return tx;
-    }
-
-    public void commit()
-    {
-        if ( tx != null )
-        {
-            try
-            {
-                tx.commit();
-            }
-            finally
-            {
-                tx = null;
-            }
-        }
-    }
-
-    public void finish()
-    {
-        if ( tx != null )
-        {
-            try
-            {
-                tx.close();
-            }
-            finally
-            {
-                tx = null;
-            }
-        }
-    }
-
-    public void rollback()
-    {
-        if ( tx != null )
-        {
-            try
-            {
-                tx.rollback();
-            }
-            finally
-            {
-                tx = null;
-            }
-        }
+        return node;
     }
 
     protected IdGenerator getIdGenerator( IdType idType )

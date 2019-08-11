@@ -30,6 +30,7 @@ import java.util.List;
 import org.neo4j.graphalgo.CommonEvaluators;
 import org.neo4j.graphalgo.CostEvaluator;
 import org.neo4j.graphdb.Path;
+import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.impl.util.NoneStrictMath;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -59,56 +60,67 @@ class TestTopFetchingWeightedPathIterator extends Neo4jAlgoTestCase
     @Test
     void shouldHandleSinglePath()
     {
-        Path a = graph.makePathWithRelProperty( length, "a1-1-a2" );
-        List<Path> list = new ArrayList<>(  );
-        list.add( a );
+        try ( Transaction transaction = graphDb.beginTx() )
+        {
+            Path a = graph.makePathWithRelProperty( length, "a1-1-a2" );
+            List<Path> list = new ArrayList<>();
+            list.add( a );
 
-        topFetcher = new TopFetchingWeightedPathIterator( list.iterator(), evaluator, epsilon );
+            topFetcher = new TopFetchingWeightedPathIterator( list.iterator(), evaluator, epsilon );
 
-        assertTrue( topFetcher.hasNext(), "Expected at least one element" );
-        assertPathDef( a, topFetcher.next() );
-        assertFalse( topFetcher.hasNext(), "Expected no more elements" );
-        assertNull( topFetcher.fetchNextOrNull(), "Expected null after report has no next" );
+            assertTrue( topFetcher.hasNext(), "Expected at least one element" );
+            assertPathDef( a, topFetcher.next() );
+            assertFalse( topFetcher.hasNext(), "Expected no more elements" );
+            assertNull( topFetcher.fetchNextOrNull(), "Expected null after report has no next" );
+            transaction.commit();
+        }
     }
 
     @Test
     void shouldHandleMultipleShortest()
     {
-        Path a = graph.makePathWithRelProperty(  length, "a1-1-a2" );
-        Path b = graph.makePathWithRelProperty( length, "b1-0-b2-1-b3-0-b4" );
-        List<Path> list = new ArrayList<>(  );
-        list.add( a );
-        list.add( b );
-
-        topFetcher = new TopFetchingWeightedPathIterator( list.iterator(), evaluator, epsilon );
-        List<Path> result = new ArrayList<>();
-        while ( topFetcher.hasNext() )
+        try ( Transaction transaction = graphDb.beginTx() )
         {
-            result.add( topFetcher.next() );
-        }
+            Path a = graph.makePathWithRelProperty( length, "a1-1-a2" );
+            Path b = graph.makePathWithRelProperty( length, "b1-0-b2-1-b3-0-b4" );
+            List<Path> list = new ArrayList<>();
+            list.add( a );
+            list.add( b );
 
-        assertPathsWithPaths( result, a, b );
+            topFetcher = new TopFetchingWeightedPathIterator( list.iterator(), evaluator, epsilon );
+            List<Path> result = new ArrayList<>();
+            while ( topFetcher.hasNext() )
+            {
+                result.add( topFetcher.next() );
+            }
+
+            assertPathsWithPaths( result, a, b );
+            transaction.commit();
+        }
     }
 
     @Test
     void shouldHandleUnsortedSource()
     {
-        Path a = graph.makePathWithRelProperty( length, "a1-1-a2-2-a3" );             // 3
-        Path b = graph.makePathWithRelProperty( length, "b1-3-b2-3-b3" );             // 6
-        Path c = graph.makePathWithRelProperty( length, "c1-0-c2-1-c3" );             // 1
-        Path d = graph.makePathWithRelProperty( length, "d1-3-d2-0-d3" );             // 3
-        Path e = graph.makePathWithRelProperty( length, "e1-0-e2-0-e3-0-e4-1-e5" );   // 1
-
-        List<Path> list = Arrays.asList(
-                a,b,c,d,e );
-        topFetcher = new TopFetchingWeightedPathIterator( list.iterator(), evaluator, epsilon );
-
-        List<Path> result = new ArrayList<>(  );
-        while ( topFetcher.hasNext() )
+        try ( Transaction transaction = graphDb.beginTx() )
         {
-            result.add( topFetcher.next() );
-        }
+            Path a = graph.makePathWithRelProperty( length, "a1-1-a2-2-a3" );             // 3
+            Path b = graph.makePathWithRelProperty( length, "b1-3-b2-3-b3" );             // 6
+            Path c = graph.makePathWithRelProperty( length, "c1-0-c2-1-c3" );             // 1
+            Path d = graph.makePathWithRelProperty( length, "d1-3-d2-0-d3" );             // 3
+            Path e = graph.makePathWithRelProperty( length, "e1-0-e2-0-e3-0-e4-1-e5" );   // 1
 
-        assertPathsWithPaths( result, c, e );
+            List<Path> list = Arrays.asList( a, b, c, d, e );
+            topFetcher = new TopFetchingWeightedPathIterator( list.iterator(), evaluator, epsilon );
+
+            List<Path> result = new ArrayList<>();
+            while ( topFetcher.hasNext() )
+            {
+                result.add( topFetcher.next() );
+            }
+
+            assertPathsWithPaths( result, c, e );
+            transaction.commit();
+        }
     }
 }

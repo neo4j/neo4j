@@ -42,7 +42,6 @@ class TestIsolationBasic extends AbstractNeo4jTestCase
     void testSimpleTransactionIsolation() throws Exception
     {
         // Start setup - create base data
-        commit();
         final CountDownLatch latch1 = new CountDownLatch( 1 );
         final CountDownLatch latch2 = new CountDownLatch( 1 );
         Node n1;

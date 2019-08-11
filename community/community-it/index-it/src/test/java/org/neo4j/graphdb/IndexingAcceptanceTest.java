@@ -47,7 +47,6 @@ import static org.neo4j.internal.helpers.collection.MapUtil.map;
 import static org.neo4j.test.mockito.matcher.Neo4jMatchers.containsOnly;
 import static org.neo4j.test.mockito.matcher.Neo4jMatchers.findNodesByLabelAndProperty;
 import static org.neo4j.test.mockito.matcher.Neo4jMatchers.hasProperty;
-import static org.neo4j.test.mockito.matcher.Neo4jMatchers.inTx;
 import static org.neo4j.test.mockito.matcher.Neo4jMatchers.isEmpty;
 import static org.neo4j.test.mockito.mock.SpatialMocks.mockCartesian;
 import static org.neo4j.test.mockito.mock.SpatialMocks.mockCartesian_3D;
@@ -56,6 +55,25 @@ import static org.neo4j.test.mockito.mock.SpatialMocks.mockWGS84_3D;
 
 public class IndexingAcceptanceTest
 {
+    private static final String LONG_STRING = "a long string that has to be stored in dynamic records";
+
+    @ClassRule
+    public static ImpermanentDbmsRule dbRule = new ImpermanentDbmsRule();
+    @Rule
+    public final TestName testName = new TestName();
+
+    private Label LABEL1;
+    private Label LABEL2;
+    private Label LABEL3;
+
+    @Before
+    public void setupLabels()
+    {
+        LABEL1 = Label.label( "LABEL1-" + testName.getMethodName() );
+        LABEL2 = Label.label( "LABEL2-" + testName.getMethodName() );
+        LABEL3 = Label.label( "LABEL3-" + testName.getMethodName() );
+    }
+
     /* This test is a bit interesting. It tests a case where we've got a property that sits in one
      * property block and the value is of a long type. So given that plus that there's an index for that
      * label/property, do an update that changes the long value into a value that requires two property blocks.
@@ -75,18 +93,16 @@ public class IndexingAcceptanceTest
         long smallValue = 10L;
         long bigValue = 1L << 62;
         Node myNode;
+        try ( Transaction tx = beansAPI.beginTx() )
         {
-            try ( Transaction tx = beansAPI.beginTx() )
-            {
-                myNode = beansAPI.createNode( LABEL1 );
-                myNode.setProperty( "pad0", true );
-                myNode.setProperty( "pad1", true );
-                myNode.setProperty( "pad2", true );
-                // Use a small long here which will only occupy one property block
-                myNode.setProperty( "key", smallValue );
+            myNode = beansAPI.createNode( LABEL1 );
+            myNode.setProperty( "pad0", true );
+            myNode.setProperty( "pad1", true );
+            myNode.setProperty( "pad2", true );
+            // Use a small long here which will only occupy one property block
+            myNode.setProperty( "key", smallValue );
 
-                tx.commit();
-            }
+            tx.commit();
         }
 
         Neo4jMatchers.createIndex( beansAPI, LABEL1, "key" );
@@ -99,9 +115,12 @@ public class IndexingAcceptanceTest
             tx.commit();
         }
 
-        // THEN
-        assertThat( findNodesByLabelAndProperty( LABEL1, "key", bigValue, beansAPI ), containsOnly( myNode ) );
-        assertThat( findNodesByLabelAndProperty( LABEL1, "key", smallValue, beansAPI ), isEmpty() );
+        try ( Transaction transaction = beansAPI.beginTx() )
+        {
+            // THEN
+            assertThat( findNodesByLabelAndProperty( LABEL1, "key", bigValue, beansAPI ), containsOnly( myNode ) );
+            assertThat( findNodesByLabelAndProperty( LABEL1, "key", smallValue, beansAPI ), isEmpty() );
+        }
     }
 
     @Test
@@ -112,36 +131,35 @@ public class IndexingAcceptanceTest
 
         // When
         long id;
+        try ( Transaction tx = beansAPI.beginTx() )
         {
-            try ( Transaction tx = beansAPI.beginTx() )
-            {
-                Node myNode = beansAPI.createNode();
-                id = myNode.getId();
-                myNode.setProperty( "key0", true );
-                myNode.setProperty( "key1", true );
+            Node myNode = beansAPI.createNode();
+            id = myNode.getId();
+            myNode.setProperty( "key0", true );
+            myNode.setProperty( "key1", true );
 
-                tx.commit();
-            }
+            tx.commit();
         }
 
         Neo4jMatchers.createIndex( beansAPI, LABEL1, "key2" );
         Node myNode;
+        try ( Transaction tx = beansAPI.beginTx() )
         {
-            try ( Transaction tx = beansAPI.beginTx() )
-            {
-                myNode = beansAPI.getNodeById( id );
-                myNode.addLabel( LABEL1 );
-                myNode.setProperty( "key2", LONG_STRING );
-                myNode.setProperty( "key3", LONG_STRING );
+            myNode = beansAPI.getNodeById( id );
+            myNode.addLabel( LABEL1 );
+            myNode.setProperty( "key2", LONG_STRING );
+            myNode.setProperty( "key3", LONG_STRING );
 
-                tx.commit();
-            }
+            tx.commit();
         }
 
-        // Then
-        assertThat( myNode, inTx( beansAPI, hasProperty( "key2" ).withValue( LONG_STRING ) ) );
-        assertThat( myNode, inTx( beansAPI, hasProperty( "key3" ).withValue( LONG_STRING ) ) );
-        assertThat( findNodesByLabelAndProperty( LABEL1, "key2", LONG_STRING, beansAPI ), containsOnly( myNode ) );
+        try ( Transaction transaction = beansAPI.beginTx() )
+        {
+            // Then
+            assertThat( myNode, hasProperty( "key2" ).withValue( LONG_STRING ) );
+            assertThat( myNode, hasProperty( "key3" ).withValue( LONG_STRING ) );
+            assertThat( findNodesByLabelAndProperty( LABEL1, "key2", LONG_STRING, beansAPI ), containsOnly( myNode ) );
+        }
     }
 
     @Test
@@ -152,7 +170,10 @@ public class IndexingAcceptanceTest
         Node myNode = createNode( beansAPI, map( "name", "Hawking" ), LABEL1 );
 
         // When
-        assertThat( findNodesByLabelAndProperty( LABEL1, "name", "Hawking", beansAPI ), containsOnly( myNode ) );
+        try ( Transaction transaction = beansAPI.beginTx() )
+        {
+            assertThat( findNodesByLabelAndProperty( LABEL1, "name", "Hawking", beansAPI ), containsOnly( myNode ) );
+        }
     }
 
     @Test
@@ -164,7 +185,10 @@ public class IndexingAcceptanceTest
         Neo4jMatchers.createIndex( beansAPI, LABEL1, "name" );
 
         // When
-        assertThat( findNodesByLabelAndProperty( LABEL1, "name", "Hawking", beansAPI ), containsOnly( myNode ) );
+        try ( Transaction transaction = beansAPI.beginTx() )
+        {
+            assertThat( findNodesByLabelAndProperty( LABEL1, "name", "Hawking", beansAPI ), containsOnly( myNode ) );
+        }
     }
 
     @Test
@@ -186,18 +210,22 @@ public class IndexingAcceptanceTest
             tx.commit();
         }
 
-        // Then
-        assertThat( myNode, inTx( beansAPI, hasProperty("name").withValue( "Einstein" ) ) );
-        assertThat( labels( myNode ), containsOnly( LABEL2, LABEL3 ) );
+        try ( Transaction transaction = beansAPI.beginTx() )
+        {
+            // Then
+            assertThat( myNode, hasProperty( "name" ).withValue( "Einstein" ) );
+            assertThat( labels( myNode ), containsOnly( LABEL2, LABEL3 ) );
 
-        assertThat( findNodesByLabelAndProperty( LABEL1, "name", "Hawking", beansAPI ), isEmpty() );
-        assertThat( findNodesByLabelAndProperty( LABEL1, "name", "Einstein", beansAPI ), isEmpty() );
+            assertThat( findNodesByLabelAndProperty( LABEL1, "name", "Hawking", beansAPI ), isEmpty() );
+            assertThat( findNodesByLabelAndProperty( LABEL1, "name", "Einstein", beansAPI ), isEmpty() );
 
-        assertThat( findNodesByLabelAndProperty( LABEL2, "name", "Hawking", beansAPI ), isEmpty() );
-        assertThat( findNodesByLabelAndProperty( LABEL2, "name", "Einstein", beansAPI ), containsOnly( myNode ) );
+            assertThat( findNodesByLabelAndProperty( LABEL2, "name", "Hawking", beansAPI ), isEmpty() );
+            assertThat( findNodesByLabelAndProperty( LABEL2, "name", "Einstein", beansAPI ), containsOnly( myNode ) );
 
-        assertThat( findNodesByLabelAndProperty( LABEL3, "name", "Hawking", beansAPI ), isEmpty() );
-        assertThat( findNodesByLabelAndProperty( LABEL3, "name", "Einstein", beansAPI ), containsOnly( myNode ) );
+            assertThat( findNodesByLabelAndProperty( LABEL3, "name", "Hawking", beansAPI ), isEmpty() );
+            assertThat( findNodesByLabelAndProperty( LABEL3, "name", "Einstein", beansAPI ), containsOnly( myNode ) );
+            transaction.commit();
+        }
     }
 
     @Test
@@ -220,21 +248,25 @@ public class IndexingAcceptanceTest
             tx.commit();
         }
 
-        // Then
-        assertThat( myNode, inTx( beansAPI, hasProperty("name").withValue( "Feynman" ) ) );
-        assertThat( labels( myNode ), containsOnly( LABEL2, LABEL3 ) );
+        try ( Transaction transaction = beansAPI.beginTx() )
+        {
+            // Then
+            assertThat( myNode, hasProperty( "name" ).withValue( "Feynman" ) );
+            assertThat( labels( myNode ), containsOnly( LABEL2, LABEL3 ) );
 
-        assertThat( findNodesByLabelAndProperty( LABEL1, "name", "Hawking", beansAPI ), isEmpty() );
-        assertThat( findNodesByLabelAndProperty( LABEL1, "name", "Einstein", beansAPI ), isEmpty() );
-        assertThat( findNodesByLabelAndProperty( LABEL1, "name", "Feynman", beansAPI ), isEmpty() );
+            assertThat( findNodesByLabelAndProperty( LABEL1, "name", "Hawking", beansAPI ), isEmpty() );
+            assertThat( findNodesByLabelAndProperty( LABEL1, "name", "Einstein", beansAPI ), isEmpty() );
+            assertThat( findNodesByLabelAndProperty( LABEL1, "name", "Feynman", beansAPI ), isEmpty() );
 
-        assertThat( findNodesByLabelAndProperty( LABEL2, "name", "Hawking", beansAPI ), isEmpty() );
-        assertThat( findNodesByLabelAndProperty( LABEL2, "name", "Einstein", beansAPI ), isEmpty() );
-        assertThat( findNodesByLabelAndProperty( LABEL2, "name", "Feynman", beansAPI ), containsOnly( myNode ) );
+            assertThat( findNodesByLabelAndProperty( LABEL2, "name", "Hawking", beansAPI ), isEmpty() );
+            assertThat( findNodesByLabelAndProperty( LABEL2, "name", "Einstein", beansAPI ), isEmpty() );
+            assertThat( findNodesByLabelAndProperty( LABEL2, "name", "Feynman", beansAPI ), containsOnly( myNode ) );
 
-        assertThat( findNodesByLabelAndProperty( LABEL3, "name", "Hawking", beansAPI ), isEmpty() );
-        assertThat( findNodesByLabelAndProperty( LABEL3, "name", "Einstein", beansAPI ), isEmpty() );
-        assertThat( findNodesByLabelAndProperty( LABEL3, "name", "Feynman", beansAPI ), containsOnly( myNode ) );
+            assertThat( findNodesByLabelAndProperty( LABEL3, "name", "Hawking", beansAPI ), isEmpty() );
+            assertThat( findNodesByLabelAndProperty( LABEL3, "name", "Einstein", beansAPI ), isEmpty() );
+            assertThat( findNodesByLabelAndProperty( LABEL3, "name", "Feynman", beansAPI ), containsOnly( myNode ) );
+            transaction.commit();
+        }
     }
 
     @Test
@@ -244,7 +276,10 @@ public class IndexingAcceptanceTest
         GraphDatabaseService beansAPI = dbRule.getGraphDatabaseAPI();
 
         // When/Then
-        assertThat( findNodesByLabelAndProperty( LABEL1, "name", "Hawking", beansAPI ), isEmpty() );
+        try ( Transaction transaction = beansAPI.beginTx() )
+        {
+            assertThat( findNodesByLabelAndProperty( LABEL1, "name", "Hawking", beansAPI ), isEmpty() );
+        }
     }
 
     @Test
@@ -256,9 +291,15 @@ public class IndexingAcceptanceTest
         Node firstNode = createNode( beansAPI, map( "name", "Mattias" ), LABEL1 );
 
         // WHEN THEN
-        assertThat( findNodesByLabelAndProperty( LABEL1, "name", "Mattias", beansAPI ), containsOnly( firstNode ) );
+        try ( Transaction transaction = beansAPI.beginTx() )
+        {
+            assertThat( findNodesByLabelAndProperty( LABEL1, "name", "Mattias", beansAPI ), containsOnly( firstNode ) );
+        }
         Node secondNode = createNode( beansAPI, map( "name", "Taylor" ), LABEL1 );
-        assertThat( findNodesByLabelAndProperty( LABEL1, "name", "Taylor", beansAPI ), containsOnly( secondNode ) );
+        try ( Transaction transaction = beansAPI.beginTx() )
+        {
+            assertThat( findNodesByLabelAndProperty( LABEL1, "name", "Taylor", beansAPI ), containsOnly( secondNode ) );
+        }
     }
 
     @Test
@@ -269,14 +310,17 @@ public class IndexingAcceptanceTest
         Neo4jMatchers.createIndex( beansAPI, LABEL1, "name" );
 
         // WHEN
-        Transaction tx = beansAPI.beginTx();
 
         Node firstNode = createNode( beansAPI, map( "name", "Mattias" ), LABEL1 );
-        long sizeBeforeDelete = count( beansAPI.findNodes( LABEL1, "name", "Mattias" ) );
-        firstNode.delete();
-        long sizeAfterDelete = count( beansAPI.findNodes( LABEL1, "name", "Mattias" ) );
-
-        tx.close();
+        long sizeBeforeDelete;
+        long sizeAfterDelete;
+        try ( Transaction tx = beansAPI.beginTx() )
+        {
+            sizeBeforeDelete = count( beansAPI.findNodes( LABEL1, "name", "Mattias" ) );
+            firstNode.delete();
+            sizeAfterDelete = count( beansAPI.findNodes( LABEL1, "name", "Mattias" ) );
+            tx.commit();
+        }
 
         // THEN
         assertThat( sizeBeforeDelete, equalTo(1L) );
@@ -292,13 +336,15 @@ public class IndexingAcceptanceTest
         Node firstNode = createNode( beansAPI, map( "name", "Mattias" ), LABEL1 );
 
         // WHEN
-        Transaction tx = beansAPI.beginTx();
-
-        long sizeBeforeDelete = count( beansAPI.findNodes( LABEL1, "name", "Mattias" ) );
-        firstNode.delete();
-        long sizeAfterDelete = count( beansAPI.findNodes( LABEL1, "name", "Mattias" ) );
-
-        tx.close();
+        long sizeBeforeDelete;
+        long sizeAfterDelete;
+        try ( Transaction tx = beansAPI.beginTx() )
+        {
+            sizeBeforeDelete = count( beansAPI.findNodes( LABEL1, "name", "Mattias" ) );
+            firstNode.delete();
+            sizeAfterDelete = count( beansAPI.findNodes( LABEL1, "name", "Mattias" ) );
+            tx.commit();
+        }
 
         // THEN
         assertThat( sizeBeforeDelete, equalTo(1L) );
@@ -314,13 +360,17 @@ public class IndexingAcceptanceTest
         createNode( beansAPI, map( "name", "Mattias" ), LABEL1 );
 
         // WHEN
-        Transaction tx = beansAPI.beginTx();
-
-        long sizeBeforeDelete = count( beansAPI.findNodes( LABEL1, "name", "Mattias" ) );
+        long sizeBeforeDelete;
+        long sizeAfterDelete;
+        try ( Transaction transaction = beansAPI.beginTx() )
+        {
+            sizeBeforeDelete = count( beansAPI.findNodes( LABEL1, "name", "Mattias" ) );
+        }
         createNode( beansAPI, map( "name", "Mattias" ), LABEL1 );
-        long sizeAfterDelete = count( beansAPI.findNodes( LABEL1, "name", "Mattias" ) );
-
-        tx.close();
+        try ( Transaction transaction = beansAPI.beginTx() )
+        {
+            sizeAfterDelete = count( beansAPI.findNodes( LABEL1, "name", "Mattias" ) );
+        }
 
         // THEN
         assertThat( sizeBeforeDelete, equalTo(1L) );
@@ -506,25 +556,6 @@ public class IndexingAcceptanceTest
             found.delete();
             tx.commit();
         }
-    }
-
-    public static final String LONG_STRING = "a long string that has to be stored in dynamic records";
-
-    @ClassRule
-    public static ImpermanentDbmsRule dbRule = new ImpermanentDbmsRule();
-    @Rule
-    public final TestName testName = new TestName();
-
-    private Label LABEL1;
-    private Label LABEL2;
-    private Label LABEL3;
-
-    @Before
-    public void setupLabels()
-    {
-        LABEL1 = Label.label( "LABEL1-" + testName.getMethodName() );
-        LABEL2 = Label.label( "LABEL2-" + testName.getMethodName() );
-        LABEL3 = Label.label( "LABEL3-" + testName.getMethodName() );
     }
 
     private Node createNode( GraphDatabaseService beansAPI, Map<String, Object> properties, Label... labels )

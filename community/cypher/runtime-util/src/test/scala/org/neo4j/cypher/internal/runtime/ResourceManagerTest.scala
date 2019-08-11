@@ -35,7 +35,7 @@ class ResourceManagerTest extends CypherFunSuite {
     resources.release(resource)
     close(resource, monitor)
 
-    resources.close(success = true)
+    resources.close()
     verifyNoMoreInteractions(resource, monitor)
   }
 
@@ -45,7 +45,7 @@ class ResourceManagerTest extends CypherFunSuite {
     val resources = new ResourceManager(monitor)
     trace(resource, monitor, resources)
 
-    resources.close(success = true)
+    resources.close()
     close(resource, monitor)
     verifyNoMoreInteractions(resource, monitor)
   }
@@ -56,9 +56,9 @@ class ResourceManagerTest extends CypherFunSuite {
     val resources = new ResourceManager(monitor)
     trace(resource, monitor, resources)
 
-    resources.close(success = true)
+    resources.close()
     close(resource, monitor)
-    resources.close(success = true)
+    resources.close()
     verifyNoMoreInteractions(resource, monitor)
   }
 
@@ -75,7 +75,7 @@ class ResourceManagerTest extends CypherFunSuite {
     resources.release(resource2)
     close(resource2, monitor)
 
-    resources.close(success = true)
+    resources.close()
     verifyNoMoreInteractions(resource1, resource2, monitor)
   }
 
@@ -87,7 +87,7 @@ class ResourceManagerTest extends CypherFunSuite {
     trace(resource1, monitor, resources)
     trace(resource2, monitor, resources)
 
-    resources.close(success = true)
+    resources.close()
     close(resource1, monitor)
     close(resource2, monitor)
     verifyNoMoreInteractions(resource1, resource2, monitor)
@@ -104,7 +104,7 @@ class ResourceManagerTest extends CypherFunSuite {
     resources.release(resource2)
     close(resource2, monitor)
 
-    resources.close(success = true)
+    resources.close()
     close(resource1, monitor)
     verifyNoMoreInteractions(resource1, resource2, monitor)
   }
@@ -124,7 +124,7 @@ class ResourceManagerTest extends CypherFunSuite {
     val exception2 = new RuntimeException
     when(resource2.close()).thenThrow(exception2)
 
-    val throwable = Try(resources.close(success = true)).failed.get
+    val throwable = Try(resources.close()).failed.get
     close(resource1, monitor)
     close(resource2, monitor)
     close(resource3, monitor)

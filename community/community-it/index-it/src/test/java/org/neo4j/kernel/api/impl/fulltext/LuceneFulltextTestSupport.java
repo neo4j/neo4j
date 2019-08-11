@@ -223,12 +223,8 @@ public class LuceneFulltextTestSupport
 
     void setNodeProp( long nodeId, String propertyKey, String value )
     {
-        try ( Transaction tx = db.beginTx() )
-        {
-            Node node = db.getNodeById( nodeId );
-            node.setProperty( propertyKey, value );
-            tx.commit();
-        }
+        Node node = db.getNodeById( nodeId );
+        node.setProperty( propertyKey, value );
     }
 
     void await( SchemaDescriptorSupplier descriptor ) throws Exception
@@ -244,10 +240,6 @@ public class LuceneFulltextTestSupport
             {
                 Thread.sleep( 100 );
             }
-        }
-        catch ( InterruptedException e )
-        {
-            e.printStackTrace();
         }
     }
 }

@@ -66,7 +66,11 @@ public class GraphDatabaseServiceExecuteTest
         }
 
         // when
-        db.execute( "CREATE (n:Foo{bar:\"baz\"})" );
+        try ( Transaction transaction = db.beginTx() )
+        {
+            db.execute( "CREATE (n:Foo{bar:\"baz\"})" );
+            transaction.commit();
+        }
 
         // then
         try ( Transaction tx = db.beginTx() )
@@ -80,40 +84,48 @@ public class GraphDatabaseServiceExecuteTest
     @Test
     void shouldNotReturnInternalGeographicPointType()
     {
-        // when
-        Result execute = db.execute( "RETURN point({longitude: 144.317718, latitude: -37.031738}) AS p" );
+        try ( Transaction transaction = db.beginTx() )
+        {
+            // when
+            Result execute = db.execute( "RETURN point({longitude: 144.317718, latitude: -37.031738}) AS p" );
 
-        // then
-        Object obj = execute.next().get( "p" );
-        assertThat( obj, Matchers.instanceOf(Point.class));
+            // then
+            Object obj = execute.next().get( "p" );
+            assertThat( obj, Matchers.instanceOf( Point.class ) );
 
-        Point point = (Point) obj;
-        assertThat( point.getCoordinate().getCoordinate().get(0), equalTo( 144.317718 ));
-        assertThat( point.getCoordinate().getCoordinate().get(1), equalTo( -37.031738  ));
+            Point point = (Point) obj;
+            assertThat( point.getCoordinate().getCoordinate().get( 0 ), equalTo( 144.317718 ) );
+            assertThat( point.getCoordinate().getCoordinate().get( 1 ), equalTo( -37.031738 ) );
 
-        CRS crs = point.getCRS();
-        assertThat( crs.getCode(), equalTo(4326));
-        assertThat( crs.getType(), equalTo("wgs-84"));
-        assertThat( crs.getHref(), equalTo("http://spatialreference.org/ref/epsg/4326/"));
+            CRS crs = point.getCRS();
+            assertThat( crs.getCode(), equalTo( 4326 ) );
+            assertThat( crs.getType(), equalTo( "wgs-84" ) );
+            assertThat( crs.getHref(), equalTo( "http://spatialreference.org/ref/epsg/4326/" ) );
+            transaction.commit();
+        }
     }
 
     @Test
     void shouldNotReturnInternalCartesianPointType()
     {
         // when
-        Result execute = db.execute( "RETURN point({x: 13.37, y: 13.37, crs:'cartesian'}) AS p" );
+        try ( Transaction transaction = db.beginTx() )
+        {
+            Result execute = db.execute( "RETURN point({x: 13.37, y: 13.37, crs:'cartesian'}) AS p" );
 
-        // then
-        Object obj = execute.next().get( "p" );
-        assertThat( obj, Matchers.instanceOf(Point.class));
+            // then
+            Object obj = execute.next().get( "p" );
+            assertThat( obj, Matchers.instanceOf( Point.class ) );
 
-        Point point = (Point) obj;
-        assertThat( point.getCoordinate(), equalTo(new Coordinate( 13.37, 13.37 )));
+            Point point = (Point) obj;
+            assertThat( point.getCoordinate(), equalTo( new Coordinate( 13.37, 13.37 ) ) );
 
-        CRS crs = point.getCRS();
-        assertThat( crs.getCode(), equalTo(7203));
-        assertThat( crs.getType(), equalTo("cartesian"));
-        assertThat( crs.getHref(), equalTo("http://spatialreference.org/ref/sr-org/7203/"));
+            CRS crs = point.getCRS();
+            assertThat( crs.getCode(), equalTo( 7203 ) );
+            assertThat( crs.getType(), equalTo( "cartesian" ) );
+            assertThat( crs.getHref(), equalTo( "http://spatialreference.org/ref/sr-org/7203/" ) );
+            transaction.commit();
+        }
     }
 
     @SuppressWarnings( "unchecked" )
@@ -121,40 +133,49 @@ public class GraphDatabaseServiceExecuteTest
     void shouldNotReturnInternalPointWhenInArray()
     {
         // when
-        Result execute = db.execute( "RETURN [point({longitude: 144.317718, latitude: -37.031738})] AS ps" );
+        try ( Transaction transaction = db.beginTx() )
+        {
+            Result execute = db.execute( "RETURN [point({longitude: 144.317718, latitude: -37.031738})] AS ps" );
 
-        // then
-        List<Point> points = (List<Point>)execute.next().get( "ps" );
-        assertThat( points.get(0), Matchers.instanceOf(Point.class));
+            // then
+            List<Point> points = (List<Point>) execute.next().get( "ps" );
+            assertThat( points.get( 0 ), Matchers.instanceOf( Point.class ) );
+            transaction.commit();
+        }
     }
 
     @SuppressWarnings( "unchecked" )
     @Test
     void shouldNotReturnInternalPointWhenInMap()
     {
-        // when
-        Result execute = db.execute( "RETURN {p: point({longitude: 144.317718, latitude: -37.031738})} AS m" );
+        try ( Transaction transaction = db.beginTx() )
+        {
+            // when
+            Result execute = db.execute( "RETURN {p: point({longitude: 144.317718, latitude: -37.031738})} AS m" );
 
-        // then
-        Map<String,Object> points = (Map<String, Object>)execute.next().get( "m" );
-        assertThat( points.get("p"), Matchers.instanceOf(Point.class));
+            // then
+            Map<String,Object> points = (Map<String,Object>) execute.next().get( "m" );
+            assertThat( points.get( "p" ), Matchers.instanceOf( Point.class ) );
+            transaction.commit();
+        }
     }
 
     @Test
     void shouldBeAbleToUseResultingPointFromOneQueryAsParameterToNext()
     {
-        // given a point create by one cypher query
-        Result execute = db.execute( "RETURN point({longitude: 144.317718, latitude: -37.031738}) AS p" );
-        Point point = (Point) execute.next().get( "p" );
+        try ( Transaction transaction = db.beginTx() )
+        {
+            // given a point create by one cypher query
+            Result execute = db.execute( "RETURN point({longitude: 144.317718, latitude: -37.031738}) AS p" );
+            Point point = (Point) execute.next().get( "p" );
+            // when passing as params to a distance function
+            Result result = db.execute( "RETURN distance(point({longitude: 144.317718, latitude: -37.031738}),$previous) AS dist", map( "previous", point ) );
 
-        // when passing as params to a distance function
-        Result result = db.execute(
-                "RETURN distance(point({longitude: 144.317718, latitude: -37.031738}),$previous) AS dist",
-                map( "previous", point ) );
-
-        // then
-        Double dist = (Double) result.next().get( "dist" );
-        assertThat( dist, equalTo( 0.0 ) );
+            // then
+            Double dist = (Double) result.next().get( "dist" );
+            assertThat( dist, equalTo( 0.0 ) );
+            transaction.commit();
+        }
     }
 
     @Test
@@ -163,14 +184,16 @@ public class GraphDatabaseServiceExecuteTest
         // given a point created from public interface
         Point point = makeFakePoint( 144.317718, -37.031738, makeWGS84() );
 
-        // when passing as params to a distance function
-        Result result = db.execute(
-                "RETURN distance(point({longitude: 144.317718, latitude: -37.031738}),$previous) AS dist",
-                map( "previous", point ) );
+        try ( Transaction transaction = db.beginTx() )
+        {
+            // when passing as params to a distance function
+            Result result = db.execute( "RETURN distance(point({longitude: 144.317718, latitude: -37.031738}),$previous) AS dist", map( "previous", point ) );
 
-        // then
-        Double dist = (Double) result.next().get( "dist" );
-        assertThat( dist, equalTo( 0.0 ) );
+            // then
+            Double dist = (Double) result.next().get( "dist" );
+            assertThat( dist, equalTo( 0.0 ) );
+            transaction.commit();
+        }
     }
 
     @Test
@@ -180,13 +203,16 @@ public class GraphDatabaseServiceExecuteTest
         Geometry geometry = makeFakePointAsGeometry( 144.317718, -37.031738, makeWGS84() );
 
         // when passing as params to a distance function
-        Result result = db.execute(
-                "RETURN distance(point({longitude: 144.317718, latitude: -37.031738}),$previous) AS dist",
-                map( "previous", geometry ) );
+        try ( Transaction transaction = db.beginTx() )
+        {
+            Result result =
+                    db.execute( "RETURN distance(point({longitude: 144.317718, latitude: -37.031738}),$previous) AS dist", map( "previous", geometry ) );
 
-        // then
-        Double dist = (Double) result.next().get( "dist" );
-        assertThat( dist, equalTo( 0.0 ) );
+            // then
+            Double dist = (Double) result.next().get( "dist" );
+            assertThat( dist, equalTo( 0.0 ) );
+            transaction.commit();
+        }
     }
 
     @Test
@@ -197,13 +223,15 @@ public class GraphDatabaseServiceExecuteTest
         Point[] points = new Point[]{point, point};
 
         // when passing as params to a distance function
-        Result result = db.execute(
-                "RETURN distance($points[0],$points[1]) AS dist",
-                map( "points", points ) );
+        try ( Transaction transaction = db.beginTx() )
+        {
+            Result result = db.execute( "RETURN distance($points[0],$points[1]) AS dist", map( "points", points ) );
 
-        // then
-        Double dist = (Double) result.next().get( "dist" );
-        assertThat( dist, equalTo( 0.0 ) );
+            // then
+            Double dist = (Double) result.next().get( "dist" );
+            assertThat( dist, equalTo( 0.0 ) );
+            transaction.commit();
+        }
     }
 
     @Test
@@ -214,14 +242,17 @@ public class GraphDatabaseServiceExecuteTest
                 db.getDependencyResolver().resolveDependency( GlobalProcedures.class );
         globalProcedures.registerProcedure( PointProcs.class );
 
-        // when calling procedure that produces a point
-        Result result = db.execute(
-                "CALL spatial.point(144.317718, -37.031738) YIELD point " +
-                "RETURN distance(point({longitude: 144.317718, latitude: -37.031738}), point) AS dist" );
+        try ( Transaction transaction = db.beginTx() )
+        {
+            // when calling procedure that produces a point
+            Result result = db.execute( "CALL spatial.point(144.317718, -37.031738) YIELD point " +
+                    "RETURN distance(point({longitude: 144.317718, latitude: -37.031738}), point) AS dist" );
 
-        // then
-        Double dist = (Double) result.next().get( "dist" );
-        assertThat( dist, equalTo( 0.0 ) );
+            // then
+            Double dist = (Double) result.next().get( "dist" );
+            assertThat( dist, equalTo( 0.0 ) );
+            transaction.commit();
+        }
     }
 
     @Test
@@ -233,14 +264,17 @@ public class GraphDatabaseServiceExecuteTest
         globalProcedures.registerProcedure( PointProcs.class );
 
         // when calling procedure that produces a point
-        Result result = db.execute(
-                "CALL spatial.pointGeometry(144.317718, -37.031738) YIELD geometry " +
-                "RETURN distance(point({longitude: 144.317718, latitude: -37.031738}), geometry) AS dist" );
+        try ( Transaction transaction = db.beginTx() )
+        {
+            Result result = db.execute( "CALL spatial.pointGeometry(144.317718, -37.031738) YIELD geometry " +
+                    "RETURN distance(point({longitude: 144.317718, latitude: -37.031738}), geometry) AS dist" );
 
-        // then
-        Object dist1 = result.next().get( "dist" );
-        Double dist = (Double) dist1;
-        assertThat( dist, equalTo( 0.0 ) );
+            // then
+            Object dist1 = result.next().get( "dist" );
+            Double dist = (Double) dist1;
+            assertThat( dist, equalTo( 0.0 ) );
+            transaction.commit();
+        }
 
     }
 

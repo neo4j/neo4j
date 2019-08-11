@@ -61,7 +61,7 @@ public class TransactionMatchers
 
     static Matcher<String> isValidRFCTimestamp()
     {
-        return new TypeSafeMatcher<String>()
+        return new TypeSafeMatcher<>()
         {
             @Override
             protected boolean matchesSafely( String item )
@@ -89,7 +89,7 @@ public class TransactionMatchers
     {
         final Pattern regex = Pattern.compile( pattern );
 
-        return new TypeSafeMatcher<String>()
+        return new TypeSafeMatcher<>()
         {
             @Override
             protected boolean matchesSafely( String item )
@@ -112,7 +112,7 @@ public class TransactionMatchers
 
     public static Matcher<? super HTTP.Response> hasErrors( final Status... expectedErrors )
     {
-        return new TypeSafeMatcher<HTTP.Response>()
+        return new TypeSafeMatcher<>()
         {
             @Override
             protected boolean matchesSafely( HTTP.Response response )
@@ -133,7 +133,6 @@ public class TransactionMatchers
                         fail( "Expected no more errors, but got " + error.get( "code" ) + " - '" + error.get( "message" ) + "'." );
                     }
                     return true;
-
                 }
                 catch ( JsonParseException e )
                 {
@@ -155,7 +154,7 @@ public class TransactionMatchers
 
     public static Matcher<? super HTTP.Response> rowContainsDeletedEntities( final int nodes, final int rels )
     {
-        return new TypeSafeMatcher<HTTP.Response>()
+        return new TypeSafeMatcher<>()
         {
             @Override
             protected boolean matchesSafely( HTTP.Response response )
@@ -209,7 +208,7 @@ public class TransactionMatchers
 
     public static Matcher<? super HTTP.Response> rowContainsDeletedEntitiesInPath( final int nodes, final int rels )
     {
-        return new TypeSafeMatcher<HTTP.Response>()
+        return new TypeSafeMatcher<>()
         {
             @Override
             protected boolean matchesSafely( HTTP.Response response )
@@ -264,7 +263,7 @@ public class TransactionMatchers
 
     public static Matcher<? super HTTP.Response> rowContainsMetaNodesAtIndex( int... indexes )
     {
-        return new TypeSafeMatcher<HTTP.Response>()
+        return new TypeSafeMatcher<>()
         {
             @Override
             protected boolean matchesSafely( HTTP.Response response )
@@ -281,7 +280,7 @@ public class TransactionMatchers
 
     public static Matcher<? super HTTP.Response> rowContainsMetaRelsAtIndex( int... indexes )
     {
-        return new TypeSafeMatcher<HTTP.Response>()
+        return new TypeSafeMatcher<>()
         {
             @Override
             protected boolean matchesSafely( HTTP.Response response )
@@ -333,7 +332,7 @@ public class TransactionMatchers
 
     public static Matcher<? super HTTP.Response> rowContainsAMetaListAtIndex( int index )
     {
-        return new TypeSafeMatcher<HTTP.Response>()
+        return new TypeSafeMatcher<>()
         {
             @Override
             protected boolean matchesSafely( HTTP.Response response )
@@ -367,7 +366,7 @@ public class TransactionMatchers
 
     public static Matcher<? super HTTP.Response> restContainsDeletedEntities( final int amount )
     {
-        return new TypeSafeMatcher<HTTP.Response>()
+        return new TypeSafeMatcher<>()
         {
             @Override
             protected boolean matchesSafely( HTTP.Response response )
@@ -403,7 +402,7 @@ public class TransactionMatchers
 
     public static Matcher<? super HTTP.Response> graphContainsDeletedNodes( final int amount )
     {
-        return new TypeSafeMatcher<HTTP.Response>()
+        return new TypeSafeMatcher<>()
         {
             @Override
             protected boolean matchesSafely( HTTP.Response response )
@@ -421,8 +420,7 @@ public class TransactionMatchers
                             deleted++;
                         }
                     }
-                    assertEquals( format( "Expected to see %d deleted elements but %d was encountered.", amount, deleted ),
-                            amount, deleted );
+                    assertEquals( format( "Expected to see %d deleted elements but %d was encountered.", amount, deleted ), amount, deleted );
                     return true;
                 }
                 catch ( JsonParseException e )
@@ -440,7 +438,7 @@ public class TransactionMatchers
 
     public static Matcher<? super HTTP.Response> graphContainsNoDeletedEntities()
     {
-        return new TypeSafeMatcher<HTTP.Response>()
+        return new TypeSafeMatcher<>()
         {
             @Override
             protected boolean matchesSafely( HTTP.Response response )
@@ -472,7 +470,7 @@ public class TransactionMatchers
 
     public static Matcher<? super HTTP.Response> rowContainsNoDeletedEntities()
     {
-        return new TypeSafeMatcher<HTTP.Response>()
+        return new TypeSafeMatcher<>()
         {
             @Override
             protected boolean matchesSafely( HTTP.Response response )
@@ -500,7 +498,7 @@ public class TransactionMatchers
 
     public static Matcher<? super HTTP.Response> restContainsNoDeletedEntities()
     {
-        return new TypeSafeMatcher<HTTP.Response>()
+        return new TypeSafeMatcher<>()
         {
             @Override
             protected boolean matchesSafely( HTTP.Response response )
@@ -528,7 +526,7 @@ public class TransactionMatchers
 
     public static Matcher<? super HTTP.Response> graphContainsDeletedRelationships( final int amount )
     {
-        return new TypeSafeMatcher<HTTP.Response>()
+        return new TypeSafeMatcher<>()
         {
             @Override
             protected boolean matchesSafely( HTTP.Response response )
@@ -581,16 +579,15 @@ public class TransactionMatchers
 
     public static Matcher<? super HTTP.Response> containsNoStackTraces()
     {
-        return new TypeSafeMatcher<HTTP.Response>()
+        return new TypeSafeMatcher<>()
         {
             @Override
             protected boolean matchesSafely( HTTP.Response response )
             {
-                Map<String, Object> content = response.content();
-                @SuppressWarnings( "unchecked" )
-                List<Map<String, Object>> errors = (List<Map<String, Object>>) content.get( "errors" );
+                Map<String,Object> content = response.content();
+                @SuppressWarnings( "unchecked" ) List<Map<String,Object>> errors = (List<Map<String,Object>>) content.get( "errors" );
 
-                for ( Map<String, Object> error : errors )
+                for ( Map<String,Object> error : errors )
                 {
                     if ( error.containsKey( "stackTrace" ) )
                     {

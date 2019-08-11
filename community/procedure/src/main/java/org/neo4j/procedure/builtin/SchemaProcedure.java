@@ -38,7 +38,6 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.ResourceIterator;
-import org.neo4j.graphdb.Transaction;
 import org.neo4j.internal.kernel.api.Read;
 import org.neo4j.internal.kernel.api.SchemaRead;
 import org.neo4j.internal.kernel.api.TokenRead;
@@ -73,43 +72,40 @@ public class SchemaProcedure
             TokenRead tokenRead = kernelTransaction.tokenRead();
             TokenNameLookup tokenNameLookup = new SilentTokenNameLookup( tokenRead );
             SchemaRead schemaRead = kernelTransaction.schemaRead();
-            try ( Transaction transaction = graphDatabaseAPI.beginTx() )
+            // add all labelsInDatabase
+            try ( ResourceIterator<Label> labelsInDatabase = graphDatabaseAPI.getAllLabelsInUse().iterator() )
             {
-                // add all labelsInDatabase
-                try ( ResourceIterator<Label> labelsInDatabase = graphDatabaseAPI.getAllLabelsInUse().iterator() )
+                while ( labelsInDatabase.hasNext() )
                 {
-                    while ( labelsInDatabase.hasNext() )
+                    Label label = labelsInDatabase.next();
+                    int labelId = tokenRead.nodeLabel( label.name() );
+                    Map<String,Object> properties = new HashMap<>();
+
+                    Iterator<IndexDescriptor> indexReferences = schemaRead.indexesGetForLabel( labelId );
+                    ArrayList<String> indexes = new ArrayList<>();
+                    while ( indexReferences.hasNext() )
                     {
-                        Label label = labelsInDatabase.next();
-                        int labelId = tokenRead.nodeLabel( label.name() );
-                        Map<String,Object> properties = new HashMap<>();
-
-                        Iterator<IndexDescriptor> indexReferences = schemaRead.indexesGetForLabel( labelId );
-                        ArrayList<String> indexes = new ArrayList<>();
-                        while ( indexReferences.hasNext() )
+                        IndexDescriptor index = indexReferences.next();
+                        if ( !index.isUnique() )
                         {
-                            IndexDescriptor index = indexReferences.next();
-                            if ( !index.isUnique() )
-                            {
-                                String[] propertyNames = PropertyNameUtils.getPropertyKeys(
-                                        tokenNameLookup, index.schema().getPropertyIds() );
-                                indexes.add( String.join( ",", propertyNames ) );
-                            }
+                            String[] propertyNames = PropertyNameUtils.getPropertyKeys(
+                                    tokenNameLookup, index.schema().getPropertyIds() );
+                            indexes.add( String.join( ",", propertyNames ) );
                         }
-                        properties.put( "indexes", indexes );
-
-                        Iterator<ConstraintDescriptor> nodePropertyConstraintIterator =
-                                schemaRead.constraintsGetForLabel( labelId );
-                        ArrayList<String> constraints = new ArrayList<>();
-                        while ( nodePropertyConstraintIterator.hasNext() )
-                        {
-                            ConstraintDescriptor constraint = nodePropertyConstraintIterator.next();
-                            constraints.add( constraint.prettyPrint( tokenNameLookup ) );
-                        }
-                        properties.put( "constraints", constraints );
-
-                        getOrCreateLabel( label.name(), properties, nodes );
                     }
+                    properties.put( "indexes", indexes );
+
+                    Iterator<ConstraintDescriptor> nodePropertyConstraintIterator =
+                            schemaRead.constraintsGetForLabel( labelId );
+                    ArrayList<String> constraints = new ArrayList<>();
+                    while ( nodePropertyConstraintIterator.hasNext() )
+                    {
+                        ConstraintDescriptor constraint = nodePropertyConstraintIterator.next();
+                        constraints.add( constraint.prettyPrint( tokenNameLookup ) );
+                    }
+                    properties.put( "constraints", constraints );
+
+                    getOrCreateLabel( label.name(), properties, nodes );
                 }
 
                 //add all relationships
@@ -155,7 +151,6 @@ public class SchemaProcedure
                         }
                     }
                 }
-                transaction.commit();
                 return getGraphResult( nodes, relationships );
             }
         }

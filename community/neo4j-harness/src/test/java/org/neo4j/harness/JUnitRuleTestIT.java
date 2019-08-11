@@ -110,13 +110,15 @@ public class JUnitRuleTestIT
     public void shouldGraphDatabaseServiceBeAccessible()
     {
         // Given the rule in the beginning of this class
-
         // When I run this test
 
-        // Then
-        assertEquals( 2, Iterators.count(
-                neo4j.defaultDatabaseService().execute( "MATCH (n:User) RETURN n" )
-        ) );
+        final GraphDatabaseService graphDatabaseService = neo4j.defaultDatabaseService();
+        try ( Transaction transaction = graphDatabaseService.beginTx() )
+        {
+            // Then
+            assertEquals( 2, Iterators.count( graphDatabaseService.execute( "MATCH (n:User) RETURN n" ) ) );
+            transaction.commit();
+        }
     }
 
     @Test
@@ -131,9 +133,10 @@ public class JUnitRuleTestIT
                 .build();
         GraphDatabaseService db = managementService.database( DEFAULT_DATABASE_NAME );
 
-        try
+        try ( Transaction transaction = db.beginTx() )
         {
             db.execute( "CREATE ()" );
+            transaction.commit();
         }
         finally
         {
@@ -149,11 +152,16 @@ public class JUnitRuleTestIT
             public void evaluate()
             {
                 // Then the database is not empty
-                Result result = ruleWithDirectory.defaultDatabaseService().execute( "MATCH (n) RETURN count(n) AS " + "count" );
-
-                List<Object> column = Iterators.asList( result.columnAs( "count" ) );
-                assertEquals( 1, column.size() );
-                assertEquals( 1L, column.get( 0 ) );
+                final GraphDatabaseService graphDatabaseService = ruleWithDirectory.defaultDatabaseService();
+                try ( Transaction transaction = graphDatabaseService.beginTx() )
+                {
+                    try ( Result result = graphDatabaseService.execute( "MATCH (n) RETURN count(n) AS " + "count" ) )
+                    {
+                        List<Object> column = Iterators.asList( result.columnAs( "count" ) );
+                        assertEquals( 1, column.size() );
+                        assertEquals( 1L, column.get( 0 ) );
+                    }
+                }
             }
         }, null );
 

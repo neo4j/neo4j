@@ -413,6 +413,30 @@ class TransactionStateMachineTest
     }
 
     @Test
+    void shouldOpenImplicitTransactionForPeriodicCommitQuery() throws Exception
+    {
+        BoltTransaction transaction = newTransaction();
+        TransactionStateMachineSPI stateMachineSPI = newTransactionStateMachineSPI( transaction );
+        when( stateMachineSPI.isPeriodicCommit( PERIODIC_COMMIT_QUERY ) ).thenReturn( true );
+        final BoltTransaction periodicTransaction = mock( BoltTransaction.class );
+        when( stateMachineSPI.beginPeriodicCommitTransaction( any(), any(), any(), any() )).thenReturn( periodicTransaction );
+
+        TransactionStateMachine stateMachine = newTransactionStateMachine( stateMachineSPI );
+
+        stateMachine.run( PERIODIC_COMMIT_QUERY, EMPTY_MAP );
+
+        // transaction was created only to stream back result of the periodic commit query
+        assertEquals( periodicTransaction, stateMachine.ctx.currentTransaction );
+
+        InOrder inOrder = inOrder( stateMachineSPI );
+        inOrder.verify( stateMachineSPI ).isPeriodicCommit( PERIODIC_COMMIT_QUERY );
+        // implicit transaction was started for periodic query execution
+        inOrder.verify( stateMachineSPI ).beginPeriodicCommitTransaction( any( LoginContext.class ), any(), any(), any() );
+        // periodic commit query was executed after specific transaction started
+        inOrder.verify( stateMachineSPI ).executeQuery( any( BoltQueryExecutor.class ), eq( PERIODIC_COMMIT_QUERY ), eq( EMPTY_MAP ) );
+    }
+
+    @Test
     void shouldCloseResultHandlesWhenConsumeFailsInExplicitTransaction() throws Throwable
     {
         BoltTransaction transaction = newTransaction();
@@ -435,29 +459,6 @@ class TransactionStateMachineTest
 
         assertThat( stateMachine.ctx.statementOutcomes.entrySet(), hasSize( 0 ) );
         assertNotNull( stateMachine.ctx.currentTransaction );
-    }
-
-    @Test
-    void shouldNotOpenExplicitTransactionForPeriodicCommitQuery() throws Exception
-    {
-        BoltTransaction transaction = newTransaction();
-        TransactionStateMachineSPI stateMachineSPI = newTransactionStateMachineSPI( transaction );
-        when( stateMachineSPI.isPeriodicCommit( PERIODIC_COMMIT_QUERY ) ).thenReturn( true );
-        when( stateMachineSPI.getPeriodicCommitExecutor( any(), any(), any(), any() )).thenReturn( mock(BoltQueryExecutor.class) );
-
-        TransactionStateMachine stateMachine = newTransactionStateMachine( stateMachineSPI );
-
-        stateMachine.run( PERIODIC_COMMIT_QUERY, EMPTY_MAP );
-
-        // transaction was created only to stream back result of the periodic commit query
-        assertEquals( transaction, stateMachine.ctx.currentTransaction );
-
-        InOrder inOrder = inOrder( stateMachineSPI );
-        inOrder.verify( stateMachineSPI ).isPeriodicCommit( PERIODIC_COMMIT_QUERY );
-        // periodic commit query was executed without starting an explicit transaction
-        inOrder.verify( stateMachineSPI ).executeQuery( any( BoltQueryExecutor.class ), eq( PERIODIC_COMMIT_QUERY ), eq( EMPTY_MAP ) );
-        // explicit transaction was started only after query execution to stream the result
-        inOrder.verify( stateMachineSPI ).beginTransaction( any( LoginContext.class ), any(), any(), any() );
     }
 
     @Test

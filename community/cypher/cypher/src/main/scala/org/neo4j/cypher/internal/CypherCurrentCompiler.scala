@@ -237,8 +237,8 @@ case class CypherCurrentCompiler[CONTEXT <: RuntimeContext](planner: CypherPlann
 
       val taskCloser = new TaskCloser
       val queryContext = getQueryContext(transactionalContext, preParsedQuery.debugOptions)
-      if (shouldCloseTransaction) taskCloser.addTask(queryContext.transactionalContext.close)
-      taskCloser.addTask(queryContext.resources.close)
+      if (shouldCloseTransaction) taskCloser.addTask(_ => queryContext.transactionalContext.close())
+      taskCloser.addTask(_ => queryContext.resources.close())
       try {
         innerExecute(transactionalContext, preParsedQuery, taskCloser, queryContext, params, prePopulateResults, subscriber)
       } catch {

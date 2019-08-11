@@ -66,6 +66,7 @@ import static org.neo4j.test.mockito.matcher.Neo4jMatchers.createIndex;
 import static org.neo4j.test.mockito.matcher.Neo4jMatchers.findNodesByLabelAndProperty;
 import static org.neo4j.test.mockito.matcher.Neo4jMatchers.getConstraints;
 import static org.neo4j.test.mockito.matcher.Neo4jMatchers.getIndexes;
+import static org.neo4j.test.mockito.matcher.Neo4jMatchers.inTx;
 import static org.neo4j.test.mockito.matcher.Neo4jMatchers.isEmpty;
 import static org.neo4j.test.mockito.matcher.Neo4jMatchers.waitForIndex;
 
@@ -93,7 +94,10 @@ class SchemaAcceptanceTest
         IndexDefinition index = createIndex( db, label, propertyKey );
 
         // THEN
-        assertThat( getIndexes( db, label ), containsOnly( index ) );
+        try ( Transaction transaction = db.beginTx() )
+        {
+            assertThat( getIndexes( db, label ), containsOnly( index ) );
+        }
     }
 
     @Test
@@ -103,7 +107,10 @@ class SchemaAcceptanceTest
         IndexDefinition index = createIndex( db, label, propertyKey, secondPropertyKey );
 
         // THEN
-        assertThat( getIndexes( db, label ), containsOnly( index ) );
+        try ( Transaction transaction = db.beginTx() )
+        {
+            assertThat( getIndexes( db, label ), containsOnly( index ) );
+        }
     }
 
     @Test
@@ -114,31 +121,7 @@ class SchemaAcceptanceTest
 
         // Then
         assertThat( index.getName(), is( "MyIndex" ) );
-        assertThat( getIndexes( db, label ), containsOnly( index ) );
-    }
-
-    @Test
-    void addingAnIndexingRuleInNestedTxShouldSucceed()
-    {
-        IndexDefinition index;
-
-        // WHEN
-        IndexDefinition indexDef;
-        try ( Transaction tx = db.beginTx() )
-        {
-            try ( Transaction nestedTransaction = db.beginTx() )
-            {
-                indexDef = db.schema().indexFor( label ).on( propertyKey ).create();
-                nestedTransaction.commit();
-            }
-
-            index = indexDef;
-            tx.commit();
-        }
-        waitForIndex( db, indexDef );
-
-        // THEN
-        assertThat( getIndexes( db, label ), containsOnly( index ) );
+        assertThat( getIndexes( db, label ), inTx( db, containsOnly( index ) ) );
     }
 
     @Test
@@ -219,7 +202,10 @@ class SchemaAcceptanceTest
         dropIndex( index );
 
         // THEN
-        assertThat( getIndexes( db, label ), isEmpty() );
+        try ( Transaction transaction = db.beginTx() )
+        {
+            assertThat( getIndexes( db, label ), isEmpty() );
+        }
     }
 
     @Test
@@ -245,7 +231,10 @@ class SchemaAcceptanceTest
         }
 
         // THEN
-        assertThat( "Index should have been deleted", getIndexes( db, label ), not( contains( index ) ) );
+        try ( Transaction transaction = db.beginTx() )
+        {
+            assertThat( "Index should have been deleted", getIndexes( db, label ), not( contains( index ) ) );
+        }
     }
 
     @Test
@@ -267,7 +256,10 @@ class SchemaAcceptanceTest
         }
 
         // THEN
-        assertThat( "Index should have been deleted", getIndexes( db, label ), not( contains( index ) ) );
+        try ( Transaction transaction = db.beginTx() )
+        {
+            assertThat( "Index should have been deleted", getIndexes( db, label ), not( contains( index ) ) );
+        }
     }
 
     @Test
@@ -319,7 +311,10 @@ class SchemaAcceptanceTest
         waitForIndex( db, index );
 
         // THEN
-        assertThat( findNodesByLabelAndProperty( label, propertyKey, "Neo", db ), containsOnly( node ) );
+        try ( Transaction transaction = db.beginTx() )
+        {
+            assertThat( findNodesByLabelAndProperty( label, propertyKey, "Neo", db ), containsOnly( node ) );
+        }
     }
 
     @Test
@@ -339,9 +334,13 @@ class SchemaAcceptanceTest
         createIndex( db, label, propertyKey );
         waitForIndex( db, index );
 
-        // THEN it should exist and be usable
-        assertThat( getIndexes( db, label ), contains( index ) );
-        assertThat( findNodesByLabelAndProperty( label, propertyKey, "Neo", db ), containsOnly( node ) );
+        try ( Transaction transaction = db.beginTx() )
+        {
+            // THEN it should exist and be usable
+            assertThat( getIndexes( db, label ), contains( index ) );
+            assertThat( findNodesByLabelAndProperty( label, propertyKey, "Neo", db ), containsOnly( node ) );
+            transaction.commit();
+        }
     }
 
     @Test
@@ -399,7 +398,10 @@ class SchemaAcceptanceTest
         createUniquenessConstraint( Labels.MY_OTHER_LABEL, propertyKey );
 
         // WHEN THEN
-        assertThat( getConstraints( db, label ), containsOnly( constraint1 ) );
+        try ( Transaction transaction = db.beginTx() )
+        {
+            assertThat( getConstraints( db, label ), containsOnly( constraint1 ) );
+        }
     }
 
     @Test
@@ -410,7 +412,10 @@ class SchemaAcceptanceTest
         ConstraintDefinition constraint2 = createUniquenessConstraint( Labels.MY_OTHER_LABEL, propertyKey );
 
         // WHEN THEN
-        assertThat( getConstraints( db ), containsOnly( constraint1, constraint2 ) );
+        try ( Transaction transaction = db.beginTx() )
+        {
+            assertThat( getConstraints( db ), containsOnly( constraint1, constraint2 ) );
+        }
     }
 
     @Test
@@ -423,7 +428,10 @@ class SchemaAcceptanceTest
         dropConstraint( db, constraint );
 
         // THEN
-        assertThat( getConstraints( db, label ), isEmpty() );
+        try ( Transaction transaction = db.beginTx() )
+        {
+            assertThat( getConstraints( db, label ), isEmpty() );
+        }
     }
 
     @Test

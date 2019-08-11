@@ -22,7 +22,6 @@ package org.neo4j.kernel.impl.factory;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import java.util.HashMap;
 import java.util.concurrent.TimeUnit;
 
 import org.neo4j.collection.Dependencies;
@@ -38,16 +37,12 @@ import org.neo4j.kernel.database.Database;
 import org.neo4j.kernel.database.DatabaseId;
 import org.neo4j.kernel.database.TestDatabaseIdRepository;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
-import org.neo4j.kernel.impl.coreapi.InternalTransaction;
-import org.neo4j.kernel.impl.coreapi.TopLevelTransaction;
 
-import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.RETURNS_DEEP_STUBS;
 import static org.mockito.Mockito.RETURNS_MOCKS;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo.EMBEDDED_CONNECTION;
@@ -102,32 +97,5 @@ class GraphDatabaseFacadeTest
 
         long timeout = Config.defaults().get( GraphDatabaseSettings.transaction_timeout ).toMillis();
         verify( inwardKernel ).beginTransaction( KernelTransaction.Type.explicit, AUTH_DISABLED, EMBEDDED_CONNECTION, timeout );
-    }
-
-    @Test
-    void executeQueryWithCustomTimeoutShouldStartTransactionWithRequestedTimeout() throws TransactionFailureException
-    {
-        graphDatabaseFacade.execute( "create (n)", 157L, TimeUnit.SECONDS );
-        verify( inwardKernel ).beginTransaction( KernelTransaction.Type.implicit, AUTH_DISABLED, EMBEDDED_CONNECTION,
-            TimeUnit.SECONDS.toMillis( 157L ) );
-
-        graphDatabaseFacade.execute( "create (n)", new HashMap<>(), 247L, MINUTES );
-        verify( inwardKernel ).beginTransaction( KernelTransaction.Type.implicit, AUTH_DISABLED, EMBEDDED_CONNECTION,
-            MINUTES.toMillis( 247L ) );
-    }
-
-    @Test
-    void executeQueryStartDefaultTransaction() throws TransactionFailureException
-    {
-        InternalTransaction transaction = new TopLevelTransaction( kernelTransaction );
-
-        when( queryService.beginTransaction( KernelTransaction.Type.implicit, AUTH_DISABLED, EMBEDDED_CONNECTION) )
-            .thenReturn( transaction );
-
-        graphDatabaseFacade.execute( "create (n)" );
-        graphDatabaseFacade.execute( "create (n)", new HashMap<>() );
-
-        long timeout = Config.defaults().get( GraphDatabaseSettings.transaction_timeout ).toMillis();
-        verify( inwardKernel, times( 2 ) ).beginTransaction( KernelTransaction.Type.implicit, AUTH_DISABLED, EMBEDDED_CONNECTION, timeout );
     }
 }

@@ -27,6 +27,7 @@ import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.dbms.api.DatabaseNotFoundException;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.QueryExecutionException;
+import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.event.DatabaseEventListener;
 import org.neo4j.graphdb.event.TransactionEventListener;
 import org.neo4j.kernel.availability.CompositeDatabaseAvailabilityGuard;
@@ -141,7 +142,12 @@ public class DatabaseManagementServiceImpl implements DatabaseManagementService
     {
         try
         {
-            database( SYSTEM_DATABASE_NAME ).execute( query );
+            GraphDatabaseService database = database( SYSTEM_DATABASE_NAME );
+            try ( Transaction transaction = database.beginTx() )
+            {
+                database.execute( query );
+                transaction.commit();
+            }
         }
         catch ( QueryExecutionException e )
         {

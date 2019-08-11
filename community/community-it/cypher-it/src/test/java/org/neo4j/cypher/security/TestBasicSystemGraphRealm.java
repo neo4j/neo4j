@@ -27,8 +27,6 @@ import java.util.function.Supplier;
 import org.neo4j.configuration.Config;
 import org.neo4j.dbms.database.DefaultSystemGraphInitializer;
 import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.kernel.api.KernelTransaction;
-import org.neo4j.kernel.database.DatabaseId;
 import org.neo4j.kernel.database.DatabaseIdRepository;
 import org.neo4j.kernel.database.TestDatabaseIdRepository;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
@@ -53,13 +51,13 @@ import static org.neo4j.dbms.DatabaseManagementSystemSettings.auth_store_directo
 
 public class TestBasicSystemGraphRealm
 {
-    private static final TestThreadToStatementContextBridge threadToStatementContextBridge = new TestThreadToStatementContextBridge();
     private static final DatabaseIdRepository databaseIdRepository = new TestDatabaseIdRepository();
 
     protected static final SecureHasher secureHasher = new SecureHasher();
 
     static BasicSystemGraphRealm testRealm( BasicImportOptionsBuilder importOptions, TestDatabaseManager dbManager, Config config ) throws Throwable
     {
+        var threadToStatementContextBridge = dbManager.testSystemDb.getDependencyResolver().resolveDependency( ThreadToStatementContextBridge.class );
         var executor = new ContextSwitchingSystemGraphQueryExecutor( dbManager, threadToStatementContextBridge );
         return testRealm( importOptions.migrationSupplier(), importOptions.initialUserSupplier(), newRateLimitedAuthStrategy(),
                 dbManager, executor, config );
@@ -76,7 +74,7 @@ public class TestBasicSystemGraphRealm
 
         Supplier<UserRepository> migrationUserRepositorySupplier = () -> CommunitySecurityModule.getUserRepository( config, logProvider, fileSystem );
         Supplier<UserRepository> initialUserRepositorySupplier = () -> CommunitySecurityModule.getInitialUserRepository( config, logProvider, fileSystem );
-
+        var threadToStatementContextBridge = dbManager.testSystemDb.getDependencyResolver().resolveDependency( ThreadToStatementContextBridge.class );
         var executor = new ContextSwitchingSystemGraphQueryExecutor( dbManager, threadToStatementContextBridge );
         return testRealm( migrationUserRepositorySupplier, initialUserRepositorySupplier, newRateLimitedAuthStrategy(), dbManager,
                 executor, config );
@@ -119,20 +117,5 @@ public class TestBasicSystemGraphRealm
     protected static AuthenticationStrategy newRateLimitedAuthStrategy()
     {
         return new RateLimitedAuthenticationStrategy( Clock.systemUTC(), Config.defaults() );
-    }
-
-    public static class TestThreadToStatementContextBridge extends ThreadToStatementContextBridge
-    {
-        @Override
-        public boolean hasTransaction()
-        {
-            return false;
-        }
-
-        @Override
-        public KernelTransaction getKernelTransactionBoundToThisThread( boolean strict, DatabaseId databaseId )
-        {
-            return null;
-        }
     }
 }

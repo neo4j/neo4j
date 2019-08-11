@@ -26,7 +26,6 @@ import org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME
 import org.neo4j.cypher.internal.javacompat.GraphDatabaseCypherService
 import org.neo4j.cypher.internal.v4_0.util.test_helpers.{CypherFunSuite, CypherTestSupport}
 import org.neo4j.dbms.api.DatabaseManagementService
-import org.neo4j.dbms.database.{DatabaseContext, DatabaseManager}
 import org.neo4j.graphdb._
 import org.neo4j.graphdb.config.Setting
 import org.neo4j.internal.kernel.api.helpers.Indexes
@@ -123,8 +122,10 @@ trait GraphDatabaseTestSupport extends CypherTestSupport with GraphIcing {
   }
 
   def resampleIndexes(): Unit = {
-    graph.execute("CALL db.resampleOutdatedIndexes")
-    assertWithKernelTx(ktx => Indexes.awaitResampling(ktx.schemaRead(), 300))
+    graph.inTx( {
+      graph.execute("CALL db.resampleOutdatedIndexes")
+      assertWithKernelTx(ktx => Indexes.awaitResampling(ktx.schemaRead(), 300))
+    })
   }
 
   def assertWithKernelTx(f: KernelTransaction => Unit): Unit = {
@@ -201,7 +202,7 @@ trait GraphDatabaseTestSupport extends CypherTestSupport with GraphIcing {
 
   def createNode(values: (String, Any)*): Node = createNode(values.toMap)
 
-  def deleteAllEntities() = graph.inTx {
+  def deleteAllEntities() = {
     val relIterator = graph.getAllRelationships.iterator()
 
     while (relIterator.hasNext) {
@@ -248,7 +249,7 @@ trait GraphDatabaseTestSupport extends CypherTestSupport with GraphIcing {
     }
   }
 
-  def node(name: String): Node = graph.inTx {
+  def node(name: String): Node = {
     nodes.find(_.getProperty("name") == name).get
   }
 

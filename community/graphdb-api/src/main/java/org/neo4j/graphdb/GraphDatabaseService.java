@@ -23,6 +23,7 @@ import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 import org.neo4j.annotations.api.PublicApi;
+import org.neo4j.graphdb.Result.ResultVisitor;
 import org.neo4j.graphdb.schema.Schema;
 import org.neo4j.graphdb.traversal.BidirectionalTraversalDescription;
 import org.neo4j.graphdb.traversal.TraversalDescription;
@@ -363,6 +364,25 @@ public interface GraphDatabaseService
      * @return a new transaction instance
      */
     Transaction beginTx( long timeout, TimeUnit unit );
+
+    /**
+     * Executes query in a separate transaction.
+     * Query execution result will be closed as part of method execution.
+     *
+     * @param query The query to execute
+     * @throws QueryExecutionException If the Query contains errors
+     */
+    void executeTransactionally( String query ) throws QueryExecutionException;
+
+    /**
+     * Executes query in a separate transaction and allow to query result to be consumed by provided visitor.
+     *
+     * @param query The query to execute
+     * @param visitor Visitor that will be used to consume query execution result.
+     * @throws QueryExecutionException If the query contains errors
+     * @throws E exception that will be throw by visitor while consuming query result
+     */
+    <E extends Exception> void executeTransactionally( String query, ResultVisitor<E> visitor ) throws QueryExecutionException, E;
 
     /**
      * Executes a query and returns an iterable that contains the result set.

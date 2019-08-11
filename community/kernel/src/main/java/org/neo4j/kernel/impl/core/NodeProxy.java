@@ -552,11 +552,6 @@ public class NodeProxy implements Node, RelationshipFactory<Relationship>
         {
             throw new IllegalArgumentException( "Other node is null." );
         }
-        // TODO: This is the checks we would like to do, but we have tests that expect to mix nodes...
-        //if ( !(otherNode instanceof NodeProxy) || (((NodeProxy) otherNode).actions != actions) )
-        //{
-        //    throw new IllegalArgumentException( "Nodes do not belong to same graph database." );
-        //}
 
         KernelTransaction transaction = safeAcquireTransaction();
         int relationshipTypeId;

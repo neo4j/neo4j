@@ -27,6 +27,7 @@ import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
+import org.neo4j.kernel.impl.factory.KernelTransactionFactory;
 import org.neo4j.kernel.impl.query.Neo4jTransactionalContextFactory;
 import org.neo4j.kernel.impl.query.QueryExecution;
 import org.neo4j.kernel.impl.query.QueryExecutionKernelException;
@@ -48,8 +49,10 @@ public class SystemDatabaseInnerAccessor implements Supplier<GraphDatabaseQueryS
     {
         this.systemDb = systemDb;
         this.engine = engine;
-        ThreadToStatementContextBridge txBridge = this.systemDb.getDependencyResolver().resolveDependency( ThreadToStatementContextBridge.class );
-        this.contextFactory = Neo4jTransactionalContextFactory.create( this.systemDb, this, txBridge );
+        var dependencyResolver = this.systemDb.getDependencyResolver();
+        var transactionFactory = dependencyResolver.resolveDependency( KernelTransactionFactory.class );
+        var txBridge = dependencyResolver.resolveDependency( ThreadToStatementContextBridge.class );
+        this.contextFactory = Neo4jTransactionalContextFactory.create( this.systemDb, this, transactionFactory, txBridge );
     }
 
     public InternalTransaction beginTx()
@@ -57,12 +60,11 @@ public class SystemDatabaseInnerAccessor implements Supplier<GraphDatabaseQueryS
         return systemDb.beginTransaction( KernelTransaction.Type.explicit, AUTH_DISABLED );
     }
 
-    public QueryExecution execute( String query, Map<String,Object> params, QuerySubscriber subscriber )
+    public QueryExecution execute(  InternalTransaction transaction, String query, Map<String,Object> params, QuerySubscriber subscriber )
     {
         try
         {
             MapValue parameters = ValueUtils.asParameterMapValue( params );
-            InternalTransaction transaction = systemDb.beginTransaction( KernelTransaction.Type.implicit, AUTH_DISABLED );
             TransactionalContext context = contextFactory.newContext( transaction, query, parameters );
             return this.engine.execute( query, parameters, context, subscriber );
         }

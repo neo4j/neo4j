@@ -102,8 +102,12 @@ class ExecutionEngineIT extends CypherFunSuite with GraphIcing {
     db = managementService.database(DEFAULT_DATABASE_NAME)
 
     // when
-    db.execute("RETURN 42").close()
-
+    val transaction = db.beginTx()
+    try {
+      db.execute("RETURN 42").close()
+    } finally {
+      transaction.close()
+    }
     // then no exception is thrown
   }
 
@@ -113,8 +117,13 @@ class ExecutionEngineIT extends CypherFunSuite with GraphIcing {
     db = managementService.database(DEFAULT_DATABASE_NAME)
 
     // when
-    db.execute("EXPLAIN MERGE (a:A) ON MATCH SET a.prop = 21  RETURN *").close()
-    db.execute("EXPLAIN    MERGE (a:A) ON MATCH SET a.prop = 42 RETURN *").close()
+    val transaction = db.beginTx()
+    try {
+      db.execute("EXPLAIN MERGE (a:A) ON MATCH SET a.prop = 21  RETURN *").close()
+      db.execute("EXPLAIN    MERGE (a:A) ON MATCH SET a.prop = 42 RETURN *").close()
+    } finally {
+      transaction.close()
+    }
   }
 
   test("should crash of erroneous parameters values if they are used") {
@@ -126,11 +135,16 @@ class ExecutionEngineIT extends CypherFunSuite with GraphIcing {
     val params = new java.util.HashMap[String, AnyRef]()
     params.put("erroneous", ErroneousParameterValue())
 
-    val result = db.execute("RETURN $erroneous AS x", params)
+    val transaction = db.beginTx()
+    try {
+      val result = db.execute("RETURN $erroneous AS x", params)
 
-    // then
-    intercept[QueryExecutionException] {
-      result.columnAs[Int]("x").next()
+      // then
+      intercept[QueryExecutionException] {
+        result.columnAs[Int]("x").next()
+      }
+    } finally {
+      transaction.close()
     }
   }
 
@@ -144,17 +158,23 @@ class ExecutionEngineIT extends CypherFunSuite with GraphIcing {
     params.put("valid", Integer.valueOf(42))
     params.put("erroneous", ErroneousParameterValue())
 
-    val result = db.execute("RETURN $valid AS x", params)
-
-    // then
-    result.columnAs[Int]("x").next() should equal(42)
+    val transaction = db.beginTx()
+    try {
+      val result = db.execute("RETURN $valid AS x", params)
+      // then
+      result.columnAs[Int]("x").next() should equal(42)
+    } finally {
+      transaction.close()
+    }
   }
 
   private implicit class RichDb(db: GraphDatabaseCypherService) {
     def planDescriptionForQuery(query: String): ExecutionPlanDescription = {
-      val res = db.execute(query)
-      res.resultAsString()
-      res.getExecutionPlanDescription
+      db.withTx( _ => {
+        val res = db.execute(query)
+        res.resultAsString()
+        res.getExecutionPlanDescription
+      })
     }
   }
 

@@ -46,11 +46,9 @@ abstract class UndirectedRelationshipByIdSeekTestBase[CONTEXT <: RuntimeContext]
     val runtimeResult = execute(logicalQuery, runtime)
 
     // then
-    inTx {
-      runtimeResult should beColumns("r", "x", "y").withRows(Seq(
-        Array(relToFind, relToFind.getStartNode, relToFind.getEndNode),
-        Array(relToFind, relToFind.getEndNode, relToFind.getStartNode)))
-    }
+    runtimeResult should beColumns("r", "x", "y").withRows(Seq(
+      Array(relToFind, relToFind.getStartNode, relToFind.getEndNode),
+      Array(relToFind, relToFind.getEndNode, relToFind.getStartNode)))
   }
 
   test("should not find non-existing relationship") {
@@ -84,10 +82,8 @@ abstract class UndirectedRelationshipByIdSeekTestBase[CONTEXT <: RuntimeContext]
     val runtimeResult = execute(logicalQuery, runtime)
 
     // then
-    inTx {
-      val expected = toFind.flatMap(r => Seq(Array(r, r.getStartNode, r.getEndNode), Array(r, r.getEndNode, r.getStartNode)))
-      runtimeResult should beColumns("r", "x", "y").withRows(expected)
-    }
+    val expected = toFind.flatMap(r => Seq(Array(r, r.getStartNode, r.getEndNode), Array(r, r.getEndNode, r.getStartNode)))
+    runtimeResult should beColumns("r", "x", "y").withRows(expected)
   }
 
   test("should find some relationships and not others") {
@@ -107,10 +103,8 @@ abstract class UndirectedRelationshipByIdSeekTestBase[CONTEXT <: RuntimeContext]
     val runtimeResult = execute(logicalQuery, runtime)
 
     // then
-    inTx {
-      val expected = toFind.flatMap(r => Seq(Array(r, r.getStartNode, r.getEndNode), Array(r, r.getEndNode, r.getStartNode)))
-      runtimeResult should beColumns("r", "x", "y").withRows(expected)
-    }
+    val expected = toFind.flatMap(r => Seq(Array(r, r.getStartNode, r.getEndNode), Array(r, r.getEndNode, r.getStartNode)))
+    runtimeResult should beColumns("r", "x", "y").withRows(expected)
   }
 
   test("should handle relById + filter") {
@@ -128,10 +122,8 @@ abstract class UndirectedRelationshipByIdSeekTestBase[CONTEXT <: RuntimeContext]
     val runtimeResult = execute(logicalQuery, runtime)
 
     // then
-    inTx {
-      runtimeResult should beColumns("r", "x", "y").withRows(Seq(
-        Array(toFind, toFind.getStartNode, toFind.getEndNode),
-        Array(toFind, toFind.getEndNode, toFind.getStartNode)))
-    }
+    runtimeResult should beColumns("r", "x", "y").withRows(Seq(
+      Array(toFind, toFind.getStartNode, toFind.getEndNode),
+      Array(toFind, toFind.getEndNode, toFind.getStartNode)))
   }
 }

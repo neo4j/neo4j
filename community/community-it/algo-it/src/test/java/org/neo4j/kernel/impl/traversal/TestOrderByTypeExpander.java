@@ -72,16 +72,19 @@ class TestOrderByTypeExpander extends TraversalTestBase
     @Test
     void makeSureNodesAreTraversedInCorrectOrder()
     {
-        PathExpander expander =
-            new OrderedByTypeExpander().add( firstComment ).add( comment ).add( next );
-        Iterator<Node> itr = getGraphDb().traversalDescription().depthFirst().expand(
-                expander ).traverse( node( "A1" ) ).nodes().iterator();
-        assertOrder( itr, "A1", "C1", "C2", "C3", "A2", "C4", "C5", "C6", "A3", "C7", "C8", "C9" );
+        try ( Transaction transaction = beginTx() )
+        {
+            PathExpander expander =
+                    new OrderedByTypeExpander().add( firstComment ).add( comment ).add( next );
+            Iterator<Node> itr = getGraphDb().traversalDescription().depthFirst().expand(
+                    expander ).traverse( node( "A1" ) ).nodes().iterator();
+            assertOrder( itr, "A1", "C1", "C2", "C3", "A2", "C4", "C5", "C6", "A3", "C7", "C8", "C9" );
 
-        expander = new OrderedByTypeExpander().add( next ).add( firstComment ).add( comment );
-        itr = getGraphDb().traversalDescription().depthFirst().expand(
-                expander ).traverse( node( "A1" ) ).nodes().iterator();
-        assertOrder( itr, "A1", "A2", "A3", "C7", "C8", "C9", "C4", "C5", "C6", "C1", "C2", "C3" );
+            expander = new OrderedByTypeExpander().add( next ).add( firstComment ).add( comment );
+            itr = getGraphDb().traversalDescription().depthFirst().expand(
+                    expander ).traverse( node( "A1" ) ).nodes().iterator();
+            assertOrder( itr, "A1", "A2", "A3", "C7", "C8", "C9", "C4", "C5", "C6", "C1", "C2", "C3" );
+        }
     }
 
     @Test
@@ -92,21 +95,20 @@ class TestOrderByTypeExpander extends TraversalTestBase
                 .add( firstComment )
                 .add( comment )
                 .add( next, OUTGOING );
-        Iterator<Node> itr = getGraphDb().traversalDescription().depthFirst().expand( expander ).traverse( node( "A2" ) ).nodes().iterator();
-        assertOrder( itr, "A2", "A1", "C1", "C2", "C3", "C4", "C5", "C6", "A3", "C7", "C8", "C9" );
+        try ( Transaction transaction = beginTx() )
+        {
+            Iterator<Node> itr = getGraphDb().traversalDescription().depthFirst().expand( expander ).traverse( node( "A2" ) ).nodes().iterator();
+            assertOrder( itr, "A2", "A1", "C1", "C2", "C3", "C4", "C5", "C6", "A3", "C7", "C8", "C9" );
+        }
     }
 
     private void assertOrder( Iterator<Node> itr, String... names )
     {
-        try ( Transaction tx = beginTx() )
+        for ( String name : names )
         {
-            for ( String name : names )
-            {
-                Node node = itr.next();
-                assertEquals( getNodeWithName( name ), node, "expected " + name + ", was " + node.getProperty( "name" ) );
-            }
-            assertFalse( itr.hasNext() );
-            tx.commit();
+            Node node = itr.next();
+            assertEquals( getNodeWithName( name ), node, "expected " + name + ", was " + node.getProperty( "name" ) );
         }
+        assertFalse( itr.hasNext() );
     }
 }

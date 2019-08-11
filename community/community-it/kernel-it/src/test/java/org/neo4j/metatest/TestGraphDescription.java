@@ -122,9 +122,9 @@ public class TestGraphDescription implements GraphHolder
     @Graph( value = { "I know you" }, nodes = { @NODE( name = "I", properties = { @PROP( key = "name", value = "me" ) } ) } )
     private void verifyIKnowYou( String type, String myName )
     {
+        Map<String, Node> graph = data.get();
         try ( Transaction ignored = graphdb.beginTx() )
         {
-            Map<String, Node> graph = data.get();
             assertEquals( "Wrong graph size.", 2, graph.size() );
             Node iNode = graph.get( "I" );
             assertNotNull( "The node 'I' was not defined", iNode );

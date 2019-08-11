@@ -27,38 +27,24 @@ trait SampleGraphs {
   self: ExecutionEngineFunSuite =>
 
   protected def createSteelfaceGraph(): Unit = {
-    val users =
-      graph.inTx {
-        val users = (0 until 1000).map(i => createLabeledNode(Map("email" -> s"user$i@mail.com"), "User"))
+    val users = (0 until 1000).map(i => createLabeledNode(Map("email" -> s"user$i@mail.com"), "User"))
+    graph.inTx {
         users.take(500).foreach(user => user.setProperty("lastName", "Steelface"+user.getId))
         users.take(300).foreach(user => user.setProperty("firstName", "Bob"+user.getId))
-        users
       }
 
-    val cars =
-      graph.inTx {
-        (0 until 120).map(i => createLabeledNode(Map("number" -> i), "Car"))
-      }
+    val cars = (0 until 120).map(i => createLabeledNode(Map("number" -> i), "Car"))
 
-    val rooms =
-      graph.inTx {
-        (0 until 150).map(i => createLabeledNode(Map("hotel" -> "Clarion", "number" -> i % 50), "Room"))
-      }
+    val rooms = (0 until 150).map(i => createLabeledNode(Map("hotel" -> "Clarion", "number" -> i % 50), "Room"))
 
-    graph.inTx(
-      for (source <- users.take(100))
-        relate(source, cars.head, "OWNS")
-    )
+    for (source <- users.take(100))
+      relate(source, cars.head, "OWNS")
 
-    graph.inTx(
-      for (source <- users.take(70))
-        relate(source, rooms.head, "OWNS")
-    )
+    for (source <- users.take(70))
+      relate(source, rooms.head, "OWNS")
 
-    graph.inTx(
-      for (source <- users.take(150))
-        relate(source, rooms.head, "STAYS_IN")
-    )
+    for (source <- users.take(150))
+      relate(source, rooms.head, "STAYS_IN")
 
     graph.createUniqueConstraint("User", "email")
     graph.createIndex("User", "lastName")
@@ -70,8 +56,7 @@ trait SampleGraphs {
       graph.schema().awaitIndexesOnline(5, TimeUnit.MINUTES)
     )
 
-    graph.inTx { // these are added after index uniqueness estimation
-      (0 until 8).map(i => createLabeledNode(Map("number" -> i), "Car"))
-    }
+     // these are added after index uniqueness estimation
+    (0 until 8).map(i => createLabeledNode(Map("number" -> i), "Car"))
   }
 }

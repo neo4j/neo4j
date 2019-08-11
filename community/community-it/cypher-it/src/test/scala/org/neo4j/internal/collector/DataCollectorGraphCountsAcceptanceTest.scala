@@ -37,12 +37,10 @@ class DataCollectorGraphCountsAcceptanceTest extends ExecutionEngineFunSuite wit
 
   test("retrieve nodes") {
     // given
-    graph.inTx {
-      createNode()
-      createLabeledNode("User")
-      createLabeledNode("User")
-      createLabeledNode("Donkey")
-    }
+    createNode()
+    createLabeledNode("User")
+    createLabeledNode("User")
+    createLabeledNode("Donkey")
 
     // when
     val res = execute("CALL db.stats.retrieve('GRAPH COUNTS')").single
@@ -57,14 +55,12 @@ class DataCollectorGraphCountsAcceptanceTest extends ExecutionEngineFunSuite wit
 
   test("retrieve relationships") {
     // given
-    graph.inTx {
-      val n1 = createNode()
-      val n2 = createLabeledNode("User")
-      relate(n1, n1, "R")
-      relate(n1, n2, "R")
-      relate(n2, n1, "R2")
-      relate(n2, n2, "R")
-    }
+    val n1 = createNode()
+    val n2 = createLabeledNode("User")
+    relate(n1, n1, "R")
+    relate(n1, n2, "R")
+    relate(n2, n1, "R2")
+    relate(n2, n2, "R")
 
     // when
     val res = execute("CALL db.stats.retrieve('GRAPH COUNTS')").single

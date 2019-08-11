@@ -374,13 +374,9 @@ public class FulltextIndexProviderTest
             tx.commit();
         }
 
-        try ( Transaction tx = db.beginTx() )
-        {
-            assertQueryFindsIds( db, true, "nodeIndex", "foo", nodes1 );
-            assertQueryFindsIds( db, true, "nodeIndex", "bar", nodes2 );
-            assertQueryFindsIds( db, true, "nodeIndex", "baz", nodes3 );
-            tx.commit();
-        }
+        assertQueryFindsIds( db, true, "nodeIndex", "foo", nodes1 );
+        assertQueryFindsIds( db, true, "nodeIndex", "bar", nodes2 );
+        assertQueryFindsIds( db, true, "nodeIndex", "baz", nodes3 );
 
         // Test that multi-token relationship indexes can be waited for.
         try ( Transaction tx = db.beginTx() )
@@ -397,13 +393,9 @@ public class FulltextIndexProviderTest
             tx.commit();
         }
 
-        try ( Transaction tx = db.beginTx() )
-        {
-            assertQueryFindsIds( db, false, "relIndex", "foo", rels1 );
-            assertQueryFindsIds( db, false, "relIndex", "bar", rels2 );
-            assertQueryFindsIds( db, false, "relIndex", "baz", rels3 );
-            tx.commit();
-        }
+        assertQueryFindsIds( db, false, "relIndex", "foo", rels1 );
+        assertQueryFindsIds( db, false, "relIndex", "bar", rels2 );
+        assertQueryFindsIds( db, false, "relIndex", "baz", rels3 );
     }
 
     @Test

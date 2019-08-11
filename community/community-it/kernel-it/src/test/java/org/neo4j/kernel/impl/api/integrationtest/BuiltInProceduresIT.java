@@ -486,12 +486,20 @@ class BuiltInProceduresIT extends KernelIntegrationTest
     void prepareForReplanningShouldEmptyQueryCache()
     {
         // Given, something is cached
-        db.execute( "MATCH (n) RETURN n" );
+        try ( org.neo4j.graphdb.Transaction transaction = db.beginTx() )
+        {
+            db.execute( "MATCH (n) RETURN n" ).close();
+            transaction.commit();
+        }
 
         ReplanMonitor monitor = replanMonitor();
 
         // When
-        db.execute( "CALL db.prepareForReplanning()" );
+        try ( org.neo4j.graphdb.Transaction transaction = db.beginTx() )
+        {
+            db.execute( "CALL db.prepareForReplanning()" ).close();
+            transaction.commit();
+        }
 
         // Then, the initial query and the procedure call should now have been cleared
         assertThat( monitor.numberOfFlushedItems(), equalTo( 2L ) );
@@ -504,7 +512,11 @@ class BuiltInProceduresIT extends KernelIntegrationTest
         ReplanMonitor monitor = replanMonitor();
 
         // When
-        db.execute( "CALL db.prepareForReplanning()" );
+        try ( org.neo4j.graphdb.Transaction transaction = db.beginTx() )
+        {
+            db.execute( "CALL db.prepareForReplanning()" ).close();
+            transaction.commit();
+        }
 
         // Then
         assertThat( monitor.samplingMode(), equalTo( IndexSamplingMode.TRIGGER_REBUILD_UPDATED ) );

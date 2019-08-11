@@ -30,6 +30,7 @@ import org.neo4j.graphdb.InputPosition;
 import org.neo4j.graphdb.Notification;
 import org.neo4j.graphdb.Result;
 import org.neo4j.graphdb.SeverityLevel;
+import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.impl.notification.NotificationCode;
 import org.neo4j.graphdb.impl.notification.NotificationDetail;
 import org.neo4j.internal.helpers.collection.Iterables;
@@ -51,9 +52,12 @@ public class NotificationTestSupport
 
     void assertNotifications( String query, Matcher<Iterable<Notification>> matchesExpectation )
     {
-        try ( Result result = db.execute( query ) )
+        try ( Transaction transaction = db.beginTx() )
         {
-            assertThat( result.getNotifications(), matchesExpectation );
+            try ( Result result = db.execute( query ) )
+            {
+                assertThat( result.getNotifications(), matchesExpectation );
+            }
         }
     }
 
@@ -129,41 +133,55 @@ public class NotificationTestSupport
 
     void shouldNotifyInStream( String version, String query, InputPosition pos, NotificationCode code )
     {
-        //when
-        Result result = db.execute( version + query );
-
-        //then
-        NotificationCode.Notification notification = code.notification( pos );
-        assertThat( Iterables.asList( result.getNotifications() ), Matchers.hasItems( notification ) );
-        Map<String,Object> arguments = result.getExecutionPlanDescription().getArguments();
-        assertThat( arguments.get( "version" ), equalTo( version ) );
-        result.close();
+        try ( Transaction transaction = db.beginTx() )
+        {
+            //when
+            try ( Result result = db.execute( version + query ) )
+            {
+                //then
+                NotificationCode.Notification notification = code.notification( pos );
+                assertThat( Iterables.asList( result.getNotifications() ), Matchers.hasItems( notification ) );
+                Map<String,Object> arguments = result.getExecutionPlanDescription().getArguments();
+                assertThat( arguments.get( "version" ), equalTo( version ) );
+            }
+            transaction.commit();
+        }
     }
 
     void shouldNotifyInStreamWithDetail( String version, String query, InputPosition pos, NotificationCode code,
                                          NotificationDetail detail )
     {
-        //when
-        Result result = db.execute( version + query );
+        try ( Transaction transaction = db.beginTx() )
+        {
+            //when
+            try ( Result result = db.execute( version + query ) )
+            {
 
-        //then
-        NotificationCode.Notification notification = code.notification( pos, detail );
-        assertThat( Iterables.asList( result.getNotifications() ), Matchers.hasItems( notification ) );
-        Map<String,Object> arguments = result.getExecutionPlanDescription().getArguments();
-        assertThat( arguments.get( "version" ), equalTo( version ) );
-        result.close();
+                //then
+                NotificationCode.Notification notification = code.notification( pos, detail );
+                assertThat( Iterables.asList( result.getNotifications() ), Matchers.hasItems( notification ) );
+                Map<String,Object> arguments = result.getExecutionPlanDescription().getArguments();
+                assertThat( arguments.get( "version" ), equalTo( version ) );
+            }
+            transaction.commit();
+        }
     }
 
     void shouldNotNotifyInStream( String version, String query )
     {
-        // when
-        Result result = db.execute( version + query );
+        try ( Transaction transaction = db.beginTx() )
+        {
+            // when
+            try ( Result result = db.execute( version + query ) )
+            {
 
-        // then
-        assertThat( Iterables.asList( result.getNotifications() ), empty() );
-        Map<String,Object> arguments = result.getExecutionPlanDescription().getArguments();
-        assertThat( arguments.get( "version" ), equalTo( version ) );
-        result.close();
+                // then
+                assertThat( Iterables.asList( result.getNotifications() ), empty() );
+                Map<String,Object> arguments = result.getExecutionPlanDescription().getArguments();
+                assertThat( arguments.get( "version" ), equalTo( version ) );
+            }
+            transaction.commit();
+        }
     }
 
     Matcher<Notification> cartesianProductWarning = notification( "Neo.ClientNotification.Statement.CartesianProductWarning", containsString(

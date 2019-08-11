@@ -31,6 +31,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.graphdb.Transaction;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.ExtensionCallback;
 import org.neo4j.test.extension.ImpermanentDbmsExtension;
@@ -67,8 +68,16 @@ class CreateIndexStressIT
         // Given
         HashMap<String,Object> params = new HashMap<>();
         params.put( "param", NUM_PROPS );
-        db.execute( "FOREACH(x in range(0,$param) | CREATE (:A {prop:x})) ", params );
-        db.execute( "CREATE INDEX ON :A(prop) " );
+        try ( Transaction transaction = db.beginTx() )
+        {
+            db.execute( "FOREACH(x in range(0,$param) | CREATE (:A {prop:x})) ", params );
+            transaction.commit();
+        }
+        try ( Transaction transaction = db.beginTx() )
+        {
+            db.execute( "CREATE INDEX ON :A(prop) " );
+            transaction.commit();
+        }
 
         // When
         for ( int i = 0; i < NUM_PROPS; i++ )
@@ -93,7 +102,11 @@ class CreateIndexStressIT
         {
             try
             {
-                db.execute( query, params ).resultAsString();
+                try ( Transaction transaction = db.beginTx() )
+                {
+                    db.execute( query, params ).resultAsString();
+                    transaction.commit();
+                }
             }
             catch ( Exception e )
             {

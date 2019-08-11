@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.runtime.spec
 
 import org.neo4j.cypher.internal.runtime.{QueryStatistics, ResourceManager}
 import org.neo4j.cypher.result.{QueryProfile, RuntimeResult}
+import org.neo4j.graphdb.Transaction
 import org.neo4j.kernel.impl.query.{QuerySubscriber, TransactionalContext}
 
 /**
@@ -28,6 +29,7 @@ import org.neo4j.kernel.impl.query.{QuerySubscriber, TransactionalContext}
   * which we are not using here. We need to close the results to make sure that updates are committed and that cursors are closed.
   */
 class ClosingRuntimeResult(inner: RuntimeResult,
+                           tx: Transaction,
                            txContext: TransactionalContext,
                            resourceManager: ResourceManager,
                            subscriber: QuerySubscriber,
@@ -45,7 +47,7 @@ class ClosingRuntimeResult(inner: RuntimeResult,
 
   override def close(): Unit = {
     inner.close()
-    closeResources(true)
+    closeResources()
   }
 
   override def request(numberOfRecords: Long): Unit = {
@@ -69,19 +71,20 @@ class ClosingRuntimeResult(inner: RuntimeResult,
     try {
       val moreData = inner.await()
       if (!moreData) {
-        closeResources(true)
+        closeResources()
       }
       moreData
     } catch {
       case t: Throwable =>
-        closeResources(false)
+        closeResources()
         throw t
     }
   }
 
-  private def closeResources(success: Boolean): Unit = {
-    resourceManager.close(success)
+  private def closeResources(): Unit = {
+    resourceManager.close()
     assertAllReleased()
-    txContext.close(success)
+    txContext.close()
+    tx.close()
   }
 }

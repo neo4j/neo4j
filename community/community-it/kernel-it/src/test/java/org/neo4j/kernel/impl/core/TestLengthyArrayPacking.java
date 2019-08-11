@@ -22,6 +22,7 @@ package org.neo4j.kernel.impl.core;
 import org.junit.jupiter.api.Test;
 
 import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.impl.AbstractNeo4jTestCase;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
@@ -39,22 +40,31 @@ class TestLengthyArrayPacking extends AbstractNeo4jTestCase
     void bitPackingOfLengthyArrays()
     {
         long arrayRecordsBefore = dynamicArrayRecordsInUse();
-
-        // Store an int array which would w/o packing require two dynamic records
-        // 4*40 = 160B (assuming data size of 120B)
         int[] arrayWhichUnpackedWouldFillTwoDynamicRecords = new int[40];
-        for ( int i = 0; i < arrayWhichUnpackedWouldFillTwoDynamicRecords.length; i++ )
-        {
-            arrayWhichUnpackedWouldFillTwoDynamicRecords[i] = i * i;
-        }
-        Node node = getGraphDb().createNode();
+        Node node;
         String key = "the array";
-        node.setProperty( key, arrayWhichUnpackedWouldFillTwoDynamicRecords );
-        newTransaction();
 
-        // Make sure it only requires one dynamic record
+        try ( Transaction transaction = getGraphDb().beginTx() )
+        {
+            // Store an int array which would w/o packing require two dynamic records
+            // 4*40 = 160B (assuming data size of 120B)
+            for ( int i = 0; i < arrayWhichUnpackedWouldFillTwoDynamicRecords.length; i++ )
+            {
+                arrayWhichUnpackedWouldFillTwoDynamicRecords[i] = i * i;
+            }
+            node = getGraphDb().createNode();
+            node.setProperty( key, arrayWhichUnpackedWouldFillTwoDynamicRecords );
+
+            // Make sure it only requires one dynamic record
+            transaction.commit();
+        }
+
         assertEquals( arrayRecordsBefore + 1, dynamicArrayRecordsInUse() );
-        assertArrayEquals( arrayWhichUnpackedWouldFillTwoDynamicRecords, (int[]) node.getProperty( key ) );
+        try ( Transaction transaction = getGraphDb().beginTx() )
+        {
+            assertArrayEquals( arrayWhichUnpackedWouldFillTwoDynamicRecords, (int[]) node.getProperty( key ) );
+            transaction.commit();
+        }
     }
 
     // Tests for strings, although the test class name suggests otherwise
@@ -100,9 +110,12 @@ class TestLengthyArrayPacking extends AbstractNeo4jTestCase
             DynamicRecordCounter recordCounter )
     {
         long stringRecordsBefore = recordCounter.count();
-        Node node = getGraphDb().createNode();
-        node.setProperty( "name", value );
-        newTransaction();
+        try ( Transaction transaction = getGraphDb().beginTx() )
+        {
+            Node node = getGraphDb().createNode();
+            node.setProperty( "name", value );
+            transaction.commit();
+        }
         long stringRecordsAfter = recordCounter.count();
         assertEquals( stringRecordsBefore + expectedAddedDynamicRecords, stringRecordsAfter );
     }

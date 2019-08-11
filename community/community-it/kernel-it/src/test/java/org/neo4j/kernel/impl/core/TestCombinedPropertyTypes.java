@@ -26,6 +26,7 @@ import org.junit.jupiter.api.Test;
 import java.time.ZoneId;
 
 import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.impl.AbstractNeo4jTestCase;
 import org.neo4j.values.storable.DateTimeValue;
 import org.neo4j.values.storable.DateValue;
@@ -41,13 +42,17 @@ class TestCombinedPropertyTypes extends AbstractNeo4jTestCase
     @BeforeEach
     void createInitialNode()
     {
-        node1 = getGraphDb().createNode();
+        node1 = createNode();
     }
 
     @AfterEach
     void deleteInitialNode()
     {
-        node1.delete();
+        try ( Transaction transaction = getGraphDb().beginTx() )
+        {
+            node1.delete();
+            transaction.commit();
+        }
     }
 
     @Test
@@ -90,23 +95,37 @@ class TestCombinedPropertyTypes extends AbstractNeo4jTestCase
 
     private void testDateTypeWithPrecedingInLinedLong( Value value )
     {
-        node1.setProperty( "l1", 255 ); // Setting these low bits was triggering a bug in some date types decision on formatting
         String key = "dt";
-        node1.setProperty( key, value );
-        newTransaction();
+        try ( Transaction transaction = getGraphDb().beginTx() )
+        {
+            node1.setProperty( "l1", 255 ); // Setting these low bits was triggering a bug in some date types decision on formatting
+            node1.setProperty( key, value );
+            transaction.commit();
+        }
 
-        Object property = node1.getProperty( key );
-        assertEquals( value.asObjectCopy(), property );
+        try ( Transaction transaction = getGraphDb().beginTx() )
+        {
+            Object property = node1.getProperty( key );
+            assertEquals( value.asObjectCopy(), property );
+            transaction.commit();
+        }
     }
 
     private void testDateTypeWithPrecedingNotInLinedLong( Value value )
     {
-        node1.setProperty( "l1", Long.MAX_VALUE );
         String key = "dt";
-        node1.setProperty( key, value );
-        newTransaction();
+        try ( Transaction transaction = getGraphDb().beginTx() )
+        {
+            node1.setProperty( "l1", Long.MAX_VALUE );
+            node1.setProperty( key, value );
+            transaction.commit();
+        }
 
-        Object property = node1.getProperty( key );
-        assertEquals( value.asObjectCopy(), property );
+        try ( Transaction transaction = getGraphDb().beginTx() )
+        {
+            Object property = node1.getProperty( key );
+            assertEquals( value.asObjectCopy(), property );
+            transaction.commit();
+        }
     }
 }

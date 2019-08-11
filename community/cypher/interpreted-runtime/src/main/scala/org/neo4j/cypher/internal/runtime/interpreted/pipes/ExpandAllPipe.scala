@@ -43,7 +43,6 @@ case class ExpandAllPipe(source: Pipe,
                 val other = r.otherNode(n)
                 executionContextFactory.copyWith(row, relName, r, toName, other)
             }
-
           case IsNoValue() => None
 
           case value => throw new InternalException(s"Expected to find a node at '$fromName' but found $value instead")

@@ -25,6 +25,7 @@ import org.junit.Test;
 
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.graphdb.Transaction;
 import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 
@@ -33,7 +34,6 @@ import static org.neo4j.logging.AssertableLogProvider.inLog;
 
 public class CypherLoggingTest
 {
-
     private final AssertableLogProvider logProvider = new AssertableLogProvider();
     private GraphDatabaseService database;
     private DatabaseManagementService managementService;
@@ -55,8 +55,11 @@ public class CypherLoggingTest
     public void shouldNotLogQueries()
     {
         // when
-        database.execute( "CREATE (n:Reference) CREATE (foo {test:'me'}) RETURN n" );
-        database.execute( "MATCH (n) RETURN n" );
+        try ( Transaction transaction = database.beginTx() )
+        {
+            database.execute( "CREATE (n:Reference) CREATE (foo {test:'me'}) RETURN n" ).close();
+            database.execute( "MATCH (n) RETURN n" ).close();
+        }
 
         // then
         inLog( org.neo4j.cypher.internal.ExecutionEngine.class );

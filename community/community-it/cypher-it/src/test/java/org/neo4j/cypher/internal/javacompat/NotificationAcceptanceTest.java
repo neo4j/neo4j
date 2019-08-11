@@ -30,6 +30,7 @@ import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.graphdb.InputPosition;
 import org.neo4j.graphdb.Notification;
 import org.neo4j.graphdb.QueryExecutionException;
+import org.neo4j.graphdb.Result;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.impl.notification.NotificationDetail;
 import org.neo4j.internal.helpers.collection.Iterables;
@@ -79,8 +80,8 @@ class NotificationAcceptanceTest extends NotificationTestSupport
     void shouldGetErrorWhenUsingCreateUniqueWhenCypherVersionIs3_5()
     {
         // when
-        QueryExecutionException exception =
-                assertThrows( QueryExecutionException.class, () -> db.execute( "CYPHER 3.5 MATCH (b) WITH b LIMIT 1 CREATE UNIQUE (b)-[:REL]->()" ) );
+        QueryExecutionException exception = assertThrows( QueryExecutionException.class,
+                () -> executeTransactionally( "CYPHER 3.5 MATCH (b) WITH b LIMIT 1 CREATE UNIQUE (b)-[:REL]->()" ) );
         assertThat( exception.getMessage(), containsString( "CREATE UNIQUE is no longer supported. You can achieve the same result using MERGE" ) );
     }
 
@@ -320,8 +321,8 @@ class NotificationAcceptanceTest extends NotificationTestSupport
     {
         Stream.of( "CYPHER 3.5", "CYPHER 4.0" ).forEach( version ->
         {
-            db.execute( "CREATE INDEX ON :Person(name)" );
-            db.execute( "Call db.awaitIndexes()" );
+            executeTransactionally( "CREATE INDEX ON :Person(name)" );
+            executeTransactionally( "Call db.awaitIndexes()" );
             shouldNotNotifyInStream( version, "EXPLAIN MATCH (n) WHERE n['key-' + n.name] = 'value' RETURN n" );
         } );
     }
@@ -331,8 +332,8 @@ class NotificationAcceptanceTest extends NotificationTestSupport
     {
         Stream.of( "CYPHER 3.5", "CYPHER 4.0" ).forEach( version ->
         {
-            db.execute( "CREATE INDEX ON :Person(name)" );
-            db.execute( "Call db.awaitIndexes()" );
+            executeTransactionally( "CREATE INDEX ON :Person(name)" );
+            executeTransactionally( "Call db.awaitIndexes()" );
             assertNotifications( version + "EXPLAIN MATCH (n:Person) WHERE n.name = 'Tobias' AND n['key-' + n.name] = 'value' RETURN n",
                     containsItem( dynamicPropertyWarning ));
         } );
@@ -343,8 +344,8 @@ class NotificationAcceptanceTest extends NotificationTestSupport
     {
         Stream.of( "CYPHER 3.5", "CYPHER 4.0" ).forEach( version ->
         {
-            db.execute( "CREATE INDEX ON :Person(name)" );
-            db.execute( "Call db.awaitIndexes()" );
+            executeTransactionally( "CREATE INDEX ON :Person(name)" );
+            executeTransactionally( "Call db.awaitIndexes()" );
             try ( Transaction tx = db.beginTx() )
             {
                 db.createNode().addLabel( label( "Foo" ) );
@@ -388,8 +389,8 @@ class NotificationAcceptanceTest extends NotificationTestSupport
         {
             for ( String query : queries )
             {
-                db.execute( "CREATE INDEX ON :Person(name)" );
-                db.execute( "Call db.awaitIndexes()" );
+                executeTransactionally( "CREATE INDEX ON :Person(name)" );
+                executeTransactionally( "Call db.awaitIndexes()" );
                 assertNotifications( version + query, containsItem( dynamicPropertyWarning ) );
             }
         } );
@@ -400,8 +401,8 @@ class NotificationAcceptanceTest extends NotificationTestSupport
     {
         Stream.of( "CYPHER 3.5", "CYPHER 4.0" ).forEach( version ->
         {
-            db.execute( "CREATE INDEX ON :Person(name)" );
-            db.execute( "Call db.awaitIndexes()" );
+            executeTransactionally( "CREATE INDEX ON :Person(name)" );
+            executeTransactionally( "Call db.awaitIndexes()" );
             shouldNotNotifyInStream( version, "EXPLAIN MATCH (n:Person) WHERE n['key-' + n.name] <> 'value' RETURN n" );
         } );
     }
@@ -411,8 +412,8 @@ class NotificationAcceptanceTest extends NotificationTestSupport
     {
         Stream.of( "CYPHER 3.5", "CYPHER 4.0" ).forEach( version ->
         {
-            db.execute( "CREATE INDEX ON :Person(name)" );
-            db.execute( "Call db.awaitIndexes()" );
+            executeTransactionally( "CREATE INDEX ON :Person(name)" );
+            executeTransactionally( "Call db.awaitIndexes()" );
 
             assertNotifications( version + "EXPLAIN MATCH (n:Person:Foo) WHERE n['key-' + n.name] = 'value' RETURN n",
                     containsItem( dynamicPropertyWarning ) );
@@ -424,10 +425,9 @@ class NotificationAcceptanceTest extends NotificationTestSupport
     {
         Stream.of( "CYPHER 3.5", "CYPHER 4.0" ).forEach( version ->
         {
-
-            db.execute( "CREATE INDEX ON :Person(name)" );
-            db.execute( "CREATE INDEX ON :Jedi(weapon)" );
-            db.execute( "Call db.awaitIndexes()" );
+            executeTransactionally( "CREATE INDEX ON :Person(name)" );
+            executeTransactionally( "CREATE INDEX ON :Jedi(weapon)" );
+            executeTransactionally( "Call db.awaitIndexes()" );
 
             assertNotifications( version + "EXPLAIN MATCH (n:Person:Jedi) WHERE n['key-' + n.name] = 'value' RETURN n",
                     containsItem( dynamicPropertyWarning ) );
@@ -524,7 +524,7 @@ class NotificationAcceptanceTest extends NotificationTestSupport
 
         Stream.of( "CYPHER 3.5", "CYPHER 4.0" ).forEach( version ->
         {
-            db.execute( "CREATE (n)-[r:R]->(m)");
+            executeTransactionally( "CREATE (n)-[r:R]->(m)");
             assertNotifications(version + "EXPLAIN MATCH ()-[r:r]->() RETURN *", containsItem( unknownRelationshipWarning ) );
             shouldNotNotifyInStream( version, "EXPLAIN MATCH ()-[r:R]->() RETURN *" );
         });
@@ -545,11 +545,11 @@ class NotificationAcceptanceTest extends NotificationTestSupport
     @Test
     void shouldWarnOnMisspelledProperty()
     {
-        db.execute("CREATE (n {prop : 42})");
+        executeTransactionally("CREATE (n {prop : 42})");
 
         Stream.of( "CYPHER 3.5", "CYPHER 4.0" ).forEach( version ->
         {
-            db.execute( "CREATE (n)-[r:R]->(m)");
+            executeTransactionally( "CREATE (n)-[r:R]->(m)");
             assertNotifications(version + "EXPLAIN MATCH (n) WHERE n.propp = 43 RETURN n", containsItem( unknownPropertyKeyWarning ) );
             shouldNotNotifyInStream( version, "EXPLAIN MATCH (n) WHERE n.prop = 43 RETURN n" );
         });
@@ -577,19 +577,34 @@ class NotificationAcceptanceTest extends NotificationTestSupport
         //make sure we cache the query
         int limit = db.getDependencyResolver().resolveDependency( Config.class )
                 .get( GraphDatabaseSettings.cypher_expression_recompilation_limit );
-        for ( int i = 0; i < limit + 1; i++ )
+        try ( Transaction transaction = db.beginTx() )
         {
-            db.execute( cachedQuery ).resultAsString();
+            for ( int i = 0; i < limit + 1; i++ )
+            {
+                db.execute( cachedQuery ).resultAsString();
+            }
+            transaction.commit();
         }
 
         // When
         Notification cachedNotification =
-                Iterables.asList( db.execute( "EXPLAIN " + cachedQuery ).getNotifications() ).get( 0 );
+                Iterables.asList( executeTransactionally( "EXPLAIN " + cachedQuery ).getNotifications() ).get( 0 );
         Notification nonCachedNotication =
-                Iterables.asList( db.execute( "EXPLAIN " + nonCachedQuery ).getNotifications() ).get( 0 );
+                Iterables.asList( executeTransactionally( "EXPLAIN " + nonCachedQuery ).getNotifications() ).get( 0 );
 
         // Then
         assertThat( cachedNotification.getPosition(), equalTo( new InputPosition( 17, 1, 18 ) ) );
         assertThat( nonCachedNotication.getPosition(), equalTo( new InputPosition( 17, 1, 18 ) ) );
+    }
+
+    private Result executeTransactionally( String query )
+    {
+        Result result;
+        try ( Transaction transaction = db.beginTx() )
+        {
+            result = db.execute( query );
+            transaction.commit();
+        }
+        return result;
     }
 }

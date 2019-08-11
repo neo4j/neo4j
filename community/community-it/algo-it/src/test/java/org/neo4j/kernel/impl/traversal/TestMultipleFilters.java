@@ -56,14 +56,15 @@ class TestMultipleFilters extends TraversalTestBase
         //                 v   v
         //                (d)  (e)
         createGraph( "a TO b", "b TO d", "b TO e", "b TO k", "a TO c", "c TO f", "c TO k" );
-
-        tx = beginTx();
     }
 
     @AfterEach
     void tearDown()
     {
-         tx.close();
+        if ( tx != null )
+        {
+            tx.close();
+        }
     }
 
     private static class MustBeConnectedToNodeFilter implements Predicate<Path>, Evaluator
@@ -104,30 +105,35 @@ class TestMultipleFilters extends TraversalTestBase
     @Test
     void testNarrowingFilters()
     {
-        Evaluator mustBeConnectedToK = new MustBeConnectedToNodeFilter( getNodeWithName( "k" ) );
-        Evaluator mustNotHaveMoreThanTwoOutRels =
-                path -> Evaluation.ofIncludes( Iterables
-                                                       .count( path.endNode().getRelationships( Direction.OUTGOING ) ) <= 2 );
+        try ( Transaction transaction = beginTx() )
+        {
+            Evaluator mustBeConnectedToK = new MustBeConnectedToNodeFilter( getNodeWithName( "k" ) );
+            Evaluator mustNotHaveMoreThanTwoOutRels =
+                    path -> Evaluation.ofIncludes( Iterables
+                            .count( path.endNode().getRelationships( Direction.OUTGOING ) ) <= 2 );
 
-        TraversalDescription description = getGraphDb().traversalDescription().evaluator( mustBeConnectedToK );
-        expectNodes( description.traverse( node( "a" ) ), "b", "c" );
-        expectNodes( description.evaluator( mustNotHaveMoreThanTwoOutRels ).traverse( node( "a" ) ), "c" );
+            TraversalDescription description = getGraphDb().traversalDescription().evaluator( mustBeConnectedToK );
+            expectNodes( description.traverse( node( "a" ) ), "b", "c" );
+            expectNodes( description.evaluator( mustNotHaveMoreThanTwoOutRels ).traverse( node( "a" ) ), "c" );
+        }
     }
 
     @Test
     void testBroadeningFilters()
     {
-        MustBeConnectedToNodeFilter mustBeConnectedToC = new MustBeConnectedToNodeFilter( getNodeWithName( "c" ) );
-        MustBeConnectedToNodeFilter mustBeConnectedToE = new MustBeConnectedToNodeFilter( getNodeWithName( "e" ) );
-
-        // Nodes connected (OUTGOING) to c (which "a" is)
-        expectNodes( getGraphDb().traversalDescription().evaluator( mustBeConnectedToC ).traverse( node( "a" ) ), "a" );
-        // Nodes connected (OUTGOING) to c AND e (which none is)
-        expectNodes( getGraphDb().traversalDescription().evaluator( mustBeConnectedToC ).evaluator( mustBeConnectedToE )
-                .traverse( node( "a" ) ) );
-        // Nodes connected (OUTGOING) to c OR e (which "a" and "b" is)
-        expectNodes( getGraphDb().traversalDescription()
-                        .evaluator( includeIfAcceptedByAny( mustBeConnectedToC, mustBeConnectedToE ) )
-                        .traverse( node( "a" ) ), "a", "b" );
+        try ( Transaction transaction = beginTx() )
+        {
+            MustBeConnectedToNodeFilter mustBeConnectedToC = new MustBeConnectedToNodeFilter( getNodeWithName( "c" ) );
+            MustBeConnectedToNodeFilter mustBeConnectedToE = new MustBeConnectedToNodeFilter( getNodeWithName( "e" ) );
+            // Nodes connected (OUTGOING) to c (which "a" is)
+            expectNodes( getGraphDb().traversalDescription().evaluator( mustBeConnectedToC ).traverse( node( "a" ) ), "a" );
+            // Nodes connected (OUTGOING) to c AND e (which none is)
+            expectNodes( getGraphDb().traversalDescription().evaluator( mustBeConnectedToC ).evaluator( mustBeConnectedToE )
+                    .traverse( node( "a" ) ) );
+            // Nodes connected (OUTGOING) to c OR e (which "a" and "b" is)
+            expectNodes( getGraphDb().traversalDescription()
+                    .evaluator( includeIfAcceptedByAny( mustBeConnectedToC, mustBeConnectedToE ) )
+                    .traverse( node( "a" ) ), "a", "b" );
+        }
     }
 }

@@ -22,7 +22,6 @@ package common;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.BeforeEach;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -37,7 +36,6 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.ResourceIterator;
-import org.neo4j.graphdb.Transaction;
 import org.neo4j.internal.helpers.collection.Iterators;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 
@@ -55,7 +53,6 @@ public abstract class Neo4jAlgoTestCase
 {
     protected static GraphDatabaseService graphDb;
     protected static SimpleGraphBuilder graph;
-    private Transaction tx;
     private static DatabaseManagementService managementService;
 
     public enum MyRelTypes implements RelationshipType
@@ -71,12 +68,6 @@ public abstract class Neo4jAlgoTestCase
         graph = new SimpleGraphBuilder( graphDb, MyRelTypes.R1 );
     }
 
-    @BeforeEach
-    public void setUpTransaction()
-    {
-        tx = graphDb.beginTx();
-    }
-
     @AfterAll
     public static void tearDownGraphDb()
     {
@@ -87,7 +78,6 @@ public abstract class Neo4jAlgoTestCase
     public void tearDownTransactionAndGraph()
     {
         graph.clear();
-        tx.commit();
     }
 
     protected static void assertPathDef( Path path, String... names )

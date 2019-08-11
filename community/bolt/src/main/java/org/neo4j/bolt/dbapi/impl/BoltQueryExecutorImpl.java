@@ -19,8 +19,6 @@
  */
 package org.neo4j.bolt.dbapi.impl;
 
-import java.util.function.Supplier;
-
 import org.neo4j.bolt.dbapi.BoltQueryExecution;
 import org.neo4j.bolt.dbapi.BoltQueryExecutor;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
@@ -36,27 +34,26 @@ public class BoltQueryExecutorImpl implements BoltQueryExecutor
 {
     private final QueryExecutionEngine queryExecutionEngine;
     private final TransactionalContextFactory transactionalContextFactory;
-    private final Supplier<InternalTransaction> placeboTransactionFactory;
+    private final InternalTransaction internalTransaction;
 
     BoltQueryExecutorImpl( QueryExecutionEngine queryExecutionEngine, TransactionalContextFactory transactionalContextFactory,
-            Supplier<InternalTransaction> placeboTransactionFactory )
+            InternalTransaction internalTransaction )
     {
-        this.placeboTransactionFactory = placeboTransactionFactory;
         this.queryExecutionEngine = queryExecutionEngine;
         this.transactionalContextFactory = transactionalContextFactory;
+        this.internalTransaction = internalTransaction;
     }
 
     @Override
     public BoltQueryExecution executeQuery( String query, MapValue parameters, boolean prePopulate, QuerySubscriber subscriber )
             throws QueryExecutionKernelException
     {
-        InternalTransaction internalTransaction = placeboTransactionFactory.get();
         TransactionalContext transactionalContext = transactionalContextFactory.newContext( internalTransaction, query, parameters );
         QueryExecution queryExecution = queryExecutionEngine.executeQuery( query, parameters, transactionalContext, prePopulate, subscriber );
         return new BoltQueryExecutionImpl( queryExecution, transactionalContext );
     }
 
-    private class BoltQueryExecutionImpl implements BoltQueryExecution
+    private static class BoltQueryExecutionImpl implements BoltQueryExecution
     {
         private final QueryExecution queryExecution;
         private final TransactionalContext transactionalContext;
@@ -74,9 +71,9 @@ public class BoltQueryExecutorImpl implements BoltQueryExecutor
         }
 
         @Override
-        public void close( boolean success )
+        public void close()
         {
-            transactionalContext.close( success );
+            transactionalContext.close();
         }
 
         @Override

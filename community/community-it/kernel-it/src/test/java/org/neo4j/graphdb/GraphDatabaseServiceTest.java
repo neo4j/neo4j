@@ -28,7 +28,6 @@ import org.junit.rules.ExpectedException;
 import org.junit.rules.RuleChain;
 
 import java.time.Duration;
-import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 
@@ -45,7 +44,6 @@ import org.neo4j.test.rule.ImpermanentDbmsRule;
 import org.neo4j.test.rule.OtherThreadRule;
 import org.neo4j.test.rule.TestDirectory;
 
-import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.iterableWithSize;
 import static org.junit.Assert.assertEquals;
@@ -69,7 +67,7 @@ public class GraphDatabaseServiceTest
     private DatabaseManagementService managementService;
 
     @Before
-    public void before() throws Exception
+    public void before()
     {
         t2.init( "T2-" + getClass().getName() );
         t3.init( "T3-" + getClass().getName() );
@@ -155,140 +153,6 @@ public class GraphDatabaseServiceTest
             catch ( TransactionTerminatedException ignored )
             {
             }
-        }
-    }
-
-    @Test
-    public void terminateNestedTransactionThrowsExceptionOnNextOperation()
-    {
-        // Given
-        final GraphDatabaseService db = globalDb;
-
-        try ( Transaction tx = db.beginTx() )
-        {
-            try ( Transaction nested = db.beginTx() )
-            {
-                tx.terminate();
-            }
-            try
-            {
-                db.createNode();
-                fail( "Failed to throw TransactionTerminateException" );
-            }
-            catch ( TransactionTerminatedException ignored )
-            {
-            }
-        }
-    }
-
-    @Test
-    public void terminateNestedTransactionThrowsExceptionOnNextNestedOperation()
-    {
-        // Given
-        final GraphDatabaseService db = globalDb;
-
-        try ( Transaction tx = db.beginTx() )
-        {
-            try ( Transaction nested = db.beginTx() )
-            {
-                tx.terminate();
-                try
-                {
-                    db.createNode();
-                    fail( "Failed to throw TransactionTerminateException" );
-                }
-                catch ( TransactionTerminatedException ignored )
-                {
-                }
-            }
-        }
-    }
-
-    @Test
-    public void terminateNestedTransactionThrowsExceptionOnNextNestedOperationMultiThreadedVersion() throws Exception
-    {
-        // Given
-        final GraphDatabaseService db = getTemporaryDatabase();
-        try
-        {
-            // When
-            final CountDownLatch txSet = new CountDownLatch( 1 );
-            final CountDownLatch terminated = new CountDownLatch( 1 );
-            final Transaction[] outer = {null};
-            final Exception[] threadFail = {null};
-
-            Thread worker = new Thread( () ->
-            {
-                try ( Transaction inner = db.beginTx() )
-                {
-                    outer[0] = inner;
-                    txSet.countDown();
-                    terminated.await();
-                    db.createNode();
-                    fail( "should have failed earlier" );
-                }
-                catch ( Exception e )
-                {
-                    threadFail[0] = e;
-                }
-            } );
-            worker.start();
-            txSet.await();
-            outer[0].terminate();
-            terminated.countDown();
-            worker.join();
-            assertThat( threadFail[0], instanceOf( TransactionTerminatedException.class ) );
-        }
-        finally
-        {
-            managementService.shutdown();
-        }
-    }
-
-    @Test
-    public void terminateNestedTransactionThrowsExceptionOnNextNestedOperationMultiThreadedVersionWithNestedTx()
-            throws Exception
-    {
-        // Given
-        final GraphDatabaseService db = getTemporaryDatabase();
-        try
-        {
-            // When
-            final CountDownLatch txSet = new CountDownLatch( 1 );
-            final CountDownLatch terminated = new CountDownLatch( 1 );
-            final Transaction[] outer = {null};
-            final Exception[] threadFail = {null};
-
-            Thread worker = new Thread( () ->
-            {
-                Transaction transaction = db.beginTx();
-                try ( Transaction inner = db.beginTx() )
-                {
-                    outer[0] = inner;
-                    txSet.countDown();
-                    terminated.await();
-                    db.createNode();
-                    fail( "should have failed earlier" );
-                }
-                catch ( Exception e )
-                {
-                    threadFail[0] = e;
-                }
-                finally
-                {
-                    transaction.close();
-                }
-            } );
-            worker.start();
-            txSet.await();
-            outer[0].terminate();
-            terminated.countDown();
-            worker.join();
-            assertThat( threadFail[0], instanceOf( TransactionTerminatedException.class ) );
-        }
-        finally
-        {
-            managementService.shutdown();
         }
     }
 

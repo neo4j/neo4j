@@ -242,9 +242,10 @@ class InProcessServerBuilderIT
         DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder( rootDirectory )
                 .setConfig( transaction_logs_root_path, new File( existingStoreDir, DEFAULT_TX_LOGS_ROOT_DIR_NAME ).toPath().toAbsolutePath() ).build();
         GraphDatabaseService db = managementService.database( DEFAULT_DATABASE_NAME );
-        try
+        try ( Transaction transaction = db.beginTx() )
         {
             db.execute( "create ()" );
+            transaction.commit();
         }
         finally
         {

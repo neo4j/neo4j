@@ -52,7 +52,7 @@ import org.neo4j.kernel.database.{DatabaseId, TestDatabaseIdRepository}
 import org.neo4j.kernel.impl.api.{ClockContext, KernelStatement, KernelTransactionImplementation}
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge
 import org.neo4j.kernel.impl.coreapi.InternalTransaction
-import org.neo4j.kernel.impl.factory.GraphDatabaseFacade
+import org.neo4j.kernel.impl.factory.{GraphDatabaseFacade, KernelTransactionFactory}
 import org.neo4j.kernel.impl.newapi.DefaultPooledCursors
 import org.neo4j.kernel.impl.query.{Neo4jTransactionalContext, Neo4jTransactionalContextFactory}
 import org.neo4j.kernel.impl.util.DefaultValueMapper
@@ -71,6 +71,7 @@ class TransactionBoundQueryContextTest extends CypherFunSuite {
   var graph: GraphDatabaseQueryService = null
   var outerTx: InternalTransaction = null
   var valueMapper: ValueMapper[AnyRef] = _
+  var transactionFactory: KernelTransactionFactory = _
   var statement: KernelStatement = null
   val indexSearchMonitor = mock[IndexSearchMonitor]
 
@@ -80,6 +81,7 @@ class TransactionBoundQueryContextTest extends CypherFunSuite {
     graphOps = managementService.database(DEFAULT_DATABASE_NAME)
     graph = new javacompat.GraphDatabaseCypherService(graphOps)
     valueMapper = new DefaultValueMapper(mock[GraphDatabaseFacade])
+    transactionFactory = mock[KernelTransactionFactory]
     outerTx = mock[InternalTransaction]
     val kernelTransaction = mock[KernelTransactionImplementation](RETURNS_DEEP_STUBS)
     when(kernelTransaction.securityContext()).thenReturn(AUTH_DISABLED)
@@ -106,11 +108,11 @@ class TransactionBoundQueryContextTest extends CypherFunSuite {
     val transaction = mock[KernelTransaction]
     when(transaction.cursors()).thenReturn(new DefaultPooledCursors(null))
     when(bridge.getKernelTransactionBoundToThisThread(ArgumentMatchers.eq(true), any(classOf[DatabaseId]))).thenReturn(transaction)
-    val tc = new Neo4jTransactionalContext(graph, bridge, outerTx, statement, mock[ExecutingQuery], valueMapper)
+    val tc = new Neo4jTransactionalContext(graph, bridge, outerTx, statement, mock[ExecutingQuery], valueMapper, transactionFactory)
     val transactionalContext = TransactionalContextWrapper(tc)
     val context = new TransactionBoundQueryContext(transactionalContext)(indexSearchMonitor)
     // WHEN
-    context.transactionalContext.close(success = true)
+    context.transactionalContext.close()
 
     // THEN
     verify(outerTx).transactionType()
@@ -130,11 +132,11 @@ class TransactionBoundQueryContextTest extends CypherFunSuite {
     when(transaction.acquireStatement()).thenReturn(statement)
     when(transaction.cursors()).thenReturn(new DefaultPooledCursors(null))
     when(bridge.getKernelTransactionBoundToThisThread(ArgumentMatchers.eq(true), any(classOf[DatabaseId]))).thenReturn(transaction)
-    val tc = new Neo4jTransactionalContext(graph, bridge, outerTx, statement, mock[ExecutingQuery], valueMapper)
+    val tc = new Neo4jTransactionalContext(graph, bridge, outerTx, statement, mock[ExecutingQuery], valueMapper, transactionFactory)
     val transactionalContext = TransactionalContextWrapper(tc)
     val context = new TransactionBoundQueryContext(transactionalContext)(indexSearchMonitor)
     // WHEN
-    context.transactionalContext.close(success = false)
+    context.transactionalContext.close()
 
     // THEN
     verify(outerTx).transactionType()
@@ -163,7 +165,7 @@ class TransactionBoundQueryContextTest extends CypherFunSuite {
     listA should equal(listB)
     listA.size should equal(2)
 
-    transactionalContext.close(true)
+    transactionalContext.close()
     tx.close()
   }
 
@@ -178,7 +180,7 @@ class TransactionBoundQueryContextTest extends CypherFunSuite {
     context.getImportURL(new URL("file:///tmp/foo/data.csv")) should equal(Right(new URL("file:///tmp/foo/data.csv")))
     context.getImportURL(new URL("jar:file:/tmp/blah.jar!/tmp/foo/data.csv")) should equal(Left("loading resources via protocol 'jar' is not permitted"))
 
-    transactionalContext.close(true)
+    transactionalContext.close()
     tx.close()
   }
 
@@ -194,7 +196,7 @@ class TransactionBoundQueryContextTest extends CypherFunSuite {
     context.getImportURL(new URL("http://localhost:7474/data.csv")) should equal (Right(new URL("http://localhost:7474/data.csv")))
     context.getImportURL(new URL("file:///tmp/foo/data.csv")) should equal (Left("configuration property 'dbms.security.allow_csv_import_from_file_urls' is false"))
 
-    transactionalContext.close(true)
+    transactionalContext.close()
     tx.close()
   }
 
@@ -217,7 +219,7 @@ class TransactionBoundQueryContextTest extends CypherFunSuite {
     val accesses = tracer.getPageCacheHits + tracer.getPageCacheMisses
     assertThat(Long.box(accesses), greaterThan(Long.box(1L)))
 
-    transactionalContext.close(true)
+    transactionalContext.close()
     tx.close()
   }
 
@@ -228,7 +230,7 @@ class TransactionBoundQueryContextTest extends CypherFunSuite {
     when(transaction.acquireStatement()).thenReturn(statement)
     when(transaction.cursors()).thenReturn(new DefaultPooledCursors(null))
     when(bridge.getKernelTransactionBoundToThisThread(ArgumentMatchers.eq(true), any(classOf[DatabaseId]))).thenReturn(transaction)
-    val tc = new Neo4jTransactionalContext(graph, bridge, outerTx, statement, mock[ExecutingQuery], valueMapper)
+    val tc = new Neo4jTransactionalContext(graph, bridge, outerTx, statement, mock[ExecutingQuery], valueMapper, transactionFactory)
     val transactionalContext = TransactionalContextWrapper(tc)
     val context = new TransactionBoundQueryContext(transactionalContext)(indexSearchMonitor)
     val resource1 = mock[AutoCloseable]
@@ -239,7 +241,7 @@ class TransactionBoundQueryContextTest extends CypherFunSuite {
     context.resources.trace(resource3)
 
     // WHEN
-    context.resources.close(success = true)
+    context.resources.close()
 
     // THEN
     verify(resource1).close()
@@ -259,7 +261,7 @@ class TransactionBoundQueryContextTest extends CypherFunSuite {
 
     // THEN
     context.resources.allResources should have size initSize + 1
-    context.resources.close(true)
+    context.resources.close()
     tx.close()
   }
 
@@ -275,7 +277,7 @@ class TransactionBoundQueryContextTest extends CypherFunSuite {
 
     // THEN
     context.resources.allResources should have size initSize + 1
-    context.resources.close(true)
+    context.resources.close()
     tx.close()
   }
 
@@ -289,7 +291,7 @@ class TransactionBoundQueryContextTest extends CypherFunSuite {
     // WHEN
     context.nodeOps.all
     context.resources.allResources should have size initSize + 1
-    context.resources.close(success = true)
+    context.resources.close()
 
     // THEN
     context.resources.allResources shouldBe empty

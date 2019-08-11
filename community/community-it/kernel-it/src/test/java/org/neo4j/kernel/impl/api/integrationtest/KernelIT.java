@@ -73,8 +73,11 @@ class KernelIT extends KernelIntegrationTest
     {
         // GIVEN
         schemaWriteInNewTransaction();
-        getOrCreateSchemaState( "my key", "my state" );
-        commit();
+        try ( Transaction tx = db.beginTx() )
+        {
+            getOrCreateSchemaState( "my key", "my state" );
+            tx.commit();
+        }
 
         // WHEN
         createIndex( newTransaction( AUTH_DISABLED ) );
@@ -209,16 +212,10 @@ class KernelIT extends KernelIntegrationTest
         return schemaWrite.indexCreate( schemaDescriptor );
     }
 
-    private String getOrCreateSchemaState( String key, final String maybeSetThisState )
+    private void getOrCreateSchemaState( String key, final String maybeSetThisState )
     {
-        try ( Transaction tx = db.beginTx() )
-        {
-            KernelTransaction ktx =
-                    statementContextSupplier.getKernelTransactionBoundToThisThread( true, db.databaseId() );
-            String state = ktx.schemaRead().schemaStateGetOrCreate( key, s -> maybeSetThisState );
-            tx.commit();
-            return state;
-        }
+        KernelTransaction ktx = statementContextSupplier.getKernelTransactionBoundToThisThread( true, db.databaseId() );
+        ktx.schemaRead().schemaStateGetOrCreate( key, s -> maybeSetThisState );
     }
 
     private boolean schemaStateContains( String key )

@@ -45,11 +45,13 @@ public class TopLevelTransaction implements InternalTransaction
 {
     private static final PropertyContainerLocker locker = new PropertyContainerLocker();
     private boolean commitCalled;
-    private final KernelTransaction transaction;
+    private KernelTransaction transaction;
+    private final ThreadLocal<TopLevelTransaction> tempTopLevelTransaction;
 
-    public TopLevelTransaction( KernelTransaction transaction )
+    public TopLevelTransaction( KernelTransaction transaction, ThreadLocal<TopLevelTransaction> tempTopLevelTransaction )
     {
         this.transaction = transaction;
+        this.tempTopLevelTransaction = tempTopLevelTransaction;
     }
 
     @Override
@@ -73,6 +75,7 @@ public class TopLevelTransaction implements InternalTransaction
     @Override
     public void close()
     {
+        tempTopLevelTransaction.remove();
         safeTransactionOperation( Transaction::close );
     }
 
@@ -107,6 +110,12 @@ public class TopLevelTransaction implements InternalTransaction
         {
             throw new TransactionFailureException( closeFailureMessage(), e );
         }
+    }
+
+    @Override
+    public void setTransaction( KernelTransaction transaction )
+    {
+        this.transaction = transaction;
     }
 
     @FunctionalInterface

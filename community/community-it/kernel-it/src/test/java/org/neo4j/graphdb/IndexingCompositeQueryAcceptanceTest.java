@@ -267,16 +267,12 @@ public class IndexingCompositeQueryAcceptanceTest
 
     public Node createNode( GraphDatabaseService beansAPI, Map<String, Object> properties, Label... labels )
     {
-        try ( Transaction tx = beansAPI.beginTx() )
+        Node node = beansAPI.createNode( labels );
+        for ( Map.Entry<String,Object> property : properties.entrySet() )
         {
-            Node node = beansAPI.createNode( labels );
-            for ( Map.Entry<String,Object> property : properties.entrySet() )
-            {
-                node.setProperty( property.getKey(), property.getValue() );
-            }
-            tx.commit();
-            return node;
+            node.setProperty( property.getKey(), property.getValue() );
         }
+        return node;
     }
 
     private static Object[] testCase( Integer[] values, IndexSeek indexSeek, boolean withIndex )

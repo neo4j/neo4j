@@ -31,6 +31,7 @@ import java.time.Duration;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 
+import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Result;
 import org.neo4j.graphdb.Transaction;
@@ -88,14 +89,14 @@ public class QueryResultsSerializationTest extends AbstractRestFunctionalTestBas
     public void tearDown()
     {
         // empty the database
-        graphdb().execute( "MATCH (n) DETACH DELETE n" );
+        executeTransactionally( "MATCH (n) DETACH DELETE n" );
     }
 
     @Test
     public void shouldBeAbleToReturnDeletedEntitiesGraph()
     {
         // given
-        graphdb().execute( "CREATE (:Start)-[:R]->(:End)" );
+        executeTransactionally( "CREATE (:Start)-[:R]->(:End)" );
 
         // execute and commit
         Response commit = http.POST( commitResource,
@@ -112,7 +113,7 @@ public class QueryResultsSerializationTest extends AbstractRestFunctionalTestBas
     public void shouldBeAbleToReturnDeletedEntitiesRest()
     {
         // given
-        graphdb().execute( "CREATE (:Start)-[:R]->(:End)" );
+        executeTransactionally( "CREATE (:Start)-[:R]->(:End)" );
 
         // execute and commit
         Response commit = http.POST( commitResource,
@@ -128,7 +129,7 @@ public class QueryResultsSerializationTest extends AbstractRestFunctionalTestBas
     public void shouldBeAbleToReturnDeletedEntitiesRow()
     {
         // given
-        graphdb().execute( "CREATE (:Start)-[:R]->(:End)" );
+        executeTransactionally( "CREATE (:Start)-[:R]->(:End)" );
 
         // execute and commit
         Response commit = http.POST( commitResource,
@@ -144,7 +145,7 @@ public class QueryResultsSerializationTest extends AbstractRestFunctionalTestBas
     public void shouldNotMarkNormalEntitiesAsDeletedGraph()
     {
         // given
-        graphdb().execute( "CREATE (:Start)-[:R]->(:End)" );
+        executeTransactionally( "CREATE (:Start)-[:R]->(:End)" );
 
         // execute and commit
         Response commit = http.POST( commitResource,
@@ -159,7 +160,7 @@ public class QueryResultsSerializationTest extends AbstractRestFunctionalTestBas
     public void shouldNotMarkNormalEntitiesAsDeletedRow()
     {
         // given
-        graphdb().execute( "CREATE (:Start)-[:R]->(:End)" );
+        executeTransactionally( "CREATE (:Start)-[:R]->(:End)" );
 
         // execute and commit
         Response commit = http.POST( commitResource,
@@ -174,7 +175,7 @@ public class QueryResultsSerializationTest extends AbstractRestFunctionalTestBas
     public void shouldNotMarkNormalEntitiesAsDeletedRest()
     {
         // given
-        graphdb().execute( "CREATE (:Start)-[:R]->(:End)" );
+        executeTransactionally( "CREATE (:Start)-[:R]->(:End)" );
 
         // execute and commit
         Response commit = http.POST( commitResource,
@@ -189,7 +190,7 @@ public class QueryResultsSerializationTest extends AbstractRestFunctionalTestBas
     public void shouldBeAbleToReturnDeletedNodesGraph()
     {
         // given
-        graphdb().execute( "CREATE (:NodeToDelete {p: 'a property'})" );
+        executeTransactionally( "CREATE (:NodeToDelete {p: 'a property'})" );
 
         // execute and commit
         Response commit = http.POST( commitResource,
@@ -205,7 +206,7 @@ public class QueryResultsSerializationTest extends AbstractRestFunctionalTestBas
     public void shouldBeAbleToReturnDeletedNodesRow()
     {
         // given
-        graphdb().execute( "CREATE (:NodeToDelete {p: 'a property'})" );
+        executeTransactionally( "CREATE (:NodeToDelete {p: 'a property'})" );
 
         // execute and commit
         Response commit = http.POST( commitResource,
@@ -221,7 +222,7 @@ public class QueryResultsSerializationTest extends AbstractRestFunctionalTestBas
     public void shouldBeAbleToReturnDeletedNodesRest()
     {
         // given
-        graphdb().execute( "CREATE (:NodeToDelete {p: 'a property'})" );
+        executeTransactionally( "CREATE (:NodeToDelete {p: 'a property'})" );
 
         // execute and commit
         Response commit = http.POST( commitResource,
@@ -237,7 +238,7 @@ public class QueryResultsSerializationTest extends AbstractRestFunctionalTestBas
     public void shouldBeAbleToReturnDeletedRelationshipsGraph()
     {
         // given
-        graphdb().execute( "CREATE (:Start)-[:R {p: 'a property'}]->(:End)" );
+        executeTransactionally( "CREATE (:Start)-[:R {p: 'a property'}]->(:End)" );
 
         // execute and commit
         Response commit = http.POST( commitResource,
@@ -253,7 +254,7 @@ public class QueryResultsSerializationTest extends AbstractRestFunctionalTestBas
     public void shouldBeAbleToReturnDeletedRelationshipsRow()
     {
         // given
-        graphdb().execute( "CREATE (:Start)-[:R {p: 'a property'}]->(:End)" );
+        executeTransactionally( "CREATE (:Start)-[:R {p: 'a property'}]->(:End)" );
 
         // execute and commit
         Response commit = http.POST( commitResource,
@@ -269,7 +270,7 @@ public class QueryResultsSerializationTest extends AbstractRestFunctionalTestBas
     public void shouldBeAbleToReturnDeletedRelationshipsRest()
     {
         // given
-        graphdb().execute( "CREATE (:Start)-[:R {p: 'a property'}]->(:End)" );
+        executeTransactionally( "CREATE (:Start)-[:R {p: 'a property'}]->(:End)" );
 
         // execute and commit
         Response commit = http.POST( commitResource,
@@ -285,7 +286,7 @@ public class QueryResultsSerializationTest extends AbstractRestFunctionalTestBas
     public void shouldFailIfTryingToReturnPropsOfDeletedNodeGraph()
     {
         // given
-        graphdb().execute( "CREATE (:NodeToDelete {p: 'a property'})" );
+        executeTransactionally( "CREATE (:NodeToDelete {p: 'a property'})" );
 
         // execute and commit
         Response commit = http.POST( commitResource,
@@ -300,7 +301,7 @@ public class QueryResultsSerializationTest extends AbstractRestFunctionalTestBas
     public void shouldFailIfTryingToReturnPropsOfDeletedNodeRow()
     {
         // given
-        graphdb().execute( "CREATE (:NodeToDelete {p: 'a property'})" );
+        executeTransactionally( "CREATE (:NodeToDelete {p: 'a property'})" );
 
         // execute and commit
         Response commit = http.POST( commitResource,
@@ -315,7 +316,7 @@ public class QueryResultsSerializationTest extends AbstractRestFunctionalTestBas
     public void shouldFailIfTryingToReturnPropsOfDeletedNodeRest()
     {
         // given
-        graphdb().execute( "CREATE (:NodeToDelete {p: 'a property'})" );
+        executeTransactionally( "CREATE (:NodeToDelete {p: 'a property'})" );
 
         // execute and commit
         Response commit = http.POST( commitResource,
@@ -330,7 +331,7 @@ public class QueryResultsSerializationTest extends AbstractRestFunctionalTestBas
     public void shouldFailIfTryingToReturnLabelsOfDeletedNodeGraph()
     {
         // given
-        graphdb().execute( "CREATE (:NodeToDelete)" );
+        executeTransactionally( "CREATE (:NodeToDelete)" );
 
         // execute and commit
         Response commit = http.POST( commitResource,
@@ -345,7 +346,7 @@ public class QueryResultsSerializationTest extends AbstractRestFunctionalTestBas
     public void shouldFailIfTryingToReturnLabelsOfDeletedNodeRow()
     {
         // given
-        graphdb().execute( "CREATE (:NodeToDelete)" );
+        executeTransactionally( "CREATE (:NodeToDelete)" );
 
         // execute and commit
         Response commit = http.POST( commitResource,
@@ -360,7 +361,7 @@ public class QueryResultsSerializationTest extends AbstractRestFunctionalTestBas
     public void shouldFailIfTryingToReturnLabelsOfDeletedNodeRest()
     {
         // given
-        graphdb().execute( "CREATE (:NodeToDelete)" );
+        executeTransactionally( "CREATE (:NodeToDelete)" );
 
         // execute and commit
         Response commit = http.POST( commitResource,
@@ -375,7 +376,7 @@ public class QueryResultsSerializationTest extends AbstractRestFunctionalTestBas
     public void shouldFailIfTryingToReturnPropsOfDeletedRelationshipGraph()
     {
         // given
-        graphdb().execute( "CREATE (:Start)-[:R {p: 'a property'}]->(:End)" );
+        executeTransactionally( "CREATE (:Start)-[:R {p: 'a property'}]->(:End)" );
 
         // execute and commit
         Response commit = http.POST( commitResource,
@@ -390,7 +391,7 @@ public class QueryResultsSerializationTest extends AbstractRestFunctionalTestBas
     public void shouldFailIfTryingToReturnPropsOfDeletedRelationshipRow()
     {
         // given
-        graphdb().execute( "CREATE (:Start)-[:R {p: 'a property'}]->(:End)" );
+        executeTransactionally( "CREATE (:Start)-[:R {p: 'a property'}]->(:End)" );
 
         // execute and commit
         Response commit = http.POST( commitResource,
@@ -405,7 +406,7 @@ public class QueryResultsSerializationTest extends AbstractRestFunctionalTestBas
     public void shouldFailIfTryingToReturnPropsOfDeletedRelationshipRest()
     {
         // given
-        graphdb().execute( "CREATE (:Start)-[:MARKER {p: 'a property'}]->(:End)" );
+        executeTransactionally( "CREATE (:Start)-[:MARKER {p: 'a property'}]->(:End)" );
 
         // execute and commit
         Response commit = http.POST( commitResource,
@@ -421,7 +422,7 @@ public class QueryResultsSerializationTest extends AbstractRestFunctionalTestBas
     public void returningADeletedPathGraph()
     {
         // given
-        graphdb().execute( "CREATE (:Start)-[:R]->(:End)" );
+        executeTransactionally( "CREATE (:Start)-[:R]->(:End)" );
 
         // execute and commit
         Response commit = http.POST( commitResource,
@@ -438,7 +439,7 @@ public class QueryResultsSerializationTest extends AbstractRestFunctionalTestBas
     public void returningAPartiallyDeletedPathGraph()
     {
         // given
-        graphdb().execute( "CREATE (:Start)-[:R]->(:End)" );
+        executeTransactionally( "CREATE (:Start)-[:R]->(:End)" );
 
         // execute and commit
         Response commit = http.POST( commitResource,
@@ -455,7 +456,7 @@ public class QueryResultsSerializationTest extends AbstractRestFunctionalTestBas
     public void returningADeletedPathRow()
     {
         // given
-        graphdb().execute( "CREATE (:Start)-[:R]->(:End)" );
+        executeTransactionally( "CREATE (:Start)-[:R]->(:End)" );
 
         // execute and commit
         Response commit = http.POST( commitResource,
@@ -471,7 +472,8 @@ public class QueryResultsSerializationTest extends AbstractRestFunctionalTestBas
     public void returningAPartiallyDeletedPathRow()
     {
         // given
-        graphdb().execute( "CREATE (:Start)-[:R]->(:End)" );
+        String query = "CREATE (:Start)-[:R]->(:End)";
+        executeTransactionally( query );
 
         // execute and commit
         Response commit = http.POST( commitResource,
@@ -483,11 +485,21 @@ public class QueryResultsSerializationTest extends AbstractRestFunctionalTestBas
         assertThat( nodesInDatabase(), equalTo( 1L ) );
     }
 
+    private void executeTransactionally( String query )
+    {
+        GraphDatabaseService database = graphdb();
+        try ( Transaction transaction = database.beginTx() )
+        {
+            database.execute( query );
+            transaction.commit();
+        }
+    }
+
     @Test
     public void returningADeletedPathRest()
     {
         // given
-        graphdb().execute( "CREATE (:Start)-[:R]->(:End)" );
+        executeTransactionally( "CREATE (:Start)-[:R]->(:End)" );
 
         // execute and commit
         Response commit = http.POST( commitResource,
@@ -502,7 +514,7 @@ public class QueryResultsSerializationTest extends AbstractRestFunctionalTestBas
     public void returningAPartiallyDeletedPathRest()
     {
         // given
-        graphdb().execute( "CREATE (:Start)-[:R]->(:End)" );
+        executeTransactionally( "CREATE (:Start)-[:R]->(:End)" );
 
         // execute and commit
         Response commit = http.POST( commitResource,
@@ -517,7 +529,7 @@ public class QueryResultsSerializationTest extends AbstractRestFunctionalTestBas
     public void nestedShouldWorkGraph()
     {
         // given
-        graphdb().execute( "CREATE ()" );
+        executeTransactionally( "CREATE ()" );
 
         // execute and commit
         Response commit = http.POST( commitResource,
@@ -533,7 +545,7 @@ public class QueryResultsSerializationTest extends AbstractRestFunctionalTestBas
     public void nestedShouldWorkRest()
     {
         // given
-        graphdb().execute( "CREATE ()" );
+        executeTransactionally( "CREATE ()" );
 
         // execute and commit
         Response commit = http.POST( commitResource,
@@ -549,7 +561,7 @@ public class QueryResultsSerializationTest extends AbstractRestFunctionalTestBas
     public void nestedShouldWorkRow()
     {
         // given
-        graphdb().execute( "CREATE ()" );
+        executeTransactionally( "CREATE ()" );
 
         // execute and commit
         Response commit = http.POST( commitResource,
@@ -838,10 +850,14 @@ public class QueryResultsSerializationTest extends AbstractRestFunctionalTestBas
 
     private long nodesInDatabase()
     {
-        Result r = graphdb().execute( "MATCH (n) RETURN count(n) AS c" );
-        Long nodes = (Long) r.columnAs( "c" ).next();
-        r.close();
-        return nodes;
+        GraphDatabaseService database = graphdb();
+        try ( Transaction transaction = database.beginTx() )
+        {
+            try ( Result r = database.execute( "MATCH (n) RETURN count(n) AS c" ) )
+            {
+                return (Long) r.columnAs( "c" ).next();
+            }
+        }
     }
 
     private void assertHasTxLocation( Response begin )

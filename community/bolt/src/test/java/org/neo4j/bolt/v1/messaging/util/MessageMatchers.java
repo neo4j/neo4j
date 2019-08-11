@@ -109,7 +109,7 @@ public class MessageMatchers
 
     public static Matcher<List<ResponseMessage>> equalsMessages( final Matcher<ResponseMessage>... messageMatchers )
     {
-        return new TypeSafeMatcher<List<ResponseMessage>>()
+        return new TypeSafeMatcher<>()
         {
             @Override
             protected boolean matchesSafely( List<ResponseMessage> messages )
@@ -131,15 +131,14 @@ public class MessageMatchers
             @Override
             public void describeTo( Description description )
             {
-                description.appendList( "MessageList[", ", ", "]", Arrays.asList( messageMatchers
-                ) );
+                description.appendList( "MessageList[", ", ", "]", Arrays.asList( messageMatchers ) );
             }
         };
     }
 
     public static Matcher<ResponseMessage> hasNotification( Notification notification )
     {
-        return new TypeSafeMatcher<ResponseMessage>()
+        return new TypeSafeMatcher<>()
         {
             @Override
             protected boolean matchesSafely( ResponseMessage t )
@@ -149,10 +148,7 @@ public class MessageMatchers
 
                 assertThat( meta.containsKey( "notifications" ), is( true ) );
                 Set<Notification> notifications =
-                        ((List<Map<String,Object>>) meta.get( "notifications" ))
-                                .stream()
-                                .map( TestNotification::fromMap )
-                                .collect( Collectors.toSet() );
+                        ((List<Map<String,Object>>) meta.get( "notifications" )).stream().map( TestNotification::fromMap ).collect( Collectors.toSet() );
 
                 assertThat( notifications, Matchers.contains( notification ) );
                 return true;
@@ -168,7 +164,7 @@ public class MessageMatchers
 
     public static Matcher<ResponseMessage> msgSuccess( final Map<String,Object> metadata )
     {
-        return new TypeSafeMatcher<ResponseMessage>()
+        return new TypeSafeMatcher<>()
         {
             @Override
             protected boolean matchesSafely( ResponseMessage t )
@@ -188,7 +184,7 @@ public class MessageMatchers
 
     public static Matcher<ResponseMessage> msgSuccess( final Matcher<Map<String,?>> matcher )
     {
-        return new TypeSafeMatcher<ResponseMessage>()
+        return new TypeSafeMatcher<>()
         {
             @Override
             protected boolean matchesSafely( ResponseMessage t )
@@ -209,7 +205,7 @@ public class MessageMatchers
 
     public static Matcher<ResponseMessage> msgSuccess()
     {
-        return new TypeSafeMatcher<ResponseMessage>()
+        return new TypeSafeMatcher<>()
         {
             @Override
             protected boolean matchesSafely( ResponseMessage t )
@@ -228,7 +224,7 @@ public class MessageMatchers
 
     public static Matcher<ResponseMessage> msgIgnored()
     {
-        return new TypeSafeMatcher<ResponseMessage>()
+        return new TypeSafeMatcher<>()
         {
             @Override
             protected boolean matchesSafely( ResponseMessage t )
@@ -266,7 +262,7 @@ public class MessageMatchers
 
     public static Matcher<ResponseMessage> msgFailure( final Status status, final String message )
     {
-        return new TypeSafeMatcher<ResponseMessage>()
+        return new TypeSafeMatcher<>()
         {
             @Override
             protected boolean matchesSafely( ResponseMessage t )
@@ -288,7 +284,7 @@ public class MessageMatchers
 
     public static Matcher<ResponseMessage> msgRecord( final Matcher<AnyValue[]> matcher )
     {
-        return new TypeSafeMatcher<ResponseMessage>()
+        return new TypeSafeMatcher<>()
         {
             @Override
             protected boolean matchesSafely( ResponseMessage t )

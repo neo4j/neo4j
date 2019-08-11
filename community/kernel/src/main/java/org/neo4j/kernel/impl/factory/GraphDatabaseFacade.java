@@ -43,6 +43,7 @@ import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.ResourceIterable;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.Result;
+import org.neo4j.graphdb.Result.ResultVisitor;
 import org.neo4j.graphdb.StringSearchMode;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.TransactionTerminatedException;
@@ -89,7 +90,6 @@ import org.neo4j.kernel.impl.core.NodeProxy;
 import org.neo4j.kernel.impl.core.RelationshipProxy;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
-import org.neo4j.kernel.impl.coreapi.PlaceboTransaction;
 import org.neo4j.kernel.impl.coreapi.TopLevelTransaction;
 import org.neo4j.kernel.impl.coreapi.schema.SchemaImpl;
 import org.neo4j.kernel.impl.query.Neo4jTransactionalContextFactory;
@@ -129,6 +129,7 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI, EmbeddedProxySPI
     private final DatabaseAvailabilityGuard availabilityGuard;
     private final DatabaseInfo databaseInfo;
     private Function<LoginContext, LoginContext> loginContextTransformer = Function.identity();
+    private static final ThreadLocal<TopLevelTransaction> TEMP_TOP_LEVEL_TRANSACTION = new ThreadLocal<>();
 
     public GraphDatabaseFacade( GraphDatabaseFacade facade, Function<LoginContext,LoginContext> loginContextTransformer )
     {
@@ -147,7 +148,9 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI, EmbeddedProxySPI
         this.schema = new SchemaImpl( () -> txBridge.getKernelTransactionBoundToThisThread( true, databaseId() ) );
         this.tokenHolders = database.getTokenHolders();
         this.contextFactory = Neo4jTransactionalContextFactory.create( this,
-                () -> getDependencyResolver().resolveDependency( GraphDatabaseQueryService.class ), txBridge );
+                () -> getDependencyResolver().resolveDependency( GraphDatabaseQueryService.class ),
+                new FacadeKernelTransactionFactory( config, this ),
+                txBridge );
     }
 
     @Override
@@ -291,6 +294,29 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI, EmbeddedProxySPI
     }
 
     @Override
+    public void executeTransactionally( String query ) throws QueryExecutionException
+    {
+        try ( var internalTransaction = beginTransaction( org.neo4j.internal.kernel.api.Transaction.Type.implicit, AUTH_DISABLED ) )
+        {
+            execute( query ).close();
+            internalTransaction.commit();
+        }
+    }
+
+    @Override
+    public <E extends Exception> void executeTransactionally( String query, ResultVisitor<E> visitor ) throws QueryExecutionException, E
+    {
+        try ( var internalTransaction = beginTransaction( org.neo4j.internal.kernel.api.Transaction.Type.implicit, AUTH_DISABLED ) )
+        {
+            try ( var result = execute( query ) )
+            {
+                result.accept( visitor );
+            }
+            internalTransaction.commit();
+        }
+    }
+
+    @Override
     public Result execute( String query ) throws QueryExecutionException
     {
         return execute( query, Collections.emptyMap() );
@@ -305,9 +331,7 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI, EmbeddedProxySPI
     @Override
     public Result execute( String query, Map<String,Object> parameters ) throws QueryExecutionException
     {
-        // ensure we have a tx and create a context (the tx is gonna get closed by the Cypher result)
-        InternalTransaction transaction = beginTransaction( KernelTransaction.Type.implicit, AUTH_DISABLED );
-
+        TopLevelTransaction transaction = TEMP_TOP_LEVEL_TRANSACTION.get();
         return execute( transaction, query, ValueUtils.asParameterMapValue( parameters ) );
     }
 
@@ -315,12 +339,11 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI, EmbeddedProxySPI
     public Result execute( String query, Map<String,Object> parameters, long timeout, TimeUnit unit ) throws
             QueryExecutionException
     {
-        InternalTransaction transaction =
-                beginTransaction( KernelTransaction.Type.implicit, AUTH_DISABLED, EMBEDDED_CONNECTION, timeout, unit );
+        TopLevelTransaction transaction = TEMP_TOP_LEVEL_TRANSACTION.get();
         return execute( transaction, query, ValueUtils.asParameterMapValue( parameters ) );
     }
 
-    public Result execute( InternalTransaction transaction, String query, MapValue parameters )
+    private Result execute( InternalTransaction transaction, String query, MapValue parameters )
             throws QueryExecutionException
     {
         TransactionalContext context = contextFactory.newContext( transaction, query, parameters );
@@ -568,11 +591,12 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI, EmbeddedProxySPI
     {
         if ( statementContext.hasTransaction() )
         {
-            KernelTransaction contextTransaction = statementContext.getKernelTransactionBoundToThisThread( true, databaseId() );
-            // FIXME: perhaps we should check that the new type and access mode are compatible with the current tx
-            return new PlaceboTransaction( contextTransaction );
+            throw new org.neo4j.graphdb.TransactionFailureException( "Fail to start new transaction. Already have transaction in the context." );
         }
-        return new TopLevelTransaction( beginKernelTransaction( type, loginContext, connectionInfo, timeoutMillis ) );
+        final KernelTransaction kernelTransaction = beginKernelTransaction( type, loginContext, connectionInfo, timeoutMillis );
+        TopLevelTransaction transaction = new TopLevelTransaction( kernelTransaction, TEMP_TOP_LEVEL_TRANSACTION );
+        TEMP_TOP_LEVEL_TRANSACTION.set( transaction );
+        return transaction;
     }
 
     @Override
@@ -581,7 +605,7 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI, EmbeddedProxySPI
         return database.getDatabaseId();
     }
 
-    private KernelTransaction beginKernelTransaction( KernelTransaction.Type type, LoginContext loginContext, ClientConnectionInfo connectionInfo,
+    KernelTransaction beginKernelTransaction( KernelTransaction.Type type, LoginContext loginContext, ClientConnectionInfo connectionInfo,
             long timeout )
     {
         try

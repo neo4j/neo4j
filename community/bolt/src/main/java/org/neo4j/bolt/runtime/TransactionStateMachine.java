@@ -236,7 +236,7 @@ public class TransactionStateMachine implements StatementProcessor
                             AccessMode accessMode, Map<String,Object> txMetadata ) throws KernelException
                     {
                         spi.awaitUpToDate( bookmarks );
-                        beginTransaction( ctx, spi, txTimeout, accessMode, txMetadata );
+                        beginTransaction( ctx, spi, txTimeout, accessMode, txMetadata, false );
                         return EXPLICIT_TRANSACTION;
                     }
 
@@ -254,11 +254,7 @@ public class TransactionStateMachine implements StatementProcessor
                             Duration txTimeout, AccessMode accessMode, Map<String,Object> txMetadata )
                             throws KernelException
                     {
-                        // only acquire a new transaction when the statement does not contain periodic commit
-                        if ( !isPeriodicCommit )
-                        {
-                            beginTransaction( ctx, spi, txTimeout, accessMode, txMetadata );
-                        }
+                        beginTransaction( ctx, spi, txTimeout, accessMode, txMetadata, isPeriodicCommit );
 
                         boolean failed = true;
                         try
@@ -266,10 +262,6 @@ public class TransactionStateMachine implements StatementProcessor
                             int statementId = StatementMetadata.ABSENT_QUERY_ID;
 
                             BoltQueryExecutor boltQueryExecutor = ctx.currentTransaction;
-                            if ( isPeriodicCommit )
-                            {
-                                boltQueryExecutor = spi.getPeriodicCommitExecutor( ctx.loginContext, txTimeout, accessMode, txMetadata );
-                            }
 
                             BoltResultHandle resultHandle = spi.executeQuery( boltQueryExecutor, statement, params);
                             BoltResult result = startExecution( resultHandle );
@@ -282,27 +274,21 @@ public class TransactionStateMachine implements StatementProcessor
                         }
                         finally
                         {
-                            // if we acquired a transaction and a failure occurred, then simply close the transaction
-                            if ( !isPeriodicCommit )
+                            if ( failed )
                             {
-                                if ( failed )
-                                {
-                                    closeTransaction( ctx, spi, false );
-                                }
-                            }
-                            else
-                            {
-                                beginTransaction( ctx, spi, txTimeout, accessMode, txMetadata );
+                                closeTransaction( ctx, spi, false );
                             }
                         }
                     }
 
                     private void beginTransaction( MutableTransactionState ctx, TransactionStateMachineSPI spi, Duration txTimeout,
-                            AccessMode accessMode, Map<String,Object> txMetadata ) throws TransactionFailureException
+                            AccessMode accessMode, Map<String,Object> txMetadata, boolean isPeriodicCommit )
                     {
                         try
                         {
-                            ctx.currentTransaction = spi.beginTransaction( ctx.loginContext, txTimeout, accessMode, txMetadata );
+                            ctx.currentTransaction = isPeriodicCommit ?
+                                                     spi.beginPeriodicCommitTransaction( ctx.loginContext, txTimeout, accessMode, txMetadata ) :
+                                                     spi.beginTransaction( ctx.loginContext, txTimeout, accessMode, txMetadata );
                         }
                         catch ( Throwable e )
                         {

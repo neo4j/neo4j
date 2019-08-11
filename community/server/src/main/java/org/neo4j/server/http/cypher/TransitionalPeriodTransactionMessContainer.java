@@ -62,13 +62,13 @@ public class TransitionalPeriodTransactionMessContainer
 
     public TransactionalContext create(
             GraphDatabaseQueryService service,
+            InternalTransaction transaction,
             Type type,
             LoginContext loginContext,
             String query,
             Map<String, Object> queryParameters )
     {
         TransactionalContextFactory contextFactory = Neo4jTransactionalContextFactory.create( service );
-        InternalTransaction transaction = service.beginTransaction( type, loginContext );
         return contextFactory.newContext( transaction, query, ValueUtils.asMapValue( queryParameters ) );
     }
 }

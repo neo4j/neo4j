@@ -19,8 +19,6 @@
  */
 package org.neo4j.server.http.cypher.integration;
 
-import org.neo4j.snapshot.TestTransactionVersionContextSupplier;
-import org.neo4j.snapshot.TestVersionContext;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -35,6 +33,8 @@ import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.server.CommunityNeoServer;
+import org.neo4j.snapshot.TestTransactionVersionContextSupplier;
+import org.neo4j.snapshot.TestVersionContext;
 import org.neo4j.test.server.ExclusiveServerTestBase;
 import org.neo4j.test.server.HTTP;
 
@@ -97,7 +97,7 @@ public class SnapshotQueryExecutionIT extends ExclusiveServerTestBase
     @Test
     public void executeQueryWithSingleRetry()
     {
-        HTTP.Response response = excuteOverHTTP( "MATCH (n) RETURN n.c" );
+        HTTP.Response response = executeOverHTTP( "MATCH (n) RETURN n.c" );
         assertThat( response.status(), equalTo( 200 ) );
         Map<String,List<Map<String,List<Map<String,List<String>>>>>> content = response.content();
         assertEquals( "d", content.get( "results" ).get( 0 ).get( "data" ).get( 0 ).get( "row" ).get( 0 ) );
@@ -107,13 +107,13 @@ public class SnapshotQueryExecutionIT extends ExclusiveServerTestBase
     @Test
     public void queryThatModifiesDataAndSeesUnstableSnapshotShouldThrowException()
     {
-        HTTP.Response response = excuteOverHTTP( "MATCH (n:toRetry) CREATE () RETURN n.c" );
+        HTTP.Response response = executeOverHTTP( "MATCH (n:toRetry) CREATE () RETURN n.c" );
         Map<String,List<Map<String,String>>> content = response.content();
         assertEquals( "Unable to get clean data snapshot for query 'MATCH (n:toRetry) CREATE () RETURN n.c' that performs updates.",
                       content.get( "errors" ).get( 0 ).get( "message" ) );
     }
 
-    private HTTP.Response excuteOverHTTP( String query )
+    private HTTP.Response executeOverHTTP( String query )
     {
         HTTP.Builder httpClientBuilder = HTTP.withBaseUri( server.baseUri() );
         HTTP.Response transactionStart = httpClientBuilder.POST( transactionURI() );

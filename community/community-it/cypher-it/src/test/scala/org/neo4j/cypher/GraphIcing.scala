@@ -32,7 +32,7 @@ import org.neo4j.internal.kernel.api.security.LoginContext.AUTH_DISABLED
 import org.neo4j.kernel.GraphDatabaseQueryService
 import org.neo4j.kernel.api.Statement
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge
-import org.neo4j.kernel.impl.coreapi.{InternalTransaction, TopLevelTransaction}
+import org.neo4j.kernel.impl.coreapi.InternalTransaction
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade
 import org.neo4j.kernel.impl.query._
 import org.neo4j.kernel.impl.transaction.stats.DatabaseTransactionStats
@@ -84,15 +84,21 @@ trait GraphIcing {
     }
 
     def createExistenceConstraint(label: String, property: String) = {
-      graph.execute(s"CREATE CONSTRAINT ON (n:$label) ASSERT exists(n.$property)")
+      inTx {
+        graph.execute(s"CREATE CONSTRAINT ON (n:$label) ASSERT exists(n.$property)")
+      }
     }
 
     def createNodeKeyConstraint(label: String, properties: String*): Result = {
-      graph.execute(s"CREATE CONSTRAINT ON (n:$label) ASSERT (n.${properties.mkString(", n.")}) IS NODE KEY")
+      inTx {
+        graph.execute(s"CREATE CONSTRAINT ON (n:$label) ASSERT (n.${properties.mkString(", n.")}) IS NODE KEY")
+      }
     }
 
     def createIndex(label: String, properties: String*): IndexDefinition = {
-      graph.execute(s"CREATE INDEX ON :$label(${properties.map(p => s"`$p`").mkString(",")})")
+      inTx {
+        graph.execute(s"CREATE INDEX ON :$label(${properties.map(p => s"`$p`").mkString(",")})")
+      }
 
       inTx {
         graph.schema().awaitIndexesOnline(10, TimeUnit.MINUTES)
@@ -108,7 +114,9 @@ trait GraphIcing {
     }
 
     def createUniqueIndex(label: String, property: String): Unit = {
-      graph.execute(s"CREATE CONSTRAINT ON (p:$label) ASSERT p.$property IS UNIQUE")
+      inTx {
+        graph.execute(s"CREATE CONSTRAINT ON (p:$label) ASSERT p.$property IS UNIQUE")
+      }
 
       inTx {
         graph.schema().awaitIndexesOnline(10, TimeUnit.MINUTES)
@@ -118,22 +126,21 @@ trait GraphIcing {
     def statement: Statement = txBridge.get(graph.databaseId())
 
     // Runs code inside of a transaction. Will mark the transaction as successful if no exception is thrown
-    def inTx[T](f: => T, txType: Type = Type.`implicit`): T = withTx(_ => f, txType)
+    def inTx[T](f: InternalTransaction => T, txType: Type = Type.`implicit`): T = withTx(f, txType)
+
+    def inTx[T](f: => T): T = inTx(_ => f)
 
     private val javaValues = new RuntimeJavaValueConverter(isGraphKernelResultValue)
 
-    private def createTransactionalContext(txType: Type, queryText: String, params: Map[String, Any] = Map.empty): (InternalTransaction, TransactionalContext) = {
-      val tx = graph.beginTransaction(txType, AUTH_DISABLED)
+    private def createTransactionalContext(tx: InternalTransaction, queryText: String, params: Map[String, Any] = Map.empty): TransactionalContext = {
       val javaParams = javaValues.asDeepJavaMap(params).asInstanceOf[util.Map[String, AnyRef]]
       val contextFactory = Neo4jTransactionalContextFactory.create(graphService)
-      val transactionalContext = contextFactory.newContext(tx, queryText, asMapValue(javaParams))
-      (tx, transactionalContext)
+      contextFactory.newContext(tx, queryText, asMapValue(javaParams))
     }
 
-    def transactionalContext(txType: Type = Type.`implicit`, query: (String, Map[String, Any])): TransactionalContext = {
+    def transactionalContext(tx: InternalTransaction, query: (String, Map[String, Any])): TransactionalContext = {
       val (queryText, params) = query
-      val (_, context) = createTransactionalContext(txType, queryText, params)
-      context
+      createTransactionalContext(tx, queryText, params)
     }
 
     // Runs code inside of a transaction. Will mark the transaction as successful if no exception is thrown
@@ -149,13 +156,11 @@ trait GraphIcing {
 
     }
 
-    def rollback[T](f: => T): T = {
+    def rollback[T](f: InternalTransaction => T): T = {
       val tx = graph.beginTransaction(Type.`implicit`, AUTH_DISABLED)
       try {
-        val result = f
-        if (tx.isInstanceOf[TopLevelTransaction]) {
-          tx.rollback()
-        }
+        val result = f(tx)
+        tx.rollback()
         result
       } finally {
         tx.close()

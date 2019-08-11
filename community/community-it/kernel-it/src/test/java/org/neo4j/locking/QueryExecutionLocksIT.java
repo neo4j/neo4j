@@ -261,9 +261,9 @@ class QueryExecutionLocksIT
         }
 
         @Override
-        public void close( boolean success )
+        public void close()
         {
-            delegate.close( success );
+            delegate.close();
         }
 
         @Override

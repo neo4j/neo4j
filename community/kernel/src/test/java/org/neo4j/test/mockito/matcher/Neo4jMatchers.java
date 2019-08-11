@@ -337,10 +337,7 @@ public class Neo4jMatchers
             @Override
             protected Iterable<IndexDefinition> manifest()
             {
-                try ( Transaction transaction = db.beginTx() )
-                {
-                    return db.schema().getIndexes( label );
-                }
+                return db.schema().getIndexes( label );
             }
         };
     }
@@ -416,10 +413,7 @@ public class Neo4jMatchers
 
         public Collection<T> collection()
         {
-            try ( Transaction ignore = db.beginTx() )
-            {
-                return Iterables.asCollection( manifest() );
-            }
+            return Iterables.asCollection( manifest() );
         }
 
     }

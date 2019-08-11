@@ -92,9 +92,12 @@ public class SchemaIndexAcceptanceTest
 
         restart();
 
-        assertThat( findNodesByLabelAndProperty( label, "name", "One", db ), containsOnly( node1 ) );
-        assertThat( findNodesByLabelAndProperty( label, "name", "Two", db ), containsOnly( node2 ) );
-        assertThat( findNodesByLabelAndProperty( label, "name", "Three", db ), containsOnly( node3 ) );
+        try ( Transaction transaction = db.beginTx() )
+        {
+            assertThat( findNodesByLabelAndProperty( label, "name", "One", db ), containsOnly( node1 ) );
+            assertThat( findNodesByLabelAndProperty( label, "name", "Two", db ), containsOnly( node2 ) );
+            assertThat( findNodesByLabelAndProperty( label, "name", "Three", db ), containsOnly( node3 ) );
+        }
     }
 
     @Test
@@ -112,9 +115,13 @@ public class SchemaIndexAcceptanceTest
         restart();
 
         assertThat( getIndexes( db, label ), inTx( db, haveState( db, IndexState.ONLINE ) ));
-        assertThat( findNodesByLabelAndProperty( label, propertyKey, arrayPropertyValue, db ), containsOnly( node1 ) );
-        assertThat( findNodesByLabelAndProperty( label, propertyKey, new long[]{42, 23}, db ), isEmpty() );
-        assertThat( findNodesByLabelAndProperty( label, propertyKey, Arrays.toString( arrayPropertyValue ), db ), isEmpty() );
+        try ( Transaction transaction = db.beginTx() )
+        {
+            assertThat( findNodesByLabelAndProperty( label, propertyKey, arrayPropertyValue, db ), containsOnly( node1 ) );
+            assertThat( findNodesByLabelAndProperty( label, propertyKey, new long[]{42, 23}, db ), isEmpty() );
+            assertThat( findNodesByLabelAndProperty( label, propertyKey, Arrays.toString( arrayPropertyValue ), db ), isEmpty() );
+            transaction.commit();
+        }
     }
 
     @Test
@@ -132,9 +139,12 @@ public class SchemaIndexAcceptanceTest
         restart();
 
         assertThat( getIndexes( db, label ), inTx( db, haveState( db, IndexState.ONLINE ) ) );
-        assertThat( findNodesByLabelAndProperty( label, propertyKey, arrayPropertyValue, db ), containsOnly( node1 ) );
-        assertThat( findNodesByLabelAndProperty( label, propertyKey, new String[]{"A", "B, C"}, db ), isEmpty() );
-        assertThat( findNodesByLabelAndProperty( label, propertyKey, Arrays.toString( arrayPropertyValue ), db ), isEmpty() );
+        try ( Transaction transaction = db.beginTx() )
+        {
+            assertThat( findNodesByLabelAndProperty( label, propertyKey, arrayPropertyValue, db ), containsOnly( node1 ) );
+            assertThat( findNodesByLabelAndProperty( label, propertyKey, new String[]{"A", "B, C"}, db ), isEmpty() );
+            assertThat( findNodesByLabelAndProperty( label, propertyKey, Arrays.toString( arrayPropertyValue ), db ), isEmpty() );
+        }
 
     }
 
@@ -154,9 +164,12 @@ public class SchemaIndexAcceptanceTest
         restart();
 
         assertThat( getIndexes( db, label ), inTx( db, haveState( db, IndexState.ONLINE ) ) );
-        assertThat( findNodesByLabelAndProperty( label, propertyKey, arrayPropertyValue, db ), containsOnly( node1 ) );
-        assertThat( findNodesByLabelAndProperty( label, propertyKey, new long[]{42, 23}, db ), isEmpty() );
-        assertThat( findNodesByLabelAndProperty( label, propertyKey, Arrays.toString( arrayPropertyValue ), db ), isEmpty() );
+        try ( Transaction transaction = db.beginTx() )
+        {
+            assertThat( findNodesByLabelAndProperty( label, propertyKey, arrayPropertyValue, db ), containsOnly( node1 ) );
+            assertThat( findNodesByLabelAndProperty( label, propertyKey, new long[]{42, 23}, db ), isEmpty() );
+            assertThat( findNodesByLabelAndProperty( label, propertyKey, Arrays.toString( arrayPropertyValue ), db ), isEmpty() );
+        }
     }
 
     @Test
@@ -173,7 +186,10 @@ public class SchemaIndexAcceptanceTest
         crashAndRestart();
 
         // THEN
-        assertThat( getIndexes( db, label ), isEmpty() );
+        try ( Transaction transaction = db.beginTx() )
+        {
+            assertThat( getIndexes( db, label ), isEmpty() );
+        }
     }
 
     private GraphDatabaseService newDb()

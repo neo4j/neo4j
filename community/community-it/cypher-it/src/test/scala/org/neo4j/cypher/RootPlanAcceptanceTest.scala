@@ -19,10 +19,10 @@
  */
 package org.neo4j.cypher
 
-import org.neo4j.cypher.internal.{InterpretedRuntimeName, RuntimeName}
 import org.neo4j.cypher.internal.planner.spi.CostBasedPlannerName
-import org.neo4j.graphdb.ExecutionPlanDescription
 import org.neo4j.cypher.internal.v4_0.frontend.PlannerName
+import org.neo4j.cypher.internal.{InterpretedRuntimeName, RuntimeName}
+import org.neo4j.graphdb.ExecutionPlanDescription
 
 class RootPlanAcceptanceTest extends ExecutionEngineFunSuite {
 
@@ -153,17 +153,19 @@ class RootPlanAcceptanceTest extends ExecutionEngineFunSuite {
     }
 
     private def execute(): ExecutionPlanDescription = {
-      val prepend = (cypherVersion, planner, runtime) match {
-        case (None, None, None) => ""
-        case _ =>
-          val version = cypherVersion.map(_.name).getOrElse("")
-          val plannerString = planner.map("planner=" + _.name).getOrElse("")
-          val runtimeString = runtime.map("runtime=" + _.name).getOrElse("")
-          s"CYPHER $version $plannerString $runtimeString"
+      graph.withTx { _ =>
+        val prepend = (cypherVersion, planner, runtime) match {
+          case (None, None, None) => ""
+          case _ =>
+            val version = cypherVersion.map(_.name).getOrElse("")
+            val plannerString = planner.map("planner=" + _.name).getOrElse("")
+            val runtimeString = runtime.map("runtime=" + _.name).getOrElse("")
+            s"CYPHER $version $plannerString $runtimeString"
+        }
+        val result = executeOfficial(s"$prepend PROFILE $query")
+        result.resultAsString()
+        result.getExecutionPlanDescription()
       }
-      val result = executeOfficial(s"$prepend PROFILE $query")
-      result.resultAsString()
-      result.getExecutionPlanDescription()
     }
   }
 }

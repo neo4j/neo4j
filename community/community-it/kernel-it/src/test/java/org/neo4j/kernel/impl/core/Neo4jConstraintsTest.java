@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.core;
 
 import org.junit.jupiter.api.Test;
 
+import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.Relationship;
@@ -39,279 +40,307 @@ class Neo4jConstraintsTest extends AbstractNeo4jTestCase
     @Test
     void testDeleteReferenceNodeOrLastNodeIsOk()
     {
-        Transaction tx = getTransaction();
         for ( int i = 0; i < 10; i++ )
         {
-            getGraphDb().createNode();
+            createNode();
         }
-        // long numNodesPre = getNodeManager().getNumberOfIdsInUse( Node.class
-        // );
-        // empty the DB instance
-        for ( Node node : getGraphDb().getAllNodes() )
+        try ( Transaction transaction = getGraphDb().beginTx() )
         {
-            for ( Relationship rel : node.getRelationships() )
+            for ( Node node : getGraphDb().getAllNodes() )
             {
-                rel.delete();
+                for ( Relationship rel : node.getRelationships() )
+                {
+                    rel.delete();
+                }
+                node.delete();
             }
-            node.delete();
+            transaction.commit();
         }
-        tx.commit();
-        tx = getGraphDb().beginTx();
-        assertFalse( getGraphDb().getAllNodes().iterator().hasNext() );
-        tx.commit();
+        try ( Transaction transaction = getGraphDb().beginTx() )
+        {
+            assertFalse( getGraphDb().getAllNodes().iterator().hasNext() );
+            transaction.commit();
+        }
     }
 
     @Test
     void testDeleteNodeWithRel1()
     {
-        Node node1 = getGraphDb().createNode();
-        Node node2 = getGraphDb().createNode();
-        node1.createRelationshipTo( node2, MyRelTypes.TEST );
-        node1.delete();
-        assertThrows( Exception.class, () ->
+        Node node1 = createNode();
+        Node node2 = createNode();
+        try ( Transaction transaction = getGraphDb().beginTx() )
         {
-            Transaction tx = getTransaction();
-            tx.commit();
-        } );
-        setTransaction( getGraphDb().beginTx() );
+            node1.createRelationshipTo( node2, MyRelTypes.TEST );
+            node1.delete();
+            assertThrows( Exception.class, transaction::commit );
+        }
     }
 
     @Test
     void testDeleteNodeWithRel2()
     {
-        Node node1 = getGraphDb().createNode();
-        Node node2 = getGraphDb().createNode();
-        node1.createRelationshipTo( node2, MyRelTypes.TEST );
-        node2.delete();
-        node1.delete();
-        assertThrows( Exception.class, () ->
+        Node node1 = createNode();
+        Node node2 = createNode();
+        try ( Transaction transaction = getGraphDb().beginTx() )
         {
-            Transaction tx = getTransaction();
-            tx.commit();
-        } );
-        setTransaction( getGraphDb().beginTx() );
+            node1.createRelationshipTo( node2, MyRelTypes.TEST );
+            node2.delete();
+            node1.delete();
+            assertThrows( Exception.class, transaction::commit );
+        }
     }
 
     @Test
     void testDeleteNodeWithRel3()
     {
         // make sure we can delete in wrong order
-        Node node0 = getGraphDb().createNode();
-        Node node1 = getGraphDb().createNode();
-        Node node2 = getGraphDb().createNode();
-        Relationship rel0 = node0.createRelationshipTo( node1, MyRelTypes.TEST );
-        Relationship rel1 = node0.createRelationshipTo( node2, MyRelTypes.TEST );
-        node1.delete();
-        rel0.delete();
-        Transaction tx = getTransaction();
-        tx.commit();
-        setTransaction( getGraphDb().beginTx() );
-        node2.delete();
-        rel1.delete();
-        node0.delete();
+        Node node0 = createNode();
+        Node node1 = createNode();
+        Node node2 = createNode();
+        Relationship rel1;
+        try ( Transaction transaction = getGraphDb().beginTx() )
+        {
+            Relationship rel0 = node0.createRelationshipTo( node1, MyRelTypes.TEST );
+            rel1 = node0.createRelationshipTo( node2, MyRelTypes.TEST );
+            node1.delete();
+            rel0.delete();
+            transaction.commit();
+        }
+
+        try ( Transaction transaction = getGraphDb().beginTx() )
+        {
+            node2.delete();
+            rel1.delete();
+            node0.delete();
+            transaction.commit();
+        }
     }
 
     @Test
     void testCreateRelOnDeletedNode()
     {
-        Node node1 = getGraphDb().createNode();
-        Node node2 = getGraphDb().createNode();
-        Transaction tx = getTransaction();
-        tx.commit();
-        tx = getGraphDb().beginTx();
-        node1.delete();
-        assertThrows( Exception.class, () ->
+        Node node1 = createNode();
+        Node node2 = createNode();
+        try ( Transaction transaction = getGraphDb().beginTx() )
         {
-            node1.createRelationshipTo( node2, MyRelTypes.TEST );
-        } );
-        tx.rollback();
-        setTransaction( getGraphDb().beginTx() );
-        node2.delete();
-        node1.delete();
+            node1.delete();
+            assertThrows( Exception.class, () -> node1.createRelationshipTo( node2, MyRelTypes.TEST ) );
+        }
+        try ( Transaction transaction = getGraphDb().beginTx() )
+        {
+            node2.delete();
+            node1.delete();
+            transaction.commit();
+        }
     }
 
     @Test
     void testAddPropertyDeletedNode()
     {
-        Node node = getGraphDb().createNode();
-        node.delete();
-        assertThrows( Exception.class, () -> node.setProperty( key, 1 ) );
+        Node node = createNode();
+        try ( Transaction transaction = getGraphDb().beginTx() )
+        {
+            node.delete();
+            assertThrows( Exception.class, () -> node.setProperty( key, 1 ) );
+        }
     }
 
     @Test
     void testRemovePropertyDeletedNode()
     {
-        Node node = getGraphDb().createNode();
-        node.setProperty( key, 1 );
-        node.delete();
-        assertThrows( Exception.class, () ->
+        GraphDatabaseService database = getGraphDb();
+        try ( Transaction transaction = database.beginTx() )
         {
-            node.removeProperty( key );
-            Transaction tx = getTransaction();
-            tx.commit();
-        } );
+            Node node = database.createNode();
+            node.setProperty( key, 1 );
+            node.delete();
+            assertThrows( Exception.class, () ->
+            {
+                node.removeProperty( key );
+                transaction.commit();
+            } );
+        }
     }
 
     @Test
     void testChangePropertyDeletedNode()
     {
-        Node node = getGraphDb().createNode();
-        node.setProperty( key, 1 );
-        node.delete();
-        assertThrows( Exception.class, () ->
+        Node node = createNode();
+        try ( Transaction transaction = getGraphDb().beginTx() )
         {
-            node.setProperty( key, 2 );
-            Transaction tx = getTransaction();
-            tx.commit();
-        } );
+            node.setProperty( key, 1 );
+            node.delete();
+            assertThrows( Exception.class, () ->
+            {
+                node.setProperty( key, 2 );
+                transaction.commit();
+            } );
+        }
     }
 
     @Test
     void testAddPropertyDeletedRelationship()
     {
-        Node node1 = getGraphDb().createNode();
-        Node node2 = getGraphDb().createNode();
-        Relationship rel = node1.createRelationshipTo( node2, MyRelTypes.TEST );
-        rel.delete();
-        assertThrows( Exception.class, () ->
+        Node node1 = createNode();
+        Node node2 = createNode();
+        try ( Transaction transaction = getGraphDb().beginTx() )
         {
-            rel.setProperty( key, 1 );
-            Transaction tx = getTransaction();
-            tx.commit();
-        } );
-        node1.delete();
-        node2.delete();
+            Relationship rel = node1.createRelationshipTo( node2, MyRelTypes.TEST );
+            rel.delete();
+            assertThrows( Exception.class, () ->
+            {
+                rel.setProperty( key, 1 );
+                transaction.commit();
+            } );
+            node1.delete();
+            node2.delete();
+            transaction.commit();
+        }
     }
 
     @Test
     void testRemovePropertyDeletedRelationship()
     {
-        Node node1 = getGraphDb().createNode();
-        Node node2 = getGraphDb().createNode();
-        Relationship rel = node1.createRelationshipTo( node2, MyRelTypes.TEST );
-        rel.setProperty( key, 1 );
-        rel.delete();
-        assertThrows( Exception.class, () ->
+        Node node1 = createNode();
+        Node node2 = createNode();
+        try ( Transaction transaction = getGraphDb().beginTx() )
         {
-            rel.removeProperty( key );
-            Transaction tx = getTransaction();
-            tx.commit();
-        } );
-        node1.delete();
-        node2.delete();
+            Relationship rel = node1.createRelationshipTo( node2, MyRelTypes.TEST );
+            rel.setProperty( key, 1 );
+            rel.delete();
+            assertThrows( Exception.class, () ->
+            {
+                rel.removeProperty( key );
+                transaction.commit();
+            } );
+            node1.delete();
+            node2.delete();
+            transaction.commit();
+        }
     }
 
     @Test
     void testChangePropertyDeletedRelationship()
     {
-        Node node1 = getGraphDb().createNode();
-        Node node2 = getGraphDb().createNode();
-        Relationship rel = node1.createRelationshipTo( node2, MyRelTypes.TEST );
-        rel.setProperty( key, 1 );
-        rel.delete();
-        assertThrows( Exception.class, () ->
+        Node node1 = createNode();
+        Node node2 = createNode();
+        try ( Transaction transaction = getGraphDb().beginTx() )
         {
-            rel.setProperty( key, 2 );
-            Transaction tx = getTransaction();
-            tx.commit();
-        } );
-        node1.delete();
-        node2.delete();
+            Relationship rel = node1.createRelationshipTo( node2, MyRelTypes.TEST );
+            rel.setProperty( key, 1 );
+            rel.delete();
+            assertThrows( Exception.class, () ->
+            {
+                rel.setProperty( key, 2 );
+                transaction.commit();
+            } );
+            node1.delete();
+            node2.delete();
+            transaction.commit();
+        }
     }
 
     @Test
     void testMultipleDeleteNode()
     {
-        Node node1 = getGraphDb().createNode();
-        node1.delete();
-        assertThrows( Exception.class, () ->
+        Node node1 = createNode();
+        try ( Transaction transaction = getGraphDb().beginTx() )
         {
             node1.delete();
-            Transaction tx = getTransaction();
-            tx.commit();
-        } );
+            assertThrows( Exception.class, () ->
+            {
+                node1.delete();
+                transaction.commit();
+            } );
+        }
     }
 
     @Test
     void testMultipleDeleteRelationship()
     {
-        Node node1 = getGraphDb().createNode();
-        Node node2 = getGraphDb().createNode();
-        Relationship rel = node1.createRelationshipTo( node2, MyRelTypes.TEST );
-        rel.delete();
-        node1.delete();
-        node2.delete();
-        assertThrows( Exception.class, () ->
+        Node node1 = createNode();
+        Node node2 = createNode();
+        try ( Transaction transaction = getGraphDb().beginTx() )
         {
+            Relationship rel = node1.createRelationshipTo( node2, MyRelTypes.TEST );
             rel.delete();
-            Transaction tx = getTransaction();
-            tx.commit();
-        } );
+            node1.delete();
+            node2.delete();
+            assertThrows( Exception.class, () ->
+            {
+                rel.delete();
+                transaction.commit();
+            } );
+            transaction.commit();
+        }
     }
 
     @Test
     void testIllegalPropertyType()
     {
-        final Node node1 = getGraphDb().createNode();
-        assertThrows( Exception.class, () -> node1.setProperty( key, new Object() ) );
-
-        setTransaction( getGraphDb().beginTx() );
-        assertThrows( NotFoundException.class, () -> getGraphDb().getNodeById( node1.getId() ) );
-        Node node3 = getGraphDb().createNode();
-        Node node2 = getGraphDb().createNode();
-        Relationship rel = node3.createRelationshipTo( node2,
-                MyRelTypes.TEST );
-        assertThrows( Exception.class, () -> rel.setProperty( key, new Object() ) );
-        assertThrows( Exception.class, () ->
+        Node node1;
+        try ( Transaction tx = getGraphDb().beginTx() )
         {
-            Transaction tx = getTransaction();
-            tx.commit();
-        } );
-        setTransaction( getGraphDb().beginTx() );
-        assertThrows( Exception.class, () -> getGraphDb().getNodeById( node3.getId() ) );
-        assertThrows( Exception.class, () -> getGraphDb().getNodeById( node2.getId() ) );
+            node1 = getGraphDb().createNode();
+            assertThrows( Exception.class, () -> node1.setProperty( key, new Object() ) );
+        }
+        Node node3 = createNode();
+        Node node2 = createNode();
+        try ( Transaction transaction = getGraphDb().beginTx() )
+        {
+            Relationship rel = node3.createRelationshipTo( node2, MyRelTypes.TEST );
+            assertThrows( NotFoundException.class, () -> getGraphDb().getNodeById( node1.getId() ) );
+            assertThrows( Exception.class, () -> rel.setProperty( key, new Object() ) );
+            assertThrows( Exception.class, transaction::commit );
+        }
     }
 
     @Test
     void testNodeRelDeleteSemantics()
     {
-        Node node1 = getGraphDb().createNode();
-        Node node2 = getGraphDb().createNode();
-        Relationship rel1 = node1.createRelationshipTo( node2, MyRelTypes.TEST );
-        Relationship rel2 = node1.createRelationshipTo( node2, MyRelTypes.TEST );
-        node1.setProperty( "key1", "value1" );
-        rel1.setProperty( "key1", "value1" );
+        Node node1 = createNode();
+        Node node2 = createNode();
+        Relationship rel1;
+        Relationship rel2;
+        try ( Transaction transaction = getGraphDb().beginTx() )
+        {
+            rel1 = node1.createRelationshipTo( node2, MyRelTypes.TEST );
+            rel2 = node1.createRelationshipTo( node2, MyRelTypes.TEST );
+            node1.setProperty( "key1", "value1" );
+            rel1.setProperty( "key1", "value1" );
+            transaction.commit();
+        }
 
-        newTransaction();
-        node1.delete();
-        assertThrows( NotFoundException.class, () -> node1.getProperty( "key1" ) );
-        assertThrows( NotFoundException.class, () -> node1.setProperty( "key1", "value2" ) );
-        assertThrows( NotFoundException.class, () -> node1.removeProperty( "key1" ) );
-        node2.delete();
-        assertThrows( NotFoundException.class, node2::delete );
-        assertThrows( NotFoundException.class, () -> node1.getProperty( "key1" ) );
-        assertThrows( NotFoundException.class, () -> node1.setProperty( "key1", "value2" ) );
-        assertThrows( NotFoundException.class, () -> node1.removeProperty( "key1" ) );
-        assertEquals( "value1", rel1.getProperty( "key1" ) );
-        rel1.delete();
-        assertThrows( NotFoundException.class, () -> rel1.delete() );
-        assertThrows( NotFoundException.class, () -> rel1.getProperty( "key1" ) );
-        assertThrows( NotFoundException.class, () -> rel1.setProperty( "key1", "value2" ) );
-        assertThrows( NotFoundException.class, () -> rel1.removeProperty( "key1" ) );
-        assertThrows( NotFoundException.class, () -> rel1.getProperty( "key1" ) );
-        assertThrows( NotFoundException.class, () -> rel1.setProperty( "key1", "value2" ) );
-        assertThrows( NotFoundException.class, () -> rel1.removeProperty( "key1" ) );
-        assertThrows( NotFoundException.class, () -> node2.createRelationshipTo( node1, MyRelTypes.TEST ) );
-        assertThrows( NotFoundException.class, () -> node2.createRelationshipTo( node1, MyRelTypes.TEST ) );
+        try ( Transaction transaction = getGraphDb().beginTx() )
+        {
+            node1.delete();
+            assertThrows( NotFoundException.class, () -> node1.getProperty( "key1" ) );
+            assertThrows( NotFoundException.class, () -> node1.setProperty( "key1", "value2" ) );
+            assertThrows( NotFoundException.class, () -> node1.removeProperty( "key1" ) );
+            node2.delete();
+            assertThrows( NotFoundException.class, node2::delete );
+            assertThrows( NotFoundException.class, () -> node1.getProperty( "key1" ) );
+            assertThrows( NotFoundException.class, () -> node1.setProperty( "key1", "value2" ) );
+            assertThrows( NotFoundException.class, () -> node1.removeProperty( "key1" ) );
+            assertEquals( "value1", rel1.getProperty( "key1" ) );
+            rel1.delete();
+            assertThrows( NotFoundException.class, rel1::delete );
+            assertThrows( NotFoundException.class, () -> rel1.getProperty( "key1" ) );
+            assertThrows( NotFoundException.class, () -> rel1.setProperty( "key1", "value2" ) );
+            assertThrows( NotFoundException.class, () -> rel1.removeProperty( "key1" ) );
+            assertThrows( NotFoundException.class, () -> rel1.getProperty( "key1" ) );
+            assertThrows( NotFoundException.class, () -> rel1.setProperty( "key1", "value2" ) );
+            assertThrows( NotFoundException.class, () -> rel1.removeProperty( "key1" ) );
+            assertThrows( NotFoundException.class, () -> node2.createRelationshipTo( node1, MyRelTypes.TEST ) );
+            assertThrows( NotFoundException.class, () -> node2.createRelationshipTo( node1, MyRelTypes.TEST ) );
 
-        assertEquals( node1, rel1.getStartNode() );
-        assertEquals( node2, rel2.getEndNode() );
-        Node[] nodes = rel1.getNodes();
-        assertEquals( node1, nodes[0] );
-        assertEquals( node2, nodes[1] );
-        assertEquals( node2, rel1.getOtherNode( node1 ) );
-        rel2.delete();
-        // will be marked for rollback so commit will throw exception
-        rollback();
+            assertEquals( node1, rel1.getStartNode() );
+            assertEquals( node2, rel2.getEndNode() );
+            Node[] nodes = rel1.getNodes();
+            assertEquals( node1, nodes[0] );
+            assertEquals( node2, nodes[1] );
+            assertEquals( node2, rel1.getOtherNode( node1 ) );
+            rel2.delete();
+        }
     }
 }

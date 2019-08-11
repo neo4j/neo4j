@@ -260,11 +260,11 @@ class CompositeIndexingIT
         setup( prototype );
         if ( !index.isUnique() ) // this test does not make any sense for UNIQUE indexes
         {
+            long nodeID1 = createNode();
+            long nodeID2 = createNode();
+            long nodeID3 = createNode();
             try ( Transaction ignore = graphDatabaseAPI.beginTx() )
             {
-                long nodeID1 = createNode();
-                long nodeID2 = createNode();
-                long nodeID3 = createNode();
                 KernelTransaction ktx = ktx();
                 Set<Long> result = new HashSet<>();
                 try ( NodeValueIndexCursor cursor = seek( ktx ) )

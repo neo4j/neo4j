@@ -31,14 +31,11 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.kernel.impl.coreapi.PlaceboTransaction;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 
 import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.CoreMatchers.not;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.core.IsInstanceOf.instanceOf;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.internal.helpers.collection.Iterators.addToCollection;
 
@@ -80,7 +77,6 @@ class NodeManagerTest
         Thread thread = new Thread( () ->
         {
             Transaction newTx = db.beginTx();
-            assertThat( newTx, not( instanceOf( PlaceboTransaction.class ) ) );
             db.createNode();
             newTx.commit();
         } );
@@ -108,7 +104,6 @@ class NodeManagerTest
         Thread thread = new Thread( () ->
         {
             Transaction newTx = db.beginTx();
-            assertThat( newTx, not( instanceOf( PlaceboTransaction.class ) ) );
             createRelationshipAssumingTxWith( "key", 3 );
             newTx.commit();
         } );

@@ -322,7 +322,7 @@ trait QueryTransactionalContext extends CloseableResource {
 
   def isTopLevelTx: Boolean
 
-  def close(success: Boolean)
+  def close()
 
   def commitAndRestartTx()
 
@@ -348,7 +348,7 @@ trait UserDefinedAggregator {
 }
 
 trait CloseableResource {
-  def close(success: Boolean)
+  def close()
 }
 
 object NodeValueHit {

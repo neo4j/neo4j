@@ -29,6 +29,7 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.security.AuthProviderFailedException;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
+import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.impl.query.QueryExecution;
 import org.neo4j.kernel.impl.query.QuerySubscriber;
 
@@ -79,7 +80,7 @@ public class ContextSwitchingSystemGraphQueryExecutor implements QueryExecutor
         // We need to make sure this method is only accessible from a SecurityContext with admin rights.
         try ( Transaction transaction = getSystemDb().beginTx() )
         {
-            systemDbExecuteWithinTransaction( query, parameters, subscriber );
+            systemDbExecuteWithinTransaction( (InternalTransaction) transaction, query, parameters, subscriber );
             if ( !subscriber.hasError() )
             {
                 transaction.commit();
@@ -87,10 +88,10 @@ public class ContextSwitchingSystemGraphQueryExecutor implements QueryExecutor
         }
     }
 
-    private void systemDbExecuteWithinTransaction( String query, Map<String,Object> parameters,
+    private void systemDbExecuteWithinTransaction( InternalTransaction transaction, String query, Map<String,Object> parameters,
            QuerySubscriber subscriber )
     {
-        QueryExecution result = getSystemDb().execute( query, parameters, subscriber );
+        QueryExecution result = getSystemDb().execute( transaction, query, parameters, subscriber );
         try
         {
             result.consumeAll();

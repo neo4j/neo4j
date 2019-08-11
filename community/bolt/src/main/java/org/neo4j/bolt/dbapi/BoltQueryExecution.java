@@ -32,7 +32,7 @@ public interface BoltQueryExecution
      * This should be called once the query is finished, either successfully or not.
      * Should be called from the same thread the query was executing in.
      */
-    void close( boolean success );
+    void close();
 
     /**
      * This is used to terminate a currently running query. Can be called from any thread.

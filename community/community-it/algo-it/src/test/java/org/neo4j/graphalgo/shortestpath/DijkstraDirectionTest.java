@@ -26,8 +26,10 @@ import java.util.HashMap;
 
 import org.neo4j.graphalgo.CostEvaluator;
 import org.neo4j.graphalgo.impl.shortestpath.Dijkstra;
+import org.neo4j.graphalgo.impl.util.DoubleAdder;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.Relationship;
+import org.neo4j.graphdb.Transaction;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
@@ -42,56 +44,88 @@ class DijkstraDirectionTest extends Neo4jAlgoTestCase
     @Test
     void testDijkstraDirection1()
     {
-        graph.makeEdge( "s", "e" );
-        Dijkstra<Double> dijkstra =
-                new Dijkstra<>( (double) 0, graph.getNode( "s" ), graph.getNode( "e" ), ( relationship, direction ) -> {
-                    assertEquals( Direction.OUTGOING, direction );
-                    return 1.0;
-                }, new org.neo4j.graphalgo.impl.util.DoubleAdder(), Double::compareTo,
-                        Direction.OUTGOING, MyRelTypes.R1 );
-        dijkstra.getCost();
-        dijkstra =
-                new Dijkstra<>( (double) 0, graph.getNode( "s" ), graph.getNode( "e" ), ( relationship, direction ) -> {
-                    assertEquals( Direction.INCOMING, direction );
-                    return 1.0;
-                }, new org.neo4j.graphalgo.impl.util.DoubleAdder(), Double::compareTo,
-                        Direction.INCOMING, MyRelTypes.R1 );
-        dijkstra.getCost();
+        try ( Transaction transaction = graphDb.beginTx() )
+        {
+            graph.makeEdge( "s", "e" );
+            Dijkstra<Double> dijkstra = new Dijkstra<>( (double) 0, graph.getNode( "s" ), graph.getNode( "e" ), ( relationship, direction ) ->
+            {
+                assertEquals( Direction.OUTGOING, direction );
+                return 1.0;
+            }, new DoubleAdder(), Double::compareTo, Direction.OUTGOING, MyRelTypes.R1 );
+            dijkstra.getCost();
+            dijkstra = new Dijkstra<>( (double) 0, graph.getNode( "s" ), graph.getNode( "e" ), ( relationship, direction ) ->
+            {
+                assertEquals( Direction.INCOMING, direction );
+                return 1.0;
+            }, new DoubleAdder(), Double::compareTo, Direction.INCOMING, MyRelTypes.R1 );
+            dijkstra.getCost();
+            transaction.commit();
+        }
     }
 
     @Test
     void testDijkstraDirection2()
     {
-        graph.makeEdge( "a", "b" );
-        graph.makeEdge( "b", "c" );
-        graph.makeEdge( "c", "d" );
-        graph.makeEdge( "d", "a" );
-        graph.makeEdge( "s", "a" );
-        graph.makeEdge( "b", "s" );
-        graph.makeEdge( "e", "c" );
-        graph.makeEdge( "d", "e" );
-        Dijkstra<Double> dijkstra =
-                new Dijkstra<>( (double) 0, graph.getNode( "s" ), graph.getNode( "e" ), ( relationship, direction ) -> {
-                    assertEquals( Direction.OUTGOING, direction );
-                    return 1.0;
-                }, new org.neo4j.graphalgo.impl.util.DoubleAdder(), Double::compareTo,
-                        Direction.OUTGOING, MyRelTypes.R1 );
-        dijkstra.getCost();
-        dijkstra =
-                new Dijkstra<>( (double) 0, graph.getNode( "s" ), graph.getNode( "e" ), ( relationship, direction ) -> {
-                    assertEquals( Direction.INCOMING, direction );
-                    return 1.0;
-                }, new org.neo4j.graphalgo.impl.util.DoubleAdder(), Double::compareTo,
-                        Direction.INCOMING, MyRelTypes.R1 );
-        dijkstra.getCost();
+        try ( Transaction transaction = graphDb.beginTx() )
+        {
+            graph.makeEdge( "a", "b" );
+            graph.makeEdge( "b", "c" );
+            graph.makeEdge( "c", "d" );
+            graph.makeEdge( "d", "a" );
+            graph.makeEdge( "s", "a" );
+            graph.makeEdge( "b", "s" );
+            graph.makeEdge( "e", "c" );
+            graph.makeEdge( "d", "e" );
+            Dijkstra<Double> dijkstra = new Dijkstra<>( (double) 0, graph.getNode( "s" ), graph.getNode( "e" ), ( relationship, direction ) ->
+            {
+                assertEquals( Direction.OUTGOING, direction );
+                return 1.0;
+            }, new DoubleAdder(), Double::compareTo, Direction.OUTGOING, MyRelTypes.R1 );
+            dijkstra.getCost();
+            dijkstra = new Dijkstra<>( (double) 0, graph.getNode( "s" ), graph.getNode( "e" ), ( relationship, direction ) ->
+            {
+                assertEquals( Direction.INCOMING, direction );
+                return 1.0;
+            }, new DoubleAdder(), Double::compareTo, Direction.INCOMING, MyRelTypes.R1 );
+            dijkstra.getCost();
+            transaction.commit();
+        }
     }
 
     // This saves the first direction observed
-    class directionSavingCostEvaluator implements CostEvaluator<Double>
+    @Test
+    void testDijkstraDirection3()
+    {
+        try ( Transaction transaction = graphDb.beginTx() )
+        {
+            Relationship r1 = graph.makeEdge( "start", "b" );
+            Relationship r2 = graph.makeEdge( "c", "b" );
+            Relationship r3 = graph.makeEdge( "c", "d" );
+            Relationship r4 = graph.makeEdge( "e", "d" );
+            Relationship r5 = graph.makeEdge( "e", "f" );
+            Relationship r6 = graph.makeEdge( "g", "f" );
+            Relationship r7 = graph.makeEdge( "g", "end" );
+            HashMap<Relationship,Direction> dirs = new HashMap<>();
+            Dijkstra<Double> dijkstra =
+                    new Dijkstra<>( (double) 0, graph.getNode( "start" ), graph.getNode( "end" ), new DirectionSavingCostEvaluator( dirs ), new DoubleAdder(),
+                            Double::compareTo, Direction.BOTH, MyRelTypes.R1 );
+            dijkstra.getCost();
+            assertEquals( Direction.OUTGOING, dirs.get( r1 ) );
+            assertEquals( Direction.INCOMING, dirs.get( r2 ) );
+            assertEquals( Direction.OUTGOING, dirs.get( r3 ) );
+            assertEquals( Direction.INCOMING, dirs.get( r4 ) );
+            assertEquals( Direction.OUTGOING, dirs.get( r5 ) );
+            assertEquals( Direction.INCOMING, dirs.get( r6 ) );
+            assertEquals( Direction.OUTGOING, dirs.get( r7 ) );
+            transaction.commit();
+        }
+    }
+
+    static class DirectionSavingCostEvaluator implements CostEvaluator<Double>
     {
         HashMap<Relationship, Direction> dirs;
 
-        directionSavingCostEvaluator( HashMap<Relationship,Direction> dirs )
+        DirectionSavingCostEvaluator( HashMap<Relationship,Direction> dirs )
         {
             super();
             this.dirs = dirs;
@@ -106,29 +140,5 @@ class DijkstraDirectionTest extends Neo4jAlgoTestCase
             }
             return 1.0;
         }
-    }
-
-    @Test
-    void testDijkstraDirection3()
-    {
-        Relationship r1 = graph.makeEdge( "start", "b" );
-        Relationship r2 = graph.makeEdge( "c", "b" );
-        Relationship r3 = graph.makeEdge( "c", "d" );
-        Relationship r4 = graph.makeEdge( "e", "d" );
-        Relationship r5 = graph.makeEdge( "e", "f" );
-        Relationship r6 = graph.makeEdge( "g", "f" );
-        Relationship r7 = graph.makeEdge( "g", "end" );
-        HashMap<Relationship, Direction> dirs = new HashMap<>();
-        Dijkstra<Double> dijkstra = new Dijkstra<>( (double) 0, graph.getNode( "start" ), graph.getNode( "end" ), new directionSavingCostEvaluator( dirs ),
-                new org.neo4j.graphalgo.impl.util.DoubleAdder(), Double::compareTo,
-                Direction.BOTH, MyRelTypes.R1 );
-        dijkstra.getCost();
-        assertEquals( Direction.OUTGOING, dirs.get( r1 ) );
-        assertEquals( Direction.INCOMING, dirs.get( r2 ) );
-        assertEquals( Direction.OUTGOING, dirs.get( r3 ) );
-        assertEquals( Direction.INCOMING, dirs.get( r4 ) );
-        assertEquals( Direction.OUTGOING, dirs.get( r5 ) );
-        assertEquals( Direction.INCOMING, dirs.get( r6 ) );
-        assertEquals( Direction.OUTGOING, dirs.get( r7 ) );
     }
 }

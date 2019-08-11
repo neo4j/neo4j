@@ -26,6 +26,7 @@ import org.junit.jupiter.api.Test;
 import org.neo4j.graphalgo.CommonEvaluators;
 import org.neo4j.graphalgo.impl.shortestpath.Dijkstra;
 import org.neo4j.graphdb.Direction;
+import org.neo4j.graphdb.Transaction;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -44,14 +45,18 @@ class DijkstraTest extends Neo4jAlgoTestCase
     @Test
     void testDijkstraMinimal()
     {
-        graph.makeNode( "lonely" );
-        Dijkstra<Double> dijkstra = getDijkstra( graph, 0.0, "lonely", "lonely" );
-        assertEquals( 0.0, dijkstra.getCost(), 0.0 );
-        assertEquals( 1, dijkstra.getPathAsNodes().size() );
-        dijkstra = getDijkstra( graph, 3.0, "lonely", "lonely" );
-        assertEquals( 6.0, dijkstra.getCost(), 0.0 );
-        assertEquals( 1, dijkstra.getPathAsNodes().size() );
-        assertEquals( 1, dijkstra.getPathsAsNodes().size() );
+        try ( Transaction transaction = graphDb.beginTx() )
+        {
+            graph.makeNode( "lonely" );
+            Dijkstra<Double> dijkstra = getDijkstra( graph, 0.0, "lonely", "lonely" );
+            assertEquals( 0.0, dijkstra.getCost(), 0.0 );
+            assertEquals( 1, dijkstra.getPathAsNodes().size() );
+            dijkstra = getDijkstra( graph, 3.0, "lonely", "lonely" );
+            assertEquals( 6.0, dijkstra.getCost(), 0.0 );
+            assertEquals( 1, dijkstra.getPathAsNodes().size() );
+            assertEquals( 1, dijkstra.getPathsAsNodes().size() );
+            transaction.commit();
+        }
     }
 
     /**
@@ -60,44 +65,52 @@ class DijkstraTest extends Neo4jAlgoTestCase
     @Test
     void testDijkstraMinimal2()
     {
-        graph.makeEdge( "a", "b", "cost", (double) 1 );
-        graph.makeEdge( "a", "c", "cost", (float) 1 );
-        graph.makeEdge( "a", "d", "cost", (long) 1 );
-        graph.makeEdge( "a", "e", "cost", 1 );
-        graph.makeEdge( "b", "c", "cost", (byte) 1 );
-        graph.makeEdge( "c", "d", "cost", (short) 1 );
-        graph.makeEdge( "d", "e", "cost", (double) 1 );
-        graph.makeEdge( "e", "f", "cost", (double) 1 );
-        Dijkstra<Double> dijkstra = getDijkstra( graph, 0.0, "a", "a" );
-        assertEquals( 0.0, dijkstra.getCost(), 0.0 );
-        assertEquals( 1, dijkstra.getPathAsNodes().size() );
-        dijkstra = getDijkstra( graph, 3.0, "a", "a" );
-        assertEquals( 6.0, dijkstra.getCost(), 0.0 );
-        assertEquals( 1, dijkstra.getPathAsNodes().size() );
-        assertEquals( 0, dijkstra.getPathAsRelationships().size() );
-        assertEquals( 1, dijkstra.getPath().size() );
-        assertEquals( 1, dijkstra.getPathsAsNodes().size() );
+        try ( Transaction transaction = graphDb.beginTx() )
+        {
+            graph.makeEdge( "a", "b", "cost", (double) 1 );
+            graph.makeEdge( "a", "c", "cost", (float) 1 );
+            graph.makeEdge( "a", "d", "cost", (long) 1 );
+            graph.makeEdge( "a", "e", "cost", 1 );
+            graph.makeEdge( "b", "c", "cost", (byte) 1 );
+            graph.makeEdge( "c", "d", "cost", (short) 1 );
+            graph.makeEdge( "d", "e", "cost", (double) 1 );
+            graph.makeEdge( "e", "f", "cost", (double) 1 );
+            Dijkstra<Double> dijkstra = getDijkstra( graph, 0.0, "a", "a" );
+            assertEquals( 0.0, dijkstra.getCost(), 0.0 );
+            assertEquals( 1, dijkstra.getPathAsNodes().size() );
+            dijkstra = getDijkstra( graph, 3.0, "a", "a" );
+            assertEquals( 6.0, dijkstra.getCost(), 0.0 );
+            assertEquals( 1, dijkstra.getPathAsNodes().size() );
+            assertEquals( 0, dijkstra.getPathAsRelationships().size() );
+            assertEquals( 1, dijkstra.getPath().size() );
+            assertEquals( 1, dijkstra.getPathsAsNodes().size() );
+            transaction.commit();
+        }
     }
 
     @Test
     void testDijkstraChain()
     {
-        graph.makeEdge( "a", "b", "cost", (double) 1 );
-        graph.makeEdge( "b", "c", "cost", (float) 2 );
-        graph.makeEdge( "c", "d", "cost", (byte) 3 );
-        Dijkstra<Double> dijkstra = getDijkstra( graph, 0.0, "a", "d" );
-        assertEquals( 6.0, dijkstra.getCost(), 0.0 );
-        assertNotNull( dijkstra.getPathAsNodes() );
-        assertEquals( 4, dijkstra.getPathAsNodes().size() );
-        assertEquals( 1, dijkstra.getPathsAsNodes().size() );
-        dijkstra = getDijkstra( graph, 0.0, "d", "a" );
-        assertEquals( 6.0, dijkstra.getCost(), 0.0 );
-        assertEquals( 4, dijkstra.getPathAsNodes().size() );
-        dijkstra = getDijkstra( graph, 0.0, "d", "b" );
-        assertEquals( 5.0, dijkstra.getCost(), 0.0 );
-        assertEquals( 3, dijkstra.getPathAsNodes().size() );
-        assertEquals( 2, dijkstra.getPathAsRelationships().size() );
-        assertEquals( 5, dijkstra.getPath().size() );
+        try ( Transaction transaction = graphDb.beginTx() )
+        {
+            graph.makeEdge( "a", "b", "cost", (double) 1 );
+            graph.makeEdge( "b", "c", "cost", (float) 2 );
+            graph.makeEdge( "c", "d", "cost", (byte) 3 );
+            Dijkstra<Double> dijkstra = getDijkstra( graph, 0.0, "a", "d" );
+            assertEquals( 6.0, dijkstra.getCost(), 0.0 );
+            assertNotNull( dijkstra.getPathAsNodes() );
+            assertEquals( 4, dijkstra.getPathAsNodes().size() );
+            assertEquals( 1, dijkstra.getPathsAsNodes().size() );
+            dijkstra = getDijkstra( graph, 0.0, "d", "a" );
+            assertEquals( 6.0, dijkstra.getCost(), 0.0 );
+            assertEquals( 4, dijkstra.getPathAsNodes().size() );
+            dijkstra = getDijkstra( graph, 0.0, "d", "b" );
+            assertEquals( 5.0, dijkstra.getCost(), 0.0 );
+            assertEquals( 3, dijkstra.getPathAsNodes().size() );
+            assertEquals( 2, dijkstra.getPathAsRelationships().size() );
+            assertEquals( 5, dijkstra.getPath().size() );
+            transaction.commit();
+        }
     }
 
     /**
@@ -106,15 +119,19 @@ class DijkstraTest extends Neo4jAlgoTestCase
     @Test
     void testDijkstraTraverserMeeting()
     {
-        graph.makeEdge( "s", "c", "cost", (double) 7 );
-        graph.makeEdge( "c", "e", "cost", (float) 7 );
-        graph.makeEdge( "s", "a", "cost", (long) 2 );
-        graph.makeEdge( "a", "b", "cost", 7 );
-        graph.makeEdge( "b", "e", "cost", (byte) 2 );
-        Dijkstra<Double> dijkstra = getDijkstra( graph, 0.0, "s", "e" );
-        assertEquals( 11.0, dijkstra.getCost(), 0.0 );
-        assertNotNull( dijkstra.getPathAsNodes() );
-        assertEquals( 4, dijkstra.getPathAsNodes().size() );
-        assertEquals( 1, dijkstra.getPathsAsNodes().size() );
+        try ( Transaction transaction = graphDb.beginTx() )
+        {
+            graph.makeEdge( "s", "c", "cost", (double) 7 );
+            graph.makeEdge( "c", "e", "cost", (float) 7 );
+            graph.makeEdge( "s", "a", "cost", (long) 2 );
+            graph.makeEdge( "a", "b", "cost", 7 );
+            graph.makeEdge( "b", "e", "cost", (byte) 2 );
+            Dijkstra<Double> dijkstra = getDijkstra( graph, 0.0, "s", "e" );
+            assertEquals( 11.0, dijkstra.getCost(), 0.0 );
+            assertNotNull( dijkstra.getPathAsNodes() );
+            assertEquals( 4, dijkstra.getPathAsNodes().size() );
+            assertEquals( 1, dijkstra.getPathsAsNodes().size() );
+            transaction.commit();
+        }
     }
 }

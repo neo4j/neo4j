@@ -86,7 +86,9 @@ import org.neo4j.kernel.impl.constraints.ConstraintSemantics;
 import org.neo4j.kernel.impl.factory.AccessCapability;
 import org.neo4j.kernel.impl.factory.AccessCapabilityFactory;
 import org.neo4j.kernel.impl.factory.DatabaseInfo;
+import org.neo4j.kernel.impl.factory.FacadeKernelTransactionFactory;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
+import org.neo4j.kernel.impl.factory.KernelTransactionFactory;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.locking.StatementLocksFactory;
 import org.neo4j.kernel.impl.pagecache.PageCacheLifecycle;
@@ -237,6 +239,7 @@ public class Database extends LifecycleAdapter
     private CheckpointerLifecycle checkpointerLifecycle;
     private final GraphDatabaseFacade databaseFacade;
     private final FileLockerService fileLockerService;
+    private final KernelTransactionFactory kernelTransactionFactory;
 
     public Database( DatabaseCreationContext context )
     {
@@ -283,6 +286,7 @@ public class Database extends LifecycleAdapter
         long availabilityGuardTimeout = databaseConfig.get( GraphDatabaseSettings.transaction_start_timeout ).toMillis();
         this.databaseAvailabilityGuard = context.getDatabaseAvailabilityGuardFactory().apply( availabilityGuardTimeout );
         this.databaseFacade = new GraphDatabaseFacade( this, context.getContextBridge(), databaseConfig, databaseInfo, databaseAvailabilityGuard );
+        this.kernelTransactionFactory = new FacadeKernelTransactionFactory( databaseConfig, databaseFacade );
         Tracers globalTracers = context.getTracers();
         this.databaseTracer = globalTracers.getDatabaseTracer();
         this.pageCursorTracerSupplier = globalTracers.getPageCursorTracerSupplier();
@@ -319,6 +323,7 @@ public class Database extends LifecycleAdapter
             databaseDependencies.satisfyDependency( databasePageCache );
             databaseDependencies.satisfyDependency( tokenHolders );
             databaseDependencies.satisfyDependency( databaseFacade );
+            databaseDependencies.satisfyDependency( kernelTransactionFactory );
             databaseDependencies.satisfyDependency( databaseHealth );
             databaseDependencies.satisfyDependency( storeCopyCheckPointMutex );
             databaseDependencies.satisfyDependency( transactionStats );

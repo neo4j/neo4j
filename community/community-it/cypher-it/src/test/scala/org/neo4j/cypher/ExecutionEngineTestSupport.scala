@@ -146,15 +146,17 @@ trait ExecutionEngineHelper {
 
   def execute(q: String, params: Map[String, Any]): RewindableExecutionResult = {
     val subscriber = new RecordingQuerySubscriber
-    val context = graph.transactionalContext(query = q -> params.toMap)
-    RewindableExecutionResult(eengine.execute(q,
-                                              ExecutionEngineHelper.asMapValue(params),
-                                              context,
-                                              profile = false,
-                                              prePopulate = false,
-                                              subscriber),
-                              new TransactionBoundQueryContext(TransactionalContextWrapper(context)),
-                              subscriber)
+    graph.withTx { tx =>
+      val context = graph.transactionalContext(tx, query = q -> params.toMap)
+      RewindableExecutionResult(eengine.execute(q,
+        ExecutionEngineHelper.asMapValue(params),
+        context,
+        profile = false,
+        prePopulate = false,
+        subscriber),
+        new TransactionBoundQueryContext(TransactionalContextWrapper(context)),
+        subscriber)
+    }
   }
 
   def executeOfficial(q: String, params: (String, Any)*): Result =

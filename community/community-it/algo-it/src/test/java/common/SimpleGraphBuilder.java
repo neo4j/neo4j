@@ -33,6 +33,7 @@ import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.ResourceIterable;
 import org.neo4j.graphdb.ResourceIterator;
+import org.neo4j.graphdb.Transaction;
 import org.neo4j.internal.helpers.collection.Iterables;
 
 public class SimpleGraphBuilder
@@ -58,17 +59,21 @@ public class SimpleGraphBuilder
 
     public void clear()
     {
-        for ( Node node : nodes.values() )
+        try ( Transaction transaction = graphDb.beginTx() )
         {
-            for ( Relationship relationship : node.getRelationships() )
+            for ( Node node : nodes.values() )
             {
-                relationship.delete();
+                for ( Relationship relationship : node.getRelationships() )
+                {
+                    relationship.delete();
+                }
+                node.delete();
             }
-            node.delete();
+            nodes.clear();
+            nodeNames.clear();
+            edges.clear();
+            transaction.commit();
         }
-        nodes.clear();
-        nodeNames.clear();
-        edges.clear();
     }
 
     public Set<Relationship> getAllEdges()

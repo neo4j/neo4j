@@ -42,6 +42,7 @@ import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.PathExpander;
 import org.neo4j.graphdb.PathExpanders;
 import org.neo4j.graphdb.Relationship;
+import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.traversal.InitialBranchState;
 import org.neo4j.kernel.impl.util.NoneStrictMath;
 
@@ -61,16 +62,20 @@ class DijkstraTest extends Neo4jAlgoTestCase
     void pathToSelfReturnsZero( DijkstraFactory factory )
     {
         // GIVEN
-        Node start = graph.makeNode( "A" );
+        try ( Transaction transaction = graphDb.beginTx() )
+        {
+            Node start = graph.makeNode( "A" );
 
-        // WHEN
-        PathFinder<WeightedPath> finder = factory.dijkstra( PathExpanders.allTypesAndDirections() );
-        WeightedPath path = finder.findSinglePath( start, start );
-        // THEN
-        assertNotNull( path );
-        assertEquals( start, path.startNode() );
-        assertEquals( start, path.endNode() );
-        assertEquals( 0, path.length() );
+            // WHEN
+            PathFinder<WeightedPath> finder = factory.dijkstra( PathExpanders.allTypesAndDirections() );
+            WeightedPath path = finder.findSinglePath( start, start );
+            // THEN
+            assertNotNull( path );
+            assertEquals( start, path.startNode() );
+            assertEquals( start, path.endNode() );
+            assertEquals( 0, path.length() );
+            transaction.commit();
+        }
     }
 
     @ParameterizedTest
@@ -78,19 +83,23 @@ class DijkstraTest extends Neo4jAlgoTestCase
     void allPathsToSelfReturnsZero( DijkstraFactory factory )
     {
         // GIVEN
-        Node start = graph.makeNode( "A" );
-
-        // WHEN
-        PathFinder<WeightedPath> finder = factory.dijkstra( PathExpanders.allTypesAndDirections() );
-        Iterable<WeightedPath> paths = finder.findAllPaths( start, start );
-
-        // THEN
-        for ( WeightedPath path : paths )
+        try ( Transaction transaction = graphDb.beginTx() )
         {
-            assertNotNull( path );
-            assertEquals( start, path.startNode() );
-            assertEquals( start, path.endNode() );
-            assertEquals( 0, path.length() );
+            Node start = graph.makeNode( "A" );
+
+            // WHEN
+            PathFinder<WeightedPath> finder = factory.dijkstra( PathExpanders.allTypesAndDirections() );
+            Iterable<WeightedPath> paths = finder.findAllPaths( start, start );
+
+            // THEN
+            for ( WeightedPath path : paths )
+            {
+                assertNotNull( path );
+                assertEquals( start, path.startNode() );
+                assertEquals( start, path.endNode() );
+                assertEquals( 0, path.length() );
+            }
+            transaction.commit();
         }
     }
 
@@ -105,11 +114,15 @@ class DijkstraTest extends Neo4jAlgoTestCase
          * Should not find (A)-(A). Should find (A)
          */
 
-        Node nodeA = graph.makeNode( "A" );
-        graph.makeEdge( "A", "A", "length", 1d );
+        try ( Transaction transaction = graphDb.beginTx() )
+        {
+            Node nodeA = graph.makeNode( "A" );
+            graph.makeEdge( "A", "A", "length", 1d );
 
-        PathFinder finder = factory.dijkstra( PathExpanders.allTypesAndDirections() );
-        assertPaths( finder.findAllPaths( nodeA, nodeA ), "A" );
+            PathFinder finder = factory.dijkstra( PathExpanders.allTypesAndDirections() );
+            assertPaths( finder.findAllPaths( nodeA, nodeA ), "A" );
+            transaction.commit();
+        }
     }
 
     @ParameterizedTest
@@ -119,12 +132,16 @@ class DijkstraTest extends Neo4jAlgoTestCase
         /*
          * (A) - 1 -(B)
          */
-        Node nodeA = graph.makeNode( "A" );
-        Node nodeB = graph.makeNode( "B" );
-        graph.makeEdge( "A", "B", "length", 1 );
+        try ( Transaction transaction = graphDb.beginTx() )
+        {
+            Node nodeA = graph.makeNode( "A" );
+            Node nodeB = graph.makeNode( "B" );
+            graph.makeEdge( "A", "B", "length", 1 );
 
-        PathFinder finder = factory.dijkstra( PathExpanders.allTypesAndDirections() );
-        assertPaths( finder.findAllPaths( nodeA, nodeB ), "A,B" );
+            PathFinder finder = factory.dijkstra( PathExpanders.allTypesAndDirections() );
+            assertPaths( finder.findAllPaths( nodeA, nodeB ), "A,B" );
+            transaction.commit();
+        }
     }
 
     @ParameterizedTest
@@ -136,13 +153,17 @@ class DijkstraTest extends Neo4jAlgoTestCase
          *   /        \
          * (A) - 1 - (B)
          */
-        Node nodeA = graph.makeNode( "A" );
-        Node nodeB = graph.makeNode( "B" );
-        graph.makeEdge( "A", "B", "length", 1.0 );
-        graph.makeEdge( "A", "B", "length", 1 );
+        try ( Transaction transaction = graphDb.beginTx() )
+        {
+            Node nodeA = graph.makeNode( "A" );
+            Node nodeB = graph.makeNode( "B" );
+            graph.makeEdge( "A", "B", "length", 1.0 );
+            graph.makeEdge( "A", "B", "length", 1 );
 
-        PathFinder finder = factory.dijkstra( PathExpanders.allTypesAndDirections() );
-        assertPaths( finder.findAllPaths( nodeA, nodeB ), "A,B", "A,B" );
+            PathFinder finder = factory.dijkstra( PathExpanders.allTypesAndDirections() );
+            assertPaths( finder.findAllPaths( nodeA, nodeB ), "A,B", "A,B" );
+            transaction.commit();
+        }
     }
 
     @ParameterizedTest
@@ -154,18 +175,22 @@ class DijkstraTest extends Neo4jAlgoTestCase
          *   /        \
          * (A) - 1 - (B)
          */
-        Node nodeA = graph.makeNode( "A" );
-        Node nodeB = graph.makeNode( "B" );
-        graph.makeEdge( "A", "B", "length", 2.0 );
-        graph.makeEdge( "A", "B", "length", 1 );
+        try ( Transaction transaction = graphDb.beginTx() )
+        {
+            Node nodeA = graph.makeNode( "A" );
+            Node nodeB = graph.makeNode( "B" );
+            graph.makeEdge( "A", "B", "length", 2.0 );
+            graph.makeEdge( "A", "B", "length", 1 );
 
-        PathFinder finder = factory.dijkstra( PathExpanders.allTypesAndDirections() );
-        Iterator<WeightedPath> paths = finder.findAllPaths( nodeA, nodeB ).iterator();
-        assertTrue( paths.hasNext(), "Expect at least one path" );
-        WeightedPath path = paths.next();
-        assertPath( path, nodeA, nodeB );
-        assertEquals( 1, path.weight(), 0.0, "Expect weight 1" );
-        assertFalse( paths.hasNext(), "Expected at most one path" );
+            PathFinder finder = factory.dijkstra( PathExpanders.allTypesAndDirections() );
+            Iterator<WeightedPath> paths = finder.findAllPaths( nodeA, nodeB ).iterator();
+            assertTrue( paths.hasNext(), "Expect at least one path" );
+            WeightedPath path = paths.next();
+            assertPath( path, nodeA, nodeB );
+            assertEquals( 1, path.weight(), 0.0, "Expect weight 1" );
+            assertFalse( paths.hasNext(), "Expected at most one path" );
+            transaction.commit();
+        }
     }
 
     @ParameterizedTest
@@ -180,28 +205,32 @@ class DijkstraTest extends Neo4jAlgoTestCase
          *
          */
 
-        Node a = graph.makeNode( "A" );
-        Node b = graph.makeNode( "B" );
-        Node c = graph.makeNode( "C" );
-        Node d = graph.makeNode( "D" );
-        Node e = graph.makeNode( "E" );
-        Node f = graph.makeNode( "F" );
-        Node g = graph.makeNode( "G" );
-        Node h = graph.makeNode( "H" );
+        try ( Transaction transaction = graphDb.beginTx() )
+        {
+            Node a = graph.makeNode( "A" );
+            Node b = graph.makeNode( "B" );
+            Node c = graph.makeNode( "C" );
+            Node d = graph.makeNode( "D" );
+            Node e = graph.makeNode( "E" );
+            Node f = graph.makeNode( "F" );
+            Node g = graph.makeNode( "G" );
+            Node h = graph.makeNode( "H" );
 
-        graph.makeEdgeChain( "A,B,C,D,E,F", "length", 1 );
-        graph.makeEdge( "A", "G", "length", 1 );
-        graph.makeEdge( "G", "H", "length", 2 );
-        graph.makeEdge( "H", "F", "length", 1 );
+            graph.makeEdgeChain( "A,B,C,D,E,F", "length", 1 );
+            graph.makeEdge( "A", "G", "length", 1 );
+            graph.makeEdge( "G", "H", "length", 2 );
+            graph.makeEdge( "H", "F", "length", 1 );
 
-        PathFinder finder = factory.dijkstra( PathExpanders.allTypesAndDirections() );
-        Iterator<WeightedPath> paths = finder.findAllPaths( a, f ).iterator();
+            PathFinder finder = factory.dijkstra( PathExpanders.allTypesAndDirections() );
+            Iterator<WeightedPath> paths = finder.findAllPaths( a, f ).iterator();
 
-        assertTrue( paths.hasNext(), "Expect at least one path" );
-        WeightedPath path = paths.next();
-        assertPath( path, a, g, h, f );
-        assertEquals( 4, path.weight(), 0.0, "Expect weight 1" );
-        assertFalse( paths.hasNext(), "Expected at most one path" );
+            assertTrue( paths.hasNext(), "Expect at least one path" );
+            WeightedPath path = paths.next();
+            assertPath( path, a, g, h, f );
+            assertEquals( 4, path.weight(), 0.0, "Expect weight 1" );
+            assertFalse( paths.hasNext(), "Expected at most one path" );
+            transaction.commit();
+        }
     }
 
     @ParameterizedTest
@@ -214,20 +243,24 @@ class DijkstraTest extends Neo4jAlgoTestCase
          *   \                     /
          *    - 10 -> (C/2) <- 3 -
          */
-        Node nodeA = graph.makeNode( "A" );
-        Node nodeB = graph.makeNode( "B" );
-        Node nodeC = graph.makeNode( "C" );
-        graph.makeEdge( "A", "B", "length", 2d );
-        graph.makeEdge( "B", "C", "length", 3L );
-        graph.makeEdge( "A", "C", "length", (byte) 10 );
+        try ( Transaction transaction = graphDb.beginTx() )
+        {
+            Node nodeA = graph.makeNode( "A" );
+            Node nodeB = graph.makeNode( "B" );
+            Node nodeC = graph.makeNode( "C" );
+            graph.makeEdge( "A", "B", "length", 2d );
+            graph.makeEdge( "B", "C", "length", 3L );
+            graph.makeEdge( "A", "C", "length", (byte) 10 );
 
-        PathFinder finder = factory.dijkstra( PathExpanders.allTypesAndDirections() );
-        Iterator<WeightedPath> paths = finder.findAllPaths( nodeA, nodeC ).iterator();
-        assertTrue( paths.hasNext(), "expected at least one path" );
-        assertPath( paths.next(), nodeA, nodeB, nodeC );
-        assertFalse( paths.hasNext(), "expected at most one path" );
+            PathFinder finder = factory.dijkstra( PathExpanders.allTypesAndDirections() );
+            Iterator<WeightedPath> paths = finder.findAllPaths( nodeA, nodeC ).iterator();
+            assertTrue( paths.hasNext(), "expected at least one path" );
+            assertPath( paths.next(), nodeA, nodeB, nodeC );
+            assertFalse( paths.hasNext(), "expected at most one path" );
 
-        assertPath( finder.findSinglePath( nodeA, nodeC ), nodeA, nodeB, nodeC );
+            assertPath( finder.findSinglePath( nodeA, nodeC ), nodeA, nodeB, nodeC );
+            transaction.commit();
+        }
     }
 
     @ParameterizedTest
@@ -244,25 +277,28 @@ class DijkstraTest extends Neo4jAlgoTestCase
          *     ---------*6-----------
          */
 
-        Node nodeA = graph.makeNode( "A" );
-        graph.makeNode( "B" );
-        graph.makeNode( "C" );
-        Node nodeD = graph.makeNode( "D" );
+        try ( Transaction transaction = graphDb.beginTx() )
+        {
+            Node nodeA = graph.makeNode( "A" );
+            graph.makeNode( "B" );
+            graph.makeNode( "C" );
+            Node nodeD = graph.makeNode( "D" );
 
-        // Path "1"
-        graph.makeEdge( "A", "B", "length", 2d );
-        graph.makeEdge( "B", "C", "length", 3L );
-        graph.makeEdge( "C", "D", "length", (byte) 1 ); // = 6
+            // Path "1"
+            graph.makeEdge( "A", "B", "length", 2d );
+            graph.makeEdge( "B", "C", "length", 3L );
+            graph.makeEdge( "C", "D", "length", (byte) 1 ); // = 6
 
-        // Path "2"
-        graph.makeEdge( "B", "D", "length", (short) 5 ); // = 7
+            // Path "2"
+            graph.makeEdge( "B", "D", "length", (short) 5 ); // = 7
 
-        // Path "3"
-        graph.makeEdge( "A", "D", "length", (float) 6 ); // = 6
+            // Path "3"
+            graph.makeEdge( "A", "D", "length", (float) 6 ); // = 6
 
-        PathFinder finder = factory.dijkstra( PathExpanders.allTypesAndDirections() );
-        assertPaths( finder.findAllPaths( nodeA, nodeD ),
-            "A,B,C,D", "A,D" );
+            PathFinder finder = factory.dijkstra( PathExpanders.allTypesAndDirections() );
+            assertPaths( finder.findAllPaths( nodeA, nodeD ), "A,B,C,D", "A,D" );
+            transaction.commit();
+        }
     }
 
     @ParameterizedTest
@@ -276,35 +312,35 @@ class DijkstraTest extends Neo4jAlgoTestCase
          *   \                    /
          *    - 5 -> (C/2) <- 2 -
          */
-        Node nodeA = graph.makeNode( "A" );
-        Node nodeB = graph.makeNode( "B" );
-        Node nodeC = graph.makeNode( "C" );
-        Set<Relationship> expectedFirsts = new HashSet<>();
-        expectedFirsts.add( graph.makeEdge( "A", "B", "length", 1d ) );
-        expectedFirsts.add( graph.makeEdge( "A", "B", "length", 1 ) );
-        Relationship expectedSecond = graph.makeEdge( "B", "C", "length", 2L );
-        graph.makeEdge( "A", "C", "length", 5d );
-
-        PathFinder finder = factory.dijkstra( PathExpanders.allTypesAndDirections() );
-        Iterator<WeightedPath> paths = finder.findAllPaths( nodeA, nodeC ).iterator();
-        for ( int i = 0; i < 2; i++ )
+        try ( Transaction transaction = graphDb.beginTx() )
         {
-            assertTrue( paths.hasNext(), "expected more paths" );
-            Path path = paths.next();
-            assertPath( path, nodeA, nodeB, nodeC );
+            Node nodeA = graph.makeNode( "A" );
+            Node nodeB = graph.makeNode( "B" );
+            Node nodeC = graph.makeNode( "C" );
+            Set<Relationship> expectedFirsts = new HashSet<>();
+            expectedFirsts.add( graph.makeEdge( "A", "B", "length", 1d ) );
+            expectedFirsts.add( graph.makeEdge( "A", "B", "length", 1 ) );
+            Relationship expectedSecond = graph.makeEdge( "B", "C", "length", 2L );
+            graph.makeEdge( "A", "C", "length", 5d );
 
-            Iterator<Relationship> relationships = path.relationships().iterator();
-            assertTrue(
-                relationships.hasNext(), "found shorter path than expected" );
-            assertTrue(
-                expectedFirsts.remove( relationships.next() ), "path contained unexpected relationship" );
-            assertTrue(
-                relationships.hasNext(), "found shorter path than expected" );
-            assertEquals( expectedSecond, relationships.next() );
-            assertFalse(
-                relationships.hasNext(), "found longer path than expected" );
+            PathFinder finder = factory.dijkstra( PathExpanders.allTypesAndDirections() );
+            Iterator<WeightedPath> paths = finder.findAllPaths( nodeA, nodeC ).iterator();
+            for ( int i = 0; i < 2; i++ )
+            {
+                assertTrue( paths.hasNext(), "expected more paths" );
+                Path path = paths.next();
+                assertPath( path, nodeA, nodeB, nodeC );
+
+                Iterator<Relationship> relationships = path.relationships().iterator();
+                assertTrue( relationships.hasNext(), "found shorter path than expected" );
+                assertTrue( expectedFirsts.remove( relationships.next() ), "path contained unexpected relationship" );
+                assertTrue( relationships.hasNext(), "found shorter path than expected" );
+                assertEquals( expectedSecond, relationships.next() );
+                assertFalse( relationships.hasNext(), "found longer path than expected" );
+            }
+            assertFalse( paths.hasNext(), "expected at most two paths" );
+            transaction.commit();
         }
-        assertFalse( paths.hasNext(), "expected at most two paths" );
     }
 
     @ParameterizedTest
@@ -324,49 +360,51 @@ class DijkstraTest extends Neo4jAlgoTestCase
          *      ------------------ 12 --------------------
          *
          */
-        Node nodeA = graph.makeNode( "A" );
-        Node nodeB = graph.makeNode( "B" );
-        Node nodeC = graph.makeNode( "C" );
-        Node nodeD = graph.makeNode( "D" );
-        Node nodeE = graph.makeNode( "E" );
-        Node nodeF = graph.makeNode( "F" );
-        graph.makeEdge( "A", "B", "length", 2d );
-        graph.makeEdge( "A", "C", "length", 2.5f );
-        graph.makeEdge( "C", "D", "length", 7.3d );
-        graph.makeEdge( "B", "D", "length", 2.5f );
-        graph.makeEdge( "D", "E", "length", 3L );
-        graph.makeEdge( "C", "E", "length", 5 );
-        graph.makeEdge( "E", "F", "length", (byte) 5 );
-        graph.makeEdge( "C", "F", "length", (short) 12 );
-        graph.makeEdge( "A", "F", "length", (long) 25 );
-
-        PathFinder finder = factory.dijkstra( PathExpanders.allTypesAndDirections() );
-        // Try the search in both directions.
-        for ( Node[] nodes : new Node[][]{{nodeA, nodeF}, {nodeF, nodeA}} )
+        try ( Transaction transaction = graphDb.beginTx() )
         {
-            int found = 0;
-            Iterator<WeightedPath> paths = finder.findAllPaths( nodes[0],
-                nodes[1] ).iterator();
-            for ( int i = 0; i < 2; i++ )
+            Node nodeA = graph.makeNode( "A" );
+            Node nodeB = graph.makeNode( "B" );
+            Node nodeC = graph.makeNode( "C" );
+            Node nodeD = graph.makeNode( "D" );
+            Node nodeE = graph.makeNode( "E" );
+            Node nodeF = graph.makeNode( "F" );
+            graph.makeEdge( "A", "B", "length", 2d );
+            graph.makeEdge( "A", "C", "length", 2.5f );
+            graph.makeEdge( "C", "D", "length", 7.3d );
+            graph.makeEdge( "B", "D", "length", 2.5f );
+            graph.makeEdge( "D", "E", "length", 3L );
+            graph.makeEdge( "C", "E", "length", 5 );
+            graph.makeEdge( "E", "F", "length", (byte) 5 );
+            graph.makeEdge( "C", "F", "length", (short) 12 );
+            graph.makeEdge( "A", "F", "length", (long) 25 );
+
+            PathFinder finder = factory.dijkstra( PathExpanders.allTypesAndDirections() );
+            // Try the search in both directions.
+            for ( Node[] nodes : new Node[][]{{nodeA, nodeF}, {nodeF, nodeA}} )
             {
-                assertTrue( paths.hasNext(), "expected more paths" );
-                Path path = paths.next();
-                if ( path.length() != found && path.length() == 3 )
+                int found = 0;
+                Iterator<WeightedPath> paths = finder.findAllPaths( nodes[0], nodes[1] ).iterator();
+                for ( int i = 0; i < 2; i++ )
                 {
-                    assertContains( path.nodes(), nodeA, nodeC, nodeE, nodeF );
+                    assertTrue( paths.hasNext(), "expected more paths" );
+                    Path path = paths.next();
+                    if ( path.length() != found && path.length() == 3 )
+                    {
+                        assertContains( path.nodes(), nodeA, nodeC, nodeE, nodeF );
+                    }
+                    else if ( path.length() != found && path.length() == 4 )
+                    {
+                        assertContains( path.nodes(), nodeA, nodeB, nodeD, nodeE, nodeF );
+                    }
+                    else
+                    {
+                        fail( "unexpected path length: " + path.length() );
+                    }
+                    found = path.length();
                 }
-                else if ( path.length() != found && path.length() == 4 )
-                {
-                    assertContains( path.nodes(), nodeA, nodeB, nodeD, nodeE,
-                        nodeF );
-                }
-                else
-                {
-                    fail( "unexpected path length: " + path.length() );
-                }
-                found = path.length();
+                assertFalse( paths.hasNext(), "expected at most two paths" );
             }
-            assertFalse( paths.hasNext(), "expected at most two paths" );
+            transaction.commit();
         }
     }
 
@@ -388,32 +426,36 @@ class DijkstraTest extends Neo4jAlgoTestCase
          *
          */
 
-        Node s = graph.makeNode( "s" );
-        Node t = graph.makeNode( "t" );
-        Node a = graph.makeNode( "a" );
-        Node b = graph.makeNode( "b" );
-        Node c = graph.makeNode( "c" );
-
-        graph.makeEdgeChain( "s,e,f", "length", 1.0 );
-        graph.makeEdge( "f", "t", "length", 2 );
-        graph.makeEdge( "s", "a", "length", 2 );
-        graph.makeEdge( "a", "t", "length", 0 );
-        graph.makeEdge( "s", "c", "length", 1 );
-        graph.makeEdge( "c", "d", "length", 1 );
-        graph.makeEdge( "s", "b", "length", 1 );
-        graph.makeEdge( "b", "d", "length", 1 );
-        graph.makeEdge( "d", "a", "length", 0 );
-        graph.makeEdge( "d", "t", "length", 1 );
-
-        PathFinder finder = factory.dijkstra( PathExpanders.allTypesAndDirections() );
-        Iterator<WeightedPath> paths = finder.findAllPaths( s, t ).iterator();
-
-        for ( int i = 1; i <= 3; i++ )
+        try ( Transaction transaction = graphDb.beginTx() )
         {
-            assertTrue( paths.hasNext(), "Expected at least " + i + " path(s)" );
-            assertTrue( NoneStrictMath.equals( paths.next().weight(), 2 ), "Expected 3 paths of cost 2" );
+            Node s = graph.makeNode( "s" );
+            Node t = graph.makeNode( "t" );
+            Node a = graph.makeNode( "a" );
+            Node b = graph.makeNode( "b" );
+            Node c = graph.makeNode( "c" );
+
+            graph.makeEdgeChain( "s,e,f", "length", 1.0 );
+            graph.makeEdge( "f", "t", "length", 2 );
+            graph.makeEdge( "s", "a", "length", 2 );
+            graph.makeEdge( "a", "t", "length", 0 );
+            graph.makeEdge( "s", "c", "length", 1 );
+            graph.makeEdge( "c", "d", "length", 1 );
+            graph.makeEdge( "s", "b", "length", 1 );
+            graph.makeEdge( "b", "d", "length", 1 );
+            graph.makeEdge( "d", "a", "length", 0 );
+            graph.makeEdge( "d", "t", "length", 1 );
+
+            PathFinder finder = factory.dijkstra( PathExpanders.allTypesAndDirections() );
+            Iterator<WeightedPath> paths = finder.findAllPaths( s, t ).iterator();
+
+            for ( int i = 1; i <= 3; i++ )
+            {
+                assertTrue( paths.hasNext(), "Expected at least " + i + " path(s)" );
+                assertTrue( NoneStrictMath.equals( paths.next().weight(), 2 ), "Expected 3 paths of cost 2" );
+            }
+            assertFalse( paths.hasNext(), "Expected exactly 3 paths" );
+            transaction.commit();
         }
-        assertFalse( paths.hasNext(), "Expected exactly 3 paths" );
     }
 
     private Relationship createGraph( boolean includeOnes )
@@ -452,26 +494,28 @@ class DijkstraTest extends Neo4jAlgoTestCase
     @MethodSource( "params" )
     void testSmallGraph( DijkstraFactory factory )
     {
-        Relationship shortCTOXRelationship = createGraph( true );
-
-        PathFinder<WeightedPath> finder = factory.dijkstra(
-            PathExpanders.forTypeAndDirection( MyRelTypes.R1, Direction.OUTGOING ),
-            CommonEvaluators.doubleCostEvaluator( "cost" ) );
-
-        // Assert that there are two matching paths
-        Node startNode = graph.getNode( "start" );
-        Node endNode = graph.getNode( "x" );
-        assertPaths( finder.findAllPaths( startNode, endNode ),
-            "start,a,b,c,x", "start,a,b,c,d,e,x" );
-
-        // Assert that for the shorter one it picked the correct relationship
-        // of the two from (c) --> (x)
-        for ( WeightedPath path : finder.findAllPaths( startNode, endNode ) )
+        try ( Transaction transaction = graphDb.beginTx() )
         {
-            if ( getPathDef( path ).equals( "start,a,b,c,x" ) )
+            Relationship shortCTOXRelationship = createGraph( true );
+
+            PathFinder<WeightedPath> finder =
+                    factory.dijkstra( PathExpanders.forTypeAndDirection( MyRelTypes.R1, Direction.OUTGOING ), CommonEvaluators.doubleCostEvaluator( "cost" ) );
+
+            // Assert that there are two matching paths
+            Node startNode = graph.getNode( "start" );
+            Node endNode = graph.getNode( "x" );
+            assertPaths( finder.findAllPaths( startNode, endNode ), "start,a,b,c,x", "start,a,b,c,d,e,x" );
+
+            // Assert that for the shorter one it picked the correct relationship
+            // of the two from (c) --> (x)
+            for ( WeightedPath path : finder.findAllPaths( startNode, endNode ) )
             {
-                assertContainsRelationship( path, shortCTOXRelationship );
+                if ( getPathDef( path ).equals( "start,a,b,c,x" ) )
+                {
+                    assertContainsRelationship( path, shortCTOXRelationship );
+                }
             }
+            transaction.commit();
         }
     }
 
@@ -479,26 +523,28 @@ class DijkstraTest extends Neo4jAlgoTestCase
     @MethodSource( "params" )
     void testSmallGraphWithDefaults( DijkstraFactory factory )
     {
-        Relationship shortCTOXRelationship = createGraph( true );
-
-        PathFinder<WeightedPath> finder = factory.dijkstra(
-            PathExpanders.forTypeAndDirection( MyRelTypes.R1, Direction.OUTGOING ),
-            CommonEvaluators.doubleCostEvaluator( "cost", 1.0d ) );
-
-        // Assert that there are two matching paths
-        Node startNode = graph.getNode( "start" );
-        Node endNode = graph.getNode( "x" );
-        assertPaths( finder.findAllPaths( startNode, endNode ),
-            "start,a,b,c,x", "start,a,b,c,d,e,x" );
-
-        // Assert that for the shorter one it picked the correct relationship
-        // of the two from (c) --> (x)
-        for ( WeightedPath path : finder.findAllPaths( startNode, endNode ) )
+        try ( Transaction transaction = graphDb.beginTx() )
         {
-            if ( getPathDef( path ).equals( "start,a,b,c,x" ) )
+            Relationship shortCTOXRelationship = createGraph( true );
+
+            PathFinder<WeightedPath> finder = factory.dijkstra( PathExpanders.forTypeAndDirection( MyRelTypes.R1, Direction.OUTGOING ),
+                    CommonEvaluators.doubleCostEvaluator( "cost", 1.0d ) );
+
+            // Assert that there are two matching paths
+            Node startNode = graph.getNode( "start" );
+            Node endNode = graph.getNode( "x" );
+            assertPaths( finder.findAllPaths( startNode, endNode ), "start,a,b,c,x", "start,a,b,c,d,e,x" );
+
+            // Assert that for the shorter one it picked the correct relationship
+            // of the two from (c) --> (x)
+            for ( WeightedPath path : finder.findAllPaths( startNode, endNode ) )
             {
-                assertContainsRelationship( path, shortCTOXRelationship );
+                if ( getPathDef( path ).equals( "start,a,b,c,x" ) )
+                {
+                    assertContainsRelationship( path, shortCTOXRelationship );
+                }
             }
+            transaction.commit();
         }
     }
 

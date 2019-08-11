@@ -30,6 +30,7 @@ import org.neo4j.graphdb.InputPosition;
 import org.neo4j.graphdb.Notification;
 import org.neo4j.graphdb.Result;
 import org.neo4j.graphdb.SeverityLevel;
+import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.api.procedure.GlobalProcedures;
 import org.neo4j.procedure.Procedure;
 
@@ -45,11 +46,14 @@ public class DeprecationAcceptanceTest extends NotificationTestSupport
     void deprecatedCompiledRuntime()
     {
         // when
-        Result result = db.execute( "EXPLAIN CYPHER runtime=compiled RETURN 1" );
-
-        // then
-        assertThat( result.getNotifications(), containsItem( deprecatedCompiledRuntime ) );
-        result.close();
+        try ( Transaction transaction = db.beginTx() )
+        {
+            try ( Result result = db.execute( "EXPLAIN CYPHER runtime=compiled RETURN 1" ) )
+            {
+                // then
+                assertThat( result.getNotifications(), containsItem( deprecatedCompiledRuntime ) );
+            }
+        }
     }
 
     // DEPRECATED FUNCTIONS

@@ -46,9 +46,7 @@ abstract class DirectedRelationshipByIdSeekTestBase[CONTEXT <: RuntimeContext](
     val runtimeResult = execute(logicalQuery, runtime)
 
     // then
-    inTx {
-      runtimeResult should beColumns("r", "x", "y").withRows(singleRow(relToFind, relToFind.getStartNode, relToFind.getEndNode))
-    }
+    runtimeResult should beColumns("r", "x", "y").withRows(singleRow(relToFind, relToFind.getStartNode, relToFind.getEndNode))
   }
 
   test("should not find non-existing relationship") {
@@ -82,10 +80,8 @@ abstract class DirectedRelationshipByIdSeekTestBase[CONTEXT <: RuntimeContext](
     val runtimeResult = execute(logicalQuery, runtime)
 
     // then
-    inTx {
-      val expected = toFind.map(r => Array(r, r.getStartNode, r.getEndNode))
-      runtimeResult should beColumns("r", "x", "y").withRows(expected)
-    }
+    val expected = toFind.map(r => Array(r, r.getStartNode, r.getEndNode))
+    runtimeResult should beColumns("r", "x", "y").withRows(expected)
   }
 
   test("should find some relationships and not others") {
@@ -105,10 +101,8 @@ abstract class DirectedRelationshipByIdSeekTestBase[CONTEXT <: RuntimeContext](
     val runtimeResult = execute(logicalQuery, runtime)
 
     // then
-    inTx {
-      val expected = toFind.map(r => Array(r, r.getStartNode, r.getEndNode))
-      runtimeResult should beColumns("r", "x", "y").withRows(expected)
-    }
+    val expected = toFind.map(r => Array(r, r.getStartNode, r.getEndNode))
+    runtimeResult should beColumns("r", "x", "y").withRows(expected)
   }
 
   test("should handle relById + filter") {
@@ -126,8 +120,6 @@ abstract class DirectedRelationshipByIdSeekTestBase[CONTEXT <: RuntimeContext](
     val runtimeResult = execute(logicalQuery, runtime)
 
     // then
-    inTx {
-      runtimeResult should beColumns("r", "x", "y").withRows(Seq(Array(toFind, toFind.getStartNode, toFind.getEndNode)))
-    }
+    runtimeResult should beColumns("r", "x", "y").withRows(Seq(Array(toFind, toFind.getStartNode, toFind.getEndNode)))
   }
 }

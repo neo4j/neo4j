@@ -22,6 +22,7 @@ package org.neo4j.server.http.cypher;
 import java.net.URI;
 
 import org.neo4j.graphdb.Result;
+import org.neo4j.graphdb.Transaction;
 import org.neo4j.internal.kernel.api.Transaction.Type;
 import org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo;
 import org.neo4j.internal.kernel.api.security.LoginContext;
@@ -34,6 +35,8 @@ import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.server.http.cypher.format.api.Statement;
 import org.neo4j.server.http.cypher.format.api.TransactionUriScheme;
+
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
 /**
  * Encapsulates executing statements in a transaction, committing the transaction, or rolling it back.
@@ -63,7 +66,7 @@ class TransactionHandle implements TransactionTerminationHandle
     private final Type type;
     private final LoginContext loginContext;
     private final ClientConnectionInfo connectionInfo;
-    private long customTransactionTimeout;
+    private long customTransactionTimeoutMillis;
     private final Log log;
     private final long id;
     private TransitionalTxManagementKernelTransaction context;
@@ -72,7 +75,7 @@ class TransactionHandle implements TransactionTerminationHandle
 
     TransactionHandle( TransitionalPeriodTransactionMessContainer txManagerFacade, QueryExecutionEngine engine, GraphDatabaseQueryService queryService,
             TransactionRegistry registry, TransactionUriScheme uriScheme, boolean implicitTransaction, LoginContext loginContext,
-            ClientConnectionInfo connectionInfo, long customTransactionTimeout, LogProvider logProvider )
+            ClientConnectionInfo connectionInfo, long customTransactionTimeoutMillis, LogProvider logProvider )
     {
         this.txManagerFacade = txManagerFacade;
         this.engine = engine;
@@ -82,7 +85,7 @@ class TransactionHandle implements TransactionTerminationHandle
         this.type = implicitTransaction ? Type.implicit : Type.explicit;
         this.loginContext = loginContext;
         this.connectionInfo = connectionInfo;
-        this.customTransactionTimeout = customTransactionTimeout;
+        this.customTransactionTimeoutMillis = customTransactionTimeoutMillis;
         this.log = logProvider.getLog( getClass() );
         this.id = registry.begin( this );
     }
@@ -136,7 +139,7 @@ class TransactionHandle implements TransactionTerminationHandle
     {
         if ( context == null )
         {
-            context = txManagerFacade.newTransaction( type, loginContext, connectionInfo, customTransactionTimeout );
+            context = txManagerFacade.newTransaction( type, loginContext, connectionInfo, customTransactionTimeoutMillis );
         }
         else
         {
@@ -144,9 +147,21 @@ class TransactionHandle implements TransactionTerminationHandle
         }
     }
 
-    public Result executeStatement( Statement statement ) throws QueryExecutionKernelException
+    Result executeStatement( Statement statement, boolean periodicCommit ) throws QueryExecutionKernelException
     {
-        TransactionalContext tc = txManagerFacade.create( queryService, type, loginContext, statement.getStatement(), statement.getParameters() );
+        if ( periodicCommit )
+        {
+            var db = txManagerFacade.getDb();
+            Result result;
+            try ( Transaction transaction = db.beginTransaction(Type.implicit, loginContext, connectionInfo, customTransactionTimeoutMillis, MILLISECONDS ) )
+            {
+                result = db.execute( statement.getStatement(), statement.getParameters() );
+                transaction.commit();
+            }
+            return result;
+        }
+        TransactionalContext tc = txManagerFacade.create( queryService, context.getInternalTransaction(),
+                type, loginContext, statement.getStatement(), statement.getParameters() );
         return engine.executeQuery( statement.getStatement(), ValueUtils.asMapValue( statement.getParameters() ), tc, false );
     }
 

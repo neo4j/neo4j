@@ -23,6 +23,8 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
+import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.graphdb.Transaction;
 import org.neo4j.server.rest.AbstractRestFunctionalTestBase;
 import org.neo4j.server.rest.domain.JsonParseException;
 import org.neo4j.test.server.HTTP;
@@ -67,14 +69,14 @@ public class RowFormatMetaFieldTestIT extends AbstractRestFunctionalTestBase
     public void tearDown()
     {
         // empty the database
-        graphdb().execute( "MATCH (n) DETACH DELETE n" );
+        executeTransactionally( "MATCH (n) DETACH DELETE n" );
     }
 
     @Test
     public void metaFieldShouldGetCorrectIndex()
     {
         // given
-        graphdb().execute( "CREATE (:Start)-[:R]->(:End)" );
+        executeTransactionally( "CREATE (:Start)-[:R]->(:End)" );
 
         // execute and commit
         Response commit = http.POST( commitResource,
@@ -90,7 +92,7 @@ public class RowFormatMetaFieldTestIT extends AbstractRestFunctionalTestBase
     public void metaFieldShouldGivePathInfoInList()
     {
         // given
-        graphdb().execute( "CREATE (:Start)-[:R]->(:End)" );
+        executeTransactionally( "CREATE (:Start)-[:R]->(:End)" );
 
         // execute and commit
         Response commit = http.POST( commitResource,
@@ -105,7 +107,7 @@ public class RowFormatMetaFieldTestIT extends AbstractRestFunctionalTestBase
     public void metaFieldShouldPutPathListAtCorrectIndex()
     {
         // given
-        graphdb().execute( "CREATE (:Start)-[:R]->(:End)" );
+        executeTransactionally( "CREATE (:Start)-[:R]->(:End)" );
 
         // execute and commit
         Response commit = http.POST( commitResource,
@@ -114,6 +116,16 @@ public class RowFormatMetaFieldTestIT extends AbstractRestFunctionalTestBase
         assertThat( commit, containsNoErrors() );
         assertThat( commit, rowContainsAMetaListAtIndex( 1 ) );
         assertThat( commit.status(), equalTo( 200 ) );
+    }
+
+    private void executeTransactionally( String query )
+    {
+        GraphDatabaseService database = graphdb();
+        try ( Transaction transaction = database.beginTx() )
+        {
+            database.execute( query );
+            transaction.commit();
+        }
     }
 
     private HTTP.RawPayload queryAsJsonRow( String query )

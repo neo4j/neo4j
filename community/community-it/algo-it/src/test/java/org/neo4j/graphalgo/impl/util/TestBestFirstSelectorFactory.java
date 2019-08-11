@@ -36,6 +36,7 @@ import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.PathExpander;
 import org.neo4j.graphdb.PathExpanders;
 import org.neo4j.graphdb.ResourceIterator;
+import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.traversal.TraversalBranch;
 import org.neo4j.graphdb.traversal.Traverser;
 import org.neo4j.graphdb.traversal.Uniqueness;
@@ -62,54 +63,58 @@ class TestBestFirstSelectorFactory extends Neo4jAlgoTestCase
     @BeforeEach
     void buildGraph()
     {
-        graph.makePathWithRelProperty( LENGTH, "a-1-b-2-d" );
-        graph.makePathWithRelProperty( LENGTH, "a-2-c-4-b" );
+        try ( Transaction transaction = graphDb.beginTx() )
+        {
+            graph.makePathWithRelProperty( LENGTH, "a-1-b-2-d" );
+            graph.makePathWithRelProperty( LENGTH, "a-2-c-4-b" );
+            transaction.commit();
+        }
     }
 
     @ParameterizedTest
     @MethodSource( "params" )
     void shouldDoWholeTraversalInCorrectOrder( PathExpander expander, PathInterest<Integer> interest, Uniqueness uniqueness, String[] expectedResult )
     {
-        var factory = new BestFirstSelectorFactory<Integer, Integer>( interest )
+        try ( Transaction transaction = graphDb.beginTx() )
         {
-            private final CostEvaluator<Integer> evaluator = CommonEvaluators.intCostEvaluator( LENGTH );
-
-            @Override
-            protected Integer getStartData()
+            var factory = new BestFirstSelectorFactory<Integer,Integer>( interest )
             {
-                return 0;
-            }
+                private final CostEvaluator<Integer> evaluator = CommonEvaluators.intCostEvaluator( LENGTH );
 
-            @Override
-            protected Integer addPriority( TraversalBranch source, Integer currentAggregatedValue, Integer value )
+                @Override
+                protected Integer getStartData()
+                {
+                    return 0;
+                }
+
+                @Override
+                protected Integer addPriority( TraversalBranch source, Integer currentAggregatedValue, Integer value )
+                {
+                    return value + currentAggregatedValue;
+                }
+
+                @Override
+                protected Integer calculateValue( TraversalBranch next )
+                {
+                    return next.length() == 0 ? 0 : evaluator.getCost( next.lastRelationship(), Direction.BOTH );
+                }
+            };
+            Node a = graph.getNode( "a" );
+
+            Traverser traverser = new MonoDirectionalTraversalDescription().expand( expander ).order( factory ).uniqueness( uniqueness ).traverse( a );
+
+            ResourceIterator<Path> iterator = traverser.iterator();
+
+            int i = 0;
+            while ( iterator.hasNext() )
             {
-                return value + currentAggregatedValue;
+                assertPath( iterator.next(), expectedResult[i] );
+                i++;
             }
-
-            @Override
-            protected Integer calculateValue( TraversalBranch next )
-            {
-                return next.length() == 0 ? 0 : evaluator.getCost( next.lastRelationship(), Direction.BOTH );
-            }
-        };
-        Node a = graph.getNode( "a" );
-
-        Traverser traverser = new MonoDirectionalTraversalDescription()
-            .expand( expander )
-            .order( factory )
-            .uniqueness( uniqueness )
-            .traverse( a );
-
-        ResourceIterator<Path> iterator = traverser.iterator();
-
-        int i = 0;
-        while ( iterator.hasNext() )
-        {
-            assertPath( iterator.next(), expectedResult[i] );
-            i++;
+            assertEquals( expectedResult.length, i, String.format( "Not all expected paths where traversed. Missing paths are %s\n",
+                    Arrays.toString( Arrays.copyOfRange( expectedResult, i, expectedResult.length ) ) ) );
+            transaction.commit();
         }
-        assertEquals( expectedResult.length, i, String.format( "Not all expected paths where traversed. Missing paths are %s\n",
-            Arrays.toString( Arrays.copyOfRange( expectedResult, i, expectedResult.length ) ) ) );
     }
 
     private static Stream<Arguments> params()

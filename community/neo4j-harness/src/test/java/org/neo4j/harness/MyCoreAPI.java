@@ -19,11 +19,9 @@
  */
 package org.neo4j.harness;
 
-import org.neo4j.graphdb.Transaction;
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.exceptions.Status;
-import org.neo4j.kernel.api.security.AnonymousContext;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.logging.Log;
@@ -44,14 +42,13 @@ public class MyCoreAPI
     public long makeNode( String label ) throws ProcedureException
     {
         long result;
-        try ( Transaction tx = graph.beginTransaction( KernelTransaction.Type.explicit, AnonymousContext.write() ) )
+        try
         {
             KernelTransaction ktx = txBridge.getKernelTransactionBoundToThisThread( true, graph.databaseId() );
             long nodeId = ktx.dataWrite().nodeCreate();
             int labelId = ktx.tokenWrite().labelGetOrCreateForName( label );
             ktx.dataWrite().nodeAddLabel( nodeId, labelId );
-            result = nodeId;
-            tx.commit();
+            return nodeId;
         }
         catch ( Exception e )
         {
@@ -59,18 +56,11 @@ public class MyCoreAPI
             throw new ProcedureException( Status.Procedure.ProcedureCallFailed,
                     "Failed to create node: " + e.getMessage(), e );
         }
-        return result;
     }
 
     public long countNodes()
     {
-        long result;
-        try ( Transaction tx = graph.beginTransaction( KernelTransaction.Type.explicit, AnonymousContext.read() ) )
-        {
-            KernelTransaction kernelTransaction = this.txBridge.getKernelTransactionBoundToThisThread(true, graph.databaseId() );
-            result = kernelTransaction.dataRead().countsForNode( -1 );
-            tx.commit();
-        }
-        return result;
+        KernelTransaction kernelTransaction = this.txBridge.getKernelTransactionBoundToThisThread(true, graph.databaseId() );
+        return kernelTransaction.dataRead().countsForNode( -1 );
     }
 }

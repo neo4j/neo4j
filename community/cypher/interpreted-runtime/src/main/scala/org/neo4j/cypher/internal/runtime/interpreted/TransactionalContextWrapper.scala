@@ -58,7 +58,7 @@ case class TransactionalContextWrapper(tc: TransactionalContext, threadSafeCurso
 
   override def isTopLevelTx: Boolean = tc.isTopLevelTx
 
-  override def close(success: Boolean) { tc.close(success) }
+  override def close() { tc.close() }
 
   override def kernelStatisticProvider: KernelStatisticProvider = new ProfileKernelStatisticProvider(tc.kernelStatisticProvider())
 

@@ -21,8 +21,8 @@ package org.neo4j.cypher.internal.runtime
 
 import java.util
 
-import org.neo4j.internal.helpers.Exceptions
 import org.neo4j.cypher.internal.runtime.ResourceManager.INITIAL_CAPACITY
+import org.neo4j.internal.helpers.Exceptions
 
 import scala.collection.JavaConverters._
 
@@ -44,7 +44,7 @@ class ResourceManager(monitor: ResourceMonitor = ResourceMonitor.NOOP) extends C
 
   def allResources: Iterable[AutoCloseable] = resources.asScala
 
-  override def close(success: Boolean): Unit = {
+  override def close(): Unit = {
     val iterator = resources.iterator()
     var error: Throwable = null
     while (iterator.hasNext) {

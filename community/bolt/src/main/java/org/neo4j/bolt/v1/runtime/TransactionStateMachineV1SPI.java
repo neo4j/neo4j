@@ -49,6 +49,7 @@ import org.neo4j.values.AnyValue;
 import org.neo4j.values.virtual.MapValue;
 
 import static org.neo4j.internal.kernel.api.Transaction.Type.explicit;
+import static org.neo4j.internal.kernel.api.Transaction.Type.implicit;
 
 public class TransactionStateMachineV1SPI implements TransactionStateMachineSPI
 {
@@ -97,9 +98,9 @@ public class TransactionStateMachineV1SPI implements TransactionStateMachineSPI
     }
 
     @Override
-    public BoltQueryExecutor getPeriodicCommitExecutor( LoginContext loginContext, Duration txTimeout, AccessMode accessMode, Map<String,Object> txMetaData )
+    public BoltTransaction beginPeriodicCommitTransaction( LoginContext loginContext, Duration txTimeout, AccessMode accessMode, Map<String,Object> txMetadata )
     {
-        return boltGraphDatabaseServiceSPI.getPeriodicCommitExecutor( loginContext, boltChannel.info(), txTimeout, accessMode, txMetaData );
+        return boltGraphDatabaseServiceSPI.beginTransaction( implicit, loginContext, boltChannel.info(), txTimeout, accessMode, txMetadata  );
     }
 
     @Override
@@ -200,7 +201,7 @@ public class TransactionStateMachineV1SPI implements TransactionStateMachineSPI
         {
             if ( boltQueryExecution != null )
             {
-                boltQueryExecution.close( success );
+                boltQueryExecution.close();
             }
         }
 

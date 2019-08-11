@@ -40,7 +40,7 @@ class ExecutionResultTest extends ExecutionEngineFunSuite {
     val regex = "zero.*one.*two.*three.*four.*five.*six.*seven.*eight.*nine"
     val pattern = Pattern.compile(regex)
 
-    val stringDump = graph.execute(q).resultAsString()
+    val stringDump = graph.withTx(_ => graph.execute(q).resultAsString())
     assertTrue( "Columns did not appear in the expected order: \n" + stringDump, pattern.matcher(stringDump).find() )
   }
 
@@ -136,31 +136,35 @@ class ExecutionResultTest extends ExecutionEngineFunSuite {
   }
 
   test("hasNext should not change resultAsString") {
-    val result = graph.execute("UNWIND [1,2,3] AS x RETURN x")
-    result.hasNext
-    result.resultAsString() should equal(
-      """+---+
-        || x |
-        |+---+
-        || 1 |
-        || 2 |
-        || 3 |
-        |+---+
-        |3 rows
-        |""".stripMargin)
+    graph.inTx({
+      val result = graph.execute("UNWIND [1,2,3] AS x RETURN x")
+      result.hasNext
+      result.resultAsString() should equal(
+        """+---+
+          || x |
+          |+---+
+          || 1 |
+          || 2 |
+          || 3 |
+          |+---+
+          |3 rows
+          |""".stripMargin)
+    })
   }
 
   test("next should change resultAsString") {
-    val result = graph.execute("UNWIND [1,2,3] AS x RETURN x")
-    result.next().asScala should equal(Map("x" -> 1))
-    result.resultAsString() should equal(
-      """+---+
-        || x |
-        |+---+
-        || 2 |
-        || 3 |
-        |+---+
-        |2 rows
-        |""".stripMargin)
+    graph.inTx({
+      val result = graph.execute("UNWIND [1,2,3] AS x RETURN x")
+      result.next().asScala should equal(Map("x" -> 1))
+      result.resultAsString() should equal(
+        """+---+
+          || x |
+          |+---+
+          || 2 |
+          || 3 |
+          |+---+
+          |2 rows
+          |""".stripMargin)
+    })
   }
 }

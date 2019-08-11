@@ -396,42 +396,6 @@ public class TransactionIT extends AbstractRestFunctionalTestBase
     }
 
     @Test
-    public void begin__execute__execute_and_periodic_commit() throws Exception
-    {
-        ServerTestUtils.withCSVFile( 1, url ->
-        {
-            // begin
-            Response begin = http.POST( txUri );
-
-            // execute
-            http.POST( begin.location(), quotedJson( "{ 'statements': [ { 'statement': 'CREATE ()' } ] }" ) );
-
-            // execute
-            Response response = http.POST( begin.location(), quotedJson( "{ 'statements': [ { 'statement': 'USING" +
-                                                                         " PERIODIC COMMIT LOAD CSV FROM \\\"" +
-                                                                         url + "\\\" AS line CREATE ()' } ] }" ) );
-
-            assertThat( response, hasErrors( Status.Statement.SemanticError ) );
-        } );
-    }
-
-    @Test
-    public void begin_and_execute_periodic_commit__commit() throws Exception
-    {
-        ServerTestUtils.withCSVFile( 1, url ->
-        {
-            // begin and execute
-            Response begin = http.POST(
-                    txUri,
-                    quotedJson( "{ 'statements': [ { 'statement': 'USING PERIODIC COMMIT LOAD CSV FROM \\\"" +
-                                url + "\\\" AS line CREATE ()' } ] }" )
-            );
-
-            assertThat( begin, hasErrors( Status.Statement.SemanticError ) );
-        } );
-    }
-
-    @Test
     public void begin__execute_multiple__commit() throws Exception
     {
         long nodesInDatabaseBeforeTransaction = countNodes();
@@ -650,10 +614,7 @@ public class TransactionIT extends AbstractRestFunctionalTestBase
         }
         socket.close();
 
-        try ( Transaction ignored = graphdb().beginTx() )
-        {
-            assertEquals( initialNodes, countNodes() );
-        }
+        assertEquals( initialNodes, countNodes() );
 
         // then soon the transaction should have been terminated
         long endTime = System.currentTimeMillis() + 5000;

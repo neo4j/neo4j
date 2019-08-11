@@ -139,6 +139,13 @@ class DeleteRelationshipStressIT
 
     private Future executeInThread( final String query )
     {
-        return executorService.submit( () -> db.execute( query ).resultAsString() );
+        return executorService.submit( () ->
+        {
+            try ( Transaction transaction = db.beginTx() )
+            {
+                db.execute( query ).resultAsString();
+                transaction.commit();
+            }
+        } );
     }
 }
