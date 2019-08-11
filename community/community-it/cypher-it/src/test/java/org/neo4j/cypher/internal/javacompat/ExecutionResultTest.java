@@ -135,7 +135,7 @@ class ExecutionResultTest
                 (Point) db.execute( "RETURN point({latitude: 12.18, longitude: 56.2}) as point" ).next().get( "point" );
 
         // When
-        double distance = (double) db.execute( "RETURN distance({points}[0], {points}[1]) as dist",
+        double distance = (double) db.execute( "RETURN distance($points[0], $points[1]) as dist",
                 map( "points", asList( point1, point2 ) ) ).next().get( "dist" );
         // Then
         assertThat( Math.round( distance ), equalTo( 86107L ) );
@@ -149,7 +149,7 @@ class ExecutionResultTest
         Point point2 = (Point) db.execute( "RETURN point({latitude: 12.18, longitude: 56.2}) as point"  ).next().get( "point" );
 
         // When
-        double distance = (double) db.execute( "RETURN distance({points}['p1'], {points}['p2']) as dist",
+        double distance = (double) db.execute( "RETURN distance($points['p1'], $points['p2']) as dist",
                 map( "points", map("p1", point1, "p2", point2) ) ).next().get( "dist" );
         // Then
         assertThat(Math.round( distance ), equalTo(86107L));

@@ -423,8 +423,8 @@ Feature: ConstraintAcceptance
       | p | {ssn: 42, name: 'Robert Paulsen'} |
     When executing query:
       """
-      MERGE (person:Person {ssn: {p}.ssn})
-        ON CREATE SET person = {p}
+      MERGE (person:Person {ssn: $p.ssn})
+        ON CREATE SET person = $p
       RETURN person.ssn
       """
     Then the result should be:

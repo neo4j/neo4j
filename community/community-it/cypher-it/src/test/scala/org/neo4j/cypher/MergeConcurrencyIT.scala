@@ -31,8 +31,8 @@ class MergeConcurrencyIT extends ExecutionEngineFunSuite {
     execute("CREATE CONSTRAINT ON (n:Label) ASSERT n.id IS UNIQUE")
 
     var exceptionsThrown = List.empty[Throwable]
-    val q = "MERGE (a:Label {id:{id}}) " +
-      "MERGE (b:Label {id:{id}+1}) " +
+    val q = "MERGE (a:Label {id:$id}) " +
+      "MERGE (b:Label {id:$id+1}) " +
       "MERGE (a)-[r:TYPE]->(b) " +
       "RETURN a, b, r"
 
@@ -73,7 +73,7 @@ class MergeConcurrencyIT extends ExecutionEngineFunSuite {
       def run() {
         try {
           (0 until nodeCount) foreach {
-            x => execute("MERGE (a:Label {id:{id}})", "id" -> x)
+            x => execute("MERGE (a:Label {id:$id})", "id" -> x)
           }
         } catch {
           case e: Throwable => exceptionsThrown = exceptionsThrown :+ e
@@ -105,7 +105,7 @@ class MergeConcurrencyIT extends ExecutionEngineFunSuite {
       def run() {
         try {
           (0 until nodeCount) foreach {
-            x => execute("MERGE (a:Label {id:{id}})", "id" -> x)
+            x => execute("MERGE (a:Label {id:$id})", "id" -> x)
           }
         } catch {
           case e: Throwable => exceptionsThrown = exceptionsThrown :+ e
@@ -133,7 +133,7 @@ class MergeConcurrencyIT extends ExecutionEngineFunSuite {
   test("merge relationship - one bound end node") {
     val n1 = createNode()
     val n2 = createNode()
-    val query = "MATCH (n) WHERE ID(n) = {id1} MERGE (n)-[r:TEST]-(m)"
+    val query = "MATCH (n) WHERE ID(n) = $id1 MERGE (n)-[r:TEST]-(m)"
     val compileFirst = execute(s"EXPLAIN $query", "id1" -> n1.getId, "id2" -> n2.getId)
     var exceptionsThrown = List.empty[Throwable]
 
@@ -167,7 +167,7 @@ class MergeConcurrencyIT extends ExecutionEngineFunSuite {
   test("merge relationship - both end nodes matched") {
     val n1 = createNode()
     val n2 = createNode()
-    val query = "MATCH (n), (m) WHERE ID(n) = {id1} AND ID(m) = {id2} MERGE (n)-[r:TEST]-(m)"
+    val query = "MATCH (n), (m) WHERE ID(n) = $id1 AND ID(m) = $id2 MERGE (n)-[r:TEST]-(m)"
     val compileFirst = execute(s"EXPLAIN $query", "id1" -> n1.getId, "id2" -> n2.getId)
 
     var exceptionsThrown = List.empty[Throwable]

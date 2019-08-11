@@ -156,8 +156,8 @@ class MatchPredicateNormalizerTest extends CypherFunSuite with RewriteTest {
 
   test("varlength with labels and parameters") {
     assertRewrite(
-      "MATCH (a:Artist)-[r:WORKED_WITH* { year: {foo} }]->(b:Artist) RETURN *",
-      "MATCH (a)-[r:WORKED_WITH*]->(b) WHERE a:Artist AND b:Artist AND ALL(`  FRESHID16` in r where `  FRESHID16`.year = {foo})  RETURN *")
+      "MATCH (a:Artist)-[r:WORKED_WITH* { year: $foo }]->(b:Artist) RETURN *",
+      "MATCH (a)-[r:WORKED_WITH*]->(b) WHERE a:Artist AND b:Artist AND ALL(`  FRESHID16` in r where `  FRESHID16`.year = $foo)  RETURN *")
   }
 
   test("rewrite outgoing pattern to getDegree call") {

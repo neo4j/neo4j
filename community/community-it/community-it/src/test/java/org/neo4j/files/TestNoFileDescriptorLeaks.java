@@ -81,12 +81,12 @@ class TestNoFileDescriptorLeaks
             try ( Transaction tx = db.beginTx() )
             {
                 db.execute(
-                        "MERGE (a:Node {id: {a}}) " +
-                        "MERGE (b:Node {id: {b}}) " +
-                        "MERGE (c:Node {id: {c}}) " +
-                        "MERGE (d:Node {id: {d}}) " +
-                        "MERGE (e:Node {id: {e}}) " +
-                        "MERGE (f:Node {id: {f}}) ",
+                        "MERGE (a:Node {id: $a}) " +
+                        "MERGE (b:Node {id: $b}) " +
+                        "MERGE (c:Node {id: $c}) " +
+                        "MERGE (d:Node {id: $d}) " +
+                        "MERGE (e:Node {id: $e}) " +
+                        "MERGE (f:Node {id: $f}) ",
                         map( "a", nextId() % 100,
                                 "b", nextId() % 100,
                                 "c", nextId() % 100,
@@ -94,12 +94,12 @@ class TestNoFileDescriptorLeaks
                                 "e", nextId(),
                                 "f", nextId() )
                 );
-                db.execute( "MERGE (n:Node {id: {a}}) ", map( "a", nextId() % 100 ) );
-                db.execute( "MERGE (n:Node {id: {a}}) ", map( "a", nextId() % 100 ) );
-                db.execute( "MERGE (n:Node {id: {a}}) ", map( "a", nextId() % 100 ) );
-                db.execute( "MERGE (n:Node {id: {a}}) ", map( "a", nextId() ) );
-                db.execute( "MERGE (n:Node {id: {a}}) ", map( "a", nextId() ) );
-                db.execute( "MERGE (n:Node {id: {a}}) ", map( "a", nextId() ) );
+                db.execute( "MERGE (n:Node {id: $a}) ", map( "a", nextId() % 100 ) );
+                db.execute( "MERGE (n:Node {id: $a}) ", map( "a", nextId() % 100 ) );
+                db.execute( "MERGE (n:Node {id: $a}) ", map( "a", nextId() % 100 ) );
+                db.execute( "MERGE (n:Node {id: $a}) ", map( "a", nextId() ) );
+                db.execute( "MERGE (n:Node {id: $a}) ", map( "a", nextId() ) );
+                db.execute( "MERGE (n:Node {id: $a}) ", map( "a", nextId() ) );
                 tx.commit();
             }
         }

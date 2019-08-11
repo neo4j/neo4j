@@ -70,7 +70,7 @@ class ExpressionStringifierIT extends CypherFunSuite with Parser with Expression
       "not(((1) = (2)) and ((3) = (4)))" -> "not (1 = 2 AND 3 = 4)",
       "reduce(totalAge = 0, n IN nodes(p)| totalAge + n.age)" ->
         "reduce(totalAge = 0, n IN nodes(p) | totalAge + n.age)",
-      "$param1+{param2}" -> "$param1 + $param2",
+      "$param1+$param2" -> "$param1 + $param2",
       "(:Label)--()" -> "(:Label)--()",
       "(:Label {prop:1})--()" -> "(:Label {prop: 1})--()",
       "()-[:Type {prop:1}]-()" -> "()-[:Type {prop: 1}]-()",

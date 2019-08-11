@@ -180,8 +180,8 @@ class CypherCompilerAstCacheAcceptanceTest extends CypherFunSuite with GraphData
     runQuery("WITH 2.0 as x RETURN x")    // hit
     runQuery("WITH 'foo' as x RETURN x")  // miss
     runQuery("WITH 'bar' as x RETURN x")  // hit
-    runQuery("WITH {p} as x RETURN x")    // not enough parameters -> not even miss
-    runQuery("WITH {k} as x RETURN x")    // not enough parameters -> not even miss
+    runQuery("WITH $p as x RETURN x")    // not enough parameters -> not even miss
+    runQuery("WITH $k as x RETURN x")    // not enough parameters -> not even miss
     runQuery("WITH [1,2] as x RETURN x")  // miss
     runQuery("WITH [3] as x RETURN x")    // hit
 

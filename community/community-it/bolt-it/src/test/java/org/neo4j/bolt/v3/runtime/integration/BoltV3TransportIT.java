@@ -338,7 +338,7 @@ public class BoltV3TransportIT extends BoltV3TransportBase
         // When
         negotiateBoltV3();
         connection.send( util.chunk(
-                new RunMessage( "RETURN {p}", asMapValue( params ) ),
+                new RunMessage( "RETURN $p", asMapValue( params ) ),
                         PullAllMessage.INSTANCE ) );
 
         // Then

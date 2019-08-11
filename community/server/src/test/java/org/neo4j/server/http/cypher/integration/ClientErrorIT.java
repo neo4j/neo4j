@@ -59,7 +59,7 @@ public class ClientErrorIT extends AbstractRestFunctionalTestBase
                         Status.Statement.SyntaxError
                 },
                 new Object[]{
-                        "RETURN {foo}",
+                        "RETURN $foo",
                         Status.Statement.ParameterMissing
                 },
                 new Object[]{

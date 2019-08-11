@@ -57,7 +57,7 @@ class StatisticsBackedCardinalityModelTest extends CypherFunSuite with LogicalPl
 
   test("query containing a WITH and LIMIT on parameterized cardinality") {
     val i = personCount
-    givenPattern("MATCH (a:Person) WITH a LIMIT {limit} MATCH (a)-[:REL]->()").
+    givenPattern("MATCH (a:Person) WITH a LIMIT $limit MATCH (a)-[:REL]->()").
       withGraphNodes(allNodes).
       withLabel('Person -> i).
       withRelationshipCardinality('Person -> 'REL -> 'Person -> relCount).
@@ -125,7 +125,7 @@ class StatisticsBackedCardinalityModelTest extends CypherFunSuite with LogicalPl
 
   test("should reduce cardinality for a WHERE after a WITH, unknown LIMIT") {
     val i = personCount
-    givenPattern("MATCH (a:Person) WITH a LIMIT {limit} WHERE a.age = 20").
+    givenPattern("MATCH (a:Person) WITH a LIMIT $limit WHERE a.age = 20").
       withGraphNodes(allNodes).
       withLabel('Person -> i).
       shouldHavePlannerQueryCardinality(createCardinalityModel)(

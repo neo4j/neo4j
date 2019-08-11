@@ -82,12 +82,12 @@ class QueryTaggerTest extends CypherFunSuite {
   }
 
   test(queryTag(ParameterExpressionTag)) {
-    QueryTagger("RETURN {param}") should contain(ParameterExpressionTag)
+    QueryTagger("RETURN $param") should contain(ParameterExpressionTag)
   }
 
   test(queryTag(ComplexExpressionTag)) {
     QueryTagger("RETURN n + 1") should contain(ComplexExpressionTag)
-    QueryTagger("RETURN {param}") should contain(ComplexExpressionTag)
+    QueryTagger("RETURN $param") should contain(ComplexExpressionTag)
     QueryTagger("RETURN n") should not contain ComplexExpressionTag
     QueryTagger("RETURN 1") should not contain ComplexExpressionTag
   }

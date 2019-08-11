@@ -609,7 +609,7 @@ public class TransactionIT extends AbstractRestFunctionalTestBase
     public void status_codes_should_appear_in_response()
     {
         Response response = http.POST( transactionCommitUri(),
-                quotedJson( "{ 'statements': [ { 'statement': 'RETURN {n}' } ] }" ) );
+                quotedJson( "{ 'statements': [ { 'statement': 'RETURN $n' } ] }" ) );
 
         assertThat( response.status(), equalTo( 200 ) );
         assertThat( response, hasErrors( Status.Statement.ParameterMissing ) );
@@ -779,7 +779,7 @@ public class TransactionIT extends AbstractRestFunctionalTestBase
         Response response = http.POST(
                 transactionCommitUri(),
                 quotedJson("{ 'statements': [ { 'statement': " +
-                        "'WITH {map} AS map RETURN map[0]', 'parameters':{'map':[{'index':0,'name':'a'},{'index':1,'name':'b'}]} } ] }"));
+                        "'WITH $map AS map RETURN map[0]', 'parameters':{'map':[{'index':0,'name':'a'},{'index':1,'name':'b'}]} } ] }"));
 
         // then
         assertThat( response.status(), equalTo( 200 ) );

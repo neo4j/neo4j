@@ -161,32 +161,32 @@ class IndexPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTe
         } getLogicalPlanFor
           """
           |MATCH (n:Coleslaw) USING INDEX n:Coleslaw(name)
-          |WHERE (n.age < 10 AND ( n.name IN {p0} OR
-          |        n.name IN {p1} OR
-          |        n.name IN {p2} OR
-          |        n.name IN {p3} OR
-          |        n.name IN {p4} OR
-          |        n.name IN {p5} OR
-          |        n.name IN {p6} OR
-          |        n.name IN {p7} OR
-          |        n.name IN {p8} OR
-          |        n.name IN {p9} OR
-          |        n.name IN {p10} OR
-          |        n.name IN {p11} OR
-          |        n.name IN {p12} OR
-          |        n.name IN {p13} OR
-          |        n.name IN {p14} OR
-          |        n.name IN {p15} OR
-          |        n.name IN {p16} OR
-          |        n.name IN {p17} OR
-          |        n.name IN {p18} OR
-          |        n.name IN {p19} OR
-          |        n.name IN {p20} OR
-          |        n.name IN {p21} OR
-          |        n.name IN {p22} OR
-          |        n.name IN {p23} OR
-          |        n.name IN {p24} OR
-          |        n.name IN {p25}) AND n.legal)
+          |WHERE (n.age < 10 AND ( n.name IN $p0 OR
+          |        n.name IN $p1 OR
+          |        n.name IN $p2 OR
+          |        n.name IN $p3 OR
+          |        n.name IN $p4 OR
+          |        n.name IN $p5 OR
+          |        n.name IN $p6 OR
+          |        n.name IN $p7 OR
+          |        n.name IN $p8 OR
+          |        n.name IN $p9 OR
+          |        n.name IN $p10 OR
+          |        n.name IN $p11 OR
+          |        n.name IN $p12 OR
+          |        n.name IN $p13 OR
+          |        n.name IN $p14 OR
+          |        n.name IN $p15 OR
+          |        n.name IN $p16 OR
+          |        n.name IN $p17 OR
+          |        n.name IN $p18 OR
+          |        n.name IN $p19 OR
+          |        n.name IN $p20 OR
+          |        n.name IN $p21 OR
+          |        n.name IN $p22 OR
+          |        n.name IN $p23 OR
+          |        n.name IN $p24 OR
+          |        n.name IN $p25) AND n.legal)
           |RETURN n.name as name
         """.stripMargin)(global)
 

@@ -661,10 +661,10 @@ class NormalizeWithAndReturnClausesTest extends CypherFunSuite with RewriteTest 
       """.stripMargin)
   }
 
-  test("MATCH (foo) WITH {meh} AS x ORDER BY x.prop DESC LIMIT 4 RETURN x") {
+  test("MATCH (foo) WITH $meh AS x ORDER BY x.prop DESC LIMIT 4 RETURN x") {
     assertIsNotRewritten(
       """MATCH (foo)
-        |WITH {meh} AS x ORDER BY x.prop DESC LIMIT 4
+        |WITH $meh AS x ORDER BY x.prop DESC LIMIT 4
         |RETURN x AS x
       """.stripMargin)
   }

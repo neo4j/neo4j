@@ -436,7 +436,7 @@ Feature: PatternPredicates
       """
       MATCH (a)-->(b)
       WHERE (b)-->()
-        AND a.id = {id}
+        AND a.id = $id
       RETURN b
       """
     Then the result should be:

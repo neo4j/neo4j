@@ -149,7 +149,7 @@ public class GraphDatabaseServiceExecuteTest
 
         // when passing as params to a distance function
         Result result = db.execute(
-                "RETURN distance(point({longitude: 144.317718, latitude: -37.031738}),{previous}) AS dist",
+                "RETURN distance(point({longitude: 144.317718, latitude: -37.031738}),$previous) AS dist",
                 map( "previous", point ) );
 
         // then
@@ -165,7 +165,7 @@ public class GraphDatabaseServiceExecuteTest
 
         // when passing as params to a distance function
         Result result = db.execute(
-                "RETURN distance(point({longitude: 144.317718, latitude: -37.031738}),{previous}) AS dist",
+                "RETURN distance(point({longitude: 144.317718, latitude: -37.031738}),$previous) AS dist",
                 map( "previous", point ) );
 
         // then
@@ -181,7 +181,7 @@ public class GraphDatabaseServiceExecuteTest
 
         // when passing as params to a distance function
         Result result = db.execute(
-                "RETURN distance(point({longitude: 144.317718, latitude: -37.031738}),{previous}) AS dist",
+                "RETURN distance(point({longitude: 144.317718, latitude: -37.031738}),$previous) AS dist",
                 map( "previous", geometry ) );
 
         // then
@@ -198,7 +198,7 @@ public class GraphDatabaseServiceExecuteTest
 
         // when passing as params to a distance function
         Result result = db.execute(
-                "RETURN distance({points}[0],{points}[1]) AS dist",
+                "RETURN distance($points[0],$points[1]) AS dist",
                 map( "points", points ) );
 
         // then

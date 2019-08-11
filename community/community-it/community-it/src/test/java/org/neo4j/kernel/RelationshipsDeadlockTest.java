@@ -53,14 +53,14 @@ import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAM
 @ExtendWith( TestDirectoryExtension.class )
 class RelationshipsDeadlockTest
 {
-    private static final String STMT_BA = " WITH {personA} as personA, {personB} as personB  " +
+    private static final String STMT_BA = " WITH $personA as personA, $personB as personB  " +
             "    MATCH (target:Person { `name` : personB })   " +
             "    MATCH (source:Person { `name` : personA })  " +
             "    SET target._lock=true" +
             "    SET source._lock=true" +
             " WITH source, target " +
             "    CREATE (source)-[rel:KNOWS]->(target)";
-    private static final String STMT_AB = " WITH {personA} as personA, {personB} as personB  " +
+    private static final String STMT_AB = " WITH $personA as personA, $personB as personB  " +
             "    MATCH (source:Person { `name` : personA })  " +
             "    MATCH (target:Person { `name` : personB })   " +
             "    SET source._lock=true" +

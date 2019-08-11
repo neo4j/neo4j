@@ -63,7 +63,7 @@ public class TransactionTestIT extends AbstractRestFunctionalTestBase
         // Document
         ResponseEntity response = gen.get()
                 .expectedStatus( 201 )
-                .payload( quotedJson( "{ 'statements': [ { 'statement': 'CREATE (n {props}) RETURN n', " +
+                .payload( quotedJson( "{ 'statements': [ { 'statement': 'CREATE (n $props) RETURN n', " +
                         "'parameters': { 'props': { 'name': 'My Node' } } } ] }" ) )
                 .post( getDataUri() + "transaction" );
 
@@ -213,7 +213,7 @@ public class TransactionTestIT extends AbstractRestFunctionalTestBase
         // Document
         ResponseEntity response = gen.get().expectedStatus( 200 )
                 .payload( quotedJson( "{ 'statements': [ { 'statement': 'CREATE (n) RETURN id(n)' }, "
-                        + "{ 'statement': 'CREATE (n {props}) RETURN n', "
+                        + "{ 'statement': 'CREATE (n $props) RETURN n', "
                         + "'parameters': { 'props': { 'name': 'My Node' } } } ] }" ) )
                 .post( getDataUri() + "transaction/commit" );
 

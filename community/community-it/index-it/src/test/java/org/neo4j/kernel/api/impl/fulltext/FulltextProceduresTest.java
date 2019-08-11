@@ -2064,11 +2064,11 @@ public class FulltextProceduresTest
         }
         Map<String,Object> params = new HashMap<>();
         params.put( "prop", valueToQueryFor );
-        try ( Result result = db.execute( "profile match (n:" + LABEL.name() + ") where n." + PROP + " = {prop} return n", params ) )
+        try ( Result result = db.execute( "profile match (n:" + LABEL.name() + ") where n." + PROP + " = $prop return n", params ) )
         {
             assertNoIndexSeeks( result );
         }
-        try ( Result result = db.execute( "cypher 3.5 profile match (n:" + LABEL.name() + ") where n." + PROP + " = {prop} return n", params ) )
+        try ( Result result = db.execute( "cypher 3.5 profile match (n:" + LABEL.name() + ") where n." + PROP + " = $prop return n", params ) )
         {
             assertNoIndexSeeks( result );
         }
@@ -2099,11 +2099,11 @@ public class FulltextProceduresTest
         }
         Map<String,Object> params = new HashMap<>();
         params.put( "prop", valueToQueryFor );
-        try ( Result result = db.execute( "profile match (n:" + LABEL.name() + ") where n." + PROP + " = {prop} return n", params ) )
+        try ( Result result = db.execute( "profile match (n:" + LABEL.name() + ") where n." + PROP + " = $prop return n", params ) )
         {
             assertNoIndexSeeks( result );
         }
-        try ( Result result = db.execute( "cypher 3.5 profile match (n:" + LABEL.name() + ") where n." + PROP + " = {prop} return n", params ) )
+        try ( Result result = db.execute( "cypher 3.5 profile match (n:" + LABEL.name() + ") where n." + PROP + " = $prop return n", params ) )
         {
             assertNoIndexSeeks( result );
         }

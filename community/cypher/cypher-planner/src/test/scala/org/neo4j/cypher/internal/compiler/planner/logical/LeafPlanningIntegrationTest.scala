@@ -57,7 +57,7 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
         case (_: ProjectEndpoints, _, _) => 11.0
       }
     } getLogicalPlanFor
-      """UNWIND {createdRelationships} as r
+      """UNWIND $createdRelationships as r
         |MATCH (source)-[r]->(target)
         |WITH source AS p
         |OPTIONAL MATCH (p)<-[follow]-() WHERE type(follow) STARTS WITH 'ProfileFavorites'
@@ -355,7 +355,7 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
   test("should plan node by ID lookup based on an IN predicate with a param as the rhs") {
     (new given {
       knownLabels = Set("Awesome")
-    } getLogicalPlanFor "MATCH (n:Awesome) WHERE id(n) IN {param} RETURN n")._2 should equal (
+    } getLogicalPlanFor "MATCH (n:Awesome) WHERE id(n) IN $param RETURN n")._2 should equal (
       Selection(
         ands(hasLabels("n", "Awesome")),
         NodeByIdSeek("n", ManySeekableArgs(parameter("param", CTAny)), Set.empty)
@@ -365,14 +365,14 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
 
   test("should plan directed rel by ID lookup based on an IN predicate with a param as the rhs") {
     (new given {
-    } getLogicalPlanFor "MATCH (a)-[r]->(b) WHERE id(r) IN {param} RETURN a, r, b")._2 should equal (
+    } getLogicalPlanFor "MATCH (a)-[r]->(b) WHERE id(r) IN $param RETURN a, r, b")._2 should equal (
       DirectedRelationshipByIdSeek("r", ManySeekableArgs(parameter("param", CTAny)), "a", "b", Set.empty)
     )
   }
 
   test("should plan undirected rel by ID lookup based on an IN predicate with a param as the rhs") {
     (new given {
-    } getLogicalPlanFor "MATCH (a)-[r]-(b) WHERE id(r) IN {param} RETURN a, r, b")._2 should equal (
+    } getLogicalPlanFor "MATCH (a)-[r]-(b) WHERE id(r) IN $param RETURN a, r, b")._2 should equal (
       UndirectedRelationshipByIdSeek("r", ManySeekableArgs(parameter("param", CTAny)), "a", "b", Set.empty)
     )
   }

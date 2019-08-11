@@ -150,8 +150,8 @@ class SemanticIndexAcceptanceTest extends ExecutionEngineFunSuite with PropertyC
     */
   private def testOperator[T <: Value](operator: String, setup: ValueSetup[T]): Unit = {
 
-    val queryNotUsingIndex = s"MATCH (n:Label) WHERE n.nonIndexed $operator {prop} RETURN n, n.nonIndexed AS prop ORDER BY id(n)"
-    val queryUsingIndex = s"MATCH (n:Label) WHERE n.indexed $operator {prop} RETURN n, n.indexed AS prop ORDER BY id(n)"
+    val queryNotUsingIndex = s"MATCH (n:Label) WHERE n.nonIndexed $operator $$prop RETURN n, n.nonIndexed AS prop ORDER BY id(n)"
+    val queryUsingIndex = s"MATCH (n:Label) WHERE n.indexed $operator $$prop RETURN n, n.indexed AS prop ORDER BY id(n)"
 
     def testValue(queryNotUsingIndex: String, queryUsingIndex: String, value: Value): Unit = {
       val valueObject = value.asObject()
