@@ -758,14 +758,6 @@ public class GraphDatabaseSettings implements SettingsDeclaration
             " This is an auxiliary service but should be left enabled in almost all cases." )
     public static final Setting<Boolean> filewatcher_enabled = newBuilder( "dbms.filewatcher.enabled", BOOL, true ).build();
 
-    @Description( "The maximum amount of heap memory to use in a transaction, in bytes (or kilobytes with the 'k' " +
-            "suffix, megabytes with 'm' and gigabytes with 'g'). If a transaction exceeds this limit, it will " +
-            "be terminated. Determining the current heap memory used by a transaction is a rough estimate and not " +
-            "an exact measurement. If no memory limit is configured, transactions will be allowed to use as much heap " +
-            "memory as needed. This could potentially lead to transactions consuming more heap memory than available, " +
-            "which will kill the Neo4j server." )
-    public static final Setting<String> transaction_max_memory = newBuilder( "unsupported.dbms.transaction.memory.max", STRING, null ).build();
-
     /**
      * Block size properties values depends from selected record format.
      * We can't figured out record format until it will be selected by corresponding edition.
@@ -1057,7 +1049,15 @@ public class GraphDatabaseSettings implements SettingsDeclaration
     @Description( "The maximum amount of off-heap memory that can be used to store transaction state data; it's a total amount of memory " +
             "shared across all active transactions. Zero means 'unlimited'. Used when dbms.tx_state.memory_allocation is set to 'OFF_HEAP'." )
     public static final Setting<Long> tx_state_max_off_heap_memory =
-            newBuilder( "dbms.tx_state.max_off_heap_memory", BYTES, BYTES.parse("2G") ).addConstraint( min( 0L ) ).build();
+            newBuilder( "dbms.tx_state.max_of_heap_memory", BYTES, BYTES.parse("2G") ).addConstraint( min( 0L ) ).build();
+
+    @Description( "The maximum amount of heap memory to use in a transaction, in bytes (or kilobytes with the 'k' " +
+                  "suffix, megabytes with 'm' and gigabytes with 'g'). If a transaction exceeds this limit, it will " +
+                  "be terminated. Determining the current heap memory used by a transaction is a rough estimate and not " +
+                  "an exact measurement. If no memory limit is configured, transactions will be allowed to use as much heap " +
+                  "memory as needed. This could potentially lead to transactions consuming more heap memory than available, " +
+                  "which will kill the Neo4j server." )
+    public static final Setting<String> transaction_max_memory = newBuilder( "unsupported.dbms.transaction.memory.max", STRING, null ).build();
 
     @Description( "Defines the maximum size of an off-heap memory block that can be cached to speed up allocations for transaction state data. " +
             "The value must be a power of 2." )
