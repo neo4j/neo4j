@@ -22,17 +22,17 @@ package org.neo4j.kernel.impl.pagecache;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracerSupplier;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 
-public class PublishPageCacheTracerMetricsAfterStart extends LifecycleAdapter
+public class PageCacheStopMetricsReporter extends LifecycleAdapter
 {
     private final PageCursorTracerSupplier pageCursorTracerSupplier;
 
-    public PublishPageCacheTracerMetricsAfterStart( PageCursorTracerSupplier pageCursorTracerSupplier )
+    public PageCacheStopMetricsReporter( PageCursorTracerSupplier pageCursorTracerSupplier )
     {
         this.pageCursorTracerSupplier = pageCursorTracerSupplier;
     }
 
     @Override
-    public void start()
+    public void stop()
     {
         // This will be called in the final stages of starting up a database, and will report any paging tracer
         // events caused by the startup process in the starting thread.
