@@ -82,6 +82,20 @@ public class NodeProxy implements Node, RelationshipFactory<Relationship>
         this.spi = spi;
     }
 
+    public static boolean isDeletedInCurrentTransaction( Node node )
+    {
+        if ( node instanceof NodeProxy )
+        {
+            NodeProxy proxy = (NodeProxy) node;
+            KernelTransaction ktx = proxy.spi.kernelTransaction();
+            try ( Statement ignore = ktx.acquireStatement() )
+            {
+                return ktx.dataRead().nodeDeletedInTransaction( proxy.nodeId );
+            }
+        }
+        return false;
+    }
+
     @Override
     public long getId()
     {
