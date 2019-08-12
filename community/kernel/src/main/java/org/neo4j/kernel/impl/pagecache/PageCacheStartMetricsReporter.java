@@ -34,8 +34,6 @@ public class PageCacheStartMetricsReporter extends LifecycleAdapter
     @Override
     public void start()
     {
-        // This will be called in the final stages of starting up a database, and will report any paging tracer
-        // events caused by the startup process in the starting thread.
         pageCursorTracerSupplier.get().reportEvents();
     }
 }
