@@ -19,9 +19,12 @@
  */
 package org.neo4j.graphdb.config;
 
+import org.neo4j.annotations.api.PublicApi;
+
 /**
  * Provide the basic operation that one could perform on a set of configurations.
  */
+@PublicApi
 public interface Configuration
 {
     /**

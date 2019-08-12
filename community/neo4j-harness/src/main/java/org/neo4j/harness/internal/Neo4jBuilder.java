@@ -20,6 +20,7 @@
 package org.neo4j.harness.internal;
 
 import org.neo4j.graphdb.config.Setting;
+import org.neo4j.harness.junit.extension.Neo4j;
 
 /**
  * Builder for constructing and starting Neo4j for test purposes.

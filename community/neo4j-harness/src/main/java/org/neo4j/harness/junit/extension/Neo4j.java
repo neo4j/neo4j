@@ -17,17 +17,20 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.harness.internal;
+package org.neo4j.harness.junit.extension;
 
 import java.io.PrintStream;
 import java.net.URI;
 
+import org.neo4j.annotations.api.PublicApi;
+import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.config.Configuration;
 
 /**
  * Neo4j test instance.
  */
+@PublicApi
 public interface Neo4j
 {
     /** Returns the URI to the Bolt Protocol connector of the instance. */
@@ -42,8 +45,14 @@ public interface Neo4j
      */
     URI httpsURI();
 
-    /** Access the {@link org.neo4j.graphdb.GraphDatabaseService} used by the server */
-    GraphDatabaseService graph();
+    /** Access the {@link DatabaseManagementService} used by the server */
+    DatabaseManagementService databaseManagementService();
+
+    /**
+     * Access default database service.
+     * @return default database service.
+     */
+    GraphDatabaseService defaultDatabaseService();
 
     /** Returns the server's configuration */
     Configuration config();

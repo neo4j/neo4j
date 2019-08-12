@@ -152,7 +152,7 @@ class InProcessServerBuilderIT
             // Then
             assertThat( HTTP.GET( neo4j.httpURI().toString() ).status(), equalTo( 200 ) );
             assertThat( HTTP.GET( neo4j.httpsURI().toString() ).status(), equalTo( 200 ) );
-            Config config = ((GraphDatabaseAPI) neo4j.graph()).getDependencyResolver().resolveDependency( Config.class );
+            Config config = ((GraphDatabaseAPI) neo4j.defaultDatabaseService()).getDependencyResolver().resolveDependency( Config.class );
             assertEquals( 20, config.get( GraphDatabaseSettings.dense_node_threshold ) );
         }
     }
@@ -206,7 +206,7 @@ class InProcessServerBuilderIT
 
             assertDoesNotThrow( () ->
             {
-                GraphDatabaseService service = neo4j.graph();
+                GraphDatabaseService service = neo4j.defaultDatabaseService();
                 try ( Transaction transaction = service.beginTx() )
                 {
                     service.createNode();
@@ -254,14 +254,15 @@ class InProcessServerBuilderIT
         try ( InProcessNeo4j neo4j = getTestBuilder( directory.storeDir() ).copyFrom( existingStoreDir ).build() )
         {
             // Then
-            try ( Transaction tx = neo4j.graph().beginTx() )
+            GraphDatabaseService graphDatabaseService = neo4j.defaultDatabaseService();
+            try ( Transaction tx = graphDatabaseService.beginTx() )
             {
-                ResourceIterable<Node> allNodes = Iterables.asResourceIterable( neo4j.graph().getAllNodes() );
+                ResourceIterable<Node> allNodes = Iterables.asResourceIterable( graphDatabaseService.getAllNodes() );
 
                 assertTrue( Iterables.count( allNodes ) > 0 );
 
                 // When: create another node
-                neo4j.graph().createNode();
+                graphDatabaseService.createNode();
                 tx.commit();
             }
         }
@@ -372,7 +373,7 @@ class InProcessServerBuilderIT
 
         try ( InProcessNeo4j neo4j = serverBuilder.build() )
         {
-            GraphDatabaseService db = neo4j.graph();
+            GraphDatabaseService db = neo4j.defaultDatabaseService();
 
             assertDbAccessible( db );
             verifyConnector( db, "http", httpEnabled );

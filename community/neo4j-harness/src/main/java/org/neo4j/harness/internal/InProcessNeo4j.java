@@ -31,8 +31,10 @@ import org.neo4j.configuration.connectors.BoltConnector;
 import org.neo4j.configuration.connectors.ConnectorPortRegister;
 import org.neo4j.configuration.connectors.HttpConnector;
 import org.neo4j.configuration.connectors.HttpsConnector;
+import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.config.Configuration;
+import org.neo4j.harness.junit.extension.Neo4j;
 import org.neo4j.internal.helpers.HostnamePort;
 import org.neo4j.io.fs.FileUtils;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
@@ -155,7 +157,13 @@ public class InProcessNeo4j implements Neo4j, AutoCloseable
     }
 
     @Override
-    public GraphDatabaseService graph()
+    public DatabaseManagementService databaseManagementService()
+    {
+        return server.getDatabaseService().getDatabaseManagementService();
+    }
+
+    @Override
+    public GraphDatabaseService defaultDatabaseService()
     {
         return server.getDatabaseService().getDatabase();
     }

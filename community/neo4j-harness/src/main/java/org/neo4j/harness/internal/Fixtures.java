@@ -91,7 +91,7 @@ public class Fixtures
 
     void applyTo( InProcessNeo4j controls )
     {
-        GraphDatabaseService db = controls.graph();
+        GraphDatabaseService db = controls.defaultDatabaseService();
         for ( String fixtureStatement : fixtureStatements )
         {
             try ( Transaction tx = db.beginTx() )

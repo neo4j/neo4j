@@ -30,9 +30,9 @@ import org.junit.jupiter.api.extension.ParameterResolver;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import org.neo4j.annotations.api.PublicApi;
+import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.harness.internal.InProcessNeo4j;
-import org.neo4j.harness.internal.Neo4j;
 import org.neo4j.harness.internal.Neo4jBuilder;
 
 import static org.neo4j.harness.internal.TestNeo4jBuilders.newInProcessBuilder;
@@ -92,9 +92,11 @@ public class Neo4jExtension implements BeforeAllCallback, AfterAllCallback, Para
     @Override
     public void beforeAll( ExtensionContext context )
     {
-        InProcessNeo4j neo4J = builder.build();
-        GraphDatabaseService service = neo4J.graph();
-        context.getStore( NAMESPACE ).put( Neo4j.class, neo4J );
+        InProcessNeo4j neo = builder.build();
+        DatabaseManagementService managementService = neo.databaseManagementService();
+        GraphDatabaseService service = neo.defaultDatabaseService();
+        context.getStore( NAMESPACE ).put( Neo4j.class, neo );
+        context.getStore( NAMESPACE ).put( DatabaseManagementService.class, managementService );
         context.getStore( NAMESPACE ).put( GraphDatabaseService.class, service );
     }
 
@@ -103,6 +105,7 @@ public class Neo4jExtension implements BeforeAllCallback, AfterAllCallback, Para
     {
         ExtensionContext.Store store = context.getStore( NAMESPACE );
         store.remove( GraphDatabaseService.class );
+        store.remove( DatabaseManagementService.class );
         InProcessNeo4j controls = store.remove( Neo4j.class, InProcessNeo4j.class );
         controls.close();
     }
@@ -111,7 +114,7 @@ public class Neo4jExtension implements BeforeAllCallback, AfterAllCallback, Para
     public boolean supportsParameter( ParameterContext parameterContext, ExtensionContext extensionContext ) throws ParameterResolutionException
     {
         Class<?> paramType = parameterContext.getParameter().getType();
-        return paramType.equals( GraphDatabaseService.class ) || paramType.equals( Neo4j.class );
+        return paramType.equals( GraphDatabaseService.class ) || paramType.equals( Neo4j.class ) || paramType.equals( DatabaseManagementService.class );
     }
 
     @Override

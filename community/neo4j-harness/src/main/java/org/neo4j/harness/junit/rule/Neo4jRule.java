@@ -30,6 +30,7 @@ import java.util.function.Function;
 import java.util.function.Supplier;
 
 import org.neo4j.annotations.api.PublicApi;
+import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.config.Configuration;
 import org.neo4j.graphdb.config.Setting;
@@ -304,10 +305,20 @@ public class Neo4jRule implements TestRule
     }
 
     /** Access the {@link org.neo4j.graphdb.GraphDatabaseService} */
-    public GraphDatabaseService getGraphDatabaseService()
+    public DatabaseManagementService getDatabaseManagementService()
     {
         assertInitialised();
-        return neo4j.graph();
+        return neo4j.databaseManagementService();
+    }
+
+    /**
+     * Access default database service.
+     * @return default database service.
+     */
+    public GraphDatabaseService getDefaultDatabaseService()
+    {
+        assertInitialised();
+        return neo4j.defaultDatabaseService();
     }
 
     /** Returns the neo4j's configuration */

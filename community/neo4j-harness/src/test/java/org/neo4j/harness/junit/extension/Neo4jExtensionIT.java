@@ -23,15 +23,16 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
+import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.harness.internal.Neo4j;
 import org.neo4j.test.server.HTTP;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 
 @ExtendWith( Neo4jExtension.class )
 class Neo4jExtensionIT
@@ -63,5 +64,12 @@ class Neo4jExtensionIT
                 transaction.commit();
             }
         } );
+    }
+
+    @Test
+    void databaseManagementServiceIsAvailable( DatabaseManagementService managementService )
+    {
+        assertNotNull( managementService );
+        assertNotNull( managementService.database( DEFAULT_DATABASE_NAME ) );
     }
 }
