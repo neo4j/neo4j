@@ -21,6 +21,8 @@ package org.neo4j.server.database;
 
 import java.io.File;
 
+import org.neo4j.collection.Dependencies;
+import org.neo4j.common.DependencyResolver;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.configuration.connectors.BoltConnector;
@@ -37,10 +39,12 @@ public class InMemoryGraphFactory implements GraphFactory
     public DatabaseManagementService newDatabaseManagementService( Config config, ExternalDependencies dependencies )
     {
         File storeDir = new File( config.get( GraphDatabaseSettings.databases_root_path ).toFile(), DEFAULT_DATABASE_NAME );
+        DependencyResolver externalDependencies = dependencies.dependencies() != null ? dependencies.dependencies() : new Dependencies();
         return new TestDatabaseManagementServiceBuilder( storeDir )
                 .setExtensions( dependencies.extensions() )
                 .setMonitors( dependencies.monitors() )
                 .noOpSystemGraphInitializer()
+                .setExternalDependencies( externalDependencies )
                 .impermanent()
                 .setConfig( BoltConnector.listen_address, new SocketAddress( "localhost", 0 ) )
                 .setConfig( BoltConnector.enabled, true )

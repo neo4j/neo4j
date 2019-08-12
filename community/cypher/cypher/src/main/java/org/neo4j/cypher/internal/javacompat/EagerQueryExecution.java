@@ -106,9 +106,9 @@ class EagerQueryExecution extends EagerQuerySubscription implements QueryExecuti
     protected void streamRecordToSubscriber( int servedRecords ) throws Exception
     {
         Map<String,Object> currentRow = queryResult.get( servedRecords );
-        for ( int i = 0; i < fieldNames.size(); i++ )
+        for ( String fieldName : fieldNames )
         {
-            subscriber.onField( i, Values.of( currentRow.get( fieldNames.get( i ) ) ) );
+            subscriber.onField( Values.of( currentRow.get( fieldName ) ) );
         }
     }
 }

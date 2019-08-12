@@ -82,7 +82,7 @@ class EagerResultTest
         private List<AnyValue> lastSeen = new ArrayList<>();
 
         @Override
-        public void onField( int offset, AnyValue value ) throws Exception
+        public void onField( AnyValue value )
         {
             lastSeen.add( value );
         }
