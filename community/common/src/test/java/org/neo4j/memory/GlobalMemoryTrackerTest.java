@@ -21,7 +21,8 @@ package org.neo4j.memory;
 
 import org.junit.jupiter.api.Test;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 
 class GlobalMemoryTrackerTest
 {
@@ -33,7 +34,7 @@ class GlobalMemoryTrackerTest
         GlobalMemoryTracker.INSTANCE.allocated( 10 );
         GlobalMemoryTracker.INSTANCE.allocated( 20 );
         GlobalMemoryTracker.INSTANCE.allocated( 40 );
-        assertEquals( 70, GlobalMemoryTracker.INSTANCE.usedDirectMemory() - initialUsedMemory );
+        assertThat( currentlyUsedMemory( initialUsedMemory ), greaterThanOrEqualTo( 70L ) );
     }
 
     @Test
@@ -41,12 +42,17 @@ class GlobalMemoryTrackerTest
     {
         long initialUsedMemory = GlobalMemoryTracker.INSTANCE.usedDirectMemory();
         GlobalMemoryTracker.INSTANCE.allocated( 100 );
-        assertEquals( 100, GlobalMemoryTracker.INSTANCE.usedDirectMemory() - initialUsedMemory );
+        assertThat( currentlyUsedMemory( initialUsedMemory ), greaterThanOrEqualTo(100L) );
 
         GlobalMemoryTracker.INSTANCE.deallocated( 20 );
-        assertEquals( 80, GlobalMemoryTracker.INSTANCE.usedDirectMemory() - initialUsedMemory );
+        assertThat( currentlyUsedMemory( initialUsedMemory ), greaterThanOrEqualTo(80L) );
 
         GlobalMemoryTracker.INSTANCE.deallocated( 40 );
-        assertEquals( 40, GlobalMemoryTracker.INSTANCE.usedDirectMemory() - initialUsedMemory );
+        assertThat( currentlyUsedMemory( initialUsedMemory ), greaterThanOrEqualTo( 40L ) );
+    }
+
+    private static long currentlyUsedMemory( long initialUsedMemory )
+    {
+        return GlobalMemoryTracker.INSTANCE.usedDirectMemory() - initialUsedMemory;
     }
 }
