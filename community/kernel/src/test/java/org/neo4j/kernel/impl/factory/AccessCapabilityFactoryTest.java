@@ -38,7 +38,7 @@ import static org.neo4j.configuration.GraphDatabaseSettings.read_only;
 class AccessCapabilityFactoryTest
 {
     private final DatabaseIdRepository databaseIdRepository = new TestDatabaseIdRepository();
-    private final DatabaseId databaseId = databaseIdRepository.get( "foo" );
+    private final DatabaseId databaseId = databaseIdRepository.get( "foo" ).get();
 
     private final DatabaseConfig readWriteConfig = new DatabaseConfig( Config.defaults( read_only, false ), databaseId );
     private final DatabaseConfig readOnlyConfig = new DatabaseConfig( Config.defaults( read_only, true ), databaseId );

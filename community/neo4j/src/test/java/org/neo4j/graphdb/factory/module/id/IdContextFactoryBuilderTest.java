@@ -71,7 +71,7 @@ class IdContextFactoryBuilderTest
     {
         IdGeneratorFactory idGeneratorFactory = mock( IdGeneratorFactory.class );
         IdContextFactory contextFactory = IdContextFactoryBuilder.of( fs, jobScheduler ).withIdGenerationFactoryProvider( any -> idGeneratorFactory ).build();
-        DatabaseIdContext idContext = contextFactory.createIdContext( databaseIdRepository.get( "database" ) );
+        DatabaseIdContext idContext = contextFactory.createIdContext( databaseIdRepository.get( "database" ).get() );
 
         IdGeneratorFactory bufferedGeneratorFactory = idContext.getIdGeneratorFactory();
         assertThat( idContext.getIdController(), instanceOf( BufferedIdController.class ) );
@@ -98,7 +98,7 @@ class IdContextFactoryBuilderTest
                                         .withFactoryWrapper( factoryWrapper )
                                         .build();
 
-        DatabaseIdContext idContext = contextFactory.createIdContext( databaseIdRepository.get( "database" ) );
+        DatabaseIdContext idContext = contextFactory.createIdContext( databaseIdRepository.get( "database" ).get() );
 
         assertSame( idGeneratorFactory, idContext.getIdGeneratorFactory() );
     }

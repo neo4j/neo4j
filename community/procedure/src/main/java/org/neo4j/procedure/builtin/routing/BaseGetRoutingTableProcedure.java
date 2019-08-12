@@ -23,7 +23,6 @@ import java.util.List;
 
 import org.neo4j.collection.RawIterator;
 import org.neo4j.configuration.Config;
-import org.neo4j.dbms.api.DatabaseNotFoundException;
 import org.neo4j.dbms.database.DatabaseManager;
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
 import org.neo4j.internal.kernel.api.procs.Neo4jTypes;
@@ -91,26 +90,22 @@ public abstract class BaseGetRoutingTableProcedure implements CallableProcedure
     private DatabaseId extractDatabaseId( AnyValue[] input ) throws ProcedureException
     {
         var arg = input[1];
+        final String databaseName;
         if ( arg == Values.NO_VALUE )
         {
-            return databaseManager.databaseIdRepository().get( config.get( default_database ) );
+            databaseName = config.get( default_database );
         }
         else if ( arg instanceof TextValue )
         {
-            var databaseName = ((TextValue) arg).stringValue();
-            try
-            {
-                return databaseManager.databaseIdRepository().get( databaseName );
-            }
-            catch ( DatabaseNotFoundException e )
-            {
-                throw databaseNotFoundException( databaseName );
-            }
+            databaseName = ((TextValue) arg).stringValue();
         }
         else
         {
             throw new IllegalArgumentException( "Illegal database name argument " + arg );
         }
+        return databaseManager.databaseIdRepository()
+                .get( databaseName )
+                .orElseThrow( () -> databaseNotFoundException( databaseName ) );
     }
 
     private void assertDatabaseExists( DatabaseId databaseId ) throws ProcedureException

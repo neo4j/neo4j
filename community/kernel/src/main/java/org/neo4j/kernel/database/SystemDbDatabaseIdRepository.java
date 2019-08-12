@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.database;
 
+import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
@@ -47,7 +48,7 @@ public class SystemDbDatabaseIdRepository implements DatabaseIdRepository
     }
 
     @Override
-    public DatabaseId get( NormalizedDatabaseName normalizedDatabaseName )
+    public Optional<DatabaseId> get( NormalizedDatabaseName normalizedDatabaseName )
     {
         try
         {
@@ -64,7 +65,7 @@ public class SystemDbDatabaseIdRepository implements DatabaseIdRepository
     }
 
     // Run on another thread to avoid running in an enclosing transaction on a different database
-    private DatabaseId get0( NormalizedDatabaseName normalizedDatabaseName )
+    private Optional<DatabaseId> get0( NormalizedDatabaseName normalizedDatabaseName )
     {
         var databaseName = normalizedDatabaseName.name();
         var context = databaseManager.getDatabaseContext( SYSTEM_DATABASE_ID )
@@ -77,7 +78,7 @@ public class SystemDbDatabaseIdRepository implements DatabaseIdRepository
 
             if ( node == null )
             {
-                throw new DatabaseNotFoundException( "No such database: " + databaseName );
+                return Optional.empty();
             }
             var uuid = node.getProperty( DATABASE_UUID_PROPERTY );
             if ( uuid == null )
@@ -88,7 +89,7 @@ public class SystemDbDatabaseIdRepository implements DatabaseIdRepository
             {
                 throw new IllegalStateException( "Database has non String uuid: " + databaseName );
             }
-            return new DatabaseId( databaseName, UUID.fromString( (String)uuid ) );
+            return Optional.of( new DatabaseId( databaseName, UUID.fromString( (String)uuid ) ) );
         }
         catch ( RuntimeException e )
         {

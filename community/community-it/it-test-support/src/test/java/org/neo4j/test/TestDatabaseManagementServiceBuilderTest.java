@@ -25,7 +25,6 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.neo4j.common.DependencyResolver;
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.dbms.database.DatabaseManager;
-import org.neo4j.kernel.database.DatabaseIdRepository;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.TestDirectoryExtension;
@@ -76,9 +75,8 @@ class TestDatabaseManagementServiceBuilderTest
     {
         DependencyResolver resolver = database.getDependencyResolver();
         DatabaseManager<?> databaseManager = resolver.resolveDependency( DatabaseManager.class );
-        DatabaseIdRepository databaseIdRepository = databaseManager.databaseIdRepository();
 
         assertTrue( databaseManager.getDatabaseContext( SYSTEM_DATABASE_ID ).isPresent() );
-        assertTrue( databaseManager.getDatabaseContext( databaseIdRepository.get( DEFAULT_DATABASE_NAME ) ).isPresent() );
+        assertTrue( databaseManager.getDatabaseContext( DEFAULT_DATABASE_NAME ).isPresent() );
     }
 }

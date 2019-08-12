@@ -156,7 +156,7 @@ public class DatabaseRule extends ExternalResource
         dependency( mutableDependencies, DbmsDiagnosticsManager.class, deps -> mock( DbmsDiagnosticsManager.class ) );
         StorageEngineFactory storageEngineFactory = dependency( mutableDependencies, StorageEngineFactory.class,
                 deps -> StorageEngineFactory.selectStorageEngine() );
-        DatabaseId databaseId = databaseIdRepository.get( databaseName );
+        DatabaseId databaseId = databaseIdRepository.get( databaseName ).get();
 
         database = new Database( new TestDatabaseCreationContext( databaseId, databaseLayout, config, idGeneratorFactory, logService,
                 mock( JobScheduler.class, RETURNS_MOCKS ), mock( TokenNameLookup.class ), mutableDependencies, mockedTokenHolders(), locksFactory,

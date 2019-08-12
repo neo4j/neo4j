@@ -34,6 +34,7 @@ import org.neo4j.values.virtual.MapValue;
 
 import static org.neo4j.bolt.v4.runtime.bookmarking.BookmarkParsingException.newInvalidBookmarkError;
 import static org.neo4j.bolt.v4.runtime.bookmarking.BookmarkParsingException.newInvalidBookmarkMixtureError;
+import static org.neo4j.bolt.v4.runtime.bookmarking.BookmarkParsingException.newInvalidBookmarkUnknownDatabaseError;
 import static org.neo4j.kernel.database.DatabaseIdRepository.SYSTEM_DATABASE_ID;
 
 public final class BookmarksParserV4 implements BookmarksParser
@@ -115,7 +116,8 @@ public final class BookmarksParserV4 implements BookmarksParser
             throw newInvalidBookmarkError( bookmarkString );
         }
 
-        var databaseId = databaseIdRepository.get( split[0] );
+        String databaseName = split[0];
+        var databaseId = databaseIdRepository.get( databaseName ).orElseThrow( () -> newInvalidBookmarkUnknownDatabaseError( databaseName ) );
         var txId = parseTxId( split[1], bookmarkString );
 
         return new ParsedBookmark( databaseId, txId );

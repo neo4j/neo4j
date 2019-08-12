@@ -19,6 +19,9 @@
  */
 package org.neo4j.kernel.database;
 
+import org.apache.commons.lang3.RandomStringUtils;
+
+import java.util.Optional;
 import java.util.UUID;
 
 import org.neo4j.collection.Dependencies;
@@ -27,6 +30,7 @@ import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.configuration.helpers.NormalizedDatabaseName;
 import org.neo4j.dbms.database.SystemGraphInitializer;
+import org.neo4j.util.Preconditions;
 
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 
@@ -52,15 +56,31 @@ public class TestDatabaseIdRepository extends MapCachingDatabaseIdRepository
 
     public DatabaseId defaultDatabase()
     {
-        return get( defaultDatabaseName );
+        return getRaw( defaultDatabaseName );
+    }
+
+    public DatabaseId getRaw( String databaseName )
+    {
+        var databaseIdOpt = get( databaseName );
+        Preconditions.checkState( databaseIdOpt.isPresent(),
+                getClass().getSimpleName() + " should always produce a " + DatabaseId.class.getSimpleName() + " for any database name" );
+        return databaseIdOpt.get();
+    }
+
+    /**
+     * @return a DatabaseId with a random name and UUID. It is not stored, so subsequent calls will return different DatabaseIds.
+     */
+    public static DatabaseId randomDatabaseId()
+    {
+        return new DatabaseId( RandomStringUtils.randomAlphabetic( 20 ), UUID.randomUUID() );
     }
 
     private static class RandomDatabaseIdRepository implements DatabaseIdRepository
     {
         @Override
-        public DatabaseId get( NormalizedDatabaseName databaseName )
+        public Optional<DatabaseId> get( NormalizedDatabaseName databaseName )
         {
-            return new DatabaseId( databaseName.name(), UUID.randomUUID() );
+            return Optional.of( new DatabaseId( databaseName.name(), UUID.randomUUID() ) );
         }
     }
 

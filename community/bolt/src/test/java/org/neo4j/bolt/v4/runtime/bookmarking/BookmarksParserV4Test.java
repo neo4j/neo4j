@@ -23,8 +23,10 @@ import org.junit.jupiter.api.Test;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.Optional;
 
 import org.neo4j.bolt.runtime.BookmarksParser;
+import org.neo4j.configuration.helpers.NormalizedDatabaseName;
 import org.neo4j.kernel.database.DatabaseId;
 import org.neo4j.kernel.database.DatabaseIdRepository;
 import org.neo4j.kernel.database.TestDatabaseIdRepository;
@@ -45,14 +47,14 @@ import static org.neo4j.kernel.database.DatabaseIdRepository.SYSTEM_DATABASE_ID;
 
 class BookmarksParserV4Test
 {
-    private final DatabaseIdRepository databaseIdRepository = new TestDatabaseIdRepository();
+    private final TestDatabaseIdRepository databaseIdRepository = new TestDatabaseIdRepository();
     private final BookmarksParser parser = new BookmarksParserV4( databaseIdRepository );
 
     @Test
     void shouldIgnoreSingleBookmarkMetadata() throws Exception
     {
         var txId = 1234;
-        var dbId = databaseIdRepository.get( "molly" );
+        var dbId = databaseIdRepository.getRaw( "molly" );
         var metadata = singletonMap( "bookmark", bookmarkString( txId, dbId ) );
 
         var bookmarks = parser.parseBookmarks( metadata );
@@ -65,7 +67,7 @@ class BookmarksParserV4Test
     {
         var txId1 = 1234;
         var txId2 = 12345;
-        var dbId = databaseIdRepository.get( "molly" );
+        var dbId = databaseIdRepository.getRaw( "molly" );
         var metadata = metadata( List.of( bookmarkString( txId1, dbId ), bookmarkString( txId2, dbId ) ) );
 
         var bookmarks = parser.parseBookmarks( metadata );
@@ -82,7 +84,7 @@ class BookmarksParserV4Test
 
         var bookmarks = parser.parseBookmarks( metadata );
 
-        assertEquals( List.of( new BookmarkWithDatabaseId( 12345, databaseIdRepository.get( "molly" ) ) ), bookmarks );
+        assertEquals( List.of( new BookmarkWithDatabaseId( 12345, databaseIdRepository.getRaw( "molly" ) ) ), bookmarks );
     }
 
     @Test
@@ -137,6 +139,29 @@ class BookmarksParserV4Test
     }
 
     @Test
+    void shouldFailWhenBookmarkForUnknownDatabase()
+    {
+        var unknownDatabaseIdRepo = new DatabaseIdRepository()
+        {
+            @Override
+            public Optional<DatabaseId> get( NormalizedDatabaseName databaseName )
+            {
+                return Optional.empty();
+            }
+        };
+
+        var parser = new BookmarksParserV4( unknownDatabaseIdRepo );
+
+        var bookmarkString = "foo:1234";
+
+        var error = assertThrows( BookmarkParsingException.class,
+                () -> parser.parseBookmarks( metadata( List.of( bookmarkString ) ) ) );
+
+        assertThat( error.status(), equalTo( InvalidBookmark ) );
+        assertTrue( error.causesFailureMessage() );
+    }
+
+    @Test
     void shouldReturnNoBookmarksWhenGivenBothSingleAndEmptyListAsMultiple() throws Exception
     {
         var metadata = metadata( emptyList() );
@@ -159,7 +184,7 @@ class BookmarksParserV4Test
 
         var bookmarks = parser.parseBookmarks( metadata );
 
-        assertEquals( List.of( new BookmarkWithDatabaseId( 17, databaseIdRepository.get( "neo4j" ) ) ), bookmarks );
+        assertEquals( List.of( new BookmarkWithDatabaseId( 17, databaseIdRepository.getRaw( "neo4j" ) ) ), bookmarks );
     }
 
     @Test
@@ -210,7 +235,7 @@ class BookmarksParserV4Test
     void shouldParseSingleSystemAndSingleUserDbBookmarks() throws Exception
     {
         var systemDbId = SYSTEM_DATABASE_ID;
-        var userDbId = databaseIdRepository.get( "foo" );
+        var userDbId = databaseIdRepository.getRaw( "foo" );
         var metadata = metadata( List.of( bookmarkString( 33, systemDbId ), bookmarkString( 22, userDbId ) ) );
 
         var bookmarks = parser.parseBookmarks( metadata );
@@ -222,7 +247,7 @@ class BookmarksParserV4Test
     void shouldParseMultipleSystemAndSingleUserDbBookmarks() throws Exception
     {
         var systemDbId = SYSTEM_DATABASE_ID;
-        var userDbId = databaseIdRepository.get( "foo" );
+        var userDbId = databaseIdRepository.getRaw( "foo" );
         var metadata = metadata( List.of( bookmarkString( 33, systemDbId ), bookmarkString( 9, userDbId ), bookmarkString( 44, systemDbId ) ) );
 
         var bookmarks = parser.parseBookmarks( metadata );
@@ -234,7 +259,7 @@ class BookmarksParserV4Test
     void shouldParseMultipleSystemAndMultipleUserDbBookmarks() throws Exception
     {
         var systemDbId = SYSTEM_DATABASE_ID;
-        var userDbId = databaseIdRepository.get( "foo" );
+        var userDbId = databaseIdRepository.getRaw( "foo" );
         var metadata = metadata( List.of(
                 bookmarkString( 12, systemDbId ), bookmarkString( 69, userDbId ), bookmarkString( 83, systemDbId ), bookmarkString( 17, userDbId ) ) );
 

@@ -62,7 +62,7 @@ public class SingleInstanceGetRoutingTableProcedureTest
 {
     private static final TestDatabaseIdRepository databaseIdRepository = new TestDatabaseIdRepository();
     private static final DatabaseId ID = databaseIdRepository.defaultDatabase();
-    private static final DatabaseId UNKNOWN_ID = databaseIdRepository.get( "unknown_database_name" );
+    private static final DatabaseId UNKNOWN_ID = databaseIdRepository.getRaw( "unknown_database_name" );
 
     @Test
     void shouldHaveCorrectSignature()

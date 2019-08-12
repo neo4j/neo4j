@@ -26,8 +26,8 @@ import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.availability.AvailabilityGuard;
 import org.neo4j.kernel.database.DatabaseId;
-import org.neo4j.kernel.database.TestDatabaseIdRepository;
 
+import static java.lang.String.format;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -37,12 +37,12 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
+import static org.neo4j.kernel.database.TestDatabaseIdRepository.randomDatabaseId;
 
 class ThreadToStatementContextBridgeTest
 {
     private final KernelTransaction kernelTransaction = mock( KernelTransaction.class );
-    private final TestDatabaseIdRepository databaseIdRepository = new TestDatabaseIdRepository();
-    private final DatabaseId testDb = databaseIdRepository.get( "testDb" );
+    private final DatabaseId testDb = randomDatabaseId();
     private ThreadToStatementContextBridge bridge;
 
     @BeforeEach
@@ -73,11 +73,13 @@ class ThreadToStatementContextBridgeTest
         assertSame( kernelTransaction, bridge.getKernelTransactionBoundToThisThread( false, testDb ) );
         assertSame( kernelTransaction, bridge.getKernelTransactionBoundToThisThread( true, testDb ) );
 
+        var otherDb = randomDatabaseId();
         TransactionFailureException exception =
                 assertThrows( TransactionFailureException.class,
-                        () -> bridge.getKernelTransactionBoundToThisThread( false, databaseIdRepository.get( "something" ) ) );
+                        () -> bridge.getKernelTransactionBoundToThisThread( false,  otherDb ) );
         assertThat( exception.getMessage(),
-                equalTo( "Fail to get transaction for database 'something', since 'testdb' database transaction already bound to this thread." ) );
+                equalTo( format( "Fail to get transaction for database '%s', since '%s' database transaction already bound to this thread.",
+                        otherDb.name(), testDb.name() ) ) );
     }
 
     @Test

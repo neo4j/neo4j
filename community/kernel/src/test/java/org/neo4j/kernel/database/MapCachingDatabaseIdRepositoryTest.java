@@ -23,6 +23,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
+import java.util.Optional;
 import java.util.UUID;
 
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -45,14 +46,14 @@ class MapCachingDatabaseIdRepositoryTest
     @BeforeEach
     void setUp()
     {
-        when( delegate.get( otherDbName ) ).thenReturn( otherDbId );
+        when( delegate.get( otherDbName ) ).thenReturn( Optional.of( otherDbId ) );
         databaseIdRepository = new MapCachingDatabaseIdRepository( delegate );
     }
 
     @Test
     void shouldDelegateGet()
     {
-        DatabaseId databaseId = databaseIdRepository.get( otherDbName );
+        DatabaseId databaseId = databaseIdRepository.get( otherDbName ).get();
 
         assertThat( databaseId, equalTo( otherDbId ) );
     }
@@ -60,8 +61,8 @@ class MapCachingDatabaseIdRepositoryTest
     @Test
     void shouldCacheDb()
     {
-        databaseIdRepository.get( otherDbName );
-        databaseIdRepository.get( otherDbName );
+        databaseIdRepository.get( otherDbName ).get();
+        databaseIdRepository.get( otherDbName ).get();
 
         verify( delegate, atMostOnce() ).get( otherDbName );
     }
@@ -69,9 +70,9 @@ class MapCachingDatabaseIdRepositoryTest
     @Test
     void shouldInvalidateDb()
     {
-        databaseIdRepository.get( otherDbName );
+        databaseIdRepository.get( otherDbName ).get();
         databaseIdRepository.invalidate( otherDbId );
-        databaseIdRepository.get( otherDbName );
+        databaseIdRepository.get( otherDbName ).get();
 
         verify( delegate, times( 2 ) ).get( otherDbName );
     }
@@ -79,7 +80,7 @@ class MapCachingDatabaseIdRepositoryTest
     @Test
     void shouldReturnSystemDatabaseIdDirectly()
     {
-        DatabaseId databaseId = databaseIdRepository.get( SYSTEM_DATABASE_ID.name() );
+        DatabaseId databaseId = databaseIdRepository.get( SYSTEM_DATABASE_ID.name() ).get();
 
         assertThat( databaseId, equalTo( SYSTEM_DATABASE_ID ) );
         verifyZeroInteractions( delegate );

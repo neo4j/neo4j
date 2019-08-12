@@ -20,12 +20,15 @@
 package org.neo4j.kernel.database;
 
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 
 import org.neo4j.configuration.helpers.NormalizedDatabaseName;
 
 public class MapCachingDatabaseIdRepository implements DatabaseIdRepository.Caching
 {
+    private static final Optional<DatabaseId> OPT_SYS_DB = Optional.of( SYSTEM_DATABASE_ID );
+
     private final DatabaseIdRepository delegate;
     private final Map<String,DatabaseId> databaseIds;
 
@@ -36,13 +39,15 @@ public class MapCachingDatabaseIdRepository implements DatabaseIdRepository.Cach
     }
 
     @Override
-    public DatabaseId get( NormalizedDatabaseName databaseName )
+    public Optional<DatabaseId> get( NormalizedDatabaseName databaseName )
     {
         if ( SYSTEM_DATABASE_ID.name().equals( databaseName.name() ) )
         {
-            return SYSTEM_DATABASE_ID;
+            return OPT_SYS_DB;
         }
-        return databaseIds.computeIfAbsent( databaseName.name(), delegate::get );
+        return Optional.ofNullable(
+                databaseIds.computeIfAbsent( databaseName.name(), name -> delegate.get( name ).orElse( null ) )
+        );
     }
 
     @Override

@@ -74,8 +74,7 @@ class CommunityGlobalTransactionStatsIT
     {
         ExecutorService transactionExecutor = Executors.newSingleThreadExecutor();
         DatabaseManager<?> databaseManager = getDatabaseManager();
-        var databaseIdRepository = databaseManager.databaseIdRepository();
-        var defaultDatabase = databaseManager.getDatabaseContext( databaseIdRepository.get( DEFAULT_DATABASE_NAME ) );
+        var defaultDatabase = databaseManager.getDatabaseContext( DEFAULT_DATABASE_NAME );
         var systemDatabase = databaseManager.getDatabaseContext( SYSTEM_DATABASE_ID );
 
         assertTrue( defaultDatabase.isPresent() );

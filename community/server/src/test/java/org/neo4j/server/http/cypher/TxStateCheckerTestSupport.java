@@ -39,7 +39,7 @@ public class TxStateCheckerTestSupport
         when( CONTAINER.getBridge() ).thenReturn( fakeBridge );
         GraphDatabaseFacade facade = mock( GraphDatabaseFacade.class );
         when( CONTAINER.getDb() ).thenReturn( facade );
-        when( facade.databaseId() ).thenReturn( new TestDatabaseIdRepository().get( "test" ) );
+        when( facade.databaseId() ).thenReturn( TestDatabaseIdRepository.randomDatabaseId() );
     }
 
     public static class FakeBridge extends ThreadToStatementContextBridge

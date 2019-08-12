@@ -29,7 +29,6 @@ import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.dbms.api.DatabaseManagementServiceBuilder;
 import org.neo4j.dbms.database.DatabaseManager;
 import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.kernel.database.DatabaseIdRepository;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.extension.DefaultFileSystemExtension;
 import org.neo4j.test.extension.Inject;
@@ -64,8 +63,7 @@ class DatabaseManagementServiceBuilderIT
         {
             DependencyResolver dependencyResolver = database.getDependencyResolver();
             DatabaseManager<?> databaseManager = dependencyResolver.resolveDependency( DatabaseManager.class );
-            DatabaseIdRepository databaseIdRepository = databaseManager.databaseIdRepository();
-            assertThat( databaseManager.getDatabaseContext( databaseIdRepository.get( DEFAULT_DATABASE_NAME ) ), not( empty() ) );
+            assertThat( databaseManager.getDatabaseContext( DEFAULT_DATABASE_NAME ), not( empty() ) );
             assertThat( databaseManager.getDatabaseContext( SYSTEM_DATABASE_ID ), not( empty() ) );
         }
         finally

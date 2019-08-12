@@ -28,10 +28,11 @@ class DatabaseNameLogContextTest
     @Test
     void shouldFormatMessage()
     {
-        var context = new DatabaseNameLogContext( new TestDatabaseIdRepository().get( "my_database" ) );
+        var databaseId = TestDatabaseIdRepository.randomDatabaseId();
+        var context = new DatabaseNameLogContext( databaseId );
 
         var formattedMessage = context.formatMessage( "Hello there" );
 
-        assertEquals( "[my_database] Hello there", formattedMessage );
+        assertEquals( String.format( "[%s] Hello there", databaseId.name() ), formattedMessage );
     }
 }

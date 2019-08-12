@@ -171,7 +171,7 @@ class TransactionStateMachineTest
         var bookmarksParser = new BookmarksParserV4( databaseIdRepository );
         var bookmarks = bookmarksParser.parseBookmarks( params );
         stateMachine.beginTransaction( bookmarks );
-        verify( stateMachineSPI ).awaitUpToDate( List.of( new BookmarkWithDatabaseId( 92, databaseIdRepository.get( "kittenDB" ) ) ) );
+        verify( stateMachineSPI ).awaitUpToDate( List.of( new BookmarkWithDatabaseId( 92, databaseIdRepository.getRaw( "kittenDB" ) ) ) );
     }
 
     @Test

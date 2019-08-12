@@ -23,6 +23,7 @@ import java.util.Optional;
 
 import org.neo4j.dbms.api.DatabaseExistsException;
 import org.neo4j.dbms.api.DatabaseManagementException;
+import org.neo4j.dbms.api.DatabaseNotFoundException;
 import org.neo4j.graphdb.factory.module.GlobalModule;
 import org.neo4j.graphdb.factory.module.edition.AbstractEditionModule;
 import org.neo4j.kernel.database.Database;
@@ -54,7 +55,9 @@ public final class DefaultDatabaseManager extends AbstractDatabaseManager<Standa
     @Override
     public void initialiseDefaultDatabase()
     {
-        DatabaseId databaseId = databaseIdRepository().get( config.get( default_database ) );
+        String databaseName = config.get( default_database );
+        DatabaseId databaseId = databaseIdRepository().get( databaseName )
+                .orElseThrow( () -> new DatabaseNotFoundException( "Default database not found: " + databaseName ) );
         StandaloneDatabaseContext context = createDatabase( databaseId );
         if ( manageDatabasesOnStartAndStop )
         {

@@ -79,7 +79,7 @@ class GraphDatabaseFacadeTest
         when( resolver.resolveDependency( Config.class ) ).thenReturn( config );
 
         kernelTransaction = mock( KernelTransaction.class );
-        when( kernelTransaction.getDatabaseId() ).thenReturn( new TestDatabaseIdRepository().get( "any ") );
+        when( kernelTransaction.getDatabaseId() ).thenReturn( TestDatabaseIdRepository.randomDatabaseId() );
         statement = mock( Statement.class, RETURNS_DEEP_STUBS );
         when( kernelTransaction.acquireStatement() ).thenReturn( statement );
         when( contextBridge.getKernelTransactionBoundToThisThread( eq( true ), any( DatabaseId.class ) ) ).thenReturn( kernelTransaction );

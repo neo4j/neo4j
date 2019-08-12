@@ -74,7 +74,7 @@ class MissingStoreFilesRecoveryIT
         createSomeData( databaseApi );
         databaseLayout = databaseApi.databaseLayout();
 
-        defaultDatabaseId = getDatabaseManager().databaseIdRepository().get( DEFAULT_DATABASE_NAME );
+        defaultDatabaseId = getDatabaseManager().databaseIdRepository().get( DEFAULT_DATABASE_NAME ).get();
 
         managementService.shutdown();
     }

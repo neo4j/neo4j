@@ -53,4 +53,10 @@ class BookmarkParsingException extends BoltIOException
         return new BookmarkParsingException( Status.Transaction.InvalidBookmarkMixture,
                 String.format( "Supplied bookmark list contains bookmarks from multiple databases. Bookmark list: %s ", bookmarks ) );
     }
+
+    static BookmarkParsingException newInvalidBookmarkUnknownDatabaseError( String databaseName )
+    {
+        return new BookmarkParsingException( Status.Transaction.InvalidBookmark,
+                String.format( "Supplied bookmark is for unknown database: %s", databaseName ) );
+    }
 }

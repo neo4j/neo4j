@@ -122,8 +122,7 @@ public class StoreUpgradeOnStartupTest
         try
         {
             DatabaseManager<?> databaseManager = ((GraphDatabaseAPI) database).getDependencyResolver().resolveDependency( DatabaseManager.class );
-            var databaseIdRepository = databaseManager.databaseIdRepository();
-            DatabaseContext databaseContext = databaseManager.getDatabaseContext( databaseIdRepository.get( DEFAULT_DATABASE_NAME ) ).get();
+            DatabaseContext databaseContext = databaseManager.getDatabaseContext( DEFAULT_DATABASE_NAME ).get();
             assertTrue( databaseContext.isFailed() );
             assertThat( rootCause( databaseContext.failureCause() ),
                     Matchers.instanceOf( StoreUpgrader.UnableToUpgradeException.class ) );

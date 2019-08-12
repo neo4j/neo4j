@@ -83,7 +83,7 @@ class CommunitySystemDatabaseIT
                 .build();
         database = managementService.database( DEFAULT_DATABASE_NAME );
         databaseManager = getDatabaseManager( database );
-        defaultDb = getDatabaseByName( databaseManager, databaseManager.databaseIdRepository().get( DEFAULT_DATABASE_NAME ) );
+        defaultDb = getDatabaseByName( databaseManager, databaseManager.databaseIdRepository().get( DEFAULT_DATABASE_NAME ).get() );
         systemDb = getDatabaseByName( databaseManager, SYSTEM_DATABASE_ID );
     }
 

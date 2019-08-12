@@ -70,7 +70,7 @@ class Neo4jTransactionalContextTest
     private ConfiguredExecutionStatistics statistics;
     private GraphDatabaseFacade databaseFacade = mock( GraphDatabaseFacade.class );
     private DefaultValueMapper valueMapper = new DefaultValueMapper( databaseFacade );
-    private DatabaseId databaseId = new TestDatabaseIdRepository().get( "any" );
+    private DatabaseId databaseId = TestDatabaseIdRepository.randomDatabaseId();
 
     @BeforeEach
     void setUp()

@@ -28,7 +28,6 @@ import org.mockito.stubbing.Answer;
 import java.time.Clock;
 
 import org.neo4j.kernel.database.DatabaseId;
-import org.neo4j.kernel.database.TestDatabaseIdRepository;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.Lifespan;
 import org.neo4j.logging.NullLog;
@@ -45,12 +44,12 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.neo4j.kernel.database.DatabaseIdRepository.SYSTEM_DATABASE_ID;
+import static org.neo4j.kernel.database.TestDatabaseIdRepository.randomDatabaseId;
 
 @ExtendWith( LifeExtension.class )
 class CompositeDatabaseAvailabilityGuardTest
 {
     private final DescriptiveAvailabilityRequirement requirement = new DescriptiveAvailabilityRequirement( "testRequirement" );
-    private final TestDatabaseIdRepository databaseIdRepository = new TestDatabaseIdRepository();
     private CompositeDatabaseAvailabilityGuard compositeGuard;
     private DatabaseAvailabilityGuard defaultGuard;
     private DatabaseAvailabilityGuard systemGuard;
@@ -64,7 +63,7 @@ class CompositeDatabaseAvailabilityGuardTest
     {
         mockClock = mock( Clock.class );
         compositeGuard = new CompositeDatabaseAvailabilityGuard( mockClock );
-        defaultGuard = createDatabaseAvailabilityGuard( databaseIdRepository.defaultDatabase(), mockClock, compositeGuard );
+        defaultGuard = createDatabaseAvailabilityGuard( randomDatabaseId(), mockClock, compositeGuard );
         systemGuard = createDatabaseAvailabilityGuard( SYSTEM_DATABASE_ID, mockClock, compositeGuard );
         defaultGuard.start();
         systemGuard.start();
@@ -163,8 +162,8 @@ class CompositeDatabaseAvailabilityGuardTest
     void stopOfAvailabilityGuardDeregisterItInCompositeParent() throws Exception
     {
         int initialGuards = compositeGuard.getGuards().size();
-        DatabaseAvailabilityGuard firstGuard = createDatabaseAvailabilityGuard( databaseIdRepository.get( "first" ), mockClock, compositeGuard );
-        DatabaseAvailabilityGuard secondGuard = createDatabaseAvailabilityGuard( databaseIdRepository.get( "second" ), mockClock, compositeGuard );
+        DatabaseAvailabilityGuard firstGuard = createDatabaseAvailabilityGuard( randomDatabaseId(), mockClock, compositeGuard );
+        DatabaseAvailabilityGuard secondGuard = createDatabaseAvailabilityGuard( randomDatabaseId(), mockClock, compositeGuard );
         firstGuard.start();
         secondGuard.start();
 

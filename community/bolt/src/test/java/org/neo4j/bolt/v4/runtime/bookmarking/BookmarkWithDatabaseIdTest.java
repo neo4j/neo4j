@@ -39,7 +39,7 @@ class BookmarkWithDatabaseIdTest
     void shouldHaveTransactionIdAndDatabaseId()
     {
         var txId = 42;
-        var databaseId = databaseIdRepository.get( "foo" );
+        var databaseId = databaseIdRepository.get( "foo" ).get();
 
         var bookmark = new BookmarkWithDatabaseId( txId, databaseId );
 
@@ -51,7 +51,7 @@ class BookmarkWithDatabaseIdTest
     void shouldAttachToMetadata()
     {
         var txId = 42;
-        var databaseId = databaseIdRepository.get( "foo" );
+        var databaseId = databaseIdRepository.get( "foo" ).get();
         var responseHandler = mock( BoltResponseHandler.class );
         var bookmark = new BookmarkWithDatabaseId( txId, databaseId );
 
@@ -64,7 +64,7 @@ class BookmarkWithDatabaseIdTest
     void shouldFormatAsString()
     {
         var txId = 424242;
-        var databaseId = databaseIdRepository.get( "bar" );
+        var databaseId = databaseIdRepository.get( "bar" ).get();
 
         var bookmark = new BookmarkWithDatabaseId( txId, databaseId );
 

@@ -49,7 +49,7 @@ class TransactionStateMachineV4SPITest
     {
         // Given
         var dbSpi = mock( BoltGraphDatabaseServiceSPI.class );
-        var databaseId = databaseIdRepository.get( "molly" );
+        var databaseId = databaseIdRepository.get( "molly" ).get();
         when( dbSpi.getDatabaseId() ).thenReturn( databaseId );
 
         var bookmarkAwaitDuration = Duration.ofMinutes( 10 );
@@ -71,7 +71,7 @@ class TransactionStateMachineV4SPITest
         // Given
         var dbSpi = mock( BoltGraphDatabaseServiceSPI.class );
         when( dbSpi.newestEncounteredTxId() ).thenReturn( 42L );
-        var databaseId = databaseIdRepository.get( "molly" );
+        var databaseId = databaseIdRepository.get( "molly" ).get();
         when( dbSpi.getDatabaseId() ).thenReturn( databaseId );
 
         var txDuration = Duration.ofMinutes( 10 );

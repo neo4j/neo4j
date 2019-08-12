@@ -175,7 +175,7 @@ class RecoveryCorruptedTransactionLogIT
         {
             DatabaseManager<?> databaseManager = db.getDependencyResolver().resolveDependency( DatabaseManager.class );
             DatabaseIdRepository databaseIdRepository = databaseManager.databaseIdRepository();
-            DatabaseContext databaseContext = databaseManager.getDatabaseContext( databaseIdRepository.get( DEFAULT_DATABASE_NAME ) ).get();
+            DatabaseContext databaseContext = databaseManager.getDatabaseContext( DEFAULT_DATABASE_NAME ).get();
             assertTrue( databaseContext.isFailed() );
             assertThat( databaseContext.failureCause(), new RootCauseMatcher<>( UnsupportedLogVersionException.class ) );
         }
@@ -408,7 +408,7 @@ class RecoveryCorruptedTransactionLogIT
         {
             DatabaseManager<?> databaseManager = db.getDependencyResolver().resolveDependency( DatabaseManager.class );
             DatabaseIdRepository databaseIdRepository = databaseManager.databaseIdRepository();
-            DatabaseContext databaseContext = databaseManager.getDatabaseContext( databaseIdRepository.get( DEFAULT_DATABASE_NAME ) ).get();
+            DatabaseContext databaseContext = databaseManager.getDatabaseContext( DEFAULT_DATABASE_NAME ).get();
             assertTrue( databaseContext.isFailed() );
             assertThat( databaseContext.failureCause(), new RootCauseMatcher<>( NegativeArraySizeException.class ) );
         }

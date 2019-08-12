@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.database;
 
+import java.util.Optional;
 import java.util.UUID;
 
 import org.neo4j.configuration.GraphDatabaseSettings;
@@ -31,9 +32,9 @@ public interface DatabaseIdRepository
 {
     DatabaseId SYSTEM_DATABASE_ID = new DatabaseId( GraphDatabaseSettings.SYSTEM_DATABASE_NAME, new UUID( 0L, 1L ) );
 
-    DatabaseId get( NormalizedDatabaseName databaseName );
+    Optional<DatabaseId> get( NormalizedDatabaseName databaseName );
 
-    default DatabaseId get( String databaseName )
+    default Optional<DatabaseId> get( String databaseName )
     {
         return get( new NormalizedDatabaseName( databaseName ) );
     }

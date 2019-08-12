@@ -72,7 +72,7 @@ class DatabaseFailureIT
 
         database = startDatabase();
         DatabaseManager<?> databaseManager = database.getDependencyResolver().resolveDependency( DatabaseManager.class );
-        assertTrue( databaseManager.getDatabaseContext( databaseManager.databaseIdRepository().get( DEFAULT_DATABASE_NAME ) ).get().isFailed() );
+        assertTrue( databaseManager.getDatabaseContext( DEFAULT_DATABASE_NAME ).get().isFailed() );
         assertFalse( databaseManager.getDatabaseContext( SYSTEM_DATABASE_ID ).get().isFailed() );
     }
 

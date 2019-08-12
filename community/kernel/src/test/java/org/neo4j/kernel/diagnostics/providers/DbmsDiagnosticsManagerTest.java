@@ -53,8 +53,8 @@ import static org.mockito.Mockito.when;
 
 class DbmsDiagnosticsManagerTest
 {
-    private static final String DEFAULT_DATABASE_NAME = "testDatabase";
-    private static final DatabaseId DEFAULT_DATABASE_ID = new TestDatabaseIdRepository().get( DEFAULT_DATABASE_NAME );
+    private static final DatabaseId DEFAULT_DATABASE_ID = TestDatabaseIdRepository.randomDatabaseId();
+    private static final String DEFAULT_DATABASE_NAME = DEFAULT_DATABASE_ID.name();
 
     private DbmsDiagnosticsManager diagnosticsManager;
     private AssertableLogProvider logProvider;
@@ -128,16 +128,16 @@ class DbmsDiagnosticsManagerTest
         for ( int i = 0; i < numberOfDatabases; i++ )
         {
             Database database = mock( Database.class );
-            DatabaseId databaseId = new TestDatabaseIdRepository().get( String.valueOf( i ) );
+            DatabaseId databaseId = TestDatabaseIdRepository.randomDatabaseId();
             when( database.getDatabaseId() ).thenReturn( databaseId );
             databaseMap.put( databaseId, new StandaloneDatabaseContext( database ) );
         }
         when( databaseManager.registeredDatabases() ).thenReturn( new TreeMap<>( databaseMap ) );
 
         diagnosticsManager.dumpAll();
-        for ( int i = 0; i < numberOfDatabases; i++ )
+        for ( var dbId : databaseMap.keySet() )
         {
-            logProvider.formattedMessageMatcher().assertContains( "Database: " + i );
+            logProvider.formattedMessageMatcher().assertContains( "Database: " + dbId.name() );
         }
     }
 
