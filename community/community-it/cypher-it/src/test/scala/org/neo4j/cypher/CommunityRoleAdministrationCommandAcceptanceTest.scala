@@ -71,7 +71,7 @@ class CommunityRoleAdministrationCommandAcceptanceTest extends CommunityAdminist
     assertFailure("GRANT ROLE reader TO neo4j", "Unsupported administration command: GRANT ROLE reader TO neo4j")
   }
 
-  test("should fail on revoking non-existing role to user with correct error message") {
+  test("should fail on revoking non-existing role from user") {
     // GIVEN
     selectDatabase(GraphDatabaseSettings.SYSTEM_DATABASE_NAME)
 
