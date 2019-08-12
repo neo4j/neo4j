@@ -565,7 +565,7 @@ class TreeNodeFixedSize<KEY,VALUE> extends TreeNode<KEY,VALUE>
     @Override
     void printNode( PageCursor cursor, boolean includeValue, boolean includeAllocSpace, long stableGeneration, long unstableGeneration )
     {
-        PrintingGBPTreeVisitor<KEY,VALUE> visitor = new PrintingGBPTreeVisitor<>( System.out, includeValue, false, false, false );
+        PrintingGBPTreeVisitor<KEY,VALUE> visitor = new PrintingGBPTreeVisitor<>( System.out, includeValue, false, false, false, false );
         try
         {
             new GBPTreeStructure<>( this, layout, stableGeneration, unstableGeneration ).visitTreeNode( cursor, visitor );

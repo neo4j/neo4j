@@ -1172,13 +1172,14 @@ public class GBPTree<KEY,VALUE> implements Closeable
         {
             new GBPTreeStructure<>( bTreeNode, layout, stableGeneration( generation ), unstableGeneration( generation ) )
                     .visitTree( cursor, writer.cursor, visitor );
+            freeList.visitFreelist( visitor );
         }
     }
 
     @SuppressWarnings( "unused" )
     public void printTree() throws IOException
     {
-        printTree( false, false, false, false );
+        printTree( false, false, false, false, false );
     }
 
     // Utility method
@@ -1189,12 +1190,14 @@ public class GBPTree<KEY,VALUE> implements Closeable
      * @param printPosition whether or not to print position for each key.
      * @param printState whether or not to print the tree state.
      * @param printHeader whether or not to print header of each tree node
+     * @param printFreelist whether or not to freelist
      * @throws IOException on I/O error.
      */
     @SuppressWarnings( "SameParameterValue" )
-    void printTree( boolean printValues, boolean printPosition, boolean printState, boolean printHeader ) throws IOException
+    void printTree( boolean printValues, boolean printPosition, boolean printState, boolean printHeader, boolean printFreelist ) throws IOException
     {
-        PrintingGBPTreeVisitor<KEY,VALUE> printingVisitor = new PrintingGBPTreeVisitor<>( System.out, printValues, printPosition, printState, printHeader );
+        PrintingGBPTreeVisitor<KEY,VALUE> printingVisitor = new PrintingGBPTreeVisitor<>( System.out, printValues, printPosition, printState, printHeader,
+                printFreelist );
         visit( printingVisitor );
     }
 
@@ -1203,7 +1206,7 @@ public class GBPTree<KEY,VALUE> implements Closeable
     {
         try ( PageCursor cursor = openRootCursor( PagedFile.PF_SHARED_READ_LOCK ) )
         {
-            PrintingGBPTreeVisitor<KEY,VALUE> printingVisitor = new PrintingGBPTreeVisitor<>( System.out, false, false, true, false );
+            PrintingGBPTreeVisitor<KEY,VALUE> printingVisitor = new PrintingGBPTreeVisitor<>( System.out, false, false, true, false, false );
             GBPTreeStructure.visitTreeState( cursor, printingVisitor );
         }
     }
@@ -1232,26 +1235,20 @@ public class GBPTree<KEY,VALUE> implements Closeable
 
     public boolean consistencyCheck() throws IOException
     {
-        ThrowingConsistencyCheckVisitor reporter = new ThrowingConsistencyCheckVisitor();
+        ThrowingConsistencyCheckVisitor<KEY> reporter = new ThrowingConsistencyCheckVisitor<>();
         return consistencyCheck( reporter );
     }
 
     // Utility method
-    public boolean consistencyCheck( GBPTreeConsistencyCheckVisitor visitor ) throws IOException
+    public boolean consistencyCheck( GBPTreeConsistencyCheckVisitor<KEY> visitor ) throws IOException
     {
         try ( PageCursor cursor = pagedFile.io( 0L /*ignored*/, PagedFile.PF_SHARED_READ_LOCK ) )
         {
             long unstableGeneration = unstableGeneration( generation );
-            GBPTreeConsistencyChecker<KEY> consistencyChecker = new GBPTreeConsistencyChecker<>( bTreeNode, layout,
+            GBPTreeConsistencyChecker<KEY> consistencyChecker = new GBPTreeConsistencyChecker<>( bTreeNode, layout, freeList,
                     stableGeneration( generation ), unstableGeneration );
 
             consistencyChecker.check( cursor, root, visitor );
-
-            // todo reimplement space check
-//            final MutableLongSet freelistIds = new LongHashSet();
-//            freeList.visitFreelistPageIds( freelistIds::add );
-//            freeList.visitUnacquiredIds( freelistIds::add, unstableGeneration );
-//            boolean checkSpace = consistencyChecker.checkSpace( cursor, freeList.lastId(), freelistIds.longIterator() );
 
             return visitor.clean();
         }

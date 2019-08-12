@@ -22,7 +22,6 @@ package org.neo4j.index.internal.gbptree;
 import org.apache.commons.lang3.mutable.MutableBoolean;
 import org.apache.commons.lang3.mutable.MutableLong;
 import org.apache.commons.lang3.tuple.Pair;
-import org.eclipse.collections.impl.iterator.ImmutableEmptyLongIterator;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Rule;
@@ -39,6 +38,7 @@ import java.util.Map;
 import java.util.Set;
 
 import org.neo4j.io.pagecache.CursorException;
+import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PagedFile;
@@ -55,10 +55,8 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.junit.rules.RuleChain.outerRule;
-import static org.neo4j.index.internal.gbptree.GBPTree.NO_MONITOR;
 import static org.neo4j.index.internal.gbptree.GBPTreeConsistencyChecker.assertNoCrashOrBrokenPointerInGSPP;
 import static org.neo4j.index.internal.gbptree.GenerationSafePointer.MIN_GENERATION;
-import static org.neo4j.index.internal.gbptree.PageCursorUtil.goTo;
 import static org.neo4j.index.internal.gbptree.SimpleLongLayout.longLayout;
 import static org.neo4j.test.rule.PageCacheRule.config;
 
@@ -464,6 +462,52 @@ public class GBPTreeConsistencyCheckerTest
         }
     }
 
+    @Test
+    public void shouldDetectPageMissingFreelistEntry() throws IOException
+    {
+        long targetMissingId;
+        try ( GBPTree<MutableLong,MutableLong> index = index().build() )
+        {
+            // Add and remove a bunch of keys to fill freelist
+            try ( Writer<MutableLong,MutableLong> writer = index.writer() )
+            {
+                int keyCount = 0;
+                while ( getHeight( index ) < 2 )
+                {
+                    writer.put( layout.key( keyCount ), layout.value( keyCount ) );
+                    keyCount++;
+                }
+
+                for ( int i = 0; i < keyCount; i++ )
+                {
+                    writer.remove( layout.key( i ) );
+                }
+            }
+            index.checkpoint( IOLimiter.UNLIMITED );
+        }
+
+        // When tree is closed we will overwrite treeState with in memory state so we need to open tree in read only mode for our state corruption to persist.
+        try ( GBPTree<MutableLong,MutableLong> index = index().withReadOnly( true ).build() )
+        {
+            InspectingVisitor<MutableLong,MutableLong> visitor = inspect( index );
+            int lastIndex = visitor.allFreelistEntries.size() - 1;
+            InspectingVisitor<MutableLong,MutableLong>.FreelistEntry lastFreelistEntry = visitor.allFreelistEntries.get( lastIndex );
+            TreeState treeState = visitor.treeState;
+            long stableGeneration = treeState.stableGeneration();
+            long unstableGeneration = treeState.unstableGeneration();
+            targetMissingId = lastFreelistEntry.id;
+
+            GBPTreeCorruption.PageCorruption<RawBytes,RawBytes> corruption = GBPTreeCorruption.decrementFreelistWritePos( treeState );
+            corrupt( treeState.pageId(), stableGeneration, unstableGeneration, corruption, dynamicLayout, dynamicNode );
+        }
+
+        // Need to restart tree to reload corrupted freelist
+        try ( GBPTree<MutableLong,MutableLong> index = index().build() )
+        {
+            assertReportUnusedPage( index, targetMissingId );
+        }
+    }
+
     //todo
     //  Tree structure inconsistencies:
     //    > Pointer generation lower than node generation
@@ -478,6 +522,8 @@ public class GBPTreeConsistencyCheckerTest
     //      X Root, internal or leaf has unknown tree node type
     //    > Node in tree has successor
     //      X Root, internal or leaf has successor
+    //    > Broken GSPP
+    //      - ...
     //    > Level hierarchy
     //      - Child pointer dont point to next level
     //      - Sibling pointer point to node on other level
@@ -492,7 +538,7 @@ public class GBPTreeConsistencyCheckerTest
     //  Free list inconsistencies:
     //  A page can be either used as a freelist page, used as a tree node (unstable generation), listed in freelist (stable generation), listen in freelist
     //  (unstable generation)
-    //      - Page missing from freelist
+    //      X Page missing from freelist
     //      - Extra page on free list
     //      - Extra empty page in file
     //  Tree meta inconsistencies:
@@ -531,66 +577,6 @@ public class GBPTreeConsistencyCheckerTest
         }
     }
 
-    @Test
-    public void shouldDetectUnusedPages() throws Exception
-    {
-        // GIVEN
-        int pageSize = 256;
-        Layout<MutableLong,MutableLong> layout = longLayout().build();
-        TreeNode<MutableLong,MutableLong> node = new TreeNodeFixedSize<>( pageSize, layout );
-        long stableGeneration = GenerationSafePointer.MIN_GENERATION;
-        long unstableGeneration = stableGeneration + 1;
-        PageAwareByteArrayCursor cursor = new PageAwareByteArrayCursor( pageSize );
-        SimpleIdProvider idProvider = new SimpleIdProvider( cursor::duplicate );
-        InternalTreeLogic<MutableLong,MutableLong> logic = new InternalTreeLogic<>( idProvider, node, layout, NO_MONITOR );
-        cursor.next( idProvider.acquireNewId( stableGeneration, unstableGeneration ) );
-        node.initializeLeaf( cursor, stableGeneration, unstableGeneration );
-        logic.initialize( cursor );
-        StructurePropagation<MutableLong> structure = new StructurePropagation<>( layout.newKey(), layout.newKey(),
-                layout.newKey() );
-        MutableLong key = layout.newKey();
-        for ( int g = 0, k = 0; g < 3; g++ )
-        {
-            for ( int i = 0; i < 100; i++, k++ )
-            {
-                key.setValue( k );
-                logic.insert( cursor, structure, key, key, ValueMergers.overwrite(),
-                        stableGeneration, unstableGeneration );
-                if ( structure.hasRightKeyInsert )
-                {
-                    goTo( cursor, "new root",
-                            idProvider.acquireNewId( stableGeneration, unstableGeneration ) );
-                    node.initializeInternal( cursor, stableGeneration, unstableGeneration );
-                    node.setChildAt( cursor, structure.midChild, 0, stableGeneration, unstableGeneration );
-                    node.insertKeyAndRightChildAt( cursor, structure.rightKey, structure.rightChild, 0, 0,
-                            stableGeneration, unstableGeneration );
-                    TreeNode.setKeyCount( cursor, 1 );
-                    logic.initialize( cursor );
-                }
-                if ( structure.hasMidChildUpdate )
-                {
-                    logic.initialize( cursor );
-                }
-                structure.clear();
-            }
-            stableGeneration = unstableGeneration;
-            unstableGeneration++;
-        }
-
-        // WHEN
-        GBPTreeConsistencyChecker<MutableLong> cc =
-                new GBPTreeConsistencyChecker<>( node, layout, stableGeneration, unstableGeneration );
-        try
-        {
-            cc.checkSpace( cursor, idProvider.lastId(), ImmutableEmptyLongIterator.INSTANCE );
-            fail( "Should have failed" );
-        }
-        catch ( RuntimeException exception )
-        {
-            assertThat( exception.getMessage(), containsString( "unused pages" ) );
-        }
-    }
-
     private void corrupt( long targetNode, long stableGeneration, long unstableGeneration,
             GBPTreeCorruption.PageCorruption<MutableLong,MutableLong> corruption ) throws IOException
     {
@@ -608,7 +594,7 @@ public class GBPTreeConsistencyCheckerTest
         }
     }
 
-    private long nodeWithLeftSibling( InspectingVisitor visitor )
+    private <KEY,VALUE> long nodeWithLeftSibling( InspectingVisitor<KEY,VALUE> visitor )
     {
         List<List<Long>> nodesPerLevel = visitor.nodesPerLevel;
         long targetNode = -1;
@@ -631,7 +617,7 @@ public class GBPTreeConsistencyCheckerTest
         return targetNode;
     }
 
-    private long nodeWithRightSibling( InspectingVisitor visitor )
+    private <KEY,VALUE> long nodeWithRightSibling( InspectingVisitor<KEY,VALUE> visitor )
     {
         List<List<Long>> nodesPerLevel = visitor.nodesPerLevel;
         long targetNode = -1;
@@ -722,7 +708,7 @@ public class GBPTreeConsistencyCheckerTest
     private static void assertReportNotATreeNode( GBPTree<MutableLong,MutableLong> index, long targetNode ) throws IOException
     {
         MutableBoolean called = new MutableBoolean();
-        index.consistencyCheck( new GBPTreeConsistencyCheckVisitor.Adaptor()
+        index.consistencyCheck( new GBPTreeConsistencyCheckVisitor.Adaptor<MutableLong>()
         {
             @Override
             public void notATreeNode( long pageId )
@@ -737,7 +723,7 @@ public class GBPTreeConsistencyCheckerTest
     private static void assertReportUnknownTreeNodeType( GBPTree<MutableLong,MutableLong> index, long targetNode ) throws IOException
     {
         MutableBoolean called = new MutableBoolean();
-        index.consistencyCheck( new GBPTreeConsistencyCheckVisitor.Adaptor()
+        index.consistencyCheck( new GBPTreeConsistencyCheckVisitor.Adaptor<MutableLong>()
         {
             @Override
             public void unknownTreeNodeType( long pageId, byte treeNodeType )
@@ -753,7 +739,7 @@ public class GBPTreeConsistencyCheckerTest
     {
         MutableBoolean corruptedSiblingPointerCalled = new MutableBoolean();
         MutableBoolean rightmostNodeHasRightSiblingCalled = new MutableBoolean();
-        index.consistencyCheck( new GBPTreeConsistencyCheckVisitor.Adaptor()
+        index.consistencyCheck( new GBPTreeConsistencyCheckVisitor.Adaptor<MutableLong>()
         {
             @Override
             public void siblingsDontPointToEachOther( long leftNode, long leftNodeGeneration, long leftRightSiblingPointerGeneration,
@@ -775,7 +761,7 @@ public class GBPTreeConsistencyCheckerTest
     private static void assertReportPointerToOldVersionOfTreeNode( GBPTree<MutableLong,MutableLong> index, long targetNode ) throws IOException
     {
         MutableBoolean called = new MutableBoolean();
-        index.consistencyCheck( new GBPTreeConsistencyCheckVisitor.Adaptor()
+        index.consistencyCheck( new GBPTreeConsistencyCheckVisitor.Adaptor<MutableLong>()
         {
             @Override
             public void pointerToOldVersionOfTreeNode( long pageId, long successorPointer )
@@ -792,7 +778,7 @@ public class GBPTreeConsistencyCheckerTest
             GBPTreePointerType expectedPointerType ) throws IOException
     {
         MutableBoolean called = new MutableBoolean();
-        index.consistencyCheck( new GBPTreeConsistencyCheckVisitor.Adaptor()
+        index.consistencyCheck( new GBPTreeConsistencyCheckVisitor.Adaptor<MutableLong>()
         {
             @Override
             public void pointerHasLowerGenerationThanNode( GBPTreePointerType pointerType, long sourceNode, long pointer, long pointerGeneration,
@@ -809,7 +795,7 @@ public class GBPTreeConsistencyCheckerTest
     private static void assertReportKeysOutOfOrderInNode( GBPTree<MutableLong,MutableLong> index, long targetNode ) throws IOException
     {
         MutableBoolean called = new MutableBoolean();
-        index.consistencyCheck( new GBPTreeConsistencyCheckVisitor.Adaptor()
+        index.consistencyCheck( new GBPTreeConsistencyCheckVisitor.Adaptor<MutableLong>()
         {
             @Override
             public void keysOutOfOrderInNode( long pageId )
@@ -841,7 +827,7 @@ public class GBPTreeConsistencyCheckerTest
     private static void assertReportAllocSpaceOverlapActiveKeys( GBPTree<RawBytes,RawBytes> index, long targetNode ) throws IOException
     {
         MutableBoolean called = new MutableBoolean();
-        index.consistencyCheck( new GBPTreeConsistencyCheckVisitor.Adaptor()
+        index.consistencyCheck( new GBPTreeConsistencyCheckVisitor.Adaptor<RawBytes>()
         {
             @Override
             public void nodeMetaInconsistency( long pageId, String message )
@@ -857,7 +843,7 @@ public class GBPTreeConsistencyCheckerTest
     private static void assertReportAllocSpaceOverlapOffsetArray( GBPTree<RawBytes,RawBytes> index, long targetNode ) throws IOException
     {
         MutableBoolean called = new MutableBoolean();
-        index.consistencyCheck( new GBPTreeConsistencyCheckVisitor.Adaptor()
+        index.consistencyCheck( new GBPTreeConsistencyCheckVisitor.Adaptor<RawBytes>()
         {
             @Override
             public void nodeMetaInconsistency( long pageId, String message )
@@ -873,7 +859,7 @@ public class GBPTreeConsistencyCheckerTest
     private static void assertReportSpaceAreasNotSummingToTotalSpace( GBPTree<RawBytes,RawBytes> index, long targetNode ) throws IOException
     {
         MutableBoolean called = new MutableBoolean();
-        index.consistencyCheck( new GBPTreeConsistencyCheckVisitor.Adaptor()
+        index.consistencyCheck( new GBPTreeConsistencyCheckVisitor.Adaptor<RawBytes>()
         {
             @Override
             public void nodeMetaInconsistency( long pageId, String message )
@@ -889,7 +875,7 @@ public class GBPTreeConsistencyCheckerTest
     private static void assertReportAllocOffsetMisplaced( GBPTree<RawBytes,RawBytes> index, long targetNode ) throws IOException
     {
         MutableBoolean called = new MutableBoolean();
-        index.consistencyCheck( new GBPTreeConsistencyCheckVisitor.Adaptor()
+        index.consistencyCheck( new GBPTreeConsistencyCheckVisitor.Adaptor<RawBytes>()
         {
             @Override
             public void nodeMetaInconsistency( long pageId, String message )
@@ -897,6 +883,21 @@ public class GBPTreeConsistencyCheckerTest
                 called.setTrue();
                 assertEquals( targetNode, pageId );
                 Assert.assertThat( message, containsString( "Pointer to allocSpace is misplaced, it should point to start of key" ) );
+            }
+        } );
+        assertCalled( called );
+    }
+
+    private static void assertReportUnusedPage( GBPTree<MutableLong,MutableLong> index, long targetNode ) throws IOException
+    {
+        MutableBoolean called = new MutableBoolean();
+        index.consistencyCheck( new GBPTreeConsistencyCheckVisitor.Adaptor<MutableLong>()
+        {
+            @Override
+            public void unusedPage( long pageId )
+            {
+                called.setTrue();
+                assertEquals( targetNode, pageId );
             }
         } );
         assertCalled( called );
@@ -914,7 +915,9 @@ public class GBPTreeConsistencyCheckerTest
         private final List<Long> allNodes = new ArrayList<>();
         private final Map<Long,Integer> allKeyCounts = new HashMap<>();
         private final List<List<Long>> nodesPerLevel = new ArrayList<>();
+        private final List<FreelistEntry> allFreelistEntries = new ArrayList<>();
         private ArrayList<Long> currentLevelNodes;
+        private long currentFreelistPage;
         private long rootNode;
         private int lastLevel;
         private TreeState treeState;
@@ -963,10 +966,38 @@ public class GBPTreeConsistencyCheckerTest
             }
         }
 
+        @Override
+        public void beginFreelistPage( long pageId )
+        {
+            currentFreelistPage = pageId;
+        }
+
+        @Override
+        public void freelistEntry( long pageId, long generation, int pos )
+        {
+            allFreelistEntries.add( new FreelistEntry( currentFreelistPage, pos, pageId, generation ) );
+        }
+
         private void clear()
         {
             rootNode = -1;
             lastLevel = -1;
+        }
+
+        private class FreelistEntry
+        {
+            private final long freelistPageId;
+            private final int pos;
+            private final long id;
+            private final long generation;
+
+            private FreelistEntry( long freelistPageId, int pos, long id, long generation )
+            {
+                this.freelistPageId = freelistPageId;
+                this.pos = pos;
+                this.id = id;
+                this.generation = generation;
+            }
         }
     }
 }

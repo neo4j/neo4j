@@ -19,7 +19,6 @@
  */
 package org.neo4j.index.internal.gbptree;
 
-import org.eclipse.collections.api.iterator.LongIterator;
 import org.eclipse.collections.api.list.MutableList;
 import org.eclipse.collections.api.list.primitive.MutableLongList;
 import org.eclipse.collections.impl.factory.Lists;
@@ -31,7 +30,6 @@ import java.util.BitSet;
 import java.util.Comparator;
 import java.util.List;
 
-import org.neo4j.index.internal.gbptree.GenerationSafePointerPair.GenerationTarget;
 import org.neo4j.io.pagecache.CursorException;
 import org.neo4j.io.pagecache.PageCursor;
 
@@ -57,139 +55,65 @@ class GBPTreeConsistencyChecker<KEY>
     private final Comparator<KEY> comparator;
     private final Layout<KEY,?> layout;
     private final List<RightmostInChain> rightmostPerLevel = new ArrayList<>();
+    private final IdProvider idProvider;
+    private final long lastId;
     private final long stableGeneration;
     private final long unstableGeneration;
     private final GenerationKeeper generationTarget = new GenerationKeeper();
 
-    GBPTreeConsistencyChecker( TreeNode<KEY,?> node, Layout<KEY,?> layout, long stableGeneration, long unstableGeneration )
+    GBPTreeConsistencyChecker( TreeNode<KEY,?> node, Layout<KEY,?> layout, IdProvider idProvider, long stableGeneration,
+            long unstableGeneration )
     {
         this.node = node;
         this.comparator = node.keyComparator();
         this.layout = layout;
+        this.idProvider = idProvider;
+        this.lastId = idProvider.lastId();
         this.stableGeneration = stableGeneration;
         this.unstableGeneration = unstableGeneration;
     }
 
     public void check( PageCursor cursor, Root root, GBPTreeConsistencyCheckVisitor<KEY> visitor ) throws IOException
     {
+        long highId = lastId + 1;
+        BitSet seenIds = new BitSet( Math.toIntExact( highId ) );
+
+        // Log ids in freelist together with ids occupied by freelist pages.
+        IdProvider.IdProviderVisitor freelistSeenIdsVisitor = new FreelistSeenIdsVisitor<>( seenIds, lastId, visitor );
+        idProvider.visitFreelist( freelistSeenIdsVisitor );
+
+        // Check structure of GBPTree
         long rootGeneration = root.goTo( cursor );
         KeyRange<KEY> openRange = new KeyRange<>( comparator, null, null, layout, null );
-        checkSubtree( cursor, openRange, -1, rootGeneration, GBPTreePointerType.noPointer(), 0, visitor );
+        checkSubtree( cursor, openRange, -1, rootGeneration, GBPTreePointerType.noPointer(), 0, visitor, seenIds );
 
         // Assert that rightmost node on each level has empty right sibling.
         rightmostPerLevel.forEach( rightmost -> rightmost.assertLast( visitor ) );
+
+        // Assert that all pages in file are either present as an active tree node or in freelist.
+        assertAllIdsOccupied( highId, seenIds, visitor );
         root.goTo( cursor );
     }
 
-    /**
-     * Checks so that all pages between {@link IdSpace#MIN_TREE_NODE_ID} and highest allocated id
-     * are either in use in the tree, on the free-list or free-list nodes.
-     *
-     * @param cursor {@link PageCursor} to use for reading.
-     * @param lastId highest allocated id in the store.
-     * @param freelistIds page ids making up free-list pages and page ids on the free-list.
-     * @return {@code true} if all pages are taken, otherwise {@code false}. Also is compatible with java
-     * assert calls.
-     * @throws IOException on {@link PageCursor} error.
-     */
-    boolean checkSpace( PageCursor cursor, long lastId, LongIterator freelistIds ) throws IOException
-    {
-        // TODO: limitation, can't run on an index larger than Integer.MAX_VALUE pages (which is fairly large)
-        long highId = lastId + 1;
-        BitSet seenIds = new BitSet( toIntExact( highId ) );
-        while ( freelistIds.hasNext() )
-        {
-            addToSeenList( seenIds, freelistIds.next(), lastId );
-        }
-
-        // Traverse the tree
-        do
-        {
-            // One level at the time
-            long leftmostSibling = cursor.getCurrentPageId();
-            addToSeenList( seenIds, leftmostSibling, lastId );
-
-            // Go right through all siblings
-            traverseAndAddRightSiblings( cursor, seenIds, lastId );
-
-            // Then go back to the left-most node on this level
-            TreeNode.goTo( cursor, "back", leftmostSibling );
-        }
-        // And continue down to next level if this level was an internal level
-        while ( goToLeftmostChild( cursor ) );
-
-        assertAllIdsOccupied( highId, seenIds );
-        return true;
-    }
-
-    private boolean goToLeftmostChild( PageCursor cursor ) throws IOException
-    {
-        boolean isInternal;
-        long leftmostSibling = -1;
-        do
-        {
-            isInternal = TreeNode.isInternal( cursor );
-            if ( isInternal )
-            {
-                leftmostSibling = node.childAt( cursor, 0, stableGeneration, unstableGeneration );
-            }
-        }
-        while ( cursor.shouldRetry() );
-
-        if ( isInternal )
-        {
-            TreeNode.goTo( cursor, "child", leftmostSibling );
-        }
-        return isInternal;
-    }
-
-    private static void assertAllIdsOccupied( long highId, BitSet seenIds )
+    private static <KEY> void assertAllIdsOccupied( long highId, BitSet seenIds, GBPTreeConsistencyCheckVisitor<KEY> visitor )
     {
         long expectedNumberOfPages = highId - IdSpace.MIN_TREE_NODE_ID;
         if ( seenIds.cardinality() != expectedNumberOfPages )
         {
-            StringBuilder builder = new StringBuilder( "[" );
             int index = (int) IdSpace.MIN_TREE_NODE_ID;
-            int count = 0;
             while ( index >= 0 && index < highId )
             {
                 index = seenIds.nextClearBit( index );
-                if ( index != -1 )
+                if ( index != -1 && index < highId )
                 {
-                    if ( count++ > 0 )
-                    {
-                        builder.append( "," );
-                    }
-                    builder.append( index );
-                    index++;
+                    visitor.unusedPage( index );
                 }
+                index++;
             }
-            builder.append( "]" );
-            throw new RuntimeException( "There are " + count + " unused pages in the store:" + builder );
         }
     }
 
-    private void traverseAndAddRightSiblings( PageCursor cursor, BitSet seenIds, long lastId ) throws IOException
-    {
-        long rightSibling;
-        do
-        {
-            do
-            {
-                rightSibling = TreeNode.rightSibling( cursor, stableGeneration, unstableGeneration );
-            }
-            while ( cursor.shouldRetry() );
-
-            if ( TreeNode.isNode( rightSibling ) )
-            {
-                TreeNode.goTo( cursor, "right sibling", rightSibling );
-                addToSeenList( seenIds, pointer( rightSibling ), lastId );
-            }
-        }
-        while ( TreeNode.isNode( rightSibling ) );
-    }
-
-    private static void addToSeenList( BitSet target, long id, long lastId )
+    private static <KEY> void addToSeenList( BitSet target, long id, long lastId, GBPTreeConsistencyCheckVisitor<KEY> visitor )
     {
         int index = toIntExact( id );
         if ( target.get( index ) )
@@ -204,9 +128,10 @@ class GBPTreeConsistencyChecker<KEY>
     }
 
     private void checkSubtree( PageCursor cursor, KeyRange<KEY> range, long parentNode, long pointerGeneration, GBPTreePointerType parentPointerType, int level,
-            GBPTreeConsistencyCheckVisitor<KEY> visitor )
-            throws IOException
+            GBPTreeConsistencyCheckVisitor<KEY> visitor, BitSet seenIds ) throws IOException
     {
+        long pageId = cursor.getCurrentPageId();
+        addToSeenList( seenIds, pageId, lastId, visitor );
         byte nodeType;
         byte treeNodeType;
         int keyCount;
@@ -255,14 +180,14 @@ class GBPTreeConsistencyChecker<KEY>
 
         if ( nodeType != TreeNode.NODE_TYPE_TREE_NODE )
         {
-             visitor.notATreeNode( cursor.getCurrentPageId() );
+             visitor.notATreeNode( pageId );
         }
 
         boolean isLeaf = treeNodeType == TreeNode.LEAF_FLAG;
         boolean isInternal = treeNodeType == TreeNode.INTERNAL_FLAG;
         if ( !isInternal && !isLeaf )
         {
-            visitor.unknownTreeNodeType( cursor.getCurrentPageId(), treeNodeType );
+            visitor.unknownTreeNodeType( pageId, treeNodeType );
         }
 
         assertKeyOrder( cursor, range, keyCount, isLeaf ? LEAF : INTERNAL, visitor );
@@ -274,7 +199,7 @@ class GBPTreeConsistencyChecker<KEY>
         while ( cursor.shouldRetry() );
         checkAfterShouldRetry( cursor );
 
-        assertPointerGenerationMatchesGeneration( parentPointerType, parentNode, cursor.getCurrentPageId(), pointerGeneration,
+        assertPointerGenerationMatchesGeneration( parentPointerType, parentNode, pageId, pointerGeneration,
                 currentNodeGeneration, visitor );
         assertSiblings( cursor, currentNodeGeneration, leftSiblingPointer, leftSiblingPointerGeneration, rightSiblingPointer,
                 rightSiblingPointerGeneration, level, visitor );
@@ -282,7 +207,7 @@ class GBPTreeConsistencyChecker<KEY>
 
         if ( isInternal )
         {
-            assertSubtrees( cursor, range, keyCount, level, visitor );
+            assertSubtrees( cursor, range, keyCount, level, visitor, seenIds );
         }
     }
 
@@ -321,7 +246,7 @@ class GBPTreeConsistencyChecker<KEY>
     }
 
     private void assertSubtrees( PageCursor cursor, KeyRange<KEY> range, int keyCount, int level,
-            GBPTreeConsistencyCheckVisitor<KEY> visitor ) throws IOException
+            GBPTreeConsistencyCheckVisitor<KEY> visitor, BitSet seenIds ) throws IOException
     {
         long pageId = cursor.getCurrentPageId();
         KEY prev = null;
@@ -350,7 +275,7 @@ class GBPTreeConsistencyChecker<KEY>
             }
 
             TreeNode.goTo( cursor, "child at pos " + pos, child );
-            checkSubtree( cursor, childRange, pageId, childGeneration, GBPTreePointerType.child( pos ), level + 1, visitor );
+            checkSubtree( cursor, childRange, pageId, childGeneration, GBPTreePointerType.child( pos ), level + 1, visitor, seenIds );
 
             TreeNode.goTo( cursor, "parent", pageId );
 
@@ -375,7 +300,7 @@ class GBPTreeConsistencyChecker<KEY>
 
         TreeNode.goTo( cursor, "child at pos " + pos, child );
         childRange = range.restrictLeft( prev );
-        checkSubtree( cursor, childRange, pageId, childGeneration, GBPTreePointerType.child( pos ), level + 1, visitor );
+        checkSubtree( cursor, childRange, pageId, childGeneration, GBPTreePointerType.child( pos ), level + 1, visitor, seenIds );
         TreeNode.goTo( cursor, "parent", pageId );
     }
 
@@ -385,7 +310,7 @@ class GBPTreeConsistencyChecker<KEY>
         cursor.checkAndClearCursorException();
     }
 
-    private long childAt( PageCursor cursor, int pos, GenerationTarget childGeneration )
+    private long childAt( PageCursor cursor, int pos, GBPTreeGenerationTarget childGeneration )
     {
         assertNoCrashOrBrokenPointerInGSPP(
                 cursor, stableGeneration, unstableGeneration, "Child", node.childOffset( pos ) );
@@ -525,6 +450,37 @@ class GBPTreeConsistencyChecker<KEY>
                 this.pos = pos;
                 this.keyCount = keyCount;
             }
+        }
+    }
+
+    private static class FreelistSeenIdsVisitor<KEY> implements IdProvider.IdProviderVisitor
+    {
+        private final BitSet seenIds;
+        private final long lastId;
+        private final GBPTreeConsistencyCheckVisitor<KEY> visitor;
+
+        private FreelistSeenIdsVisitor( BitSet seenIds, long lastId, GBPTreeConsistencyCheckVisitor<KEY> visitor )
+        {
+            this.seenIds = seenIds;
+            this.lastId = lastId;
+            this.visitor = visitor;
+        }
+
+        @Override
+        public void beginFreelistPage( long pageId )
+        {
+            addToSeenList( seenIds, pageId, lastId, visitor );
+        }
+
+        @Override
+        public void endFreelistPage( long pageId )
+        {
+        }
+
+        @Override
+        public void freelistEntry( long pageId, long generation, int pos )
+        {
+            addToSeenList( seenIds, pageId, lastId, visitor );
         }
     }
 }

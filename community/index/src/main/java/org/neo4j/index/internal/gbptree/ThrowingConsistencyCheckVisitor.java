@@ -99,6 +99,12 @@ public class ThrowingConsistencyCheckVisitor<KEY> implements GBPTreeConsistencyC
         throwNodeMetaInconsistency( "Tree node %d has inconsistent meta data: %s.", pageId, message );
     }
 
+    @Override
+    public void unusedPage( long pageId )
+    {
+        throwTreeMetaInconsistency( "Index has a leaked page that will never be reclaimed, pageId=%d.", pageId );
+    }
+
     private String leftPattern( long actualLeftSibling, long actualLeftSiblingGeneration,
             long expectedRightSiblingGeneration, long expectedRightSibling )
     {
@@ -129,6 +135,12 @@ public class ThrowingConsistencyCheckVisitor<KEY> implements GBPTreeConsistencyC
     {
         notClean();
         throwWithPrefix( nodeMetaInconsistency, format, args );
+    }
+
+    private void throwTreeMetaInconsistency( String format, Object... args )
+    {
+        notClean();
+        throwWithPrefix( treeMetaInconsistency, format, args );
     }
 
     private void throwWithPrefix( String prefix, String format, Object[] args )

@@ -1525,8 +1525,9 @@ public abstract class InternalTreeLogicTestBase<KEY,VALUE>
         long currentPageId = readCursor.getCurrentPageId();
         root.goTo( readCursor );
         GBPTreeConsistencyChecker<KEY> consistencyChecker =
-                new GBPTreeConsistencyChecker<>( node, layout, stableGeneration, unstableGeneration );
-        consistencyChecker.check( readCursor, root, new ThrowingConsistencyCheckVisitor() );
+                new GBPTreeConsistencyChecker<>( node, layout, id, stableGeneration, unstableGeneration );
+        ThrowingConsistencyCheckVisitor<KEY> visitor = new ThrowingConsistencyCheckVisitor<>();
+        consistencyChecker.check( readCursor, root, visitor );
         goTo( readCursor, currentPageId );
     }
 
@@ -1732,7 +1733,7 @@ public abstract class InternalTreeLogicTestBase<KEY,VALUE>
     {
         long currentPageId = cursor.getCurrentPageId();
         cursor.next( root.id() );
-        PrintingGBPTreeVisitor<KEY,VALUE> printingVisitor = new PrintingGBPTreeVisitor<>( System.out, false, false, false, false );
+        PrintingGBPTreeVisitor<KEY,VALUE> printingVisitor = new PrintingGBPTreeVisitor<>( System.out, false, false, false, false, false );
         new GBPTreeStructure<>( node, layout, stableGeneration, unstableGeneration ).visitTree( cursor, cursor, printingVisitor );
         cursor.next( currentPageId );
     }

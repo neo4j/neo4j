@@ -21,7 +21,7 @@ package org.neo4j.index.internal.gbptree;
 
 import org.apache.commons.lang3.tuple.Pair;
 
-interface GBPTreeVisitor<KEY,VALUE>
+interface GBPTreeVisitor<KEY,VALUE> extends IdProvider.IdProviderVisitor
 {
     void treeState( Pair<TreeState,TreeState> statePair );
 
@@ -85,6 +85,21 @@ interface GBPTreeVisitor<KEY,VALUE>
 
         @Override
         public void endLevel( int level )
+        {
+        }
+
+        @Override
+        public void beginFreelistPage( long pageId )
+        {
+        }
+
+        @Override
+        public void endFreelistPage( long pageId )
+        {
+        }
+
+        @Override
+        public void freelistEntry( long pageId, long generation, int pos )
         {
         }
     }

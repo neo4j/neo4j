@@ -201,6 +201,16 @@ final class GBPTreeCorruption
         };
     }
 
+    static <KEY,VALUE> PageCorruption<KEY,VALUE> decrementFreelistWritePos( TreeState treeState )
+    {
+        return ( cursor, layout, node, stableGeneration, unstableGeneration, crashGeneration ) -> {
+            int decrementedWritePos = treeState.freeListWritePos() - 1;
+            TreeState.write( cursor, treeState.stableGeneration(), treeState.unstableGeneration(), treeState.rootId(),
+                    treeState.rootGeneration(), treeState.lastId(), treeState.freeListWritePageId(), treeState.freeListReadPageId(), decrementedWritePos,
+                    treeState.freeListReadPos(), treeState.isClean() );
+        };
+    }
+
     private static <KEY, VALUE> TreeNodeDynamicSize assertDynamicNode( TreeNode<KEY,VALUE> node )
     {
         if ( !(node instanceof TreeNodeDynamicSize) )

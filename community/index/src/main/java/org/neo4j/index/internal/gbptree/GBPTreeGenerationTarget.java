@@ -19,16 +19,10 @@
  */
 package org.neo4j.index.internal.gbptree;
 
-/**
- * {@link GBPTreeGenerationTarget} which has its own generation field.
- */
-class GenerationKeeper implements GBPTreeGenerationTarget
+@FunctionalInterface
+interface GBPTreeGenerationTarget
 {
-    long generation;
+    GBPTreeGenerationTarget NO_GENERATION_TARGET = generation -> {};
 
-    @Override
-    public void accept( long generation )
-    {
-        this.generation = generation;
-    }
+    void accept( long generation );
 }

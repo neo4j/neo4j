@@ -42,6 +42,8 @@ public interface GBPTreeConsistencyCheckVisitor<KEY>
 
     void keysLocatedInWrongNode( long pageId, KeyRange<KEY> range, KEY key, int pos, int keyCount );
 
+    void unusedPage( long pageId );
+
     void nodeMetaInconsistency( long pageId, String message );
 
     class Adaptor<KEY> implements GBPTreeConsistencyCheckVisitor<KEY>
@@ -91,6 +93,11 @@ public interface GBPTreeConsistencyCheckVisitor<KEY>
 
         @Override
         public void keysLocatedInWrongNode( long pageId, KeyRange<KEY> range, KEY key, int pos, int keyCount )
+        {
+        }
+
+        @Override
+        public void unusedPage( long pageId )
         {
         }
 
