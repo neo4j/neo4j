@@ -269,7 +269,7 @@ class GBPTreeConsistencyChecker<KEY>
 
         do
         {
-            node.checkMetaConsistency( cursor, keyCount, isLeaf ? LEAF : INTERNAL );
+            node.checkMetaConsistency( cursor, keyCount, isLeaf ? LEAF : INTERNAL, visitor );
         }
         while ( cursor.shouldRetry() );
         checkAfterShouldRetry( cursor );

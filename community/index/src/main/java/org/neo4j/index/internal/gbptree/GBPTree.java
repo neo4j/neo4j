@@ -1213,7 +1213,7 @@ public class GBPTree<KEY,VALUE> implements Closeable
      * Print node with given id to System.out, if node with id exists.
      * @param id the page id of node to print
      */
-    void printNode( int id ) throws IOException
+    void printNode( long id ) throws IOException
     {
         if ( id < freeList.lastId() )
         {

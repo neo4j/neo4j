@@ -399,6 +399,6 @@ abstract class TreeNode<KEY,VALUE>
     @SuppressWarnings( "unused" )
     abstract void printNode( PageCursor cursor, boolean includeValue, boolean includeAllocSpace, long stableGeneration, long unstableGeneration );
 
-    abstract void checkMetaConsistency( PageCursor cursor, int keyCount, Type type );
+    abstract void checkMetaConsistency( PageCursor cursor, int keyCount, Type type, GBPTreeConsistencyCheckVisitor<KEY> visitor );
 
 }

@@ -167,6 +167,49 @@ final class GBPTreeCorruption
         };
     }
 
+    static <KEY,VALUE> PageCorruption<KEY,VALUE> maximizeAllocOffsetInDynamicNode()
+    {
+        return ( cursor, layout, node, stableGeneration, unstableGeneration, crashGeneration ) -> {
+            TreeNodeDynamicSize dynamicNode = assertDynamicNode( node );
+            dynamicNode.setAllocOffset( cursor, cursor.getCurrentPageSize() ); // Clear alloc space
+        };
+    }
+
+    static <KEY,VALUE> PageCorruption<KEY,VALUE> minimizeAllocOffsetInDynamicNode()
+    {
+        return ( cursor, layout, node, stableGeneration, unstableGeneration, crashGeneration ) -> {
+            TreeNodeDynamicSize dynamicNode = assertDynamicNode( node );
+            dynamicNode.setAllocOffset( cursor, TreeNodeDynamicSize.HEADER_LENGTH_DYNAMIC );
+        };
+    }
+
+    static <KEY, VALUE> PageCorruption<KEY,VALUE> decrementAllocOffsetInDynamicNode()
+    {
+        return ( cursor, layout, node, stableGeneration, unstableGeneration, crashGeneration ) -> {
+            TreeNodeDynamicSize dynamicNode = assertDynamicNode( node );
+            int allocOffset = dynamicNode.getAllocOffset( cursor );
+            dynamicNode.setAllocOffset( cursor, allocOffset - 1 );
+        };
+    }
+
+    static <KEY, VALUE> PageCorruption<KEY,VALUE> incrementDeadSpaceInDynamicNode()
+    {
+        return ( cursor, layout, node, stableGeneration, unstableGeneration, crashGeneration ) -> {
+            TreeNodeDynamicSize dynamicNode = assertDynamicNode( node );
+            int deadSpace = dynamicNode.getDeadSpace( cursor );
+            dynamicNode.setDeadSpace( cursor, deadSpace + 1 );
+        };
+    }
+
+    private static <KEY, VALUE> TreeNodeDynamicSize assertDynamicNode( TreeNode<KEY,VALUE> node )
+    {
+        if ( !(node instanceof TreeNodeDynamicSize) )
+        {
+            throw new RuntimeException( "Can not use this corruption if node is not of type " + TreeNodeDynamicSize.class.getSimpleName() );
+        }
+        return (TreeNodeDynamicSize) node;
+    }
+
     private static void overwriteGSPP( PageCursor cursor, int gsppOffset, long generation, long pointer )
     {
         cursor.setOffset( gsppOffset );

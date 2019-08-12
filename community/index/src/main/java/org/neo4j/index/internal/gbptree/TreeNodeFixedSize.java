@@ -583,7 +583,7 @@ class TreeNodeFixedSize<KEY,VALUE> extends TreeNode<KEY,VALUE>
     }
 
     @Override
-    void checkMetaConsistency( PageCursor cursor, int keyCount, Type type )
+    void checkMetaConsistency( PageCursor cursor, int keyCount, Type type, GBPTreeConsistencyCheckVisitor<KEY> visitor )
     {   // no-op
     }
 

@@ -69,28 +69,34 @@ public class ThrowingConsistencyCheckVisitor<KEY> implements GBPTreeConsistencyC
     @Override
     public void pointerToOldVersionOfTreeNode( long pageId, long successorPointer )
     {
-        throwTreeStructureInconsistency( "We ended up on node %d which has a newer generation, successor is: %d", pageId, successorPointer );
+        throwTreeStructureInconsistency( "We ended up on tree node %d which has a newer generation, successor is: %d", pageId, successorPointer );
     }
 
     @Override
     public void pointerHasLowerGenerationThanNode( GBPTreePointerType pointerType, long sourceNode, long pointer, long pointerGeneration,
             long targetNodeGeneration )
     {
-        throwTreeStructureInconsistency( "Pointer (%s) in node %d has pointer generation %d, but target node %d has a higher generation %d.",
+        throwTreeStructureInconsistency( "Pointer (%s) in tree node %d has pointer generation %d, but target node %d has a higher generation %d.",
                 pointerType.toString(), sourceNode, pointerGeneration, pointer, targetNodeGeneration );
     }
 
     @Override
     public void keysOutOfOrderInNode( long pageId )
     {
-        throwKeyOrderInconsistency( "Keys in node %d are out of order.", pageId );
+        throwKeyOrderInconsistency( "Keys in tree node %d are out of order.", pageId );
     }
 
     @Override
     public void keysLocatedInWrongNode( long pageId, KeyRange<KEY> range, KEY key, int pos, int keyCount )
     {
-        throwKeyOrderInconsistency( "Expected range for this node is %n%s%n but found %s in position %d, with keyCount %d on page %d.",
+        throwKeyOrderInconsistency( "Expected range for this tree node is %n%s%n but found %s in position %d, with keyCount %d on page %d.",
                 range, key, pos, keyCount, pageId );
+    }
+
+    @Override
+    public void nodeMetaInconsistency( long pageId, String message )
+    {
+        throwNodeMetaInconsistency( "Tree node %d has inconsistent meta data: %s.", pageId, message );
     }
 
     private String leftPattern( long actualLeftSibling, long actualLeftSiblingGeneration,
@@ -117,6 +123,12 @@ public class ThrowingConsistencyCheckVisitor<KEY> implements GBPTreeConsistencyC
     {
         notClean();
         throwWithPrefix( treeStructureInconsistency, format, args );
+    }
+
+    private void throwNodeMetaInconsistency( String format, Object... args )
+    {
+        notClean();
+        throwWithPrefix( nodeMetaInconsistency, format, args );
     }
 
     private void throwWithPrefix( String prefix, String format, Object[] args )
