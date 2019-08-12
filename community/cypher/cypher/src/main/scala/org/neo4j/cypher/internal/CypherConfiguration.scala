@@ -58,12 +58,8 @@ object CypherConfiguration {
       config.get(GraphDatabaseSettings.cypher_task_wait),
       config.get(GraphDatabaseSettings.cypher_expression_recompilation_limit),
       config.get(GraphDatabaseSettings.cypher_morsel_fuse_operators),
-      parseByteUnitOrNull(config.get(GraphDatabaseSettings.transaction_max_memory))
+      config.get(GraphDatabaseSettings.transaction_max_memory)
     )
-  }
-
-  def parseByteUnitOrNull(memoryConfig: String): Long = {
-    if(memoryConfig == null) 0L else ByteUnit.parse(memoryConfig)
   }
 
   def statsDivergenceFromConfig(config: Config): StatsDivergenceCalculator = {

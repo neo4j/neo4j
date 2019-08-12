@@ -29,7 +29,7 @@ import org.neo4j.kernel.impl.util.ValueUtils
 
 object MemoryManagementTestBase {
   // The configured max memory per transaction in Bytes
-  val maxMemory = 4000
+  val maxMemory = 4000L
 }
 
 trait InputStreams[CONTEXT <: RuntimeContext] {
@@ -134,7 +134,7 @@ abstract class MemoryManagementDisabledTestBase[CONTEXT <: RuntimeContext](
                                                                             runtime: CypherRuntime[CONTEXT]
                                                                           )
   extends RuntimeTestSuite[CONTEXT](edition.copyWith(
-    GraphDatabaseSettings.transaction_max_memory -> null), runtime) with InputStreams[CONTEXT] {
+    GraphDatabaseSettings.transaction_max_memory -> 0L.asInstanceOf[java.lang.Long]), runtime) with InputStreams[CONTEXT] {
   test("should not kill memory eating query") {
     // given
     val input = finiteInput(10000)
@@ -156,7 +156,7 @@ abstract class MemoryManagementTestBase[CONTEXT <: RuntimeContext](
                                                                     runtime: CypherRuntime[CONTEXT]
                                                                   )
   extends RuntimeTestSuite[CONTEXT](edition.copyWith(
-    GraphDatabaseSettings.transaction_max_memory -> MemoryManagementTestBase.maxMemory.toString), runtime) with InputStreams[CONTEXT] {
+    GraphDatabaseSettings.transaction_max_memory -> MemoryManagementTestBase.maxMemory.asInstanceOf[java.lang.Long]), runtime) with InputStreams[CONTEXT] {
 
   test("should kill sort query before it runs out of memory") {
     // given
