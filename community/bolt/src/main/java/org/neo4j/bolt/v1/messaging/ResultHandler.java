@@ -62,9 +62,9 @@ public class ResultHandler extends MessageProcessingHandler
         }
 
         @Override
-        public void consumeField( int offset, AnyValue value ) throws IOException
+        public void consumeField( AnyValue value ) throws IOException
         {
-            messageWriter.consumeField( offset, value );
+            messageWriter.consumeField( value );
         }
 
         @Override

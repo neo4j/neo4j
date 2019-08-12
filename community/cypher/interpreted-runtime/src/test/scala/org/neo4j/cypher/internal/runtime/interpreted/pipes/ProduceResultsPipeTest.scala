@@ -39,13 +39,23 @@ class ProduceResultsPipeTest extends CypherFunSuite {
 
     val subscriber: QuerySubscriber = new QuerySubscriberAdapter {
       private val record: mutable.Map[String, AnyValue] = mutable.Map.empty
+      private var currentOffset = -1
 
-      override def onField(offset: Int, value: AnyValue): Unit = {
-        record.put(columns(offset), value)
+      override def onField(value: AnyValue): Unit = {
+        try {
+          record.put(columns(currentOffset), value)
+        } finally {
+          currentOffset += 1
+        }
       }
 
       override def onRecordCompleted(): Unit = {
+        currentOffset = -1
         records.append(record.toMap)
+      }
+
+      override def onRecord(): Unit = {
+        currentOffset = 0
       }
     }
     val queryState = mock[QueryState]

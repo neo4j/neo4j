@@ -84,9 +84,9 @@ public abstract class NaiveQuerySubscription implements VisitableRuntimeResult
             {
                 subscriber.onRecord();
                 AnyValue[] current = materializedResult.get( servedRecords );
-                for ( int offset = 0; offset < current.length; offset++ )
+                for ( AnyValue anyValue : current )
                 {
-                    subscriber.onField( offset, current[offset] );
+                    subscriber.onField( anyValue );
                 }
                 subscriber.onRecordCompleted();
             }

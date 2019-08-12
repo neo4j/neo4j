@@ -128,6 +128,7 @@ public class BoltResponseRecorder implements BoltResponseHandler
     private class RecordingBoltResultRecordConsumer implements BoltResult.RecordConsumer
     {
         private AnyValue[] anyValues;
+        private int currentOffset = -1;
 
         @Override
         public void addMetadata( String key, AnyValue value )
@@ -138,18 +139,20 @@ public class BoltResponseRecorder implements BoltResponseHandler
         @Override
         public void beginRecord( int numberOfFields )
         {
+            currentOffset = 0;
             anyValues = new AnyValue[numberOfFields];
         }
 
         @Override
-        public void consumeField( int offset, AnyValue value )
+        public void consumeField( AnyValue value )
         {
-         anyValues[offset] = value;
+            anyValues[currentOffset++] = value;
         }
 
         @Override
         public void endRecord()
         {
+            currentOffset = -1;
             currentResponse.addFields( anyValues );
         }
 

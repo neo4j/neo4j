@@ -273,9 +273,9 @@ class ResultSubscriberTest
             {
                 subscriber.onRecord();
                 AnyValue[] record = results.next();
-                for ( int offset = 0; offset < record.length; offset++ )
+                for ( AnyValue anyValue : record )
                 {
-                    subscriber.onField( offset, record[offset] );
+                    subscriber.onField( anyValue );
                 }
                 subscriber.onRecordCompleted();
                 served++;

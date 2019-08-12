@@ -31,6 +31,7 @@ public class RecordingQuerySubscriber implements QuerySubscriber
     private AnyValue[] current;
     private Throwable throwable;
     private QueryStatistics statistics;
+    private int currentOffset = -1;
 
     @Override
     public void onResult( int numberOfFields )
@@ -41,18 +42,19 @@ public class RecordingQuerySubscriber implements QuerySubscriber
     @Override
     public void onRecord()
     {
-        //do nothing
+        currentOffset = 0;
     }
 
     @Override
-    public void onField( int offset, AnyValue value )
+    public void onField( AnyValue value )
     {
-        current[offset] = value;
+        current[currentOffset++] = value;
     }
 
     @Override
     public void onRecordCompleted()
     {
+        currentOffset = -1;
         all.add( current.clone() );
     }
 

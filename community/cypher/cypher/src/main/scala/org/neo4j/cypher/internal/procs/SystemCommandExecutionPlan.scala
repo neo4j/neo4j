@@ -83,6 +83,7 @@ case class SystemCommandExecutionPlan(name: String, normalExecutionEngine: Execu
 class SystemCommandQuerySubscriber(ctx: SystemUpdateCountingQueryContext, inner: QuerySubscriber, queryHandler: QueryHandler) extends QuerySubscriber {
   @volatile private var empty = true
   @volatile private var failed: Option[Throwable] = None
+  private var currentOffset = -1
 
   override def onResult(numberOfFields: Int): Unit = if (failed.isEmpty) {
     inner.onResult(numberOfFields)
@@ -101,6 +102,7 @@ class SystemCommandQuerySubscriber(ctx: SystemUpdateCountingQueryContext, inner:
   }
 
   override def onRecord(): Unit = {
+    currentOffset = 0
     if (failed.isEmpty) {
       empty = false
       inner.onRecord()
@@ -108,17 +110,22 @@ class SystemCommandQuerySubscriber(ctx: SystemUpdateCountingQueryContext, inner:
   }
 
   override def onRecordCompleted(): Unit = if (failed.isEmpty) {
+    currentOffset = -1
     inner.onRecordCompleted()
   }
 
-  override def onField(offset: Int, value: AnyValue): Unit = {
-    queryHandler.onResult(offset, value).foreach(error => {
-      val cypherError = exceptionHandler.mapToCypher(error)
-      inner.onError(cypherError)
-      failed = Some(cypherError)
-    })
-    if (failed.isEmpty) {
-      inner.onField(offset, value)
+  override def onField(value: AnyValue): Unit = {
+    try {
+      queryHandler.onResult(currentOffset, value).foreach(error => {
+        val cypherError = exceptionHandler.mapToCypher(error)
+        inner.onError(cypherError)
+        failed = Some(cypherError)
+      })
+      if (failed.isEmpty) {
+        inner.onField(value)
+      }
+    } finally {
+      currentOffset += 1
     }
   }
 

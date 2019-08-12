@@ -138,7 +138,7 @@ public class BoltResponseMessageWriterV1 implements BoltResponseMessageWriter
     }
 
     @Override
-    public void consumeField( int offset, AnyValue value ) throws IOException
+    public void consumeField( AnyValue value ) throws IOException
     {
         try
         {

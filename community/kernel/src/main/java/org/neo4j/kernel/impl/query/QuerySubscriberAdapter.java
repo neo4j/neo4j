@@ -37,7 +37,7 @@ public abstract class QuerySubscriberAdapter implements QuerySubscriber
     }
 
     @Override
-    public void onField( int offset, AnyValue value ) throws Exception
+    public void onField( AnyValue value ) throws Exception
     {
 
     }

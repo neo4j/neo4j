@@ -234,9 +234,9 @@ public class TransactionStateMachineV1SPI implements TransactionStateMachineSPI
         }
 
         @Override
-        public void onField( int offset, AnyValue value ) throws IOException
+        public void onField( AnyValue value ) throws IOException
         {
-            recordConsumer.consumeField( offset, value );
+            recordConsumer.consumeField( value );
         }
 
         @Override

@@ -292,7 +292,7 @@ abstract class ReactiveResultTestBase[CONTEXT <: RuntimeContext](edition: Editio
   test("should handle throwing subscriber") {
     val subscriber = mock[QuerySubscriber]
     val exception = new IOException("two is the loneliest number since the number one")
-    when(subscriber.onField(0, intValue(2))).thenThrow(exception)
+    when(subscriber.onField(intValue(2))).thenThrow(exception)
 
     val result = runtimeResult(subscriber,
                                Array(1),

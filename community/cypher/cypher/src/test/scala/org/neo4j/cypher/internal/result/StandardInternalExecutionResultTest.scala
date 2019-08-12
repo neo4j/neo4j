@@ -144,7 +144,8 @@ class StandardInternalExecutionResultTest extends CypherFunSuite {
     private var demand = 0L
     private var served = 0L
     private var cancelled = false
-    subscriber.onResult(fieldNames.length)
+    private val numberOfFields = fieldNames.length
+    subscriber.onResult(numberOfFields)
 
     override def consumptionState: RuntimeResult.ConsumptionState =
       if (!resultRequested) ConsumptionState.NOT_STARTED
@@ -168,7 +169,7 @@ class StandardInternalExecutionResultTest extends CypherFunSuite {
       while (iterator.hasNext && served < demand && !cancelled) {
         subscriber.onRecord()
         val nextValue = intValue(iterator.next())
-        fieldNames.indices.foreach(subscriber.onField(_, nextValue))
+        for(_ <- 1 to numberOfFields) subscriber.onField(nextValue)
         subscriber.onRecordCompleted()
         served += 1L
       }

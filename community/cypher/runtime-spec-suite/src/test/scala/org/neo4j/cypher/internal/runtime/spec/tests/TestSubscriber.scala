@@ -44,7 +44,7 @@ class TestSubscriber extends QuerySubscriber {
     numberOfSeenRecords.incrementAndGet()
   }
 
-  override def onField(offset: Int, value: AnyValue): Unit = {
+  override def onField(value: AnyValue): Unit = {
     current.add(value)
   }
 

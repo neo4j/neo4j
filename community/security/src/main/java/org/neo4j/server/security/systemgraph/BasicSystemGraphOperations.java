@@ -82,6 +82,7 @@ public class BasicSystemGraphOperations
         final ErrorPreservingQuerySubscriber subscriber = new ErrorPreservingQuerySubscriber()
         {
             private AnyValue[] fields;
+            private int currentOffset = -1;
 
             @Override
             public void onResult( int numberOfFields )
@@ -90,14 +91,21 @@ public class BasicSystemGraphOperations
             }
 
             @Override
-            public void onField( int offset, AnyValue value )
+            public void onRecord()
             {
-                fields[offset] = value;
+                currentOffset = 0;
+            }
+
+            @Override
+            public void onField( AnyValue value )
+            {
+                fields[currentOffset++] = value;
             }
 
             @Override
             public void onRecordCompleted() throws Exception
             {
+                currentOffset = -1;
                 Credential credential = SystemGraphCredential.deserialize( ((TextValue) fields[0]).stringValue(), secureHasher );
                 boolean requirePasswordChange = ((BooleanValue) fields[1]).booleanValue();
                 boolean suspended = ((BooleanValue) fields[2]).booleanValue();

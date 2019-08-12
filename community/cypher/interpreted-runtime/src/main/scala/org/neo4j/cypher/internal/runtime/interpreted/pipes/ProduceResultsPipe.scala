@@ -49,7 +49,7 @@ case class ProduceResultsPipe(source: Pipe, columns: Array[String])
     while (i < columns.length) {
       val value = original.getByName(columns(i))
       ValuePopulation.populate(value)
-      subscriber.onField(i, value)
+      subscriber.onField(value)
       i += 1
     }
     subscriber.onRecordCompleted()
@@ -59,7 +59,7 @@ case class ProduceResultsPipe(source: Pipe, columns: Array[String])
     var i = 0
     subscriber.onRecord()
     while (i < columns.length) {
-      subscriber.onField(i, original.getByName(columns(i)))
+      subscriber.onField(original.getByName(columns(i)))
       i += 1
     }
     subscriber.onRecordCompleted()

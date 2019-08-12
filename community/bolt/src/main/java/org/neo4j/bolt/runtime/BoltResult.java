@@ -56,7 +56,7 @@ public interface BoltResult extends AutoCloseable
         }
 
         @Override
-        public void consumeField( int offset, AnyValue value )
+        public void consumeField( AnyValue value )
         {
             //discard
         }

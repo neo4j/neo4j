@@ -107,9 +107,9 @@ class ResultHandlerTest
             for ( AnyValue[] record : records )
             {
                 recordConsumer.beginRecord( record.length );
-                for ( int i = 0; i < record.length; i++ )
+                for ( AnyValue anyValue : record )
                 {
-                    recordConsumer.consumeField( i, record[i] );
+                    recordConsumer.consumeField( anyValue );
                 }
                 recordConsumer.endRecord();
             }

@@ -44,11 +44,10 @@ public interface BoltRecordConsumer
     void beginRecord( int numberOfFields ) throws IOException;
 
     /**
-     * Called once for each field of the record
-     * @param offset the offset this field has in the record
+     * Called once for each field of the record, in order of increasing offsets.
      * @param value the value of this field
      */
-    void consumeField( int offset, AnyValue value ) throws IOException;
+    void consumeField( AnyValue value ) throws IOException;
 
     /**
      * Called once at the end of each received record.

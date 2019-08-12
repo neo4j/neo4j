@@ -31,6 +31,7 @@ public class BoltResponseMessageRecorder implements BoltResponseMessageWriter
 {
     private final List<ResponseMessage> messages = new ArrayList<>();
     private AnyValue[] fields;
+    private int currentOffset = -1;
 
     public List<ResponseMessage> asList()
     {
@@ -46,18 +47,20 @@ public class BoltResponseMessageRecorder implements BoltResponseMessageWriter
     @Override
     public void beginRecord( int numberOfFields )
     {
+        currentOffset = 0;
         fields = new AnyValue[numberOfFields];
     }
 
     @Override
-    public void consumeField( int offset, AnyValue value )
+    public void consumeField( AnyValue value )
     {
-        fields[offset] = value;
+        fields[currentOffset++] = value;
     }
 
     @Override
     public void endRecord()
     {
+        currentOffset = -1;
         messages.add( new RecordMessage( fields ) );
     }
 

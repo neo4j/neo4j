@@ -31,14 +31,14 @@ import org.neo4j.values.AnyValue;
  * <pre>
  *     onResult(3)
  *     onRecord()
- *     onField(0, v1)
- *     onField(1, v2)
- *     onField(2, v3)
+ *     onField(v1)
+ *     onField(v2)
+ *     onField(v3)
  *     onRecordCompleted()
  *     onRecord()
- *     onField(0, v1)
- *     onField(1, v2)
- *     onField(2, v3)
+ *     onField(v1)
+ *     onField(v2)
+ *     onField(v3)
  *     onRecordCompleted()
  *     ...
  *     onResultCompleted(stats)
@@ -61,15 +61,14 @@ public interface QuerySubscriber
     void onRecord() throws Exception;
 
     /**
-     * Writes the field at a particular offset.
+     * Writes the field.
      * <p>
-     * This method is guaranteed to be called exactly <tt>numberOfFields</tt> times with distinct offsets in [0, <tt>numberOfFields</tt> -1],
+     * This method is guaranteed to be called exactly <tt>numberOfFields</tt> times with increasing offsets in [0, <tt>numberOfFields</tt> -1],
      * where <tt>numberOfFields</tt> is the argument provided in {@link #onResult(int)} ()}
      *
-     * @param offset the offset of the field
-     * @param value the value of the field
+     * @param value the value of the field at the current offset.
      */
-    void onField( int offset, AnyValue value ) throws Exception;
+    void onField( AnyValue value ) throws Exception;
 
     /**
      * The current record has been completed
@@ -110,7 +109,7 @@ public interface QuerySubscriber
         }
 
         @Override
-        public void onField( int offset, AnyValue value )
+        public void onField( AnyValue value )
         {
 
         }

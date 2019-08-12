@@ -28,6 +28,7 @@ import java.util.Set;
 import java.util.TreeSet;
 
 import org.neo4j.cypher.CypherExecutionException;
+import org.neo4j.graphdb.QueryStatistics;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.api.exceptions.InvalidArgumentsException;
 import org.neo4j.kernel.api.exceptions.Status;
@@ -53,13 +54,29 @@ public interface QueryExecutor
 
         ErrorPreservingQuerySubscriber subscriber = new ErrorPreservingQuerySubscriber()
         {
+            private int currentOffset = -1;
+
             @Override
-            public void onField( int offset, AnyValue value )
+            public void onRecordCompleted()
             {
-                if ( offset == 0 )
+                currentOffset = -1;
+            }
+
+            @Override
+            public void onRecord() throws Exception
+            {
+                super.onRecord();
+                currentOffset = 0;
+            }
+
+            @Override
+            public void onField( AnyValue value )
+            {
+                if ( currentOffset == 0 )
                 {
                     count.setValue( ((NumberValue) value).longValue() );
                 }
+                currentOffset++;
             }
         };
 
@@ -124,13 +141,28 @@ public interface QueryExecutor
 
         ErrorPreservingQuerySubscriber subscriber = new ErrorPreservingQuerySubscriber()
         {
+            private int currentOffset = -1;
+
             @Override
-            public void onField( int offset, AnyValue value )
+            public void onRecord() throws Exception
             {
-                if ( offset == 0 )
+                currentOffset = 0;
+            }
+
+            @Override
+            public void onRecordCompleted() throws Exception
+            {
+                currentOffset = -1;
+            }
+
+            @Override
+            public void onField( AnyValue value )
+            {
+                if ( currentOffset == 0 )
                 {
                     resultSet.add( ((TextValue) value).stringValue() );
                 }
+                currentOffset++;
             }
         };
 
@@ -145,18 +177,34 @@ public interface QueryExecutor
 
         ErrorPreservingQuerySubscriber subscriber = new ErrorPreservingQuerySubscriber()
         {
+            private int currentOffset = -1;
+
+            @Override
+            public void onRecordCompleted()
+            {
+                currentOffset = -1;
+            }
+
             @Override
             public void onRecord()
             {
+                currentOffset = 0;
                 success.setTrue();// If we get a row we know that the parameter existed in the system db
             }
 
             @Override
-            public void onField( int offset, AnyValue value )
+            public void onField( AnyValue value )
             {
-                if ( offset == 0 && value != Values.NO_VALUE )
+                try
                 {
-                    resultSet.add( ((TextValue) value).stringValue() );
+                    if ( currentOffset == 0 && value != Values.NO_VALUE )
+                    {
+                        resultSet.add( ((TextValue) value).stringValue() );
+                    }
+                }
+                finally
+                {
+                    currentOffset++;
                 }
             }
         };
