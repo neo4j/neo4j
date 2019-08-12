@@ -22,6 +22,7 @@ package org.neo4j.kernel.impl.store.id;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.Pair;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Timeout;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.io.File;
@@ -63,6 +64,7 @@ import org.neo4j.values.storable.RandomValues;
 import static java.lang.Boolean.TRUE;
 import static java.lang.String.format;
 import static java.util.Comparator.comparing;
+import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.graphdb.Label.label;
@@ -73,6 +75,7 @@ import static org.neo4j.test.proc.ProcessUtil.getClassPath;
 import static org.neo4j.test.proc.ProcessUtil.getJavaExecutable;
 
 @ExtendWith( {TestDirectoryExtension.class, RandomExtension.class} )
+@Timeout( value = 20, unit = MINUTES )
 class ReuseStorageSpaceIT
 {
     // Data size control center
