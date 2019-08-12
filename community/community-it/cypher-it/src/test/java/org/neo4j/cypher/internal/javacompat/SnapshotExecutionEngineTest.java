@@ -41,7 +41,7 @@ import org.neo4j.test.extension.ImpermanentDbmsExtension;
 import org.neo4j.test.extension.Inject;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.fail;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyMap;
@@ -114,15 +114,9 @@ class SnapshotExecutionEngineTest
 
         when( versionContext.isDirty() ).thenReturn( true, true, false );
 
-        try
-        {
-            executionEngine.executeWithRetries( "query", Collections.emptyMap(), transactionalContext, executor, false );
-            fail( "No exception thrown" );
-        }
-        catch ( QueryExecutionKernelException e )
-        {
-            assertEquals( "Unable to get clean data snapshot for query 'query' that performs updates.", e.getMessage() );
-        }
+        QueryExecutionKernelException e = assertThrows( QueryExecutionKernelException.class, () ->
+                executionEngine.executeWithRetries( "query", Collections.emptyMap(), transactionalContext, executor, false ) );
+        assertEquals( "Unable to get clean data snapshot for query 'query' that performs updates.", e.getMessage() );
 
         verify( executor, times( 1 ) ).execute( any(), anyMap(), any(), anyBoolean(), any() );
         verify( versionContext, times( 1 ) ).initRead();
@@ -133,15 +127,9 @@ class SnapshotExecutionEngineTest
     {
         when( versionContext.isDirty() ).thenReturn( true );
 
-        try
-        {
-            executionEngine.executeWithRetries( "query", Collections.emptyMap(), transactionalContext, executor, false );
-            fail( "No exception thrown" );
-        }
-        catch ( QueryExecutionKernelException e )
-        {
-            assertEquals( "Unable to get clean data snapshot for query 'query' after 5 attempts.", e.getMessage() );
-        }
+        QueryExecutionKernelException e = assertThrows( QueryExecutionKernelException.class, () ->
+                executionEngine.executeWithRetries( "query", Collections.emptyMap(), transactionalContext, executor, false ) );
+        assertEquals( "Unable to get clean data snapshot for query 'query' after 5 attempts.", e.getMessage() );
 
         verify( executor, times( 5 ) ).execute( any(), anyMap(), any(), anyBoolean(), any() );
         verify( versionContext, times( 5 ) ).initRead();

@@ -19,8 +19,6 @@
  */
 package org.neo4j.db;
 
-import org.neo4j.snapshot.TestTransactionVersionContextSupplier;
-import org.neo4j.snapshot.TestVersionContext;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -37,13 +35,15 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.QueryExecutionException;
 import org.neo4j.graphdb.Result;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.snapshot.TestTransactionVersionContextSupplier;
+import org.neo4j.snapshot.TestVersionContext;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.TestDirectoryExtension;
 import org.neo4j.test.rule.TestDirectory;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.fail;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 
 @ExtendWith( {TestDirectoryExtension.class} )
@@ -127,16 +127,10 @@ class QueryRestartIT
     @Test
     void queryThatModifiesDataAndSeesUnstableSnapshotShouldThrowException()
     {
-        try
-        {
-            database.execute( "MATCH (n:toRetry) CREATE () RETURN n.c" );
-            fail( "No exception thrown" );
-        }
-        catch ( QueryExecutionException e )
-        {
-            assertEquals( "Unable to get clean data snapshot for query " +
-                    "'MATCH (n:toRetry) CREATE () RETURN n.c' that performs updates.", e.getMessage() );
-        }
+        QueryExecutionException e = assertThrows( QueryExecutionException.class, () ->
+                database.execute( "MATCH (n:toRetry) CREATE () RETURN n.c" ) );
+        assertEquals( "Unable to get clean data snapshot for query " +
+                      "'MATCH (n:toRetry) CREATE () RETURN n.c' that performs updates.", e.getMessage() );
     }
 
     private GraphDatabaseService startSnapshotQueryDb()
