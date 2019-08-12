@@ -309,7 +309,7 @@ Feature: CaseExpression
       | [] |
     And no side effects
 
-  Scenario: Shorthand case with filter should work as expected
+  Scenario: Shorthand case with filtering pattern comprehension should work as expected
     Given an empty graph
     And having executed:
       """
@@ -322,7 +322,7 @@ Feature: CaseExpression
       WITH
       CASE 1
           WHEN 0 THEN []
-          ELSE FILTER(t IN ts WHERE (t)<--())
+          ELSE [t IN ts WHERE (t)<--()]
       END AS res
       RETURN COUNT(res) AS count
       """
