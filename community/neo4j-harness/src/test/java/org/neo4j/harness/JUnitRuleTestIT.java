@@ -118,7 +118,7 @@ public class JUnitRuleTestIT
 
         // Then
         assertEquals( 2, Iterators.count(
-                neo4j.getDefaultDatabaseService().execute( "MATCH (n:User) RETURN n" )
+                neo4j.defaultDatabaseService().execute( "MATCH (n:User) RETURN n" )
         ) );
     }
 
@@ -152,7 +152,7 @@ public class JUnitRuleTestIT
             public void evaluate()
             {
                 // Then the database is not empty
-                Result result = ruleWithDirectory.getDefaultDatabaseService().execute( "MATCH (n) RETURN count(n) AS " + "count" );
+                Result result = ruleWithDirectory.defaultDatabaseService().execute( "MATCH (n) RETURN count(n) AS " + "count" );
 
                 List<Object> column = Iterators.asList( result.columnAs( "count" ) );
                 assertEquals( 1, column.size() );
@@ -175,7 +175,7 @@ public class JUnitRuleTestIT
 
     private String contentOf( String file ) throws IOException
     {
-        GraphDatabaseAPI api = (GraphDatabaseAPI) neo4j.getDefaultDatabaseService();
+        GraphDatabaseAPI api = (GraphDatabaseAPI) neo4j.defaultDatabaseService();
         Config config = api.getDependencyResolver().resolveDependency( Config.class );
         File dataDirectory = config.get( GraphDatabaseSettings.data_directory ).toFile();
         return Files.readString( new File( dataDirectory, file ).toPath() );

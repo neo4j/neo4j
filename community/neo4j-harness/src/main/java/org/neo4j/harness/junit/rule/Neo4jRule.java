@@ -305,7 +305,7 @@ public class Neo4jRule implements TestRule
     }
 
     /** Access the {@link org.neo4j.graphdb.GraphDatabaseService} */
-    public DatabaseManagementService getDatabaseManagementService()
+    public DatabaseManagementService databaseManagementService()
     {
         assertInitialised();
         return neo4j.databaseManagementService();
@@ -315,14 +315,14 @@ public class Neo4jRule implements TestRule
      * Access default database service.
      * @return default database service.
      */
-    public GraphDatabaseService getDefaultDatabaseService()
+    public GraphDatabaseService defaultDatabaseService()
     {
         assertInitialised();
         return neo4j.defaultDatabaseService();
     }
 
     /** Returns the neo4j's configuration */
-    public Configuration getConfig()
+    public Configuration config()
     {
         assertInitialised();
         return neo4j.config();
