@@ -38,6 +38,7 @@ import java.util.function.LongFunction;
 import org.neo4j.batchinsert.BatchInserter;
 import org.neo4j.collection.Dependencies;
 import org.neo4j.collection.PrimitiveLongCollections;
+import org.neo4j.common.EntityType;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.exceptions.KernelException;
@@ -89,6 +90,7 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracerSupplier;
 import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier;
+import org.neo4j.kernel.api.SilentTokenNameLookup;
 import org.neo4j.kernel.api.exceptions.index.IndexPopulationFailedKernelException;
 import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.extension.DatabaseExtensions;
@@ -603,8 +605,7 @@ public class BatchInserterImpl implements BatchInserter
         return new BaseNodeConstraintCreator( new BatchSchemaActions(), null, label );
     }
 
-    private void createUniqueIndexAndOwningConstraint( LabelSchemaDescriptor schema,
-            IndexBackedConstraintDescriptor constraint )
+    private IndexBackedConstraintDescriptor createUniqueIndexAndOwningConstraint( LabelSchemaDescriptor schema, IndexBackedConstraintDescriptor constraint )
     {
         // TODO: Do not create duplicate index
 
@@ -617,6 +618,7 @@ public class BatchInserterImpl implements BatchInserter
         index = provider.completeConfiguration( index ).withOwningConstraintId( constraintRuleId );
 
         constraint = constraint.withId( constraintRuleId ).withOwnedIndexId( indexId );
+        constraint = ensureConstraintHasName( constraint );
 
         try
         {
@@ -626,11 +628,44 @@ public class BatchInserterImpl implements BatchInserter
             schemaCache.addSchemaRule( index );
             labelsTouched = true;
             flushStrategy.forceFlush();
+            return constraint;
         }
         catch ( KernelException e )
         {
             throw kernelExceptionToUserException( e );
         }
+    }
+
+    private <T extends ConstraintDescriptor> T ensureConstraintHasName( T constraint )
+    {
+        if ( constraint.getName() == null )
+        {
+            try
+            {
+                SchemaDescriptor schema = constraint.schema();
+                TokenHolder entityTokenHolder = schema.entityType() == EntityType.NODE ? tokenHolders.labelTokens() : tokenHolders.relationshipTypeTokens();
+                TokenHolder propertyKeyTokenHolder = tokenHolders.propertyKeyTokens();
+                int[] entityTokenIds = schema.getEntityTokenIds();
+                int[] propertyIds = schema.getPropertyIds();
+                String[] entityTokenNames = new String[entityTokenIds.length];
+                String[] propertyNames = new String[propertyIds.length];
+                for ( int i = 0; i < entityTokenIds.length; i++ )
+                {
+                    entityTokenNames[i] = entityTokenHolder.getTokenById( entityTokenIds[i] ).name();
+                }
+                for ( int i = 0; i < propertyIds.length; i++ )
+                {
+                    propertyNames[i] = propertyKeyTokenHolder.getTokenById( propertyIds[i] ).name();
+                }
+                //noinspection unchecked
+                constraint = (T) constraint.withName( SchemaRule.generateName( constraint, entityTokenNames, propertyNames ) );
+            }
+            catch ( TokenNotFoundException e )
+            {
+                throw new TransactionFailureException( "Failed to generate name for constraint: " + constraint, e );
+            }
+        }
+        return constraint;
     }
 
     private TransactionFailureException kernelExceptionToUserException( KernelException e )
@@ -639,19 +674,20 @@ public class BatchInserterImpl implements BatchInserter
         throw new TransactionFailureException( "Unexpected kernel exception writing schema rules", e );
     }
 
-    private void createUniquenessConstraintRule( LabelSchemaDescriptor descriptor )
+    private IndexBackedConstraintDescriptor createUniquenessConstraintRule( LabelSchemaDescriptor descriptor, String name )
     {
-        createUniqueIndexAndOwningConstraint( descriptor, ConstraintDescriptorFactory.uniqueForSchema( descriptor ) );
+        return createUniqueIndexAndOwningConstraint( descriptor, ConstraintDescriptorFactory.uniqueForSchema( descriptor ).withName( name ) );
     }
 
-    private void createNodeKeyConstraintRule( LabelSchemaDescriptor descriptor )
+    private IndexBackedConstraintDescriptor createNodeKeyConstraintRule( LabelSchemaDescriptor descriptor, String name )
     {
-        createUniqueIndexAndOwningConstraint( descriptor, ConstraintDescriptorFactory.nodeKeyForSchema( descriptor ) );
+        return createUniqueIndexAndOwningConstraint( descriptor, ConstraintDescriptorFactory.nodeKeyForSchema( descriptor ).withName( name ) );
     }
 
-    private void createNodePropertyExistenceConstraintRule( int labelId, int... propertyKeyIds )
+    private ConstraintDescriptor createNodePropertyExistenceConstraintRule( String name, int labelId, int... propertyKeyIds )
     {
-        SchemaRule rule = ConstraintDescriptorFactory.existsForLabel( labelId, propertyKeyIds ).withId( schemaStore.nextId() );
+        ConstraintDescriptor rule = ConstraintDescriptorFactory.existsForLabel( labelId, propertyKeyIds ).withId( schemaStore.nextId() ).withName( name );
+        rule = ensureConstraintHasName( rule );
 
         try
         {
@@ -659,6 +695,7 @@ public class BatchInserterImpl implements BatchInserter
             schemaCache.addSchemaRule( rule );
             labelsTouched = true;
             flushStrategy.forceFlush();
+            return rule;
         }
         catch ( KernelException e )
         {
@@ -666,15 +703,17 @@ public class BatchInserterImpl implements BatchInserter
         }
     }
 
-    private void createRelTypePropertyExistenceConstraintRule( int relTypeId, int... propertyKeyIds )
+    private ConstraintDescriptor createRelTypePropertyExistenceConstraintRule( String name, int relTypeId, int... propertyKeyIds )
     {
-        SchemaRule rule = ConstraintDescriptorFactory.existsForRelType( relTypeId, propertyKeyIds ).withId( schemaStore.nextId() );
+        ConstraintDescriptor rule = ConstraintDescriptorFactory.existsForRelType( relTypeId, propertyKeyIds ).withId( schemaStore.nextId() ).withName( name );
+        rule = ensureConstraintHasName( rule );
 
         try
         {
             schemaRuleAccess.writeSchemaRule( rule );
             schemaCache.addSchemaRule( rule );
             flushStrategy.forceFlush();
+            return rule;
         }
         catch ( KernelException e )
         {
@@ -1169,8 +1208,8 @@ public class BatchInserterImpl implements BatchInserter
             LabelSchemaDescriptor descriptor = SchemaDescriptor.forLabel( labelId, propertyKeyIds );
 
             validateUniquenessConstraintCanBeCreated( descriptor );
-            createUniquenessConstraintRule( descriptor );
-            return new UniquenessConstraintDefinition( this, name, indexDefinition );
+            IndexBackedConstraintDescriptor constraint = createUniquenessConstraintRule( descriptor, name );
+            return new UniquenessConstraintDefinition( this, constraint.getName(), indexDefinition );
         }
 
         @Override
@@ -1181,8 +1220,8 @@ public class BatchInserterImpl implements BatchInserter
             LabelSchemaDescriptor descriptor = SchemaDescriptor.forLabel( labelId, propertyKeyIds );
 
             validateNodeKeyConstraintCanBeCreated( descriptor );
-            createNodeKeyConstraintRule( descriptor );
-            return new NodeKeyConstraintDefinition( this, null, indexDefinition );
+            IndexBackedConstraintDescriptor constraint = createNodeKeyConstraintRule( descriptor, name );
+            return new NodeKeyConstraintDefinition( this, constraint.getName(), indexDefinition );
         }
 
         @Override
@@ -1193,8 +1232,8 @@ public class BatchInserterImpl implements BatchInserter
 
             validateNodePropertyExistenceConstraintCanBeCreated( labelId, propertyKeyIds );
 
-            createNodePropertyExistenceConstraintRule( labelId, propertyKeyIds );
-            return new NodePropertyExistenceConstraintDefinition( this, null, label, propertyKeys );
+            ConstraintDescriptor constraint = createNodePropertyExistenceConstraintRule( name, labelId, propertyKeyIds );
+            return new NodePropertyExistenceConstraintDefinition( this, constraint.getName(), label, propertyKeys );
         }
 
         @Override
@@ -1205,8 +1244,8 @@ public class BatchInserterImpl implements BatchInserter
 
             validateRelationshipConstraintCanBeCreated( relationshipTypeId, propertyKeyId );
 
-            createRelTypePropertyExistenceConstraintRule( relationshipTypeId, propertyKeyId );
-            return new RelationshipPropertyExistenceConstraintDefinition( this, null, type, propertyKey );
+            ConstraintDescriptor constraint = createRelTypePropertyExistenceConstraintRule( name, relationshipTypeId, propertyKeyId );
+            return new RelationshipPropertyExistenceConstraintDefinition( this, constraint.getName(), type, propertyKey );
         }
 
         @Override

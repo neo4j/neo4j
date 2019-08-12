@@ -51,9 +51,18 @@ class KernelSchemaStateFlushingTest
     private Kernel kernel;
 
     @BeforeEach
-    void setup()
+    void setup() throws KernelException
     {
         kernel = db.getDependencyResolver().resolveDependency( Kernel.class );
+        try ( Transaction transaction = beginTransaction() )
+        {
+            // Make sure that a label token with id 1, and a property key token, also with id 1, both exists.
+            transaction.tokenWrite().labelGetOrCreateForName( "Label0" );
+            transaction.tokenWrite().labelGetOrCreateForName( "Label1" );
+            transaction.tokenWrite().propertyKeyGetOrCreateForName( "prop0" );
+            transaction.tokenWrite().propertyKeyGetOrCreateForName( "prop1" );
+            transaction.commit();
+        }
     }
 
     @Test
@@ -139,7 +148,6 @@ class KernelSchemaStateFlushingTest
 
     private ConstraintDescriptor createConstraint() throws KernelException
     {
-
         try ( Transaction transaction = beginTransaction() )
         {
             ConstraintDescriptor descriptor = transaction.schemaWrite().uniquePropertyConstraintCreate(
