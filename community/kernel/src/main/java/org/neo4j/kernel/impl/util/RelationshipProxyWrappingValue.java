@@ -61,7 +61,7 @@ public class RelationshipProxyWrappingValue extends RelationshipValue
             {
                 // If the relationship has been deleted since it was found by the query, then we'll have to tell the client that their transaction conflicted,
                 // and that they need to retry it.
-                throw new ReadAndDeleteTransactionConflictException();
+                throw new ReadAndDeleteTransactionConflictException( RelationshipProxy.isDeletedInCurrentTransaction( relationship ) );
             }
         }
 
@@ -76,7 +76,7 @@ public class RelationshipProxyWrappingValue extends RelationshipValue
         }
         catch ( IllegalStateException e )
         {
-            throw new ReadAndDeleteTransactionConflictException( e );
+            throw new ReadAndDeleteTransactionConflictException( RelationshipProxy.isDeletedInCurrentTransaction( relationship ), e );
         }
 
         if ( id() < 0 )

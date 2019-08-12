@@ -25,6 +25,7 @@ import org.neo4j.exceptions.StoreFailureException;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.NotFoundException;
+import org.neo4j.kernel.impl.core.NodeProxy;
 import org.neo4j.values.AnyValueWriter;
 import org.neo4j.values.storable.TextArray;
 import org.neo4j.values.storable.Values;
@@ -66,7 +67,7 @@ public class NodeProxyWrappingNodeValue extends NodeValue
         }
         catch ( StoreFailureException e )
         {
-            throw new ReadAndDeleteTransactionConflictException( e );
+            throw new ReadAndDeleteTransactionConflictException( NodeProxy.isDeletedInCurrentTransaction( node ), e );
         }
 
         if ( id() < 0 )
