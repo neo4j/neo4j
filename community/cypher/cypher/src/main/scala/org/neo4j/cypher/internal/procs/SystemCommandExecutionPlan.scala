@@ -128,8 +128,9 @@ class SystemCommandQuerySubscriber(ctx: SystemUpdateCountingQueryContext, inner:
   }
 
   override def onError(throwable: Throwable): Unit = {
-    inner.onError(throwable)
-    failed = Some(throwable)
+    val handledError = queryHandler.onError(throwable)
+    inner.onError(handledError)
+    failed = Some(handledError)
   }
 
   def assertNotFailed(onFailure: Throwable => Unit = _ => ()): Unit = failed.foreach { exception =>

@@ -20,6 +20,7 @@
 package org.neo4j.cypher.operations;
 
 import org.neo4j.cypher.CypherTypeException;
+import org.neo4j.cypher.ArithmeticException;
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.storable.ArrayValue;
 import org.neo4j.values.storable.DurationValue;
@@ -205,7 +206,7 @@ public final class CypherMath
     {
         if ( rhs instanceof IntegralValue && rhs.equals( ZERO_INT ) )
         {
-            throw new ArithmeticException( "/ by zero" );
+            throw new ArithmeticException( "/ by zero", null );
         }
         else
         {
