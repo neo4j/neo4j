@@ -574,6 +574,24 @@ public class GBPTreeConsistencyCheckerTest
         }
     }
 
+    @Test
+    public void shouldDetectUnreasonableKeyCount() throws IOException
+    {
+        try ( GBPTree<MutableLong,MutableLong> index = index().build() )
+        {
+            treeWithHeightTwo( index );
+
+            InspectingVisitor<MutableLong,MutableLong> visitor = inspect( index );
+            long targetNode = randomValues.among( visitor.allNodes );
+            int unreasonableKeyCount = PAGE_SIZE;
+
+            GBPTreeCorruption.PageCorruption<MutableLong,MutableLong> corruption = GBPTreeCorruption.setKeyCount( unreasonableKeyCount );
+            corrupt( targetNode, corruption, visitor.treeState );
+
+            assertReportUnreasonableKeyCount( index, targetNode, unreasonableKeyCount );
+        }
+    }
+
     //todo
     //  Tree structure inconsistencies:
     //    > Pointer generation lower than node generation
@@ -603,7 +621,7 @@ public class GBPTreeConsistencyCheckerTest
     //      X Dynamic layout: Overlap between offsetArray and allocSpace
     //      X Dynamic layout: Overlap between allocSpace and activeKeys
     //      X Dynamic layout: Misplaced allocOffset
-    //      - Unreasonable keyCount
+    //      X Unreasonable keyCount
     //  Free list inconsistencies:
     //  A page can be either used as a freelist page, used as a tree node (unstable generation), listed in freelist (stable generation), listen in freelist
     //  (unstable generation)
@@ -1019,6 +1037,22 @@ public class GBPTreeConsistencyCheckerTest
                 called.setTrue();
                 assertEquals( targetNode, pageId );
                 assertEquals( targetPointerType, pointerType );
+            }
+        } );
+        assertCalled( called );
+    }
+
+    private static void assertReportUnreasonableKeyCount( GBPTree<MutableLong,MutableLong> index, long targetNode, int targetKeyCount ) throws IOException
+    {
+        MutableBoolean called = new MutableBoolean();
+        index.consistencyCheck( new GBPTreeConsistencyCheckVisitor.Adaptor<MutableLong>()
+        {
+            @Override
+            public void unreasonableKeyCount( long pageId, int keyCount )
+            {
+                called.setTrue();
+                assertEquals( targetNode, pageId );
+                assertEquals( targetKeyCount, keyCount );
             }
         } );
         assertCalled( called );

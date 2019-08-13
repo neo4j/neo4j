@@ -251,6 +251,13 @@ final class GBPTreeCorruption
         };
     }
 
+    static <KEY, VALUE> PageCorruption<KEY,VALUE> setKeyCount( int keyCount )
+    {
+        return ( pagedFile, cursor, layout, node, treeState ) -> {
+            TreeNode.setKeyCount( cursor, keyCount );
+        };
+    }
+
     private static FreeListIdProvider getFreelist( PagedFile pagedFile, TreeState treeState )
     {
         FreeListIdProvider freelist = new FreeListIdProvider( pagedFile, pagedFile.pageSize(), treeState.lastId(), FreeListIdProvider.NO_MONITOR );
