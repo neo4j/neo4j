@@ -68,9 +68,8 @@ public class CrashGenerationCleanerTest
     private final Layout<MutableLong,MutableLong> layout = longLayout().build();
     private final TreeNode<MutableLong,MutableLong> treeNode = new TreeNodeFixedSize<>( PAGE_SIZE, layout );
     private final ExecutorService executor = Executors.newFixedThreadPool( Runtime.getRuntime().availableProcessors() );
-    private final int oldStableGeneration = 9;
-    private final int stableGeneration = 10;
-    private final int unstableGeneration = 12;
+    private final TreeState checkpointedTreeState = new TreeState( 0, 9, 10, 0, 0, 0, 0, 0, 0, 0, true, true );
+    private final TreeState unstableTreeState = new TreeState( 0, 10, 12, 0, 0, 0, 0, 0, 0, 0, true, true );
     private final List<GBPTreeCorruption.PageCorruption> possibleCorruptionsInInternal = Arrays.asList(
             GBPTreeCorruption.crashed( GBPTreePointerType.leftSibling() ),
             GBPTreeCorruption.crashed( GBPTreePointerType.rightSibling() ),
@@ -219,7 +218,7 @@ public class CrashGenerationCleanerTest
             SimpleCleanupMonitor monitor )
     {
         return new CrashGenerationCleaner( pagedFile, treeNode, lowTreeNodeId, highTreeNodeId,
-                stableGeneration, unstableGeneration, monitor );
+                unstableTreeState.stableGeneration(), unstableTreeState.unstableGeneration(), monitor );
     }
 
     private void initializeFile( PagedFile pagedFile, Page... pages ) throws IOException
@@ -229,7 +228,7 @@ public class CrashGenerationCleanerTest
             for ( Page page : pages )
             {
                 cursor.next();
-                page.write( pagedFile, cursor, treeNode, layout, stableGeneration, unstableGeneration );
+                page.write( pagedFile, cursor, treeNode, layout, checkpointedTreeState, unstableTreeState );
             }
         }
     }
@@ -314,13 +313,12 @@ public class CrashGenerationCleanerTest
         }
 
         private void write( PagedFile pagedFile, PageCursor cursor, TreeNode<MutableLong,MutableLong> node, Layout<MutableLong,MutableLong> layout,
-                int stableGeneration, int unstableGeneration ) throws IOException
+                TreeState checkpointedTreeState, TreeState unstableTreeState ) throws IOException
         {
-            type.write( cursor, node, layout, oldStableGeneration, stableGeneration );
+            type.write( cursor, node, layout, checkpointedTreeState );
             for ( GBPTreeCorruption.PageCorruption<MutableLong,MutableLong> pc : pageCorruptions )
             {
-                TreeState treeState = new TreeState( 0, stableGeneration, unstableGeneration, 0, 0, 0, 0, 0, 0, 0, true, true );
-                pc.corrupt( pagedFile, cursor, layout, node, treeState );
+                pc.corrupt( pagedFile, cursor, layout, node, unstableTreeState );
             }
         }
     }
@@ -331,31 +329,31 @@ public class CrashGenerationCleanerTest
                 {
                     @Override
                     void write( PageCursor cursor, TreeNode<MutableLong,MutableLong> treeNode, Layout<MutableLong,MutableLong> layout,
-                            int stableGeneration, int unstableGeneration )
+                            TreeState treeState )
                     {
-                        treeNode.initializeLeaf( cursor, stableGeneration, unstableGeneration );
+                        treeNode.initializeLeaf( cursor, treeState.stableGeneration(), treeState.unstableGeneration() );
                     }
                 },
         INTERNAL
                 {
                     @Override
                     void write( PageCursor cursor, TreeNode<MutableLong,MutableLong> treeNode, Layout<MutableLong,MutableLong> layout,
-                            int stableGeneration, int unstableGeneration )
+                            TreeState treeState )
                     {
-                        treeNode.initializeInternal( cursor, stableGeneration, unstableGeneration );
+                        treeNode.initializeInternal( cursor, treeState.stableGeneration(), treeState.unstableGeneration() );
                         long base = IdSpace.MIN_TREE_NODE_ID;
                         int keyCount;
                         for ( keyCount = 0; treeNode.internalOverflow( cursor, keyCount, layout.newKey() ) == Overflow.NO;
                               keyCount++ )
                         {
                             long child = base + keyCount;
-                            treeNode.setChildAt( cursor, child, keyCount, stableGeneration, unstableGeneration );
+                            treeNode.setChildAt( cursor, child, keyCount, treeState.stableGeneration(), treeState.unstableGeneration() );
                         }
                         setKeyCount( cursor, keyCount );
                     }
                 };
 
         abstract void write( PageCursor cursor, TreeNode<MutableLong,MutableLong> treeNode,
-                Layout<MutableLong,MutableLong> layout, int stableGeneration, int unstableGeneration );
+                Layout<MutableLong,MutableLong> layout, TreeState treeState );
     }
 }
