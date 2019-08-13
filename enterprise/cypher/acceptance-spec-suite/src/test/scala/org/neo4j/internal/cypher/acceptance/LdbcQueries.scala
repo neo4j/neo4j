@@ -1595,16 +1595,16 @@ object LdbcQueries {
     val query = """MATCH path = allShortestPaths((person1:Person {id:{1}})-[:KNOWS*0..100]-(person2:Person {id:{2}}))
                   |WITH nodes(path) AS pathNodes
                   |RETURN
-                  | extract(n IN pathNodes | n.id) AS pathNodeIds,
+                  | [n IN pathNodes | n.id] AS pathNodeIds,
                   | reduce(weight=0.0, idx IN range(1,size(pathNodes)-1) |
-                  |    extract(prev IN [pathNodes[idx-1]] |
-                  |        extract(curr IN [pathNodes[idx]] |
+                  |    [prev IN [pathNodes[idx-1]] |
+                  |        [curr IN [pathNodes[idx]] |
                   |            weight +
                   |            length((curr)<-[:COMMENT_HAS_CREATOR]-(:Comment)-[:REPLY_OF_POST]->(:Post)-[:POST_HAS_CREATOR]->(prev))*1.0 +
                   |            length((prev)<-[:COMMENT_HAS_CREATOR]-(:Comment)-[:REPLY_OF_POST]->(:Post)-[:POST_HAS_CREATOR]->(curr))*1.0 +
                   |            length((prev)-[:COMMENT_HAS_CREATOR]-(:Comment)-[:REPLY_OF_COMMENT]-(:Comment)-[:COMMENT_HAS_CREATOR]-(curr))*0.5
-                  |        )
-                  |    )[0][0]
+                  |        ]
+                  |    ][0][0]
                   | ) AS weight
                   |ORDER BY weight DESC""".stripMargin
 
@@ -1630,7 +1630,7 @@ object LdbcQueries {
 
     val query = """MATCH path = allShortestPaths((person1:Person {id:{1}})-[:KNOWS*0..]-(person2:Person {id:{2}}))
                   |RETURN
-                  |extract(n IN nodes(path) | n.id) AS pathNodeIds,
+                  |[n IN nodes(path) | n.id] AS pathNodeIds,
                   |reduce(weight=0.0, r IN relationships(path) |
                   |           weight +
                   |           length(()-[r]->()<-[:COMMENT_HAS_CREATOR]-(:Comment)-[:REPLY_OF_POST]->(:Post)-[:POST_HAS_CREATOR]->()-[r]->())*1.0 +
