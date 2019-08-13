@@ -109,6 +109,7 @@ public interface ConstraintDescriptor extends SchemaDescriptorSupplier, SchemaRu
      * @param name The name of the new constraint descriptor.
      * @return a modified copy of this constraint descriptor.
      */
+    @Override
     ConstraintDescriptor withName( String name );
 
     /**

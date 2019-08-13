@@ -106,6 +106,10 @@ class SchemaRuleSerialization35Test
 
     static IndexDescriptor withId( IndexPrototype prototype, long id )
     {
+        if ( prototype.getName().isEmpty() )
+        {
+            prototype = prototype.withName( "index_" + id );
+        }
         return prototype.materialise( id );
     }
 
@@ -227,7 +231,7 @@ class SchemaRuleSerialization35Test
                 uniqueForLabel( LABEL_ID, PROPERTY_ID_1 ).withId( RULE_ID_2 ).withOwnedIndexId( RULE_ID ) ).getName(),
                 is( "constraint_2" ) );
         assertThat( serialiseAndDeserialise(
-                nodeKeyForLabel( LABEL_ID, PROPERTY_ID_1 ).withId( RULE_ID_2 ).withId( RULE_ID ) ).getName(),
+                nodeKeyForLabel( LABEL_ID, PROPERTY_ID_1 ).withId( RULE_ID_2 ).withOwnedIndexId( RULE_ID ) ).getName(),
                 is( "constraint_2" ) );
         assertThat( serialiseAndDeserialise(
                 existsForRelType( REL_TYPE_ID, PROPERTY_ID_1 ).withId( RULE_ID_2 ) ).getName(),
@@ -250,8 +254,7 @@ class SchemaRuleSerialization35Test
     @Test
     void indexRuleNameMustNotBeTheEmptyString()
     {
-        String name = "";
-        assertEquals( DEFAULT_INDEX_NAME, withId( namedForLabel( name, LABEL_ID, PROPERTY_ID_1 ), RULE_ID ).getName() );
+        assertThrows( IllegalArgumentException.class, () -> withId( namedForLabel( "", LABEL_ID, PROPERTY_ID_1 ), RULE_ID ) );
     }
 
     @Test
@@ -265,53 +268,7 @@ class SchemaRuleSerialization35Test
     void constraintIndexRuleNameMustNotBeTheEmptyString()
     {
         String name =  "";
-        assertEquals( DEFAULT_INDEX_NAME, withIds( namedUniqueForLabel( name, LABEL_ID, PROPERTY_ID_1 ), RULE_ID, RULE_ID_2 ).getName() );
-    }
-
-    @Test
-    void constraintRuleNameMustNotContainNullCharacter()
-    {
-        String name = "a\0b";
-        assertThrows( IllegalArgumentException.class,
-            () -> existsForLabel( LABEL_ID, PROPERTY_ID_1 ).withId( RULE_ID ).withName( name ) );
-    }
-
-    @Test
-    void constraintRuleNameMustNotBeTheEmptyString()
-    {
-        String name = "";
-        assertEquals( DEFAULT_CONSTRAINT_NAME, existsForLabel( LABEL_ID, PROPERTY_ID_1 ).withId( RULE_ID ).withName( name ).getName() );
-    }
-
-    @Test
-    void uniquenessConstraintRuleNameMustNotContainNullCharacter()
-    {
-        String name = "a\0b";
-        assertThrows( IllegalArgumentException.class,
-            () -> uniqueForLabel( LABEL_ID, PROPERTY_ID_1 ).withId( RULE_ID ).withOwnedIndexId( RULE_ID_2 ).withName( name ) );
-    }
-
-    @Test
-    void uniquenessConstraintRuleNameMustNotBeTheEmptyString()
-    {
-        assertEquals( DEFAULT_CONSTRAINT_NAME,
-                uniqueForLabel( LABEL_ID, PROPERTY_ID_1 ).withId( RULE_ID ).withOwnedIndexId( RULE_ID_2 ).withName( "" ).getName() );
-    }
-
-    @Test
-    void nodeKeyConstraintRuleNameMustNotContainNullCharacter()
-    {
-        String name = "a\0b";
-        assertThrows( IllegalArgumentException.class,
-            () -> nodeKeyForLabel( LABEL_ID, PROPERTY_ID_1 ).withId( RULE_ID ).withOwnedIndexId( RULE_ID_2 ).withName( name ) );
-    }
-
-    @Test
-    void nodeKeyConstraintRuleNameMustNotBeTheEmptyString()
-    {
-        String name = "";
-        assertEquals( DEFAULT_CONSTRAINT_NAME,
-                nodeKeyForLabel( LABEL_ID, PROPERTY_ID_1 ).withId( RULE_ID ).withOwnedIndexId( RULE_ID_2 ).withName( name ).getName() );
+        assertThrows( IllegalArgumentException.class, () -> withIds( namedUniqueForLabel( name, LABEL_ID, PROPERTY_ID_1 ), RULE_ID, RULE_ID_2 ) );
     }
 
     @Test

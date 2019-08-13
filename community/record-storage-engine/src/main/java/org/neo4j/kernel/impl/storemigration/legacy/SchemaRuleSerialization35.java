@@ -257,6 +257,10 @@ public class SchemaRuleSerialization35
             {
                 prototype = prototype.withName( name.get() );
             }
+            else
+            {
+                prototype = prototype.withName( "index_" + id );
+            }
             return prototype.materialise( id );
         }
         case UNIQUE_INDEX:
@@ -269,6 +273,10 @@ public class SchemaRuleSerialization35
             if ( name.isPresent() )
             {
                 prototype = prototype.withName( name.get() );
+            }
+            else
+            {
+                prototype = prototype.withName( "index_" + id );
             }
             IndexDescriptor index = prototype.materialise( id );
             if ( readOwningConstraint != NO_OWNING_CONSTRAINT_YET )

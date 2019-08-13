@@ -312,6 +312,7 @@ class RecordStorageMigratorIT
             {
                 // We're starting to run low on ids, but just ignore this and loop as along as there are still some left.
             }
+            // TODO ensure all supposed tokens are present.
         }
         schemaStore35.flush();
         schemaStore35.close();

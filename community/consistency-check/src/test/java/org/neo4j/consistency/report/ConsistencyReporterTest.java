@@ -429,6 +429,12 @@ public class ConsistencyReporterTest
                 }
 
                 @Override
+                public SchemaRule withName( String name )
+                {
+                    return null;
+                }
+
+                @Override
                 public SchemaDescriptor schema()
                 {
                     return null;

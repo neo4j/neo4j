@@ -1283,6 +1283,7 @@ public class Operations implements Write, SchemaWrite
         }
     }
 
+    @SuppressWarnings( "unchecked" )
     private <T extends IndexBackedConstraintDescriptor> T indexBackedConstraintCreate( T constraint, String provider )
             throws KernelException
     {
@@ -1329,6 +1330,7 @@ public class Operations implements Write, SchemaWrite
         return constraint;
     }
 
+    @SuppressWarnings( "unchecked" )
     private <T extends ConstraintDescriptor> T ensureConstraintHasName( T constraint ) throws KernelException
     {
         if ( constraint.getName() == null )
@@ -1354,6 +1356,7 @@ public class Operations implements Write, SchemaWrite
 
             constraint = (T) constraint.withName( SchemaRule.generateName( constraint, entityTokenNames, propertyNames ) );
         }
+
         return constraint;
     }
 

@@ -20,26 +20,24 @@
 package org.neo4j.internal.schema;
 
 import java.util.Arrays;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 import org.neo4j.common.EntityType;
-
-import static org.apache.commons.lang3.StringUtils.isBlank;
 
 /**
  * Represents a stored schema rule.
  */
 public interface SchemaRule extends SchemaDescriptorSupplier
 {
-    static String nameOrDefault( String name, String defaultName )
+    @SuppressWarnings( "OptionalUsedAsFieldOrParameterType" )
+    static String sanitiseName( Optional<String> name )
     {
-        // Because of the difference how blank and trim works (whitespace check is totally different in those) we can't simply use isBlank here
-        // and need to double check invoking trim that as result we do not have empty string there
-        if ( isBlank( name ) || name.trim().isEmpty() )
+        if ( name.isPresent() )
         {
-            name = defaultName;
+            return sanitiseName( name.get() );
         }
-        return sanitiseName( name );
+        throw new IllegalArgumentException( "Schema rules must have names." );
     }
 
     static String sanitiseName( String name )
@@ -49,9 +47,9 @@ public interface SchemaRule extends SchemaDescriptorSupplier
             throw new IllegalArgumentException( "Schema rule name cannot be null." );
         }
         name = name.trim();
-        if ( name.isEmpty() )
+        if ( name.isEmpty() || name.isBlank() )
         {
-            throw new IllegalArgumentException( "Schema rule name cannot be the empty string." );
+            throw new IllegalArgumentException( "Schema rule name cannot be the empty string or only contain whitespace." );
         }
         else
         {
@@ -74,16 +72,39 @@ public interface SchemaRule extends SchemaDescriptorSupplier
     }
 
     /**
-     * Generate a human friendly name for the given {@link IndexPrototype}, using the supplied arrays of resolved schema token names.
-     * @param prototype The {@link IndexPrototype} to generate a name for.
+     * Generate a human friendly name for the given {@link SchemaDescriptorSupplier}, using the supplied arrays of resolved schema token names.
+     *
+     * Only {@link SchemaRule} implementations, and {@link IndexPrototype}, are supported arguments for the schema descriptor supplier.
+     *
+     * @param rule The {@link SchemaDescriptorSupplier} to generate a name for.
      * @param entityTokenNames The resolved names of the schema entity tokens, that is, label names or relationship type names.
      * @param propertyNames The resolved property key names.
      * @return A suitable name.
      */
-    static String generateName( IndexPrototype prototype, String[] entityTokenNames, String[] propertyNames )
+    static String generateName( SchemaDescriptorSupplier rule, String[] entityTokenNames, String[] propertyNames )
     {
-        SchemaDescriptor schema = prototype.schema();
-        String indexType = schema.getIndexType() == IndexType.FULLTEXT ? "Full-Text Index" : prototype.isUnique() ? "Unique Index" : "Index";
+        if ( rule instanceof IndexRef<?> )
+        {
+            return generateName( (IndexRef<?>) rule, entityTokenNames, propertyNames );
+        }
+        if ( rule instanceof ConstraintDescriptor )
+        {
+            return generateName( (ConstraintDescriptor) rule, entityTokenNames, propertyNames );
+        }
+        throw new IllegalArgumentException( "Don't know how to generate a name for this SchemaDescriptorSupplier implementation: " + rule + "." );
+    }
+
+    /**
+     * Generate a human friendly name for the given {@link IndexRef}, using the supplied arrays of resolved schema token names.
+     * @param indexRef The {@link IndexRef} to generate a name for.
+     * @param entityTokenNames The resolved names of the schema entity tokens, that is, label names or relationship type names.
+     * @param propertyNames The resolved property key names.
+     * @return A suitable name.
+     */
+    private static String generateName( IndexRef<?> indexRef, String[] entityTokenNames, String[] propertyNames )
+    {
+        SchemaDescriptor schema = indexRef.schema();
+        String indexType = schema.getIndexType() == IndexType.FULLTEXT ? "Full-Text Index" : indexRef.isUnique() ? "Unique Index" : "Index";
         String entityPart = generateEntityNamePart( schema, entityTokenNames );
         return indexType + " on " + entityPart + " (" + String.join( ",", propertyNames ) + ")";
     }
@@ -95,7 +116,7 @@ public interface SchemaRule extends SchemaDescriptorSupplier
      * @param propertyNames The resolved property key names.
      * @return A suitable name.
      */
-    static String generateName( ConstraintDescriptor constraint, String[] entityTokenNames, String[] propertyNames )
+    private static String generateName( ConstraintDescriptor constraint, String[] entityTokenNames, String[] propertyNames )
     {
         SchemaDescriptor schema = constraint.schema();
         String constraintType;
@@ -149,4 +170,13 @@ public interface SchemaRule extends SchemaDescriptorSupplier
      * @return The (possibly user supplied) name of this schema rule.
      */
     String getName();
+
+    /**
+     * Produce a copy of this schema rule, that has the given name.
+     * If the given name is {@code null}, then this schema rule is returned unchanged.
+     * @param name The name of the new constraint descriptor.
+     * @return a modified copy of this constraint descriptor.
+     * @throws IllegalArgumentException if the given name is not {@code null}, and it fails the sanitise check.
+     */
+    SchemaRule withName( String name );
 }

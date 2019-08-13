@@ -97,13 +97,16 @@ class SchemaRuleDeserializer2_0to3_1
         IndexProviderDescriptor providerDescriptor = new IndexProviderDescriptor( providerKey, providerVersion );
         int[] propertyKeyIds = readIndexPropertyKeys( serialized );
         LabelSchemaDescriptor schema = SchemaDescriptor.forLabel( label, propertyKeyIds );
+        String name = "index_" + id;
         if ( constraintIndex )
         {
-            return IndexPrototype.uniqueForSchema( schema, providerDescriptor ).materialise( id ).withOwningConstraintId( readOwningConstraint( serialized ) );
+            return IndexPrototype.uniqueForSchema( schema, providerDescriptor )
+                    .withName( name ).materialise( id ).withOwningConstraintId( readOwningConstraint( serialized ) );
         }
         else
         {
-            return IndexPrototype.forSchema( schema, providerDescriptor ).materialise( id );
+            return IndexPrototype.forSchema( schema, providerDescriptor )
+                    .withName( name ).materialise( id );
         }
     }
 

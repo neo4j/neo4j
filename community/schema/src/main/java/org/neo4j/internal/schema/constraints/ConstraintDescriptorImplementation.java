@@ -27,6 +27,7 @@ import org.neo4j.common.TokenNameLookup;
 import org.neo4j.internal.schema.ConstraintDescriptor;
 import org.neo4j.internal.schema.ConstraintType;
 import org.neo4j.internal.schema.SchemaDescriptor;
+import org.neo4j.internal.schema.SchemaRule;
 import org.neo4j.token.api.TokenIdPrettyPrinter;
 
 import static java.lang.String.format;
@@ -298,6 +299,7 @@ public class ConstraintDescriptorImplementation implements ConstraintDescriptor,
         {
             return this;
         }
+        name = SchemaRule.sanitiseName( name );
         return new ConstraintDescriptorImplementation( type, schema, id, name, ownedIndex );
     }
 

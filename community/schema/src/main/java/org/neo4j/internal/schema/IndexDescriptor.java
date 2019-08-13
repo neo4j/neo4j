@@ -28,8 +28,6 @@ import java.util.stream.Stream;
 import org.neo4j.common.TokenNameLookup;
 
 import static java.util.Objects.requireNonNull;
-import static org.apache.commons.lang3.StringUtils.EMPTY;
-import static org.neo4j.internal.schema.SchemaRule.nameOrDefault;
 
 public final class IndexDescriptor implements IndexRef<IndexDescriptor>, SchemaRule
 {
@@ -49,8 +47,7 @@ public final class IndexDescriptor implements IndexRef<IndexDescriptor>, SchemaR
 
     IndexDescriptor( long id, IndexPrototype prototype )
     {
-        // TODO we should throw an exception instead of generating a name for unnamed index prototypes. Or generate a name based on the schema tokens.
-        this( id, nameOrDefault( prototype.getName().orElse( EMPTY ), "index_" + id ), prototype.schema(), prototype.isUnique(),
+        this( id, SchemaRule.sanitiseName( prototype.getName() ), prototype.schema(), prototype.isUnique(),
                 prototype.getIndexProvider(), null,
                 IndexCapability.NO_CAPABILITY );
     }
@@ -115,6 +112,17 @@ public final class IndexDescriptor implements IndexRef<IndexDescriptor>, SchemaR
     public String getName()
     {
         return name;
+    }
+
+    @Override
+    public IndexDescriptor withName( String name )
+    {
+        if ( name == null )
+        {
+            return this;
+        }
+        name = SchemaRule.sanitiseName( name );
+        return new IndexDescriptor( id, name, schema, isUnique, indexProvider, owningConstraintId, capability );
     }
 
     /**

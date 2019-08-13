@@ -32,8 +32,11 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
+import org.neo4j.common.EntityType;
 import org.neo4j.common.ProgressReporter;
 import org.neo4j.configuration.Config;
 import org.neo4j.exceptions.KernelException;
@@ -60,11 +63,15 @@ import org.neo4j.internal.id.DefaultIdGeneratorFactory;
 import org.neo4j.internal.id.IdGeneratorFactory;
 import org.neo4j.internal.id.ScanOnOpenOverwritingIdGeneratorFactory;
 import org.neo4j.internal.id.ScanOnOpenReadOnlyIdGeneratorFactory;
+import org.neo4j.internal.kernel.api.exceptions.LabelNotFoundKernelException;
+import org.neo4j.internal.kernel.api.exceptions.PropertyKeyIdNotFoundKernelException;
+import org.neo4j.internal.kernel.api.exceptions.RelationshipTypeIdNotFoundKernelException;
 import org.neo4j.internal.recordstorage.RecordNodeCursor;
 import org.neo4j.internal.recordstorage.RecordStorageEngine;
 import org.neo4j.internal.recordstorage.RecordStorageEngineFactory;
 import org.neo4j.internal.recordstorage.RecordStorageReader;
 import org.neo4j.internal.recordstorage.StoreTokens;
+import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.internal.schema.SchemaRule;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.FileUtils;
@@ -100,11 +107,13 @@ import org.neo4j.storageengine.migration.AbstractStoreMigrationParticipant;
 import org.neo4j.storageengine.migration.SchemaRuleMigrationAccess;
 import org.neo4j.token.TokenHolders;
 import org.neo4j.token.api.TokenHolder;
+import org.neo4j.token.api.TokenNotFoundException;
 
 import static java.util.Arrays.asList;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
 import static org.neo4j.internal.batchimport.ImportLogic.NO_MONITOR;
 import static org.neo4j.internal.batchimport.staging.ExecutionSupervisors.withDynamicProcessorAssignment;
+import static org.neo4j.internal.recordstorage.StoreTokens.allTokens;
 import static org.neo4j.kernel.impl.store.format.RecordFormatSelector.selectForVersion;
 import static org.neo4j.kernel.impl.store.format.standard.MetaDataRecordFormat.FIELD_NOT_PRESENT;
 import static org.neo4j.kernel.impl.storemigration.FileOperation.COPY;
@@ -209,7 +218,9 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant
             // been migrated earlier.
             List<DatabaseFile> databaseFiles = asList(
                     DatabaseFile.PROPERTY_STORE, DatabaseFile.PROPERTY_ARRAY_STORE, DatabaseFile.PROPERTY_STRING_STORE,
-                    DatabaseFile.PROPERTY_KEY_TOKEN_STORE, DatabaseFile.PROPERTY_KEY_TOKEN_NAMES_STORE );
+                    DatabaseFile.PROPERTY_KEY_TOKEN_STORE, DatabaseFile.PROPERTY_KEY_TOKEN_NAMES_STORE,
+                    DatabaseFile.LABEL_TOKEN_STORE, DatabaseFile.LABEL_TOKEN_NAMES_STORE,
+                    DatabaseFile.RELATIONSHIP_TYPE_TOKEN_STORE, DatabaseFile.RELATIONSHIP_TYPE_TOKEN_NAMES_STORE );
             fileOperation( COPY, fileSystem, directoryLayout, migrationLayout, databaseFiles, true, ExistingTargetStrategy.SKIP );
             migrateSchemaStore( directoryLayout, migrationLayout, oldFormat, newFormat );
         }
@@ -637,7 +648,11 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant
 
         if ( newFormat.hasCapability( RecordStorageCapability.FLEXIBLE_SCHEMA_STORE ) )
         {
-            try ( NeoStores srcStore = srcFactory.openNeoStores( StoreType.PROPERTY_KEY_TOKEN, StoreType.PROPERTY_KEY_TOKEN_NAME );
+            StoreType[] sourceStoresToOpen = {
+                    StoreType.PROPERTY_KEY_TOKEN, StoreType.PROPERTY_KEY_TOKEN_NAME,
+                    StoreType.LABEL_TOKEN, StoreType.LABEL_TOKEN_NAME,
+                    StoreType.RELATIONSHIP_TYPE_TOKEN, StoreType.RELATIONSHIP_TYPE_TOKEN_NAME};
+            try ( NeoStores srcStore = srcFactory.openNeoStores( sourceStoresToOpen );
                   SchemaStore35 srcSchema = new SchemaStore35(
                           directoryLayout.schemaStore(),
                           directoryLayout.idSchemaStore(),
@@ -649,25 +664,110 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant
                           oldFormat );
                   NeoStores dstStore = dstFactory.openNeoStores( true, StoreType.SCHEMA, StoreType.PROPERTY_KEY_TOKEN, StoreType.PROPERTY ) )
             {
-                TokenHolders srcTokenHolders = new TokenHolders( StoreTokens.createReadOnlyTokenHolder( TokenHolder.TYPE_PROPERTY_KEY ),
+                TokenHolders srcTokenHolders = new TokenHolders(
+                        StoreTokens.createReadOnlyTokenHolder( TokenHolder.TYPE_PROPERTY_KEY ),
                         StoreTokens.createReadOnlyTokenHolder( TokenHolder.TYPE_LABEL ),
                         StoreTokens.createReadOnlyTokenHolder( TokenHolder.TYPE_RELATIONSHIP_TYPE ) );
-                // Only set the property key tokens, because it's the only one we need, and it's the only token store we made sure to be there.
-                srcTokenHolders.propertyKeyTokens().setInitialTokens( srcStore.getPropertyKeyTokenStore().getTokens() );
+                srcTokenHolders.setInitialTokens( allTokens( srcStore ) );
                 srcSchema.initialise( true );
                 SchemaStorage35 srcAccess = new SchemaStorage35( srcSchema );
 
                 SchemaRuleMigrationAccess dstAccess = RecordStorageEngineFactory.createMigrationTargetSchemaRuleAccess( dstStore );
 
-                Iterable<SchemaRule> rules = srcAccess.getAll();
-                for ( SchemaRule rule : rules )
-                {
-                    dstAccess.writeSchemaRule( rule );
-                }
+                migrateSchemaRules( srcTokenHolders, srcAccess, dstAccess );
 
                 dstStore.flush( IOLimiter.UNLIMITED );
             }
         }
+    }
+
+    static void migrateSchemaRules( TokenHolders srcTokenHolders, SchemaStorage35 srcAccess, SchemaRuleMigrationAccess dstAccess ) throws KernelException
+    {
+        Set<String> distinctNames = new HashSet<>();
+        List<SchemaRule> unnamedRules = new ArrayList<>(); // Process unnamed rules only once we're done with all the named ones.
+        Iterable<SchemaRule> rules = srcAccess.getAll();
+
+        // Go through all rules. Process explicitly named rules immediately. Defer the unnamed ones for later.
+        // We do it this way because explicitly named rules gets priority to keep their names.
+        for ( SchemaRule rule : rules )
+        {
+            String name = rule.getName();
+            if ( name == null || name.startsWith( "index_" ) || name.startsWith( "constraint_" ) )
+            {
+                unnamedRules.add( rule );
+                continue;
+            }
+            name = makeNameUnique( distinctNames, name );
+            rule = rule.withName( name );
+            dstAccess.writeSchemaRule( rule );
+        }
+
+        // Then go through the unnamed rules, and generate names for them while ensuring that all names are unique.
+        for ( SchemaRule rule : unnamedRules )
+        {
+            String[] entityTokenNames = getEntityTokenNames( srcTokenHolders, rule );
+            String[] propertyTokenNames = getPropertyTokenNames( srcTokenHolders, rule );
+            String name = SchemaRule.generateName( rule, entityTokenNames, propertyTokenNames );
+            name = makeNameUnique( distinctNames, name );
+            rule = rule.withName( name );
+            dstAccess.writeSchemaRule( rule );
+        }
+    }
+
+    private static String makeNameUnique( Set<String> distinctNames, String name )
+    {
+        int count = 0;
+        String originalName = name;
+        while ( !distinctNames.add( name ) )
+        {
+            count++;
+            name = originalName + " (" + count + ")";
+        }
+        return name;
+    }
+
+    private static String[] getEntityTokenNames( TokenHolders tokenHolders, SchemaRule rule ) throws KernelException
+    {
+        SchemaDescriptor schema = rule.schema();
+        int[] entityTokenIds = schema.getEntityTokenIds();
+        String[] entityTokenNames = new String[entityTokenIds.length];
+        TokenHolder tokenHolder = schema.entityType() == EntityType.NODE ? tokenHolders.labelTokens() : tokenHolders.relationshipTypeTokens();
+        for ( int i = 0; i < entityTokenIds.length; i++ )
+        {
+            try
+            {
+                entityTokenNames[i] = tokenHolder.getTokenById( entityTokenIds[i] ).name();
+            }
+            catch ( TokenNotFoundException e )
+            {
+                if ( schema.entityType() == EntityType.NODE )
+                {
+                    throw new LabelNotFoundKernelException( entityTokenIds[i], e );
+                }
+                throw new RelationshipTypeIdNotFoundKernelException( entityTokenIds[i], e );
+            }
+        }
+        return entityTokenNames;
+    }
+
+    private static String[] getPropertyTokenNames( TokenHolders tokenHolders, SchemaRule rule ) throws KernelException
+    {
+        SchemaDescriptor schema = rule.schema();
+        int[] propertyIds = schema.getPropertyIds();
+        String[] propertyNames = new String[propertyIds.length];
+        TokenHolder tokenHolder = tokenHolders.propertyKeyTokens();
+        for ( int i = 0; i < propertyIds.length; i++ )
+        {
+            try
+            {
+                propertyNames[i] = tokenHolder.getTokenById( propertyIds[i] ).name();
+            }
+            catch ( TokenNotFoundException e )
+            {
+                throw new PropertyKeyIdNotFoundKernelException( propertyIds[i], e );
+            }
+        }
+        return propertyNames;
     }
 
     @Override

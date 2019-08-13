@@ -172,10 +172,7 @@ public class RandomSchema implements Supplier<SchemaRule>
         IndexProviderDescriptor providerDescriptor = new IndexProviderDescriptor( nextName(), nextName() );
         prototype = prototype.withIndexProvider( providerDescriptor );
 
-        if ( rng.nextBoolean() )
-        {
-            prototype = prototype.withName( nextName() );
-        }
+        prototype = prototype.withName( nextName() );
 
         long ruleId = nextRuleIdForIndex();
         IndexDescriptor index = prototype.materialise( ruleId );
@@ -259,7 +256,13 @@ public class RandomSchema implements Supplier<SchemaRule>
 
     public String nextName()
     {
-        return ((TextValue) values.nextValueOfTypes( textTypes )).stringValue();
+        String name;
+        do
+        {
+            name = ((TextValue) values.nextValueOfTypes( textTypes )).stringValue().trim();
+        }
+        while ( name.isEmpty() || name.isBlank() ); // Avoid generating empty names.
+        return name;
     }
 
     public int nextLabelId()
