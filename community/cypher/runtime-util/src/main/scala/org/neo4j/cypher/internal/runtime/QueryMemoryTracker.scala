@@ -93,9 +93,9 @@ class BoundedMemoryTracker(val threshold: Long) extends QueryMemoryTracker {
 
   override def totalAllocatedMemory: Optional[lang.Long] = Optional.of(highWaterMark)
 
-  override def memoryTrackingIterator[T <: ExecutionContext](input: Iterator[T]): Iterator[T] = new MemoryTrackingIterator2[T](input)
+  override def memoryTrackingIterator[T <: ExecutionContext](input: Iterator[T]): Iterator[T] = new MemoryTrackingIterator[T](input)
 
-  private class MemoryTrackingIterator2[T <: ExecutionContext](input: Iterator[T]) extends Iterator[T] {
+  private class MemoryTrackingIterator[T <: ExecutionContext](input: Iterator[T]) extends Iterator[T] {
     override def hasNext: Boolean = input.hasNext
 
     override def next(): T = {
