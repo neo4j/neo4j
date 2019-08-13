@@ -37,7 +37,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import org.neo4j.io.pagecache.CursorException;
 import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCursor;
@@ -48,16 +47,10 @@ import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.rule.fs.DefaultFileSystemRule;
 import org.neo4j.values.storable.RandomValues;
 
-import static org.hamcrest.CoreMatchers.allOf;
 import static org.hamcrest.CoreMatchers.containsString;
-import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
 import static org.junit.rules.RuleChain.outerRule;
-import static org.neo4j.index.internal.gbptree.GBPTreeConsistencyChecker.assertNoCrashOrBrokenPointerInGSPP;
-import static org.neo4j.index.internal.gbptree.GenerationSafePointer.MIN_GENERATION;
-import static org.neo4j.index.internal.gbptree.SimpleLongLayout.longLayout;
 import static org.neo4j.test.rule.PageCacheRule.config;
 
 public class GBPTreeConsistencyCheckerTest
@@ -541,6 +534,46 @@ public class GBPTreeConsistencyCheckerTest
         }
     }
 
+    @Test
+    public void shouldDetectCrashedGSPP() throws IOException
+    {
+        try ( GBPTree<MutableLong,MutableLong> index = index().build() )
+        {
+            treeWithHeightTwo( index );
+
+            InspectingVisitor<MutableLong,MutableLong> visitor = inspect( index );
+            long targetNode = randomValues.among( visitor.allNodes );
+            boolean isLeaf = visitor.leafNodes.contains( targetNode );
+            int keyCount = visitor.allKeyCounts.get( targetNode );
+            GBPTreePointerType pointerType = randomPointerType( keyCount, isLeaf );
+
+            GBPTreeCorruption.PageCorruption<MutableLong,MutableLong> corruption = GBPTreeCorruption.crashed( pointerType );
+            corrupt( targetNode, corruption, visitor.treeState );
+
+            assertReportCrashedGSPP( index, targetNode, pointerType );
+        }
+    }
+
+    @Test
+    public void shouldDetectBrokenGSPP() throws IOException
+    {
+        try ( GBPTree<MutableLong,MutableLong> index = index().build() )
+        {
+            treeWithHeightTwo( index );
+
+            InspectingVisitor<MutableLong,MutableLong> visitor = inspect( index );
+            long targetNode = randomValues.among( visitor.allNodes );
+            boolean isLeaf = visitor.leafNodes.contains( targetNode );
+            int keyCount = visitor.allKeyCounts.get( targetNode );
+            GBPTreePointerType pointerType = randomPointerType( keyCount, isLeaf );
+
+            GBPTreeCorruption.PageCorruption<MutableLong,MutableLong> corruption = GBPTreeCorruption.broken( pointerType );
+            corrupt( targetNode, corruption, visitor.treeState );
+
+            assertReportBrokenGSPP( index, targetNode, pointerType );
+        }
+    }
+
     //todo
     //  Tree structure inconsistencies:
     //    > Pointer generation lower than node generation
@@ -556,7 +589,9 @@ public class GBPTreeConsistencyCheckerTest
     //    > Node in tree has successor
     //      X Root, internal or leaf has successor
     //    > Broken GSPP
-    //      - ...
+    //      X Should detect crashed GSPP
+    //      X Should detect broken GSPP
+    //      - Should not report crashed GSPP if allowed
     //    > Level hierarchy
     //      - Child pointer dont point to next level
     //      - Sibling pointer point to node on other level
@@ -568,6 +603,7 @@ public class GBPTreeConsistencyCheckerTest
     //      X Dynamic layout: Overlap between offsetArray and allocSpace
     //      X Dynamic layout: Overlap between allocSpace and activeKeys
     //      X Dynamic layout: Misplaced allocOffset
+    //      - Unreasonable keyCount
     //  Free list inconsistencies:
     //  A page can be either used as a freelist page, used as a tree node (unstable generation), listed in freelist (stable generation), listen in freelist
     //  (unstable generation)
@@ -576,39 +612,6 @@ public class GBPTreeConsistencyCheckerTest
     //      X Extra empty page in file
     //  Tree meta inconsistencies:
     //    > Can not read meta data.
-
-    @Test
-    public void shouldThrowDescriptiveExceptionOnBrokenGSPP() throws Exception
-    {
-        // GIVEN
-        int pageSize = 256;
-        PageCursor cursor = new PageAwareByteArrayCursor( pageSize );
-        long stableGeneration = MIN_GENERATION;
-        long crashGeneration = stableGeneration + 1;
-        long unstableGeneration = stableGeneration + 2;
-        String pointerFieldName = "abc";
-        long pointer = 123;
-
-        cursor.next( 0 );
-        new TreeNodeFixedSize<>( pageSize, longLayout().build() ).initializeInternal( cursor, stableGeneration, crashGeneration );
-        TreeNode.setSuccessor( cursor, pointer, stableGeneration, crashGeneration );
-
-        // WHEN
-        try
-        {
-            assertNoCrashOrBrokenPointerInGSPP( cursor, stableGeneration, unstableGeneration, pointerFieldName, TreeNode.BYTE_POS_SUCCESSOR );
-            cursor.checkAndClearCursorException();
-            fail( "Should have failed" );
-        }
-        catch ( CursorException exception )
-        {
-            assertThat( exception.getMessage(), allOf( containsString( pointerFieldName ),
-                    containsString( pointerFieldName ),
-                    containsString( "state=CRASH" ),
-                    containsString( "state=EMPTY" ),
-                    containsString( String.valueOf( pointer ) ) ) );
-        }
-    }
 
     private void corrupt( long targetNode, GBPTreeCorruption.PageCorruption<MutableLong,MutableLong> corruption, TreeState treeState ) throws IOException
     {
@@ -704,6 +707,24 @@ public class GBPTreeConsistencyCheckerTest
     private <KEY,VALUE> GBPTreeBuilder<KEY,VALUE> index( Layout<KEY,VALUE> layout )
     {
         return new GBPTreeBuilder<>( pageCache, indexFile, layout );
+    }
+
+    private GBPTreePointerType randomPointerType( int keyCount, boolean isLeaf )
+    {
+        int bound = isLeaf ? 3 : 4;
+        switch ( randomValues.nextInt( bound ) )
+        {
+        case 0:
+            return GBPTreePointerType.leftSibling();
+        case 1:
+            return GBPTreePointerType.rightSibling();
+        case 2:
+            return GBPTreePointerType.successor();
+        case 3:
+            return GBPTreePointerType.child( randomValues.nextInt( keyCount + 1 ) );
+        default:
+            throw new IllegalStateException( "Unrecognized option" );
+        }
     }
 
     private void treeWithHeightTwo( GBPTree<MutableLong,MutableLong> index ) throws IOException
@@ -960,6 +981,44 @@ public class GBPTreeConsistencyCheckerTest
             {
                 called.setTrue();
                 assertEquals( targetPage, pageId );
+            }
+        } );
+        assertCalled( called );
+    }
+
+    private static void assertReportCrashedGSPP( GBPTree<MutableLong,MutableLong> index, long targetNode, GBPTreePointerType targetPointerType )
+            throws IOException
+    {
+        MutableBoolean called = new MutableBoolean();
+        index.consistencyCheck( new GBPTreeConsistencyCheckVisitor.Adaptor<MutableLong>()
+        {
+            @Override
+            public void crashedPointer( long pageId, GBPTreePointerType pointerType,
+                    long generationA, long readPointerA, long pointerA, byte stateA,
+                    long generationB, long readPointerB, long pointerB, byte stateB )
+            {
+                called.setTrue();
+                assertEquals( targetNode, pageId );
+                assertEquals( targetPointerType, pointerType );
+            }
+        } );
+        assertCalled( called );
+    }
+
+    private static void assertReportBrokenGSPP( GBPTree<MutableLong,MutableLong> index, long targetNode, GBPTreePointerType targetPointerType )
+            throws IOException
+    {
+        MutableBoolean called = new MutableBoolean();
+        index.consistencyCheck( new GBPTreeConsistencyCheckVisitor.Adaptor<MutableLong>()
+        {
+            @Override
+            public void brokenPointer( long pageId, GBPTreePointerType pointerType,
+                    long generationA, long readPointerA, long pointerA, byte stateA,
+                    long generationB, long readPointerB, long pointerB, byte stateB )
+            {
+                called.setTrue();
+                assertEquals( targetNode, pageId );
+                assertEquals( targetPointerType, pointerType );
             }
         } );
         assertCalled( called );

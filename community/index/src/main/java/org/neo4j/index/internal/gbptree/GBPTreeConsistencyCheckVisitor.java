@@ -48,6 +48,16 @@ public interface GBPTreeConsistencyCheckVisitor<KEY>
 
     void pageIdSeenMultipleTimes( long pageId );
 
+    void crashedPointer( long pageId, GBPTreePointerType pointerType,
+            long generationA, long readPointerA, long pointerA, byte stateA,
+            long generationB, long readPointerB, long pointerB, byte stateB );
+
+    void brokenPointer( long pageId, GBPTreePointerType pointerType,
+            long generationA, long readPointerA, long pointerA, byte stateA,
+            long generationB, long readPointerB, long pointerB, byte stateB );
+
+    void unreasonableKeyCount( long pageId, int keyCount );
+
     class Adaptor<KEY> implements GBPTreeConsistencyCheckVisitor<KEY>
     {
         @Override
@@ -110,6 +120,25 @@ public interface GBPTreeConsistencyCheckVisitor<KEY>
 
         @Override
         public void pageIdSeenMultipleTimes( long pageId )
+        {
+        }
+
+        @Override
+        public void crashedPointer( long pageId, GBPTreePointerType pointerType,
+                long generationA, long readPointerA, long pointerA, byte stateA,
+                long generationB, long readPointerB, long pointerB, byte stateB )
+        {
+        }
+
+        @Override
+        public void brokenPointer( long pageId, GBPTreePointerType pointerType,
+                long generationA, long readPointerA, long pointerA, byte stateA,
+                long generationB, long readPointerB, long pointerB, byte stateB )
+        {
+        }
+
+        @Override
+        public void unreasonableKeyCount( long pageId, int keyCount )
         {
         }
     }

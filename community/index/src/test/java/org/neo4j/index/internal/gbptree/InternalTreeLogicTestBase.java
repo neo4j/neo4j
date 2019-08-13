@@ -1685,10 +1685,10 @@ public abstract class InternalTreeLogicTestBase<KEY,VALUE>
         treeLogic.initialize( cursor, ratioToKeepInLeftOnSplit );
     }
 
-    private void assertSuccessorPointerNotCrashOrBroken()
+    private void assertSuccessorPointerNotCrashOrBroken() throws IOException
     {
-        assertNoCrashOrBrokenPointerInGSPP( readCursor, stableGeneration, unstableGeneration, "Successor",
-                TreeNode.BYTE_POS_SUCCESSOR );
+        assertNoCrashOrBrokenPointerInGSPP( readCursor, stableGeneration, unstableGeneration, GBPTreePointerType.successor(),
+                TreeNode.BYTE_POS_SUCCESSOR, new ThrowingConsistencyCheckVisitor<>() );
     }
 
     private void assertKeyAssociatedWithValue( KEY key, VALUE expectedValue )

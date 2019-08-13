@@ -112,6 +112,40 @@ public class ThrowingConsistencyCheckVisitor<KEY> implements GBPTreeConsistencyC
         throwTreeMetaInconsistency( "Index has a leaked page that will never be reclaimed, pageId=%d.", pageId );
     }
 
+    @Override
+    public void crashedPointer( long pageId, GBPTreePointerType pointerType,
+            long generationA, long readPointerA, long pointerA, byte stateA,
+            long generationB, long readPointerB, long pointerB, byte stateB )
+    {
+        throwTreeStructureInconsistency( "Crashed pointer found in tree node %d, pointer: %s%n  slotA[%s]%n  slotB[%s]",
+                pageId, pointerType.toString(),
+                stateToString( generationA, readPointerA, pointerA, stateA ),
+                stateToString( generationB, readPointerB, pointerB, stateB ) );
+    }
+
+    @Override
+    public void brokenPointer( long pageId, GBPTreePointerType pointerType,
+            long generationA, long readPointerA, long pointerA, byte stateA,
+            long generationB, long readPointerB, long pointerB, byte stateB )
+    {
+        throwTreeStructureInconsistency( "Broken pointer found in tree node %d, pointer: %s%n  slotA[%s]%n  slotB[%s]",
+                pageId, pointerType.toString(),
+                stateToString( generationA, readPointerA, pointerA, stateA ),
+                stateToString( generationB, readPointerB, pointerB, stateB ) );
+    }
+
+    @Override
+    public void unreasonableKeyCount( long pageId, int keyCount )
+    {
+        throwTreeMetaInconsistency( "Unexpected keyCount on pageId %d, keyCount=%d", pageId, keyCount );
+    }
+
+    private static String stateToString( long generation, long readPointer, long pointer, byte stateA )
+    {
+        return format( "generation=%d, readPointer=%d, pointer=%d, state=%s",
+                generation, readPointer, pointer, GenerationSafePointerPair.pointerStateName( stateA ) );
+    }
+
     private String leftPattern( long actualLeftSibling, long actualLeftSiblingGeneration,
             long expectedRightSiblingGeneration, long expectedRightSibling )
     {

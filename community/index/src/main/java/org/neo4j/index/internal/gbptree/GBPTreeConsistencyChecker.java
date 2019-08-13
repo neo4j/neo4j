@@ -34,7 +34,6 @@ import org.neo4j.io.pagecache.CursorException;
 import org.neo4j.io.pagecache.PageCursor;
 
 import static java.lang.Math.toIntExact;
-import static java.lang.String.format;
 import static org.neo4j.index.internal.gbptree.GenerationSafePointerPair.pointer;
 import static org.neo4j.index.internal.gbptree.PageCursorUtil.checkOutOfBounds;
 import static org.neo4j.index.internal.gbptree.TreeNode.Type.INTERNAL;
@@ -146,14 +145,6 @@ class GBPTreeConsistencyChecker<KEY>
 
         do
         {
-            // check header pointers
-            assertNoCrashOrBrokenPointerInGSPP(
-                    cursor, stableGeneration, unstableGeneration, "LeftSibling", TreeNode.BYTE_POS_LEFTSIBLING );
-            assertNoCrashOrBrokenPointerInGSPP(
-                    cursor, stableGeneration, unstableGeneration, "RightSibling", TreeNode.BYTE_POS_RIGHTSIBLING );
-            assertNoCrashOrBrokenPointerInGSPP(
-                    cursor, stableGeneration, unstableGeneration, "Successor", TreeNode.BYTE_POS_SUCCESSOR );
-
             // for assertSiblings
             leftSiblingPointer = TreeNode.leftSibling( cursor, stableGeneration, unstableGeneration, generationTarget );
             leftSiblingPointerGeneration = generationTarget.generation;
@@ -169,11 +160,6 @@ class GBPTreeConsistencyChecker<KEY>
             keyCount = TreeNode.keyCount( cursor );
             nodeType = TreeNode.nodeType( cursor );
             treeNodeType = TreeNode.treeNodeType( cursor );
-            if ( !node.reasonableKeyCount( keyCount ) )
-            {
-                // todo change this to report inconsistency instead
-                cursor.setCursorException( "Unexpected keyCount:" + keyCount );
-            }
         }
         while ( cursor.shouldRetry() );
         checkAfterShouldRetry( cursor );
@@ -181,6 +167,7 @@ class GBPTreeConsistencyChecker<KEY>
         if ( nodeType != TreeNode.NODE_TYPE_TREE_NODE )
         {
              visitor.notATreeNode( pageId );
+             return;
         }
 
         boolean isLeaf = treeNodeType == TreeNode.LEAF_FLAG;
@@ -188,9 +175,25 @@ class GBPTreeConsistencyChecker<KEY>
         if ( !isInternal && !isLeaf )
         {
             visitor.unknownTreeNodeType( pageId, treeNodeType );
+            return;
         }
 
-        assertKeyOrder( cursor, range, keyCount, isLeaf ? LEAF : INTERNAL, visitor );
+        // check header pointers
+        assertNoCrashOrBrokenPointerInGSPP(
+                cursor, stableGeneration, unstableGeneration, GBPTreePointerType.leftSibling(), TreeNode.BYTE_POS_LEFTSIBLING, visitor );
+        assertNoCrashOrBrokenPointerInGSPP(
+                cursor, stableGeneration, unstableGeneration, GBPTreePointerType.rightSibling(), TreeNode.BYTE_POS_RIGHTSIBLING, visitor );
+        assertNoCrashOrBrokenPointerInGSPP(
+                cursor, stableGeneration, unstableGeneration, GBPTreePointerType.successor(), TreeNode.BYTE_POS_SUCCESSOR, visitor );
+
+        if ( !node.reasonableKeyCount( keyCount ) )
+        {
+            visitor.unreasonableKeyCount( pageId, keyCount );
+        }
+        else
+        {
+            assertKeyOrder( cursor, range, keyCount, isLeaf ? LEAF : INTERNAL, visitor );
+        }
 
         do
         {
@@ -259,6 +262,8 @@ class GBPTreeConsistencyChecker<KEY>
         {
             long child;
             long childGeneration;
+            assertNoCrashOrBrokenPointerInGSPP(
+                    cursor, stableGeneration, unstableGeneration, GBPTreePointerType.child( pos ), node.childOffset( pos ), visitor );
             do
             {
                 child = childAt( cursor, pos, generationTarget );
@@ -290,6 +295,8 @@ class GBPTreeConsistencyChecker<KEY>
         // Check last child
         long child;
         long childGeneration;
+        assertNoCrashOrBrokenPointerInGSPP(
+                cursor, stableGeneration, unstableGeneration, GBPTreePointerType.child( pos ), node.childOffset( pos ), visitor );
         do
         {
             child = childAt( cursor, pos, generationTarget );
@@ -312,8 +319,6 @@ class GBPTreeConsistencyChecker<KEY>
 
     private long childAt( PageCursor cursor, int pos, GBPTreeGenerationTarget childGeneration )
     {
-        assertNoCrashOrBrokenPointerInGSPP(
-                cursor, stableGeneration, unstableGeneration, "Child", node.childOffset( pos ) );
         return node.childAt( cursor, pos, stableGeneration, unstableGeneration, childGeneration );
     }
 
@@ -355,47 +360,59 @@ class GBPTreeConsistencyChecker<KEY>
         delayedVisitor.report( visitor );
     }
 
-    static void assertNoCrashOrBrokenPointerInGSPP( PageCursor cursor, long stableGeneration, long unstableGeneration,
-            String pointerFieldName, int offset )
+    static <KEY> void assertNoCrashOrBrokenPointerInGSPP( PageCursor cursor, long stableGeneration, long unstableGeneration,
+            GBPTreePointerType pointerType, int offset, GBPTreeConsistencyCheckVisitor<KEY> visitor ) throws IOException
     {
-        cursor.setOffset( offset );
         long currentNodeId = cursor.getCurrentPageId();
-        // A
-        long generationA = GenerationSafePointer.readGeneration( cursor );
-        long readPointerA = GenerationSafePointer.readPointer( cursor );
-        long pointerA = GenerationSafePointerPair.pointer( readPointerA );
-        short checksumA = GenerationSafePointer.readChecksum( cursor );
-        boolean correctChecksumA = GenerationSafePointer.checksumOf( generationA, readPointerA ) == checksumA;
-        byte stateA = GenerationSafePointerPair.pointerState(
-                stableGeneration, unstableGeneration, generationA, readPointerA, correctChecksumA );
-        boolean okA = stateA != GenerationSafePointerPair.BROKEN && stateA != GenerationSafePointerPair.CRASH;
 
-        // B
-        long generationB = GenerationSafePointer.readGeneration( cursor );
-        long readPointerB = GenerationSafePointer.readPointer( cursor );
-        long pointerB = GenerationSafePointerPair.pointer( readPointerA );
-        short checksumB = GenerationSafePointer.readChecksum( cursor );
-        boolean correctChecksumB = GenerationSafePointer.checksumOf( generationB, readPointerB ) == checksumB;
-        byte stateB = GenerationSafePointerPair.pointerState(
-                stableGeneration, unstableGeneration, generationB, readPointerB, correctChecksumB );
-        boolean okB = stateB != GenerationSafePointerPair.BROKEN && stateB != GenerationSafePointerPair.CRASH;
+        long generationA;
+        long readPointerA;
+        long pointerA;
+        short checksumA;
+        boolean correctChecksumA;
+        byte stateA;
 
-        if ( !(okA && okB) )
+        long generationB;
+        long readPointerB;
+        long pointerB;
+        short checksumB;
+        boolean correctChecksumB;
+        byte stateB;
+        do
         {
-            boolean isInternal = TreeNode.isInternal( cursor );
-            String type = isInternal ? "internal" : "leaf";
-            cursor.setCursorException( format(
-                    "GSPP state found that was not ok in %s field in %s node with id %d%n  slotA[%s]%n  slotB[%s]",
-                    pointerFieldName, type, currentNodeId,
-                    stateToString( generationA, readPointerA, pointerA, stateA ),
-                    stateToString( generationB, readPointerB, pointerB, stateB ) ) );
-        }
-    }
+            cursor.setOffset( offset );
+            // A
+            generationA = GenerationSafePointer.readGeneration( cursor );
+            readPointerA = GenerationSafePointer.readPointer( cursor );
+            pointerA = GenerationSafePointerPair.pointer( readPointerA );
+            checksumA = GenerationSafePointer.readChecksum( cursor );
+            correctChecksumA = GenerationSafePointer.checksumOf( generationA, readPointerA ) == checksumA;
+            stateA = GenerationSafePointerPair.pointerState(
+                    stableGeneration, unstableGeneration, generationA, readPointerA, correctChecksumA );
 
-    private static String stateToString( long generation, long readPointer, long pointer, byte stateA )
-    {
-        return format( "generation=%d, readPointer=%d, pointer=%d, state=%s",
-                generation, readPointer, pointer, GenerationSafePointerPair.pointerStateName( stateA ) );
+            // B
+            generationB = GenerationSafePointer.readGeneration( cursor );
+            readPointerB = GenerationSafePointer.readPointer( cursor );
+            pointerB = GenerationSafePointerPair.pointer( readPointerA );
+            checksumB = GenerationSafePointer.readChecksum( cursor );
+            correctChecksumB = GenerationSafePointer.checksumOf( generationB, readPointerB ) == checksumB;
+            stateB = GenerationSafePointerPair.pointerState(
+                    stableGeneration, unstableGeneration, generationB, readPointerB, correctChecksumB );
+        }
+        while ( cursor.shouldRetry() );
+
+        if ( stateA == GenerationSafePointerPair.CRASH || stateB == GenerationSafePointerPair.CRASH )
+        {
+            visitor.crashedPointer( currentNodeId, pointerType,
+                    generationA, readPointerA, pointerA, stateA,
+                    generationB, readPointerB, pointerB, stateB );
+        }
+        if ( stateA == GenerationSafePointerPair.BROKEN || stateB == GenerationSafePointerPair.BROKEN )
+        {
+            visitor.brokenPointer( currentNodeId, pointerType,
+                    generationA, readPointerA, pointerA, stateA,
+                    generationB, readPointerB, pointerB, stateB );
+        }
     }
 
     private static class DelayedVisitor<KEY> extends GBPTreeConsistencyCheckVisitor.Adaptor<KEY>

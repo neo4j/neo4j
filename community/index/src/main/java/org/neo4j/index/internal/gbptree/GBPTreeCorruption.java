@@ -24,6 +24,7 @@ import java.io.IOException;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PagedFile;
 
+import static org.neo4j.index.internal.gbptree.GBPTreeGenerationTarget.NO_GENERATION_TARGET;
 import static org.neo4j.index.internal.gbptree.GenerationSafePointerPair.pointer;
 import static org.neo4j.index.internal.gbptree.TreeNode.BYTE_POS_LEFTSIBLING;
 import static org.neo4j.index.internal.gbptree.TreeNode.BYTE_POS_RIGHTSIBLING;
@@ -39,8 +40,22 @@ final class GBPTreeCorruption
     static <KEY, VALUE> PageCorruption<KEY,VALUE> crashed( GBPTreePointerType gbpTreePointerType )
     {
         return ( pagedFile, pageCursor, layout, node, treeState ) -> {
-            pageCursor.setOffset( gbpTreePointerType.offset( node ) );
-            GenerationSafePointerPair.write( pageCursor, 42, treeState.stableGeneration(), crashGeneration( treeState ) );
+            int offset = gbpTreePointerType.offset( node );
+            long stableGeneration = treeState.stableGeneration();
+            long unstableGeneration = treeState.unstableGeneration();
+            long crashGeneration = crashGeneration( treeState );
+            pageCursor.setOffset( offset );
+            long pointer = pointer( GenerationSafePointerPair.read( pageCursor, stableGeneration, unstableGeneration, NO_GENERATION_TARGET ) );
+            overwriteGSPP( pageCursor, offset, crashGeneration, pointer );
+        };
+    }
+
+    static <KEY, VALUE> PageCorruption<KEY,VALUE> broken( GBPTreePointerType gbpTreePointerType )
+    {
+        return ( pagedFile, pageCursor, layout, node, treeState ) -> {
+            int offset = gbpTreePointerType.offset( node );
+            pageCursor.setOffset( offset );
+            pageCursor.putInt( Integer.MAX_VALUE );
         };
     }
 
