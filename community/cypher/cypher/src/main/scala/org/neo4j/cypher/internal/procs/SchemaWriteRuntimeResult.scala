@@ -19,6 +19,9 @@
  */
 package org.neo4j.cypher.internal.procs
 
+import java.lang
+import java.util.Optional
+
 import org.neo4j.cypher.internal.runtime.{QueryContext, QueryStatistics}
 import org.neo4j.cypher.result.RuntimeResult.ConsumptionState
 import org.neo4j.cypher.result.{EmptyQuerySubscription, QueryProfile, RuntimeResult}
@@ -32,6 +35,8 @@ case class SchemaWriteRuntimeResult(ctx: QueryContext, subscriber: QuerySubscrib
   override def fieldNames(): Array[String] = Array.empty
 
   override def queryStatistics(): QueryStatistics = ctx.getOptStatistics.getOrElse(QueryStatistics())
+
+  override def totalAllocatedMemory(): Optional[lang.Long] = Optional.empty()
 
   override def consumptionState: RuntimeResult.ConsumptionState = ConsumptionState.EXHAUSTED
 

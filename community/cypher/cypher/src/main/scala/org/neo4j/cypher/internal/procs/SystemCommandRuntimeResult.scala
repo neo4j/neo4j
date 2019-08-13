@@ -19,7 +19,8 @@
  */
 package org.neo4j.cypher.internal.procs
 
-import java.util
+import java.{lang, util}
+import java.util.Optional
 
 import org.neo4j.cypher.internal.result.{Error, InternalExecutionResult}
 import org.neo4j.cypher.internal.runtime.{QueryContext, QueryStatistics}
@@ -41,6 +42,8 @@ case class SystemCommandRuntimeResult(ctx: SystemUpdateCountingQueryContext,
   private var state = ConsumptionState.NOT_STARTED
 
   override def queryStatistics(): QueryStatistics = ctx.getOptStatistics.getOrElse(QueryStatistics())
+
+  override def totalAllocatedMemory(): Optional[lang.Long] = Optional.empty()
 
   override def consumptionState: RuntimeResult.ConsumptionState = state
 

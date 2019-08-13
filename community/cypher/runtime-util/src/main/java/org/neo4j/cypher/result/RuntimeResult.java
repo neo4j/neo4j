@@ -19,6 +19,8 @@
  */
 package org.neo4j.cypher.result;
 
+import java.util.Optional;
+
 import org.neo4j.cypher.internal.runtime.QueryStatistics;
 import org.neo4j.kernel.impl.query.QuerySubscription;
 
@@ -53,6 +55,13 @@ public interface RuntimeResult extends AutoCloseable, QuerySubscription
      * Get the {@link QueryProfile} of this query execution.
      */
     QueryProfile queryProfile();
+
+    /**
+     * Get the total allocated memory of this query, in bytes.
+     *
+     * @return the total number of allocated memory bytes, or None, if memory tracking was not enabled.
+     */
+    Optional<Long> totalAllocatedMemory();
 
     @Override
     void close();

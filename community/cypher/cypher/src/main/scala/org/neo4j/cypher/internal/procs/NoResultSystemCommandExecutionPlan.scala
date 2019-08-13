@@ -19,6 +19,9 @@
  */
 package org.neo4j.cypher.internal.procs
 
+import java.lang
+import java.util.Optional
+
 import org.neo4j.cypher.internal.plandescription.Argument
 import org.neo4j.cypher.internal.runtime.{InputDataStream, QueryContext, QueryStatistics}
 import org.neo4j.cypher.internal.v4_0.util.InternalNotification
@@ -58,6 +61,8 @@ case class NoRuntimeResult(subscriber: QuerySubscriber) extends EmptyQuerySubscr
 
   override def queryStatistics(): QueryStatistics = QueryStatistics()
 
+  override def totalAllocatedMemory(): Optional[lang.Long] = Optional.empty()
+
   override def consumptionState: RuntimeResult.ConsumptionState = ConsumptionState.EXHAUSTED
 
   override def close(): Unit = {}
@@ -68,6 +73,7 @@ case class NoRuntimeResult(subscriber: QuerySubscriber) extends EmptyQuerySubscr
 case object FailedRuntimeResult extends RuntimeResult {
   override def fieldNames(): Array[String] = Array.empty
   override def queryStatistics(): QueryStatistics = QueryStatistics()
+  override def totalAllocatedMemory(): Optional[lang.Long] = Optional.empty()
   override def consumptionState: RuntimeResult.ConsumptionState = ConsumptionState.EXHAUSTED
   override def close(): Unit = {}
   override def queryProfile(): QueryProfile = QueryProfile.NONE

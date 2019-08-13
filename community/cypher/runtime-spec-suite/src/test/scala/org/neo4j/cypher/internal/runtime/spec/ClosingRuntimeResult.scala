@@ -19,6 +19,9 @@
  */
 package org.neo4j.cypher.internal.runtime.spec
 
+import java.lang
+import java.util.Optional
+
 import org.neo4j.cypher.internal.runtime.{QueryStatistics, ResourceManager}
 import org.neo4j.cypher.result.{QueryProfile, RuntimeResult}
 import org.neo4j.graphdb.Transaction
@@ -42,6 +45,8 @@ class ClosingRuntimeResult(inner: RuntimeResult,
   override def consumptionState(): RuntimeResult.ConsumptionState = inner.consumptionState()
 
   override def queryStatistics(): QueryStatistics = inner.queryStatistics()
+
+  override def totalAllocatedMemory(): Optional[lang.Long] = inner.totalAllocatedMemory()
 
   override def queryProfile(): QueryProfile = inner.queryProfile()
 

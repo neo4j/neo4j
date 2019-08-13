@@ -20,6 +20,8 @@
 package org.neo4j.cypher.internal.result
 
 import java.io.PrintWriter
+import java.lang
+import java.util.Optional
 
 import org.mockito.Mockito.RETURNS_DEEP_STUBS
 import org.neo4j.cypher.internal.InterpretedRuntimeName
@@ -153,6 +155,8 @@ class StandardInternalExecutionResultTest extends CypherFunSuite {
       else ConsumptionState.EXHAUSTED
 
     override def queryStatistics(): QueryStatistics = QueryStatistics()
+
+    override def totalAllocatedMemory(): Optional[lang.Long] = Optional.empty()
 
     override def queryProfile(): QueryProfile = QueryProfile.NONE
 

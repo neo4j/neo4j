@@ -20,6 +20,8 @@
 package org.neo4j.cypher.internal.runtime
 
 import org.neo4j.exceptions.TransactionOutOfMemoryException
+import java.lang
+import java.util.Optional
 
 trait QueryMemoryTracker {
 
@@ -35,6 +37,13 @@ trait QueryMemoryTracker {
     * memory used by the query grows too large.
     */
   def memoryTrackingIterator[T<: ExecutionContext](input: Iterator[T]): Iterator[T]
+
+  /**
+    * Get the total allocated memory of this query, in bytes.
+    *
+    * @return the total number of allocated memory bytes, or None, if memory tracking was not enabled.
+    */
+  def totalAllocatedMemory: Optional[lang.Long]
 }
 
 object QueryMemoryTracker {
@@ -52,6 +61,7 @@ case object NoMemoryTracker extends QueryMemoryTracker {
 
   override def allocated(bytes: => Long): Unit = {}
 
+  override def totalAllocatedMemory: Optional[lang.Long] = Optional.empty()
 }
 
 class BoundedMemoryTracker(val threshold: Long) extends QueryMemoryTracker {
@@ -63,6 +73,8 @@ class BoundedMemoryTracker(val threshold: Long) extends QueryMemoryTracker {
       throw new TransactionOutOfMemoryException
     }
   }
+
+  override def totalAllocatedMemory: Optional[lang.Long] = Optional.of(allocatedBytes)
 
   override def memoryTrackingIterator[T <: ExecutionContext](input: Iterator[T]): Iterator[T] = new MemoryTrackingIterator2[T](input)
 

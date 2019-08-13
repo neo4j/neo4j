@@ -19,6 +19,9 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted
 
+import java.lang
+import java.util.Optional
+
 import org.neo4j.cypher.internal.runtime._
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
 import org.neo4j.cypher.result.RuntimeResult.ConsumptionState
@@ -38,6 +41,8 @@ class PipeExecutionResult(inner: Iterator[_],
   private val numberOfFields = fieldNames.length
 
   override def queryStatistics(): QueryStatistics = state.getStatistics
+
+  override def totalAllocatedMemory: Optional[lang.Long] = state.memoryTracker.totalAllocatedMemory
 
   override def close(): Unit = {
     state.close()
