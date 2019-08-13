@@ -52,374 +52,379 @@ class ExpressionSelectivityCalculatorTest extends CypherFunSuite with AstConstru
   private val nIsPerson = Predicate(Set("n"), HasLabels(varFor("n"), Seq(LabelName("Person") _)) _)
   private val nIsAnimal = Predicate(Set("n"), HasLabels(varFor("n"), Seq(LabelName("Animal") _)) _)
 
+  private val personPropSel = 0.2
+  private val indexPersonUniqueSel = 1.0 / 180.0
+
+  private val PERSON_COUNT = 1000.0
+
   // RANGE SEEK
 
   test("half-open (>) range with no label") {
-    val ineqality = Predicate(Set("n"), AndedPropertyInequalities(varFor("n"), nProp, NonEmptyList(
+    val inequality = Predicate(Set("n"), AndedPropertyInequalities(varFor("n"), nProp, NonEmptyList(
       GreaterThan(nProp, SignedDecimalIntegerLiteral("3") _) _
     )))
 
-    val calculator = setUpCalculator(ineqality, Seq.empty)
-    val ineqResult = calculator(ineqality.expr)
-    ineqResult should equal(DEFAULT_RANGE_SELECTIVITY)
+    val calculator = setUpCalculator(inequality, Seq.empty)
+    val inequalityResult = calculator(inequality.expr)
+    inequalityResult should equal(DEFAULT_RANGE_SELECTIVITY)
   }
 
   test("half-open (>=) range with no label") {
-    val ineqality = Predicate(Set("n"), AndedPropertyInequalities(varFor("n"), nProp, NonEmptyList(
+    val inequality = Predicate(Set("n"), AndedPropertyInequalities(varFor("n"), nProp, NonEmptyList(
       GreaterThanOrEqual(nProp, SignedDecimalIntegerLiteral("3") _) _
     )))
 
-    val calculator = setUpCalculator(ineqality, Seq.empty)
-    val ineqResult = calculator(ineqality.expr)
-    ineqResult.factor should equal(DEFAULT_RANGE_SELECTIVITY.factor + DEFAULT_EQUALITY_SELECTIVITY.factor)
+    val calculator = setUpCalculator(inequality, Seq.empty)
+    val inequalityResult = calculator(inequality.expr)
+    inequalityResult.factor should equal(DEFAULT_RANGE_SELECTIVITY.factor + DEFAULT_EQUALITY_SELECTIVITY.factor)
   }
 
   test("closed (> && <) range with no label") {
-    val ineqality = Predicate(Set("n"), AndedPropertyInequalities(varFor("n"), nProp, NonEmptyList(
+    val inequality = Predicate(Set("n"), AndedPropertyInequalities(varFor("n"), nProp, NonEmptyList(
       GreaterThan(nProp, SignedDecimalIntegerLiteral("3") _) _,
       LessThan(nProp, SignedDecimalIntegerLiteral("4") _) _
     )))
 
-    val calculator = setUpCalculator(ineqality, Seq.empty)
-    val ineqResult = calculator(ineqality.expr)
-    ineqResult.factor should equal(DEFAULT_RANGE_SELECTIVITY.factor / 2)
+    val calculator = setUpCalculator(inequality, Seq.empty)
+    val inequalityResult = calculator(inequality.expr)
+    inequalityResult.factor should equal(DEFAULT_RANGE_SELECTIVITY.factor / 2)
   }
 
   test("closed (>= && <) range with no label") {
-    val ineqality = Predicate(Set("n"), AndedPropertyInequalities(varFor("n"), nProp, NonEmptyList(
+    val inequality = Predicate(Set("n"), AndedPropertyInequalities(varFor("n"), nProp, NonEmptyList(
       GreaterThanOrEqual(nProp, SignedDecimalIntegerLiteral("3") _) _,
       LessThan(nProp, SignedDecimalIntegerLiteral("4") _) _
     )))
 
-    val calculator = setUpCalculator(ineqality, Seq.empty)
-    val ineqResult = calculator(ineqality.expr)
-    ineqResult.factor should equal(DEFAULT_RANGE_SELECTIVITY.factor / 2 + DEFAULT_EQUALITY_SELECTIVITY.factor)
+    val calculator = setUpCalculator(inequality, Seq.empty)
+    val inequalityResult = calculator(inequality.expr)
+    inequalityResult.factor should equal(DEFAULT_RANGE_SELECTIVITY.factor / 2 + DEFAULT_EQUALITY_SELECTIVITY.factor)
   }
 
-  test("three inequalities should be equal to two inequalities, no labels") {
-    val ineqality = Predicate(Set("n"), AndedPropertyInequalities(varFor("n"), nProp, NonEmptyList(
+  test("three inequalityualities should be equal to two inequalityualities, no labels") {
+    val inequality = Predicate(Set("n"), AndedPropertyInequalities(varFor("n"), nProp, NonEmptyList(
       GreaterThan(nProp, SignedDecimalIntegerLiteral("3") _) _,
       LessThan(nProp, SignedDecimalIntegerLiteral("4") _) _,
       LessThan(nProp, SignedDecimalIntegerLiteral("7") _) _
     )))
 
-    val calculator = setUpCalculator(ineqality, Seq.empty)
-    val ineqResult = calculator(ineqality.expr)
-    ineqResult.factor should equal(DEFAULT_RANGE_SELECTIVITY.factor / 2)
+    val calculator = setUpCalculator(inequality, Seq.empty)
+    val inequalityResult = calculator(inequality.expr)
+    inequalityResult.factor should equal(DEFAULT_RANGE_SELECTIVITY.factor / 2)
   }
 
   test("half-open (>) range with one label") {
-    val ineqality = Predicate(Set("n"), AndedPropertyInequalities(varFor("n"), nProp, NonEmptyList(
+    val inequality = Predicate(Set("n"), AndedPropertyInequalities(varFor("n"), nProp, NonEmptyList(
       GreaterThan(nProp, SignedDecimalIntegerLiteral("3") _) _
     )))
 
-    val calculator = setUpCalculator(ineqality, Seq(nIsPerson))
+    val calculator = setUpCalculator(inequality, Seq(nIsPerson))
 
     val labelResult = calculator(nIsPerson.expr)
-    val ineqResult = calculator(ineqality.expr)
+    val inequalityResult = calculator(inequality.expr)
 
     labelResult.factor should equal(0.1)
-    ineqResult.factor should equal(
-      0.2 // Selectivity for .prop
-        * 0.75 // Selectivity for != x
+    inequalityResult.factor should equal(
+      personPropSel
+        * (1-indexPersonUniqueSel) // Selectivity for != x
         * DEFAULT_RANGE_SEEK_FACTOR // Selectivity for range
         +- 0.00000001
     )
   }
 
   test("half-open (>=) range with one label") {
-    val ineqality = Predicate(Set("n"), AndedPropertyInequalities(varFor("n"), nProp, NonEmptyList(
+    val inequality = Predicate(Set("n"), AndedPropertyInequalities(varFor("n"), nProp, NonEmptyList(
       GreaterThanOrEqual(nProp, SignedDecimalIntegerLiteral("3") _) _
     )))
 
-    val calculator = setUpCalculator(ineqality, Seq(nIsPerson))
+    val calculator = setUpCalculator(inequality, Seq(nIsPerson))
 
     val labelResult = calculator(nIsPerson.expr)
-    val ineqResult = calculator(ineqality.expr)
+    val inequalityResult = calculator(inequality.expr)
 
     labelResult.factor should equal(0.1)
-    ineqResult.factor should equal(
-      0.2 // Selectivity for .prop
-        * 0.75 // Selectivity for != 3
+    inequalityResult.factor should equal(
+      personPropSel
+        * (1 - indexPersonUniqueSel) // Selectivity for != x
         * DEFAULT_RANGE_SEEK_FACTOR // Selectivity for range
-        + 0.2 // Selectivity for .prop
-        * 0.25 // Selectivity for == 3
+        + personPropSel
+        * indexPersonUniqueSel
         +- 0.00000001
     )
   }
 
   test("closed (> && <) range with one label") {
-    val ineqality = Predicate(Set("n"), AndedPropertyInequalities(varFor("n"), nProp, NonEmptyList(
+    val inequality = Predicate(Set("n"), AndedPropertyInequalities(varFor("n"), nProp, NonEmptyList(
       GreaterThan(nProp, SignedDecimalIntegerLiteral("3") _) _,
       LessThan(nProp, SignedDecimalIntegerLiteral("4") _) _
     )))
 
-    val calculator = setUpCalculator(ineqality, Seq(nIsPerson))
+    val calculator = setUpCalculator(inequality, Seq(nIsPerson))
 
     val labelResult = calculator(nIsPerson.expr)
-    val ineqResult = calculator(ineqality.expr)
+    val inequalityResult = calculator(inequality.expr)
 
     labelResult.factor should equal(0.1)
-    ineqResult.factor should equal(
-      0.2 // Selectivity for .prop
-        * 0.75 // Selectivity for != x
+    inequalityResult.factor should equal(
+      personPropSel
+        * (1-indexPersonUniqueSel) // Selectivity for != x
         * DEFAULT_RANGE_SEEK_FACTOR / 2 // Selectivity for range
         +- 0.00000001
     )
   }
 
   test("closed (>= && <) range with one label") {
-    val ineqality = Predicate(Set("n"), AndedPropertyInequalities(varFor("n"), nProp, NonEmptyList(
+    val inequality = Predicate(Set("n"), AndedPropertyInequalities(varFor("n"), nProp, NonEmptyList(
       GreaterThanOrEqual(nProp, SignedDecimalIntegerLiteral("3") _) _,
       LessThan(nProp, SignedDecimalIntegerLiteral("4") _) _
     )))
 
-    val calculator = setUpCalculator(ineqality, Seq(nIsPerson))
+    val calculator = setUpCalculator(inequality, Seq(nIsPerson))
 
     val labelResult = calculator(nIsPerson.expr)
-    val ineqResult = calculator(ineqality.expr)
+    val inequalityResult = calculator(inequality.expr)
 
     labelResult.factor should equal(0.1)
-    ineqResult.factor should equal(
-      0.2 // Selectivity for .prop
-        * 0.75 // Selectivity for != 3
+    inequalityResult.factor should equal(
+      personPropSel
+        * (1 - indexPersonUniqueSel) // Selectivity for != x
         * DEFAULT_RANGE_SEEK_FACTOR / 2 // Selectivity for range
-        + 0.2 // Selectivity for .prop
-        * 0.25 // Selectivity for == 3
+        + personPropSel
+        * indexPersonUniqueSel
         +- 0.00000001
     )
   }
 
-  test("three inequalities should be equal to two inequalities, one label") {
-    val ineqality = Predicate(Set("n"), AndedPropertyInequalities(varFor("n"), nProp, NonEmptyList(
+  test("three inequalityualities should be equal to two inequalityualities, one label") {
+    val inequality = Predicate(Set("n"), AndedPropertyInequalities(varFor("n"), nProp, NonEmptyList(
       GreaterThan(nProp, SignedDecimalIntegerLiteral("3") _) _,
       LessThan(nProp, SignedDecimalIntegerLiteral("4") _) _,
       LessThan(nProp, SignedDecimalIntegerLiteral("7") _) _
     )))
 
-    val calculator = setUpCalculator(ineqality, Seq(nIsPerson))
+    val calculator = setUpCalculator(inequality, Seq(nIsPerson))
 
     val labelResult = calculator(nIsPerson.expr)
-    val ineqResult = calculator(ineqality.expr)
+    val inequalityResult = calculator(inequality.expr)
 
     labelResult.factor should equal(0.1)
-    ineqResult.factor should equal(
-      0.2 // Selectivity for .prop
-        * 0.75 // Selectivity for != x
+    inequalityResult.factor should equal(
+      personPropSel
+        * (1-indexPersonUniqueSel) // Selectivity for != x
         * DEFAULT_RANGE_SEEK_FACTOR / 2 // Selectivity for range
         +- 0.00000001
     )
   }
 
   test("half-open (>) range with one label, no index") {
-    val ineqality = Predicate(Set("n"), AndedPropertyInequalities(varFor("n"), nProp, NonEmptyList(
+    val inequality = Predicate(Set("n"), AndedPropertyInequalities(varFor("n"), nProp, NonEmptyList(
       GreaterThan(nProp, SignedDecimalIntegerLiteral("3") _) _
     )))
 
-    val calculator = setUpCalculator(ineqality, Seq(nIsPerson), mockStats(indexCardinalities = Map.empty))
+    val calculator = setUpCalculator(inequality, Seq(nIsPerson), mockStats(indexCardinalities = Map.empty))
 
     val labelResult = calculator(nIsPerson.expr)
-    val ineqResult = calculator(ineqality.expr)
+    val inequalityResult = calculator(inequality.expr)
 
     labelResult.factor should equal(0.1)
-    ineqResult should equal(DEFAULT_RANGE_SELECTIVITY)
+    inequalityResult should equal(DEFAULT_RANGE_SELECTIVITY)
   }
 
   test("closed (> && <) range with one label, no index") {
-    val ineqality = Predicate(Set("n"), AndedPropertyInequalities(varFor("n"), nProp, NonEmptyList(
+    val inequality = Predicate(Set("n"), AndedPropertyInequalities(varFor("n"), nProp, NonEmptyList(
       GreaterThan(nProp, SignedDecimalIntegerLiteral("3") _) _,
       LessThan(nProp, SignedDecimalIntegerLiteral("4") _) _
     )))
 
-    val calculator = setUpCalculator(ineqality, Seq(nIsPerson), mockStats(indexCardinalities = Map.empty))
+    val calculator = setUpCalculator(inequality, Seq(nIsPerson), mockStats(indexCardinalities = Map.empty))
 
     val labelResult = calculator(nIsPerson.expr)
-    val ineqResult = calculator(ineqality.expr)
+    val inequalityResult = calculator(inequality.expr)
 
     labelResult.factor should equal(0.1)
-    ineqResult.factor should equal(DEFAULT_RANGE_SELECTIVITY.factor / 2)
+    inequalityResult.factor should equal(DEFAULT_RANGE_SELECTIVITY.factor / 2)
   }
 
   test("half-open (>) range with two labels, one index") {
-    val ineqality = Predicate(Set("n"), AndedPropertyInequalities(varFor("n"), nProp, NonEmptyList(
+    val inequality = Predicate(Set("n"), AndedPropertyInequalities(varFor("n"), nProp, NonEmptyList(
       GreaterThan(nProp, SignedDecimalIntegerLiteral("3") _) _
     )))
 
-    val calculator = setUpCalculator(ineqality, Seq(nIsPerson, nIsAnimal),
+    val calculator = setUpCalculator(inequality, Seq(nIsPerson, nIsAnimal),
       mockStats(labelCardinalities = Map(indexPerson.label -> 1000.0, indexAnimal.label -> 10.0)))
 
     val labelResult1 = calculator(nIsPerson.expr)
     val labelResult2 = calculator(nIsAnimal.expr)
-    val ineqResult = calculator(ineqality.expr)
+    val inequalityResult = calculator(inequality.expr)
 
     labelResult1.factor should equal(0.1)
     labelResult2.factor should equal(0.001)
-    ineqResult.factor should equal(
-      0.2 // Selectivity for .prop
-        * 0.75 // Selectivity for != x
+    inequalityResult.factor should equal(
+      personPropSel
+        * (1-indexPersonUniqueSel) // Selectivity for != x
         * DEFAULT_RANGE_SEEK_FACTOR // Selectivity for range
         +- 0.00000001
     )
   }
 
   test("closed (> && <) range with two labels, one index") {
-    val ineqality = Predicate(Set("n"), AndedPropertyInequalities(varFor("n"), nProp, NonEmptyList(
+    val inequality = Predicate(Set("n"), AndedPropertyInequalities(varFor("n"), nProp, NonEmptyList(
       GreaterThan(nProp, SignedDecimalIntegerLiteral("3") _) _,
       LessThan(nProp, SignedDecimalIntegerLiteral("4") _) _
     )))
 
-    val calculator = setUpCalculator(ineqality, Seq(nIsPerson),
+    val calculator = setUpCalculator(inequality, Seq(nIsPerson),
       mockStats(labelCardinalities = Map(indexPerson.label -> 1000.0, indexAnimal.label -> 10.0)))
 
     val labelResult = calculator(nIsPerson.expr)
     val labelResult2 = calculator(nIsAnimal.expr)
-    val ineqResult = calculator(ineqality.expr)
+    val inequalityResult = calculator(inequality.expr)
 
     labelResult.factor should equal(0.1)
     labelResult2.factor should equal(0.001)
-    ineqResult.factor should equal(
-      0.2 // Selectivity for .prop
-        * 0.75 // Selectivity for != 3
+    inequalityResult.factor should equal(
+      personPropSel
+        * (1 - indexPersonUniqueSel) // Selectivity for != x
         * DEFAULT_RANGE_SEEK_FACTOR / 2 // Selectivity for range
         +- 0.00000001
     )
   }
 
   test("half-open (>) range with two labels, two indexes") {
-    val ineqality = Predicate(Set("n"), AndedPropertyInequalities(varFor("n"), nProp, NonEmptyList(
+    val inequality = Predicate(Set("n"), AndedPropertyInequalities(varFor("n"), nProp, NonEmptyList(
       GreaterThan(nProp, SignedDecimalIntegerLiteral("3") _) _
     )))
 
-    val calculator = setUpCalculator(ineqality, Seq(nIsPerson, nIsAnimal), mockStats(
+    val calculator = setUpCalculator(inequality, Seq(nIsPerson, nIsAnimal), mockStats(
       labelCardinalities = Map(indexPerson.label -> 1000, indexAnimal.label -> 800.0),
       indexCardinalities = Map(indexPerson -> 200.0, indexAnimal -> 400.0),
-      indexUniqueCardinalities = Map(indexPerson -> 50.0, indexAnimal -> 40.0)))
+      indexUniqueCardinalities = Map(indexPerson -> 180.0, indexAnimal -> 380.0)))
 
     val labelResult1 = calculator(nIsPerson.expr)
     val labelResult2 = calculator(nIsAnimal.expr)
-    val ineqResult = calculator(ineqality.expr)
+    val inequalityResult = calculator(inequality.expr)
 
     labelResult1.factor should equal(0.1)
     labelResult2.factor should equal(0.08)
 
     val personIndexSelectivity = (
-      0.2 // Selectivity for .prop
-        * 0.75 // Selectivity for != x
+      personPropSel
+        * (1-indexPersonUniqueSel) // Selectivity for != x
         * DEFAULT_RANGE_SEEK_FACTOR // Selectivity for range
       )
     val animalIndexSelectivity = (
       0.5 // Selectivity for .prop
-        * 0.9 // Selectivity for != x
+        * (1.0 - 1.0 / 380.0) // Selectivity for != x
         * DEFAULT_RANGE_SEEK_FACTOR // Selectivity for range
       )
 
-    ineqResult.factor should equal(personIndexSelectivity + animalIndexSelectivity - personIndexSelectivity * animalIndexSelectivity
+    inequalityResult.factor should equal(personIndexSelectivity + animalIndexSelectivity - personIndexSelectivity * animalIndexSelectivity
       +- 0.00000001)
   }
 
   test("half-open (>=) range with two labels, two indexes") {
-    val ineqality = Predicate(Set("n"), AndedPropertyInequalities(varFor("n"), nProp, NonEmptyList(
+    val inequality = Predicate(Set("n"), AndedPropertyInequalities(varFor("n"), nProp, NonEmptyList(
       GreaterThanOrEqual(nProp, SignedDecimalIntegerLiteral("3") _) _
     )))
 
-    val calculator = setUpCalculator(ineqality, Seq(nIsPerson, nIsAnimal), mockStats(
-      labelCardinalities = Map(indexPerson.label -> 1000, indexAnimal.label -> 800.0),
+    val calculator = setUpCalculator(inequality, Seq(nIsPerson, nIsAnimal), mockStats(
+      labelCardinalities = Map(indexPerson.label -> 1000.0, indexAnimal.label -> 800.0),
       indexCardinalities = Map(indexPerson -> 200.0, indexAnimal -> 400.0),
-      indexUniqueCardinalities = Map(indexPerson -> 50.0, indexAnimal -> 40.0)))
+      indexUniqueCardinalities = Map(indexPerson -> 180.0, indexAnimal -> 380.0)))
 
     val labelResult1 = calculator(nIsPerson.expr)
     val labelResult2 = calculator(nIsAnimal.expr)
-    val ineqResult = calculator(ineqality.expr)
+    val inequalityResult = calculator(inequality.expr)
 
     labelResult1.factor should equal(0.1)
     labelResult2.factor should equal(0.08)
 
     val personIndexSelectivity = (
-      0.2 // Selectivity for .prop
-        * 0.75 // Selectivity for != 3
+      personPropSel
+        * (1 - indexPersonUniqueSel) // Selectivity for != x
         * DEFAULT_RANGE_SEEK_FACTOR // Selectivity for range
-        + 0.2 // Selectivity for .prop
-        * 0.25 // Selectivity for == 3
+        + personPropSel
+        * indexPersonUniqueSel
       )
     val animalIndexSelectivity = (
       0.5 // Selectivity for .prop
-        * 0.9 // Selectivity for != x
+        * (1.0 - 1.0 / 380.0) // Selectivity for != x
         * DEFAULT_RANGE_SEEK_FACTOR // Selectivity for range
         + 0.5 // Selectivity for .prop
-        * 0.1 // Selectivity for == 3
+        * (1.0 / 380.0) // Selectivity for == 3
       )
 
-    ineqResult.factor should equal(personIndexSelectivity + animalIndexSelectivity - personIndexSelectivity * animalIndexSelectivity
+    inequalityResult.factor should equal(personIndexSelectivity + animalIndexSelectivity - personIndexSelectivity * animalIndexSelectivity
       +- 0.00000001)
   }
 
   test("closed (> && <) range with two labels, two indexes") {
-    val ineqality = Predicate(Set("n"), AndedPropertyInequalities(varFor("n"), nProp, NonEmptyList(
+    val inequality = Predicate(Set("n"), AndedPropertyInequalities(varFor("n"), nProp, NonEmptyList(
       GreaterThan(nProp, SignedDecimalIntegerLiteral("3") _) _,
       LessThan(nProp, SignedDecimalIntegerLiteral("4") _) _
     )))
 
-    val calculator = setUpCalculator(ineqality, Seq(nIsPerson, nIsAnimal), mockStats(
-      labelCardinalities = Map(indexPerson.label -> 1000, indexAnimal.label -> 800.0),
+    val calculator = setUpCalculator(inequality, Seq(nIsPerson, nIsAnimal), mockStats(
+      labelCardinalities = Map(indexPerson.label -> 1000.0, indexAnimal.label -> 800.0),
       indexCardinalities = Map(indexPerson -> 200.0, indexAnimal -> 400.0),
-      indexUniqueCardinalities = Map(indexPerson -> 50.0, indexAnimal -> 40.0)))
+      indexUniqueCardinalities = Map(indexPerson -> 180.0, indexAnimal -> 380.0)))
 
     val labelResult1 = calculator(nIsPerson.expr)
     val labelResult2 = calculator(nIsAnimal.expr)
-    val ineqResult = calculator(ineqality.expr)
+    val inequalityResult = calculator(inequality.expr)
 
     labelResult1.factor should equal(0.1)
     labelResult2.factor should equal(0.08)
 
     val personIndexSelectivity = (
-      0.2 // Selectivity for .prop
-        * 0.75 // Selectivity for != x
+      personPropSel
+        * (1 - indexPersonUniqueSel) // Selectivity for != x
         * DEFAULT_RANGE_SEEK_FACTOR / 2 // Selectivity for range
       )
     val animalIndexSelectivity = (
       0.5 // Selectivity for .prop
-        * 0.9 // Selectivity for != x
+        * (1.0 - 1.0 / 380.0) // Selectivity for != x
         * DEFAULT_RANGE_SEEK_FACTOR / 2 // Selectivity for range
       )
 
-    ineqResult.factor should equal(personIndexSelectivity + animalIndexSelectivity - personIndexSelectivity * animalIndexSelectivity
+    inequalityResult.factor should equal(personIndexSelectivity + animalIndexSelectivity - personIndexSelectivity * animalIndexSelectivity
       +- 0.00000001)
   }
 
   test("closed (>= && <) range with two labels, two indexes") {
-    val ineqality = Predicate(Set("n"), AndedPropertyInequalities(varFor("n"), nProp, NonEmptyList(
+    val inequality = Predicate(Set("n"), AndedPropertyInequalities(varFor("n"), nProp, NonEmptyList(
       GreaterThanOrEqual(nProp, SignedDecimalIntegerLiteral("3") _) _,
       LessThan(nProp, SignedDecimalIntegerLiteral("4") _) _
     )))
 
-    val calculator = setUpCalculator(ineqality, Seq(nIsPerson, nIsAnimal), mockStats(
-      labelCardinalities = Map(indexPerson.label -> 1000, indexAnimal.label -> 800.0),
+    val calculator = setUpCalculator(inequality, Seq(nIsPerson, nIsAnimal), mockStats(
+      labelCardinalities = Map(indexPerson.label -> 1000.0, indexAnimal.label -> 800.0),
       indexCardinalities = Map(indexPerson -> 200.0, indexAnimal -> 400.0),
-      indexUniqueCardinalities = Map(indexPerson -> 50.0, indexAnimal -> 40.0)))
+      indexUniqueCardinalities = Map(indexPerson -> 180.0, indexAnimal -> 380.0)))
 
     val labelResult1 = calculator(nIsPerson.expr)
     val labelResult2 = calculator(nIsAnimal.expr)
-    val ineqResult = calculator(ineqality.expr)
+    val inequalityResult = calculator(inequality.expr)
 
     labelResult1.factor should equal(0.1)
     labelResult2.factor should equal(0.08)
 
     val personIndexSelectivity = (
-      0.2 // Selectivity for .prop
-        * 0.75 // Selectivity for != 3
+      personPropSel
+        * (1 - indexPersonUniqueSel) // Selectivity for != x
         * DEFAULT_RANGE_SEEK_FACTOR / 2 // Selectivity for range
-        + 0.2 // Selectivity for .prop
-        * 0.25 // Selectivity for == 3
+        + personPropSel
+        * indexPersonUniqueSel
       )
     val animalIndexSelectivity = (
       0.5 // Selectivity for .prop
-        * 0.9 // Selectivity for != 3
+        * (1.0 - 1.0 / 380.0) // Selectivity for != x
         * DEFAULT_RANGE_SEEK_FACTOR / 2 // Selectivity for range
         + 0.5 // Selectivity for .prop
-        * 0.1 // Selectivity for == 3
+        * (1.0 / 380.0) // Selectivity for != x
       )
 
-    ineqResult.factor should equal(personIndexSelectivity + animalIndexSelectivity - personIndexSelectivity * animalIndexSelectivity
+    inequalityResult.factor should equal(personIndexSelectivity + animalIndexSelectivity - personIndexSelectivity * animalIndexSelectivity
       +- 0.00000001)
   }
 
@@ -449,7 +454,7 @@ class ExpressionSelectivityCalculatorTest extends CypherFunSuite with AstConstru
 
   test("distance with two labels, two indexes") {
     val calculator = setUpCalculator(distance, Seq(nIsPerson, nIsAnimal), mockStats(
-      labelCardinalities = Map(indexPerson.label -> 1000, indexAnimal.label -> 800.0),
+      labelCardinalities = Map(indexPerson.label -> 1000.0, indexAnimal.label -> 800.0),
       indexCardinalities = Map(indexPerson -> 200.0, indexAnimal -> 400.0)))
 
     val labelResult1 = calculator(nIsPerson.expr)
@@ -460,7 +465,7 @@ class ExpressionSelectivityCalculatorTest extends CypherFunSuite with AstConstru
     labelResult2.factor should equal(0.08)
 
     val personIndexSelectivity = (
-      0.2 // Selectivity for .prop
+      personPropSel
         * DEFAULT_RANGE_SEEK_FACTOR // point distance
       )
     val animalIndexSelectivity = (
@@ -571,7 +576,7 @@ class ExpressionSelectivityCalculatorTest extends CypherFunSuite with AstConstru
     val stringPredicate = Predicate(Set("n"), StartsWith(nProp, StringLiteral("")(pos))(pos))
 
     val calculator = setUpCalculator(stringPredicate, Seq(nIsPerson, nIsAnimal), mockStats(
-      labelCardinalities = Map(indexPerson.label -> 1000, indexAnimal.label -> 800.0),
+      labelCardinalities = Map(indexPerson.label -> 1000.0, indexAnimal.label -> 800.0),
       indexCardinalities = Map(indexPerson -> 200.0, indexAnimal -> 400.0)))
 
     val labelResult1 = calculator(nIsPerson.expr)
@@ -598,7 +603,7 @@ class ExpressionSelectivityCalculatorTest extends CypherFunSuite with AstConstru
     val stringPredicate = Predicate(Set("n"), StartsWith(nProp, StringLiteral("1")(pos))(pos))
 
     val calculator = setUpCalculator(stringPredicate, Seq(nIsPerson, nIsAnimal), mockStats(
-      labelCardinalities = Map(indexPerson.label -> 1000, indexAnimal.label -> 800.0),
+      labelCardinalities = Map(indexPerson.label -> 1000.0, indexAnimal.label -> 800.0),
       indexCardinalities = Map(indexPerson -> 200.0, indexAnimal -> 400.0)))
 
     val labelResult1 = calculator(nIsPerson.expr)
@@ -625,7 +630,7 @@ class ExpressionSelectivityCalculatorTest extends CypherFunSuite with AstConstru
     val stringPredicate = Predicate(Set("n"), StartsWith(nProp, StringLiteral("12")(pos))(pos))
 
     val calculator = setUpCalculator(stringPredicate, Seq(nIsPerson, nIsAnimal), mockStats(
-      labelCardinalities = Map(indexPerson.label -> 1000, indexAnimal.label -> 800.0),
+      labelCardinalities = Map(indexPerson.label -> 1000.0, indexAnimal.label -> 800.0),
       indexCardinalities = Map(indexPerson -> 200.0, indexAnimal -> 400.0)))
 
     val labelResult1 = calculator(nIsPerson.expr)
@@ -652,7 +657,7 @@ class ExpressionSelectivityCalculatorTest extends CypherFunSuite with AstConstru
     val stringPredicate = Predicate(Set("n"), StartsWith(nProp, varFor("string"))(pos))
 
     val calculator = setUpCalculator(stringPredicate, Seq(nIsPerson, nIsAnimal), mockStats(
-      labelCardinalities = Map(indexPerson.label -> 1000, indexAnimal.label -> 800.0),
+      labelCardinalities = Map(indexPerson.label -> 1000.0, indexAnimal.label -> 800.0),
       indexCardinalities = Map(indexPerson -> 200.0, indexAnimal -> 400.0)))
 
     val labelResult1 = calculator(nIsPerson.expr)
@@ -720,7 +725,7 @@ class ExpressionSelectivityCalculatorTest extends CypherFunSuite with AstConstru
 
   test("exists with two labels, two indexes") {
     val calculator = setUpCalculator(exists, Seq(nIsPerson, nIsAnimal), mockStats(
-      labelCardinalities = Map(indexPerson.label -> 1000, indexAnimal.label -> 800.0),
+      labelCardinalities = Map(indexPerson.label -> 1000.0, indexAnimal.label -> 800.0),
       indexCardinalities = Map(indexPerson -> 200.0, indexAnimal -> 400.0)))
 
     val labelResult1 = calculator(nIsPerson.expr)
@@ -789,7 +794,7 @@ class ExpressionSelectivityCalculatorTest extends CypherFunSuite with AstConstru
     val eqResult = calculator(equals.expr)
 
     labelResult.factor should equal(0.1)
-    eqResult.factor should equal(0.05)
+    eqResult.factor should equal(0.2 * (1.0 / 180.0))
   }
 
   test("equality with one label, size 2") {
@@ -801,7 +806,7 @@ class ExpressionSelectivityCalculatorTest extends CypherFunSuite with AstConstru
     val eqResult = calculator(equals.expr)
 
     labelResult.factor should equal(0.1)
-    val resFor1 = 0.05
+    val resFor1 = 0.2 * (1.0 / 180.0)
     eqResult.factor should equal(resFor1 + resFor1 - resFor1 * resFor1)
   }
 
@@ -814,7 +819,7 @@ class ExpressionSelectivityCalculatorTest extends CypherFunSuite with AstConstru
     val eqResult = calculator(equals.expr)
 
     labelResult.factor should equal(0.1)
-    val resFor1 = Selectivity(0.05)
+    val resFor1 = Selectivity(0.2 * (1.0 / 180.0))
     eqResult should equal(IndependenceCombiner.orTogetherSelectivities(for (_ <- 1 to DEFAULT_LIST_CARDINALITY.amount.toInt) yield resFor1).get)
   }
 
@@ -822,7 +827,7 @@ class ExpressionSelectivityCalculatorTest extends CypherFunSuite with AstConstru
     val equals = Predicate(Set("n"), In(nProp, listOf()) _)
 
     val calculator = setUpCalculator(equals, Seq(nIsPerson, nIsAnimal), mockStats(
-      labelCardinalities = Map(indexPerson.label -> 1000, indexAnimal.label -> 800.0),
+      labelCardinalities = Map(indexPerson.label -> 1000.0, indexAnimal.label -> 800.0),
       indexUniqueCardinalities = Map(indexPerson -> 200.0, indexAnimal -> 400.0)))
 
     val labelResult1 = calculator(nIsPerson.expr)
@@ -838,7 +843,7 @@ class ExpressionSelectivityCalculatorTest extends CypherFunSuite with AstConstru
     val equals = Predicate(Set("n"), Equals(nProp, SignedDecimalIntegerLiteral("3") _) _)
 
     val calculator = setUpCalculator(equals, Seq(nIsPerson, nIsAnimal), mockStats(
-      labelCardinalities = Map(indexPerson.label -> 1000, indexAnimal.label -> 800.0),
+      labelCardinalities = Map(indexPerson.label -> 1000.0, indexAnimal.label -> 800.0),
       indexCardinalities = Map(indexPerson -> 300.0, indexAnimal -> 500.0),
       indexUniqueCardinalities = Map(indexPerson -> 200.0, indexAnimal -> 400.0)))
 
@@ -848,14 +853,17 @@ class ExpressionSelectivityCalculatorTest extends CypherFunSuite with AstConstru
 
     labelResult1.factor should equal(0.1)
     labelResult2.factor should equal(0.08)
-    eqResult.factor should equal(0.2 + 0.5 - 0.2 * 0.5)
+
+    val personSel = (300.0 / 1000.0) * (1.0 / 200.0)
+    val animalSel = (500.0 / 800.0) * (1.0 / 400.0)
+    eqResult.factor should equal(personSel + animalSel - personSel * animalSel)
   }
 
   test("equality with two labels, size 2") {
     val equals = Predicate(Set("n"), In(nProp, listOf(SignedDecimalIntegerLiteral("3") _, SignedDecimalIntegerLiteral("4") _)) _)
 
     val calculator = setUpCalculator(equals, Seq(nIsPerson, nIsAnimal), mockStats(
-      labelCardinalities = Map(indexPerson.label -> 1000, indexAnimal.label -> 800.0),
+      labelCardinalities = Map(indexPerson.label -> 1000.0, indexAnimal.label -> 800.0),
       indexCardinalities = Map(indexPerson -> 300.0, indexAnimal -> 500.0),
       indexUniqueCardinalities = Map(indexPerson -> 200.0, indexAnimal -> 400.0)))
 
@@ -865,7 +873,10 @@ class ExpressionSelectivityCalculatorTest extends CypherFunSuite with AstConstru
 
     labelResult1.factor should equal(0.1)
     labelResult2.factor should equal(0.08)
-    val resFor1 = 0.2 + 0.5 - 0.2 * 0.5
+
+    val personSel = (300.0 / 1000.0) * (1.0 / 200.0)
+    val animalSel = (500.0 / 800.0) * (1.0 / 400.0)
+    val resFor1 = personSel + animalSel - personSel * animalSel
     eqResult.factor should equal(resFor1 + resFor1 - resFor1 * resFor1)
   }
 
@@ -873,7 +884,7 @@ class ExpressionSelectivityCalculatorTest extends CypherFunSuite with AstConstru
     val equals = Predicate(Set("n"), In(nProp, varFor("someList")) _)
 
     val calculator = setUpCalculator(equals, Seq(nIsPerson, nIsAnimal), mockStats(
-      labelCardinalities = Map(indexPerson.label -> 1000, indexAnimal.label -> 800.0),
+      labelCardinalities = Map(indexPerson.label -> 1000.0, indexAnimal.label -> 800.0),
       indexCardinalities = Map(indexPerson -> 300.0, indexAnimal -> 500.0),
       indexUniqueCardinalities = Map(indexPerson -> 200.0, indexAnimal -> 400.0)))
 
@@ -883,7 +894,10 @@ class ExpressionSelectivityCalculatorTest extends CypherFunSuite with AstConstru
 
     labelResult1.factor should equal(0.1)
     labelResult2.factor should equal(0.08)
-    val resFor1 = Selectivity(0.2 + 0.5 - 0.2 * 0.5)
+
+    val personSel = (300.0 / 1000.0) * (1.0 / 200.0)
+    val animalSel = (500.0 / 800.0) * (1.0 / 400.0)
+    val resFor1 = Selectivity(personSel + animalSel - personSel * animalSel)
     eqResult should equal(IndependenceCombiner.orTogetherSelectivities(for (_ <- 1 to DEFAULT_LIST_CARDINALITY.amount.toInt) yield resFor1).get)
   }
 
@@ -939,7 +953,7 @@ class ExpressionSelectivityCalculatorTest extends CypherFunSuite with AstConstru
   private def mockStats(allNodesCardinality: Double = 10000.0,
                         labelCardinalities: Map[LabelId, Double] = Map(indexPerson.label -> 1000.0),
                         indexCardinalities: Map[IndexDescriptor, Double] = Map(indexPerson -> 200.0),
-                        indexUniqueCardinalities: Map[IndexDescriptor, Double] = Map(indexPerson -> 50.0)): GraphStatistics = {
+                        indexUniqueCardinalities: Map[IndexDescriptor, Double] = Map(indexPerson -> 180.0)): GraphStatistics = {
 
     // sanity check:
     for {
@@ -960,7 +974,7 @@ class ExpressionSelectivityCalculatorTest extends CypherFunSuite with AstConstru
     }
 
     val stats = mock[GraphStatistics]
-    when(stats.nodesAllCardinality()).thenReturn(10000.0)
+    when(stats.nodesAllCardinality()).thenReturn(allNodesCardinality)
     labelCardinalities.foreach { case (label, number) =>
       when(stats.nodesWithLabelCardinality(Some(label))).thenReturn(number)
     }
@@ -980,8 +994,7 @@ class ExpressionSelectivityCalculatorTest extends CypherFunSuite with AstConstru
         val theIndex = invocationOnMock.getArgument[IndexDescriptor](0)
         for {
           indexUniqueCardinality <- indexUniqueCardinalities.get(theIndex)
-          indexCardinality <- indexCardinalities.get(theIndex)
-        } yield Selectivity(indexUniqueCardinality / indexCardinality)
+        } yield Selectivity(1 / indexUniqueCardinality)
       }
     })
 
