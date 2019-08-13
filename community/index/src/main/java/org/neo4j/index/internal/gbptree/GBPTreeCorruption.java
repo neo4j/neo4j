@@ -105,6 +105,12 @@ final class GBPTreeCorruption
         };
     }
 
+    static <KEY, VALUE> PageCorruption<KEY,VALUE> setChild( int childPos, long childPointer )
+    {
+        return ( pagedFile, cursor, layout, node, treeState ) ->
+                node.setChildAt( cursor, childPointer, childPos, treeState.stableGeneration(), treeState.unstableGeneration() );
+    }
+
     static <KEY, VALUE> PageCorruption<KEY,VALUE> hasSuccessor()
     {
         return ( pagedFile, cursor, layout, node, treeState ) -> overwriteGSPP( cursor, BYTE_POS_SUCCESSOR, treeState.unstableGeneration(),

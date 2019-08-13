@@ -52,7 +52,7 @@ public class ThrowingConsistencyCheckVisitor<KEY> implements GBPTreeConsistencyC
     public void siblingsDontPointToEachOther( long leftNode, long leftNodeGeneration, long leftRightSiblingPointerGeneration, long leftRightSiblingPointer,
             long rightNode, long rightNodeGeneration, long rightLeftSiblingPointerGeneration, long rightLeftSiblingPointer )
     {
-        throwTreeStructureInconsistency( "Sibling pointers misaligned." +
+        throwTreeStructureInconsistency( "Sibling pointers misaligned.%n" +
                         "  Left siblings view:  %s%n" +
                         "  Right siblings view: %s%n",
                 leftPattern( leftNode, leftNodeGeneration, leftRightSiblingPointerGeneration, leftRightSiblingPointer ),

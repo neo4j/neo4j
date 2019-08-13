@@ -592,6 +592,26 @@ public class GBPTreeConsistencyCheckerTest
         }
     }
 
+    @Test
+    public void shouldDetectChildPointerPointingTwoLevelsDown() throws IOException
+    {
+        try ( GBPTree<MutableLong,MutableLong> index = index().build() )
+        {
+            treeWithHeightTwo( index );
+
+            InspectingVisitor<MutableLong,MutableLong> visitor = inspect( index );
+            long rootNode = visitor.rootNode;
+            int childCount = visitor.allKeyCounts.get( rootNode ) + 1;
+            int childPos = randomValues.nextInt( childCount );
+            Long targetChildNode = randomValues.among( visitor.leafNodes );
+
+            GBPTreeCorruption.PageCorruption<MutableLong,MutableLong> corruption = GBPTreeCorruption.setChild( childPos, targetChildNode );
+            corrupt( rootNode, corruption, visitor.treeState );
+
+            assertReportCorruptTreeStructure( index );
+        }
+    }
+
     //todo
     //  Tree structure inconsistencies:
     //    > Pointer generation lower than node generation
@@ -611,8 +631,12 @@ public class GBPTreeConsistencyCheckerTest
     //      X Should detect broken GSPP
     //      - Should not report crashed GSPP if allowed
     //    > Level hierarchy
-    //      - Child pointer dont point to next level
-    //      - Sibling pointer point to node on other level
+    //      X Child pointer point two levels down
+    //      - Child pointer point to upper level
+    //      - Child pointer point to same level
+    //      - Child pointer point to child owned by other internal node
+    //      - Sibling pointer point to lower level
+    //      - Sibling pointer point to upper level
     //  Key order inconsistencies:
     //      X Keys out of order in isolated node
     //      X Keys not within parent range
@@ -1053,6 +1077,28 @@ public class GBPTreeConsistencyCheckerTest
                 called.setTrue();
                 assertEquals( targetNode, pageId );
                 assertEquals( targetKeyCount, keyCount );
+            }
+        } );
+        assertCalled( called );
+    }
+
+    private static void assertReportCorruptTreeStructure( GBPTree<MutableLong,MutableLong> index ) throws IOException
+    {
+        MutableBoolean called = new MutableBoolean();
+        index.consistencyCheck( new GBPTreeConsistencyCheckVisitor.Adaptor<MutableLong>()
+        {
+            @Override
+            public void siblingsDontPointToEachOther( long leftNode, long leftNodeGeneration, long leftRightSiblingPointerGeneration,
+                    long leftRightSiblingPointer, long rightNode, long rightNodeGeneration, long rightLeftSiblingPointerGeneration,
+                    long rightLeftSiblingPointer )
+            {
+                called.setTrue();
+            }
+
+            @Override
+            public void keysLocatedInWrongNode( long pageId, KeyRange<MutableLong> range, MutableLong mutableLong, int pos, int keyCount )
+            {
+                called.setTrue();
             }
         } );
         assertCalled( called );
