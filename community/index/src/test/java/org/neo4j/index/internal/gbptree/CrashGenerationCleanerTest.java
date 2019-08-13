@@ -71,7 +71,6 @@ public class CrashGenerationCleanerTest
     private final int oldStableGeneration = 9;
     private final int stableGeneration = 10;
     private final int unstableGeneration = 12;
-    private final int crashGeneration = 11;
     private final List<GBPTreeCorruption.PageCorruption> possibleCorruptionsInInternal = Arrays.asList(
             GBPTreeCorruption.crashed( GBPTreePointerType.leftSibling() ),
             GBPTreeCorruption.crashed( GBPTreePointerType.rightSibling() ),
@@ -162,7 +161,7 @@ public class CrashGenerationCleanerTest
 
         // THEN
         assertPagesVisited( monitor, pages.length );
-        assertCleanedCrashPointers( monitor, 9 );
+        assertCleanedCrashPointers( monitor, 7 );
     }
 
     @Test
@@ -188,7 +187,7 @@ public class CrashGenerationCleanerTest
 
         // THEN
         assertPagesVisited( monitor, pages.length );
-        assertCleanedCrashPointers( monitor, 9 );
+        assertCleanedCrashPointers( monitor, 7 );
     }
 
     @Test
@@ -230,7 +229,7 @@ public class CrashGenerationCleanerTest
             for ( Page page : pages )
             {
                 cursor.next();
-                page.write( pagedFile, cursor, treeNode, layout, stableGeneration, unstableGeneration, crashGeneration );
+                page.write( pagedFile, cursor, treeNode, layout, stableGeneration, unstableGeneration );
             }
         }
     }
@@ -315,12 +314,13 @@ public class CrashGenerationCleanerTest
         }
 
         private void write( PagedFile pagedFile, PageCursor cursor, TreeNode<MutableLong,MutableLong> node, Layout<MutableLong,MutableLong> layout,
-                int stableGeneration, int unstableGeneration, int crashGeneration ) throws IOException
+                int stableGeneration, int unstableGeneration ) throws IOException
         {
             type.write( cursor, node, layout, oldStableGeneration, stableGeneration );
             for ( GBPTreeCorruption.PageCorruption<MutableLong,MutableLong> pc : pageCorruptions )
             {
-                pc.corrupt( pagedFile, cursor, layout, node, stableGeneration, unstableGeneration, crashGeneration );
+                TreeState treeState = new TreeState( 0, stableGeneration, unstableGeneration, 0, 0, 0, 0, 0, 0, 0, true, true );
+                pc.corrupt( pagedFile, cursor, layout, node, treeState );
             }
         }
     }

@@ -102,10 +102,8 @@ public class GBPTreeConsistencyCheckerTest
 
             InspectingVisitor<MutableLong,MutableLong> visitor = inspect( index );
             long rootNode = visitor.rootNode;
-            long stableGeneration = visitor.treeState.stableGeneration();
-            long unstableGeneration = visitor.treeState.unstableGeneration();
 
-            corrupt( rootNode, stableGeneration, unstableGeneration, GBPTreeCorruption.notATreeNode() );
+            corrupt( rootNode, GBPTreeCorruption.notATreeNode(), visitor.treeState );
 
             assertReportNotATreeNode( index, rootNode );
         }
@@ -120,10 +118,8 @@ public class GBPTreeConsistencyCheckerTest
 
             InspectingVisitor<MutableLong,MutableLong> visitor = inspect( index );
             long internalNode = randomValues.among( visitor.internalNodes );
-            long stableGeneration = visitor.treeState.stableGeneration();
-            long unstableGeneration = visitor.treeState.unstableGeneration();
 
-            corrupt( internalNode, stableGeneration, unstableGeneration, GBPTreeCorruption.notATreeNode() );
+            corrupt( internalNode, GBPTreeCorruption.notATreeNode(), visitor.treeState );
 
             assertReportNotATreeNode( index, internalNode );
         }
@@ -138,10 +134,8 @@ public class GBPTreeConsistencyCheckerTest
 
             InspectingVisitor<MutableLong,MutableLong> visitor = inspect( index );
             long leafNode = randomValues.among( visitor.leafNodes );
-            long stableGeneration = visitor.treeState.stableGeneration();
-            long unstableGeneration = visitor.treeState.unstableGeneration();
 
-            corrupt( leafNode, stableGeneration, unstableGeneration, GBPTreeCorruption.notATreeNode() );
+            corrupt( leafNode, GBPTreeCorruption.notATreeNode(), visitor.treeState );
 
             assertReportNotATreeNode( index, leafNode );
         }
@@ -156,10 +150,8 @@ public class GBPTreeConsistencyCheckerTest
 
             InspectingVisitor<MutableLong,MutableLong> visitor = inspect( index );
             long rootNode = visitor.rootNode;
-            long stableGeneration = visitor.treeState.stableGeneration();
-            long unstableGeneration = visitor.treeState.unstableGeneration();
 
-            corrupt( rootNode, stableGeneration, unstableGeneration, GBPTreeCorruption.unknownTreeNodeType() );
+            corrupt( rootNode, GBPTreeCorruption.unknownTreeNodeType(), visitor.treeState );
 
             assertReportUnknownTreeNodeType( index, rootNode );
         }
@@ -174,10 +166,8 @@ public class GBPTreeConsistencyCheckerTest
 
             InspectingVisitor<MutableLong,MutableLong> visitor = inspect( index );
             long internalNode = randomValues.among( visitor.internalNodes );
-            long stableGeneration = visitor.treeState.stableGeneration();
-            long unstableGeneration = visitor.treeState.unstableGeneration();
 
-            corrupt( internalNode, stableGeneration, unstableGeneration, GBPTreeCorruption.unknownTreeNodeType() );
+            corrupt( internalNode, GBPTreeCorruption.unknownTreeNodeType(), visitor.treeState );
 
             assertReportUnknownTreeNodeType( index, internalNode );
         }
@@ -192,10 +182,8 @@ public class GBPTreeConsistencyCheckerTest
 
             InspectingVisitor<MutableLong,MutableLong> visitor = inspect( index );
             long leafNode = randomValues.among( visitor.leafNodes );
-            long stableGeneration = visitor.treeState.stableGeneration();
-            long unstableGeneration = visitor.treeState.unstableGeneration();
 
-            corrupt( leafNode, stableGeneration, unstableGeneration, GBPTreeCorruption.unknownTreeNodeType() );
+            corrupt( leafNode, GBPTreeCorruption.unknownTreeNodeType(), visitor.treeState );
 
             assertReportUnknownTreeNodeType( index, leafNode );
         }
@@ -210,10 +198,8 @@ public class GBPTreeConsistencyCheckerTest
 
             InspectingVisitor<MutableLong,MutableLong> visitor = inspect( index );
             long targetNode = randomValues.among( visitor.leafNodes );
-            long stableGeneration = visitor.treeState.stableGeneration();
-            long unstableGeneration = visitor.treeState.unstableGeneration();
 
-            corrupt( targetNode, stableGeneration, unstableGeneration, GBPTreeCorruption.rightSiblingPointToNonExisting() );
+            corrupt( targetNode, GBPTreeCorruption.rightSiblingPointToNonExisting(), visitor.treeState );
 
             assertReportMisalignedSiblingPointers( index );
         }
@@ -228,10 +214,8 @@ public class GBPTreeConsistencyCheckerTest
 
             InspectingVisitor<MutableLong,MutableLong> visitor = inspect( index );
             long targetNode = randomValues.among( visitor.leafNodes );
-            long stableGeneration = visitor.treeState.stableGeneration();
-            long unstableGeneration = visitor.treeState.unstableGeneration();
 
-            corrupt( targetNode, stableGeneration, unstableGeneration, GBPTreeCorruption.leftSiblingPointToNonExisting() );
+            corrupt( targetNode, GBPTreeCorruption.leftSiblingPointToNonExisting(), visitor.treeState );
 
             assertReportMisalignedSiblingPointers( index );
         }
@@ -246,10 +230,8 @@ public class GBPTreeConsistencyCheckerTest
 
             InspectingVisitor<MutableLong,MutableLong> visitor = inspect( index );
             long targetNode = randomValues.among( visitor.allNodes );
-            long stableGeneration = visitor.treeState.stableGeneration();
-            long unstableGeneration = visitor.treeState.unstableGeneration();
 
-            corrupt( targetNode, stableGeneration, unstableGeneration, GBPTreeCorruption.hasSuccessor() );
+            corrupt( targetNode, GBPTreeCorruption.hasSuccessor(), visitor.treeState );
 
             assertReportPointerToOldVersionOfTreeNode( index, targetNode );
         }
@@ -264,10 +246,8 @@ public class GBPTreeConsistencyCheckerTest
 
             InspectingVisitor<MutableLong,MutableLong> visitor = inspect( index );
             long targetNode = nodeWithRightSibling( visitor );
-            long stableGeneration = visitor.treeState.stableGeneration();
-            long unstableGeneration = visitor.treeState.unstableGeneration();
 
-            corrupt( targetNode, stableGeneration, unstableGeneration, GBPTreeCorruption.rightSiblingPointerHasTooLowGeneration() );
+            corrupt( targetNode, GBPTreeCorruption.rightSiblingPointerHasTooLowGeneration(), visitor.treeState );
 
             assertReportPointerGenerationLowerThanNodeGeneration( index, targetNode, GBPTreePointerType.rightSibling() );
         }
@@ -282,10 +262,8 @@ public class GBPTreeConsistencyCheckerTest
 
             InspectingVisitor<MutableLong,MutableLong> visitor = inspect( index );
             long targetNode = nodeWithLeftSibling( visitor );
-            long stableGeneration = visitor.treeState.stableGeneration();
-            long unstableGeneration = visitor.treeState.unstableGeneration();
 
-            corrupt( targetNode, stableGeneration, unstableGeneration, GBPTreeCorruption.leftSiblingPointerHasTooLowGeneration() );
+            corrupt( targetNode, GBPTreeCorruption.leftSiblingPointerHasTooLowGeneration(), visitor.treeState );
 
             assertReportPointerGenerationLowerThanNodeGeneration( index, targetNode, GBPTreePointerType.leftSibling() );
         }
@@ -302,10 +280,8 @@ public class GBPTreeConsistencyCheckerTest
             long targetNode = randomValues.among( visitor.internalNodes );
             int keyCount = visitor.allKeyCounts.get( targetNode );
             int childPos = randomValues.nextInt( keyCount + 1 );
-            long stableGeneration = visitor.treeState.stableGeneration();
-            long unstableGeneration = visitor.treeState.unstableGeneration();
 
-            corrupt( targetNode, stableGeneration, unstableGeneration, GBPTreeCorruption.childPointerHasTooLowGeneration( childPos ) );
+            corrupt( targetNode, GBPTreeCorruption.childPointerHasTooLowGeneration( childPos ), visitor.treeState );
 
             assertReportPointerGenerationLowerThanNodeGeneration( index, targetNode, GBPTreePointerType.child( childPos ) );
         }
@@ -324,13 +300,11 @@ public class GBPTreeConsistencyCheckerTest
             int firstKey = randomValues.nextInt( keyCount );
             int secondKey = nextRandomIntExcluding( keyCount, firstKey );
             boolean isLeaf = visitor.leafNodes.contains( targetNode );
-            long stableGeneration = visitor.treeState.stableGeneration();
-            long unstableGeneration = visitor.treeState.unstableGeneration();
 
             GBPTreeCorruption.PageCorruption<MutableLong,MutableLong> swapKeyOrder = isLeaf ?
                                                                            GBPTreeCorruption.swapKeyOrderLeaf( firstKey, secondKey, keyCount ) :
                                                                            GBPTreeCorruption.swapKeyOrderInternal( firstKey, secondKey, keyCount );
-            corrupt( targetNode, stableGeneration, unstableGeneration, swapKeyOrder );
+            corrupt( targetNode, swapKeyOrder, visitor.treeState );
 
             assertReportKeysOutOfOrderInNode( index, targetNode );
         }
@@ -349,13 +323,11 @@ public class GBPTreeConsistencyCheckerTest
             int keyPos = randomValues.nextInt( keyCount );
             MutableLong key = new MutableLong( Long.MIN_VALUE );
             boolean isLeaf = visitor.leafNodes.contains( targetNode );
-            long stableGeneration = visitor.treeState.stableGeneration();
-            long unstableGeneration = visitor.treeState.unstableGeneration();
 
             GBPTreeCorruption.PageCorruption<MutableLong,MutableLong> swapKeyOrder = isLeaf ?
                                                                                      GBPTreeCorruption.overwriteKeyAtPosLeaf( key, keyPos, keyCount ) :
                                                                                      GBPTreeCorruption.overwriteKeyAtPosInternal( key, keyPos, keyCount );
-            corrupt( targetNode, stableGeneration, unstableGeneration, swapKeyOrder );
+            corrupt( targetNode, swapKeyOrder, visitor.treeState );
 
             assertReportKeysLocatedInWrongNode( index, targetNode );
         }
@@ -374,13 +346,11 @@ public class GBPTreeConsistencyCheckerTest
             int keyPos = randomValues.nextInt( keyCount );
             MutableLong key = new MutableLong( Long.MAX_VALUE );
             boolean isLeaf = visitor.leafNodes.contains( targetNode );
-            long stableGeneration = visitor.treeState.stableGeneration();
-            long unstableGeneration = visitor.treeState.unstableGeneration();
 
             GBPTreeCorruption.PageCorruption<MutableLong,MutableLong> swapKeyOrder = isLeaf ?
                                                                                      GBPTreeCorruption.overwriteKeyAtPosLeaf( key, keyPos, keyCount ) :
                                                                                      GBPTreeCorruption.overwriteKeyAtPosInternal( key, keyPos, keyCount );
-            corrupt( targetNode, stableGeneration, unstableGeneration, swapKeyOrder );
+            corrupt( targetNode, swapKeyOrder, visitor.treeState );
 
             assertReportKeysLocatedInWrongNode( index, targetNode );
         }
@@ -395,11 +365,9 @@ public class GBPTreeConsistencyCheckerTest
 
             InspectingVisitor<RawBytes,RawBytes> visitor = inspect( index );
             long targetNode = randomValues.among( visitor.allNodes );
-            long stableGeneration = visitor.treeState.stableGeneration();
-            long unstableGeneration = visitor.treeState.unstableGeneration();
 
             GBPTreeCorruption.PageCorruption<RawBytes,RawBytes> corruption = GBPTreeCorruption.maximizeAllocOffsetInDynamicNode();
-            corrupt( targetNode, stableGeneration, unstableGeneration, corruption, dynamicLayout, dynamicNode );
+            corrupt( targetNode, corruption, visitor.treeState , dynamicLayout, dynamicNode );
 
             assertReportAllocSpaceOverlapActiveKeys( index, targetNode );
         }
@@ -414,11 +382,9 @@ public class GBPTreeConsistencyCheckerTest
 
             InspectingVisitor<RawBytes,RawBytes> visitor = inspect( index );
             long targetNode = randomValues.among( visitor.allNodes );
-            long stableGeneration = visitor.treeState.stableGeneration();
-            long unstableGeneration = visitor.treeState.unstableGeneration();
 
             GBPTreeCorruption.PageCorruption<RawBytes,RawBytes> corruption = GBPTreeCorruption.minimizeAllocOffsetInDynamicNode();
-            corrupt( targetNode, stableGeneration, unstableGeneration, corruption, dynamicLayout, dynamicNode );
+            corrupt( targetNode, corruption, visitor.treeState , dynamicLayout, dynamicNode );
 
             assertReportAllocSpaceOverlapOffsetArray( index, targetNode );
         }
@@ -433,11 +399,9 @@ public class GBPTreeConsistencyCheckerTest
 
             InspectingVisitor<RawBytes,RawBytes> visitor = inspect( index );
             long targetNode = randomValues.among( visitor.allNodes );
-            long stableGeneration = visitor.treeState.stableGeneration();
-            long unstableGeneration = visitor.treeState.unstableGeneration();
 
             GBPTreeCorruption.PageCorruption<RawBytes,RawBytes> corruption = GBPTreeCorruption.incrementDeadSpaceInDynamicNode();
-            corrupt( targetNode, stableGeneration, unstableGeneration, corruption, dynamicLayout, dynamicNode );
+            corrupt( targetNode, corruption, visitor.treeState, dynamicLayout, dynamicNode );
 
             assertReportSpaceAreasNotSummingToTotalSpace( index, targetNode );
         }
@@ -452,11 +416,9 @@ public class GBPTreeConsistencyCheckerTest
 
             InspectingVisitor<RawBytes,RawBytes> visitor = inspect( index );
             long targetNode = randomValues.among( visitor.allNodes );
-            long stableGeneration = visitor.treeState.stableGeneration();
-            long unstableGeneration = visitor.treeState.unstableGeneration();
 
             GBPTreeCorruption.PageCorruption<RawBytes,RawBytes> corruption = GBPTreeCorruption.decrementAllocOffsetInDynamicNode();
-            corrupt( targetNode, stableGeneration, unstableGeneration, corruption, dynamicLayout, dynamicNode );
+            corrupt( targetNode, corruption, visitor.treeState, dynamicLayout, dynamicNode );
 
             assertReportAllocOffsetMisplaced( index, targetNode );
         }
@@ -493,12 +455,10 @@ public class GBPTreeConsistencyCheckerTest
             int lastIndex = visitor.allFreelistEntries.size() - 1;
             InspectingVisitor<MutableLong,MutableLong>.FreelistEntry lastFreelistEntry = visitor.allFreelistEntries.get( lastIndex );
             TreeState treeState = visitor.treeState;
-            long stableGeneration = treeState.stableGeneration();
-            long unstableGeneration = treeState.unstableGeneration();
             targetMissingId = lastFreelistEntry.id;
 
-            GBPTreeCorruption.PageCorruption<RawBytes,RawBytes> corruption = GBPTreeCorruption.decrementFreelistWritePos( treeState );
-            corrupt( treeState.pageId(), stableGeneration, unstableGeneration, corruption, dynamicLayout, dynamicNode );
+            GBPTreeCorruption.PageCorruption<RawBytes,RawBytes> corruption = GBPTreeCorruption.decrementFreelistWritePos();
+            corrupt( treeState.pageId(), corruption, treeState, dynamicLayout, dynamicNode );
         }
 
         // Need to restart tree to reload corrupted freelist
@@ -533,11 +493,9 @@ public class GBPTreeConsistencyCheckerTest
             InspectingVisitor<MutableLong,MutableLong> visitor = inspect( index );
             targetNode = randomValues.among( visitor.allNodes );
             TreeState treeState = visitor.treeState;
-            long stableGeneration = treeState.stableGeneration();
-            long unstableGeneration = treeState.unstableGeneration();
 
-            GBPTreeCorruption.PageCorruption<RawBytes,RawBytes> corruption = GBPTreeCorruption.addFreelistEntry( treeState, targetNode );
-            corrupt( treeState.pageId(), stableGeneration, unstableGeneration, corruption, dynamicLayout, dynamicNode );
+            GBPTreeCorruption.PageCorruption<RawBytes,RawBytes> corruption = GBPTreeCorruption.addFreelistEntry( targetNode );
+            corrupt( treeState.pageId(), corruption, treeState , dynamicLayout, dynamicNode );
         }
 
         // Need to restart tree to reload corrupted freelist
@@ -616,20 +574,19 @@ public class GBPTreeConsistencyCheckerTest
         }
     }
 
-    private void corrupt( long targetNode, long stableGeneration, long unstableGeneration,
-            GBPTreeCorruption.PageCorruption<MutableLong,MutableLong> corruption ) throws IOException
+    private void corrupt( long targetNode, GBPTreeCorruption.PageCorruption<MutableLong,MutableLong> corruption, TreeState treeState ) throws IOException
     {
-        corrupt( targetNode, stableGeneration, unstableGeneration, corruption, layout, node );
+        corrupt( targetNode, corruption, treeState, layout, node );
     }
 
-    private <KEY, VALUE> void corrupt( long targetNode, long stableGeneration, long unstableGeneration,
-            GBPTreeCorruption.PageCorruption<KEY,VALUE> corruption, Layout<KEY,VALUE> layout, TreeNode<KEY,VALUE> node ) throws IOException
+    private <KEY, VALUE> void corrupt( long targetNode, GBPTreeCorruption.PageCorruption<KEY,VALUE> corruption, TreeState treeState, Layout<KEY,VALUE> layout,
+            TreeNode<KEY,VALUE> node ) throws IOException
     {
         try ( PagedFile pagedFile = pageCache.map( indexFile, pageCache.pageSize() );
               PageCursor cursor = pagedFile.io( 0, PagedFile.PF_SHARED_WRITE_LOCK ) )
         {
             cursor.next( targetNode );
-            corruption.corrupt( pagedFile, cursor, layout, node, stableGeneration, unstableGeneration, unstableGeneration - 1 );
+            corruption.corrupt( pagedFile, cursor, layout, node, treeState );
         }
     }
 
