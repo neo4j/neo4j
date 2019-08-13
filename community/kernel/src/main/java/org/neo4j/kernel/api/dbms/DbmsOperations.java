@@ -22,6 +22,7 @@ package org.neo4j.kernel.api.dbms;
 import org.neo4j.collection.RawIterator;
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
+import org.neo4j.internal.kernel.api.procs.ProcedureCallContext;
 import org.neo4j.internal.kernel.api.procs.QualifiedName;
 import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.api.ResourceTracker;
@@ -35,9 +36,9 @@ public interface DbmsOperations
 {
     /** Invoke a DBMS procedure by name */
     RawIterator<Object[],ProcedureException> procedureCallDbms( QualifiedName name, Object[] input, DependencyResolver dependencyResolver,
-            SecurityContext securityContext, ResourceTracker resourceTracker ) throws ProcedureException;
+            SecurityContext securityContext, ResourceTracker resourceTracker, ProcedureCallContext context ) throws ProcedureException;
 
     /** Invoke a DBMS procedure by id */
     RawIterator<Object[],ProcedureException> procedureCallDbms( int id, Object[] input, DependencyResolver dependencyResolver, SecurityContext securityContext,
-            ResourceTracker resourceTracker ) throws ProcedureException;
+            ResourceTracker resourceTracker, ProcedureCallContext context ) throws ProcedureException;
 }

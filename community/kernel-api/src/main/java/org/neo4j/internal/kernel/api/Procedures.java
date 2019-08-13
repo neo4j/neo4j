@@ -23,6 +23,7 @@ import java.util.Set;
 
 import org.neo4j.collection.RawIterator;
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
+import org.neo4j.internal.kernel.api.procs.ProcedureCallContext;
 import org.neo4j.internal.kernel.api.procs.ProcedureHandle;
 import org.neo4j.internal.kernel.api.procs.ProcedureSignature;
 import org.neo4j.internal.kernel.api.procs.QualifiedName;
@@ -67,10 +68,11 @@ public interface Procedures
      * Invoke a read-only procedure by id.
      * @param id the id of the procedure.
      * @param arguments the procedure arguments.
+     * @param context the procedure call context.
      * @return an iterator containing the procedure results.
      * @throws ProcedureException if there was an exception thrown during procedure execution.
      */
-    RawIterator<Object[], ProcedureException> procedureCallRead( int id, Object[] arguments )
+    RawIterator<Object[], ProcedureException> procedureCallRead( int id, Object[] arguments, ProcedureCallContext context )
             throws ProcedureException;
 
     /**
@@ -78,60 +80,66 @@ public interface Procedures
      * {@link AccessMode.Static#READ READ} for the duration of the procedure execution.
      * @param id the id of the procedure.
      * @param arguments the procedure arguments.
+     * @param context the procedure call context.
      * @return an iterator containing the procedure results.
      * @throws ProcedureException if there was an exception thrown during procedure execution.
      */
-    RawIterator<Object[], ProcedureException> procedureCallReadOverride( int id, Object[] arguments )
+    RawIterator<Object[], ProcedureException> procedureCallReadOverride( int id, Object[] arguments, ProcedureCallContext context )
             throws ProcedureException;
 
     /**
      * Invoke a read/write procedure by id.
      * @param id the id of the procedure.
      * @param arguments the procedure arguments.
+     * @param context the procedure call context.
      * @return an iterator containing the procedure results.
      * @throws ProcedureException if there was an exception thrown during procedure execution.
      */
-    RawIterator<Object[], ProcedureException> procedureCallWrite( int id, Object[] arguments )
+    RawIterator<Object[], ProcedureException> procedureCallWrite( int id, Object[] arguments, ProcedureCallContext context )
             throws ProcedureException;
     /**
      * Invoke a read/write procedure by id, and set the transaction's access mode to
      * {@link AccessMode.Static#WRITE WRITE} for the duration of the procedure execution.
      * @param id the id of the procedure.
      * @param arguments the procedure arguments.
+     * @param context the procedure call context.
      * @return an iterator containing the procedure results.
      * @throws ProcedureException if there was an exception thrown during procedure execution.
      */
-    RawIterator<Object[], ProcedureException> procedureCallWriteOverride( int id, Object[] arguments )
+    RawIterator<Object[], ProcedureException> procedureCallWriteOverride( int id, Object[] arguments, ProcedureCallContext context )
             throws ProcedureException;
 
     /**
      * Invoke a schema write procedure by id.
      * @param id the id of the procedure.
      * @param arguments the procedure arguments.
+     * @param context the procedure call context.
      * @return an iterator containing the procedure results.
      * @throws ProcedureException if there was an exception thrown during procedure execution.
      */
-    RawIterator<Object[], ProcedureException> procedureCallSchema( int id, Object[] arguments )
+    RawIterator<Object[], ProcedureException> procedureCallSchema( int id, Object[] arguments, ProcedureCallContext context )
             throws ProcedureException;
     /**
      * Invoke a schema write procedure by id, and set the transaction's access mode to
      * {@link AccessMode.Static#FULL FULL} for the duration of the procedure execution.
      * @param id the id of the procedure.
      * @param arguments the procedure arguments.
+     * @param context the procedure call context.
      * @return an iterator containing the procedure results.
      * @throws ProcedureException if there was an exception thrown during procedure execution.
      */
-    RawIterator<Object[], ProcedureException> procedureCallSchemaOverride( int id, Object[] arguments )
+    RawIterator<Object[], ProcedureException> procedureCallSchemaOverride( int id, Object[] arguments, ProcedureCallContext context )
             throws ProcedureException;
 
     /**
      * Invoke a read-only procedure by name.
      * @param name the name of the procedure.
      * @param arguments the procedure arguments.
+     * @param context the procedure call context.
      * @return an iterator containing the procedure results.
      * @throws ProcedureException if there was an exception thrown during procedure execution.
      */
-    RawIterator<Object[], ProcedureException> procedureCallRead( QualifiedName name, Object[] arguments )
+    RawIterator<Object[], ProcedureException> procedureCallRead( QualifiedName name, Object[] arguments, ProcedureCallContext context )
             throws ProcedureException;
 
     /**
@@ -139,50 +147,55 @@ public interface Procedures
      * {@link AccessMode.Static#READ READ} for the duration of the procedure execution.
      * @param name the name of the procedure.
      * @param arguments the procedure arguments.
+     * @param context the procedure call context.
      * @return an iterator containing the procedure results.
      * @throws ProcedureException if there was an exception thrown during procedure execution.
      */
-    RawIterator<Object[], ProcedureException> procedureCallReadOverride( QualifiedName name, Object[] arguments )
+    RawIterator<Object[], ProcedureException> procedureCallReadOverride( QualifiedName name, Object[] arguments, ProcedureCallContext context )
             throws ProcedureException;
 
     /**
      * Invoke a read/write procedure by name.
      * @param name the name of the procedure.
      * @param arguments the procedure arguments.
+     * @param context the procedure call context.
      * @return an iterator containing the procedure results.
      * @throws ProcedureException if there was an exception thrown during procedure execution.
      */
-    RawIterator<Object[], ProcedureException> procedureCallWrite( QualifiedName name, Object[] arguments )
+    RawIterator<Object[], ProcedureException> procedureCallWrite( QualifiedName name, Object[] arguments, ProcedureCallContext context )
             throws ProcedureException;
     /**
      * Invoke a read/write procedure by name, and set the transaction's access mode to
      * {@link AccessMode.Static#WRITE WRITE} for the duration of the procedure execution.
      * @param name the name of the procedure.
      * @param arguments the procedure arguments.
+     * @param context the procedure call context.
      * @return an iterator containing the procedure results.
      * @throws ProcedureException if there was an exception thrown during procedure execution.
      */
-    RawIterator<Object[], ProcedureException> procedureCallWriteOverride( QualifiedName name, Object[] arguments )
+    RawIterator<Object[], ProcedureException> procedureCallWriteOverride( QualifiedName name, Object[] arguments, ProcedureCallContext context )
             throws ProcedureException;
 
     /**
      * Invoke a schema write procedure by name.
      * @param name the name of the procedure.
      * @param arguments the procedure arguments.
+     * @param context the procedure call context.
      * @return an iterator containing the procedure results.
      * @throws ProcedureException if there was an exception thrown during procedure execution.
      */
-    RawIterator<Object[], ProcedureException> procedureCallSchema( QualifiedName name, Object[] arguments )
+    RawIterator<Object[], ProcedureException> procedureCallSchema( QualifiedName name, Object[] arguments, ProcedureCallContext context )
             throws ProcedureException;
     /**
      * Invoke a schema write procedure by name, and set the transaction's access mode to
      * {@link AccessMode.Static#FULL FULL} for the duration of the procedure execution.
      * @param name the name of the procedure.
      * @param arguments the procedure arguments.
+     * @param context the procedure call context.
      * @return an iterator containing the procedure results.
      * @throws ProcedureException if there was an exception thrown during procedure execution.
      */
-    RawIterator<Object[], ProcedureException> procedureCallSchemaOverride( QualifiedName name, Object[] arguments )
+    RawIterator<Object[], ProcedureException> procedureCallSchemaOverride( QualifiedName name, Object[] arguments, ProcedureCallContext context )
             throws ProcedureException;
 
     /** Invoke a read-only function by id

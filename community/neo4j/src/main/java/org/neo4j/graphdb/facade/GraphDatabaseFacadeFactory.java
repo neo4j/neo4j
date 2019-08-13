@@ -30,7 +30,6 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
-import org.neo4j.internal.DataCollectorManager;
 import org.neo4j.graphdb.factory.module.DataSourceModule;
 import org.neo4j.graphdb.factory.module.PlatformModule;
 import org.neo4j.graphdb.factory.module.edition.AbstractEditionModule;
@@ -38,7 +37,9 @@ import org.neo4j.graphdb.security.URLAccessRule;
 import org.neo4j.graphdb.spatial.Geometry;
 import org.neo4j.graphdb.spatial.Point;
 import org.neo4j.helpers.collection.Pair;
+import org.neo4j.internal.DataCollectorManager;
 import org.neo4j.internal.kernel.api.exceptions.KernelException;
+import org.neo4j.internal.kernel.api.procs.ProcedureCallContext;
 import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.security.provider.SecurityProvider;
@@ -75,6 +76,7 @@ import static org.neo4j.internal.kernel.api.procs.Neo4jTypes.NTRelationship;
 import static org.neo4j.kernel.api.proc.Context.DATABASE_API;
 import static org.neo4j.kernel.api.proc.Context.DEPENDENCY_RESOLVER;
 import static org.neo4j.kernel.api.proc.Context.KERNEL_TRANSACTION;
+import static org.neo4j.kernel.api.proc.Context.PROCEDURE_CALL_CONTEXT;
 import static org.neo4j.kernel.api.proc.Context.SECURITY_CONTEXT;
 
 /**
@@ -299,6 +301,8 @@ public class GraphDatabaseFacadeFactory
 
         // Security procedures
         procedures.registerComponent( SecurityContext.class, ctx -> ctx.get( SECURITY_CONTEXT ), true );
+
+        procedures.registerComponent( ProcedureCallContext.class, ctx -> ctx.get( PROCEDURE_CALL_CONTEXT), true );
 
         // Edition procedures
         try

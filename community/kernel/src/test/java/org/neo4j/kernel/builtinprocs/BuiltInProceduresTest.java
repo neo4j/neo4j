@@ -46,6 +46,7 @@ import org.neo4j.internal.kernel.api.SchemaReadCore;
 import org.neo4j.internal.kernel.api.TokenRead;
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
+import org.neo4j.internal.kernel.api.procs.ProcedureCallContext;
 import org.neo4j.internal.kernel.api.procs.ProcedureSignature;
 import org.neo4j.internal.kernel.api.schema.IndexProviderDescriptor;
 import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
@@ -91,6 +92,7 @@ import static org.neo4j.kernel.api.schema.SchemaDescriptorFactory.forLabel;
 public class BuiltInProceduresTest
 {
     private static final Key<DependencyResolver> DEPENDENCY_RESOLVER = key( "DependencyResolver", DependencyResolver.class );
+    private static final Key<ProcedureCallContext> CALL_CONTEXT = key( "ProcedureCallContext", ProcedureCallContext.class );
     private static final Key<GraphDatabaseAPI> GRAPHDATABASEAPI = key( "GraphDatabaseAPI", GraphDatabaseAPI.class );
     private static final Key<Log> LOG = key( "Log", Log.class );
 
@@ -108,6 +110,7 @@ public class BuiltInProceduresTest
     private final Statement statement = mock( Statement.class );
     private final KernelTransaction tx = mock( KernelTransaction.class );
     private final DependencyResolver resolver = mock( DependencyResolver.class );
+    private final ProcedureCallContext callContext = mock( ProcedureCallContext.class );
     private final GraphDatabaseAPI graphDatabaseAPI = mock( GraphDatabaseAPI.class );
     private final IndexingService indexingService = mock( IndexingService.class );
     private final Log log = mock( Log.class );
@@ -122,6 +125,7 @@ public class BuiltInProceduresTest
         procs.registerComponent( DependencyResolver.class, ctx -> ctx.get( DEPENDENCY_RESOLVER ), false );
         procs.registerComponent( GraphDatabaseAPI.class, ctx -> ctx.get( GRAPHDATABASEAPI ), false );
         procs.registerComponent( SecurityContext.class, ctx -> ctx.get( SECURITY_CONTEXT ), true );
+        procs.registerComponent( ProcedureCallContext.class, ctx -> ctx.get(CALL_CONTEXT), true );
 
         procs.registerComponent( Log.class, ctx -> ctx.get( LOG), false );
         procs.registerType( Node.class, NTNode );
@@ -137,6 +141,7 @@ public class BuiltInProceduresTest
         when( tx.dataRead() ).thenReturn( read );
         when( tx.schemaRead() ).thenReturn( schemaRead );
         when( schemaRead.snapshot() ).thenReturn( schemaReadCore );
+        when( callContext.isCalledFromCypher() ).thenReturn( false );
 
         when( tokens.propertyKeyGetAllTokens() ).thenAnswer( asTokens( propKeys ) );
         when( tokens.labelsGetAllTokens() ).thenAnswer( asTokens( labels ) );
@@ -617,6 +622,7 @@ public class BuiltInProceduresTest
         ctx.put( DEPENDENCY_RESOLVER, resolver );
         ctx.put( GRAPHDATABASEAPI, graphDatabaseAPI );
         ctx.put( SECURITY_CONTEXT, SecurityContext.AUTH_DISABLED );
+        ctx.put( CALL_CONTEXT, callContext );
         ctx.put( LOG, log );
         when( graphDatabaseAPI.getDependencyResolver() ).thenReturn( resolver );
         when( resolver.resolveDependency( Procedures.class ) ).thenReturn( procs );

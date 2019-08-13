@@ -23,7 +23,7 @@ import org.neo4j.collection.RawIterator
 import org.neo4j.cypher.internal.runtime.UserDefinedAggregator
 import org.neo4j.cypher.internal.v3_5.logical.plans.QualifiedName
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException
-import org.neo4j.internal.kernel.api.procs.{UserAggregator, QualifiedName => KernelQualifiedName}
+import org.neo4j.internal.kernel.api.procs.{ProcedureCallContext, UserAggregator, QualifiedName => KernelQualifiedName}
 import org.neo4j.kernel.impl.query.TransactionalContext
 import org.neo4j.values.AnyValue
 
@@ -54,81 +54,82 @@ object CallSupport {
   }
 
   def callReadOnlyProcedure(transactionalContext: TransactionalContext, id: Int, args: Seq[Any],
-                            allowed: Array[String]): Iterator[Array[AnyRef]] = {
+                            allowed: Array[String], context: ProcedureCallContext): Iterator[Array[AnyRef]] = {
     val call: KernelProcedureCall =
       if (shouldElevate(transactionalContext, allowed))
-        transactionalContext.kernelTransaction.procedures().procedureCallReadOverride(id, _)
+        transactionalContext.kernelTransaction.procedures().procedureCallReadOverride(id, _, context)
       else
-        transactionalContext.kernelTransaction.procedures().procedureCallRead(id, _)
+        transactionalContext.kernelTransaction.procedures().procedureCallRead(id, _, context)
 
     callProcedure(args, call)
   }
 
   def callReadWriteProcedure(transactionalContext: TransactionalContext, id: Int, args: Seq[Any],
-                             allowed: Array[String]): Iterator[Array[AnyRef]] = {
+                             allowed: Array[String], context: ProcedureCallContext): Iterator[Array[AnyRef]] = {
     val call: KernelProcedureCall =
       if (shouldElevate(transactionalContext, allowed))
-        transactionalContext.kernelTransaction().procedures().procedureCallWriteOverride(id, _)
+        transactionalContext.kernelTransaction().procedures().procedureCallWriteOverride(id, _, context)
       else
-        transactionalContext.kernelTransaction().procedures().procedureCallWrite(id, _)
+        transactionalContext.kernelTransaction().procedures().procedureCallWrite(id, _, context)
     callProcedure(args, call)
   }
 
   def callSchemaWriteProcedure(transactionalContext: TransactionalContext, id: Int, args: Seq[Any],
-                               allowed: Array[String]): Iterator[Array[AnyRef]] = {
+                               allowed: Array[String], context: ProcedureCallContext): Iterator[Array[AnyRef]] = {
     val call: KernelProcedureCall =
       if (shouldElevate(transactionalContext, allowed))
-        transactionalContext.kernelTransaction().procedures().procedureCallSchemaOverride(id, _)
+        transactionalContext.kernelTransaction().procedures().procedureCallSchemaOverride(id, _, context)
       else
-        transactionalContext.kernelTransaction().procedures().procedureCallSchema(id, _)
+        transactionalContext.kernelTransaction().procedures().procedureCallSchema(id, _, context)
     callProcedure(args, call)
   }
 
-  def callDbmsProcedure(transactionalContext: TransactionalContext, id: Int, args: Seq[Any], allowed: Array[String]): Iterator[Array[AnyRef]] =
+  def callDbmsProcedure(transactionalContext: TransactionalContext, id: Int, args: Seq[Any], allowed: Array[String], context: ProcedureCallContext): Iterator[Array[AnyRef]] =
     callProcedure(args,
                   transactionalContext.dbmsOperations.procedureCallDbms(id,
                                                                         _,
                                                                         transactionalContext.graph
                                                                           .getDependencyResolver,
                                                                         transactionalContext.securityContext,
-                                                                        transactionalContext.resourceTracker))
+                                                                        transactionalContext.resourceTracker,
+                                                                        context))
 
   def callReadOnlyProcedure(transactionalContext: TransactionalContext, name: QualifiedName, args: Seq[Any],
-                            allowed: Array[String]): Iterator[Array[AnyRef]] = {
+                            allowed: Array[String], context: ProcedureCallContext): Iterator[Array[AnyRef]] = {
     val kn = new KernelQualifiedName(name.namespace.asJava, name.name)
     val call: KernelProcedureCall =
       if (shouldElevate(transactionalContext, allowed))
-        transactionalContext.kernelTransaction().procedures().procedureCallReadOverride(kn, _)
+        transactionalContext.kernelTransaction().procedures().procedureCallReadOverride(kn, _, context)
       else
-        transactionalContext.kernelTransaction().procedures().procedureCallRead(kn, _)
+        transactionalContext.kernelTransaction().procedures().procedureCallRead(kn, _, context)
 
     callProcedure(args, call)
   }
 
   def callReadWriteProcedure(transactionalContext: TransactionalContext, name: QualifiedName, args: Seq[Any],
-                             allowed: Array[String]): Iterator[Array[AnyRef]] = {
+                             allowed: Array[String], context: ProcedureCallContext): Iterator[Array[AnyRef]] = {
     val kn = new KernelQualifiedName(name.namespace.asJava, name.name)
     val call: KernelProcedureCall =
       if (shouldElevate(transactionalContext, allowed))
-        transactionalContext.kernelTransaction().procedures().procedureCallWriteOverride(kn, _)
+        transactionalContext.kernelTransaction().procedures().procedureCallWriteOverride(kn, _, context)
       else
-        transactionalContext.kernelTransaction().procedures().procedureCallWrite(kn, _)
+        transactionalContext.kernelTransaction().procedures().procedureCallWrite(kn, _, context)
     callProcedure(args, call)
   }
 
   def callSchemaWriteProcedure(transactionalContext: TransactionalContext, name: QualifiedName, args: Seq[Any],
-                               allowed: Array[String]): Iterator[Array[AnyRef]] = {
+                               allowed: Array[String], context: ProcedureCallContext): Iterator[Array[AnyRef]] = {
     val kn = new KernelQualifiedName(name.namespace.asJava, name.name)
     val call: KernelProcedureCall =
       if (shouldElevate(transactionalContext: TransactionalContext, allowed))
-        transactionalContext.kernelTransaction().procedures().procedureCallSchemaOverride(kn, _)
+        transactionalContext.kernelTransaction().procedures().procedureCallSchemaOverride(kn, _, context)
       else
-        transactionalContext.kernelTransaction().procedures().procedureCallSchema(kn, _)
+        transactionalContext.kernelTransaction().procedures().procedureCallSchema(kn, _, context)
     callProcedure(args, call)
   }
 
   def callDbmsProcedure(transactionalContext: TransactionalContext, name: QualifiedName, args: Seq[Any],
-                        allowed: Array[String]): Iterator[Array[AnyRef]] = {
+                        allowed: Array[String], context: ProcedureCallContext): Iterator[Array[AnyRef]] = {
     val kn = new KernelQualifiedName(name.namespace.asJava, name.name)
     callProcedure(args,
                   transactionalContext.dbmsOperations.procedureCallDbms(kn,
@@ -136,7 +137,8 @@ object CallSupport {
                                                                         transactionalContext.graph
                                                                           .getDependencyResolver,
                                                                         transactionalContext.securityContext,
-                                                                        transactionalContext.resourceTracker))
+                                                                        transactionalContext.resourceTracker,
+                                                                        context))
   }
 
   def aggregateFunction(transactionalContext: TransactionalContext, id: Int, allowed: Array[String]): UserDefinedAggregator = {

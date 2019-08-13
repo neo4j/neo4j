@@ -29,6 +29,7 @@ import org.neo4j.collection.RawIterator;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
 import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
+import org.neo4j.internal.kernel.api.procs.ProcedureCallContext;
 import org.neo4j.internal.kernel.api.procs.ProcedureSignature;
 import org.neo4j.internal.kernel.api.procs.QualifiedName;
 import org.neo4j.kernel.api.ResourceTracker;
@@ -127,7 +128,7 @@ public class ProceduresKernelIT extends KernelIntegrationTest
         RawIterator<Object[],ProcedureException> found = procs()
                 .procedureCallRead(
                         procs().procedureGet( new QualifiedName( new String[]{"example"}, "exampleProc" ) ).id(),
-                        new Object[]{1337} );
+                        new Object[]{1337}, ProcedureCallContext.EMPTY );
 
         // Then
         assertThat( asList( found ), contains( equalTo( new Object[]{1337} ) ) );
@@ -151,7 +152,7 @@ public class ProceduresKernelIT extends KernelIntegrationTest
 
         // When
         RawIterator<Object[],ProcedureException> stream =
-                procs().procedureCallRead( procs().procedureGet( signature.name() ).id(), new Object[]{""} );
+                procs().procedureCallRead( procs().procedureGet( signature.name() ).id(), new Object[]{""}, ProcedureCallContext.EMPTY );
 
         // Then
         assertNotNull( asList( stream  ).get( 0 )[0] );

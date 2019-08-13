@@ -19,10 +19,10 @@
  */
 package org.neo4j.cypher.internal.v3_5.logical.plans
 
-import org.neo4j.cypher.internal.v3_5.util.symbols.CypherType
 import org.neo4j.cypher.internal.ir.v3_5._
-import org.neo4j.cypher.internal.v3_5.util.attribution.IdGen
 import org.neo4j.cypher.internal.v3_5.expressions._
+import org.neo4j.cypher.internal.v3_5.util.attribution.IdGen
+import org.neo4j.cypher.internal.v3_5.util.symbols.CypherType
 
 abstract class ProceduralLogicalPlan(idGen: IdGen) extends LogicalPlan(idGen) {
   override def lhs: Option[LogicalPlan] = None
@@ -38,7 +38,7 @@ abstract class ProceduralLogicalPlan(idGen: IdGen) extends LogicalPlan(idGen) {
 case class StandAloneProcedureCall(signature: ProcedureSignature,
                                    args: Seq[Expression],
                                    types: Seq[(String, CypherType)],
-                                   callResultIndices: Seq[(Int, String)])(implicit idGen: IdGen) extends ProceduralLogicalPlan(idGen)
+                                   callResultIndices: Seq[(Int, (String, String))])(implicit idGen: IdGen) extends ProceduralLogicalPlan(idGen)
 
 case class CreateNodeKeyConstraint(node: String, label: LabelName, props: Seq[Property])(implicit idGen: IdGen) extends ProceduralLogicalPlan(idGen)
 case class DropNodeKeyConstraint(label: LabelName, props: Seq[Property])(implicit idGen: IdGen) extends ProceduralLogicalPlan(idGen)

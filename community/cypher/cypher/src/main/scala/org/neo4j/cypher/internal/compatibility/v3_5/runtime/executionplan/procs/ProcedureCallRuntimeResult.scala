@@ -25,17 +25,18 @@ import java.util
 
 import org.neo4j.cypher.internal.runtime._
 import org.neo4j.cypher.internal.v3_5.logical.plans.QualifiedName
+import org.neo4j.cypher.internal.v3_5.util.symbols.{CypherType, _}
 import org.neo4j.cypher.result.QueryResult.{QueryResultVisitor, Record}
 import org.neo4j.cypher.result.RuntimeResult.ConsumptionState
 import org.neo4j.cypher.result.{OperatorProfile, QueryProfile, RuntimeResult}
 import org.neo4j.graphdb.ResourceIterator
 import org.neo4j.graphdb.spatial.{Geometry, Point}
+import org.neo4j.internal.kernel.api.procs.ProcedureCallContext
 import org.neo4j.kernel.impl.util.ValueUtils
 import org.neo4j.kernel.impl.util.ValueUtils._
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.Values._
 import org.neo4j.values.storable._
-import org.neo4j.cypher.internal.v3_5.util.symbols.{CypherType, _}
 
 /**
   * Result of calling a procedure.
@@ -53,7 +54,8 @@ class ProcedureCallRuntimeResult(context: QueryContext,
                                  callMode: ProcedureCallMode,
                                  args: Seq[Any],
                                  indexResultNameMappings: IndexedSeq[(Int, String, CypherType)],
-                                 profile: Boolean) extends RuntimeResult {
+                                 profile: Boolean,
+                                 procedureCallContext : ProcedureCallContext) extends RuntimeResult {
 
   self =>
 
@@ -67,8 +69,8 @@ class ProcedureCallRuntimeResult(context: QueryContext,
   // The signature mode is taking care of eagerization
   protected def executeCall: Iterator[Array[AnyRef]] = {
     val iterator =
-      if (id.nonEmpty) callMode.callProcedure(context, id.get, args)
-      else callMode.callProcedure(context, name, args)
+      if (id.nonEmpty) callMode.callProcedure(context, id.get, args, procedureCallContext)
+      else callMode.callProcedure(context, name, args, procedureCallContext)
 
     if (profile)
       counter.track(iterator)

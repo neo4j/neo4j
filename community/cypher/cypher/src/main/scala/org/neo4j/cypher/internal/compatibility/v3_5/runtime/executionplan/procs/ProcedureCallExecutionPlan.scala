@@ -27,13 +27,14 @@ import org.neo4j.cypher.internal.runtime.interpreted.commands.convert.Expression
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.{Literal, ParameterExpression, Expression => CommandExpression}
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.{ExternalCSVResource, QueryState}
 import org.neo4j.cypher.internal.runtime.planDescription.Argument
-import org.neo4j.cypher.internal.v3_5.logical.plans.ProcedureSignature
-import org.neo4j.cypher.result.RuntimeResult
-import org.neo4j.values.virtual.MapValue
 import org.neo4j.cypher.internal.v3_5.expressions.Expression
-import org.neo4j.cypher.internal.v3_5.util.{InternalNotification, InvalidArgumentException}
+import org.neo4j.cypher.internal.v3_5.logical.plans.ProcedureSignature
 import org.neo4j.cypher.internal.v3_5.util.attribution.Id
 import org.neo4j.cypher.internal.v3_5.util.symbols.CypherType
+import org.neo4j.cypher.internal.v3_5.util.{InternalNotification, InvalidArgumentException}
+import org.neo4j.cypher.result.RuntimeResult
+import org.neo4j.internal.kernel.api.procs.ProcedureCallContext
+import org.neo4j.values.virtual.MapValue
 
 /**
   * Execution plan for calling procedures
@@ -48,7 +49,7 @@ import org.neo4j.cypher.internal.v3_5.util.symbols.CypherType
 case class ProcedureCallExecutionPlan(signature: ProcedureSignature,
                                       argExprs: Seq[Expression],
                                       resultSymbols: Seq[(String, CypherType)],
-                                      resultIndices: Seq[(Int, String)],
+                                      resultIndices: Seq[(Int, (String, String))],
                                       converter: ExpressionConverters,
                                       id: Id)
   extends ExecutionPlan {
@@ -57,8 +58,13 @@ case class ProcedureCallExecutionPlan(signature: ProcedureSignature,
 
   private val resultMappings = resultSymbols.indices.map(i => {
     val r = resultIndices(i)
-    (r._1, r._2, resultSymbols(i)._2)
+    (r._1, r._2._1, resultSymbols(i)._2)
   })
+
+  private def createProcedureCallContext(): ProcedureCallContext ={
+    // getting the original name of the yielded variable
+    new ProcedureCallContext( resultIndices.map(_._2._2).toArray, true )
+  }
 
   private val actualArgs: Seq[CommandExpression] =  argExprs.map(converter.toCommandExpression(id, _)) // This list can be shorter than signature.inputSignature.length
   private val parameterArgs: Seq[ParameterExpression] =  signature.inputSignature.map(s => ParameterExpression(s.name))
@@ -68,7 +74,7 @@ case class ProcedureCallExecutionPlan(signature: ProcedureSignature,
   override def run(ctx: QueryContext, doProfile: Boolean, params: MapValue): RuntimeResult = {
     val input = evaluateArguments(ctx, params)
     val callMode = ProcedureCallMode.fromAccessMode(signature.accessMode)
-    new ProcedureCallRuntimeResult(ctx, signature.name, signature.id, callMode, input, resultMappings, doProfile)
+    new ProcedureCallRuntimeResult(ctx, signature.name, signature.id, callMode, input, resultMappings, doProfile, createProcedureCallContext())
   }
 
   private def evaluateArguments(ctx: QueryContext, params: MapValue): Seq[Any] = {
