@@ -57,12 +57,12 @@ class LdbcAcceptanceTest extends ExecutionEngineFunSuite with CypherComparisonSu
     ldbcQuery.constraintQueries.foreach(query => eengine.execute(query, Map.empty[String, Any]))
 
     val updatedLdbc12 =
-      """PROFILE MATCH (:Person {id:{1}})-[:KNOWS]-(friend:Person)
+      """PROFILE MATCH (:Person {id:$1})-[:KNOWS]-(friend:Person)
         |MATCH (friend)<-[:COMMENT_HAS_CREATOR]-(comment:Comment)-[:REPLY_OF_POST]->(:Post)-[:POST_HAS_TAG]->(tag:Tag)-[:HAS_TYPE]->(tagClass:TagClass)-[:IS_SUBCLASS_OF*0..]->(baseTagClass:TagClass)
-        |WHERE tagClass.name = {2} OR baseTagClass.name = {2}
+        |WHERE tagClass.name = $2 OR baseTagClass.name = $2
         |RETURN friend.id AS friendId, friend.firstName AS friendFirstName, friend.lastName AS friendLastName, collect(DISTINCT tag.name) AS tagNames, count(DISTINCT comment) AS count
         |ORDER BY count DESC, friendId ASC
-        |LIMIT {3}
+        |LIMIT $3
       """.stripMargin
 
     val params: Map[String, Any] = Map("1" -> 0, "2" -> 1, "3" -> 10)
@@ -78,8 +78,8 @@ class LdbcAcceptanceTest extends ExecutionEngineFunSuite with CypherComparisonSu
 
   test("This LDBC query should work") {
     // given
-    val ldbcQuery = """MATCH (knownTag:Tag {name:{2}})
-                      |MATCH (person:Person {id:{1}})-[:KNOWS*1..2]-(friend)
+    val ldbcQuery = """MATCH (knownTag:Tag {name:$2})
+                      |MATCH (person:Person {id:$1})-[:KNOWS*1..2]-(friend)
                       |WHERE NOT person=friend
                       |WITH DISTINCT friend, knownTag
                       |MATCH (friend)<-[:POST_HAS_CREATOR]-(post)
@@ -90,7 +90,7 @@ class LdbcAcceptanceTest extends ExecutionEngineFunSuite with CypherComparisonSu
                       |WITH commonTag, count(post) AS postCount
                       |RETURN commonTag.name AS tagName, postCount
                       |ORDER BY postCount DESC, tagName ASC
-                      |LIMIT {3}""".stripMargin
+                      |LIMIT $3""".stripMargin
     eengine.execute(LdbcQueries.Query4.createQuery, LdbcQueries.Query4.createParams)
 
 
@@ -98,7 +98,7 @@ class LdbcAcceptanceTest extends ExecutionEngineFunSuite with CypherComparisonSu
 
     val result =
     // when
-      executeWith(Configs.Interpreted, ldbcQuery, params = params)
+      executeWith(Configs.Interpreted - Configs.Version2_3, ldbcQuery, params = params)
 
     // then
     result should not be empty

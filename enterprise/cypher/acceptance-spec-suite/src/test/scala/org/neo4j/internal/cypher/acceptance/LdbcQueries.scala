@@ -73,26 +73,26 @@ object LdbcQueries {
                         |
                         |// --- NODES ---
                         |
-                        | (person0:Person {person0}),
-                        | (f1:Person {f1}),
-                        | (f2:Person {f2}),
-                        | (f3:Person {f3}),
-                        | (ff11:Person {ff11}),
-                        | (fff111:Person {fff111}),
-                        | (ffff1111:Person {ffff1111}),
-                        | (fffff11111:Person {fffff11111}),
-                        | (ff21:Person {ff21}),
-                        | (fff211:Person {fff211}),
-                        | (ff31:Person {ff31}),
-                        | (uni0:University {uni0}),
-                        | (uni1:University {uni1}),
-                        | (uni2:University {uni2}),
-                        | (company0:Company {company0}),
-                        | (company1:Company {company1}),
-                        | (city0:City {city0}),
-                        | (city1:City {city1}),
-                        | (country0:Country {country0}),
-                        | (country1:Country {country1}),
+                        | (person0:Person $person0),
+                        | (f1:Person $f1),
+                        | (f2:Person $f2),
+                        | (f3:Person $f3),
+                        | (ff11:Person $ff11),
+                        | (fff111:Person $fff111),
+                        | (ffff1111:Person $ffff1111),
+                        | (fffff11111:Person $fffff11111),
+                        | (ff21:Person $ff21),
+                        | (fff211:Person $fff211),
+                        | (ff31:Person $ff31),
+                        | (uni0:University $uni0),
+                        | (uni1:University $uni1),
+                        | (uni2:University $uni2),
+                        | (company0:Company $company0),
+                        | (company1:Company $company1),
+                        | (city0:City $city0),
+                        | (city1:City $city1),
+                        | (country0:Country $country0),
+                        | (country1:Country $country1),
                         |
                         |// --- RELATIONSHIPS ---
                         |
@@ -126,20 +126,20 @@ object LdbcQueries {
                         | (uni0)-[:ORGANISATION_IS_LOCATED_IN ]->(city1),
                         | (uni1)-[:ORGANISATION_IS_LOCATED_IN ]->(city0),
                         | (uni2)-[:ORGANISATION_IS_LOCATED_IN ]->(city0),
-                        | (f1)-[:STUDY_AT {f1StudyAtUni0}]->(uni0),
-                        | (ff11)-[:STUDY_AT {ff11StudyAtUni1}]->(uni1),
-                        | (ff11)-[:STUDY_AT {ff11StudyAtUni2}]->(uni2),
-                        | (f2)-[:STUDY_AT {f2StudyAtUni2}]->(uni2),
-                        | (f1)-[:WORKS_AT {f1WorkAtCompany0}]->(company0),
-                        | (f3)-[:WORKS_AT {f3WorkAtCompany0}]->(company0),
-                        | (ff21)-[:WORKS_AT {ff21WorkAtCompany1}]->(company1)""".stripMargin
+                        | (f1)-[:STUDY_AT $f1StudyAtUni0]->(uni0),
+                        | (ff11)-[:STUDY_AT $ff11StudyAtUni1]->(uni1),
+                        | (ff11)-[:STUDY_AT $ff11StudyAtUni2]->(uni2),
+                        | (f2)-[:STUDY_AT $f2StudyAtUni2]->(uni2),
+                        | (f1)-[:WORKS_AT $f1WorkAtCompany0]->(company0),
+                        | (f3)-[:WORKS_AT $f3WorkAtCompany0]->(company0),
+                        | (ff21)-[:WORKS_AT $ff21WorkAtCompany1]->(company1)""".stripMargin
 
 
-    val query = """MATCH path=(:Person {id:{1}})-[:KNOWS*1..3]-(friend)
-                  |WHERE friend.firstName={2}
+    val query = """MATCH path=(:Person {id:$1})-[:KNOWS*1..3]-(friend)
+                  |WHERE friend.firstName=$2
                   |WITH friend, min(length(path)) AS distance
                   |ORDER BY distance ASC, friend.lastName ASC, friend.id ASC
-                  |LIMIT {3}
+                  |LIMIT $3
                   |MATCH (friend)-[:PERSON_IS_LOCATED_IN]->(friendCity:City)
                   |OPTIONAL MATCH (friend)-[studyAt:STUDY_AT]->(uni:University)-[:ORGANISATION_IS_LOCATED_IN]->(uniCity:City)
                   |WITH friend,
@@ -226,7 +226,7 @@ object LdbcQueries {
       )
     }
 
-    override def expectedToSucceedIn: TestConfiguration = Configs.Interpreted
+    override def expectedToSucceedIn: TestConfiguration = Configs.Interpreted - Configs.Version2_3
 
   }
 
@@ -238,15 +238,15 @@ object LdbcQueries {
                         |
                         |// --- NODES ---
                         |
-                        | (country0:Country {country0}),
-                        | (forum1:Forum {forum1}), (p1:Person {p1}), (f2:Person {f2}), (f3:Person {f3}), (f4:Person {f4}),
-                        | (s5:Person {s5}), (ff6:Person {ff6}),(s7:Person {s7}),
-                        | (f3Post1:Post {f3Post1}), (f3Post2:Post {f3Post2}), (f3Post3:Post {f3Post3}),
-                        | (f4Post1:Post {f4Post1}), (f2Post1:Post {f2Post1}), (f2Post2:Post {f2Post2}), (f2Post3:Post {f2Post3}),
-                        | (s5Post1:Post {s5Post1}), (s5Post2:Post {s5Post2}), (ff6Post1:Post {ff6Post1}),
-                        | (s7Post1:Post {s7Post1}), (s7Post2:Post {s7Post2}),
-                        | (f2Comment1:Comment {f2Comment1}), (f2Comment2:Comment {f2Comment2}),
-                        | (s5Comment1:Comment {s5Comment1}), (f3Comment1:Comment {f3Comment1}), (p1Comment1:Comment {p1Comment1})
+                        | (country0:Country $country0),
+                        | (forum1:Forum $forum1), (p1:Person $p1), (f2:Person $f2), (f3:Person $f3), (f4:Person $f4),
+                        | (s5:Person $s5), (ff6:Person $ff6),(s7:Person $s7),
+                        | (f3Post1:Post $f3Post1), (f3Post2:Post $f3Post2), (f3Post3:Post $f3Post3),
+                        | (f4Post1:Post $f4Post1), (f2Post1:Post $f2Post1), (f2Post2:Post $f2Post2), (f2Post3:Post $f2Post3),
+                        | (s5Post1:Post $s5Post1), (s5Post2:Post $s5Post2), (ff6Post1:Post $ff6Post1),
+                        | (s7Post1:Post $s7Post1), (s7Post2:Post $s7Post2),
+                        | (f2Comment1:Comment $f2Comment1), (f2Comment2:Comment $f2Comment2),
+                        | (s5Comment1:Comment $s5Comment1), (f3Comment1:Comment $f3Comment1), (p1Comment1:Comment $p1Comment1)
                         |
                         |// --- RELATIONSHIPS ---
                         |
@@ -298,9 +298,9 @@ object LdbcQueries {
         Map("content" -> "[p1Comment1] content", "id" -> 17, "creationDate" -> 1, "browserUsed" -> "browser1", "locationIP" -> "1"), "f4Post1" ->
         Map("content" -> "[f4Post1] content", "id" -> 4, "creationDate" -> 4, "browserUsed" -> "4", "locationIP" -> "4", "imageFile" -> "[f4Post1] image", "language" -> "4"))
 
-    val query = """MATCH (:Person {id:{1}})-[:KNOWS]-(friend),
+    val query = """MATCH (:Person {id:$1})-[:KNOWS]-(friend),
                   |      (friend)<-[:POST_HAS_CREATOR|COMMENT_HAS_CREATOR]-(message)
-                  |WHERE message.creationDate <= {2}
+                  |WHERE message.creationDate <= $2
                   |RETURN friend.id AS personId,
                   |       friend.firstName AS personFirstName,
                   |       friend.lastName AS personLastName,
@@ -308,7 +308,7 @@ object LdbcQueries {
                   |       coalesce(message.content, message.imageFile) AS messageContent,
                   |       message.creationDate AS messageDate
                   |ORDER BY messageDate DESC, messageId ASC
-                  |LIMIT {3}""".stripMargin
+                  |LIMIT $3""".stripMargin
 
 
     def params = Map("1" -> 1, "2" -> 3, "3" -> 10)
@@ -327,7 +327,7 @@ object LdbcQueries {
       Map("personId" -> 2, "messageId" -> 13, "personLastName" -> "last2-ᚠさ丵פش",
         "messageContent" -> "[f2Comment1] content", "messageDate" -> 2, "personFirstName" -> "f2"))
 
-    override def expectedToSucceedIn: TestConfiguration = Configs.Interpreted
+    override def expectedToSucceedIn: TestConfiguration = Configs.Interpreted - Configs.Version2_3
 
   }
 
@@ -339,28 +339,28 @@ object LdbcQueries {
                         |
                         |// --- NODES ---
                         |
-                        | (person1:Person {person1}), (f2:Person {f2}), (f3:Person {f3}), (f4:Person {f4}),
-                        | (s5:Person {s5}), (ff6:Person {ff6}),(s7:Person {s7}),
-                        | (city1:City {city1}),  (city2:City {city2}), (city3:City {city3}),
-                        | (city4:City {city4}), (city5:City {city5}),
-                        | (country1:Country {country1}), (country2:Country {country2}),
-                        | (country3:Country {country3}), (country4:Country {country4}),
-                        | (country5:Country {country5}),
-                        | (f3Post1:Post {f3Post1}),
-                        |(f3Post2:Post {f3Post2}),
-                        | (f3Post3:Post {f3Post3}),
-                        | (f4Post1:Post {f4Post1}),
-                        |(f2Post1:Post {f2Post1}),
-                        | (f2Post2:Post {f2Post2}),
-                        |(f2Post3:Post {f2Post3}),
-                        | (s5Post1:Post {s5Post1}),
-                        | (s5Post2:Post {s5Post2}),
-                        | (ff6Post1:Post {ff6Post1}),
-                        | (s7Post1:Post {s7Post1}),
-                        | (s7Post2:Post {s7Post2}),
-                        | (f2Comment1:Comment {f2Comment1}), (f2Comment2:Comment {f2Comment2}),
-                        | (s5Comment1:Comment {s5Comment1}), (f3Comment1:Comment {f3Comment1}), (person1Comment1:Comment {person1Comment1}),
-                        | (ff6Comment1:Comment {ff6Comment1}),
+                        | (person1:Person $person1), (f2:Person $f2), (f3:Person $f3), (f4:Person $f4),
+                        | (s5:Person $s5), (ff6:Person $ff6),(s7:Person $s7),
+                        | (city1:City $city1),  (city2:City $city2), (city3:City $city3),
+                        | (city4:City $city4), (city5:City $city5),
+                        | (country1:Country $country1), (country2:Country $country2),
+                        | (country3:Country $country3), (country4:Country $country4),
+                        | (country5:Country $country5),
+                        | (f3Post1:Post $f3Post1),
+                        |(f3Post2:Post $f3Post2),
+                        | (f3Post3:Post $f3Post3),
+                        | (f4Post1:Post $f4Post1),
+                        |(f2Post1:Post $f2Post1),
+                        | (f2Post2:Post $f2Post2),
+                        |(f2Post3:Post $f2Post3),
+                        | (s5Post1:Post $s5Post1),
+                        | (s5Post2:Post $s5Post2),
+                        | (ff6Post1:Post $ff6Post1),
+                        | (s7Post1:Post $s7Post1),
+                        | (s7Post2:Post $s7Post2),
+                        | (f2Comment1:Comment $f2Comment1), (f2Comment2:Comment $f2Comment2),
+                        | (s5Comment1:Comment $s5Comment1), (f3Comment1:Comment $f3Comment1), (person1Comment1:Comment $person1Comment1),
+                        | (ff6Comment1:Comment $ff6Comment1),
                         |
                         |// --- RELATIONSHIPS ---
                         |
@@ -440,9 +440,9 @@ object LdbcQueries {
         Map("content" -> "[f3Post3] content", "id" -> 3, "creationDate" -> 946940400000L, "browserUsed" -> "browser3", "locationIP" -> "ip3", "imageFile" -> "image3", "language" -> "language3"), "f4Post1" ->
         Map("content" -> "[f4Post1] content", "id" -> 4, "creationDate" -> 946854000000L, "browserUsed" -> "browser4", "locationIP" -> "ip4", "imageFile" -> "image4", "language" -> "language4"))
 
-    val query = """|MATCH (countryX:Country {name:{2}}),
-                   |      (countryY:Country{name:{3}}),
-                   |      (person:Person {id:{1}})
+    val query = """|MATCH (countryX:Country {name:$2}),
+                   |      (countryY:Country{name:$3}),
+                   |      (person:Person {id:$1})
                    |WITH person, countryX, countryY
                    |LIMIT 1
                    |MATCH (city:City)-[:IS_PART_OF]->(country:Country)
@@ -453,7 +453,7 @@ object LdbcQueries {
                    |WITH DISTINCT friend, countryX, countryY
                    |MATCH (friend)<-[:POST_HAS_CREATOR|COMMENT_HAS_CREATOR]-(message),
                    |      (message)-[:POST_IS_LOCATED_IN|COMMENT_IS_LOCATED_IN]->(country)
-                   |WHERE {5}>message.creationDate>={4} AND
+                   |WHERE $5>message.creationDate>=$4 AND
                    |      country IN [countryX, countryY]
                    |WITH friend,
                    |     CASE WHEN country=countryX THEN 1 ELSE 0 END AS messageX,
@@ -467,7 +467,7 @@ object LdbcQueries {
                    |       yCount,
                    |       xCount + yCount AS xyCount
                    |ORDER BY xyCount DESC, friendId ASC
-                   |LIMIT {6}
+                   |LIMIT $6
                    |""".stripMargin
 
     def params = {
@@ -480,7 +480,7 @@ object LdbcQueries {
       Map("friendLastName" -> "last2-ᚠさ丵פش", "friendId" -> 2, "friendFirstName" -> "f2", "yCount" -> 1, "xyCount" -> 2, "xCount" -> 1),
       Map("friendLastName" -> "last6-ᚠさ丵פش", "friendId" -> 6, "friendFirstName" -> "ff6", "yCount" -> 1, "xyCount" -> 2, "xCount" -> 1))
 
-    override def expectedToSucceedIn: TestConfiguration = Configs.Interpreted
+    override def expectedToSucceedIn: TestConfiguration = Configs.Interpreted - Configs.Version2_3
 
   }
 
@@ -492,14 +492,14 @@ object LdbcQueries {
                         |
                         |// --- NODES ---
                         |
-                        | (tag1:Tag {tag1}), (tag2:Tag {tag2}), (tag3:Tag {tag3}), (tag4:Tag {tag4}), (tag5:Tag {tag5}),
-                        | (person1:Person {person1}), (f2:Person {f2}), (f3:Person {f3}), (f4:Person {f4}),
-                        |(s5:Person {s5}), (ff6:Person {ff6}),(s7:Person {s7}),
-                        | (f3Post1:Post {f3Post1}), (f3Post2:Post {f3Post2}), (f3Post3:Post {f3Post3}),
-                        | (f4Post1:Post {f4Post1}), (f2Post1:Post {f2Post1}), (f2Post2:Post {f2Post2}), (f2Post3:Post {f2Post3}),
-                        | (s5Post1:Post {s5Post1}), (s5Post2:Post {s5Post2}), (ff6Post1:Post {ff6Post1}),
-                        | (s7Post1:Post {s7Post1}), (s7Post2:Post {s7Post2}),
-                        | (f4Comment1:Comment {f4Comment1})
+                        | (tag1:Tag $tag1), (tag2:Tag $tag2), (tag3:Tag $tag3), (tag4:Tag $tag4), (tag5:Tag $tag5),
+                        | (person1:Person $person1), (f2:Person $f2), (f3:Person $f3), (f4:Person $f4),
+                        |(s5:Person $s5), (ff6:Person $ff6),(s7:Person $s7),
+                        | (f3Post1:Post $f3Post1), (f3Post2:Post $f3Post2), (f3Post3:Post $f3Post3),
+                        | (f4Post1:Post $f4Post1), (f2Post1:Post $f2Post1), (f2Post2:Post $f2Post2), (f2Post3:Post $f2Post3),
+                        | (s5Post1:Post $s5Post1), (s5Post2:Post $s5Post2), (ff6Post1:Post $ff6Post1),
+                        | (s7Post1:Post $s7Post1), (s7Post2:Post $s7Post2),
+                        | (f4Comment1:Comment $f4Comment1)
                         |
                         |// --- RELATIONSHIPS ---
                         |
@@ -549,23 +549,23 @@ object LdbcQueries {
         Map("id" -> 4, "languages" -> Seq("language4a", "language4b"), "birthday" -> 1, "creationDate" -> 1, "lastName" -> "last4", "browserUsed" -> "browser4", "email" -> Seq("friend4@email.com"), "locationIP" -> "ip4", "gender" -> "gender4", "firstName" -> "f4"))
 
 
-    val query = """MATCH (person:Person {id:{1}})-[:KNOWS]-(friend),
+    val query = """MATCH (person:Person {id:$1})-[:KNOWS]-(friend),
                   |      (friend)<-[:POST_HAS_CREATOR]-(post)-[:POST_HAS_TAG]->(tag)
                   |WITH DISTINCT tag, post
                   |WITH tag,
                   |     CASE
-                  |       WHEN {3} > post.creationDate >= {2} THEN 1
+                  |       WHEN $3 > post.creationDate >= $2 THEN 1
                   |       ELSE 0
                   |     END AS valid,
                   |     CASE
-                  |       WHEN {2} > post.creationDate THEN 1
+                  |       WHEN $2 > post.creationDate THEN 1
                   |       ELSE 0
                   |     END AS inValid
                   |WITH tag, sum(valid) AS postCount, sum(inValid) AS inValidPostCount
                   |WHERE postCount>0 AND inValidPostCount=0
                   |RETURN tag.name AS tagName, postCount
                   |ORDER BY postCount DESC, tagName ASC
-                  |LIMIT {4}""".stripMargin
+                  |LIMIT $4""".stripMargin
 
     def params = {
       val startTime = new DateTime(2000, 1, 3, 0, 0, 0,  DateTimeZone.forID("Europe/Stockholm"))
@@ -578,7 +578,7 @@ object LdbcQueries {
       Map("tagName" -> "tag3-ᚠさ丵פش", "postCount" -> 2),
       Map("tagName" -> "tag5-ᚠさ丵פش", "postCount" -> 1))
 
-    override def expectedToSucceedIn: TestConfiguration = Configs.Interpreted
+    override def expectedToSucceedIn: TestConfiguration = Configs.Interpreted - Configs.Version2_3
 
   }
 
@@ -590,26 +590,26 @@ object LdbcQueries {
                         |
                         |// --- NODES ---
                         |
-                        | (forum1:Forum {forum1}), (forum2:Forum {forum2}),
-                        | (forum3:Forum {forum3}), (forum4:Forum {forum4}),
-                        | (person1:Person {person1}), (f2:Person {f2}), (f3:Person {f3}), (f4:Person {f4}),
-                        | (s5:Person {s5}), (ff6:Person {ff6}),(s7:Person {s7}),
-                        | (country0:Country {country0}),
-                        | (country1:Country {country1}),
-                        | (f3Post1:Post {f3Post1}), (f3Post2:Post {f3Post2}), (f3Post3:Post {f3Post3}),
-                        | (f2Post1:Post {f2Post1}), (f2Post2:Post {f2Post2}), (f2Post3:Post {f2Post3}),
-                        | (s5Post1:Post {s5Post1}), (s5Post2:Post {s5Post2}), (ff6Post1:Post {ff6Post1}),
-                        | (s7Post1:Post {s7Post1}), (s7Post2:Post {s7Post2}),
+                        | (forum1:Forum $forum1), (forum2:Forum $forum2),
+                        | (forum3:Forum $forum3), (forum4:Forum $forum4),
+                        | (person1:Person $person1), (f2:Person $f2), (f3:Person $f3), (f4:Person $f4),
+                        | (s5:Person $s5), (ff6:Person $ff6),(s7:Person $s7),
+                        | (country0:Country $country0),
+                        | (country1:Country $country1),
+                        | (f3Post1:Post $f3Post1), (f3Post2:Post $f3Post2), (f3Post3:Post $f3Post3),
+                        | (f2Post1:Post $f2Post1), (f2Post2:Post $f2Post2), (f2Post3:Post $f2Post3),
+                        | (s5Post1:Post $s5Post1), (s5Post2:Post $s5Post2), (ff6Post1:Post $ff6Post1),
+                        | (s7Post1:Post $s7Post1), (s7Post2:Post $s7Post2),
                         |
                         |// --- RELATIONSHIPS ---
                         |
-                        | (forum1)-[:HAS_MEMBER {forum1HasMemberPerson1}]->(person1), (forum1)-[:HAS_MEMBER {forum1HasMemberF2}]->(f2),
-                        | (forum1)-[:HAS_MEMBER {forum1HasMemberS5}]->(s5), (forum1)-[:HAS_MEMBER {forum1HasMemberF3}]->(f3),
-                        | (forum1)-[:HAS_MEMBER {forum1HasMemberFF6}]->(ff6),
-                        | (forum2)-[:HAS_MEMBER {forum2HasMemberF3}]->(f3), (forum3)-[:HAS_MEMBER {forum3HasMemberPerson1}]->(person1),
-                        | (forum3)-[:HAS_MEMBER {forum3HasMemberF3}]->(f3), (forum3)-[:HAS_MEMBER {forum3HasMemberF4}]->(f4),
-                        | (forum4)-[:HAS_MEMBER {forum4HasMemberF2}]->(f2),
-                        | (forum4)-[:HAS_MEMBER {forum4HasMemberPerson1}]->(person1),
+                        | (forum1)-[:HAS_MEMBER $forum1HasMemberPerson1]->(person1), (forum1)-[:HAS_MEMBER $forum1HasMemberF2]->(f2),
+                        | (forum1)-[:HAS_MEMBER $forum1HasMemberS5]->(s5), (forum1)-[:HAS_MEMBER $forum1HasMemberF3]->(f3),
+                        | (forum1)-[:HAS_MEMBER $forum1HasMemberFF6]->(ff6),
+                        | (forum2)-[:HAS_MEMBER $forum2HasMemberF3]->(f3), (forum3)-[:HAS_MEMBER $forum3HasMemberPerson1]->(person1),
+                        | (forum3)-[:HAS_MEMBER $forum3HasMemberF3]->(f3), (forum3)-[:HAS_MEMBER $forum3HasMemberF4]->(f4),
+                        | (forum4)-[:HAS_MEMBER $forum4HasMemberF2]->(f2),
+                        | (forum4)-[:HAS_MEMBER $forum4HasMemberPerson1]->(person1),
                         | (person1)-[:KNOWS]->(f2), (f2)-[:KNOWS]->(ff6),
                         | (person1)-[:KNOWS]->(f3),
                         | (person1)-[:KNOWS]->(f4)-[:KNOWS]->(f2),
@@ -663,18 +663,18 @@ object LdbcQueries {
       Map("joinDate" -> 946681200000L), "forum1HasMemberF3" ->
       Map("joinDate" -> 946681200000L))
 
-    val query = """MATCH (person:Person {id:{1}})-[:KNOWS*1..2]-(friend)
+    val query = """MATCH (person:Person {id:$1})-[:KNOWS*1..2]-(friend)
                   |WHERE NOT person=friend
                   |WITH DISTINCT friend
                   |MATCH (friend)<-[membership:HAS_MEMBER]-(forum)
-                  |WHERE membership.joinDate>{2}
+                  |WHERE membership.joinDate>$2
                   |WITH forum, collect(friend) AS friends
                   |OPTIONAL MATCH (friend)<-[:POST_HAS_CREATOR]-(post)<-[:CONTAINER_OF]-(forum)
                   |WHERE friend IN friends
                   |WITH forum, count(post) AS postCount
                   |RETURN forum.title AS forumName, postCount
                   |ORDER BY postCount DESC, forum.id ASC
-                  |LIMIT {3}
+                  |LIMIT $3
                   |""".stripMargin
 
     def params = {
@@ -684,7 +684,7 @@ object LdbcQueries {
 
     def expectedResult = List(Map("forumName" -> "forum1-ᚠさ丵פش", "postCount" -> 1), Map("forumName" -> "forum3-ᚠさ丵פش", "postCount" -> 1), Map("forumName" -> "forum1-ᚠさ丵פش", "postCount" -> 0))
 
-    override def expectedToSucceedIn: TestConfiguration = Configs.Interpreted
+    override def expectedToSucceedIn: TestConfiguration = Configs.Interpreted - Configs.Version2_3
 
   }
 
@@ -696,13 +696,13 @@ object LdbcQueries {
                         |
                         |// --- NODES ---
                         |
-                        | (tag1:Tag {tag1}), (tag2:Tag {tag2}), (tag3:Tag {tag3}), (tag4:Tag {tag4}), (tag5:Tag {tag5}),
-                        | (person1:Person {person1}), (f2:Person {f2}), (f3:Person {f3}), (f4:Person {f4}),
-                        | (s5:Person {s5}), (ff6:Person {ff6}),(s7:Person {s7}),
-                        | (f3Post1:Post {f3Post1}), (f3Post2:Post {f3Post2}), (f3Post3:Post {f3Post3}),
-                        | (f4Post1:Post {f4Post1}), (f2Post1:Post {f2Post1}), (f2Post2:Post {f2Post2}), (f2Post3:Post {f2Post3}),
-                        | (s5Post1:Post {s5Post1}), (s5Post2:Post {s5Post2}), (ff6Post1:Post {ff6Post1}),
-                        | (s7Post1:Post {s7Post1}), (s7Post2:Post {s7Post2})
+                        | (tag1:Tag $tag1), (tag2:Tag $tag2), (tag3:Tag $tag3), (tag4:Tag $tag4), (tag5:Tag $tag5),
+                        | (person1:Person $person1), (f2:Person $f2), (f3:Person $f3), (f4:Person $f4),
+                        | (s5:Person $s5), (ff6:Person $ff6),(s7:Person $s7),
+                        | (f3Post1:Post $f3Post1), (f3Post2:Post $f3Post2), (f3Post3:Post $f3Post3),
+                        | (f4Post1:Post $f4Post1), (f2Post1:Post $f2Post1), (f2Post2:Post $f2Post2), (f2Post3:Post $f2Post3),
+                        | (s5Post1:Post $s5Post1), (s5Post2:Post $s5Post2), (ff6Post1:Post $ff6Post1),
+                        | (s7Post1:Post $s7Post1), (s7Post2:Post $s7Post2)
                         |
                         |// --- RELATIONSHIPS ---
                         |
@@ -746,8 +746,8 @@ object LdbcQueries {
       Map("content" -> "[s7Post2] content", "id" -> 11L, "creationDate" -> 946854000000L, "browserUsed" -> "browser7", "locationIP" -> "ip7", "imageFile" -> "image7", "language" -> "language7"), "f4" ->
       Map("id" -> 4L, "languages" -> Seq("language4"), "birthday" -> 4L, "creationDate" -> 4L, "lastName" -> "last4", "browserUsed" -> "browser4", "email" -> Seq("f4@email.com"), "locationIP" -> "ip4", "gender" -> "gender4", "firstName" -> "f4"))
 
-   val query = """|MATCH (knownTag:Tag {name:{2}})
-                  |MATCH (person:Person {id:{1}})-[:KNOWS*1..2]-(friend)
+   val query = """|MATCH (knownTag:Tag {name:$2})
+                  |MATCH (person:Person {id:$1})-[:KNOWS*1..2]-(friend)
                   |WHERE NOT person=friend
                   |WITH DISTINCT friend, knownTag
                   |MATCH (friend)<-[:POST_HAS_CREATOR]-(post)
@@ -758,14 +758,14 @@ object LdbcQueries {
                   |WITH commonTag, count(post) AS postCount
                   |RETURN commonTag.name AS tagName, postCount
                   |ORDER BY postCount DESC, tagName ASC
-                  |LIMIT {3}""".stripMargin
+                  |LIMIT $3""".stripMargin
 
     def params = Map("1" -> 1, "2" -> "tag3-ᚠさ丵פش", "3" -> 4)
 
 
     def expectedResult = List(Map("tagName" -> "tag2-ᚠさ丵פش", "postCount" -> 2), Map("tagName" -> "tag5-ᚠさ丵פش", "postCount" -> 2), Map("tagName" -> "tag1-ᚠさ丵פش", "postCount" -> 1))
 
-    override def expectedToSucceedIn: TestConfiguration = Configs.Interpreted
+    override def expectedToSucceedIn: TestConfiguration = Configs.Interpreted - Configs.Version2_3
 
   }
 
@@ -777,21 +777,21 @@ object LdbcQueries {
                         |
                         |// --- NODES ---
                         |
-                        |(person1:Person {person1}),
-                        |(f2:Person {f2}),
-                        |(f3:Person {f3}),
-                        |(f4:Person {f4}),
-                        |(ff5:Person {ff5}),
-                        |(ff6:Person {ff6}),
-                        |(s7:Person {s7}),
-                        |(s8:Person {s8}),
-                        |(person1Post1:Post {person1Post1}),
-                        |(person1Post2:Post {person1Post2}),
-                        |(person1Post3:Post {person1Post3}),
-                        |(s7Post1:Post {s7Post1}),
-                        | (city0:City {city0}),
-                        |(person1Comment1:Comment {person1Comment1}),
-                        |(f4Comment1:Comment {f4Comment1}),
+                        |(person1:Person $person1),
+                        |(f2:Person $f2),
+                        |(f3:Person $f3),
+                        |(f4:Person $f4),
+                        |(ff5:Person $ff5),
+                        |(ff6:Person $ff6),
+                        |(s7:Person $s7),
+                        |(s8:Person $s8),
+                        |(person1Post1:Post $person1Post1),
+                        |(person1Post2:Post $person1Post2),
+                        |(person1Post3:Post $person1Post3),
+                        |(s7Post1:Post $s7Post1),
+                        | (city0:City $city0),
+                        |(person1Comment1:Comment $person1Comment1),
+                        |(f4Comment1:Comment $f4Comment1),
                         |
                         |// --- RELATIONSHIPS ---
                         |
@@ -810,20 +810,20 @@ object LdbcQueries {
                         | (s8)-[:PERSON_IS_LOCATED_IN]->(city0),
                         |(person1Comment1)-[:REPLY_OF_POST]->(s7Post1),
                         |(f4Comment1)-[:REPLY_OF_POST]->(person1Post3),
-                        |(person1)-[:LIKES_POST {person1LikesPerson1Post1}]->(person1Post1),
-                        |(person1)-[:LIKES_POST {person1LikesS7Post1}]->(s7Post1),
-                        |(f2)-[:LIKES_POST {f2LikesPerson1Post1}]->(person1Post1),
-                        |(f4)-[:LIKES_POST {f4LikesPerson1Post1}]->(person1Post1),
-                        |(f4)-[:LIKES_POST {f4LikesPerson1Post2}]->(person1Post2),
-                        |(f4)-[:LIKES_POST {f4LikesPerson1Post3}]->(person1Post3),
-                        |(ff6)-[:LIKES_POST {ff6OldLikesPerson1Post1}]->(person1Post1),
-                        |(ff6)-[:LIKES_POST {ff6NewLikesPerson1Post1}]->(person1Post1),
-                        |(ff6)-[:LIKES_POST {ff6LikesPerson1Post2}]->(person1Post2),
-                        |(s7)-[:LIKES_POST {s7LikesPerson1Post1}]->(person1Post1),
-                        |(s8)-[:LIKES_POST {s8LikesPerson1Post2}]->(person1Post2),
-                        |(person1)-[:LIKES_COMMENT {person1LikesF4Comment1}]->(f4Comment1),
-                        |(s7)-[:LIKES_COMMENT {s7LikesPerson1Comment1}]->(person1Comment1),
-                        |(s8)-[:LIKES_COMMENT {s8LikesF4Comment1}]->(f4Comment1),
+                        |(person1)-[:LIKES_POST $person1LikesPerson1Post1]->(person1Post1),
+                        |(person1)-[:LIKES_POST $person1LikesS7Post1]->(s7Post1),
+                        |(f2)-[:LIKES_POST $f2LikesPerson1Post1]->(person1Post1),
+                        |(f4)-[:LIKES_POST $f4LikesPerson1Post1]->(person1Post1),
+                        |(f4)-[:LIKES_POST $f4LikesPerson1Post2]->(person1Post2),
+                        |(f4)-[:LIKES_POST $f4LikesPerson1Post3]->(person1Post3),
+                        |(ff6)-[:LIKES_POST $ff6OldLikesPerson1Post1]->(person1Post1),
+                        |(ff6)-[:LIKES_POST $ff6NewLikesPerson1Post1]->(person1Post1),
+                        |(ff6)-[:LIKES_POST $ff6LikesPerson1Post2]->(person1Post2),
+                        |(s7)-[:LIKES_POST $s7LikesPerson1Post1]->(person1Post1),
+                        |(s8)-[:LIKES_POST $s8LikesPerson1Post2]->(person1Post2),
+                        |(person1)-[:LIKES_COMMENT $person1LikesF4Comment1]->(f4Comment1),
+                        |(s7)-[:LIKES_COMMENT $s7LikesPerson1Comment1]->(person1Comment1),
+                        |(s8)-[:LIKES_COMMENT $s8LikesF4Comment1]->(f4Comment1),
                         |(person1)<-[:POST_HAS_CREATOR]-(person1Post1),
                         |(person1)<-[:POST_HAS_CREATOR]-(person1Post2),
                         |(person1)<-[:POST_HAS_CREATOR]-(person1Post3),
@@ -832,7 +832,7 @@ object LdbcQueries {
                         |(f4)<-[:COMMENT_HAS_CREATOR]-(f4Comment1)""".stripMargin
 
 
-    val query = """MATCH (person:Person {id:{1}})<-[:POST_HAS_CREATOR|COMMENT_HAS_CREATOR]-(message),
+    val query = """MATCH (person:Person {id:$1})<-[:POST_HAS_CREATOR|COMMENT_HAS_CREATOR]-(message),
                   |      (message)<-[like:LIKES_POST|LIKES_COMMENT]-(liker)
                   |WITH liker, message, like.creationDate AS likeTime, person
                   |ORDER BY likeTime DESC, message.id ASC
@@ -850,7 +850,7 @@ object LdbcQueries {
                   | coalesce(message.content,message.imageFile) AS messageContent,
                   | message.creationDate AS messageCreationDate
                   |ORDER BY likeTime DESC, personId ASC
-                  |LIMIT {2}""".stripMargin
+                  |LIMIT $2""".stripMargin
 
     def createParams = Map("person1Post2" ->
       Map("content" -> "person1post2", "id" -> 2L, "creationDate" -> 946681320000L, "browserUsed" -> "browser2", "locationIP" -> "ip2", "imageFile" -> "imageFile2", "language" -> "language2"), "person1Post3" ->
@@ -890,7 +890,7 @@ object LdbcQueries {
       Map("isNew" -> true, "likeTime" -> 946681800000L, "personId" -> 8, "messageCreationDate" -> 946681320000L, "messageId" -> 2,
         "personLastName" -> "last8-ᚠさ丵פش", "messageContent" -> "person1post2", "personFirstName" -> "s8"))
 
-    override def expectedToSucceedIn: TestConfiguration = Configs.Interpreted
+    override def expectedToSucceedIn: TestConfiguration = Configs.Interpreted - Configs.Version2_3
 
   }
 
@@ -902,26 +902,26 @@ object LdbcQueries {
                         |
                         |// --- NODES ---
                         |
-                        | (person:Person {person}),
-                        | (friend1:Person {friend1}),
-                        | (friend2:Person {friend2}),
-                        | (friend3:Person {friend3}),
-                        | (post0:Post {post0}),
-                        | (post1:Post {post1}),
-                        | (post2:Post {post2}),
-                        | (post3:Post {post3}),
-                        | (comment01:Comment {comment01}),
-                        | (comment11:Comment {comment11}),
-                        | (comment12:Comment {comment12}),
-                        | (comment13:Comment {comment13}),
-                        | (comment131:Comment {comment131}),
-                        | (comment111:Comment {comment111}),
-                        | (comment112:Comment {comment112}),
-                        | (comment21:Comment {comment21}),
-                        | (comment211:Comment {comment211}),
-                        | (comment2111:Comment {comment2111}),
-                        | (comment31:Comment {comment31}),
-                        | (comment32:Comment {comment32}),
+                        | (person:Person $person),
+                        | (friend1:Person $friend1),
+                        | (friend2:Person $friend2),
+                        | (friend3:Person $friend3),
+                        | (post0:Post $post0),
+                        | (post1:Post $post1),
+                        | (post2:Post $post2),
+                        | (post3:Post $post3),
+                        | (comment01:Comment $comment01),
+                        | (comment11:Comment $comment11),
+                        | (comment12:Comment $comment12),
+                        | (comment13:Comment $comment13),
+                        | (comment131:Comment $comment131),
+                        | (comment111:Comment $comment111),
+                        | (comment112:Comment $comment112),
+                        | (comment21:Comment $comment21),
+                        | (comment211:Comment $comment211),
+                        | (comment2111:Comment $comment2111),
+                        | (comment31:Comment $comment31),
+                        | (comment32:Comment $comment32),
                         |
                         |// --- RELATIONSHIPS ---
                         |
@@ -972,7 +972,7 @@ object LdbcQueries {
       Map("content" -> "C211", "id" -> 18L, "creationDate" -> 8L), "friend2" ->
       Map("id" -> 2L, "lastName" -> "two-ᚠさ丵פش", "firstName" -> "friend"))
 
-    val query = """MATCH (start:Person {id:{1}})<-[:POST_HAS_CREATOR|COMMENT_HAS_CREATOR]-(message),
+    val query = """MATCH (start:Person {id:$1})<-[:POST_HAS_CREATOR|COMMENT_HAS_CREATOR]-(message),
                   |      (message)<-[:REPLY_OF_POST|REPLY_OF_COMMENT]-(comment)-[:COMMENT_HAS_CREATOR]->(person)
                   |RETURN
                   | person.id AS personId,
@@ -982,7 +982,7 @@ object LdbcQueries {
                   | comment.creationDate AS commentCreationDate,
                   | comment.content AS commentContent
                   |ORDER BY commentCreationDate DESC, commentId ASC
-                  |LIMIT {2}""".stripMargin
+                  |LIMIT $2""".stripMargin
 
     def params = Map("1" -> 0, "2" -> 10)
 
@@ -994,7 +994,7 @@ object LdbcQueries {
       Map("personId" -> 3, "commentContent" -> "C01", "commentId" -> 10, "personLastName" -> "three-ᚠさ丵פش", "commentCreationDate" -> 1, "personFirstName" -> "friend"),
       Map("personId" -> 3, "commentContent" -> "C11", "commentId" -> 11, "personLastName" -> "three-ᚠさ丵פش", "commentCreationDate" -> 1, "personFirstName" -> "friend"))
 
-    override def expectedToSucceedIn: TestConfiguration = Configs.All
+    override def expectedToSucceedIn: TestConfiguration = Configs.All - Configs.Version2_3
 
   }
 
@@ -1006,23 +1006,23 @@ object LdbcQueries {
                         |
                         |// --- NODES ---
                         |
-                        | (person0:Person {person0}),
-                        | (friend1:Person {friend1}),
-                        | (friend2:Person {friend2}),
-                        | (stranger3:Person {stranger3}),
-                        | (friendfriend4:Person {friendfriend4}),
-                        | (post01:Post {post01}),
-                        | (post11:Post {post11}),
-                        | (post12:Post {post12}),
-                        | (post21:Post {post21}),
-                        | (post31:Post {post31}),
-                        | (comment111:Comment {comment111}),
-                        | (comment121:Comment {comment121}),
-                        | (comment1211:Comment {comment1211}),
-                        | (comment211:Comment {comment211}),
-                        | (comment2111:Comment {comment2111}),
-                        | (comment21111:Comment {comment21111}),
-                        | (comment311:Comment {comment311}),
+                        | (person0:Person $person0),
+                        | (friend1:Person $friend1),
+                        | (friend2:Person $friend2),
+                        | (stranger3:Person $stranger3),
+                        | (friendfriend4:Person $friendfriend4),
+                        | (post01:Post $post01),
+                        | (post11:Post $post11),
+                        | (post12:Post $post12),
+                        | (post21:Post $post21),
+                        | (post31:Post $post31),
+                        | (comment111:Comment $comment111),
+                        | (comment121:Comment $comment121),
+                        | (comment1211:Comment $comment1211),
+                        | (comment211:Comment $comment211),
+                        | (comment2111:Comment $comment2111),
+                        | (comment21111:Comment $comment21111),
+                        | (comment311:Comment $comment311),
                         |
                         |// --- RELATIONSHIPS ---
                         |
@@ -1065,14 +1065,14 @@ object LdbcQueries {
       Map("content" -> "C211", "id" -> 211L, "creationDate" -> 7L), "friend2" ->
       Map("id" -> 2L, "lastName" -> "two-ᚠさ丵פش", "firstName" -> "friend"))
 
-    val query = """MATCH (person:Person {id:{1}})-[:KNOWS*1..2]-(friend)
+    val query = """MATCH (person:Person {id:$1})-[:KNOWS*1..2]-(friend)
                   |WHERE NOT person=friend
                   |WITH DISTINCT friend
                   |MATCH (friend)<-[:POST_HAS_CREATOR|COMMENT_HAS_CREATOR]-(message)
-                  |WHERE message.creationDate < {2}
+                  |WHERE message.creationDate < $2
                   |WITH friend, message
                   |ORDER BY message.creationDate DESC, message.id ASC
-                  |LIMIT {3}
+                  |LIMIT $3
                   |RETURN message.id AS messageId,
                   |       coalesce(message.content,message.imageFile) AS messageContent,
                   |       message.creationDate AS messageCreationDate,
@@ -1102,7 +1102,7 @@ object LdbcQueries {
       Map("personId" -> 2, "messageId" -> 311,
         "personLastName" -> "two-ᚠさ丵פش", "messageContent" -> "C311", "personFirstName" -> "friend", "messageCreationDate" -> 4))
 
-    override def expectedToSucceedIn: TestConfiguration = Configs.Interpreted
+    override def expectedToSucceedIn: TestConfiguration = Configs.Interpreted - Configs.Version2_3
 
   }
 
@@ -1114,30 +1114,30 @@ object LdbcQueries {
                         |
                         |// --- NODES ---
                         |
-                        | (person0:Person {person0}),
-                        | (f1:Person {f1}),
-                        | (f2:Person {f2}),
-                        | (ff11:Person {ff11}),
-                        | (ff12:Person {ff12}),
-                        | (ff21:Person {ff21}),
-                        | (ff22:Person {ff22}),
-                        | (ff23:Person {ff23}),
-                        | (post21:Post {post21}),
-                        | (post111:Post {post111}),
-                        | (post112:Post {post112}),
-                        | (post113:Post {post113}),
-                        | (post121:Post {post121}),
-                        | (post211:Post {post211}),
-                        | (post212:Post {post212}),
-                        | (post213:Post {post213}),
-                        | (city0:City {city0}),
-                        | (city1:City {city1}),
-                        | (uncommonTag1:Tag {uncommonTag1}),
-                        | (uncommonTag2:Tag {uncommonTag2}),
-                        | (uncommonTag3:Tag {uncommonTag3}),
-                        | (commonTag4:Tag {commonTag4}),
-                        | (commonTag5:Tag {commonTag5}),
-                        | (commonTag6:Tag {commonTag6}),
+                        | (person0:Person $person0),
+                        | (f1:Person $f1),
+                        | (f2:Person $f2),
+                        | (ff11:Person $ff11),
+                        | (ff12:Person $ff12),
+                        | (ff21:Person $ff21),
+                        | (ff22:Person $ff22),
+                        | (ff23:Person $ff23),
+                        | (post21:Post $post21),
+                        | (post111:Post $post111),
+                        | (post112:Post $post112),
+                        | (post113:Post $post113),
+                        | (post121:Post $post121),
+                        | (post211:Post $post211),
+                        | (post212:Post $post212),
+                        | (post213:Post $post213),
+                        | (city0:City $city0),
+                        | (city1:City $city1),
+                        | (uncommonTag1:Tag $uncommonTag1),
+                        | (uncommonTag2:Tag $uncommonTag2),
+                        | (uncommonTag3:Tag $uncommonTag3),
+                        | (commonTag4:Tag $commonTag4),
+                        | (commonTag5:Tag $commonTag5),
+                        | (commonTag6:Tag $commonTag6),
                         |
                         |// --- RELATIONSHIPS ---
                         |
@@ -1202,12 +1202,12 @@ object LdbcQueries {
       Map("name" -> "uncommon tag 2"), "post113" ->
       Map("content" -> "P113", "id" -> 113L))
 
-   val query = """MATCH (person:Person {id:{1}})-[:KNOWS*2..2]-(friend),
+   val query = """MATCH (person:Person {id:$1})-[:KNOWS*2..2]-(friend),
                  |       (friend)-[:PERSON_IS_LOCATED_IN]->(city)
                  |WHERE NOT friend=person AND
                  |      NOT (friend)-[:KNOWS]-(person) AND
-                 |      ( (friend.birthday_month={2} AND friend.birthday_day>=21) OR
-                 |        (friend.birthday_month=({2}%12)+1 AND friend.birthday_day<22) )
+                 |      ( (friend.birthday_month=$2 AND friend.birthday_day>=21) OR
+                 |        (friend.birthday_month=($2%12)+1 AND friend.birthday_day<22) )
                  |WITH DISTINCT friend, city, person
                  |OPTIONAL MATCH (friend)<-[:POST_HAS_CREATOR]-(post)
                  |WITH friend, city, collect(post) AS posts, person
@@ -1222,7 +1222,7 @@ object LdbcQueries {
                  |       city.name AS personCityName,
                  |       commonPostCount - (postCount - commonPostCount) AS commonInterestScore
                  |ORDER BY commonInterestScore DESC, personId ASC
-                 |LIMIT {4}
+                 |LIMIT $4
                  |""".stripMargin
 
     def params = Map("1" -> 0, "2" -> 1, "4" -> 7)
@@ -1239,7 +1239,7 @@ object LdbcQueries {
         "personLastName" -> "two one-ᚠさ丵פش", "commonInterestScore" -> -1, "personFirstName" -> "friendfriend",
         "personCityName" -> "city0"))
 
-    override def expectedToSucceedIn: TestConfiguration = Configs.Interpreted
+    override def expectedToSucceedIn: TestConfiguration = Configs.Interpreted - Configs.Version2_3
 
   }
 
@@ -1251,27 +1251,27 @@ object LdbcQueries {
                         |
                         |// --- NODES ---
                         |
-                        | (person0:Person {person0}),
-                        | (f1:Person {f1}),
-                        | (f2:Person {f2}),
-                        | (stranger3:Person {stranger3}),
-                        | (ff11:Person {ff11}),
-                        | (company0:Company {company0}),
-                        | (company1:Company {company1}),
-                        | (company2:Company {company2}),
-                        | (country0:Country {country0}),
-                        | (country1:Country {country1}),
+                        | (person0:Person $person0),
+                        | (f1:Person $f1),
+                        | (f2:Person $f2),
+                        | (stranger3:Person $stranger3),
+                        | (ff11:Person $ff11),
+                        | (company0:Company $company0),
+                        | (company1:Company $company1),
+                        | (company2:Company $company2),
+                        | (country0:Country $country0),
+                        | (country1:Country $country1),
                         |
                         |// --- RELATIONSHIPS ---
                         |
                         |(person0)-[:KNOWS]->(f1)-[:KNOWS]->(ff11),
                         | (f1)-[:KNOWS]->(f2),
                         |(person0)-[:KNOWS]->(f2),
-                        |(f1)-[:WORKS_AT {f1WorkedAtCompany0}]->(company0),
-                        |(f1)-[:WORKS_AT {f1WorkedAtCompany1}]->(company1),
-                        |(f2)-[:WORKS_AT {f2WorkedAtCompany2}]->(company2),
-                        |(ff11)-[:WORKS_AT {ff11WorkedAtCompany0}]->(company0),
-                        |(stranger3)-[:WORKS_AT {stranger3WorkedAtCompany2}]->(company2),
+                        |(f1)-[:WORKS_AT $f1WorkedAtCompany0]->(company0),
+                        |(f1)-[:WORKS_AT $f1WorkedAtCompany1]->(company1),
+                        |(f2)-[:WORKS_AT $f2WorkedAtCompany2]->(company2),
+                        |(ff11)-[:WORKS_AT $ff11WorkedAtCompany0]->(company0),
+                        |(stranger3)-[:WORKS_AT $stranger3WorkedAtCompany2]->(company2),
                         |(company0)-[:ORGANISATION_IS_LOCATED_IN]->(country0),
                         |(company1)-[:ORGANISATION_IS_LOCATED_IN]->(country1),
                         |(company2)-[:ORGANISATION_IS_LOCATED_IN]->(country0)""".stripMargin
@@ -1294,12 +1294,12 @@ object LdbcQueries {
       Map("id" -> 2L, "lastName" -> "two-ᚠさ丵פش", "firstName" -> "friend"), "ff11" ->
       Map("id" -> 11L, "lastName" -> "one one-ᚠさ丵פش", "firstName" -> "friend friend"))
 
-    val query = """|MATCH (country:Country {name:{3}})
-                   |MATCH (person:Person {id:{1}})-[:KNOWS*1..2]-(friend)
+    val query = """|MATCH (country:Country {name:$3})
+                   |MATCH (person:Person {id:$1})-[:KNOWS*1..2]-(friend)
                    |WHERE NOT person=friend
                    |WITH DISTINCT friend, country
                    |MATCH (friend)-[worksAt:WORKS_AT]->(company)-[:ORGANISATION_IS_LOCATED_IN]->(country)
-                   |WHERE worksAt.workFrom<{2}
+                   |WHERE worksAt.workFrom<$2
                    |RETURN
                    | friend.id AS friendId,
                    | friend.firstName AS friendFirstName,
@@ -1307,7 +1307,7 @@ object LdbcQueries {
                    | worksAt.workFrom AS workFromYear,
                    | company.name AS companyName
                    |ORDER BY workFromYear ASC, friendId ASC, companyName DESC
-                   |LIMIT {4}""".stripMargin
+                   |LIMIT $4""".stripMargin
 
     def params = Map("1" -> 0, "3" -> "country0", "2" -> 5, "4" -> 4)
 
@@ -1317,7 +1317,7 @@ object LdbcQueries {
       Map("friendLastName" -> "one one-ᚠさ丵פش", "friendId" -> 11, "companyName" -> "company zero",
         "friendFirstName" -> "friend friend", "workFromYear" -> 3))
 
-    override def expectedToSucceedIn: TestConfiguration = Configs.Interpreted
+    override def expectedToSucceedIn: TestConfiguration = Configs.Interpreted - Configs.Version2_3
 
   }
 
@@ -1329,25 +1329,25 @@ object LdbcQueries {
                         |
                         |// --- NODES ---
                         |
-                        | (person0:Person {person0}),
-                        | (f1:Person {f1}),
-                        | (f2:Person {f2}),
-                        | (f3:Person {f3}),
-                        | (f4:Person {f4}),
-                        | (ff11:Person {ff11}),
-                        | (tc1:TagClass {tc1}),
-                        | (tc11:TagClass {tc11}),
-                        | (tc12:TagClass {tc12}),
-                        | (tc121:TagClass {tc121}),
-                        | (tc1211:TagClass {tc1211}),
-                        | (tc2:TagClass {tc2}),
-                        | (tc21:TagClass {tc21}),
-                        | (t11:Tag {t11}),
-                        | (t111:Tag {t111}),
-                        | (t112:Tag {t112}),
-                        | (t12111:Tag {t12111}),
-                        | (t21:Tag {t21}),
-                        | (t211:Tag {t211}),
+                        | (person0:Person $person0),
+                        | (f1:Person $f1),
+                        | (f2:Person $f2),
+                        | (f3:Person $f3),
+                        | (f4:Person $f4),
+                        | (ff11:Person $ff11),
+                        | (tc1:TagClass $tc1),
+                        | (tc11:TagClass $tc11),
+                        | (tc12:TagClass $tc12),
+                        | (tc121:TagClass $tc121),
+                        | (tc1211:TagClass $tc1211),
+                        | (tc2:TagClass $tc2),
+                        | (tc21:TagClass $tc21),
+                        | (t11:Tag $t11),
+                        | (t111:Tag $t111),
+                        | (t112:Tag $t112),
+                        | (t12111:Tag $t12111),
+                        | (t21:Tag $t21),
+                        | (t211:Tag $t211),
                         | (p11:Post {content:'p11'}),
                         | (p111:Post {content:'p111'}),
                         | (p112:Post {content:'p112'}),
@@ -1445,11 +1445,11 @@ object LdbcQueries {
       "ff11" -> Map("id" -> 11L, "lastName" -> "11", "firstName" -> "ff"),
       "f4" -> Map("id" -> 4L, "lastName" -> "4", "firstName" -> "f"))
 
-    val query = """MATCH (:Person {id:{1}})-[:KNOWS]-(friend:Person),
+    val query = """MATCH (:Person {id:$1})-[:KNOWS]-(friend:Person),
                   |      (friend)<-[:COMMENT_HAS_CREATOR]-(comment:Comment),
                   |      (comment)-[:REPLY_OF_POST]->(post:Post),
                   |      (post)-[:POST_HAS_TAG]->(tag:Tag),
-                  |      (tag)-[:HAS_TYPE|IS_SUBCLASS_OF*0..]->(:TagClass{name:{2}})
+                  |      (tag)-[:HAS_TYPE|IS_SUBCLASS_OF*0..]->(:TagClass{name:$2})
                   |RETURN
                   | friend.id AS friendId,
                   | friend.firstName AS friendFirstName,
@@ -1457,7 +1457,7 @@ object LdbcQueries {
                   | collect(DISTINCT tag.name) AS tagNames,
                   | count(DISTINCT comment) AS count
                   |ORDER BY count DESC, friendId ASC
-                  |LIMIT {3}""".stripMargin
+                  |LIMIT $3""".stripMargin
 
     def params = Map("1" -> 0, "2" -> "1", "3" -> 10)
 
@@ -1466,7 +1466,7 @@ object LdbcQueries {
       Map("friendLastName" -> "2", "tagNames" -> Seq("tag111-ᚠさ丵פش"), "friendId" -> 2, "count" -> 1, "friendFirstName" -> "f"),
       Map("friendLastName" -> "3", "tagNames" -> Seq("tag11-ᚠさ丵פش"), "friendId" -> 3, "count" -> 1, "friendFirstName" -> "f"))
 
-    override def expectedToSucceedIn: TestConfiguration = Configs.Interpreted
+    override def expectedToSucceedIn: TestConfiguration = Configs.Interpreted - Configs.Version2_3
 
   }
 
@@ -1502,7 +1502,7 @@ object LdbcQueries {
 
     def createParams = Map.empty
 
-    val query = """MATCH (person1:Person {id:{1}}), (person2:Person {id:{2}})
+    val query = """MATCH (person1:Person {id:$1}), (person2:Person {id:$2})
                   |OPTIONAL MATCH path = shortestPath((person1)-[:KNOWS*0..]-(person2))
                   |RETURN CASE path IS NULL WHEN true THEN -1 ELSE length(path) END AS pathLength""".stripMargin
 
@@ -1510,7 +1510,7 @@ object LdbcQueries {
 
     def expectedResult = List(Map("pathLength" -> 5))
 
-    override def expectedToSucceedIn: TestConfiguration = Configs.Interpreted
+    override def expectedToSucceedIn: TestConfiguration = Configs.Interpreted - Configs.Version2_3
 
   }
 
@@ -1592,7 +1592,7 @@ object LdbcQueries {
 
     def createParams = Map.empty
 
-    val query = """MATCH path = allShortestPaths((person1:Person {id:{1}})-[:KNOWS*0..100]-(person2:Person {id:{2}}))
+    val query = """MATCH path = allShortestPaths((person1:Person {id:$1})-[:KNOWS*0..100]-(person2:Person {id:$2}))
                   |WITH nodes(path) AS pathNodes
                   |RETURN
                   | [n IN pathNodes | n.id] AS pathNodeIds,
@@ -1616,7 +1616,7 @@ object LdbcQueries {
       Map("weight" -> 4.0, "pathNodeIds" -> List(0, 1, 2, 4, 8, 5)),
       Map("weight" -> 3.0, "pathNodeIds" -> List(0, 1, 2, 4, 6, 5)))
 
-    override def expectedToSucceedIn: TestConfiguration = Configs.Interpreted
+    override def expectedToSucceedIn: TestConfiguration = Configs.Interpreted - Configs.Version2_3
 
   }
 
@@ -1628,7 +1628,7 @@ object LdbcQueries {
 
     def createParams = Map.empty
 
-    val query = """MATCH path = allShortestPaths((person1:Person {id:{1}})-[:KNOWS*0..]-(person2:Person {id:{2}}))
+    val query = """MATCH path = allShortestPaths((person1:Person {id:$1})-[:KNOWS*0..]-(person2:Person {id:$2}))
                   |RETURN
                   |[n IN nodes(path) | n.id] AS pathNodeIds,
                   |reduce(weight=0.0, r IN relationships(path) |
@@ -1647,7 +1647,7 @@ object LdbcQueries {
       Map("weight" -> 4.0, "pathNodeIds" -> List(0, 1, 2, 4, 8, 5)),
       Map("weight" -> 3.0, "pathNodeIds" -> List(0, 1, 2, 4, 6, 5)))
 
-    override def expectedToSucceedIn: TestConfiguration = Configs.Interpreted
+    override def expectedToSucceedIn: TestConfiguration = Configs.Interpreted - Configs.Version2_3
 
   }
 
