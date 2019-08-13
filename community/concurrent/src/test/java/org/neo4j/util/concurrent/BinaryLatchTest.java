@@ -47,7 +47,7 @@ class BinaryLatchTest
     @Test
     void releaseThenAwaitDoesNotBlock()
     {
-        assertTimeoutPreemptively( ofSeconds( 3 ), () ->
+        assertTimeoutPreemptively( ofSeconds( 30 ), () ->
         {
             BinaryLatch latch = new BinaryLatch();
             latch.release();
@@ -58,7 +58,7 @@ class BinaryLatchTest
     @Test
     void releaseMustUnblockAwaiters()
     {
-        assertTimeoutPreemptively( ofSeconds( 10 ), () ->
+        assertTimeoutPreemptively( ofSeconds( 30 ), () ->
         {
             final BinaryLatch latch = new BinaryLatch();
             Runnable awaiter = latch::await;
