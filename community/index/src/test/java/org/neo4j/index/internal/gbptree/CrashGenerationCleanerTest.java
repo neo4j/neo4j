@@ -230,7 +230,7 @@ public class CrashGenerationCleanerTest
             for ( Page page : pages )
             {
                 cursor.next();
-                page.write( cursor, treeNode, layout, stableGeneration, unstableGeneration, crashGeneration );
+                page.write( pagedFile, cursor, treeNode, layout, stableGeneration, unstableGeneration, crashGeneration );
             }
         }
     }
@@ -293,12 +293,12 @@ public class CrashGenerationCleanerTest
         return pages;
     }
 
-    private Page leafWith( GBPTreeCorruption.PageCorruption... pageCorruptions )
+    private Page leafWith( GBPTreeCorruption.PageCorruption<MutableLong,MutableLong>... pageCorruptions )
     {
         return new Page( PageType.LEAF, pageCorruptions );
     }
 
-    private Page internalWith( GBPTreeCorruption.PageCorruption... pageCorruptions )
+    private Page internalWith( GBPTreeCorruption.PageCorruption<MutableLong,MutableLong>... pageCorruptions )
     {
         return new Page( PageType.INTERNAL, pageCorruptions );
     }
@@ -306,20 +306,22 @@ public class CrashGenerationCleanerTest
     private class Page
     {
         private final PageType type;
-        private final GBPTreeCorruption.PageCorruption[] pageCorruptions;
+        private final GBPTreeCorruption.PageCorruption<MutableLong,MutableLong>[] pageCorruptions;
 
-        private Page( PageType type, GBPTreeCorruption.PageCorruption... pageCorruptions )
+        private Page( PageType type, GBPTreeCorruption.PageCorruption<MutableLong,MutableLong>... pageCorruptions )
         {
             this.type = type;
             this.pageCorruptions = pageCorruptions;
         }
 
-        private void write( PageCursor cursor, TreeNode<MutableLong,MutableLong> node, Layout<MutableLong,MutableLong> layout,
-                int stableGeneration, int unstableGeneration, int crashGeneration )
+        private void write( PagedFile pagedFile, PageCursor cursor, TreeNode<MutableLong,MutableLong> node, Layout<MutableLong,MutableLong> layout,
+                int stableGeneration, int unstableGeneration, int crashGeneration ) throws IOException
         {
             type.write( cursor, node, layout, oldStableGeneration, stableGeneration );
-            Arrays.stream( pageCorruptions )
-                    .forEach( pc -> pc.corrupt( cursor, layout, node, stableGeneration, unstableGeneration, crashGeneration ) );
+            for ( GBPTreeCorruption.PageCorruption<MutableLong,MutableLong> pc : pageCorruptions )
+            {
+                pc.corrupt( pagedFile, cursor, layout, node, stableGeneration, unstableGeneration, crashGeneration );
+            }
         }
     }
 

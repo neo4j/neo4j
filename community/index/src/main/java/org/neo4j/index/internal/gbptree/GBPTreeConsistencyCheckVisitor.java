@@ -46,6 +46,8 @@ public interface GBPTreeConsistencyCheckVisitor<KEY>
 
     void nodeMetaInconsistency( long pageId, String message );
 
+    void pageIdSeenMultipleTimes( long pageId );
+
     class Adaptor<KEY> implements GBPTreeConsistencyCheckVisitor<KEY>
     {
         @Override
@@ -103,6 +105,11 @@ public interface GBPTreeConsistencyCheckVisitor<KEY>
 
         @Override
         public void nodeMetaInconsistency( long pageId, String message )
+        {
+        }
+
+        @Override
+        public void pageIdSeenMultipleTimes( long pageId )
         {
         }
     }

@@ -118,7 +118,7 @@ class GBPTreeConsistencyChecker<KEY>
         int index = toIntExact( id );
         if ( target.get( index ) )
         {
-            throw new IllegalStateException( id + " already seen" );
+            visitor.pageIdSeenMultipleTimes( id );
         }
         if ( id > lastId )
         {

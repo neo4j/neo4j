@@ -508,6 +508,45 @@ public class GBPTreeConsistencyCheckerTest
         }
     }
 
+    @Test
+    public void shouldDetectExtraFreelistEntry() throws IOException
+    {
+        long targetNode;
+        try ( GBPTree<MutableLong,MutableLong> index = index().build() )
+        {
+            // Add and remove a bunch of keys to fill freelist
+            try ( Writer<MutableLong,MutableLong> writer = index.writer() )
+            {
+                int keyCount = 0;
+                while ( getHeight( index ) < 2 )
+                {
+                    writer.put( layout.key( keyCount ), layout.value( keyCount ) );
+                    keyCount++;
+                }
+            }
+            index.checkpoint( IOLimiter.UNLIMITED );
+        }
+
+        // When tree is closed we will overwrite treeState with in memory state so we need to open tree in read only mode for our state corruption to persist.
+        try ( GBPTree<MutableLong,MutableLong> index = index().withReadOnly( true ).build() )
+        {
+            InspectingVisitor<MutableLong,MutableLong> visitor = inspect( index );
+            targetNode = randomValues.among( visitor.allNodes );
+            TreeState treeState = visitor.treeState;
+            long stableGeneration = treeState.stableGeneration();
+            long unstableGeneration = treeState.unstableGeneration();
+
+            GBPTreeCorruption.PageCorruption<RawBytes,RawBytes> corruption = GBPTreeCorruption.addFreelistEntry( treeState, targetNode );
+            corrupt( treeState.pageId(), stableGeneration, unstableGeneration, corruption, dynamicLayout, dynamicNode );
+        }
+
+        // Need to restart tree to reload corrupted freelist
+        try ( GBPTree<MutableLong,MutableLong> index = index().build() )
+        {
+            assertReportActiveTreeNodeInFreelist( index, targetNode );
+        }
+    }
+
     //todo
     //  Tree structure inconsistencies:
     //    > Pointer generation lower than node generation
@@ -539,7 +578,7 @@ public class GBPTreeConsistencyCheckerTest
     //  A page can be either used as a freelist page, used as a tree node (unstable generation), listed in freelist (stable generation), listen in freelist
     //  (unstable generation)
     //      X Page missing from freelist
-    //      - Extra page on free list
+    //      X Extra page on free list
     //      - Extra empty page in file
     //  Tree meta inconsistencies:
     //    > Can not read meta data.
@@ -590,7 +629,7 @@ public class GBPTreeConsistencyCheckerTest
               PageCursor cursor = pagedFile.io( 0, PagedFile.PF_SHARED_WRITE_LOCK ) )
         {
             cursor.next( targetNode );
-            corruption.corrupt( cursor, layout, node, stableGeneration, unstableGeneration, unstableGeneration - 1 );
+            corruption.corrupt( pagedFile, cursor, layout, node, stableGeneration, unstableGeneration, unstableGeneration - 1 );
         }
     }
 
@@ -895,6 +934,21 @@ public class GBPTreeConsistencyCheckerTest
         {
             @Override
             public void unusedPage( long pageId )
+            {
+                called.setTrue();
+                assertEquals( targetNode, pageId );
+            }
+        } );
+        assertCalled( called );
+    }
+
+    private static void assertReportActiveTreeNodeInFreelist( GBPTree<MutableLong,MutableLong> index, long targetNode ) throws IOException
+    {
+        MutableBoolean called = new MutableBoolean();
+        index.consistencyCheck( new GBPTreeConsistencyCheckVisitor.Adaptor<MutableLong>()
+        {
+            @Override
+            public void pageIdSeenMultipleTimes( long pageId )
             {
                 called.setTrue();
                 assertEquals( targetNode, pageId );
