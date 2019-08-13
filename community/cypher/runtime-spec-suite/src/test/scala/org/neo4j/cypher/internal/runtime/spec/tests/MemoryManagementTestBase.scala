@@ -23,7 +23,7 @@ import org.neo4j.configuration.GraphDatabaseSettings
 import org.neo4j.cypher.internal.logical.plans.Ascending
 import org.neo4j.cypher.internal.runtime.InputDataStream
 import org.neo4j.cypher.internal.runtime.spec._
-import org.neo4j.cypher.internal.{CypherRuntime, RuntimeContext}
+import org.neo4j.cypher.internal.{CypherRuntime, LogicalQuery, RuntimeContext}
 import org.neo4j.exceptions.TransactionOutOfMemoryException
 import org.neo4j.kernel.impl.util.ValueUtils
 
@@ -39,7 +39,7 @@ trait InputStreams[CONTEXT <: RuntimeContext] {
     * Infinite iterator.
     *
     * @param rowSize the size of a row in Bytes
-    * @param data    an optionally empty array. If non-empty, it will be returned in every call to `next`. If non-empty, the iterator returns integer values.
+    * @param data    an optionally empty array. If non-empty, it will be returned in every call to `next`. If empty, the iterator returns integer values.
     */
   protected def infiniteInput(rowSize: Long, data: Any*): InputDataStream = {
     iteratorInput(iterate(data.toArray, None, nodeInput = false, rowSize))
@@ -49,7 +49,7 @@ trait InputStreams[CONTEXT <: RuntimeContext] {
     * Infinite iterator.
     *
     * @param rowSize the size of a row in Bytes
-    * @param data    an optionally empty array. If non-empty, it will be returned in every call to `next`. If non-empty, the iterator returns node values.
+    * @param data    an optionally empty array. If non-empty, it will be returned in every call to `next`. If empty, the iterator returns node values.
     */
   protected def infiniteNodeInput(rowSize: Long, data: Any*): InputDataStream = {
     iteratorInput(iterate(data.toArray, None, nodeInput = true, rowSize))
@@ -59,7 +59,7 @@ trait InputStreams[CONTEXT <: RuntimeContext] {
     * Finite iterator.
     *
     * @param limit the iterator will be exhausted after the given amount of rows
-    * @param data  an optionally empty array. If non-empty, it will be returned in every call to `next`. If non-empty, the iterator returns integer values.
+    * @param data  an optionally empty array. If non-empty, it will be returned in every call to `next`. If empty, the iterator returns integer values.
     */
   protected def finiteInput(limit: Int, data: Any*): InputDataStream = {
     iteratorInput(iterate(data.toArray, Some(limit), nodeInput = false, -1))
@@ -82,7 +82,6 @@ trait InputStreams[CONTEXT <: RuntimeContext] {
   case object E_NODE_PRIMITIVE extends ValueToEstimate
   // a single node column, which cannot be stored in a long-slot in slotted
   case object E_NODE_VALUE extends ValueToEstimate
-
 
   /**
     * Estimate the size of an object after converting it into a Neo4j value.
@@ -160,14 +159,15 @@ abstract class MemoryManagementTestBase[CONTEXT <: RuntimeContext](
 
   test("should kill sort query before it runs out of memory") {
     // given
-    val input = infiniteInput(estimateSize(E_INT))
-
-    // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
       .sort(Seq(Ascending("x")))
       .input(variables = Seq("x"))
       .build()
+
+    // when
+    val expectedRowSize = assertTotalAllocatedMemory(logicalQuery, E_INT)
+    val input = infiniteInput(expectedRowSize)
 
     // then
     a[TransactionOutOfMemoryException] should be thrownBy {
@@ -177,14 +177,15 @@ abstract class MemoryManagementTestBase[CONTEXT <: RuntimeContext](
 
   test("should kill distinct query before it runs out of memory") {
     // given
-    val input = infiniteInput(estimateSize(E_INT_IN_DISTINCT))
-
-    // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
       .distinct("x AS x")
       .input(variables = Seq("x"))
       .build()
+
+    // when
+    val expectedRowSize = assertTotalAllocatedMemory(logicalQuery, E_INT_IN_DISTINCT)
+    val input = infiniteInput(expectedRowSize)
 
     // then
     a[TransactionOutOfMemoryException] should be thrownBy {
@@ -194,14 +195,14 @@ abstract class MemoryManagementTestBase[CONTEXT <: RuntimeContext](
 
   test("should not kill count aggregation query") {
     // given
-    val input = finiteInput(100000)
-
-    // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("c")
       .aggregation(Seq.empty, Seq("count(*) AS c"))
       .input(variables = Seq("x"))
       .build()
+
+    // when
+    val input = finiteInput(100000)
 
     // then
     consume(execute(logicalQuery, runtime, input))
@@ -209,14 +210,15 @@ abstract class MemoryManagementTestBase[CONTEXT <: RuntimeContext](
 
   test("should kill collect aggregation query before it runs out of memory") {
     // given
-    val input = infiniteInput(estimateSize(E_INT))
-
-    // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("c")
       .aggregation(Seq.empty, Seq("collect(x) AS c"))
       .input(variables = Seq("x"))
       .build()
+
+    // when
+    val expectedRowSize = assertTotalAllocatedMemory(logicalQuery, E_INT)
+    val input = infiniteInput(expectedRowSize)
 
     // then
     a[TransactionOutOfMemoryException] should be thrownBy {
@@ -226,14 +228,15 @@ abstract class MemoryManagementTestBase[CONTEXT <: RuntimeContext](
 
   test("should kill grouping aggregation query before it runs out of memory - one large group") {
     // given
-    val input = infiniteInput(estimateSize(E_INT), 0)
-
-    // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("c")
       .aggregation(Seq("x AS x"), Seq("collect(x) AS c"))
       .input(variables = Seq("x"))
       .build()
+
+    // when
+    val expectedRowSize = assertTotalAllocatedMemory(logicalQuery, E_INT, Some(0))
+    val input = infiniteInput(expectedRowSize, 0)
 
     // then
     a[TransactionOutOfMemoryException] should be thrownBy {
@@ -243,14 +246,15 @@ abstract class MemoryManagementTestBase[CONTEXT <: RuntimeContext](
 
   test("should kill grouping aggregation query before it runs out of memory - many groups") {
     // given
-    val input = infiniteInput(estimateSize(E_INT))
-
-    // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("c")
       .aggregation(Seq("x AS x"), Seq("collect(x) AS c"))
       .input(variables = Seq("x"))
       .build()
+
+    // when
+    val expectedRowSize = assertTotalAllocatedMemory(logicalQuery, E_INT)
+    val input = infiniteInput(expectedRowSize)
 
     // then
     a[TransactionOutOfMemoryException] should be thrownBy {
@@ -260,16 +264,17 @@ abstract class MemoryManagementTestBase[CONTEXT <: RuntimeContext](
 
   test("should kill node hash join query before it runs out of memory") {
     // given
-    val nodes = nodeGraph(1)
-    val input = infiniteNodeInput(estimateSize(E_NODE_PRIMITIVE), nodes.head)
-
-    // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
       .nodeHashJoin("x")
       .|.allNodeScan("x")
       .input(nodes = Seq("x"))
       .build()
+
+    // when
+    val nodes = nodeGraph(1)
+    val expectedRowSize = assertTotalAllocatedMemory(logicalQuery, E_NODE_PRIMITIVE, Some(nodes.head))
+    val input = infiniteInput(expectedRowSize, nodes.head)
 
     // then
     a[TransactionOutOfMemoryException] should be thrownBy {
@@ -279,10 +284,6 @@ abstract class MemoryManagementTestBase[CONTEXT <: RuntimeContext](
 
   test("should kill multi-column node hash join query before it runs out of memory") {
     // given
-    val (nodes, _) = circleGraph(1)
-    val input = infiniteNodeInput(estimateSize(E_NODE_PRIMITIVE) * 2, nodes.head, nodes.head)
-
-    // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
       .nodeHashJoin("x", "y")
@@ -291,10 +292,69 @@ abstract class MemoryManagementTestBase[CONTEXT <: RuntimeContext](
       .input(nodes = Seq("x", "y"))
       .build()
 
+    // when
+    val (nodes, _) = circleGraph(1)
+    val input = infiniteNodeInput(estimateSize(E_NODE_PRIMITIVE) * 2, nodes.head, nodes.head)
+
     // then
     a[TransactionOutOfMemoryException] should be thrownBy {
       consume(execute(logicalQuery, runtime, input))
     }
+  }
+
+  test("should kill double collect aggregation query before it runs out of memory") {
+    // given
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("c1", "c2")
+      .aggregation(Seq.empty, Seq("collect(x) AS c1", "collect(x) AS c2"))
+      .input(variables = Seq("x"))
+      .build()
+
+    val estimatedRowSize = estimateRowSize(logicalQuery)
+
+    // when
+    val input = infiniteInput(estimatedRowSize)
+
+    // then
+    a[TransactionOutOfMemoryException] should be thrownBy {
+      consume(execute(logicalQuery, runtime, input))
+    }
+  }
+
+  test("should kill distinct + node hash join query before it runs out of memory") {
+    // given
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x")
+      .nodeHashJoin("x")
+      .|.allNodeScan("x")
+      .distinct("x AS x")
+      .input(nodes = Seq("x"))
+      .build()
+
+    val estimatedRowSize = estimateRowSize(logicalQuery, Some(nodeGraph(1).head))
+
+    // when
+    val input = infiniteNodeInput(estimatedRowSize)
+
+    // then
+    a[TransactionOutOfMemoryException] should be thrownBy {
+      consume(execute(logicalQuery, runtime, input))
+    }
+  }
+
+  protected def assertTotalAllocatedMemory(logicalQuery: LogicalQuery, valueToEstimate: ValueToEstimate, sampleValue: Option[Any] = None): Long = {
+    val expectedRowSize = estimateSize(valueToEstimate)
+    val estimatedRowSize = estimateRowSize(logicalQuery, sampleValue)
+    estimatedRowSize should be >= expectedRowSize
+    estimatedRowSize should be < expectedRowSize * 10 // in morsel we have lot's of overhead for some operators in corner cases
+    expectedRowSize
+  }
+
+  protected def estimateRowSize(logicalQuery: LogicalQuery, sampleValue: Option[Any] = None): Long = {
+    val nRows = 8
+    val result = execute(logicalQuery, runtime, inputColumns(1, nRows, i => sampleValue.getOrElse(i)))
+    consume(result)
+    result.runtimeResult.totalAllocatedMemory().get() / nRows
   }
 }
 
@@ -306,14 +366,15 @@ trait FullSupportMemoryManagementTestBase [CONTEXT <: RuntimeContext] {
 
   test("should kill eager query before it runs out of memory") {
     // given
-    val input = infiniteInput(estimateSize(E_INT))
-
-    // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
       .eager()
       .input(variables = Seq("x"))
       .build()
+
+    // when
+    val estimatedRowSize = assertTotalAllocatedMemory(logicalQuery, E_INT)
+    val input = infiniteInput(estimatedRowSize)
 
     // then
     a[TransactionOutOfMemoryException] should be thrownBy {
@@ -323,14 +384,14 @@ trait FullSupportMemoryManagementTestBase [CONTEXT <: RuntimeContext] {
 
   test("should kill stdDev aggregation query before it runs out of memory") {
     // given
-    val input = infiniteInput(java.lang.Double.BYTES, 5) // StdDev stores primitive doubles
-
-    // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("c")
       .aggregation(Seq.empty, Seq("stdev(x) AS c"))
       .input(variables = Seq("x"))
       .build()
+
+    // when
+    val input = infiniteInput(java.lang.Double.BYTES, 5) // StdDev stores primitive doubles
 
     // then
     a[TransactionOutOfMemoryException] should be thrownBy {
@@ -340,14 +401,14 @@ trait FullSupportMemoryManagementTestBase [CONTEXT <: RuntimeContext] {
 
   test("should kill percentileDisc aggregation query before it runs out of memory") {
     // given
-    val input = infiniteInput(estimateSize(E_INT), 5)
-
-    // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("c")
       .aggregation(Seq.empty, Seq("percentileDisc(x, 0.1) AS c"))
       .input(variables = Seq("x"))
       .build()
+
+    // when
+    val input = infiniteInput(estimateSize(E_INT), 5)
 
     // then
     a[TransactionOutOfMemoryException] should be thrownBy {
@@ -357,14 +418,14 @@ trait FullSupportMemoryManagementTestBase [CONTEXT <: RuntimeContext] {
 
   test("should kill percentileCont aggregation query before it runs out of memory") {
     // given
-    val input = infiniteInput(estimateSize(E_INT), 5)
-
-    // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("c")
       .aggregation(Seq.empty, Seq("percentileCont(x, 0.1) AS c"))
       .input(variables = Seq("x"))
       .build()
+
+    // when
+    val input = infiniteInput(estimateSize(E_INT), 5)
 
     // then
     a[TransactionOutOfMemoryException] should be thrownBy {
@@ -374,15 +435,15 @@ trait FullSupportMemoryManagementTestBase [CONTEXT <: RuntimeContext] {
 
   test("should kill distinct aggregation query before it runs out of memory") {
     // given
-    val (nodes, _) = circleGraph(1) // Just for size estimation
-    val input = infiniteNodeInput(estimateSize(E_NODE_VALUE))
-
-    // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("c")
       .aggregation(Seq.empty, Seq("count(DISTINCT x) AS c"))
       .input(nodes = Seq("x"))
       .build()
+
+    // when
+    val (nodes, _) = circleGraph(1) // Just for size estimation
+    val input = infiniteNodeInput(estimateSize(E_NODE_VALUE))
 
     // then
     a[TransactionOutOfMemoryException] should be thrownBy {

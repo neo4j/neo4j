@@ -26,11 +26,18 @@ import java.util.Optional
 trait QueryMemoryTracker {
 
   /**
-   * Record allocation of bytes
-   *
-   * @param bytes number of allocated bytes
-   */
+    * Record allocation of bytes
+    *
+    * @param bytes number of allocated bytes
+    */
   def allocated(bytes: => Long): Unit
+
+  /**
+    * Record de-allocation of bytes
+    *
+    * @param bytes number of de-allocated bytes
+    */
+  def deallocated(bytes: => Long): Unit
 
   /**
     * Returns an Iterator that, given the memory config settings, might throw an exception if the
@@ -61,20 +68,30 @@ case object NoMemoryTracker extends QueryMemoryTracker {
 
   override def allocated(bytes: => Long): Unit = {}
 
+  override def deallocated(bytes: => Long): Unit = {}
+
   override def totalAllocatedMemory: Optional[lang.Long] = Optional.empty()
 }
 
 class BoundedMemoryTracker(val threshold: Long) extends QueryMemoryTracker {
   private var allocatedBytes = 0L
+  private var highWaterMark = 0L
 
   override def allocated(bytes: => Long): Unit = {
-    this.allocatedBytes += bytes
-    if (this.allocatedBytes > threshold) {
+    allocatedBytes += bytes
+    if (allocatedBytes > threshold) {
       throw new TransactionOutOfMemoryException
+    }
+    if (allocatedBytes > highWaterMark) {
+      highWaterMark = allocatedBytes
     }
   }
 
-  override def totalAllocatedMemory: Optional[lang.Long] = Optional.of(allocatedBytes)
+  override def deallocated(bytes: => Long): Unit = {
+    allocatedBytes -= bytes
+  }
+
+  override def totalAllocatedMemory: Optional[lang.Long] = Optional.of(highWaterMark)
 
   override def memoryTrackingIterator[T <: ExecutionContext](input: Iterator[T]): Iterator[T] = new MemoryTrackingIterator2[T](input)
 
