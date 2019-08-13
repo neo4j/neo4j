@@ -33,9 +33,10 @@ class CollectFunction(value:Expression) extends AggregationFunction {
   override def apply(data: ExecutionContext, state:QueryState): Unit = {
     value(data, state) match {
       case IsNoValue() =>
-      case v    => collection += v
+      case v    =>
+        collection += v
+        state.memoryTracker.allocated(v.estimatedHeapUsage())
     }
-    state.memoryTracker.checkMemoryRequirement(collection.map(_.estimatedHeapUsage).sum)
   }
 
   override def result(state: QueryState): AnyValue = VirtualValues.list(collection.toArray:_*)

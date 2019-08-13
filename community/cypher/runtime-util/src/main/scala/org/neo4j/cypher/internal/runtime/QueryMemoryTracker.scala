@@ -21,59 +21,58 @@ package org.neo4j.cypher.internal.runtime
 
 import org.neo4j.exceptions.TransactionOutOfMemoryException
 
-trait MemoryTracker {
+trait QueryMemoryTracker {
+
+  /**
+   * Record allocation of bytes
+   *
+   * @param bytes number of allocated bytes
+   */
+  def allocated(bytes: => Long): Unit
+
   /**
     * Returns an Iterator that, given the memory config settings, might throw an exception if the
     * memory used by the query grows too large.
     */
   def memoryTrackingIterator[T<: ExecutionContext](input: Iterator[T]): Iterator[T]
-
-  /**
-    * Given the size of a collection, this method can throw an Exception if the size exceeds the configured
-    * limit for the query.
-    */
-  def checkMemoryRequirement(estimatedHeapUsage: => Long): Unit
 }
 
-object MemoryTracker {
-  def apply(transactionMaxMemory: Long): MemoryTracker = {
+object QueryMemoryTracker {
+  def apply(transactionMaxMemory: Long): QueryMemoryTracker = {
     if (transactionMaxMemory == 0L) {
       NoMemoryTracker
     } else {
-      StandardMemoryTracker(transactionMaxMemory)
+      new BoundedMemoryTracker(transactionMaxMemory)
     }
   }
 }
 
-case object NoMemoryTracker extends MemoryTracker {
+case object NoMemoryTracker extends QueryMemoryTracker {
   override def memoryTrackingIterator[T](input: Iterator[T]): Iterator[T] = input
 
-  override def checkMemoryRequirement(size: => Long): Unit = {}
+  override def allocated(bytes: => Long): Unit = {}
+
 }
 
-case class StandardMemoryTracker(transactionMaxMemory: Long) extends MemoryTracker {
-  override def memoryTrackingIterator[T<: ExecutionContext](input: Iterator[T]): Iterator[T] = new MemoryTrackingIterator[T](input, transactionMaxMemory)
+class BoundedMemoryTracker(val threshold: Long) extends QueryMemoryTracker {
+  private var allocatedBytes = 0L
 
-  override def checkMemoryRequirement(size: => Long): Unit = {
-    if (size >= transactionMaxMemory) {
-      throw new TransactionOutOfMemoryException()
+  override def allocated(bytes: => Long): Unit = {
+    this.allocatedBytes += bytes
+    if (this.allocatedBytes > threshold) {
+      throw new TransactionOutOfMemoryException
     }
   }
 
-  /**
-    * Iterator that throws a [[TransactionOutOfMemoryException]] when the input uses more memory than transactionMaxMemory allows.
-    */
-  private class MemoryTrackingIterator[T <: ExecutionContext](input: Iterator[T], transactionMaxMemory: Long) extends Iterator[T] {
-    private var heapUsage = 0L
+  override def memoryTrackingIterator[T <: ExecutionContext](input: Iterator[T]): Iterator[T] = new MemoryTrackingIterator2[T](input)
 
+  private class MemoryTrackingIterator2[T <: ExecutionContext](input: Iterator[T]) extends Iterator[T] {
     override def hasNext: Boolean = input.hasNext
 
     override def next(): T = {
       val t = input.next()
-      heapUsage += t.estimatedHeapUsage
-      if (heapUsage > transactionMaxMemory) {
-        throw new TransactionOutOfMemoryException()
-      }
+      val rowHeapUsage = t.estimatedHeapUsage
+      allocated(rowHeapUsage)
       t
     }
   }

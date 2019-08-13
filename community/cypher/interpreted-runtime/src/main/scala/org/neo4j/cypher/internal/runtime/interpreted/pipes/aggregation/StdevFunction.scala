@@ -60,7 +60,7 @@ class StdevFunction(val value: Expression, val population:Boolean)
       count += 1
       total += number.doubleValue()
       temp = temp :+ number.doubleValue()
+      state.memoryTracker.allocated(java.lang.Double.BYTES)
     })
-    state.memoryTracker.checkMemoryRequirement(temp.size * java.lang.Double.BYTES)
   }
 }

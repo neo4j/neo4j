@@ -50,6 +50,7 @@ class GroupingAggTable(groupingColumns: Array[GroupingCol],
   override def processRow(row: ExecutionContext): Unit = {
     val groupingValue: AnyValue = groupingFunction(row, state)
     val aggregationFunctions = resultMap.computeIfAbsent(groupingValue, _ => {
+      state.memoryTracker.allocated(groupingValue.estimatedHeapUsage())
       val functions = new Array[AggregationFunction](aggregations.length)
       var i = 0
       while (i < aggregations.length) {
@@ -58,7 +59,6 @@ class GroupingAggTable(groupingColumns: Array[GroupingCol],
       }
       functions
     })
-    state.memoryTracker.checkMemoryRequirement(resultMap.keySet().asScala.toList.map(_.estimatedHeapUsage).sum)
     var i = 0
     while (i < aggregationFunctions.length) {
       aggregationFunctions(i)(row, state)
