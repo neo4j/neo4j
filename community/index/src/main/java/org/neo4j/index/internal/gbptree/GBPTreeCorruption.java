@@ -225,6 +225,17 @@ final class GBPTreeCorruption
         };
     }
 
+    static <KEY,VALUE> PageCorruption<KEY,VALUE> incrementLastPageId()
+    {
+        return ( pagedFile, cursor, layout, node, treeState ) -> {
+            cursor.next( treeState.pageId() );
+            long incrementedLastId = treeState.lastId() + 1;
+            TreeState.write( cursor, treeState.stableGeneration(), treeState.unstableGeneration(), treeState.rootId(),
+                    treeState.rootGeneration(), incrementedLastId, treeState.freeListWritePageId(), treeState.freeListReadPageId(), treeState.freeListWritePos(),
+                    treeState.freeListReadPos(), treeState.isClean() );
+        };
+    }
+
     private static FreeListIdProvider getFreelist( PagedFile pagedFile, TreeState treeState )
     {
         FreeListIdProvider freelist = new FreeListIdProvider( pagedFile, pagedFile.pageSize(), treeState.lastId(), FreeListIdProvider.NO_MONITOR );

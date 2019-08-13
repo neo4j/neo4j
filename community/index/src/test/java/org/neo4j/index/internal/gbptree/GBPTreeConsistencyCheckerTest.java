@@ -505,6 +505,42 @@ public class GBPTreeConsistencyCheckerTest
         }
     }
 
+    @Test
+    public void shouldDetectExtraEmptyPageInFile() throws IOException
+    {
+        long targetPage;
+        try ( GBPTree<MutableLong,MutableLong> index = index().build() )
+        {
+            // Add and remove a bunch of keys to fill freelist
+            try ( Writer<MutableLong,MutableLong> writer = index.writer() )
+            {
+                int keyCount = 0;
+                while ( getHeight( index ) < 2 )
+                {
+                    writer.put( layout.key( keyCount ), layout.value( keyCount ) );
+                    keyCount++;
+                }
+            }
+            index.checkpoint( IOLimiter.UNLIMITED );
+        }
+
+        // When tree is closed we will overwrite treeState with in memory state so we need to open tree in read only mode for our state corruption to persist.
+        try ( GBPTree<MutableLong,MutableLong> index = index().withReadOnly( true ).build() )
+        {
+            InspectingVisitor<MutableLong,MutableLong> visitor = inspect( index );
+            targetPage = visitor.treeState.lastId() + 1;
+
+            GBPTreeCorruption.PageCorruption<RawBytes,RawBytes> corruption = GBPTreeCorruption.incrementLastPageId();
+            corrupt( 0, corruption, visitor.treeState , dynamicLayout, dynamicNode );
+        }
+
+        // Need to restart tree to reload corrupted freelist
+        try ( GBPTree<MutableLong,MutableLong> index = index().build() )
+        {
+            assertReportLastIdIncremented( index, targetPage );
+        }
+    }
+
     //todo
     //  Tree structure inconsistencies:
     //    > Pointer generation lower than node generation
@@ -537,7 +573,7 @@ public class GBPTreeConsistencyCheckerTest
     //  (unstable generation)
     //      X Page missing from freelist
     //      X Extra page on free list
-    //      - Extra empty page in file
+    //      X Extra empty page in file
     //  Tree meta inconsistencies:
     //    > Can not read meta data.
 
@@ -909,6 +945,21 @@ public class GBPTreeConsistencyCheckerTest
             {
                 called.setTrue();
                 assertEquals( targetNode, pageId );
+            }
+        } );
+        assertCalled( called );
+    }
+
+    private static void assertReportLastIdIncremented( GBPTree<MutableLong,MutableLong> index, long targetPage ) throws IOException
+    {
+        MutableBoolean called = new MutableBoolean();
+        index.consistencyCheck( new GBPTreeConsistencyCheckVisitor.Adaptor<MutableLong>()
+        {
+            @Override
+            public void unusedPage( long pageId )
+            {
+                called.setTrue();
+                assertEquals( targetPage, pageId );
             }
         } );
         assertCalled( called );
