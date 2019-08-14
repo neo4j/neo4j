@@ -57,7 +57,7 @@ import org.neo4j.kernel.impl.newapi.DefaultPooledCursors
 import org.neo4j.kernel.impl.query.{Neo4jTransactionalContext, Neo4jTransactionalContextFactory}
 import org.neo4j.kernel.impl.util.DefaultValueMapper
 import org.neo4j.lock.LockTracer
-import org.neo4j.resources.{CpuClock, HeapAllocation}
+import org.neo4j.resources.CpuClock
 import org.neo4j.test.TestDatabaseManagementServiceBuilder
 import org.neo4j.values.ValueMapper
 import org.neo4j.values.virtual.VirtualValues.EMPTY_MAP
@@ -87,8 +87,7 @@ class TransactionBoundQueryContextTest extends CypherFunSuite {
     when(kernelTransaction.securityContext()).thenReturn(AUTH_DISABLED)
     when(kernelTransaction.acquireStatement()).thenReturn(statement)
     statement = new KernelStatement(kernelTransaction, LockTracer.NONE, new ClockContext(), EmptyVersionContextSupplier.EMPTY,
-      new AtomicReference[CpuClock](CpuClock.NOT_AVAILABLE), new AtomicReference[HeapAllocation](HeapAllocation.NOT_AVAILABLE),
-      new TestDatabaseIdRepository().defaultDatabase)
+      new AtomicReference[CpuClock](CpuClock.NOT_AVAILABLE), new TestDatabaseIdRepository().defaultDatabase)
     statement.initialize(null, PageCursorTracerSupplier.NULL.get())
     statement.acquire()
   }
@@ -209,7 +208,6 @@ class TransactionBoundQueryContextTest extends CypherFunSuite {
 
     val tx = graph.beginTransaction(Type.explicit, LoginContext.AUTH_DISABLED)
     val transactionalContext = TransactionalContextWrapper(createTransactionContext(graph, tx))
-    val context = new TransactionBoundQueryContext(transactionalContext)(indexSearchMonitor)
 
     val tracer = transactionalContext.kernelStatisticProvider
     tracer.getPageCacheHits should equal(0)

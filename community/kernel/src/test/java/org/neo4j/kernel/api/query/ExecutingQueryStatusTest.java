@@ -64,6 +64,16 @@ class ExecutingQueryStatusTest
     }
 
     @Test
+    void shouldProduceSensibleMapRepresentationInPlannedState()
+    {
+        // when
+        String status = SimpleState.planning().name();
+
+        // then
+        assertEquals( "planned", status );
+    }
+
+    @Test
     void shouldProduceSensibleMapRepresentationInWaitingOnLockState()
     {
         // given
@@ -108,8 +118,7 @@ class ExecutingQueryStatusTest
                                 Thread.currentThread().getId(),
                                 Thread.currentThread().getName(),
                                 clock,
-                                FakeCpuClock.NOT_AVAILABLE,
-                                HeapAllocation.NOT_AVAILABLE ), clock.nanos() );
+                                FakeCpuClock.NOT_AVAILABLE ), clock.nanos() );
         clock.forward( 1025, TimeUnit.MILLISECONDS );
 
         // when

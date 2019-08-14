@@ -54,11 +54,11 @@ trait QueryMemoryTracker {
 }
 
 object QueryMemoryTracker {
-  def apply(transactionMaxMemory: Long): QueryMemoryTracker = {
-    if (transactionMaxMemory == 0L) {
-      NoMemoryTracker
-    } else {
-      new BoundedMemoryTracker(transactionMaxMemory)
+  def apply(memoryTracking: MemoryTracking): QueryMemoryTracker = {
+    memoryTracking match {
+      case NO_TRACKING => NoMemoryTracker
+      case MEMORY_TRACKING => new BoundedMemoryTracker(Long.MaxValue)
+      case MEMORY_BOUND(maxAllocatedBytes) => new BoundedMemoryTracker(maxAllocatedBytes)
     }
   }
 }
@@ -106,3 +106,8 @@ class BoundedMemoryTracker(val threshold: Long) extends QueryMemoryTracker {
     }
   }
 }
+
+sealed trait MemoryTracking
+case object NO_TRACKING extends MemoryTracking
+case object MEMORY_TRACKING extends MemoryTracking
+case class MEMORY_BOUND(maxAllocatedBytes: Long) extends MemoryTracking

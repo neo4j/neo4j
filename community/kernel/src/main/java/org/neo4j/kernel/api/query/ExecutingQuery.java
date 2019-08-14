@@ -39,8 +39,8 @@ import org.neo4j.kernel.impl.locking.ActiveLock;
 import org.neo4j.lock.LockTracer;
 import org.neo4j.lock.LockWaitEvent;
 import org.neo4j.lock.ResourceType;
+import org.neo4j.memory.OptionalMemoryTracker;
 import org.neo4j.resources.CpuClock;
-import org.neo4j.resources.HeapAllocation;
 import org.neo4j.time.SystemNanoClock;
 import org.neo4j.values.virtual.MapValue;
 
@@ -77,9 +77,7 @@ public class ExecutingQuery
     private final long initialActiveLocks;
     private final SystemNanoClock clock;
     private final CpuClock cpuClock;
-    private final HeapAllocation heapAllocation;
     private final long cpuTimeNanosWhenQueryStarted;
-    private final long heapAllocatedBytesWhenQueryStarted;
     private final Map<String,Object> transactionAnnotationData;
     /** Uses write barrier of {@link #status}. */
     private CompilerInfo compilerInfo;
@@ -87,10 +85,11 @@ public class ExecutingQuery
     /** Updated through {@link #WAIT_TIME} */
     @SuppressWarnings( "unused" )
     private volatile long waitTimeNanos;
+    private OptionalMemoryTracker memoryTracker = OptionalMemoryTracker.NONE;
 
     public ExecutingQuery( long queryId, ClientConnectionInfo clientConnection, DatabaseId databaseId, String username, String queryText,
             MapValue queryParameters, Map<String,Object> transactionAnnotationData, LongSupplier activeLockCount, PageCursorCounters pageCursorCounters,
-            long threadExecutingTheQueryId, String threadExecutingTheQueryName, SystemNanoClock clock, CpuClock cpuClock, HeapAllocation heapAllocation )
+            long threadExecutingTheQueryId, String threadExecutingTheQueryName, SystemNanoClock clock, CpuClock cpuClock )
     {
         this.databaseId = databaseId;
         // Capture timestamps first
@@ -111,9 +110,7 @@ public class ExecutingQuery
         this.threadExecutingTheQueryId = threadExecutingTheQueryId;
         this.threadExecutingTheQueryName = threadExecutingTheQueryName;
         this.cpuClock = cpuClock;
-        this.heapAllocation = heapAllocation;
         this.clock = clock;
-        this.heapAllocatedBytesWhenQueryStarted = heapAllocation.allocatedBytes( this.threadExecutingTheQueryId );
     }
 
     // update state
@@ -126,6 +123,12 @@ public class ExecutingQuery
         this.compilationCompletedNanos = clock.nanos();
         this.planDescriptionSupplier = planDescriptionSupplier;
         this.queryType = queryType;
+        this.status = SimpleState.planned(); // write barrier - must be last
+    }
+
+    public void executionStarted( OptionalMemoryTracker memoryTracker )
+    {
+        this.memoryTracker = memoryTracker;
         this.status = SimpleState.running(); // write barrier - must be last
     }
 
@@ -172,7 +175,6 @@ public class ExecutingQuery
         // activeLockCount is not atomic to capture, so we capture it after the most sensitive part.
         long totalActiveLocks = this.activeLockCount.getAsLong();
         // just needs to be captured at some point...
-        long heapAllocatedBytes = heapAllocation.allocatedBytes( threadExecutingTheQueryId );
         PageCounterValues pageCounters = new PageCounterValues( pageCursorCounters );
 
         // - at this point we are done capturing the "live" state, and can start computing the snapshot -
@@ -180,11 +182,6 @@ public class ExecutingQuery
         long elapsedTimeNanos = currentTimeNanos - startTimeNanos;
         cpuTimeNanos -= cpuTimeNanosWhenQueryStarted;
         waitTimeNanos += status.waitTimeNanos( currentTimeNanos );
-        // TODO: when we start allocating native memory as well during query execution,
-        // we should have a tracer that keeps track of how much memory we have allocated for the query,
-        // and get the value from that here.
-        heapAllocatedBytes = heapAllocatedBytesWhenQueryStarted < 0 ? -1 : // mark that we were unable to measure
-                heapAllocatedBytes - heapAllocatedBytesWhenQueryStarted;
 
         return new QuerySnapshot(
                 this,
@@ -198,7 +195,7 @@ public class ExecutingQuery
                 status.toMap( currentTimeNanos ),
                 waitingOnLocks,
                 totalActiveLocks - initialActiveLocks,
-                heapAllocatedBytes
+                memoryTracker.totalAllocatedMemory()
         );
     }
 

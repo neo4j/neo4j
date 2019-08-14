@@ -25,7 +25,7 @@ import java.util.concurrent.TimeUnit
 import org.neo4j.configuration.{Config, GraphDatabaseSettings}
 import org.neo4j.cypher._
 import org.neo4j.cypher.internal.compiler.{CypherPlannerConfiguration, StatsDivergenceCalculator}
-import org.neo4j.io.ByteUnit
+import org.neo4j.cypher.internal.runtime.{MEMORY_BOUND, MEMORY_TRACKING, MemoryTracking, NO_TRACKING}
 
 import scala.concurrent.duration.Duration
 
@@ -58,7 +58,10 @@ object CypherConfiguration {
       config.get(GraphDatabaseSettings.cypher_task_wait),
       config.get(GraphDatabaseSettings.cypher_expression_recompilation_limit),
       config.get(GraphDatabaseSettings.cypher_morsel_fuse_operators),
-      config.get(GraphDatabaseSettings.transaction_max_memory)
+      memoryTracking(
+        config.get(GraphDatabaseSettings.track_query_allocation),
+        config.get(GraphDatabaseSettings.query_max_memory)
+      )
     )
   }
 
@@ -74,6 +77,11 @@ object CypherConfiguration {
                                                       minReplanTime,
                                                       targetReplanTime)
   }
+
+  def memoryTracking(trackQueryAllocation: Boolean, queryMaxMemory: Long): MemoryTracking =
+    if (trackQueryAllocation && queryMaxMemory > 0) MEMORY_BOUND(queryMaxMemory)
+    else if (trackQueryAllocation) MEMORY_TRACKING
+    else NO_TRACKING
 }
 
 case class CypherConfiguration(version: CypherVersion,
@@ -99,7 +107,7 @@ case class CypherConfiguration(version: CypherVersion,
                                waitTimeout: Int,
                                recompilationLimit: Int,
                                fuseOperators: Boolean,
-                               transactionMaxMemory: Long) {
+                               memoryTracking: MemoryTracking) {
 
   def toCypherRuntimeConfiguration: CypherRuntimeConfiguration =
     CypherRuntimeConfiguration(
@@ -111,7 +119,7 @@ case class CypherConfiguration(version: CypherVersion,
       waitTimeout = Duration(waitTimeout, TimeUnit.MILLISECONDS),
       lenientCreateRelationship = lenientCreateRelationship,
       fuseOperators = fuseOperators,
-      transactionMaxMemory = transactionMaxMemory
+      memoryTracking = memoryTracking
     )
 
   def toSchedulerTracingConfiguration(doSchedulerTracing: Boolean,

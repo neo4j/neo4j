@@ -19,15 +19,14 @@
  */
 package org.neo4j.cypher.result;
 
-import java.util.Optional;
-
 import org.neo4j.cypher.internal.runtime.QueryStatistics;
 import org.neo4j.kernel.impl.query.QuerySubscription;
+import org.neo4j.memory.OptionalMemoryTracker;
 
 /**
  * The result API of a Cypher runtime
  */
-public interface RuntimeResult extends AutoCloseable, QuerySubscription
+public interface RuntimeResult extends AutoCloseable, QuerySubscription, OptionalMemoryTracker
 {
     enum ConsumptionState
     {
@@ -55,13 +54,6 @@ public interface RuntimeResult extends AutoCloseable, QuerySubscription
      * Get the {@link QueryProfile} of this query execution.
      */
     QueryProfile queryProfile();
-
-    /**
-     * Get the total allocated memory of this query, in bytes.
-     *
-     * @return the total number of allocated memory bytes, or None, if memory tracking was not enabled.
-     */
-    Optional<Long> totalAllocatedMemory();
 
     @Override
     void close();

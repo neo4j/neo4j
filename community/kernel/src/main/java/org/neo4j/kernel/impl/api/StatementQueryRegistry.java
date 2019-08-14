@@ -27,7 +27,6 @@ import org.neo4j.kernel.api.query.ExecutingQuery;
 import org.neo4j.kernel.database.DatabaseId;
 import org.neo4j.kernel.impl.util.MonotonicCounter;
 import org.neo4j.resources.CpuClock;
-import org.neo4j.resources.HeapAllocation;
 import org.neo4j.time.SystemNanoClock;
 import org.neo4j.values.virtual.MapValue;
 
@@ -37,16 +36,13 @@ public class StatementQueryRegistry implements QueryRegistry
     private final KernelStatement statement;
     private final SystemNanoClock clock;
     private final AtomicReference<CpuClock> cpuClockRef;
-    private final AtomicReference<HeapAllocation> heapAllocationRef;
     private final DatabaseId databaseId;
 
-    StatementQueryRegistry( KernelStatement statement, SystemNanoClock clock, AtomicReference<CpuClock> cpuClockRef,
-            AtomicReference<HeapAllocation> heapAllocationRef, DatabaseId databaseId )
+    StatementQueryRegistry( KernelStatement statement, SystemNanoClock clock, AtomicReference<CpuClock> cpuClockRef, DatabaseId databaseId )
     {
         this.statement = statement;
         this.clock = clock;
         this.cpuClockRef = cpuClockRef;
-        this.heapAllocationRef = heapAllocationRef;
         this.databaseId = databaseId;
     }
 
@@ -74,7 +70,7 @@ public class StatementQueryRegistry implements QueryRegistry
                 new ExecutingQuery( queryId, transaction.clientInfo(), databaseId, statement.username(), queryText, queryParameters,
                         transaction.getMetaData(), () -> statement.locks().activeLockCount(),
                         statement.getPageCursorTracer(),
-                        threadId, threadName, clock, cpuClockRef.get(), heapAllocationRef.get() );
+                        threadId, threadName, clock, cpuClockRef.get() );
         registerExecutingQuery( executingQuery );
         return executingQuery;
     }

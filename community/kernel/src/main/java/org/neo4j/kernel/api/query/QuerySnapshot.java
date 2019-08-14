@@ -22,6 +22,7 @@ package org.neo4j.kernel.api.query;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
@@ -43,12 +44,12 @@ public class QuerySnapshot
     private final Map<String,Object> resourceInfo;
     private final List<ActiveLock> waitingLocks;
     private final long activeLockCount;
-    private final long allocatedBytes;
+    private final Optional<Long> allocatedBytes;
     private final PageCounterValues page;
 
     QuerySnapshot( ExecutingQuery query, CompilerInfo compilerInfo, PageCounterValues page, long compilationTimeMicros,
                    long elapsedTimeMicros, long cpuTimeMicros, long waitTimeMicros, String status,
-                   Map<String,Object> resourceInfo, List<ActiveLock> waitingLocks, long activeLockCount, long allocatedBytes )
+                   Map<String,Object> resourceInfo, List<ActiveLock> waitingLocks, long activeLockCount, Optional<Long> allocatedBytes )
     {
         this.query = query;
         this.compilerInfo = compilerInfo;
@@ -207,12 +208,11 @@ public class QuerySnapshot
     /**
      * The number of bytes allocated by the query.
      *
-     * @return the number of bytes allocated by the execution of the query, or {@code null} if the memory allocation
-     * could not be measured.
+     * @return the number of bytes allocated by the execution of the query, or Optional.empty() if measurement was not possible or not enabled.
      */
-    public Long allocatedBytes()
+    public Optional<Long> allocatedBytes()
     {
-        return allocatedBytes < 0 ? null : allocatedBytes;
+        return allocatedBytes;
     }
 
     public long pageHits()

@@ -89,11 +89,10 @@ public class KernelStatement extends CloseableResourceManager implements TxState
     private final VersionContextSupplier versionContextSupplier;
 
     public KernelStatement( KernelTransactionImplementation transaction, LockTracer systemLockTracer, ClockContext clockContext,
-            VersionContextSupplier versionContextSupplier, AtomicReference<CpuClock> cpuClockRef, AtomicReference<HeapAllocation> heapAllocationRef,
-            DatabaseId databaseId )
+            VersionContextSupplier versionContextSupplier, AtomicReference<CpuClock> cpuClockRef, DatabaseId databaseId )
     {
         this.transaction = transaction;
-        this.queryRegistry = new StatementQueryRegistry( this, clockContext.systemClock(), cpuClockRef, heapAllocationRef, databaseId );
+        this.queryRegistry = new StatementQueryRegistry( this, clockContext.systemClock(), cpuClockRef, databaseId );
         this.systemLockTracer = systemLockTracer;
         this.statementOpenCloseCalls = RECORD_STATEMENTS_TRACES ? new ArrayDeque<>() : EMPTY_STATEMENT_HISTORY;
         this.clockContext = clockContext;

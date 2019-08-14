@@ -39,8 +39,8 @@ import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.lock.LockWaitEvent;
 import org.neo4j.lock.ResourceType;
 import org.neo4j.lock.WaitStrategy;
-import org.neo4j.resources.HeapAllocation;
 import org.neo4j.test.FakeCpuClock;
+import org.neo4j.test.FakeMemoryTracker;
 import org.neo4j.time.Clocks;
 import org.neo4j.time.FakeClock;
 
@@ -83,6 +83,12 @@ class ExecutingQueryTest
 
         // when
         query.compilationCompleted( new CompilerInfo( "the-planner", "the-runtime", emptyList() ), READ_ONLY, null );
+
+        // then
+        assertEquals( "planned", query.snapshot().status() );
+
+        // when
+        query.executionStarted( new FakeMemoryTracker() );
 
         // then
         assertEquals( "running", query.snapshot().status() );
@@ -135,6 +141,7 @@ class ExecutingQueryTest
     {
         // given
         query.compilationCompleted( new CompilerInfo( "the-planner", "the-runtime", emptyList() ), READ_ONLY, null );
+        query.executionStarted( new FakeMemoryTracker() );
 
         // then
         assertEquals( "running", query.snapshot().status() );
@@ -236,8 +243,7 @@ class ExecutingQueryTest
                 Thread.currentThread().getId(),
                 Thread.currentThread().getName(),
                 clock,
-                FakeCpuClock.NOT_AVAILABLE,
-                HeapAllocation.NOT_AVAILABLE );
+                FakeCpuClock.NOT_AVAILABLE );
 
         // when
         QuerySnapshot snapshot = query.snapshot();
@@ -260,14 +266,13 @@ class ExecutingQueryTest
                 Thread.currentThread().getId(),
                 Thread.currentThread().getName(),
                 clock,
-                FakeCpuClock.NOT_AVAILABLE,
-                HeapAllocation.NOT_AVAILABLE );
+                FakeCpuClock.NOT_AVAILABLE );
 
         // when
         QuerySnapshot snapshot = query.snapshot();
 
         // then
-        assertNull( snapshot.allocatedBytes() );
+        assertTrue( snapshot.allocatedBytes().isEmpty() );
     }
 
     @Test
@@ -381,7 +386,7 @@ class ExecutingQueryTest
     {
         return new ExecutingQuery( queryId, ClientConnectionInfo.EMBEDDED_CONNECTION, randomDatabaseId(), "neo4j", hello_world,
                 EMPTY_MAP, Collections.emptyMap(), () -> lockCount, page, Thread.currentThread().getId(),
-                Thread.currentThread().getName(), clock, cpuClock, HeapAllocation.HEAP_ALLOCATION );
+                Thread.currentThread().getName(), clock, cpuClock );
     }
 
     private static class PageCursorCountersStub implements PageCursorCounters

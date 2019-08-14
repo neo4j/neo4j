@@ -223,7 +223,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         this.versionContextSupplier = versionContextSupplier;
         this.databaseAvailabilityGuard = databaseAvailabilityGuard;
         this.databaseId = databaseId;
-        this.currentStatement = new KernelStatement( this, lockTracer, this.clocks, versionContextSupplier, cpuClockRef, heapAllocationRef, databaseId );
+        this.currentStatement = new KernelStatement( this, lockTracer, this.clocks, versionContextSupplier, cpuClockRef, databaseId );
         this.accessCapability = accessCapability;
         this.statistics = new Statistics( this, cpuClockRef, heapAllocationRef );
         this.userMetaData = emptyMap();

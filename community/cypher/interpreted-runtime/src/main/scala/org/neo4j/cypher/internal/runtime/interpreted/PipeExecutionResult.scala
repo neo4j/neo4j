@@ -23,21 +23,21 @@ import java.lang
 import java.util.Optional
 
 import org.neo4j.cypher.internal.runtime._
-import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.{Pipe, QueryState}
 import org.neo4j.cypher.result.RuntimeResult.ConsumptionState
 import org.neo4j.cypher.result.{QueryProfile, RuntimeResult}
 import org.neo4j.kernel.impl.query.QuerySubscriber
 
-class PipeExecutionResult(inner: Iterator[_],
+class PipeExecutionResult(pipe: Pipe,
                           val fieldNames: Array[String],
                           val state: QueryState,
                           override val queryProfile: QueryProfile,
                           subscriber: QuerySubscriber)
   extends RuntimeResult {
 
-  private var resultRequested = false
   private var demand = 0L
   private var cancelled = false
+  private var inner: Iterator[_] = _
   private val numberOfFields = fieldNames.length
 
   override def queryStatistics(): QueryStatistics = state.getStatistics
@@ -49,14 +49,16 @@ class PipeExecutionResult(inner: Iterator[_],
   }
 
   override def consumptionState: RuntimeResult.ConsumptionState =
-    if (!resultRequested) ConsumptionState.NOT_STARTED
+    if (inner == null) ConsumptionState.NOT_STARTED
     else if (inner.hasNext) ConsumptionState.HAS_MORE
     else ConsumptionState.EXHAUSTED
 
   subscriber.onResult(numberOfFields)
 
   override def request(numberOfRecords: Long): Unit = {
-    resultRequested = true
+    if (inner == null) {
+      inner = pipe.createResults(state)
+    }
     demand = checkForOverflow(demand + numberOfRecords)
     serveResults()
   }

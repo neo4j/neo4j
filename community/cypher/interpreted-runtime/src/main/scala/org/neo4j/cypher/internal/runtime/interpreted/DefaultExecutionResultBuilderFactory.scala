@@ -61,15 +61,7 @@ abstract class BaseExecutionResultBuilderFactory(pipe: Pipe,
                        input: InputDataStream,
                        subscriber: QuerySubscriber): RuntimeResult = {
       val state = createQueryState(params, prePopulateResults, input, subscriber)
-      //pipe.createResults, may fail early and if so we must make sure to close the state
-      val results = try {
-        pipe.createResults(state)
-      } catch {
-        case e: Throwable =>
-          state.close()
-          throw e
-      }
-      new PipeExecutionResult(results, columns.toArray, state, queryProfile, subscriber)
+      new PipeExecutionResult(pipe, columns.toArray, state, queryProfile, subscriber)
     }
   }
 
@@ -83,7 +75,7 @@ case class InterpretedExecutionResultBuilderFactory(pipe: Pipe,
                                                     columns: Seq[String],
                                                     logicalPlan: LogicalPlan,
                                                     lenientCreateRelationship: Boolean,
-                                                    transactionMaxMemory: Long,
+                                                    memoryTracking: MemoryTracking,
                                                     hasLoadCSV: Boolean = false)
   extends BaseExecutionResultBuilderFactory(pipe, readOnly, columns, logicalPlan, hasLoadCSV) {
 
@@ -100,7 +92,7 @@ case class InterpretedExecutionResultBuilderFactory(pipe: Pipe,
                      queryIndexes.initiateLabelAndSchemaIndexes(queryContext),
                      new Array[AnyValue](nExpressionSlots),
                      subscriber,
-                     QueryMemoryTracker(transactionMaxMemory),
+                     QueryMemoryTracker(memoryTracking),
                      pipeDecorator,
                      lenientCreateRelationship = lenientCreateRelationship,
                      prePopulateResults = prePopulateResults,
