@@ -140,15 +140,15 @@ case class Prettifier(expr: ExpressionStringifier) {
 
     case x @ GrantPrivilege(_, resource, dbScope, qualifier, roleNames) =>
       val (resourceName, dbName, segment) = Prettifier.extractScope(resource, dbScope, qualifier)
-      s"${x.name} ($resourceName) ON GRAPH $dbName $segment (*) TO ${Prettifier.escapeNames(roleNames)}"
+      s"${x.name} {$resourceName} ON GRAPH $dbName $segment (*) TO ${Prettifier.escapeNames(roleNames)}"
 
     case x @ DenyPrivilege(_, resource, dbScope, qualifier, roleNames) =>
       val (resourceName, dbName, segment) = Prettifier.extractScope(resource, dbScope, qualifier)
-      s"${x.name} ($resourceName) ON GRAPH $dbName $segment (*) TO ${Prettifier.escapeNames(roleNames)}"
+      s"${x.name} {$resourceName} ON GRAPH $dbName $segment (*) TO ${Prettifier.escapeNames(roleNames)}"
 
     case x @ RevokePrivilege(_, resource, dbScope, qualifier, roleNames, _) =>
       val (resourceName, dbName, segment) = Prettifier.extractScope(resource, dbScope, qualifier)
-      s"${x.name} ($resourceName) ON GRAPH $dbName $segment (*) FROM ${Prettifier.escapeNames(roleNames)}"
+      s"${x.name} {$resourceName} ON GRAPH $dbName $segment (*) FROM ${Prettifier.escapeNames(roleNames)}"
 
     case x @ ShowPrivileges(scope) =>
       s"SHOW ${Prettifier.extractScope(scope)} PRIVILEGES"

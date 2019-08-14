@@ -197,8 +197,8 @@ case object MultiDatabaseAdministrationCommandPlanBuilder extends Phase[PlannerC
           case (source, (roleName, segment)) => Some(plans.RevokeWrite(source, AllResource()(InputPosition.NONE), database, segment, roleName, revokeType))
         }.map(plan => plans.LogSystemCommand(plan, prettifier.asString(c)))
 
-      // GRANT READ (prop) ON GRAPH foo ELEMENTS A (*) TO role
-      // GRANT MATCH (prop) ON GRAPH foo ELEMENTS A (*) TO role
+      // GRANT READ {prop} ON GRAPH foo ELEMENTS A (*) TO role
+      // GRANT MATCH {prop} ON GRAPH foo ELEMENTS A (*) TO role
       case c@GrantPrivilege(privilege, resources, database, segments, roleNames) =>
         val combos = for (roleName <- roleNames; segment <- segments.simplify; resource <- resources.simplify) yield {
           roleName -> (segment, resource)
@@ -213,8 +213,8 @@ case object MultiDatabaseAdministrationCommandPlanBuilder extends Phase[PlannerC
           case (source, (roleName, (segment, resource))) => Some(plans.GrantRead(source, resource, database, segment, roleName))
         }.map(plan => plans.LogSystemCommand(plan, prettifier.asString(c)))
 
-      // DENY READ (prop) ON GRAPH foo ELEMENTS A (*) TO role
-      // DENY MATCH (prop) ON GRAPH foo ELEMENTS A (*) TO role
+      // DENY READ {prop} ON GRAPH foo ELEMENTS A (*) TO role
+      // DENY MATCH {prop} ON GRAPH foo ELEMENTS A (*) TO role
       case c@DenyPrivilege(privilege, resources, database, segments, roleNames) =>
         val combos = for (roleName <- roleNames; segment <- segments.simplify; resource <- resources.simplify) yield {
           roleName -> (segment, resource)
@@ -229,8 +229,8 @@ case object MultiDatabaseAdministrationCommandPlanBuilder extends Phase[PlannerC
           case (source, (roleName, (segment, resource))) => Some(plans.DenyRead(source, resource, database, segment, roleName))
         }.map(plan => plans.LogSystemCommand(plan, prettifier.asString(c)))
 
-      // REVOKE READ (prop) ON GRAPH foo ELEMENTS A (*) FROM role
-      // REVOKE MATCH (prop) ON GRAPH foo ELEMENTS A (*) FROM role
+      // REVOKE READ {prop} ON GRAPH foo ELEMENTS A (*) FROM role
+      // REVOKE MATCH {prop} ON GRAPH foo ELEMENTS A (*) FROM role
       case c@RevokePrivilege(_, resources, database, segments, roleNames, revokeType) =>
         (for (roleName <- roleNames; segment <- segments.simplify; resource <- resources.simplify) yield {
           roleName -> (segment, resource)

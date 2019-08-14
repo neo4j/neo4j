@@ -122,62 +122,62 @@ class PrivilegeAdministrationCommandParserTest extends AdministrationCommandPars
               ).foreach {
                 case (properties: String, resource: ast.ActionResource, dbName: String, graphScope: ast.GraphScope) =>
 
-                  test( s"validExpressions $command ${privilege.name} ($properties) $graphKeyword $dbName $nodeKeyword $preposition") {
-                    parsing(s"$command ${privilege.name} ($properties) ON $graphKeyword $dbName $nodeKeyword * $preposition role") shouldGive
+                  test( s"validExpressions $command ${privilege.name} {$properties} $graphKeyword $dbName $nodeKeyword $preposition") {
+                    parsing(s"$command ${privilege.name} {$properties} ON $graphKeyword $dbName $nodeKeyword * $preposition role") shouldGive
                       func(privilege, resource, graphScope, ast.LabelAllQualifier() _, Seq("role"))
-                    parsing(s"$command ${privilege.name} ($properties) ON $graphKeyword $dbName $nodeKeyword * (*) $preposition role") shouldGive
+                    parsing(s"$command ${privilege.name} {$properties} ON $graphKeyword $dbName $nodeKeyword * (*) $preposition role") shouldGive
                       func(privilege, resource, graphScope, ast.LabelAllQualifier() _, Seq("role"))
-                    parsing(s"$command ${privilege.name} ($properties) ON $graphKeyword $dbName $nodeKeyword A $preposition role") shouldGive
+                    parsing(s"$command ${privilege.name} {$properties} ON $graphKeyword $dbName $nodeKeyword A $preposition role") shouldGive
                       func(privilege, resource, graphScope, ast.LabelsQualifier(Seq("A")) _, Seq("role"))
-                    parsing(s"$command ${privilege.name} ($properties) ON $graphKeyword $dbName $nodeKeyword A (*) $preposition role") shouldGive
+                    parsing(s"$command ${privilege.name} {$properties} ON $graphKeyword $dbName $nodeKeyword A (*) $preposition role") shouldGive
                       func(privilege, resource, graphScope, ast.LabelsQualifier(Seq("A")) _, Seq("role"))
-                    parsing(s"$command ${privilege.name} ($properties) ON $graphKeyword $dbName $nodeKeyword `A B` (*) $preposition role") shouldGive
+                    parsing(s"$command ${privilege.name} {$properties} ON $graphKeyword $dbName $nodeKeyword `A B` (*) $preposition role") shouldGive
                       func(privilege, resource, graphScope, ast.LabelsQualifier(Seq("A B")) _, Seq("role"))
-                    parsing(s"$command ${privilege.name} ($properties) ON $graphKeyword $dbName $nodeKeyword A, B (*) $preposition role1, role2") shouldGive
+                    parsing(s"$command ${privilege.name} {$properties} ON $graphKeyword $dbName $nodeKeyword A, B (*) $preposition role1, role2") shouldGive
                       func(privilege, resource, graphScope, ast.LabelsQualifier(Seq("A", "B")) _, Seq("role1", "role2"))
-                    parsing(s"$command ${privilege.name} ($properties) ON $graphKeyword $dbName $nodeKeyword * $preposition `r:ole`") shouldGive
+                    parsing(s"$command ${privilege.name} {$properties} ON $graphKeyword $dbName $nodeKeyword * $preposition `r:ole`") shouldGive
                       func(privilege, resource, graphScope, ast.LabelAllQualifier() _, Seq("r:ole"))
-                    parsing(s"$command ${privilege.name} ($properties) ON $graphKeyword $dbName $nodeKeyword `:A` (*) $preposition role") shouldGive
+                    parsing(s"$command ${privilege.name} {$properties} ON $graphKeyword $dbName $nodeKeyword `:A` (*) $preposition role") shouldGive
                       func(privilege, resource, graphScope, ast.LabelsQualifier(Seq(":A")) _, Seq("role"))
                   }
 
-                  test( s"failToParse $command ${privilege.name} ($properties) $graphKeyword $dbName $nodeKeyword $preposition") {
-                    assertFails(s"$command ${privilege.name} ($properties) $graphKeyword $dbName $nodeKeyword * (*) $preposition role")
-                    assertFails(s"$command ${privilege.name} ($properties) $graphKeyword $dbName $nodeKeyword A $preposition role")
-                    assertFails(s"$command ${privilege.name} ($properties) ON $graphKeyword $dbName $nodeKeyword * (*)")
-                    assertFails(s"$command ${privilege.name} ($properties) ON $graphKeyword $dbName $nodeKeyword A B (*) $preposition role")
-                    assertFails(s"$command ${privilege.name} ($properties) ON $graphKeyword $dbName $nodeKeyword A (foo) $preposition role")
-                    assertFails(s"$command ${privilege.name} ($properties) ON $graphKeyword $dbName $nodeKeyword * $preposition r:ole")
+                  test( s"failToParse $command ${privilege.name} {$properties} $graphKeyword $dbName $nodeKeyword $preposition") {
+                    assertFails(s"$command ${privilege.name} {$properties} $graphKeyword $dbName $nodeKeyword * (*) $preposition role")
+                    assertFails(s"$command ${privilege.name} {$properties} $graphKeyword $dbName $nodeKeyword A $preposition role")
+                    assertFails(s"$command ${privilege.name} {$properties} ON $graphKeyword $dbName $nodeKeyword * (*)")
+                    assertFails(s"$command ${privilege.name} {$properties} ON $graphKeyword $dbName $nodeKeyword A B (*) $preposition role")
+                    assertFails(s"$command ${privilege.name} {$properties} ON $graphKeyword $dbName $nodeKeyword A (foo) $preposition role")
+                    assertFails(s"$command ${privilege.name} {$properties} ON $graphKeyword $dbName $nodeKeyword * $preposition r:ole")
                   }
               }
 
               test( s"validExpressions $command ${privilege.name} $graphKeyword $nodeKeyword $preposition") {
-                parsing(s"$command ${privilege.name} (*) ON $graphKeyword `f:oo` $nodeKeyword * $preposition role") shouldGive
+                parsing(s"$command ${privilege.name} {*} ON $graphKeyword `f:oo` $nodeKeyword * $preposition role") shouldGive
                   func(privilege, ast.AllResource() _, ast.NamedGraphScope("f:oo") _, ast.LabelAllQualifier() _, Seq("role"))
-                parsing(s"$command ${privilege.name} (bar) ON $graphKeyword `f:oo` $nodeKeyword * $preposition role") shouldGive
+                parsing(s"$command ${privilege.name} {bar} ON $graphKeyword `f:oo` $nodeKeyword * $preposition role") shouldGive
                   func(privilege, ast.PropertiesResource(Seq("bar")) _, ast.NamedGraphScope("f:oo") _, ast.LabelAllQualifier() _, Seq("role"))
-                parsing(s"$command ${privilege.name} (`b:ar`) ON $graphKeyword foo $nodeKeyword * $preposition role") shouldGive
+                parsing(s"$command ${privilege.name} {`b:ar`} ON $graphKeyword foo $nodeKeyword * $preposition role") shouldGive
                   func(privilege, ast.PropertiesResource(Seq("b:ar")) _, ast.NamedGraphScope("foo") _, ast.LabelAllQualifier() _, Seq("role"))
               }
 
               test( s"parsingFailures $command ${privilege.name} $graphKeyword $nodeKeyword $preposition") {
                 // Invalid graph name
-                assertFails(s"$command ${privilege.name} (*) ON $graphKeyword f:oo $nodeKeyword * $preposition role")
-                assertFails(s"$command ${privilege.name} (bar) ON $graphKeyword f:oo $nodeKeyword * $preposition role")
+                assertFails(s"$command ${privilege.name} {*} ON $graphKeyword f:oo $nodeKeyword * $preposition role")
+                assertFails(s"$command ${privilege.name} {bar} ON $graphKeyword f:oo $nodeKeyword * $preposition role")
                 // multiple graphs not allowed
-                assertFails(s"$command ${privilege.name} (*) ON $graphKeyword foo, baz $nodeKeyword A (*) $preposition role")
-                assertFails(s"$command ${privilege.name} (bar) ON $graphKeyword foo, baz $nodeKeyword A (*) $preposition role")
+                assertFails(s"$command ${privilege.name} {*} ON $graphKeyword foo, baz $nodeKeyword A (*) $preposition role")
+                assertFails(s"$command ${privilege.name} {bar} ON $graphKeyword foo, baz $nodeKeyword A (*) $preposition role")
                 // invalid property definition
-                assertFails(s"$command ${privilege.name} (b:ar) ON $graphKeyword foo $nodeKeyword * $preposition role")
+                assertFails(s"$command ${privilege.name} {b:ar} ON $graphKeyword foo $nodeKeyword * $preposition role")
                 // missing graph name
-                assertFails(s"$command ${privilege.name} (*) ON $graphKeyword $nodeKeyword * $preposition role")
-                assertFails(s"$command ${privilege.name} (*) ON $graphKeyword $nodeKeyword * (*) $preposition role")
-                assertFails(s"$command ${privilege.name} (*) ON $graphKeyword $nodeKeyword A $preposition role")
-                assertFails(s"$command ${privilege.name} (*) ON $graphKeyword $nodeKeyword A (*) $preposition role")
-                assertFails(s"$command ${privilege.name} (bar) ON $graphKeyword $nodeKeyword * $preposition role")
-                assertFails(s"$command ${privilege.name} (bar) ON $graphKeyword $nodeKeyword * (*) $preposition role")
-                assertFails(s"$command ${privilege.name} (bar) ON $graphKeyword $nodeKeyword A $preposition role")
-                assertFails(s"$command ${privilege.name} (bar) ON $graphKeyword $nodeKeyword A (*) $preposition role")
+                assertFails(s"$command ${privilege.name} {*} ON $graphKeyword $nodeKeyword * $preposition role")
+                assertFails(s"$command ${privilege.name} {*} ON $graphKeyword $nodeKeyword * (*) $preposition role")
+                assertFails(s"$command ${privilege.name} {*} ON $graphKeyword $nodeKeyword A $preposition role")
+                assertFails(s"$command ${privilege.name} {*} ON $graphKeyword $nodeKeyword A (*) $preposition role")
+                assertFails(s"$command ${privilege.name} {bar} ON $graphKeyword $nodeKeyword * $preposition role")
+                assertFails(s"$command ${privilege.name} {bar} ON $graphKeyword $nodeKeyword * (*) $preposition role")
+                assertFails(s"$command ${privilege.name} {bar} ON $graphKeyword $nodeKeyword A $preposition role")
+                assertFails(s"$command ${privilege.name} {bar} ON $graphKeyword $nodeKeyword A (*) $preposition role")
                 // missing property definition
                 assertFails(s"$command ${privilege.name} ON $graphKeyword * $nodeKeyword * $preposition role")
                 assertFails(s"$command ${privilege.name} ON $graphKeyword * $nodeKeyword * (*) $preposition role")
@@ -203,62 +203,62 @@ class PrivilegeAdministrationCommandParserTest extends AdministrationCommandPars
               ).foreach {
                 case (properties: String, resource: ast.ActionResource, dbName: String, graphScope: ast.GraphScope) =>
 
-                  test( s"validExpressions $command ${privilege.name} ($properties) $graphKeyword $dbName $relTypeKeyword $preposition") {
-                    parsing(s"$command ${privilege.name} ($properties) ON $graphKeyword $dbName $relTypeKeyword * $preposition role") shouldGive
+                  test( s"validExpressions $command ${privilege.name} {$properties} $graphKeyword $dbName $relTypeKeyword $preposition") {
+                    parsing(s"$command ${privilege.name} {$properties} ON $graphKeyword $dbName $relTypeKeyword * $preposition role") shouldGive
                       func(privilege, resource, graphScope, ast.RelationshipAllQualifier() _, Seq("role"))
-                    parsing(s"$command ${privilege.name} ($properties) ON $graphKeyword $dbName $relTypeKeyword * (*) $preposition role") shouldGive
+                    parsing(s"$command ${privilege.name} {$properties} ON $graphKeyword $dbName $relTypeKeyword * (*) $preposition role") shouldGive
                       func(privilege, resource, graphScope, ast.RelationshipAllQualifier() _, Seq("role"))
-                    parsing(s"$command ${privilege.name} ($properties) ON $graphKeyword $dbName $relTypeKeyword A $preposition role") shouldGive
+                    parsing(s"$command ${privilege.name} {$properties} ON $graphKeyword $dbName $relTypeKeyword A $preposition role") shouldGive
                       func(privilege, resource, graphScope, ast.RelationshipsQualifier(Seq("A")) _, Seq("role"))
-                    parsing(s"$command ${privilege.name} ($properties) ON $graphKeyword $dbName $relTypeKeyword A (*) $preposition role") shouldGive
+                    parsing(s"$command ${privilege.name} {$properties} ON $graphKeyword $dbName $relTypeKeyword A (*) $preposition role") shouldGive
                       func(privilege, resource, graphScope, ast.RelationshipsQualifier(Seq("A")) _, Seq("role"))
-                    parsing(s"$command ${privilege.name} ($properties) ON $graphKeyword $dbName $relTypeKeyword `A B` (*) $preposition role") shouldGive
+                    parsing(s"$command ${privilege.name} {$properties} ON $graphKeyword $dbName $relTypeKeyword `A B` (*) $preposition role") shouldGive
                       func(privilege, resource, graphScope, ast.RelationshipsQualifier(Seq("A B")) _, Seq("role"))
-                    parsing(s"$command ${privilege.name} ($properties) ON $graphKeyword $dbName $relTypeKeyword A, B (*) $preposition role1, role2") shouldGive
+                    parsing(s"$command ${privilege.name} {$properties} ON $graphKeyword $dbName $relTypeKeyword A, B (*) $preposition role1, role2") shouldGive
                       func(privilege, resource, graphScope, ast.RelationshipsQualifier(Seq("A", "B")) _, Seq("role1", "role2"))
-                    parsing(s"$command ${privilege.name} ($properties) ON $graphKeyword $dbName $relTypeKeyword * $preposition `r:ole`") shouldGive
+                    parsing(s"$command ${privilege.name} {$properties} ON $graphKeyword $dbName $relTypeKeyword * $preposition `r:ole`") shouldGive
                       func(privilege, resource, graphScope, ast.RelationshipAllQualifier() _, Seq("r:ole"))
-                    parsing(s"$command ${privilege.name} ($properties) ON $graphKeyword $dbName $relTypeKeyword `:A` (*) $preposition role") shouldGive
+                    parsing(s"$command ${privilege.name} {$properties} ON $graphKeyword $dbName $relTypeKeyword `:A` (*) $preposition role") shouldGive
                       func(privilege, resource, graphScope, ast.RelationshipsQualifier(Seq(":A")) _, Seq("role"))
                   }
 
-                  test( s"parsingFailures $command ${privilege.name} ($properties) $graphKeyword $dbName $relTypeKeyword $preposition") {
-                    assertFails(s"$command ${privilege.name} ($properties) $graphKeyword $dbName $relTypeKeyword * (*) $preposition role")
-                    assertFails(s"$command ${privilege.name} ($properties) $graphKeyword $dbName $relTypeKeyword A $preposition role")
-                    assertFails(s"$command ${privilege.name} ($properties) ON $graphKeyword $dbName $relTypeKeyword * (*)")
-                    assertFails(s"$command ${privilege.name} ($properties) ON $graphKeyword $dbName $relTypeKeyword A B (*) $preposition role")
-                    assertFails(s"$command ${privilege.name} ($properties) ON $graphKeyword $dbName $relTypeKeyword A (foo) $preposition role")
-                    assertFails(s"$command ${privilege.name} ($properties) ON $graphKeyword $dbName $relTypeKeyword * $preposition r:ole")
+                  test( s"parsingFailures $command ${privilege.name} {$properties} $graphKeyword $dbName $relTypeKeyword $preposition") {
+                    assertFails(s"$command ${privilege.name} {$properties} $graphKeyword $dbName $relTypeKeyword * (*) $preposition role")
+                    assertFails(s"$command ${privilege.name} {$properties} $graphKeyword $dbName $relTypeKeyword A $preposition role")
+                    assertFails(s"$command ${privilege.name} {$properties} ON $graphKeyword $dbName $relTypeKeyword * (*)")
+                    assertFails(s"$command ${privilege.name} {$properties} ON $graphKeyword $dbName $relTypeKeyword A B (*) $preposition role")
+                    assertFails(s"$command ${privilege.name} {$properties} ON $graphKeyword $dbName $relTypeKeyword A (foo) $preposition role")
+                    assertFails(s"$command ${privilege.name} {$properties} ON $graphKeyword $dbName $relTypeKeyword * $preposition r:ole")
                   }
               }
 
               test( s"validExpressions $command ${privilege.name} $graphKeyword $relTypeKeyword $preposition") {
-                parsing(s"$command ${privilege.name} (*) ON $graphKeyword `f:oo` $relTypeKeyword * $preposition role") shouldGive
+                parsing(s"$command ${privilege.name} {*} ON $graphKeyword `f:oo` $relTypeKeyword * $preposition role") shouldGive
                   func(privilege, ast.AllResource() _, ast.NamedGraphScope("f:oo") _, ast.RelationshipAllQualifier() _, Seq("role"))
-                parsing(s"$command ${privilege.name} (bar) ON $graphKeyword `f:oo` $relTypeKeyword * $preposition role") shouldGive
+                parsing(s"$command ${privilege.name} {bar} ON $graphKeyword `f:oo` $relTypeKeyword * $preposition role") shouldGive
                   func(privilege, ast.PropertiesResource(Seq("bar")) _, ast.NamedGraphScope("f:oo") _, ast.RelationshipAllQualifier() _, Seq("role"))
-                parsing(s"$command ${privilege.name} (`b:ar`) ON $graphKeyword foo $relTypeKeyword * $preposition role") shouldGive
+                parsing(s"$command ${privilege.name} {`b:ar`} ON $graphKeyword foo $relTypeKeyword * $preposition role") shouldGive
                   func(privilege, ast.PropertiesResource(Seq("b:ar")) _, ast.NamedGraphScope("foo") _, ast.RelationshipAllQualifier() _, Seq("role"))
               }
 
               test( s"parsingFailures$command ${privilege.name} $graphKeyword $relTypeKeyword $preposition") {
                 // Invalid graph name
-                assertFails(s"$command ${privilege.name} (*) ON $graphKeyword f:oo $relTypeKeyword * $preposition role")
-                assertFails(s"$command ${privilege.name} (bar) ON $graphKeyword f:oo $relTypeKeyword * $preposition role")
+                assertFails(s"$command ${privilege.name} {*} ON $graphKeyword f:oo $relTypeKeyword * $preposition role")
+                assertFails(s"$command ${privilege.name} {bar} ON $graphKeyword f:oo $relTypeKeyword * $preposition role")
                 // multiple graphs not allowed
-                assertFails(s"$command ${privilege.name} (*) ON $graphKeyword foo, baz $relTypeKeyword A (*) $preposition role")
-                assertFails(s"$command ${privilege.name} (bar) ON $graphKeyword foo, baz $relTypeKeyword A (*) $preposition role")
+                assertFails(s"$command ${privilege.name} {*} ON $graphKeyword foo, baz $relTypeKeyword A (*) $preposition role")
+                assertFails(s"$command ${privilege.name} {bar} ON $graphKeyword foo, baz $relTypeKeyword A (*) $preposition role")
                 // invalid property definition
-                assertFails(s"$command ${privilege.name} (b:ar) ON $graphKeyword foo $relTypeKeyword * $preposition role")
+                assertFails(s"$command ${privilege.name} {b:ar} ON $graphKeyword foo $relTypeKeyword * $preposition role")
                 // missing graph name
-                assertFails(s"$command ${privilege.name} (*) ON $graphKeyword $relTypeKeyword * $preposition role")
-                assertFails(s"$command ${privilege.name} (*) ON $graphKeyword $relTypeKeyword * (*) $preposition role")
-                assertFails(s"$command ${privilege.name} (*) ON $graphKeyword $relTypeKeyword A $preposition role")
-                assertFails(s"$command ${privilege.name} (*) ON $graphKeyword $relTypeKeyword A (*) $preposition role")
-                assertFails(s"$command ${privilege.name} (bar) ON $graphKeyword $relTypeKeyword * $preposition role")
-                assertFails(s"$command ${privilege.name} (bar) ON $graphKeyword $relTypeKeyword * (*) $preposition role")
-                assertFails(s"$command ${privilege.name} (bar) ON $graphKeyword $relTypeKeyword A $preposition role")
-                assertFails(s"$command ${privilege.name} (bar) ON $graphKeyword $relTypeKeyword A (*) $preposition role")
+                assertFails(s"$command ${privilege.name} {*} ON $graphKeyword $relTypeKeyword * $preposition role")
+                assertFails(s"$command ${privilege.name} {*} ON $graphKeyword $relTypeKeyword * (*) $preposition role")
+                assertFails(s"$command ${privilege.name} {*} ON $graphKeyword $relTypeKeyword A $preposition role")
+                assertFails(s"$command ${privilege.name} {*} ON $graphKeyword $relTypeKeyword A (*) $preposition role")
+                assertFails(s"$command ${privilege.name} {bar} ON $graphKeyword $relTypeKeyword * $preposition role")
+                assertFails(s"$command ${privilege.name} {bar} ON $graphKeyword $relTypeKeyword * (*) $preposition role")
+                assertFails(s"$command ${privilege.name} {bar} ON $graphKeyword $relTypeKeyword A $preposition role")
+                assertFails(s"$command ${privilege.name} {bar} ON $graphKeyword $relTypeKeyword A (*) $preposition role")
                 // missing property definition
                 assertFails(s"$command ${privilege.name} ON $graphKeyword * $relTypeKeyword * $preposition role")
                 assertFails(s"$command ${privilege.name} ON $graphKeyword * $relTypeKeyword * (*) $preposition role")
@@ -284,62 +284,62 @@ class PrivilegeAdministrationCommandParserTest extends AdministrationCommandPars
               ).foreach {
                 case (properties: String, resource: ast.ActionResource, dbName: String, graphScope: ast.GraphScope) =>
 
-                  test( s"validExpressions $command ${privilege.name} ($properties) $graphKeyword $dbName $elementKeyword $preposition") {
-                    parsing(s"$command ${privilege.name} ($properties) ON $graphKeyword $dbName $elementKeyword * $preposition role") shouldGive
+                  test( s"validExpressions $command ${privilege.name} {$properties} $graphKeyword $dbName $elementKeyword $preposition") {
+                    parsing(s"$command ${privilege.name} {$properties} ON $graphKeyword $dbName $elementKeyword * $preposition role") shouldGive
                       func(privilege, resource, graphScope, ast.AllQualifier() _, Seq("role"))
-                    parsing(s"$command ${privilege.name} ($properties) ON $graphKeyword $dbName $elementKeyword * (*) $preposition role") shouldGive
+                    parsing(s"$command ${privilege.name} {$properties} ON $graphKeyword $dbName $elementKeyword * (*) $preposition role") shouldGive
                       func(privilege, resource, graphScope, ast.AllQualifier() _, Seq("role"))
-                    parsing(s"$command ${privilege.name} ($properties) ON $graphKeyword $dbName $elementKeyword A $preposition role") shouldGive
+                    parsing(s"$command ${privilege.name} {$properties} ON $graphKeyword $dbName $elementKeyword A $preposition role") shouldGive
                       func(privilege, resource, graphScope, ast.ElementsQualifier(Seq("A")) _, Seq("role"))
-                    parsing(s"$command ${privilege.name} ($properties) ON $graphKeyword $dbName $elementKeyword A (*) $preposition role") shouldGive
+                    parsing(s"$command ${privilege.name} {$properties} ON $graphKeyword $dbName $elementKeyword A (*) $preposition role") shouldGive
                       func(privilege, resource, graphScope, ast.ElementsQualifier(Seq("A")) _, Seq("role"))
-                    parsing(s"$command ${privilege.name} ($properties) ON $graphKeyword $dbName $elementKeyword `A B` (*) $preposition role") shouldGive
+                    parsing(s"$command ${privilege.name} {$properties} ON $graphKeyword $dbName $elementKeyword `A B` (*) $preposition role") shouldGive
                       func(privilege, resource, graphScope, ast.ElementsQualifier(Seq("A B")) _, Seq("role"))
-                    parsing(s"$command ${privilege.name} ($properties) ON $graphKeyword $dbName $elementKeyword A, B (*) $preposition role1, role2") shouldGive
+                    parsing(s"$command ${privilege.name} {$properties} ON $graphKeyword $dbName $elementKeyword A, B (*) $preposition role1, role2") shouldGive
                       func(privilege, resource, graphScope, ast.ElementsQualifier(Seq("A", "B")) _, Seq("role1", "role2"))
-                    parsing(s"$command ${privilege.name} ($properties) ON $graphKeyword $dbName $elementKeyword * $preposition `r:ole`") shouldGive
+                    parsing(s"$command ${privilege.name} {$properties} ON $graphKeyword $dbName $elementKeyword * $preposition `r:ole`") shouldGive
                       func(privilege, resource, graphScope, ast.AllQualifier() _, Seq("r:ole"))
-                    parsing(s"$command ${privilege.name} ($properties) ON $graphKeyword $dbName $elementKeyword `:A` (*) $preposition role") shouldGive
+                    parsing(s"$command ${privilege.name} {$properties} ON $graphKeyword $dbName $elementKeyword `:A` (*) $preposition role") shouldGive
                       func(privilege, resource, graphScope, ast.ElementsQualifier(Seq(":A")) _, Seq("role"))
                   }
 
-                  test( s"parsingFailures$command ${privilege.name} ($properties) $graphKeyword $dbName $elementKeyword $preposition") {
-                    assertFails(s"$command ${privilege.name} ($properties) $graphKeyword $dbName $elementKeyword * (*) $preposition role")
-                    assertFails(s"$command ${privilege.name} ($properties) $graphKeyword $dbName $elementKeyword A $preposition role")
-                    assertFails(s"$command ${privilege.name} ($properties) ON $graphKeyword $dbName $elementKeyword * (*)")
-                    assertFails(s"$command ${privilege.name} ($properties) ON $graphKeyword $dbName $elementKeyword A B (*) $preposition role")
-                    assertFails(s"$command ${privilege.name} ($properties) ON $graphKeyword $dbName $elementKeyword A (foo) $preposition role")
-                    assertFails(s"$command ${privilege.name} ($properties) ON $graphKeyword $dbName $elementKeyword * $preposition r:ole")
+                  test( s"parsingFailures$command ${privilege.name} {$properties} $graphKeyword $dbName $elementKeyword $preposition") {
+                    assertFails(s"$command ${privilege.name} {$properties} $graphKeyword $dbName $elementKeyword * (*) $preposition role")
+                    assertFails(s"$command ${privilege.name} {$properties} $graphKeyword $dbName $elementKeyword A $preposition role")
+                    assertFails(s"$command ${privilege.name} {$properties} ON $graphKeyword $dbName $elementKeyword * (*)")
+                    assertFails(s"$command ${privilege.name} {$properties} ON $graphKeyword $dbName $elementKeyword A B (*) $preposition role")
+                    assertFails(s"$command ${privilege.name} {$properties} ON $graphKeyword $dbName $elementKeyword A (foo) $preposition role")
+                    assertFails(s"$command ${privilege.name} {$properties} ON $graphKeyword $dbName $elementKeyword * $preposition r:ole")
                   }
               }
 
               test( s"validExpressions $command ${privilege.name} $graphKeyword $elementKeyword $preposition") {
-                parsing(s"$command ${privilege.name} (*) ON $graphKeyword `f:oo` $elementKeyword * $preposition role") shouldGive
+                parsing(s"$command ${privilege.name} {*} ON $graphKeyword `f:oo` $elementKeyword * $preposition role") shouldGive
                   func(privilege, ast.AllResource() _, ast.NamedGraphScope("f:oo") _, ast.AllQualifier() _, Seq("role"))
-                parsing(s"$command ${privilege.name} (bar) ON $graphKeyword `f:oo` $elementKeyword * $preposition role") shouldGive
+                parsing(s"$command ${privilege.name} {bar} ON $graphKeyword `f:oo` $elementKeyword * $preposition role") shouldGive
                   func(privilege, ast.PropertiesResource(Seq("bar")) _, ast.NamedGraphScope("f:oo") _, ast.AllQualifier() _, Seq("role"))
-                parsing(s"$command ${privilege.name} (`b:ar`) ON $graphKeyword foo $elementKeyword * $preposition role") shouldGive
+                parsing(s"$command ${privilege.name} {`b:ar`} ON $graphKeyword foo $elementKeyword * $preposition role") shouldGive
                   func(privilege, ast.PropertiesResource(Seq("b:ar")) _, ast.NamedGraphScope("foo") _, ast.AllQualifier() _, Seq("role"))
               }
 
               test( s"parsingFailures $command ${privilege.name} $graphKeyword $elementKeyword $preposition") {
                 // Invalid graph name
-                assertFails(s"$command ${privilege.name} (*) ON $graphKeyword f:oo $elementKeyword * $preposition role")
-                assertFails(s"$command ${privilege.name} (bar) ON $graphKeyword f:oo $elementKeyword * $preposition role")
+                assertFails(s"$command ${privilege.name} {*} ON $graphKeyword f:oo $elementKeyword * $preposition role")
+                assertFails(s"$command ${privilege.name} {bar} ON $graphKeyword f:oo $elementKeyword * $preposition role")
                 // multiple graphs not allowed
-                assertFails(s"$command ${privilege.name} (*) ON $graphKeyword foo, baz $elementKeyword A (*) $preposition role")
-                assertFails(s"$command ${privilege.name} (bar) ON $graphKeyword foo, baz $elementKeyword A (*) $preposition role")
+                assertFails(s"$command ${privilege.name} {*} ON $graphKeyword foo, baz $elementKeyword A (*) $preposition role")
+                assertFails(s"$command ${privilege.name} {bar} ON $graphKeyword foo, baz $elementKeyword A (*) $preposition role")
                 // invalid property definition
-                assertFails(s"$command ${privilege.name} (b:ar) ON $graphKeyword foo $elementKeyword * $preposition role")
+                assertFails(s"$command ${privilege.name} {b:ar} ON $graphKeyword foo $elementKeyword * $preposition role")
                 // missing graph name
-                assertFails(s"$command ${privilege.name} (*) ON $graphKeyword $elementKeyword * $preposition role")
-                assertFails(s"$command ${privilege.name} (*) ON $graphKeyword $elementKeyword * (*) $preposition role")
-                assertFails(s"$command ${privilege.name} (*) ON $graphKeyword $elementKeyword A $preposition role")
-                assertFails(s"$command ${privilege.name} (*) ON $graphKeyword $elementKeyword A (*) $preposition role")
-                assertFails(s"$command ${privilege.name} (bar) ON $graphKeyword $elementKeyword * $preposition role")
-                assertFails(s"$command ${privilege.name} (bar) ON $graphKeyword $elementKeyword * (*) $preposition role")
-                assertFails(s"$command ${privilege.name} (bar) ON $graphKeyword $elementKeyword A $preposition role")
-                assertFails(s"$command ${privilege.name} (bar) ON $graphKeyword $elementKeyword A (*) $preposition role")
+                assertFails(s"$command ${privilege.name} {*} ON $graphKeyword $elementKeyword * $preposition role")
+                assertFails(s"$command ${privilege.name} {*} ON $graphKeyword $elementKeyword * (*) $preposition role")
+                assertFails(s"$command ${privilege.name} {*} ON $graphKeyword $elementKeyword A $preposition role")
+                assertFails(s"$command ${privilege.name} {*} ON $graphKeyword $elementKeyword A (*) $preposition role")
+                assertFails(s"$command ${privilege.name} {bar} ON $graphKeyword $elementKeyword * $preposition role")
+                assertFails(s"$command ${privilege.name} {bar} ON $graphKeyword $elementKeyword * (*) $preposition role")
+                assertFails(s"$command ${privilege.name} {bar} ON $graphKeyword $elementKeyword A $preposition role")
+                assertFails(s"$command ${privilege.name} {bar} ON $graphKeyword $elementKeyword A (*) $preposition role")
                 // missing property definition
                 assertFails(s"$command ${privilege.name} ON $graphKeyword * $elementKeyword * $preposition role")
                 assertFails(s"$command ${privilege.name} ON $graphKeyword * $elementKeyword * (*) $preposition role")
@@ -363,7 +363,7 @@ class PrivilegeAdministrationCommandParserTest extends AdministrationCommandPars
           ).foreach {
             case (properties: String, resource: ast.ActionResource, dbName: String, graphScope: ast.GraphScope) =>
 
-              test(s"$command ${privilege.name} ($properties) ON $graphKeyword $dbName $preposition role") {
+              test(s"$command ${privilege.name} {$properties} ON $graphKeyword $dbName $preposition role") {
                 yields(func(privilege, resource, graphScope, ast.AllQualifier() _, Seq("role")))
               }
           }

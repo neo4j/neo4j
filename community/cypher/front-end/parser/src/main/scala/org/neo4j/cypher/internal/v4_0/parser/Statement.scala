@@ -220,61 +220,61 @@ trait Statement extends Parser
       ((scope, qualifier, grantees) => ast.RevokePrivilege.traverse(scope, qualifier, grantees))
   }
 
-  //`GRANT READ (a) ON GRAPH foo ELEMENTS A (*) TO role`
+  //`GRANT READ {a} ON GRAPH foo ELEMENTS A (*) TO role`
   def GrantRead: Rule1[GrantPrivilege] = rule("CATALOG GRANT READ") {
     group(keyword("GRANT READ") ~~ PrivilegeProperty ~~ Graph ~~ ScopeQualifier ~~ keyword("TO") ~~ SymbolicNamesList) ~~>>
       ((prop, scope, qualifier, grantees) => ast.GrantPrivilege.read(prop, scope, qualifier, grantees))
   }
 
-  //`DENY READ (a) ON GRAPH foo ELEMENTS A (*) TO role`
+  //`DENY READ {a} ON GRAPH foo ELEMENTS A (*) TO role`
   def DenyRead: Rule1[DenyPrivilege] = rule("CATALOG DENY READ") {
     group(keyword("DENY READ") ~~ PrivilegeProperty ~~ Graph ~~ ScopeQualifier ~~ keyword("TO") ~~ SymbolicNamesList) ~~>>
       ((prop, scope, qualifier, grantees) => ast.DenyPrivilege.read(prop, scope, qualifier, grantees))
   }
 
-  //`REVOKE GRANT READ (a) ON GRAPH foo ELEMENTS A (*) FROM role`
+  //`REVOKE GRANT READ {a} ON GRAPH foo ELEMENTS A (*) FROM role`
   def RevokeGrantRead: Rule1[RevokePrivilege] = rule("CATALOG REVOKE GRANT READ") {
     group(keyword("REVOKE GRANT READ") ~~ PrivilegeProperty ~~ Graph ~~ ScopeQualifier ~~ keyword("FROM") ~~ SymbolicNamesList) ~~>>
       ((prop, scope, qualifier, grantees) => ast.RevokePrivilege.grantedRead(prop, scope, qualifier, grantees))
   }
 
-  //`REVOKE DENY READ (a) ON GRAPH foo ELEMENTS A (*) FROM role`
+  //`REVOKE DENY READ {a} ON GRAPH foo ELEMENTS A (*) FROM role`
   def RevokeDenyRead: Rule1[RevokePrivilege] = rule("CATALOG REVOKE DENY READ") {
     group(keyword("REVOKE DENY READ") ~~ PrivilegeProperty ~~ Graph ~~ ScopeQualifier ~~ keyword("FROM") ~~ SymbolicNamesList) ~~>>
       ((prop, scope, qualifier, grantees) => ast.RevokePrivilege.deniedRead(prop, scope, qualifier, grantees))
   }
 
-  //`REVOKE READ (a) ON GRAPH foo ELEMENTS A (*) FROM role`
+  //`REVOKE READ {a} ON GRAPH foo ELEMENTS A (*) FROM role`
   def RevokeRead: Rule1[RevokePrivilege] = rule("CATALOG REVOKE READ") {
     group(keyword("REVOKE READ") ~~ PrivilegeProperty ~~ Graph ~~ ScopeQualifier ~~ keyword("FROM") ~~ SymbolicNamesList) ~~>>
       ((prop, scope, qualifier, grantees) => ast.RevokePrivilege.read(prop, scope, qualifier, grantees))
   }
 
-  //`GRANT MATCH (a) ON GRAPH foo ELEMENTS A (*) TO role`
+  //`GRANT MATCH {a} ON GRAPH foo ELEMENTS A (*) TO role`
   def GrantMatch: Rule1[GrantPrivilege] = rule("CATALOG GRANT MATCH") {
     group(keyword("GRANT MATCH") ~~ PrivilegeProperty ~~ Graph ~~ ScopeQualifier ~~ keyword("TO") ~~ SymbolicNamesList) ~~>>
       ((prop, scope, qualifier, grantees) => ast.GrantPrivilege.asMatch(prop, scope, qualifier, grantees))
   }
 
-  //`DENY MATCH (a) ON GRAPH foo ELEMENTS A (*) TO role`
+  //`DENY MATCH {a} ON GRAPH foo ELEMENTS A (*) TO role`
   def DenyMatch: Rule1[DenyPrivilege] = rule("CATALOG DENY MATCH") {
     group(keyword("DENY MATCH") ~~ PrivilegeProperty ~~ Graph ~~ ScopeQualifier ~~ keyword("TO") ~~ SymbolicNamesList) ~~>>
       ((prop, scope, qualifier, grantees) => ast.DenyPrivilege.asMatch(prop, scope, qualifier, grantees))
   }
 
-  //`REVOKE GRANT MATCH (a) ON GRAPH foo ELEMENTS A (*) FROM role`
+  //`REVOKE GRANT MATCH {a} ON GRAPH foo ELEMENTS A (*) FROM role`
   def RevokeGrantMatch: Rule1[RevokePrivilege] = rule("CATALOG REVOKE GRANT MATCH") {
     group(keyword("REVOKE GRANT MATCH") ~~ PrivilegeProperty ~~ Graph ~~ ScopeQualifier ~~ keyword("FROM") ~~ SymbolicNamesList) ~~>>
       ((prop, scope, qualifier, grantees) => ast.RevokePrivilege.grantedAsMatch(prop, scope, qualifier, grantees))
   }
 
-  //`REVOKE DENY MATCH (a) ON GRAPH foo ELEMENTS A (*) FROM role`
+  //`REVOKE DENY MATCH {a} ON GRAPH foo ELEMENTS A (*) FROM role`
   def RevokeDenyMatch: Rule1[RevokePrivilege] = rule("CATALOG REVOKE DENY MATCH") {
     group(keyword("REVOKE DENY MATCH") ~~ PrivilegeProperty ~~ Graph ~~ ScopeQualifier ~~ keyword("FROM") ~~ SymbolicNamesList) ~~>>
       ((prop, scope, qualifier, grantees) => ast.RevokePrivilege.deniedAsMatch(prop, scope, qualifier, grantees))
   }
 
-  //`REVOKE MATCH (a) ON GRAPH foo ELEMENTS A (*) FROM role`
+  //`REVOKE MATCH {a} ON GRAPH foo ELEMENTS A (*) FROM role`
   def RevokeMatch: Rule1[RevokePrivilege] = rule("CATALOG REVOKE MATCH") {
     group(keyword("REVOKE MATCH") ~~ PrivilegeProperty ~~ Graph ~~ ScopeQualifier ~~ keyword("FROM") ~~ SymbolicNamesList) ~~>>
       ((prop, scope, qualifier, grantees) => ast.RevokePrivilege.asMatch(prop, scope, qualifier, grantees))
@@ -315,8 +315,8 @@ trait Statement extends Parser
   }
 
   private def PrivilegeProperty: Rule1[ActionResource] = rule("a property")(
-    group("(" ~~ SymbolicNamesList ~~ ")") ~~>> {ast.PropertiesResource(_)} |
-      group("(" ~~ "*" ~~ ")") ~~~> {ast.AllResource()}
+    group("{" ~~ SymbolicNamesList ~~ "}") ~~>> {ast.PropertiesResource(_)} |
+      group("{" ~~ "*" ~~ "}") ~~~> {ast.AllResource()}
   )
 
   // TODO can be removed once we have more fine-grained writes

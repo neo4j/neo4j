@@ -501,47 +501,48 @@ class PrettifierIT extends CypherFunSuite {
           s"$action traverse on graph foo relationships A,B,C (*) $preposition x,y,z" ->
             s"$action TRAVERSE ON GRAPH foo RELATIONSHIPS A, B, C (*) $preposition x, y, z",
 
-          s"$action read (*) on graph * $preposition role" ->
-            s"$action READ (*) ON GRAPH * ELEMENTS * (*) $preposition role",
+          s"$action read {*} on graph * $preposition role" ->
+            s"$action READ {*} ON GRAPH * ELEMENTS * (*) $preposition role",
 
-          s"$action read (*) on graph * nodes * $preposition role" ->
-            s"$action READ (*) ON GRAPH * NODES * (*) $preposition role",
+          s"$action read {*} on graph * nodes * $preposition role" ->
+            s"$action READ {*} ON GRAPH * NODES * (*) $preposition role",
 
-          s"$action read (*) on graph * nodes * (*) $preposition role" ->
-            s"$action READ (*) ON GRAPH * NODES * (*) $preposition role",
+          s"$action read {*} on graph * nodes * (*) $preposition role" ->
+            s"$action READ {*} ON GRAPH * NODES * (*) $preposition role",
 
-          s"$action read (*) on graph foo nodes * (*) $preposition role" ->
-            s"$action READ (*) ON GRAPH foo NODES * (*) $preposition role",
+          s"$action read {*} on graph foo nodes * (*) $preposition role" ->
+            s"$action READ {*} ON GRAPH foo NODES * (*) $preposition role",
 
-          s"$action read (*) on graph foo nodes A (*) $preposition role" ->
-            s"$action READ (*) ON GRAPH foo NODES A (*) $preposition role",
+          s"$action read {*} on graph foo nodes A (*) $preposition role" ->
+            s"$action READ {*} ON GRAPH foo NODES A (*) $preposition role",
 
-          s"$action read (bar) on graph foo nodes A (*) $preposition role" ->
-            s"$action READ (bar) ON GRAPH foo NODES A (*) $preposition role",
+          s"$action read {bar} on graph foo nodes A (*) $preposition role" ->
+            s"$action READ {bar} ON GRAPH foo NODES A (*) $preposition role",
 
-          s"$action read ( `&bar` ) on graph `#%¤` nodes `()/&` (*) $preposition role" ->
-            s"$action READ (`&bar`) ON GRAPH `#%¤` NODES `()/&` (*) $preposition role",
+          s"$action read { `&bar` } on graph `#%¤` nodes `()/&` (*) $preposition role" ->
+            s"$action READ {`&bar`} ON GRAPH `#%¤` NODES `()/&` (*) $preposition role",
 
-          s"$action read (foo,bar) on graph foo nodes A,B,C (*) $preposition x,y,z" ->
-            s"$action READ (foo, bar) ON GRAPH foo NODES A, B, C (*) $preposition x, y, z",
+          s"$action read {foo,bar} on graph foo nodes A,B,C (*) $preposition x,y,z" ->
+            s"$action READ {foo, bar} ON GRAPH foo NODES A, B, C (*) $preposition x, y, z",
 
+          // TODO: write share prettifier code with read, update input query when changing write syntax
           s"$action write (*) on graph * $preposition role" ->
-            s"$action WRITE (*) ON GRAPH * ELEMENTS * (*) $preposition role",
+            s"$action WRITE {*} ON GRAPH * ELEMENTS * (*) $preposition role",
 
           s"$action write (*) on graph * elements * $preposition role" ->
-            s"$action WRITE (*) ON GRAPH * ELEMENTS * (*) $preposition role",
+            s"$action WRITE {*} ON GRAPH * ELEMENTS * (*) $preposition role",
 
           s"$action write (*) on graph * elements * (*) $preposition role" ->
-            s"$action WRITE (*) ON GRAPH * ELEMENTS * (*) $preposition role",
+            s"$action WRITE {*} ON GRAPH * ELEMENTS * (*) $preposition role",
 
           s"$action write (*) on graph foo $preposition role" ->
-            s"$action WRITE (*) ON GRAPH foo ELEMENTS * (*) $preposition role",
+            s"$action WRITE {*} ON GRAPH foo ELEMENTS * (*) $preposition role",
 
           s"$action write (*) on graph foo elements * (*) $preposition role" ->
-            s"$action WRITE (*) ON GRAPH foo ELEMENTS * (*) $preposition role",
+            s"$action WRITE {*} ON GRAPH foo ELEMENTS * (*) $preposition role",
 
           s"$action write (*) on graphs foo elements * (*) $preposition role" ->
-            s"$action WRITE (*) ON GRAPH foo ELEMENTS * (*) $preposition role"
+            s"$action WRITE {*} ON GRAPH foo ELEMENTS * (*) $preposition role"
         )
     }
   }

@@ -64,7 +64,7 @@ class CommunityPrivilegeAdministrationCommandAcceptanceTest extends CommunityAdm
     selectDatabase(SYSTEM_DATABASE_NAME)
 
     // THEN
-    assertFailure("GRANT READ (*) ON GRAPH * NODES * (*) TO custom", "Unsupported administration command: GRANT READ (*) ON GRAPH * NODES * (*) TO custom")
+    assertFailure("GRANT READ {*} ON GRAPH * NODES * (*) TO custom", "Unsupported administration command: GRANT READ {*} ON GRAPH * NODES * (*) TO custom")
   }
 
   test("should fail on granting MATCH privilege from community") {
@@ -72,7 +72,7 @@ class CommunityPrivilegeAdministrationCommandAcceptanceTest extends CommunityAdm
     selectDatabase(SYSTEM_DATABASE_NAME)
 
     // THEN
-    assertFailure("GRANT MATCH (*) ON GRAPH * NODES * (*) TO custom", "Unsupported administration command: GRANT MATCH (*) ON GRAPH * NODES * (*) TO custom")
+    assertFailure("GRANT MATCH {*} ON GRAPH * NODES * (*) TO custom", "Unsupported administration command: GRANT MATCH {*} ON GRAPH * NODES * (*) TO custom")
   }
 
   // Tests for denying privileges
@@ -90,7 +90,7 @@ class CommunityPrivilegeAdministrationCommandAcceptanceTest extends CommunityAdm
     selectDatabase(SYSTEM_DATABASE_NAME)
 
     // THEN
-    assertFailure("DENY READ (*) ON GRAPH * NODES * (*) TO custom", "Unsupported administration command: DENY READ (*) ON GRAPH * NODES * (*) TO custom")
+    assertFailure("DENY READ {*} ON GRAPH * NODES * (*) TO custom", "Unsupported administration command: DENY READ {*} ON GRAPH * NODES * (*) TO custom")
   }
 
   test("should fail on denying MATCH privilege from community") {
@@ -98,7 +98,7 @@ class CommunityPrivilegeAdministrationCommandAcceptanceTest extends CommunityAdm
     selectDatabase(SYSTEM_DATABASE_NAME)
 
     // THEN
-    assertFailure("DENY MATCH (*) ON GRAPH * NODES * (*) TO custom", "Unsupported administration command: DENY MATCH (*) ON GRAPH * NODES * (*) TO custom")
+    assertFailure("DENY MATCH {*} ON GRAPH * NODES * (*) TO custom", "Unsupported administration command: DENY MATCH {*} ON GRAPH * NODES * (*) TO custom")
   }
 
   // Tests for revoking grant privileges
@@ -116,7 +116,7 @@ class CommunityPrivilegeAdministrationCommandAcceptanceTest extends CommunityAdm
     selectDatabase(SYSTEM_DATABASE_NAME)
 
     // THEN
-    assertFailure("REVOKE GRANT READ (*) ON GRAPH * NODES * (*) FROM custom", "Unsupported administration command: REVOKE GRANT READ (*) ON GRAPH * NODES * (*) FROM custom")
+    assertFailure("REVOKE GRANT READ {*} ON GRAPH * NODES * (*) FROM custom", "Unsupported administration command: REVOKE GRANT READ {*} ON GRAPH * NODES * (*) FROM custom")
   }
 
   test("should fail on revoking grant MATCH privilege from community") {
@@ -124,7 +124,7 @@ class CommunityPrivilegeAdministrationCommandAcceptanceTest extends CommunityAdm
     selectDatabase(SYSTEM_DATABASE_NAME)
 
     // THEN
-    assertFailure("REVOKE GRANT MATCH (*) ON GRAPH * NODES * (*) FROM custom", "Unsupported administration command: REVOKE GRANT MATCH (*) ON GRAPH * NODES * (*) FROM custom")
+    assertFailure("REVOKE GRANT MATCH {*} ON GRAPH * NODES * (*) FROM custom", "Unsupported administration command: REVOKE GRANT MATCH {*} ON GRAPH * NODES * (*) FROM custom")
   }
   
   // Tests for revoking deny privileges
@@ -141,7 +141,7 @@ class CommunityPrivilegeAdministrationCommandAcceptanceTest extends CommunityAdm
     selectDatabase(SYSTEM_DATABASE_NAME)
 
     // THEN
-    assertFailure("REVOKE DENY READ (*) ON GRAPH * NODES * (*) FROM custom", "Unsupported administration command: REVOKE DENY READ (*) ON GRAPH * NODES * (*) FROM custom")
+    assertFailure("REVOKE DENY READ {*} ON GRAPH * NODES * (*) FROM custom", "Unsupported administration command: REVOKE DENY READ {*} ON GRAPH * NODES * (*) FROM custom")
   }
 
   test("should fail on revoking deny MATCH privilege from community") {
@@ -149,7 +149,7 @@ class CommunityPrivilegeAdministrationCommandAcceptanceTest extends CommunityAdm
     selectDatabase(SYSTEM_DATABASE_NAME)
 
     // THEN
-    assertFailure("REVOKE DENY MATCH (*) ON GRAPH * NODES * (*) FROM custom", "Unsupported administration command: REVOKE DENY MATCH (*) ON GRAPH * NODES * (*) FROM custom")
+    assertFailure("REVOKE DENY MATCH {*} ON GRAPH * NODES * (*) FROM custom", "Unsupported administration command: REVOKE DENY MATCH {*} ON GRAPH * NODES * (*) FROM custom")
   }
 
   // Tests for revoking privileges
@@ -161,12 +161,12 @@ class CommunityPrivilegeAdministrationCommandAcceptanceTest extends CommunityAdm
     assertFailure("REVOKE TRAVERSE ON GRAPH * NODES * (*) FROM custom", "Unsupported administration command: REVOKE TRAVERSE ON GRAPH * NODES * (*) FROM custom")
   }
 
-  test("should fail on revokingread privilege from community") {
+  test("should fail on revoking read privilege from community") {
     // GIVEN
     selectDatabase(SYSTEM_DATABASE_NAME)
 
     // THEN
-    assertFailure("REVOKE READ (*) ON GRAPH * NODES * (*) FROM custom", "Unsupported administration command: REVOKE READ (*) ON GRAPH * NODES * (*) FROM custom")
+    assertFailure("REVOKE READ {*} ON GRAPH * NODES * (*) FROM custom", "Unsupported administration command: REVOKE READ {*} ON GRAPH * NODES * (*) FROM custom")
   }
 
   test("should fail on revoking MATCH privilege from community") {
@@ -174,7 +174,7 @@ class CommunityPrivilegeAdministrationCommandAcceptanceTest extends CommunityAdm
     selectDatabase(SYSTEM_DATABASE_NAME)
 
     // THEN
-    assertFailure("REVOKE MATCH (*) ON GRAPH * NODES * (*) FROM custom", "Unsupported administration command: REVOKE MATCH (*) ON GRAPH * NODES * (*) FROM custom")
+    assertFailure("REVOKE MATCH {*} ON GRAPH * NODES * (*) FROM custom", "Unsupported administration command: REVOKE MATCH {*} ON GRAPH * NODES * (*) FROM custom")
   }
 
 }
