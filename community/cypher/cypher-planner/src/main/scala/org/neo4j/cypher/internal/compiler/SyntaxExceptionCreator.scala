@@ -19,10 +19,9 @@
  */
 package org.neo4j.cypher.internal.compiler
 
-import org.neo4j.cypher.SyntaxException
-import org.neo4j.cypher.internal.v4_0.util.{CypherException, CypherExceptionFactory, InputPosition}
+import org.neo4j.cypher.{ArithmeticException, CypherException, SyntaxException}
+import org.neo4j.cypher.internal.v4_0.util.{CypherExceptionFactory, InputPosition}
 import org.neo4j.cypher.internal.v4_0.ast.semantics.SemanticErrorDef
-import org.neo4j.cypher.ArithmeticException
 
 case class Neo4jCypherExceptionFactory(queryText: String, preParserOffset: Option[InputPosition]) extends CypherExceptionFactory {
 

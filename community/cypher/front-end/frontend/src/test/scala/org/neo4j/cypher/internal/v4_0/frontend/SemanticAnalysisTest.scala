@@ -16,14 +16,13 @@
  */
 package org.neo4j.cypher.internal.v4_0.frontend
 
-import org.neo4j.cypher.internal.v4_0.frontend.ErrorCollectingContext.failWith
 import org.neo4j.cypher.internal.v4_0.ast.semantics.SemanticErrorDef
+import org.neo4j.cypher.internal.v4_0.frontend.ErrorCollectingContext.failWith
 import org.neo4j.cypher.internal.v4_0.frontend.phases._
-import org.neo4j.cypher.internal.v4_0.util.{CypherException, CypherExceptionFactory, InputPosition}
 import org.neo4j.cypher.internal.v4_0.util.symbols._
 import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
-import org.scalatest.matchers.MatchResult
-import org.scalatest.matchers.Matcher
+import org.neo4j.cypher.internal.v4_0.util.{CypherExceptionFactory, OpenCypherExceptionFactory}
+import org.scalatest.matchers.{MatchResult, Matcher}
 
 class SemanticAnalysisTest extends CypherFunSuite {
 
@@ -103,7 +102,7 @@ class ErrorCollectingContext extends BaseContext {
 
   override def tracer: CompilationPhaseTracer = CompilationPhaseTracer.NO_TRACING
   override def notificationLogger: devNullLogger.type = devNullLogger
-  override def cypherExceptionFactory: CypherExceptionFactory = ???
+  override def cypherExceptionFactory: CypherExceptionFactory = OpenCypherExceptionFactory(None)
   override def monitors: Monitors = ???
   override def errorHandler: Seq[SemanticErrorDef] => Unit = (errs: Seq[SemanticErrorDef]) =>
     errors = errs

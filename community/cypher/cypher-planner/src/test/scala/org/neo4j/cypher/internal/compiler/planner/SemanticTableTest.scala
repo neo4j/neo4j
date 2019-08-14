@@ -85,7 +85,7 @@ class SemanticTableTest extends CypherFunSuite with AstConstructionTestSupport {
   test("should fail when asking for an unknown variable") {
     val table = SemanticTable()
 
-    intercept[InternalException](table.getTypeFor("a"))
+    intercept[IllegalStateException](table.getTypeFor("a"))
   }
 
   test("should fail if the semantic table is confusing") {
@@ -93,6 +93,6 @@ class SemanticTableTest extends CypherFunSuite with AstConstructionTestSupport {
       updated(varFor("a", position123), ExpressionTypeInfo(CTNode.invariant, None)).
       updated(varFor("a", position000), ExpressionTypeInfo(CTRelationship.invariant, None)))
 
-    intercept[InternalException](table.getTypeFor("a"))
+    intercept[IllegalStateException](table.getTypeFor("a"))
   }
 }
