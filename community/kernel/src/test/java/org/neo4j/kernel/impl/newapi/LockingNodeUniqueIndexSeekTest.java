@@ -48,7 +48,8 @@ class LockingNodeUniqueIndexSeekTest
 {
     private final int labelId = 1;
     private final int propertyKeyId = 2;
-    private IndexDescriptor index = IndexPrototype.uniqueForSchema( SchemaDescriptor.forLabel( labelId, propertyKeyId ) ).materialise( 12 );
+    private IndexDescriptor index = IndexPrototype.uniqueForSchema( SchemaDescriptor.forLabel( labelId, propertyKeyId ) )
+            .withName( "index_12" ).materialise( 12 );
 
     private final Value value = Values.of( "value" );
     private final IndexQuery.ExactPredicate predicate = exact( propertyKeyId, value );

@@ -129,7 +129,8 @@ class IndexBatchTransactionApplierTest
     private IndexDescriptor uniqueForSchema( SchemaDescriptor schema, String providerKey, String providerVersion, long id, long owningConstraint )
     {
         final IndexProviderDescriptor indexProvider = new IndexProviderDescriptor( providerKey, providerVersion );
-        return IndexPrototype.uniqueForSchema( schema, indexProvider ).materialise( id ).withOwningConstraintId( owningConstraint );
+        return IndexPrototype.uniqueForSchema( schema, indexProvider ).withName( "constraint_" + id )
+                .materialise( id ).withOwningConstraintId( owningConstraint );
     }
 
     private SchemaRecord asSchemaRecord( SchemaRule rule, boolean inUse )

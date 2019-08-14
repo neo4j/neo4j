@@ -83,7 +83,7 @@ abstract class FusionIndexAccessorTest
     private EnumMap<IndexSlot,IndexAccessor> accessors;
     private IndexAccessor[] aliveAccessors;
     private IndexDescriptor indexDescriptor =
-            IndexPrototype.forSchema( SchemaDescriptor.forLabel( 1, 42 ) ).materialise( indexId );
+            IndexPrototype.forSchema( SchemaDescriptor.forLabel( 1, 42 ) ).withName( "index" ).materialise( indexId );
     private FileSystemAbstraction fs;
     private IndexDirectoryStructure directoryStructure;
 

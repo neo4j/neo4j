@@ -34,7 +34,6 @@ import static org.neo4j.internal.schema.IndexPrototype.forSchema;
 
 class IndexMapTest
 {
-    private static final long[] noEntityToken = {};
     private IndexMap indexMap;
 
     private LabelSchemaDescriptor schema3_4 = SchemaDescriptor.forLabel( 3, 4 );
@@ -47,11 +46,11 @@ class IndexMapTest
     void setup()
     {
         indexMap = new IndexMap();
-        indexMap.putIndexProxy( new TestIndexProxy( forSchema( schema3_4 ).materialise( 1 ) ) );
-        indexMap.putIndexProxy( new TestIndexProxy( forSchema( schema5_6_7 ).materialise( 2 ) ) );
-        indexMap.putIndexProxy( new TestIndexProxy( forSchema( schema5_8 ).materialise( 3 ) ) );
-        indexMap.putIndexProxy( new TestIndexProxy( forSchema( node35_8 ).materialise( 4 ) ) );
-        indexMap.putIndexProxy( new TestIndexProxy( forSchema( rel35_8 ).materialise( 5 ) ) );
+        indexMap.putIndexProxy( new TestIndexProxy( forSchema( schema3_4 ).withName( "index_1" ).materialise( 1 ) ) );
+        indexMap.putIndexProxy( new TestIndexProxy( forSchema( schema5_6_7 ).withName( "index_2" ).materialise( 2 ) ) );
+        indexMap.putIndexProxy( new TestIndexProxy( forSchema( schema5_8 ).withName( "index_3" ).materialise( 3 ) ) );
+        indexMap.putIndexProxy( new TestIndexProxy( forSchema( node35_8 ).withName( "index_4" ).materialise( 4 ) ) );
+        indexMap.putIndexProxy( new TestIndexProxy( forSchema( rel35_8 ).withName( "index_5" ).materialise( 5 ) ) );
     }
 
     @Test
@@ -70,7 +69,7 @@ class IndexMapTest
 
     // HELPERS
 
-    private class TestIndexProxy extends IndexProxyAdapter
+    private static class TestIndexProxy extends IndexProxyAdapter
     {
         private final IndexDescriptor descriptor;
 

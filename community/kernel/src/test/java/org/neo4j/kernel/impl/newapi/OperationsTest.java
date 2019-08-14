@@ -578,7 +578,7 @@ class OperationsTest
     void shouldAcquireSchemaWriteLockBeforeRemovingIndexRule() throws Exception
     {
         // given
-        IndexDescriptor index = IndexPrototype.forSchema( SchemaDescriptor.forLabel( 0, 0 ) ).materialise( 0 );
+        IndexDescriptor index = IndexPrototype.forSchema( SchemaDescriptor.forLabel( 0, 0 ) ).withName( "index" ).materialise( 0 );
         IndexProxy indexProxy = mock( IndexProxy.class );
         when( indexProxy.getDescriptor() ).thenReturn( index );
         when( indexingService.getIndexProxy( index.schema() ) ).thenReturn( indexProxy );
@@ -596,7 +596,7 @@ class OperationsTest
     void shouldAcquireSchemaWriteLockBeforeRemovingIndexRuleBySchema() throws Exception
     {
         // given
-        IndexDescriptor index = IndexPrototype.forSchema( SchemaDescriptor.forLabel( 0, 0 ) ).materialise( 0 );
+        IndexDescriptor index = IndexPrototype.forSchema( SchemaDescriptor.forLabel( 0, 0 ) ).withName( "index" ).materialise( 0 );
         IndexProxy indexProxy = mock( IndexProxy.class );
         when( indexProxy.getDescriptor() ).thenReturn( index );
         when( indexingService.getIndexProxy( index.schema() ) ).thenReturn( indexProxy );
@@ -615,7 +615,7 @@ class OperationsTest
     {
         // given
         String defaultProvider = Config.defaults().get( default_schema_provider );
-        IndexDescriptor constraintIndex = IndexPrototype.uniqueForSchema( descriptor ).materialise( 42 );
+        IndexDescriptor constraintIndex = IndexPrototype.uniqueForSchema( descriptor ).withName( "index_42" ).materialise( 42 );
         UniquenessConstraintDescriptor constraint = ConstraintDescriptorFactory.uniqueForSchema( descriptor );
         when( constraintIndexCreator.createUniquenessConstraintIndex( transaction, constraint, defaultProvider ) ).thenReturn( constraintIndex );
         IndexProxy indexProxy = mock( IndexProxy.class );
@@ -807,7 +807,7 @@ class OperationsTest
     {
         // given
         UniquenessConstraintDescriptor constraint = uniqueForSchema( descriptor );
-        IndexDescriptor index = IndexPrototype.uniqueForSchema( descriptor ).materialise( 13 );
+        IndexDescriptor index = IndexPrototype.uniqueForSchema( descriptor ).withName( "index_13" ).materialise( 13 );
         when( storageReader.constraintExists( constraint ) ).thenReturn( true );
         when( storageReader.indexGetForSchema( descriptor ) ).thenReturn( index );
 

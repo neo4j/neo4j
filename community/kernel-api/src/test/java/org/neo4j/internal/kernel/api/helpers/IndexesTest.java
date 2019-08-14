@@ -41,8 +41,7 @@ import static org.neo4j.internal.kernel.api.helpers.Indexes.awaitResampling;
 
 class IndexesTest
 {
-
-    private final IndexDescriptor index = IndexPrototype.forSchema( SchemaDescriptor.forLabel( 1, 2 ) ).materialise( 1 );
+    private final IndexDescriptor index = IndexPrototype.forSchema( SchemaDescriptor.forLabel( 1, 2 ) ).withName( "index" ).materialise( 1 );
 
     @Test
     void shouldNotTimeOutIfNoIndexes() throws Throwable

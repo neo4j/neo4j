@@ -50,18 +50,20 @@ public class SchemaRuleUtil
 
     public static IndexDescriptor indexRule( long ruleId, int labelId, int propertyId, IndexProviderDescriptor descriptor )
     {
-        return IndexPrototype.forSchema( forLabel( labelId, propertyId ), descriptor ).materialise( ruleId );
+        return IndexPrototype.forSchema( forLabel( labelId, propertyId ), descriptor ).withName( "index_" + ruleId ).materialise( ruleId );
     }
 
     public static IndexDescriptor constraintIndexRule( long ruleId, int labelId, int propertyId,
                                                             IndexProviderDescriptor descriptor, long constraintId )
     {
-        return IndexPrototype.uniqueForSchema( forLabel( labelId, propertyId ), descriptor ).materialise( ruleId ).withOwningConstraintId( constraintId );
+        return IndexPrototype.uniqueForSchema( forLabel( labelId, propertyId ), descriptor )
+                .withName( "constraint_" + ruleId ).materialise( ruleId ).withOwningConstraintId( constraintId );
     }
 
     public static IndexDescriptor constraintIndexRule( long ruleId, int labelId, int propertyId,
                                                             IndexProviderDescriptor descriptor )
     {
-        return IndexPrototype.uniqueForSchema( forLabel( labelId, propertyId ), descriptor ).materialise( ruleId );
+        return IndexPrototype.uniqueForSchema( forLabel( labelId, propertyId ), descriptor )
+                .withName( "constraint_" + ruleId ).materialise( ruleId );
     }
 }

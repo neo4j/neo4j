@@ -70,7 +70,7 @@ import static org.neo4j.values.storable.Values.stringValue;
 class BlockBasedIndexPopulatorTest
 {
     private static final LabelSchemaDescriptor SCHEMA_DESCRIPTOR = SchemaDescriptor.forLabelOfType( IndexType.TREE, 1, 1 );
-    private static final IndexDescriptor INDEX_DESCRIPTOR = IndexPrototype.forSchema( SCHEMA_DESCRIPTOR ).materialise( 1 );
+    private static final IndexDescriptor INDEX_DESCRIPTOR = IndexPrototype.forSchema( SCHEMA_DESCRIPTOR ).withName( "index" ).materialise( 1 );
 
     @Inject
     Actor merger;

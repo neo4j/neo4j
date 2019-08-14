@@ -262,10 +262,10 @@ class TransactionRecordStateTest
         // -- indexes
         long nodeRuleId = 0;
         TransactionRecordState recordState = newTransactionRecordState();
-        SchemaRule nodeRule = IndexPrototype.forSchema( forLabel( labelId, propertyKeyId ) ).materialise( nodeRuleId );
+        SchemaRule nodeRule = IndexPrototype.forSchema( forLabel( labelId, propertyKeyId ) ).withName( "index_" + nodeRuleId ).materialise( nodeRuleId );
         recordState.schemaRuleCreate( nodeRuleId, false, nodeRule );
         long relRuleId = 1;
-        SchemaRule relRule = IndexPrototype.forSchema( forRelType( relTypeId, propertyKeyId ) ).materialise( relRuleId );
+        SchemaRule relRule = IndexPrototype.forSchema( forRelType( relTypeId, propertyKeyId ) ).withName( "index_" + relRuleId ).materialise( relRuleId );
         recordState.schemaRuleCreate( relRuleId, false, relRule );
         apply( recordState );
 
@@ -1219,7 +1219,7 @@ class TransactionRecordStateTest
         neoStores = createStores();
         TransactionRecordState state = newTransactionRecordState();
         long ruleId = neoStores.getSchemaStore().nextId();
-        IndexDescriptor rule = IndexPrototype.forSchema( forLabel( 0, 1 ) ).materialise( ruleId );
+        IndexDescriptor rule = IndexPrototype.forSchema( forLabel( 0, 1 ) ).withName( "index_" + ruleId ).materialise( ruleId );
         state.schemaRuleCreate( ruleId, false, rule );
 
         List<StorageCommand> commands = new ArrayList<>();
@@ -1267,7 +1267,7 @@ class TransactionRecordStateTest
         neoStores = createStores();
         TransactionRecordState state = newTransactionRecordState();
         long ruleId = neoStores.getSchemaStore().nextId();
-        IndexDescriptor rule = IndexPrototype.forSchema( forLabel( 0, 1 ) ).materialise( ruleId );
+        IndexDescriptor rule = IndexPrototype.forSchema( forLabel( 0, 1 ) ).withName( "index_" + ruleId ).materialise( ruleId );
         state.schemaRuleCreate( ruleId, false, rule );
 
         apply( state );
@@ -1316,7 +1316,7 @@ class TransactionRecordStateTest
         neoStores = createStores();
         TransactionRecordState state = newTransactionRecordState();
         long ruleId = neoStores.getSchemaStore().nextId();
-        IndexDescriptor rule = IndexPrototype.forSchema( forLabel( 0, 1 ) ).materialise( ruleId );
+        IndexDescriptor rule = IndexPrototype.forSchema( forLabel( 0, 1 ) ).withName( "index_" + ruleId ).materialise( ruleId );
         state.schemaRuleCreate( ruleId, false, rule );
         state.schemaRuleSetProperty( ruleId, 42, Values.booleanValue( true ), rule );
 
@@ -1346,7 +1346,7 @@ class TransactionRecordStateTest
         neoStores = createStores();
         TransactionRecordState state = newTransactionRecordState();
         long ruleId = neoStores.getSchemaStore().nextId();
-        IndexDescriptor rule = IndexPrototype.uniqueForSchema( forLabel( 0, 1 ) ).materialise( ruleId );
+        IndexDescriptor rule = IndexPrototype.uniqueForSchema( forLabel( 0, 1 ) ).withName( "index_" + ruleId ).materialise( ruleId );
         state.schemaRuleCreate( ruleId, false, rule );
 
         apply( state );
@@ -1385,7 +1385,7 @@ class TransactionRecordStateTest
         neoStores = createStores();
         TransactionRecordState state = newTransactionRecordState();
         long ruleId = neoStores.getSchemaStore().nextId();
-        IndexDescriptor rule = IndexPrototype.uniqueForSchema( forLabel( 0, 1 ) ).materialise( ruleId );
+        IndexDescriptor rule = IndexPrototype.uniqueForSchema( forLabel( 0, 1 ) ).withName( "constraint_" + ruleId ).materialise( ruleId );
         state.schemaRuleCreate( ruleId, false, rule );
         state.schemaRuleSetProperty( ruleId, 42, Values.booleanValue( true ), rule );
 
@@ -1635,7 +1635,8 @@ class TransactionRecordStateTest
 
     private IndexDescriptor createIndex( int labelId, int... propertyKeyIds )
     {
-        IndexDescriptor descriptor = IndexPrototype.forSchema( forLabel( labelId, propertyKeyIds ) ).materialise( nextRuleId++ );
+        long id = nextRuleId++;
+        IndexDescriptor descriptor = IndexPrototype.forSchema( forLabel( labelId, propertyKeyIds ) ).withName( "index_" + id ).materialise( id );
         schemaCache.addSchemaRule( descriptor );
         return descriptor;
     }

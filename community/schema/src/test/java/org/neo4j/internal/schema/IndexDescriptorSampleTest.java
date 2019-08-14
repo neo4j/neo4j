@@ -38,7 +38,7 @@ class IndexDescriptorSampleTest extends SchemaRuleTestBase
     {
         // GIVEN
         IndexPrototype prototype = forLabel( LABEL_ID, PROPERTY_ID_1 );
-        IndexDescriptor indexRule = prototype.materialise( RULE_ID );
+        IndexDescriptor indexRule = prototype.withName( "index" ).materialise( RULE_ID );
 
         // THEN
         assertThat( indexRule.getId(), equalTo( RULE_ID ) );
@@ -53,14 +53,14 @@ class IndexDescriptorSampleTest extends SchemaRuleTestBase
     void shouldCreateUniqueIndex()
     {
         // GIVEN
-        IndexPrototype descriptor = uniqueForLabel( LABEL_ID, PROPERTY_ID_1 );
-        IndexDescriptor indexRule = descriptor.materialise( RULE_ID );
+        IndexPrototype prototype = uniqueForLabel( LABEL_ID, PROPERTY_ID_1 );
+        IndexDescriptor indexRule = prototype.withName( "index" ).materialise( RULE_ID );
 
         // THEN
         assertThat( indexRule.getId(), equalTo( RULE_ID ) );
         assertTrue( indexRule.isUnique() );
-        assertThat( indexRule.schema(), equalTo( descriptor.schema() ) );
-        assertThat( indexRule, equalTo( descriptor ) );
+        assertThat( indexRule.schema(), equalTo( prototype.schema() ) );
+        assertThat( indexRule, equalTo( prototype ) );
         assertThat( indexRule.getIndexProvider(), equalTo( PROVIDER ) );
         assertTrue( indexRule.getOwningConstraintId().isEmpty() );
 
@@ -83,7 +83,7 @@ class IndexDescriptorSampleTest extends SchemaRuleTestBase
     @Test
     void detectUniqueIndexWithoutOwningConstraint()
     {
-        IndexPrototype descriptor = uniqueForLabel( LABEL_ID, PROPERTY_ID_1 );
+        IndexPrototype descriptor = namedUniqueForLabel( "index", LABEL_ID, PROPERTY_ID_1 );
         IndexDescriptor indexRule = descriptor.materialise( RULE_ID );
 
         assertTrue( indexRule.isUnique() && indexRule.getOwningConstraintId().isEmpty() );
@@ -91,12 +91,12 @@ class IndexDescriptorSampleTest extends SchemaRuleTestBase
 
     private void assertEqualityByDescriptor( IndexPrototype descriptor )
     {
-        IndexDescriptor rule1 = descriptor.materialise( RULE_ID );
-        IndexDescriptor rule2 = descriptor.materialise( RULE_ID_2 );
+        IndexDescriptor rule1 = descriptor.withName( "a" ).materialise( RULE_ID );
+        IndexDescriptor rule2 = descriptor.withName( "b" ).materialise( RULE_ID_2 );
 
         BiFunction<SchemaDescriptor,IndexProviderDescriptor,IndexPrototype> factory =
                 descriptor.isUnique() ? IndexPrototype::uniqueForSchema : IndexPrototype::forSchema;
-        IndexDescriptor rule3 = factory.apply( descriptor.schema(), descriptor.getIndexProvider() ).materialise( RULE_ID );
+        IndexDescriptor rule3 = factory.apply( descriptor.schema(), descriptor.getIndexProvider() ).withName( "c" ).materialise( RULE_ID );
 
         assertEquality( rule1, rule2 );
         assertEquality( rule1, rule3 );

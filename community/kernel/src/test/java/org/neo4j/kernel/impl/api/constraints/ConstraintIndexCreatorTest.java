@@ -90,7 +90,7 @@ class ConstraintIndexCreatorTest
 
     private final LabelSchemaDescriptor descriptor = forLabel( LABEL_ID, PROPERTY_KEY_ID );
     private final UniquenessConstraintDescriptor constraint = ConstraintDescriptorFactory.uniqueForSchema( descriptor );
-    private final IndexDescriptor index = IndexPrototype.uniqueForSchema( forLabel( LABEL_ID, PROPERTY_KEY_ID ) ).materialise( INDEX_ID );
+    private final IndexDescriptor index = IndexPrototype.uniqueForSchema( forLabel( LABEL_ID, PROPERTY_KEY_ID ) ).withName( "index" ).materialise( INDEX_ID );
     private final IndexDescriptor indexReference = TestIndexDescriptorFactory.uniqueForLabel( LABEL_ID, PROPERTY_KEY_ID );
     private final SchemaRead schemaRead = schemaRead();
     private final SchemaWrite schemaWrite = mock( SchemaWrite.class );
@@ -210,7 +210,7 @@ class ConstraintIndexCreatorTest
         StubKernel kernel = new StubKernel();
 
         long orphanedConstraintIndexId = 111;
-        IndexDescriptor indexReference = IndexPrototype.uniqueForSchema( descriptor ).materialise( orphanedConstraintIndexId );
+        IndexDescriptor indexReference = IndexPrototype.uniqueForSchema( descriptor ).withName( "constraint" ).materialise( orphanedConstraintIndexId );
         IndexProxy indexProxy = mock( IndexProxy.class );
         when( indexingService.getIndexProxy( orphanedConstraintIndexId ) ).thenReturn( indexProxy );
         when( schemaRead.index( descriptor ) ).thenReturn( indexReference );
@@ -367,7 +367,8 @@ class ConstraintIndexCreatorTest
             TransactionState transactionState = mock( TransactionState.class );
             when( transaction.txState() ).thenReturn( transactionState );
             when( transaction.indexUniqueCreate( any( IndexBackedConstraintDescriptor.class ), any( String.class ) ) ).thenAnswer(
-                    i -> IndexPrototype.uniqueForSchema( i.<IndexBackedConstraintDescriptor>getArgument( 0 ).schema() ).materialise( INDEX_ID ) );
+                    i -> IndexPrototype.uniqueForSchema( i.<IndexBackedConstraintDescriptor>getArgument( 0 ).schema() )
+                            .withName( "constraint" ).materialise( INDEX_ID ) );
             when( transaction.newStorageReader() ).thenReturn( mock( StorageReader.class ) );
         }
         catch ( InvalidTransactionTypeKernelException e )

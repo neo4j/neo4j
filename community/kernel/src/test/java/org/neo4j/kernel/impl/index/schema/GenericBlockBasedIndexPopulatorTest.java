@@ -69,8 +69,8 @@ import static org.neo4j.values.storable.Values.stringValue;
 @PageCacheExtension
 class GenericBlockBasedIndexPopulatorTest
 {
-    private static final IndexDescriptor INDEX_DESCRIPTOR = forSchema( forLabel( 1, 1 ) ).materialise( 1 );
-    private static final IndexDescriptor UNIQUE_INDEX_DESCRIPTOR = uniqueForSchema( forLabel( 1, 1 ) ).materialise( 1 );
+    private static final IndexDescriptor INDEX_DESCRIPTOR = forSchema( forLabel( 1, 1 ) ).withName( "index" ).materialise( 1 );
+    private static final IndexDescriptor UNIQUE_INDEX_DESCRIPTOR = uniqueForSchema( forLabel( 1, 1 ) ).withName( "constrain" ).materialise( 1 );
 
     @Inject
     private FileSystemAbstraction fs;

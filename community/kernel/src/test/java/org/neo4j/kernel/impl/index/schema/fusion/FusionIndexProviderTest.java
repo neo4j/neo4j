@@ -66,7 +66,7 @@ abstract class FusionIndexProviderTest
 {
     private static final IndexProviderDescriptor DESCRIPTOR = new IndexProviderDescriptor( "test-fusion", "1" );
     private static final IndexDescriptor AN_INDEX =
-            IndexPrototype.forSchema( forLabel( 0, 0 ), PROVIDER_DESCRIPTOR ).materialise( 0 );
+            IndexPrototype.forSchema( forLabel( 0, 0 ), PROVIDER_DESCRIPTOR ).withName( "index" ).materialise( 0 );
 
     private final FusionVersion fusionVersion;
     private EnumMap<IndexSlot,IndexProvider> providers;

@@ -75,7 +75,7 @@ class NonUniqueDatabaseIndexPopulatorTest
         File folder = testDir.directory( "folder" );
         PartitionedIndexStorage indexStorage = new PartitionedIndexStorage( dirFactory, fileSystem, folder );
 
-        IndexDescriptor descriptor = IndexPrototype.forSchema( labelSchemaDescriptor ).materialise( 13 );
+        IndexDescriptor descriptor = IndexPrototype.forSchema( labelSchemaDescriptor ).withName( "index" ).materialise( 13 );
         index = LuceneSchemaIndexBuilder.create( descriptor, Config.defaults() )
                                         .withIndexStorage( indexStorage )
                                         .build();

@@ -61,9 +61,9 @@ class IndexSamplingControllerTest
     private final IndexProxy indexProxy = mock( IndexProxy.class );
     private final IndexProxy anotherIndexProxy = mock( IndexProxy.class );
     private final IndexDescriptor descriptor =
-            forSchema( forLabel( 3, 4 ), PROVIDER_DESCRIPTOR ).materialise( indexId );
+            forSchema( forLabel( 3, 4 ), PROVIDER_DESCRIPTOR ).withName( "index_2" ).materialise( indexId );
     private final IndexDescriptor anotherDescriptor =
-            forSchema( forLabel( 5, 6 ), PROVIDER_DESCRIPTOR ).materialise( anotherIndexId );
+            forSchema( forLabel( 5, 6 ), PROVIDER_DESCRIPTOR ).withName( "index_3" ).materialise( anotherIndexId );
     private final IndexSamplingJob job = mock( IndexSamplingJob.class );
     private final IndexSamplingJob anotherJob = mock( IndexSamplingJob.class );
     {

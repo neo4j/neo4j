@@ -169,7 +169,7 @@ class IndexDescriptorTest
         for ( int i = 0; i < prototypes.length; i++ )
         {
             IndexRef<?> prototype = prototypes[i];
-            IndexRef<?> index = prototypes[i].materialise( 0 );
+            IndexRef<?> index = prototypes[i].withName( "index_" + i ).materialise( 0 );
             if ( !index.equals( prototype ) )
             {
                 fail( index + " was not equal to its prototype " + prototype + " at index (" + i + ", _)");
@@ -201,7 +201,7 @@ class IndexDescriptorTest
     void toStringMustIncludeSchemaDescription()
     {
         IndexPrototype prototype = IndexPrototype.forSchema( SCHEMAS[0] );
-        IndexDescriptor index = prototype.materialise( 1 );
+        IndexDescriptor index = prototype.withName( "index" ).materialise( 1 );
         String schemaDescription = SCHEMAS[0].userDescription( TokenNameLookup.idTokenNameLookup );
         assertThat( prototype.toString(), containsString( schemaDescription ) );
         assertThat( index.toString(), containsString( schemaDescription ) );

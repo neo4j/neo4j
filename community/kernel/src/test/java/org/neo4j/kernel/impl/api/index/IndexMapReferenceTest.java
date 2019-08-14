@@ -97,7 +97,7 @@ class IndexMapReferenceTest
         {
             existing[i] = mock( IndexProxy.class );
             when( existing[i].getDescriptor() ).thenReturn(
-                    forSchema( forLabel( base + i, 1 ), PROVIDER_DESCRIPTOR ).materialise( i ) );
+                    forSchema( forLabel( base + i, 1 ), PROVIDER_DESCRIPTOR ).withName( "index_" + i ).materialise( i ) );
         }
         return existing;
     }

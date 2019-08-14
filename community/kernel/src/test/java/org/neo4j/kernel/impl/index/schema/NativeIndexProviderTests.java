@@ -329,17 +329,17 @@ abstract class NativeIndexProviderTests
 
     private static IndexDescriptor descriptor()
     {
-        return IndexPrototype.forSchema( forLabel( labelId, propId ), PROVIDER_DESCRIPTOR ).materialise( indexId );
+        return IndexPrototype.forSchema( forLabel( labelId, propId ), PROVIDER_DESCRIPTOR ).withName( "index" ).materialise( indexId );
     }
 
     private static IndexDescriptor descriptor( long indexId )
     {
-        return IndexPrototype.forSchema( forLabel( labelId, propId ), PROVIDER_DESCRIPTOR ).materialise( indexId );
+        return IndexPrototype.forSchema( forLabel( labelId, propId ), PROVIDER_DESCRIPTOR ).withName( "index_" + indexId ).materialise( indexId );
     }
 
     private static IndexDescriptor descriptorUnique()
     {
-        return IndexPrototype.uniqueForSchema( forLabel( labelId, propId ), PROVIDER_DESCRIPTOR ).materialise( indexId );
+        return IndexPrototype.uniqueForSchema( forLabel( labelId, propId ), PROVIDER_DESCRIPTOR ).withName( "constraint" ).materialise( indexId );
     }
 
     @FunctionalInterface

@@ -60,19 +60,19 @@ class IndexUpdaterMapTest
         indexMap = new IndexMap();
 
         indexProxy1 = mock( IndexProxy.class );
-        schemaIndexDescriptor1 = forSchema( forLabel( 2, 3 ), PROVIDER_DESCRIPTOR ).materialise( 0 );
+        schemaIndexDescriptor1 = forSchema( forLabel( 2, 3 ), PROVIDER_DESCRIPTOR ).withName( "a" ).materialise( 0 );
         indexUpdater1 = mock( IndexUpdater.class );
         when( indexProxy1.getDescriptor() ).thenReturn( schemaIndexDescriptor1 );
         when( indexProxy1.newUpdater( any( IndexUpdateMode.class ) ) ).thenReturn( indexUpdater1 );
 
         indexProxy2 = mock( IndexProxy.class );
-        schemaIndexDescriptor = forSchema( forLabel( 5, 6 ), PROVIDER_DESCRIPTOR ).materialise( 1 );
+        schemaIndexDescriptor = forSchema( forLabel( 5, 6 ), PROVIDER_DESCRIPTOR ).withName( "b" ).materialise( 1 );
         IndexUpdater indexUpdater2 = mock( IndexUpdater.class );
         when( indexProxy2.getDescriptor() ).thenReturn( schemaIndexDescriptor );
         when( indexProxy2.newUpdater( any( IndexUpdateMode.class ) ) ).thenReturn( indexUpdater2 );
 
         indexProxy3 = mock( IndexProxy.class );
-        schemaIndexDescriptor3 = forSchema( forLabel( 5, 7, 8 ), PROVIDER_DESCRIPTOR ).materialise( 2 );
+        schemaIndexDescriptor3 = forSchema( forLabel( 5, 7, 8 ), PROVIDER_DESCRIPTOR ).withName( "c" ).materialise( 2 );
         IndexUpdater indexUpdater3 = mock( IndexUpdater.class );
         when( indexProxy3.getDescriptor() ).thenReturn( schemaIndexDescriptor3 );
         when( indexProxy3.newUpdater( any( IndexUpdateMode.class ) ) ).thenReturn( indexUpdater3 );

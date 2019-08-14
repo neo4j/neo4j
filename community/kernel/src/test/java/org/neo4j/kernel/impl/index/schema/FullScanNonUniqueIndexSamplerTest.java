@@ -26,6 +26,7 @@ import java.io.IOException;
 import org.neo4j.configuration.Config;
 import org.neo4j.index.internal.gbptree.GBPTree;
 import org.neo4j.index.internal.gbptree.Writer;
+import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.kernel.api.index.IndexSample;
 import org.neo4j.kernel.impl.index.schema.config.IndexSpecificSpaceFillingCurveSettings;
@@ -106,7 +107,8 @@ public class FullScanNonUniqueIndexSamplerTest extends NativeIndexTestUtil<Gener
     @Override
     protected ValueCreatorUtil<GenericKey,NativeIndexValue> createValueCreatorUtil()
     {
-        return new ValueCreatorUtil<>( forSchema( forLabel( 42, 666 ) ).materialise( 0 ), typesOfGroup( NUMBER ), FRACTION_DUPLICATE_NON_UNIQUE );
+        IndexDescriptor index = forSchema( forLabel( 42, 666 ) ).withName( "index" ).materialise( 0 );
+        return new ValueCreatorUtil<>( index, typesOfGroup( NUMBER ), FRACTION_DUPLICATE_NON_UNIQUE );
     }
 
     @Override

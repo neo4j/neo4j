@@ -32,7 +32,7 @@ import static org.mockito.Mockito.verify;
 
 class PopulatingIndexProxyTest
 {
-    private final IndexDescriptor index = IndexPrototype.forSchema( SchemaDescriptor.forLabel( 1, 2 ) ).materialise( 13 );
+    private final IndexDescriptor index = IndexPrototype.forSchema( SchemaDescriptor.forLabel( 1, 2 ) ).withName( "index" ).materialise( 13 );
     private final IndexPopulationJob indexPopulationJob = mock( IndexPopulationJob.class );
     private final IndexPopulation indexPopulation = mock( IndexPopulation.class );
     private PopulatingIndexProxy populatingIndexProxy;

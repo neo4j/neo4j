@@ -86,7 +86,7 @@ class SchemaRuleCommandTest
             new IndexBatchTransactionApplier( indexUpdateListener, labelScanStoreSynchronizer, indexUpdatesSync, mock( NodeStore.class ),
                     neoStores.getRelationshipStore(), propertyStore, storageEngine, schemaCache, new IndexActivator( indexes ) );
     private final BaseCommandReader reader = new PhysicalLogCommandReaderV4_0();
-    private final IndexDescriptor rule = IndexPrototype.forSchema( SchemaDescriptor.forLabel( labelId, propertyKey ) ).materialise( id );
+    private final IndexDescriptor rule = IndexPrototype.forSchema( SchemaDescriptor.forLabel( labelId, propertyKey ) ).withName( "index" ).materialise( id );
 
     @BeforeEach
     void setup()

@@ -44,7 +44,7 @@ class CompiledIndexUtilsTest
     {
         // GIVEN
         Read read = mock( Read.class );
-        IndexDescriptor index = IndexPrototype.forSchema( SchemaDescriptor.forLabel( 1, 42 ) ).materialise( 13 );
+        IndexDescriptor index = IndexPrototype.forSchema( SchemaDescriptor.forLabel( 1, 42 ) ).withName( "index" ).materialise( 13 );
 
         // WHEN
         CompiledIndexUtils.indexSeek( read, mock( CursorFactory.class ), index, "hello" );
@@ -58,7 +58,7 @@ class CompiledIndexUtilsTest
     {
         // GIVEN
         Read read = mock( Read.class );
-        IndexDescriptor index = IndexPrototype.forSchema( SchemaDescriptor.forLabel( 1, 42 ) ).materialise( 13 );
+        IndexDescriptor index = IndexPrototype.forSchema( SchemaDescriptor.forLabel( 1, 42 ) ).withName( "index" ).materialise( 13 );
 
         // WHEN
         NodeValueIndexCursor cursor = CompiledIndexUtils.indexSeek( mock( Read.class ), mock( CursorFactory.class ), index, null );

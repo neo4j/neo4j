@@ -340,7 +340,7 @@ abstract class TxStateTest
         // when
         LabelSchemaDescriptor schema = forLabel( 1, 17 );
         UniquenessConstraintDescriptor constraint = ConstraintDescriptorFactory.uniqueForSchema( schema );
-        state.constraintDoAdd( constraint, IndexPrototype.uniqueForSchema( schema ).materialise( 7 ) );
+        state.constraintDoAdd( constraint, IndexPrototype.uniqueForSchema( schema ).withName( "constraint_7" ).materialise( 7 ) );
 
         // then
         DiffSets<ConstraintDescriptor> diff = state.constraintsChangesForLabel( 1 );
@@ -355,11 +355,11 @@ abstract class TxStateTest
         // given
         LabelSchemaDescriptor schema = forLabel( 1, 17 );
         UniquenessConstraintDescriptor constraint1 = ConstraintDescriptorFactory.uniqueForSchema( schema );
-        state.constraintDoAdd( constraint1, IndexPrototype.uniqueForSchema( schema ).materialise( 7 ) );
+        state.constraintDoAdd( constraint1, IndexPrototype.uniqueForSchema( schema ).withName( "constraint_7" ).materialise( 7 ) );
 
         // when
         UniquenessConstraintDescriptor constraint2 = ConstraintDescriptorFactory.uniqueForSchema( schema );
-        state.constraintDoAdd( constraint2, IndexPrototype.uniqueForSchema( schema ).materialise( 19 ) );
+        state.constraintDoAdd( constraint2, IndexPrototype.uniqueForSchema( schema ).withName( "constraint_19" ).materialise( 19 ) );
 
         // then
         assertEquals( constraint1, constraint2 );
@@ -372,10 +372,10 @@ abstract class TxStateTest
         // when
         LabelSchemaDescriptor schema1 = forLabel( 1, 17 );
         UniquenessConstraintDescriptor constraint1 = ConstraintDescriptorFactory.uniqueForSchema( schema1 );
-        state.constraintDoAdd( constraint1, IndexPrototype.uniqueForSchema( schema1 ).materialise( 7 ) );
+        state.constraintDoAdd( constraint1, IndexPrototype.uniqueForSchema( schema1 ).withName( "constraint_7" ).materialise( 7 ) );
         LabelSchemaDescriptor schema2 = forLabel( 2, 17 );
         UniquenessConstraintDescriptor constraint2 = ConstraintDescriptorFactory.uniqueForSchema( schema2 );
-        state.constraintDoAdd( constraint2, IndexPrototype.uniqueForSchema( schema2 ).materialise( 19 ) );
+        state.constraintDoAdd( constraint2, IndexPrototype.uniqueForSchema( schema2 ).withName( "constraint_19" ).materialise( 19 ) );
 
         // then
         assertEquals( singleton( constraint1 ), state.constraintsChangesForLabel( 1 ).getAdded() );
@@ -916,7 +916,7 @@ abstract class TxStateTest
         assertFalse( state.hasDataChanges() );
 
         IndexBackedConstraintDescriptor constraint2 = ConstraintDescriptorFactory.nodeKeyForLabel( 0, 0 );
-        state.constraintDoAdd( constraint2, IndexPrototype.uniqueForSchema( forLabel( 0, 0 ) ).materialise( 0 ) );
+        state.constraintDoAdd( constraint2, IndexPrototype.uniqueForSchema( forLabel( 0, 0 ) ).withName( "index" ).materialise( 0 ) );
         assertThat( state.getDataRevision(), is( 0L ) );
         assertFalse( state.hasDataChanges() );
 

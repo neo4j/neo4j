@@ -56,7 +56,8 @@ class GenericNativeIndexProviderTest
         // Given
         GenericNativeIndexProvider provider = new GenericNativeIndexProvider( IndexDirectoryStructure.NONE, null, null, null, null, false, Config.defaults() );
         LabelSchemaDescriptor incompleteSchema = SchemaDescriptor.forLabel( 1, 1 );
-        IndexDescriptor incompleteDescriptor = IndexPrototype.forSchema( incompleteSchema, IndexProviderDescriptor.UNDECIDED ).materialise( 1 );
+        IndexDescriptor incompleteDescriptor = IndexPrototype.forSchema( incompleteSchema, IndexProviderDescriptor.UNDECIDED )
+                .withName( "index" ).materialise( 1 );
 
         // When
         IndexDescriptor completedDescriptor = provider.completeConfiguration( incompleteDescriptor );
@@ -98,7 +99,8 @@ class GenericNativeIndexProviderTest
         existingSettings.put( key( existingCrs.getName(), MAX ), max );
         IndexConfig existingIndexConfig = IndexConfig.with( existingSettings );
         LabelSchemaDescriptor incompleteSchema = SchemaDescriptor.forLabel( 1, 1 ).withIndexConfig( existingIndexConfig );
-        IndexDescriptor incompleteDescriptor = IndexPrototype.forSchema( incompleteSchema, IndexProviderDescriptor.UNDECIDED ).materialise( 1 );
+        IndexDescriptor incompleteDescriptor = IndexPrototype.forSchema( incompleteSchema, IndexProviderDescriptor.UNDECIDED )
+                .withName( "index" ).materialise( 1 );
 
         // When
         IndexDescriptor completedDescriptor = provider.completeConfiguration( incompleteDescriptor );

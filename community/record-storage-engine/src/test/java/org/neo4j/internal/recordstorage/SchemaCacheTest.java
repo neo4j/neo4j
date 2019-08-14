@@ -80,8 +80,10 @@ class SchemaCacheTest
     private SchemaRule schema3_4 = newIndexRule( 10, 3, 4 );
     private SchemaRule schema5_6_7 = newIndexRule( 11, 5, 6, 7 );
     private SchemaRule schema5_8 = newIndexRule( 12, 5, 8 );
-    private SchemaRule node35_8 = IndexPrototype.forSchema( fulltext( NODE, IndexConfig.empty(), new int[]{3, 5}, new int[]{8} ) ).materialise( 13 );
-    private SchemaRule rel35_8 = IndexPrototype.forSchema( fulltext( RELATIONSHIP, IndexConfig.empty(), new int[]{3, 5}, new int[]{8} ) ).materialise( 14 );
+    private SchemaRule node35_8 = IndexPrototype.forSchema( fulltext( NODE, IndexConfig.empty(), new int[]{3, 5}, new int[]{8} ) )
+            .withName( "index_13" ).materialise( 13 );
+    private SchemaRule rel35_8 = IndexPrototype.forSchema( fulltext( RELATIONSHIP, IndexConfig.empty(), new int[]{3, 5}, new int[]{8} ) )
+            .withName( "index_14" ).materialise( 14 );
 
     @Test
     void shouldConstructSchemaCache()
@@ -599,8 +601,8 @@ class SchemaCacheTest
     @Test
     void shouldFindIndexDescriptorsByRelationshipType()
     {
-        IndexDescriptor first = IndexPrototype.forSchema( forRelType( 2, 3 ) ).materialise( 1 );
-        IndexDescriptor second = IndexPrototype.forSchema( forLabel( 2, 3 ) ).materialise( 2 );
+        IndexDescriptor first = IndexPrototype.forSchema( forRelType( 2, 3 ) ).withName( "index_1" ).materialise( 1 );
+        IndexDescriptor second = IndexPrototype.forSchema( forLabel( 2, 3 ) ).withName( "index_2" ).materialise( 2 );
         SchemaCache cache = newSchemaCache( first, second );
         assertEquals( first, single( cache.indexDescriptorsForRelationshipType( 2 ) ) );
         assertEquals( first.getId(), single( cache.indexDescriptorsForRelationshipType( 2 ) ).getId() );
@@ -650,7 +652,7 @@ class SchemaCacheTest
 
     private static IndexDescriptor newIndexRule( long id, int label, int... propertyKeys )
     {
-        return IndexPrototype.forSchema( forLabel( label, propertyKeys ) ).materialise( id );
+        return IndexPrototype.forSchema( forLabel( label, propertyKeys ) ).withName( "index_id" ).materialise( id );
     }
 
     private static ConstraintDescriptor nodePropertyExistenceConstraint( long ruleId, int labelId, int propertyId )

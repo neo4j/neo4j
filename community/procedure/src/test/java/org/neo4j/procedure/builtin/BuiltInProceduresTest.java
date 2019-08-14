@@ -366,7 +366,9 @@ class BuiltInProceduresTest
         int labelId = token( label, labels );
         int propId = token( propKey, propKeys );
 
-        IndexDescriptor index = IndexPrototype.forSchema( forLabel( labelId, propId ), EMPTY.getProviderDescriptor() ).materialise( indexes.size() + 1000 );
+        IndexDescriptor index = IndexPrototype.forSchema( forLabel( labelId, propId ), EMPTY.getProviderDescriptor() )
+                .withName( "index_" + indexes.size() )
+                .materialise( indexes.size() + 1000 );
         indexes.add( index );
     }
 
@@ -376,7 +378,9 @@ class BuiltInProceduresTest
         int propId = token( propKey, propKeys );
 
         LabelSchemaDescriptor schema = forLabel( labelId, propId );
-        IndexDescriptor index = IndexPrototype.uniqueForSchema( schema, EMPTY.getProviderDescriptor() ).materialise( uniqueIndexes.size() + 1000 );
+        IndexDescriptor index = IndexPrototype.uniqueForSchema( schema, EMPTY.getProviderDescriptor() )
+                .withName( "constraint_" + uniqueIndexes.size() )
+                .materialise( uniqueIndexes.size() + 1000 );
         uniqueIndexes.add( index );
         constraints.add( ConstraintDescriptorFactory.uniqueForLabel( labelId, propId ) );
     }

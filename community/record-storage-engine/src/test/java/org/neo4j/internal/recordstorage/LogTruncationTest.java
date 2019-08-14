@@ -76,7 +76,7 @@ class LogTruncationTest
         permutations.put( Command.RelationshipGroupCommand.class,
                 new Command[] { new Command.LabelTokenCommand( new LabelTokenRecord( 1 ),
                         createLabelTokenRecord( 1 ) ) } );
-        IndexDescriptor schemaRule = IndexPrototype.forSchema( SchemaDescriptor.forLabel( 3, 4 ) ).materialise( 1 );
+        IndexDescriptor schemaRule = IndexPrototype.forSchema( SchemaDescriptor.forLabel( 3, 4 ) ).withName( "index_1" ).materialise( 1 );
         permutations.put( Command.SchemaRuleCommand.class, new Command[]{
                 new Command.SchemaRuleCommand( new SchemaRecord( 1 ).initialize( true, 41 ), new SchemaRecord( 1 ).initialize( true, 42 ), schemaRule ),
                 new Command.SchemaRuleCommand( new SchemaRecord( 1 ), new SchemaRecord( 1 ).initialize( true, 42 ), schemaRule ),

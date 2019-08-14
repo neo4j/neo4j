@@ -167,8 +167,10 @@ class IndexingServiceTest
     private final int labelId = 7;
     private final int propertyKeyId = 15;
     private final int uniquePropertyKeyId = 15;
-    private final IndexPrototype index = forSchema( forLabel( labelId, propertyKeyId ) ).withIndexProvider( PROVIDER_DESCRIPTOR );
-    private final IndexPrototype uniqueIndex = uniqueForSchema( forLabel( labelId, uniquePropertyKeyId ) ).withIndexProvider( PROVIDER_DESCRIPTOR );
+    private final IndexPrototype index =
+            forSchema( forLabel( labelId, propertyKeyId ) ).withIndexProvider( PROVIDER_DESCRIPTOR ).withName( "index" );
+    private final IndexPrototype uniqueIndex =
+            uniqueForSchema( forLabel( labelId, uniquePropertyKeyId ) ).withIndexProvider( PROVIDER_DESCRIPTOR ).withName( "constraint" );
     private final IndexPopulator populator = mock( IndexPopulator.class );
     private final IndexUpdater updater = mock( IndexUpdater.class );
     private final IndexProvider indexProvider = mock( IndexProvider.class );
@@ -629,7 +631,7 @@ class IndexingServiceTest
     {
         // given
         IndexingService indexingService = newIndexingServiceWithMockedDependencies( populator, accessor, withData() );
-        IndexDescriptor index = forSchema( forLabel( 0, 0 ) ).withIndexProvider( PROVIDER_DESCRIPTOR ).materialise( 0 );
+        IndexDescriptor index = forSchema( forLabel( 0, 0 ) ).withIndexProvider( PROVIDER_DESCRIPTOR ).withName( "index" ).materialise( 0 );
 
         // when
         indexingService.activateIndex( index );
@@ -659,7 +661,7 @@ class IndexingServiceTest
         // given
         long indexId = 0;
         IndexSamplingMode mode = TRIGGER_REBUILD_ALL;
-        IndexPrototype descriptor = forSchema( forLabel( 0, 1 ) ).withIndexProvider( PROVIDER_DESCRIPTOR );
+        IndexPrototype descriptor = forSchema( forLabel( 0, 1 ) ).withIndexProvider( PROVIDER_DESCRIPTOR ).withName( "index" );
         IndexingService indexingService = newIndexingServiceWithMockedDependencies( populator, accessor, withData(),
                                                                                     descriptor.materialise( indexId ) );
         life.init();
@@ -827,7 +829,7 @@ class IndexingServiceTest
         life.init();
 
         // WHEN dropping another index, which happens to have the same label/property... while recovering
-        IndexDescriptor otherIndex = index.materialise( otherIndexId );
+        IndexDescriptor otherIndex = index.withName( "index_" + otherIndexId ).materialise( otherIndexId );
         indexing.createIndexes( otherIndex );
         indexing.dropIndex( otherIndex );
         // and WHEN finally creating our index again (at a later point in recovery)
@@ -895,11 +897,12 @@ class IndexingServiceTest
         indexing.createIndexes( indexRule1, indexRule2, indexRule3 );
 
         // THEN
-        verify( indexProvider ).getPopulator( eq( forSchema( forLabel( 0, 0 ) ).withIndexProvider( PROVIDER_DESCRIPTOR ).materialise( 0 ) ),
+        IndexPrototype prototype = forSchema( forLabel( 0, 0 ) ).withIndexProvider( PROVIDER_DESCRIPTOR );
+        verify( indexProvider ).getPopulator( eq( prototype.withName( "index_0" ).materialise( 0 ) ),
                 any( IndexSamplingConfig.class ), any() );
-        verify( indexProvider ).getPopulator( eq( forSchema( forLabel( 0, 1 ) ).withIndexProvider( PROVIDER_DESCRIPTOR ).materialise( 1 ) ),
+        verify( indexProvider ).getPopulator( eq( prototype.withSchemaDescriptor( forLabel( 0, 1 ) ).withName( "index_1" ).materialise( 1 ) ),
                 any( IndexSamplingConfig.class ), any() );
-        verify( indexProvider ).getPopulator( eq( forSchema( forLabel( 1, 0 ) ).withIndexProvider( PROVIDER_DESCRIPTOR ).materialise( 2 ) ),
+        verify( indexProvider ).getPopulator( eq( prototype.withSchemaDescriptor( forLabel( 1, 0 ) ).withName( "index_2" ).materialise( 2 ) ),
                 any( IndexSamplingConfig.class ), any() );
 
         waitForIndexesToComeOnline( indexing, 0, 1, 2 );
@@ -1487,12 +1490,13 @@ class IndexingServiceTest
 
     private static IndexDescriptor storeIndex( long ruleId, int labelId, int propertyKeyId, IndexProviderDescriptor providerDescriptor )
     {
-        return forSchema( forLabel( labelId, propertyKeyId ) ).withIndexProvider( providerDescriptor ).materialise( ruleId );
+        return forSchema( forLabel( labelId, propertyKeyId ) ).withIndexProvider( providerDescriptor ).withName( "index_" + ruleId ).materialise( ruleId );
     }
 
     private static IndexDescriptor constraintIndexRule( long ruleId, int labelId, int propertyKeyId, IndexProviderDescriptor providerDescriptor )
     {
-        return uniqueForSchema( forLabel( labelId, propertyKeyId ) ).withIndexProvider( providerDescriptor ).materialise( ruleId );
+        return uniqueForSchema( forLabel( labelId, propertyKeyId ) ).withIndexProvider( providerDescriptor )
+                .withName( "constraint_" + ruleId ).materialise( ruleId );
     }
 
     private static IndexDescriptor constraintIndexRule( long ruleId, int labelId, int propertyKeyId, IndexProviderDescriptor providerDescriptor,
@@ -1500,6 +1504,7 @@ class IndexingServiceTest
     {
         return uniqueForSchema( forLabel( labelId, propertyKeyId ) )
                 .withIndexProvider( providerDescriptor )
+                .withName( "constraint_" + ruleId )
                 .materialise( ruleId )
                 .withOwningConstraintId( constraintId );
     }

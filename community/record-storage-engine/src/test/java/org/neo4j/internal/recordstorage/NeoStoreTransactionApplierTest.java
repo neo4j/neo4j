@@ -36,6 +36,7 @@ import org.neo4j.internal.schema.ConstraintDescriptor;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.IndexProviderDescriptor;
+import org.neo4j.internal.schema.LabelSchemaDescriptor;
 import org.neo4j.internal.schema.constraints.ConstraintDescriptorFactory;
 import org.neo4j.kernel.impl.store.CommonAbstractStore;
 import org.neo4j.kernel.impl.store.DynamicArrayStore;
@@ -930,13 +931,15 @@ class NeoStoreTransactionApplierTest
 
     private static IndexDescriptor indexRule( long id, int label, int propertyKeyId, String providerKey, String providerVersion )
     {
-        return IndexPrototype.forSchema( forLabel( label, propertyKeyId ), new IndexProviderDescriptor( providerKey, providerVersion ) ).materialise( id );
+        IndexProviderDescriptor indexProvider = new IndexProviderDescriptor( providerKey, providerVersion );
+        return IndexPrototype.forSchema( forLabel( label, propertyKeyId ), indexProvider ).withName( "index_" + id ).materialise( id );
     }
 
     private static IndexDescriptor constraintIndexRule( long id, int label, int propertyKeyId, String providerKey, String providerVersion, long constraintId )
     {
-        return IndexPrototype.uniqueForSchema( forLabel( label, propertyKeyId ), new IndexProviderDescriptor( providerKey, providerVersion ) )
-                .materialise( id ).withOwningConstraintId( constraintId );
+        LabelSchemaDescriptor schema = forLabel( label, propertyKeyId );
+        IndexProviderDescriptor indexProvider = new IndexProviderDescriptor( providerKey, providerVersion );
+        return IndexPrototype.uniqueForSchema( schema, indexProvider ).withName( "constraint_" + id ).materialise( id ).withOwningConstraintId( constraintId );
     }
 
     private static ConstraintDescriptor uniquenessConstraintRule( long id, int labelId, int propertyKeyId, long ownedIndexRule )

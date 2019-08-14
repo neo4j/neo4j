@@ -47,7 +47,7 @@ class FailedIndexProxyTest
         // given
         String userDescription = "description";
         FailedIndexProxy index =
-                new FailedIndexProxy( forSchema( forLabel( 1, 2 ), IndexProviderDescriptor.UNDECIDED ).materialise( 1 ),
+                new FailedIndexProxy( forSchema( forLabel( 1, 2 ), IndexProviderDescriptor.UNDECIDED ).withName( userDescription ).materialise( 1 ),
                                       userDescription, indexPopulator, indexPopulationFailure, indexStatisticsStore, NullLogProvider.getInstance() );
 
         // when
@@ -66,7 +66,7 @@ class FailedIndexProxyTest
         AssertableLogProvider logProvider = new AssertableLogProvider();
 
         // when
-        new FailedIndexProxy( forSchema( forLabel( 0, 0 ), IndexProviderDescriptor.UNDECIDED ).materialise( 1 ),
+        new FailedIndexProxy( forSchema( forLabel( 0, 0 ), IndexProviderDescriptor.UNDECIDED ).withName( "foo" ).materialise( 1 ),
                               "foo", mock( IndexPopulator.class ), IndexPopulationFailure.failure( "it broke" ),
                               indexStatisticsStore, logProvider ).drop();
 

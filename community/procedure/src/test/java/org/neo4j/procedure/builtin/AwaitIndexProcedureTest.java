@@ -77,7 +77,7 @@ class AwaitIndexProcedureTest
         procedure = new IndexProcedures( transaction, null );
         descriptor = SchemaDescriptor.forLabel( 123, 456 );
         anyDescriptor = SchemaDescriptor.forLabel( 0, 0 );
-        anyIndex = forSchema( anyDescriptor ).materialise( 13 );
+        anyIndex = forSchema( anyDescriptor ).withName( "index" ).materialise( 13 );
         when( transaction.tokenRead() ).thenReturn( tokenRead );
         when( transaction.schemaRead() ).thenReturn( schemaRead );
     }

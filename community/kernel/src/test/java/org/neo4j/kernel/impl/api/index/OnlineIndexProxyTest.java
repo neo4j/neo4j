@@ -34,7 +34,7 @@ import static org.mockito.Mockito.verifyNoMoreInteractions;
 class OnlineIndexProxyTest
 {
     private final long indexId = 1;
-    private final IndexDescriptor descriptor = IndexPrototype.forSchema( SchemaDescriptor.forLabel( 1, 2 ) ).materialise( indexId );
+    private final IndexDescriptor descriptor = IndexPrototype.forSchema( SchemaDescriptor.forLabel( 1, 2 ) ).withName( "index" ).materialise( indexId );
     private final IndexAccessor accessor = mock( IndexAccessor.class );
     private final IndexStoreView storeView = mock( IndexStoreView.class );
     private final IndexStatisticsStore indexStatisticsStore = mock( IndexStatisticsStore.class );

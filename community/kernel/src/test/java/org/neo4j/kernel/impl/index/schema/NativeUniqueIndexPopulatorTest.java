@@ -42,7 +42,8 @@ import static org.neo4j.kernel.impl.api.index.PhaseTracker.nullInstance;
 
 abstract class NativeUniqueIndexPopulatorTest<KEY extends NativeIndexKey<KEY>, VALUE extends NativeIndexValue> extends NativeIndexPopulatorTests<KEY,VALUE>
 {
-    private static final IndexDescriptor uniqueDescriptor = IndexPrototype.uniqueForSchema( SchemaDescriptor.forLabel( 42, 666 ) ).materialise( 0 );
+    private static final IndexDescriptor uniqueDescriptor =
+            IndexPrototype.uniqueForSchema( SchemaDescriptor.forLabel( 42, 666 ) ).withName( "constraint" ).materialise( 0 );
 
     private final NativeIndexPopulatorTestCases.PopulatorFactory<KEY, VALUE> populatorFactory;
     private final ValueType[] typesOfGroup;

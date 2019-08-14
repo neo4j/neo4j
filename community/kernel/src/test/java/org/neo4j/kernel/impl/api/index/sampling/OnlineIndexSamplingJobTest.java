@@ -48,7 +48,7 @@ class OnlineIndexSamplingJobTest
     private final long indexId = 1;
     private final IndexProxy indexProxy = mock( IndexProxy.class );
     private final IndexStatisticsStore indexStatisticsStore = mock( IndexStatisticsStore.class );
-    private final IndexDescriptor indexDescriptor = forSchema( forLabel( 1, 2 ), IndexProviderDescriptor.UNDECIDED ).materialise( indexId );
+    private final IndexDescriptor indexDescriptor = forSchema( forLabel( 1, 2 ), IndexProviderDescriptor.UNDECIDED ).withName( "index" ).materialise( indexId );
     private final IndexReader indexReader = mock( IndexReader.class );
     private final IndexSampler indexSampler = mock( IndexSampler.class );
 

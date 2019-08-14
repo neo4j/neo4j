@@ -33,12 +33,14 @@ public class TestIndexDescriptorFactory
 
     public static IndexDescriptor forSchema( SchemaDescriptor schema )
     {
-        return IndexPrototype.forSchema( schema ).materialise( randomId() );
+        int id = randomId();
+        return IndexPrototype.forSchema( schema ).withName( "index_" + id ).materialise( id );
     }
 
     public static IndexDescriptor uniqueForSchema( SchemaDescriptor schema )
     {
-        return IndexPrototype.uniqueForSchema( schema ).materialise( randomId() );
+        int id = randomId();
+        return IndexPrototype.uniqueForSchema( schema ).withName( "index_" + id ).materialise( id );
     }
 
     public static IndexDescriptor forLabel( int labelId, int... propertyIds )

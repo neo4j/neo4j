@@ -48,6 +48,7 @@ import org.neo4j.internal.kernel.api.Kernel;
 import org.neo4j.internal.kernel.api.PopulationProgress;
 import org.neo4j.internal.kernel.api.Transaction;
 import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
+import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.LabelSchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptor;
@@ -758,7 +759,7 @@ class IndexPopulationJobTest
     {
         IndexSamplingConfig samplingConfig = new IndexSamplingConfig( Config.defaults() );
         IndexProvider indexProvider = db.getDependencyResolver().resolveDependency( DefaultIndexProviderMap.class ).getDefaultProvider();
-        return indexProvider.getPopulator( prototype.materialise( 21 ), samplingConfig, heapBufferFactory( 1024 ) );
+        return indexProvider.getPopulator( prototype.withName( "index_21" ).materialise( 21 ), samplingConfig, heapBufferFactory( 1024 ) );
     }
 
     private IndexPopulationJob newIndexPopulationJob( IndexPopulator populator, FlippableIndexProxy flipper, EntityType type, IndexPrototype prototype )
@@ -780,7 +781,8 @@ class IndexPopulationJobTest
 
         MultipleIndexPopulator multiPopulator = new MultipleIndexPopulator( storeView, logProvider, type, stateHolder, indexStatisticsStore );
         IndexPopulationJob job = new IndexPopulationJob( multiPopulator, NO_MONITOR, false );
-        job.addPopulator( populator, prototype.materialise( indexId ), format( ":%s(%s)", FIRST.name(), name ), flipper, failureDelegateFactory );
+        IndexDescriptor descriptor = prototype.withName( "index_" + indexId ).materialise( indexId );
+        job.addPopulator( populator, descriptor, format( ":%s(%s)", FIRST.name(), name ), flipper, failureDelegateFactory );
         return job;
     }
 

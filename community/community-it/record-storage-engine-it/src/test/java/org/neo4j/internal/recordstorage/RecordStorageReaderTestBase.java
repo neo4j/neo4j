@@ -193,7 +193,8 @@ public abstract class RecordStorageReaderTestBase
         TxState txState = new TxState();
         int labelId = getOrCreateLabelId( label );
         int propertyKeyId = getOrCreatePropertyKeyId( propertyKey );
-        txState.indexDoAdd( IndexPrototype.uniqueForSchema( forLabel( labelId, propertyKeyId ) ).materialise( commitContext.reserveSchema() ) );
+        long id = commitContext.reserveSchema();
+        txState.indexDoAdd( IndexPrototype.uniqueForSchema( forLabel( labelId, propertyKeyId ) ).withName( "constraint_" + id ).materialise( id ) );
         apply( txState );
     }
 
@@ -202,7 +203,8 @@ public abstract class RecordStorageReaderTestBase
         TxState txState = new TxState();
         int labelId = getOrCreateLabelId( label );
         int propertyKeyId = getOrCreatePropertyKeyId( propertyKey );
-        txState.indexDoAdd( IndexPrototype.forSchema( forLabel( labelId, propertyKeyId ) ).materialise( commitContext.reserveSchema() ) );
+        long id = commitContext.reserveSchema();
+        txState.indexDoAdd( IndexPrototype.forSchema( forLabel( labelId, propertyKeyId ) ).withName( "index_" + id ).materialise( id ) );
         apply( txState );
     }
 
@@ -211,7 +213,8 @@ public abstract class RecordStorageReaderTestBase
         TxState txState = new TxState();
         int relTypeId = getOrCreateRelationshipTypeId( relType );
         int propertyKeyId = getOrCreatePropertyKeyId( propertyKey );
-        txState.indexDoAdd( IndexPrototype.forSchema( forRelType( relTypeId, propertyKeyId ) ).materialise( commitContext.reserveSchema() ) );
+        long id = commitContext.reserveSchema();
+        txState.indexDoAdd( IndexPrototype.forSchema( forRelType( relTypeId, propertyKeyId ) ).withName( "index_" + id ).materialise( id ) );
         apply( txState );
     }
 

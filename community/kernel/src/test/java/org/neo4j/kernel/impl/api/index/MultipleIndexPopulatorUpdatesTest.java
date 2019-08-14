@@ -94,8 +94,8 @@ class MultipleIndexPopulatorUpdatesTest
     private static void addPopulator( MultipleIndexPopulator multipleIndexPopulator,
         IndexPopulator indexPopulator, long indexId, IndexPrototype prototype )
     {
-        addPopulator( multipleIndexPopulator, prototype.materialise( indexId ), indexPopulator, mock( FlippableIndexProxy.class ),
-                mock( FailedIndexProxyFactory.class ) );
+        IndexDescriptor descriptor = prototype.withName( "index_" + indexId ).materialise( indexId );
+        addPopulator( multipleIndexPopulator, descriptor, indexPopulator, mock( FlippableIndexProxy.class ), mock( FailedIndexProxyFactory.class ) );
     }
 
     private static void addPopulator( MultipleIndexPopulator multipleIndexPopulator, IndexDescriptor descriptor,

@@ -141,7 +141,7 @@ public class Commands
 
     public static SchemaRuleCommand createIndexRule( IndexProviderDescriptor providerDescriptor, long id, LabelSchemaDescriptor descriptor )
     {
-        SchemaRule rule = IndexPrototype.forSchema( descriptor, providerDescriptor ).materialise( id );
+        SchemaRule rule = IndexPrototype.forSchema( descriptor, providerDescriptor ).withName( "index_" + id ).materialise( id );
         SchemaRecord before = new SchemaRecord( id ).initialize( false, Record.NO_NEXT_PROPERTY.longValue() );
         SchemaRecord after = new SchemaRecord( id ).initialize( true, 33 );
         return new SchemaRuleCommand( before, after, rule );

@@ -57,7 +57,7 @@ class GenericNativeIndexAccessorTest
         File root = testDirectory.directory( "root" );
         IndexDirectoryStructure directoryStructure = IndexDirectoryStructure.directoriesByProvider( root ).forProvider( GenericNativeIndexProvider.DESCRIPTOR );
         long indexId = 8;
-        IndexDescriptor descriptor = forSchema( SchemaDescriptor.forLabel( 1, 1 ) ).materialise( indexId );
+        IndexDescriptor descriptor = forSchema( SchemaDescriptor.forLabel( 1, 1 ) ).withName( "index" ).materialise( indexId );
         IndexSpecificSpaceFillingCurveSettings spatialSettings = mock( IndexSpecificSpaceFillingCurveSettings.class );
         IndexFiles indexFiles = new IndexFiles.Directory( fs, directoryStructure, descriptor.getId() );
         GenericNativeIndexAccessor accessor = new GenericNativeIndexAccessor( pageCache, fs, indexFiles, new GenericLayout( 1, spatialSettings ),

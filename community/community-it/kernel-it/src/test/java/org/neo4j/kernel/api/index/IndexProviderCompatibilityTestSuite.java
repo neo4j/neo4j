@@ -154,7 +154,7 @@ public abstract class IndexProviderCompatibilityTestSuite
             graphDbDir = pageCacheAndDependenciesRule.directory().storeDir();
             PageCache pageCache = pageCacheAndDependenciesRule.pageCache();
             indexProvider = testSuite.createIndexProvider( pageCache, fs, graphDbDir );
-            descriptor = indexProvider.completeConfiguration( incompleteIndexPrototype.materialise( 17 ) );
+            descriptor = indexProvider.completeConfiguration( incompleteIndexPrototype.withName( "index_17" ).materialise( 17 ) );
         }
 
         Compatibility( IndexProviderCompatibilityTestSuite testSuite, IndexPrototype prototype )

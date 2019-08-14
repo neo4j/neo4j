@@ -110,7 +110,7 @@ class NeoTransactionIndexApplierTest
 
     private IndexDescriptor indexRule( long ruleId, int labelId, int propertyId )
     {
-        return IndexPrototype.forSchema( forLabel( labelId, propertyId ) ).materialise( ruleId );
+        return IndexPrototype.forSchema( forLabel( labelId, propertyId ) ).withName( "index_" + ruleId ).materialise( ruleId );
     }
 
     @Test

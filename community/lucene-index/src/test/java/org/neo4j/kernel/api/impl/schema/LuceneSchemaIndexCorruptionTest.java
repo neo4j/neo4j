@@ -81,7 +81,8 @@ class LuceneSchemaIndexCorruptionTest
         LuceneIndexProvider provider = newFaultyIndexProvider( faultyIndexId, error );
 
         // When
-        IndexDescriptor descriptor = forSchema( forLabel( 1, 1 ), provider.getProviderDescriptor() ).materialise( faultyIndexId );
+        IndexDescriptor descriptor = forSchema( forLabel( 1, 1 ), provider.getProviderDescriptor() )
+                .withName( "index_" + faultyIndexId ).materialise( faultyIndexId );
         InternalIndexState initialState = provider.getInitialState( descriptor );
 
         // Then
@@ -99,7 +100,8 @@ class LuceneSchemaIndexCorruptionTest
         LuceneIndexProvider provider = newFaultyIndexProvider( faultyIndexId, error );
 
         // When
-        IndexDescriptor descriptor = forSchema( forLabel( 1, 1 ), provider.getProviderDescriptor() ).materialise( faultyIndexId );
+        IndexDescriptor descriptor = forSchema( forLabel( 1, 1 ), provider.getProviderDescriptor() )
+                .withName( "index_" + faultyIndexId ).materialise( faultyIndexId );
         InternalIndexState initialState = provider.getInitialState( descriptor );
 
         // Then
@@ -117,7 +119,8 @@ class LuceneSchemaIndexCorruptionTest
         LuceneIndexProvider provider = newFaultyIndexProvider( faultyIndexId, error );
 
         // When
-        IndexDescriptor descriptor = forSchema( forLabel( 1, 1 ), provider.getProviderDescriptor() ).materialise( faultyIndexId );
+        IndexDescriptor descriptor = forSchema( forLabel( 1, 1 ), provider.getProviderDescriptor() )
+                .withName( "index_" + faultyIndexId ).materialise( faultyIndexId );
         InternalIndexState initialState = provider.getInitialState( descriptor );
 
         // Then

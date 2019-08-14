@@ -149,8 +149,8 @@ public class DatabaseCompositeIndexAccessorTest
         Collection<Object[]> params = new ArrayList<>();
         for ( IndexProvider provider : providers )
         {
-            params.add( parameterSetup( provider, SCHEMA_INDEX_DESCRIPTOR.materialise( params.size() ) ) );
-            params.add( parameterSetup( provider, UNIQUE_SCHEMA_INDEX_DESCRIPTOR.materialise( params.size() ) ) );
+            params.add( parameterSetup( provider, SCHEMA_INDEX_DESCRIPTOR.withName( "index_" + params.size() ).materialise( params.size() ) ) );
+            params.add( parameterSetup( provider, UNIQUE_SCHEMA_INDEX_DESCRIPTOR.withName( "constraint_" + params.size() ).materialise( params.size() ) ) );
         }
 
         return params;

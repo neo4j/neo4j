@@ -60,7 +60,7 @@ abstract class FusionIndexReaderTest
 {
     private static final int PROP_KEY = 1;
     private static final int LABEL_KEY = 11;
-    private static final IndexDescriptor DESCRIPTOR = forSchema( forLabel( LABEL_KEY, PROP_KEY ) ).materialise( 12 );
+    private static final IndexDescriptor DESCRIPTOR = forSchema( forLabel( LABEL_KEY, PROP_KEY ) ).withName( "index" ).materialise( 12 );
 
     private final FusionVersion fusionVersion;
     private IndexReader[] aliveReaders;

@@ -2386,7 +2386,7 @@ public class FullCheckIntegrationTest
             protected void transactionData( GraphStoreFixture.TransactionDataBuilder tx, GraphStoreFixture.IdGenerator next ) throws KernelException
             {
                 int id = (int) next.schema();
-                IndexDescriptor index = forSchema( forLabel( labelId, propertyKeyIds ), DESCRIPTOR ).materialise( id );
+                IndexDescriptor index = forSchema( forLabel( labelId, propertyKeyIds ), DESCRIPTOR ).withName( "index_" + id ).materialise( id );
 
                 SchemaRecord before = new SchemaRecord( id );
                 SchemaRecord after = cloneRecord( before );
@@ -2405,8 +2405,8 @@ public class FullCheckIntegrationTest
         long ruleId1 = schemaStore.nextId();
         long ruleId2 = schemaStore.nextId();
 
-        IndexDescriptor indexRule =
-                uniqueForSchema( forLabel( labelId, propertyKeyIds ), DESCRIPTOR ).materialise( ruleId1 ).withOwningConstraintId( ruleId2 );
+        IndexDescriptor indexRule = uniqueForSchema( forLabel( labelId, propertyKeyIds ), DESCRIPTOR )
+                .withName( "constraint_" + ruleId1 ).materialise( ruleId1 ).withOwningConstraintId( ruleId2 );
         ConstraintDescriptor uniqueRule = ConstraintDescriptorFactory.uniqueForLabel( labelId, propertyKeyIds ).withId( ruleId2 ).withOwnedIndexId( ruleId1 );
 
         writeToSchemaStore( schemaStore, indexRule );
@@ -2420,8 +2420,8 @@ public class FullCheckIntegrationTest
         long ruleId1 = schemaStore.nextId();
         long ruleId2 = schemaStore.nextId();
 
-        IndexDescriptor indexRule =
-                uniqueForSchema( forLabel( labelId, propertyKeyIds ), DESCRIPTOR ).materialise( ruleId1 ).withOwningConstraintId( ruleId2 );
+        IndexDescriptor indexRule = uniqueForSchema( forLabel( labelId, propertyKeyIds ), DESCRIPTOR )
+                .withName( "constraint_" + ruleId1 ).materialise( ruleId1 ).withOwningConstraintId( ruleId2 );
         ConstraintDescriptor nodeKeyRule = ConstraintDescriptorFactory.nodeKeyForLabel( labelId, propertyKeyIds ).withId( ruleId2 ).withOwnedIndexId( ruleId1 );
 
         writeToSchemaStore( schemaStore, indexRule );

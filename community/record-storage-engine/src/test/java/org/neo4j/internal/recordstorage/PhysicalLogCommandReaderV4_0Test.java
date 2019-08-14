@@ -499,7 +499,8 @@ class PhysicalLogCommandReaderV4_0Test
         SchemaRecord after = createRandomSchemaRecord();
         markAfterRecordAsCreatedIfCommandLooksCreated( before, after );
 
-        SchemaRule rule = IndexPrototype.forSchema( SchemaDescriptor.forLabel( 1, 2, 3 ) ).materialise( after.getId() );
+        long id = after.getId();
+        SchemaRule rule = IndexPrototype.forSchema( SchemaDescriptor.forLabel( 1, 2, 3 ) ).withName( "index_" + id ).materialise( id );
         new Command.SchemaRuleCommand( before, after, rule ).serialize( channel );
 
         CommandReader reader = createReader();

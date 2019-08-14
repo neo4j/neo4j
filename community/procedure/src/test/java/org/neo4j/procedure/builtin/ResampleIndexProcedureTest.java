@@ -88,7 +88,7 @@ class ResampleIndexProcedureTest
     @Test
     void shouldLookUpTheIndexByLabelIdAndPropertyKeyId() throws ProcedureException
     {
-        IndexDescriptor index = IndexPrototype.forSchema( forLabel( 0, 0 ) ).materialise( 42 );
+        IndexDescriptor index = IndexPrototype.forSchema( forLabel( 0, 0 ) ).withName( "index_42" ).materialise( 42 );
         when( tokenRead.nodeLabel( anyString() ) ).thenReturn( 123 );
         when( tokenRead.propertyKey( anyString() ) ).thenReturn( 456 );
         when( schemaRead.index( anyInt(), any() ) ).thenReturn( index );
@@ -101,7 +101,7 @@ class ResampleIndexProcedureTest
     @Test
     void shouldLookUpTheCompositeIndexByLabelIdAndPropertyKeyId() throws ProcedureException
     {
-        IndexDescriptor index = IndexPrototype.forSchema( forLabel( 0, 0, 1 ) ).materialise( 42 );
+        IndexDescriptor index = IndexPrototype.forSchema( forLabel( 0, 0, 1 ) ).withName( "index_42" ).materialise( 42 );
         when( tokenRead.nodeLabel( anyString() ) ).thenReturn( 123 );
         when( tokenRead.propertyKey( "name" ) ).thenReturn( 0 );
         when( tokenRead.propertyKey( "lastName" ) ).thenReturn( 1 );
@@ -126,7 +126,7 @@ class ResampleIndexProcedureTest
     @Test
     void shouldTriggerResampling() throws ProcedureException, IndexNotFoundKernelException
     {
-        IndexDescriptor index = IndexPrototype.forSchema( forLabel( 123, 456 ) ).materialise( 42 );
+        IndexDescriptor index = IndexPrototype.forSchema( forLabel( 123, 456 ) ).withName( "index_42" ).materialise( 42 );
         when( schemaRead.index( anyInt(), any() ) ).thenReturn( index );
 
         procedure.resampleIndex( ":Person(name)" );

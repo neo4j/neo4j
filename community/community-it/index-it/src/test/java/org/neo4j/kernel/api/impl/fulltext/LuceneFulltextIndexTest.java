@@ -584,7 +584,8 @@ public class LuceneFulltextIndexTest extends LuceneFulltextTestSupport
         FulltextSchemaDescriptor schema = SchemaDescriptor.fulltext( NODE, indexConfig, new int[]{label}, new int[]{propertyKey} );
 
         IndexProviderDescriptor providerDescriptor = indexProvider.getProviderDescriptor();
-        IndexDescriptor descriptor = indexProvider.completeConfiguration( IndexPrototype.forSchema( schema, providerDescriptor ).materialise( 1 ) );
+        IndexDescriptor descriptor = indexProvider.completeConfiguration( IndexPrototype.forSchema( schema, providerDescriptor )
+                .withName( "index_1" ).materialise( 1 ) );
 
         assertThat( descriptor.schema().getIndexConfig().get( ANALYZER ), is( Values.stringValue( "standard-no-stop-words" ) ) );
         assertThat( descriptor.schema().getIndexConfig().get( EVENTUALLY_CONSISTENT ), is( Values.booleanValue( true ) ) );
@@ -597,7 +598,8 @@ public class LuceneFulltextIndexTest extends LuceneFulltextTestSupport
         IndexConfig indexConfig = IndexConfig.empty().withIfAbsent( "A", Values.stringValue( "B" ) );
         FulltextSchemaDescriptor schema = SchemaDescriptor.fulltext( NODE, indexConfig, new int[]{1}, new int[]{1} );
         IndexProviderDescriptor providerDescriptor = indexProvider.getProviderDescriptor();
-        IndexDescriptor descriptor = indexProvider.completeConfiguration( IndexPrototype.forSchema( schema, providerDescriptor ).materialise( 1 ) );
+        IndexDescriptor descriptor = indexProvider.completeConfiguration( IndexPrototype.forSchema( schema, providerDescriptor )
+                .withName( "index_1" ).materialise( 1 ) );
         assertEquals( Values.stringValue( "B" ), descriptor.schema().getIndexConfig().get( "A" ) );
     }
 
@@ -606,7 +608,8 @@ public class LuceneFulltextIndexTest extends LuceneFulltextTestSupport
     {
         FulltextSchemaDescriptor schema = SchemaDescriptor.fulltext( NODE, IndexConfig.empty(), new int[]{1}, new int[]{1} );
         IndexProviderDescriptor providerDescriptor = indexProvider.getProviderDescriptor();
-        IndexDescriptor onceCompleted = indexProvider.completeConfiguration( IndexPrototype.forSchema( schema, providerDescriptor ).materialise( 1 ) );
+        IndexDescriptor onceCompleted = indexProvider.completeConfiguration( IndexPrototype.forSchema( schema, providerDescriptor )
+                .withName( "index_1" ).materialise( 1 ) );
         IndexDescriptor twiceCompleted = indexProvider.completeConfiguration( onceCompleted );
         assertEquals( onceCompleted.schema().getIndexConfig(), twiceCompleted.schema().getIndexConfig() );
     }
@@ -616,7 +619,8 @@ public class LuceneFulltextIndexTest extends LuceneFulltextTestSupport
     {
         FulltextSchemaDescriptor schema = SchemaDescriptor.fulltext( NODE, IndexConfig.empty(), new int[]{1}, new int[]{1} );
         IndexProviderDescriptor providerDescriptor = indexProvider.getProviderDescriptor();
-        IndexDescriptor completed = indexProvider.completeConfiguration( IndexPrototype.forSchema( schema, providerDescriptor ).materialise( 1 ) );
+        IndexDescriptor completed = indexProvider.completeConfiguration( IndexPrototype.forSchema( schema, providerDescriptor )
+                .withName( "index_1" ).materialise( 1 ) );
         assertNotEquals( completed.getCapability(), IndexCapability.NO_CAPABILITY );
         completed = completed.withIndexCapability( IndexCapability.NO_CAPABILITY );
         completed = indexProvider.completeConfiguration( completed );
@@ -642,7 +646,8 @@ public class LuceneFulltextIndexTest extends LuceneFulltextTestSupport
         };
         FulltextSchemaDescriptor schema = SchemaDescriptor.fulltext( NODE, IndexConfig.empty(), new int[]{1}, new int[]{1} );
         IndexProviderDescriptor providerDescriptor = indexProvider.getProviderDescriptor();
-        IndexDescriptor index = IndexPrototype.forSchema( schema, providerDescriptor ).materialise( 1 ).withIndexCapability( capability );
+        IndexDescriptor index = IndexPrototype.forSchema( schema, providerDescriptor )
+                .withName( "index_1" ).materialise( 1 ).withIndexCapability( capability );
         IndexDescriptor completed = indexProvider.completeConfiguration( index );
         assertSame( capability, completed.getCapability() );
     }

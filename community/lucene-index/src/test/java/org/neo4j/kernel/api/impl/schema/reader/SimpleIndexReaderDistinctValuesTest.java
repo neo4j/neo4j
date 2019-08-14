@@ -70,7 +70,7 @@ public class SimpleIndexReaderDistinctValuesTest
     @BeforeEach
     void setup() throws IOException
     {
-        index = LuceneSchemaIndexBuilder.create( IndexPrototype.forSchema( forLabel( 1, 1 ) ).materialise( 42 ), Config.defaults() )
+        index = LuceneSchemaIndexBuilder.create( IndexPrototype.forSchema( forLabel( 1, 1 ) ).withName( "index_42" ).materialise( 42 ), Config.defaults() )
                 .withFileSystem( fs )
                 .withIndexRootFolder( directory.directory() )
                 .build();

@@ -32,6 +32,7 @@ import org.neo4j.configuration.Config;
 import org.neo4j.internal.id.DefaultIdGeneratorFactory;
 import org.neo4j.internal.id.IdType;
 import org.neo4j.internal.schema.ConstraintDescriptor;
+import org.neo4j.internal.schema.FulltextSchemaDescriptor;
 import org.neo4j.internal.schema.IndexConfig;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexPrototype;
@@ -48,6 +49,7 @@ import org.neo4j.test.extension.pagecache.EphemeralPageCacheExtension;
 import org.neo4j.test.rule.TestDirectory;
 
 import static java.nio.ByteBuffer.wrap;
+import static java.util.stream.IntStream.range;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
 import static org.neo4j.internal.helpers.collection.Iterables.asCollection;
@@ -91,7 +93,8 @@ class SchemaStore35Test
     void storeAndLoadSchemaRule() throws Exception
     {
         // GIVEN
-        IndexDescriptor indexRule = IndexPrototype.forSchema( forLabel( 1, 4 ), PROVIDER ).materialise( store.nextId() );
+        long id = store.nextId();
+        IndexDescriptor indexRule = IndexPrototype.forSchema( forLabel( 1, 4 ), PROVIDER ).withName( "index_" + id ).materialise( id );
 
         // WHEN
         IndexDescriptor readIndexRule = (IndexDescriptor) SchemaRuleSerialization35.deserialize(
@@ -109,7 +112,8 @@ class SchemaStore35Test
     {
         // GIVEN
         int[] propertyIds = {4, 5, 6, 7};
-        IndexDescriptor indexRule = IndexPrototype.forSchema( forLabel( 2, propertyIds ), PROVIDER ).materialise( store.nextId() );
+        long id = store.nextId();
+        IndexDescriptor indexRule = IndexPrototype.forSchema( forLabel( 2, propertyIds ), PROVIDER ).withName( "index_" + id ).materialise( id );
 
         // WHEN
         IndexDescriptor readIndexRule = (IndexDescriptor) SchemaRuleSerialization35.deserialize(
@@ -128,8 +132,9 @@ class SchemaStore35Test
         // GIVEN
         int[] propertyIds = {4, 5, 6, 7};
         int[] entityTokens = {2, 3, 4};
+        long id = store.nextId();
         IndexDescriptor indexRule = IndexPrototype.forSchema(
-                fulltext( EntityType.RELATIONSHIP, IndexConfig.empty(), entityTokens, propertyIds ), PROVIDER ).materialise( store.nextId() );
+                fulltext( EntityType.RELATIONSHIP, IndexConfig.empty(), entityTokens, propertyIds ), PROVIDER ).withName( "index_" + id ).materialise( id );
 
         // WHEN
         IndexDescriptor readIndexRule =
@@ -147,8 +152,9 @@ class SchemaStore35Test
     void storeAndLoad_Big_CompositeSchemaRule() throws Exception
     {
         // GIVEN
+        long id = store.nextId();
         IndexDescriptor indexRule =
-                IndexPrototype.forSchema( forLabel( 2, IntStream.range( 1, 200 ).toArray() ), PROVIDER ).materialise( store.nextId() );
+                IndexPrototype.forSchema( forLabel( 2, range( 1, 200 ).toArray() ), PROVIDER ).withName( "index_" + id ).materialise( id );
 
         // WHEN
         IndexDescriptor readIndexRule = (IndexDescriptor) SchemaRuleSerialization35.deserialize(
@@ -165,9 +171,9 @@ class SchemaStore35Test
     void storeAndLoad_Big_CompositeMultiTokenSchemaRule() throws Exception
     {
         // GIVEN
-        IndexDescriptor indexRule = IndexPrototype.forSchema(
-                fulltext( EntityType.RELATIONSHIP, IndexConfig.empty(), IntStream.range( 1, 200 ).toArray(), IntStream.range( 1, 200 ).toArray() ),
-                PROVIDER ).materialise( store.nextId() );
+        FulltextSchemaDescriptor schema = fulltext( EntityType.RELATIONSHIP, IndexConfig.empty(), range( 1, 200 ).toArray(), range( 1, 200 ).toArray() );
+        long id = store.nextId();
+        IndexDescriptor indexRule = IndexPrototype.forSchema( schema, PROVIDER ).withName( "index_" + id ).materialise( id );
 
         // WHEN
         IndexDescriptor readIndexRule = (IndexDescriptor) SchemaRuleSerialization35.deserialize( indexRule.getId(),
@@ -218,12 +224,13 @@ class SchemaStore35Test
 
     private static IndexDescriptor indexRule( long ruleId, int labelId, int... propertyIds )
     {
-        return IndexPrototype.forSchema( forLabel( labelId, propertyIds ), PROVIDER ).materialise( ruleId );
+        return IndexPrototype.forSchema( forLabel( labelId, propertyIds ), PROVIDER ).withName( "index_" + ruleId ).materialise( ruleId );
     }
 
     private static IndexDescriptor uniqueIndexRule( long ruleId, long owningConstraint, int labelId, int... propertyIds )
     {
-        return IndexPrototype.uniqueForSchema( forLabel( labelId, propertyIds ), PROVIDER ).materialise( ruleId ).withOwningConstraintId( owningConstraint );
+        return IndexPrototype.uniqueForSchema( forLabel( labelId, propertyIds ), PROVIDER )
+                .withName( "constraint_" + ruleId ).materialise( ruleId ).withOwningConstraintId( owningConstraint );
     }
 
     private static ConstraintDescriptor constraintUniqueRule( long ruleId, long ownedIndexId, int labelId, int... propertyIds )

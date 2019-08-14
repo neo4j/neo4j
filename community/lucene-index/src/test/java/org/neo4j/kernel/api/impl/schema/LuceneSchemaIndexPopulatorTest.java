@@ -95,7 +95,7 @@ class LuceneSchemaIndexPopulatorTest
                 IndexProvider.Monitor.EMPTY, Config.defaults(), OperationalMode.SINGLE );
         propertyAccessor = mock( NodePropertyAccessor.class );
         IndexSamplingConfig samplingConfig = new IndexSamplingConfig( Config.defaults() );
-        index = IndexPrototype.forSchema( forLabel( 42, propertyKeyId ), provider.getProviderDescriptor() ).materialise( 0 );
+        index = IndexPrototype.forSchema( forLabel( 42, propertyKeyId ), provider.getProviderDescriptor() ).withName( "index" ).materialise( 0 );
         indexPopulator = provider.getPopulator( index, samplingConfig, heapBufferFactory( 1024 ) );
         indexPopulator.create();
     }

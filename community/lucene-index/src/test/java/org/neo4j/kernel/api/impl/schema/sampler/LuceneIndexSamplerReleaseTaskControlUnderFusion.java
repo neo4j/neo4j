@@ -59,6 +59,7 @@ import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.values.storable.Values;
 
 import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.neo4j.internal.schema.SchemaDescriptor.forLabel;
 import static org.neo4j.kernel.api.index.IndexDirectoryStructure.directoriesByProvider;
 import static org.neo4j.kernel.api.schema.SchemaTestUtil.simpleNameLookup;
 import static org.neo4j.logging.NullLogProvider.getInstance;
@@ -67,7 +68,7 @@ import static org.neo4j.logging.NullLogProvider.getInstance;
 class LuceneIndexSamplerReleaseTaskControlUnderFusion
 {
     private static final int indexId = 1;
-    private static final IndexDescriptor descriptor = IndexPrototype.forSchema( SchemaDescriptor.forLabel( 1, 1 ) ).materialise( indexId );
+    private static final IndexDescriptor descriptor = IndexPrototype.forSchema( forLabel( 1, 1 ) ).withName( "index_1" ).materialise( indexId );
     private static final IndexProviderDescriptor providerDescriptor = IndexProviderDescriptor.UNDECIDED;
     private static final DirectoryFactory.InMemoryDirectoryFactory luceneDirectoryFactory = new DirectoryFactory.InMemoryDirectoryFactory();
     private static final Config config = Config.defaults();

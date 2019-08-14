@@ -62,7 +62,7 @@ class NativeIndexAccessorTest<KEY extends NativeIndexKey<KEY>, VALUE extends Nat
     @Override
     ValueCreatorUtil<KEY, VALUE> createValueCreatorUtil()
     {
-        return new ValueCreatorUtil<>( forSchema( forLabel( 42, 666 ) ).materialise( 0 ), supportedTypes, FRACTION_DUPLICATE_NON_UNIQUE );
+        return new ValueCreatorUtil<>( forSchema( forLabel( 42, 666 ) ).withName( "index" ).materialise( 0 ), supportedTypes, FRACTION_DUPLICATE_NON_UNIQUE );
     }
 
     @Override

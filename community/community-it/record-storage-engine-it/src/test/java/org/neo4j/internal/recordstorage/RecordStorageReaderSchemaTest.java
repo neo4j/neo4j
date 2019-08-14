@@ -241,21 +241,21 @@ class RecordStorageReaderSchemaTest extends RecordStorageReaderTestBase
     {
         int labelId = labelId( label );
         int propKeyId = propertyKeyId( propertyKey );
-        return IndexPrototype.forSchema( SchemaDescriptor.forLabel( labelId, propKeyId ) ).materialise( 0 );
+        return IndexPrototype.forSchema( SchemaDescriptor.forLabel( labelId, propKeyId ) ).withName( "index" ).materialise( 0 );
     }
 
     private IndexDescriptor indexDescriptor( RelationshipType relType, String propertyKey )
     {
         int relTypeId = relationshipTypeId( relType );
         int propKeyId = propertyKeyId( propertyKey );
-        return IndexPrototype.forSchema( SchemaDescriptor.forRelType( relTypeId, propKeyId ) ).materialise( 0 );
+        return IndexPrototype.forSchema( SchemaDescriptor.forRelType( relTypeId, propKeyId ) ).withName( "index" ).materialise( 0 );
     }
 
     private IndexDescriptor uniqueIndexDescriptor( Label label, String propertyKey )
     {
         int labelId = labelId( label );
         int propKeyId = propertyKeyId( propertyKey );
-        return IndexPrototype.uniqueForSchema( SchemaDescriptor.forLabel( labelId, propKeyId ) ).materialise( 0 );
+        return IndexPrototype.uniqueForSchema( SchemaDescriptor.forLabel( labelId, propKeyId ) ).withName( "constraint" ).materialise( 0 );
     }
 
     private ConstraintDescriptor uniqueConstraintDescriptor( Label label, String propertyKey )

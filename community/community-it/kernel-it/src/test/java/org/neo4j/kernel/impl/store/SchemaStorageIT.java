@@ -44,6 +44,7 @@ import org.neo4j.internal.schema.ConstraintType;
 import org.neo4j.internal.schema.IndexConfig;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexPrototype;
+import org.neo4j.internal.schema.LabelSchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptorPredicates;
 import org.neo4j.internal.schema.SchemaRule;
@@ -252,7 +253,7 @@ class SchemaStorageIT
         ) );
         SchemaDescriptor schema = forLabel( labelId( LABEL1 ), propId( PROP1 ) ).withIndexConfig( expected );
         long id = schemaStore.nextId();
-        IndexDescriptor storeIndexDescriptor = forSchema( schema ).materialise( id );
+        IndexDescriptor storeIndexDescriptor = forSchema( schema ).withName( "index_" + id ).materialise( id );
         storage.writeSchemaRule( storeIndexDescriptor );
 
         // when
@@ -290,13 +291,14 @@ class SchemaStorageIT
 
     private IndexDescriptor makeIndexRule( long ruleId, String label, String propertyKey )
     {
-        return forSchema( forLabel( labelId( label ), propId( propertyKey ) ), EMPTY.getProviderDescriptor() ).materialise( ruleId );
+        LabelSchemaDescriptor schema = forLabel( labelId( label ), propId( propertyKey ) );
+        return forSchema( schema, EMPTY.getProviderDescriptor() ).withName( "index_" + ruleId ).materialise( ruleId );
     }
 
     private IndexDescriptor makeIndexRuleForConstraint( long ruleId, String label, String propertyKey, long constraintId )
     {
         IndexPrototype prototype = uniqueForSchema( forLabel( labelId( label ), propId( propertyKey ) ), EMPTY.getProviderDescriptor() );
-        return prototype.materialise( ruleId ).withOwningConstraintId( constraintId );
+        return prototype.withName( "constraint_" + ruleId ).materialise( ruleId ).withOwningConstraintId( constraintId );
     }
 
     private int labelId( String labelName )

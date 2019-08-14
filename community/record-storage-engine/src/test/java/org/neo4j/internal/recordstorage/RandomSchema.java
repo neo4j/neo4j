@@ -175,7 +175,7 @@ public class RandomSchema implements Supplier<SchemaRule>
         prototype = prototype.withName( nextName() );
 
         long ruleId = nextRuleIdForIndex();
-        IndexDescriptor index = prototype.materialise( ruleId );
+        IndexDescriptor index = prototype.withName( "index_" + ruleId ).materialise( ruleId );
 
         if ( isUnique && rng.nextBoolean() )
         {

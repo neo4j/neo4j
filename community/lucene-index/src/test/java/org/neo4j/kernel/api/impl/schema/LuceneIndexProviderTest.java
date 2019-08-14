@@ -59,7 +59,7 @@ class LuceneIndexProviderTest
     private TestDirectory testDir;
 
     private File graphDbDir;
-    private static final IndexDescriptor descriptor = forSchema( forLabel( 1, 1 ), PROVIDER_DESCRIPTOR ).materialise( 1 );
+    private static final IndexDescriptor descriptor = forSchema( forLabel( 1, 1 ), PROVIDER_DESCRIPTOR ).withName( "index_1" ).materialise( 1 );
 
     @BeforeEach
     void setup()

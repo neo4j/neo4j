@@ -379,7 +379,8 @@ public class ConsistencyReporterTest
             }
             if ( type == IndexEntry.class )
             {
-                return new IndexEntry( IndexPrototype.forSchema( SchemaDescriptor.forLabel( 1, 1 ) ).materialise( 1L ), idTokenNameLookup, 0 );
+                return new IndexEntry( IndexPrototype.forSchema( SchemaDescriptor.forLabel( 1, 1 ) )
+                        .withName( "index" ).materialise( 1L ), idTokenNameLookup, 0 );
             }
             if ( type == CountsEntry.class )
             {
@@ -387,7 +388,8 @@ public class ConsistencyReporterTest
             }
             if ( type == IndexDescriptor.class )
             {
-                return IndexPrototype.forSchema( forLabel( 2, 3 ), IndexProviderDescriptor.UNDECIDED ).materialise( 1 );
+                return IndexPrototype.forSchema( forLabel( 2, 3 ), IndexProviderDescriptor.UNDECIDED )
+                        .withName( "index" ).materialise( 1 );
             }
             if ( type == SchemaRule.class )
             {

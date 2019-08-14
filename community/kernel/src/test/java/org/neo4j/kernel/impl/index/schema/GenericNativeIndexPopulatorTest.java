@@ -58,7 +58,7 @@ class GenericNativeIndexPopulatorTest
         IndexDirectoryStructure directoryStructure = IndexDirectoryStructure.directoriesByProvider( root ).forProvider( GenericNativeIndexProvider.DESCRIPTOR );
         long indexId = 8;
         File indexDirectory = directoryStructure.directoryForIndex( indexId );
-        IndexDescriptor descriptor = IndexPrototype.forSchema( SchemaDescriptor.forLabel( 1, 1 ) ).materialise( indexId );
+        IndexDescriptor descriptor = IndexPrototype.forSchema( SchemaDescriptor.forLabel( 1, 1 ) ).withName( "index" ).materialise( indexId );
         IndexSpecificSpaceFillingCurveSettings spatialSettings = mock( IndexSpecificSpaceFillingCurveSettings.class );
         IndexFiles.Directory indexFiles = new IndexFiles.Directory( fs, directoryStructure, indexId );
         GenericLayout layout = new GenericLayout( 1, spatialSettings );

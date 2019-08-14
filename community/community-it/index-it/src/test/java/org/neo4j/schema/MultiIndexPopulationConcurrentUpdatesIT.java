@@ -390,7 +390,8 @@ public class MultiIndexPopulationConcurrentUpdatesIT
         IndexProvider lookup = getIndexProviderMap().lookup( schemaIndex.providerName() );
         IndexProviderDescriptor providerDescriptor = lookup.getProviderDescriptor();
         return labelNameIdMap.values().stream()
-                .map( index -> IndexPrototype.forSchema( SchemaDescriptor.forLabel( index, propertyId ), providerDescriptor ).materialise( index ) )
+                .map( index -> IndexPrototype.forSchema( SchemaDescriptor.forLabel( index, propertyId ), providerDescriptor )
+                        .withName( "index_" + index ).materialise( index ) )
                 .toArray( IndexDescriptor[]::new );
     }
 

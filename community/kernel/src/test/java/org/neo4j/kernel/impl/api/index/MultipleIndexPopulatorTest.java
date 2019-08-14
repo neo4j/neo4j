@@ -525,8 +525,8 @@ class MultipleIndexPopulatorTest
     private IndexPopulation addPopulator( MultipleIndexPopulator multipleIndexPopulator, IndexPopulator indexPopulator,
         int id, FlippableIndexProxy flippableIndexProxy, FailedIndexProxyFactory failedIndexProxyFactory )
     {
-        return addPopulator( multipleIndexPopulator, IndexPrototype.forSchema( SchemaDescriptor.forLabel( id, id ) ).materialise( id ),
-            indexPopulator, flippableIndexProxy, failedIndexProxyFactory );
+        IndexDescriptor descriptor = IndexPrototype.forSchema( SchemaDescriptor.forLabel( id, id ) ).withName( "index_" + id ).materialise( id );
+        return addPopulator( multipleIndexPopulator, descriptor, indexPopulator, flippableIndexProxy, failedIndexProxyFactory );
     }
 
     private IndexPopulation addPopulator( MultipleIndexPopulator multipleIndexPopulator, IndexDescriptor descriptor, IndexPopulator indexPopulator,

@@ -67,7 +67,7 @@ class UpdateCountingQueryContextTest extends CypherFunSuite {
   when( inner.createRelationshipPropertyExistenceConstraint(anyInt(), anyInt()) ).thenReturn(true)
 
   when(inner.addIndexRule(anyInt(), any()))
-    .thenReturn(IdempotentResult(IndexPrototype.forSchema(SchemaDescriptor.forLabel(1, 2)).materialise(1)))
+    .thenReturn(IdempotentResult(IndexPrototype.forSchema(SchemaDescriptor.forLabel(1, 2)).withName("index_1").materialise(1)))
 
   var context: UpdateCountingQueryContext = _
 
