@@ -103,7 +103,7 @@ case class CommunityAdministrationCommandRuntime(normalExecutionEngine: Executio
 
     // DROP USER foo
     case DropUser(userName) => (_, _, securityContext) =>
-      if (securityContext.subject().hasUsername(userName)) throw new InvalidArgumentsException(s"Deleting yourself (user '$userName') is not allowed.")
+      if (securityContext.subject().hasUsername(userName)) throw new InvalidArgumentsException(s"Failed to delete the specified user '$userName': Deleting yourself is not allowed.")
       UpdatingSystemCommandExecutionPlan("DropUser", normalExecutionEngine,
         """MATCH (user:User {name: $name}) DETACH DELETE user
           |RETURN user""".stripMargin,

@@ -335,7 +335,7 @@ class CommunityUserAdministrationCommandAcceptanceTest extends CommunityAdminist
       // WHEN
       executeOnSystem("foo", "bar", "DROP USER foo")
       // THEN
-    } should have message "Deleting yourself (user 'foo') is not allowed."
+    } should have message "Failed to delete the specified user 'foo': Deleting yourself is not allowed."
 
     // THEN
     execute("SHOW USERS").toSet shouldBe Set(user("neo4j"), user("foo", passwordChangeRequired = false))
