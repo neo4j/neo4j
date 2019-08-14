@@ -50,20 +50,11 @@
 
     <dependencies>
 
-        <!-- neo4j -->
-
-        <dependency>
-            <groupId>org.neo4j</groupId>
-            <artifactId>neo4j-util-4.0</artifactId>
-            <version>${project.version}</version>
-        </dependency>
-
         <dependency>
             <groupId>org.neo4j</groupId>
             <artifactId>neo4j-common</artifactId>
             <version>${project.version}</version>
         </dependency>
-        <!-- scala -->
 
         <dependency>
             <groupId>org.scala-lang</groupId>

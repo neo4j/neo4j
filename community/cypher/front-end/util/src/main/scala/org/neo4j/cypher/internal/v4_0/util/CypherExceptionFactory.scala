@@ -17,6 +17,6 @@
 package org.neo4j.cypher.internal.v4_0.util
 
 trait CypherExceptionFactory {
-  def arithmeticException(message: String, cause: Exception = null): CypherException
-  def syntaxException(message: String, pos: InputPosition): CypherException
+  def arithmeticException(message: String, cause: Exception = null): Exception
+  def syntaxException(message: String, pos: InputPosition): Exception
 }

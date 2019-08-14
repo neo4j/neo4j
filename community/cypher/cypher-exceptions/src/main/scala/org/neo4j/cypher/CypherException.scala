@@ -24,7 +24,7 @@ import org.neo4j.kernel.api.exceptions.Status.HasStatus
 
 import scala.compat.Platform.EOL
 
-abstract class CypherException(message: String, cause: Throwable) extends org.neo4j.cypher.internal.v4_0.util.CypherException(message, cause)
+abstract class CypherException(message: String, cause: Throwable) extends RuntimeException(message, cause)
                                                                   with Status.HasStatus {
   def status: Status
 }
