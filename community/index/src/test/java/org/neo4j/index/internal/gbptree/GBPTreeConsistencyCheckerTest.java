@@ -31,6 +31,7 @@ import org.junit.rules.RuleChain;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -692,6 +693,44 @@ public class GBPTreeConsistencyCheckerTest
         }
     }
 
+    @Test
+    public void shouldDetectSiblingPointerPointingToLowerLevel() throws IOException
+    {
+        try ( GBPTree<MutableLong,MutableLong> index = index().build() )
+        {
+            treeWithHeight( index, 2 );
+
+            InspectingVisitor<MutableLong,MutableLong> visitor = inspect( index );
+            long internalNode = randomValues.among( visitor.internalNodes );
+            long leafNode = randomValues.among( visitor.leafNodes );
+            GBPTreePointerType siblingPointer = randomSiblingPointerType();
+
+            GBPTreeCorruption.PageCorruption<MutableLong,MutableLong> corruption = GBPTreeCorruption.setPointer( siblingPointer, leafNode );
+            corrupt( internalNode, corruption, visitor.treeState );
+
+            assertReportAnyStructuralInconsistency( index );
+        }
+    }
+
+    @Test
+    public void shouldDetectSiblingPointerPointingToUpperLevel() throws IOException
+    {
+        try ( GBPTree<MutableLong,MutableLong> index = index().build() )
+        {
+            treeWithHeight( index, 2 );
+
+            InspectingVisitor<MutableLong,MutableLong> visitor = inspect( index );
+            long internalNode = randomValues.among( visitor.internalNodes );
+            long leafNode = randomValues.among( visitor.leafNodes );
+            GBPTreePointerType siblingPointer = randomSiblingPointerType();
+
+            GBPTreeCorruption.PageCorruption<MutableLong,MutableLong> corruption = GBPTreeCorruption.setPointer( siblingPointer, internalNode );
+            corrupt( leafNode, corruption, visitor.treeState );
+
+            assertReportAnyStructuralInconsistency( index );
+        }
+    }
+
     //todo
     //  Tree structure inconsistencies:
     //    > Pointer generation lower than node generation
@@ -716,8 +755,8 @@ public class GBPTreeConsistencyCheckerTest
     //      X Child pointer point to same level
     //      X Child pointer point to upper level not same stack
     //      X Child pointer point to child owned by other internal node
-    //      - Sibling pointer point to lower level
-    //      - Sibling pointer point to upper level
+    //      X Sibling pointer point to lower level
+    //      X Sibling pointer point to upper level
     //  Key order inconsistencies:
     //      X Keys out of order in isolated node
     //      X Keys not within parent range
@@ -829,7 +868,7 @@ public class GBPTreeConsistencyCheckerTest
         {
             other = randomValues.among( from );
         }
-        while ( from.equals( excluding ) );
+        while ( other.equals( excluding ) );
         return other;
     }
 
@@ -837,6 +876,11 @@ public class GBPTreeConsistencyCheckerTest
     {
         int childCount = visitor.allKeyCounts.get( internalNode ) + 1;
         return randomValues.nextInt( childCount );
+    }
+
+    private GBPTreePointerType randomSiblingPointerType()
+    {
+        return randomValues.among( Arrays.asList( GBPTreePointerType.leftSibling(), GBPTreePointerType.rightSibling() ) );
     }
 
     private long childAt( long internalNode, int childPos, TreeState treeState ) throws IOException
@@ -1195,6 +1239,12 @@ public class GBPTreeConsistencyCheckerTest
         MutableBoolean called = new MutableBoolean();
         index.consistencyCheck( new GBPTreeConsistencyCheckVisitor.Adaptor<MutableLong>()
         {
+            @Override
+            public void rightmostNodeHasRightSibling( long rightmostNode, long rightSiblingPointer )
+            {
+                called.setTrue();
+            }
+
             @Override
             public void siblingsDontPointToEachOther( long leftNode, long leftNodeGeneration, long leftRightSiblingPointerGeneration,
                     long leftRightSiblingPointer, long rightNode, long rightNodeGeneration, long rightLeftSiblingPointerGeneration,

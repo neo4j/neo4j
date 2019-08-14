@@ -59,6 +59,13 @@ final class GBPTreeCorruption
         };
     }
 
+    static <KEY, VALUE> PageCorruption<KEY,VALUE> setPointer( GBPTreePointerType pointerType, long pointer )
+    {
+        return ( pagedFile, cursor, layout, node, treeState ) -> {
+            overwriteGSPP( cursor, pointerType.offset( node ), treeState.unstableGeneration(), pointer );
+        };
+    }
+
     static <KEY, VALUE> PageCorruption<KEY,VALUE> notATreeNode()
     {
         return ( pagedFile, cursor, layout, node, treeState ) -> cursor.putByte( TreeNode.BYTE_POS_NODE_TYPE, Byte.MAX_VALUE );
