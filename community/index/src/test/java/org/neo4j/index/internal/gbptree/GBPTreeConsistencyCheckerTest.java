@@ -51,6 +51,7 @@ import static org.hamcrest.CoreMatchers.containsString;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.rules.RuleChain.outerRule;
+import static org.neo4j.index.internal.gbptree.GenerationSafePointerPair.pointer;
 import static org.neo4j.test.rule.PageCacheRule.config;
 
 public class GBPTreeConsistencyCheckerTest
@@ -91,7 +92,7 @@ public class GBPTreeConsistencyCheckerTest
     {
         try ( GBPTree<MutableLong,MutableLong> index = index().build() )
         {
-            treeWithHeightTwo( index );
+            treeWithHeight( index, 2 );
 
             InspectingVisitor<MutableLong,MutableLong> visitor = inspect( index );
             long rootNode = visitor.rootNode;
@@ -107,7 +108,7 @@ public class GBPTreeConsistencyCheckerTest
     {
         try ( GBPTree<MutableLong,MutableLong> index = index().build() )
         {
-            treeWithHeightTwo( index );
+            treeWithHeight( index, 2 );
 
             InspectingVisitor<MutableLong,MutableLong> visitor = inspect( index );
             long internalNode = randomValues.among( visitor.internalNodes );
@@ -123,7 +124,7 @@ public class GBPTreeConsistencyCheckerTest
     {
         try ( GBPTree<MutableLong,MutableLong> index = index().build() )
         {
-            treeWithHeightTwo( index );
+            treeWithHeight( index, 2 );
 
             InspectingVisitor<MutableLong,MutableLong> visitor = inspect( index );
             long leafNode = randomValues.among( visitor.leafNodes );
@@ -139,7 +140,7 @@ public class GBPTreeConsistencyCheckerTest
     {
         try ( GBPTree<MutableLong,MutableLong> index = index().build() )
         {
-            treeWithHeightTwo( index );
+            treeWithHeight( index, 2 );
 
             InspectingVisitor<MutableLong,MutableLong> visitor = inspect( index );
             long rootNode = visitor.rootNode;
@@ -155,7 +156,7 @@ public class GBPTreeConsistencyCheckerTest
     {
         try ( GBPTree<MutableLong,MutableLong> index = index().build() )
         {
-            treeWithHeightTwo( index );
+            treeWithHeight( index, 2 );
 
             InspectingVisitor<MutableLong,MutableLong> visitor = inspect( index );
             long internalNode = randomValues.among( visitor.internalNodes );
@@ -171,7 +172,7 @@ public class GBPTreeConsistencyCheckerTest
     {
         try ( GBPTree<MutableLong,MutableLong> index = index().build() )
         {
-            treeWithHeightTwo( index );
+            treeWithHeight( index, 2 );
 
             InspectingVisitor<MutableLong,MutableLong> visitor = inspect( index );
             long leafNode = randomValues.among( visitor.leafNodes );
@@ -187,7 +188,7 @@ public class GBPTreeConsistencyCheckerTest
     {
         try ( GBPTree<MutableLong,MutableLong> index = index().build() )
         {
-            treeWithHeightTwo( index );
+            treeWithHeight( index, 2 );
 
             InspectingVisitor<MutableLong,MutableLong> visitor = inspect( index );
             long targetNode = randomValues.among( visitor.leafNodes );
@@ -203,7 +204,7 @@ public class GBPTreeConsistencyCheckerTest
     {
         try ( GBPTree<MutableLong,MutableLong> index = index().build() )
         {
-            treeWithHeightTwo( index );
+            treeWithHeight( index, 2 );
 
             InspectingVisitor<MutableLong,MutableLong> visitor = inspect( index );
             long targetNode = randomValues.among( visitor.leafNodes );
@@ -219,7 +220,7 @@ public class GBPTreeConsistencyCheckerTest
     {
         try ( GBPTree<MutableLong,MutableLong> index = index().build() )
         {
-            treeWithHeightTwo( index );
+            treeWithHeight( index, 2 );
 
             InspectingVisitor<MutableLong,MutableLong> visitor = inspect( index );
             long targetNode = randomValues.among( visitor.allNodes );
@@ -235,7 +236,7 @@ public class GBPTreeConsistencyCheckerTest
     {
         try ( GBPTree<MutableLong,MutableLong> index = index().build() )
         {
-            treeWithHeightTwo( index );
+            treeWithHeight( index, 2 );
 
             InspectingVisitor<MutableLong,MutableLong> visitor = inspect( index );
             long targetNode = nodeWithRightSibling( visitor );
@@ -251,7 +252,7 @@ public class GBPTreeConsistencyCheckerTest
     {
         try ( GBPTree<MutableLong,MutableLong> index = index().build() )
         {
-            treeWithHeightTwo( index );
+            treeWithHeight( index, 2 );
 
             InspectingVisitor<MutableLong,MutableLong> visitor = inspect( index );
             long targetNode = nodeWithLeftSibling( visitor );
@@ -267,7 +268,7 @@ public class GBPTreeConsistencyCheckerTest
     {
         try ( GBPTree<MutableLong,MutableLong> index = index().build() )
         {
-            treeWithHeightTwo( index );
+            treeWithHeight( index, 2 );
 
             InspectingVisitor<MutableLong,MutableLong> visitor = inspect( index );
             long targetNode = randomValues.among( visitor.internalNodes );
@@ -285,7 +286,7 @@ public class GBPTreeConsistencyCheckerTest
     {
         try ( GBPTree<MutableLong,MutableLong> index = index().build() )
         {
-            treeWithHeightTwo( index );
+            treeWithHeight( index, 2 );
 
             InspectingVisitor<MutableLong,MutableLong> visitor = inspect( index );
             long targetNode = nodeWithMultipleKeys( visitor );
@@ -308,7 +309,7 @@ public class GBPTreeConsistencyCheckerTest
     {
         try ( GBPTree<MutableLong,MutableLong> index = index().build() )
         {
-            treeWithHeightTwo( index );
+            treeWithHeight( index, 2 );
 
             InspectingVisitor<MutableLong,MutableLong> visitor = inspect( index );
             long targetNode = nodeWithLeftSibling( visitor );
@@ -331,7 +332,7 @@ public class GBPTreeConsistencyCheckerTest
     {
         try ( GBPTree<MutableLong,MutableLong> index = index().build() )
         {
-            treeWithHeightTwo( index );
+            treeWithHeight( index, 2 );
 
             InspectingVisitor<MutableLong,MutableLong> visitor = inspect( index );
             long targetNode = nodeWithRightSibling( visitor );
@@ -354,7 +355,7 @@ public class GBPTreeConsistencyCheckerTest
     {
         try ( GBPTree<RawBytes,RawBytes> index = index( dynamicLayout).build() )
         {
-            treeWithHeightTwo( index, dynamicLayout );
+            treeWithHeight( index, dynamicLayout, 2 );
 
             InspectingVisitor<RawBytes,RawBytes> visitor = inspect( index );
             long targetNode = randomValues.among( visitor.allNodes );
@@ -371,7 +372,7 @@ public class GBPTreeConsistencyCheckerTest
     {
         try ( GBPTree<RawBytes,RawBytes> index = index( dynamicLayout).build() )
         {
-            treeWithHeightTwo( index, dynamicLayout );
+            treeWithHeight( index, dynamicLayout, 2 );
 
             InspectingVisitor<RawBytes,RawBytes> visitor = inspect( index );
             long targetNode = randomValues.among( visitor.allNodes );
@@ -388,7 +389,7 @@ public class GBPTreeConsistencyCheckerTest
     {
         try ( GBPTree<RawBytes,RawBytes> index = index( dynamicLayout).build() )
         {
-            treeWithHeightTwo( index, dynamicLayout );
+            treeWithHeight( index, dynamicLayout, 2 );
 
             InspectingVisitor<RawBytes,RawBytes> visitor = inspect( index );
             long targetNode = randomValues.among( visitor.allNodes );
@@ -405,7 +406,7 @@ public class GBPTreeConsistencyCheckerTest
     {
         try ( GBPTree<RawBytes,RawBytes> index = index( dynamicLayout).build() )
         {
-            treeWithHeightTwo( index, dynamicLayout );
+            treeWithHeight( index, dynamicLayout, 2 );
 
             InspectingVisitor<RawBytes,RawBytes> visitor = inspect( index );
             long targetNode = randomValues.among( visitor.allNodes );
@@ -539,7 +540,7 @@ public class GBPTreeConsistencyCheckerTest
     {
         try ( GBPTree<MutableLong,MutableLong> index = index().build() )
         {
-            treeWithHeightTwo( index );
+            treeWithHeight( index, 2 );
 
             InspectingVisitor<MutableLong,MutableLong> visitor = inspect( index );
             long targetNode = randomValues.among( visitor.allNodes );
@@ -559,7 +560,7 @@ public class GBPTreeConsistencyCheckerTest
     {
         try ( GBPTree<MutableLong,MutableLong> index = index().build() )
         {
-            treeWithHeightTwo( index );
+            treeWithHeight( index, 2 );
 
             InspectingVisitor<MutableLong,MutableLong> visitor = inspect( index );
             long targetNode = randomValues.among( visitor.allNodes );
@@ -579,7 +580,7 @@ public class GBPTreeConsistencyCheckerTest
     {
         try ( GBPTree<MutableLong,MutableLong> index = index().build() )
         {
-            treeWithHeightTwo( index );
+            treeWithHeight( index, 2 );
 
             InspectingVisitor<MutableLong,MutableLong> visitor = inspect( index );
             long targetNode = randomValues.among( visitor.allNodes );
@@ -597,18 +598,17 @@ public class GBPTreeConsistencyCheckerTest
     {
         try ( GBPTree<MutableLong,MutableLong> index = index().build() )
         {
-            treeWithHeightTwo( index );
+            treeWithHeight( index, 2 );
 
             InspectingVisitor<MutableLong,MutableLong> visitor = inspect( index );
             long rootNode = visitor.rootNode;
-            int childCount = visitor.allKeyCounts.get( rootNode ) + 1;
-            int childPos = randomValues.nextInt( childCount );
+            int childPos = randomChildPos( visitor, rootNode );
             Long targetChildNode = randomValues.among( visitor.leafNodes );
 
             GBPTreeCorruption.PageCorruption<MutableLong,MutableLong> corruption = GBPTreeCorruption.setChild( childPos, targetChildNode );
             corrupt( rootNode, corruption, visitor.treeState );
 
-            assertReportCorruptTreeStructure( index );
+            assertReportAnyStructuralInconsistency( index );
         }
     }
 
@@ -617,18 +617,78 @@ public class GBPTreeConsistencyCheckerTest
     {
         try ( GBPTree<MutableLong,MutableLong> index = index().build() )
         {
-            treeWithHeightTwo( index );
+            treeWithHeight( index, 2 );
 
             InspectingVisitor<MutableLong,MutableLong> visitor = inspect( index );
             long rootNode = visitor.rootNode;
             Long internalNode = randomValues.among( visitor.nodesPerLevel.get( 1 ) );
-            int childCount = visitor.allKeyCounts.get( internalNode ) + 1;
-            int childPos = randomValues.nextInt( childCount );
+            int childPos = randomChildPos( visitor, internalNode );
 
             GBPTreeCorruption.PageCorruption<MutableLong,MutableLong> corruption = GBPTreeCorruption.setChild( childPos, rootNode );
             corrupt( internalNode, corruption, visitor.treeState );
 
             assertReportCircularChildPointer( index, rootNode );
+        }
+    }
+
+    @Test
+    public void shouldDetectChildPointerPointingToSameLevel() throws IOException
+    {
+        try ( GBPTree<MutableLong,MutableLong> index = index().build() )
+        {
+            treeWithHeight( index, 2 );
+
+            InspectingVisitor<MutableLong,MutableLong> visitor = inspect( index );
+            List<Long> internalNodesWithSiblings = visitor.nodesPerLevel.get( 1 );
+            long internalNode = randomValues.among( internalNodesWithSiblings );
+            long otherInternalNode = randomFromExcluding( internalNodesWithSiblings, internalNode );
+            int childPos = randomChildPos( visitor, internalNode );
+
+            GBPTreeCorruption.PageCorruption<MutableLong,MutableLong> corruption = GBPTreeCorruption.setChild( childPos, otherInternalNode );
+            corrupt( internalNode, corruption, visitor.treeState );
+
+            assertReportAnyStructuralInconsistency( index );
+        }
+    }
+
+    @Test
+    public void shouldDetectChildPointerPointingToUpperLevelNotSameStack() throws IOException
+    {
+        try ( GBPTree<MutableLong,MutableLong> index = index().build() )
+        {
+            treeWithHeight( index, 3 );
+
+            InspectingVisitor<MutableLong,MutableLong> visitor = inspect( index );
+            long upperInternalNode = randomValues.among( visitor.nodesPerLevel.get( 1 ) );
+            long lowerInternalNode = randomValues.among( visitor.nodesPerLevel.get( 2 ) );
+            int childPos = randomChildPos( visitor, lowerInternalNode );
+
+            GBPTreeCorruption.PageCorruption<MutableLong,MutableLong> corruption = GBPTreeCorruption.setChild( childPos, upperInternalNode );
+            corrupt( lowerInternalNode, corruption, visitor.treeState );
+
+            assertReportAnyStructuralInconsistency( index );
+        }
+    }
+
+    @Test
+    public void shouldDetectChildPointerPointingToChildOwnedByOtherNode() throws IOException
+    {
+        try ( GBPTree<MutableLong,MutableLong> index = index().build() )
+        {
+            treeWithHeight( index, 2 );
+
+            InspectingVisitor<MutableLong,MutableLong> visitor = inspect( index );
+            List<Long> internalNodesWithSiblings = visitor.nodesPerLevel.get( 1 );
+            long internalNode = randomValues.among( internalNodesWithSiblings );
+            long otherInternalNode = randomFromExcluding( internalNodesWithSiblings, internalNode );
+            int otherChildPos = randomChildPos( visitor, otherInternalNode );
+            long childInOtherInternal = childAt( otherInternalNode, otherChildPos, visitor.treeState );
+            int childPos = randomChildPos( visitor, internalNode );
+
+            GBPTreeCorruption.PageCorruption<MutableLong,MutableLong> corruption = GBPTreeCorruption.setChild( childPos, childInOtherInternal );
+            corrupt( internalNode, corruption, visitor.treeState );
+
+            assertReportAnyStructuralInconsistency( index );
         }
     }
 
@@ -653,9 +713,9 @@ public class GBPTreeConsistencyCheckerTest
     //    > Level hierarchy
     //      X Child pointer point two levels down
     //      X Child pointer point to upper level same stack
-    //      - Child pointer point to same level
-    //      - Child pointer point to upper level not same stack
-    //      - Child pointer point to child owned by other internal node
+    //      X Child pointer point to same level
+    //      X Child pointer point to upper level not same stack
+    //      X Child pointer point to child owned by other internal node
     //      - Sibling pointer point to lower level
     //      - Sibling pointer point to upper level
     //  Key order inconsistencies:
@@ -687,7 +747,7 @@ public class GBPTreeConsistencyCheckerTest
         try ( PagedFile pagedFile = pageCache.map( indexFile, pageCache.pageSize() );
               PageCursor cursor = pagedFile.io( 0, PagedFile.PF_SHARED_WRITE_LOCK ) )
         {
-            cursor.next( targetNode );
+            PageCursorUtil.goTo( cursor, "", targetNode );
             corruption.corrupt( pagedFile, cursor, layout, node, treeState );
         }
     }
@@ -762,6 +822,33 @@ public class GBPTreeConsistencyCheckerTest
         return result;
     }
 
+    private <T> T randomFromExcluding( List<T> from, T excluding )
+    {
+        T other;
+        do
+        {
+            other = randomValues.among( from );
+        }
+        while ( from.equals( excluding ) );
+        return other;
+    }
+
+    private <KEY,VALUE> int randomChildPos( InspectingVisitor<KEY,VALUE> visitor, long internalNode )
+    {
+        int childCount = visitor.allKeyCounts.get( internalNode ) + 1;
+        return randomValues.nextInt( childCount );
+    }
+
+    private long childAt( long internalNode, int childPos, TreeState treeState ) throws IOException
+    {
+        try ( PagedFile pagedFile = pageCache.map( indexFile, pageCache.pageSize() );
+              PageCursor cursor = pagedFile.io( 0, PagedFile.PF_SHARED_WRITE_LOCK ) )
+        {
+            PageCursorUtil.goTo( cursor, "", internalNode );
+            return pointer( node.childAt( cursor, childPos, treeState.stableGeneration(), treeState.unstableGeneration() ) );
+        }
+    }
+
     private GBPTreeBuilder<MutableLong,MutableLong> index()
     {
         return index( layout );
@@ -790,17 +877,17 @@ public class GBPTreeConsistencyCheckerTest
         }
     }
 
-    private void treeWithHeightTwo( GBPTree<MutableLong,MutableLong> index ) throws IOException
+    private void treeWithHeight( GBPTree<MutableLong,MutableLong> index, int height ) throws IOException
     {
-        treeWithHeightTwo( index, layout );
+        treeWithHeight( index, layout, height );
     }
 
-    private static <KEY,VALUE> void treeWithHeightTwo( GBPTree<KEY,VALUE> index, TestLayout<KEY,VALUE> layout ) throws IOException
+    private static <KEY,VALUE> void treeWithHeight( GBPTree<KEY,VALUE> index, TestLayout<KEY,VALUE> layout, int height ) throws IOException
     {
         try ( Writer<KEY,VALUE> writer = index.writer() )
         {
             int keyCount = 0;
-            while ( getHeight( index ) < 2 )
+            while ( getHeight( index ) < height )
             {
                 writer.put( layout.key( keyCount ), layout.value( keyCount ) );
                 keyCount++;
@@ -1103,7 +1190,7 @@ public class GBPTreeConsistencyCheckerTest
         assertCalled( called );
     }
 
-    private static void assertReportCorruptTreeStructure( GBPTree<MutableLong,MutableLong> index ) throws IOException
+    private static void assertReportAnyStructuralInconsistency( GBPTree<MutableLong,MutableLong> index ) throws IOException
     {
         MutableBoolean called = new MutableBoolean();
         index.consistencyCheck( new GBPTreeConsistencyCheckVisitor.Adaptor<MutableLong>()
@@ -1118,6 +1205,18 @@ public class GBPTreeConsistencyCheckerTest
 
             @Override
             public void keysLocatedInWrongNode( long pageId, KeyRange<MutableLong> range, MutableLong mutableLong, int pos, int keyCount )
+            {
+                called.setTrue();
+            }
+
+            @Override
+            public void pageIdSeenMultipleTimes( long pageId )
+            {
+                called.setTrue();
+            }
+
+            @Override
+            public void childNodeFoundAmongParentNodes( int level, long pageId, KeyRange<MutableLong> superRange )
             {
                 called.setTrue();
             }
