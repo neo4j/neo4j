@@ -612,6 +612,26 @@ public class GBPTreeConsistencyCheckerTest
         }
     }
 
+    @Test
+    public void shouldDetectChildPointerPointingToUpperLevelSameStack() throws IOException
+    {
+        try ( GBPTree<MutableLong,MutableLong> index = index().build() )
+        {
+            treeWithHeightTwo( index );
+
+            InspectingVisitor<MutableLong,MutableLong> visitor = inspect( index );
+            long rootNode = visitor.rootNode;
+            Long internalNode = randomValues.among( visitor.nodesPerLevel.get( 1 ) );
+            int childCount = visitor.allKeyCounts.get( internalNode ) + 1;
+            int childPos = randomValues.nextInt( childCount );
+
+            GBPTreeCorruption.PageCorruption<MutableLong,MutableLong> corruption = GBPTreeCorruption.setChild( childPos, rootNode );
+            corrupt( internalNode, corruption, visitor.treeState );
+
+            assertReportCircularChildPointer( index, rootNode );
+        }
+    }
+
     //todo
     //  Tree structure inconsistencies:
     //    > Pointer generation lower than node generation
@@ -632,8 +652,9 @@ public class GBPTreeConsistencyCheckerTest
     //      - Should not report crashed GSPP if allowed
     //    > Level hierarchy
     //      X Child pointer point two levels down
-    //      - Child pointer point to upper level
+    //      - Child pointer point to upper level same stack
     //      - Child pointer point to same level
+    //      - Child pointer point to upper level not same stack
     //      - Child pointer point to child owned by other internal node
     //      - Sibling pointer point to lower level
     //      - Sibling pointer point to upper level
@@ -1099,6 +1120,21 @@ public class GBPTreeConsistencyCheckerTest
             public void keysLocatedInWrongNode( long pageId, KeyRange<MutableLong> range, MutableLong mutableLong, int pos, int keyCount )
             {
                 called.setTrue();
+            }
+        } );
+        assertCalled( called );
+    }
+
+    private static void assertReportCircularChildPointer( GBPTree<MutableLong,MutableLong> index, long targetNode ) throws IOException
+    {
+        MutableBoolean called = new MutableBoolean();
+        index.consistencyCheck( new GBPTreeConsistencyCheckVisitor.Adaptor<MutableLong>()
+        {
+            @Override
+            public void childNodeFoundAmongParentNodes( int level, long pageId, KeyRange<MutableLong> superRange )
+            {
+                called.setTrue();
+                assertEquals( targetNode, pageId );
             }
         } );
         assertCalled( called );

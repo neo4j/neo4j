@@ -25,15 +25,19 @@ import static java.lang.String.format;
 
 class KeyRange<KEY>
 {
+    private final int level;
+    private final long pageId;
     private final Comparator<KEY> comparator;
     private final KEY fromInclusive;
     private final KEY toExclusive;
     private final Layout<KEY,?> layout;
     private final KeyRange<KEY> superRange;
 
-    KeyRange( Comparator<KEY> comparator, KEY fromInclusive, KEY toExclusive, Layout<KEY,?> layout,
+    KeyRange( int level, long pageId, Comparator<KEY> comparator, KEY fromInclusive, KEY toExclusive, Layout<KEY,?> layout,
             KeyRange<KEY> superRange )
     {
+        this.level = level;
+        this.pageId = pageId;
         this.comparator = comparator;
         this.superRange = superRange;
         this.fromInclusive = fromInclusive == null ? null : layout.copyKey( fromInclusive, layout.newKey() );
@@ -54,60 +58,76 @@ class KeyRange<KEY>
         return toExclusive == null || comparator.compare( key, toExclusive ) < 0;
     }
 
-    KeyRange<KEY> narrowLeft( KEY left )
+    KeyRange<KEY> newSubRange( int level, long pageId )
     {
-        if ( fromInclusive == null )
+        return new KeyRange<>( level, pageId, comparator, fromInclusive, toExclusive, layout, this );
+    }
+
+    boolean hasPageIdInStack( long pageId )
+    {
+        if ( this.pageId == pageId )
         {
-            return new KeyRange<>( comparator, left, toExclusive, layout, superRange );
+            return true;
         }
-        if ( left == null )
+        if ( superRange != null )
         {
-            return new KeyRange<>( comparator, fromInclusive, toExclusive, layout, superRange );
+            return superRange.hasPageIdInStack( pageId );
         }
-        if ( comparator.compare( fromInclusive, left ) < 0 )
-        {
-            return new KeyRange<>( comparator, left, toExclusive, layout, superRange );
-        }
-        return new KeyRange<>( comparator, fromInclusive, toExclusive, layout, superRange );
+        return false;
     }
 
     KeyRange<KEY> restrictLeft( KEY left )
     {
+        KEY newLeft;
         if ( fromInclusive == null )
         {
-            return new KeyRange<>( comparator, left, toExclusive, layout, this );
+            newLeft = left;
         }
-        if ( left == null )
+        else if ( left == null )
         {
-            return new KeyRange<>( comparator, fromInclusive, toExclusive, layout, this );
+            newLeft = fromInclusive;
         }
-        if ( comparator.compare( fromInclusive, left ) < 0 )
+        else if ( comparator.compare( fromInclusive, left ) < 0 )
         {
-            return new KeyRange<>( comparator, left, toExclusive, layout, this );
+            newLeft = left;
         }
-        return new KeyRange<>( comparator, fromInclusive, toExclusive, layout, this );
+        else
+        {
+            newLeft = fromInclusive;
+        }
+        return new KeyRange<>( level, pageId, comparator, newLeft, toExclusive, layout, superRange );
     }
 
     KeyRange<KEY> restrictRight( KEY right )
     {
+        KEY newRight;
         if ( toExclusive == null )
         {
-            return new KeyRange<>( comparator, fromInclusive, right, layout, this );
+            newRight = right;
         }
-        if ( right == null )
+        else if ( right == null )
         {
-            return new KeyRange<>( comparator, fromInclusive, toExclusive, layout, this );
+            newRight = toExclusive;
         }
-        if ( comparator.compare( toExclusive, right ) > 0 )
+        else if ( comparator.compare( toExclusive, right ) > 0 )
         {
-            return new KeyRange<>( comparator, fromInclusive, right, layout, this );
+            newRight = right;
         }
-        return new KeyRange<>( comparator, fromInclusive, toExclusive, layout, this );
+        else
+        {
+            newRight = toExclusive;
+        }
+        return new KeyRange<>( level, pageId, comparator, fromInclusive, newRight, layout, superRange );
     }
 
     @Override
     public String toString()
     {
-        return (superRange != null ? format( "%s%n", superRange ) : "") + fromInclusive + " ≤ key < " + toExclusive;
+        return (superRange != null ? format( "%s%n", superRange ) : "") + singleLevel();
+    }
+
+    private String singleLevel()
+    {
+        return "level: " + level + " {" + pageId + "} " + fromInclusive + " ≤ key < " + toExclusive;
     }
 }

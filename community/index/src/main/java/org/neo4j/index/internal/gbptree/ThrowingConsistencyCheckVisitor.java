@@ -140,6 +140,13 @@ public class ThrowingConsistencyCheckVisitor<KEY> implements GBPTreeConsistencyC
         throwTreeMetaInconsistency( "Unexpected keyCount on pageId %d, keyCount=%d", pageId, keyCount );
     }
 
+    @Override
+    public void childNodeFoundAmongParentNodes( int level, long pageId, KeyRange<KEY> parentRange )
+    {
+        throwTreeStructureInconsistency( "Circular reference, child tree node found among parent nodes. Parents:%n%s%nlevel: %d, pageId: %d",
+                parentRange, level, pageId );
+    }
+
     private static String stateToString( long generation, long readPointer, long pointer, byte stateA )
     {
         return format( "generation=%d, readPointer=%d, pointer=%d, state=%s",

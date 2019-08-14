@@ -58,6 +58,8 @@ public interface GBPTreeConsistencyCheckVisitor<KEY>
 
     void unreasonableKeyCount( long pageId, int keyCount );
 
+    void childNodeFoundAmongParentNodes( int level, long pageId, KeyRange<KEY> superRange );
+
     class Adaptor<KEY> implements GBPTreeConsistencyCheckVisitor<KEY>
     {
         @Override
@@ -139,6 +141,11 @@ public interface GBPTreeConsistencyCheckVisitor<KEY>
 
         @Override
         public void unreasonableKeyCount( long pageId, int keyCount )
+        {
+        }
+
+        @Override
+        public void childNodeFoundAmongParentNodes( int level, long pageId, KeyRange<KEY> superRange )
         {
         }
     }

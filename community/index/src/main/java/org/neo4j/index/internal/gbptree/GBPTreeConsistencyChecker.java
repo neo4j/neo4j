@@ -83,7 +83,7 @@ class GBPTreeConsistencyChecker<KEY>
 
         // Check structure of GBPTree
         long rootGeneration = root.goTo( cursor );
-        KeyRange<KEY> openRange = new KeyRange<>( comparator, null, null, layout, null );
+        KeyRange<KEY> openRange = new KeyRange<>( -1, -1, comparator, null, null, layout, null );
         checkSubtree( cursor, openRange, -1, rootGeneration, GBPTreePointerType.noPointer(), 0, visitor, seenIds );
 
         // Assert that rightmost node on each level has empty right sibling.
@@ -131,11 +131,15 @@ class GBPTreeConsistencyChecker<KEY>
     {
         long pageId = cursor.getCurrentPageId();
         addToSeenList( seenIds, pageId, lastId, visitor );
+        if ( range.hasPageIdInStack( pageId ) )
+        {
+            visitor.childNodeFoundAmongParentNodes( level, pageId, range );
+            return;
+        }
         byte nodeType;
         byte treeNodeType;
         int keyCount;
         long successor;
-        long successorGeneration;
 
         long leftSiblingPointer;
         long rightSiblingPointer;
@@ -155,7 +159,6 @@ class GBPTreeConsistencyChecker<KEY>
             currentNodeGeneration = TreeNode.generation( cursor );
 
             successor = TreeNode.successor( cursor, stableGeneration, unstableGeneration, generationTarget );
-            successorGeneration = generationTarget.generation;
 
             keyCount = TreeNode.keyCount( cursor );
             nodeType = TreeNode.nodeType( cursor );
@@ -186,7 +189,8 @@ class GBPTreeConsistencyChecker<KEY>
         assertNoCrashOrBrokenPointerInGSPP(
                 cursor, stableGeneration, unstableGeneration, GBPTreePointerType.successor(), TreeNode.BYTE_POS_SUCCESSOR, visitor );
 
-        if ( !node.reasonableKeyCount( keyCount ) )
+        boolean reasonableKeyCount = node.reasonableKeyCount( keyCount );
+        if ( !reasonableKeyCount )
         {
             visitor.unreasonableKeyCount( pageId, keyCount );
         }
@@ -197,6 +201,7 @@ class GBPTreeConsistencyChecker<KEY>
 
         do
         {
+            // todo place this report outside of shouldRetry
             node.checkMetaConsistency( cursor, keyCount, isLeaf ? LEAF : INTERNAL, visitor );
         }
         while ( cursor.shouldRetry() );
@@ -206,9 +211,9 @@ class GBPTreeConsistencyChecker<KEY>
                 currentNodeGeneration, visitor );
         assertSiblings( cursor, currentNodeGeneration, leftSiblingPointer, leftSiblingPointerGeneration, rightSiblingPointer,
                 rightSiblingPointerGeneration, level, visitor );
-        checkSuccessorPointerGeneration( cursor, successor, successorGeneration, visitor );
+        checkSuccessorPointerGeneration( cursor, successor, visitor );
 
-        if ( isInternal )
+        if ( isInternal && reasonableKeyCount )
         {
             assertSubtrees( cursor, range, keyCount, level, visitor, seenIds );
         }
@@ -223,8 +228,7 @@ class GBPTreeConsistencyChecker<KEY>
         }
     }
 
-    private void checkSuccessorPointerGeneration( PageCursor cursor, long successor, long successorGeneration,
-            GBPTreeConsistencyCheckVisitor<KEY> visitor )
+    private void checkSuccessorPointerGeneration( PageCursor cursor, long successor, GBPTreeConsistencyCheckVisitor<KEY> visitor )
     {
         if ( TreeNode.isNode( successor ) )
         {
@@ -273,10 +277,10 @@ class GBPTreeConsistencyChecker<KEY>
             while ( cursor.shouldRetry() );
             checkAfterShouldRetry( cursor );
 
-            childRange = range.restrictRight( readKey );
+            childRange = range.newSubRange( level, pageId ).restrictRight( readKey );
             if ( pos > 0 )
             {
-                childRange = childRange.narrowLeft( prev );
+                childRange = childRange.restrictLeft( prev );
             }
 
             TreeNode.goTo( cursor, "child at pos " + pos, child );
@@ -306,7 +310,7 @@ class GBPTreeConsistencyChecker<KEY>
         checkAfterShouldRetry( cursor );
 
         TreeNode.goTo( cursor, "child at pos " + pos, child );
-        childRange = range.restrictLeft( prev );
+        childRange = range.newSubRange( level, pageId ).restrictLeft( prev );
         checkSubtree( cursor, childRange, pageId, childGeneration, GBPTreePointerType.child( pos ), level + 1, visitor, seenIds );
         TreeNode.goTo( cursor, "parent", pageId );
     }
