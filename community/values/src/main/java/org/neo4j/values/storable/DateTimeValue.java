@@ -380,7 +380,7 @@ public final class DateTimeValue extends TemporalValue<ZonedDateTime,DateTimeVal
                         }
                         catch ( DateTimeParseException e )
                         {
-                            throw new InvalidArgumentException( e.getMessage(), e );
+                            throw new TemporalParseException( e.getMessage(), e.getParsedString(), e.getErrorIndex(), e );
                         }
                     }
                     else
