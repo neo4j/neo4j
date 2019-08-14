@@ -112,6 +112,7 @@ trait GraphDatabaseTestSupport extends CypherTestSupport with GraphIcing {
       graph = null
       managementService = null
       nodes = null
+      databaseManager = null
       onDeletedGraphDatabase()
     }
   }
