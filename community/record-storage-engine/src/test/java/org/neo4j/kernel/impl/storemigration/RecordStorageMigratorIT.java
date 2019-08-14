@@ -28,8 +28,10 @@ import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
 import java.io.File;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Comparator;
 import java.util.List;
 import java.util.NoSuchElementException;
@@ -39,6 +41,7 @@ import java.util.stream.Stream;
 
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
+import org.neo4j.internal.helpers.collection.Iterables;
 import org.neo4j.internal.helpers.collection.Pair;
 import org.neo4j.internal.id.IdGeneratorFactory;
 import org.neo4j.internal.id.IdType;
@@ -50,13 +53,17 @@ import org.neo4j.internal.schema.ConstraintDescriptor;
 import org.neo4j.internal.schema.SchemaRule;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.kernel.impl.store.DynamicStringStore;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.SchemaStore;
 import org.neo4j.kernel.impl.store.StoreFactory;
+import org.neo4j.kernel.impl.store.StoreType;
+import org.neo4j.kernel.impl.store.TokenStore;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.kernel.impl.store.format.standard.Standard;
 import org.neo4j.kernel.impl.store.format.standard.StandardV3_4;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
+import org.neo4j.kernel.impl.store.record.TokenRecord;
 import org.neo4j.kernel.impl.storemigration.legacy.SchemaStore35;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.logging.AssertableLogProvider;
@@ -84,6 +91,9 @@ class RecordStorageMigratorIT
 {
     private static final String MIGRATION_DIRECTORY = "upgrade";
     private static final Config CONFIG = Config.defaults( GraphDatabaseSettings.pagecache_memory, "8m" );
+    public static final int MAX_PROPERTY_KEY_ID = 500;
+    public static final int MAX_RELATIONSHIP_TYPE_ID = 100;
+    public static final int MAX_LABEL_ID = 100;
 
     @Inject
     private TestDirectory directory;
@@ -269,6 +279,19 @@ class RecordStorageMigratorIT
         // when trying to open an older store, before doing migration.
         IdGeneratorFactory igf = new ScanOnOpenOverwritingIdGeneratorFactory( fs );
         LogProvider logProvider = logService.getInternalLogProvider();
+
+        // Prepare all the tokens we'll need.
+        StoreFactory legacyStoreFactory = new StoreFactory( databaseLayout, CONFIG, igf, pageCache, fs, StandardV3_4.RECORD_FORMATS, logProvider );
+        NeoStores stores = legacyStoreFactory.openNeoStores( false,
+                StoreType.LABEL_TOKEN, StoreType.LABEL_TOKEN_NAME,
+                StoreType.RELATIONSHIP_TYPE_TOKEN, StoreType.RELATIONSHIP_TYPE_TOKEN_NAME,
+                StoreType.PROPERTY_KEY_TOKEN, StoreType.PROPERTY_KEY_TOKEN_NAME );
+        createTokens( stores.getLabelTokenStore(), MAX_LABEL_ID );
+        createTokens( stores.getRelationshipTypeTokenStore(), MAX_RELATIONSHIP_TYPE_ID );
+        createTokens( stores.getPropertyKeyTokenStore(), MAX_PROPERTY_KEY_ID );
+        stores.close();
+
+        // Prepare the legacy schema store we'll migrate.
         File storeFile = databaseLayout.schemaStore();
         File idFile = databaseLayout.idSchemaStore();
         SchemaStore35 schemaStore35 = new SchemaStore35( storeFile, idFile, CONFIG, IdType.SCHEMA, igf, pageCache, logProvider, StandardV3_4.RECORD_FORMATS );
@@ -312,7 +335,6 @@ class RecordStorageMigratorIT
             {
                 // We're starting to run low on ids, but just ignore this and loop as along as there are still some left.
             }
-            // TODO ensure all supposed tokens are present.
         }
         schemaStore35.flush();
         schemaStore35.close();
@@ -344,6 +366,35 @@ class RecordStorageMigratorIT
         }
     }
 
+    private <T extends TokenRecord> void createTokens( TokenStore<T> tokenStore, int tokenCount )
+    {
+        T record = tokenStore.newRecord();
+        DynamicStringStore nameStore = tokenStore.getNameStore();
+        record.setInUse( true );
+        record.setCreated();
+        String tokenType = record.getClass().getSimpleName();
+        String prefix = tokenType.substring( 0, tokenType.indexOf( "TokenRecord" ) );
+        for ( int i = 1; i <= tokenCount; i++ )
+        {
+            String name = prefix + i;
+            Collection<DynamicRecord> nameRecords = tokenStore.allocateNameRecords( name.getBytes( StandardCharsets.UTF_8 ) );
+            record.setNameId( (int) Iterables.first( nameRecords ).getId() );
+            record.addNameRecords( nameRecords );
+            record.setId( tokenStore.nextId() );
+            long maxId = 0;
+            for ( DynamicRecord nameRecord : nameRecords )
+            {
+                nameStore.updateRecord( nameRecord );
+                maxId = Math.max( nameRecord.getId(), maxId );
+            }
+            nameStore.setHighestPossibleIdInUse( Math.max( maxId, nameStore.getHighestPossibleIdInUse() ) );
+            tokenStore.updateRecord( record );
+            tokenStore.setHighestPossibleIdInUse( Math.max( record.getId(), tokenStore.getHighestPossibleIdInUse() ) );
+        }
+        nameStore.flush();
+        tokenStore.flush();
+    }
+
     private static class RealIdsRandomSchema extends RandomSchema
     {
         private final Pair<LongHashSet,LongHashSet> newIndexes;
@@ -358,6 +409,42 @@ class RecordStorageMigratorIT
             this.newConstraints = Pair.of( constraints, new LongHashSet() );
             this.existingIndexes = Pair.of( new LongHashSet( indexes ), new LongHashSet() );
             this.existingConstraints = Pair.of( new LongHashSet( constraints ), new LongHashSet() );
+        }
+
+        @Override
+        protected int maxPropertyId()
+        {
+            return MAX_PROPERTY_KEY_ID;
+        }
+
+        @Override
+        protected int maxRelationshipTypeId()
+        {
+            return MAX_RELATIONSHIP_TYPE_ID;
+        }
+
+        @Override
+        protected int maxLabelId()
+        {
+            return MAX_LABEL_ID;
+        }
+
+        @Override
+        protected int defaultLabelIdsArrayMaxLength()
+        {
+            return 20;
+        }
+
+        @Override
+        protected int defaultRelationshipTypeIdsArrayMaxLength()
+        {
+            return 20;
+        }
+
+        @Override
+        protected int defaultPropertyKeyIdsArrayMaxLength()
+        {
+            return 100;
         }
 
         @Override
