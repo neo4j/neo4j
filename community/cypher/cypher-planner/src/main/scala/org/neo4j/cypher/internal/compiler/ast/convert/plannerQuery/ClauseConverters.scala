@@ -19,7 +19,6 @@
  */
 package org.neo4j.cypher.internal.compiler.ast.convert.plannerQuery
 
-import org.neo4j.cypher.{InternalException, SyntaxException}
 import org.neo4j.cypher.internal.compiler.planner._
 import org.neo4j.cypher.internal.ir.helpers.ExpressionConverters._
 import org.neo4j.cypher.internal.ir.helpers.PatternConverters._
@@ -28,6 +27,7 @@ import org.neo4j.cypher.internal.logical.plans.ResolvedCall
 import org.neo4j.cypher.internal.v4_0.ast._
 import org.neo4j.cypher.internal.v4_0.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.v4_0.expressions._
+import org.neo4j.exceptions.{InternalException, SyntaxException}
 
 import scala.collection.mutable
 import scala.collection.mutable.ArrayBuffer

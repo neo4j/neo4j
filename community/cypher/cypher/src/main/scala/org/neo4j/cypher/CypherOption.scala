@@ -19,6 +19,8 @@
  */
 package org.neo4j.cypher
 
+import org.neo4j.exceptions.SyntaxException
+
 object CypherOption {
   val DEFAULT: String = "default"
 

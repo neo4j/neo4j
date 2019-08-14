@@ -23,7 +23,7 @@ import org.neo4j.cypher.internal.compiler.planner.logical.steps.{LogicalPlanProd
 import org.neo4j.cypher.internal.ir._
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.v4_0.expressions.{ContainerIndex, PathExpression, Variable}
-import org.neo4j.cypher.InternalException
+import org.neo4j.exceptions.InternalException
 
 /*
  * This coordinates PlannerQuery planning of updates.

@@ -21,8 +21,8 @@ package org.neo4j.server.http.cypher;
 
 import java.net.URI;
 
-import org.neo4j.cypher.CypherException;
-import org.neo4j.cypher.InvalidSemanticsException;
+import org.neo4j.exceptions.Neo4jException;
+import org.neo4j.exceptions.InvalidSemanticsException;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.graphdb.Result;
 import org.neo4j.graphdb.WriteOperationsNotAllowedException;
@@ -212,7 +212,7 @@ class Invocation
         {
             handleNeo4jError( Status.Request.InvalidFormat, e );
         }
-        catch ( KernelException | CypherException | AuthorizationViolationException | WriteOperationsNotAllowedException e )
+        catch ( KernelException | Neo4jException | AuthorizationViolationException | WriteOperationsNotAllowedException e )
         {
             handleNeo4jError( e.status(), e );
         }

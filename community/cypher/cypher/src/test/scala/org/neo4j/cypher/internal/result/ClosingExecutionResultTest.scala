@@ -19,10 +19,10 @@
  */
 package org.neo4j.cypher.internal.result
 
-import org.neo4j.cypher.CypherException
 import org.neo4j.cypher.internal.plandescription.InternalPlanDescription
 import org.neo4j.cypher.internal.runtime._
 import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
+import org.neo4j.exceptions.Neo4jException
 import org.neo4j.graphdb.Notification
 import org.neo4j.kernel.api.exceptions.Status
 import org.neo4j.kernel.api.query.ExecutingQuery
@@ -228,7 +228,7 @@ class ClosingExecutionResultTest extends CypherFunSuite {
   }
 }
 
-abstract class TestException(msg: String) extends CypherException(msg, null) {
+abstract class TestException(msg: String) extends Neo4jException(msg, null) {
   override def status: Status = Status.General.UnknownError
   override def toString: String = s"${getClass.getSimpleName}($msg)"
 }

@@ -24,8 +24,8 @@ import java.time.temporal.ChronoUnit
 import org.neo4j.cypher.internal.runtime.ExecutionContext
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expression
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
+import org.neo4j.exceptions.InternalException
 import org.neo4j.values.AnyValue
-import org.neo4j.cypher.InternalException
 import org.neo4j.values.storable._
 import org.neo4j.values.utils.ValueMath.overflowSafeAdd
 

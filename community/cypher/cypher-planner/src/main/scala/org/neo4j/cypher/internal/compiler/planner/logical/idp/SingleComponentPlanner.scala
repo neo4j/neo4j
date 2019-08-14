@@ -30,7 +30,7 @@ import org.neo4j.cypher.internal.ir.InterestingOrder.FullSatisfaction
 import org.neo4j.cypher.internal.ir.{InterestingOrder, PatternRelationship, QueryGraph}
 import org.neo4j.cypher.internal.logical.plans.{Argument, LogicalPlan}
 import org.neo4j.cypher.internal.v4_0.ast.RelationshipHint
-import org.neo4j.cypher.InternalException
+import org.neo4j.exceptions.InternalException
 
 /**
   * This class contains the main IDP loop in the cost planner.

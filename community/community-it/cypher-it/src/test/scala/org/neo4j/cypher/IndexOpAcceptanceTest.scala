@@ -25,6 +25,7 @@ import java.util.concurrent.TimeUnit
 import org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME
 import org.neo4j.cypher.ExecutionEngineHelper.createEngine
 import org.neo4j.cypher.internal.javacompat.GraphDatabaseCypherService
+import org.neo4j.exceptions.{CypherExecutionException, FailedIndexException}
 import org.neo4j.graphdb.GraphDatabaseService
 import org.neo4j.kernel.api.exceptions.schema.{DropIndexFailureException, NoSuchIndexException}
 import org.neo4j.kernel.impl.index.schema.FailingGenericNativeIndexProviderFactory

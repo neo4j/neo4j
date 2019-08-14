@@ -25,8 +25,8 @@ import java.util.Collections
 
 import org.neo4j.configuration.GraphDatabaseSettings
 import org.neo4j.cypher.internal.runtime.spec._
-import org.neo4j.cypher.CypherTypeException
 import org.neo4j.cypher.internal.{CypherRuntime, RuntimeContext}
+import org.neo4j.exceptions.CypherTypeException
 import org.neo4j.values.storable.{DoubleValue, DurationValue, StringValue, Values}
 import org.neo4j.values.virtual.ListValue
 

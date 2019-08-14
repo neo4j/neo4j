@@ -19,8 +19,8 @@
  */
 package org.neo4j.cypher.internal
 
-import org.neo4j.cypher.SyntaxException
 import org.neo4j.cypher.internal.cache.LFUCache
+import org.neo4j.exceptions.SyntaxException
 import org.neo4j.values.virtual.MapValue
 
 /**
@@ -37,7 +37,7 @@ trait CachingPlanner[PARSED_QUERY <: AnyRef] {
     *
     * @param preParsedQuery the pre-parsed query to get or cache
     * @param parser the parser to use if the query is not cached
-    * @throws org.neo4j.cypher.SyntaxException if there are syntax errors
+    * @throws SyntaxException if there are syntax errors
     * @return the parsed query
     */
   @throws(classOf[SyntaxException])

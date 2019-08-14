@@ -19,7 +19,6 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.commands.convert
 
-import org.neo4j.cypher.InternalException
 import org.neo4j.cypher.internal.logical.plans._
 import org.neo4j.cypher.internal.planner.spi.TokenContext
 import org.neo4j.cypher.internal.runtime.ast.{ExpressionVariable, ParameterFromSlot}
@@ -34,6 +33,7 @@ import org.neo4j.cypher.internal.v4_0.expressions.functions._
 import org.neo4j.cypher.internal.v4_0.util.NonEmptyList
 import org.neo4j.cypher.internal.v4_0.util.attribution.Id
 import org.neo4j.cypher.internal.v4_0.{expressions => ast}
+import org.neo4j.exceptions.InternalException
 
 case class CommunityExpressionConverter(tokenContext: TokenContext) extends ExpressionConverter {
 

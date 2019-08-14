@@ -19,9 +19,9 @@
  */
 package org.neo4j.cypher.internal.ir
 
-import org.neo4j.cypher.InternalException
 import org.neo4j.cypher.internal.v4_0.ast.{Limit, Skip}
 import org.neo4j.cypher.internal.v4_0.expressions.Expression
+import org.neo4j.exceptions.InternalException
 
 final case class QueryPagination(skip: Option[Expression] = None,
                                  limit: Option[Expression] = None) {

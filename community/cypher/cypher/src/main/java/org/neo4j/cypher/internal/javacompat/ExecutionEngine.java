@@ -24,7 +24,7 @@ import java.util.List;
 
 import org.neo4j.common.DependencyResolver;
 import org.neo4j.configuration.Config;
-import org.neo4j.cypher.CypherException;
+import org.neo4j.exceptions.Neo4jException;
 import org.neo4j.cypher.internal.CacheTracer;
 import org.neo4j.cypher.internal.CompilerFactory;
 import org.neo4j.cypher.internal.CompilerLibrary;
@@ -118,7 +118,7 @@ public class ExecutionEngine implements QueryExecutionEngine
         {
             return cypherExecutionEngine.execute( query, parameters, context, false, prePopulate, subscriber );
         }
-        catch ( CypherException e )
+        catch ( Neo4jException e )
         {
             throw new QueryExecutionKernelException( e );
         }

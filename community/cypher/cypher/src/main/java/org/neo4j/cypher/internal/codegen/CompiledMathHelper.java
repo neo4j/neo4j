@@ -23,9 +23,9 @@ import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.neo4j.cypher.ArithmeticException;
-import org.neo4j.cypher.CypherTypeException;
-import org.neo4j.cypher.InvalidArgumentException;
+import org.neo4j.exceptions.ArithmeticException;
+import org.neo4j.exceptions.CypherTypeException;
+import org.neo4j.exceptions.InvalidArgumentException;
 import org.neo4j.kernel.impl.util.ValueUtils;
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.storable.ArrayValue;

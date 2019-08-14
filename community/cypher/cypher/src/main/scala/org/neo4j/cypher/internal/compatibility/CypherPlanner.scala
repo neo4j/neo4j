@@ -19,12 +19,12 @@
  */
 package org.neo4j.cypher.internal.compatibility
 
-import org.neo4j.cypher.CypherException
 import org.neo4j.cypher.internal.compiler.phases.{LogicalPlanState, PlannerContext}
 import org.neo4j.cypher.internal.v4_0.frontend.PlannerName
 import org.neo4j.cypher.internal.v4_0.frontend.phases.CompilationPhaseTracer
 import org.neo4j.cypher.internal.v4_0.util.InternalNotification
 import org.neo4j.cypher.internal.{CypherRuntime, PreParsedQuery, ReusabilityState}
+import org.neo4j.exceptions.Neo4jException
 import org.neo4j.kernel.impl.query.TransactionalContext
 import org.neo4j.values.virtual.MapValue
 
@@ -39,10 +39,10 @@ trait CypherPlanner {
     * @param preParsedQuery       pre-parsed query to convert
     * @param tracer               tracer to which events of the parsing and planning are reported
     * @param transactionalContext transactional context to use during parsing and planning
-    * @throws CypherException public cypher exceptions on compilation problems
+    * @throws Neo4jException public cypher exceptions on compilation problems
     * @return a logical plan result
     */
-  @throws[org.neo4j.cypher.CypherException]
+  @throws[Neo4jException]
   def parseAndPlan(preParsedQuery: PreParsedQuery,
                    tracer: CompilationPhaseTracer,
                    transactionalContext: TransactionalContext,

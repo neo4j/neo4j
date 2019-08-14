@@ -19,11 +19,11 @@
  */
 package org.neo4j.cypher.internal
 
-import org.neo4j.cypher.{CypherException, CypherExpressionEngineOption}
 import org.neo4j.graphdb.Notification
 import org.neo4j.kernel.impl.query.TransactionalContext
 import org.neo4j.values.virtual.MapValue
 import org.neo4j.cypher.internal.v4_0.frontend.phases.CompilationPhaseTracer
+import org.neo4j.exceptions.Neo4jException
 
 /**
   * Cypher compiler, which compiles pre-parsed queries into executable queries.
@@ -37,10 +37,10 @@ trait Compiler {
     * @param tracer                  compilation tracer to which events of the compilation process are reported
     * @param preParsingNotifications notifications from pre-parsing
     * @param transactionalContext    transactional context to use during compilation (in logical and physical planning)
-    * @throws CypherException public cypher exceptions on compilation problems
+    * @throws Neo4jException public cypher exceptions on compilation problems
     * @return a compiled and executable query
     */
-  @throws[org.neo4j.cypher.CypherException]
+  @throws[Neo4jException]
   def compile(preParsedQuery: PreParsedQuery,
               tracer: CompilationPhaseTracer,
               preParsingNotifications: Set[Notification],

@@ -30,7 +30,7 @@ import org.neo4j.bolt.dbapi.BoltQueryExecutor;
 import org.neo4j.bolt.dbapi.BoltTransaction;
 import org.neo4j.bolt.security.auth.AuthenticationResult;
 import org.neo4j.bolt.v4.messaging.ResultConsumer;
-import org.neo4j.cypher.InvalidSemanticsException;
+import org.neo4j.exceptions.InvalidSemanticsException;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.internal.kernel.api.security.LoginContext;

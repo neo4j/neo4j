@@ -19,7 +19,6 @@
  */
 package org.neo4j.cypher.internal.compiler.ast.convert.plannerQuery
 
-import org.neo4j.cypher.InternalException
 import org.neo4j.cypher.internal.compiler.ast.convert.plannerQuery.ClauseConverters._
 import org.neo4j.cypher.internal.ir.{PeriodicCommit, UnionQuery}
 import org.neo4j.cypher.internal.v4_0.ast
@@ -27,6 +26,7 @@ import org.neo4j.cypher.internal.v4_0.ast._
 import org.neo4j.cypher.internal.v4_0.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.v4_0.expressions.{And, Or, Pattern, PatternPart}
 import org.neo4j.cypher.internal.v4_0.util.{ASTNode, InputPosition}
+import org.neo4j.exceptions.InternalException
 
 import scala.collection.mutable.ArrayBuffer
 

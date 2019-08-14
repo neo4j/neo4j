@@ -21,9 +21,9 @@ package org.neo4j.cypher.internal.runtime.interpreted
 
 import java.util
 
-import org.neo4j.cypher.InternalException
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
 import org.neo4j.cypher.internal.runtime.{Operations, QueryContext}
+import org.neo4j.exceptions.InternalException
 import org.neo4j.function.ThrowingBiConsumer
 import org.neo4j.internal.kernel.api.PropertyCursor
 import org.neo4j.values.AnyValue

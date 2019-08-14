@@ -23,9 +23,9 @@ import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.concurrent.ThreadLocalRandom;
 
-import org.neo4j.cypher.CypherTypeException;
-import org.neo4j.cypher.InvalidArgumentException;
-import org.neo4j.cypher.ParameterWrongTypeException;
+import org.neo4j.exceptions.CypherTypeException;
+import org.neo4j.exceptions.InvalidArgumentException;
+import org.neo4j.exceptions.ParameterWrongTypeException;
 import org.neo4j.cypher.internal.runtime.DbAccess;
 import org.neo4j.cypher.internal.runtime.ExpressionCursors;
 import org.neo4j.internal.kernel.api.NodeCursor;

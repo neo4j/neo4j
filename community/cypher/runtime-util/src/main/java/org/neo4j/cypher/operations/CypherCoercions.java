@@ -22,7 +22,7 @@ package org.neo4j.cypher.operations;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.neo4j.cypher.CypherTypeException;
+import org.neo4j.exceptions.CypherTypeException;
 import org.neo4j.cypher.internal.runtime.DbAccess;
 import org.neo4j.cypher.internal.runtime.ExpressionCursors;
 import org.neo4j.cypher.internal.runtime.makeValueNeoSafe;

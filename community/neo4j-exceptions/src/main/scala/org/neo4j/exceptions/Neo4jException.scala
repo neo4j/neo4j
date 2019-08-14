@@ -17,58 +17,58 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher
+package org.neo4j.exceptions
 
 import org.neo4j.kernel.api.exceptions.Status
 import org.neo4j.kernel.api.exceptions.Status.HasStatus
 
 import scala.compat.Platform.EOL
 
-abstract class CypherException(message: String, cause: Throwable) extends RuntimeException(message, cause)
-                                                                  with Status.HasStatus {
+abstract class Neo4jException(message: String, cause: Throwable) extends RuntimeException(message, cause)
+                                                                 with Status.HasStatus {
   def status: Status
 }
 
-class CypherExecutionException(message: String, cause: Throwable = null) extends CypherException(message, cause) {
+class CypherExecutionException(message: String, cause: Throwable = null) extends Neo4jException(message, cause) {
   def status: Status = cause match {
     case e: HasStatus => e.status()
     case _ => Status.Statement.ExecutionFailed
   }
 }
 
-class CantCompileQueryException(message: String, cause: Throwable = null) extends CypherException(message, cause) {
+class CantCompileQueryException(message: String, cause: Throwable = null) extends Neo4jException(message, cause) {
   override val status: Status = Status.Statement.ExecutionFailed
 }
 
-class EntityNotFoundException(message: String, cause: Throwable = null) extends CypherException(message, cause) {
+class EntityNotFoundException(message: String, cause: Throwable = null) extends Neo4jException(message, cause) {
   override val status: Status = Status.Statement.EntityNotFound
 }
 
-class CypherTypeException(message: String, cause: Throwable = null) extends CypherException(message, cause) {
+class CypherTypeException(message: String, cause: Throwable = null) extends Neo4jException(message, cause) {
   override val status: Status = Status.Statement.TypeError
 }
 
-class ParameterNotFoundException(message: String, cause: Throwable = null) extends CypherException(message, cause) {
+class ParameterNotFoundException(message: String, cause: Throwable = null) extends Neo4jException(message, cause) {
   override val status: Status = Status.Statement.ParameterMissing
 }
 
-class ParameterWrongTypeException(message: String, cause: Throwable = null) extends CypherException(message, cause) {
+class ParameterWrongTypeException(message: String, cause: Throwable = null) extends Neo4jException(message, cause) {
   override val status: Status = Status.Statement.TypeError
 }
 
-class InvalidArgumentException(message: String, cause: Throwable = null) extends CypherException(message, cause) {
+class InvalidArgumentException(message: String, cause: Throwable = null) extends Neo4jException(message, cause) {
   override val status: Status = Status.Statement.ArgumentError
 }
 
-class RuntimeUnsupportedException(message: String, cause: Throwable = null) extends CypherException(message, cause) {
+class RuntimeUnsupportedException(message: String, cause: Throwable = null) extends Neo4jException(message, cause) {
   override val status: Status = Status.Statement.RuntimeUnsupportedError
 }
 
-class PatternException(message: String, cause: Throwable = null) extends CypherException(message, cause) {
+class PatternException(message: String, cause: Throwable = null) extends Neo4jException(message, cause) {
   override val status: Status = Status.Statement.SemanticError
 }
 
-class InternalException(message: String, cause: Throwable = null) extends CypherException(message, cause) {
+class InternalException(message: String, cause: Throwable = null) extends Neo4jException(message, cause) {
   override val status: Status = Status.Statement.ExecutionFailed
 }
 
@@ -78,7 +78,7 @@ object FailedIndexException {
     (if (failureMessage != null) s" Actual failure:$EOL==================$EOL$failureMessage$EOL==================" else "")
 }
 
-class FailedIndexException(indexName: String, failureMessage: String) extends CypherException(FailedIndexException.msg(indexName, failureMessage), null) {
+class FailedIndexException(indexName: String, failureMessage: String) extends Neo4jException(FailedIndexException.msg(indexName, failureMessage), null) {
   override val status: Status = Status.General.IndexCorruptionDetected
 }
 
@@ -86,12 +86,12 @@ object ProfilerStatisticsNotReadyException {
   val ERROR_MSG: String = "This result has not been materialised yet. Iterate over it to get profiler stats."
 }
 
-class ProfilerStatisticsNotReadyException(cause: Throwable = null) extends CypherException(ProfilerStatisticsNotReadyException.ERROR_MSG, cause) {
+class ProfilerStatisticsNotReadyException(cause: Throwable = null) extends Neo4jException(ProfilerStatisticsNotReadyException.ERROR_MSG, cause) {
   override val status: Status = Status.Statement.ExecutionFailed
 }
 
 class HintException(message: String)
-  extends CypherException(message, null) {
+  extends Neo4jException(message, null) {
   override val status: Status = Status.Statement.ExecutionFailed
 }
 
@@ -101,28 +101,28 @@ object IndexHintException {
 }
 
 class IndexHintException(variable: String, label: String, properties: Seq[String], message: String)
-  extends CypherException(IndexHintException.msg(variable, label, properties, message), null) {
+  extends Neo4jException(IndexHintException.msg(variable, label, properties, message), null) {
   override val status: Status = Status.Schema.IndexNotFound
 }
 
 class JoinHintException(variable: String, message: String)
-  extends CypherException(message, null) {
+  extends Neo4jException(message, null) {
   override val status: Status = Status.Statement.ExecutionFailed
 }
 
-class InvalidSemanticsException(message: String, cause: Throwable = null) extends CypherException(message, cause) {
+class InvalidSemanticsException(message: String, cause: Throwable = null) extends Neo4jException(message, cause) {
   override val status: Status = Status.Statement.SemanticError
 }
 
-class MergeConstraintConflictException(message: String, cause: Throwable = null) extends CypherException(message, cause) {
+class MergeConstraintConflictException(message: String, cause: Throwable = null) extends Neo4jException(message, cause) {
   override val status: Status = Status.Schema.ConstraintValidationFailed
 }
 
-class ConstraintValidationException(message: String, cause: Throwable = null) extends CypherException(message, cause) {
+class ConstraintValidationException(message: String, cause: Throwable = null) extends Neo4jException(message, cause) {
   override val status: Status = Status.Statement.ConstraintVerificationFailed
 }
 
-class ArithmeticException(message: String, cause: Throwable = null) extends CypherException(message, cause) {
+class ArithmeticException(message: String, cause: Throwable = null) extends Neo4jException(message, cause) {
   override val status: Status = Status.Statement.ArithmeticError
 }
 
@@ -150,7 +150,7 @@ class PeriodicCommitInOpenTransactionException(cause: Throwable = null)
   extends InvalidSemanticsException(PeriodicCommitInOpenTransactionException.ERROR_MSG, cause) {
 }
 
-class LoadExternalResourceException(message: String, cause: Throwable = null) extends CypherException(message, cause) {
+class LoadExternalResourceException(message: String, cause: Throwable = null) extends Neo4jException(message, cause) {
   override val status: Status = Status.Statement.ExternalResourceFailed
 }
 
@@ -158,8 +158,8 @@ object LoadCsvStatusWrapCypherException {
   def message(extraInfo: String, message: String) = s"$message ($extraInfo)"
 }
 
-class LoadCsvStatusWrapCypherException(extraInfo: String, cause: CypherException)
-  extends CypherException(LoadCsvStatusWrapCypherException.message(extraInfo, cause.getMessage), cause) {
+class LoadCsvStatusWrapCypherException(extraInfo: String, cause: Neo4jException)
+  extends Neo4jException(LoadCsvStatusWrapCypherException.message(extraInfo, cause.getMessage), cause) {
   override val status: Status = cause.status
 }
 

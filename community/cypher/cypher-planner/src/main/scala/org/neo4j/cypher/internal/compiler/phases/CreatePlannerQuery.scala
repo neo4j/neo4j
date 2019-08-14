@@ -19,13 +19,12 @@
  */
 package org.neo4j.cypher.internal.compiler.phases
 
-import org.neo4j.cypher.DatabaseAdministrationException
-import org.neo4j.cypher.InternalException
 import org.neo4j.cypher.internal.compiler.ast.convert.plannerQuery.StatementConverters._
 import org.neo4j.cypher.internal.v4_0.ast.{MultiDatabaseAdministrationCommand, Query}
 import org.neo4j.cypher.internal.v4_0.frontend.phases.CompilationPhaseTracer.CompilationPhase.LOGICAL_PLANNING
 import org.neo4j.cypher.internal.v4_0.frontend.phases.{BaseContext, BaseState, Phase}
 import org.neo4j.cypher.internal.ir.UnionQuery
+import org.neo4j.exceptions.{DatabaseAdministrationException, InternalException}
 
 
 object CreatePlannerQuery extends Phase[BaseContext, BaseState, LogicalPlanState] {

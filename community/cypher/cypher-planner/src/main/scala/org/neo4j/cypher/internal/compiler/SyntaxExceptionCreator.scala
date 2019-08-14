@@ -19,15 +19,15 @@
  */
 package org.neo4j.cypher.internal.compiler
 
-import org.neo4j.cypher.{ArithmeticException, CypherException, SyntaxException}
 import org.neo4j.cypher.internal.v4_0.util.{CypherExceptionFactory, InputPosition}
 import org.neo4j.cypher.internal.v4_0.ast.semantics.SemanticErrorDef
+import org.neo4j.exceptions.{ArithmeticException, Neo4jException, SyntaxException}
 
 case class Neo4jCypherExceptionFactory(queryText: String, preParserOffset: Option[InputPosition]) extends CypherExceptionFactory {
 
-  override def arithmeticException(message: String, cause: Exception): CypherException = new ArithmeticException(message, cause)
+  override def arithmeticException(message: String, cause: Exception): Neo4jException = new ArithmeticException(message, cause)
 
-  override def syntaxException(message: String, pos: InputPosition): CypherException = {
+  override def syntaxException(message: String, pos: InputPosition): Neo4jException = {
     val adjustedPosition = pos.withOffset(preParserOffset)
     new SyntaxException(s"$message ($adjustedPosition)", queryText, adjustedPosition.offset)
   }

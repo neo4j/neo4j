@@ -27,8 +27,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
 
-import org.neo4j.cypher.CypherExecutionException;
-import org.neo4j.graphdb.QueryStatistics;
+import org.neo4j.exceptions.CypherExecutionException;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.api.exceptions.InvalidArgumentsException;
 import org.neo4j.kernel.api.exceptions.Status;

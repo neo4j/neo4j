@@ -21,11 +21,11 @@ package org.neo4j.cypher.internal.codegen
 
 import java.{lang, util}
 
+import org.neo4j.exceptions.CypherTypeException
 import org.neo4j.kernel.impl.util.ValueUtils
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable._
 import org.neo4j.values.virtual.{ListValue, VirtualValues}
-import org.neo4j.cypher.CypherTypeException
 import org.scalatest.prop.{TableDrivenPropertyChecks, TableFor1}
 import org.scalatest.{Assertions, Matchers, PropSpec}
 

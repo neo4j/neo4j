@@ -76,6 +76,7 @@
     <module>community-it</module>
     <module>data-collector</module>
     <module>testing</module>
+    <module>neo4j-exceptions</module>
   </modules>
 
   <licenses>

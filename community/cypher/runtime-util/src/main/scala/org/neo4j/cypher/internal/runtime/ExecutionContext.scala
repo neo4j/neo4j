@@ -19,8 +19,8 @@
  */
 package org.neo4j.cypher.internal.runtime
 
-import org.neo4j.cypher.InternalException
 import org.neo4j.cypher.internal.v4_0.expressions.ASTCachedProperty
+import org.neo4j.exceptions.InternalException
 import org.neo4j.graphdb.NotFoundException
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.{Value, Values}

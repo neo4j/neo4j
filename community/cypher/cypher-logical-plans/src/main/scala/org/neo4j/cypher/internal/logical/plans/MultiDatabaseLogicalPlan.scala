@@ -20,11 +20,11 @@
 package org.neo4j.cypher.internal.logical.plans
 
 import org.neo4j.configuration.helpers.NormalizedDatabaseName
-import org.neo4j.cypher.{DatabaseAdministrationException, SecurityAdministrationException}
 import org.neo4j.cypher.internal.ir.{LazyMode, StrictnessMode}
 import org.neo4j.cypher.internal.v4_0.ast._
 import org.neo4j.cypher.internal.v4_0.expressions.Parameter
 import org.neo4j.cypher.internal.v4_0.util.attribution.IdGen
+import org.neo4j.exceptions.{DatabaseAdministrationException, SecurityAdministrationException}
 
 abstract class MultiDatabaseLogicalPlan(source: Option[MultiDatabaseLogicalPlan] = None)(implicit idGen: IdGen) extends LogicalPlan(idGen) {
   override def lhs: Option[LogicalPlan] = source

@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.runtime
 
-import org.neo4j.cypher.TransactionOutOfMemoryException
+import org.neo4j.exceptions.TransactionOutOfMemoryException
 
 trait MemoryTracker {
   /**

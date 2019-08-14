@@ -3,18 +3,19 @@
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <parent>
-        <artifactId>cypher-parent</artifactId>
         <groupId>org.neo4j</groupId>
+        <artifactId>parent</artifactId>
         <version>4.0.0-SNAPSHOT</version>
+        <relativePath>../..</relativePath>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
-    <artifactId>neo4j-cypher-exceptions</artifactId>
+    <artifactId>neo4j-exceptions</artifactId>
     <packaging>jar</packaging>
     <version>4.0.0-SNAPSHOT</version>
-    <name>Neo4j - Cypher Exceptions</name>
+    <name>Neo4j - Exceptions</name>
 
-    <description>Cypher exceptions</description>
+    <description>Neo4j exceptions</description>
     <url>http://components.neo4j.org/${project.artifactId}/${project.version}</url>
 
     <scm>
@@ -24,8 +25,9 @@
     </scm>
 
     <properties>
-        <moduleName>org.neo4j.cypher.exceptions</moduleName>
         <license-text.header>headers/GPL-3-header.txt</license-text.header>
+        <licensing.prepend.text>licensing/notice-gpl-prefix.txt</licensing.prepend.text>
+        <moduleName>org.neo4j.exceptions</moduleName>
     </properties>
 
     <licenses>

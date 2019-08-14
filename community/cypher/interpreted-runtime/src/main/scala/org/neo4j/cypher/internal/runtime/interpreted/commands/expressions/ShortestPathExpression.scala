@@ -19,12 +19,12 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.commands.expressions
 
-import org.neo4j.cypher.{ShortestPathCommonEndNodesForbiddenException, SyntaxException}
 import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates._
 import org.neo4j.cypher.internal.runtime.interpreted.commands.{ShortestPath, SingleNode, _}
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
 import org.neo4j.cypher.internal.runtime.{ExecutionContext, Expander, KernelPredicate}
 import org.neo4j.cypher.internal.v4_0.util.NonEmptyList
+import org.neo4j.exceptions.{ShortestPathCommonEndNodesForbiddenException, SyntaxException}
 import org.neo4j.graphdb.{NotFoundException, Path, PropertyContainer, Relationship}
 import org.neo4j.kernel.impl.util.ValueUtils
 import org.neo4j.values.AnyValue

@@ -19,8 +19,8 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
-import org.neo4j.cypher.{CypherException, LoadCsvStatusWrapCypherException}
 import org.neo4j.cypher.internal.runtime.{ExecutionContext, ResourceLinenumber}
+import org.neo4j.exceptions.{Neo4jException, LoadCsvStatusWrapCypherException}
 
 /*
 A PipeDecorator is used to instrument calls between Pipes, and between a Pipe and the graph
@@ -83,7 +83,7 @@ class LinenumberPipeDecorator() extends PipeDecorator {
       } catch {
         case e: LoadCsvStatusWrapCypherException =>
           throw e
-        case e: CypherException =>
+        case e: Neo4jException =>
           throw wrapException(e, previousContextSupplier())
         case e: Throwable =>
           throw e
@@ -98,14 +98,14 @@ class LinenumberPipeDecorator() extends PipeDecorator {
       } catch {
         case e: LoadCsvStatusWrapCypherException =>
           throw e
-        case e: CypherException =>
+        case e: Neo4jException =>
             throw wrapException(e, previousContextSupplier())
         case e: Throwable =>
           throw e
       }
     }
 
-    private def wrapException(e: CypherException, maybeContext: Option[ExecutionContext]): Exception = maybeContext match {
+    private def wrapException(e: Neo4jException, maybeContext: Option[ExecutionContext]): Exception = maybeContext match {
       case Some(record: ExecutionContext) if record.getLinenumber.nonEmpty =>
         new LoadCsvStatusWrapCypherException(errorMessage(record), e)
       case _ => e

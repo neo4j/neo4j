@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.logical.plans
 
-import org.neo4j.cypher.InvalidArgumentException
+import org.neo4j.exceptions.InvalidArgumentException
 import org.scalatest.{FunSuite, Matchers}
 
 class NameValidatorTest extends FunSuite with Matchers {

@@ -22,6 +22,7 @@ package org.neo4j.cypher.internal.runtime.spec.tests
 import org.neo4j.cypher.internal.{CypherRuntime, RuntimeContext}
 import org.neo4j.cypher.internal.logical.plans.{Ascending, Descending}
 import org.neo4j.cypher.internal.runtime.spec.{Edition, LogicalQueryBuilder, RowsMatcher, RuntimeTestSuite}
+import org.neo4j.exceptions.ArithmeticException
 import org.neo4j.kernel.impl.util.{NodeProxyWrappingNodeValue, RelationshipProxyWrappingValue}
 import org.neo4j.values.AnyValue
 import org.neo4j.values.virtual.{NodeReference, RelationshipReference}
@@ -266,7 +267,7 @@ abstract class MiscTestBase[CONTEXT <: RuntimeContext](edition: Edition[CONTEXT]
     val futureResult = Future(consume(execute(logicalQuery, runtime, inputValues(Array(1)))))(global)
 
     // then
-    intercept[org.neo4j.cypher.ArithmeticException] {
+    intercept[ArithmeticException] {
       Await.result(futureResult, 10.seconds)
     }
   }
@@ -288,7 +289,7 @@ abstract class MiscTestBase[CONTEXT <: RuntimeContext](edition: Edition[CONTEXT]
     val futureResult = Future(consume(execute(logicalQuery, runtime)))(global)
 
     // then
-    intercept[org.neo4j.cypher.ArithmeticException] {
+    intercept[ArithmeticException] {
       Await.result(futureResult, 30.seconds)
     }
   }

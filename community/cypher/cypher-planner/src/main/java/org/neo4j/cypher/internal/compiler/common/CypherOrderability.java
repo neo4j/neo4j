@@ -28,8 +28,8 @@ import java.util.stream.DoubleStream;
 import java.util.stream.IntStream;
 import java.util.stream.LongStream;
 
-import org.neo4j.cypher.IncomparableValuesException;
-import org.neo4j.cypher.UnorderableValueException;
+import org.neo4j.exceptions.IncomparableValuesException;
+import org.neo4j.exceptions.UnorderableValueException;
 import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.internal.helpers.MathUtil;

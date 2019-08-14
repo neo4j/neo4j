@@ -22,9 +22,9 @@ package org.neo4j.cypher.operations;
 import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
 
-import org.neo4j.cypher.CypherTypeException;
-import org.neo4j.cypher.InternalException;
-import org.neo4j.cypher.InvalidSemanticsException;
+import org.neo4j.exceptions.CypherTypeException;
+import org.neo4j.exceptions.InternalException;
+import org.neo4j.exceptions.InvalidSemanticsException;
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.AnyValues;
 import org.neo4j.values.Comparison;

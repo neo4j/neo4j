@@ -21,10 +21,11 @@ package org.neo4j.cypher.internal.compatibility.v4_0
 
 import org.neo4j.common.TokenNameLookup
 import org.neo4j.cypher.internal.planner.spi.TokenContext
-import org.neo4j.cypher.{ConstraintValidationException, CypherExecutionException}
-import org.neo4j.exceptions.KernelException
+import org.neo4j.exceptions
+import org.neo4j.exceptions.{ConstraintValidationException, Neo4jException, CypherExecutionException, CypherTypeException, InternalException, InvalidArgumentException, KernelException, SyntaxException}
 import org.neo4j.graphdb.{ConstraintViolationException => KernelConstraintViolationException}
 import org.neo4j.kernel.api.exceptions.ResourceCloseFailureException
+import org.neo4j.values.utils.{InvalidValuesArgumentException, TemporalArithmeticException, TemporalParseException, UnsupportedTemporalUnitException, ValuesException}
 
 trait ExceptionTranslationSupport {
   inner: TokenContext =>

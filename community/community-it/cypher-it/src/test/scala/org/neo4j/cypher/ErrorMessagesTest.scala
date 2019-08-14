@@ -22,6 +22,7 @@ package org.neo4j.cypher
 import org.hamcrest.CoreMatchers._
 import org.junit.Assert._
 import org.neo4j.cypher.internal.v4_0.util.helpers.StringHelper._
+import org.neo4j.exceptions.{Neo4jException, SyntaxException}
 
 class ErrorMessagesTest extends ExecutionEngineFunSuite {
 
@@ -256,7 +257,7 @@ class ErrorMessagesTest extends ExecutionEngineFunSuite {
   }
 
   private def expectError(query: String, expectedError: String) {
-    val error = intercept[CypherException](executeQuery(query))
+    val error = intercept[Neo4jException](executeQuery(query))
     assertThat(error.getMessage, containsString(expectedError))
   }
 

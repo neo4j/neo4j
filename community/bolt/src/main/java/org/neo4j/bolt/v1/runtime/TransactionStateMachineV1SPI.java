@@ -36,7 +36,7 @@ import org.neo4j.bolt.runtime.BoltResultHandle;
 import org.neo4j.bolt.runtime.Bookmark;
 import org.neo4j.bolt.runtime.TransactionStateMachineSPI;
 import org.neo4j.bolt.v1.runtime.bookmarking.BookmarkWithPrefix;
-import org.neo4j.cypher.CypherExecutionException;
+import org.neo4j.exceptions.CypherExecutionException;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.graphdb.QueryStatistics;
 import org.neo4j.internal.kernel.api.security.LoginContext;

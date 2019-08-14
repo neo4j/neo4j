@@ -25,7 +25,7 @@ import org.junit.jupiter.api.Test;
 import java.util.Arrays;
 import java.util.HashMap;
 
-import org.neo4j.cypher.IncomparableValuesException;
+import org.neo4j.exceptions.IncomparableValuesException;
 import org.neo4j.kernel.impl.util.ValueUtils;
 import org.neo4j.values.virtual.VirtualValues;
 

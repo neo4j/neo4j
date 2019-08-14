@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal
 
 import org.neo4j.cypher._
 import org.neo4j.cypher.internal.cache.LFUCache
+import org.neo4j.exceptions.{InvalidArgumentException, SyntaxException}
 
 import scala.util.matching.Regex
 
@@ -67,7 +68,7 @@ class PreParser(configuredVersion: CypherVersion,
     *
     * @param queryText the query
     * @param profile true if the query should be profiled even if profile is not given as a pre-parser option
-    * @throws org.neo4j.cypher.SyntaxException if there are syntactic errors in the pre-parser options
+    * @throws SyntaxException if there are syntactic errors in the pre-parser options
     * @return the pre-parsed query
     */
   @throws(classOf[SyntaxException])

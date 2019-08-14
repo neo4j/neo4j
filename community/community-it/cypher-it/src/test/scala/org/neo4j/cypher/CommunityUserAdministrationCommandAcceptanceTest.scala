@@ -23,6 +23,7 @@ import java.util
 import java.util.Collections
 
 import org.neo4j.configuration.GraphDatabaseSettings.{DEFAULT_DATABASE_NAME, SYSTEM_DATABASE_NAME}
+import org.neo4j.exceptions.{DatabaseAdministrationException, InvalidArgumentException, ParameterNotFoundException, ParameterWrongTypeException, SyntaxException}
 import org.neo4j.graphdb.{QueryExecutionException, Result}
 import org.neo4j.internal.kernel.api.Transaction
 import org.neo4j.internal.kernel.api.security.AuthenticationResult

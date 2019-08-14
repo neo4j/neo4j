@@ -17,13 +17,13 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher
+package org.neo4j.exceptions
 
 import java.lang.System.lineSeparator
 
 import org.neo4j.kernel.api.exceptions.Status
 
-class SyntaxException(message: String, val query: String, val offset: Option[Int], cause: Throwable) extends CypherException(message, cause) {
+class SyntaxException(message: String, val query: String, val offset: Option[Int], cause: Throwable) extends Neo4jException(message, cause) {
   def this(message: String, query: String, offset: Int) = this(message, query, Some(offset), null)
   def this(message: String, query: String, offset: Int, cause: Throwable) = this(message, query, Some(offset), cause)
   def this(message: String, cause: Throwable) = this(message, "", None, cause)

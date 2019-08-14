@@ -39,6 +39,7 @@ import org.neo4j.cypher.internal.v4_0.rewriting.rewriters.{GeneratingNamer, Inne
 import org.neo4j.cypher.internal.v4_0.util.InputPosition
 import org.neo4j.cypher.internal.v4_0.util.attribution.SequentialIdGen
 import org.neo4j.cypher.internal.{compiler, _}
+import org.neo4j.exceptions.DatabaseAdministrationException
 import org.neo4j.internal.helpers.collection.Pair
 import org.neo4j.kernel.impl.query.TransactionalContext
 import org.neo4j.logging.Log

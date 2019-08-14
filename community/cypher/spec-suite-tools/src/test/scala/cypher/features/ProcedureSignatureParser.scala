@@ -21,8 +21,8 @@ package cypher.features
 
 import cypher.features
 import org.neo4j.cypher.internal.v4_0.parser.{Base, Expressions, Literals}
-import org.neo4j.cypher.SyntaxException
 import org.neo4j.cypher.internal.v4_0.util.symbols._
+import org.neo4j.exceptions.SyntaxException
 import org.parboiled.scala._
 
 /**

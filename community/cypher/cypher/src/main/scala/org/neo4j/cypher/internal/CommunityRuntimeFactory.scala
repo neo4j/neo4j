@@ -19,7 +19,8 @@
  */
 package org.neo4j.cypher.internal
 
-import org.neo4j.cypher.{CypherRuntimeOption, RuntimeUnsupportedException}
+import org.neo4j.cypher.CypherRuntimeOption
+import org.neo4j.exceptions.RuntimeUnsupportedException
 
 object CommunityRuntimeFactory {
 

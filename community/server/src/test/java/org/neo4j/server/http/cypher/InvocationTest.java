@@ -32,7 +32,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
 
-import org.neo4j.cypher.SyntaxException;
+import org.neo4j.exceptions.SyntaxException;
 import org.neo4j.cypher.internal.runtime.QueryStatistics;
 import org.neo4j.graphdb.ExecutionPlanDescription;
 import org.neo4j.graphdb.Notification;
