@@ -1357,7 +1357,7 @@ public class TreeNodeDynamicSize<KEY, VALUE> extends TreeNode<KEY,VALUE>
     }
 
     @Override
-    void checkMetaConsistency( PageCursor cursor, int keyCount, Type type, GBPTreeConsistencyCheckVisitor<KEY> visitor )
+    String checkMetaConsistency( PageCursor cursor, int keyCount, Type type, GBPTreeConsistencyCheckVisitor<KEY> visitor )
     {
         // Reminder: Header layout
         // TotalSpace  |----------------------------------------|
@@ -1412,8 +1412,9 @@ public class TreeNodeDynamicSize<KEY, VALUE> extends TreeNode<KEY,VALUE>
         // Report inconsistencies as cursor exception
         if ( hasInconsistency )
         {
-            visitor.nodeMetaInconsistency( nodeId, joiner.toString() );
+            return joiner.toString();
         }
+        return "";
     }
 
     private int lowestActiveKeyOffset( PageCursor cursor, int keyCount, Type type )

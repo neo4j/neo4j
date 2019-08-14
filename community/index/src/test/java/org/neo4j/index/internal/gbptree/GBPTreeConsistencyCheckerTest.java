@@ -652,7 +652,7 @@ public class GBPTreeConsistencyCheckerTest
     //      - Should not report crashed GSPP if allowed
     //    > Level hierarchy
     //      X Child pointer point two levels down
-    //      - Child pointer point to upper level same stack
+    //      X Child pointer point to upper level same stack
     //      - Child pointer point to same level
     //      - Child pointer point to upper level not same stack
     //      - Child pointer point to child owned by other internal node

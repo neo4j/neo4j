@@ -169,8 +169,8 @@ class GBPTreeConsistencyChecker<KEY>
 
         if ( nodeType != TreeNode.NODE_TYPE_TREE_NODE )
         {
-             visitor.notATreeNode( pageId );
-             return;
+            visitor.notATreeNode( pageId );
+            return;
         }
 
         boolean isLeaf = treeNodeType == TreeNode.LEAF_FLAG;
@@ -199,13 +199,19 @@ class GBPTreeConsistencyChecker<KEY>
             assertKeyOrder( cursor, range, keyCount, isLeaf ? LEAF : INTERNAL, visitor );
         }
 
+        String nodeMetaReport;
+        boolean consistentNodeMeta;
         do
         {
-            // todo place this report outside of shouldRetry
-            node.checkMetaConsistency( cursor, keyCount, isLeaf ? LEAF : INTERNAL, visitor );
+            nodeMetaReport = node.checkMetaConsistency( cursor, keyCount, isLeaf ? LEAF : INTERNAL, visitor );
+            consistentNodeMeta = nodeMetaReport.isEmpty();
         }
         while ( cursor.shouldRetry() );
         checkAfterShouldRetry( cursor );
+        if ( !consistentNodeMeta )
+        {
+            visitor.nodeMetaInconsistency( pageId, nodeMetaReport );
+        }
 
         assertPointerGenerationMatchesGeneration( parentPointerType, parentNode, pageId, pointerGeneration,
                 currentNodeGeneration, visitor );
@@ -213,7 +219,7 @@ class GBPTreeConsistencyChecker<KEY>
                 rightSiblingPointerGeneration, level, visitor );
         checkSuccessorPointerGeneration( cursor, successor, visitor );
 
-        if ( isInternal && reasonableKeyCount )
+        if ( isInternal && reasonableKeyCount && consistentNodeMeta )
         {
             assertSubtrees( cursor, range, keyCount, level, visitor, seenIds );
         }
