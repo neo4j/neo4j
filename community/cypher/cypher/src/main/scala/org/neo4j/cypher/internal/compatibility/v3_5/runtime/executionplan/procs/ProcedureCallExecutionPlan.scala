@@ -49,7 +49,7 @@ import org.neo4j.values.virtual.MapValue
 case class ProcedureCallExecutionPlan(signature: ProcedureSignature,
                                       argExprs: Seq[Expression],
                                       resultSymbols: Seq[(String, CypherType)],
-                                      resultIndices: Seq[(Int, (String, String))],
+                                      var resultIndices: Seq[(Int, (String, String))],
                                       converter: ExpressionConverters,
                                       id: Id)
   extends ExecutionPlan {
@@ -57,8 +57,18 @@ case class ProcedureCallExecutionPlan(signature: ProcedureSignature,
   assert(resultSymbols.size == resultIndices.size)
 
   private val resultMappings = resultSymbols.indices.map(i => {
-    val r = resultIndices(i)
-    (r._1, r._2._1, resultSymbols(i)._2)
+    try {
+      val r = resultIndices(i)
+      (r._1, r._2._1, resultSymbols(i)._2)
+    }
+    catch {
+      case _:ClassCastException =>
+        // When older planners are used, due to compatibility reasons, resultIndices can in fact be filled with Seq[(Int, String)] even though it should not be possible
+        // Thus we need convert resultIndices into the new form. To do that we have to trick scala a bit because its type inference system is wrong here
+        this.resultIndices = resultIndices.map(t => (t._1, (t._2.asInstanceOf[String], t._2.asInstanceOf[String])))
+        val r = resultIndices(i)
+        (r._1, r._2._1, resultSymbols(i)._2)
+    }
   })
 
   private def createProcedureCallContext(): ProcedureCallContext ={
