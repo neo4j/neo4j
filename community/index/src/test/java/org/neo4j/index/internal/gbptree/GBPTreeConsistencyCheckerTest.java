@@ -503,7 +503,7 @@ public class GBPTreeConsistencyCheckerTest
     @Test
     public void shouldDetectExtraEmptyPageInFile() throws IOException
     {
-        long targetPage;
+        long lastId;
         try ( GBPTree<MutableLong,MutableLong> index = index().build() )
         {
             // Add and remove a bunch of keys to fill freelist
@@ -523,17 +523,66 @@ public class GBPTreeConsistencyCheckerTest
         try ( GBPTree<MutableLong,MutableLong> index = index().withReadOnly( true ).build() )
         {
             InspectingVisitor<MutableLong,MutableLong> visitor = inspect( index );
-            targetPage = visitor.treeState.lastId() + 1;
+            TreeState treeState = visitor.treeState;
+            lastId = treeState.lastId() + 1;
+            TreeState newTreeState = treeStateWithLastId( lastId, treeState );
 
-            GBPTreeCorruption.PageCorruption<RawBytes,RawBytes> corruption = GBPTreeCorruption.incrementLastPageId();
-            corrupt( 0, corruption, visitor.treeState , dynamicLayout, dynamicNode );
+            GBPTreeCorruption.PageCorruption<RawBytes,RawBytes> corruption = GBPTreeCorruption.setTreeState( newTreeState );
+            corrupt( 0, corruption, treeState, dynamicLayout, dynamicNode );
         }
 
         // Need to restart tree to reload corrupted freelist
         try ( GBPTree<MutableLong,MutableLong> index = index().build() )
         {
-            assertReportLastIdIncremented( index, targetPage );
+            assertReportUnusedPage( index, lastId );
         }
+    }
+
+    @Test
+    public void shouldDetectIdLargerThanFreelistLastId() throws IOException
+    {
+        long targetLastId;
+        long targetPageId;
+        try ( GBPTree<MutableLong,MutableLong> index = index().build() )
+        {
+            // Add and remove a bunch of keys to fill freelist
+            try ( Writer<MutableLong,MutableLong> writer = index.writer() )
+            {
+                int keyCount = 0;
+                while ( getHeight( index ) < 2 )
+                {
+                    writer.put( layout.key( keyCount ), layout.value( keyCount ) );
+                    keyCount++;
+                }
+            }
+            index.checkpoint( IOLimiter.UNLIMITED );
+        }
+
+        // When tree is closed we will overwrite treeState with in memory state so we need to open tree in read only mode for our state corruption to persist.
+        try ( GBPTree<MutableLong,MutableLong> index = index().withReadOnly( true ).build() )
+        {
+            InspectingVisitor<MutableLong,MutableLong> visitor = inspect( index );
+            TreeState treeState = visitor.treeState;
+            targetPageId = treeState.lastId();
+            targetLastId = treeState.lastId() - 1;
+            TreeState newTreeState = treeStateWithLastId( targetLastId, treeState );
+
+            GBPTreeCorruption.PageCorruption<RawBytes,RawBytes> corruption = GBPTreeCorruption.setTreeState( newTreeState );
+            corrupt( 0, corruption, treeState, dynamicLayout, dynamicNode );
+        }
+
+        // Need to restart tree to reload corrupted freelist
+        try ( GBPTree<MutableLong,MutableLong> index = index().build() )
+        {
+            assertReportIdExceedLastId( index, targetLastId, targetPageId );
+        }
+    }
+
+    private static TreeState treeStateWithLastId( long lastId, TreeState treeState )
+    {
+        return new TreeState( treeState.pageId(), treeState.stableGeneration(), treeState.unstableGeneration(), treeState.rootId(),
+                treeState.rootGeneration(), lastId, treeState.freeListWritePageId(), treeState.freeListReadPageId(), treeState.freeListWritePos(),
+                treeState.freeListReadPos(), treeState.isClean(), treeState.isValid() );
     }
 
     @Test
@@ -1165,16 +1214,17 @@ public class GBPTreeConsistencyCheckerTest
         assertCalled( called );
     }
 
-    private static void assertReportLastIdIncremented( GBPTree<MutableLong,MutableLong> index, long targetPage ) throws IOException
+    private static void assertReportIdExceedLastId( GBPTree<MutableLong,MutableLong> index, long targetLastId, long targetPageId ) throws IOException
     {
         MutableBoolean called = new MutableBoolean();
         index.consistencyCheck( new GBPTreeConsistencyCheckVisitor.Adaptor<MutableLong>()
         {
             @Override
-            public void unusedPage( long pageId )
+            public void pageIdExceedLastId( long lastId, long pageId )
             {
                 called.setTrue();
-                assertEquals( targetPage, pageId );
+                assertEquals( targetLastId, lastId );
+                assertEquals( targetPageId, pageId );
             }
         } );
         assertCalled( called );

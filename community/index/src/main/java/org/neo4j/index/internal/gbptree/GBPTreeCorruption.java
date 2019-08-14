@@ -253,14 +253,12 @@ final class GBPTreeCorruption
         };
     }
 
-    static <KEY,VALUE> PageCorruption<KEY,VALUE> incrementLastPageId()
+    static <KEY,VALUE> PageCorruption<KEY,VALUE> setTreeState( TreeState target )
     {
         return ( pagedFile, cursor, layout, node, treeState ) -> {
-            cursor.next( treeState.pageId() );
-            long incrementedLastId = treeState.lastId() + 1;
-            TreeState.write( cursor, treeState.stableGeneration(), treeState.unstableGeneration(), treeState.rootId(),
-                    treeState.rootGeneration(), incrementedLastId, treeState.freeListWritePageId(), treeState.freeListReadPageId(), treeState.freeListWritePos(),
-                    treeState.freeListReadPos(), treeState.isClean() );
+            cursor.next( treeState.pageId() ); // Write new tree state to current tree states page
+            TreeState.write( cursor, target.stableGeneration(), target.unstableGeneration(), target.rootId(), target.rootGeneration(), target.lastId(),
+                    target.freeListWritePageId(), target.freeListReadPageId(), target.freeListWritePos(), target.freeListReadPos(), target.isClean() );
         };
     }
 

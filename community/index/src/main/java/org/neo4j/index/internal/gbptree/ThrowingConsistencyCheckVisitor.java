@@ -113,6 +113,12 @@ public class ThrowingConsistencyCheckVisitor<KEY> implements GBPTreeConsistencyC
     }
 
     @Override
+    public void pageIdExceedLastId( long lastId, long pageId )
+    {
+        throwTreeMetaInconsistency( "Tree node has page id larger than registered last id, lastId=%d, pageId=%d.", lastId, pageId );
+    }
+
+    @Override
     public void crashedPointer( long pageId, GBPTreePointerType pointerType,
             long generationA, long readPointerA, long pointerA, byte stateA,
             long generationB, long readPointerB, long pointerB, byte stateB )

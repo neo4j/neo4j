@@ -44,6 +44,8 @@ public interface GBPTreeConsistencyCheckVisitor<KEY>
 
     void unusedPage( long pageId );
 
+    void pageIdExceedLastId( long lastId, long pageId );
+
     void nodeMetaInconsistency( long pageId, String message );
 
     void pageIdSeenMultipleTimes( long pageId );
@@ -112,6 +114,11 @@ public interface GBPTreeConsistencyCheckVisitor<KEY>
 
         @Override
         public void unusedPage( long pageId )
+        {
+        }
+
+        @Override
+        public void pageIdExceedLastId( long lastId, long pageId )
         {
         }
 

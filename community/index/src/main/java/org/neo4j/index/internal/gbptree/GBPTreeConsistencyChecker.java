@@ -121,7 +121,7 @@ class GBPTreeConsistencyChecker<KEY>
         }
         if ( id > lastId )
         {
-            throw new IllegalStateException( "Unexpectedly high id " + id + " seen when last id is " + lastId );
+            visitor.pageIdExceedLastId( lastId, id );
         }
         target.set( index );
     }
