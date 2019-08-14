@@ -19,7 +19,7 @@
  */
 package org.neo4j.values.storable;
 
-import org.neo4j.values.utils.UnsupportedTemporalUnitException;
+import org.neo4j.exceptions.UnsupportedTemporalUnitException;
 
 import static org.neo4j.values.utils.TemporalUtil.NANOS_PER_SECOND;
 

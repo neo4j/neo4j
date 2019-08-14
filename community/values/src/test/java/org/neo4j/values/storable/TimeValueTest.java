@@ -29,7 +29,7 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Supplier;
 
-import org.neo4j.values.utils.TemporalParseException;
+import org.neo4j.exceptions.TemporalParseException;
 
 import static java.time.ZoneOffset.UTC;
 import static java.time.ZoneOffset.ofHours;

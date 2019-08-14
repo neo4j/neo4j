@@ -33,11 +33,11 @@ import java.util.function.Supplier;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import org.neo4j.exceptions.InvalidArgumentException;
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.StructureBuilder;
 import org.neo4j.values.ValueMapper;
-import org.neo4j.values.utils.InvalidValuesArgumentException;
-import org.neo4j.values.utils.UnsupportedTemporalUnitException;
+import org.neo4j.exceptions.UnsupportedTemporalUnitException;
 import org.neo4j.values.virtual.MapValue;
 
 import static java.lang.Integer.parseInt;
@@ -153,7 +153,7 @@ public final class LocalTimeValue extends TemporalValue<LocalTime,LocalTimeValue
                     AnyValue time = fields.get( TemporalFields.time );
                     if ( !(time instanceof TemporalValue) )
                     {
-                        throw new InvalidValuesArgumentException( String.format( "Cannot construct local time from: %s", time ) );
+                        throw new InvalidArgumentException( String.format( "Cannot construct local time from: %s", time ) );
                     }
                     result = ((TemporalValue) time).getLocalTimePart();
                 }
@@ -173,7 +173,7 @@ public final class LocalTimeValue extends TemporalValue<LocalTime,LocalTimeValue
 
                 if ( !(time instanceof TemporalValue) )
                 {
-                    throw new InvalidValuesArgumentException( String.format( "Cannot construct local time from: %s", time ) );
+                    throw new InvalidArgumentException( String.format( "Cannot construct local time from: %s", time ) );
                 }
                 TemporalValue v = (TemporalValue) time;
                 LocalTime lt = v.getLocalTimePart();

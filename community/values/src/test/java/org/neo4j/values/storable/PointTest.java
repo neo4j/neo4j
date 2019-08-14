@@ -22,8 +22,8 @@ package org.neo4j.values.storable;
 import org.hamcrest.CoreMatchers;
 import org.junit.jupiter.api.Test;
 
+import org.neo4j.exceptions.InvalidArgumentException;
 import org.neo4j.values.Comparison;
-import org.neo4j.values.utils.InvalidValuesArgumentException;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
@@ -314,7 +314,7 @@ class PointTest
         String headerInformation = "{latitude: 40.7128}";
         String data = "{longitude: -74.0060, height: 567.8, crs:wgs-84-3D}";
 
-        assertThrows( InvalidValuesArgumentException.class, () -> PointValue.parse( data ) );
+        assertThrows( InvalidArgumentException.class, () -> PointValue.parse( data ) );
 
         // this should work
         PointValue.parse( data, PointValue.parseHeaderInformation( headerInformation ) );
@@ -357,8 +357,8 @@ class PointTest
         assertCannotParse( "{crs:WGS-84 , lat:1, y:2}" );
     }
 
-    private InvalidValuesArgumentException assertCannotParse( String text )
+    private InvalidArgumentException assertCannotParse( String text )
     {
-        return assertThrows( InvalidValuesArgumentException.class, () -> PointValue.parse( text ) );
+        return assertThrows( InvalidArgumentException.class, () -> PointValue.parse( text ) );
     }
 }

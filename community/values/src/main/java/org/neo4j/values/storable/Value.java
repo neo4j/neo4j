@@ -27,6 +27,7 @@ import java.time.ZonedDateTime;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import org.neo4j.exceptions.InvalidArgumentException;
 import org.neo4j.graphdb.spatial.Geometry;
 import org.neo4j.hashing.HashFunction;
 import org.neo4j.values.AnyValue;
@@ -34,7 +35,6 @@ import org.neo4j.values.AnyValueWriter;
 import org.neo4j.values.Comparison;
 import org.neo4j.values.Equality;
 import org.neo4j.values.SequenceValue;
-import org.neo4j.values.utils.InvalidValuesArgumentException;
 
 import static java.lang.String.format;
 import static org.neo4j.values.storable.Values.NO_VALUE;
@@ -269,19 +269,19 @@ public abstract class Value extends AnyValue
         String errorMessage = format( "Failed to parse %s value: '%s'", type, text );
         if ( !(mapMatcher.find() && mapMatcher.groupCount() == 1) )
         {
-            throw new InvalidValuesArgumentException( errorMessage );
+            throw new InvalidArgumentException( errorMessage );
         }
 
         String mapContents = mapMatcher.group( 1 );
         if ( mapContents.isEmpty() )
         {
-            throw new InvalidValuesArgumentException( errorMessage );
+            throw new InvalidArgumentException( errorMessage );
         }
 
         Matcher matcher = KEY_VALUE_PATTERN.matcher( mapContents );
         if ( !(matcher.find()) )
         {
-            throw new InvalidValuesArgumentException( errorMessage );
+            throw new InvalidArgumentException( errorMessage );
         }
 
         do

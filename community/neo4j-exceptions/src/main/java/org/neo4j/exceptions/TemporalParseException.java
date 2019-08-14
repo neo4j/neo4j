@@ -17,21 +17,28 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.values.utils;
+package org.neo4j.exceptions;
 
 /**
- * {@code ValuesException} is the super class of the custom exceptions
- * that can be thrown during usage of the Values module (org.neo4j.values).
+ * {@code TemporalParseException} is thrown if parsing of a TemporalValue is unsuccessful.
+ * The constructor parameters {@code parsedData} and {@code errorIndex} can optionally be provided
+ * in order to conform with Java's {@code DateTimeParseException} and {@code SyntaxException}.
  */
-public class ValuesException extends RuntimeException
+public class TemporalParseException extends SyntaxException
 {
-    ValuesException( String errorMsg )
-    {
-        super( errorMsg );
-    }
-
-    ValuesException( String errorMsg, Throwable cause )
+    public TemporalParseException( String errorMsg, Throwable cause )
     {
         super( errorMsg, cause );
     }
+
+    public TemporalParseException( String errorMsg, String parsedData, int errorIndex )
+    {
+        super( errorMsg, parsedData, errorIndex );
+    }
+
+    public TemporalParseException( String errorMsg, String parsedData, int errorIndex, Throwable cause )
+    {
+        super( errorMsg, parsedData, errorIndex, cause );
+    }
+
 }

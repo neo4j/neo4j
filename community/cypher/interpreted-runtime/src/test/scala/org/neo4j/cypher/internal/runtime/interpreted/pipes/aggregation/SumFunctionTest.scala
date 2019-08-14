@@ -21,10 +21,9 @@ package org.neo4j.cypher.internal.runtime.interpreted.pipes.aggregation
 
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expression
 import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
-import org.neo4j.exceptions.CypherTypeException
+import org.neo4j.exceptions.{CypherTypeException, InvalidArgumentException}
 import org.neo4j.values.storable.Values._
 import org.neo4j.values.storable.{DoubleValue, DurationValue, LongValue, Values}
-import org.neo4j.values.utils.InvalidValuesArgumentException
 
 class SumFunctionTest extends CypherFunSuite with AggregateTest {
   def createAggregator(inner: Expression) = new SumFunction(inner)
@@ -61,7 +60,7 @@ class SumFunctionTest extends CypherFunSuite with AggregateTest {
 
   test("catches duration overflows") {
     val durationValue = DurationValue.duration(0, 0, Long.MaxValue, 0)
-    an[InvalidValuesArgumentException] shouldBe thrownBy{
+    an[InvalidArgumentException] shouldBe thrownBy{
       aggregateOn(durationValue, durationValue)
     }
   }

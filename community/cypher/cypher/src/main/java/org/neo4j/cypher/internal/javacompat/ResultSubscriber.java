@@ -28,14 +28,9 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
-import org.neo4j.exceptions.ArithmeticException;
-import org.neo4j.exceptions.Neo4jException;
-import org.neo4j.exceptions.CypherExecutionException;
-import org.neo4j.exceptions.CypherTypeException;
-import org.neo4j.exceptions.InternalException;
-import org.neo4j.exceptions.InvalidArgumentException;
-import org.neo4j.exceptions.SyntaxException;
 import org.neo4j.cypher.internal.result.string.ResultStringBuilder;
+import org.neo4j.exceptions.CypherExecutionException;
+import org.neo4j.exceptions.Neo4jException;
 import org.neo4j.graphdb.ExecutionPlanDescription;
 import org.neo4j.graphdb.Notification;
 import org.neo4j.graphdb.QueryExecutionException;
@@ -52,11 +47,6 @@ import org.neo4j.kernel.impl.query.TransactionalContext;
 import org.neo4j.kernel.impl.util.DefaultValueMapper;
 import org.neo4j.util.VisibleForTesting;
 import org.neo4j.values.AnyValue;
-import org.neo4j.values.utils.InvalidValuesArgumentException;
-import org.neo4j.values.utils.TemporalArithmeticException;
-import org.neo4j.values.utils.TemporalParseException;
-import org.neo4j.values.utils.UnsupportedTemporalUnitException;
-import org.neo4j.values.utils.ValuesException;
 
 /**
  * A {@link QuerySubscriber} that implements the {@link Result} interface.
@@ -401,14 +391,6 @@ public class ResultSubscriber extends PrefetchingResourceIterator<Map<String,Obj
         {
             neo4jException = (Neo4jException) e;
         }
-        else if ( e instanceof ValuesException )
-        {
-            neo4jException = convertedValuesException( (ValuesException) e );
-        }
-        else if ( e instanceof ArithmeticException )
-        {
-            neo4jException = new org.neo4j.exceptions.ArithmeticException( e.getMessage(), e );
-        }
         else if ( e instanceof RuntimeException )
         {
             throw (RuntimeException) e;
@@ -418,36 +400,6 @@ public class ResultSubscriber extends PrefetchingResourceIterator<Map<String,Obj
             neo4jException = new CypherExecutionException( e.getMessage(), e );
         }
         return new QueryExecutionKernelException( neo4jException ).asUserException();
-    }
-
-    private Neo4jException convertedValuesException( ValuesException e )
-    {
-        if ( e instanceof UnsupportedTemporalUnitException )
-        {
-            return new CypherTypeException( e.getMessage(), e );
-        }
-        else if ( e instanceof InvalidValuesArgumentException )
-        {
-            return new InvalidArgumentException( e.getMessage(), e );
-        }
-        else if ( e instanceof TemporalArithmeticException )
-        {
-            return new org.neo4j.exceptions.ArithmeticException( e.getMessage(), e );
-        }
-        else if ( e instanceof TemporalParseException )
-        {
-            TemporalParseException e1 = (TemporalParseException) e;
-            String parsedData = e1.getParsedData();
-            if ( parsedData == null )
-            {
-                return new SyntaxException( e.getMessage(), e );
-            }
-            else
-            {
-                return new SyntaxException( e.getMessage(), parsedData, e1.getErrorIndex(), e );
-            }
-        }
-        return new InternalException( e.getMessage(), e );
     }
 
     private <VisitationException extends Exception> void acceptFromMaterialized(

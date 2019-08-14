@@ -34,12 +34,12 @@ import java.util.function.Supplier;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import org.neo4j.exceptions.InvalidArgumentException;
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.StructureBuilder;
 import org.neo4j.values.ValueMapper;
-import org.neo4j.values.utils.InvalidValuesArgumentException;
 import org.neo4j.values.utils.TemporalUtil;
-import org.neo4j.values.utils.UnsupportedTemporalUnitException;
+import org.neo4j.exceptions.UnsupportedTemporalUnitException;
 import org.neo4j.values.virtual.MapValue;
 
 import static java.lang.Integer.parseInt;
@@ -210,7 +210,7 @@ public final class TimeValue extends TemporalValue<OffsetTime,TimeValue>
                     AnyValue time = fields.get( TemporalFields.time );
                     if ( !(time instanceof TemporalValue) )
                     {
-                        throw new InvalidValuesArgumentException( String.format( "Cannot construct time from: %s", time ) );
+                        throw new InvalidArgumentException( String.format( "Cannot construct time from: %s", time ) );
                     }
                     TemporalValue t = (TemporalValue) time;
                     result = t.getTimePart( defaultZone );
@@ -249,7 +249,7 @@ public final class TimeValue extends TemporalValue<OffsetTime,TimeValue>
             {
                 if ( !(temporal instanceof TemporalValue) )
                 {
-                    throw new InvalidValuesArgumentException( String.format( "Cannot construct time from: %s", temporal ) );
+                    throw new InvalidArgumentException( String.format( "Cannot construct time from: %s", temporal ) );
                 }
                 if ( temporal instanceof TimeValue &&
                         timezone == null )
@@ -411,7 +411,7 @@ public final class TimeValue extends TemporalValue<OffsetTime,TimeValue>
         {
             return parseOffset( matcher );
         }
-        throw new InvalidValuesArgumentException( "Not a valid offset: " + offset );
+        throw new InvalidArgumentException( "Not a valid offset: " + offset );
     }
 
     static ZoneOffset parseOffset( Matcher matcher )

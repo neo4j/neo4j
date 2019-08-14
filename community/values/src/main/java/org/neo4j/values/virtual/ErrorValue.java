@@ -22,13 +22,13 @@ package org.neo4j.values.virtual;
 
 import java.util.Comparator;
 
+import org.neo4j.exceptions.InvalidArgumentException;
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.AnyValueWriter;
 import org.neo4j.values.Comparison;
 import org.neo4j.values.TernaryComparator;
 import org.neo4j.values.ValueMapper;
 import org.neo4j.values.VirtualValue;
-import org.neo4j.values.utils.InvalidValuesArgumentException;
 
 /**
  * The ErrorValue allow delaying errors in value creation until runtime, which is useful
@@ -36,11 +36,11 @@ import org.neo4j.values.utils.InvalidValuesArgumentException;
  */
 public final class ErrorValue extends VirtualValue
 {
-    private final InvalidValuesArgumentException e;
+    private final InvalidArgumentException e;
 
     ErrorValue( Exception e )
     {
-        this.e = new InvalidValuesArgumentException( e.getMessage() );
+        this.e = new InvalidArgumentException( e.getMessage() );
     }
 
     @Override

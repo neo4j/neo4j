@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.values.utils;
+package org.neo4j.exceptions;
 
 /**
  * {@code UnsupportedTemporalUnitException} is thrown if trying to get or assign a temporal unit
@@ -25,7 +25,7 @@ package org.neo4j.values.utils;
  * assign a month to a {@code TimeValue}, trying to truncate a {@code DateValue} to minutes and
  * trying to get the timezone of a {@code LocalDateTimeValue}.
  */
-public class UnsupportedTemporalUnitException extends ValuesException
+public class UnsupportedTemporalUnitException extends CypherTypeException
 {
     public UnsupportedTemporalUnitException( String errorMsg )
     {

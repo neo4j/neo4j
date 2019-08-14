@@ -45,7 +45,6 @@ import org.neo4j.values.storable.TemporalValue;
 import org.neo4j.values.storable.TextValue;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
-import org.neo4j.values.utils.InvalidValuesArgumentException;
 import org.neo4j.values.virtual.ListValue;
 import org.neo4j.values.virtual.MapValue;
 import org.neo4j.values.virtual.MapValueBuilder;
@@ -531,14 +530,7 @@ public final class CypherFunctions
         }
         else if ( container instanceof PointValue )
         {
-            try
-            {
-                return ((PointValue) container).get( key );
-            }
-            catch ( InvalidValuesArgumentException e )
-            {
-                throw new InvalidArgumentException( e.getMessage(), e );
-            }
+            return ((PointValue) container).get( key );
         }
         else
         {

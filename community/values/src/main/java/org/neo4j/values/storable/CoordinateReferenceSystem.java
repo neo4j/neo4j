@@ -21,9 +21,9 @@ package org.neo4j.values.storable;
 
 import java.util.Objects;
 
+import org.neo4j.exceptions.InvalidArgumentException;
 import org.neo4j.graphdb.spatial.CRS;
 import org.neo4j.internal.helpers.collection.Iterables;
-import org.neo4j.values.utils.InvalidValuesArgumentException;
 
 public class CoordinateReferenceSystem implements CRS
 {
@@ -49,7 +49,7 @@ public class CoordinateReferenceSystem implements CRS
                 return type;
             }
         }
-        throw new InvalidValuesArgumentException( "Unknown coordinate reference system: " + tableId + "-" + code );
+        throw new InvalidArgumentException( "Unknown coordinate reference system: " + tableId + "-" + code );
     }
 
     public static CoordinateReferenceSystem get( CRS crs )
@@ -68,7 +68,7 @@ public class CoordinateReferenceSystem implements CRS
             }
         }
 
-        throw new InvalidValuesArgumentException( "Unknown coordinate reference system: " + name );
+        throw new InvalidArgumentException( "Unknown coordinate reference system: " + name );
     }
 
     public static CoordinateReferenceSystem get( String href )
@@ -80,7 +80,7 @@ public class CoordinateReferenceSystem implements CRS
                 return type;
             }
         }
-        throw new InvalidValuesArgumentException( "Unknown coordinate reference system: " + href );
+        throw new InvalidArgumentException( "Unknown coordinate reference system: " + href );
     }
 
     public static CoordinateReferenceSystem get( int code )
@@ -96,7 +96,7 @@ public class CoordinateReferenceSystem implements CRS
                 }
             }
         }
-        throw new InvalidValuesArgumentException( "Unknown coordinate reference system code: " + code );
+        throw new InvalidArgumentException( "Unknown coordinate reference system code: " + code );
     }
 
     private final String name;

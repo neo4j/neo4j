@@ -36,10 +36,10 @@ import java.util.function.Supplier;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import org.neo4j.exceptions.InvalidArgumentException;
 import org.neo4j.values.StructureBuilder;
 import org.neo4j.values.ValueMapper;
-import org.neo4j.values.utils.InvalidValuesArgumentException;
-import org.neo4j.values.utils.UnsupportedTemporalUnitException;
+import org.neo4j.exceptions.UnsupportedTemporalUnitException;
 import org.neo4j.values.virtual.MapValue;
 
 import static java.lang.Integer.parseInt;
@@ -465,7 +465,7 @@ public final class DateValue extends TemporalValue<LocalDate,DateValue>
         // week 53 of years that don't have 53 weeks, so we have to guard for this:
         if ( week == 53 && withWeek.get( IsoFields.WEEK_BASED_YEAR ) != year )
         {
-            throw new InvalidValuesArgumentException(
+            throw new InvalidArgumentException(
                     String.format( "Year %d does not contain %d weeks.", year, week ) );
         }
         return withWeek.with( ChronoField.DAY_OF_WEEK, dayOfWeek );
@@ -476,13 +476,13 @@ public final class DateValue extends TemporalValue<LocalDate,DateValue>
         // special handling for the range of Q1 and Q2, since they are shorter than Q3 and Q4
         if ( quarter == 2 && dayOfQuarter == 92 )
         {
-            throw new InvalidValuesArgumentException( "Quarter 2 only has 91 days." );
+            throw new InvalidArgumentException( "Quarter 2 only has 91 days." );
         }
         // instantiate the yearDate now, because we use it to know if it is a leap year
         LocalDate yearDate = LocalDate.ofYearDay( year, dayOfQuarter ); // guess on the day
         if ( quarter == 1 && dayOfQuarter > 90 && (!yearDate.isLeapYear() || dayOfQuarter == 92) )
         {
-            throw new InvalidValuesArgumentException( String.format(
+            throw new InvalidArgumentException( String.format(
                     "Quarter 1 of %d only has %d days.", year, yearDate.isLeapYear() ? 91 : 90 ) );
         }
         return yearDate
@@ -531,7 +531,7 @@ public final class DateValue extends TemporalValue<LocalDate,DateValue>
                 TemporalValue v = (TemporalValue) temporal;
                 return v.getDatePart();
             }
-            throw new InvalidValuesArgumentException( String.format( "Cannot construct date from: %s", temporal ) );
+            throw new InvalidArgumentException( String.format( "Cannot construct date from: %s", temporal ) );
         }
 
         @Override

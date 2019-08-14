@@ -21,7 +21,7 @@ package org.neo4j.values.storable;
 
 import org.junit.jupiter.api.Test;
 
-import org.neo4j.values.utils.InvalidValuesArgumentException;
+import org.neo4j.exceptions.InvalidArgumentException;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.closeTo;
@@ -43,7 +43,7 @@ class CoordinateReferenceSystemTest
     @Test
     void shouldFailToGetWithIncorrectCode()
     {
-        InvalidValuesArgumentException exception = assertThrows( InvalidValuesArgumentException.class, () -> CoordinateReferenceSystem.get( 42 ) );
+        InvalidArgumentException exception = assertThrows( InvalidArgumentException.class, () -> CoordinateReferenceSystem.get( 42 ) );
         assertEquals( "Unknown coordinate reference system code: 42", exception.getMessage() );
     }
 
