@@ -280,31 +280,31 @@ trait Statement extends Parser
       ((prop, scope, qualifier, grantees) => ast.RevokePrivilege.asMatch(prop, scope, qualifier, grantees))
   }
 
-  //`GRANT WRITE (*) ON GRAPH foo * (*) TO role`
+  //`GRANT WRITE {*} ON GRAPH foo * (*) TO role`
   def GrantWrite: Rule1[GrantPrivilege] = rule("CATALOG GRANT WRITE") {
     group(keyword("GRANT WRITE") ~~ AllPrivilegeProperty ~~ Graph ~~ AllScopeQualifier ~~ keyword("TO") ~~ SymbolicNamesList) ~~>>
       ((prop, scope, qualifier, grantees) => ast.GrantPrivilege.write(prop, scope, qualifier, grantees))
   }
 
-  //`DENY WRITE (*) ON GRAPH foo * (*) TO role`
+  //`DENY WRITE {*} ON GRAPH foo * (*) TO role`
   def DenyWrite: Rule1[DenyPrivilege] = rule("CATALOG DENY WRITE") {
     group(keyword("DENY WRITE") ~~ AllPrivilegeProperty ~~ Graph ~~ AllScopeQualifier ~~ keyword("TO") ~~ SymbolicNamesList) ~~>>
       ((prop, scope, qualifier, grantees) => ast.DenyPrivilege.write(prop, scope, qualifier, grantees))
   }
 
-  //`REVOKE GRANT WRITE (*) ON GRAPH foo * (*) FROM role`
+  //`REVOKE GRANT WRITE {*} ON GRAPH foo * (*) FROM role`
   def RevokeGrantWrite: Rule1[RevokePrivilege] = rule("CATALOG REVOKE GRANT WRITE") {
     group(keyword("REVOKE GRANT WRITE") ~~ AllPrivilegeProperty ~~ Graph ~~ AllScopeQualifier ~~ keyword("FROM") ~~ SymbolicNamesList) ~~>>
       ((prop, scope, qualifier, grantees) => ast.RevokePrivilege.grantedWrite(prop, scope, qualifier, grantees))
   }
 
-  //`REVOKE DENY WRITE (*) ON GRAPH foo * (*) FROM role`
+  //`REVOKE DENY WRITE {*} ON GRAPH foo * (*) FROM role`
   def RevokeDenyWrite: Rule1[RevokePrivilege] = rule("CATALOG REVOKE DENY WRITE") {
     group(keyword("REVOKE DENY WRITE") ~~ AllPrivilegeProperty ~~ Graph ~~ AllScopeQualifier ~~ keyword("FROM") ~~ SymbolicNamesList) ~~>>
       ((prop, scope, qualifier, grantees) => ast.RevokePrivilege.deniedWrite(prop, scope, qualifier, grantees))
   }
 
-  //`REVOKE WRITE (*) ON GRAPH foo * (*) FROM role`
+  //`REVOKE WRITE {*} ON GRAPH foo * (*) FROM role`
   def RevokeWrite: Rule1[RevokePrivilege] = rule("CATALOG REVOKE WRITE") {
     group(keyword("REVOKE WRITE") ~~ AllPrivilegeProperty ~~ Graph ~~ AllScopeQualifier ~~ keyword("FROM") ~~ SymbolicNamesList) ~~>>
       ((prop, scope, qualifier, grantees) => ast.RevokePrivilege.write(prop, scope, qualifier, grantees))
@@ -321,7 +321,7 @@ trait Statement extends Parser
 
   // TODO can be removed once we have more fine-grained writes
   private def AllPrivilegeProperty: Rule1[ActionResource] = rule("all properties")(
-    group("(" ~~ "*" ~~ ")") ~~~> {ast.AllResource()}
+    group("{" ~~ "*" ~~ "}") ~~~> {ast.AllResource()}
   )
 
   private def ScopeQualifier: Rule1[PrivilegeQualifier] = rule("which element type and associated labels/relTypes (props) qualifier combination")(

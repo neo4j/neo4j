@@ -173,7 +173,7 @@ case object MultiDatabaseAdministrationCommandPlanBuilder extends Phase[PlannerC
           case (source, (roleName, segment)) => Some(plans.RevokeTraverse(source, database, segment, roleName, revokeType))
         }.map(plan => plans.LogSystemCommand(plan, prettifier.asString(c)))
 
-      // GRANT WRITE (*) ON GRAPH foo ELEMENTS * (*) TO role
+      // GRANT WRITE {*} ON GRAPH foo ELEMENTS * (*) TO role
       case c@GrantPrivilege(WritePrivilege(), _, database, segments, roleNames) =>
         (for (roleName <- roleNames; segment <- segments.simplify) yield {
           roleName -> segment
@@ -181,7 +181,7 @@ case object MultiDatabaseAdministrationCommandPlanBuilder extends Phase[PlannerC
           case (source, (roleName, segment)) => Some(plans.GrantWrite(source, AllResource()(InputPosition.NONE), database, segment, roleName))
         }.map(plan => plans.LogSystemCommand(plan, prettifier.asString(c)))
 
-      // DENY WRITE (*) ON GRAPH foo ELEMENTS * (*) TO role
+      // DENY WRITE {*} ON GRAPH foo ELEMENTS * (*) TO role
       case c@DenyPrivilege(WritePrivilege(), _, database, segments, roleNames) =>
         (for (roleName <- roleNames; segment <- segments.simplify) yield {
           roleName -> segment
@@ -189,7 +189,7 @@ case object MultiDatabaseAdministrationCommandPlanBuilder extends Phase[PlannerC
           case (source, (roleName, segment)) => Some(plans.DenyWrite(source, AllResource()(InputPosition.NONE), database, segment, roleName))
         }.map(plan => plans.LogSystemCommand(plan, prettifier.asString(c)))
 
-      // REVOKE WRITE (*) ON GRAPH foo ELEMENTS * (*) FROM role
+      // REVOKE WRITE {*} ON GRAPH foo ELEMENTS * (*) FROM role
       case c@RevokePrivilege(WritePrivilege(), _, database, segments, roleNames, revokeType) =>
         (for (roleName <- roleNames; segment <- segments.simplify) yield {
           roleName -> segment

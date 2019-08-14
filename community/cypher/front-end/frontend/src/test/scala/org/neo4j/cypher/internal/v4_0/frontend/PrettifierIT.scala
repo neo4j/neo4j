@@ -525,23 +525,22 @@ class PrettifierIT extends CypherFunSuite {
           s"$action read {foo,bar} on graph foo nodes A,B,C (*) $preposition x,y,z" ->
             s"$action READ {foo, bar} ON GRAPH foo NODES A, B, C (*) $preposition x, y, z",
 
-          // TODO: write share prettifier code with read, update input query when changing write syntax
-          s"$action write (*) on graph * $preposition role" ->
+          s"$action write {*} on graph * $preposition role" ->
             s"$action WRITE {*} ON GRAPH * ELEMENTS * (*) $preposition role",
 
-          s"$action write (*) on graph * elements * $preposition role" ->
+          s"$action write {*} on graph * elements * $preposition role" ->
             s"$action WRITE {*} ON GRAPH * ELEMENTS * (*) $preposition role",
 
-          s"$action write (*) on graph * elements * (*) $preposition role" ->
+          s"$action write {*} on graph * elements * (*) $preposition role" ->
             s"$action WRITE {*} ON GRAPH * ELEMENTS * (*) $preposition role",
 
-          s"$action write (*) on graph foo $preposition role" ->
+          s"$action write {*} on graph foo $preposition role" ->
             s"$action WRITE {*} ON GRAPH foo ELEMENTS * (*) $preposition role",
 
-          s"$action write (*) on graph foo elements * (*) $preposition role" ->
+          s"$action write {*} on graph foo elements * (*) $preposition role" ->
             s"$action WRITE {*} ON GRAPH foo ELEMENTS * (*) $preposition role",
 
-          s"$action write (*) on graphs foo elements * (*) $preposition role" ->
+          s"$action write {*} on graphs foo elements * (*) $preposition role" ->
             s"$action WRITE {*} ON GRAPH foo ELEMENTS * (*) $preposition role"
         )
     }
