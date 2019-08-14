@@ -52,7 +52,6 @@ import org.neo4j.internal.kernel.api.TokenRead;
 import org.neo4j.internal.kernel.api.exceptions.KernelException;
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
-import org.neo4j.internal.kernel.api.procs.ProcedureCallContext;
 import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.SilentTokenNameLookup;
@@ -89,9 +88,6 @@ public class BuiltInProcedures
 
     @Context
     public GraphDatabaseAPI graphDatabaseAPI;
-
-    @Context
-    public ProcedureCallContext callContext;
 
     @Description( "List all labels in the database." )
     @Procedure( name = "db.labels", mode = READ )
