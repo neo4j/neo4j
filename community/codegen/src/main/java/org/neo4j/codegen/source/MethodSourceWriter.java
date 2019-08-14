@@ -139,6 +139,12 @@ class MethodSourceWriter implements MethodEmitter, ExpressionVisitor
     }
 
     @Override
+    public void breaks( String labelName )
+    {
+        indent().append( "break " + labelName + ";\n" );
+    }
+
+    @Override
     public void declare( LocalVariable local )
     {
         indent().append( local.type().fullName() ).append( ' ' ).append( local.name() ).append( ";\n" );
@@ -161,8 +167,12 @@ class MethodSourceWriter implements MethodEmitter, ExpressionVisitor
     }
 
     @Override
-    public void beginWhile( Expression test )
+    public void beginWhile( Expression test, String labelName )
     {
+        if ( labelName != null && !labelName.isEmpty() )
+        {
+            indent().append( labelName + ":\n" );
+        }
         indent().append( "while( " );
         test.accept( this );
         append( " )\n" );

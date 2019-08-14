@@ -176,6 +176,22 @@ class MethodByteCodeEmitter implements MethodEmitter
     }
 
     @Override
+    public void breaks( String labelName )
+    {
+        for ( Block block : stateStack )
+        {
+            if ( block instanceof While )
+            {
+                if ( ((While)block).breakBlock( labelName ) )
+                {
+                    return;
+                }
+            }
+        }
+        throw new IllegalStateException( "Found no block to break out of with label " + labelName );
+    }
+
+    @Override
     public void assign( LocalVariable variable, Expression value )
     {
         value.accept( expressionVisitor );
@@ -210,14 +226,14 @@ class MethodByteCodeEmitter implements MethodEmitter
     }
 
     @Override
-    public void beginWhile( Expression test )
+    public void beginWhile( Expression test, String labelName )
     {
         Label repeat = new Label();
         Label done = new Label();
         methodVisitor.visitLabel( repeat );
         test.accept( new JumpVisitor( expressionVisitor, methodVisitor, done ) );
 
-        stateStack.push( new While( methodVisitor, repeat, done  ) );
+        stateStack.push( new While( methodVisitor, repeat, done, labelName ) );
     }
 
     @Override

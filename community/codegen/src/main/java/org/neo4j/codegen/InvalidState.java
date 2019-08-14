@@ -101,13 +101,19 @@ class InvalidState implements MethodEmitter
     }
 
     @Override
+    public void breaks( String labelName )
+    {
+        throw new IllegalStateException( reason );
+    }
+
+    @Override
     public void assign( LocalVariable variable, Expression value )
     {
         throw new IllegalStateException( reason );
     }
 
     @Override
-    public void beginWhile( Expression test )
+    public void beginWhile( Expression test, String labelName )
     {
         throw new IllegalStateException( reason );
     }

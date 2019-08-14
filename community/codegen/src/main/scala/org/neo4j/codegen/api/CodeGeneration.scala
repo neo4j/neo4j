@@ -233,8 +233,13 @@ object CodeGeneration {
       codegen.Expression.EMPTY
 
     //while(test) { body }
-    case Loop(test, body) =>
-      beginBlock(block.whileLoop(compileExpression(test, block)))(compileExpression(body, _))
+    case Loop(test, body, labelName) =>
+      beginBlock(block.whileLoop(compileExpression(test, block), labelName))(compileExpression(body, _))
+
+    //break label
+    case Break(labelName) =>
+      block.breaks(labelName)
+      codegen.Expression.EMPTY
 
     // (to) expressions
     case Cast(to, expression) => codegen.Expression.cast(to, compileExpression(expression, block))

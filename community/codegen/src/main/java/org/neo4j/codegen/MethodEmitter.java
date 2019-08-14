@@ -39,9 +39,11 @@ public interface MethodEmitter
 
     void continues();
 
+    void breaks( String labelName );
+
     void assign( LocalVariable local, Expression value );
 
-    void beginWhile( Expression test );
+    void beginWhile( Expression test, String labelName );
 
     void beginIf( Expression test );
 

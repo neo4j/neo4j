@@ -177,7 +177,13 @@ public class CodeBlock implements AutoCloseable
 
     public CodeBlock whileLoop( Expression test )
     {
-        emitter.beginWhile( test );
+        emitter.beginWhile( test, null );
+        return new CodeBlock( this, true );
+    }
+
+    public CodeBlock whileLoop( Expression test, String labelName )
+    {
+        emitter.beginWhile( test, labelName );
         return new CodeBlock( this, true );
     }
 
@@ -219,6 +225,11 @@ public class CodeBlock implements AutoCloseable
         {
             emitter.continues();
         }
+    }
+
+    public void breaks( String labelName )
+    {
+        emitter.breaks( labelName );
     }
 
     public void throwException( Expression exception )

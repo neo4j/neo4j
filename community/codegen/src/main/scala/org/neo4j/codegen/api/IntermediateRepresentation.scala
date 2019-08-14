@@ -251,8 +251,25 @@ case class Condition(test: IntermediateRepresentation, onTrue: IntermediateRepre
   * @param test the body will run while this evaluates to true
   * @param body the body to run on each iteration
   */
-case class Loop(test: IntermediateRepresentation, body: IntermediateRepresentation)
+case class Loop(test: IntermediateRepresentation, body: IntermediateRepresentation, labelName: String)
   extends IntermediateRepresentation
+
+/**
+  * Break out of a labeled loop.
+  *
+  * {{{
+  * outerLoop:
+  * while (outerTest) {
+  *   while (innerTest) {
+  *     if (done) {
+  *       break outerLoop;
+  *     }
+  *   }
+  * }
+  * }}}
+  * @param labelName The label name of the loop to break out of
+  */
+case class Break(labelName: String) extends IntermediateRepresentation
 
 /**
   * Declare a local variable of the given type.
@@ -622,7 +639,12 @@ object IntermediateRepresentation {
                (onFalse: IntermediateRepresentation): IntermediateRepresentation = Condition(test, onTrue, Some(onFalse))
 
   def loop(test: IntermediateRepresentation)
-               (body: IntermediateRepresentation): IntermediateRepresentation = Loop(test, body)
+               (body: IntermediateRepresentation): IntermediateRepresentation = Loop(test, body, labelName = null)
+
+  def labeledLoop(labelName: String, test: IntermediateRepresentation)
+                 (body: IntermediateRepresentation): IntermediateRepresentation = Loop(test, body, labelName)
+
+  def break(labelName: String): IntermediateRepresentation = Break(labelName)
 
   def declare[TYPE](name: String)(implicit typ: Manifest[TYPE]) = DeclareLocalVariable(typeRef(typ), name)
 
