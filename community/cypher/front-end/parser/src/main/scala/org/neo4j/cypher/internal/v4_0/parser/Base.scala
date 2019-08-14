@@ -140,8 +140,8 @@ trait Base extends Parser {
             }
           }
 
-          val bufferPosition = BufferPosition(error.getInputBuffer, error.getStartIndex)
-          val position = bufferPosition.withOffset(initialOffset)
+          // The `initialOffset` will be added to the position by the factory
+          val position = BufferPosition(error.getInputBuffer, error.getStartIndex)
           throw cypherExceptionFactory.syntaxException(message, position)
         }
 
