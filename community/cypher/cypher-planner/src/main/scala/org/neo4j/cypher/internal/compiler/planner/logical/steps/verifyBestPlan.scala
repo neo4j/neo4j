@@ -28,6 +28,8 @@ import org.neo4j.cypher.internal.v4_0.ast._
 import org.neo4j.cypher.internal.v4_0.expressions.LabelName
 import org.neo4j.exceptions.{HintException, IndexHintException, InternalException, JoinHintException}
 
+import scala.collection.JavaConverters._
+
 object verifyBestPlan extends PlanTransformer {
   def apply(plan: LogicalPlan, expected: PlannerQuery, context: LogicalPlanningContext): LogicalPlan = {
     val constructed = context.planningAttributes.solveds.get(plan.id)
@@ -82,7 +84,7 @@ object verifyBestPlan extends PlanTransformer {
       // hints referred to non-existent indexes ("explicit hints")
       if (context.useErrorsOverWarnings) {
         val firstIndexHint = hints.head
-        throw new IndexHintException(firstIndexHint.variable.name, firstIndexHint.label.name, firstIndexHint.properties.map(_.name), "No such index")
+        throw new IndexHintException(firstIndexHint.label.name, firstIndexHint.properties.map(_.name).asJava, "No such index")
       } else {
         hints.foreach { hint =>
           context.notificationLogger.log(IndexHintUnfulfillableNotification(hint.label.name, hint.properties.map(_.name)))
@@ -95,8 +97,7 @@ object verifyBestPlan extends PlanTransformer {
     if (hints.nonEmpty) {
       // we were unable to plan hash join on some requested nodes
       if (context.useErrorsOverWarnings) {
-        val firstJoinHint = hints.head
-        throw new JoinHintException(firstJoinHint.variables.map(_.name).reduceLeft(_ + ", " + _), s"Unable to plan hash join. Instead, constructed\n$plan")
+        throw new JoinHintException(s"Unable to plan hash join. Instead, constructed\n$plan")
       } else {
         hints.foreach { hint =>
           context.notificationLogger.log(JoinHintUnfulfillableNotification(hint.variables.map(_.name).toIndexedSeq))

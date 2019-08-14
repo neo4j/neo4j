@@ -19,6 +19,8 @@
  */
 package org.neo4j.cypher
 
+import java.util.Optional
+
 import org.hamcrest.CoreMatchers._
 import org.junit.Assert._
 import org.neo4j.cypher.internal.v4_0.util.helpers.StringHelper._
@@ -263,8 +265,8 @@ class ErrorMessagesTest extends ExecutionEngineFunSuite {
 
   private def expectSyntaxError(query: String, expectedError: String, expectedOffset: Int) {
     val error = intercept[SyntaxException](executeQuery(query))
-    assertThat(error.getMessage(), containsString(expectedError))
-    assertThat(error.offset, equalTo(Some(expectedOffset): Option[Int]))
+    assertThat(error.getMessage, containsString(expectedError))
+    assertThat(error.getOffset, equalTo(Optional.of(expectedOffset.asInstanceOf[java.lang.Integer])))
   }
 
   private def executeQuery(query: String) {

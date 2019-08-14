@@ -1,0 +1,122 @@
+/*
+ * Copyright (c) 2002-2019 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
+ *
+ * This file is part of Neo4j.
+ *
+ * Neo4j is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+package org.neo4j.exceptions;
+
+import java.util.Optional;
+
+import org.neo4j.kernel.api.exceptions.Status;
+
+import static java.lang.System.lineSeparator;
+
+@SuppressWarnings( "OptionalUsedAsFieldOrParameterType" )
+public class SyntaxException extends Neo4jException
+{
+    private final Optional<Integer> offset;
+    private final String query;
+
+    public SyntaxException( String message, String query, Optional<Integer> offset, Throwable cause )
+    {
+        super( message, cause );
+        this.offset = offset;
+        this.query = query;
+    }
+
+    public SyntaxException( String message, String query, int offset )
+    {
+        this( message, query, Optional.of( offset ), null );
+    }
+
+    public SyntaxException( String message, String query, int offset, Throwable cause )
+    {
+        this( message, query, Optional.of( offset ), cause );
+    }
+
+    public SyntaxException( String message, Throwable cause )
+    {
+        this( message, "", Optional.empty(), cause );
+    }
+
+    public SyntaxException( String message )
+    {
+        this( message, "", Optional.empty(), null );
+    }
+
+    @Override
+    public Status status()
+    {
+        return Status.Statement.SyntaxError;
+    }
+
+    public Optional<Integer> getOffset()
+    {
+        return offset;
+    }
+
+    @Override
+    public String getMessage()
+    {
+        if ( offset.isPresent() )
+        {
+            //split can be empty if query = '\n'
+            var split = query.split( "\r?\n" );
+            return super.getMessage() + lineSeparator() + findErrorLine( offset.get(), split.length != 0 ? split : new String[]{""} );
+        }
+        else
+        {
+            return super.getMessage();
+        }
+    }
+
+    private String findErrorLine( int offset, String[] message )
+    {
+        int currentOffset = offset;
+        if ( message.length == 0 )
+        {
+            throw new IllegalArgumentException( "message converted to empty list" );
+        }
+        else
+        {
+            StringBuilder builder = new StringBuilder();
+            for ( int i = 0; i < message.length; i++ )
+            {
+                String element = message[i];
+                if ( i < message.length - 1 )
+                {
+                    if ( element.length() > currentOffset )
+                    {
+                        builder.append( "\"" ).append( element ).append( "\"" ).append( lineSeparator() ).append( " ".repeat( currentOffset ) ).append( " ^" );
+                        break;
+                    }
+                    else
+                    {
+                        //The extra minus one is there for the now missing \n
+                        currentOffset -= element.length() + 1;
+                    }
+                }
+                else
+                {
+                    int spaces = Math.min( element.length(), currentOffset );
+                    builder.append( "\"" ).append( element ).append( "\"" ).append( lineSeparator() ).append( " ".repeat( spaces ) ).append( " ^" );
+                }
+            }
+            return builder.toString();
+        }
+    }
+}
