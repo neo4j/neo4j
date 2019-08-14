@@ -229,7 +229,7 @@ class BoltConnectionIT extends BoltStateMachineV4StateTestBase
         var recorder = new BoltResponseRecorder();
         machine.process( run(
                 "USING PERIODIC COMMIT " + batch + "\n" +
-                        "LOAD CSV WITH HEADERS FROM {csvFileUrl} AS l\n" +
+                        "LOAD CSV WITH HEADERS FROM $csvFileUrl AS l\n" +
                         "MATCH (c:Class {name: l.class_name})\n" +
                         "CREATE (s:Sample {sepal_length: l.sepal_length, sepal_width: l.sepal_width, " +
                         "petal_length: l.petal_length, petal_width: l.petal_width})\n" +
@@ -270,7 +270,7 @@ class BoltConnectionIT extends BoltStateMachineV4StateTestBase
         var recorder = new BoltResponseRecorder();
         machine.process( run(
                 "USING PERIODIC COMMIT 40\n" +
-                        "LOAD CSV WITH HEADERS FROM {csvFileUrl} AS l\n" +
+                        "LOAD CSV WITH HEADERS FROM $csvFileUrl AS l\n" +
                         "MATCH (c:Class {name: l.class_name})\n" +
                         "CREATE (s:Sample {sepal_length: l.sepal_length, sepal_width: l.sepal_width, petal_length: l" +
                         ".petal_length, petal_width: l.petal_width})\n" +
@@ -380,7 +380,7 @@ class BoltConnectionIT extends BoltStateMachineV4StateTestBase
         for ( String className : IRIS_CLASS_NAMES )
         {
             MapValue params = map( "className", className );
-            runAndPull( machine, "CREATE (c:Class {name: {className}}) RETURN c", params );
+            runAndPull( machine, "CREATE (c:Class {name: $className}) RETURN c", params );
         }
 
         return env.putTmpFile( "iris", ".csv", IRIS_DATA ).toExternalForm();

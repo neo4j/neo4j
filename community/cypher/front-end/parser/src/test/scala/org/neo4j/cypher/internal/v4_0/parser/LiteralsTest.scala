@@ -78,15 +78,7 @@ class LiteralsTest extends ParserTest[Any, Any] with Literals {
     parsing("9E-443") shouldGive ast.DecimalDoubleLiteral("9E-443")(t)
   }
 
-  test("can parse legacy parameter syntax") {
-    implicit val parserToTest = Parameter
-
-    parsing("{p}") shouldGive ast.Parameter("p", CTAny)(t)
-    parsing("{`the funny horse`}") shouldGive ast.Parameter("the funny horse", CTAny)(t)
-    parsing("{0}") shouldGive ast.Parameter("0", CTAny)(t)
-  }
-
-  test("can parse new parameter syntax") {
+  test("can parse parameter syntax") {
     implicit val parserToTest = Parameter
 
     parsing("$p") shouldGive ast.Parameter("p", CTAny)(t)
