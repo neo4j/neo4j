@@ -172,7 +172,6 @@ class IdRangeMarker implements CommitMarker, ReuseMarker
     @Override
     public void markFree( long id )
     {
-        bridgeGapBetweenHighestWrittenIdAndThisId( id );
         if ( !isReservedId( id ) )
         {
             prepareRange( id, true );
