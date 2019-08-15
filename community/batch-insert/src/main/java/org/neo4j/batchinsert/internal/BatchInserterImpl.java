@@ -80,6 +80,7 @@ import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.IndexProviderDescriptor;
 import org.neo4j.internal.schema.LabelSchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptor;
+import org.neo4j.internal.schema.SchemaDescriptorSupplier;
 import org.neo4j.internal.schema.SchemaRule;
 import org.neo4j.internal.schema.constraints.ConstraintDescriptorFactory;
 import org.neo4j.internal.schema.constraints.IndexBackedConstraintDescriptor;
@@ -90,7 +91,6 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracerSupplier;
 import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier;
-import org.neo4j.kernel.api.SilentTokenNameLookup;
 import org.neo4j.kernel.api.exceptions.index.IndexPopulationFailedKernelException;
 import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.extension.DatabaseExtensions;
@@ -508,6 +508,7 @@ public class BatchInserterImpl implements BatchInserter
         IndexProvider provider = indexProviderMap.getDefaultProvider();
         IndexProviderDescriptor providerDescriptor = provider.getProviderDescriptor();
         IndexPrototype prototype = IndexPrototype.forSchema( schema, providerDescriptor ).withName( indexName );
+        prototype = ensureSchemaHasName( prototype );
 
         IndexDescriptor index = prototype.materialise( schemaStore.nextId() );
         index = provider.completeConfiguration( index );
@@ -611,14 +612,15 @@ public class BatchInserterImpl implements BatchInserter
 
         long indexId = schemaStore.nextId();
         long constraintRuleId = schemaStore.nextId();
+        constraint = ensureSchemaHasName( constraint );
 
         IndexProvider provider = indexProviderMap.getDefaultProvider();
         IndexProviderDescriptor providerDescriptor = provider.getProviderDescriptor();
-        IndexDescriptor index = IndexPrototype.uniqueForSchema( schema, providerDescriptor ).materialise( indexId );
+        IndexPrototype prototype = IndexPrototype.uniqueForSchema( schema, providerDescriptor );
+        IndexDescriptor index = prototype.withName( constraint.getName() ).materialise( indexId );
         index = provider.completeConfiguration( index ).withOwningConstraintId( constraintRuleId );
 
         constraint = constraint.withId( constraintRuleId ).withOwnedIndexId( indexId );
-        constraint = ensureConstraintHasName( constraint );
 
         try
         {
@@ -636,13 +638,27 @@ public class BatchInserterImpl implements BatchInserter
         }
     }
 
-    private <T extends ConstraintDescriptor> T ensureConstraintHasName( T constraint )
+    @SuppressWarnings( "unchecked" )
+    private <T extends SchemaDescriptorSupplier> T ensureSchemaHasName( T schemaish )
     {
-        if ( constraint.getName() == null )
+        String name;
+        if ( schemaish instanceof IndexPrototype )
+        {
+            name = ((IndexPrototype) schemaish).getName().orElse( null );
+        }
+        else if ( schemaish instanceof SchemaRule )
+        {
+            name = ((SchemaRule) schemaish).getName();
+        }
+        else
+        {
+            throw new IllegalArgumentException( "Don't know how to check the name of " + schemaish + "." );
+        }
+        if ( name == null || (name = name.trim()).isEmpty() || name.isBlank() )
         {
             try
             {
-                SchemaDescriptor schema = constraint.schema();
+                SchemaDescriptor schema = schemaish.schema();
                 TokenHolder entityTokenHolder = schema.entityType() == EntityType.NODE ? tokenHolders.labelTokens() : tokenHolders.relationshipTypeTokens();
                 TokenHolder propertyKeyTokenHolder = tokenHolders.propertyKeyTokens();
                 int[] entityTokenIds = schema.getEntityTokenIds();
@@ -657,15 +673,23 @@ public class BatchInserterImpl implements BatchInserter
                 {
                     propertyNames[i] = propertyKeyTokenHolder.getTokenById( propertyIds[i] ).name();
                 }
-                //noinspection unchecked
-                constraint = (T) constraint.withName( SchemaRule.generateName( constraint, entityTokenNames, propertyNames ) );
+                name = SchemaRule.generateName( schemaish, entityTokenNames, propertyNames );
+                if ( schemaish instanceof IndexPrototype )
+                {
+                    schemaish = (T) ((IndexPrototype) schemaish).withName( name );
+                }
+                else
+                {
+                    assert schemaish instanceof SchemaRule;
+                    schemaish = (T) ((SchemaRule) schemaish).withName( name );
+                }
             }
             catch ( TokenNotFoundException e )
             {
-                throw new TransactionFailureException( "Failed to generate name for constraint: " + constraint, e );
+                throw new TransactionFailureException( "Failed to generate name for constraint: " + schemaish, e );
             }
         }
-        return constraint;
+        return schemaish;
     }
 
     private TransactionFailureException kernelExceptionToUserException( KernelException e )
@@ -687,7 +711,7 @@ public class BatchInserterImpl implements BatchInserter
     private ConstraintDescriptor createNodePropertyExistenceConstraintRule( String name, int labelId, int... propertyKeyIds )
     {
         ConstraintDescriptor rule = ConstraintDescriptorFactory.existsForLabel( labelId, propertyKeyIds ).withId( schemaStore.nextId() ).withName( name );
-        rule = ensureConstraintHasName( rule );
+        rule = ensureSchemaHasName( rule );
 
         try
         {
@@ -706,7 +730,7 @@ public class BatchInserterImpl implements BatchInserter
     private ConstraintDescriptor createRelTypePropertyExistenceConstraintRule( String name, int relTypeId, int... propertyKeyIds )
     {
         ConstraintDescriptor rule = ConstraintDescriptorFactory.existsForRelType( relTypeId, propertyKeyIds ).withId( schemaStore.nextId() ).withName( name );
-        rule = ensureConstraintHasName( rule );
+        rule = ensureSchemaHasName( rule );
 
         try
         {
